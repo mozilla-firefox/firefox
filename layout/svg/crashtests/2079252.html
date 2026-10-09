@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><text id="t" y="20" style="white-space:pre"></text></svg>
+<script>
+const NS = "http://www.w3.org/2000/svg", t = document.getElementById("t"), m = 48;
+for (let i = 0; i < m; i++) {
+  const s = document.createElementNS(NS, "tspan");
+  s.setAttribute("style", i % 2 ? "font-size:20px" : "font-size:24px");
+  s.textContent = "x\ne" + String.fromCharCode(0x301);
+  t.appendChild(s);
+}
+const d = document.createElementNS(NS, "tspan");
+d.setAttribute("style", "font-size:30px");
+d.textContent = "w";
+t.appendChild(d);
+const total = t.getNumberOfChars();
+const per = (total - 1) / m;
+d.firstChild.data = "ww";
+for (let i = 0; i < m; i++) {
+  try { t.getExtentOfChar(i * per + per - 1); } catch (e) {}
+}
+</script>
+</body>
+</html>

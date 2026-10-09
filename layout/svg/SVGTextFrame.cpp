@@ -3994,6 +3994,8 @@ already_AddRefed<DOMSVGPoint> SVGTextFrame::GetEndPositionOfChar(
     return nullptr;
   }
 
+  RefPtr<const gfxTextRun> textRun = it.TextRun();
+
   // We need to return the end position of the whole glyph.
   uint32_t startIndex = it.GlyphStartTextElementCharIndex();
   float zoom = it.GetTextFrame()->Style()->EffectiveZoom().ToFloat();
@@ -4003,7 +4005,6 @@ already_AddRefed<DOMSVGPoint> SVGTextFrame::GetEndPositionOfChar(
       GetGlyphAdvance(this, aElement, startIndex,
                       it.IsClusterAndLigatureGroupStart() ? &it : nullptr) /
       mFontSizeScaleFactor;
-  const gfxTextRun* textRun = it.TextRun();
   if (textRun->IsInlineReversed()) {
     advance = -advance;
   }
@@ -4046,7 +4047,7 @@ already_AddRefed<SVGRect> SVGTextFrame::GetExtentOfChar(
 
   nsTextFrame* textFrame = it.GetTextFrame();
   uint32_t startIndex = it.GlyphStartTextElementCharIndex();
-  const gfxTextRun* textRun = it.TextRun();
+  RefPtr<const gfxTextRun> textRun = it.TextRun();
 
   // Get the glyph advance.
   gfxFloat advance =
@@ -4762,7 +4763,7 @@ void SVGTextFrame::DoTextPathLayout() {
 
       MOZ_ASSERT(!mPositions[i].mClusterOrLigatureGroupMiddle);
 
-      const gfxTextRun* textRun = it.TextRun();
+      RefPtr<const gfxTextRun> textRun = it.TextRun();
       bool vertical = textRun->IsVertical();
 
       // Compute cumulative advances for each character of the cluster or

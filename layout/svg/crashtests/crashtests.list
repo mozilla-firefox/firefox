@@ -282,3 +282,4 @@ skip-if(isDebugBuild&&Android) load 1993379-1.html # bug 1467887
 load 1906769-1.html
 load 2073222.html
 load 2076198.html
+load 2079252.html
