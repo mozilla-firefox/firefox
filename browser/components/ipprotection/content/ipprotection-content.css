@@ -45,6 +45,7 @@ ipprotection-status-card {
 .vpn-bottom-content {
   display: flex;
   flex-direction: column;
+  margin-block-start: var(--space-xsmall);
   moz-button {
     --button-content-alignment: start;
     --button-font-weight: var(--font-weight);

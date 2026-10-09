@@ -562,11 +562,13 @@ export default class IPProtectionContentElement extends MozLitElement {
     }
 
     if (this.#hasErrors) {
-      return html` ${this.errorTemplate()}${this.footerTemplate()}`;
+      return html` ${this.errorTemplate()}
+        <div class="vpn-bottom-content">${this.footerTemplate()}</div>`;
     }
 
     if (this.state.paused) {
-      return html` ${this.pausedTemplate()} ${this.footerTemplate()}`;
+      return html` ${this.pausedTemplate()}
+        <div class="vpn-bottom-content">${this.footerTemplate()}</div>`;
     }
 
     if (this.state.isSiteInclusionsEnabled) {
