@@ -93,7 +93,7 @@ class TextDecoderStreamAlgorithms : public TransformerAlgorithmsWrapper {
 
   // https://encoding.spec.whatwg.org/#dom-textdecoderstream
   MOZ_CAN_RUN_SCRIPT void TransformCallbackImpl(
-      JS::Handle<JS::Value> aChunk,
+      JSContext* aCx, JS::Handle<JS::Value> aChunk,
       TransformStreamDefaultController& aController,
       ErrorResult& aRv) override {
     // Step 7. Let transformAlgorithm be an algorithm which takes a chunk
@@ -102,43 +102,29 @@ class TextDecoderStreamAlgorithms : public TransformerAlgorithmsWrapper {
 
     // https://encoding.spec.whatwg.org/#decode-and-enqueue-a-chunk
 
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // Step 1. Let bufferSource be the result of converting chunk to an
     // [AllowShared] BufferSource.
-    RootedUnion<OwningBufferSource> bufferSource(cx);
-    if (!bufferSource.Init(cx, aChunk)) {
+    RootedUnion<OwningBufferSource> bufferSource(aCx);
+    if (!bufferSource.Init(aCx, aChunk)) {
       aRv.MightThrowJSException();
-      aRv.StealExceptionFromJSContext(cx);
+      aRv.StealExceptionFromJSContext(aCx);
       return;
     }
 
-    DecodeBufferSourceAndEnqueue(cx, &bufferSource, false, aController, aRv);
+    DecodeBufferSourceAndEnqueue(aCx, &bufferSource, false, aController, aRv);
   }
 
   // https://encoding.spec.whatwg.org/#dom-textdecoderstream
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
-      TransformStreamDefaultController& aController,
+      JSContext* aCx, TransformStreamDefaultController& aController,
       ErrorResult& aRv) override {
     // Step 8. Let flushAlgorithm be an algorithm which takes no arguments and
     // runs the flush and enqueue algorithm with this.
 
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // https://encoding.spec.whatwg.org/#flush-and-enqueue
     // (The flush and enqueue algorithm is basically a subset of decode and
     // enqueue one, so let's reuse it)
-    DecodeBufferSourceAndEnqueue(cx, nullptr, true, aController, aRv);
+    DecodeBufferSourceAndEnqueue(aCx, nullptr, true, aController, aRv);
   }
 
  private:

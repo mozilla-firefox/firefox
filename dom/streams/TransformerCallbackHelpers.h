@@ -86,11 +86,12 @@ class TransformerAlgorithmsWrapper : public TransformerAlgorithmsBase {
       ErrorResult& aRv) final;
 
   MOZ_CAN_RUN_SCRIPT virtual void TransformCallbackImpl(
-      JS::Handle<JS::Value> aChunk,
+      JSContext* aCx, JS::Handle<JS::Value> aChunk,
       TransformStreamDefaultController& aController, ErrorResult& aRv) = 0;
 
   MOZ_CAN_RUN_SCRIPT virtual void FlushCallbackImpl(
-      TransformStreamDefaultController& aController, ErrorResult& aRv) {
+      JSContext* aCx, TransformStreamDefaultController& aController,
+      ErrorResult& aRv) {
     // flushAlgorithm is optional, do nothing by default
   }
 };
