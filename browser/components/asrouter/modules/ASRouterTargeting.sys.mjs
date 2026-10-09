@@ -53,6 +53,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AboutNewTabResourceMapping:
     "resource:///modules/AboutNewTabResourceMapping.sys.mjs",
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
+  AgentPageDetector:
+    "moz-src:///browser/components/aiwindow/ui/modules/AgentPageDetector.sys.mjs",
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AboutNewTab: "resource:///modules/AboutNewTab.sys.mjs",
@@ -759,6 +761,19 @@ async function getPinStatus() {
   return await ShellService.doesAppNeedPin();
 }
 
+function getSelectedTabURI() {
+  const win = lazy.BrowserWindowTracker.getTopWindow({
+    private: false,
+    allowFromInactiveWorkspace: true,
+  });
+
+  // null in private windows
+  if (!win || lazy.PrivateBrowsingUtils.isWindowPrivate(win)) {
+    return null;
+  }
+  return win.gBrowser?.selectedBrowser?.currentURI ?? null;
+}
+
 const TargetingGetters = {
   get locale() {
     return Services.locale.appLocaleAsBCP47;
@@ -781,6 +796,12 @@ const TargetingGetters = {
   },
   get currentDate() {
     return new Date();
+  },
+  // The category of the page open in the active tab ("product-detail",
+  // "shopping-home", "news-home"), or null when it is in none of them.
+  get currentTabPageCategory() {
+    const uri = getSelectedTabURI();
+    return uri ? lazy.AgentPageDetector.getPageCategory(uri) : null;
   },
   get canCreateSelectableProfiles() {
     if (!AppConstants.MOZ_SELECTABLE_PROFILES) {

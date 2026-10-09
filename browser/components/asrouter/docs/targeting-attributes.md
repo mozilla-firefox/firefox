@@ -187,6 +187,59 @@ declare const currentDate; ECMA262DateString;
 type ECMA262DateString = string;
 ```
 
+### `currentTabPageCategory`
+
+Category of the page in the selected tab of the most recent non-private
+window, or `null` if it doesn't match any category. With multiple windows
+open, this isn't necessarily the window the message is evaluated for, or the
+tab that fired the trigger.
+
+* `"product-detail"`: a product page on Amazon, Walmart, Best Buy or Sephora,
+  US (`.com`) only.
+* `"shopping-home"`: the home page of a US or Canadian retailer.
+* `"news-home"`: the home page of a US or Canadian news site.
+
+Matching is done on the URL only, against a list of hosts and paths. Page
+content isn't read. US and Canadian sites share one list, so use `region` if
+you only want users in one market.
+
+```{note}
+  Only the category is exposed, never the URL, and it must not be recorded in
+  telemetry. Always `null` in private windows, including permanent private
+  browsing.
+```
+
+The host lists live in
+`browser/components/aiwindow/ui/modules/AgentPageDetector.sys.mjs` and ship
+with the build. They can't be changed through Nimbus or Remote Settings, so
+adding or fixing a site needs a patch on the trains.
+
+#### Triggers
+
+Targeting is only evaluated when a message is requested, so this needs a
+trigger. Use `openURL` with `params`, `patterns` or `regexPatterns` covering
+the same sites. `openURL` also exposes `url` and `host` for the tab that fired
+it, if you need the exact page.
+
+#### Examples
+* Is the selected tab on a shopping home page?
+```java
+currentTabPageCategory == "shopping-home"
+```
+* Is the selected tab on a news home page, in Canada?
+```java
+currentTabPageCategory == "news-home" && region == "CA"
+```
+
+#### Definition
+```ts
+declare const currentTabPageCategory:
+  | "product-detail"
+  | "shopping-home"
+  | "news-home"
+  | null;
+```
+
 ### `devToolsOpenedCount`
 Number of usages of the web console.
 

@@ -27,6 +27,7 @@ MOZ_SRC_FILES += [
     "actors/SmartWindowTasksChild.sys.mjs",
     "actors/SmartWindowTasksParent.sys.mjs",
     "modules/A2UI.mjs",
+    "modules/AgentPageDetector.sys.mjs",
     "modules/AgentUI.sys.mjs",
     "modules/AITabConstants.sys.mjs",
     "modules/AITabMigrations.sys.mjs",

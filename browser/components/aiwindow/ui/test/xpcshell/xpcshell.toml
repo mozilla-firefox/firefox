@@ -13,6 +13,8 @@ run-if = [
 
 ["test_AITabStore.js"]
 
+["test_AgentPageDetector.js"]
+
 ["test_AutoTabGrouping.js"]
 
 ["test_ChatConversation.js"]
