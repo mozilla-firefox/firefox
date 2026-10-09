@@ -103,9 +103,16 @@ add_task(async function test_dismiss() {
       "Should find a visible sponsored topsite"
     );
 
-    let topsitesList = content.document.querySelectorAll("li.top-site-outer");
-
-    Assert.equal(topsitesList.length, 4, "Should have 4 topsites by default");
+    // Count the sponsored tiles rather than the whole row, which also depends
+    // on the search engine, on what earlier tests pinned, and on whether there
+    // is a free cell for the add-shortcut tile.
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        content.document.querySelectorAll(
+          '.top-sites [data-is-sponsored-link="true"]'
+        ).length === 2,
+      "Wait for 2 sponsored top sites"
+    );
 
     const contextMenuDiv = content.document.querySelector(
       '.top-sites [data-is-sponsored-link="true"] + div'
@@ -131,16 +138,19 @@ add_task(async function test_dismiss() {
     dismissButton.click();
 
     await ContentTaskUtils.waitForCondition(
-      () => content.document.querySelectorAll("li.top-site-outer").length === 3,
-      "Should find only 3 topsites"
+      () =>
+        content.document.querySelectorAll(
+          '.top-sites [data-is-sponsored-link="true"]'
+        ).length === 1,
+      "Should find only 1 sponsored topsite"
     );
 
-    topsitesList = content.document.querySelectorAll("li.top-site-outer");
-
     Assert.equal(
-      topsitesList.length,
-      3,
-      "Should have 3 topsites after dismiss"
+      content.document.querySelectorAll(
+        '.top-sites [data-is-sponsored-link="true"]'
+      ).length,
+      1,
+      "Should have 1 sponsored topsite after dismiss"
     );
   });
 

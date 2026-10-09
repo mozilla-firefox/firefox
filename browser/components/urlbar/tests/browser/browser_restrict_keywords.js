@@ -22,7 +22,16 @@ const RESTRICT_TOKENS_TO_TEST = [
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.searchRestrictKeywords.featureGate", true]],
+    set: [
+      ["browser.urlbar.searchRestrictKeywords.featureGate", true],
+      // Tests get no default Top Sites. Leaving the actions search mode runs a
+      // query on an empty string, and the view only drops its actions state
+      // once it has results to render, so give it one to find.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 
   registerCleanupFunction(async function () {

@@ -5,7 +5,16 @@
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.scotchBonnet.enableOverride", true]],
+    set: [
+      ["browser.urlbar.scotchBonnet.enableOverride", true],
+      // Tests get no default Top Sites, and test_picked_search_engines opens
+      // the view on an empty string to show the Unified Search Button, which
+      // would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
   await TestUtils.waitForCondition(
     () =>

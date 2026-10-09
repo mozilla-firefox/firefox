@@ -8,6 +8,19 @@
 
 "use strict";
 
+add_setup(async function () {
+  // Tests get no default Top Sites, and the popup is opened on an empty
+  // string, which would otherwise leave it closed with no results.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+});
+
 add_task(async function () {
   let tab1 = BrowserTestUtils.addTab(gBrowser);
   let tab2 = BrowserTestUtils.addTab(gBrowser);

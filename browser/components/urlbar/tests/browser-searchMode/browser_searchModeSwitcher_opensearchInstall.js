@@ -6,7 +6,15 @@ const ENGINE_TEST_URL =
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.scotchBonnet.enableOverride", true]],
+    set: [
+      ["browser.urlbar.scotchBonnet.enableOverride", true],
+      // Tests get no default Top Sites, and testInstallEngine opens the view on
+      // an empty string, which would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 });
 

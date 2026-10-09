@@ -16,7 +16,16 @@ let gFluentStrings = new Localization(["browser/browser.ftl"]);
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.searchRestrictKeywords.featureGate", true]],
+    set: [
+      ["browser.urlbar.searchRestrictKeywords.featureGate", true],
+      // Tests get no default Top Sites. Leaving the actions search mode runs a
+      // query on an empty string, and the view only drops its actions state
+      // once it has results to render, so give it one to find.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 
   let italianEnglishKeywords = new Map([

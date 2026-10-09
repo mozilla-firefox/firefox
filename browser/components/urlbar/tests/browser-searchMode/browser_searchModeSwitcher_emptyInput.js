@@ -9,7 +9,16 @@
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.scotchBonnet.enableOverride", true]],
+    set: [
+      ["browser.urlbar.scotchBonnet.enableOverride", true],
+      // Tests get no default Top Sites, and the empty-string opening used to
+      // reveal the Unified Search Button would otherwise leave the view closed
+      // with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 });
 

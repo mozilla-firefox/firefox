@@ -28,6 +28,12 @@ add_setup(async function () {
     set: [
       ["dom.security.https_first", false],
       ["dom.security.https_first_schemeless", false],
+      // Tests get no default Top Sites, and the empty-string openings below
+      // would otherwise leave the view closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
     ],
   });
   // Needs at least one success.

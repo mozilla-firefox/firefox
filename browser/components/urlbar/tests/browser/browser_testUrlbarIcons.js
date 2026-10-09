@@ -18,7 +18,15 @@ let DEFAULT_ENGINE_ICON = null;
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.unifiedSearchButton.always", true]],
+    set: [
+      ["browser.urlbar.unifiedSearchButton.always", true],
+      // Tests get no default Top Sites, and the empty-string openings below
+      // would otherwise leave the view closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 
   let engine = await SearchService.getDefault();
