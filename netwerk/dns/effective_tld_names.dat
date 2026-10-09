@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-10-01_23-02-52_UTC
-// COMMIT: 6cd82aff889e3d64e5e03bc5c1f43da1934a960a
+// VERSION: 2026-10-07_07-28-19_UTC
+// COMMIT: 3929462652695bad04f0a27afb600974014a3c8b
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -11417,9 +11417,10 @@ cloudfront.net
 
 // Amazon Cognito
 // Submitted by AWS Security <psl-maintainers@amazon.com>
-// Reference: d7d4a954-976e-403e-a010-de9ed0cfbbd1
+// Reference: dd7b1be3-c336-4750-8e69-85d381b572dd
 auth.af-south-1.amazoncognito.com
 auth.ap-east-1.amazoncognito.com
+auth.ap-east-2.amazoncognito.com
 auth.ap-northeast-1.amazoncognito.com
 auth.ap-northeast-2.amazoncognito.com
 auth.ap-northeast-3.amazoncognito.com
@@ -11430,6 +11431,7 @@ auth.ap-southeast-2.amazoncognito.com
 auth.ap-southeast-3.amazoncognito.com
 auth.ap-southeast-4.amazoncognito.com
 auth.ap-southeast-5.amazoncognito.com
+auth.ap-southeast-6.amazoncognito.com
 auth.ap-southeast-7.amazoncognito.com
 auth.ca-central-1.amazoncognito.com
 auth.ca-west-1.amazoncognito.com
@@ -11568,6 +11570,30 @@ emrstudio-prod.us-west-1.amazonaws.com
 emrappui-prod.us-west-2.amazonaws.com
 emrnotebooks-prod.us-west-2.amazonaws.com
 emrstudio-prod.us-west-2.amazonaws.com
+
+// Amazon Lightsail
+// Submitted by AWS Security <psl-maintainers@amazon.com>
+// Reference: _BNEF4RCADXL7ELNLFZHYJMSMW4
+amazonlightsail.com
+*.ap-east-1.cs.amazonlightsail.com
+*.ap-northeast-1.cs.amazonlightsail.com
+*.ap-northeast-2.cs.amazonlightsail.com
+*.ap-south-1.cs.amazonlightsail.com
+*.ap-southeast-1.cs.amazonlightsail.com
+*.ap-southeast-2.cs.amazonlightsail.com
+*.ap-southeast-3.cs.amazonlightsail.com
+*.ap-southeast-5.cs.amazonlightsail.com
+*.ca-central-1.cs.amazonlightsail.com
+*.eu-central-1.cs.amazonlightsail.com
+*.eu-north-1.cs.amazonlightsail.com
+*.eu-south-2.cs.amazonlightsail.com
+*.eu-west-1.cs.amazonlightsail.com
+*.eu-west-2.cs.amazonlightsail.com
+*.eu-west-3.cs.amazonlightsail.com
+*.sa-east-1.cs.amazonlightsail.com
+*.us-east-1.cs.amazonlightsail.com
+*.us-east-2.cs.amazonlightsail.com
+*.us-west-2.cs.amazonlightsail.com
 
 // Amazon Managed Workflows for Apache Airflow
 // Submitted by AWS Security <psl-maintainers@amazon.com>
@@ -12190,7 +12216,7 @@ awsapps.com
 
 // AWS Elastic Beanstalk
 // Submitted by AWS Security <psl-maintainers@amazon.com>
-// Reference: e4e02a54-eaf9-4fe7-b662-39ccbc011a04
+// Reference: _CCBN322SBHBCSUGB7BBDVTREDI
 cn-north-1.eb.amazonaws.com.cn
 cn-northwest-1.eb.amazonaws.com.cn
 elasticbeanstalk.com
@@ -12200,13 +12226,18 @@ ap-northeast-1.elasticbeanstalk.com
 ap-northeast-2.elasticbeanstalk.com
 ap-northeast-3.elasticbeanstalk.com
 ap-south-1.elasticbeanstalk.com
+ap-south-2.elasticbeanstalk.com
 ap-southeast-1.elasticbeanstalk.com
 ap-southeast-2.elasticbeanstalk.com
 ap-southeast-3.elasticbeanstalk.com
+ap-southeast-4.elasticbeanstalk.com
 ap-southeast-5.elasticbeanstalk.com
+ap-southeast-6.elasticbeanstalk.com
 ap-southeast-7.elasticbeanstalk.com
 ca-central-1.elasticbeanstalk.com
+ca-west-1.elasticbeanstalk.com
 eu-central-1.elasticbeanstalk.com
+eu-central-2.elasticbeanstalk.com
 eu-north-1.elasticbeanstalk.com
 eu-south-1.elasticbeanstalk.com
 eu-south-2.elasticbeanstalk.com
@@ -15481,39 +15512,18 @@ firewalledreplit.co
 id.firewalledreplit.co
 repl.co
 id.repl.co
-replit.dev
-archer.replit.dev
-bones.replit.dev
-canary.replit.dev
-global.replit.dev
-hacker.replit.dev
-id.replit.dev
-janeway.replit.dev
-kim.replit.dev
-kira.replit.dev
-kirk.replit.dev
-odo.replit.dev
-paris.replit.dev
-picard.replit.dev
-pike.replit.dev
-prerelease.replit.dev
-reed.replit.dev
-riker.replit.dev
-sisko.replit.dev
-spock.replit.dev
-staging.replit.dev
-sulu.replit.dev
-tarpit.replit.dev
-teams.replit.dev
-tucker.replit.dev
-wesley.replit.dev
-worf.replit.dev
+*.replit.dev
+*.teams.replit.dev
 repl.run
 
 // Resin.io : https://resin.io
 // Submitted by Tim Perry <tim@resin.io>
 resindevice.io
 devices.resinstaging.io
+
+// Retool : https://retool.com
+// Submitted by Andrew Guan <security@retool.com>
+retool.app
 
 // Rico Developments Limited : https://adimo.co
 // Submitted by Colin Brown <hello@adimo.co>
