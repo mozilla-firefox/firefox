@@ -414,6 +414,12 @@ bool nsBaseFilePicker::IsWithinInputProtectionTimeRange(
 
 // static
 bool nsBaseFilePicker::IsPotentiallyReadableDirectory(nsIFile& aDirectory) {
+  if (XRE_IsContentProcess()) {
+    // The content process sandbox may block access to directories that the
+    // file picker, which runs in the parent process, can read.
+    return true;
+  }
+
 #ifdef XP_MACOSX
   // On macOS, the file picker can read directories that our own process can't.
   return true;

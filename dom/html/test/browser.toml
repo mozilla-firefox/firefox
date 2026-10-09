@@ -39,6 +39,8 @@ support-files = [
 
 ["browser_form_post_from_file_to_http.js"]
 
+["browser_input_file_picker_default_directory.js"]
+
 ["browser_input_file_picker_opening_notification.js"]
 
 ["browser_input_file_untrusted_drop.js"]
