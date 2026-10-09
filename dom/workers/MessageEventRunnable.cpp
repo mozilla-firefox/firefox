@@ -81,16 +81,15 @@ bool MessageEventRunnable::DispatchDOMEvent(
 bool MessageEventRunnable::WorkerRun(JSContext* aCx,
                                      WorkerPrivate* aWorkerPrivate) {
   MOZ_ASSERT(aWorkerPrivate == GetWorkerPrivateFromContext(aCx));
-  MOZ_ASSERT(aWorkerPrivate->GlobalScope());
 
-  // If the worker start shutting down, don't dispatch the message event.
-  if (NS_FAILED(
-          aWorkerPrivate->GlobalScope()->CheckCurrentGlobalCorrectness())) {
+  // If the worker global failed to be created or the worker start shutting
+  // down, don't dispatch the message event.
+  WorkerGlobalScope* globalScope = aWorkerPrivate->GlobalScope();
+  if (!globalScope || NS_FAILED(globalScope->CheckCurrentGlobalCorrectness())) {
     return true;
   }
 
-  return DispatchDOMEvent(aCx, aWorkerPrivate, aWorkerPrivate->GlobalScope(),
-                          false);
+  return DispatchDOMEvent(aCx, aWorkerPrivate, globalScope, false);
 }
 
 void MessageEventRunnable::DispatchError(JSContext* aCx,
