@@ -668,10 +668,10 @@ function push_repo {
       '.[] | select(.title | test($branch + " repo-update")) | select((.title | test("HSTS|HPKP")) == $pinning) | .id')
   do
     echo "Removing old request D$diff"
-    moz-phab abandon "D$diff"
+    moz-phab abandon --yes "D$diff"
   done
 
-  moz-phab submit -s --reviewers "${REVIEWERS}" --no-bug
+  moz-phab submit --yes -s --reviewers "${REVIEWERS}" --no-bug
 }
 
 
