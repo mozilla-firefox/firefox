@@ -1119,10 +1119,13 @@ RefPtr<PrintPromise> CanonicalBrowsingContext::PrintWithNoContentAnalysis(
     return promise;
   }
 
-  layout::RemotePrintJobParent* remotePrintJob =
-      new layout::RemotePrintJobParent(printSettings);
+  auto remotePrintJob = MakeRefPtr<layout::RemotePrintJobParent>(printSettings);
   printData.remotePrintJob() =
       browserParent->Manager()->SendPRemotePrintJobConstructor(remotePrintJob);
+  if (NS_WARN_IF(!printData.remotePrintJob())) {
+    promise->Reject(NS_ERROR_FAILURE, __func__);
+    return promise;
+  }
 
   remotePrintJob->RegisterListener(listener);
 
