@@ -129,6 +129,8 @@ class TLSTransportLayer final : public nsISocketTransport,
 
   nsISocketTransport* Transport() { return mSocketTransport; }
 
+  void MaybeWakeWaiter(int32_t aPollResult, int16_t aOutFlags, bool aInput);
+
   int32_t OutputInternal(const char* aBuf, int32_t aAmount);
   int32_t InputInternal(char* aBuf, int32_t aAmount);
 
@@ -149,6 +151,9 @@ class TLSTransportLayer final : public nsISocketTransport,
   InputStreamWrapper mSocketInWrapper;
   OutputStreamWrapper mSocketOutWrapper;
   nsCOMPtr<nsITLSSocketControl> mTLSSocketControl;
+  // Whether the last PR_Poll reached this layer's Poll(). See MaybeWakeWaiter.
+  bool mPollCalled{false};
+
   nsCOMPtr<nsIInputStreamCallback> mInputCallback;
   nsCOMPtr<nsIOutputStreamCallback> mOutputCallback;
   PRFileDesc* mFD{nullptr};

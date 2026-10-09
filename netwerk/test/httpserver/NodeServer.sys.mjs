@@ -798,13 +798,20 @@ class BaseProxyCode {
       return;
     }
     const net = require("net");
-    // Connect to an origin server
+    // Connect to an origin server. The test-only hostnames below have no DNS
+    // entry: Gecko resolves them via network.dns.native-is-localhost, but this
+    // process uses the OS resolver and would fail with ENOTFOUND.
     const { port, hostname } = new URL(`https://${req.url}`);
+    const localhostNames = [
+      "foo.example.com",
+      "alt1.example.com",
+      "alt2.example.com",
+    ];
     const serverSocket = net
       .connect(
         {
           port: port || 443,
-          host: hostname,
+          host: localhostNames.includes(hostname) ? "127.0.0.1" : hostname,
           family: 4, // Specifies to use IPv4
         },
         () => {

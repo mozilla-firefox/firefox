@@ -28,7 +28,14 @@ add_task(async function setup() {
   Services.prefs.setBoolPref("network.dns.native-is-localhost", true);
 });
 
+function resetConnections() {
+  Services.obs.notifyObservers(null, "net:cancel-all-connections");
+  Services.dns.clearCache(true);
+  return new Promise(resolve => do_timeout(500, resolve));
+}
+
 async function test_cert_failure(server_or_proxy, server_cert) {
+  await resetConnections();
   let server = new server_or_proxy();
   server._skipCert = true;
   await server.start();
@@ -76,4 +83,26 @@ add_task(async function test_http2_proxy() {
   });
 
   await test_cert_failure(NodeHTTPSServer, false);
+});
+
+// The two tests below trust the proxy's own certificate, so the load gets a
+// working CONNECT tunnel and only then fails on the origin's certificate,
+// inside it.
+async function test_cert_failure_through_tunnel(proxy_server) {
+  let proxy = new proxy_server();
+  proxy._skipCert = false;
+  await proxy.start();
+  registerCleanupFunction(async () => {
+    await proxy.stop();
+  });
+
+  await test_cert_failure(NodeHTTPSServer, true);
+}
+
+add_task(async function test_https_proxy_origin_cert_failure() {
+  await test_cert_failure_through_tunnel(NodeHTTPSProxyServer);
+});
+
+add_task(async function test_http2_proxy_origin_cert_failure() {
+  await test_cert_failure_through_tunnel(NodeHTTP2ProxyServer);
 });

@@ -80,14 +80,18 @@ TLSTransportLayer::InputStreamWrapper::Read(char* buf, uint32_t count,
           this));
       return NS_BASE_STREAM_WOULD_BLOCK;
     }
-    // If reading from the socket succeeded (NS_SUCCEEDED(mStatus)),
-    // but the nss layer encountered an error remember the error.
+    // Prefer the transport's status only when the transport really failed
+    // Otherwise the error came from NSS.
     if (NS_SUCCEEDED(mStatus)) {
-      mStatus = mTransport->mInputStatus;
-      LOG((
-          "TLSTransportLayer::InputStreamWrapper::Read %p socket error %" PRIx32
-          ".\n",
-          this, static_cast<uint32_t>(mStatus)));
+      nsresult transportStatus = mTransport->mInputStatus;
+      mStatus = (NS_FAILED(transportStatus) &&
+                 transportStatus != NS_BASE_STREAM_WOULD_BLOCK)
+                    ? transportStatus
+                    : ErrorAccordingToNSPR(code);
+      LOG(("TLSTransportLayer::InputStreamWrapper::Read %p error %" PRIx32
+           " (transport=%" PRIx32 ", nss code=%d)\n",
+           this, static_cast<uint32_t>(mStatus),
+           static_cast<uint32_t>(transportStatus), code));
     }
   }
 
@@ -149,11 +153,17 @@ TLSTransportLayer::InputStreamWrapper::AsyncWait(
   PRPollDesc pd;
   pd.fd = mTransport->mFD;
   pd.in_flags = PR_POLL_READ | PR_POLL_EXCEPT;
+  pd.out_flags = 0;
   // Only run PR_Poll on the socket thread. Also, make sure this lives at least
   // as long as that operation.
   auto DoPoll = [self = RefPtr{this}, pd(pd)]() mutable {
+    self->mTransport->mPollCalled = false;
     int32_t rv = PR_Poll(&pd, 1, PR_INTERVAL_NO_TIMEOUT);
-    LOG(("TLSTransportLayer::InputStreamWrapper::AsyncWait rv=%d", rv));
+    LOG(
+        ("TLSTransportLayer::InputStreamWrapper::AsyncWait rv=%d out_flags=%d "
+         "pollCalled=%d",
+         rv, (int)pd.out_flags, (int)self->mTransport->mPollCalled));
+    self->mTransport->MaybeWakeWaiter(rv, pd.out_flags, /* aInput */ true);
   };
   if (OnSocketThread()) {
     DoPoll();
@@ -240,13 +250,17 @@ TLSTransportLayer::OutputStreamWrapper::Write(const char* buf, uint32_t count,
       return NS_BASE_STREAM_WOULD_BLOCK;
     }
 
-    // Writing to the socket succeeded, but failed in nss layer.
+    // Same reasoning as InputStreamWrapper::Read above.
     if (NS_SUCCEEDED(mStatus)) {
-      mStatus = mTransport->mOutputStatus;
-      LOG(
-          ("TLSTransportLayer:::OutputStreamWrapper::Write %p socket error "
-           "%" PRIx32 " code=%d\n",
-           this, static_cast<uint32_t>(mStatus), code));
+      nsresult transportStatus = mTransport->mOutputStatus;
+      mStatus = (NS_FAILED(transportStatus) &&
+                 transportStatus != NS_BASE_STREAM_WOULD_BLOCK)
+                    ? transportStatus
+                    : ErrorAccordingToNSPR(code);
+      LOG(("TLSTransportLayer::OutputStreamWrapper::Write %p error %" PRIx32
+           " (transport=%" PRIx32 ", nss code=%d)\n",
+           this, static_cast<uint32_t>(mStatus),
+           static_cast<uint32_t>(transportStatus), code));
     }
   }
 
@@ -308,8 +322,14 @@ TLSTransportLayer::OutputStreamWrapper::AsyncWait(
   PRPollDesc pd;
   pd.fd = mTransport->mFD;
   pd.in_flags = PR_POLL_WRITE | PR_POLL_EXCEPT;
+  pd.out_flags = 0;
+  mTransport->mPollCalled = false;
   int32_t rv = PR_Poll(&pd, 1, PR_INTERVAL_NO_TIMEOUT);
-  LOG(("TLSTransportLayer::OutputStreamWrapper::AsyncWait rv=%d", rv));
+  LOG(
+      ("TLSTransportLayer::OutputStreamWrapper::AsyncWait rv=%d out_flags=%d "
+       "pollCalled=%d",
+       rv, (int)pd.out_flags, (int)mTransport->mPollCalled));
+  mTransport->MaybeWakeWaiter(rv, pd.out_flags, /* aInput */ false);
   return NS_OK;
 }
 
@@ -431,6 +451,29 @@ bool TLSTransportLayer::Init(const char* aTLSHost, int32_t aTLSPort) {
   return NS_SUCCEEDED(provider->AddToSocket(
       PR_AF_INET, aTLSHost, aTLSPort, nullptr, OriginAttributes(), 0, 0, mFD,
       getter_AddRefs(mTLSSocketControl)));
+}
+
+// PSM's poll method cannot report errors: once the handshake has failed it
+// stops calling to Poll() and just flags the socket ready, expecting the
+// caller to collect the error from PR_Recv/PR_Send.
+void TLSTransportLayer::MaybeWakeWaiter(int32_t aPollResult, int16_t aOutFlags,
+                                        bool aInput) {
+  if (aPollResult <= 0 || mPollCalled || !(aOutFlags & PR_POLL_EXCEPT)) {
+    return;
+  }
+
+  LOG(("TLSTransportLayer::MaybeWakeWaiter %p waking %s waiter\n", this,
+       aInput ? "input" : "output"));
+
+  RefPtr<TLSTransportLayer> self(this);
+  gSocketTransportService->Dispatch(NS_NewRunnableFunction(
+      "TLSTransportLayer::MaybeWakeWaiter", [self, aInput]() mutable {
+        if (aInput) {
+          self->OnInputStreamReady(&self->mSocketInWrapper);
+        } else {
+          self->OnOutputStreamReady(&self->mSocketOutWrapper);
+        }
+      }));
 }
 
 NS_IMETHODIMP
@@ -851,6 +894,7 @@ int16_t TLSTransportLayer::Poll(PRFileDesc* fd, int16_t in_flags,
   if (!self) {
     return 0;
   }
+  self->mPollCalled = true;
 
   if (in_flags & PR_POLL_READ) {
     self->mSocketInWrapper.mSocketIn->AsyncWait(self, 0, 0, nullptr);
