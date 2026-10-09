@@ -50,6 +50,7 @@ export let RemotePageAccessManager = {
         "security.certerror.hideAddException",
         "security.certerrors.felt-privacy-v1",
         "browser.ipProtection.userEnabled",
+        "browser.netError.illustration.enabled",
       ],
       RPMGetIntPref: [
         "security.dialog_enable_delay",
@@ -128,6 +129,7 @@ export let RemotePageAccessManager = {
         "security.certerror.hideAddException",
         "security.certerrors.felt-privacy-v1",
         "browser.ipProtection.userEnabled",
+        "browser.netError.illustration.enabled",
       ],
       RPMGetHostForDisplay: ["*"],
       RPMGetInnermostAsciiHost: ["*"],

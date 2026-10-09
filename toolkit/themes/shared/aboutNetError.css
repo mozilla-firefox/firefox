@@ -205,6 +205,16 @@ button:disabled {
     > .container {
       width: 100%;
     }
+
+    /* Without the illustration, shrink the text to its widest line and center
+       it, so short messages do not sit left of center in the full-width card. */
+    @media not -moz-pref("browser.netError.illustration.enabled") {
+      justify-content: center;
+
+      > .container {
+        width: fit-content;
+      }
+    }
   }
 
   .img-container > img {
