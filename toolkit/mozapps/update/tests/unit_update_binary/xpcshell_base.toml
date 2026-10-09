@@ -299,11 +299,27 @@ run-sequentially = ["os == 'linux'"] # frequent fail in parallel on Linux
 
 ["marStageSuccessPartial.js"]
 
+["marStageSuccessPartialStaleDraft.js"]
+
 ["marStageSuccessPartialZucchini.js"]
 
 ["marSuccessComplete.js"]
 
 ["marSuccessPartial.js"]
+
+["marSuccessPartialStaleDraft.js"]
+
+["marSuccessPartialStaleDraftLockedForDeleteAdd_win.js"]
+run-if = [
+  "os == 'win'",
+]
+reason = "Windows only test"
+
+["marSuccessPartialStaleDraftLockedForDeletePatch_win.js"]
+run-if = [
+  "os == 'win'",
+]
+reason = "Windows only test"
 
 ["marSuccessPartialWhileBackgroundTaskRunning.js"]
 

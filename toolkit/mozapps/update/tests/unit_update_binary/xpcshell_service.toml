@@ -163,6 +163,9 @@ run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
 ["marStageSuccessPartial.js"]
 run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
 
+["marStageSuccessPartialStaleDraft.js"]
+run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
+
 ["marStageSuccessPartialZucchini.js"]
 run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
 
@@ -170,6 +173,9 @@ run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
 run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
 
 ["marSuccessPartial.js"]
+run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
+
+["marSuccessPartialStaleDraft.js"]
 run-sequentially = ["true"] # Uses the Mozilla Maintenance Service.
 
 ["marSuccessPartialZucchini.js"]
