@@ -1088,6 +1088,16 @@ void nsMenuBarX::CreateApplicationMenu(nsMenuX* aMenu) {
 
   if ([keyWindow isKindOfClass:[BaseWindow class]]) {
     gMenuItemsExecuteCommands = NO;
+  } else if (!(aEvent.modifierFlags & NSEventModifierFlagCommand)) {
+    // A native window has focus, for example an NSSavePanel sheet. Native text
+    // fields read keys that arrive without a Command modifier as plain editing
+    // or navigation keys, so leave those keys to that window rather than match
+    // them against our menu items. Otherwise the forward delete key matches
+    // Edit > Delete, whose shortcut carries no modifier, and is spent on a
+    // delete: that does nothing when the caret in the panel is collapsed.
+    // Shortcuts that include Command are still handled below, which is what
+    // lets native fields respond to Command+C/V/X/Z/A.
+    return NO;
   }
 
   NS_OBJC_BEGIN_TRY_IGNORE_BLOCK
