@@ -18,7 +18,7 @@ enum class Flush : bool { No, Yes };
 class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
  public:
   // Step 3 of
-  // https://wicg.github.io/compression/#dom-decompressionstream-decompressionstream
+  // https://compression.spec.whatwg.org/#dom-compressionstream-compressionstream
   // Let transformAlgorithm be an algorithm which takes a chunk argument and
   // runs the compress and enqueue a chunk algorithm with this and chunk.
   MOZ_CAN_RUN_SCRIPT
@@ -27,7 +27,7 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
                              ErrorResult& aRv) override;
 
   // Step 4 of
-  // https://compression.spec.whatwg.org/#dom-decompressionstream-decompressionstream
+  // https://compression.spec.whatwg.org/#dom-compressionstream-compressionstream
   // Let flushAlgorithm be an algorithm which takes no argument and runs the
   // compress flush and enqueue algorithm with this.
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
@@ -38,20 +38,25 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
 
   ~CompressionStreamAlgorithms() = default;
 
+  // Steps 2 - 4 of
+  // https://compression.spec.whatwg.org/#compress-and-enqueue-a-chunk
+  // and steps 1 - 3 of
+  // https://compression.spec.whatwg.org/#compress-flush-and-enqueue
   virtual void Compress(JSContext* aCx, Span<const uint8_t> aInput,
                         JS::MutableHandleVector<JSObject*> aOutput,
                         Flush aFlush, ErrorResult& aRv) = 0;
 
  private:
-  MOZ_CAN_RUN_SCRIPT void CompressAndEnqueue(
-      JSContext* aCx, Span<const uint8_t> aInput, Flush aFlush,
-      TransformStreamDefaultController& aController, ErrorResult& aRv);
+  MOZ_CAN_RUN_SCRIPT void Enqueue(JSContext* aCx,
+                                  JS::HandleVector<JSObject*> aArray,
+                                  TransformStreamDefaultController& aController,
+                                  ErrorResult& aRv);
 };
 
 class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
  public:
   // Step 3 of
-  // https://wicg.github.io/compression/#dom-decompressionstream-decompressionstream
+  // https://compression.spec.whatwg.org/#dom-decompressionstream-decompressionstream
   // Let transformAlgorithm be an algorithm which takes a chunk argument and
   // runs the compress and enqueue a chunk algorithm with this and chunk.
   MOZ_CAN_RUN_SCRIPT
@@ -72,6 +77,13 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   ~DecompressionStreamAlgorithms() = default;
 
   /**
+   * Steps 2 and 4 of
+   * https://compression.spec.whatwg.org/#decompress-and-enqueue-a-chunk
+   * (step 3, returning early if buffer is empty, is intentionally not
+   * implemented; see https://github.com/whatwg/compression/issues/78)
+   * and steps 1 and 2.1 of
+   * https://compression.spec.whatwg.org/#decompress-flush-and-enqueue
+   *
    * @return true if the input is fully consumed, else false
    */
   virtual bool Decompress(JSContext* aCx, Span<const uint8_t> aInput,
@@ -81,9 +93,10 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   bool mObservedStreamEnd = false;
 
  private:
-  MOZ_CAN_RUN_SCRIPT void DecompressAndEnqueue(
-      JSContext* aCx, Span<const uint8_t> aInput, Flush aFlush,
-      TransformStreamDefaultController& aController, ErrorResult& aRv);
+  MOZ_CAN_RUN_SCRIPT void Enqueue(JSContext* aCx,
+                                  JS::HandleVector<JSObject*> aArray,
+                                  TransformStreamDefaultController& aController,
+                                  ErrorResult& aRv);
 };
 
 }  // namespace mozilla::dom::compression
