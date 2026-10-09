@@ -1217,6 +1217,36 @@ static void backup_finish(const NS_tchar* path, const NS_tchar* relPath,
   }
 }
 
+static int extract_file(const NS_tchar* itemPath, const NS_tchar* dstPath) {
+#ifdef XP_WIN
+  char mbItemPath[MAXPATHLEN];
+  if (!WideCharToMultiByte(CP_UTF8, 0, itemPath, -1, mbItemPath, MAXPATHLEN,
+                           nullptr, nullptr)) {
+    LOG(("error converting wchar to utf8: %lu", GetLastError()));
+    return STRING_CONVERSION_ERROR;
+  }
+
+  return gArchiveReader.ExtractFile(mbItemPath, dstPath);
+#else
+  return gArchiveReader.ExtractFile(itemPath, dstPath);
+#endif
+}
+
+static int extract_file_to_stream(const NS_tchar* itemPath, FILE* dstStream) {
+#ifdef XP_WIN
+  char mbItemPath[MAXPATHLEN];
+  if (!WideCharToMultiByte(CP_UTF8, 0, itemPath, -1, mbItemPath, MAXPATHLEN,
+                           nullptr, nullptr)) {
+    LOG(("error converting wchar to utf8: %lu", GetLastError()));
+    return STRING_CONVERSION_ERROR;
+  }
+
+  return gArchiveReader.ExtractFileToStream(mbItemPath, dstStream);
+#else
+  return gArchiveReader.ExtractFileToStream(itemPath, dstStream);
+#endif
+}
+
 //-----------------------------------------------------------------------------
 
 static int DoUpdate();
@@ -1547,18 +1577,7 @@ int AddFile::Execute() {
     }
   }
 
-#ifdef XP_WIN
-  char sourcefile[MAXPATHLEN];
-  if (!WideCharToMultiByte(CP_UTF8, 0, mRelPath.get(), -1, sourcefile,
-                           MAXPATHLEN, nullptr, nullptr)) {
-    LOG(("error converting wchar to utf8: %lu", GetLastError()));
-    return STRING_CONVERSION_ERROR;
-  }
-
-  rv = gArchiveReader.ExtractFile(sourcefile, mFile.get());
-#else
-  rv = gArchiveReader.ExtractFile(mRelPath.get(), mFile.get());
-#endif
+  rv = extract_file(mRelPath.get(), mFile.get());
   if (!rv) {
     mAdded = true;
   }
@@ -1801,7 +1820,14 @@ class PatchFile : public Action {
   void Finish(int status) override;
 
  private:
+  enum class PatchDest {
+    InPlace,
+  };
+
   int LoadSourceFile(FILE* ofile);
+
+  // This consumes the patch, so it may only be called once.
+  int ApplyPatchTo(PatchDest aDest);
 
   static int sPatchIndex;
 
@@ -1949,24 +1975,23 @@ int PatchFile::Prepare() {
     LOG(("Couldn't lock patch file: %lu", GetLastError()));
     return LOCK_ERROR_PATCH_FILE;
   }
-
-  char sourcefile[MAXPATHLEN];
-  if (!WideCharToMultiByte(CP_UTF8, 0, mPatchFile, -1, sourcefile, MAXPATHLEN,
-                           nullptr, nullptr)) {
-    LOG(("error converting wchar to utf8: %lu", GetLastError()));
-    return STRING_CONVERSION_ERROR;
-  }
-
-  int rv = gArchiveReader.ExtractFileToStream(sourcefile, mPatchStream);
-#else
-  int rv = gArchiveReader.ExtractFileToStream(mPatchFile, mPatchStream);
 #endif
 
-  return rv;
+  return extract_file_to_stream(mPatchFile, mPatchStream);
 }
 
 int PatchFile::Execute() {
   LOG(("EXECUTE PATCH " LOG_S, mFileRelPath.get()));
+
+  return ApplyPatchTo(PatchDest::InPlace);
+}
+
+int PatchFile::ApplyPatchTo(PatchDest aDest) {
+  // PatchDest only has one enumerator for now: the next patch of this series
+  // adds a second one, which is when this parameter starts being read.
+  (void)aDest;
+
+  const NS_tchar* destPath = mFile.get();
 
   int rv = UNEXPECTED_BSPATCH_ERROR;
 
@@ -2038,7 +2063,7 @@ int PatchFile::Execute() {
   off_t dlen = mPatchFileDecoder->DestinationSize();
 
 #if defined(HAVE_POSIX_FALLOCATE)
-  AutoFile ofile(ensure_open(mFile.get(), NS_T("wb+"), ss.st_mode));
+  AutoFile ofile(ensure_open(destPath, NS_T("wb+"), ss.st_mode));
   posix_fallocate(fileno((FILE*)ofile), 0, dlen);
 #elif defined(XP_WIN)
   bool shouldTruncate = true;
@@ -2050,8 +2075,8 @@ int PatchFile::Execute() {
   // 2. _get_osfhandle and then setting the size reduced fragmentation though
   //    not completely. There are also reports of _get_osfhandle failing on
   //    mingw.
-  HANDLE hfile = CreateFileW(mFile.get(), GENERIC_WRITE, 0, nullptr,
-                             CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  HANDLE hfile = CreateFileW(destPath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                             FILE_ATTRIBUTE_NORMAL, nullptr);
 
   if (hfile != INVALID_HANDLE_VALUE) {
     if (SetFilePointer(hfile, dlen, nullptr, FILE_BEGIN) !=
@@ -2063,9 +2088,9 @@ int PatchFile::Execute() {
   }
 
   AutoFile ofile(ensure_open(
-      mFile.get(), shouldTruncate ? NS_T("wb+") : NS_T("rb+"), ss.st_mode));
+      destPath, shouldTruncate ? NS_T("wb+") : NS_T("rb+"), ss.st_mode));
 #elif defined(XP_MACOSX)
-  AutoFile ofile(ensure_open(mFile.get(), NS_T("wb+"), ss.st_mode));
+  AutoFile ofile(ensure_open(destPath, NS_T("wb+"), ss.st_mode));
   // Modified code from FileUtils.cpp
   fstore_t store = {F_ALLOCATECONTIG, F_PEOFPOSMODE, 0, dlen};
   // Try to get a continous chunk of disk space
@@ -2080,7 +2105,7 @@ int PatchFile::Execute() {
     ftruncate(fileno((FILE*)ofile), dlen);
   }
 #else
-  AutoFile ofile(ensure_open(mFile.get(), NS_T("wb+"), ss.st_mode));
+  AutoFile ofile(ensure_open(destPath, NS_T("wb+"), ss.st_mode));
 #endif
 
   if (ofile == nullptr) {
