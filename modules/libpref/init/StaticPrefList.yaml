@@ -16906,6 +16906,13 @@
   value: true
   mirror: always
 
+# Specifies for how many miliseconds to keep processing socket thread events
+# after shutdown was triggered.
+- name: network.socket.shutdown_process_events_ms
+  type: RelaxedAtomicUint32
+  value: 3000
+  mirror: always
+
 # Maximum duration (seconds) that transmitted data may remain unacknowledged
 # before TCP forcibly closes the connection. 0 = disabled (kernel default).
 # Only effective on Linux/Android (TCP_USER_TIMEOUT, kernel 2.6.37+).

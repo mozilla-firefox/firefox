@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
-
+#include "mozilla/StaticPrefs_network.h"
+#include "mozilla/TimeStamp.h"
 #include "nsCOMPtr.h"
 #include "nsISocketTransport.h"
 #include "nsString.h"
@@ -132,6 +133,71 @@ TEST(TestSocketTransportService, PortRemappingPreferenceReading)
           ASSERT_TRUE(CheckPortRemap((uint16_t)port, (uint16_t)port));
         }
       }));
+}
+
+namespace {
+
+// Re-dispatches itself to the socket thread at high priority until its
+// deadline, simulating a continuous stream of prioritized socket thread work.
+class PrioritySpinner final : public nsIRunnable, public nsIRunnablePriority {
+ public:
+  NS_DECL_THREADSAFE_ISUPPORTS
+  NS_DECL_NSIRUNNABLE
+  NS_DECL_NSIRUNNABLEPRIORITY
+
+  PrioritySpinner(nsSocketTransportService* aSTS, TimeDuration aDuration)
+      : mSTS(aSTS), mDeadline(TimeStamp::Now() + aDuration) {}
+
+ private:
+  ~PrioritySpinner() = default;
+
+  const RefPtr<nsSocketTransportService> mSTS;
+  const TimeStamp mDeadline;
+};
+
+NS_IMPL_ISUPPORTS(PrioritySpinner, nsIRunnable, nsIRunnablePriority)
+
+NS_IMETHODIMP PrioritySpinner::GetPriority(uint32_t* aPriority) {
+  *aPriority = nsIRunnablePriority::PRIORITY_MEDIUMHIGH;
+  return NS_OK;
+}
+
+NS_IMETHODIMP PrioritySpinner::Run() {
+  if (TimeStamp::Now() > mDeadline) {
+    return NS_OK;
+  }
+  nsCOMPtr<nsIRunnable> self(this);
+  return mSTS->Dispatch(self.forget(), NS_DISPATCH_NORMAL);
+}
+
+}  // namespace
+
+TEST(TestSocketTransportService, HighPriorityRunnablesDoNotBlockShutdown)
+{
+  nsCOMPtr<nsISocketTransportService> service =
+      do_GetService("@mozilla.org/network/socket-transport-service;1");
+  ASSERT_TRUE(service);
+
+  auto* sts = gSocketTransportService;
+  ASSERT_TRUE(sts);
+  ASSERT_TRUE(StaticPrefs::network_socket_prioritize_runnables());
+
+  RefPtr<PrioritySpinner> spinner =
+      new PrioritySpinner(sts, TimeDuration::FromSeconds(10));
+  nsCOMPtr<nsIRunnable> spin = static_cast<nsIRunnable*>(spinner.get());
+  ASSERT_TRUE(NS_SUCCEEDED(sts->Dispatch(spin.forget(), NS_DISPATCH_NORMAL)));
+
+  TimeStamp start = TimeStamp::Now();
+  ASSERT_TRUE(NS_SUCCEEDED(sts->Shutdown(false)));
+  double elapsed = (TimeStamp::Now() - start).ToMilliseconds();
+
+  // Bring the service back up for the tests running after this one. This is
+  // the same shutdown/restart cycle nsIOService performs when going offline
+  // and back online.
+  ASSERT_TRUE(NS_SUCCEEDED(sts->Init()));
+
+  EXPECT_LT(elapsed, 4000.0)
+      << "socket thread shutdown was delayed by high priority events";
 }
 
 TEST(TestSocketTransportService, StatusValues)
