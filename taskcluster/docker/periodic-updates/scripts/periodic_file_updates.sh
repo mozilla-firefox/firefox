@@ -498,9 +498,8 @@ function compare_remote_settings_files {
     
     # bug 1959683: remote settings update can add untracked search-config-icons
     # It is not safe to take these (see https://bugzilla.mozilla.org/show_bug.cgi?id=1873448)
-    # If they are around as untracked files when `arc diff` runs, that command will fail.
-    # (We explicitly don't want to use `arc diff --allow-untracked` to avoid accidentally
-    # missing files from other updates - we'd rather the job fail.)
+    # moz-phab submits commits rather than the working copy, so it would silently
+    # leave these behind (warning but not failing); explicitly drop them here.
     if [ "${USE_GIT}" == "true" ]; then
       ${GIT} -C "${TOPSRCDIR}" clean -f -d services/settings/dumps/main/search-config-icons
     else
@@ -646,8 +645,9 @@ function push_repo {
   then
     return 1
   fi
-  if ! ARC=$(command -v arc) && ! ARC=$(command -v arcanist)
+  if ! command -v moz-phab
   then
+    echo moz-phab not found >&2
     return 1
   fi
   if [ -z "${REVIEWERS}" ]
@@ -657,24 +657,21 @@ function push_repo {
   # Clean up older review requests of the same type as this run.
   # Pinning updates (HSTS/HPKP) and periodic updates are separate tasks and
   # must not abandon each other's patches.
-  # Turn  Needs Review D624: No bug, Automated HSTS ...
-  # into D624
-  ALL_DIFFS=$($ARC list | grep "Needs Review" | grep -E "${BRANCH} repo-update" || true)
   if [ "${DO_HSTS}" == "true" ] || [ "${DO_HPKP}" == "true" ]; then
-    OLDER_DIFFS=$(echo "${ALL_DIFFS}" | grep -E "HSTS|HPKP" || true)
+    PINNING=true
   else
-    OLDER_DIFFS=$(echo "${ALL_DIFFS}" | grep -vE "HSTS|HPKP" || true)
+    PINNING=false
   fi
-  for diff in $(echo "${OLDER_DIFFS}" | awk 'match($0, /D[0-9]+[^: ]/) { print substr($0, RSTART, RLENGTH)  }')
+  # shellcheck disable=SC2016  # $branch and $pinning are jq variables, not shell
+  for diff in $(moz-phab list --status needs-review --format json | \
+    "${JQ}" --arg branch "${BRANCH}" --argjson pinning "${PINNING}" \
+      '.[] | select(.title | test($branch + " repo-update")) | select((.title | test("HSTS|HPKP")) == $pinning) | .id')
   do
-    echo "Removing old request $diff"
-    # There is no 'arc abandon', see bug 1452082
-    echo '{"transactions": [{"type":"abandon", "value": true}], "objectIdentifier": "'"${diff}"'"}' | $ARC call-conduit -- differential.revision.edit
+    echo "Removing old request D$diff"
+    moz-phab abandon "D$diff"
   done
 
-  # bug 1959683: using /dev/null as stdin causes arcanist to fail quickly
-  # instead of hang if user input is requested.
-  $ARC diff --verbatim --reviewers "${REVIEWERS}" < /dev/null
+  moz-phab submit -s --reviewers "${REVIEWERS}" --no-bug
 }
 
 

@@ -15,16 +15,24 @@ apt-get install -y --no-install-recommends \
     libxml2-utils \
     libxt6 \
     libxtst6 \
-    php-cli \
-    php-curl \
     shellcheck \
     unzip \
     bzip2 \
     wget
 
-# Install specific version of Arcanist to avoid PHP deprecation issues (Bug 2016414)
-git clone https://github.com/phacility/arcanist.git /usr/local/share/arcanist
-git -C /usr/local/share/arcanist checkout e50d1bc4eabac9c37e3220e9f3fb8e37ae20b957
-ln -s /usr/local/share/arcanist/bin/arc /usr/local/bin/arc
+uv tool install MozPhab==2.19.0
+
+# turn off update checks
+cat >"$HOME"/.moz-phab-config<<EOF
+[updater]
+self_last_check = -1
+self_auto_update = False
+EOF
+
+# moz-phab requires some hg config even though it's not used
+cat >"$HOME"/.hgrc<<EOF
+[ui]
+username = hg user <user@example.com>
+EOF
 
 rm -rf /setup
