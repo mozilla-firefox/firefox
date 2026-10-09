@@ -955,6 +955,43 @@ static int ensure_copy_recursive(const NS_tchar* path, const NS_tchar* dest,
   return rv;
 }
 
+#ifdef XP_WIN
+// Moves a file that could not be removed into the deletion directory, and
+// schedules it for removal on the next OS reboot.
+static int remove_on_reboot(const NS_tchar* path) {
+  if (sStagedUpdate || sReplaceRequest) {
+    return WRITE_ERROR_DELETE_FILE;
+  }
+
+  NS_tchar deletePath[MAXPATHLEN + 1];
+  if (!GetUUIDTempFilePath(gDeleteDirPath, L"moz", deletePath)) {
+    LOG(("remove_on_reboot: failed to generate a temporary file path"));
+    return WRITE_ERROR_DELETE_FILE;
+  }
+  if (NS_trename(path, deletePath) != 0) {
+    LOG(("remove_on_reboot: failed to move file out of the way: " LOG_S
+         ", err: %d",
+         path, errno));
+    return WRITE_ERROR_DELETE_FILE;
+  }
+
+  // The MoveFileEx call to remove the file on OS reboot will fail if the
+  // process doesn't have write access to the HKEY_LOCAL_MACHINE registry key
+  // but this is ok since the installer / uninstaller will delete the
+  // directory containing the file along with its contents after an update is
+  // applied, on reinstall, and on uninstall.
+  if (MoveFileEx(deletePath, nullptr, MOVEFILE_DELAY_UNTIL_REBOOT)) {
+    LOG(("remove_on_reboot: file will be removed on OS reboot: " LOG_S, path));
+  } else {
+    LOG(
+        ("remove_on_reboot: failed to schedule OS reboot removal of "
+         "file: " LOG_S,
+         path));
+  }
+  return OK;
+}
+#endif
+
 // Renames the specified file to the new file specified. If the destination file
 // exists it is removed.
 static int rename_file(const NS_tchar* spath, const NS_tchar* dpath,
@@ -983,11 +1020,17 @@ static int rename_file(const NS_tchar* spath, const NS_tchar* dpath,
   }
 
   if (!NS_taccess(dpath, F_OK)) {
-    if (ensure_remove(dpath)) {
+    rv = ensure_remove(dpath);
+    if (rv) {
       LOG(
           ("rename_file: destination file exists and could not be "
            "removed: " LOG_S,
            dpath));
+#ifdef XP_WIN
+      rv = remove_on_reboot(dpath);
+    }
+    if (rv) {
+#endif
       return WRITE_ERROR_DELETE_FILE;
     }
   }
@@ -1017,7 +1060,12 @@ static int remove_recursive_on_reboot(const NS_tchar* path,
 
   if (!S_ISDIR(sInfo.st_mode)) {
     NS_tchar tmpDeleteFile[MAXPATHLEN + 1];
-    GetUUIDTempFilePath(deleteDir, L"rep", tmpDeleteFile);
+    if (!GetUUIDTempFilePath(deleteDir, L"rep", tmpDeleteFile)) {
+      LOG(
+          ("remove_recursive_on_reboot: failed to generate a temporary file "
+           "path"));
+      return WRITE_ERROR_DELETE_FILE;
+    }
     if (NS_tremove(tmpDeleteFile) && errno != ENOENT) {
       LOG(("remove_recursive_on_reboot: failed to remove temporary file: " LOG_S
            ", err: %d",
@@ -1125,38 +1173,15 @@ static int backup_discard(const NS_tchar* path, const NS_tchar* relPath) {
   }
 
   int rv = ensure_remove(backup);
-#if defined(XP_WIN)
-  if (rv && !sStagedUpdate && !sReplaceRequest) {
-    LOG(("backup_discard: unable to remove: " LOG_S, relBackup));
-    NS_tchar path[MAXPATHLEN + 1];
-    GetUUIDTempFilePath(gDeleteDirPath, L"moz", path);
-    if (rename_file(backup, path)) {
-      LOG(("backup_discard: failed to rename file:" LOG_S ", dst:" LOG_S,
-           relBackup, relPath));
-      return WRITE_ERROR_DELETE_BACKUP;
-    }
-    // The MoveFileEx call to remove the file on OS reboot will fail if the
-    // process doesn't have write access to the HKEY_LOCAL_MACHINE registry key
-    // but this is ok since the installer / uninstaller will delete the
-    // directory containing the file along with its contents after an update is
-    // applied, on reinstall, and on uninstall.
-    if (MoveFileEx(path, nullptr, MOVEFILE_DELAY_UNTIL_REBOOT)) {
-      LOG(
-          ("backup_discard: file renamed and will be removed on OS "
-           "reboot: " LOG_S,
-           relPath));
-    } else {
-      LOG(
-          ("backup_discard: failed to schedule OS reboot removal of "
-           "file: " LOG_S,
-           relPath));
-    }
-  }
-#else
   if (rv) {
+    LOG(("backup_discard: unable to remove: " LOG_S, relBackup));
+#ifdef XP_WIN
+    rv = remove_on_reboot(backup);
+  }
+  if (rv) {
+#endif
     return WRITE_ERROR_DELETE_BACKUP;
   }
-#endif
 
   return OK;
 }
@@ -1299,7 +1324,7 @@ int RemoveFile::Execute() {
     // Staged updates don't need backup files so just remove it.
     rv = ensure_remove(mFile.get());
     if (rv) {
-      return rv;
+      return WRITE_ERROR_DELETE_FILE;
     }
   } else {
     // Rename the old file. It will be removed in Finish.
@@ -1485,12 +1510,14 @@ int AddFile::Execute() {
   if (rv == 0) {
     if (sStagedUpdate) {
       // Staged updates don't need backup files so just remove it.
-      rv = ensure_remove(mFile.get());
+      if (ensure_remove(mFile.get())) {
+        return WRITE_ERROR_DELETE_FILE;
+      }
     } else {
       rv = backup_create(mFile.get());
-    }
-    if (rv) {
-      return rv;
+      if (rv) {
+        return rv;
+      }
     }
   } else {
     rv = ensure_parent_dir(mFile.get());
@@ -1528,6 +1555,9 @@ void AddFile::Finish(int status) {
         LOG(("non-fatal error after update failure removing added file: " LOG_S
              ", err: %d",
              mFile.get(), errno));
+#ifdef XP_WIN
+        (void)remove_on_reboot(mFile.get());
+#endif
       }
     }
     backup_finish(mFile.get(), mRelPath.get(), status);
