@@ -1,32 +1,4 @@
 {
-  "data": [
-    {
-      "urls": {
-        "search": {
-          "params": [
-            {
-              "name": "tag",
-              "value": "{partnerCode}"
-            },
-            {
-              "name": "ref",
-              "value": "pd_sl_a71c226e8a96bfdb7ae5bc6d1f30e9e88d9e4e3436d7bfb941a95d0a"
-            },
-            {
-              "name": "mfadid",
-              "value": "adm"
-            }
-          ]
-        }
-      },
-      "schema": 1710170050767,
-      "clickUrl": "https://firefoxsearchwith.ampxdirect.com/amazon?partner=firefoxsearchwith&sub1=amazon&sub2=us&ctag=pd_sl_a71c226e8a96bfdb7ae5bc6d1f30e9e88d9e4e3436d7bfb941a95d0a",
-      "identifier": "amazondotcom-us",
-      "partnerCode": "admarketus-20",
-      "telemetrySuffix": "adm",
-      "id": "c12f71be-f484-4f50-a8cc-79ed92ab0b42",
-      "last_modified": 1710333238310
-    }
-  ],
-  "timestamp": 1710333238310
+  "data": [],
+  "timestamp": 1790703221206
 }

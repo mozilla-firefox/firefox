@@ -6,6 +6,8 @@
 
 // prettier-ignore
 export const logNameTable = {
+  "/cLoBbiE8/CzcwbEliJzk9OExUIiB/1Aj+4CBc6jVhY=": "GoDaddy Aquamarine2027h1",
+  "/jwyxS3R1tXbsRUdYe6iH5EhBfIZa1UNh/as89aPnFM=": "GoDaddy Aquamarine2028h2",
   "0vxlL6X5tzi4N1X6XrFfC0UlP06Po7m2T9TeVmLRhwg=": "Bogus RFC6962 log to avoid breaking misbehaving CT libraries",
   "1219ENGn9XfCx+lf1wC/+YLJM1pl4dCzAXMXwMjFaXc=": "Google 'Argon2026h2' log",
   "1d5V7roItgyf/BjFE75qYLoARga8WVuWu0T2LMV9Ofo=": "Geomys 'Tuscolo2027h2'",
@@ -15,7 +17,9 @@ export const logNameTable = {
   "5eNiR9ku9K2jhYO1NZHbcp/C8ArktnRRdNPd/GqiU4g=": "Let's Encrypt 'Sycamore2027h2'",
   "6+a9C+qJOkTtPzg+2/4QzZnxhphufXsmsBqEMk57934=": "IPng Networks Halloumi2028h1",
   "6Mz6YX3GS9LYtKJsKw/1dnHx5n3gb4uVYfJVLXuUA5o=": "Mozilla Test RSA Log 4",
+  "6jAGlJ1CunsD2FCB4yYsua5xil5vUDT3ePE4BU6CdFw=": "GoDaddy Aquamarine2026h2",
   "7drrgVxjITRJtHvlB3kFq9DZMUfCesUUazvFjkPptsc=": "TrustAsia 'HETU2027'",
+  "8LDBho1KJqIqj/7ghUOplCvvi7u69tYBqyHdvnFJ/68=": "GoDaddy Aquamarine2027h2",
   "A18eYQnn44YBqbhkHlfl9aePeIcnUy/PQlPx68mqDzk=": "Geomys Tuscolo2028h2",
   "A4AqwmL24F4D+Lxve5hRMk/Xaj31t1lRdeIi+46b1fY=": "Sectigo 'Tiger2027h2'",
   "ABpdGhwtk3W2SFV4+C9xoa5u7zl9KXyK4xV7yt7hoB4=": "DigiCert 'Wyvern2027h1'",
@@ -41,6 +45,7 @@ export const logNameTable = {
   "M3qex8rmqQSLdS8tk65+SyqQLSG0lxKdg+J5x1PJL4w=": "Google 'PlumbersArms2027h2' log",
   "MQj2tt1yGAfwFpWETYUCVrZxk2CD2705NKBQUlAaKJI=": "Mozilla Test RSA Log 2",
   "N6oHzCFvLm2RnHCdJNj3MbAPKxR8YhzAkaX6GoTYFt0=": "DigiCert 'Wyvern2027h2'",
+  "Nh2PNG9+2gYj4hlfNqqVGKiHKCEzvpzppruUJGPrTaY=": "GoDaddy Aquamarine2028h1",
   "RMK9DOkUDmSlyUoBkwpaobs1lw4A7hEWiWgqHETXtWY=": "Google 'Xenon2027h1'",
   "ROgi/CurDpLu0On61pZkYCd20Bdg4IkFCckjobA/w38=": "IPng Networks 'Halloumi2027h1'",
   "Rq+GPTs+5Z+ld96oJF02sNntIqIj9GF3QSKUUu6VUF8=": "Geomys 'Tuscolo2026h2'",

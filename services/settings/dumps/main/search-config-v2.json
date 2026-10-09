@@ -287,39 +287,6 @@
     {
       "base": {
         "aliases": [
-          "amazon"
-        ],
-        "classification": "unknown",
-        "name": "Amazon.com",
-        "urls": {
-          "search": {
-            "base": "https://www.amazon.com/s",
-            "searchTermParamName": "k"
-          }
-        }
-      },
-      "id": "788a2ded-6872-4742-8115-c14dde7a18f9",
-      "identifier": "amazondotcom-us",
-      "last_modified": 1718719100307,
-      "notes": "Amazon.com (us only)",
-      "recordType": "engine",
-      "schema": 1718698346192,
-      "variants": [
-        {
-          "environment": {
-            "applications": [
-              "firefox"
-            ],
-            "regions": [
-              "us"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "base": {
-        "aliases": [
           "百度",
           "baidu"
         ],
@@ -8561,5 +8528,5 @@
       "schema": 1707824831520
     }
   ],
-  "timestamp": 1789051315933
+  "timestamp": 1790703242032
 }

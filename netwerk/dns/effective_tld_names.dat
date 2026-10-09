@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-09-24_13-26-36_UTC
-// COMMIT: a179a48c465e818cfd8d626691cb317985da87fb
+// VERSION: 2026-10-01_23-02-52_UTC
+// COMMIT: 6cd82aff889e3d64e5e03bc5c1f43da1934a960a
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -6812,7 +6812,7 @@ org.zw
 
 // newGTLDs
 
-// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-07-24T16:40:16Z
+// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-10-01T20:07:38Z
 // This list is auto-generated, don't edit it manually.
 // aaa : American Automobile Association, Inc.
 // https://www.iana.org/domains/root/db/aaa.html
@@ -7630,7 +7630,7 @@ coffee
 // https://www.iana.org/domains/root/db/college.html
 college
 
-// cologne : dotKoeln GmbH
+// cologne : domainworx Service & Management GmbH
 // https://www.iana.org/domains/root/db/cologne.html
 cologne
 
@@ -8798,10 +8798,6 @@ jprs
 // https://www.iana.org/domains/root/db/juegos.html
 juegos
 
-// juniper : JUNIPER NETWORKS, INC.
-// https://www.iana.org/domains/root/db/juniper.html
-juniper
-
 // kaufen : Dog Beach, LLC
 // https://www.iana.org/domains/root/db/kaufen.html
 kaufen
@@ -8846,7 +8842,7 @@ kitchen
 // https://www.iana.org/domains/root/db/kiwi.html
 kiwi
 
-// koeln : dotKoeln GmbH
+// koeln : domainworx Service & Management GmbH
 // https://www.iana.org/domains/root/db/koeln.html
 koeln
 
