@@ -12,7 +12,7 @@ If given a conduit API token, it will also use the arcanist client to submit the
 ```sh
 docker build -t hsts-local --no-cache --rm .
 
-docker run -e DO_HSTS=1 -e DO_HPKP=1 -e PRODUCT="firefox" -e BRANCH="mozilla-central" -e USE_MOZILLA_CENTRAL=1 hsts-local
+docker run -v /path/to/firefox:/builds/worker/checkouts/gecko -e GECKO_PATH=/builds/worker/checkouts/gecko -e TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com -e DO_HSTS=1 -e DO_HPKP=1 -e PRODUCT="firefox" -e BRANCH="mozilla-central" -e USE_MOZILLA_CENTRAL=1 hsts-local
 ```
 
 HSTS checks will only be run if the `DO_HSTS` environment variable is set.
@@ -32,7 +32,7 @@ These scripts have been moved from
 ==HSTS Checks==
 
 `scripts/getHSTSPreloadList.js` will examine the current contents of
-nsSTSPreloadList.inc from whichever `BRANCH` is specified, add in the mandatory
+nsSTSPreloadList.inc in the task's checkout, add in the mandatory
 hosts, and those from the Chromium source, and check them all to see if their
 SSL configuration is valid, and whether or not they have the
 Strict-Transport-Security header set with an appropriate `max-age`.

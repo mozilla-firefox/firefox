@@ -21,7 +21,7 @@ const { FileUtils } = ChromeUtils.importESModule(
 const SOURCE =
   "https://raw.githubusercontent.com/chromium/chromium/main/net/http/transport_security_state_static.json";
 const TOOL_SOURCE =
-  "https://hg.mozilla.org/mozilla-central/file/default/taskcluster/docker/periodic-updates/scripts/getHSTSPreloadList.js";
+  "https://github.com/mozilla-firefox/firefox/blob/main/taskcluster/docker/periodic-updates/scripts/getHSTSPreloadList.js";
 const OUTPUT = "nsSTSPreloadList.inc";
 const RESULTS_OUTPUT = "hsts-probe-results.json";
 const MINIMUM_REQUIRED_MAX_AGE = 60 * 60 * 24 * 7 * 18;

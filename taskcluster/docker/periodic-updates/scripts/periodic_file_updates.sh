@@ -12,16 +12,11 @@ Usage: $(basename "$0") [-p product]
            [--use-mozilla-central]
            # Use archive.m.o instead of the taskcluster index to get xpcshell
            [--use-ftp-builds]
-           # Use git rather than hg. Using git does not currently support cloning (use
-           # --skip-clone as well).
-           [--use-git]
            # One (or more) of the following actions must be specified.
            --hsts | --hpkp | --remote-settings | --suffix-list | --mobile-experiments | --mobile-merino-manifest | --ct-logs
            -b branch
-           # The name of top source directory to use for the repository clone.
-           [-t topsrcdir]
-           # Skips cloning of the repository.
-           [--skip-clone]
+           # The top source directory of the checkout to update.
+           -t topsrcdir
            # Performs a dry run - no commits are created.
            [-n]
            # Skips pushing of the repository - create a commit but does not try
@@ -47,8 +42,6 @@ DO_MOBILE_EXPERIMENTS=false
 DO_MOBILE_MERINO_MANIFEST=false
 DO_CT_LOGS=false
 
-CLONE_REPO=true
-HGHOST="hg.mozilla.org"
 STAGEHOST="archive.mozilla.org"
 
 USE_MC=false
@@ -74,12 +67,10 @@ while [ $# -gt 0 ]; do
     --mobile-experiments) DO_MOBILE_EXPERIMENTS=true ;;
     --mobile-merino-manifest) DO_MOBILE_MERINO_MANIFEST=true ;;
     --ct-logs) DO_CT_LOGS=true ;;
-    --skip-clone) CLONE_REPO=false ;;
     --skip-push) SKIP_PUSH=true ;;
     -t) TOPSRCDIR="$2"; shift ;;
     --use-mozilla-central) USE_MC=true ;;
     --use-ftp-builds) USE_TC=false ;;
-    --use-git) USE_GIT=true ;;
     -*) usage
       exit 11 ;;
     *)  break ;; # terminate while loop
@@ -93,6 +84,13 @@ if [ "${BRANCH}" == "" ]; then
   usage
   exit 12
 fi
+
+if [ ! -d "${TOPSRCDIR}" ]; then
+  echo "Error: '${TOPSRCDIR}' is not a directory; specify an existing checkout with -t topsrcdir." >&2
+  usage
+  exit 16
+fi
+TOPSRCDIR="$(realpath "${TOPSRCDIR}")"
 
 # Must choose at least one update action.
 if [ "$DO_HSTS" == "false" ] && [ "$DO_HPKP" == "false" ] && [ "$DO_REMOTE_SETTINGS" == "false" ] && [ "$DO_SUFFIX_LIST" == "false" ] && [ "$DO_MOBILE_EXPERIMENTS" == false ] && [ "$DO_MOBILE_MERINO_MANIFEST" == false ] && [ "$DO_CT_LOGS" == false ]
@@ -116,39 +114,26 @@ case "${PRODUCT}" in
     ;;
 esac
 
-if [ "${TOPSRCDIR}" == "" ]; then
-  TOPSRCDIR="$(basename "${BRANCH}")"
-fi
-
-case "${BRANCH}" in
-  try)
-    # don't clone try, that can only end in sadness
-    HGREPO="https://${HGHOST}/mozilla-central"
-    ;;
-  mozilla-central|comm-central )
-    HGREPO="https://${HGHOST}/${BRANCH}"
-    ;;
-  mozilla-*|comm-* )
-    HGREPO="https://${HGHOST}/releases/${BRANCH}"
-    ;;
-  * )
-    HGREPO="https://${HGHOST}/projects/${BRANCH}"
-    ;;
-esac
-
 BROWSER_ARCHIVE="target.tar.xz"
 TESTS_ARCHIVE="target.common.tests.tar.zst"
 
 UNPACK_CMD="tar xf"
-COMMIT_AUTHOR='ffxbld <ffxbld@mozilla.com>'
 WGET="wget -nv"
 DIFF="$(command -v diff) -u"
 JQ="$(command -v jq)"
 
-if [ "${USE_GIT}" == "true" ]; then
+if [ -e "${TOPSRCDIR}/.git" ]; then
+  USE_GIT=true
   GIT="$(command -v git)"
+  dirty=$(${GIT} -C "${TOPSRCDIR}" status --porcelain --untracked-files=no)
 else
   HG="$(command -v hg)"
+  dirty=$(${HG} -R "${TOPSRCDIR}" status -mard)
+fi
+
+if [ "${DRY_RUN}" == "false" ] && [ -n "${dirty}" ]; then
+  echo "Error: ${TOPSRCDIR} has uncommitted changes that the update commit would include." >&2
+  exit 17
 fi
 
 BASEDIR="${HOME}"
@@ -178,8 +163,8 @@ REMOTE_SETTINGS_UPDATED=false
 
 PUBLIC_SUFFIX_URL="https://publicsuffix.org/list/public_suffix_list.dat"
 PUBLIC_SUFFIX_LOCAL="public_suffix_list.dat"
-HG_SUFFIX_LOCAL="effective_tld_names.dat"
-HG_SUFFIX_PATH="/netwerk/dns/${HG_SUFFIX_LOCAL}"
+SUFFIX_LOCAL="effective_tld_names.dat"
+SUFFIX_PATH="/netwerk/dns/${SUFFIX_LOCAL}"
 PUBLIC_SUFFIX_END_MARKER="// ===END PRIVATE DOMAINS==="
 SUFFIX_LIST_UPDATED=false
 
@@ -324,17 +309,14 @@ function unpack_artifacts {
   cp tests/bin/xpcshell "${PRODUCT}"
 }
 
-# Downloads the current in-tree HSTS (HTTP Strict Transport Security) files.
+# Copies the current in-tree HSTS (HTTP Strict Transport Security) files.
 # Runs a simple xpcshell script to generate up-to-date HSTS information.
 # Compares the new HSTS output with the old to determine whether we need to update.
 function compare_hsts_files {
   cd "${BASEDIR}"
 
-  HSTS_PRELOAD_INC_HG="${HGREPO}/raw-file/default/security/manager/ssl/$(basename "${HSTS_PRELOAD_INC_OLD}")"
-
-  echo "INFO: Downloading existing include file..."
   rm -rf "${HSTS_PRELOAD_ERRORS}"
-  download_file "${HSTS_PRELOAD_INC_OLD}" "${HSTS_PRELOAD_INC_HG}"
+  cp "${TOPSRCDIR}/security/manager/ssl/$(basename "${HSTS_PRELOAD_INC_OLD}")" "${HSTS_PRELOAD_INC_OLD}" || exit 84
 
   echo "INFO: Downloading previous HSTS probe results..."
   if ! fetch_file "${HSTS_RESULTS_PREVIOUS}" "${index_base}/task/gecko.v2.${BRANCH}.latest.${PRODUCT}.pinning-update/artifacts/public/build/${HSTS_RESULTS}"; then
@@ -368,18 +350,15 @@ function compare_hsts_files {
   return 1
 }
 
-# Downloads the current in-tree HPKP (HTTP public key pinning) files.
+# Copies the current in-tree HPKP (HTTP public key pinning) files.
 # Runs a simple xpcshell script to generate up-to-date HPKP information.
 # Compares the new HPKP output with the old to determine whether we need to update.
 function compare_hpkp_files {
   cd "${BASEDIR}"
-  HPKP_PRELOAD_JSON_HG="${HGREPO}/raw-file/default/security/manager/tools/$(basename "${HPKP_PRELOAD_JSON}")"
-
-  HPKP_PRELOAD_OUTPUT_HG="${HGREPO}/raw-file/default/security/manager/ssl/${HPKP_PRELOAD_INC}"
 
   rm -f "${HPKP_PRELOAD_OUTPUT}"
-  download_file "${HPKP_PRELOAD_INPUT}" "${HPKP_PRELOAD_OUTPUT_HG}" kPreloadPKPinsExpirationTime
-  download_file "${HPKP_PRELOAD_JSON}" "${HPKP_PRELOAD_JSON_HG}" '"entries"'
+  cp "${TOPSRCDIR}/security/manager/ssl/${HPKP_PRELOAD_INC}" "${HPKP_PRELOAD_INPUT}" || exit 84
+  cp "${TOPSRCDIR}/security/manager/tools/$(basename "${HPKP_PRELOAD_JSON}")" "${HPKP_PRELOAD_JSON}" || exit 84
 
   # Run the script to get an updated preload list.
   echo "INFO: Generating new HPKP preload list..."
@@ -424,14 +403,13 @@ function is_valid_xml {
 
 # Downloads the public suffix list
 function compare_suffix_lists {
-  HG_SUFFIX_URL="${HGREPO}/raw-file/default/${HG_SUFFIX_PATH}"
   cd "${BASEDIR}"
 
   download_file "${PUBLIC_SUFFIX_LOCAL}" "${PUBLIC_SUFFIX_URL}" "${PUBLIC_SUFFIX_END_MARKER}"
-  download_file "${HG_SUFFIX_LOCAL}" "${HG_SUFFIX_URL}" "${PUBLIC_SUFFIX_END_MARKER}"
+  cp "${TOPSRCDIR}/${SUFFIX_PATH}" "${SUFFIX_LOCAL}" || exit 84
 
   echo "INFO: diffing in-tree suffix list against the suffix list from publicsuffix.org"
-  ${DIFF} ${HG_SUFFIX_LOCAL} ${PUBLIC_SUFFIX_LOCAL} | tee "${SUFFIX_LIST_DIFF_ARTIFACT}"
+  ${DIFF} ${SUFFIX_LOCAL} ${PUBLIC_SUFFIX_LOCAL} | tee "${SUFFIX_LIST_DIFF_ARTIFACT}"
   if [ -s "${SUFFIX_LIST_DIFF_ARTIFACT}" ]
   then
     return 0
@@ -576,8 +554,8 @@ function update_remote_settings_attachment() {
 
 function compare_mobile_experiments() {
   download_json experiments.json "${EXPERIMENTER_URL}"
-  download_json fenix-experiments-old.json "${HGREPO}/raw-file/default/${FENIX_INITIAL_EXPERIMENTS}"
-  download_json focus-experiments-old.json "${HGREPO}/raw-file/default/${FOCUS_INITIAL_EXPERIMENTS}"
+  cp "${TOPSRCDIR}/${FENIX_INITIAL_EXPERIMENTS}" fenix-experiments-old.json || exit 84
+  cp "${TOPSRCDIR}/${FOCUS_INITIAL_EXPERIMENTS}" focus-experiments-old.json || exit 84
 
   # shellcheck disable=SC2016
   ${JQ} --arg APP_NAME fenix '{"data":map(select(.appName == $APP_NAME))}' < experiments.json > fenix-experiments-new.json
@@ -609,17 +587,6 @@ function update_ct_logs() {
   "${TOPSRCDIR}"/mach python "${CT_LOG_UPDATE_SCRIPT}"
 }
 
-# Clones an hg repo
-function clone_repo {
-  cd "${BASEDIR}"
-  if [ ! -d "${TOPSRCDIR}" ]; then
-    ${HG} robustcheckout --sharebase /tmp/hg-store -b default "${HGREPO}" "${TOPSRCDIR}"
-  fi
-
-  ${HG} -R "${TOPSRCDIR}" pull
-  ${HG} -R "${TOPSRCDIR}" update -C default
-}
-
 # Copies new HSTS files in place, and commits them.
 function stage_hsts_files {
   cd "${BASEDIR}"
@@ -633,7 +600,7 @@ function stage_hpkp_files {
 
 function stage_tld_suffix_files {
   cd "${BASEDIR}"
-  cp -a "${PUBLIC_SUFFIX_LOCAL}" "${TOPSRCDIR}/${HG_SUFFIX_PATH}"
+  cp -a "${PUBLIC_SUFFIX_LOCAL}" "${TOPSRCDIR}/${SUFFIX_PATH}"
 }
 
 function stage_mobile_experiments_files {
@@ -692,13 +659,6 @@ preflight_cleanup
 
 mkdir -p "${DATADIR}"
 
-# Clone the repository here as some sections will use it for source data, and
-# we'll need it later anyway.
-if [ "${CLONE_REPO}" == "true" ]
-then
-  clone_repo
-fi
-
 if [ "${DO_HSTS}" == "true" ] || [ "${DO_HPKP}" == "true" ] || [ "${DO_PRELOAD_PINSET}" == "true" ]
 then
   if [ "${USE_TC}" == "true" ]; then
@@ -755,7 +715,7 @@ if [ "${HSTS_UPDATED}" == "false" ] && [ "${HPKP_UPDATED}" == "false" ] && [ "${
   exit 0
 else
   if [ "${DRY_RUN}" == "true" ]; then
-    echo "INFO: Updates are available, not updating hg in dry-run mode."
+    echo "INFO: Updates are available, not committing in dry-run mode."
     exit 2
   fi
 fi
@@ -815,12 +775,12 @@ if [ ${APPROVAL} == true ]; then
 fi
 
 if [ "${USE_GIT}" == "true" ]; then
-  if ${GIT} -C "${TOPSRCDIR}" commit -a --author "${COMMIT_AUTHOR}" -m "${COMMIT_MESSAGE}"
+  if ${GIT} -C "${TOPSRCDIR}" commit -a -m "${COMMIT_MESSAGE}"
   then
     push_repo
   fi
 else
-  if ${HG} -R "${TOPSRCDIR}" commit -u "${COMMIT_AUTHOR}" -m "${COMMIT_MESSAGE}"
+  if ${HG} -R "${TOPSRCDIR}" commit -m "${COMMIT_MESSAGE}"
   then
     push_repo
   fi

@@ -29,10 +29,15 @@ self_last_check = -1
 self_auto_update = False
 EOF
 
-# moz-phab requires some hg config even though it's not used
 cat >"$HOME"/.hgrc<<EOF
 [ui]
-username = hg user <user@example.com>
+username = ffxbld <ffxbld@mozilla.com>
+EOF
+
+cat >"$HOME"/.gitconfig<<EOF
+[user]
+name = ffxbld
+email = ffxbld@mozilla.com
 EOF
 
 rm -rf /setup

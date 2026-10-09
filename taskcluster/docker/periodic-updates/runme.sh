@@ -108,4 +108,4 @@ fi
 export HGPLAIN=1
 
 # shellcheck disable=SC2086
-/home/worker/scripts/periodic_file_updates.sh -p "${PRODUCT}" -b "${BRANCH}" -a ${PARAMS} -t "${GECKO_PATH}" --skip-clone
+/home/worker/scripts/periodic_file_updates.sh -p "${PRODUCT}" -b "${BRANCH}" -a ${PARAMS} -t "${GECKO_PATH}"
