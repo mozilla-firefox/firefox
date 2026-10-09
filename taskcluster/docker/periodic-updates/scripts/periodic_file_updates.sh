@@ -177,6 +177,7 @@ PUBLIC_SUFFIX_URL="https://publicsuffix.org/list/public_suffix_list.dat"
 PUBLIC_SUFFIX_LOCAL="public_suffix_list.dat"
 HG_SUFFIX_LOCAL="effective_tld_names.dat"
 HG_SUFFIX_PATH="/netwerk/dns/${HG_SUFFIX_LOCAL}"
+PUBLIC_SUFFIX_END_MARKER="// ===END PRIVATE DOMAINS==="
 SUFFIX_LIST_UPDATED=false
 
 EXPERIMENTER_URL="https://experimenter.services.mozilla.com/api/v6/experiments-first-run/"
@@ -209,6 +210,41 @@ function create_repo_diff() {
   fi
 }
 
+# fetch_file DEST URL [REQUIRED_MARKER]
+# Returns non-zero on failure, for callers that can carry on without the file.
+function fetch_file {
+  local dest=$1 url=$2 marker=$3
+  rm -f "${dest}"
+  echo "INFO: ${WGET} -O ${dest} ${url}"
+  if ! ${WGET} -O "${dest}" "${url}"; then
+    echo "ERROR: download of ${url} failed" >&2
+    return 80
+  fi
+  if [ ! -s "${dest}" ]; then
+    echo "ERROR: ${url} returned an empty file" >&2
+    return 81
+  fi
+  if [ -n "${marker}" ] && ! grep -Fq -- "${marker}" "${dest}"; then
+    echo "ERROR: ${dest} from ${url} is missing '${marker}', truncated?" >&2
+    return 82
+  fi
+}
+
+# download_file DEST URL [REQUIRED_MARKER]
+# Must exit rather than return: callers run in `if` conditions, where `set -e` is disabled.
+function download_file {
+  fetch_file "$@" || exit $?
+}
+
+# download_json DEST URL
+function download_json {
+  download_file "$1" "$2"
+  if ! ${JQ} -e . "$1" > /dev/null; then
+    echo "ERROR: $2 did not return valid JSON" >&2
+    exit 83
+  fi
+}
+
 # Cleanup common artifacts.
 function preflight_cleanup {
   cd "${BASEDIR}"
@@ -228,10 +264,8 @@ function download_shared_artifacts_from_ftp {
   BROWSER_ARCHIVE_URL="https://${STAGEHOST}/pub/mozilla.org/${PRODUCT}/${ARTIFACT_DIR}/${BROWSER_ARCHIVE}"
   TESTS_ARCHIVE_URL="https://${STAGEHOST}/pub/mozilla.org/${PRODUCT}/${ARTIFACT_DIR}/${TESTS_ARCHIVE}"
 
-  echo "INFO: ${WGET} ${BROWSER_ARCHIVE_URL}"
-  ${WGET} "${BROWSER_ARCHIVE_URL}"
-  echo "INFO: ${WGET} ${TESTS_ARCHIVE_URL}"
-  ${WGET} "${TESTS_ARCHIVE_URL}"
+  download_file "${BROWSER_ARCHIVE}" "${BROWSER_ARCHIVE_URL}"
+  download_file "${TESTS_ARCHIVE}" "${TESTS_ARCHIVE_URL}"
 }
 
 function download_shared_artifacts_from_tc {
@@ -244,9 +278,9 @@ function download_shared_artifacts_from_tc {
   if [ "${USE_MC}" == "true" ]; then
     TASKID_URL="$index_base/task/gecko.v2.mozilla-central.shippable.latest.${PRODUCT}.linux64-opt"
   fi
-  ${WGET} -O ${TASKID_FILE} "${TASKID_URL}"
+  download_json "${TASKID_FILE}" "${TASKID_URL}"
   INDEX_TASK_ID="$($JQ -r '.taskId' ${TASKID_FILE})"
-  if [ -z "${INDEX_TASK_ID}" ]; then
+  if [ -z "${INDEX_TASK_ID}" ] || [ "${INDEX_TASK_ID}" == "null" ]; then
     echo "Failed to look up taskId at ${TASKID_URL}"
     exit 22
   else
@@ -255,17 +289,15 @@ function download_shared_artifacts_from_tc {
 
   TASKSTATUS_FILE="taskstatus.json"
   STATUS_URL="$queue_base/task/${INDEX_TASK_ID}/status"
-  ${WGET} -O "${TASKSTATUS_FILE}" "${STATUS_URL}"
+  download_json "${TASKSTATUS_FILE}" "${STATUS_URL}"
   LAST_RUN_INDEX=$(($(jq '.status.runs | length' ${TASKSTATUS_FILE}) - 1))
   echo "INFO: Examining run number ${LAST_RUN_INDEX}"
 
   BROWSER_ARCHIVE_URL="$queue_base/task/${INDEX_TASK_ID}/runs/${LAST_RUN_INDEX}/artifacts/public/build/${BROWSER_ARCHIVE}"
-  echo "INFO: ${WGET} ${BROWSER_ARCHIVE_URL}"
-  ${WGET} "${BROWSER_ARCHIVE_URL}"
+  download_file "${BROWSER_ARCHIVE}" "${BROWSER_ARCHIVE_URL}"
 
   TESTS_ARCHIVE_URL="$queue_base/task/${INDEX_TASK_ID}/runs/${LAST_RUN_INDEX}/artifacts/public/build/${TESTS_ARCHIVE}"
-  echo "INFO: ${WGET} ${TESTS_ARCHIVE_URL}"
-  ${WGET} "${TESTS_ARCHIVE_URL}"
+  download_file "${TESTS_ARCHIVE}" "${TESTS_ARCHIVE_URL}"
 }
 
 function unpack_artifacts {
@@ -297,14 +329,8 @@ function compare_hsts_files {
   HSTS_PRELOAD_INC_HG="${HGREPO}/raw-file/default/security/manager/ssl/$(basename "${HSTS_PRELOAD_INC_OLD}")"
 
   echo "INFO: Downloading existing include file..."
-  rm -rf "${HSTS_PRELOAD_ERRORS}" "${HSTS_PRELOAD_INC_OLD}"
-  echo "INFO: ${WGET} ${HSTS_PRELOAD_INC_HG}"
-  ${WGET} -O "${HSTS_PRELOAD_INC_OLD}" "${HSTS_PRELOAD_INC_HG}"
-
-  if [ ! -f "${HSTS_PRELOAD_INC_OLD}" ]; then
-    echo "Downloaded file '${HSTS_PRELOAD_INC_OLD}' not found in directory '$(pwd)' - this should have been downloaded above from ${HSTS_PRELOAD_INC_HG}." >&2
-    exit 41
-  fi
+  rm -rf "${HSTS_PRELOAD_ERRORS}"
+  download_file "${HSTS_PRELOAD_INC_OLD}" "${HSTS_PRELOAD_INC_HG}"
 
   # Run the script to get an updated preload list.
   echo "INFO: Generating new HSTS preload list..."
@@ -342,8 +368,8 @@ function compare_hpkp_files {
   HPKP_PRELOAD_OUTPUT_HG="${HGREPO}/raw-file/default/security/manager/ssl/${HPKP_PRELOAD_INC}"
 
   rm -f "${HPKP_PRELOAD_OUTPUT}"
-  ${WGET} -O "${HPKP_PRELOAD_INPUT}" "${HPKP_PRELOAD_OUTPUT_HG}"
-  ${WGET} -O "${HPKP_PRELOAD_JSON}" "${HPKP_PRELOAD_JSON_HG}"
+  download_file "${HPKP_PRELOAD_INPUT}" "${HPKP_PRELOAD_OUTPUT_HG}" kPreloadPKPinsExpirationTime
+  download_file "${HPKP_PRELOAD_JSON}" "${HPKP_PRELOAD_JSON_HG}" '"entries"'
 
   # Run the script to get an updated preload list.
   echo "INFO: Generating new HPKP preload list..."
@@ -391,13 +417,8 @@ function compare_suffix_lists {
   HG_SUFFIX_URL="${HGREPO}/raw-file/default/${HG_SUFFIX_PATH}"
   cd "${BASEDIR}"
 
-  echo "INFO: ${WGET} -O ${PUBLIC_SUFFIX_LOCAL} ${PUBLIC_SUFFIX_URL}"
-  rm -f "${PUBLIC_SUFFIX_LOCAL}"
-  ${WGET} -O "${PUBLIC_SUFFIX_LOCAL}" "${PUBLIC_SUFFIX_URL}"
-
-  echo "INFO: ${WGET} -O ${HG_SUFFIX_LOCAL} ${HG_SUFFIX_URL}"
-  rm -f "${HG_SUFFIX_LOCAL}"
-  ${WGET} -O "${HG_SUFFIX_LOCAL}" "${HG_SUFFIX_URL}"
+  download_file "${PUBLIC_SUFFIX_LOCAL}" "${PUBLIC_SUFFIX_URL}" "${PUBLIC_SUFFIX_END_MARKER}"
+  download_file "${HG_SUFFIX_LOCAL}" "${HG_SUFFIX_URL}" "${PUBLIC_SUFFIX_END_MARKER}"
 
   echo "INFO: diffing in-tree suffix list against the suffix list from publicsuffix.org"
   ${DIFF} ${HG_SUFFIX_LOCAL} ${PUBLIC_SUFFIX_LOCAL} | tee "${SUFFIX_LIST_DIFF_ARTIFACT}"
@@ -439,13 +460,14 @@ function compare_remote_settings_files {
     # 4. Download server version into REMOTE_SETTINGS_DIR folder
     remote_records_url="$REMOTE_SETTINGS_SERVER/buckets/${bucket}/collections/${collection}/changeset?_expected=${last_modified}"
     local_location_output="$REMOTE_SETTINGS_DIR/${bucket}/${collection}.json"
+    download_json "${BASEDIR}/changeset.json" "${remote_records_url}"
 
     # We sort both the keys and the records in search-config-v2 to make it
     # easier to read and to experiment with making changes via the dump file.
     if [ "${collection}" = "search-config-v2" ]; then
-      ${WGET} -qO- "$remote_records_url" | ${JQ} --sort-keys '{"data": .changes | sort_by(.recordType, .identifier), "timestamp": .timestamp}' > "${local_location_output}"
+      ${JQ} --sort-keys '{"data": .changes | sort_by(.recordType, .identifier), "timestamp": .timestamp}' < "${BASEDIR}/changeset.json" > "${local_location_output}"
     else
-      ${WGET} -qO- "$remote_records_url" | ${JQ} '{"data": .changes, "timestamp": .timestamp}' > "${local_location_output}"
+      ${JQ} '{"data": .changes, "timestamp": .timestamp}' < "${BASEDIR}/changeset.json" > "${local_location_output}"
     fi
 
     # 5. Download attachments if needed.
@@ -470,7 +492,7 @@ function compare_remote_settings_files {
         # We do not want quotes around ${id}
         # shellcheck disable=SC2086
         update_remote_settings_attachment "${bucket}" "${collection}" ${id} ".[] | select(.id == \"${id}\")"
-      done
+      done || exit $?
     fi
     # NOTE: The downloaded data is not validated. xpcshell should be used for that.
     
@@ -523,24 +545,30 @@ function update_remote_settings_attachment() {
     return
   fi
   # Metadata changed. Download attachments.
-
-  # Save the metadata.
-  ${JQ} -cj <"${source_collection_location}" "${jq_attachment_selector}" > "${meta_file}"
+  local new_meta_file="${BASEDIR}/attachment.meta.json.tmp"
+  local new_attachment_file="${BASEDIR}/attachment.tmp"
+  ${JQ} -cj <"${source_collection_location}" "${jq_attachment_selector}" > "${new_meta_file}"
 
   echo "INFO: Downloading updated remote settings dump: ${bucket}/${collection}/${attachment_id}"
 
   if [ -z "${ATTACHMENT_BASE_URL}" ] ; then
-    ATTACHMENT_BASE_URL=$(${WGET} -qO- "${REMOTE_SETTINGS_SERVER}" | ${JQ} -r .capabilities.attachments.base_url)
+    download_json "${BASEDIR}/server-info.json" "${REMOTE_SETTINGS_SERVER}"
+    ATTACHMENT_BASE_URL=$(${JQ} -r .capabilities.attachments.base_url < "${BASEDIR}/server-info.json")
   fi
-  attachment_path_from_meta=$(${JQ} -r < "${meta_file}" .attachment.location)
-  ${WGET} -qO "${REMOTE_SETTINGS_DIR}/${path_to_attachment}" "${ATTACHMENT_BASE_URL}${attachment_path_from_meta}"
+  attachment_path_from_meta=$(${JQ} -r < "${new_meta_file}" .attachment.location)
+  if ! fetch_file "${new_attachment_file}" "${ATTACHMENT_BASE_URL}${attachment_path_from_meta}"; then
+    echo "WARNING: skipping ${path_to_attachment}, the in-tree copy (if any) is unchanged" >&2
+    rm -f "${new_meta_file}" "${new_attachment_file}"
+    return 0
+  fi
+  mv "${new_attachment_file}" "${REMOTE_SETTINGS_DIR}/${path_to_attachment}"
+  mv "${new_meta_file}" "${meta_file}"
 }
 
 function compare_mobile_experiments() {
-  echo "INFO ${WGET} ${EXPERIMENTER_URL}"
-  ${WGET} -O experiments.json "${EXPERIMENTER_URL}"
-  ${WGET} -O fenix-experiments-old.json "${HGREPO}/raw-file/default/${FENIX_INITIAL_EXPERIMENTS}"
-  ${WGET} -O focus-experiments-old.json "${HGREPO}/raw-file/default/${FOCUS_INITIAL_EXPERIMENTS}"
+  download_json experiments.json "${EXPERIMENTER_URL}"
+  download_json fenix-experiments-old.json "${HGREPO}/raw-file/default/${FENIX_INITIAL_EXPERIMENTS}"
+  download_json focus-experiments-old.json "${HGREPO}/raw-file/default/${FOCUS_INITIAL_EXPERIMENTS}"
 
   # shellcheck disable=SC2016
   ${JQ} --arg APP_NAME fenix '{"data":map(select(.appName == $APP_NAME))}' < experiments.json > fenix-experiments-new.json
