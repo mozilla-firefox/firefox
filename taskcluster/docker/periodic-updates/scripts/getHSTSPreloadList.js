@@ -22,8 +22,7 @@ const TOOL_SOURCE =
   "https://hg.mozilla.org/mozilla-central/file/default/taskcluster/docker/periodic-updates/scripts/getHSTSPreloadList.js";
 const OUTPUT = "nsSTSPreloadList.inc";
 const MINIMUM_REQUIRED_MAX_AGE = 60 * 60 * 24 * 7 * 18;
-const MAX_CONCURRENT_REQUESTS = 500;
-const MAX_RETRIES = 1;
+const MAX_CONCURRENT_REQUESTS = 250;
 const REQUEST_TIMEOUT = 30 * 1000;
 const ERROR_NONE = "no error";
 const ERROR_CONNECTING_TO_HOST = "could not connect to host";
@@ -78,7 +77,6 @@ function getHosts(rawdata) {
         // We trim the entry name here to avoid malformed URI exceptions when we
         // later try to connect to the domain.
         entry.name = entry.name.trim();
-        entry.retries = MAX_RETRIES;
         // We prefer the camelCase variable to the JSON's snake case version
         entry.includeSubdomains = entry.include_subdomains;
         hosts.push(entry);
@@ -135,7 +133,6 @@ function processStsHeader(host, header, status, securityInfo) {
     maxAge: maxAge.value,
     includeSubdomains: includeSubdomains.value,
     error,
-    retries: host.retries - 1,
     forceInclude: host.forceInclude,
   };
 }
@@ -205,13 +202,6 @@ function fetchstatus(host) {
   });
 }
 
-async function getHSTSStatus(host) {
-  do {
-    host = await fetchstatus(host);
-  } while (shouldRetry(host));
-  return host;
-}
-
 function compareHSTSStatus(a, b) {
   if (a.name > b.name) {
     return 1;
@@ -239,15 +229,6 @@ function getExpirationTimeString() {
     "const PRTime gPreloadListExpirationTime = INT64_C(" +
     expirationMicros +
     ");\n"
-  );
-}
-
-function shouldRetry(response) {
-  return (
-    response.error != ERROR_NO_HSTS_HEADER &&
-    response.error != ERROR_MAX_AGE_TOO_LOW &&
-    response.error != ERROR_NONE &&
-    response.retries > 0
   );
 }
 
@@ -279,31 +260,49 @@ function spinResolve(promise) {
   }
 }
 
-async function probeHSTSStatuses(inHosts) {
-  let totalLength = inHosts.length;
-  dump("Examining " + totalLength + " hosts.\n");
-
-  // Make requests in batches of MAX_CONCURRENT_REQUESTS. Otherwise, we have
-  // too many in-flight requests and the time it takes to process them causes
-  // them all to time out.
-  let allResults = [];
-  while (inHosts.length) {
-    let promises = [];
-    for (let i = 0; i < MAX_CONCURRENT_REQUESTS && inHosts.length; i++) {
-      let host = inHosts.shift();
-      promises.push(getHSTSStatus(host));
+async function probePool(hosts) {
+  let total = hosts.length;
+  let results = [];
+  let lastProgress = 0;
+  let worker = async () => {
+    while (hosts.length) {
+      results.push(await fetchstatus(hosts.pop()));
+      let progress = Math.floor((100 * results.length) / total);
+      if (progress > lastProgress) {
+        lastProgress = progress;
+        dump(progress + "% done\n");
+      }
     }
-    let results = await Promise.all(promises);
-    let progress = (
-      (100 * (totalLength - inHosts.length)) /
-      totalLength
-    ).toFixed(2);
-    dump(progress + "% done\n");
-    allResults = allResults.concat(results);
-  }
+  };
+  await Promise.all(Array.from({ length: MAX_CONCURRENT_REQUESTS }, worker));
+  return results;
+}
 
-  dump("HSTS Probe received " + allResults.length + " statuses.\n");
-  return allResults;
+async function probeHSTSStatuses(hosts) {
+  dump("Examining " + hosts.length + " hosts.\n");
+  let probed = await probePool(hosts);
+
+  let results = probed.filter(
+    status => status.error != ERROR_CONNECTING_TO_HOST
+  );
+  let failed = probed.filter(
+    status => status.error == ERROR_CONNECTING_TO_HOST
+  );
+  dump("Retrying " + failed.length + " hosts that could not be reached.\n");
+  let retried = await probePool(failed.map(status => ({ name: status.name })));
+  let rescued = retried.filter(
+    status => status.error != ERROR_CONNECTING_TO_HOST
+  );
+  for (let status of rescued) {
+    status.rescued = true;
+  }
+  results = results.concat(retried);
+  dump(
+    rescued.length + " of " + failed.length + " retried hosts were reached.\n"
+  );
+
+  dump("HSTS Probe received " + results.length + " statuses.\n");
+  return results;
 }
 
 function readCurrentList(filename) {
@@ -348,7 +347,7 @@ function combineLists(newHosts, currentHosts) {
 
   for (let currentHost in currentHosts) {
     if (!newHostsSet.has(currentHost)) {
-      newHosts.push({ name: currentHost, retries: MAX_RETRIES });
+      newHosts.push({ name: currentHost });
     }
   }
 }
@@ -382,8 +381,6 @@ function getTestHosts() {
       maxAge: MINIMUM_REQUIRED_MAX_AGE,
       includeSubdomains: testEntry.includeSubdomains,
       error: ERROR_NONE,
-      // This deliberately doesn't have a value for `retries` (because we should
-      // never attempt to connect to this host).
       forceInclude: true,
     });
   }
