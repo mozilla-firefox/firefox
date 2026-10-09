@@ -111,8 +111,19 @@ nsIGlobalObject* RTCEncodedFrameBase::GetParentObject() const {
   return mGlobal;
 }
 
-void RTCEncodedFrameBase::SetData(const ArrayBuffer& aData) {
-  mData.set(aData.Obj());
+void RTCEncodedFrameBase::SetData(const ArrayBuffer& aData, ErrorResult& aRv) {
+  AutoJSAPI jsapi;
+  if (NS_WARN_IF(!jsapi.Init(mGlobal))) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+  JSContext* cx = jsapi.cx();
+  JS::Rooted<JSObject*> data(cx, aData.Obj());
+  if (!JS_WrapObject(cx, &data)) {
+    aRv.StealExceptionFromJSContext(cx);
+    return;
+  }
+  mData = data;
 }
 
 void RTCEncodedFrameBase::GetData(JSContext* aCx,
@@ -132,8 +143,11 @@ bool RTCEncodedFrameBase::CopyData(JSContext* aCx,
     return false;
   }
 
-  JS::Rooted<JSObject*> original(aCx, mData);
-  aData.set(JS::CopyArrayBuffer(aCx, original));
+  JS::Rooted<JSObject*> data(aCx, mData);
+  if (!JS_WrapObject(aCx, &data)) {
+    return false;
+  }
+  aData.set(JS::CopyArrayBuffer(aCx, data));
   return !NS_WARN_IF(!aData);
 }
 
@@ -147,6 +161,10 @@ bool RTCEncodedFrameBase::WriteData(JSContext* aCx,
   // JS_WriteTypedArray does not take a bare ArrayBuffer, so hand it a view.
   // TODO: Update this once bug 2067921 is fixed.
   JS::Rooted<JSObject*> buffer(aCx, mData);
+  // Put this in the right compartment
+  if (NS_WARN_IF(!JS_WrapObject(aCx, &buffer))) {
+    return false;
+  }
   JS::Rooted<JSObject*> view(aCx,
                              JS_NewUint8ArrayWithBuffer(aCx, buffer, 0, -1));
   if (NS_WARN_IF(!view)) {

@@ -24,6 +24,7 @@ interface RTCEncodedAudioFrame {
     [Throws]
     constructor(RTCEncodedAudioFrame originalFrame, optional RTCEncodedAudioFrameOptions options = {});
     readonly attribute unsigned long timestamp;    // legacy name of metadata rtpTimestamp
+    [SetterThrows]
     attribute ArrayBuffer data;
     RTCEncodedAudioFrameMetadata getMetadata();
 };

@@ -18,7 +18,11 @@ namespace webrtc {
 class TransformableFrameInterface;
 }
 
-namespace mozilla::dom {
+namespace mozilla {
+
+class ErrorResult;
+
+namespace dom {
 
 class RTCRtpScriptTransformer;
 
@@ -50,7 +54,7 @@ class RTCEncodedFrameBase : public nsISupports, public nsWrapperCache {
 
   nsIGlobalObject* GetParentObject() const;
 
-  void SetData(const ArrayBuffer& aData);
+  void SetData(const ArrayBuffer& aData, ErrorResult& aRv);
 
   void GetData(JSContext* aCx, JS::Rooted<JSObject*>* aObj) const;
 
@@ -98,5 +102,6 @@ class RTCEncodedFrameBase : public nsISupports, public nsWrapperCache {
   uint64_t mCounter = 0;
 };
 
-}  // namespace mozilla::dom
+}  // namespace dom
+}  // namespace mozilla
 #endif  // MOZILLA_DOM_MEDIA_WEBRTC_JSAPI_RTCENCODEDFRAMEBASE_H_
