@@ -45,7 +45,6 @@ parent:
                         ChildLoadInfoForwarderArgs? targetLoadInfoForwarder,
                         uint32_t loadFlags,
                         nullable nsIReferrerInfo referrerInfo,
-                        nullable nsIURI apiRedirectTo,
                         CorsPreflightArgs? corsPreflightArgs);
 
   // For document loads we keep this protocol open after child's

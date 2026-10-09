@@ -250,12 +250,6 @@ interface nsIHttpChannelInternal : nsISupports
     [must_use] attribute unsigned long initialRwin;
 
     /**
-     * Get value of the URI passed to nsIHttpChannel.redirectTo() if any.
-     * May return null when redirectTo() has not been called.
-     */
-    [must_use] readonly attribute nsIURI apiRedirectToURI;
-
-    /**
      * Enable/Disable use of Alternate Services with this channel.
      * The network.http.altsvc.enabled preference is still a pre-requisite.
      */

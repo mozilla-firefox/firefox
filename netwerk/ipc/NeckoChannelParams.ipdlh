@@ -369,7 +369,6 @@ struct HttpChannelOpenArgs
   nullable nsIURI             original;
   nullable nsIURI             doc;
   nullable nsIReferrerInfo    referrerInfo;
-  nullable nsIURI             apiRedirectTo;
   nullable nsIURI             topWindowURI;
   RequestHeaderTuples         requestHeaders;
   PreferredAlternativeDataTypeParams[] preferredAlternativeTypes;

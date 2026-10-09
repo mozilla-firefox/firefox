@@ -4160,16 +4160,6 @@ HttpBaseChannel::SetTlsFlags(uint32_t aTlsFlags) {
 }
 
 NS_IMETHODIMP
-HttpBaseChannel::GetApiRedirectToURI(nsIURI** aResult) {
-  if (!mAPIRedirectTo) {
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-  NS_ENSURE_ARG_POINTER(aResult);
-  *aResult = do_AddRef(mAPIRedirectTo->first()).take();
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 HttpBaseChannel::GetResponseTimeoutEnabled(bool* aEnable) {
   if (NS_WARN_IF(!aEnable)) {
     return NS_ERROR_NULL_POINTER;
