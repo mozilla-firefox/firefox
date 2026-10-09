@@ -116,6 +116,8 @@ wr::WrExternalImage RenderTextureHostSWGL::LockSWGL(
       return InvalidToWrExternalImage();
     }
     mLockedSWGL = true;
+  } else if (!mLockedSWGL) {
+    return InvalidToWrExternalImage();
   }
   if (aChannelIndex >= mPlanes.size()) {
     return InvalidToWrExternalImage();
@@ -169,6 +171,8 @@ bool RenderTextureHostSWGL::LockSWGLCompositeSurface(
       return false;
     }
     mLockedSWGLCompositeSurface = true;
+  } else if (!mLockedSWGLCompositeSurface) {
+    return false;
   }
   MOZ_ASSERT(mPlanes.size() <= 3);
   for (size_t i = 0; i < mPlanes.size(); i++) {
