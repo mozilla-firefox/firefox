@@ -27,4 +27,7 @@ skip-if = [
 ["test_subprocess_perf.js"]
 requesttimeoutfactor = 2  # Slow on Windows
 
+["test_subprocess_pipe_flags.js"]
+skip-if = ["os == 'win'"]
+
 ["test_subprocess_polling.js"]

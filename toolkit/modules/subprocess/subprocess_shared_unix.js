@@ -59,7 +59,7 @@ var libc = new Library("libc", LIBC_CHOICES, {
     ctypes.int,
     ctypes.int /* fildes */,
     ctypes.int /* cmd */,
-    ctypes.int /* ... */,
+    "...",
   ],
 
   getcwd: [

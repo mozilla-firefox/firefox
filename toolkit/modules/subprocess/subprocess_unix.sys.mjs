@@ -36,9 +36,9 @@ class UnixPromiseWorker extends PromiseWorker {
 
     this.signalFd = fds[1];
 
-    libc.fcntl(fds[0], LIBC.F_SETFL, LIBC.O_NONBLOCK);
-    libc.fcntl(fds[0], LIBC.F_SETFD, LIBC.FD_CLOEXEC);
-    libc.fcntl(fds[1], LIBC.F_SETFD, LIBC.FD_CLOEXEC);
+    libc.fcntl(fds[0], LIBC.F_SETFL, ctypes.int(LIBC.O_NONBLOCK));
+    libc.fcntl(fds[0], LIBC.F_SETFD, ctypes.int(LIBC.FD_CLOEXEC));
+    libc.fcntl(fds[1], LIBC.F_SETFD, ctypes.int(LIBC.FD_CLOEXEC));
 
     this.call("init", [{ signalFd: fds[0] }]);
   }
