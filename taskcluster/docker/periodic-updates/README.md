@@ -12,7 +12,7 @@ If given a conduit API token, it will also use the arcanist client to submit the
 ```sh
 docker build -t hsts-local --no-cache --rm .
 
-docker run -v /path/to/firefox:/builds/worker/checkouts/gecko -e GECKO_PATH=/builds/worker/checkouts/gecko -e TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com -e DO_HSTS=1 -e DO_HPKP=1 -e PRODUCT="firefox" -e BRANCH="mozilla-central" -e USE_MOZILLA_CENTRAL=1 hsts-local
+docker run -v /path/to/firefox:/builds/worker/checkouts/gecko -e GECKO_PATH=/builds/worker/checkouts/gecko -e TASKCLUSTER_ROOT_URL=https://firefox-ci-tc.services.mozilla.com -e DO_HSTS=1 -e DO_HPKP=1 -e BRANCH="mozilla-central" -e USE_MOZILLA_CENTRAL=1 hsts-local
 ```
 
 HSTS checks will only be run if the `DO_HSTS` environment variable is set.
@@ -75,7 +75,6 @@ payload:
   env:
     DO_HSTS: 1
     DO_HPKP: 1
-    PRODUCT: firefox
     BRANCH: mozilla-central
     USE_MOZILLA_CENTRAL: 1
     REVIEWERS: catlee

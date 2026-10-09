@@ -6,13 +6,11 @@ set -xe
 # --pinset --hsts --hpkp
 # -b branch
 # --use-mozilla-central
-# -p firefox
 # Artifact directory
 # Artifact names.
 
 
 test "${BRANCH}"
-test "${PRODUCT}"
 
 PARAMS=""
 
@@ -108,4 +106,4 @@ fi
 export HGPLAIN=1
 
 # shellcheck disable=SC2086
-/home/worker/scripts/periodic_file_updates.sh -p "${PRODUCT}" -b "${BRANCH}" -a ${PARAMS} -t "${GECKO_PATH}"
+/home/worker/scripts/periodic_file_updates.sh -b "${BRANCH}" -a ${PARAMS} -t "${GECKO_PATH}"

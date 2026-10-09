@@ -7,11 +7,9 @@ function usage {
 
 Usage: $(basename "$0") -h # Displays this usage/help text
 Usage: $(basename "$0") -x # lists exit codes
-Usage: $(basename "$0") [-p product]
+Usage: $(basename "$0")
            # Use mozilla-central builds to check HSTS & HPKP
            [--use-mozilla-central]
-           # Use archive.m.o instead of the taskcluster index to get xpcshell
-           [--use-ftp-builds]
            # One (or more) of the following actions must be specified.
            --hsts | --hpkp | --remote-settings | --suffix-list | --mobile-experiments | --mobile-merino-manifest | --ct-logs
            -b branch
@@ -27,7 +25,6 @@ EOF
 }
 
 # Defaults
-PRODUCT="firefox"
 DRY_RUN=false
 CLOSED_TREE=false
 DONTBUILD=false
@@ -42,10 +39,7 @@ DO_MOBILE_EXPERIMENTS=false
 DO_MOBILE_MERINO_MANIFEST=false
 DO_CT_LOGS=false
 
-STAGEHOST="archive.mozilla.org"
-
 USE_MC=false
-USE_TC=true
 USE_GIT=false
 SKIP_PUSH=false
 
@@ -53,7 +47,6 @@ SKIP_PUSH=false
 while [ $# -gt 0 ]; do
   case "$1" in
     -h) usage; exit 0 ;;
-    -p) PRODUCT="$2"; shift ;;
     -b) BRANCH="$2"; shift ;;
     -n) DRY_RUN=true ;;
     -c) CLOSED_TREE=true ;;
@@ -70,7 +63,6 @@ while [ $# -gt 0 ]; do
     --skip-push) SKIP_PUSH=true ;;
     -t) TOPSRCDIR="$2"; shift ;;
     --use-mozilla-central) USE_MC=true ;;
-    --use-ftp-builds) USE_TC=false ;;
     -*) usage
       exit 11 ;;
     *)  break ;; # terminate while loop
@@ -99,20 +91,6 @@ then
   usage
   exit 13
 fi
-
-# per-product constants
-case "${PRODUCT}" in
-  thunderbird)
-    COMMIT_AUTHOR="tbirdbld <tbirdbld@thunderbird.net>"
-    ;;
-  firefox)
-    ;;
-  *)
-    echo "Error: Invalid product specified"
-    usage
-    exit 14
-    ;;
-esac
 
 BROWSER_ARCHIVE="target.tar.xz"
 TESTS_ARCHIVE="target.common.tests.tar.zst"
@@ -143,10 +121,10 @@ DATADIR="${BASEDIR}/data"
 HSTS_PRELOAD_SCRIPT="${SCRIPTDIR}/getHSTSPreloadList.js"
 HSTS_PRELOAD_ERRORS="nsSTSPreloadList.errors"
 HSTS_PRELOAD_INC_OLD="${DATADIR}/nsSTSPreloadList.inc"
-HSTS_PRELOAD_INC_NEW="${BASEDIR}/${PRODUCT}/nsSTSPreloadList.inc"
+HSTS_PRELOAD_INC_NEW="${BASEDIR}/firefox/nsSTSPreloadList.inc"
 HSTS_RESULTS="hsts-probe-results.json"
 HSTS_RESULTS_PREVIOUS="${DATADIR}/${HSTS_RESULTS}"
-HSTS_RESULTS_NEW="${BASEDIR}/${PRODUCT}/${HSTS_RESULTS}"
+HSTS_RESULTS_NEW="${BASEDIR}/firefox/${HSTS_RESULTS}"
 HSTS_UPDATED=false
 
 HPKP_PRELOAD_SCRIPT="${SCRIPTDIR}/genHPKPStaticPins.js"
@@ -237,24 +215,7 @@ function download_json {
 # Cleanup common artifacts.
 function preflight_cleanup {
   cd "${BASEDIR}"
-  rm -rf "${PRODUCT}" tests "${BROWSER_ARCHIVE}" "${TESTS_ARCHIVE}"
-}
-
-function download_shared_artifacts_from_ftp {
-  cd "${BASEDIR}"
-
-  # Download everything we need to run js with xpcshell
-  echo "INFO: Downloading all the necessary pieces from ${STAGEHOST}..."
-  ARTIFACT_DIR="nightly/latest-${BRANCH}"
-  if [ "${USE_MC}" == "true" ]; then
-    ARTIFACT_DIR="nightly/latest-mozilla-central"
-  fi
-
-  BROWSER_ARCHIVE_URL="https://${STAGEHOST}/pub/mozilla.org/${PRODUCT}/${ARTIFACT_DIR}/${BROWSER_ARCHIVE}"
-  TESTS_ARCHIVE_URL="https://${STAGEHOST}/pub/mozilla.org/${PRODUCT}/${ARTIFACT_DIR}/${TESTS_ARCHIVE}"
-
-  download_file "${BROWSER_ARCHIVE}" "${BROWSER_ARCHIVE_URL}"
-  download_file "${TESTS_ARCHIVE}" "${TESTS_ARCHIVE_URL}"
+  rm -rf firefox tests "${BROWSER_ARCHIVE}" "${TESTS_ARCHIVE}"
 }
 
 function download_shared_artifacts_from_tc {
@@ -263,9 +224,9 @@ function download_shared_artifacts_from_tc {
 
   # Download everything we need to run js with xpcshell
   echo "INFO: Downloading all the necessary pieces from the taskcluster index..."
-  TASKID_URL="$index_base/task/gecko.v2.${BRANCH}.shippable.latest.${PRODUCT}.linux64-opt"
+  TASKID_URL="$index_base/task/gecko.v2.${BRANCH}.shippable.latest.firefox.linux64-opt"
   if [ "${USE_MC}" == "true" ]; then
-    TASKID_URL="$index_base/task/gecko.v2.mozilla-central.shippable.latest.${PRODUCT}.linux64-opt"
+    TASKID_URL="$index_base/task/gecko.v2.mozilla-central.shippable.latest.firefox.linux64-opt"
   fi
   download_json "${TASKID_FILE}" "${TASKID_URL}"
   INDEX_TASK_ID="$($JQ -r '.taskId' ${TASKID_FILE})"
@@ -306,7 +267,7 @@ function unpack_artifacts {
   cd tests
   ${UNPACK_CMD} "../${TESTS_ARCHIVE}"
   cd "${BASEDIR}"
-  cp tests/bin/xpcshell "${PRODUCT}"
+  cp tests/bin/xpcshell firefox
 }
 
 # Copies the current in-tree HSTS (HTTP Strict Transport Security) files.
@@ -319,13 +280,13 @@ function compare_hsts_files {
   cp "${TOPSRCDIR}/security/manager/ssl/$(basename "${HSTS_PRELOAD_INC_OLD}")" "${HSTS_PRELOAD_INC_OLD}" || exit 84
 
   echo "INFO: Downloading previous HSTS probe results..."
-  if ! fetch_file "${HSTS_RESULTS_PREVIOUS}" "${index_base}/task/gecko.v2.${BRANCH}.latest.${PRODUCT}.pinning-update/artifacts/public/build/${HSTS_RESULTS}"; then
+  if ! fetch_file "${HSTS_RESULTS_PREVIOUS}" "${index_base}/task/gecko.v2.${BRANCH}.latest.firefox.pinning-update/artifacts/public/build/${HSTS_RESULTS}"; then
     echo "WARNING: no previous HSTS probe results, failure streaks start over" >&2
   fi
 
   # Run the script to get an updated preload list.
   echo "INFO: Generating new HSTS preload list..."
-  cd "${BASEDIR}/${PRODUCT}"
+  cd "${BASEDIR}/firefox"
   if ! LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:. ./xpcshell "${HSTS_PRELOAD_SCRIPT}" "${HSTS_PRELOAD_INC_OLD}" "${HSTS_RESULTS_PREVIOUS}"; then
     echo "HSTS preload list generation failed" >&2
     exit 43
@@ -362,7 +323,7 @@ function compare_hpkp_files {
 
   # Run the script to get an updated preload list.
   echo "INFO: Generating new HPKP preload list..."
-  cd "${BASEDIR}/${PRODUCT}"
+  cd "${BASEDIR}/firefox"
   if ! LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:. ./xpcshell "${HPKP_PRELOAD_SCRIPT}" "${HPKP_PRELOAD_JSON}" "${HPKP_PRELOAD_OUTPUT}" > "${HPKP_PRELOAD_ERRORS}"; then
     echo "HPKP preload list generation failed" >&2
     exit 54
@@ -661,11 +622,7 @@ mkdir -p "${DATADIR}"
 
 if [ "${DO_HSTS}" == "true" ] || [ "${DO_HPKP}" == "true" ] || [ "${DO_PRELOAD_PINSET}" == "true" ]
 then
-  if [ "${USE_TC}" == "true" ]; then
-    download_shared_artifacts_from_tc
-  else
-    download_shared_artifacts_from_ftp
-  fi
+  download_shared_artifacts_from_tc
   unpack_artifacts
 fi
 

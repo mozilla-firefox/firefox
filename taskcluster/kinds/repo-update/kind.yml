@@ -24,7 +24,6 @@ task-defaults:
         os: linux
         docker-image: {in-tree: periodic-updates}
         env:
-            PRODUCT: firefox
             REVIEWERS: "#release-managers"
         taskcluster-proxy: true
     treeherder:
