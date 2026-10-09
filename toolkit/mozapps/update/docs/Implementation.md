@@ -108,6 +108,23 @@ the MAR. Some files may also be deleted. The updater tracks each change made
 and, if an error is encountered, can roll all the changes back to restore the
 installation to its original state.
 
+Applying a MAR, whether staging or not, runs in four phases, named after the
+tokens that they log in the update log: `PREPARE`, `DRAFT`, `EXECUTE` and
+`FINISH`. `DRAFT` exists to limit
+how much there is to roll back: it writes the new contents of every file that a
+non-staged update produces to a `.moz-draft` file next to the destination,
+without replacing any installed file. Only once every one of those succeeded
+does `EXECUTE` proceed to actual replacement, by renaming any existing old
+version to a `.moz-backup` file and renaming the new draft into place. `FINISH`
+then discards the backups, or restores them if anything failed. So a failure
+while decompressing the MAR or while applying a patch never replaces an
+installed file, and a rollback only ever has to undo a series of renames. Note
+that `DRAFT` still writes into the installation directory, and that it creates
+the parent directories of added files there, which a failure does not remove.
+Staged updates don't need any of this: they write into their own directory
+during `EXECUTE`, where nothing is in use, and have nothing to do during
+`DRAFT`.
+
 The update process often requires elevation. Elevating is only supported on
 macOS and Windows. The macOS process is documented [here](MacElevatedUpdate.md).
 The Windows process involves:

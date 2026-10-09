@@ -314,11 +314,15 @@ updater.
 ```
 
 Great! We are going to do the actual staging now. This should be followed by
-many `PREPARE` statements, then many `EXECUTE` statements, then many `FINISH`
-statements showing the progress of the update. Look through these for any
-"failed" messages indicating a failure of the update process. If there is one,
-we should immediately move to the `FINISH` phase which, in this case, will
-involve rolling the installation back to its original state.
+many `PREPARE` statements, then many `DRAFT` statements, then many `EXECUTE`
+statements, then many `FINISH` statements showing the progress of the update.
+The `DRAFT` statements do nothing here: only non-staged updates write draft
+files, but the statements are logged either way so that staged and non-staged
+updater tests can compare against the same expected update logs. Look through
+all of these for any "failed" messages indicating a failure of the update
+process. If there is one, we should immediately move to the `FINISH` phase
+which, in this case, will involve rolling the installation back to its original
+state.
 
 ```
 2025-12-10 09:13:55-0800: succeeded

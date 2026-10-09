@@ -131,6 +131,7 @@ static inline int mywcsprintf(WCHAR* dest, size_t count, const WCHAR* fmt,
 #endif
 
 #define BACKUP_EXT NS_T(".moz-backup")
+#define DRAFT_EXT NS_T(".moz-draft")
 
 #ifndef MAXPATHLEN
 #  ifdef PATH_MAX
