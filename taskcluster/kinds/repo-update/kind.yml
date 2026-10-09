@@ -14,7 +14,7 @@ transforms:
 task-defaults:
     run-on-repo-type: [hg]
     run-on-projects: []  # Only run via cron
-    worker-type: b-linux-xlarge
+    worker-type: b-linux-medium
     run:
         using: run-task
         checkout: true
@@ -51,7 +51,7 @@ tasks:
             product: firefox
             job-name: pinning-update
         worker:
-            max-run-time: 14400  # Takes up to 4 hours
+            max-run-time: 3600
             env:
                 DO_HSTS:
                     by-project:
@@ -78,7 +78,6 @@ tasks:
 
     periodic-file-update:
         description: Remote settings, suffix list, mobile experiments, mobile merino manifest, and CT log update
-        worker-type: b-linux
         task-context:
             from-parameters:
                 project: project
@@ -91,7 +90,7 @@ tasks:
         treeherder:
             symbol: pfu
         worker:
-            max-run-time: 1800
+            max-run-time: 1200
             env:
                 DO_REMOTE_SETTINGS:
                     by-project:
