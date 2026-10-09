@@ -640,10 +640,10 @@
 - name: StringToAtom
   shared: true
   transpile: true
-  custom_writer: true
   cost_estimate: 4
   args:
     str: StringId
+    result: StringId
 
 - name: BooleanToNumber
   shared: true

@@ -479,11 +479,6 @@ class MOZ_RAII CacheIRWriter : public JS::CustomAutoRooter {
     return NumberOperandId(input.id());
   }
 
-  StringOperandId stringToAtom(StringOperandId input) {
-    stringToAtom_(input);
-    return input;
-  }
-
   ValOperandId boxObject(ObjOperandId input) {
     return ValOperandId(input.id());
   }
