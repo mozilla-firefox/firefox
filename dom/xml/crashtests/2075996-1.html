@@ -1,0 +1,33 @@
+<!doctype html>
+<html class="reftest-wait">
+<body>
+<script>
+const KEY = "details";
+const url = `2075996.sjs?start&${KEY}`;
+const frame = document.createElement("iframe");
+frame.onload = () => {
+  const root = frame.contentDocument.documentElement;
+  root.setAttribute("data-a", "b");
+  root.getBoundingClientRect();
+  document.documentElement.removeAttribute("class");
+};
+frame.src = url;
+document.body.append(frame);
+const poll = setInterval(() => {
+  const doc = frame.contentDocument;
+  if (!doc?.URL.endsWith(url)) {
+    return;
+  }
+  clearInterval(poll);
+  doc.addEventListener("readystatechange", () => {
+    if (doc.readyState == "interactive") {
+      const el = doc.createElementNS("http://www.w3.org/1999/xhtml", KEY);
+      el.append("text");
+      doc.replaceChild(el, doc.documentElement);
+    }
+  });
+  fetch(`2075996.sjs?finish&${KEY}`);
+}, 0);
+</script>
+</body>
+</html>
