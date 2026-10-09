@@ -4185,7 +4185,10 @@ nsCString nsWindow::GetPopupTypeName() {
 Window nsWindow::GetX11Window() {
 #ifdef MOZ_X11
   if (GdkIsX11Display()) {
-    return gdk_x11_window_get_xid(mGdkWindow);
+    // mGdkWindow is set on realize signal at nsWindow::Create()
+    // and removed on nsWindow::::Destroy(). Looks like we're painting
+    // outside of that rendering window.
+    return mGdkWindow ? gdk_x11_window_get_xid(mGdkWindow) : (Window) nullptr;
   }
 #endif
   return (Window) nullptr;
