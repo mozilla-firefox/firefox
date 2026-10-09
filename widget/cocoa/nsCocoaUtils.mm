@@ -181,7 +181,13 @@ NSPoint nsCocoaUtils::ScreenLocationForEvent(NSEvent* anEvent) {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
   // Don't trust mouse locations of mouse move events, see bug 443178.
-  if (!anEvent || [anEvent type] == NSEventTypeMouseMoved)
+  // Likewise, on macOS 26 the locationInWindow of mouseEntered/mouseExited
+  // events can be reported relative to a wrong window origin, which puts the
+  // point off to the side by an amount that depends on the window's screen
+  // position (Bug 2043963). The live cursor location is reliable, so use it.
+  if (!anEvent || [anEvent type] == NSEventTypeMouseMoved ||
+      [anEvent type] == NSEventTypeMouseEntered ||
+      [anEvent type] == NSEventTypeMouseExited)
     return [NSEvent mouseLocation];
 
   // Pin momentum scroll events to the location of the last user-controlled
