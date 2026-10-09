@@ -29,6 +29,7 @@
 #include "nsIURI.h"
 #include "nsIWritablePropertyBag2.h"
 #include "nsNetUtil.h"
+#include "nsComponentManagerUtils.h"
 #include "nsContentUtils.h"
 #include "nsIWebProgressListener.h"
 #include "nsStringFwd.h"
