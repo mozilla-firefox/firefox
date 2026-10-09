@@ -1151,20 +1151,24 @@ void nsMenuPopupFrame::SchedulePendingWidgetMoveResize() {
   SchedulePaint();
 }
 
+void nsMenuPopupFrame::FlipAnchorForRTL(int8_t& aPopupAnchor,
+                                        int8_t& aPopupAlignment) {
+  // no need to flip the centered anchor types vertically
+  if (aPopupAnchor <= POPUPALIGNMENT_LEFTCENTER) {
+    aPopupAnchor = -aPopupAnchor;
+  }
+  if (aPopupAlignment <= POPUPALIGNMENT_LEFTCENTER) {
+    aPopupAlignment = -aPopupAlignment;
+  }
+}
+
 nsPoint nsMenuPopupFrame::AdjustPositionForAnchorAlign(
     nsRect& anchorRect, const nsSize& aPrefSize, FlipStyle& aHFlip,
     FlipStyle& aVFlip) const {
-  // flip the anchor and alignment for right-to-left
   int8_t popupAnchor(mPopupAnchor);
   int8_t popupAlign(mPopupAlignment);
   if (IsDirectionRTL()) {
-    // no need to flip the centered anchor types vertically
-    if (popupAnchor <= POPUPALIGNMENT_LEFTCENTER) {
-      popupAnchor = -popupAnchor;
-    }
-    if (popupAlign <= POPUPALIGNMENT_LEFTCENTER) {
-      popupAlign = -popupAlign;
-    }
+    FlipAnchorForRTL(popupAnchor, popupAlign);
   }
 
   nsRect originalAnchorRect(anchorRect);
