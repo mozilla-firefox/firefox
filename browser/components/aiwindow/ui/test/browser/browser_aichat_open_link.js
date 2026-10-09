@@ -3,6 +3,10 @@
 
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 /*
  * Tests for link opening from <ai-chat-message> through AIChatContentParent.
  *
@@ -85,7 +89,11 @@ async function clickRenderedLink(browserOrBC, url, eventOptions = {}) {
 }
 
 describe("aichat container tab behavior", () => {
+  let mockEngineManager;
+
   beforeEach(async () => {
+    mockEngineManager = new MockEngineManager();
+
     await SpecialPowers.pushPrefEnv({
       set: [["privacy.userContext.enabled", true]],
     });
@@ -102,11 +110,15 @@ describe("aichat container tab behavior", () => {
   });
 
   afterEach(async () => {
+    mockEngineManager.rejectAllRequests();
     await BrowserTestUtils.closeWindow(win);
+    await SpecialPowers.popPrefEnv();
+    mockEngineManager.cleanupMocks();
+
     win = null;
     sidebarBrowser = null;
     containerTab = null;
-    await SpecialPowers.popPrefEnv();
+    mockEngineManager = null;
   });
 
   it("should open link in the container of the selected tab", async () => {
