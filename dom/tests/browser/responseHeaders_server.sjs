@@ -28,9 +28,6 @@ function handleRequest(request, response) {
   if (request.queryString == "vary") {
     response.setHeader("Vary", "Cookie", false);
   }
-  if (request.queryString == "vary-random") {
-    response.setHeader("Vary", "Random-Header", false);
-  }
   response.setHeader("Content-Type", "text/javascript", false);
   const body = `
 document.body.setAttribute("counter", "${counter}");

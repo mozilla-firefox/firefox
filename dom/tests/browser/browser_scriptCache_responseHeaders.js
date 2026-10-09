@@ -33,14 +33,6 @@ add_task(async function test_redirectCache() {
       log: ",vary,vary",
     },
     {
-      // This returns unknown header name for Vary, which should
-      // bypass the in-memory cache, but necko should handle the header
-      // correctly and the second request shouldn't reach the server.
-      query: "?vary-random",
-      cachedCounter: true,
-      log: ",vary-random",
-    },
-    {
       query: "?normal",
       cachedCounter: true,
       log: ",normal",

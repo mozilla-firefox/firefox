@@ -13634,9 +13634,18 @@ nsContentUtils::GetSubresourceCacheValidationInfo(nsIRequest* aRequest,
     if (!info.mMustRevalidate) {
       nsAutoCString vary;
       (void)httpChannel->GetResponseHeader("vary"_ns, vary);
-      if (!vary.IsEmpty()) {
-        info.mMustRevalidate = true;
-      }
+      info.mMustRevalidate = [&] {
+        for (const nsACString& token :
+             nsCCharSeparatedTokenizer(vary, ',').ToRange()) {
+          if (token.EqualsLiteral("*")) {
+            return true;
+          }
+          if (token.EqualsIgnoreCase("cookie")) {
+            return true;
+          }
+        }
+        return false;
+      }();
     }
   }
 
