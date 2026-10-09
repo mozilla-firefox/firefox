@@ -115,6 +115,8 @@ skip-if = [
   "socketprocess_networking", # Bug 1759035
 ]
 
+["statusErrorCodeTelemetry.js"]
+
 ["test_blocked_metric_recorded_when_downloads_blocked_by_waf.js"]
 firefox-appdir = "browser"
 run-if = [
