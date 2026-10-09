@@ -253,7 +253,7 @@ class CanvasTranslator final : public gfx::InlineTranslator,
       uint64_t aKey) final;
 
   already_AddRefed<gfx::SourceSurface> LookupSourceSurfaceFromSurfaceDescriptor(
-      const SurfaceDescriptor& aDesc) final;
+      gfx::DrawTarget* aDT, const SurfaceDescriptor& aDesc) final;
 
   /**
    * Gets the cached DataSourceSurface, if it exists, associated with a

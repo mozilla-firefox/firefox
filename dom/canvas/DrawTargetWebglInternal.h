@@ -220,7 +220,8 @@ class SharedTexture : public RefCounted<SharedTexture>, public BackingTexture {
   MOZ_DECLARE_REFCOUNTED_TYPENAME(SharedTexture)
 
   SharedTexture(const IntSize& aSize, SurfaceFormat aFormat,
-                const RefPtr<WebGLTexture>& aTexture);
+                const RefPtr<WebGLTexture>& aTexture,
+                const dom::ContentParentId& aContentId);
   ~SharedTexture();
 
   already_AddRefed<SharedTextureHandle> Allocate(const IntSize& aSize);
@@ -231,8 +232,11 @@ class SharedTexture : public RefCounted<SharedTexture>, public BackingTexture {
                                   mAtlasAllocator) > 0;
   }
 
+  const dom::ContentParentId& GetContentId() const { return mContentId; }
+
  private:
   Etagere::AtlasAllocator* mAtlasAllocator = nullptr;
+  dom::ContentParentId mContentId;
 };
 
 // SharedTextureHandle is an allocated region within a large SharedTexture page

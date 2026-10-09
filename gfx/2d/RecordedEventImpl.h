@@ -3299,7 +3299,7 @@ inline bool RecordedDrawSurfaceDescriptor::PlayEvent(
   }
 
   RefPtr<SourceSurface> surface =
-      aTranslator->LookupSourceSurfaceFromSurfaceDescriptor(mDesc);
+      aTranslator->LookupSourceSurfaceFromSurfaceDescriptor(dt, mDesc);
   if (!surface) {
     return false;
   }

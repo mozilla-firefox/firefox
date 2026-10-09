@@ -1235,8 +1235,8 @@ already_AddRefed<gfx::DrawTarget> CanvasTranslator::CreateDrawTarget(
     if (EnsureSharedContextWebgl()) {
       mSharedContext->EnterTlsScope();
     }
-    if (RefPtr<gfx::DrawTargetWebgl> webgl =
-            gfx::DrawTargetWebgl::Create(aSize, aFormat, mSharedContext)) {
+    if (RefPtr<gfx::DrawTargetWebgl> webgl = gfx::DrawTargetWebgl::Create(
+            aSize, aFormat, mSharedContext, mContentId)) {
       webgl->BeginFrame(true);
       dt = webgl.forget().downcast<gfx::DrawTarget>();
       if (dt) {
@@ -1631,7 +1631,7 @@ CanvasTranslator::MaybeRecycleDataSurfaceForSurfaceDescriptor(
 
 already_AddRefed<gfx::SourceSurface>
 CanvasTranslator::LookupSourceSurfaceFromSurfaceDescriptor(
-    const SurfaceDescriptor& aDesc) {
+    DrawTarget* aDT, const SurfaceDescriptor& aDesc) {
   if (!SDIsSupportedRemoteDecoder(aDesc)) {
     return nullptr;
   }
@@ -1835,7 +1835,7 @@ bool CanvasTranslator::ResolveExternalSnapshot(uint64_t aSyncId,
         // If we can't import the surface using the DT, then try using the
         // global shared context to allow for a readback.
         resolved = mSharedContext->ImportSurfaceDescriptor(
-            *snapshot.mDescriptor, aSize, aFormat);
+            nullptr, *snapshot.mDescriptor, aSize, aFormat);
       }
     }
     snapshot.mSharedSurface->EndRead();
