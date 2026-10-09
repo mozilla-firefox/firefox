@@ -275,6 +275,17 @@ const tests = [
 ];
 
 add_setup(async function () {
+  // Tests get no default Top Sites, and the view is opened on an empty
+  // string here, which would otherwise leave it closed with no results.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+
   gURLBar.inputField.style.font = "14px monospace";
   registerCleanupFunction(() => {
     gURLBar.inputField.style.font = null;

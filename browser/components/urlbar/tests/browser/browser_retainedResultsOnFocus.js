@@ -74,6 +74,12 @@ add_setup(async function () {
     set: [
       ["browser.urlbar.autoFill", true],
       ["browser.urlbar.scotchBonnet.enableOverride", false],
+      // Tests get no default Top Sites, and the view is opened on an empty
+      // string here, which would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
     ],
   });
   // Add some history for the empty panel and autofill.

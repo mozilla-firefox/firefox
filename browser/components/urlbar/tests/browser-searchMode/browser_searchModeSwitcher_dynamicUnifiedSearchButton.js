@@ -11,7 +11,15 @@ const TEST_URL = `${TEST_BASE_URL}has-a-link.html`;
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.scotchBonnet.enableOverride", true]],
+    set: [
+      ["browser.urlbar.scotchBonnet.enableOverride", true],
+      // Tests get no default Top Sites, and the view is opened on an empty
+      // string here, which would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
 });
 

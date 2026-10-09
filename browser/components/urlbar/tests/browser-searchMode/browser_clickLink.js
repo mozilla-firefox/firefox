@@ -17,7 +17,15 @@ const LINK_PAGE_URL =
 // in the link should be opened.
 add_task(async function clickLink() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.urlbar.scotchBonnet.enableOverride", false]],
+    set: [
+      ["browser.urlbar.scotchBonnet.enableOverride", false],
+      // Tests get no default Top Sites, and the view is opened on an empty
+      // string here, which would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
   });
   for (let test of [
     // searchString, href to use in the link

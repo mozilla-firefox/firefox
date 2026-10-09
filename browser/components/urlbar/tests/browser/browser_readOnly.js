@@ -3,6 +3,19 @@
 
 "use strict";
 
+add_setup(async function () {
+  // Tests get no default Top Sites, and the view is opened on an empty string
+  // here, which would otherwise leave it closed with no results.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+});
+
 add_task(async function toggle_readOnly() {
   gURLBar.focus();
   Assert.ok(gURLBar.hasAttribute("focused"), "Gets focused attribute");

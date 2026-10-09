@@ -11,6 +11,12 @@ add_task(async function test_click_urlbar_results() {
     set: [
       [VERTICAL_TABS_PREF, true],
       [SIDEBAR_VISIBILITY_PREF, "always-show"],
+      // Tests get no default Top Sites, and the view is opened on an empty
+      // string here, which would otherwise leave it closed with no results.
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
     ],
   });
 
