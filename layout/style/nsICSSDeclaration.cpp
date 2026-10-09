@@ -22,6 +22,11 @@ DocGroup* nsICSSDeclaration::GetDocGroup() {
   return parentNode->GetDocGroup();
 }
 
+already_AddRefed<mozilla::css::Rule>
+nsICSSDeclaration::GetParentRuleForBindings() {
+  return do_AddRef(GetParentRule());
+}
+
 bool nsICSSDeclaration::IsReadOnly() {
   mozilla::css::Rule* rule = GetParentRule();
   return rule && rule->IsReadOnly();

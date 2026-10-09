@@ -29,5 +29,5 @@ interface CSSStyleDeclaration {
   [CEReactions, Throws]
   UTF8String removeProperty(UTF8String property);
 
-  readonly attribute CSSRule? parentRule;
+  [BinaryName="parentRuleForBindings"] readonly attribute CSSRule? parentRule;
 };

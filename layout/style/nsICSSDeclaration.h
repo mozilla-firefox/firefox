@@ -104,6 +104,7 @@ class nsICSSDeclaration : public nsISupports, public nsWrapperCache {
   virtual void GetPropertyPriority(const nsACString& aPropName,
                                    nsACString& aPriority) = 0;
   virtual mozilla::css::Rule* GetParentRule() = 0;
+  already_AddRefed<mozilla::css::Rule> GetParentRuleForBindings();
 
  protected:
   bool IsReadOnly();

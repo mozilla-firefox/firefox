@@ -353,7 +353,7 @@ class StyleSheet final : public nsICSSLoaderObserver, public nsWrapperCache {
   // Can't be inline because we can't include ImportRule here.  And can't be
   // called GetOwnerRule because that would be ambiguous with the ImportRule
   // version.
-  css::Rule* GetDOMOwnerRule() const;
+  already_AddRefed<css::Rule> GetDOMOwnerRule() const;
   dom::CSSRuleList* GetCssRules(nsIPrincipal& aSubjectPrincipal, ErrorResult&);
   uint32_t InsertRule(const nsACString& aRule, uint32_t aIndex,
                       nsIPrincipal& aSubjectPrincipal, ErrorResult& aRv);
