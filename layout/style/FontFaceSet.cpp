@@ -405,14 +405,26 @@ void FontFaceSet::DispatchLoadingEventAndReplaceReadyPromise() {
   mResolveLazilyCreatedReadyPromise = false;
 }
 
-void FontFaceSet::MaybeResolve() {
-  if (mReady) {
-    mReady->MaybeResolve(this);
-  } else {
-    mResolveLazilyCreatedReadyPromise = true;
-  }
+static RefPtr<FontFaceSetLoadEvent> MakeLoadEvent(
+    FontFaceSet* aFontFaceSet, const nsAString& aType,
+    nsTArray<OwningNonNull<FontFace>>&& aFontFaces) {
+  FontFaceSetLoadEventInit init;
+  init.mBubbles = false;
+  init.mCancelable = false;
+  init.mFontfaces = std::move(aFontFaces);
+  return FontFaceSetLoadEvent::Constructor(aFontFaceSet, aType, init);
+}
 
-  // Now dispatch the loadingdone/loadingerror events.
+static RefPtr<FontFaceSetLoadEvent> MaybeMakeLoadEvent(
+    FontFaceSet* aFontFaceSet, const nsAString& aType,
+    nsTArray<OwningNonNull<FontFace>>&& aFontFaces) {
+  if (aFontFaces.IsEmpty()) {
+    return nullptr;
+  }
+  return MakeLoadEvent(aFontFaceSet, aType, std::move(aFontFaces));
+}
+
+void FontFaceSet::MaybeResolve() {
   nsTArray<OwningNonNull<FontFace>> loaded;
   nsTArray<OwningNonNull<FontFace>> failed;
 
@@ -444,22 +456,22 @@ void FontFaceSet::MaybeResolve() {
   checkStatus(mRuleFaces);
   checkStatus(mNonRuleFaces);
 
-  DispatchLoadingFinishedEvent(u"loadingdone"_ns, std::move(loaded));
-
-  if (!failed.IsEmpty()) {
-    DispatchLoadingFinishedEvent(u"loadingerror"_ns, std::move(failed));
-  }
-}
-
-void FontFaceSet::DispatchLoadingFinishedEvent(
-    const nsAString& aType, nsTArray<OwningNonNull<FontFace>>&& aFontFaces) {
-  FontFaceSetLoadEventInit init;
-  init.mBubbles = false;
-  init.mCancelable = false;
-  init.mFontfaces = std::move(aFontFaces);
-  RefPtr<FontFaceSetLoadEvent> event =
-      FontFaceSetLoadEvent::Constructor(this, aType, init);
-  (new AsyncEventDispatcher(this, event.forget()))->PostDOMEvent();
+  NS_DispatchToCurrentThread(NS_NewRunnableFunction(
+      "FontFaceSet::DoResolveAndDispatchLoadEvents",
+      [self = RefPtr{this},
+       loadingdone = MakeLoadEvent(this, u"loadingdone"_ns, std::move(loaded)),
+       loadingerror =
+           MaybeMakeLoadEvent(this, u"loadingerror"_ns, std::move(failed))] {
+        if (self->mReady) {
+          self->mReady->MaybeResolve(self);
+        } else {
+          self->mResolveLazilyCreatedReadyPromise = true;
+        }
+        self->DispatchEvent(*loadingdone);
+        if (loadingerror) {
+          self->DispatchEvent(*loadingerror);
+        }
+      }));
 }
 
 void FontFaceSet::FlushUserFontSet() { mImpl->FlushUserFontSet(); }

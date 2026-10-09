@@ -95,9 +95,6 @@ class FontFaceSet final : public DOMEventTargetHelper {
 
   void MaybeResolve();
 
-  void DispatchLoadingFinishedEvent(
-      const nsAString& aType, nsTArray<OwningNonNull<FontFace>>&& aFontFaces);
-
   void DispatchLoadingEventAndReplaceReadyPromise();
   void DispatchCheckLoadingFinishedAfterDelay();
 
