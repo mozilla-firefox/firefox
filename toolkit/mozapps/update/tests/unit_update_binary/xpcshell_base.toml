@@ -278,6 +278,18 @@ run-if = [
 ]
 reason = "Windows only test"
 
+["marRollbackFileLockedForDeletePartialZucchini_win.js"]
+run-if = [
+  "os == 'win'",
+]
+reason = "Windows only test"
+
+["marRollbackFileLockedForDeletePartial_win.js"]
+run-if = [
+  "os == 'win'",
+]
+reason = "Windows only test"
+
 ["marStageFailurePartial.js"]
 
 ["marStageFailurePartialZucchini.js"]

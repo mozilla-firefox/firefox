@@ -4229,6 +4229,37 @@ function checkFilesAfterUpdateCommon(aStageDirExists, aToBeDeletedDirExists) {
 }
 
 /**
+ * Asserts that the tobedeleted directory contains exactly aExpectedCount
+ * relocated files (files whose names start with "moz").
+ *
+ * @param   aExpectedCount
+ *          The number of relocated files that the directory should contain.
+ * @returns
+ *          The relocated files as an array of nsIFile. Relocated files are
+ *          named after a UUID, so this is the only way for a caller to check
+ *          which files were relocated, for instance by comparing contents.
+ */
+function checkToBeDeletedFileCount(aExpectedCount) {
+  let toBeDeletedDir = getApplyDirFile(DIR_TOBEDELETED);
+  let relocatedFiles = [];
+  let dirEntries = toBeDeletedDir.directoryEntries;
+  while (dirEntries.hasMoreElements()) {
+    let entry = dirEntries.nextFile;
+    if (entry.isFile() && entry.leafName.startsWith("moz")) {
+      relocatedFiles.push(entry);
+    }
+  }
+  Assert.equal(
+    relocatedFiles.length,
+    aExpectedCount,
+    "the tobedeleted directory should contain " +
+      aExpectedCount +
+      " relocated file(s)"
+  );
+  return relocatedFiles;
+}
+
+/**
  * Helper function for updater binary tests for verifying the contents of the
  * updater callback application log which should contain the arguments passed to
  * the callback application.
