@@ -47,6 +47,9 @@ tasks:
                 - worker.env.USE_MOZILLA_CENTRAL
         treeherder:
             symbol: hfu
+        index:
+            product: firefox
+            job-name: pinning-update
         worker:
             max-run-time: 14400  # Takes up to 4 hours
             env:
@@ -68,6 +71,9 @@ tasks:
                   type: file
                 - name: 'public/build/StaticHPKPins.h.diff'
                   path: '/home/worker/artifacts/StaticHPKPins.h.diff'
+                  type: file
+                - name: 'public/build/hsts-probe-results.json'
+                  path: '/home/worker/artifacts/hsts-probe-results.json'
                   type: file
 
     periodic-file-update:

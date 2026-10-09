@@ -159,6 +159,9 @@ HSTS_PRELOAD_SCRIPT="${SCRIPTDIR}/getHSTSPreloadList.js"
 HSTS_PRELOAD_ERRORS="nsSTSPreloadList.errors"
 HSTS_PRELOAD_INC_OLD="${DATADIR}/nsSTSPreloadList.inc"
 HSTS_PRELOAD_INC_NEW="${BASEDIR}/${PRODUCT}/nsSTSPreloadList.inc"
+HSTS_RESULTS="hsts-probe-results.json"
+HSTS_RESULTS_PREVIOUS="${DATADIR}/${HSTS_RESULTS}"
+HSTS_RESULTS_NEW="${BASEDIR}/${PRODUCT}/${HSTS_RESULTS}"
 HSTS_UPDATED=false
 
 HPKP_PRELOAD_SCRIPT="${SCRIPTDIR}/genHPKPStaticPins.js"
@@ -193,6 +196,7 @@ CT_LOG_UPDATE_SCRIPT="${SCRIPTDIR}/getCTKnownLogs.py"
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-.}"
 # Defaults
 HSTS_DIFF_ARTIFACT="${ARTIFACTS_DIR}/${HSTS_DIFF_ARTIFACT:-"nsSTSPreloadList.diff"}"
+HSTS_RESULTS_ARTIFACT="${ARTIFACTS_DIR}/${HSTS_RESULTS}"
 HPKP_DIFF_ARTIFACT="${ARTIFACTS_DIR}/${HPKP_DIFF_ARTIFACT:-"StaticHPKPins.h.diff"}"
 REMOTE_SETTINGS_DIFF_ARTIFACT="${ARTIFACTS_DIR}/${REMOTE_SETTINGS_DIFF_ARTIFACT:-"remote-settings.diff"}"
 SUFFIX_LIST_DIFF_ARTIFACT="${ARTIFACTS_DIR}/${SUFFIX_LIST_DIFF_ARTIFACT:-"effective_tld_names.diff"}"
@@ -332,10 +336,15 @@ function compare_hsts_files {
   rm -rf "${HSTS_PRELOAD_ERRORS}"
   download_file "${HSTS_PRELOAD_INC_OLD}" "${HSTS_PRELOAD_INC_HG}"
 
+  echo "INFO: Downloading previous HSTS probe results..."
+  if ! fetch_file "${HSTS_RESULTS_PREVIOUS}" "${index_base}/task/gecko.v2.${BRANCH}.latest.${PRODUCT}.pinning-update/artifacts/public/build/${HSTS_RESULTS}"; then
+    echo "WARNING: no previous HSTS probe results, failure streaks start over" >&2
+  fi
+
   # Run the script to get an updated preload list.
   echo "INFO: Generating new HSTS preload list..."
   cd "${BASEDIR}/${PRODUCT}"
-  if ! LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:. ./xpcshell "${HSTS_PRELOAD_SCRIPT}" "${HSTS_PRELOAD_INC_OLD}"; then
+  if ! LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:. ./xpcshell "${HSTS_PRELOAD_SCRIPT}" "${HSTS_PRELOAD_INC_OLD}" "${HSTS_RESULTS_PREVIOUS}"; then
     echo "HSTS preload list generation failed" >&2
     exit 43
   fi
@@ -347,6 +356,7 @@ function compare_hsts_files {
     exit 42
   fi
   cd "${BASEDIR}"
+  cp "${HSTS_RESULTS_NEW}" "${HSTS_RESULTS_ARTIFACT}"
 
   # Check for differences
   echo "INFO: diffing old/new HSTS preload lists into ${HSTS_DIFF_ARTIFACT}"
