@@ -232,6 +232,10 @@ support-files = [
 
 ["test_AbortAfterPartialMediaSegment.html"]
 
+["test_AppendMultipleInitOpusAudio.html"]
+
+["test_AppendMultipleInitTracksLast.html"]
+
 ["test_AppendPartialInitSegment.html"]
 
 ["test_AudioChange_mp4.html"]
@@ -298,8 +302,6 @@ skip-if = [
 ["test_MediaSource_memory_reporting.html"]
 
 ["test_MediaSource_mp4.html"]
-
-["test_AppendMultipleInitOpusAudio.html"]
 
 ["test_MultipleInitSegments.html"]
 

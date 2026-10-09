@@ -202,6 +202,7 @@ support-files = [
   "tags_before_cluster.webm^header^",
   "bug1341228_init.webm",
   "bug1341228_cluster.webm",
+  "bug2065262_init.webm",
   "1516754.webm 1516754.webm^headers^",
   "init-trackid2.mp4",
   "init-trackid3.mp4",
@@ -225,9 +226,9 @@ support-files = [
 
 ["test_BufferingWait.html"]
 
-["test_BufferingWait_mp4.html"]
-
 ["test_BufferingWait_OffsetTimestamps_mp4.html"]
+
+["test_BufferingWait_mp4.html"]
 
 ["test_ChangeType.html"]
 

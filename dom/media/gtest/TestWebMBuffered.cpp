@@ -232,3 +232,78 @@ TEST(WebMBuffered, InvalidEBMLMaxSizeLength)
   EXPECT_EQ(parser.Append(webmData.Elements(), webmData.Length(), mapping),
             NS_ERROR_FAILURE);
 }
+
+// Parse aData and return where the parser placed the init segment boundary.
+static int64_t InitEndOffsetOf(const nsTArray<uint8_t>& aData) {
+  WebMBufferedParser parser(0);
+  nsTArray<WebMTimeDataOffset> mapping;
+  EXPECT_EQ(parser.Append(aData.Elements(), aData.Length(), mapping), NS_OK);
+  return parser.mInitEndOffset;
+}
+
+// The init segment ends at the first Cluster, so trailing non-Cluster
+// top-level elements such as Cues belong to it.
+TEST(WebMBuffered, InitSegmentIncludesCues)
+{
+  nsTArray<uint8_t> init;
+  ReadFile("bug1341228_init.webm", init);
+  // EBML header, Segment, SeekHead, Void, Info, Tracks, then Cues.
+  EXPECT_EQ(init.Length(), 591u);
+
+  EXPECT_EQ(InitEndOffsetOf(init), 591);
+}
+
+// An init segment whose last element is Tracks ends where Tracks ends.
+TEST(WebMBuffered, InitSegmentEndingAtTracks)
+{
+  nsTArray<uint8_t> init;
+  ReadFile("bug2065262_init.webm", init);
+  // As above, truncated after Tracks so that no Cues follow.
+  EXPECT_EQ(init.Length(), 272u);
+
+  EXPECT_EQ(InitEndOffsetOf(init), 272);
+}
+
+// A SourceBuffer's input buffer can hold two init segments back to back with
+// no Cluster between them: TrackBuffersManager re-seeds the input buffer with
+// a copy of the previous init segment on abort(), and the next appendBuffer()
+// is concatenated onto it. The boundary must stay at the end of the first
+// segment rather than running into the second.
+TEST(WebMBuffered, BackToBackInitSegmentsWithCues)
+{
+  nsTArray<uint8_t> init;
+  ReadFile("bug1341228_init.webm", init);
+
+  nsTArray<uint8_t> doubled;
+  doubled.AppendElements(init);
+  doubled.AppendElements(init);
+
+  EXPECT_EQ(InitEndOffsetOf(doubled), 591);
+}
+
+TEST(WebMBuffered, BackToBackInitSegmentsEndingAtTracks)
+{
+  nsTArray<uint8_t> init;
+  ReadFile("bug2065262_init.webm", init);
+
+  nsTArray<uint8_t> doubled;
+  doubled.AppendElements(init);
+  doubled.AppendElements(init);
+
+  EXPECT_EQ(InitEndOffsetOf(doubled), 272);
+}
+
+// The boundary must also hold when the second init segment arrives in its own
+// Append(), since offsets accumulate across calls.
+TEST(WebMBuffered, BackToBackInitSegmentsAcrossAppends)
+{
+  nsTArray<uint8_t> init;
+  ReadFile("bug2065262_init.webm", init);
+
+  WebMBufferedParser parser(0);
+  nsTArray<WebMTimeDataOffset> mapping;
+  EXPECT_EQ(parser.Append(init.Elements(), init.Length(), mapping), NS_OK);
+  EXPECT_EQ(parser.mInitEndOffset, 272);
+  EXPECT_EQ(parser.Append(init.Elements(), init.Length(), mapping), NS_OK);
+  EXPECT_EQ(parser.mInitEndOffset, 272);
+}

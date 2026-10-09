@@ -1,0 +1,69 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: Append init segments whose last element is Tracks (bug 2065262)</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+// abort() re-seeds the SourceBuffer's input buffer with a copy of the current
+// init segment, so the appendBuffer() that follows is parsed as two init
+// segments back to back with no Cluster between them. This is what YouTube
+// does on every seek.
+//
+// bug2065262_init.webm is bug1341228_init.webm truncated after Tracks, so it
+// has no trailing Cues. That matters: with Cues last the init boundary lands
+// on the end of the buffer and the mis-parse is invisible, which is why
+// test_AppendMultipleInitOpusAudio.html does not cover this.
+
+SimpleTest.waitForExplicitFinish();
+
+runWithMSE(async (ms, _v) => {
+  await once(ms, "sourceopen");
+  const sb = ms.addSourceBuffer('audio/webm; codecs="opus"');
+
+  const init = await fetchWithXHR("bug2065262_init.webm");
+  const cluster = await fetchWithXHR("bug1341228_cluster.webm");
+
+  let errorCount = 0;
+  sb.addEventListener("error", () => { errorCount++; });
+
+  async function append(buffer, what) {
+    const before = errorCount;
+    sb.appendBuffer(new Uint8Array(buffer));
+    await once(sb, "updateend");
+    is(errorCount, before, `appending ${what} should not raise an error`);
+  }
+
+  info("- append init segment -");
+  await append(init, "the initial init segment");
+
+  info("- append media cluster -");
+  await append(cluster, "a media cluster");
+
+  is(sb.buffered.length, 1, "should have one buffered range after cluster");
+  const expectedEnd = sb.buffered.end(0);
+  info(`- recorded buffered.end(0) = ${expectedEnd} -`);
+
+  info("- abort source buffer -");
+  sb.abort();
+
+  info("- append the same init segment again -");
+  await append(init, "the init segment again after abort");
+
+  is(sb.buffered.length, 1,
+     "should still have one buffered range after re-appending init");
+  is(sb.buffered.end(0), expectedEnd,
+     "buffered.end(0) must be unchanged across abort + init re-append");
+
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>
