@@ -860,10 +860,10 @@ bool TextOverflow::CanHaveOverflowMarkers(nsBlockFrame* aBlockFrame,
 
   // Make text-overflow: ellipsis work on the <input> editor.
   if (aBlockFrame->Style()->GetPseudoType() ==
-      PseudoStyleType::MozTextControlEditingRoot) {
+          PseudoStyleType::MozTextControlEditingRoot &&
+      MOZ_LIKELY(IsTextInputScrolledContent(aBlockFrame->GetParent()))) {
     MOZ_ASSERT(IsInlineAxisOverflowVisible(*aBlockFrame),
                "The control editing root must create overflow");
-    MOZ_DIAGNOSTIC_ASSERT(IsTextInputScrolledContent(aBlockFrame->GetParent()));
     auto* scc = static_cast<ScrollContainerFrame*>(
         aBlockFrame->GetParent()->GetParent());
     if (scc->GetScrollPosition() != nsPoint()) {
