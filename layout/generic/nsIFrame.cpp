@@ -566,6 +566,9 @@ static void MaybeScheduleReflowSVGNonDisplayText(nsIFrame* aFrame) {
       svgTextFrame->HasAnyStateBits(NS_STATE_SVG_TEXT_IN_REFLOW)) {
     return;
   }
+  if (SVGUtils::AnyOuterSVGIsCallingReflowSVG(svgTextFrame)) {
+    return;
+  }
 
   svgTextFrame->ScheduleReflowSVGNonDisplayText(
       IntrinsicDirty::FrameAncestorsAndDescendants);
