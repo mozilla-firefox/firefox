@@ -499,9 +499,11 @@ class ScrollContainerFrame : public nsContainerFrame,
    * aScrollPosition afterward. It tries to scroll as close to
    * aScrollPosition as possible while scrolling by an integer
    * number of layer pixels (so the operation is fast and looks clean).
+   * Returns false if the frame was destroyed.
    */
-  void ScrollToCSSPixelsForApz(const CSSPoint& aScrollPosition,
-                               ScrollSnapTargetIds&& aLastSnapTargetIds);
+  [[nodiscard]] bool ScrollToCSSPixelsForApz(
+      const CSSPoint& aScrollPosition,
+      ScrollSnapTargetIds&& aLastSnapTargetIds);
 
   /**
    * Returns the scroll position in integer CSS pixels, rounded to the nearest
