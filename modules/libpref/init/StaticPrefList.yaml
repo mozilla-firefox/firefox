@@ -841,7 +841,7 @@
   mirror: always
 
 - name: apz.pinch_lock.buffer_max_age
-  type: int32_t
+  type: uint32_t
   value: 80   # milliseconds
   mirror: once
 
@@ -895,7 +895,7 @@
   mirror: always
 
 - name: apz.touch_scroll.buffer_max_age
-  type: int32_t
+  type: uint32_t
   value: 200  # milliseconds
   mirror: once
 

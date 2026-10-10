@@ -54,12 +54,14 @@ class RecentEventsBuffer {
 
 template <typename Event>
 RecentEventsBuffer<Event>::RecentEventsBuffer(TimeDuration maxAge)
-    : mMinSize(0), mMaxAge(maxAge), mBuffer() {}
+    : RecentEventsBuffer(maxAge, 0) {}
 
 template <typename Event>
 RecentEventsBuffer<Event>::RecentEventsBuffer(TimeDuration maxAge,
                                               size_t minSize)
-    : mMinSize(minSize), mMaxAge(maxAge), mBuffer() {}
+    : mMinSize(minSize), mMaxAge(maxAge), mBuffer() {
+  MOZ_ASSERT(maxAge >= TimeDuration());
+}
 
 template <typename Event>
 void RecentEventsBuffer<Event>::push(Event event) {
