@@ -490,14 +490,14 @@ class HTMLFormElement final : public nsGenericHTMLElement {
    * submit, used to be able to block double submits. */
   Maybe<uint64_t> mCurrentLoadId;
 
-  /** The default submit element -- WEAK */
-  nsGenericHTMLFormElement* mDefaultSubmitElement;
+  /** The default submit element */
+  RefPtr<nsGenericHTMLFormElement> mDefaultSubmitElement;
 
-  /** The first submit element in mElements -- WEAK */
-  nsGenericHTMLFormElement* mFirstSubmitInElements;
+  /** The first submit element in mElements */
+  RefPtr<nsGenericHTMLFormElement> mFirstSubmitInElements;
 
-  /** The first submit element in mNotInElements -- WEAK */
-  nsGenericHTMLFormElement* mFirstSubmitNotInElements;
+  /** The first submit element in mNotInElements */
+  RefPtr<nsGenericHTMLFormElement> mFirstSubmitNotInElements;
 
   // This array holds on to all HTMLImageElement(s).
   // This is needed to properly clean up the bi-directional references

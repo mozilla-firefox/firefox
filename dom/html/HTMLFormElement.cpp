@@ -99,9 +99,6 @@ HTMLFormElement::HTMLFormElement(
     : nsGenericHTMLElement(std::move(aNodeInfo)),
       mControls(new HTMLFormControlsCollection(this)),
       mPendingSubmission(nullptr),
-      mDefaultSubmitElement(nullptr),
-      mFirstSubmitInElements(nullptr),
-      mFirstSubmitNotInElements(nullptr),
       mImageNameLookupTable(FORM_CONTROL_LIST_HASHTABLE_LENGTH),
       mPastNameLookupTable(FORM_CONTROL_LIST_HASHTABLE_LENGTH),
       mSubmitPopupState(PopupBlocker::openAbused),
@@ -137,12 +134,18 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(HTMLFormElement,
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPastNameLookupTable)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mRelList)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mTargetContext)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDefaultSubmitElement)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFirstSubmitInElements)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFirstSubmitNotInElements)
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(HTMLFormElement,
                                                 nsGenericHTMLElement)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mRelList)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mTargetContext)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mDefaultSubmitElement)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mFirstSubmitInElements)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mFirstSubmitNotInElements)
   tmp->Clear();
   tmp->mExpandoAndGeneration.OwnerUnlinked();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
@@ -1148,7 +1151,7 @@ nsresult HTMLFormElement::AddElement(nsGenericHTMLFormElement* aChild,
     // Update mDefaultSubmitElement, mFirstSubmitInElements,
     // mFirstSubmitNotInElements.
 
-    nsGenericHTMLFormElement** firstSubmitSlot =
+    RefPtr<nsGenericHTMLFormElement>* firstSubmitSlot =
         childInElements ? &mFirstSubmitInElements : &mFirstSubmitNotInElements;
 
     // The new child is the new first submit in its list if the firstSubmitSlot
@@ -1250,7 +1253,7 @@ nsresult HTMLFormElement::RemoveElement(nsGenericHTMLFormElement* aChild,
   controls.RemoveElementAt(index);
 
   // Update our mFirstSubmit* values.
-  nsGenericHTMLFormElement** firstSubmitSlot =
+  RefPtr<nsGenericHTMLFormElement>* firstSubmitSlot =
       childInElements ? &mFirstSubmitInElements : &mFirstSubmitNotInElements;
   if (aChild == *firstSubmitSlot) {
     *firstSubmitSlot = nullptr;
