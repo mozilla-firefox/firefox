@@ -132,9 +132,8 @@ class TRRService : public TRRServiceBase,
 
   void RebuildSuffixList(nsTArray<nsCString>&& aSuffixList);
 
-  nsresult DispatchTRRRequestInternal(TRR* aTrrRequest, bool aWithLock);
   already_AddRefed<nsIThread> TRRThread_locked();
-  already_AddRefed<nsIThread> MainThreadOrTRRThread(bool aWithLock = true);
+  already_AddRefed<nsIEventTarget> MainThreadOrTRRTarget(bool aWithLock = true);
 
   // This method will process the URI and try to set mPrivateURI to that value.
   // Will return true if performed the change (if the value was different)

@@ -517,28 +517,26 @@ TRRService::~TRRService() {
 }
 
 nsresult TRRService::DispatchTRRRequest(TRR* aTrrRequest) {
-  return DispatchTRRRequestInternal(aTrrRequest, true);
-}
-
-nsresult TRRService::DispatchTRRRequestInternal(TRR* aTrrRequest,
-                                                bool aWithLock) {
   NS_ENSURE_ARG_POINTER(aTrrRequest);
 
-  nsCOMPtr<nsIThread> thread = MainThreadOrTRRThread(aWithLock);
-  if (!thread) {
+  nsCOMPtr<nsIEventTarget> target = aTrrRequest->Target();
+  if (!target) {
     return NS_ERROR_FAILURE;
   }
 
   RefPtr<TRR> trr = aTrrRequest;
-  return thread->Dispatch(trr.forget());
+  return target->Dispatch(trr.forget());
 }
 
-already_AddRefed<nsIThread> TRRService::MainThreadOrTRRThread(bool aWithLock) {
+already_AddRefed<nsIEventTarget> TRRService::MainThreadOrTRRTarget(
+    bool aWithLock) {
   if (XRE_IsSocketProcess() || mDontUseTRRThread) {
-    return do_GetMainThread();
+    nsCOMPtr<nsIEventTarget> mainThread = do_GetMainThread();
+    return mainThread.forget();
   }
 
-  nsCOMPtr<nsIThread> thread = aWithLock ? TRRThread() : TRRThread_locked();
+  nsCOMPtr<nsIEventTarget> thread =
+      aWithLock ? TRRThread() : TRRThread_locked();
   return thread.forget();
 }
 
@@ -856,9 +854,11 @@ bool TRRService::ConfirmationContext::HandleEvent(ConfirmationEvent aEvent,
                "Should only confirm in TRR first mode");
     // Set aUseFreshConnection if TRR lookups are retried
     // or if confirmation already failed.
+    nsCOMPtr<nsIEventTarget> target = service->MainThreadOrTRRTarget(false);
     mTask = new TRR(service, service->mConfirmationNS, TRRTYPE_NS, ""_ns, false,
                     mState == CONFIRM_TRYING_FAILED ||
-                        StaticPrefs::network_trr_retry_on_recoverable_errors());
+                        StaticPrefs::network_trr_retry_on_recoverable_errors(),
+                    target);
     mTask->SetTimeout(StaticPrefs::network_trr_confirmation_timeout_ms());
     mTask->SetPurpose(TRR::Confirmation);
 
@@ -874,7 +874,7 @@ bool TRRService::ConfirmationContext::HandleEvent(ConfirmationEvent aEvent,
     }
 
     LOG(("Dispatching confirmation task: %p", mTask.get()));
-    service->DispatchTRRRequestInternal(mTask, false);
+    service->DispatchTRRRequest(mTask);
   };
 
   switch (aEvent) {
@@ -1145,8 +1145,9 @@ void TRRService::AddToBlocklist(const nsACString& aHost,
       LOG(("TRR: verify if '%s' resolves as NS\n", check.get()));
 
       // check if there's an NS entry for this name
+      nsCOMPtr<nsIEventTarget> target = MainThreadOrTRRTarget();
       RefPtr<TRR> trr = new TRR(this, check, TRRTYPE_NS, aOriginSuffix,
-                                privateBrowsing, false);
+                                privateBrowsing, false, target);
       trr->SetPurpose(TRR::Blocklist);
       DispatchTRRRequest(trr);
     }
