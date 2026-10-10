@@ -86,3 +86,68 @@ add_task(async function test_bug_1696948() {
   });
   BrowserTestUtils.removeTab(aboutLoginsTab);
 });
+
+add_task(async function test_context_menus_hide_reveal_password() {
+  await setupPolicyEngineWithJson({
+    policies: {
+      DisablePasswordReveal: true,
+    },
+  });
+
+  await BrowserTestUtils.withNewTab(
+    "data:text/html,<input type='password' id='pw'>",
+    async browser => {
+      let contextMenu = document.getElementById("contentAreaContextMenu");
+      let popupShown = BrowserTestUtils.waitForEvent(contextMenu, "popupshown");
+      await BrowserTestUtils.synthesizeMouseAtCenter(
+        "#pw",
+        { type: "contextmenu", button: 2 },
+        browser
+      );
+      await popupShown;
+      ok(
+        document.getElementById("context-reveal-password").hidden,
+        "Reveal Password should be hidden in the content context menu"
+      );
+      let popupHidden = BrowserTestUtils.waitForEvent(
+        contextMenu,
+        "popuphidden"
+      );
+      contextMenu.hidePopup();
+      await popupHidden;
+    }
+  );
+
+  let input = document.createElementNS("http://www.w3.org/1999/xhtml", "input");
+  input.type = "password";
+  document.documentElement.appendChild(input);
+  let popupShown = BrowserTestUtils.waitForEvent(
+    document,
+    "popupshown",
+    false,
+    e => e.target.id == "textbox-contextmenu"
+  );
+  input.dispatchEvent(
+    new MouseEvent("contextmenu", { bubbles: true, cancelable: true })
+  );
+  await popupShown;
+  let popup = document.getElementById("textbox-contextmenu");
+  ok(
+    popup.querySelector("#textbox-contextmenu-reveal-password").hidden,
+    "Reveal Password should be hidden in the chrome text context menu"
+  );
+  let popupHidden = BrowserTestUtils.waitForEvent(popup, "popuphidden");
+  popup.hidePopup();
+  await popupHidden;
+  input.remove();
+
+  is(
+    Services.prefs.getBoolPref("layout.forms.reveal-password-button.enabled"),
+    false,
+    "Reveal password button pref should be false"
+  );
+  ok(
+    Services.prefs.prefIsLocked("layout.forms.reveal-password-button.enabled"),
+    "Reveal password button pref should be locked"
+  );
+});

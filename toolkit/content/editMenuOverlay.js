@@ -137,8 +137,10 @@ window.addEventListener("contextmenu", e => {
   let revealPassword = popup.querySelector(
     "#textbox-contextmenu-reveal-password"
   );
-  revealPassword.hidden = !isPasswordInput;
-  if (isPasswordInput) {
+  const showRevealPassword =
+    isPasswordInput && Services.policies.isAllowed("passwordReveal");
+  revealPassword.hidden = !showRevealPassword;
+  if (showRevealPassword) {
     if (target.revealPassword) {
       revealPassword.setAttribute("checked", "true");
     } else {

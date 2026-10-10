@@ -1192,6 +1192,7 @@ export var Policies = {
     onBeforeUIStartup(manager, param) {
       if (param) {
         manager.disallowFeature("passwordReveal");
+        setAndLockPref("layout.forms.reveal-password-button.enabled", false);
       }
     },
   },

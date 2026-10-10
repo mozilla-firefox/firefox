@@ -94,7 +94,7 @@ policy-DisableFormHistory = Don’t remember search and form history.
 
 policy-DisablePrimaryPasswordCreation = If true, a Primary Password can’t be created.
 
-policy-DisablePasswordReveal = Do not allow passwords to be revealed in saved logins.
+policy-DisablePasswordReveal2 = Do not allow passwords to be revealed in saved logins or password fields.
 
 policy-DisablePrivateBrowsing = Disable Private Browsing.
 
