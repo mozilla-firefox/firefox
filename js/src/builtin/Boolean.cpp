@@ -169,6 +169,6 @@ JS_PUBLIC_API bool js::ToBooleanSlow(HandleValue v) {
     return !v.toBigInt()->isZero();
   }
 
-  MOZ_ASSERT(v.isObject());
+  MOZ_RELEASE_ASSERT(v.isObject());
   return !EmulatesUndefined(&v.toObject());
 }
