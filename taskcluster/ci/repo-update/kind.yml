@@ -49,7 +49,7 @@ jobs:
             implementation: docker-worker
             os: linux
             docker-image: {in-tree: periodic-updates}
-            max-run-time: 3600
+            max-run-time: 7200
             env:
                 PRODUCT: firefox
                 REVIEWERS: "#release-managers"
