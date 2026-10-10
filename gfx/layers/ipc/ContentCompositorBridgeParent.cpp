@@ -179,30 +179,6 @@ ContentCompositorBridgeParent::AllocPWebRenderBridgeParent(
   return parent.forget();
 }
 
-mozilla::ipc::IPCResult ContentCompositorBridgeParent::RecvNotifyChildCreated(
-    const LayersId& child, const LayersId& embedderId,
-    CompositorOptions* aOptions) {
-  if (NS_WARN_IF(!LayerTreeOwnerTracker::Get()->IsMapped(child, OtherPid()))) {
-    return IPC_OK();
-  }
-
-  bool found = false;
-  CompositorBridgeParent::WithIndirectLayerTreesLock(
-      [&](const StaticMonitorAutoLock& aProofOfLock) {
-        CompositorBridgeParent::ForEachLayerTreeStateUnderLock(
-            aProofOfLock,
-            [&](LayersId, CompositorBridgeParent::LayerTreeState& lts) {
-              if (!found && lts.mParent &&
-                  lts.mContentCompositorBridgeParent == this) {
-                lts.mParent->NotifyChildCreated(child, embedderId);
-                *aOptions = lts.mParent->GetOptions();
-                found = true;
-              }
-            });
-      });
-  return found ? IPC_OK() : IPC_FAIL_NO_REASON(this);
-}
-
 mozilla::ipc::IPCResult
 ContentCompositorBridgeParent::RecvMapAndNotifyChildCreated(
     const LayersId& child, const LayersId& embedderId,
