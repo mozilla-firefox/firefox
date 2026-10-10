@@ -192,8 +192,6 @@ static void nr_ice_candidate_pair_stun_cb(NR_SOCKET s, int how, void *cb_arg)
     nr_transport_addr response_dst;
     nr_stun_message_attribute *attr;
 
-    pair->stun_cb_timer=0;
-
     r_log(LOG_ICE,LOG_DEBUG,"ICE-PEER(%s)/STREAM(%s)/CAND-PAIR(%s): STUN cb on pair addr = %s",
       pair->pctx->label,pair->local->stream->label,pair->codeword,pair->as_string);
 
@@ -362,6 +360,14 @@ static void nr_ice_candidate_pair_stun_cb(NR_SOCKET s, int how, void *cb_arg)
     return;
   }
 
+static void nr_ice_candidate_pair_stun_timer_cb(NR_SOCKET s, int how, void *cb_arg)
+  {
+    nr_ice_cand_pair *pair=(nr_ice_cand_pair*)cb_arg;
+
+    pair->stun_cb_timer=0;
+    nr_ice_candidate_pair_stun_cb(s,how,cb_arg);
+  }
+
 static void nr_ice_candidate_pair_restart(nr_ice_peer_ctx *pctx, nr_ice_cand_pair *pair)
   {
     int r,_status;
@@ -391,8 +397,9 @@ static void nr_ice_candidate_pair_restart(nr_ice_peer_ctx *pctx, nr_ice_cand_pai
   abort:
     if(_status){
       /* Don't fire the CB, but schedule it to fire ASAP */
-      assert(!pair->stun_cb_timer);
-      NR_ASYNC_TIMER_SET(0,nr_ice_candidate_pair_stun_cb,pair, &pair->stun_cb_timer);
+      NR_async_timer_cancel(pair->stun_cb_timer);
+      pair->stun_cb_timer=0;
+      NR_ASYNC_TIMER_SET(0,nr_ice_candidate_pair_stun_timer_cb,pair, &pair->stun_cb_timer);
       _status=0;
     }
   }
