@@ -22,7 +22,7 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let transformAlgorithm be an algorithm which takes a chunk argument and
   // runs the compress and enqueue a chunk algorithm with this and chunk.
   MOZ_CAN_RUN_SCRIPT
-  void TransformCallbackImpl(JS::Handle<JS::Value> aChunk,
+  void TransformCallbackImpl(JSContext* aCx, JS::Handle<JS::Value> aChunk,
                              TransformStreamDefaultController& aController,
                              ErrorResult& aRv) override;
 
@@ -31,7 +31,8 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let flushAlgorithm be an algorithm which takes no argument and runs the
   // compress flush and enqueue algorithm with this.
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
-      TransformStreamDefaultController& aController, ErrorResult& aRv) override;
+      JSContext* aCx, TransformStreamDefaultController& aController,
+      ErrorResult& aRv) override;
 
  protected:
   static const uint16_t kBufferSize = 16384;
@@ -60,7 +61,7 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let transformAlgorithm be an algorithm which takes a chunk argument and
   // runs the compress and enqueue a chunk algorithm with this and chunk.
   MOZ_CAN_RUN_SCRIPT
-  void TransformCallbackImpl(JS::Handle<JS::Value> aChunk,
+  void TransformCallbackImpl(JSContext* aCx, JS::Handle<JS::Value> aChunk,
                              TransformStreamDefaultController& aController,
                              ErrorResult& aRv) override;
 
@@ -69,7 +70,8 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let flushAlgorithm be an algorithm which takes no argument and runs the
   // compress flush and enqueue algorithm with this.
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
-      TransformStreamDefaultController& aController, ErrorResult& aRv) override;
+      JSContext* aCx, TransformStreamDefaultController& aController,
+      ErrorResult& aRv) override;
 
  protected:
   static const uint16_t kBufferSize = 16384;

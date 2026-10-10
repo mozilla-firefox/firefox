@@ -17,36 +17,29 @@ namespace mozilla::dom::compression {
 // runs the compress and enqueue a chunk algorithm with this and chunk.
 MOZ_CAN_RUN_SCRIPT
 void CompressionStreamAlgorithms::TransformCallbackImpl(
-    JS::Handle<JS::Value> aChunk, TransformStreamDefaultController& aController,
-    ErrorResult& aRv) {
-  AutoJSAPI jsapi;
-  if (!jsapi.Init(aController.GetParentObject())) {
-    aRv.ThrowUnknownError("Internal error");
-    return;
-  }
-  JSContext* cx = jsapi.cx();
-
+    JSContext* aCx, JS::Handle<JS::Value> aChunk,
+    TransformStreamDefaultController& aController, ErrorResult& aRv) {
   // https://compression.spec.whatwg.org/#compress-and-enqueue-a-chunk
 
   // Step 1: If chunk is not a BufferSource type, then throw a TypeError.
-  RootedUnion<OwningBufferSource> bufferSource(cx);
-  if (!bufferSource.Init(cx, aChunk)) {
+  RootedUnion<OwningBufferSource> bufferSource(aCx);
+  if (!bufferSource.Init(aCx, aChunk)) {
     aRv.MightThrowJSException();
-    aRv.StealExceptionFromJSContext(cx);
+    aRv.StealExceptionFromJSContext(aCx);
     return;
   }
 
   // Steps 2 - 4:
-  JS::RootedVector<JSObject*> array(cx);
+  JS::RootedVector<JSObject*> array(aCx);
   ProcessTypedArraysFixed(bufferSource, [&](const Span<uint8_t>& aData) {
-    Compress(cx, aData, &array, Flush::No, aRv);
+    Compress(aCx, aData, &array, Flush::No, aRv);
   });
   if (aRv.Failed()) {
     return;
   }
 
   // Step 5: For each Uint8Array array, enqueue array in cs's transform.
-  Enqueue(cx, array, aController, aRv);
+  Enqueue(aCx, array, aController, aRv);
 }
 
 // Step 4 of
@@ -54,24 +47,18 @@ void CompressionStreamAlgorithms::TransformCallbackImpl(
 // Let flushAlgorithm be an algorithm which takes no argument and runs the
 // compress flush and enqueue algorithm with this.
 MOZ_CAN_RUN_SCRIPT void CompressionStreamAlgorithms::FlushCallbackImpl(
-    TransformStreamDefaultController& aController, ErrorResult& aRv) {
-  AutoJSAPI jsapi;
-  if (!jsapi.Init(aController.GetParentObject())) {
-    aRv.ThrowUnknownError("Internal error");
-    return;
-  }
-  JSContext* cx = jsapi.cx();
-
+    JSContext* aCx, TransformStreamDefaultController& aController,
+    ErrorResult& aRv) {
   // https://compression.spec.whatwg.org/#compress-flush-and-enqueue
   // Step 1-3:
-  JS::RootedVector<JSObject*> arrays(cx);
-  Compress(cx, Span<const uint8_t>(), &arrays, Flush::Yes, aRv);
+  JS::RootedVector<JSObject*> arrays(aCx);
+  Compress(aCx, Span<const uint8_t>(), &arrays, Flush::Yes, aRv);
   if (aRv.Failed()) {
     return;
   }
 
   // Step 4: For each Uint8Array array, enqueue array in cs's transform.
-  Enqueue(cx, arrays, aController, aRv);
+  Enqueue(aCx, arrays, aController, aRv);
 }
 
 MOZ_CAN_RUN_SCRIPT void CompressionStreamAlgorithms::Enqueue(
@@ -93,22 +80,15 @@ MOZ_CAN_RUN_SCRIPT void CompressionStreamAlgorithms::Enqueue(
 // runs the compress and enqueue a chunk algorithm with this and chunk.
 MOZ_CAN_RUN_SCRIPT
 void DecompressionStreamAlgorithms::TransformCallbackImpl(
-    JS::Handle<JS::Value> aChunk, TransformStreamDefaultController& aController,
-    ErrorResult& aRv) {
-  AutoJSAPI jsapi;
-  if (!jsapi.Init(aController.GetParentObject())) {
-    aRv.ThrowUnknownError("Internal error");
-    return;
-  }
-  JSContext* cx = jsapi.cx();
-
+    JSContext* aCx, JS::Handle<JS::Value> aChunk,
+    TransformStreamDefaultController& aController, ErrorResult& aRv) {
   // https://compression.spec.whatwg.org/#decompress-and-enqueue-a-chunk
 
   // Step 1: If chunk is not a BufferSource type, then throw a TypeError.
-  RootedUnion<OwningBufferSource> bufferSource(cx);
-  if (!bufferSource.Init(cx, aChunk)) {
+  RootedUnion<OwningBufferSource> bufferSource(aCx);
+  if (!bufferSource.Init(aCx, aChunk)) {
     aRv.MightThrowJSException();
-    aRv.StealExceptionFromJSContext(cx);
+    aRv.StealExceptionFromJSContext(aCx);
     return;
   }
 
@@ -117,17 +97,17 @@ void DecompressionStreamAlgorithms::TransformCallbackImpl(
   // TypeError.
   // Step 4: Let arrays be the result of splitting buffer into one or more
   // non-empty pieces and converting them into Uint8Arrays.
-  JS::RootedVector<JSObject*> array(cx);
+  JS::RootedVector<JSObject*> array(aCx);
   bool fullyConsumed = false;
   ProcessTypedArraysFixed(bufferSource, [&](const Span<uint8_t>& aData) {
-    fullyConsumed = Decompress(cx, aData, &array, Flush::No, aRv);
+    fullyConsumed = Decompress(aCx, aData, &array, Flush::No, aRv);
   });
   if (aRv.Failed()) {
     return;
   }
 
   // Step 5: For each Uint8Array array, enqueue array in ds's transform.
-  Enqueue(cx, array, aController, aRv);
+  Enqueue(aCx, array, aController, aRv);
   if (aRv.Failed()) {
     return;
   }
@@ -144,25 +124,19 @@ void DecompressionStreamAlgorithms::TransformCallbackImpl(
 // Let flushAlgorithm be an algorithm which takes no argument and runs the
 // compress flush and enqueue algorithm with this.
 MOZ_CAN_RUN_SCRIPT void DecompressionStreamAlgorithms::FlushCallbackImpl(
-    TransformStreamDefaultController& aController, ErrorResult& aRv) {
-  AutoJSAPI jsapi;
-  if (!jsapi.Init(aController.GetParentObject())) {
-    aRv.ThrowUnknownError("Internal error");
-    return;
-  }
-  JSContext* cx = jsapi.cx();
-
-  JS::RootedVector<JSObject*> array(cx);
+    JSContext* aCx, TransformStreamDefaultController& aController,
+    ErrorResult& aRv) {
+  JS::RootedVector<JSObject*> array(aCx);
 
   // https://compression.spec.whatwg.org/#decompress-flush-and-enqueue
   // Step 1 and 2.1:
-  (void)Decompress(cx, Span<const uint8_t>(), &array, Flush::Yes, aRv);
+  (void)Decompress(aCx, Span<const uint8_t>(), &array, Flush::Yes, aRv);
   if (aRv.Failed()) {
     return;
   }
 
   // Step 2.2: For each Uint8Array array, enqueue array in ds's transform.
-  Enqueue(cx, array, aController, aRv);
+  Enqueue(aCx, array, aController, aRv);
   if (aRv.Failed()) {
     return;
   }
