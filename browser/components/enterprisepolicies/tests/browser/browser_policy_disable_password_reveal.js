@@ -128,7 +128,7 @@ add_task(async function test_context_menus_hide_reveal_password() {
     e => e.target.id == "textbox-contextmenu"
   );
   input.dispatchEvent(
-    new MouseEvent("contextmenu", { bubbles: true, cancelable: true })
+    new PointerEvent("contextmenu", { bubbles: true, cancelable: true })
   );
   await popupShown;
   let popup = document.getElementById("textbox-contextmenu");
