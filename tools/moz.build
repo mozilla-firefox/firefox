@@ -72,6 +72,7 @@ PYTHON_UNITTEST_MANIFESTS += [
     "code-coverage/tests/python/python.toml",
     "fuzzing/smoke/python.toml",
     "lint/test/python.toml",
+    "rb/test/python.toml",
     "tryselect/test/python.toml",
     "update-packaging/test/python.toml",
 ]

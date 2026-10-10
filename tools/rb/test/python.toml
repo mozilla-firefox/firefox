@@ -1,0 +1,4 @@
+[DEFAULT]
+subsuite = "mozbase"
+
+["test_fix_stacks_threads.py"]
