@@ -1149,6 +1149,8 @@
   <string name="preferences_category_sync">Mba’ekuaarã mbojuehepyre</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Eñangareko embojuehéva ne mba’e’oka pa’ũmegua rehe</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Noñembojuehéi mba’evete. Eporavo mba’etépa embojuehéta ne mba’e’okápe.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Tembiasakue</string>
   <!-- Preference for syncing bookmarks -->
@@ -1485,6 +1487,8 @@
   <string name="preferences_inactive_tabs_title">Umi tendayke ehecha’ỹa mokõi arapokõindýpe ohóma tenda ojeporu’ỹvape.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Tendayke aty</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Emohenda ne rendayke atýpe embohéra ha eñongatukuaahápe.</string>
   <!-- Title for the preference to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_feature">Embojuruja tendayke aty</string>
   <!--
@@ -2435,6 +2439,8 @@
   <string name="sync_send_tab_empty_state_title">Ndaipóri mba’e’oka ojuajúva</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Emondo hag̃ua tendayke, eike Firefox-pe michĩvérõ peteĩ mba’e’okágui.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Mba’éichapa embojuajúta mba’e’oka</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Ehecha oiko porãpa ne ñanduti</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -2625,6 +2631,8 @@
   <string name="sign_out_confirmation_message_2">%s nombojuehemo’ãvéima ne mba’ete ndive, hákatu nomboguemo’ãi ne kundaha mba’ekuaarã ko mba’e’okápe.</string>
   <!-- Title of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_title">¿Emboty tembiapo ne mba’etépe?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Mba’ekuaarãita mbojuehepyre opytáta ne mba’etépe.</string>
   <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_confirm_button">Emboty tembiapo</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
@@ -4514,6 +4522,16 @@
   <string name="lens_camera_mode_qr">QR moha’ãngaha</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Ndojejuhúi QR ayvu ta’ãngapegua</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Aheka marandu hesegua</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Eheja</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Noñemyanyhẽi ko ta’ãnga. Eha’ã ambuépe.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Ndereguerúi mba’eve Google Lens-gui.</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Eha’ã jey</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Eheka Google Lens ndive</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

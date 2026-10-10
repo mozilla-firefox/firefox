@@ -4508,7 +4508,7 @@
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">이미지에서 QR 코드를 찾을 수 없음</string>
   <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
-  <string name="lens_camera_loading_status">검색 중...</string>
+  <string name="lens_camera_loading_status">검색 중…</string>
   <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">취소</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->

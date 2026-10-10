@@ -2439,6 +2439,8 @@
   <string name="sync_send_tab_error_connection_title">Пайвастшавии Интернети худро тафтиш кунед</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">Сипас кӯшиш кунед, ки варақаи худро аз нав ирсол намоед.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Аз нав кӯшиш кардан</string>
   <!--
     Notifications
 
@@ -2621,6 +2623,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Ҳисоб надоред? Барои ҳамоҳангсозӣ кардани Firefox байни дастгоҳҳо, <u>ҳисоберо эҷод намоед</u>.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s ҳамоҳангсозиро бо ҳисоби шумо қатъ мекунад, аммо ягон маълумоти тамошобинии шуморо дар ин дастгоҳ нест намекунад.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Аз ҳисоби худ мебароед?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Маълумоти ҳамоҳангшуда дар ҳисоби шумо нигоҳ дошта мешавад.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Баромад</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Қатъ кардани пайваст</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -4508,6 +4516,10 @@
   <string name="lens_camera_mode_qr">Аксбардории «QR»</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Дар тасвир ягон рамзи «QR» ёфт нашуд</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Бекор кардан</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Аз нав кӯшиш кардан</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Онро ба воситаи «Google Lens» пайдо намоед</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

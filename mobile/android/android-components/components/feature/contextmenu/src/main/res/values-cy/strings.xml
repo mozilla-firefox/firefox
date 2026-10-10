@@ -44,11 +44,11 @@
   <!-- Text for context menu item to open the link in an external app. -->
   <string name="mozac_feature_contextmenu_open_link_in_external_app">Agorwch y ddolen mewn ap allanol</string>
   <!-- Text for context menu item to share the email with another app. -->
-  <string name="mozac_feature_contextmenu_share_email_address">Rhannu cyfeiriad e-bost</string>
+  <string name="mozac_feature_contextmenu_share_email_address">Rhannu cyfeiriad ebost</string>
   <!-- Text for context menu item to copy the email address to the clipboard. -->
-  <string name="mozac_feature_contextmenu_copy_email_address">Copïo cyfeiriad e-bost</string>
+  <string name="mozac_feature_contextmenu_copy_email_address">Copïo cyfeiriad ebost</string>
   <!-- Text for confirmation "snackbar" shown after copying a email address to the clipboard. -->
-  <string name="mozac_feature_contextmenu_snackbar_email_address_copied">Cyfeiriad e-bost wedi ei gopïo i’r clipfwrdd</string>
+  <string name="mozac_feature_contextmenu_snackbar_email_address_copied">Cyfeiriad ebost wedi ei gopïo i’r clipfwrdd</string>
   <!-- Text for context menu item to add to a contact. -->
   <string name="mozac_feature_contextmenu_add_to_contact">Ychwanegu i gyswllt</string>
   <!-- Action shown in a text selection context menu. This will prompt a search using the selected text. -->
@@ -58,7 +58,7 @@
   <!-- Action shown in a text selection context menu. This will prompt a share of the selected text. -->
   <string name="mozac_selection_context_menu_share">Rhannu</string>
   <!-- Action shown in a text selection context menu. This will prompt a new email from the selected text. -->
-  <string name="mozac_selection_context_menu_email">E-bost</string>
+  <string name="mozac_selection_context_menu_email">Ebost</string>
   <!-- Action shown in a text selection context menu. This will prompt a new call from the selected text. -->
   <string name="mozac_selection_context_menu_call">Galw</string>
 </resources>

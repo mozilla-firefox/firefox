@@ -112,7 +112,7 @@
   <!-- Header for the select password prompt to allow users to fill a form with a saved password -->
   <string name="mozac_feature_prompts_saved_logins_2">Cyfrineiriau wedi\'u cadw</string>
   <!-- Content description for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
-  <string name="mozac_feature_prompts_suggest_strong_password_content_description">Awgrym o gyfrinair cryf</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_content_description">Awgrymu cyfrinair cryf</string>
   <!-- Header for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
   <string name="mozac_feature_prompts_suggest_strong_password_2">Defnyddiwch gyfrinair cryf</string>
   <!-- Title for using the suggest strong password confirmation dialog. %1$s will be replaced with the generated password -->
@@ -199,7 +199,7 @@
 
     Text for the email mask prompt to allow users to fill an email input field in a sign up form with an email mask.
   -->
-  <string name="mozac_feature_relay_chip_text">Defnyddiwch arallenw e-bost</string>
+  <string name="mozac_feature_relay_chip_text">Defnyddiwch arallenw ebost</string>
   <!-- Informational text for the contextual feature recommendation (CFR) enabling the email mask aliases. The %s is the name of the service, "Firefox Relay". -->
-  <string name="mozac_feature_relay_email_masks_cfr">Newydd! Mae %s arallenwau e-bost bellach ar gael ar ffôn symudol.</string>
+  <string name="mozac_feature_relay_email_masks_cfr">Newydd! Mae %s arallenwau ebost bellach ar gael ar ffôn symudol.</string>
 </resources>

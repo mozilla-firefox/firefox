@@ -2648,7 +2648,7 @@
   <!-- Text shown for settings option for sign with pairing -->
   <string name="sign_in_with_camera">Mewngofnodi gyda’ch camera</string>
   <!-- Text shown for settings option for sign with email -->
-  <string name="sign_in_with_email">Defnyddio e-bost yn lle hynny</string>
+  <string name="sign_in_with_email">Defnyddio ebost yn lle hynny</string>
   <!-- Text shown for settings option for create new account text.'Firefox' intentionally hardcoded here. -->
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Dim cyfrif? <u>Crëwch un</u> i gydweddu Firefox rhwng dyfeisiau.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
@@ -3062,17 +3062,17 @@
   -->
   <string name="preferences_email_masks">Arallenwau e-byst</string>
   <!-- Title for the Suggest Email Masks toggle -->
-  <string name="preferences_email_masks_suggest_title">Awgrymu arallenwau e-bost</string>
+  <string name="preferences_email_masks_suggest_title">Awgrymu arallenwau ebost</string>
   <!-- Summary for the Suggest Email Masks toggle. -->
-  <string name="preferences_email_masks_suggest_summary">Cuddiwch eich e-bost go iawn i ddiogelu eich blwch derbyn rhag sbam. Dyw rhai gwefannau ddim yn cefnog arallenwau.</string>
+  <string name="preferences_email_masks_suggest_summary">Cuddiwch eich ebost go iawn i ddiogelu eich blwch derbyn rhag sbam. Dyw rhai gwefannau ddim yn cefnog arallenwau.</string>
   <!-- Text that links to additional information about the Email Masks -->
   <string name="preferences_email_masks_suggest_learn_more">Dysgu rhagor</string>
   <!-- Title for the Manage Email Masks links to Firefox Relay dashboard -->
-  <string name="preferences_email_masks_manage_title">Rheoli arallenwau e-bost</string>
+  <string name="preferences_email_masks_manage_title">Rheoli arallenwau ebost</string>
   <!-- The message displayed when a user has used all of their free-tier email masks, so now the application will choose an existing one at random. -->
-  <string name="email_masks_max_free_tier_reached">Rydych chi wedi defnyddio\'ch 5 arallenw e-bost am ddim, felly rydym wedi dewis un i chi ei ailddefnyddio.</string>
+  <string name="email_masks_max_free_tier_reached">Rydych chi wedi defnyddio\'ch 5 arallenw ebost am ddim, felly rydym wedi dewis un i chi ei ailddefnyddio.</string>
   <!-- The message displayed when there was an error with the email mask or Firefox Account services. -->
-  <string name="email_masks_error_retrieving_masks">Does dim arallenwau e-bost ar gael ar hyn o bryd. Ceisiwch eto mewn ychydig funudau.</string>
+  <string name="email_masks_error_retrieving_masks">Does dim arallenwau ebost ar gael ar hyn o bryd. Ceisiwch eto mewn ychydig funudau.</string>
   <!--
     Firefox browser VPN (a browser-only proxy, distinct from the Mozilla VPN service)
 
@@ -3236,7 +3236,7 @@
   <!-- Preference for saving and filling addresses -->
   <string name="preferences_addresses_save_and_autofill_addresses_2">Cadw a llanw cyfeiriadau</string>
   <!-- Preference summary for saving and filling address data -->
-  <string name="preferences_addresses_save_and_autofill_addresses_summary_2">Yn cynnwys rhifau ffôn a chyfeiriadau e-bost</string>
+  <string name="preferences_addresses_save_and_autofill_addresses_summary_2">Yn cynnwys rhifau ffôn a chyfeiriadau ebost</string>
   <!-- Preference option for syncing addresses across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_addresses_sync_addresses_across_devices">Cydweddu cyfeiriadau ar draws dyfeisiau</string>
   <!-- Preference option for syncing addresses across devices. This is displayed when the user is signed into sync -->
@@ -3316,7 +3316,7 @@
   <!-- The header for the phone number of an address -->
   <string name="addresses_phone">Ffôn</string>
   <!-- The header for the email of an address -->
-  <string name="addresses_email">E-bost</string>
+  <string name="addresses_email">Ebost</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. This specific field is used for addresses in Iran, Mexico. -->
   <string name="addresses_neighborhood" tools:ignore="UnusedResources">Cymdogaeth</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The Village or Township field, specific to Malaysia is crucial for addresses in rural areas. -->

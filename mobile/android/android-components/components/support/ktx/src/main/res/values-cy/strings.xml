@@ -10,7 +10,7 @@
   <!-- Text displayed when choosing which app to call with after selecting a phone number -->
   <string name="mozac_support_ktx_menu_call_with">Galw gyda…</string>
   <!-- Text displayed when choosing which app to email with after selecting an email address -->
-  <string name="mozac_support_ktx_menu_email_with">E-bostio gyda…</string>
+  <string name="mozac_support_ktx_menu_email_with">Ebostio gyda…</string>
   <string name="mozac_support_ktx_menu_share_with">Rhannu gyda…</string>
   <string name="mozac_support_ktx_share_dialog_title">Rhannu drwy</string>
 </resources>
