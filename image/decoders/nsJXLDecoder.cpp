@@ -5,12 +5,15 @@
 
 #include "nsJXLDecoder.h"
 
+#include <algorithm>
+
 #include "AnimationParams.h"
 #include "ImageLogging.h"  // Must appear first
 #include "RasterImage.h"
 #include "SurfacePipeFactory.h"
 #include "gfxPlatform.h"
 #include "mozilla/CheckedInt.h"
+#include "mozilla/gfx/Swizzle.h"
 #include "mozilla/glean/ImageDecodersMetrics.h"
 
 using namespace mozilla::gfx;
@@ -515,6 +518,8 @@ nsresult nsJXLDecoder::AllocateFrameBuffers() {
   // Format is constant across all frames; detect once on the first frame.
   if (mFrameIndex == 0) {
     mPixelFormat.set(DetectPixelFormat(mDecoder.get(), basicInfo));
+    mSourcePremultiplied = basicInfo.alpha_premultiplied &&
+                           mPixelFormat.value() != PixelFormat::Cmyk8;
   }
 
   // These buffers are cleared in HandleFrameOutput after each frame is consumed
@@ -538,10 +543,19 @@ nsresult nsJXLDecoder::AllocateFrameBuffers() {
     return NS_ERROR_FAILURE;
   }
 
-  // Per-row u8 scratch for all non-passthrough paths (gray, CMYK, HDR).
-  // Rgba8 passes directly through the pipe; all other formats need conversion.
+  // Premultiplied rows may go through gfx::UnpremultiplyRow, which computes the
+  // row's byte length in int32_t.
+  if (mSourcePremultiplied &&
+      !(CheckedInt<int32_t>(size.width) * 4).isValid()) {
+    mDecodeResult = DecodeResult::SizeOverflow;
+    return NS_ERROR_FAILURE;
+  }
+
+  // Per-row u8 scratch for all non-passthrough paths (gray, CMYK, HDR,
+  // premultiplied alpha). Unpremult Rgba8 passes directly through the pipe;
+  // everything else needs conversion.
   // Cmyk8 qcms output is RGB8 (3 bytes/pixel) but we allocate 4 for uniformity.
-  if (mPixelFormat.value() != PixelFormat::Rgba8) {
+  if (mPixelFormat.value() != PixelFormat::Rgba8 || mSourcePremultiplied) {
     CheckedInt<size_t> rowBufSize = CheckedInt<size_t>(size.width) * 4;
     if (!rowBufSize.isValid() || !mPipeInputRowBuf.resize(rowBufSize.value())) {
       mDecodeResult = DecodeResult::OutOfMemory;
@@ -553,6 +567,21 @@ nsresult nsJXLDecoder::AllocateFrameBuffers() {
   // color space are constant across all frames of a JXL image.
   if (mFrameIndex == 0 && GetCMSOutputProfile() && mCMSMode != CMSMode::Off) {
     BuildCMSTransform();
+  }
+
+  // CMS needs unpremult input. For Rgba8 the pipe runs CMS on the unpremult
+  // row we put in mPipeInputRowBuf. Other formats call qcms themselves in
+  // WritePixelRowsToPipe, which writes its output to mPipeInputRowBuf, so
+  // their unpremult qcms input row needs a buffer of its own.
+  const bool qcmsCalledBeforePipe =
+      mTransform && mPixelFormat.value() != PixelFormat::Rgba8;
+  if (mSourcePremultiplied && qcmsCalledBeforePipe) {
+    CheckedInt<size_t> rowBufSize =
+        CheckedInt<size_t>(size.width) * BytesPerPixel();
+    if (!rowBufSize.isValid() || !mCMSInputRowBuf.resize(rowBufSize.value())) {
+      mDecodeResult = DecodeResult::OutOfMemory;
+      return NS_ERROR_FAILURE;
+    }
   }
 
   return NS_OK;
@@ -604,12 +633,18 @@ nsresult nsJXLDecoder::EnsureSurfacePipe() {
   bool usePipeTransform = mPixelFormat.value() == PixelFormat::Rgba8;
   qcms_transform* pipeTransform = usePipeTransform ? mTransform : nullptr;
 
-  // jxl-rs always outputs straight alpha; the pipe handles premultiplication
-  // for all formats. CMYK is excluded as its pipe input has no alpha channel.
+  // jxl-rs outputs alpha as the image stores it. Unpremult pipe input is
+  // premultiplied by the pipe if the output was requested to be premult. Output
+  // of jxl-rs that is premultiplied that we don't unpremultiply (see
+  // MustUnpremultiplyJxlrsOutput) is already what was requested and must not be
+  // premultiplied again. CMYK never has an alpha channel so is excluded.
   const bool wantPremultiply =
       !(GetSurfaceFlags() & SurfaceFlags::NO_PREMULTIPLY_ALPHA);
+  const bool pipeInputPremultiplied =
+      mSourcePremultiplied && !MustUnpremultiplyJxlrsOutput();
   SurfacePipeFlags pipeFlags = SurfacePipeFlags();
-  if (wantPremultiply && mPixelFormat.value() != PixelFormat::Cmyk8) {
+  if (wantPremultiply && mPixelFormat.value() != PixelFormat::Cmyk8 &&
+      !pipeInputPremultiplied) {
     pipeFlags |= SurfacePipeFlags::PREMULTIPLY_ALPHA;
   }
 
@@ -752,6 +787,8 @@ void nsJXLDecoder::BuildCMSTransform() {
 }
 
 // IEEE 754 half-float to float, used for HDR fallback when no CMS transform.
+// TODO: No native support for 16 bit float type yet; C++23 (bug 1880762) adds
+// optional support for float16_t.
 static float F16ToF32(uint16_t h) {
   uint32_t sign = (h >> 15) & 1u;
   uint32_t exp = (h >> 10) & 0x1fu;
@@ -769,6 +806,82 @@ static float F16ToF32(uint16_t h) {
   return result;
 }
 
+// Float to IEEE 754 half-float, rounding to nearest even. Like F16ToF32,
+// subnormals are flushed to zero.
+static uint16_t F32ToF16(float aValue) {
+  uint32_t f;
+  memcpy(&f, &aValue, sizeof(f));
+  uint32_t sign = (f >> 16) & 0x8000u;
+  uint32_t exp = (f >> 23) & 0xffu;
+  uint32_t mantissa = f & 0x7fffffu;
+  if (exp == 0xff) {
+    // Inf stays inf. For NaN, set the top mantissa bit, otherwise a NaN whose
+    // set bits are all in the low bits we shift out would turn into inf.
+    return uint16_t(sign | 0x7c00u | (mantissa ? 0x200u : 0u));
+  }
+  int32_t halfExp = int32_t(exp) - 127 + 15;
+  if (halfExp <= 0) {
+    return uint16_t(sign);
+  }
+  uint32_t rounded = mantissa + 0xfffu + ((mantissa >> 13) & 1u);
+  if (rounded & 0x800000u) {
+    rounded = 0;
+    ++halfExp;
+  }
+  if (halfExp >= 31) {
+    return uint16_t(sign | 0x7c00u);
+  }
+  return uint16_t(sign | (uint32_t(halfExp) << 10) | (rounded >> 13));
+}
+
+bool nsJXLDecoder::MustUnpremultiplyJxlrsOutput() const {
+  const bool surfaceWantsUnpremult =
+      bool(GetSurfaceFlags() & SurfaceFlags::NO_PREMULTIPLY_ALPHA);
+  return mSourcePremultiplied && (mTransform || surfaceWantsUnpremult);
+}
+
+void nsJXLDecoder::ClampAndMaybeUnpremultiplyRgba8RowForPipe(
+    const uint8_t* aSrc, SwizzleRowFn aUnpremultiplyRow) {
+  const size_t width = size_t(Size().width);
+  uint8_t* out = mPipeInputRowBuf.begin();
+  for (size_t x = 0; x < width; ++x) {
+    const uint8_t a = aSrc[x * 4 + 3];
+    out[x * 4] = std::min(aSrc[x * 4], a);
+    out[x * 4 + 1] = std::min(aSrc[x * 4 + 1], a);
+    out[x * 4 + 2] = std::min(aSrc[x * 4 + 2], a);
+    out[x * 4 + 3] = a;
+  }
+  if (aUnpremultiplyRow) {
+    aUnpremultiplyRow(out, out, Size().width);
+  }
+}
+
+const uint8_t* nsJXLDecoder::UnpremultiplyForOurQcmsCall(const uint8_t* aRow) {
+  const size_t width = size_t(Size().width);
+  uint8_t* out = mCMSInputRowBuf.begin();
+  if (mPixelFormat.value() == PixelFormat::GrayAlpha8) {
+    for (size_t x = 0; x < width; ++x) {
+      const uint8_t a = aRow[x * 2 + 1];
+      const uint8_t g = std::min(aRow[x * 2], a);
+      out[x * 2] = a ? uint8_t((g * 255u + a / 2u) / a) : 0;
+      out[x * 2 + 1] = a;
+    }
+  } else {
+    MOZ_ASSERT(mPixelFormat.value() == PixelFormat::Rgba16f);
+    const uint16_t* src = reinterpret_cast<const uint16_t*>(aRow);
+    uint16_t* dst = reinterpret_cast<uint16_t*>(out);
+    for (size_t x = 0; x < width; ++x) {
+      const float a = F16ToF32(src[x * 4 + 3]);
+      for (size_t c = 0; c < 3; ++c) {
+        const float v = std::min(F16ToF32(src[x * 4 + c]), a);
+        dst[x * 4 + c] = a > 0.0f ? F32ToF16(v / a) : 0;
+      }
+      dst[x * 4 + 3] = src[x * 4 + 3];
+    }
+  }
+  return out;
+}
+
 bool nsJXLDecoder::WritePixelRowsToPipe() {
   MOZ_ASSERT(mCurrentPipe);
 #ifdef DEBUG
@@ -776,13 +889,21 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
 #endif
   OrientedIntSize size = Size();
 
+  const SwizzleRowFn unpremultiplyRow =
+      MustUnpremultiplyJxlrsOutput()
+          ? UnpremultiplyRow(SurfaceFormat::R8G8B8A8, SurfaceFormat::R8G8B8A8)
+          : nullptr;
+
   uint8_t* currentRow = mPixelBuffer.begin();
   for (size_t y = 0; y < size_t(size.height); ++y) {
     uint8_t* pipeInput;
     if (mPixelFormat.value() == PixelFormat::Rgba16f) {
       if (mTransform) {
+        const uint8_t* qcmsInput = mSourcePremultiplied
+                                       ? UnpremultiplyForOurQcmsCall(currentRow)
+                                       : currentRow;
         qcms_transform_data_rgba_f16_to_rgba_u8(
-            mTransform, reinterpret_cast<const uint16_t*>(currentRow),
+            mTransform, reinterpret_cast<const uint16_t*>(qcmsInput),
             mPipeInputRowBuf.begin(), size.width);
       } else {
         // No CMS: clip f16 to [0,1].
@@ -792,13 +913,20 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
           mPipeInputRowBuf[i] =
               v <= 0.0f ? 0 : (v >= 1.0f ? 255 : uint8_t(v * 255.0f + 0.5f));
         }
+        if (mSourcePremultiplied) {
+          ClampAndMaybeUnpremultiplyRgba8RowForPipe(mPipeInputRowBuf.begin(),
+                                                    unpremultiplyRow);
+        }
       }
       pipeInput = mPipeInputRowBuf.begin();
     } else if (mPixelFormat.value() == PixelFormat::Gray8 ||
                mPixelFormat.value() == PixelFormat::GrayAlpha8) {
       if (mTransform) {
+        const uint8_t* qcmsInput = mSourcePremultiplied
+                                       ? UnpremultiplyForOurQcmsCall(currentRow)
+                                       : currentRow;
         // qcms reads the packed Gray8/GrayAlpha8 and produces Rgba8 output.
-        qcms_transform_data(mTransform, currentRow, mPipeInputRowBuf.begin(),
+        qcms_transform_data(mTransform, qcmsInput, mPipeInputRowBuf.begin(),
                             size.width);
       } else {
         // No CMS: expand gray → Rgba8 without color management.
@@ -812,6 +940,10 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
           out[x * 4 + 1] = g;
           out[x * 4 + 2] = g;
           out[x * 4 + 3] = a;
+        }
+        if (mSourcePremultiplied) {
+          ClampAndMaybeUnpremultiplyRgba8RowForPipe(mPipeInputRowBuf.begin(),
+                                                    unpremultiplyRow);
         }
       }
       pipeInput = mPipeInputRowBuf.begin();
@@ -844,6 +976,9 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
         }
       }
       pipeInput = out;
+    } else if (mSourcePremultiplied) {
+      ClampAndMaybeUnpremultiplyRgba8RowForPipe(currentRow, unpremultiplyRow);
+      pipeInput = mPipeInputRowBuf.begin();
     } else {
       pipeInput = currentRow;
     }
