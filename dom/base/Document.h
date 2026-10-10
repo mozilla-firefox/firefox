@@ -2683,6 +2683,7 @@ class Document : public nsINode,
                "Display documents should not nest");
     mDisplayDocument = aDisplayDocument;
     mHasDisplayDocument = !!aDisplayDocument;
+    mIsBeingUsedAsImage |= aDisplayDocument->mIsBeingUsedAsImage;
   }
 
   /**
