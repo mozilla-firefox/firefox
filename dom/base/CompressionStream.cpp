@@ -44,21 +44,14 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let transformAlgorithm be an algorithm which takes a chunk argument and
   // runs the compress and enqueue a chunk algorithm with this and chunk.
   MOZ_CAN_RUN_SCRIPT
-  void TransformCallbackImpl(JS::Handle<JS::Value> aChunk,
+  void TransformCallbackImpl(JSContext* aCx, JS::Handle<JS::Value> aChunk,
                              TransformStreamDefaultController& aController,
                              ErrorResult& aRv) override {
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // https://wicg.github.io/compression/#compress-and-enqueue-a-chunk
 
     // Step 1: If chunk is not a BufferSource type, then throw a TypeError.
     // (ExtractSpanFromBufferSource does it)
-    Span<const uint8_t> input = ExtractSpanFromBufferSource(cx, aChunk, aRv);
+    Span<const uint8_t> input = ExtractSpanFromBufferSource(aCx, aChunk, aRv);
     if (aRv.Failed()) {
       return;
     }
@@ -66,7 +59,7 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
     // Step 2: Let buffer be the result of compressing chunk with cs's format
     // and context.
     // Step 3 - 5: (Done in CompressAndEnqueue)
-    CompressAndEnqueue(cx, input, ZLibFlush::No, aController, aRv);
+    CompressAndEnqueue(aCx, input, ZLibFlush::No, aController, aRv);
   }
 
   // Step 4 of
@@ -74,21 +67,14 @@ class CompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let flushAlgorithm be an algorithm which takes no argument and runs the
   // compress flush and enqueue algorithm with this.
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
-      TransformStreamDefaultController& aController,
+      JSContext* aCx, TransformStreamDefaultController& aController,
       ErrorResult& aRv) override {
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // https://wicg.github.io/compression/#compress-flush-and-enqueue
 
     // Step 1: Let buffer be the result of compressing an empty input with cs's
     // format and context, with the finish flag.
     // Step 2 - 4: (Done in CompressAndEnqueue)
-    CompressAndEnqueue(cx, Span<const uint8_t>(), ZLibFlush::Yes, aController,
+    CompressAndEnqueue(aCx, Span<const uint8_t>(), ZLibFlush::Yes, aController,
                        aRv);
   }
 

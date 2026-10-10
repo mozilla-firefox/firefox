@@ -41,21 +41,14 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let transformAlgorithm be an algorithm which takes a chunk argument and
   // runs the compress and enqueue a chunk algorithm with this and chunk.
   MOZ_CAN_RUN_SCRIPT
-  void TransformCallbackImpl(JS::Handle<JS::Value> aChunk,
+  void TransformCallbackImpl(JSContext* aCx, JS::Handle<JS::Value> aChunk,
                              TransformStreamDefaultController& aController,
                              ErrorResult& aRv) override {
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // https://wicg.github.io/compression/#compress-and-enqueue-a-chunk
 
     // Step 1: If chunk is not a BufferSource type, then throw a TypeError.
     // (ExtractSpanFromBufferSource does it)
-    Span<const uint8_t> input = ExtractSpanFromBufferSource(cx, aChunk, aRv);
+    Span<const uint8_t> input = ExtractSpanFromBufferSource(aCx, aChunk, aRv);
     if (aRv.Failed()) {
       return;
     }
@@ -63,7 +56,7 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
     // Step 2: Let buffer be the result of decompressing chunk with ds's format
     // and context. If this results in an error, then throw a TypeError.
     // Step 3 - 5: (Done in CompressAndEnqueue)
-    DecompressAndEnqueue(cx, input, ZLibFlush::No, aController, aRv);
+    DecompressAndEnqueue(aCx, input, ZLibFlush::No, aController, aRv);
   }
 
   // Step 4 of
@@ -71,22 +64,15 @@ class DecompressionStreamAlgorithms : public TransformerAlgorithmsWrapper {
   // Let flushAlgorithm be an algorithm which takes no argument and runs the
   // compress flush and enqueue algorithm with this.
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
-      TransformStreamDefaultController& aController,
+      JSContext* aCx, TransformStreamDefaultController& aController,
       ErrorResult& aRv) override {
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // https://wicg.github.io/compression/#decompress-flush-and-enqueue
 
     // Step 1: Let buffer be the result of decompressing an empty input with
     // ds's format and context, with the finish flag.
     // Step 2 - 4: (Done in CompressAndEnqueue)
-    DecompressAndEnqueue(cx, Span<const uint8_t>(), ZLibFlush::Yes, aController,
-                         aRv);
+    DecompressAndEnqueue(aCx, Span<const uint8_t>(), ZLibFlush::Yes,
+                         aController, aRv);
   }
 
  private:
