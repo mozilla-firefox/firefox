@@ -91,6 +91,10 @@ void Rule::SetCssText(const nsACString& aCssText) {
 
 Rule* Rule::GetParentRule() const { return mParentRule; }
 
+already_AddRefed<Rule> Rule::GetParentRuleForBindings() const {
+  return do_AddRef(mParentRule);
+}
+
 #ifdef DEBUG
 void Rule::AssertParentRuleType() {
   // Would be nice to check that this->Type() is StyleCssRuleType::Keyframe

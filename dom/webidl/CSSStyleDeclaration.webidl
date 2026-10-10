@@ -32,5 +32,5 @@ interface CSSStyleDeclaration {
   [ChromeOnly]
   boolean hasLonghandProperty(UTF8String property);
 
-  readonly attribute CSSRule? parentRule;
+  [BinaryName="parentRuleForBindings"] readonly attribute CSSRule? parentRule;
 };
