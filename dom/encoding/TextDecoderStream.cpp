@@ -118,7 +118,7 @@ class TextDecoderStreamAlgorithms : public TransformerAlgorithmsWrapper {
 
   // https://encoding.spec.whatwg.org/#dom-textdecoderstream
   MOZ_CAN_RUN_SCRIPT void TransformCallbackImpl(
-      JS::Handle<JS::Value> aChunk,
+      JSContext* aCx, JS::Handle<JS::Value> aChunk,
       TransformStreamDefaultController& aController,
       ErrorResult& aRv) override {
     // Step 7. Let transformAlgorithm be an algorithm which takes a chunk
@@ -127,42 +127,28 @@ class TextDecoderStreamAlgorithms : public TransformerAlgorithmsWrapper {
 
     // https://encoding.spec.whatwg.org/#decode-and-enqueue-a-chunk
 
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // Step 1. Let bufferSource be the result of converting chunk to an
     // [AllowShared] BufferSource.
     // (But here we get a mozilla::Span instead)
-    Span<const uint8_t> input = ExtractSpanFromBufferSource(cx, aChunk, aRv);
+    Span<const uint8_t> input = ExtractSpanFromBufferSource(aCx, aChunk, aRv);
     if (aRv.Failed()) {
       return;
     }
 
-    DecodeSpanAndEnqueue(cx, input, false, aController, aRv);
+    DecodeSpanAndEnqueue(aCx, input, false, aController, aRv);
   }
 
   // https://encoding.spec.whatwg.org/#dom-textdecoderstream
   MOZ_CAN_RUN_SCRIPT void FlushCallbackImpl(
-      TransformStreamDefaultController& aController,
+      JSContext* aCx, TransformStreamDefaultController& aController,
       ErrorResult& aRv) override {
     // Step 8. Let flushAlgorithm be an algorithm which takes no arguments and
     // runs the flush and enqueue algorithm with this.
 
-    AutoJSAPI jsapi;
-    if (!jsapi.Init(aController.GetParentObject())) {
-      aRv.ThrowUnknownError("Internal error");
-      return;
-    }
-    JSContext* cx = jsapi.cx();
-
     // https://encoding.spec.whatwg.org/#flush-and-enqueue
     // (The flush and enqueue algorithm is basically a subset of decode and
     // enqueue one, so let's reuse it)
-    DecodeSpanAndEnqueue(cx, Span<const uint8_t>(), true, aController, aRv);
+    DecodeSpanAndEnqueue(aCx, Span<const uint8_t>(), true, aController, aRv);
   }
 
  private:
