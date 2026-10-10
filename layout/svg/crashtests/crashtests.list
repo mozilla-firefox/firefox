@@ -277,3 +277,4 @@ asserts(5-20) load 1941838.html
 load 1953296.html
 load 1982067-1.html
 skip-if(isDebugBuild&&Android) load 1993379-1.html # bug 1467887
+load 2079252.html
