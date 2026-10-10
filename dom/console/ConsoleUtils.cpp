@@ -47,7 +47,7 @@ void ConsoleUtils::ReportForServiceWorkerScope(const nsAString& aScope,
                                                uint32_t aLineNumber,
                                                uint32_t aColumnNumber,
                                                Level aLevel) {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   RefPtr<ConsoleUtils> service = ConsoleUtils::GetOrCreate();
   if (NS_WARN_IF(!service)) {

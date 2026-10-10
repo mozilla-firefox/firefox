@@ -1599,6 +1599,19 @@ void ServiceWorkerManager::LocalizeAndReportToAllClients(
     const nsTArray<nsString>& aParamArray, uint32_t aFlags,
     const nsCString& aFilename, const nsString& aLine, uint32_t aLineNumber,
     uint32_t aColumnNumber) {
+  if (!NS_IsMainThread()) {
+    NS_DispatchToMainThread(NS_NewRunnableFunction(
+        "ServiceWorkerManager::LocalizeAndReportToAllClients",
+        [scope = aScope, stringKey = nsCString(aStringKey),
+         paramArray = aParamArray.Clone(), aFlags, filename = aFilename,
+         line = aLine, aLineNumber, aColumnNumber]() {
+          LocalizeAndReportToAllClients(scope, stringKey.get(), paramArray,
+                                        aFlags, filename, line, aLineNumber,
+                                        aColumnNumber);
+        }));
+    return;
+  }
+
   RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
   if (!swm) {
     return;
