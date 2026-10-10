@@ -44,12 +44,12 @@ jobs:
             platform: linux64/opt
             symbol: pfu
             tier: 1
-        worker-type: b-linux-medium-gcp
+        worker-type: b-linux-xlarge-gcp
         worker:
             implementation: docker-worker
             os: linux
             docker-image: {in-tree: periodic-updates}
-            max-run-time: 7200
+            max-run-time: 14400  # Takes up to 4 hours
             env:
                 PRODUCT: firefox
                 REVIEWERS: "#release-managers"
