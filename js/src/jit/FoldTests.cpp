@@ -123,20 +123,22 @@ static bool IsTestInputMaybeToBool(MTest* test, MDefinition* value) {
   }
 }
 
+// |phi| is the input of an MTest instruction we're folding away. Discard it
+// and mark its operands as implicitly-used, because Baseline may still read
+// them after a bailout.
+static void DiscardTestedPhi(MPhi* phi) {
+  for (size_t i = 0; i < phi->numOperands(); i++) {
+    phi->getOperand(i)->setImplicitlyUsedUnchecked();
+  }
+  phi->block()->discardPhi(phi);
+}
+
 // Change |block| so that it ends in a goto to the specific |target| block.
 // |existingPred| is an existing predecessor of the block.
-//
-// |blockResult| is the value computed by |block|. This was a phi input but the
-// caller has determined that |blockResult| matches the input of an earlier
-// MTest instruction and we don't need to test it a second time. Mark it as
-// implicitly-used because we're removing a use.
 [[nodiscard]] static bool UpdateGotoSuccessor(TempAllocator& alloc,
                                               MBasicBlock* block,
-                                              MDefinition* blockResult,
                                               MBasicBlock* target,
                                               MBasicBlock* existingPred) {
-  blockResult->setImplicitlyUsedUnchecked();
-
   MInstruction* ins = block->lastIns();
   MOZ_RELEASE_ASSERT(ins->isGoto());
   ins->toGoto()->target()->removePredecessor(block);
@@ -303,14 +305,14 @@ static bool IsDiamondPattern(MBasicBlock* initialBlock) {
   // OK, we found the desired pattern, now transform the graph.
 
   // Remove the phi from phiBlock.
-  phiBlock->discardPhi(*phiBlock->phisBegin());
+  DiscardTestedPhi(phi);
 
   // Change the end of the block to a test that jumps directly to successors of
   // testBlock, rather than to testBlock itself.
 
   if (IsTestInputMaybeToBool(initialTest, trueResult)) {
-    if (!UpdateGotoSuccessor(graph.alloc(), trueBranch, trueResult,
-                             finalTest->ifTrue(), testBlock)) {
+    if (!UpdateGotoSuccessor(graph.alloc(), trueBranch, finalTest->ifTrue(),
+                             testBlock)) {
       return false;
     }
   } else {
@@ -322,8 +324,8 @@ static bool IsDiamondPattern(MBasicBlock* initialBlock) {
   }
 
   if (IsTestInputMaybeToBool(initialTest, falseResult)) {
-    if (!UpdateGotoSuccessor(graph.alloc(), falseBranch, falseResult,
-                             finalTest->ifFalse(), testBlock)) {
+    if (!UpdateGotoSuccessor(graph.alloc(), falseBranch, finalTest->ifFalse(),
+                             testBlock)) {
       return false;
     }
   } else {
@@ -500,7 +502,7 @@ static bool IsTrianglePattern(MBasicBlock* initialBlock) {
   // OK, we found the desired pattern, now transform the graph.
 
   // Remove the phi from phiBlock.
-  phiBlock->discardPhi(*phiBlock->phisBegin());
+  DiscardTestedPhi(phi);
 
   // Change the end of the block to a test that jumps directly to successors of
   // testBlock, rather than to testBlock itself.
@@ -512,8 +514,8 @@ static bool IsTrianglePattern(MBasicBlock* initialBlock) {
       return false;
     }
   } else if (IsTestInputMaybeToBool(initialTest, trueResult)) {
-    if (!UpdateGotoSuccessor(graph.alloc(), trueBranch, trueResult,
-                             finalTest->ifTrue(), testBlock)) {
+    if (!UpdateGotoSuccessor(graph.alloc(), trueBranch, finalTest->ifTrue(),
+                             testBlock)) {
       return false;
     }
   } else {
@@ -531,8 +533,8 @@ static bool IsTrianglePattern(MBasicBlock* initialBlock) {
       return false;
     }
   } else if (IsTestInputMaybeToBool(initialTest, falseResult)) {
-    if (!UpdateGotoSuccessor(graph.alloc(), falseBranch, falseResult,
-                             finalTest->ifFalse(), testBlock)) {
+    if (!UpdateGotoSuccessor(graph.alloc(), falseBranch, finalTest->ifFalse(),
+                             testBlock)) {
       return false;
     }
   } else {
@@ -709,7 +711,7 @@ static bool IsTrianglePattern(MBasicBlock* initialBlock) {
   // OK, we found the desired pattern, now transform the graph.
 
   // Remove the phi from phiBlock.
-  phiBlock->discardPhi(*phiBlock->phisBegin());
+  DiscardTestedPhi(phi);
 
   // Create the new test instruction.
   if (!UpdateTestSuccessors(graph.alloc(), newTestBlock, newTestInput,
