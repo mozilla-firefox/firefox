@@ -1221,8 +1221,12 @@ void MediaTrackGraphImpl::ProduceDataForTracksBlockByBlock(
              "Cycle breaker is not AudioNodeTrack?");
 
   while (mProcessedTime < mStateComputedTime) {
-    // Microtask checkpoints are in between render quanta.
+    // Microtask checkpoints run script which must run with denormals enabled.
+    // Re-enable denormals around the checkpoint and disable them again for
+    // rendering.
+    WebCore::DenormalEnabler enableForMicroTasks;
     nsAutoMicroTask mt;
+    WebCore::DenormalDisabler disableForRendering;
 
     GraphTime next = RoundUpToNextAudioBlock(mProcessedTime);
     for (uint32_t i = mFirstCycleBreaker; i < mTracks.Length(); ++i) {
@@ -1432,6 +1436,8 @@ void MediaTrackGraphImpl::Process(MixerCallbackReceiver* aMixerReceiver) {
     return;
   }
 
+  WebCore::DenormalDisabler disabler;
+
   // Play track contents.
   bool allBlockedForever = true;
   // True when we've done ProcessInput for all processed tracks.
@@ -1602,8 +1608,6 @@ auto MediaTrackGraphImpl::OneIterationImpl(
   MOZ_POP_THREAD_SAFETY
 
   MOZ_ASSERT(OnGraphThread());
-
-  WebCore::DenormalDisabler disabler;
 
   // Process graph message from the main thread for this iteration.
   SwapMessageQueues();

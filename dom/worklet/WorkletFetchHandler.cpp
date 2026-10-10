@@ -23,6 +23,7 @@
 #include "mozilla/dom/WorkletImpl.h"
 #include "mozilla/dom/WorkletThread.h"
 #include "mozilla/dom/worklet/WorkletModuleLoader.h"
+#include "nsIContentPolicy.h"
 #include "nsIInputStreamPump.h"
 #include "nsIThreadRetargetableRequest.h"
 #include "xpcpublic.h"
@@ -53,6 +54,11 @@ class StartModuleLoadRunnable final : public Runnable {
     MOZ_ASSERT(NS_IsMainThread());
     MOZ_ASSERT(mParentRuntime);
     xpc::SetPrefableContextOptions(mContextOptions);
+    if (aWorkletImpl->ContentPolicyType() ==
+        nsIContentPolicy::TYPE_INTERNAL_AUDIOWORKLET) {
+      // AudioWorklets disable denormals in wasm code for performance reasons.
+      mContextOptions.setWasmDisablesDenormals();
+    }
   }
 
   ~StartModuleLoadRunnable() = default;

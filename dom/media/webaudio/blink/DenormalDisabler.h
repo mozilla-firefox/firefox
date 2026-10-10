@@ -53,105 +53,127 @@ namespace WebCore {
 #endif
 
 #ifdef HAVE_DENORMAL
+namespace detail {
+
+#  if defined(__GNUC__) && defined(__SSE__)
+inline bool isDAZSupported() {
+#    if defined(__x86_64__)
+  return true;
+#    else
+  static bool s_isInited = false;
+  static bool s_isSupported = false;
+  if (s_isInited) {
+    return s_isSupported;
+  }
+
+  struct fxsaveResult {
+    uint8_t before[28];
+    uint32_t CSRMask;
+    uint8_t after[480];
+  } __attribute__((aligned(16)));
+
+  fxsaveResult registerData;
+  memset(&registerData, 0, sizeof(fxsaveResult));
+  asm volatile("fxsave %0" : "=m"(registerData));
+  s_isSupported = registerData.CSRMask & 0x0040;
+  s_isInited = true;
+  return s_isSupported;
+#    endif
+}
+
+inline int getCSR() {
+  int result;
+  asm volatile("stmxcsr %0" : "=m"(result));
+  return result;
+}
+
+inline void setCSR(int a) {
+  int temp = a;
+  asm volatile("ldmxcsr %0" : : "m"(temp));
+}
+
+inline unsigned setDenormalMode(bool aDisabled) {
+  unsigned saved = getCSR();
+  unsigned mask = isDAZSupported() ? 0x8040 : 0x8000;
+  setCSR(aDisabled ? (saved | mask) : (saved & ~mask));
+  return saved;
+}
+
+inline void restoreDenormalMode(unsigned aSaved) { setCSR(aSaved); }
+
+#  elif defined(XP_WIN) && defined(_MSC_VER)
+inline unsigned setDenormalMode(bool aDisabled) {
+  // Save the current state before changing the mode.
+  //
+  // http://stackoverflow.com/questions/637175/possible-bug-in-controlfp-s-may-not-restore-control-word-correctly
+  unsigned saved;
+  _controlfp_s(&saved, 0, 0);
+  unsigned unused;
+  _controlfp_s(&unused, aDisabled ? _DN_FLUSH : _DN_SAVE, _MCW_DN);
+  return saved;
+}
+
+inline void restoreDenormalMode(unsigned aSaved) {
+  unsigned unused;
+  _controlfp_s(&unused, aSaved, _MCW_DN);
+}
+
+#  elif defined(__arm__) || defined(__aarch64__)
+inline int getStatusWord() {
+  int result;
+#    if defined(__aarch64__)
+  asm volatile("mrs %x[result], FPCR" : [result] "=r"(result));
+#    else
+  asm volatile("vmrs %[result], FPSCR" : [result] "=r"(result));
+#    endif
+  return result;
+}
+
+inline void setStatusWord(int a) {
+#    if defined(__aarch64__)
+  asm volatile("msr FPCR, %x[src]" : : [src] "r"(a));
+#    else
+  asm volatile("vmsr FPSCR, %[src]" : : [src] "r"(a));
+#    endif
+}
+
+inline unsigned setDenormalMode(bool aDisabled) {
+  unsigned saved = getStatusWord();
+  // Bit 24 is the flush-to-zero mode control bit. Setting it to 1 flushes
+  // denormals to 0.
+  setStatusWord(aDisabled ? (saved | (1u << 24)) : (saved & ~(1u << 24)));
+  return saved;
+}
+
+inline void restoreDenormalMode(unsigned aSaved) { setStatusWord(aSaved); }
+
+#  endif
+}  // namespace detail
+
+// Disable denormals for the duration of this scope.
 class DenormalDisabler {
  public:
-  DenormalDisabler() : m_savedCSR(0) { disableDenormals(); }
+  DenormalDisabler() : m_savedCSR(detail::setDenormalMode(true)) {}
 
-  ~DenormalDisabler() { restoreState(); }
+  ~DenormalDisabler() { detail::restoreDenormalMode(m_savedCSR); }
 
   // This is a nop if we can flush denormals to zero in hardware.
   static inline float flushDenormalFloatToZero(float f) { return f; }
 
  private:
   unsigned m_savedCSR;
+};
 
-#  if defined(__GNUC__) && defined(__SSE__)
-  static inline bool isDAZSupported() {
-#    if defined(__x86_64__)
-    return true;
-#    else
-    static bool s_isInited = false;
-    static bool s_isSupported = false;
-    if (s_isInited) {
-      return s_isSupported;
-    }
+// Restore denormals for the duration of this scope if there is a
+// DenormalDisabler somewhere higher on the stack.
+class DenormalEnabler {
+ public:
+  DenormalEnabler() : m_savedCSR(detail::setDenormalMode(false)) {}
 
-    struct fxsaveResult {
-      uint8_t before[28];
-      uint32_t CSRMask;
-      uint8_t after[480];
-    } __attribute__((aligned(16)));
+  ~DenormalEnabler() { detail::restoreDenormalMode(m_savedCSR); }
 
-    fxsaveResult registerData;
-    memset(&registerData, 0, sizeof(fxsaveResult));
-    asm volatile("fxsave %0" : "=m"(registerData));
-    s_isSupported = registerData.CSRMask & 0x0040;
-    s_isInited = true;
-    return s_isSupported;
-#    endif
-  }
-
-  inline void disableDenormals() {
-    m_savedCSR = getCSR();
-    setCSR(m_savedCSR | (isDAZSupported() ? 0x8040 : 0x8000));
-  }
-
-  inline void restoreState() { setCSR(m_savedCSR); }
-
-  inline int getCSR() {
-    int result;
-    asm volatile("stmxcsr %0" : "=m"(result));
-    return result;
-  }
-
-  inline void setCSR(int a) {
-    int temp = a;
-    asm volatile("ldmxcsr %0" : : "m"(temp));
-  }
-
-#  elif defined(XP_WIN) && defined(_MSC_VER)
-  inline void disableDenormals() {
-    // Save the current state, and set mode to flush denormals.
-    //
-    // http://stackoverflow.com/questions/637175/possible-bug-in-controlfp-s-may-not-restore-control-word-correctly
-    _controlfp_s(&m_savedCSR, 0, 0);
-    unsigned unused;
-    _controlfp_s(&unused, _DN_FLUSH, _MCW_DN);
-  }
-
-  inline void restoreState() {
-    unsigned unused;
-    _controlfp_s(&unused, m_savedCSR, _MCW_DN);
-  }
-#  elif defined(__arm__) || defined(__aarch64__)
-  inline void disableDenormals() {
-    m_savedCSR = getStatusWord();
-    // Bit 24 is the flush-to-zero mode control bit. Setting it to 1 flushes
-    // denormals to 0.
-    setStatusWord(m_savedCSR | (1 << 24));
-  }
-
-  inline void restoreState() { setStatusWord(m_savedCSR); }
-
-  inline int getStatusWord() {
-    int result;
-#    if defined(__aarch64__)
-    asm volatile("mrs %x[result], FPCR" : [result] "=r"(result));
-#    else
-    asm volatile("vmrs %[result], FPSCR" : [result] "=r"(result));
-#    endif
-    return result;
-  }
-
-  inline void setStatusWord(int a) {
-#    if defined(__aarch64__)
-    asm volatile("msr FPCR, %x[src]" : : [src] "r"(a));
-#    else
-    asm volatile("vmsr FPSCR, %[src]" : : [src] "r"(a));
-#    endif
-  }
-
-#  endif
+ private:
+  unsigned m_savedCSR;
 };
 
 #else
@@ -165,6 +187,11 @@ class DenormalDisabler {
   static inline float flushDenormalFloatToZero(float f) {
     return (fabs(f) < FLT_MIN) ? 0.0f : f;
   }
+};
+
+class DenormalEnabler {
+ public:
+  DenormalEnabler() {}
 };
 
 #endif

@@ -12,6 +12,7 @@
 #include "AudioWorkletImpl.h"
 #include "PlayingRefChangeHandler.h"
 #include "Tracing.h"
+#include "blink/DenormalDisabler.h"
 #include "js/Array.h"  // JS::{Get,Set}ArrayLength, JS::NewArrayLength
 #include "js/CallAndConstruct.h"  // JS::Call, JS::IsCallable
 #include "js/Exception.h"
@@ -504,6 +505,10 @@ void WorkletNodeEngine::ProcessBlocksOnPorts(AudioNodeTrack* aTrack,
       output.AllocateChannels(1);
     }
   }
+
+  // Undo the graph thread's DenormalDisabler. SpiderMonkey manages disabling
+  // denormals.
+  WebCore::DenormalEnabler denormals;
 
   AutoEntryScript aes(mGlobal, "Worklet Process");
   JSContext* cx = aes.cx();
