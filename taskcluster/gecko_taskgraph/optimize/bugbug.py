@@ -25,6 +25,9 @@ def merge_bugbug_replies(data, new_data):
     in the `data` argument).
     """
     for key, value in new_data.items():
+        if key == "confidence_thresholds":
+            continue
+
         if isinstance(value, dict):
             if key not in data:
                 data[key] = {}
