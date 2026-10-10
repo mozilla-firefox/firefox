@@ -123,7 +123,7 @@ function messageGetMatchingElements(message) {
       const selectedTargetFront = message?.targetFront;
 
       const response = await commands.scriptCommand.execute(
-        `document.querySelectorAll('${message.cssSelectors}')`,
+        `document.querySelectorAll('${CSS.escape(message.cssSelectors)}')`,
         {
           selectedTargetFront,
           innerWindowID: message.innerWindowID,
