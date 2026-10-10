@@ -59,6 +59,19 @@ async function searchAndCheckState({ input, token }) {
   await UrlbarTestUtils.promisePopupClose(window);
 }
 
+add_setup(async function () {
+  // Tests get no default Top Sites, and clearURLs opens the view on an empty
+  // string, which would otherwise leave it closed with no results.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+});
+
 add_task(async function insertTokens() {
   const tests = [
     {

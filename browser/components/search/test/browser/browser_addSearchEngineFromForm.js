@@ -178,6 +178,20 @@ async function openAddEngineDialog(browser, selector) {
   return dialogWin;
 }
 
+add_setup(async function () {
+  // Tests get no default Top Sites. addEngine leaves search mode with an empty
+  // input, and without a result the view never opens for exitSearchMode to
+  // wait on.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.newtabpage.activity-stream.default.sites",
+        "https://example.com/",
+      ],
+    ],
+  });
+});
+
 add_task(async function testAddingEngines() {
   let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser);
   let browser = tab.linkedBrowser;
