@@ -467,6 +467,8 @@ async function main(args) {
     false
   );
   Services.prefs.setBoolPref("network.http.http3.enable", false);
+  Services.prefs.setIntPref("network.dns.max_high_priority_threads", 40);
+  Services.prefs.setIntPref("network.dns.max_any_priority_threads", 24);
   // download and parse the raw json file from the Chromium source
   let rawdata = await download();
   // get just the hosts with mode: "force-https"
