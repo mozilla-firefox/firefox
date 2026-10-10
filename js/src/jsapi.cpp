@@ -434,6 +434,13 @@ JS::ContextOptions& JS::ContextOptions::setFuzzing(bool flag) {
   return *this;
 }
 
+JS::ContextOptions& JS::ContextOptions::setWasmDisablesDenormals() {
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+  wasmDisablesDenormals_ = true;
+#endif
+  return *this;
+}
+
 JS_PUBLIC_API const char* JS_GetImplementationVersion(void) {
   return "JavaScript-C" MOZILLA_VERSION;
 }

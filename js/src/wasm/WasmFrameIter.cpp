@@ -20,6 +20,7 @@
 #include "jit/JitRuntime.h"
 #include "jit/shared/IonAssemblerBuffer.h"  // jit::BufferOffset
 #include "js/ColumnNumber.h"  // JS::WasmFunctionIndex, LimitedColumnNumberOneOrigin, JS::TaggedColumnNumberOneOrigin, JS::TaggedColumnNumberOneOrigin
+#include "util/Denormals.h"
 #include "vm/JitActivation.h"  // js::jit::JitActivation
 #include "vm/JSAtomState.h"
 #include "vm/JSContext.h"
@@ -714,6 +715,54 @@ void wasm::ClearExitFP(MacroAssembler& masm, Register activation) {
       Address(activation, JitActivation::offsetOfEncodedWasmExitReason()));
 }
 
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+static void ToggleMxcsr(MacroAssembler& masm, Register instance,
+                        size_t targetMxcsrOffset) {
+  Address flag(instance, wasm::Instance::offsetOfHasWasmMxcsr());
+  Label done;
+  masm.branchTest32(Assembler::Zero, flag, Imm32(1), &done);
+  masm.ldmxcsr(Address(instance, targetMxcsrOffset));
+  masm.bind(&done);
+}
+#endif
+
+void wasm::AssertDenormalsEnabled(MacroAssembler& masm) {
+#if defined(DEBUG) && (defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64))
+  masm.PushFlags();
+  masm.reserveStack(sizeof(uintptr_t));
+  Address mxcsr(masm.getStackPointer(), 0);
+  masm.stmxcsr(mxcsr);
+
+  Label ok;
+  masm.branchTest32(Assembler::Zero, mxcsr, Imm32(MxcsrDenormalsDisabled),
+                    &ok);
+  masm.breakpoint();
+  masm.bind(&ok);
+
+  masm.freeStack(sizeof(uintptr_t));
+  masm.PopFlags();
+#endif
+}
+
+void wasm::GenerateLeaveWasmFPEnvironment(MacroAssembler& masm,
+                                          Register instance) {
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+  // Leaving is always safe: the ieee mxcsr is what we want no matter which
+  // environment we were in. Unwinding reaches some of these while already in
+  // the system environment.
+  ToggleMxcsr(masm, instance, wasm::Instance::offsetOfIeeeMxcsr());
+  AssertDenormalsEnabled(masm);
+#endif
+}
+
+void wasm::GenerateEnterWasmFPEnvironment(MacroAssembler& masm,
+                                          Register instance) {
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+  AssertDenormalsEnabled(masm);
+  ToggleMxcsr(masm, instance, wasm::Instance::offsetOfWasmMxcsr());
+#endif
+}
+
 static void GenerateCallablePrologue(MacroAssembler& masm, uint32_t* entry) {
   AutoCreatedBy acb(masm, "GenerateCallablePrologue");
   masm.setFramePushed(0);
@@ -1368,6 +1417,9 @@ void wasm::GenerateExitPrologue(MacroAssembler& masm, ExitReason reason,
   LoadActivation(masm, InstanceReg, scratch1);
   SetExitFP(masm, reason, scratch1, scratch2);
 
+  // We are leaving wasm code.
+  GenerateLeaveWasmFPEnvironment(masm, InstanceReg);
+
 #ifdef ENABLE_WASM_JSPI
   if (switchToMainStack) {
     uint32_t frameStackSaveSlots =
@@ -1448,6 +1500,9 @@ void wasm::GenerateExitEpilogue(MacroAssembler& masm, ExitReason reason,
   }
 #endif  // ENABLE_WASM_JSPI
 
+  // We are about to return to wasm code.
+  GenerateEnterWasmFPEnvironment(masm, InstanceReg);
+
   // Reset our stack pointer back to the frame pointer. This may switch the
   // stack pointer back to our original stack.
   masm.moveToStackPtr(FramePointer);
@@ -1508,6 +1563,9 @@ void wasm::GenerateJitExitPrologue(MacroAssembler& masm,
 
   AssertNoWasmExitFPInJitExit(masm);
 
+  // We are leaving wasm code.
+  GenerateLeaveWasmFPEnvironment(masm, InstanceReg);
+
   MOZ_ASSERT(masm.framePushed() == 0);
 }
 
@@ -1516,6 +1574,10 @@ void wasm::GenerateJitExitEpilogue(MacroAssembler& masm,
   // Inverse of GenerateJitExitPrologue:
   MOZ_ASSERT(masm.framePushed() == 0);
   AssertNoWasmExitFPInJitExit(masm);
+
+  // We are about to return to wasm code.
+  GenerateEnterWasmFPEnvironment(masm, InstanceReg);
+
   GenerateCallableEpilogue(masm, /*framePushed*/ 0, &offsets->ret);
   MOZ_ASSERT(masm.framePushed() == 0);
 }
@@ -2463,8 +2525,6 @@ const char* wasm::ThunkedNativeToDescription(SymbolicAddress func) {
       return "call to native wake m64 (in wasm)";
     case SymbolicAddress::CoerceInPlace_JitEntry:
       return "out-of-line coercion for jit entry arguments (in wasm)";
-    case SymbolicAddress::ReportV128JSCall:
-      return "jit call to v128 wasm function";
     case SymbolicAddress::MemCopyM32:
     case SymbolicAddress::MemCopySharedM32:
       return "call to native memory.copy m32 function";

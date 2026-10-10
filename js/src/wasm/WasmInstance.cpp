@@ -33,6 +33,7 @@
 #include "jit/Registers.h"
 #include "js/friend/ErrorMessages.h"  // js::GetErrorMessage, JSMSG_*
 #include "js/Stack.h"                 // JS::NativeStackLimitMin
+#include "util/Denormals.h"
 #include "util/StringBuilder.h"
 #include "util/Text.h"
 #include "util/Unicode.h"
@@ -246,6 +247,7 @@ static bool UnpackResults(JSContext* cx, const ValTypeVector& resultTypes,
 bool Instance::callImport(JSContext* cx, uint32_t funcImportIndex,
                           unsigned argc, uint64_t* argv) {
   AssertRealmUnchanged aru(cx);
+  AutoAssertDenormalsEnabled denormals;
 
 #ifdef ENABLE_WASM_JSPI
   // We should not be on a cont stack.
@@ -2465,6 +2467,9 @@ Instance::Instance(JSContext* cx, Handle<WasmInstanceObject*> object,
                    const SharedCode& code, SharedTableVector&& tables,
                    UniqueDebugState maybeDebug)
     : realm_(cx->realm()),
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+      hasWasmMxcsr_(false),
+#endif
       allocSites_(nullptr),
       jsJitExceptionHandler_(
           cx->runtime()->jitRuntime()->getExceptionTail().value),
@@ -2478,6 +2483,10 @@ Instance::Instance(JSContext* cx, Handle<WasmInstanceObject*> object,
       debugFilter_(nullptr),
       callRefMetrics_(nullptr),
       maxInitializedGlobalsIndexPlus1_(0),
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+      ieeeMxcsr_(0),
+      wasmMxcsr_(0),
+#endif
       allocationMetadataBuilder_(nullptr),
       addressOfLastBufferedWholeCell_(
           cx->runtime()->gc.addressOfLastBufferedWholeCell()) {
@@ -2523,6 +2532,22 @@ bool Instance::init(JSContext* cx, const JSObjectVector& funcImports,
   cx_ = cx;
   valueBoxClass_ = AnyRef::valueBoxClass();
   interrupt_ = false;
+#if defined(JS_CODEGEN_X64) || defined(JS_CODEGEN_X86)
+  // We should not be running with denormals disabled already.
+  MOZ_RELEASE_ASSERT(!DenormalsDisabled());
+
+  // Capture this thread's MXCSR once, so the wasm stubs can restore it with
+  // a single ldmxcsr each.
+  uint32_t mxcsr = ReadMxcsr();
+  ieeeMxcsr_ = mxcsr;
+  if (CanDisableDenormals() && cx->options().wasmDisablesDenormals()) {
+    wasmMxcsr_ = mxcsr | MxcsrDenormalsDisabled;
+    hasWasmMxcsr_ = true;
+  } else {
+    wasmMxcsr_ = mxcsr;
+    hasWasmMxcsr_ = false;
+  }
+#endif
   jumpTable_ = code_->tieringJumpTable();
   debugFilter_ = nullptr;
   callRefMetrics_ = nullptr;
@@ -4015,6 +4040,8 @@ bool Instance::getExportedFunction(JSContext* cx, uint32_t funcIndex,
 
 bool Instance::callExport(JSContext* cx, uint32_t funcIndex,
                           const CallArgs& args, CoercionLevel level) {
+  AutoAssertDenormalsEnabled denormals;
+
   if (memory0Base_) {
     // If there has been a moving grow, this Instance should have been notified.
     MOZ_RELEASE_ASSERT(memoryBase(0).unwrap() == memory0Base_);

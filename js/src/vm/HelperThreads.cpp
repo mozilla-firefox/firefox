@@ -27,6 +27,7 @@
 #include "js/UniquePtr.h"
 #include "js/Utility.h"
 #include "threading/CpuCount.h"
+#include "util/Denormals.h"
 #include "vm/ErrorReporting.h"
 #include "vm/HelperThreadState.h"
 #include "vm/InternalThreadPool.h"
@@ -663,6 +664,7 @@ void GlobalHelperThreadState::runTaskLocked(HelperThreadTask* task,
 
   {
     JS::AutoSuppressGCAnalysis nogc;
+    AutoAssertDenormalsEnabled denormals;
     task->runHelperThreadTask(locked);
   }
 

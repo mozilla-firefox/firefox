@@ -400,6 +400,58 @@ void SetExitFP(jit::MacroAssembler& masm, ExitReason reason,
                jit::Register activation, jit::Register scratch);
 void ClearExitFP(jit::MacroAssembler& masm, jit::Register activation);
 
+// [SMDOC] Wasm FP environment (denormals)
+//
+// AudioWorklets want to disable denormal FP support for performance reasons on
+// x86/x64 processors.
+//
+// This means changing the FP state to enable:
+//   1. 'flush-to-zero' (FTZ) - instruction outputs don't emit denormals
+//   2. 'denormals-are-zero' (DAZ) - instruction inputs ignore denormals
+//
+// Disabling this across all of SpiderMonkey can lead to surprising results and
+// is difficult to verify for correctness. Instead, we limit the scope of this
+// to just wasm JIT code. Specifically the body of wasm functions after all JS
+// value conversions are done.
+//
+// To make this as efficient as possible, we store on wasm::Instance:
+//   1. hasWasmMxcsr - snapshot of ContextOptions::wasmDisablesDenormals()
+//   2. ieeeMxcsr_ - snapshot of thread's mxcsr
+//   3. wasmMxcsr_ - ieeeMxcsr_ with FTZ/DAZ set iff `wasmDisablesDenormals`
+//
+// Entering wasm code does: `if hasWasmMxcsr: ldmxcsr wasmMxcsr_`.
+// Leaving wasm code does: `if hasWasmMxcsr: ldmxcsr ieeeMxcsr_`.
+//
+// We need to do this on the following locations:
+//   1. Interpreter entry - Handled directly in GenerateInterpEntry.
+//   2. Interpreter exit - Handled by GenerateExitPrologue/Epilogue in
+//        GenerateImportInterpExit.
+//   3. JS JIT entry - Handled directly in GenerateJitEntry.
+//   4. JS JIT 'direct' entry - Handled directly in GenerateDirectCallFromJit.
+//   5. JS JIT exit - Handled by GenerateJitExitPrologue/Epilogue.
+//   6. Calls into the VM - Handled by GenerateExitPrologue/Epilogue
+//      in GenerateBuiltinThunk.
+//   7. Trap exit (signal handler) - Handled directly in GenerateTrapExit.
+//   8. Debug breakpoints - Handled by GenerateExitPrologue/Epilogue in
+//      GenerateDebugStub.
+//   9. Throwing - GenerateThrowStub is always jumped to in the system FP state.
+//   10. Catching - GenerateJumpToCatchHandler handles the switch back to wasm FP
+//       state.
+//
+// Entering must happen from the system FP state, and that is asserted.
+// Leaving is idempotent and has no such requirement: unwinding reaches some
+// of the locations above with the system FP state already restored.
+//
+// We currently only do this on x86/x64 and not ARM64. ARM64 processors do not
+// exhibit the same performance issues as x86.
+void GenerateEnterWasmFPEnvironment(jit::MacroAssembler& masm,
+                                    jit::Register instance);
+void GenerateLeaveWasmFPEnvironment(jit::MacroAssembler& masm,
+                                    jit::Register instance);
+
+// Debug-only checks that the FP environment has denormals enabled.
+void AssertDenormalsEnabled(jit::MacroAssembler& masm);
+
 #ifdef ENABLE_WASM_JSPI
 // [SMDOC] Wasm dynamic stack switches on 'exit'
 //

@@ -1189,6 +1189,15 @@ class AssemblerX86Shared : public AssemblerShared {
   }
 
   void breakpoint() { masm.int3(); }
+
+  void ldmxcsr(const Address& src) {
+    masm.ldmxcsr_mr(src.offset, src.base.encoding());
+  }
+
+  void stmxcsr(const Address& dest) {
+    masm.stmxcsr_rm(dest.offset, dest.base.encoding());
+  }
+
   CodeOffset ud2() {
     MOZ_ASSERT(hasCreator());
     CodeOffset off(masm.currentOffset());

@@ -25,6 +25,7 @@ class JS_PUBLIC_API ContextOptions {
         wasmBaseline_(true),
         wasmIon_(true),
         testWasmAwaitTier2_(false),
+        wasmDisablesDenormals_(false),
         disableIon_(false),
         disableEvalSecurityChecks_(false),
         disableFilenameSecurityChecks_(false),
@@ -94,6 +95,12 @@ class JS_PUBLIC_API ContextOptions {
     compileOptions_.toggleThrowOnAsmJSValidationFailure();
     return *this;
   }
+
+  // Whether wasm will disable denormal floating point support inside wasm
+  // function bodies. This must be set right after creating the context. This
+  // currently only applies on x86/x64.
+  bool wasmDisablesDenormals() const { return wasmDisablesDenormals_; }
+  ContextOptions& setWasmDisablesDenormals();
 
   // Override to allow disabling Ion for this context irrespective of the
   // process-wide Ion-enabled setting. This must be set right after creating
@@ -184,6 +191,7 @@ class JS_PUBLIC_API ContextOptions {
   bool wasmBaseline_ : 1;
   bool wasmIon_ : 1;
   bool testWasmAwaitTier2_ : 1;
+  bool wasmDisablesDenormals_ : 1;
 
   // JIT options.
   bool disableIon_ : 1;

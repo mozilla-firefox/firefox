@@ -12917,6 +12917,9 @@ bool InitOptionParser(OptionParser& op) {
       !op.addBoolOption('\0', "test-wasm-await-tier2",
                         "Forcibly activate tiering and block "
                         "instantiation on completion of tier2") ||
+      !op.addBoolOption('\0', "disable-main-thread-wasm-denormals",
+                        "Disable denormals (FTZ+DAZ) for wasm execution on "
+                        "the main thread, to emulate WebAudio worklets") ||
       !op.addBoolOption('\0', "no-native-regexp",
                         "Disable native regexp compilation") ||
       !op.addIntOption(
@@ -13057,9 +13060,6 @@ bool InitOptionParser(OptionParser& op) {
       !op.addStringOption('\0', "ion-parallel-compile", "on/off",
                           "--ion-parallel compile is deprecated. Use "
                           "--ion-offthread-compile.") ||
-      !op.addBoolOption('\0', "disable-main-thread-denormals",
-                        "Disable Denormals on the main thread only, to "
-                        "emulate WebAudio worklets.") ||
       !op.addStringOption('\0', "object-keys-scalar-replacement", "on/off",
                           "Replace Object.keys with a NativeIterators "
                           "(default: on)") ||
@@ -13830,6 +13830,9 @@ bool SetContextWasmOptions(JSContext* cx, const OptionParser& op) {
       .setWasmBaseline(enableWasmBaseline)
       .setWasmIon(enableWasmOptimizing)
       .setTestWasmAwaitTier2(enableTestWasmAwaitTier2);
+  if (op.getBoolOption("disable-main-thread-wasm-denormals")) {
+    JS::ContextOptionsRef(cx).setWasmDisablesDenormals();
+  }
 
 #ifndef __wasi__
   // Also the following are to be propagated.
@@ -14096,35 +14099,6 @@ bool SetContextJITOptions(JSContext* cx, const OptionParser& op) {
     } else {
       return OptionFailure("ion-limit-script-size", str);
     }
-  }
-
-  if (op.getBoolOption("disable-main-thread-denormals")) {
-    // This is a simplified version of WebAudio code, which is good enough for
-    // fuzzing purposes.
-    //
-    // See dom/media/webaudio/blink/DenormalDisabler.h#124
-#if defined(__GNUC__) && defined(__SSE__) && defined(__x86_64__)
-    int savedCSR;
-    asm volatile("stmxcsr %0" : "=m"(savedCSR));
-    int newCSR = savedCSR | 0x8040;
-    asm volatile("ldmxcsr %0" : : "m"(newCSR));
-#elif defined(__arm__)
-    int savedCSR;
-    asm volatile("vmrs %[result], FPSCR" : [result] "=r"(savedCSR));
-    // Bit 24 is the flush-to-zero mode control bit. Setting it to 1 flushes
-    // denormals to 0.
-    int newCSR = savedCSR | (1 << 24);
-    asm volatile("vmsr FPSCR, %[src]" : : [src] "r"(newCSR));
-#elif defined(__aarch64__)
-    int savedCSR;
-    asm volatile("mrs %x[result], FPCR" : [result] "=r"(savedCSR));
-    // Bit 24 is the flush-to-zero mode control bit. Setting it to 1 flushes
-    // denormals to 0.
-    int newCSR = savedCSR | (1 << 24);
-    asm volatile("msr FPCR, %x[src]" : : [src] "r"(newCSR));
-#else
-    // Do nothing on other architecture.
-#endif
   }
 
   if (const char* str = op.getStringOption("object-keys-scalar-replacement")) {

@@ -4713,6 +4713,16 @@ class BaseAssembler : public GenericAssembler {
     m_formatter.twoByteOp(OP_FENCE, (RegisterID)0, 0b110);
   }
 
+  void ldmxcsr_mr(int32_t offset, RegisterID base) {
+    spew(currentOffset(), "ldmxcsr    " MEM_ob, ADDR_ob(offset, base));
+    m_formatter.twoByteOp(OP_FENCE, offset, base, 0b010);
+  }
+
+  void stmxcsr_rm(int32_t offset, RegisterID base) {
+    spew(currentOffset(), "stmxcsr    " MEM_ob, ADDR_ob(offset, base));
+    m_formatter.twoByteOp(OP_FENCE, offset, base, 0b011);
+  }
+
   void pause() {
     spew(currentOffset(), "pause");
     m_formatter.oneByteOp(PRE_REP);

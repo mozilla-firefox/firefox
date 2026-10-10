@@ -59,7 +59,7 @@
 --monomorphic-inlining=default
 --monomorphic-inlining=always
 --monomorphic-inlining=never
---disable-main-thread-denormals
+--disable-main-thread-wasm-denormals
 --object-keys-scalar-replacement=off
 --object-keys-scalar-replacement=on
 
