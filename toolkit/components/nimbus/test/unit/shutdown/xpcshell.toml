@@ -13,6 +13,7 @@ prefs = [
 ["test_RSEL_updateRecipes_RemoteSettingsClient_get.js"]
 ["test_RSEL_updateRecipes_before_update.js"]
 ["test_RSEL_updateRecipes_load_unenrolled_slugs.js"]
+["test_RSEL_updateRecipes_record_targeting_context.js"]
 ["test_RSEL_updateRecipes_timer.js"]
 ["test_RSEL_updateRecipes_timer_lock_held.js"]
 ["test_RSEL_withUpdateLock.js"]

@@ -42,3 +42,22 @@ function promiseWithUpdateLock(sandbox, loader) {
 
   return blocker.promise;
 }
+
+function promiseRecordTargetingContextBlocks(sandbox) {
+  const blocker = Promise.withResolvers();
+
+  const { ClientID } = ChromeUtils.importESModule(
+    "resource://gre/modules/ClientID.sys.mjs"
+  );
+
+  // ClientID.getProfileGroupID() is the last call awaited by
+  // recordTargetingContext().
+  sandbox.stub(ClientID, "getProfileGroupID").callsFake(() => {
+    blocker.resolve();
+
+    // This promise will never resolve and recordTargetingContext() will block.
+    return new Promise(() => {});
+  });
+
+  return blocker.promise;
+}

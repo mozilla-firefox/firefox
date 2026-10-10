@@ -495,7 +495,7 @@ export class RemoteSettingsExperimentLoader {
     // See-also: https://bugzilla.mozilla.org/show_bug.cgi?id=1936317
     // See-also: https://bugzilla.mozilla.org/show_bug.cgi?id=1936319
     if (lazy.TARGETING_CONTEXT_TELEMETRY_ENABLED) {
-      await lazy.recordTargetingContext();
+      await this.#raceShutdown(() => lazy.recordTargetingContext());
     }
 
     try {
