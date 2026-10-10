@@ -543,7 +543,7 @@ nsresult nsJXLDecoder::AllocateFrameBuffers() {
   // Cmyk8 qcms output is RGB8 (3 bytes/pixel) but we allocate 4 for uniformity.
   if (mPixelFormat.value() != PixelFormat::Rgba8) {
     CheckedInt<size_t> rowBufSize = CheckedInt<size_t>(size.width) * 4;
-    if (!rowBufSize.isValid() || !mU8RowBuf.resize(rowBufSize.value())) {
+    if (!rowBufSize.isValid() || !mPipeInputRowBuf.resize(rowBufSize.value())) {
       mDecodeResult = DecodeResult::OutOfMemory;
       return NS_ERROR_FAILURE;
     }
@@ -783,26 +783,26 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
       if (mTransform) {
         qcms_transform_data_rgba_f16_to_rgba_u8(
             mTransform, reinterpret_cast<const uint16_t*>(currentRow),
-            mU8RowBuf.begin(), size.width);
+            mPipeInputRowBuf.begin(), size.width);
       } else {
         // No CMS: clip f16 to [0,1].
         const uint16_t* src = reinterpret_cast<const uint16_t*>(currentRow);
         for (size_t i = 0; i < size_t(size.width) * 4; ++i) {
           float v = F16ToF32(src[i]);
-          mU8RowBuf[i] =
+          mPipeInputRowBuf[i] =
               v <= 0.0f ? 0 : (v >= 1.0f ? 255 : uint8_t(v * 255.0f + 0.5f));
         }
       }
-      pipeInput = mU8RowBuf.begin();
+      pipeInput = mPipeInputRowBuf.begin();
     } else if (mPixelFormat.value() == PixelFormat::Gray8 ||
                mPixelFormat.value() == PixelFormat::GrayAlpha8) {
       if (mTransform) {
         // qcms reads the packed Gray8/GrayAlpha8 and produces Rgba8 output.
-        qcms_transform_data(mTransform, currentRow, mU8RowBuf.begin(),
+        qcms_transform_data(mTransform, currentRow, mPipeInputRowBuf.begin(),
                             size.width);
       } else {
         // No CMS: expand gray → Rgba8 without color management.
-        uint8_t* out = mU8RowBuf.begin();
+        uint8_t* out = mPipeInputRowBuf.begin();
         for (size_t x = 0; x < size_t(size.width); ++x) {
           uint8_t g = currentRow[x * BytesPerPixel()];
           uint8_t a = mPixelFormat.value() == PixelFormat::GrayAlpha8
@@ -814,9 +814,9 @@ bool nsJXLDecoder::WritePixelRowsToPipe() {
           out[x * 4 + 3] = a;
         }
       }
-      pipeInput = mU8RowBuf.begin();
+      pipeInput = mPipeInputRowBuf.begin();
     } else if (mPixelFormat.value() == PixelFormat::Cmyk8) {
-      uint8_t* out = mU8RowBuf.begin();
+      uint8_t* out = mPipeInputRowBuf.begin();
       const uint8_t* kRow =
           mKBuffer.empty() ? nullptr : mKBuffer.begin() + y * size.width;
       if (mTransform) {

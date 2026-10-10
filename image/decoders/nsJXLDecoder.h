@@ -163,8 +163,10 @@ class nsJXLDecoder final : public Decoder {
 
   WriteOnce<PixelFormat> mPixelFormat;
 
-  // Per-row u8 output buffer for manual CMS paths (HDR, gray, CMYK).
-  Vector<uint8_t> mU8RowBuf;
+  // The row written to the SurfacePipe when the pipe can't read mPixelBuffer
+  // directly: mPixelFormat converted to 4 bytes per pixel (RGBA8, or RGB8 plus
+  // padding for CMYK with CMS). Allocated for every format except Rgba8.
+  Vector<uint8_t> mPipeInputRowBuf;
 
   // Full-frame decoded pixel buffer; allocated in AllocateFrameBuffers, sized
   // width * height * BytesPerPixel(). Passed to jxl-rs as the output buffer.
