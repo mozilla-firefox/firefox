@@ -5607,6 +5607,10 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
   const FlexItem* endmostItem =
       endmostLine.IsEmpty() ? nullptr : &endmostLine.EndmostItem(aAxisTracker);
 
+  // Forced breaks are honored only if the available block-size is constrained,
+  // since an unconstrained reflow must not push items to a next-in-flow.
+  const bool shouldHonorForcedBreaks =
+      aAvailableSizeForItems.BSize(flexWM) != NS_UNCONSTRAINEDSIZE;
   bool endmostItemOrLineHasBreakAfter = false;
   // If true, push all remaining flex items to the container's next-in-flow.
   bool shouldPushRemainingItems = false;
@@ -5769,7 +5773,7 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
             ReflowFlexItem(aAxisTracker, aReflowInput, item, framePos,
                            isAdjacentWithBStart, availableSize, aContainerSize);
 
-        if (aReflowInput.IsInFragmentedContext()) {
+        if (shouldHonorForcedBreaks) {
           const bool itemHasBreakBefore =
               item.Frame()->ShouldBreakBefore(aReflowInput.mBreakType) ||
               childStatus.IsInlineBreakBefore();
@@ -5835,7 +5839,7 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
           overflowIncompleteItems.Insert(item.Frame());
         }
 
-        if (aReflowInput.IsInFragmentedContext()) {
+        if (shouldHonorForcedBreaks) {
           const bool itemHasBreakAfter =
               item.Frame()->ShouldBreakAfter(aReflowInput.mBreakType) ||
               childStatus.IsInlineBreakAfter();
@@ -5944,7 +5948,7 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
       }
     }
 
-    if (aReflowInput.IsInFragmentedContext() && aAxisTracker.IsRowOriented()) {
+    if (shouldHonorForcedBreaks && aAxisTracker.IsRowOriented()) {
       // Propagate forced break values from the flex items to its flex line.
       if (lineHasBreakBefore) {
         if (&line == &startmostLine) {
