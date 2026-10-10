@@ -941,4 +941,14 @@ var vectors = [
     sanitized:
       '<html><head></head><body><svg><a xlink:title="foo">bar</a></svg></body></html>',
   },
+  {
+    data: `<div is="custom-div">foo</div>`,
+    sanitized: "<html><head></head><body><div>foo</div></body></html>",
+  },
+  {
+    data: `<body><style is="custom-style">* { color: red; }</style></body>`,
+    flags: Ci.nsIParserUtils.SanitizerAllowStyle,
+    sanitized:
+      "<html><head></head><body><style>* { color: red; }</style></body></html>",
+  },
 ];

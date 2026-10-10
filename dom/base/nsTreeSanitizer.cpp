@@ -1183,6 +1183,13 @@ static bool UTF16StringStartsWith(const char16_t* aStr, uint32_t aLength,
 
 void nsTreeSanitizer::SanitizeAttributes(mozilla::dom::Element* aElement,
                                          AllowedAttributes aAllowed) {
+  // Clear the custom element data introduced by the "is" attribute.
+  if (aElement->HasCustomElementData()) {
+    MOZ_ASSERT(aElement->GetCustomElementData()->GetIs(aElement),
+               "CustomElementData without an |is| attribute?");
+    aElement->ClearCustomElementData();
+  }
+
   int32_t ac = (int)aElement->GetAttrCount();
 
   for (int32_t i = ac - 1; i >= 0; --i) {
@@ -1451,11 +1458,6 @@ void nsTreeSanitizer::SanitizeChildren(nsINode* aRoot) {
       NS_ASSERTION(ns == kNameSpaceID_XHTML || ns == kNameSpaceID_SVG ||
                        ns == kNameSpaceID_MathML,
                    "Should have only HTML, MathML or SVG here!");
-      if (elt->HasCustomElementData()) {
-        MOZ_ASSERT(elt->GetCustomElementData()->GetIs(elt),
-                   "CustomElementData without an |is| attribute?");
-        elt->ClearCustomElementData();
-      }
       AllowedAttributes allowed;
       if (ns == kNameSpaceID_XHTML) {
         allowed.mNames = sAttributesHTML;
