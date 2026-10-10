@@ -522,6 +522,9 @@ mozilla::ipc::IPCResult DocAccessibleParent::RecvEvent(
 
 void DocAccessibleParent::FireEvent(RemoteAccessible* aAcc,
                                     const uint32_t& aEventType) {
+#if defined(ANDROID)
+  nsAccessibilityService::GetAndroidMonitor().AssertCurrentThreadOwns();
+#endif
   if (aEventType == nsIAccessibleEvent::EVENT_REORDER ||
       aEventType == nsIAccessibleEvent::EVENT_INNER_REORDER) {
     uint32_t count = aAcc->ChildCount();
@@ -732,6 +735,7 @@ mozilla::ipc::IPCResult DocAccessibleParent::RecvMutationEvents(
 }
 
 mozilla::ipc::IPCResult DocAccessibleParent::RecvRequestAckMutationEvents() {
+  ACQUIRE_ANDROID_LOCK
   if (!mShutdown) {
     if (!mIsInitialTreeDone) {
       // This is the first request for an ACK, which means we now have the
