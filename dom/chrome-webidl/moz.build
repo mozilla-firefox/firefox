@@ -23,6 +23,9 @@ with Files("MatchGlob.webidl"):
 with Files("MatchPattern.webidl"):
     BUG_COMPONENT = ("WebExtensions", "General")
 
+with Files("Nimbus.webidl"):
+    BUG_COMPONENT = ("Firefox", "Nimbus Desktop Client")
+
 with Files("WebExtension*.webidl"):
     BUG_COMPONENT = ("WebExtensions", "General")
 
@@ -81,6 +84,7 @@ WEBIDL_FILES = [
     "MozStorageStatementParams.webidl",
     "MozStorageStatementRow.webidl",
     "NetDashboard.webidl",
+    "Nimbus.webidl",
     "OriginAttributes.webidl",
     "PathUtils.webidl",
     "PermissionSetParameters.webidl",
