@@ -1,0 +1,17 @@
+---
+root:
+  items:
+    - type: reference-frame
+      bounds: [0, 37.5, 300, 200]
+      transform: translate(0, 0)
+      is-2d: true
+      items:
+        - type: scroll-frame
+          bounds: [0, 0, 300, 150]
+          content-size: [300, 400]
+          items:
+            - text: "Masked text"
+              origin: [10, 28.5]
+              size: 16
+              font: "../text/VeraBd.ttf"
+              color: black

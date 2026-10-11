@@ -595,6 +595,10 @@ impl<'a> SceneBuilder<'a> {
             &builder.interners.clip,
         );
 
+        for params in tile_cache_config.tile_caches.values() {
+            builder.spatial_tree.add_slice_root(params.spatial_node_index);
+        }
+
         for pic_index in &builder.snapshot_pictures {
             builder.picture_graph.add_root(*pic_index);
         }

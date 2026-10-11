@@ -1,0 +1,34 @@
+---
+# A masked surface inside a scroll root that sits at a fractional device
+# offset must rasterize on that scroll root's pixel grid, or compositing it
+# into the picture cache tile resamples its content by the fraction.
+# The mask is opaque, so the result must match unmasked text.
+root:
+  items:
+    - type: reference-frame
+      bounds: [0, 37.5, 300, 200]
+      transform: translate(0, 0)
+      is-2d: true
+      items:
+        - type: scroll-frame
+          bounds: [0, 0, 300, 150]
+          content-size: [300, 400]
+          items:
+            - type: clip
+              id: 2
+              image-mask:
+                image: solid-color(255,255,255,255,200,30)
+                rect: [0, 6.5, 200, 30]
+                repeat: false
+            - type: clip-chain
+              id: 3
+              clips: [2]
+            - type: stacking-context
+              bounds: [0, 0, 300, 150]
+              clip-chain: 3
+              items:
+                - text: "Masked text"
+                  origin: [10, 28.5]
+                  size: 16
+                  font: "../text/VeraBd.ttf"
+                  color: black

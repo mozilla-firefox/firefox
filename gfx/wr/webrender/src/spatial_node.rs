@@ -215,6 +215,14 @@ pub struct SpatialNode {
     /// the tree's existing policy of not snapping animated transforms (bug
     /// 637852), which the device text-snap path (bug 2044211) otherwise misses.
     pub is_ancestor_or_self_animating: bool,
+
+    /// True if this node is the spatial node of a picture cache slice.
+    pub is_slice_root: bool,
+
+    /// Adjustment that places a slice root scroll or sticky frame on the device
+    /// pixel grid. Applied to this node's transforms and to the coordinate system
+    /// offset handed to its descendants.
+    pub slice_root_snap_offset: WorldVector2D,
 }
 
 /// Grid that a device-space offset is quantized to just before it is rounded
@@ -597,6 +605,28 @@ impl SpatialNode {
             }
         }
 
+        // A slice is rasterized relative to its spatial node and composited at a
+        // whole device pixel offset. If an unsnapped reference frame leaves the
+        // node at a fractional offset, surfaces drawn into the slice that rasterize
+        // relative to root end up off its pixel grid and get resampled when
+        // composited (bug 2077649). Snap the node so the spatial tree agrees with
+        // where the slice is composited. Slice content doesn't move, since it is
+        // already composited at the rounded offset.
+        self.slice_root_snap_offset = WorldVector2D::zero();
+        if self.is_slice_root {
+            if let SpatialNodeType::ScrollFrame(..) | SpatialNodeType::StickyFrame(..) = self.node_type {
+                debug_assert_eq!(self.coordinate_system_id, CoordinateSystemId::root());
+                let offset = self.content_transform.offset;
+                let snapped = Vector2D::new(
+                    quantize_device_offset(offset.x).round(),
+                    quantize_device_offset(offset.y).round(),
+                );
+                self.slice_root_snap_offset = WorldVector2D::from_untyped(snapped - offset);
+                self.content_transform.offset = snapped;
+                self.viewport_transform.offset += self.slice_root_snap_offset.to_untyped();
+            }
+        }
+
         //TODO: remove the field entirely?
         self.transform_kind = if self.coordinate_system_id.0 == 0 {
             TransformedRectKind::AxisAligned
@@ -694,6 +724,7 @@ impl SpatialNode {
         // reference frame and the offset is the accumulated offset of all the nodes
         // between us and the parent reference frame. If we are a reference frame,
         // we need to reset both these values.
+        state.coordinate_system_relative_scale_offset.offset += self.slice_root_snap_offset.to_untyped();
         match self.node_type {
             SpatialNodeType::StickyFrame(ref info) => {
                 // We don't translate the combined rect by the sticky offset, because sticky

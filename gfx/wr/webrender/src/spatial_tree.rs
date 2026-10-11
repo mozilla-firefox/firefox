@@ -229,6 +229,11 @@ impl SceneSpatialTree {
         self.spatial_nodes[index.0 as usize].is_root_coord_system
     }
 
+    /// Record that a picture cache slice was built for this spatial node.
+    pub fn add_slice_root(&mut self, index: SpatialNodeIndex) {
+        self.updates.slice_roots.push(index);
+    }
+
     /// Complete building this scene, return the updates to apply to the frame spatial tree
     pub fn end_frame_and_get_pending_updates(&mut self) -> SpatialTreeUpdates {
         self.updates.root_reference_frame_index = self.root_reference_frame_index;
@@ -490,6 +495,8 @@ pub struct SpatialTreeUpdate {
 pub struct SpatialTreeUpdates {
     root_reference_frame_index: SpatialNodeIndex,
     updates: Vec<SpatialTreeUpdate>,
+    /// Spatial nodes of the picture cache slices built for this scene.
+    slice_roots: Vec<SpatialNodeIndex>,
 }
 
 impl SpatialTreeUpdates {
@@ -497,6 +504,7 @@ impl SpatialTreeUpdates {
         SpatialTreeUpdates {
             root_reference_frame_index: SpatialNodeIndex::INVALID,
             updates: Vec::new(),
+            slice_roots: Vec::new(),
         }
     }
 }
@@ -754,7 +762,13 @@ impl SpatialTree {
                 is_async_zooming: false,
                 is_ancestor_or_self_zooming: false,
                 is_ancestor_or_self_animating: false,
+                is_slice_root: false,
+                slice_root_snap_offset: WorldVector2D::zero(),
             });
+        }
+
+        for index in updates.slice_roots {
+            self.get_spatial_node_mut(index).is_slice_root = true;
         }
 
         self.visit_nodes_mut(|_, node| {
@@ -1487,6 +1501,68 @@ fn test_is_ancestor1() {
     assert!(!st.is_ancestor(child1_1, child2));
     assert!(!st.is_ancestor(child2, child1_0));
     assert!(!st.is_ancestor(child2, child1_1));
+}
+
+/// A slice root scroll frame under a reference frame at a fractional offset is
+/// snapped to the device pixel grid, and its descendants move with it. A scroll
+/// frame that isn't a slice root keeps the fractional offset.
+#[test]
+fn test_slice_root_snapped() {
+    fn build(mark_slice_root: bool) -> (SpatialTree, SpatialNodeIndex, SpatialNodeIndex) {
+        let mut cst = SceneSpatialTree::new();
+        let frame = cst.add_reference_frame(
+            cst.root_reference_frame_index(),
+            TransformStyle::Flat,
+            PropertyBinding::Value(LayoutTransform::identity()),
+            ReferenceFrameKind::Transform {
+                is_2d_scale_translation: true,
+                should_snap: false,
+                paired_with_perspective: false,
+            },
+            LayoutVector2D::new(0.0, 37.5),
+            PipelineId::dummy(),
+            false,
+        );
+        let scroll = cst.add_scroll_frame(
+            frame,
+            ExternalScrollId(1, PipelineId::dummy()),
+            PipelineId::dummy(),
+            &LayoutRect::from_size(LayoutSize::new(400.0, 400.0)),
+            &LayoutSize::new(400.0, 800.0),
+            ScrollFrameKind::Explicit,
+            LayoutVector2D::zero(),
+            APZScrollGeneration::default(),
+            HasScrollLinkedEffect::No,
+        );
+        let child = cst.add_reference_frame(
+            scroll,
+            TransformStyle::Flat,
+            PropertyBinding::Value(LayoutTransform::identity()),
+            ReferenceFrameKind::Transform {
+                is_2d_scale_translation: true,
+                should_snap: false,
+                paired_with_perspective: false,
+            },
+            LayoutVector2D::new(0.0, 10.25),
+            PipelineId::dummy(),
+            false,
+        );
+        if mark_slice_root {
+            cst.add_slice_root(scroll);
+        }
+        let mut st = SpatialTree::new();
+        st.apply_updates(cst.end_frame_and_get_pending_updates());
+        st.update_tree(&SceneProperties::new());
+        (st, scroll, child)
+    }
+
+    let (st, scroll, child) = build(true);
+    assert_eq!(st.get_spatial_node(scroll).content_transform.offset.y, 38.0);
+    assert_eq!(st.get_spatial_node(child).content_transform.offset.y, 48.25);
+
+    let (st, scroll, child) = build(false);
+    assert_eq!(st.get_spatial_node(scroll).content_transform.offset.y, 37.5);
+    assert_eq!(st.get_spatial_node(child).content_transform.offset.y, 47.75);
 }
 
 /// Tests that we select the correct scroll root in the simple case.

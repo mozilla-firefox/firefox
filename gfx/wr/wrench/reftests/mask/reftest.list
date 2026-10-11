@@ -19,3 +19,4 @@ platform(linux,mac) == mask-multiple-coord-systems.yaml mask-multiple-coord-syst
 fuzzy(1,10) fuzzy-if(platform(swgl),5,100) == shaped-corners.yaml shaped-corners.png
 platform(linux,mac) == shaped-corners-inset.yaml shaped-corners-inset.png
 platform(linux,mac) == shaped-corners-outset.yaml shaped-corners-outset.png
+options(disable-subpixel) == 2077649-mask-fractional-scroll-root.yaml 2077649-mask-fractional-scroll-root-ref.yaml
