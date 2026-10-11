@@ -289,8 +289,6 @@
   <string name="browser_menu_default_banner_title">Cleachd %1$s mar am brabhsair bunaiteach agad</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Luath, prìobhaideach is air a dhèanamh dhutsa.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Leig seachad an iomairt</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Barrachd fiosrachaidh</string>
   <!--
@@ -1099,8 +1097,6 @@
   <string name="preference_simple_toolbar">Sìmplidh</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Air a leudachadh</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Feumaidh bàr an t-seòlaidh a bhith aig a’ bhàrr nuair a tha bàr nan tabaichean ris.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Fosgail taba ùr</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1215,8 +1211,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Tabaichean</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Sealladh nan taba</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Liosta</string>
   <!-- Option for a grid tab view -->
@@ -1261,12 +1255,6 @@
   <string name="opening_screen_last_tab_summary">Fosgail san taba mu dheireadh</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Fosgail air an duilleag-dhachaigh an dèidh ceithir uairean a thìde</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Gluais seann-tabaichean gun earrann neo-ghnìomhach</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Thèid tabaichean nach tug thu sùil orra fad cola-deug a ghluasad gun earrann neo-ghnìomhach.</string>
   <!--

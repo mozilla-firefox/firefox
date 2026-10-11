@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">%1$s ن پؽش فرز خوتووݩ کۊنین</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">زل، سیخومی وو وورکل وابیڌه مخسۊس ایسا.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">رڌ کردن تبلیقات</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">دووسمندیا قلوه</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">ساڌه</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">بولند وابیڌه</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">هر سا نوار بلگه نشووݩ داڌه ابۊ، نوار نشۊوی وا ب روء بۊ.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">گۊشیڌن بلگه نۊ</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1421,8 +1417,6 @@
   <string name="preferences_tabs">بلگه یل</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">تئر بندی بلگه</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">نما بلگه یل</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">نومگه ای</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1471,12 @@
   <string name="preferences_tab_organization">سازمووݩ دهی بلگه</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">بلگه یل قیر فعال</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">جا گورو بلگه یل قڌیمی و بشن قیر فعال</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">بلگه یلی ک بیشتر ز دو هفته ننیشتینه، و بشن قیر فعال جا گورو ابۊن.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">بونکۊیل بلگه</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">بلگه یل خوتووݩ ن من بونکۊیلی ک ترین نوم بنین وو زفت کۊنین، سازمووݩ دهی کۊنین.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">فعال کردن بونکۊ یل بلگه</string>
   <!--
     Privacy report
 

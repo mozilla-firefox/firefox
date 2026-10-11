@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Bruk %1$s som standard</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Raskt, privat og laga for deg.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Ignorer marknadsføring</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Meir informasjon</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">Enkel</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Utvida</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Adresselinja må vere øvst når fanelinja vert vist.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Opne ei ny fane</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1421,8 +1417,6 @@
   <string name="preferences_tabs">Faner</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Faneoppsett</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Fanevising</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Liste</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1471,12 @@
   <string name="preferences_tab_organization">Faneorganisering</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Uverksame faner</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Flytt gamle faner til uverksame</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Faner du ikkje har vist på to veker, vert flytta til den uverksame delen.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Fanegrupper</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Organiser fanene dine i grupper du kan namngi og lagre.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Aktiver fanegrupper</string>
   <!--
     Privacy report
 

@@ -309,8 +309,6 @@
   <string name="browser_menu_default_banner_title">%1$s ᱟᱢᱟᱜ ᱢᱩᱞ ᱞᱮᱠᱷᱟᱛᱮ ᱫᱮᱠᱷᱟᱣ ᱢᱮ</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">ᱩᱥᱟᱹᱨᱟ, ᱯᱨᱟᱭᱣᱮᱴ, ᱟᱨ ᱟᱢ ᱞᱟᱹᱜᱤᱫ ᱛᱮᱭᱟᱨ ᱟᱠᱟᱱᱟ ᱾</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">ᱯᱨᱚᱢᱚᱥᱚᱱ ᱵᱚᱸᱫᱚᱭ ᱢᱮ</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">ᱰᱷᱮᱨ ᱵᱤᱵᱨᱚᱬ</string>
   <!--
@@ -1269,8 +1267,6 @@
   <string name="preference_simple_toolbar">ᱟᱞᱜᱟ</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">ᱯᱟᱥᱱᱟᱣ ᱟᱠᱟᱱᱟ</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">ᱴᱮᱵᱽ ᱵᱟᱨ ᱩᱫᱩᱜᱚᱜ ᱡᱷᱚᱜ ᱴᱷᱤᱠᱟᱹᱱᱟ ᱵᱟᱨ ᱪᱮᱛᱟᱱ ᱨᱮ ᱛᱟᱦᱮᱱ ᱞᱟᱹᱠᱛᱤᱭᱟ ᱾</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">ᱢᱤᱫᱴᱟᱹᱝ ᱱᱟᱶᱟ ᱴᱮᱵᱽ ᱡᱷᱤᱡᱽ ᱢᱮ</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1402,8 +1398,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">ᱴᱮᱵᱽ ᱠᱚ</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">ᱴᱮᱵᱽ ᱵᱷᱤᱭᱩ</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">ᱞᱤᱥᱴᱤ</string>
   <!-- Option for a grid tab view -->
@@ -1450,16 +1444,8 @@
   <string name="opening_screen_last_tab_summary">ᱢᱩᱪᱟᱹᱫ ᱴᱮᱵᱽ ᱨᱮ ᱠᱷᱩᱞᱟᱹᱭ ᱢᱮ</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">ᱯᱩᱱ ᱴᱟᱲᱟᱝ ᱛᱟᱭᱚᱢ ᱚᱲᱟᱜ ᱥᱟᱦᱴᱟ ᱨᱮ ᱠᱷᱩᱞᱟᱹᱭ ᱢᱮ</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">ᱢᱟᱨᱮ ᱴᱟᱵᱽ ᱫᱚ ᱵᱟᱝ ᱪᱟᱹᱞᱩ ᱨᱮ ᱩᱪᱟᱹᱲ ᱢᱮ</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">ᱟᱢᱟᱜ ᱴᱮᱵᱽ ᱚᱠᱟ ᱫᱚ ᱵᱟᱨ ᱦᱟᱴ ᱫᱷᱟᱹᱵᱤᱡ ᱵᱟᱝ ᱧᱮᱞ ᱠᱟᱱᱟ ᱚᱱᱟ ᱫᱚ ᱵᱟᱝ ᱪᱟᱹᱞᱩᱜ ᱛᱷᱟᱨ ᱨᱮ ᱩᱪᱟᱹᱲᱚᱜᱼᱟ ᱾</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">ᱴᱮᱵᱽ ᱜᱟᱫᱮᱞ ᱪᱟᱹᱞᱩᱭ ᱢᱮ</string>
   <!--
     Privacy report
 

@@ -16,6 +16,8 @@
   <string name="feedback_erase2">방문 기록 삭제됨</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">탭의 탐색 기록이 삭제되었습니다.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">메뉴</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">공유…</string>
   <!--

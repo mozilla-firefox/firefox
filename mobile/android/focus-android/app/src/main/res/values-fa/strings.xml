@@ -540,7 +540,7 @@
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">متاسفیم. با این زبانه مشکل داریم.</string>
   <!-- Subtitle for the tab crash report screen -->
-  <string name="tab_crash_report_description">به عنوان یک مرورگر خصوصی نمی توانیم این زبانه را ذخیره و بازیابی کنیم.</string>
+  <string name="tab_crash_report_description">به عنوان یک مرورگر خصوصی، ما هرگز این زبانه را ذخیره نمی‌کنیم و نمی‌توانیم آن را بازیابی کنیم.</string>
   <!-- Label for button to close the tab -->
   <string name="tab_crash_report_close_tab_button_label">بستن زبانه</string>
   <!-- Label for the checkbox to send the tab crash report to Mozilla -->

@@ -561,8 +561,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Karty</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Wyglōnd kart</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Wykoz</string>
   <!-- Option for a grid tab view -->
@@ -605,12 +603,6 @@
   <string name="opening_screen_last_tab_summary">Ôdewrzij na ôstatnij karcie</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Ôdewrzij na dōmowyj strōnie po sztyrech godzinach</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Dej stare karty do niyaktywnych</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Larty, co dwa tydnie niy były ôtwiyrane, idōm do sekcyje niyaktywnych kart.</string>
   <!--

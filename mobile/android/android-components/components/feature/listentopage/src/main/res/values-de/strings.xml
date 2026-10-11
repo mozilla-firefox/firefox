@@ -59,4 +59,8 @@
     Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended.
   -->
   <string name="mozac_feature_listentopage_change_speed">Wiedergabegeschwindigkeit ändern</string>
+  <!-- Playback speed menu item, such as "1.5×". %1$s is the multiplier already formatted with the decimal separator of the locale. -->
+  <string name="mozac_feature_listentopage_playback_speed_option">%1$s×</string>
+  <!-- Playback speed menu item for the normal reading speed, which is also the default speed. "1×" means one times the normal speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_option_default">1× (Standard)</string>
 </resources>

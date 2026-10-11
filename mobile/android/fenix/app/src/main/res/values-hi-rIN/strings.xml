@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">%1$s को अपना डिफ़ॉल्ट बनाएं</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">तेज़, प्राइवेट और खास आपके लिए बनाया गया।</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">प्रमोशन खारिज करें</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">और जानकारी</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">सिंपल</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">बड़ा</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">टैब बार दिखाए जाते समय, एड्रेस बार सबसे ऊपर होना चाहिए।</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">नया टैब खोलें</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1421,8 +1417,6 @@
   <string name="preferences_tabs">टैब</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">टैब लेआउट</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">टैब व्यू</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">सूची</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1471,12 @@
   <string name="preferences_tab_organization">टैब व्यवस्था</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">निष्क्रिय टैब</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">पुराने टैब को \'निष्क्रिय\' में ले जाएं</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">जो टैब आपने दो हफ़्तों से नहीं देखे हैं, वे \'निष्क्रिय\' सेक्शन में ट्रांसफ़र हो जाते हैं।</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">टैब ग्रुप</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">अपने टैब को ऐसे ग्रुप में व्यवस्थित करें, जिन्हें आप नाम दे सकते हैं और सेव कर सकते हैं।</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">टैब ग्रुप की सुविधा चालू करें</string>
   <!--
     Privacy report
 

@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Gjør %1$s til din standard</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Raskt, privat og laget for deg.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Ignorer markedsføring</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Mer informasjon</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">Enkel</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Utvidet</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Adresselinjen må være øverst når fanelinjen vises.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Åpne en ny fane</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1369,6 +1365,8 @@
   <string name="library_desktop_bookmarks_unfiled">Andre bokmerker</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Historikk</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Valgt</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Innstillinger</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1421,8 +1419,6 @@
   <string name="preferences_tabs">Faner</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Faneoppsett</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Fanevisning</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Liste</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1473,12 @@
   <string name="preferences_tab_organization">Faneorganisering</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Inaktive faner</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Flytt gamle faner til inaktive</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Faner du ikke har vist på to uker, flyttes til den inaktive delen.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Fanegrupper</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Organiser fanene dine i grupper du kan navngi og lagre.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Aktiver fanegrupper</string>
   <!--
     Privacy report
 

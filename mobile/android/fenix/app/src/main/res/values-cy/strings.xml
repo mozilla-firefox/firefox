@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Gwnewch %1$s eich porwr arferol</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Cyflym, preifat, ac wedi\'i wneud ar eich cyfer chi.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Cau\'r hyrwyddo</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Rhagor o wybodaeth</string>
   <!--
@@ -1290,8 +1288,6 @@
   <string name="preference_simple_toolbar">Syml</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Estynedig</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Rhaid i\'r bar cyfeiriad fod ar y brig pan fydd y bar tabiau\'n cael ei ddangos.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Agor tab newydd</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1373,6 +1369,8 @@
   <string name="library_desktop_bookmarks_unfiled">Nodau Tudalen Eraill</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Hanes</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Dewiswyd</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Gosodiadau</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1425,8 +1423,6 @@
   <string name="preferences_tabs">Tabiau</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Cynllun tabiau</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Golwg tabiau</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Rhestr</string>
   <!-- Option for a grid tab view -->
@@ -1481,20 +1477,12 @@
   <string name="preferences_tab_organization">Trefnu tabiau</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Tabiau anweithredol</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Symud hen dabiau i anweithredol</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Mae tabiau dydych chi heb edrych arnyn nhw ers pythefnos yn cael eu symud i’r adran anweithredol.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Grwpiau tabiau</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Trefnwch eich tabiau yn grwpiau y mae modd chi eu henwi a\'u cadw.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Galluogi Grwpiau Tabiau</string>
   <!--
     Privacy report
 

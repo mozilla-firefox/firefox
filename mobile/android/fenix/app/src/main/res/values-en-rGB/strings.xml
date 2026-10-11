@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Make %1$s your default</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Fast, private, and made for you.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Dismiss promotion</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">More info</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">Simple</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Expanded</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Address bar must be on top when tab bar is shown.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Open a new tab</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1369,6 +1365,8 @@
   <string name="library_desktop_bookmarks_unfiled">Other Bookmarks</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">History</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Selected</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Settings</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1421,8 +1419,6 @@
   <string name="preferences_tabs">Tabs</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Tab layout</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Tab view</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">List</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1473,12 @@
   <string name="preferences_tab_organization">Tab organisation</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Inactive tabs</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Move old tabs to inactive</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Tabs you haven’t viewed for two weeks get moved to the inactive section.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Tab groups</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Organise your tabs into groups you can name and save.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Enable Tab Groups</string>
   <!--
     Privacy report
 

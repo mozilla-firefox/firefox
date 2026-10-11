@@ -309,8 +309,6 @@
   <string name="browser_menu_default_banner_title">เลือก %1$s เป็นค่าเริ่มต้น</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">รวดเร็ว เป็นส่วนตัว และตอบโจทย์คุณ</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">ปิดโปรโมชัน</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">ข้อมูลเพิ่มเติม</string>
   <!--
@@ -1271,8 +1269,6 @@
   <string name="preference_simple_toolbar">ธรรมดา</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">ขยาย</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">แถบที่อยู่ต้องอยู่ด้านบนเมื่อแสดงแถบแท็บ</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">เปิดแท็บใหม่</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1397,8 +1393,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">แท็บ</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">มุมมองแท็บ</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">รายการ</string>
   <!-- Option for a grid tab view -->
@@ -1445,18 +1439,10 @@
   <string name="opening_screen_after_four_hours_of_inactivity_summary">เปิดหน้าแรกหลังจากสี่ชั่วโมง</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">แท็บที่ไม่ได้ใช้งาน</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">ย้ายแท็บเก่าไปยังส่วนที่ไม่ได้ใช้งาน</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">แท็บที่คุณไม่ได้ดูเป็นเวลา 2 สัปดาห์จะถูกย้ายไปยังส่วนที่ไม่ได้ใช้งาน</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">กลุ่มแท็บ</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">เปิดใช้งานกลุ่มแท็บ</string>
   <!--
     Privacy report
 

@@ -1145,8 +1145,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Onglets</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Vista onglet</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Lista</string>
   <!-- Option for a grid tab view -->
@@ -1191,18 +1189,10 @@
   <string name="opening_screen_last_tab_summary">Dobrir lo darrièr onglet</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Dobrir la pagina d’acuèlh après quatre oras</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Passar los onglets ancians a inactius</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Los onglets qu’avètz pas consultats fa doas setmanas aniràn a la seccion dels inactius.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Grops d’onglets</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Activar los grops d’onglets</string>
   <!--
     Privacy report
 

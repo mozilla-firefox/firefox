@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Cyńśo %1$s k swójomu standardoju</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Malsny, priwatny a za was gótowany.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Wabjenje zacyniś</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Dalšne informacije</string>
   <!--
@@ -1288,8 +1286,6 @@
   <string name="preference_simple_toolbar">Jadnory</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Rozłožony</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Adresowe pólo musy górjejce byś, gaž se rědka rejtarikow pokazujo.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Nowy rejtarik wócyniś</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1423,8 +1419,6 @@
   <string name="preferences_tabs">Rejtariki</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Wugótowanje rejtarikow</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Rejtarikowy naglěd</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Lisćina</string>
   <!-- Option for a grid tab view -->
@@ -1479,20 +1473,12 @@
   <string name="preferences_tab_organization">Organizacija rejtarikow</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Inaktiwne rejtariki</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Stare rejtariki do „inaktiwne“ pśesunuś</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Rejtariki, kótarež njejsćo se woglědał dwa tyźenja, se do inaktiwnego wótrězka pśesunu.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Kupki rejtarikow</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Organizěrujśo swóje rejtariki w kupkach, kótarež móžośo pomjeniś a składowaś.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Kupki rejtarikow zmóžniś</string>
   <!--
     Privacy report
 

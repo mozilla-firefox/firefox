@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">將 %1$s 設為您的預設瀏覽器</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">快速上網，確保隱私，為您量身打造。</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">關閉宣傳內容</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">更多資訊</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">簡單</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">展開</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">顯示分頁列時，網址列必須在頂端。</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">開啟新分頁</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1421,8 +1417,6 @@
   <string name="preferences_tabs">分頁</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">分頁版面</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">分頁檢視</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">清單</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1471,12 @@
   <string name="preferences_tab_organization">分頁管理方式</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">閒置分頁</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">將舊分頁移動到獨立區塊</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">將超過兩週沒有檢視過的分頁，移動至「閒置分頁」區塊。</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">分頁群組</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">將分頁放入可命名並儲存的群組來整理。</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">開啟分頁群組功能</string>
   <!--
     Privacy report
 

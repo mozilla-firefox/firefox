@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Դարձնել Ձեր սկզբնադիրը %1$s</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Արագ, գաղտնի և ստեղծված Ձեզ համար։</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Փակել առաջխաղացումը</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Հավելյալ տեղեկություն</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">Պարզ</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Ընդարձակված</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Հասցեի տողը պետք է լինի վերևում, երբ ներդիրների գոտին ցուցադրվում է։</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Բացել նոր ներդիր</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1421,8 +1417,6 @@
   <string name="preferences_tabs">Ներդիրներ</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Ներդիրի դասավորություն</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Ներդիրի տեսք</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Ցանկ</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1471,12 @@
   <string name="preferences_tab_organization">Ներդիրի կազմակերպում</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Ոչ ակտիվ ներդիրներ</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Տեղափոխել հին ներդիրները անգործուն</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Ներդիրները, որոնք չեք դիտել երկու շաբաթ, տեղափոխվել են անգործուն հատված:</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Ներդիրների խմբեր</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Կազմակերպեք ձեր ներդիրները խմբերի, որոնք կարող եք անվանել և պահպանել։</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Միացնել ներդիրների խմբերը</string>
   <!--
     Privacy report
 

@@ -162,6 +162,8 @@
     Option in Library to open Downloads page
   -->
   <string name="library_downloads">Lejupielādes</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Atlasīts</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Ciļņu izkārtojums</string>
   <!-- Content description for the media playback indicator in the tabs tray. -->
@@ -184,8 +186,6 @@
   <string name="preferences_tab_groups_title">Ciļņu kopas</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Kārto savas cilnes kopās, kurām var piešķirt nosaukumu, un saglabā!</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Iespējot ciļņu kopas</string>
   <!--
     Privacy report
 

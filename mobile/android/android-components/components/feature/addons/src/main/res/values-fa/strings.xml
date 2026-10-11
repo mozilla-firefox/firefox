@@ -40,7 +40,7 @@
   <!-- Description for the "privacy" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_privacy_description">خواندن و تغییر تنظیمات حریم خصوصی</string>
   <!-- Description for the "<all_urls>" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description">دسترسی به تمامی اطلاعات شما برای تمامی پایگاه های اینترنتی</string>
+  <string name="mozac_feature_addons_permissions_all_urls_description">دسترسی به داده‌های شما برای همه وبگاه‌ها</string>
   <!-- Description for the "tabs" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_tabs_description">دسترسی به زبانه‌های مرورگر</string>
   <!-- Description for the "webNavigation" WebExtensions API permission. -->

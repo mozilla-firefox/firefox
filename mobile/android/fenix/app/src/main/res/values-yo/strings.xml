@@ -461,8 +461,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Àwọn táàbù</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Wíwo táàbù</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Àtòkọ</string>
   <!-- Option for a grid tab view -->
@@ -499,12 +497,6 @@
   <string name="close_tabs_after_one_week_summary">Padé lẹ́yìn ọ̀sẹ̀ kan</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one month -->
   <string name="close_tabs_after_one_month_summary">Padé lẹ́yìn oṣù kan</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Gbé àwọn táàbù àtijọ́ lọ sí àìṣiṣẹ́</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Àwọn táàbù tí o kò tíì wò fún ọ̀sẹ̀ méjì má a lọ sí abala àìṣiṣẹ́.</string>
   <!--

@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">הגדרת %1$s כברירת המחדל</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">מהיר, פרטי ונוצר עבורך.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">סגירת ההצעה</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">מידע נוסף</string>
   <!--
@@ -1287,8 +1285,6 @@
   <string name="preference_simple_toolbar">פשוט</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">מורחב</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">שורת הכתובת חייבת להופיע למעלה כאשר סרגל הלשוניות מוצג.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">פתיחת לשונית חדשה</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1422,8 +1418,6 @@
   <string name="preferences_tabs">לשוניות</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">פריסת לשוניות</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">תצוגת לשוניות</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">רשימה</string>
   <!-- Option for a grid tab view -->
@@ -1478,20 +1472,12 @@
   <string name="preferences_tab_organization">ארגון לשוניות</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">לשוניות לא פעילות</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">העברת לשוניות ישנות ללא פעילות</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">לשוניות בהן לא צפית במשך שבועיים מועברות לאגף הלא פעילים.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">קבוצות לשוניות</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">ארגון הלשוניות שלך לקבוצות שניתן לתת להן שם ולשמור אותן.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">הפעלת קבוצות לשוניות</string>
   <!--
     Privacy report
 

@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Аз «%1$s» ба таври пешфарз истифода баред</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Зудкор, хусусӣ ва барои шумо сохта шудааст.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Пинҳон кардани таблиғу реклама</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Маълумоти бештар</string>
   <!--
@@ -1284,8 +1282,6 @@
   <string name="preference_simple_toolbar">Оддӣ</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Баркушода</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Вақте ки навори варақаҳо нишон дода мешавад, навори нишонӣ бояд дар боло ҷойгир карда шавад.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Кушодани варақаи нав</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1419,8 +1415,6 @@
   <string name="preferences_tabs">Варақаҳо</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Тарҳи варақаҳо</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Намоиши варақаҳо</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Рӯйхат</string>
   <!-- Option for a grid tab view -->
@@ -1475,18 +1469,10 @@
   <string name="preferences_tab_organization">Ташкили варақаҳо</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Варақаҳои ғайрифаъол</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Варақаҳои куҳнаро ба ғайрифаъол интиқол диҳед</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Варақаҳое, ки шумо ду ҳафта такроран надидаед, ба қисмати ғайрифаъол интиқол дода мешаванд.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Гурӯҳҳои варақаҳо</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Фаъол кардани гурӯҳҳои варақаҳо</string>
   <!--
     Privacy report
 

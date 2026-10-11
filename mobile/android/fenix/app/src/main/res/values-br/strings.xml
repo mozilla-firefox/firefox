@@ -885,8 +885,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Ivinelloù</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Gwel an ivinell</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Roll</string>
   <!-- Option for a grid tab view -->
@@ -929,12 +927,6 @@
   <string name="opening_screen_last_tab_summary">Digeriñ en ivinell ziwezhañ</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Digeriñ er bennbajenn goude peder eurvezh</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Dilec’hiañ an ivinelloù kozh dioberiant</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">An ivinelloù n’ho peus ket gwelet e-pad div sizhun a vo dilec’hiet er lodenn dioberiant.</string>
   <!--

@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Gör %1$s till din standard</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Snabb, privat och gjord för dig.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Avvisa befordran</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Mer information</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">Enkel</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Expanderad</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Adressfältet måste vara överst när flikfältet visas.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Öppna en ny flik</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1369,6 +1365,8 @@
   <string name="library_desktop_bookmarks_unfiled">Andra bokmärken</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Historik</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Markerad</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Inställningar</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1421,8 +1419,6 @@
   <string name="preferences_tabs">Flikar</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Fliklayout</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Flikvy</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Lista</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1473,12 @@
   <string name="preferences_tab_organization">Organisation av flikar</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Inaktiva flikar</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Flytta gamla flikar till inaktiva</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Flikar som du inte har besökt på två veckor flyttas till inaktiva.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Flikgrupper</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Ordna dina flikar i grupper som du kan namnge och spara.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Aktivera flikgrupper</string>
   <!--
     Privacy report
 

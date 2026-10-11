@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Ορίστε το %1$s ως προεπιλογή</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Γρήγορο, ιδιωτικό και φτιαγμένο για εσάς.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Απόρριψη προωθητικής ενέργειας</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Περισσότερες πληροφορίες</string>
   <!--
@@ -775,9 +773,9 @@
   <!-- Preference for enabling "HTTPS-Only" mode -->
   <string name="preferences_https_only_title">Λειτουργία «Μόνο HTTPS»</string>
   <!-- Preference title for using the screen lock to hide tabs in private browsing -->
-  <string name="preferences_pbm_lock_screen_title">Χρήση κλειδώματος οθόνης για την απόκρυψη καρτελών στην ιδιωτική περιήγηση</string>
+  <string name="preferences_pbm_lock_screen_title">Χρήση κλειδώματος οθόνης για την απόκρυψη ιδιωτικών καρτελών</string>
   <!-- Informs the user how to access the tabs when "Use screen lock to hide tabs in private browsing" is enabled -->
-  <string name="preferences_pbm_lock_screen_summary_3">Δείτε τις καρτέλες σας με το δακτυλικό σας αποτύπωμα, ένα PIN ή με αναγνώριση προσώπου. Η ενεργοποίηση αυτής της λειτουργίας εμποδίζει επίσης την καταγραφή και τον διαμοιρασμό οθόνης.</string>
+  <string name="preferences_pbm_lock_screen_summary_3">Δείτε τις καρτέλες σας με δακτυλικό αποτύπωμα, PIN ή αναγνώριση προσώπου. Αυτή η λειτουργία εμποδίζει επίσης την καταγραφή και τον διαμοιρασμό της οθόνης.</string>
   <!-- Description of the preference to enable "HTTPS-Only" mode. -->
   <string name="preferences_https_only_summary">Προσπαθεί αυτόματα να συνδεθεί σε ιστοτόπους με το πρωτόκολλο κρυπτογράφησης HTTPS για αυξημένη ασφάλεια.</string>
   <!-- Summary of https only preference if https only is set to off -->
@@ -809,7 +807,7 @@
   <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
   <string name="preferences_category_sync_controls">Συγχρονισμός</string>
   <!-- Preference for changing where the AddressBar is positioned -->
-  <string name="preferences_toolbar_2">Τοποθεσία γραμμής διευθύνσεων</string>
+  <string name="preferences_toolbar_2">Θέση γραμμής διευθύνσεων</string>
   <!-- Preference for changing toolbar layout -->
   <string name="preferences_toolbar_layout">Διάταξη γραμμής εργαλείων</string>
   <!-- Preference for changing default theme to dark or light mode -->
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">Απλή</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Ανεπτυγμένη</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Η γραμμή διευθύνσεων πρέπει να βρίσκεται στο πάνω μέρος όταν εμφανίζεται η γραμμή καρτελών.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Άνοιγμα νέας καρτέλας</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1369,6 +1365,8 @@
   <string name="library_desktop_bookmarks_unfiled">Άλλοι σελιδοδείκτες</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Ιστορικό</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Επιλεγμένο</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Ρυθμίσεις</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1421,8 +1419,6 @@
   <string name="preferences_tabs">Καρτέλες</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Διάταξη καρτελών</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Προβολή καρτελών</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Λίστα</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1473,12 @@
   <string name="preferences_tab_organization">Οργάνωση καρτελών</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Ανενεργές καρτέλες</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Μετακίνηση παλαιών καρτελών στις ανενεργές</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Μετακίνηση των καρτελών που δεν έχουν προβληθεί για δύο εβδομάδες στην ενότητα «Ανενεργές».</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Ομάδες καρτελών</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Οργανώστε τις καρτέλες σας σε ομάδες που μπορείτε να ονομάσετε και να αποθηκεύσετε.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Ενεργοποίηση ομάδων καρτελών</string>
   <!--
     Privacy report
 
@@ -2191,7 +2179,7 @@
   <!-- Title for the bookmark list empty state -->
   <string name="bookmark_empty_list_title">Δεν υπάρχει κανένας σελιδοδείκτης ακόμα</string>
   <!-- Title for the bookmark list empty state at the root level. -->
-  <string name="bookmark_empty_list_root_title">Κρατήστε όλους τους αγαπημένους σας σελιδοδείκτες μαζί</string>
+  <string name="bookmark_empty_list_root_title">Συγκεντρώστε όλους τους αγαπημένους σας σελιδοδείκτες</string>
   <!-- Bookmark screen folder description. %s is the count of bookmark folder children -->
   <string name="bookmarks_folder_description">Σελιδοδείκτες στον φάκελο: %s</string>
   <!-- Text for the button to navigate to sync authentication -->
@@ -2439,6 +2427,8 @@
   <string name="sync_send_tab_empty_state_title">Καμία συνδεδεμένη συσκευή</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Για να στείλετε μια καρτέλα, συνδεθείτε στο Firefox σε τουλάχιστον άλλη μία συσκευή.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Μάθετε πώς να συνδέσετε μια συσκευή</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Ελέγξτε τη σύνδεσή σας στο διαδίκτυο</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -3034,7 +3024,7 @@
   <!-- Title for the Suggest Email Masks toggle -->
   <string name="preferences_email_masks_suggest_title">Πρόταση μασκών email</string>
   <!-- Summary for the Suggest Email Masks toggle. -->
-  <string name="preferences_email_masks_suggest_summary">Αποκρύψτε το πραγματικό σας email για να προστατέψετε τα εισερχόμενά σας από ανεπιθύμητα μηνύματα. Ορισμένοι ιστότοποι δεν υποστηρίζουν μάσκες email.</string>
+  <string name="preferences_email_masks_suggest_summary">Αποκρύψτε το πραγματικό σας email για να προστατεύετε τα εισερχόμενά σας από ανεπιθύμητα μηνύματα. Ορισμένοι ιστότοποι δεν υποστηρίζουν τις μάσκες email.</string>
   <!-- Text that links to additional information about the Email Masks -->
   <string name="preferences_email_masks_suggest_learn_more">Μάθετε περισσότερα</string>
   <!-- Title for the Manage Email Masks links to Firefox Relay dashboard -->
@@ -3079,7 +3069,7 @@
   <!-- Header for the browser VPN `location` section -->
   <string name="ip_protection_location_section">Τοποθεσία</string>
   <!-- Label for the recommended automatic location option on the browser VPN settings screen -->
-  <string name="ip_protection_location_recommended_label">Προτείνεται</string>
+  <string name="ip_protection_location_recommended_label">Προτεινόμενη</string>
   <!-- Badge label shown in the menu item when the browser VPN is active -->
   <string name="preferences_ip_protection_on">Ενεργό</string>
   <!-- Badge label shown in the menu item when the browser VPN is off -->
@@ -3152,7 +3142,7 @@
   <!-- Title shown on the browser VPN settings screen for location selection section. -->
   <string name="ip_protection_location_title" tools:ignore="UnusedResources">Τοποθεσία</string>
   <!-- Label for the Recommended server location option which is automatically selected by the browser. -->
-  <string name="ip_protection_recommended_location" tools:ignore="UnusedResources">Προτείνεται</string>
+  <string name="ip_protection_recommended_location" tools:ignore="UnusedResources">Προτεινόμενη</string>
   <!-- Headline for the card that promotes the standalone Mozilla VPN product. -->
   <string name="ip_protection_mozilla_vpn_upsell_headline" tools:ignore="UnusedResources,BrandUsage">Προστατέψτε περισσότερα με το Mozilla VPN</string>
   <!-- Body for the card that promotes the standalone Mozilla VPN product. -->
@@ -4520,8 +4510,16 @@
   <string name="lens_camera_mode_qr">Σάρωση QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Δεν βρέθηκε κωδικός QR στην εικόνα</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Αναζήτηση σε εξέλιξη</string>
   <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Ακύρωση</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Δεν ήταν δυνατή η φόρτωση αυτής της εικόνας. Δοκιμάστε κάποια άλλη.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Δεν ήταν δυνατή η λήψη αποτελεσμάτων από το Google Lens</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Δοκιμή ξανά</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Αναζήτηση με Google Lens</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
