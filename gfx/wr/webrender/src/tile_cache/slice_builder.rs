@@ -119,9 +119,6 @@ pub struct TileCacheBuilder {
     root_spatial_node_index: SpatialNodeIndex,
     /// Debug flags to provide to our TileCacheInstances.
     debug_flags: DebugFlags,
-    /// While a backdrop-filter chain is added to a non-atomic slice: the
-    /// spatial node of the backdrop-filter element, which places the chain.
-    pub backdrop_placement_node: Option<SpatialNodeIndex>,
 }
 
 /// The output of a tile cache builder, containing all details needed to construct the
@@ -155,7 +152,6 @@ impl TileCacheBuilder {
             prev_scroll_root_cache: (SpatialNodeIndex::INVALID, SpatialNodeIndex::INVALID),
             root_spatial_node_index,
             debug_flags,
-            backdrop_placement_node: None,
         }
     }
 
@@ -271,12 +267,17 @@ impl TileCacheBuilder {
     }
 
     /// Add a primitive, either to the current tile cache, or a new one, depending on various conditions.
+    /// A non-atomic slice picks the tile cache by `placement_node_index`, which
+    /// is the primitive's spatial node except for a backdrop-filter chain: that
+    /// is in its backdrop root's space, only known once the slice is built, so
+    /// it is placed by the backdrop-filter element's spatial node.
     pub fn add_prim(
         &mut self,
         prim_instance: PrimitiveInstance,
         prim_rect: LayoutRect,
         prim_local_clip_rect: LayoutRect,
         spatial_node_index: SpatialNodeIndex,
+        placement_node_index: SpatialNodeIndex,
         prim_flags: PrimitiveFlags,
         spatial_tree: &SceneSpatialTree,
         quality_settings: &QualitySettings,
@@ -297,14 +298,7 @@ impl TileCacheBuilder {
                 );
             }
             SliceKind::Default { ref mut secondary_slices } => {
-                // A backdrop-filter chain is in its backdrop root's space, which
-                // is only known once the slice is built, so it is placed by the
-                // backdrop-filter element's spatial node instead.
-                let placement_node_index = if spatial_node_index == SpatialNodeIndex::UNKNOWN {
-                    self.backdrop_placement_node.expect("bug: unplaced prim in a non-atomic slice")
-                } else {
-                    spatial_node_index
-                };
+                assert_ne!(placement_node_index, SpatialNodeIndex::UNKNOWN);
 
                 // Check if we want to create a new slice based on the current / next scroll root
                 let scroll_root = find_scroll_root(

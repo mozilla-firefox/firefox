@@ -250,7 +250,6 @@ pub struct PictureContext {
 /// Mutable state of a picture that gets modified when
 /// the children are processed.
 pub struct PictureState {
-    pub map_local_to_pic: SpaceMapper<LayoutPixel, PicturePixel>,
     /// Maps this picture's space to the screen framebuffer, for the debug
     /// overlays that draw into it.
     pub map_pic_to_device: SpaceMapper<PicturePixel, DevicePixel>,

@@ -106,7 +106,7 @@ pub fn prepare_picture(
     }
 
     let pic = &mut store.pictures[pic_index.0 as usize];
-    let Some((pic_context, mut pic_state, prim_list, scratch_handle)) = pic.take_context(
+    let Some((pic_context, mut pic_state, scratch_handle)) = pic.take_context(
         pic_index,
         surface_index,
         subpixel_mode,
@@ -134,10 +134,8 @@ pub fn prepare_picture(
         prim_instances,
     );
 
-    // Restore the dependencies (borrow check dance)
     store.pictures[pic_context.pic_index.0 as usize].restore_context(
         pic_context.pic_index,
-        prim_list,
         pic_context,
         frame_context,
         frame_state,
@@ -174,11 +172,6 @@ fn prepare_primitives(
         let draw = scratch.frame.draw(draw_index);
         let prim_instance_index = draw.prim_instance_index.0 as usize;
         let spatial_node_index = draw.spatial_node_index;
-
-        pic_state.map_local_to_pic.set_target_spatial_node(
-            spatial_node_index,
-            frame_context.spatial_tree,
-        );
 
         quad_transform.set(
             spatial_node_index,

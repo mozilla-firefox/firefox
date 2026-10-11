@@ -136,7 +136,6 @@ use crate::spatial_tree::CoordinateSystemId;
 use crate::surface::{SurfaceDescriptor, SurfaceTileDescriptor, get_surface_rects};
 use crate::surface::{SurfaceIndex, SurfaceInfo, SubpixelMode};
 use smallvec::SmallVec;
-use std::mem;
 use std::ops::Range;
 use crate::picture_textures::PictureCacheTextureHandle;
 use crate::util::{MaxRect, Recycler, ScaleOffset};
@@ -400,10 +399,7 @@ pub struct PrimitiveList {
 }
 
 impl PrimitiveList {
-    /// Construct an empty primitive list. This is
-    /// just used during the take_context / restore_context
-    /// borrow check dance, which will be removed as the
-    /// picture traversal pass is completed.
+    /// Construct an empty primitive list.
     pub fn empty() -> Self {
         PrimitiveList {
             clusters: Vec::new(),
@@ -696,7 +692,7 @@ impl PictureInstance {
         data_stores: &DataStores,
         scratch: &mut PrimitiveScratchBuffer,
         tile_caches: &mut FastHashMap<SliceId, Box<TileCacheInstance>>,
-    ) -> Option<(PictureContext, PictureState, PrimitiveList, storage::Index<PictureScratch>)> {
+    ) -> Option<(PictureContext, PictureState, storage::Index<PictureScratch>)> {
         let mut picture_scratch = PictureScratch::empty();
 
         let dbg_flags = DebugFlags::PICTURE_CACHING_DBG | DebugFlags::PICTURE_BORDERS;
@@ -728,18 +724,6 @@ impl PictureInstance {
             surface_spatial_node_index,
             frame_context.global_screen_device_rect,
             frame_context.spatial_tree,
-        );
-
-        // TODO: Compute the picture bounds by projecting the parent surface's
-        // culling rect into this surface's raster space, rather than the screen
-        // rect from the root.
-        let pic_bounds = map_pic_to_device
-            .unmap(&map_pic_to_device.bounds)
-            .unwrap_or_else(PictureRect::max_rect);
-
-        let map_local_to_pic = SpaceMapper::new(
-            surface_spatial_node_index,
-            pic_bounds,
         );
 
         match self.raster_config {
@@ -814,7 +798,6 @@ impl PictureInstance {
         };
 
         let state = PictureState {
-            map_local_to_pic,
             map_pic_to_device,
         };
 
@@ -844,16 +827,13 @@ impl PictureInstance {
             subpixel_mode,
         };
 
-        let prim_list = mem::replace(&mut self.prim_list, PrimitiveList::empty());
-
         let scratch_handle = scratch.frame.pictures.push(picture_scratch);
-        Some((context, state, prim_list, scratch_handle))
+        Some((context, state, scratch_handle))
     }
 
     pub fn restore_context(
         &mut self,
         pic_index: PictureIndex,
-        prim_list: PrimitiveList,
         context: PictureContext,
         frame_context: &FrameBuildingContext,
         frame_state: &mut FrameBuildingState,
@@ -932,8 +912,6 @@ impl PictureInstance {
                 }
             }
         }
-
-        self.prim_list = prim_list;
     }
 
     /// Add a primitive instance to the plane splitter. The function would generate

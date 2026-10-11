@@ -1812,6 +1812,7 @@ impl<'a> SceneBuilder<'a> {
                     prim_rect,
                     prim_local_clip_rect,
                     spatial_node_index,
+                    spatial_node_index,
                     flags,
                     self.spatial_tree,
                     &self.quality_settings,
@@ -3168,20 +3169,19 @@ impl<'a> SceneBuilder<'a> {
                     );
                 }
                 None => {
-                    self.tile_cache_builder.backdrop_placement_node = Some(spatial_node_index);
                     self.tile_cache_builder.add_prim(
                         filtered_instance,
                         info.rect,
                         // A picture has no local clip rect of its own.
                         LayoutRect::max_rect(),
                         filter_spatial_node_index,
+                        spatial_node_index,
                         info.flags,
                         self.spatial_tree,
                         &self.quality_settings,
                         &mut self.prim_instances,
                         &self.clip_tree_builder,
                     );
-                    self.tile_cache_builder.backdrop_placement_node = None;
                 }
             }
 
