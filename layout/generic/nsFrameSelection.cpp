@@ -1212,8 +1212,10 @@ void nsFrameSelection::MaintainedRange::AdjustNormalSelection(
   if ((*relToStart <= 0 && *relToEnd >= 0) ||
       (*relToStart > 0 && aNormalSelection.GetDirection() == eDirNext) ||
       (*relToEnd < 0 && aNormalSelection.GetDirection() == eDirPrevious)) {
+    // Ensure we hold a strong ref to the range across ReplaceAnchorFocusRange.
+    const RefPtr range = mRange;
     // Set the current range to the maintained range.
-    aNormalSelection.ReplaceAnchorFocusRange(mRange);
+    aNormalSelection.ReplaceAnchorFocusRange(range);
     // Set the direction of the selection so that the anchor will be on the
     // far side of the maintained selection, relative to aContent/aOffset.
     aNormalSelection.SetDirection(*relToStart > 0 ? eDirPrevious : eDirNext);
