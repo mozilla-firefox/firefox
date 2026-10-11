@@ -152,13 +152,15 @@ ImageWrapper::GetAnimated(bool* aAnimated) {
 
 NS_IMETHODIMP_(already_AddRefed<SourceSurface>)
 ImageWrapper::GetFrame(uint32_t aWhichFrame, uint32_t aFlags) {
-  return mInnerImage->GetFrame(aWhichFrame, aFlags);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->GetFrame(aWhichFrame, aFlags);
 }
 
 NS_IMETHODIMP_(already_AddRefed<SourceSurface>)
 ImageWrapper::GetFrameAtSize(const IntSize& aSize, uint32_t aWhichFrame,
                              uint32_t aFlags) {
-  return mInnerImage->GetFrameAtSize(aSize, aWhichFrame, aFlags);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->GetFrameAtSize(aSize, aWhichFrame, aFlags);
 }
 
 NS_IMETHODIMP_(bool)
@@ -177,8 +179,9 @@ ImageWrapper::GetImageProvider(WindowRenderer* aRenderer,
                                const Maybe<ImageIntRegion>& aRegion,
                                uint32_t aFlags,
                                WebRenderImageProvider** aProvider) {
-  return mInnerImage->GetImageProvider(aRenderer, aSize, aSVGContext, aRegion,
-                                       aFlags, aProvider);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->GetImageProvider(aRenderer, aSize, aSVGContext, aRegion, aFlags,
+                                 aProvider);
 }
 
 NS_IMETHODIMP_(ImgDrawResult)
@@ -187,18 +190,21 @@ ImageWrapper::Draw(gfxContext* aContext, const nsIntSize& aSize,
                    SamplingFilter aSamplingFilter,
                    const SVGImageContext& aSVGContext, uint32_t aFlags,
                    float aOpacity) {
-  return mInnerImage->Draw(aContext, aSize, aRegion, aWhichFrame,
-                           aSamplingFilter, aSVGContext, aFlags, aOpacity);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->Draw(aContext, aSize, aRegion, aWhichFrame, aSamplingFilter,
+                     aSVGContext, aFlags, aOpacity);
 }
 
 NS_IMETHODIMP
 ImageWrapper::StartDecoding(uint32_t aFlags, uint32_t aWhichFrame) {
-  return mInnerImage->StartDecoding(aFlags, aWhichFrame);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->StartDecoding(aFlags, aWhichFrame);
 }
 
 bool ImageWrapper::StartDecodingWithResult(uint32_t aFlags,
                                            uint32_t aWhichFrame) {
-  return mInnerImage->StartDecodingWithResult(aFlags, aWhichFrame);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->StartDecodingWithResult(aFlags, aWhichFrame);
 }
 
 bool ImageWrapper::HasDecodedPixels() {
@@ -207,13 +213,15 @@ bool ImageWrapper::HasDecodedPixels() {
 
 imgIContainer::DecodeResult ImageWrapper::RequestDecodeWithResult(
     uint32_t aFlags, uint32_t aWhichFrame) {
-  return mInnerImage->RequestDecodeWithResult(aFlags, aWhichFrame);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->RequestDecodeWithResult(aFlags, aWhichFrame);
 }
 
 NS_IMETHODIMP
 ImageWrapper::RequestDecodeForSize(const nsIntSize& aSize, uint32_t aFlags,
                                    uint32_t aWhichFrame) {
-  return mInnerImage->RequestDecodeForSize(aSize, aFlags, aWhichFrame);
+  RefPtr<Image> inner = mInnerImage;
+  return inner->RequestDecodeForSize(aSize, aFlags, aWhichFrame);
 }
 
 NS_IMETHODIMP
@@ -231,7 +239,10 @@ ImageWrapper::UnlockImage() {
 }
 
 NS_IMETHODIMP
-ImageWrapper::RequestDiscard() { return mInnerImage->RequestDiscard(); }
+ImageWrapper::RequestDiscard() {
+  RefPtr<Image> inner = mInnerImage;
+  return inner->RequestDiscard();
+}
 
 NS_IMETHODIMP_(void)
 ImageWrapper::RequestRefresh(const TimeStamp& aTime) {
@@ -250,7 +261,10 @@ ImageWrapper::SetAnimationMode(uint16_t aAnimationMode) {
 }
 
 NS_IMETHODIMP
-ImageWrapper::ResetAnimation() { return mInnerImage->ResetAnimation(); }
+ImageWrapper::ResetAnimation() {
+  RefPtr<Image> inner = mInnerImage;
+  return inner->ResetAnimation();
+}
 
 NS_IMETHODIMP_(float)
 ImageWrapper::GetFrameIndex(uint32_t aWhichFrame) {
