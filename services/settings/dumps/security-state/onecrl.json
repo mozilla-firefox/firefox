@@ -1,6 +1,36 @@
 {
   "data": [
     {
+      "schema": 1791318533037,
+      "details": {
+        "bug": "2078851",
+        "who": "",
+        "why": "",
+        "name": "",
+        "created": ""
+      },
+      "enabled": true,
+      "issuerName": "MDsxCzAJBgNVBAYTAkVTMREwDwYDVQQKDAhGTk1ULVJDTTEZMBcGA1UECwwQQUMgUkFJWiBGTk1ULVJDTQ==",
+      "serialNumber": "LO0aXgKAW7xd34o67KqYWg==",
+      "id": "78e1876e-8832-49ee-9bd9-b36e3d53b059",
+      "last_modified": 1791573428759
+    },
+    {
+      "schema": 1791233394581,
+      "details": {
+        "bug": "2078851",
+        "who": "",
+        "why": "",
+        "name": "",
+        "created": ""
+      },
+      "enabled": true,
+      "issuerName": "MDsxCzAJBgNVBAYTAkVTMREwDwYDVQQKDAhGTk1ULVJDTTEZMBcGA1UECwwQQUMgUkFJWiBGTk1ULVJDTQ==",
+      "serialNumber": "NIFgxR9e28td34nKtFczkg==",
+      "id": "2690f159-72d9-4a13-a7e4-ee2d2b5b7e5b",
+      "last_modified": 1791573428756
+    },
+    {
       "schema": 1790874064811,
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=2077222",
@@ -28394,5 +28424,5 @@
       "last_modified": 1480349158647
     }
   ],
-  "timestamp": 1791233394201
+  "timestamp": 1791573428759
 }
