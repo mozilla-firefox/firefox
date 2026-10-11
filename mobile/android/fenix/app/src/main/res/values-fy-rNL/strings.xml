@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Meitsje %1$s jo standert</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Fluch, privee, en makke foar jo.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Promoasje slute</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Mear ynfo</string>
   <!--
@@ -806,6 +804,8 @@
   <string name="preferences_override_sync_tokenserver">Oanpaste Syncserver</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Account</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">Syngronisaasje</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">Lokaasje adresbalke</string>
   <!-- Preference for changing toolbar layout -->
@@ -862,6 +862,8 @@
   <string name="preferences_search_synced_tabs">Syngronisearre ljepblêden trochsykje</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">Accountynstellingen</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">Account en syngronisaasje</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">URL’s automatysk oanfolje</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -1141,6 +1143,12 @@
   <string name="preferences_sync_now">No syngronisearje</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Kies wat jo syngronisearje wolle</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Syngronisearre gegevens</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Beheare wat syngronisearre wurdt op al jo ferbûne apparaten</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Jo syngronisearje neat. Kies wat jo op al jo apparaten syngronisearre hâlde wolle.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Skiednis</string>
   <!-- Preference for syncing bookmarks -->
@@ -1153,6 +1161,10 @@
   <string name="preferences_sign_out">Ofmelde</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">Apparaatnamme</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">Apparaatnamme</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">Apparaatnamme wizigje</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">Apparaatnamme mei net leech wêze.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1272,8 +1284,6 @@
   <string name="preference_simple_toolbar">Ienfâldich</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Utklapt</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">De adresbalke moat boppe oan stean as de ljepblêdenbalke toand wurdt.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">In nij ljepblêd iepenje</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1405,8 +1415,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Ljepblêden</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Ljepblêdwerjefte</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">Ljepblêdyndieling</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">List</string>
   <!-- Option for a grid tab view -->
@@ -1454,15 +1464,19 @@
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Op startside iepenje nei fjouwer oeren</string>
   <!--
-    Inactive tabs
+    Tab organization
 
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
+    Category header for the preferences that control how tabs are organized
   -->
-  <string name="preferences_inactive_tabs">Alde ljepblêden nei ynaktyf ferpleatse</string>
+  <string name="preferences_tab_organization">Ljepblêdoardering</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Ynaktive ljepblêden</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Ljepblêden dy’t jo twa wiken net besjoen hawwe, wurde ferpleatst nei de seksje Ynaktyf.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Ljepblêdgroepen ynskeakelje</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Ljepblêdgroepen</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Oarderje jo ljepblêden yn groepen dy’t jo in namme jaan kinne en bewarje.</string>
   <!--
     Privacy report
 
@@ -2375,6 +2389,10 @@
   <string name="sync_send_to_all">Ferstjoere nei alle apparaten</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Opnij ferbine mei Sync</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Ferstjoere</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">Selektearre</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Offline</string>
   <!-- An option to connect additional devices -->
@@ -2411,6 +2429,8 @@
   <string name="sync_send_tab_error_connection_title">Kontrolearje jo ynternetferbining</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">Probearje dan jo ljepblêd opnij te ferstjoeren.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Opnij probearje</string>
   <!--
     Notifications
 
@@ -2593,6 +2613,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Gjin account? <u>Meitsje der ien oan</u> om Firefox tusken apparaten te syngronisearjen.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s stoppet de syngronisaasje mei jo account, mar sil gjin sneupgegevens op dit apparaat fuortsmite.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Ofmelde by jo account?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Syngronisearre gegevens bliuwe yn jo account bewarre.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Ofmelde</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Ferbining ferbrekke</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -4568,4 +4594,6 @@
   <string name="reader_mode_panel_content_description">Lêzermodusopsjes</string>
   <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Hurdop foarlêze</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Mediaspiler</string>
 </resources>

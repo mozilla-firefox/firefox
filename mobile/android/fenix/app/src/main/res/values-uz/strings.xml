@@ -505,8 +505,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Varaqlar</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Varaqni koʻrish</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Roʻyxat</string>
   <!-- Option for a grid tab view -->
@@ -543,12 +541,6 @@
   <string name="close_tabs_after_one_week_summary">Bir haftadan keyin yopish</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one month -->
   <string name="close_tabs_after_one_month_summary">Bir oydan keyin yopish</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Eski varaqlarni nofaol holatga oʻtkazish</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Ikki hafta davomida ochilmagan varaqlar nofaol boʻlimga oʻtkaziladi.</string>
   <!--

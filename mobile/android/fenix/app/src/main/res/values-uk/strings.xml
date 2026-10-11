@@ -273,6 +273,10 @@
   <string name="browser_main_menu_content_description_navigation_header">Навігація</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">Закрити сторінку меню користувацьких вкладок</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">Кешовано</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Актуальна сторінка</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Додати до закладок</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -287,8 +291,12 @@
   <string name="browser_menu_summarize_page">Підсумувати вміст сторінки</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">Нове</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">Нове</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">Повідомити про пошкоджений сайт</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">Додати до групи</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Перекладено</string>
   <!-- Browser menu label for the print feature -->
@@ -305,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Зробити %1$s типовим браузером</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Швидкий, приватний, створений для вас.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Відхилити промоакцію</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Докладніше</string>
   <!--
@@ -799,6 +805,8 @@
   <string name="preferences_override_sync_tokenserver">Спеціальний сервер синхронізації</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Обліковий запис</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">Синхронізація</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">Розташування панелі адреси</string>
   <!-- Preference for changing toolbar layout -->
@@ -855,6 +863,8 @@
   <string name="preferences_search_synced_tabs">Шукати синхронізовані вкладки</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">Обліковий запис</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">Обліковий запис і синхронізація</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">Автозавершення URL-адрес</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -902,6 +912,8 @@
   <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">У вас немає дозволу на використання цієї теки. Повторіть спробу, вибравши іншу теку.</string>
   <!-- Preference title for choosing an app to handle downloads -->
   <string name="preferences_choose_app_for_downloads">Керування завантаженнями за допомогою іншої програми</string>
+  <!-- Message shown when no app is available to let the user pick a download folder. -->
+  <string name="preferences_downloads_no_folder_picker_available">Не вдається відкрити вікно вибору теки на цьому пристрої.</string>
   <!-- Preference category for deleting or removing downloads -->
   <string name="preferences_category_delete_or_remove_downloads">Видалення і вилучення завантажень</string>
   <string name="preferences_downloads_delete_from_device">Видалити з пристрою</string>
@@ -1132,6 +1144,12 @@
   <string name="preferences_sync_now">Синхронізувати</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Оберіть що синхронізувати</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Синхронізовані дані</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Керуйте синхронізованими даними на всіх під’єднаних пристроях</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Ви нічого не синхронізуєте. Виберіть, що потрібно синхронізувати між вашими пристроями.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Історію</string>
   <!-- Preference for syncing bookmarks -->
@@ -1144,6 +1162,10 @@
   <string name="preferences_sign_out">Вийти</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">Назва пристрою</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">Назва пристрою</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">Змінити назву пристрою</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">Назва пристрою обов’язкова.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1263,8 +1285,6 @@
   <string name="preference_simple_toolbar">Проста</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Розширена</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Панель адреси має бути вгорі, якщо показується панель вкладок.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Відкрити нову вкладку</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1308,6 +1328,12 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">Показати панель вкладок</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">Розташування панелі вкладок</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">Вгорі</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">Внизу</string>
   <!--
     Gestures Preferences
 
@@ -1390,8 +1416,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Вкладки</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Подання вкладок</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">Макет вкладок</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Списком</string>
   <!-- Option for a grid tab view -->
@@ -1410,6 +1436,8 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">Автозакриття відкритих вкладок</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">Закрити</string>
+  <!-- Content description for the media playback indicator in the tabs tray. -->
+  <string name="tab_indicator_media_playing">Відтворення медіа</string>
   <!--
     Opening screen
 
@@ -1437,15 +1465,19 @@
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Відкрити домівку через 4 години</string>
   <!--
-    Inactive tabs
+    Tab organization
 
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
+    Category header for the preferences that control how tabs are organized
   -->
-  <string name="preferences_inactive_tabs">Переміщувати старі вкладки в неактивні</string>
+  <string name="preferences_tab_organization">Організація вкладок</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Неактивні вкладки</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Вкладки, які ви не переглядали впродовж двох тижнів, переміщуватимуться у розділ неактивних.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Увімкнути групи вкладок</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Групи вкладок</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Впорядкуйте вкладки в групи, які можна назвати та зберегти.</string>
   <!--
     Privacy report
 
@@ -2363,6 +2395,10 @@
   <string name="sync_send_to_all">Надіслати на всі пристрої</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Перепід’єднатися до Синхронізації</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Надіслати</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">Вибрано</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Поза мережею</string>
   <!-- An option to connect additional devices -->
@@ -2393,8 +2429,16 @@
   <string name="sync_send_tab_error_auth_remove_account">Вилучити обліковий запис</string>
   <!-- Send tab to synced devices: Empty state title - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_title">Немає під\'єднаних пристроїв</string>
+  <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Щоб надіслати вкладку, ввійдіть у Firefox на іншому пристрої.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Дізнатися, як під\'єднати пристрій</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Перевірте своє з\'єднання з інтернетом</string>
+  <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
+  <string name="sync_send_tab_error_connection_text">Потім спробуйте повторно надіслати вкладку.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Повторити</string>
   <!--
     Notifications
 
@@ -2416,6 +2460,16 @@
     The app name is in the text, due to limitations with localizing Nimbus experiments
   -->
   <string name="nimbus_notification_default_browser_text" tools:ignore="BrandUsage,UnusedResources">Зробити Firefox типовим браузером</string>
+  <!--
+    Privacy report notification
+
+    Name of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app.
+  -->
+  <string name="notification_privacy_report_channel_name">Звіт про приватність</string>
+  <!-- Description of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app. %1$s is the app name (e.g. Firefox) -->
+  <string name="notification_privacy_report_channel_description">%1$s показує кількість елементів стеження, які було заблоковано під час вебперегляду.</string>
+  <!-- Body text for the weekly privacy report notification for when trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
+  <string name="notification_privacy_report_body_has_trackers">%1$s продовжуватиме блокування, поки ви користуєтеся браузером.</string>
   <!-- Headline text of the weekly privacy report notification for when no trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
   <string name="notification_privacy_report_headline_no_trackers">%1$s блокує елементи стеження під час перегляду. Ви побачите їх тут.</string>
   <!--
@@ -2567,6 +2621,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Не маєте облікового запису? <u>Створіть його</u> для синхронізації Firefox між пристроями.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s припинить синхронізацію з вашим обліковим записом, але не видалить жодних даних перегляду на цьому пристрої.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Вийти з вашого облікового запису?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Синхронізовані дані зберігаються у вашому обліковому записі.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Вийти</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Від’єднатись</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -4463,6 +4523,16 @@
   <string name="lens_camera_mode_qr">QR-сканер</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">На зображенні не виявлено QR-код</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Виконується пошук</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Скасувати</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Не вдалося завантажити це зображення. Спробуйте інше.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Не вдалося отримати результати в Google Lens</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Повторити спробу</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Знайти за допомогою Google Об’єктива</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4537,8 +4607,20 @@
   <string name="pdf_tools_signature_title">Додати підпис</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that closes the dialog for adding a signature to a PDF. -->
   <string name="pdf_tools_signature_close_content_description">Закрити панель підпису PDF-файлу</string>
+  <!-- The placeholder text shown in the empty text input field where users can enter the signature they wish to add to a PDF. -->
+  <string name="pdf_tools_signature_placeholder">Введіть підпис</string>
   <!-- The text for the button that erases the text the user entered in the "add a signature" field. -->
   <string name="pdf_tools_signature_clear_button">Очистити</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Додати</string>
+  <!--
+    Listen to page
+
+    Content description for the reader mode panel: a group of buttons floating over the content
+  -->
+  <string name="reader_mode_panel_content_description">Параметри режиму читання</string>
+  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">Читати вголос</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Медіапрогравач</string>
 </resources>

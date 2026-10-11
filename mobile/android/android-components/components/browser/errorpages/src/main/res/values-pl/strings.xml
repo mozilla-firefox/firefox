@@ -22,13 +22,13 @@
   -->
   <string name="mozac_browser_errorpages_archive_wayback_machine">Wayback Machine</string>
   <!-- The label shown on the archive button while the archived copy is being looked up. -->
-  <string name="mozac_browser_errorpages_archive_checking">Wyszukiwanie w archiwum</string>
+  <string name="mozac_browser_errorpages_archive_checking">Wyszukiwanie w\u00a0archiwum</string>
   <!-- The message shown when no archived copy of the unreachable page could be found. -->
   <string name="mozac_browser_errorpages_archive_not_found">Nie odnaleziono żadnej wersji archiwalnej.</string>
   <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->
-  <string name="mozac_browser_errorpages_archive_search_web">Szukaj w Internecie.</string>
+  <string name="mozac_browser_errorpages_archive_search_web">Szukaj w\u00a0Internecie.</string>
   <!-- The message shown when the archive service could not be reached to look up an archived copy. -->
-  <string name="mozac_browser_errorpages_archive_unreachable">Nie można połączyć się z archiwum.</string>
+  <string name="mozac_browser_errorpages_archive_unreachable">Nie można połączyć się z\u00a0archiwum.</string>
   <!-- A link, shown after the archive service could not be reached, that retries the lookup. -->
   <string name="mozac_browser_errorpages_archive_retry">Spróbuj ponownie.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->

@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Historial de navegación borrado</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">Se borró el historial de navegación de la pestaña.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Menú</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Compartir…</string>
   <!--

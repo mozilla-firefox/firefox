@@ -273,6 +273,10 @@
   <string name="browser_main_menu_content_description_navigation_header">导航</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">关闭定制标签页菜单表单</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">缓存页面</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">实时页面</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">为页面添加书签</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -287,8 +291,12 @@
   <string name="browser_menu_summarize_page">生成页面摘要</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">新</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">新</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">反馈网站问题</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">添加到群组</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">已翻译</string>
   <!-- Browser menu label for the print feature -->
@@ -305,8 +313,6 @@
   <string name="browser_menu_default_banner_title">将 %1$s 设为默认浏览器</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">快速、私密，专属于您。</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">关闭推广内容</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">更多信息</string>
   <!--
@@ -797,6 +803,8 @@
   <string name="preferences_override_sync_tokenserver">自定义同步服务器</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">账户</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">同步</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">地址栏位置</string>
   <!-- Preference for changing toolbar layout -->
@@ -853,6 +861,8 @@
   <string name="preferences_search_synced_tabs">搜索同步的标签页</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">账户设置</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">账户与同步</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">自动补全网址</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -900,6 +910,8 @@
   <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">您没有使用此文件夹的权限，请尝试选择其他文件夹。</string>
   <!-- Preference title for choosing an app to handle downloads -->
   <string name="preferences_choose_app_for_downloads">通过其他应用管理下载</string>
+  <!-- Message shown when no app is available to let the user pick a download folder. -->
+  <string name="preferences_downloads_no_folder_picker_available">无法打开此设备上的文件夹选择器。</string>
   <!-- Preference category for deleting or removing downloads -->
   <string name="preferences_category_delete_or_remove_downloads">删除或移除下载</string>
   <string name="preferences_downloads_delete_from_device">从设备删除</string>
@@ -1130,6 +1142,12 @@
   <string name="preferences_sync_now">立即同步</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">选择要同步的项目</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">同步的数据</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">管理需要同步到所有已连接设备上的项目</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">尚未同步任何项目。请选择要在各设备间同步的项目。</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">历史记录</string>
   <!-- Preference for syncing bookmarks -->
@@ -1142,6 +1160,10 @@
   <string name="preferences_sign_out">退出登录</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">设备名称</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">设备名称</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">更改设备名称</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">设备名不能为空。</string>
   <!-- Label indicating that sync is in progress -->
@@ -1261,8 +1283,6 @@
   <string name="preference_simple_toolbar">简洁</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">丰富</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">显示标签页栏时，地址栏需位于顶部。</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">打开新标签页</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1306,6 +1326,12 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">显示标签页栏</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">标签页栏位置</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">顶部</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">底部</string>
   <!--
     Gestures Preferences
 
@@ -1388,8 +1414,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">标签页</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">标签页视图</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">标签页布局</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">列表</string>
   <!-- Option for a grid tab view -->
@@ -1408,6 +1434,8 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">自动关闭打开的标签页</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">关闭</string>
+  <!-- Content description for the media playback indicator in the tabs tray. -->
+  <string name="tab_indicator_media_playing">正在播放媒体</string>
   <!--
     Opening screen
 
@@ -1435,15 +1463,19 @@
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">闲置四小时后打开主页</string>
   <!--
-    Inactive tabs
+    Tab organization
 
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
+    Category header for the preferences that control how tabs are organized
   -->
-  <string name="preferences_inactive_tabs">将旧标签页切换至休眠状态</string>
+  <string name="preferences_tab_organization">标签页整理方式</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">休眠标签页</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">两周内未查看的标签页将进入休眠状态。</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">启用标签页群组</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">标签页群组</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">将标签页整理成群组，可命名和保存。</string>
   <!--
     Privacy report
 
@@ -2351,6 +2383,10 @@
   <string name="sync_send_to_all">发送到所有设备</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">重新连接同步</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">发送</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">已选中</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">离线</string>
   <!-- An option to connect additional devices -->
@@ -2383,10 +2419,14 @@
   <string name="sync_send_tab_empty_state_title">没有已连接的设备</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">若要发送标签页，请登录至少一台其他设备上的 Firefox。</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">了解如何连接新设备</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">请检查互联网连接</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">然后尝试重新发送标签页。</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">重试</string>
   <!--
     Notifications
 
@@ -2569,6 +2609,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[尚无账户？<u>立即创建</u>以在设备间同步 Firefox。]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s 将停止与您的账户的同步，但不会删除您在这台设备上的任何上网数据。</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">确定要退出账户吗？</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">已同步的数据会保留在您的账户中。</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">退出登录</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">断开连接</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -2986,6 +3032,8 @@
   <string name="preferences_ip_protection_title_2">内置 VPN</string>
   <!-- Label for the BETA badge for the browser VPN entry in the settings list -->
   <string name="preferences_ip_protection_beta_badge_label">测试版</string>
+  <!-- Title for the browser VPN settings screen (displayed in the app bar) -->
+  <string name="ip_protection_settings_title">内置 VPN</string>
   <!-- Label for the browser VPN toggle on the settings screen -->
   <string name="ip_protection_toggle_label">VPN</string>
   <!-- Content description for the browser VPN settings screen top bar back button -->
@@ -3078,6 +3126,8 @@
     %1$d is the total monthly allowance in GB (for example "50").
   -->
   <string name="ip_protection_data_limit_reached_snackbar">%1$d GB VPN 流量已用完，使用权限将于下个月重置。</string>
+  <!-- Snackbar (in-app pop-up notification) action button text that takes the user to the VPN settings screen. -->
+  <string name="ip_protection_open_settings_snackbar_action">设置</string>
   <!-- Description shown on the browser VPN settings screen prompting the user to turn the VPN on. -->
   <string name="ip_protection_settings_description" tools:ignore="UnusedResources">开启 VPN，让您的浏览更加隐私，更难跟踪。</string>
   <!-- Title shown on the browser VPN settings screen for location selection section. -->
@@ -4443,6 +4493,16 @@
   <string name="lens_camera_mode_qr">扫码器</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">未在图像中找到二维码</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">正在查询</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">取消</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">无法加载此图像，请尝试选择其他图像。</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">未能从 Google 智能镜头获取结果</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">重试</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">使用 Google 智能镜头搜索</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4523,4 +4583,14 @@
   <string name="pdf_tools_signature_clear_button">清空</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">添加</string>
+  <!--
+    Listen to page
+
+    Content description for the reader mode panel: a group of buttons floating over the content
+  -->
+  <string name="reader_mode_panel_content_description">阅读模式选项</string>
+  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">朗读</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">媒体播放器</string>
 </resources>

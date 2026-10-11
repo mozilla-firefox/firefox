@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Сделать %1$s вашим браузером по умолчанию</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Быстрый, приватный и созданный для вас.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Скрыть рекламу</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Подробнее</string>
   <!--
@@ -1287,8 +1285,6 @@
   <string name="preference_simple_toolbar">Простой</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Расширенный</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Когда отображается панель вкладок, адресная строка должна быть сверху.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Открыть новую вкладку</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1370,6 +1366,8 @@
   <string name="library_desktop_bookmarks_unfiled">Другие закладки</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">История</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Выбрано</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Настройки</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1422,8 +1420,6 @@
   <string name="preferences_tabs">Вкладки</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Макет вкладок</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Просмотр вкладок</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Списком</string>
   <!-- Option for a grid tab view -->
@@ -1478,20 +1474,12 @@
   <string name="preferences_tab_organization">Организация вкладок</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Неактивные вкладки</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Перемещать старые вкладки в неактивные</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Вкладки, к которым вы не обращались в течение двух недель, перемещаются в неактивные.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Группы вкладок</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Организуйте свои вкладки в группы, которые вы сможете переименовать и сохранить.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Включить группы вкладок</string>
   <!--
     Privacy report
 
@@ -2445,6 +2433,8 @@
   <string name="sync_send_tab_empty_state_title">Нет подключённых устройств</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Чтобы отправить вкладку, войдите в Firefox хотя бы на ещё одном устройстве.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Узнайте, как подключить устройство</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Проверьте своё соединение с Интернетом</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -4535,6 +4525,16 @@
   <string name="lens_camera_mode_qr">Сканер QR-кодов</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">В изображении не найден QR-код</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Выполняется поиск</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Отмена</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Не удалось загрузить это изображение. Попробуйте другое.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Не удалось получить результаты из Google Lens</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Попробовать снова</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Найдите её с помощью Google Lens</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

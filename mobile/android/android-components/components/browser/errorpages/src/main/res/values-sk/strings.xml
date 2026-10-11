@@ -139,7 +139,7 @@
   <string name="mozac_browser_errorpages_proxy_connection_refused_title">Proxy server odmietol spojenie</string>
   <string name="mozac_browser_errorpages_proxy_connection_refused_message"><![CDATA[<p>Prehliadač je nakonfigurovaný na používanie proxy servera, no tento odmietol pripojenie.</p>\n<ul>\n<li>Skontrolujte nastavenia proxy servera v prehliadači a skúste to znova.</li>\n<li>Má služba proxy povolený prístup k sieti?</li>\n<li>Ak problémy pretrvávajú, kontaktujte, prosím, svojho správcu siete alebo poskytovateľa internetu.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
-  <string name="mozac_browser_errorpages_unknown_proxy_host_title">Proxy server nenájdený</string>
+  <string name="mozac_browser_errorpages_unknown_proxy_host_title">Server proxy sa nenašiel</string>
   <string name="mozac_browser_errorpages_unknown_proxy_host_message"><![CDATA[<p>Prehliadač je nakonfigurovaný na používanie proxy servera, no tento odmietol pripojenie.</p>\n<ul>\n<li>Skontrolujte nastavenia proxy servera v prehliadači a skúste to znova.</li>\n<li>Je zariadenie pripojené k aktívnej sieti?</li>\n<li>Ak problémy pretrvávajú, kontaktujte, prosím, svojho správcu siete alebo poskytovateľa internetu.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_safe_browsing_malware_uri_title">Stránka so škodlivým softvérom</string>

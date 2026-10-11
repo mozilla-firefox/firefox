@@ -9,4 +9,6 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">جدید</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
+  <string name="mozac_menu_banner_dismiss_description">رد کردن تبلیغ</string>
 </resources>

@@ -29,4 +29,9 @@
   <string name="mozac_browser_awesomebar_copy_website_details">Копіювати</string>
   <!-- Description for the button to edit the highlighted awesomebar element (URL, search query, etc.) -->
   <string name="mozac_browser_awesomebar_edit_website_details">Редагувати URL-адресу</string>
+  <!--
+    Description for the highlighted awesomebar element, which represents the current webpage - clicking it reloads the webpage.
+    This will be interpolated into a longer message, equivalent to "Double tap to [reload the current page]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended.
+  -->
+  <string name="mozac_browser_awesomebar_reload_website">перезавантажити поточну сторінку</string>
 </resources>

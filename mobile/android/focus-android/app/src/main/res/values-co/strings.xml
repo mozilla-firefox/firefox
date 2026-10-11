@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Cronolugia di navigazione squassata</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">A cronolugia di navigazione di l’unghjetta hè stata squassata.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Listinu</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Sparte…</string>
   <!--

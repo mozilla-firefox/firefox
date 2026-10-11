@@ -718,8 +718,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">ٹیباں</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">ٹیب دا نظارہ</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">فہرست</string>
   <!-- Option for a grid tab view -->
@@ -762,12 +760,6 @@
   <string name="opening_screen_last_tab_summary">پچھلی ٹیب اُتے کھولھو</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">چار گھنٹیاں بعدے مکھ صفحے اُتے کھولھو</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">پراݨیاں ٹیباں نوں غیرفعال چ بھیجو</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">پچھلے دو ہفتیاں وچ تہاڈے ولوں نہ ویکھیاں ٹیباں نوں غیرفعال بھاگ وچ بھیجیا جاندا اے۔</string>
   <!--

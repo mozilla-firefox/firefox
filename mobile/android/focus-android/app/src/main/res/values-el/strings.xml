@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Το ιστορικό περιήγησης διαγράφηκε</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">Το ιστορικό της καρτέλας έχει διαγραφεί.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Μενού</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Κοινή χρήση…</string>
   <!--

@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">%1$s を既定のブラウザーにしましょう</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">高速、プライベート、あなたのために。</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">宣伝を閉じる</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">詳細情報</string>
   <!--
@@ -1285,8 +1283,6 @@
   <string name="preference_simple_toolbar">シンプル</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">展開表示</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">タブバーを表示するときは、アドレスバーが上部に配置されている必要があります。</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">新しいタブを開く</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1420,8 +1416,6 @@
   <string name="preferences_tabs">タブ</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">タブの配置</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">タブ表示</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">リスト</string>
   <!-- Option for a grid tab view -->
@@ -1476,20 +1470,12 @@
   <string name="preferences_tab_organization">タブの整理</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">休止中のタブ</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">古いタブを休止中に移動する</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">2 週間以上表示していないタブを休止中セクションに移動します。</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">タブグループ</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">タブを名前付きのグループに整理して保存できます。</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">タブグループを有効にする</string>
   <!--
     Privacy report
 
@@ -2438,6 +2424,8 @@
   <string name="sync_send_tab_error_connection_title">インターネット接続を確認してください</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">その後、タブをもう一度送信してください。</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">再試行</string>
   <!--
     Notifications
 
@@ -2620,6 +2608,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[アカウントをお持ちでない方は、<u>アカウントを作成</u>して Firefox を端末間で同期しましょう。]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s はあなたのアカウントとの同期を中止しますが、この端末上の閲覧履歴は削除されません。</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">アカウントからログアウトしますか？</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">同期済みデータはアカウントに保存されます。</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">ログアウト</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">接続を解除</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->

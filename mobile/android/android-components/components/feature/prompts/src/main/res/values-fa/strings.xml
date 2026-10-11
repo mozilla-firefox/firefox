@@ -34,7 +34,7 @@
   <!-- Negative confirmation that we should not save the updated login -->
   <string name="mozac_feature_prompt_dont_update_2">الان نه</string>
   <!-- Positive confirmation that we should save the updated login -->
-  <string name="mozac_feature_prompt_update_confirmation">به‌روزرسانی‌</string>
+  <string name="mozac_feature_prompt_update_confirmation">به‌روزرسانی</string>
   <!-- Error text displayed underneath the password field when it is in an error case -->
   <string name="mozac_feature_prompt_error_empty_password_2">یک گذرواژه وارد کنید</string>
   <!-- Error text displayed underneath the password field when it is in an error case -->
@@ -69,6 +69,12 @@
   <string name="mozac_feature_prompts_before_unload_stay">ماندن</string>
   <!-- Leave button of the dialog shown when a user is leaving a website and there is still data not saved yet, this indicates that the user wants to leave in the website. -->
   <string name="mozac_feature_prompts_before_unload_leave">ترک کردن</string>
+  <!-- Message shown when a site wants to create a passkey for a related domain. %1$s is the requesting site, %2$s is the related domain the passkey is for. -->
+  <string name="webauthn_related_origin_create_message">%1$s می‌خواهد برای %2$s یک کلید عبور بسازد.</string>
+  <!-- Message shown when a site wants to use a passkey from a related domain. %1$s is the requesting site, %2$s is the related domain the passkey is for. -->
+  <string name="webauthn_related_origin_use_message">%1$s می‌خواهد از کلید عبور برای %2$s استفاده کند.</string>
+  <!-- Continue button label for WebAuthn related origin prompt. -->
+  <string name="webauthn_continue">ادامه</string>
   <!-- Title of the month chooser dialog. -->
   <string name="mozac_feature_prompts_set_month">یک ماه انتخاب کنید</string>
   <!-- January (short description), used on the month chooser dialog. -->
@@ -166,6 +172,10 @@
   <string name="mozac_feature_prompts_collapse_address_content_description_2">جمع‌کردن نشانی‌های ذخیره‌شده</string>
   <!-- Text for the manage addresses button. -->
   <string name="mozac_feature_prompts_manage_address">مدیریت نشانی‌ها</string>
+  <!-- Text for the title of a save address dialog. -->
+  <string name="mozac_feature_prompts_save_address_prompt_title">نشانی ذخیره شود؟</string>
+  <!-- Text for the title of an update address dialog, shown when the address adds information to an already saved address. -->
+  <string name="mozac_feature_prompts_update_address_prompt_title">نشانی به‌روز شود؟</string>
   <!--
     Federated Credential Management prompts
 
@@ -184,4 +194,12 @@
   <string name="mozac_feature_prompts_identity_credentials_continue">ادامه</string>
   <!-- Text for the cancel button of the Identity Credential dialogs. -->
   <string name="mozac_feature_prompts_identity_credentials_cancel">انصراف</string>
+  <!--
+    Email Mask Autofill
+
+    Text for the email mask prompt to allow users to fill an email input field in a sign up form with an email mask.
+  -->
+  <string name="mozac_feature_relay_chip_text">استفاده از پوشش رایانامه</string>
+  <!-- Informational text for the contextual feature recommendation (CFR) enabling the email mask aliases. The %s is the name of the service, "Firefox Relay". -->
+  <string name="mozac_feature_relay_email_masks_cfr">جدید! پوشش‌های رایانامهٔ %s اکنون روی تلفن همراه هم در دسترس‌اند.</string>
 </resources>

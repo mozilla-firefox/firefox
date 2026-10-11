@@ -11,6 +11,16 @@
   <string name="mozac_browser_errorpages_page_refresh">重试</string>
   <!-- The button on an error page that checks whether an archived copy of the unreachable page exists. -->
   <string name="mozac_browser_errorpages_archive_check_button">检查存档版本</string>
+  <!--
+    The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
+    the app name and %2$s will be replaced by the name of the archive service as a link
+  -->
+  <string name="mozac_browser_errorpages_archive_description">%1$s 可从互联网档案馆的“%2$s”查找此页面的早前版本。</string>
+  <!--
+    The name of the Internet Archive service, shown as a link at the end of
+    mozac_browser_errorpages_archive_description.
+  -->
+  <string name="mozac_browser_errorpages_archive_wayback_machine">网站时光机</string>
   <!-- The label shown on the archive button while the archived copy is being looked up. -->
   <string name="mozac_browser_errorpages_archive_checking">正在检查存档</string>
   <!-- The message shown when no archived copy of the unreachable page could be found. -->
@@ -157,4 +167,6 @@
   <string name="mozac_browser_errorpages_httpsonly_message"><![CDATA[为增强安全性，您已启用 HTTPS-Only 模式，但 <em>%1$s</em> 的 HTTPS 版本不可用。]]></string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">继续前往 HTTP 网站</string>
+  <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->
+  <string name="mozac_browser_errorpages_httpsonly_back">返回上一页（推荐）</string>
 </resources>

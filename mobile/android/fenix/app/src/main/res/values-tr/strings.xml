@@ -273,6 +273,10 @@
   <string name="browser_main_menu_content_description_navigation_header">Navigasyon</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">Özel sekme menüsünü kapat</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">Önbellekteki sayfa</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Güncel sayfa</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Yer imlerine ekle</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -309,8 +313,6 @@
   <string name="browser_menu_default_banner_title">%1$s uygulamasını varsayılan tarayıcınız yapın</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Hızlı, gizli ve sizin için geliştirildi.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Tanıtımı kapat</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Daha fazla bilgi al</string>
   <!--
@@ -1145,6 +1147,8 @@
   <string name="preferences_category_sync">Eşitlenen veriler</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Bağlı tüm cihazlarınızda nelerin eşitleneceğini yönetin</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Şu anda hiçbir şey eşitlenmiyor. Cihazlarınız arasında nelerin eşitleneceğini seçin.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Geçmiş</string>
   <!-- Preference for syncing bookmarks -->
@@ -1280,8 +1284,6 @@
   <string name="preference_simple_toolbar">Basit</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Genişletilmiş</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Sekme çubuğu gösterilirken adres çubuğu üstte olmalıdır.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Yeni sekme aç</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1415,8 +1417,6 @@
   <string name="preferences_tabs">Sekmeler</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Sekme düzeni</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Sekme görünümü</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Liste</string>
   <!-- Option for a grid tab view -->
@@ -1463,20 +1463,20 @@
   <string name="opening_screen_last_tab_summary">Son sekmeyi aç</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Dört saat sonra giriş sayfasını aç</string>
+  <!--
+    Tab organization
+
+    Category header for the preferences that control how tabs are organized
+  -->
+  <string name="preferences_tab_organization">Sekme düzenleme</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Pasif sekmeler</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Eski sekmeleri pasife taşı</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">İki haftadır bakmadığınız sekmeler pasif bölümüne taşınır.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Sekme grupları</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Sekme gruplarını etkinleştir</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Sekmelerinizi gruplar halinde düzenleyin, grupları adlandırıp kaydedin.</string>
   <!--
     Privacy report
 
@@ -2425,6 +2425,8 @@
   <string name="sync_send_tab_empty_state_title">Bağlı cihaz yok</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Sekme göndermek için başka bir cihazdan daha Firefox’a giriş yapmalısınız.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Cihaz bağlamayı öğrenin</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">İnternet bağlantınızı kontrol edin</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -4506,6 +4508,16 @@
   <string name="lens_camera_mode_qr">QR tarayıcı</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Resimde QR kodu bulunamadı</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Aranıyor</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">İptal</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Bu resim yüklenemedi. Başka bir resim deneyin.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Google Lens’ten sonuç alınamadı</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Yeniden dene</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Google Lens ile bul</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4594,4 +4606,6 @@
   <string name="reader_mode_panel_content_description">Okuyucu modu seçenekleri</string>
   <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Sesli oku</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Medya oynatıcı</string>
 </resources>

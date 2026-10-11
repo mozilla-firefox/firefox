@@ -548,8 +548,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Llingüetes</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Llista de llingüetes</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">En llista</string>
   <!-- Option for a grid tab view -->
@@ -586,12 +584,6 @@
   <string name="close_tabs_after_one_week_summary">Zarrales dempués d\'una selmana</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one month -->
   <string name="close_tabs_after_one_month_summary">Zarrales dempués d\'un mes</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Mover les llingüetes antigües a la seición d\'inactividá</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Les llingüetes que nun visites en dos selmanes van a la seición d\'inactividá.</string>
   <!--

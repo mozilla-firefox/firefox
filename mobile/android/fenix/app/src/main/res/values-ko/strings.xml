@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">%1$s를 기본 브라우저로 설정</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">빠르고, 안전하며, 여러분을 위해 만들어졌습니다.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">프로모션 닫기</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">추가 정보</string>
   <!--
@@ -1285,8 +1283,6 @@
   <string name="preference_simple_toolbar">단순</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">확장됨</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">탭 표시줄이 표시될 때는 주소 표시줄이 위에 있습니다.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">새 탭 열기</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1368,6 +1364,8 @@
   <string name="library_desktop_bookmarks_unfiled">기타 북마크</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">기록</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">선택됨</string>
   <!-- Settings Page Title -->
   <string name="settings_title">설정</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1420,8 +1418,6 @@
   <string name="preferences_tabs">탭</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">탭 레이아웃</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">탭 보기</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">목록</string>
   <!-- Option for a grid tab view -->
@@ -1476,20 +1472,12 @@
   <string name="preferences_tab_organization">탭 구성</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">비활성 탭</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">이전 탭을 비활성으로 이동</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">2주 동안 보지 않은 탭은 비활동 섹션으로 이동</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">탭 그룹</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">이름을 지정하고 저장할 수 있는 그룹으로 탭을 구성합니다.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">탭 그룹 활성화</string>
   <!--
     Privacy report
 
@@ -2433,6 +2421,8 @@
   <string name="sync_send_tab_empty_state_title">연결된 기기 없음</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">탭을 보내려면 하나 이상의 다른 기기에서 Firefox에 로그인하세요.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">기기 연결 방법 알아보기</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">인터넷 연결을 확인하세요</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -4505,6 +4495,16 @@
   <string name="lens_camera_mode_qr">QR 스캐너</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">이미지에서 QR 코드를 찾을 수 없음</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">검색 중…</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">취소</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">이미지를 로드할 수 없습니다. 다른 이미지를 시도해 보세요.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Google 렌즈에서 결과를 얻을 수 없음</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">다시 시도</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Google 렌즈로 찾기</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

@@ -273,6 +273,8 @@
   <string name="browser_main_menu_content_description_navigation_header">ناوبری</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">بستن برگهٔ منوی زبانهٔ سفارشی</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">از حافظهٔ نهان</string>
   <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
   <string name="browser_toolbar_live_page_toast">صفحه زنده</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
@@ -311,8 +313,6 @@
   <string name="browser_menu_default_banner_title">‏%1$s را مرورگر پیش‌فرض خود کنید</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">سریع، خصوصی و ساخته‌شده برای شما.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">رد کردن تبلیغ</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">اطلاعات بیشتر</string>
   <!--
@@ -1145,6 +1145,10 @@
   <string name="preferences_sync_category">انتخاب موارد همگام‌سازی</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">داده‌های همگام‌سازی شده</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">مدیریت آنچه در همهٔ دستگاه‌های متصلتان همگام می‌شود</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">چیزی را همگام نمی‌کنید. انتخاب کنید چه چیزهایی میان دستگاه‌هایتان همگام بماند.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">تاریخچه</string>
   <!-- Preference for syncing bookmarks -->
@@ -1280,8 +1284,6 @@
   <string name="preference_simple_toolbar">ساده</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">گسترش‌یافته</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">هنگام نمایش نوار زبانه‌ها، نوار نشانی باید در بالا قرار گیرد.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">باز کردن زبانهٔ جدید</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1325,6 +1327,8 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">نمایش نوار زبانه‌ها</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">محل نوار زبانه‌ها</string>
   <!-- Preference for using top tab strip -->
   <string name="preference_top_tab_strip">بالا</string>
   <!-- Preference for using bottom tab strip -->
@@ -1361,6 +1365,8 @@
   <string name="library_desktop_bookmarks_unfiled">سایر نشانک‌ها</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">تاریخچه</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">انتخاب‌شده</string>
   <!-- Settings Page Title -->
   <string name="settings_title">تنظیمات</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1411,8 +1417,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">زبانه‌ها</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">نمای زبانه‌ها</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">چیدمان زبانه‌ها</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">فهرست</string>
   <!-- Option for a grid tab view -->
@@ -1431,6 +1437,8 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">بستن خودکار زبانه‌های باز</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">بستن</string>
+  <!-- Content description for the media playback indicator in the tabs tray. -->
+  <string name="tab_indicator_media_playing">در حال پخش رسانه</string>
   <!--
     Opening screen
 
@@ -1457,20 +1465,20 @@
   <string name="opening_screen_last_tab_summary">باز کردن در آخرین زبانه</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">باز کردن در صفحهٔ اصلی پس از چهار ساعت</string>
+  <!--
+    Tab organization
+
+    Category header for the preferences that control how tabs are organized
+  -->
+  <string name="preferences_tab_organization">سازمان‌دهی زبانه‌ها</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">زبانه‌های ازکار افتاده</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">انتقال زبانه‌های قدیمی به بخش غیرفعال</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">زبانه‌هایی که دو هفته مشاهده نشده‌اند به بخش غیرفعال منتقل می‌شوند.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">گروه‌های زبانه</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">فعال‌سازی گروه‌های زبانه</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">زبانه‌هایتان را در گروه‌هایی که می‌توانید نام‌گذاری و ذخیره کنید سازمان‌دهی کنید.</string>
   <!--
     Privacy report
 
@@ -2419,6 +2427,8 @@
   <string name="sync_send_tab_empty_state_title">هیچ دستگاهی متصل نیست</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">برای ارسال زبانه، حداقل در یک دستگاه دیگر وارد Firefox شوید.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">آموزش نحوه اتصال دستگاه</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">اتصال اینترنت خود را بررسی کنید</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -2609,6 +2619,8 @@
   <string name="sign_out_confirmation_message_2">‏%s همگام‌سازی با حساب شما را متوقف خواهد کرد، اما هیچ‌یک از داده‌های وب‌گردی شما در این دستگاه حذف نخواهد شد.</string>
   <!-- Title of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_title">از حساب کاربریتان خارج شوید؟</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">داده‌های همگام‌شده در حسابتان ذخیره می‌مانند.</string>
   <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_confirm_button">خروج</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
@@ -2687,7 +2699,7 @@
 
     Preference for enhanced tracking protection for the custom protection settings for cookies
   -->
-  <string name="preference_enhanced_tracking_protection_custom_cookies">کوکی‌ها</string>
+  <string name="preference_enhanced_tracking_protection_custom_cookies">کلوچک‌ها</string>
   <!-- Option for enhanced tracking protection for the custom protection settings for cookies -->
   <string name="preference_enhanced_tracking_protection_custom_cookies_1">ردیاب‌های بین‌سایتی و شبکه‌های اجتماعی</string>
   <!-- Option for enhanced tracking protection for the custom protection settings for cookies -->
@@ -2721,9 +2733,9 @@
   <!-- Category of trackers (cross-site tracking cookies) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_cookies_title_2">کوکی‌های بین‌سایتی</string>
   <!-- Description of cross-site tracking cookies that can be blocked by Enhanced Tracking Protection -->
-  <string name="etp_cookies_description">کوکی‌هایی را که شبکه‌های تبلیغاتی و شرکت‌های تحلیلی برای جمع‌آوری داده‌های وب‌گردی شما در سایت‌های متعدد استفاده می‌کنند، مسدود می‌نماید.</string>
+  <string name="etp_cookies_description">کلوچک‌هایی را که شبکه‌های تبلیغاتی و شرکت‌های تحلیلی از آن‌ها استفاده می‌کنند، برای گردآوری داده‌های مرور شما در بسیاری از پایگاه‌ها مسدود می‌کند.</string>
   <!-- Description of cross-site tracking cookies that can be blocked by Enhanced Tracking Protection -->
-  <string name="etp_cookies_description_2">محافظت کامل در برابر کوکی‌ها، کوکی‌ها را در همان سایتی که در آن حضور دارید ایزوله می‌کند تا ردیاب‌هایی مانند شبکه‌های تبلیغاتی نتوانند از آن‌ها برای دنبال کردن شما میان سایت‌های مختلف استفاده کنند.</string>
+  <string name="etp_cookies_description_2">محافظت کامل در برابر کلوچک‌ها، کلوچک‌ها را در پایگاهی که در آن هستید، منزوی می‌کند، پس ردیاب‌هایی مانند شبکه‌های تبلیغاتی نمی‌توانند از آن‌ها برای دنبال کردن شما در میان پایگاه‌ها استفاده کنند.</string>
   <!-- Category of trackers (cryptominers) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_cryptominers_title">استخراج‌کننده‌های رمزارز</string>
   <!-- Description of cryptominers that can be blocked by Enhanced Tracking Protection -->
@@ -3029,6 +3041,8 @@
   <string name="preferences_ip_protection_title_2">VPN توکار</string>
   <!-- Label for the BETA badge for the browser VPN entry in the settings list -->
   <string name="preferences_ip_protection_beta_badge_label">BETA</string>
+  <!-- Title for the browser VPN settings screen (displayed in the app bar) -->
+  <string name="ip_protection_settings_title">VPN داخلی</string>
   <!-- Label for the browser VPN toggle on the settings screen -->
   <string name="ip_protection_toggle_label">VPN</string>
   <!-- Content description for the browser VPN settings screen top bar back button -->
@@ -4496,6 +4510,16 @@
   <string name="lens_camera_mode_qr">اسکنر QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">هیچ کد QR در تصویر یافت نشد</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">به دنبال این هستم</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">انصراف</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">این تصویر بارگذاری نشد. تصویر دیگری را امتحان کنید.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">نتوانستم از Google Lens نتیجه بگیرم</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">تلاش دوباره</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">با Google Lens پیدایش کنید</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4576,6 +4600,14 @@
   <string name="pdf_tools_signature_clear_button">پاک کردن</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">افزودن</string>
+  <!--
+    Listen to page
+
+    Content description for the reader mode panel: a group of buttons floating over the content
+  -->
+  <string name="reader_mode_panel_content_description">گزینه‌های حالت خواندن</string>
+  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">بلندخوانی</string>
   <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">پخش کننده رسانه</string>
 </resources>

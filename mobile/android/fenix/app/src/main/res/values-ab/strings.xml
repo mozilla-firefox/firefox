@@ -736,8 +736,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Агәылаҵақәа</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Ахҵарақәа рбара</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Ахҩылаа</string>
   <!-- Option for a grid tab view -->
@@ -780,12 +778,6 @@
   <string name="opening_screen_last_tab_summary">Иаарттәуп аҵыхәтәантәи абларҭаҿы</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Ԥшь-сааҭк рышьҭахь ахатә даҟьаҿы иаартуп</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Ижәытәу абларҭақәа иактивым рахь ииагатәуп</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Ҩымчыбжь раахыс узҭамлаз анҵамҭақәа активтәым ахь ииасуеит.</string>
   <!--

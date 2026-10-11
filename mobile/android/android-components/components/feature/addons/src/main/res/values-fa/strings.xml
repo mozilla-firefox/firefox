@@ -31,12 +31,16 @@
     then we will show another collapsed entry saying "Access your data on other domains".
   -->
   <string name="mozac_feature_addons_permissions_extra_domains_description_plural_2">دسترسی به داده‌های شما در دامنه‌های دیگر</string>
+  <plurals name="mozac_feature_addons_permissions_all_domain_count_description_2">
+    <!-- When an add-on requires access to domains, this entry is used to describe the total number of domains. Underneath it will be the list of all the domains. %1$d is the number of all the domains that will be shown to the user as required. -->
+    <item quantity="other">دسترسی به داده‌های شما در سایت‌های %1$d دامنه</item>
+  </plurals>
   <!-- Content description for a permission item, for an installed add-on details page. %1$s will be replaced with the permission text name, %2$d will be replaced with the permission position in the list and %3$d will be replaced with the total number of permissions in the list.Taking as an example "Read and modify privacy settings" the whole text will read Read and modify privacy settings, 2 of 6. -->
   <string name="mozac_feature_addons_permissions_content_description_item">%1$s، %2$d از %3$d</string>
   <!-- Description for the "privacy" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_privacy_description">خواندن و تغییر تنظیمات حریم خصوصی</string>
   <!-- Description for the "<all_urls>" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description">دسترسی به تمامی اطلاعات شما برای تمامی پایگاه های اینترنتی</string>
+  <string name="mozac_feature_addons_permissions_all_urls_description">دسترسی به داده‌های شما برای همه وبگاه‌ها</string>
   <!-- Description for the "tabs" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_tabs_description">دسترسی به زبانه‌های مرورگر</string>
   <!-- Description for the "webNavigation" WebExtensions API permission. -->
@@ -101,6 +105,10 @@
   <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">خواندن و ویرایش تنظیمات مرورگر.</string>
   <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">پاک کردن تاریخچهٔ مرور اخیر،‌ کلوچک‌ها و اطلاعات مرتبط.</string>
+  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">دریافت داده از تخته‌گیره.</string>
+  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">وارد کردن داده در تخته‌گیره.</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">مسدود کردن محتوا در هر صفحه.</string>
   <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -131,6 +139,36 @@
   <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">پنهان کردن و نمایش زبانه‌های مرورگر.</string>
   <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_top_sites_description_for_update">دسترسی به تاریخچه مرور.</string>
+  <!-- Description for the "trialML" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_trial_ml_description_for_update">بارگیری و اجرای مدل‌های هوش مصنوعی روی دستگاه شما.</string>
+  <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">اجازه به اسکریپت‌های تأییدنشدهٔ شخص ثالث برای دسترسی به داده‌های شما.</string>
+  <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
+  <string name="mozac_feature_addons_permissions_devtools_description_for_update">گسترش ابزارهای توسعه برای دسترسی به داده‌های شما در زبانه‌های باز.</string>
+  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
+  <string name="mozac_feature_addons_permissions_one_site_description_for_update">دسترسی به داده‌های شما برای %1$s.</string>
+  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
+  <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">دسترسی به داده‌های شما برای سایت‌های دامنهٔ %1$s.</string>
+  <!--
+    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
+    then we will show another collapsed entry saying "Access your data on another domain.".
+  -->
+  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">دسترسی به داده‌های شما در یک دامنهٔ دیگر.</string>
+  <!--
+    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
+    then we will show another collapsed entry saying "Access your data on other domains.".
+  -->
+  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">دسترسی به داده‌های شما در دامنه‌های دیگر.</string>
+  <!--
+    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
+    then we will show another collapsed entry saying "Access your data on another site.".
+  -->
+  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">دسترسی به داده‌های شما در یک سایت دیگر.</string>
+  <!--
+    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
+    then we will show another collapsed entry saying "Access your data on other sites.".
+  -->
+  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">دسترسی به داده‌های شما در سایت‌های دیگر.</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">اسکریپت‌های تایید نشده می‌توانند خطرات امنیتی و حفظ حریم خصوصی ایجاد کنند. فقط اسکریپت‌هایی را از افزونه‌ها یا منابعی که به آن‌ها اعتماد دارید، اجرا کنید.</string>
   <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
@@ -189,6 +227,8 @@
   <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_long_description">هم‌رسانی داده‌های فنی و تعاملی با توسعه‌دهنده افزونه</string>
   <!-- Long description for the websiteActivity data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_websiteActivity_long_description">هم‌رسانی فعالیت وبگاه با توسعه‌دهنده افزونه</string>
+  <!-- Long description for the websiteContent data collection permission -->
+  <string name="mozac_feature_addons_permissions_data_collection_websiteContent_long_description">هم‌رسانی محتوای وب‌سایت با توسعه‌دهندهٔ افزونه</string>
   <!-- The version on of add-on. -->
   <string name="mozac_feature_addons_version">نگارش</string>
   <!-- The author of an add-on. -->
@@ -235,8 +275,20 @@
   <string name="mozac_feature_addons_report">گزارش</string>
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title_2">افزودن %1$s</string>
+  <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s تنظیمات بیشتری درخواست می‌کند</string>
+  <!-- This is the title of a dialog that asks the users to grant optional data collection permissions only. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_only_dialog_title">%1$s جمع‌آوری دادهٔ بیشتری درخواست می‌کند</string>
+  <!-- Heading for the permissions section in the add-on install dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_required_permissions">مجوزهای لازم:</string>
+  <!-- Heading for the data collection permissions section in the add-on install dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">جمع‌آوری دادهٔ لازم:</string>
   <!-- Heading for the optional settings section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_settings">تنظیمات اختیاری:</string>
+  <!-- Heading for the permissions section in the optional permissions request dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">مجوزهای جدید:</string>
+  <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_heading_optional_data_collection">جمع‌آوری دادهٔ جدید:</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">افزودن</string>
   <!-- This is a button to allow the optional permissions requested by an add-on . -->
@@ -245,6 +297,8 @@
   <string name="mozac_feature_addons_permissions_dialog_deny">رد کردن</string>
   <!-- Text link to learn more about permission requests on the add-on permissions dialog . -->
   <string name="mozac_feature_addons_permissions_dialog_learn_more">بیشتر بدانید</string>
+  <!-- This is the text for the "technical and interaction" checkbox shown in the add-on permissions dialog. -->
+  <string name="mozac_feature_addons_permissions_dialog_technical_and_interaction_data">هم‌رسانی داده‌های فنی و تعاملی با توسعه‌دهندهٔ افزونه</string>
   <!-- This is a button to cancel the add-on installation . -->
   <string name="mozac_feature_addons_permissions_dialog_cancel">لغو</string>
   <!-- Accessibility content description to install add-on button. %1$s is the add-on name. -->
@@ -252,7 +306,7 @@
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">لغو</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
-  <string name="mozac_feature_addons_user_rating_count_2">بررسی‌های:%1$s</string>
+  <string name="mozac_feature_addons_user_rating_count_2">بررسی‌ها: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->
   <string name="mozac_feature_addons_rating_content_description_2">رتبه‌بندی: %1$.02f از of 5</string>
   <!-- This is the title of page where all the add-ons are listed -->
@@ -271,6 +325,14 @@
   <string name="mozac_feature_addons_updater_notification_update_button">به‌روزرسانی</string>
   <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
   <string name="mozac_feature_addons_updater_notification_cancel_button">انصراف</string>
+  <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
+  <string name="mozac_feature_addons_updater_notification_title_2">%1$s به‌روزرسانی دارد</string>
+  <!-- A short explanation shown in the notification displayed when an add-on has a new update that requires new permissions. -->
+  <string name="mozac_feature_addons_updater_notification_short_intro">برای حفظ نسخه و تنظیمات فعلی، لغو کنید.</string>
+  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
+  <string name="mozac_feature_addons_updater_notification_heading_permissions">مجوزهای لازم جدید: %1$s</string>
+  <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
+  <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">جمع‌آوری دادهٔ لازم جدید: توسعه‌دهنده می‌گوید افزونه %1$s را جمع‌آوری خواهد کرد.</string>
   <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_updater_notification_channel_2">به‌روزرسانی افزونه</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
@@ -289,10 +351,12 @@
   <string name="mozac_feature_addons_not_yet_supported_caption2">در حال حاضر در حال ساختن پشتیبانی برای گزیده ای از افزونه‌های انتخاب شده هستیم.</string>
   <!-- This is the caption for the extension installation progress overlay -->
   <string name="mozac_extension_install_progress_caption">در حال بارگیری و تأیید افزونه…</string>
+  <!-- Error shown when extensions could not be loaded -->
+  <string name="mozac_feature_addons_failed_to_load_extensions">بار کردن افزونه‌ها ممکن نشد. بعداً دوباره امتحان کنید.</string>
   <!-- Error shown when unable to find a translation for an add-on field. %1$s is the locale of the user and %2$s is the default language of the add-on -->
   <string name="mozac_feature_addons_failed_to_translate">برای محل %1$s و همچینین زبان پیش‌فرض %2$s، ترجمه‌ای یافت نشد</string>
   <!-- Text shown after successfully installed an add-on. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_successfully_installed">%1$sبا موفقیت نصب شد</string>
+  <string name="mozac_feature_addons_successfully_installed">%1$s با موفقیت نصب شد</string>
   <!-- Text shown after failing to install an add-on (when add-on type isn't supported or an unknown has errored). %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_install">شکست در نصب %1$s</string>
   <!-- Text shown after failing to install an extension for which we don't have its name (when add-on type isn't supported or an unknown has errored). -->
@@ -311,6 +375,8 @@
   <string name="mozac_feature_addons_blocklisted_2" tools:ignore="BrandUsage">%1$s خط‌مشی‌های Mozilla را نقض می‌کند و نمی‌تواند بر روی %2$s نصب شود.</string>
   <!-- Text shown when attempting to install an add-on that can only be install via Enterprise Policies, which is not supported on Android.  %1$s is the add-on name. -->
   <string name="mozac_feature_addons_admin_install_only">%1$s نمی‌تواند نصب شود زیرا فقط توسط سازمانی که از سیاست‌های سازمانی استفاده می‌کند قابل نصب است، که در این سکو پشتیبانی نمی‌شود.</string>
+  <!-- Text shown when attempting to install an add-on that is soft-blocked. %1$s is the add-on name. %2$s is the app name. -->
+  <string name="mozac_feature_addons_soft_blocked_2">%1$s محدود شده است و نمی‌توان آن را روی %2$s نصب کرد.</string>
   <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_enable">شکست در فعالسازی %1$s</string>
   <!-- Text shown after failed to disable an add-on. %1$s is the add-on name. -->
@@ -318,9 +384,9 @@
   <!-- Text shown after failed to uninstall an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_uninstall">شکست در پاک‌کردن %1$s</string>
   <!-- Text shown after successfully removed an add-on. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_successfully_removed" tools:ignore="UnusedResources">%1$sبا موفقیت حذف شد</string>
+  <string name="mozac_feature_addons_successfully_removed" tools:ignore="UnusedResources">%1$s با موفقیت حذف شد</string>
   <!-- Text shown after failed to remove an add-on. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_failed_to_remove" tools:ignore="UnusedResources">شکست در حذف%1$s</string>
+  <string name="mozac_feature_addons_failed_to_remove" tools:ignore="UnusedResources">حذف %1$s ناموفق بود</string>
   <!-- Label shown to indicate that the add-on was migrated from a previous version of the app. %1$s is the app name most of the case it will be Firefox. -->
   <string name="mozac_feature_addons_migrated_from_a_previous_version_label" tools:ignore="UnusedResources">این افزونه از نگارش قبلی %1$s منتقل شده است</string>
   <!-- Text shown in not yet supported add-ons section. -->
@@ -338,9 +404,15 @@
   <!-- Text shown in a dialog that displays information about the last attempt to update an add-on. This is the title of the dialog. -->
   <string name="mozac_feature_addons_updater_dialog_title">به‌روزرسانی اطلاعات</string>
   <!-- Label in the dialog displaying information for the last attempt to update add-ons. It's followed by the date of the last attempt. -->
-  <string name="mozac_feature_addons_updater_dialog_last_attempt">آخرین تلاش</string>
+  <string name="mozac_feature_addons_updater_dialog_last_attempt">آخرین تلاش:</string>
   <!-- Displayed in the "Status" field for the updater when an add-on has been correctly updated -->
   <string name="mozac_feature_addons_updater_dialog_status">وضعیت:</string>
+  <!-- Text shown in the dialog when add-on installation is completed. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_installed_dialog_title_2">%1$s اضافه شد</string>
+  <!-- Used as text for the link in the description of the post-installation dialog. -->
+  <string name="mozac_feature_addons_installed_dialog_description_link_text">تنظیمات افزونه</string>
+  <!-- Text shown in the dialog when add-on installation is completed. %1$s is replaced by an active link, using mozac_feature_addons_installed_dialog_description_link_text as text ("extension settings"). -->
+  <string name="mozac_feature_addons_installed_dialog_description_3">هر زمان بخواهید می‌توانید مجوزها و ترجیحات داده را در %1$s به‌روز کنید.</string>
   <!-- Confirmation button text for the dialog when add-on installation is completed. -->
   <string name="mozac_feature_addons_installed_dialog_okay_button_2">تأیید</string>
   <!-- "Learn more" link displayed below an add-on status message. -->
@@ -349,6 +421,10 @@
   <string name="mozac_feature_addons_status_see_details">مشاهده جزئیات</string>
   <!-- Status message below an add-on in the add-ons manager when this add-on has been blocklisted. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_status_blocklisted_1" tools:ignore="BrandUsage">این افزونه به دلیل نقض خط‌مشی‌های Mozilla مسدود شده و غیرفعال شده است.</string>
+  <!-- Status message below an add-on in the add-ons manager when this add-on has been soft-blocked. -->
+  <string name="mozac_feature_addons_status_softblocked_2">این افزونه محدود شده و غیرفعال است. می‌توانید فعالش کنید، اما ممکن است خطرناک باشد.</string>
+  <!-- Status message below an add-on in the add-ons manager when this add-on has been soft-blocked but the user re-enabled it. -->
+  <string name="mozac_feature_addons_status_softblocked_re_enabled_2">این افزونه محدود شده است. استفاده از آن ممکن است خطرناک باشد.</string>
   <!-- Status message below an add-on in the add-ons manager when this add-on hasn't been signed correctly. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_status_unsigned">%1$s نمی‌تواند به عنوان امن تأیید شود و غیرفعال شده است.</string>
   <!-- Status message below an add-on in the add-ons manager when this add-on isn't compatible with the application version. %1$s is the add-on name, %2$s is the app name and %3$s is the app version. -->

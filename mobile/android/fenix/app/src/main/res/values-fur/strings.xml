@@ -297,8 +297,6 @@
   <string name="browser_menu_default_banner_title">Met %1$s come predefinît</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Svelt, riservât e fat propite par te.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Siere promozion</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Altris informazions</string>
   <!--
@@ -1240,8 +1238,6 @@
   <string name="preference_simple_toolbar">Semplice</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Slargjade</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Tu scugnis plaçâ la sbare de direzion adalt cuant che e ven mostrade la sbare des schedis.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Vierç une gnove schede</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1362,8 +1358,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Schedis</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Viodude schedis</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Liste</string>
   <!-- Option for a grid tab view -->
@@ -1408,12 +1402,6 @@
   <string name="opening_screen_last_tab_summary">Vierç su la ultime schede</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Vierç su la pagjine iniziâl dopo cuatri oris</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Sposte lis schedis vecjis te sezion inativis</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Lis schedis che no tu visualizis di dôs setemanis a vegnin spostadis te sezion inativis.</string>
   <!--

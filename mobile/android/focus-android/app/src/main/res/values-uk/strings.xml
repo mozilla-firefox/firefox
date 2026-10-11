@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Історію перегляду очищено</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">Історію перегляду було стерто.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Меню</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Поділитися…</string>
   <!--
@@ -415,11 +417,30 @@
   <string name="notification_browsing_session_channel_description">Сповіщення дозволяють вам стирати дані сеансу %1$s одним дотиком. Вам не потрібно відкривати програму чи дивитися, що відбувається у вашому браузері.</string>
   <!-- Label for the option in the Focus "tabs tray" to clos the other tabs except the current tab. -->
   <string name="tabs_tray_action_erase_other">Закрити інші вкладки</string>
+  <!-- Label for the option in the Focus "tabs tray" to add a new tab. -->
+  <string name="tabs_tray_action_add_new_tab">Додати нову вкладку</string>
   <!--
     If the user decides to open the current page in another browser and if Firefox is not installed then we show this
     item in the list of browsers. Clicking it will open the app store installed on the device (usually that's Google Play).
   -->
   <string name="download_firefox" tools:ignore="BrandUsage">Завантажити Firefox</string>
+  <!--
+    Text shown in Security Information Popup
+
+    %1$s will be replaced with the organization for which the certificate
+    used by the site was issued. For example, the certificate in use by
+    the site https://eidas.ec.europa.eu/ was issued to "The European
+    Commission".
+  -->
+  <string name="qualified_identity">Сертифікат виданий: %1$s</string>
+  <!--
+    The European Union eIDAS Regulation specifies a type of certificate
+    called a "qualified website authentication certificate" (QWAC) and
+    requires that browsers identify and indicate such certificates. This
+    text was paraphrased from ETSI TS 119 411-5 V2.1.1 section 6.3 and
+    indicates that the website uses a QWAC.
+  -->
+  <string name="qualified_text">Кваліфікований, як зазначено в Регламенті (ЄС) 2024/1183.</string>
   <string name="preference_autocomplete_duplicate_url_error">URL вже наявний</string>
   <!-- Label for the Find in page button -->
   <string name="find_in_page">Знайти на сторінці</string>

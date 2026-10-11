@@ -80,7 +80,7 @@
   <!-- Label for the shake sensitivity slider in settings -->
   <string name="mozac_summarize_settings_shake_sensitivity">Wrażliwość na potrząsanie</string>
   <!-- Description for the shake sensitivity slider in settings -->
-  <string name="mozac_summarize_settings_shake_sensitivity_description">Dostosuj siłę, z jaką musisz potrząsnąć, aby uruchomić streszczenie.</string>
+  <string name="mozac_summarize_settings_shake_sensitivity_description">Dostosuj siłę, z\u00a0jaką musisz potrząsnąć, aby uruchomić streszczenie.</string>
   <!-- Low option label for the shake sensitivity slider in settings -->
   <string name="mozac_summarize_settings_shake_sensitivity_low">Lekko</string>
   <!-- Medium option label for the shake sensitivity slider in settings -->

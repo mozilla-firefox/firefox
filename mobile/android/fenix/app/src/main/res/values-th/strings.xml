@@ -271,6 +271,8 @@
   <string name="browser_main_menu_content_description_navigation_header">การนำทาง</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">ปิดแผ่นเมนูแท็บกำหนดเอง</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">ถูกแคช</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">เพิ่มที่คั่นหน้าสำหรับหน้า</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -307,8 +309,6 @@
   <string name="browser_menu_default_banner_title">เลือก %1$s เป็นค่าเริ่มต้น</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">รวดเร็ว เป็นส่วนตัว และตอบโจทย์คุณ</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">ปิดโปรโมชัน</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">ข้อมูลเพิ่มเติม</string>
   <!--
@@ -1146,6 +1146,10 @@
   <string name="preferences_sign_out">ลงชื่อออก</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">ชื่ออุปกรณ์</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">ชื่ออุปกรณ์</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">เปลี่ยนชื่ออุปกรณ์</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">ชื่ออุปกรณ์ต้องไม่ว่างเปล่า</string>
   <!-- Label indicating that sync is in progress -->
@@ -1265,8 +1269,6 @@
   <string name="preference_simple_toolbar">ธรรมดา</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">ขยาย</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">แถบที่อยู่ต้องอยู่ด้านบนเมื่อแสดงแถบแท็บ</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">เปิดแท็บใหม่</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1305,6 +1307,10 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">แสดงแถบแท็บ</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">ด้านบน</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">ด้านล่าง</string>
   <!--
     Gestures Preferences
 
@@ -1387,8 +1393,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">แท็บ</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">มุมมองแท็บ</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">รายการ</string>
   <!-- Option for a grid tab view -->
@@ -1433,20 +1437,20 @@
   <string name="opening_screen_last_tab_summary">เปิดบนแท็บสุดท้าย</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">เปิดหน้าแรกหลังจากสี่ชั่วโมง</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">ย้ายแท็บเก่าไปยังส่วนที่ไม่ได้ใช้งาน</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">แท็บที่ไม่ได้ใช้งาน</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">แท็บที่คุณไม่ได้ดูเป็นเวลา 2 สัปดาห์จะถูกย้ายไปยังส่วนที่ไม่ได้ใช้งาน</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">กลุ่มแท็บ</string>
   <!--
     Privacy report
 
     Category header of a preference that allows a user to enable or disable the privacy report feature
   -->
   <string name="preferences_privacy_report">รายงานความเป็นส่วนตัว</string>
+  <!-- Title of the privacy report preference that allows a user to enable or disable the feature -->
+  <string name="preferences_privacy_report_title">เปิดใช้งานรายงานความเป็นส่วนตัว</string>
   <!--
     Studies
 
@@ -2338,6 +2342,8 @@
   <string name="sync_send_to_all">ส่งไปยังอุปกรณ์ทั้งหมด</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">เชื่อมต่อกับ Sync ใหม่</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">ส่ง</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">ออฟไลน์</string>
   <!-- An option to connect additional devices -->
@@ -2364,6 +2370,8 @@
   <string name="sync_send_tab_error_auth_button">ลงชื่อเข้า</string>
   <!-- Send tab to synced devices: Authentication error button - Allows user to remove the currently connected account -->
   <string name="sync_send_tab_error_auth_remove_account">เอาบัญชีออก</string>
+  <!-- Send tab to synced devices: Connectivity Error title -->
+  <string name="sync_send_tab_error_connection_title">ตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ</string>
   <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
   <string name="sync_send_tab_error_connection_button">ลองใหม่</string>
   <!--
@@ -2387,6 +2395,12 @@
     The app name is in the text, due to limitations with localizing Nimbus experiments
   -->
   <string name="nimbus_notification_default_browser_text" tools:ignore="BrandUsage,UnusedResources">ทำให้ Firefox เป็นเบราว์เซอร์เริ่มต้นของคุณ</string>
+  <!--
+    Privacy report notification
+
+    Name of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app.
+  -->
+  <string name="notification_privacy_report_channel_name">รายงานความเป็นส่วนตัว</string>
   <!--
     Survey
 
@@ -2994,6 +3008,8 @@
   <string name="ip_protection_menu_paused">หยุดชั่วคราว</string>
   <!-- Badge label shown in the menu item when the browser VPN has an error -->
   <string name="ip_protection_menu_error">ข้อผิดพลาด</string>
+  <!-- Badge label shown in the VPN menu item when the user is eligible for the feature but needs to authenticate / authorize to enable it -->
+  <string name="ip_protection_menu_try_vpn_cta">ลองใช้ฟรี</string>
   <!-- Content description for the chevron button that opens the browser VPN settings screen -->
   <string name="ip_protection_navigate_settings">เปิดการตั้งค่า VPN</string>
   <!--
@@ -3010,6 +3026,8 @@
   <string name="ip_protection_toolbar_pill_label">VPN เปิดอยู่</string>
   <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has been activated -->
   <string name="ip_protection_toolbar_pill_description">VPN เปิดใช้งานอยู่</string>
+  <!-- Label shown next to the browser protection icon in the address bar when the browser VPN turns off -->
+  <string name="ip_protection_toolbar_pill_label_off">VPN ปิดอยู่</string>
   <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has turned off -->
   <string name="ip_protection_toolbar_pill_description_off">VPN ปิดอยู่</string>
   <!-- Label for the button that starts the browser VPN authentication or authorization flow on the settings screen -->

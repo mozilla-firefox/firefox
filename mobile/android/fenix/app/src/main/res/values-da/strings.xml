@@ -273,6 +273,10 @@
   <string name="browser_main_menu_content_description_navigation_header">Navigation</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">Luk menuen tilpasset fanebladsmenu</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">Cached</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Aktuelle side</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Bogmærk side</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -309,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Gør %1$s til din standard-browser</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Hurtigt, privat og lavet til dig.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Afvis promovering</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Mere information</string>
   <!--
@@ -802,6 +804,8 @@
   <string name="preferences_override_sync_tokenserver">Selvvalgt synkroniseringsserver</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Konto</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">Synkronisering</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">Adresselinjens placering</string>
   <!-- Preference for changing toolbar layout -->
@@ -1139,6 +1143,12 @@
   <string name="preferences_sync_now">Synkroniser nu</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Vælg, hvad der skal synkroniseres</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Synkroniserede data</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Håndter, hvad som skal synkroniseres til dine tilknyttede enheder</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Du synkroniserer ikke noget. Vælg, hvad der skal synkroniseres på tværs af dine enheder.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Historik</string>
   <!-- Preference for syncing bookmarks -->
@@ -1151,6 +1161,10 @@
   <string name="preferences_sign_out">Log ud</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">Enhedsnavn</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">Enhedens navn</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">Skift enhedsnavn</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">Enhedsnavnet kan ikke være tomt.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1270,8 +1284,6 @@
   <string name="preference_simple_toolbar">Enkel</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Udvidet</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Adresselinjen skal være øverst, når fanebladslinjen vises.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Åbn et nyt faneblad</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1403,8 +1415,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Faneblade</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Fanebladsvisning</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">Fanebladslayout</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Liste</string>
   <!-- Option for a grid tab view -->
@@ -1452,15 +1464,19 @@
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Åbn på startside efter fire timers inaktivitet</string>
   <!--
-    Inactive tabs
+    Tab organization
 
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
+    Category header for the preferences that control how tabs are organized
   -->
-  <string name="preferences_inactive_tabs">Flyt gamle faneblade til afsnittet Inaktive faneblade</string>
+  <string name="preferences_tab_organization">Fanebladsorganisering</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Inaktive faneblade</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Faneblade, du ikke har set i to uger, flyttes til afsnittet Inaktive faneblade.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Aktiver fanebladsgrupper</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Fanebladsgrupper</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Organisere dine faneblade i grupper, du kan navngive og gemme.</string>
   <!--
     Privacy report
 
@@ -2373,6 +2389,10 @@
   <string name="sync_send_to_all">Send til alle enheder</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Genopret forbindelse til Sync</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Send</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">Valgt</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Offline</string>
   <!-- An option to connect additional devices -->
@@ -2409,6 +2429,8 @@
   <string name="sync_send_tab_error_connection_title">Kontroller din internetforbindelse</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">Prøv derefter at sende din faneblade igen.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Prøv igen</string>
   <!--
     Notifications
 
@@ -2591,6 +2613,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Ingen konto? <u>Opret en</u> for at synkronisere Firefox mellem enheder.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s vil ikke længere synkronisere med din konto, men sletter ikke dine data på denne enhed.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Log ud af din konto?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Synkroniserede data forbliver gemt på din konto.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Log ud</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Afbryd forbindelse</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -4558,4 +4586,14 @@
   <string name="pdf_tools_signature_clear_button">Ryd</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Tilføj</string>
+  <!--
+    Listen to page
+
+    Content description for the reader mode panel: a group of buttons floating over the content
+  -->
+  <string name="reader_mode_panel_content_description">Indstillinger for læsetilstand</string>
+  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">Læs højt</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Medieafspiller</string>
 </resources>

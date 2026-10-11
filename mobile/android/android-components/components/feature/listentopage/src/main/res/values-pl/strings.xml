@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <plurals name="mozac_feature_listentopage_notification_skip_back">
+    <!--
+      Content description of the playback notification control that moves the
+      reading backwards. %1$d is how many seconds it moves by.
+    -->
+    <item quantity="one">Do tyłu o\u00a0%1$d sekundę</item>
+    <item quantity="few">Do tyłu o\u00a0%1$d sekundy</item>
+    <item quantity="other">Do tyłu o\u00a0%1$d sekund</item>
+  </plurals>
+  <plurals name="mozac_feature_listentopage_notification_skip_forward">
+    <!--
+      Content description of the playback notification control that moves the
+      reading forwards. %1$d is how many seconds it moves by.
+    -->
+    <item quantity="one">Do przodu o\u00a0%1$d sekundę</item>
+    <item quantity="few">Do przodu o\u00a0%1$d sekundy</item>
+    <item quantity="other">Do przodu o\u00a0%1$d sekund</item>
+  </plurals>
+  <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_25">Odtwarzanie wolniejsze o\u00a075 procent</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_5">Odtwarzanie z\u00a0połową prędkości</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_75">Odtwarzanie wolniejsze o\u00a025 procent</string>
+  <!-- Content description of the playback control notification, when the playback is set to normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1">Standardowa prędkość odtwarzania</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_25">Odtwarzanie szybsze o\u00a025 procent</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.5 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_5">Odtwarzanie szybsze o\u00a050 procent</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_75">Odtwarzanie szybsze o\u00a075 procent</string>
+  <!-- Content description of the playback control notification, when the playback is set to 2 times (double) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_2">Odtwarzanie z\u00a0dwukrotną prędkością</string>
+  <!-- Listen to Page media player: content description for the button that closes the player. -->
+  <string name="mozac_feature_listentopage_close">Zamknij</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_audio">Dźwięk</string>
+  <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
+  <string name="mozac_feature_listentopage_back_10_sec">Do tyłu o\u00a010 sekund</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
+  <string name="mozac_feature_listentopage_play">Odtwórz</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is playing - tapping pauses playback. -->
+  <string name="mozac_feature_listentopage_pause">Wstrzymaj</string>
+  <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
+  <string name="mozac_feature_listentopage_forward_30_sec">Do przodu o\u00a030 sekund</string>
+  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_1">Standardowa prędkość odtwarzania</string>
+  <!--
+    Listen to Page media player: content description for the playback speed button. Pressing it cycles through available playback speeds.
+    This string will be interpolated into a longer message, equivalent to "Double tap to [change playback speed]" in English.
+    Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended.
+  -->
+  <string name="mozac_feature_listentopage_change_speed">zmienić prędkość odtwarzania</string>
+</resources>

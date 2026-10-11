@@ -114,7 +114,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_title_2">Pare ch’ella ci sia un prublema cù a vostra cunnessione internet</string>
   <!-- The main body text of this error page. It will be shown beneath the title -->
-  <string name="mozac_browser_errorpages_no_internet_message_2">Pruvate di cunnettevi nant’à un altru apparechju. Verificate u vostru modem o «\u00a0router\u00a0». Discunnittitevi è ricunnittitevi à u Wi-Fi.</string>
+  <string name="mozac_browser_errorpages_no_internet_message_2">Pruvate di cunnettevi nant’à un altru apparechju. Verificate u vostru modem o «\u00a0router\u00a0». Scunnittitevi è ricunnittitevi à u Wi-Fi.</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_error_code">Codice di sbagliu\u00a0: NS_ERROR_OFFLINE</string>
   <!-- Text that will show up on the button at the bottom of the error page -->
@@ -167,4 +167,6 @@
   <string name="mozac_browser_errorpages_httpsonly_message"><![CDATA[Avete attivatu u modu «\u00a0HTTPS solu\u00a0» per una sicurità rinfurzata, ma ùn ci hè alcuna versione HTTPS di <em>%1$s</em>.]]></string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">Cuntinuà nant’à u situ HTTP</string>
+  <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->
+  <string name="mozac_browser_errorpages_httpsonly_back">Ritornu (ricumandatu)</string>
 </resources>

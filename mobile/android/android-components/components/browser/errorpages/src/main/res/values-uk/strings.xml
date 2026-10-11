@@ -11,6 +11,16 @@
   <string name="mozac_browser_errorpages_page_refresh">Спробувати знову</string>
   <!-- The button on an error page that checks whether an archived copy of the unreachable page exists. -->
   <string name="mozac_browser_errorpages_archive_check_button">Перевірити архівну версію</string>
+  <!--
+    The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
+    the app name and %2$s will be replaced by the name of the archive service as a link
+  -->
+  <string name="mozac_browser_errorpages_archive_description">%1$s може знайти попередню версію цієї сторінки в інтернет-архіві %2$s.</string>
+  <!--
+    The name of the Internet Archive service, shown as a link at the end of
+    mozac_browser_errorpages_archive_description.
+  -->
+  <string name="mozac_browser_errorpages_archive_wayback_machine">Wayback Machine</string>
   <!-- The label shown on the archive button while the archived copy is being looked up. -->
   <string name="mozac_browser_errorpages_archive_checking">Перевірка архіву</string>
   <!-- The message shown when no archived copy of the unreachable page could be found. -->
@@ -157,4 +167,6 @@
   <string name="mozac_browser_errorpages_httpsonly_message"><![CDATA[Ви увімкнули HTTPS-режим для поліпшення безпеки, але HTTPS версія для <em>%1$s</em> недоступна.]]></string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">Продовжити на HTTP-сайті</string>
+  <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->
+  <string name="mozac_browser_errorpages_httpsonly_back">Назад (рекомендовано)</string>
 </resources>

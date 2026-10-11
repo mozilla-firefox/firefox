@@ -471,8 +471,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">ట్యాబులు</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">ట్యాబు వీక్షణ</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">జాబితా</string>
   <!-- Option for a grid tab view -->

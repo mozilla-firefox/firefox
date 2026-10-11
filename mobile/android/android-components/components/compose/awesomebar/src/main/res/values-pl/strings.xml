@@ -8,7 +8,7 @@
 
 <resources>
   <!-- Description for the button to accept the search suggestion and continue editing the search. -->
-  <string name="mozac_browser_awesomebar_edit_suggestion">Przyjmij i edytuj podpowiedź</string>
+  <string name="mozac_browser_awesomebar_edit_suggestion">Przyjmij i\u00a0edytuj podpowiedź</string>
   <!-- Description for the button to remove the search suggestion from the displayed results. -->
   <string name="mozac_browser_awesomebar_remove_suggestion">Usuń podpowiedź</string>
   <!--

@@ -264,8 +264,6 @@
   <string name="browser_menu_default_banner_title">Mposta %1$s pi app pridifinuta</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Lestu, privatu, fattu pi tia.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Chiuji l\'ufferta</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Cchiù nfurmazzioni</string>
   <!--
@@ -864,8 +862,6 @@
   <string name="preference_simple_toolbar">Sìmprici</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Allargata</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">A barra dî nnirizzi àv’a stari supra quannu veni mustrata a barra dî schedi.</string>
   <!--
     App icon Preferences
 
@@ -968,8 +964,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Schedi</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Vista dî schedi</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Lista</string>
   <!-- Option for a grid tab view -->
@@ -1012,12 +1006,6 @@
   <string name="opening_screen_last_tab_summary">Grapi nna l’ùrtima scheda</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Grapi nnâ pàggina mastra doppu quattru uri</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Movi i schedi vecchi nnâ sizzioni Fermi</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">I schedi chi nun taliasti pi du’ simani vennu muvuti nnâ sizzioni Fermi.</string>
   <!--

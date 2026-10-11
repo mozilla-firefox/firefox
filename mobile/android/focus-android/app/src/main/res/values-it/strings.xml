@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Cronologia di navigazione eliminata</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">Eliminata cronologia di navigazione della scheda.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Menu</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Condividi…</string>
   <!--

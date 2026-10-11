@@ -273,6 +273,10 @@
   <string name="browser_main_menu_content_description_navigation_header">Điều hướng</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">Đóng bảng menu thẻ tuỳ chỉnh</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">Đã lưu vào bộ nhớ đệm</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Trang trực tiếp</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Đánh dấu trang</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -287,8 +291,12 @@
   <string name="browser_menu_summarize_page">Tóm tắt trang</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">Mới</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">Mới</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">Báo cáo trang web bị hỏng</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">Thêm vào nhóm</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Đã dịch</string>
   <!-- Browser menu label for the print feature -->
@@ -305,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Đặt %1$s làm trình duyệt mặc định của bạn</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Nhanh chóng, riêng tư, dành riêng cho bạn.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Bỏ qua quảng cáo</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Thông tin thêm</string>
   <!--
@@ -797,6 +803,8 @@
   <string name="preferences_override_sync_tokenserver">Tùy chỉnh máy chủ đồng bộ hóa</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Tài khoản</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">Đồng bộ hóa</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">Vị trí thanh địa chỉ</string>
   <!-- Preference for changing toolbar layout -->
@@ -853,6 +861,8 @@
   <string name="preferences_search_synced_tabs">Tìm kiếm các thẻ đã đồng bộ hóa</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">Cài đặt tài khoản</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">Tài khoản và đồng bộ</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">Tự động điền URL</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -1132,6 +1142,12 @@
   <string name="preferences_sync_now">Đồng bộ ngay</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Chọn những gì để đồng bộ hóa</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Dữ liệu đã đồng bộ</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Quản lý những gì được đồng bộ hóa trên tất cả các thiết bị được kết nối của bạn</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Bạn không đang đồng bộ hóa bất cứ thứ gì. Hãy chọn những gì bạn muốn giữ lại để đồng bộ hóa trên các thiết bị của mình.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Lịch sử</string>
   <!-- Preference for syncing bookmarks -->
@@ -1144,6 +1160,10 @@
   <string name="preferences_sign_out">Đăng xuất</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">Tên thiết bị</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">Tên thiết bị</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">Thay đổi tên thiết bị</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">Tên thiết bị không được để trống.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1263,8 +1283,6 @@
   <string name="preference_simple_toolbar">Đơn giản</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Mở rộng</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Thanh địa chỉ phải ở trên cùng khi thanh thẻ được hiển thị.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Mở một thẻ mới</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1308,6 +1326,12 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">Hiển thị thanh thẻ</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">Vị trí thanh thẻ</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">Trên cùng</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">Dưới cùng</string>
   <!--
     Gestures Preferences
 
@@ -1390,8 +1414,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Thẻ</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Chế độ xem thẻ</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">Bố cục thẻ</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Danh sách</string>
   <!-- Option for a grid tab view -->
@@ -1439,15 +1463,19 @@
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Mở trên trang chủ sau bốn giờ</string>
   <!--
-    Inactive tabs
+    Tab organization
 
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
+    Category header for the preferences that control how tabs are organized
   -->
-  <string name="preferences_inactive_tabs">Chuyển các thẻ cũ sang không hoạt động</string>
+  <string name="preferences_tab_organization">Tổ chức thẻ</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Thẻ không hoạt động</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Các thẻ mà bạn chưa xem trong hai tuần sẽ được chuyển vào phần không hoạt động.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Bật Nhóm thẻ</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Nhóm thẻ</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Sắp xếp các thẻ của bạn thành các nhóm mà bạn có thể đặt tên và lưu lại.</string>
   <!--
     Privacy report
 
@@ -2355,6 +2383,10 @@
   <string name="sync_send_to_all">Gửi đến tất cả các thiết bị</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Kết nối lại với Sync</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Gửi</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">Đã chọn</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Ngoại tuyến</string>
   <!-- An option to connect additional devices -->
@@ -2387,10 +2419,14 @@
   <string name="sync_send_tab_empty_state_title">Không có thiết bị nào được kết nối</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Để gửi một thẻ, đăng nhập vào Firefox trên ít nhất một thiết bị khác.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Tìm hiểu cách kết nối một thiết bị</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Kiểm tra kết nối Internet của bạn</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">Sau đó hãy thử gửi lại thẻ của bạn.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Thử lại</string>
   <!--
     Notifications
 
@@ -2573,6 +2609,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Không có tài khoản? <u>Tạo ngay tài khoản mới</u> để đồng bộ hóa Firefox giữa các thiết bị.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s sẽ ngừng đồng bộ hóa với tài khoản của bạn, nhưng sẽ không xóa bất kỳ dữ liệu duyệt web nào của bạn trên thiết bị này.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Đăng xuất khỏi tài khoản của bạn?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Dữ liệu đã đồng bộ vẫn được lưu trong tài khoản của bạn.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Đăng xuất</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Ngắt kết nối</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -4451,6 +4493,16 @@
   <string name="lens_camera_mode_qr">Quét mã QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Không có mã QR nào trong ảnh</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Đang tìm kiếm thông tin này</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Huỷ bỏ</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Không thể tải hình ảnh này. Hãy thử hình ảnh khác.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Không tìm thấy kết quả từ Google Ống kính</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Thử lại</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Tìm kiếm nó với Google Ống kính</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4531,4 +4583,14 @@
   <string name="pdf_tools_signature_clear_button">Xoá</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Thêm</string>
+  <!--
+    Listen to page
+
+    Content description for the reader mode panel: a group of buttons floating over the content
+  -->
+  <string name="reader_mode_panel_content_description">Tuỳ chọn chế độ đọc</string>
+  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">Đọc to</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Trình phát đa phương tiện</string>
 </resources>

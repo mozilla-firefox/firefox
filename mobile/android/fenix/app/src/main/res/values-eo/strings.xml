@@ -273,6 +273,10 @@
   <string name="browser_main_menu_content_description_navigation_header">Esplorado</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">Fermi menuon de personecigo de langetoj</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">Stokita</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Aktuala paĝo</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Aldoni paĝon al legosignoj</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -287,8 +291,12 @@
   <string name="browser_menu_summarize_page">Resumi paĝon</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">Nova</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">Nova</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">Raporti ne bone funkciantan retejon</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">Aldoni al grupo</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Tradukita</string>
   <!-- Browser menu label for the print feature -->
@@ -305,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Igu %1$s norma</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Rapida, privata kaj farita por vi.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Rifuzi oferton</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Pli da informo</string>
   <!--
@@ -798,6 +804,8 @@
   <string name="preferences_override_sync_tokenserver">Personecigita servilo de spegulado</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Konto</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">Spegulado</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">Loko por la adresa strio</string>
   <!-- Preference for changing toolbar layout -->
@@ -854,6 +862,8 @@
   <string name="preferences_search_synced_tabs">Serĉi spegulitajn langetojn</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">Agordoj de konto</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">Konto kaj spegulado</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">Aŭtomate kompletigi retadresojn</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -1133,6 +1143,12 @@
   <string name="preferences_sync_now">Speguli nun</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Elekti kion speguli</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Spegulitaj datumoj</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Administri kio estos spegulita en ĉiuj viaj konektitaj aparatoj</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">Vi ne spegulas ion ajn. Elektu kion vi volas speguli en ĉiuj viaj aparatoj.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">historion</string>
   <!-- Preference for syncing bookmarks -->
@@ -1145,6 +1161,10 @@
   <string name="preferences_sign_out">Fini seancon</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">Nomo de aparato</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">Nomo de aparato</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">Ŝanĝi nomon de aparato</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">La nomo de aparato ne povas esti malplena.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1264,8 +1284,6 @@
   <string name="preference_simple_toolbar">Simpla</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Etendita</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">La adresa strio devas esti supre kiam la langeta strio estas montrita.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Malfermi novan langeton</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1309,6 +1327,12 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">Montri langetan strion</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">Loko por la langeta strio</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">Supre</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">Malsupre</string>
   <!--
     Gestures Preferences
 
@@ -1391,8 +1415,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Langetoj</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Vido de langetoj</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">Aranĝo de langetoj</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Listo</string>
   <!-- Option for a grid tab view -->
@@ -1411,6 +1435,8 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">Aŭtomate fermi malfermitajn langetojn</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">Fermi</string>
+  <!-- Content description for the media playback indicator in the tabs tray. -->
+  <string name="tab_indicator_media_playing">Aŭdvidaĵo ludata</string>
   <!--
     Opening screen
 
@@ -1438,15 +1464,19 @@
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Malfermi en eka paĝo post kvar horoj</string>
   <!--
-    Inactive tabs
+    Tab organization
 
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
+    Category header for the preferences that control how tabs are organized
   -->
-  <string name="preferences_inactive_tabs">Igi malnovajn langetojn neaktivaj</string>
+  <string name="preferences_tab_organization">Organizo de langetoj</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Neaktivaj langetoj</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Langetoj ne vizititaj dum la lastaj du semajnoj iras al la neaktiva sekcio.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Aktivigi grupojn de langetoj</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Grupoj de langetoj</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Organizu viajn langetojn en grupo, kiujn vi povas nomi kaj konservi.</string>
   <!--
     Privacy report
 
@@ -2359,6 +2389,10 @@
   <string name="sync_send_to_all">Sendi al ĉiuj aparatoj</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Rekonekti al Spegulado</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Sendi</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">Elektita</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Malkonektite</string>
   <!-- An option to connect additional devices -->
@@ -2395,6 +2429,8 @@
   <string name="sync_send_tab_error_connection_title">Kontrolu vian retaliron</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">Kaj poste provu resendi vian langeton.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Provi denove</string>
   <!--
     Notifications
 
@@ -2577,6 +2613,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Ĉu vi ne havas konton? <u>Kreu ĝin</u> por speguli Firefox inter aparatoj.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s ne plu spegulos vian konton, sed ĝi ne forigos iun ajn el viaj retumaj datumoj en tiu ĉi aparato.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Ĉu fini vian seancon?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Spegulitaj datumoj restas konservitaj en via konto.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Fini seancon</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Malkonekti</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -2995,6 +3037,8 @@
   <string name="preferences_ip_protection_title_2">Integrita VPN</string>
   <!-- Label for the BETA badge for the browser VPN entry in the settings list -->
   <string name="preferences_ip_protection_beta_badge_label">BETA</string>
+  <!-- Title for the browser VPN settings screen (displayed in the app bar) -->
+  <string name="ip_protection_settings_title">Integrita VPN</string>
   <!-- Label for the browser VPN toggle on the settings screen -->
   <string name="ip_protection_toggle_label">VPN</string>
   <!-- Content description for the browser VPN settings screen top bar back button -->
@@ -4542,4 +4586,14 @@
   <string name="pdf_tools_signature_clear_button">Viŝi</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Aldoni</string>
+  <!--
+    Listen to page
+
+    Content description for the reader mode panel: a group of buttons floating over the content
+  -->
+  <string name="reader_mode_panel_content_description">Ebloj de la legila reĝimo</string>
+  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">Laŭtlegi</string>
+  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Ludilo de aŭdvidaĵoj</string>
 </resources>

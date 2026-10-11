@@ -826,8 +826,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Таблар</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Таб күренеше</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Исемлек</string>
   <!-- Option for a grid tab view -->
@@ -870,12 +868,6 @@
   <string name="opening_screen_homepage_summary">Баш биттә ачу</string>
   <!-- Summary for homepage preference indicating always opening the last-open tab when re-opening the app -->
   <string name="opening_screen_last_tab_summary">Соңгы табта ачу</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Иске табларны актив булмаганга күчерү</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Ике атна эчендә каралмаган таблар актив булмаган бүлеккә күчереләчәк.</string>
   <!--

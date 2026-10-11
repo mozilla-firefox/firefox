@@ -14,11 +14,25 @@
     secret settings. Since that's not localized, keep the name unchanged.
   -->
   <string name="longfox">LONGFOX</string>
+  <string name="likes_cookies">🍪 عاشق کلوچه است 🍪</string>
+  <string name="tap_to_play">برای بازی بزنید!</string>
   <!--
     %1$d is a placeholder for the current high score. HISCORE is an
     abbreviation for "Highest Score".
   -->
   <string name="hiscore">بالاترین امتیاز: %1$d</string>
+  <string name="sound_on">🔈 صدا روشن</string>
+  <string name="sound_off">🔇 صدا خاموش</string>
   <!-- Back button -->
   <string name="back">بازگشت</string>
+  <!-- Share hiscore action label. hiscore is an abbreviation for "Highest Score" -->
+  <string name="share_hiscore">هم‌رسانی بالاترین امتیاز</string>
+  <!--
+    The longest fox is your best game achievement so far (based on your highest score).
+    %1$d is a placeholder for the current highest score.
+    #longfox is a hashtag for sharing on social media and should not be translated.
+    %2$s is a placeholder for a string representation of the longest fox and should not be translated.
+    Example output: My longest fox is 6! #longfox 🦊🟧🟧🟧🟧🟧🟧
+  -->
+  <string name="my_longest_fox_is">درازترین روباه من %1$d است! #longfox %2$s</string>
 </resources>

@@ -825,8 +825,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Mga Tab</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Tab view</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Listahan</string>
   <!-- Option for a grid tab view -->
@@ -869,12 +867,6 @@
   <string name="opening_screen_last_tab_summary">Buksan sa huling tab</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Buksan sa homepage pagkatapos ng apat na oras</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Ilipat ang mga lumang tab sa hindi aktibo</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Ang mga tab na hindi mo natingnan sa loob ng dalawang linggo ay ililipat sa di-aktibong seksyon.</string>
   <!--

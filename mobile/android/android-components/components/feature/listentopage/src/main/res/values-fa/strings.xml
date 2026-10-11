@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <plurals name="mozac_feature_listentopage_notification_skip_back">
+    <!--
+      Content description of the playback notification control that moves the
+      reading backwards. %1$d is how many seconds it moves by.
+    -->
+    <item quantity="one">%1$d ثانیه عقب</item>
+    <item quantity="other">%1$d ثانیه عقب</item>
+  </plurals>
+  <plurals name="mozac_feature_listentopage_notification_skip_forward">
+    <!--
+      Content description of the playback notification control that moves the
+      reading forwards. %1$d is how many seconds it moves by.
+    -->
+    <item quantity="one">%1$d ثانیه جلو</item>
+    <item quantity="other">%1$d ثانیه جلو</item>
+  </plurals>
+  <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_25">سرعت پخش ۷۵ درصد کندتر</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_5">سرعت پخش روی نصف تنظیم شد</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_75">سرعت پخش ۲۵ درصد کندتر</string>
+  <!-- Content description of the playback control notification, when the playback is set to normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1">سرعت پخش عادی</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_25">سرعت پخش ۲۵ درصد سریع‌تر</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.5 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_5">سرعت پخش ۵۰ درصد سریع‌تر</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_75">سرعت پخش ۷۵ درصد سریع‌تر</string>
+  <!-- Content description of the playback control notification, when the playback is set to 2 times (double) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_2">سرعت پخش روی دو برابر تنظیم شد</string>
+  <!-- Listen to Page media player: content description for the button that closes the player. -->
+  <string name="mozac_feature_listentopage_close">بستن</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_audio">صدا</string>
+  <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
+  <string name="mozac_feature_listentopage_back_10_sec">۱۰ ثانیه عقب</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
+  <string name="mozac_feature_listentopage_play">پخش</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is playing - tapping pauses playback. -->
+  <string name="mozac_feature_listentopage_pause">توقف</string>
+  <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
+  <string name="mozac_feature_listentopage_forward_30_sec">۳۰ ثانیه جلو</string>
+  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_1">سرعت پخش عادی</string>
+  <!--
+    Listen to Page media player: content description for the playback speed button. Pressing it cycles through available playback speeds.
+    This string will be interpolated into a longer message, equivalent to "Double tap to [change playback speed]" in English.
+    Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended.
+  -->
+  <string name="mozac_feature_listentopage_change_speed">تغییر سرعت پخش</string>
+  <!-- Playback speed menu item, such as "1.5×". %1$s is the multiplier already formatted with the decimal separator of the locale. -->
+  <string name="mozac_feature_listentopage_playback_speed_option">%1$s×</string>
+  <!-- Playback speed menu item for the normal reading speed, which is also the default speed. "1×" means one times the normal speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_option_default">1× (پیش‌گزیده)</string>
+</resources>

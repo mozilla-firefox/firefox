@@ -23,4 +23,40 @@
     <item quantity="one">%1$d sekonde foarút</item>
     <item quantity="other">%1$d sekonden foarút</item>
   </plurals>
+  <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_25">Ofspylsnelheid 75 prosint stadiger</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_5">Ofspyljen ynsteld op heale snelheid</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_75">Ofspylsnelheid 25 prosint stadiger</string>
+  <!-- Content description of the playback control notification, when the playback is set to normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1">Normale ôfspylsnelheid</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_25">Ofspylsnelheid 25 prosint flugger</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.5 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_5">Ofspylsnelheid 50 prosint flugger</string>
+  <!-- Content description of the playback control notification, when the playback is set to 1.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_1_75">Ofspylsnelheid 75 prosint flugger</string>
+  <!-- Content description of the playback control notification, when the playback is set to 2 times (double) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_2">Ofspyljen ynsteld op dûbele snelheid</string>
+  <!-- Listen to Page media player: content description for the button that closes the player. -->
+  <string name="mozac_feature_listentopage_close">Slute</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_audio">Audio</string>
+  <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
+  <string name="mozac_feature_listentopage_back_10_sec">10 sekonden tebek</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
+  <string name="mozac_feature_listentopage_play">Ofspylje</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is playing - tapping pauses playback. -->
+  <string name="mozac_feature_listentopage_pause">Pauzearje</string>
+  <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
+  <string name="mozac_feature_listentopage_forward_30_sec">30 sekonden foarút</string>
+  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_1">Normale ôfspylsnelheid</string>
+  <!--
+    Listen to Page media player: content description for the playback speed button. Pressing it cycles through available playback speeds.
+    This string will be interpolated into a longer message, equivalent to "Double tap to [change playback speed]" in English.
+    Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended.
+  -->
+  <string name="mozac_feature_listentopage_change_speed">ôfspylsnelheid oanpasse</string>
 </resources>

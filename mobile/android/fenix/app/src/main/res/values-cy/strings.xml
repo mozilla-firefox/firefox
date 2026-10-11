@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">Gwnewch %1$s eich porwr arferol</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Cyflym, preifat, ac wedi\'i wneud ar eich cyfer chi.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Cau\'r hyrwyddo</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Rhagor o wybodaeth</string>
   <!--
@@ -1290,8 +1288,6 @@
   <string name="preference_simple_toolbar">Syml</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Estynedig</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">Rhaid i\'r bar cyfeiriad fod ar y brig pan fydd y bar tabiau\'n cael ei ddangos.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Agor tab newydd</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1373,6 +1369,8 @@
   <string name="library_desktop_bookmarks_unfiled">Nodau Tudalen Eraill</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Hanes</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Dewiswyd</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Gosodiadau</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1425,8 +1423,6 @@
   <string name="preferences_tabs">Tabiau</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">Cynllun tabiau</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">Golwg tabiau</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Rhestr</string>
   <!-- Option for a grid tab view -->
@@ -1481,20 +1477,12 @@
   <string name="preferences_tab_organization">Trefnu tabiau</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Tabiau anweithredol</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">Symud hen dabiau i anweithredol</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Mae tabiau dydych chi heb edrych arnyn nhw ers pythefnos yn cael eu symud i’r adran anweithredol.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Grwpiau tabiau</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">Trefnwch eich tabiau yn grwpiau y mae modd chi eu henwi a\'u cadw.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">Galluogi Grwpiau Tabiau</string>
   <!--
     Privacy report
 
@@ -2463,6 +2451,8 @@
   <string name="sync_send_tab_empty_state_title">Dim dyfeisiau wedi\'u cysylltu</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">I anfon tab, mewngofnodwch i Firefox ar o leiaf un ddyfais arall.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Dysgwch sut i gysylltu dyfais</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Gwiriwch eich cysylltiad rhyngrwyd</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -2646,7 +2636,7 @@
   <!-- Text shown for settings option for sign with pairing -->
   <string name="sign_in_with_camera">Mewngofnodi gyda’ch camera</string>
   <!-- Text shown for settings option for sign with email -->
-  <string name="sign_in_with_email">Defnyddio e-bost yn lle hynny</string>
+  <string name="sign_in_with_email">Defnyddio ebost yn lle hynny</string>
   <!-- Text shown for settings option for create new account text.'Firefox' intentionally hardcoded here. -->
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Dim cyfrif? <u>Crëwch un</u> i gydweddu Firefox rhwng dyfeisiau.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
@@ -3060,17 +3050,17 @@
   -->
   <string name="preferences_email_masks">Arallenwau e-byst</string>
   <!-- Title for the Suggest Email Masks toggle -->
-  <string name="preferences_email_masks_suggest_title">Awgrymu arallenwau e-bost</string>
+  <string name="preferences_email_masks_suggest_title">Awgrymu arallenwau ebost</string>
   <!-- Summary for the Suggest Email Masks toggle. -->
-  <string name="preferences_email_masks_suggest_summary">Cuddiwch eich e-bost go iawn i ddiogelu eich blwch derbyn rhag sbam. Dyw rhai gwefannau ddim yn cefnog arallenwau.</string>
+  <string name="preferences_email_masks_suggest_summary">Cuddiwch eich ebost go iawn i ddiogelu eich blwch derbyn rhag sbam. Dyw rhai gwefannau ddim yn cefnog arallenwau.</string>
   <!-- Text that links to additional information about the Email Masks -->
   <string name="preferences_email_masks_suggest_learn_more">Dysgu rhagor</string>
   <!-- Title for the Manage Email Masks links to Firefox Relay dashboard -->
-  <string name="preferences_email_masks_manage_title">Rheoli arallenwau e-bost</string>
+  <string name="preferences_email_masks_manage_title">Rheoli arallenwau ebost</string>
   <!-- The message displayed when a user has used all of their free-tier email masks, so now the application will choose an existing one at random. -->
-  <string name="email_masks_max_free_tier_reached">Rydych chi wedi defnyddio\'ch 5 arallenw e-bost am ddim, felly rydym wedi dewis un i chi ei ailddefnyddio.</string>
+  <string name="email_masks_max_free_tier_reached">Rydych chi wedi defnyddio\'ch 5 arallenw ebost am ddim, felly rydym wedi dewis un i chi ei ailddefnyddio.</string>
   <!-- The message displayed when there was an error with the email mask or Firefox Account services. -->
-  <string name="email_masks_error_retrieving_masks">Does dim arallenwau e-bost ar gael ar hyn o bryd. Ceisiwch eto mewn ychydig funudau.</string>
+  <string name="email_masks_error_retrieving_masks">Does dim arallenwau ebost ar gael ar hyn o bryd. Ceisiwch eto mewn ychydig funudau.</string>
   <!--
     Firefox browser VPN (a browser-only proxy, distinct from the Mozilla VPN service)
 
@@ -3234,7 +3224,7 @@
   <!-- Preference for saving and filling addresses -->
   <string name="preferences_addresses_save_and_autofill_addresses_2">Cadw a llanw cyfeiriadau</string>
   <!-- Preference summary for saving and filling address data -->
-  <string name="preferences_addresses_save_and_autofill_addresses_summary_2">Yn cynnwys rhifau ffôn a chyfeiriadau e-bost</string>
+  <string name="preferences_addresses_save_and_autofill_addresses_summary_2">Yn cynnwys rhifau ffôn a chyfeiriadau ebost</string>
   <!-- Preference option for syncing addresses across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_addresses_sync_addresses_across_devices">Cydweddu cyfeiriadau ar draws dyfeisiau</string>
   <!-- Preference option for syncing addresses across devices. This is displayed when the user is signed into sync -->
@@ -3314,7 +3304,7 @@
   <!-- The header for the phone number of an address -->
   <string name="addresses_phone">Ffôn</string>
   <!-- The header for the email of an address -->
-  <string name="addresses_email">E-bost</string>
+  <string name="addresses_email">Ebost</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. This specific field is used for addresses in Iran, Mexico. -->
   <string name="addresses_neighborhood" tools:ignore="UnusedResources">Cymdogaeth</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The Village or Township field, specific to Malaysia is crucial for addresses in rural areas. -->
@@ -4580,6 +4570,16 @@
   <string name="lens_camera_mode_qr">Sganiwr QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Heb ganfod cod QR yn y llun</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Yn chwilio am hyn</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Diddymu</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Methu llwytho\'r ddelwedd hon. Rhowch gynnig ar un gwahanol.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Methu cael canlyniadau gan Google Lens</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Ceisiwch eto</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Dod o hyd iddo gyda Google Lens</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

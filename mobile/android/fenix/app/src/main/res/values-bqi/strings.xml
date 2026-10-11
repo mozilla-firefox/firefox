@@ -313,8 +313,6 @@
   <string name="browser_menu_default_banner_title">%1$s ن پؽش فرز خوتووݩ کۊنین</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">زل، سیخومی وو وورکل وابیڌه مخسۊس ایسا.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">رڌ کردن تبلیقات</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">دووسمندیا قلوه</string>
   <!--
@@ -1286,8 +1284,6 @@
   <string name="preference_simple_toolbar">ساڌه</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">بولند وابیڌه</string>
-  <!-- Preference description indicating the toolbar location preference is disabled when the tab strip is enabled -->
-  <string name="preference_toolbar_pref_disabled_explanation">هر سا نوار بلگه نشووݩ داڌه ابۊ، نوار نشۊوی وا ب روء بۊ.</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">گۊشیڌن بلگه نۊ</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1421,8 +1417,6 @@
   <string name="preferences_tabs">بلگه یل</string>
   <!-- Title of preference that allows a user to specify the tab layout -->
   <string name="preferences_tab_layout">تئر بندی بلگه</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">نما بلگه یل</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">نومگه ای</string>
   <!-- Option for a grid tab view -->
@@ -1477,20 +1471,12 @@
   <string name="preferences_tab_organization">سازمووݩ دهی بلگه</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">بلگه یل قیر فعال</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">جا گورو بلگه یل قڌیمی و بشن قیر فعال</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">بلگه یلی ک بیشتر ز دو هفته ننیشتینه، و بشن قیر فعال جا گورو ابۊن.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">بونکۊیل بلگه</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_description">بلگه یل خوتووݩ ن من بونکۊیلی ک ترین نوم بنین وو زفت کۊنین، سازمووݩ دهی کۊنین.</string>
-  <!-- Title for the preference to enable or disable the tab groups feature -->
-  <string name="preferences_tab_groups_feature">فعال کردن بونکۊ یل بلگه</string>
   <!--
     Privacy report
 
@@ -2439,6 +2425,8 @@
   <string name="sync_send_tab_empty_state_title">هیچ دسگایی منپیز نؽ</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">سی فشناڌن ی بلگه، ٱقلن وا ز من ی دسگا دیر و من Firefox بیاین.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">وانوم ناهاڌن بارت منپیز دسگا</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">منپیز اینترنت خوتووݩ ن واجۊری کۊنین</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -4520,6 +4508,16 @@
   <string name="lens_camera_mode_qr">اسکنر QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">کود QR من شؽوات نجۊرست</string>
+  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">ز دین یو هڌوم</string>
+  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">لقو</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">ای شؽوات بار ونی نوابی. شؽوات دیری ن امتهووݩ کۊنین.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">نترستوم ز Google Lens نتیجه بگروم</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">قپ ریت دووارته</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">هونه وا Google Lens بجۊر</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

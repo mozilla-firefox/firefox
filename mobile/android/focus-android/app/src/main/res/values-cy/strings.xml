@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Hanes pori wedi’i glirio</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">Mae hanes pori\'r Tab wedi cael ei ddileu.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Dewislen</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Rhannu…</string>
   <!--
@@ -168,7 +170,7 @@
   -->
   <string name="preference_autocomplete_topsite_summary2">Galluogi i %s awtogwblhau dros 450 URL poblogaidd yn y bar cyfeiriad.</string>
   <!-- Title of "switch" preference that enables/disables autocomplete for the user-defined list -->
-  <string name="preference_switch_autocomplete_user_list">Eich Gwefannau Chi</string>
+  <string name="preference_switch_autocomplete_user_list">Ar gyfer gwefannau rydych chi\'n eu hychwanegu</string>
   <!--
     Summary for the toggle to enable autocomplete for the user-defined list
     %s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
@@ -493,7 +495,7 @@
   <!-- Preference for block autoplay audio and video -->
   <string name="preference_block_autoplay_audio_video">Rhwystro sain a fideo</string>
   <!-- Preference to enable remote debugging of the app via USB or Wi-Fi -->
-  <string name="preference_remote_debugging">Dadfygio pell drwy\'r USB/Diwifr</string>
+  <string name="preference_remote_debugging">Dadfygio pell drwy\'r USB/Wi-Fi</string>
   <!-- Text Button for show biometric prompt -->
   <string name="show_biometric_button_text">Datgloi</string>
   <!-- Title text for biometric prompt pop-up -->

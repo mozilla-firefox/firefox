@@ -16,6 +16,8 @@
   <string name="feedback_erase2">Historie prohlížení vymazána</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">Historie prohlížení panelu byla vymazána.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Nabídka</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Sdílet…</string>
   <!--

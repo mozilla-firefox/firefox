@@ -741,8 +741,6 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">පටිති</string>
-  <!-- Title of preference that allows a user to specify the tab view -->
-  <string name="preferences_tab_view">පටිති දැක්ම</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">ලේඛනය</string>
   <!-- Option for a grid tab view -->
@@ -785,12 +783,6 @@
   <string name="opening_screen_last_tab_summary">අවසාන පටිත්ත අරින්න</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">පැය හතරකට පසු මුල් පිටුව පෙන්වන්න</string>
-  <!--
-    Inactive tabs
-
-    Category header of a preference that allows a user to enable or disable the inactive tabs feature
-  -->
-  <string name="preferences_inactive_tabs">පරණ පටිති අක්‍රිය වෙත දමන්න</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">ඔබ සති දෙකක් තුළ නොබැලූ පටිති අක්‍රිය කොටස වෙත ගෙන යනු ලැබේ.</string>
   <!--
