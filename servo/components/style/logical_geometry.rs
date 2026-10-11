@@ -475,13 +475,6 @@ impl Debug for DebugWritingMode {
     }
 }
 
-// Used to specify the logical direction.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
-pub enum Direction {
-    Inline,
-    Block,
-}
-
 /// A 2D size in flow-relative dimensions
 #[derive(Clone, Copy, Eq, PartialEq, Serialize)]
 pub struct LogicalSize<T> {
@@ -1151,10 +1144,10 @@ impl<T: Copy + Add<T, Output = T>> LogicalMargin<T> {
     }
 
     #[inline]
-    pub fn start_end(&self, direction: Direction) -> T {
-        match direction {
-            Direction::Inline => self.inline_start + self.inline_end,
-            Direction::Block => self.block_start + self.block_end,
+    pub fn start_end(&self, axis: LogicalAxis) -> T {
+        match axis {
+            LogicalAxis::Inline => self.inline_start + self.inline_end,
+            LogicalAxis::Block => self.block_start + self.block_end,
         }
     }
 
