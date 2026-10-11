@@ -352,10 +352,9 @@ static void PremultiplyFallback(const uint8_t* aSrc, int32_t aSrcGap,
 // If rows are tightly packed, and the size of the total area will fit within
 // the precision range of a single row, then process all the data as if it was
 // a single row.
-static inline IntSize CollapseSize(const IntSize& aSize, int32_t aSrcStride,
-                                   int32_t aDstStride) {
-  if (aSrcStride == aDstStride && (aSrcStride & 3) == 0 &&
-      aSrcStride / 4 == aSize.width) {
+static inline IntSize CollapseSize(const IntSize& aSize, int32_t aSrcStrideGap,
+                                   int32_t aDstStrideGap) {
+  if (!aSrcStrideGap && !aDstStrideGap) {
     CheckedInt32 area = CheckedInt32(aSize.width) * CheckedInt32(aSize.height);
     if (area.isValid()) {
       return IntSize(area.value(), 1);
@@ -380,7 +379,6 @@ bool PremultiplyData(const uint8_t* aSrc, int32_t aSrcStride,
   if (aSize.IsEmpty()) {
     return true;
   }
-  IntSize size = CollapseSize(aSize, aSrcStride, aDstStride);
   // Find gap from end of row to the start of the next row.
   int32_t srcGap = GetStrideGap(aSize.width, aSrcFormat, aSrcStride);
   int32_t dstGap = GetStrideGap(aSize.width, aDstFormat, aDstStride);
@@ -388,6 +386,7 @@ bool PremultiplyData(const uint8_t* aSrc, int32_t aSrcStride,
   if (srcGap < 0 || dstGap < 0) {
     return false;
   }
+  IntSize size = CollapseSize(aSize, srcGap, dstGap);
 
 #define FORMAT_CASE_CALL(...) __VA_ARGS__(aSrc, srcGap, aDst, dstGap, size)
 
@@ -587,7 +586,6 @@ bool UnpremultiplyData(const uint8_t* aSrc, int32_t aSrcStride,
   if (aSize.IsEmpty()) {
     return true;
   }
-  IntSize size = CollapseSize(aSize, aSrcStride, aDstStride);
   // Find gap from end of row to the start of the next row.
   int32_t srcGap = GetStrideGap(aSize.width, aSrcFormat, aSrcStride);
   int32_t dstGap = GetStrideGap(aSize.width, aDstFormat, aDstStride);
@@ -595,6 +593,7 @@ bool UnpremultiplyData(const uint8_t* aSrc, int32_t aSrcStride,
   if (srcGap < 0 || dstGap < 0) {
     return false;
   }
+  IntSize size = CollapseSize(aSize, srcGap, dstGap);
 
 #define FORMAT_CASE_CALL(...) __VA_ARGS__(aSrc, srcGap, aDst, dstGap, size)
 
@@ -1090,7 +1089,6 @@ bool SwizzleData(const uint8_t* aSrc, int32_t aSrcStride,
   if (aSize.IsEmpty()) {
     return true;
   }
-  IntSize size = CollapseSize(aSize, aSrcStride, aDstStride);
   // Find gap from end of row to the start of the next row.
   int32_t srcGap = GetStrideGap(aSize.width, aSrcFormat, aSrcStride);
   int32_t dstGap = GetStrideGap(aSize.width, aDstFormat, aDstStride);
@@ -1098,6 +1096,7 @@ bool SwizzleData(const uint8_t* aSrc, int32_t aSrcStride,
   if (srcGap < 0 || dstGap < 0) {
     return false;
   }
+  IntSize size = CollapseSize(aSize, srcGap, dstGap);
 
 #define FORMAT_CASE_CALL(...) __VA_ARGS__(aSrc, srcGap, aDst, dstGap, size)
 
