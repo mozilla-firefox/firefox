@@ -645,6 +645,13 @@ dependencies {
     debugImplementation libs.androidx.compose.ui.tooling
     debugImplementation libs.leakcanary
 
+    // Declares androidx.activity.ComponentActivity in the app under test, which the host-less
+    // Compose rules launch. Only added when building a non-debug variant for UI tests, so that
+    // it never reaches a shipping build.
+    if (project.hasProperty("testBuildType") && project.property("testBuildType") != "debug") {
+        addProvider("${project.property('testBuildType')}Implementation", libs.androidx.compose.ui.test.manifest)
+    }
+
     // Exclude Mockito to prevent classpath conflicts with MockK in tests.
     testImplementation (project(':components:support-test')) {
         exclude group: 'org.mockito'

@@ -1,0 +1,42 @@
+# Google Cloud Documentation: https://cloud.google.com/sdk/gcloud/reference/firebase/test/android/run
+# Flank Documentation: https://flank.github.io/flank/
+gcloud:
+  results-bucket: fenix_test_artifacts
+  record-video: true
+  timeout: 15m
+  async: false
+  num-flaky-test-attempts: 1
+
+  app: /app/path
+  test: /test/path
+
+  auto-google-login: false
+  use-orchestrator: true
+  environment-variables:
+    clearPackageData: true
+  directories-to-pull:
+    - /sdcard/Android/data/org.mozilla.fenix/minidumps
+  performance-metrics: true
+
+  test-targets:
+    - notPackage org.mozilla.fenix.syncintegration
+    - notPackage org.mozilla.fenix.experimentintegration
+    - notPackage org.mozilla.fenix.ui.efficiency.tests
+    - notPackage org.mozilla.fenix.ui.efficiency.devtools
+    - notPackage org.mozilla.fenix.ui.efficiency.generation.reachability.shards
+    - notPackage org.mozilla.fenix.ui.efficiency.generation.pairs.shards
+    - notPackage org.mozilla.fenix.ui.efficiency.generation.interaction.shards
+    - notPackage org.mozilla.fenix.ui.efficiency.generation.behavior.shards
+    - notClass org.mozilla.fenix.perf.StartupExcessiveResourceUseTest
+
+  device:
+    - model: MediumPhone.arm
+      version: 34
+      locale: en_US
+
+flank:
+  project: GOOGLE_PROJECT
+  max-test-shards: 100
+  num-test-runs: 1
+  output-style: compact
+  full-junit-result: true
