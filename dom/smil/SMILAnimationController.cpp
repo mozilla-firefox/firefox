@@ -275,6 +275,9 @@ void SMILAnimationController::DoSample(bool aSkipUnchangedContainers) {
   AutoRestore<bool> autoRestoreRunningSample(mRunningSample);
   mRunningSample = true;
 
+  nsCOMPtr<dom::Document> kungFuDeathGrip(mDocument);
+  (void)kungFuDeathGrip;
+
   // STEP 1: Bring model up to date
   // (i)  Rewind elements where necessary
   // (ii) Run milestone samples
