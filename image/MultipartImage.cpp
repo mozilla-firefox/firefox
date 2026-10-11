@@ -301,13 +301,9 @@ nsresult MultipartImage::OnImageDataAvailable(nsIRequest* aRequest,
   // Note that this method is special in that we forward it to the next part if
   // one exists, and *not* the current part.
 
-  // We may trigger notifications that will free mNextPart, so keep it alive.
-  RefPtr<Image> nextPart = mNextPart;
-  if (nextPart) {
-    nextPart->OnImageDataAvailable(aRequest, aInStr, aSourceOffset, aCount);
-  } else {
-    InnerImage()->OnImageDataAvailable(aRequest, aInStr, aSourceOffset, aCount);
-  }
+  // We may trigger notifications that will free the part, so keep it alive.
+  RefPtr<Image> part = mNextPart ? mNextPart.get() : InnerImage();
+  part->OnImageDataAvailable(aRequest, aInStr, aSourceOffset, aCount);
 
   return NS_OK;
 }
@@ -317,13 +313,9 @@ nsresult MultipartImage::OnImageDataComplete(nsIRequest* aRequest,
   // Note that this method is special in that we forward it to the next part if
   // one exists, and *not* the current part.
 
-  // We may trigger notifications that will free mNextPart, so keep it alive.
-  RefPtr<Image> nextPart = mNextPart;
-  if (nextPart) {
-    nextPart->OnImageDataComplete(aRequest, aStatus, aLastPart);
-  } else {
-    InnerImage()->OnImageDataComplete(aRequest, aStatus, aLastPart);
-  }
+  // We may trigger notifications that will free the part, so keep it alive.
+  RefPtr<Image> part = mNextPart ? mNextPart.get() : InnerImage();
+  part->OnImageDataComplete(aRequest, aStatus, aLastPart);
 
   return NS_OK;
 }
