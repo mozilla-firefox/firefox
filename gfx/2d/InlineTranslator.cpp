@@ -83,6 +83,38 @@ already_AddRefed<DrawTarget> InlineTranslator::CreateDrawTarget(
   return drawTarget.forget();
 }
 
+template <typename Table>
+static void CopyTable(Table& aDest, const Table& aSrc) {
+  aDest = Table(aSrc.Count());
+  for (const auto& entry : aSrc) {
+    aDest.InsertOrUpdate(entry.GetKey(), entry.GetData());
+  }
+}
+
+void InlineTranslator::SaveState(State& aState) const {
+  aState.mCurrentDT = mCurrentDT;
+  CopyTable(aState.mDrawTargets, mDrawTargets);
+  CopyTable(aState.mPaths, mPaths);
+  CopyTable(aState.mSourceSurfaces, mSourceSurfaces);
+  CopyTable(aState.mFilterNodes, mFilterNodes);
+  CopyTable(aState.mGradientStops, mGradientStops);
+  CopyTable(aState.mScaledFonts, mScaledFonts);
+  CopyTable(aState.mUnscaledFonts, mUnscaledFonts);
+  CopyTable(aState.mNativeFontResources, mNativeFontResources);
+}
+
+void InlineTranslator::RestoreState(const State& aState) {
+  mCurrentDT = aState.mCurrentDT;
+  CopyTable(mDrawTargets, aState.mDrawTargets);
+  CopyTable(mPaths, aState.mPaths);
+  CopyTable(mSourceSurfaces, aState.mSourceSurfaces);
+  CopyTable(mFilterNodes, aState.mFilterNodes);
+  CopyTable(mGradientStops, aState.mGradientStops);
+  CopyTable(mScaledFonts, aState.mScaledFonts);
+  CopyTable(mUnscaledFonts, aState.mUnscaledFonts);
+  CopyTable(mNativeFontResources, aState.mNativeFontResources);
+}
+
 already_AddRefed<SourceSurface> InlineTranslator::LookupExternalSurface(
     uint64_t aKey) {
   if (!mExternalSurfaces) {

@@ -17945,6 +17945,19 @@
   value: 101
   mirror: always
 
+# Whether to print on Windows using Skia's GDI backend rather than cairo.
+- name: print.windows.skia-gdi.enabled
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
+# Resolution of the bitmaps used by the Skia GDI print backend for content that
+# GDI can't draw natively, in dots per inch.
+- name: print.windows.skia-gdi.raster-dpi
+  type: RelaxedAtomicUint32
+  value: 300
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "privacy."
 #---------------------------------------------------------------------------

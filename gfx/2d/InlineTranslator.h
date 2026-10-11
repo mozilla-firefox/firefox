@@ -39,6 +39,28 @@ class InlineTranslator : public Translator {
   void SetReferenceDrawTargetTransform(const Matrix& aTransform) {
     mBaseDTTransform = aTransform;
   }
+  void SetBaseDrawTarget(DrawTarget* aDT) { mBaseDT = aDT; }
+
+  /**
+   * The objects known to the translator, which allow replaying the same
+   * recording multiple times, if the recording refers to objects created by
+   * previous recordings.
+   */
+  class State {
+    friend class InlineTranslator;
+
+    DrawTarget* mCurrentDT = nullptr;
+    nsRefPtrHashtable<nsPtrHashKey<void>, DrawTarget> mDrawTargets;
+    nsRefPtrHashtable<nsPtrHashKey<void>, Path> mPaths;
+    nsRefPtrHashtable<nsPtrHashKey<void>, SourceSurface> mSourceSurfaces;
+    nsRefPtrHashtable<nsPtrHashKey<void>, FilterNode> mFilterNodes;
+    nsRefPtrHashtable<nsPtrHashKey<void>, GradientStops> mGradientStops;
+    nsRefPtrHashtable<nsPtrHashKey<void>, ScaledFont> mScaledFonts;
+    nsRefPtrHashtable<nsPtrHashKey<void>, UnscaledFont> mUnscaledFonts;
+    nsRefPtrHashtable<nsUint64HashKey, NativeFontResource> mNativeFontResources;
+  };
+  void SaveState(State& aState) const;
+  void RestoreState(const State& aState);
 
   DrawTarget* LookupDrawTarget(ReferencePtr aRefPtr) final {
     DrawTarget* result = mDrawTargets.GetWeak(aRefPtr);
