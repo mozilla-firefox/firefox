@@ -2519,6 +2519,16 @@ class Settings(
             default = { FxNimbus.features.remoteSearchConfiguration.value().enabled },
         )
 
+    /**
+     * Indicates whether to read search configuration from the `search-config-v3` Remote Settings collection instead
+     * of `search-config-v2`.
+     */
+    var useSearchConfigV3 by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_use_search_config_v3),
+            default = { FxNimbus.features.searchConfigV3.value().enabled },
+        )
+
     /** Get the current mode for how https-only is enabled. */
     fun getHttpsOnlyMode(): HttpsOnlyMode {
         return if (!shouldUseHttpsOnly) {

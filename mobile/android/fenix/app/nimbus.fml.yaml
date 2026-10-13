@@ -826,6 +826,15 @@ features:
           Uses search configuration from remote servers .
         type: Boolean
         default: true
+  search-config-v3:
+    description: Feature to read search configuration from the search-config-v3 collection.
+    variables:
+      enabled:
+        description: >
+          Reads search configuration from the `search-config-v3` Remote Settings
+          collection instead of `search-config-v2`.
+        type: Boolean
+        default: false
   same-document-navigation-overrides-load-type:
     description: Control whether the same document navigation overrides the load type.
     variables:

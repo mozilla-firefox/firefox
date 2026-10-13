@@ -143,6 +143,8 @@
     <string name="preferences_debug_settings_force_weekly_privacy_report_notification" translatable="false">Force weekly privacy report notification trackers over threshold</string>
     <!-- Label for enabling remote search configuration -->
     <string name="preferences_debug_settings_remote_search_configuration" translatable="false">Enable Remote Search Configuration (requires restart)</string>
+    <!-- Label for selecting the search-config-v3 Remote Settings collection -->
+    <string name="preferences_debug_settings_search_config_v3" translatable="false">Use search-config-v3 (requires restart)</string>
     <!-- Label for enabling Address Sync -->
     <string name="preferences_debug_settings_address_sync" translatable="false">Enable Address Sync for supported regions</string>
     <!-- Label for enabling the DNS over HTTPS settings -->
