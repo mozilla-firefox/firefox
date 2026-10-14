@@ -65,13 +65,12 @@ class PrivacyReportNotificationScheduler(
             ensurePrivacyReportNotificationChannelExists(applicationContext)
         }
 
-        val onboardingCompletedTimestamp = settings.onboardingCompletedTimestamp
         val availability = privacyReportNotificationAvailability(notificationManager)
         TrackingProtection.privacyReportNotificationAvailability.set(availability.telemetryId)
 
         if (availability == PrivacyReportNotificationAvailability.AVAILABLE) {
             // Users who never completed onboarding are not eligible for this feature.
-            if (onboardingCompletedTimestamp < 0) {
+            if (settings.onboardingCompletedTimestamp < 0) {
                 return
             }
 
