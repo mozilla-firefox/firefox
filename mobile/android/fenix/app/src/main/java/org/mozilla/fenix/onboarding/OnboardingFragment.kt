@@ -427,11 +427,7 @@ class OnboardingFragment : Fragment() {
             )
         }
 
-        requireComponents.fenixOnboarding.finish()
-
         val settings = requireComponents.settings
-        settings.recordOnboardingCompleted()
-        settings.onboardingCurrentPageIndex = 0
 
         // Telemetry and daily usage ping get enabled after ToU acceptance.
         startMetricsIfEnabled(
@@ -447,6 +443,13 @@ class OnboardingFragment : Fragment() {
                 id = R.id.onboardingFragment,
                 directions = OnboardingFragmentDirections.actionHome(),
             )
+
+        // finish() synchronously notifies the onboarding completed listener in HomeActivity, which replays the launch
+        // intent and may navigate to the browser. Navigating home first keeps home on the back stack beneath it.
+        requireComponents.fenixOnboarding.finish()
+
+        settings.recordOnboardingCompleted()
+        settings.onboardingCurrentPageIndex = 0
 
         val downloadUrl = settings.rtamoAddonDownloadUrl
         if (downloadUrl.isNotBlank()) {

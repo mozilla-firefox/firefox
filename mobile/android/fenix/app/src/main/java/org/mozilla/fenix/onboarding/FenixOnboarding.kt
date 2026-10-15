@@ -8,10 +8,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.StrictMode
 import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.LifecycleOwner
 import mozilla.components.support.ktx.android.content.PreferencesHolder
 import mozilla.components.support.ktx.android.content.intPreference
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.nimbus.FxNimbus
+import org.mozilla.fenix.settings.registerOnSharedPreferenceChangeListener
 
 class FenixOnboarding(context: Context) : PreferencesHolder {
 
@@ -43,6 +45,15 @@ class FenixOnboarding(context: Context) : PreferencesHolder {
     fun userHasBeenOnboarded(): Boolean {
         return strictMode.allowViolation(StrictMode::allowThreadDiskReads) {
             onboardedVersion == CURRENT_ONBOARDING_VERSION
+        }
+    }
+
+    /** Invokes [onCompleted] when the user completes onboarding, for as long as [lifecycleOwner] is alive. */
+    fun registerOnboardingCompletedListener(lifecycleOwner: LifecycleOwner, onCompleted: () -> Unit) {
+        preferences.registerOnSharedPreferenceChangeListener(lifecycleOwner) { _, key ->
+            if (key == LAST_VERSION_ONBOARDING_KEY && userHasBeenOnboarded()) {
+                onCompleted()
+            }
         }
     }
 
