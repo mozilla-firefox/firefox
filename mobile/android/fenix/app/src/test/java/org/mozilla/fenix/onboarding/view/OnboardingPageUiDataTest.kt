@@ -74,7 +74,7 @@ val syncPageUiData =
 val notificationPageUiData =
     OnboardingPageUiData(
         type = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION,
-        imageRes = R.drawable.ic_onboarding_welcome,
+        imageRes = R.drawable.nova_onboarding_notifications,
         title = "notification title",
         description = "notification body",
         primaryButtonLabel = "notification primary button text",

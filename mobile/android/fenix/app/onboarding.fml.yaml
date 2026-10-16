@@ -264,8 +264,6 @@ enums:
         description: Allows user to set Firefox as the default browser.
       sync-sign-in:
         description: Allows user to sync with a Firefox account.
-      notification-permission:
-        description: Allows user to enable notification permission.
       terms-of-service:
         description: Page to display the terms of services.
       marketing-data:

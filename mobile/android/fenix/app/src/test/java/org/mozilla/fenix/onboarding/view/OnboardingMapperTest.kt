@@ -38,8 +38,6 @@ class OnboardingMapperTest {
                 onMakeFirefoxDefaultSkipClick = unitLambda,
                 onSignInButtonClick = {},
                 onSignInSkipClick = {},
-                onNotificationPermissionButtonClick = {},
-                onNotificationPermissionSkipClick = {},
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -73,43 +71,6 @@ class OnboardingMapperTest {
                 onMakeFirefoxDefaultSkipClick = {},
                 onSignInButtonClick = unitLambda,
                 onSignInSkipClick = unitLambda,
-                onNotificationPermissionButtonClick = {},
-                onNotificationPermissionSkipClick = {},
-                onTermsOfServiceButtonClick = {},
-            )
-
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `GIVEN a notification page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
-        val expected =
-            OnboardingPageState(
-                imageRes = R.drawable.ic_onboarding_welcome,
-                title = "notification title",
-                description = "notification body",
-                primaryButton = Action("notification primary button text", unitLambda),
-                secondaryButton = Action("notification secondary button text", unitLambda),
-            )
-
-        val onboardingPageUiData =
-            OnboardingPageUiData(
-                type = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION,
-                imageRes = R.drawable.ic_onboarding_welcome,
-                title = "notification title",
-                description = "notification body",
-                primaryButtonLabel = "notification primary button text",
-                secondaryButtonLabel = "notification secondary button text",
-            )
-        val actual =
-            mapToOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onMakeFirefoxDefaultClick = {},
-                onMakeFirefoxDefaultSkipClick = {},
-                onSignInButtonClick = {},
-                onSignInSkipClick = {},
-                onNotificationPermissionButtonClick = unitLambda,
-                onNotificationPermissionSkipClick = unitLambda,
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -152,8 +113,6 @@ class OnboardingMapperTest {
                 onMakeFirefoxDefaultSkipClick = {},
                 onSignInButtonClick = {},
                 onSignInSkipClick = {},
-                onNotificationPermissionButtonClick = {},
-                onNotificationPermissionSkipClick = {},
                 onTermsOfServiceButtonClick = {},
                 onMarketingDataContinueClick = unitLambda,
             )

@@ -38,27 +38,12 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun showNotificationTrue_pagesToDisplay_returnsSortedListOfAllConvertedPages() {
-        val expected = listOf(defaultBrowserPageUiData, syncPageUiData, notificationPageUiData)
-        assertEquals(
-            expected,
-            unsortedAllKnownCardData.toPageUiData(
-                showDefaultBrowserPage = true,
-                showNotificationPage = true,
-                jexlConditions = jexlConditions,
-                jexlEvaluator = fakeJexlEvaluator,
-            ),
-        )
-    }
-
-    @Test
-    fun showNotificationFalse_pagesToDisplay_returnsSortedListOfConvertedPages_withoutNotificationPage() {
+    fun showDefaultBrowserPageTrue_pagesToDisplay_returnsSortedListOfAllConvertedPages() {
         val expected = listOf(defaultBrowserPageUiData, syncPageUiData)
         assertEquals(
             expected,
             unsortedAllKnownCardData.toPageUiData(
                 showDefaultBrowserPage = true,
-                showNotificationPage = false,
                 jexlConditions = jexlConditions,
                 jexlEvaluator = fakeJexlEvaluator,
             ),
@@ -66,13 +51,12 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun showDefaultBrowserPageFalse_showNotificationFalse_pagesToDisplay_returnsSortedListOfConvertedPages_withoutDefaultBrowserPage() {
+    fun showDefaultBrowserPageFalse_pagesToDisplay_returnsSortedListOfConvertedPages_withoutDefaultBrowserPage() {
         val expected = listOf(syncPageUiData)
         assertEquals(
             expected,
             unsortedAllKnownCardData.toPageUiData(
                 showDefaultBrowserPage = false,
-                showNotificationPage = false,
                 jexlConditions = jexlConditions,
                 jexlEvaluator = fakeJexlEvaluator,
             ),
@@ -144,7 +128,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData, termsOfServiceCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 )
@@ -162,7 +145,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -179,7 +161,6 @@ class OnboardingMapperTest {
             listOf(syncCardDataNoConditions)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -196,7 +177,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -213,7 +193,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -230,7 +209,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -247,7 +225,6 @@ class OnboardingMapperTest {
             listOf(syncCardDataNoConditions)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -264,7 +241,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardDataNoDisqualifiers)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -281,7 +257,6 @@ class OnboardingMapperTest {
             listOf(syncCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -289,16 +264,15 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun disqualifiersDontMatchJexlConditions_shouldDisplayCard_returnsNoPage() {
+    fun disqualifiersDontMatchJexlConditions_shouldDisplayCard_returnsConvertedPage() {
         val jexlConditions = mapOf("NEVER" to "false")
-        val expected = listOf<OnboardingPageUiData>()
+        val expected = listOf(syncPageUiData)
 
         assertEquals(
             expected,
-            listOf(notificationCardData)
+            listOf(syncCardDataUnknownDisqualifier)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -315,7 +289,6 @@ class OnboardingMapperTest {
             listOf(syncCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -345,7 +318,6 @@ class OnboardingMapperTest {
             expected,
             cardData.toPageUiData(
                 showDefaultBrowserPage = true,
-                showNotificationPage = true,
                 jexlConditions = jexlConditions,
                 jexlEvaluator = fakeJexlEvaluator,
             ),
@@ -371,16 +343,6 @@ private val syncPageUiData =
         primaryButtonLabel = "sync primary button text",
         secondaryButtonLabel = "sync secondary button text",
     )
-private val notificationPageUiData =
-    OnboardingPageUiData(
-        type = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION,
-        imageRes = R.drawable.ic_onboarding_welcome,
-        title = "notification title",
-        description = "notification body",
-        primaryButtonLabel = "notification primary button text",
-        secondaryButtonLabel = "notification secondary button text",
-    )
-
 private val defaultBrowserCardData =
     OnboardingCardData(
         cardType = OnboardingCardType.DEFAULT_BROWSER,
@@ -433,15 +395,15 @@ private val syncCardDataNoConditions =
         disqualifiers = listOf(),
     )
 
-private val notificationCardData =
+private val syncCardDataUnknownDisqualifier =
     OnboardingCardData(
-        cardType = OnboardingCardType.NOTIFICATION_PERMISSION,
-        imageRes = R.drawable.ic_onboarding_welcome,
-        title = StringHolder(null, "notification title"),
-        body = StringHolder(null, "notification body"),
-        primaryButtonLabel = StringHolder(null, "notification primary button text"),
-        secondaryButtonLabel = StringHolder(null, "notification secondary button text"),
-        ordering = 30,
+        cardType = OnboardingCardType.SYNC_SIGN_IN,
+        imageRes = R.drawable.ic_onboarding_sync,
+        title = StringHolder(null, "sync title"),
+        body = StringHolder(null, "sync body"),
+        primaryButtonLabel = StringHolder(null, "sync primary button text"),
+        secondaryButtonLabel = StringHolder(null, "sync secondary button text"),
+        ordering = 20,
         prerequisites = listOf(),
         disqualifiers = listOf("NEVER", "OTHER"),
     )
@@ -449,6 +411,5 @@ private val notificationCardData =
 private val unsortedAllKnownCardData =
     listOf(
         syncCardData,
-        notificationCardData,
         defaultBrowserCardData,
     )

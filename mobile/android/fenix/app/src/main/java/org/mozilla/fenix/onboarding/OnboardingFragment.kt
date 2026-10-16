@@ -8,16 +8,13 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.toMutableStateList
-import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import androidx.lifecycle.lifecycleScope
@@ -28,7 +25,6 @@ import mozilla.components.browser.state.state.extension.WebExtensionPromptReques
 import mozilla.components.concept.engine.webextension.InstallationMethod
 import mozilla.components.service.nimbus.evalJexlSafe
 import mozilla.components.service.nimbus.messaging.use
-import mozilla.components.support.base.ext.areNotificationsEnabledSafe
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.Browsers
@@ -86,12 +82,7 @@ class OnboardingFragment : Fragment() {
     }
 
     private val allOnboardingPages by lazy {
-        with(requireContext()) {
-            pagesToDisplay(
-                showDefaultBrowserPage = displayDefaultBrowserPage(this),
-                showNotificationPage = canShowNotificationPage(this),
-            )
-        }
+        pagesToDisplay(showDefaultBrowserPage = displayDefaultBrowserPage(requireContext()))
     }
 
     private val marketingPage by lazy {
@@ -178,7 +169,6 @@ class OnboardingFragment : Fragment() {
         telemetryRecorder.onOnboardingStarted()
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -239,7 +229,6 @@ class OnboardingFragment : Fragment() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     @Composable
     @Suppress("LongMethod")
     private fun ScreenContent() {
@@ -273,21 +262,6 @@ class OnboardingFragment : Fragment() {
                 telemetryRecorder.onSkipSignInClick(
                     pagesToDisplay.telemetrySequenceId(),
                     pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_SIGN_IN),
-                )
-            },
-            onNotificationPermissionButtonClick = {
-                requireComponents.notificationsDelegate.requestNotificationPermission()
-                telemetryRecorder.onNotificationPermissionClick(
-                    sequenceId = pagesToDisplay.telemetrySequenceId(),
-                    sequencePosition =
-                        pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.NOTIFICATION_PERMISSION),
-                )
-            },
-            onSkipNotificationClick = {
-                telemetryRecorder.onSkipTurnOnNotificationsClick(
-                    sequenceId = pagesToDisplay.telemetrySequenceId(),
-                    sequencePosition =
-                        pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.NOTIFICATION_PERMISSION),
                 )
             },
             onFinish = {
@@ -421,21 +395,13 @@ class OnboardingFragment : Fragment() {
 
     private fun isNotDefaultBrowser(context: Context) = !Browsers.isDefaultBrowser(context)
 
-    private fun canShowNotificationPage(context: Context) =
-        !NotificationManagerCompat.from(context.applicationContext).areNotificationsEnabledSafe() &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-
-    private fun pagesToDisplay(
-        showDefaultBrowserPage: Boolean,
-        showNotificationPage: Boolean,
-    ): List<OnboardingPageUiData> {
+    private fun pagesToDisplay(showDefaultBrowserPage: Boolean): List<OnboardingPageUiData> {
         val jexlConditions = FxNimbus.features.junoOnboarding.value().conditions
         val jexlHelper = requireContext().components.nimbus.createJexlHelper()
 
         return jexlHelper.use {
             FxNimbus.features.junoOnboarding.value().cards.values.toPageUiData(
                 showDefaultBrowserPage,
-                showNotificationPage,
                 jexlConditions,
             ) { condition ->
                 jexlHelper.evalJexlSafe(condition)
