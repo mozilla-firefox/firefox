@@ -102,7 +102,6 @@
     <ID>ForbiddenSuppress:NotificationManager.kt$NotificationManager$@SuppressWarnings("MagicNumber")</ID>
     <ID>ForbiddenSuppress:OnboardingFragment.kt$OnboardingFragment$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:OnboardingScreen.kt$@Suppress("LongParameterList", "LongMethod")</ID>
-    <ID>ForbiddenSuppress:OnboardingTelemetryRecorder.kt$OnboardingTelemetryRecorder$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:PagedHistoryProvider.kt$DefaultPagedHistoryProvider$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:PrivateBrowsingFragment.kt$PrivateBrowsingFragment$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:ProtectionPanel.kt$@Suppress("CognitiveComplexMethod")</ID>
