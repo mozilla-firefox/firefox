@@ -67,8 +67,6 @@ private val SMALL_SCREEN_MAX_HEIGHT = 570.dp
  * @param onSkipDefaultClick Invoked when negative button on default browser page is clicked.
  * @param onSignInButtonClick Invoked when the positive button on the sign in page is clicked.
  * @param onSkipSignInClick Invoked when the negative button on the sign in page is clicked.
- * @param onNotificationPermissionButtonClick Invoked when positive button on notification page is clicked.
- * @param onSkipNotificationClick Invoked when negative button on notification page is clicked.
  * @param termsOfServiceEventHandler Invoked when the primary button on the terms of service page is clicked.
  * @param onMarketingDataLearnMoreClick callback for when the user clicks the learn more text link
  * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox
@@ -90,8 +88,6 @@ fun OnboardingScreen(
     onSkipDefaultClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
     onSkipSignInClick: () -> Unit,
-    onNotificationPermissionButtonClick: () -> Unit,
-    onSkipNotificationClick: () -> Unit,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -185,14 +181,6 @@ fun OnboardingScreen(
         },
         onSignInSkipClick = {
             onSkipSignInClick()
-            scrollToNextPageOrDismiss()
-        },
-        onNotificationPermissionButtonClick = {
-            onNotificationPermissionButtonClick()
-            scrollToNextPageOrDismiss()
-        },
-        onNotificationPermissionSkipClick = {
-            onSkipNotificationClick()
             scrollToNextPageOrDismiss()
         },
         termsOfServiceEventHandler = termsOfServiceEventHandler,
@@ -303,8 +291,6 @@ private fun OnboardingContent(
     onMakeFirefoxDefaultSkipClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
     onSignInSkipClick: () -> Unit,
-    onNotificationPermissionButtonClick: () -> Unit,
-    onNotificationPermissionSkipClick: () -> Unit,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onAgreeAndConfirmTermsOfService: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -351,8 +337,6 @@ private fun OnboardingContent(
                         onMakeFirefoxDefaultSkipClick = onMakeFirefoxDefaultSkipClick,
                         onSignInButtonClick = onSignInButtonClick,
                         onSignInSkipClick = onSignInSkipClick,
-                        onNotificationPermissionButtonClick = onNotificationPermissionButtonClick,
-                        onNotificationPermissionSkipClick = onNotificationPermissionSkipClick,
                         onTermsOfServiceButtonClick = onAgreeAndConfirmTermsOfService,
                         isSmallDevice = layout.isSmall,
                     )
@@ -603,8 +587,6 @@ private fun OnboardingScreenPreview() {
             onMarketingOptInToggle = {},
             onMarketingDataContinueClick = {},
             onMarketingDataSkipClick = {},
-            onNotificationPermissionButtonClick = {},
-            onNotificationPermissionSkipClick = {},
         )
     }
 }
