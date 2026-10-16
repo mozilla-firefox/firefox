@@ -16,7 +16,6 @@ import org.mozilla.fenix.nimbus.MarketingCardVariant
  * @property primaryButton [Action] for the primary button.
  * @property secondaryButton Optional [Action] for the secondary button.
  * @property termsOfService Optional term of service page data.
- * @property toolbarOptions Optional list of toolbar selection options.
  * @property marketingData Optional marketing page data.
  * @property onRecordImpressionEvent Callback for recording impression event.
  * @property isSmallDevice Whether to apply layout optimizations for constrained screen heights.
@@ -28,7 +27,6 @@ data class OnboardingPageState(
     val primaryButton: Action,
     val secondaryButton: Action? = null,
     val termsOfService: OnboardingTermsOfService? = null,
-    val toolbarOptions: List<ToolbarOption>? = null,
     val marketingData: OnboardingMarketingData? = null,
     val onRecordImpressionEvent: () -> Unit = {},
     val isSmallDevice: Boolean = false,
@@ -39,26 +37,6 @@ data class Action(
     val text: String,
     val onClick: () -> Unit,
 )
-
-/** Model containing data for a toolbar placement. */
-data class ToolbarOption(
-    val toolbarType: ToolbarOptionType,
-    @param:DrawableRes val imageRes: Int,
-    val label: String,
-)
-
-/**
- * Types of toolbar placement options available.
- *
- * @property id Identifier for the toolbar option type, used in telemetry.
- */
-enum class ToolbarOptionType(val id: String) {
-    /** Sets the toolbar placement to the top. */
-    TOOLBAR_TOP("toolbar_top"),
-
-    /** Sets the toolbar placement to the bottom. */
-    TOOLBAR_BOTTOM("toolbar_bottom"),
-}
 
 /** Model containing data for the terms of service page during onboarding. */
 data class OnboardingTermsOfService(

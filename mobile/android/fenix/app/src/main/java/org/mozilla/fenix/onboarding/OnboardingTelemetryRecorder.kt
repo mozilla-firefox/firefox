@@ -136,19 +136,6 @@ class OnboardingTelemetryRecorder(
                 )
             }
 
-            OnboardingPageUiData.Type.TOOLBAR_PLACEMENT -> {
-                Onboarding.toolbarPlacementCard.record(
-                    Onboarding.ToolbarPlacementCardExtra(
-                        action = ACTION_IMPRESSION,
-                        elementType = ET_ONBOARDING_CARD,
-                        sequenceId = sequenceId,
-                        sequencePosition = sequencePosition,
-                        onboardingReason = onboardingReason.value,
-                        installSource = installSource,
-                    )
-                )
-            }
-
             OnboardingPageUiData.Type.TERMS_OF_SERVICE -> {
                 Onboarding.termsOfServiceCard.record(
                     Onboarding.TermsOfServiceCardExtra(
@@ -356,27 +343,6 @@ class OnboardingTelemetryRecorder(
                 elementType = elementType,
                 sequenceId = sequenceId,
                 sequencePosition = sequencePosition,
-                onboardingReason = onboardingReason.value,
-                installSource = installSource,
-            )
-        )
-    }
-
-    /**
-     * Records select toolbar placement click event.
-     *
-     * @param sequenceId The identifier of the onboarding sequence shown to the user.
-     * @param sequencePosition The sequence position of the page for which the impression occurred.
-     * @param toolbarPlacement The toolbar placement option chosen by the user.
-     */
-    fun onSelectToolbarPlacementClick(sequenceId: String, sequencePosition: String, toolbarPlacement: String) {
-        Onboarding.selectToolbarPlacement.record(
-            Onboarding.SelectToolbarPlacementExtra(
-                action = ACTION_CLICK,
-                elementType = ET_PRIMARY_BUTTON,
-                sequenceId = sequenceId,
-                sequencePosition = sequencePosition,
-                toolbarPlacement = toolbarPlacement,
                 onboardingReason = onboardingReason.value,
                 installSource = installSource,
             )
