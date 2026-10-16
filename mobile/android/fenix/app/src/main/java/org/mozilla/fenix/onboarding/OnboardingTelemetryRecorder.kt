@@ -97,19 +97,6 @@ class OnboardingTelemetryRecorder(
                 )
             }
 
-            OnboardingPageUiData.Type.ADD_SEARCH_WIDGET -> {
-                Onboarding.addSearchWidgetCard.record(
-                    Onboarding.AddSearchWidgetCardExtra(
-                        action = ACTION_IMPRESSION,
-                        elementType = ET_ONBOARDING_CARD,
-                        sequenceId = sequenceId,
-                        sequencePosition = sequencePosition,
-                        onboardingReason = onboardingReason.value,
-                        installSource = installSource,
-                    )
-                )
-            }
-
             OnboardingPageUiData.Type.SYNC_SIGN_IN -> {
                 Onboarding.signInCard.record(
                     Onboarding.SignInCardExtra(
@@ -235,25 +222,6 @@ class OnboardingTelemetryRecorder(
     }
 
     /**
-     * Records add search widget click event.
-     *
-     * @param sequenceId The identifier of the onboarding sequence shown to the user.
-     * @param sequencePosition The sequence position of the page for which the impression occurred.
-     */
-    fun onAddSearchWidgetClick(sequenceId: String, sequencePosition: String) {
-        Onboarding.addSearchWidget.record(
-            Onboarding.AddSearchWidgetExtra(
-                action = ACTION_CLICK,
-                elementType = ET_PRIMARY_BUTTON,
-                sequenceId = sequenceId,
-                sequencePosition = sequencePosition,
-                onboardingReason = onboardingReason.value,
-                installSource = installSource,
-            )
-        )
-    }
-
-    /**
      * Records skip set to default click event.
      *
      * @param sequenceId The identifier of the onboarding sequence shown to the user.
@@ -293,25 +261,6 @@ class OnboardingTelemetryRecorder(
             Onboarding.SkipSignInExtra(
                 action = ACTION_CLICK,
                 elementType = elementType,
-                sequenceId = sequenceId,
-                sequencePosition = sequencePosition,
-                onboardingReason = onboardingReason.value,
-                installSource = installSource,
-            )
-        )
-    }
-
-    /**
-     * Records skip add widget click event.
-     *
-     * @param sequenceId The identifier of the onboarding sequence shown to the user.
-     * @param sequencePosition The sequence position of the page for which the impression occurred.
-     */
-    fun onSkipAddWidgetClick(sequenceId: String, sequencePosition: String) {
-        Onboarding.skipAddSearchWidget.record(
-            Onboarding.SkipAddSearchWidgetExtra(
-                action = ACTION_CLICK,
-                elementType = ET_SECONDARY_BUTTON,
                 sequenceId = sequenceId,
                 sequencePosition = sequencePosition,
                 onboardingReason = onboardingReason.value,

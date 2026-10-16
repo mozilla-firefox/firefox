@@ -611,15 +611,6 @@
     <!-- Notifications onboarding button. -->
     <string name="nova_onboarding_notifications_button">Turn on notifications</string>
 
-    <!-- "Add search widget" onboarding title. -->
-    <string name="nova_onboarding_add_search_widget_title">Make every search more private</string>
-
-    <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-    <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Start every search from your phone’s home screen and know Firefox’s automatic protections have your back.</string>
-
-    <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-    <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Add Firefox widget</string>
-
     <!-- Customize prompt onboarding title. -->
     <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Easy to customize and more private with every tap</string>
 

@@ -5,7 +5,6 @@
 package org.mozilla.fenix.onboarding
 
 import android.annotation.SuppressLint
-import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
@@ -33,7 +32,6 @@ import mozilla.components.support.base.ext.areNotificationsEnabledSafe
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.Browsers
-import mozilla.components.support.utils.BuildManufacturerChecker
 import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
@@ -60,8 +58,6 @@ import org.mozilla.fenix.onboarding.view.telemetrySequenceId
 import org.mozilla.fenix.onboarding.view.toPageUiData
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.theme.FirefoxTheme
-import org.mozilla.fenix.utils.canShowAddSearchWidgetPrompt
-import org.mozilla.fenix.utils.maybeShowAddSearchWidgetPrompt
 
 /** Fragment displaying the onboarding flow. */
 class OnboardingFragment : Fragment() {
@@ -91,12 +87,9 @@ class OnboardingFragment : Fragment() {
 
     private val allOnboardingPages by lazy {
         with(requireContext()) {
-            val appWidgetManager = AppWidgetManager.getInstance(this)
             pagesToDisplay(
                 showDefaultBrowserPage = displayDefaultBrowserPage(this),
                 showNotificationPage = canShowNotificationPage(this),
-                showAddWidgetPage =
-                    !BuildManufacturerChecker().isXiaomi() && canShowAddSearchWidgetPrompt(appWidgetManager),
             )
         }
     }
@@ -297,19 +290,6 @@ class OnboardingFragment : Fragment() {
                         pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.NOTIFICATION_PERMISSION),
                 )
             },
-            onAddFirefoxWidgetClick = {
-                telemetryRecorder.onAddSearchWidgetClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.ADD_SEARCH_WIDGET),
-                )
-                maybeShowAddSearchWidgetPrompt(requireActivity())
-            },
-            onSkipFirefoxWidgetClick = {
-                telemetryRecorder.onSkipAddWidgetClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.ADD_SEARCH_WIDGET),
-                )
-            },
             onFinish = {
                 onFinish(it)
             },
@@ -448,7 +428,6 @@ class OnboardingFragment : Fragment() {
     private fun pagesToDisplay(
         showDefaultBrowserPage: Boolean,
         showNotificationPage: Boolean,
-        showAddWidgetPage: Boolean,
     ): List<OnboardingPageUiData> {
         val jexlConditions = FxNimbus.features.junoOnboarding.value().conditions
         val jexlHelper = requireContext().components.nimbus.createJexlHelper()
@@ -457,7 +436,6 @@ class OnboardingFragment : Fragment() {
             FxNimbus.features.junoOnboarding.value().cards.values.toPageUiData(
                 showDefaultBrowserPage,
                 showNotificationPage,
-                showAddWidgetPage,
                 jexlConditions,
             ) { condition ->
                 jexlHelper.evalJexlSafe(condition)

@@ -13,7 +13,6 @@ import org.mozilla.fenix.nimbus.TermsOfServiceData
 internal fun Collection<OnboardingCardData>.toPageUiData(
     showDefaultBrowserPage: Boolean,
     showNotificationPage: Boolean,
-    showAddWidgetPage: Boolean,
     jexlConditions: Map<String, String>,
     jexlEvaluator: (String) -> Boolean,
 ): List<OnboardingPageUiData> {
@@ -22,7 +21,7 @@ internal fun Collection<OnboardingCardData>.toPageUiData(
         .filter { it.cardType != null }
         .filter { it.shouldDisplayCard(jexlEvaluator, jexlConditions) }
         // we are then filtering again based on device capabilities
-        .filter { it.isCardEnabled(showDefaultBrowserPage, showNotificationPage, showAddWidgetPage) }
+        .filter { it.isCardEnabled(showDefaultBrowserPage, showNotificationPage) }
         .sortedBy { it.ordering }
         // Cards that don't declare a card type are considered misconfigured so they are discarded
         .mapNotNull { it.toPageUiData() }
@@ -79,12 +78,10 @@ private fun OnboardingCardData.shouldDisplayCard(
 private fun OnboardingCardData.isCardEnabled(
     showDefaultBrowserPage: Boolean,
     showNotificationPage: Boolean,
-    showAddWidgetPage: Boolean,
 ): Boolean =
     when (cardType) {
         OnboardingCardType.DEFAULT_BROWSER -> enabled && showDefaultBrowserPage
         OnboardingCardType.NOTIFICATION_PERMISSION -> enabled && showNotificationPage
-        OnboardingCardType.ADD_SEARCH_WIDGET -> enabled && showAddWidgetPage
         else -> enabled
     }
 
@@ -106,7 +103,6 @@ private fun OnboardingCardType.toPageUiDataType() =
         OnboardingCardType.DEFAULT_BROWSER -> OnboardingPageUiData.Type.DEFAULT_BROWSER
         OnboardingCardType.SYNC_SIGN_IN -> OnboardingPageUiData.Type.SYNC_SIGN_IN
         OnboardingCardType.NOTIFICATION_PERMISSION -> OnboardingPageUiData.Type.NOTIFICATION_PERMISSION
-        OnboardingCardType.ADD_SEARCH_WIDGET -> OnboardingPageUiData.Type.ADD_SEARCH_WIDGET
         OnboardingCardType.TERMS_OF_SERVICE -> OnboardingPageUiData.Type.TERMS_OF_SERVICE
         OnboardingCardType.MARKETING_DATA -> OnboardingPageUiData.Type.MARKETING_DATA
     }
@@ -150,8 +146,6 @@ internal fun mapToOnboardingPageState(
     onSignInSkipClick: () -> Unit,
     onNotificationPermissionButtonClick: () -> Unit = {},
     onNotificationPermissionSkipClick: () -> Unit = {},
-    onAddFirefoxWidgetClick: () -> Unit,
-    onAddFirefoxWidgetSkipClick: () -> Unit,
     onTermsOfServiceButtonClick: () -> Unit,
     onMarketingDataContinueClick: () -> Unit = {},
 ): OnboardingPageState =
@@ -161,14 +155,6 @@ internal fun mapToOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
                 onPositiveButtonClick = onMakeFirefoxDefaultClick,
                 onNegativeButtonClick = onMakeFirefoxDefaultSkipClick,
-                isSmallDevice = isSmallDevice,
-            )
-
-        OnboardingPageUiData.Type.ADD_SEARCH_WIDGET ->
-            createOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onAddFirefoxWidgetClick,
-                onNegativeButtonClick = onAddFirefoxWidgetSkipClick,
                 isSmallDevice = isSmallDevice,
             )
 

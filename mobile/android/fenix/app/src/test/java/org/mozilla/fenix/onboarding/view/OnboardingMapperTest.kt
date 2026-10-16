@@ -40,8 +40,6 @@ class OnboardingMapperTest {
                 onSignInSkipClick = {},
                 onNotificationPermissionButtonClick = {},
                 onNotificationPermissionSkipClick = {},
-                onAddFirefoxWidgetClick = {},
-                onAddFirefoxWidgetSkipClick = {},
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -77,8 +75,6 @@ class OnboardingMapperTest {
                 onSignInSkipClick = unitLambda,
                 onNotificationPermissionButtonClick = {},
                 onNotificationPermissionSkipClick = {},
-                onAddFirefoxWidgetClick = {},
-                onAddFirefoxWidgetSkipClick = {},
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -114,45 +110,6 @@ class OnboardingMapperTest {
                 onSignInSkipClick = {},
                 onNotificationPermissionButtonClick = unitLambda,
                 onNotificationPermissionSkipClick = unitLambda,
-                onAddFirefoxWidgetClick = {},
-                onAddFirefoxWidgetSkipClick = {},
-                onTermsOfServiceButtonClick = {},
-            )
-
-        assertEquals(expected, actual)
-    }
-
-    @Test
-    fun `GIVEN an add search widget page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
-        val expected =
-            OnboardingPageState(
-                imageRes = R.drawable.ic_onboarding_welcome,
-                title = "add search widget title",
-                description = "add search widget body with link text",
-                primaryButton = Action("add search widget primary button text", unitLambda),
-                secondaryButton = Action("add search widget secondary button text", unitLambda),
-            )
-
-        val onboardingPageUiData =
-            OnboardingPageUiData(
-                type = OnboardingPageUiData.Type.ADD_SEARCH_WIDGET,
-                imageRes = R.drawable.ic_onboarding_welcome,
-                title = "add search widget title",
-                description = "add search widget body with link text",
-                primaryButtonLabel = "add search widget primary button text",
-                secondaryButtonLabel = "add search widget secondary button text",
-            )
-        val actual =
-            mapToOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onMakeFirefoxDefaultClick = {},
-                onMakeFirefoxDefaultSkipClick = {},
-                onSignInButtonClick = {},
-                onSignInSkipClick = {},
-                onNotificationPermissionButtonClick = {},
-                onNotificationPermissionSkipClick = {},
-                onAddFirefoxWidgetClick = unitLambda,
-                onAddFirefoxWidgetSkipClick = unitLambda,
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -197,8 +154,6 @@ class OnboardingMapperTest {
                 onSignInSkipClick = {},
                 onNotificationPermissionButtonClick = {},
                 onNotificationPermissionSkipClick = {},
-                onAddFirefoxWidgetClick = {},
-                onAddFirefoxWidgetSkipClick = {},
                 onTermsOfServiceButtonClick = {},
                 onMarketingDataContinueClick = unitLambda,
             )
