@@ -12,8 +12,8 @@ import org.mozilla.fenix.nimbus.DefaultBrowserPrompt
 import org.mozilla.fenix.nimbus.FxNimbus.features
 import org.mozilla.fenix.onboarding.view.OnboardingPageUiData
 import org.mozilla.fenix.onboarding.view.defaultBrowserPageUiData
-import org.mozilla.fenix.onboarding.view.notificationPageUiData
 import org.mozilla.fenix.onboarding.view.syncPageUiData
+import org.mozilla.fenix.onboarding.view.termsOfServicePageUiData
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -74,7 +74,7 @@ class DefaultBrowserPromptManagerTest {
     fun `WHEN we can show prompt THEN only the set to default card shows the prompt`() {
         assertTrue(promptShownFor(defaultBrowserPageUiData))
         assertFalse(promptShownFor(syncPageUiData))
-        assertFalse(promptShownFor(notificationPageUiData))
+        assertFalse(promptShownFor(termsOfServicePageUiData))
     }
 
     @Test

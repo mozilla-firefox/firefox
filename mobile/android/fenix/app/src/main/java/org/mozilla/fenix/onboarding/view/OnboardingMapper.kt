@@ -158,15 +158,6 @@ internal fun mapToOnboardingPageState(
                 isSmallDevice = isSmallDevice,
             )
 
-        // Only used by continuous onboarding, which builds its page state directly.
-        OnboardingPageUiData.Type.NOTIFICATION_PERMISSION ->
-            createOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = {},
-                onNegativeButtonClick = {},
-                isSmallDevice = isSmallDevice,
-            )
-
         OnboardingPageUiData.Type.TERMS_OF_SERVICE ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,

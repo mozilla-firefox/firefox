@@ -396,8 +396,7 @@ private fun OnboardingPageForType(
 ) {
     when (type) {
         OnboardingPageUiData.Type.DEFAULT_BROWSER,
-        OnboardingPageUiData.Type.SYNC_SIGN_IN,
-        OnboardingPageUiData.Type.NOTIFICATION_PERMISSION -> OnboardingPage(state)
+        OnboardingPageUiData.Type.SYNC_SIGN_IN -> OnboardingPage(state)
 
         OnboardingPageUiData.Type.MARKETING_DATA ->
             MarketingDataOnboardingPage(

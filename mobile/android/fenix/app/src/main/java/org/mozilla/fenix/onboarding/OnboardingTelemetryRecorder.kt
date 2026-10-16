@@ -72,7 +72,6 @@ class OnboardingTelemetryRecorder(
      * @param pageType The page type for which the impression occurred.
      * @param sequencePosition The sequence position of the page for which the impression occurred.
      */
-    @Suppress("LongMethod")
     fun onImpression(
         sequenceId: String,
         pageType: OnboardingPageUiData.Type,
@@ -100,19 +99,6 @@ class OnboardingTelemetryRecorder(
             OnboardingPageUiData.Type.SYNC_SIGN_IN -> {
                 Onboarding.signInCard.record(
                     Onboarding.SignInCardExtra(
-                        action = ACTION_IMPRESSION,
-                        elementType = ET_ONBOARDING_CARD,
-                        sequenceId = sequenceId,
-                        sequencePosition = sequencePosition,
-                        onboardingReason = onboardingReason.value,
-                        installSource = installSource,
-                    )
-                )
-            }
-
-            OnboardingPageUiData.Type.NOTIFICATION_PERMISSION -> {
-                Onboarding.turnOnNotificationsCard.record(
-                    Onboarding.TurnOnNotificationsCardExtra(
                         action = ACTION_IMPRESSION,
                         elementType = ET_ONBOARDING_CARD,
                         sequenceId = sequenceId,
@@ -189,6 +175,30 @@ class OnboardingTelemetryRecorder(
             Onboarding.SignInExtra(
                 action = ACTION_CLICK,
                 elementType = ET_PRIMARY_BUTTON,
+                sequenceId = sequenceId,
+                sequencePosition = sequencePosition,
+                onboardingReason = onboardingReason.value,
+                installSource = installSource,
+            )
+        )
+    }
+
+    /**
+     * Records the notification permission card impression event.
+     *
+     * @param sequenceId The identifier of the onboarding sequence shown to the user.
+     * @param sequencePosition The sequence position of the page for which the impression occurred.
+     */
+    fun onNotificationCardImpression(sequenceId: String, sequencePosition: String) {
+        logger.debug(
+            "Recording notification card impression event, sequenceId: $sequenceId, " +
+                "sequencePosition: $sequencePosition"
+        )
+
+        Onboarding.turnOnNotificationsCard.record(
+            Onboarding.TurnOnNotificationsCardExtra(
+                action = ACTION_IMPRESSION,
+                elementType = ET_ONBOARDING_CARD,
                 sequenceId = sequenceId,
                 sequencePosition = sequencePosition,
                 onboardingReason = onboardingReason.value,

@@ -317,7 +317,7 @@ class ContinuousOnboardingFeature(
                 markStageCompleted(stage)
 
                 telemetryRecorder.onSkipTurnOnNotificationsClick(
-                    sequenceId = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION.telemetryId,
+                    sequenceId = NOTIFICATION_SEQUENCE_ID,
                     sequencePosition = "0",
                     elementType = ET_CARD_CLOSE_BUTTON,
                 )
@@ -349,7 +349,7 @@ class ContinuousOnboardingFeature(
                         markStageCompleted(stage)
 
                         telemetryRecorder.onNotificationPermissionClick(
-                            sequenceId = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION.telemetryId,
+                            sequenceId = NOTIFICATION_SEQUENCE_ID,
                             sequencePosition = "0",
                         )
                     },
@@ -362,15 +362,14 @@ class ContinuousOnboardingFeature(
                         markStageCompleted(stage)
 
                         telemetryRecorder.onSkipTurnOnNotificationsClick(
-                            sequenceId = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION.telemetryId,
+                            sequenceId = NOTIFICATION_SEQUENCE_ID,
                             sequencePosition = "0",
                         )
                     },
                 ),
             onRecordImpressionEvent = {
-                telemetryRecorder.onImpression(
-                    sequenceId = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION.telemetryId,
-                    pageType = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION,
+                telemetryRecorder.onNotificationCardImpression(
+                    sequenceId = NOTIFICATION_SEQUENCE_ID,
                     sequencePosition = "0",
                 )
             },
@@ -431,6 +430,7 @@ class ContinuousOnboardingFeature(
 
     companion object {
         private const val CONTINUOUS_ONBOARDING_DIALOG_TAG = "continuous_onboarding_dialog"
+        private const val NOTIFICATION_SEQUENCE_ID = "notification"
         private const val IP_PROTECTION_SEQUENCE_ID = "ip_protection"
 
         /**
