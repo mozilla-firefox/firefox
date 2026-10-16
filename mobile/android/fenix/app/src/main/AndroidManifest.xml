@@ -818,10 +818,6 @@
         </receiver>
 
         <receiver
-            android:name=".onboarding.WidgetPinnedReceiver"
-            android:exported="false" />
-
-        <receiver
             android:name=".privacyreport.PrivacyReportNotificationReceiver"
             android:exported="false" />
 

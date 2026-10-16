@@ -1368,9 +1368,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
      * This function should be called when the fragment's view is active (e.g., in response to a user interaction). It
      * launches a coroutine within the [viewLifecycleOwner]'s [androidx.lifecycle.LifecycleCoroutineScope] to display
      * the widget prompt using [showAddSearchWidgetPromptIfSupported].
-     *
-     * The actual display logic, including handling success and failure callbacks, is managed by
-     * [showAddSearchWidgetPromptIfSupported].
      */
     private fun showAddSearchWidgetPrompt() {
         viewLifecycleOwner.lifecycleScope.launch {

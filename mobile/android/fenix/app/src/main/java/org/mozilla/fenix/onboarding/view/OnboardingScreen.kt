@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +45,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import mozilla.components.compose.base.PagerIndicator
@@ -54,7 +52,6 @@ import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.components
-import org.mozilla.fenix.onboarding.WidgetPinnedReceiver.WidgetPinnedState
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.isLargeScreenSize
 
@@ -72,8 +69,6 @@ private val SMALL_SCREEN_MAX_HEIGHT = 570.dp
  * @param onSkipSignInClick Invoked when the negative button on the sign in page is clicked.
  * @param onNotificationPermissionButtonClick Invoked when positive button on notification page is clicked.
  * @param onSkipNotificationClick Invoked when negative button on notification page is clicked.
- * @param onAddFirefoxWidgetClick Invoked when positive button on add search widget page is clicked.
- * @param onSkipFirefoxWidgetClick Invoked when negative button on add search widget page is clicked.
  * @param termsOfServiceEventHandler Invoked when the primary button on the terms of service page is clicked.
  * @param onMarketingDataLearnMoreClick callback for when the user clicks the learn more text link
  * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox
@@ -97,8 +92,6 @@ fun OnboardingScreen(
     onSkipSignInClick: () -> Unit,
     onNotificationPermissionButtonClick: () -> Unit,
     onSkipNotificationClick: () -> Unit,
-    onAddFirefoxWidgetClick: () -> Unit,
-    onSkipFirefoxWidgetClick: () -> Unit,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -117,8 +110,6 @@ fun OnboardingScreen(
         )
     val isSignedIn: State<Boolean?> =
         components.backgroundServices.syncStore.observeAsComposableState { it.account != null }
-    val widgetPinnedFlow: StateFlow<Boolean> = WidgetPinnedState.isPinned
-    val isWidgetPinnedState by widgetPinnedFlow.collectAsState()
     val isSetToDefault by components.appStore.observeAsComposableState { it.isDefaultBrowser }
     var lastSettledPage by remember { mutableIntStateOf(pagerState.settledPage) }
 
@@ -152,11 +143,10 @@ fun OnboardingScreen(
 
     val hasScrolledToNextPage = remember { mutableStateOf(false) }
 
-    LaunchedEffect(isSignedIn.value, isWidgetPinnedState, isSetToDefault) {
+    LaunchedEffect(isSignedIn.value, isSetToDefault) {
         val scrollToNextCard =
             shouldLaunchEffectScrollToNextPage(
                 isSignedIn = isSignedIn,
-                isWidgetPinnedState = isWidgetPinnedState,
                 isSetToDefault = isSetToDefault,
                 pagesToDisplay = pagesToDisplay,
                 pagerState = pagerState,
@@ -203,17 +193,6 @@ fun OnboardingScreen(
         },
         onNotificationPermissionSkipClick = {
             onSkipNotificationClick()
-            scrollToNextPageOrDismiss()
-        },
-        onAddFirefoxWidgetClick = {
-            if (isWidgetPinnedState) {
-                scrollToNextPageOrDismiss()
-            } else {
-                onAddFirefoxWidgetClick()
-            }
-        },
-        onSkipFirefoxWidgetClick = {
-            onSkipFirefoxWidgetClick()
             scrollToNextPageOrDismiss()
         },
         termsOfServiceEventHandler = termsOfServiceEventHandler,
@@ -270,7 +249,6 @@ private fun setToDefaultClick(
 
 private fun shouldLaunchEffectScrollToNextPage(
     isSignedIn: State<Boolean?>,
-    isWidgetPinnedState: Boolean,
     isSetToDefault: Boolean,
     pagesToDisplay: List<OnboardingPageUiData>,
     pagerState: PagerState,
@@ -284,13 +262,6 @@ private fun shouldLaunchEffectScrollToNextPage(
             )
         } ?: false
 
-    val scrollToNextCardFromAddWidget =
-        scrollToNextCardFromAddWidget(
-            pagesToDisplay,
-            pagerState.currentPage,
-            isWidgetPinnedState,
-        )
-
     val scrollToNextCardFromSetToDefault =
         scrollToNextCardFromSetToDefault(
             pagesToDisplay,
@@ -298,20 +269,9 @@ private fun shouldLaunchEffectScrollToNextPage(
             isSetToDefault,
         )
 
-    val scrollToNextCard =
-        scrollToNextCardFromSignIn || scrollToNextCardFromAddWidget || scrollToNextCardFromSetToDefault
+    val scrollToNextCard = scrollToNextCardFromSignIn || scrollToNextCardFromSetToDefault
 
     return scrollToNextCard
-}
-
-private fun scrollToNextCardFromAddWidget(
-    pagesToDisplay: List<OnboardingPageUiData>,
-    currentPageIndex: Int,
-    isWidgetPinnedState: Boolean,
-): Boolean {
-    val indexOfWidgetPage = pagesToDisplay.indexOfFirst { it.type == OnboardingPageUiData.Type.ADD_SEARCH_WIDGET }
-    val currentPageIsWidgetPage = currentPageIndex == indexOfWidgetPage
-    return isWidgetPinnedState && currentPageIsWidgetPage
 }
 
 private fun scrollToNextCardFromSignIn(
@@ -345,8 +305,6 @@ private fun OnboardingContent(
     onSignInSkipClick: () -> Unit,
     onNotificationPermissionButtonClick: () -> Unit,
     onNotificationPermissionSkipClick: () -> Unit,
-    onAddFirefoxWidgetClick: () -> Unit,
-    onSkipFirefoxWidgetClick: () -> Unit,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onAgreeAndConfirmTermsOfService: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -395,8 +353,6 @@ private fun OnboardingContent(
                         onSignInSkipClick = onSignInSkipClick,
                         onNotificationPermissionButtonClick = onNotificationPermissionButtonClick,
                         onNotificationPermissionSkipClick = onNotificationPermissionSkipClick,
-                        onAddFirefoxWidgetClick = onAddFirefoxWidgetClick,
-                        onAddFirefoxWidgetSkipClick = onSkipFirefoxWidgetClick,
                         onTermsOfServiceButtonClick = onAgreeAndConfirmTermsOfService,
                         isSmallDevice = layout.isSmall,
                     )
@@ -457,7 +413,6 @@ private fun OnboardingPageForType(
     when (type) {
         OnboardingPageUiData.Type.DEFAULT_BROWSER,
         OnboardingPageUiData.Type.SYNC_SIGN_IN,
-        OnboardingPageUiData.Type.ADD_SEARCH_WIDGET,
         OnboardingPageUiData.Type.NOTIFICATION_PERMISSION -> OnboardingPage(state)
 
         OnboardingPageUiData.Type.MARKETING_DATA ->
@@ -642,8 +597,6 @@ private fun OnboardingScreenPreview() {
             onMakeFirefoxDefaultSkipClick = {},
             onSignInButtonClick = {},
             onSignInSkipClick = {},
-            onAddFirefoxWidgetClick = {},
-            onSkipFirefoxWidgetClick = {},
             onAgreeAndConfirmTermsOfService = {},
             termsOfServiceEventHandler = object : OnboardingTermsOfServiceEventHandler {},
             onMarketingDataLearnMoreClick = {},

@@ -266,8 +266,6 @@ enums:
         description: Allows user to sync with a Firefox account.
       notification-permission:
         description: Allows user to enable notification permission.
-      add-search-widget:
-        description: Allows user to add search widget to homescreen.
       terms-of-service:
         description: Page to display the terms of services.
       marketing-data:
