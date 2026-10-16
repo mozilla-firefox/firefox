@@ -525,15 +525,6 @@
     <!-- "Set to default" onboarding button. -->
     <string name="nova_onboarding_set_to_default_button">Set as default browser</string>
 
-    <!-- Toolbar selection onboarding title. -->
-    <string name="nova_onboarding_toolbar_selection_title">Choose your address bar</string>
-
-    <!-- Toolbar selection onboarding "top" option label. -->
-    <string name="nova_onboarding_toolbar_selection_top_label">Top</string>
-
-    <!-- Toolbar selection onboarding "bottom" option label. -->
-    <string name="nova_onboarding_toolbar_selection_bottom_label">Bottom</string>
-
     <!-- Theme selection onboarding title. -->
     <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Pick your theme</string>
 

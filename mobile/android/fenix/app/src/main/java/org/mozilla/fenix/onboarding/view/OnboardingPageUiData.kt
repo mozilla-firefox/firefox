@@ -15,7 +15,6 @@ data class OnboardingPageUiData(
     val description: String,
     val primaryButtonLabel: String,
     val secondaryButtonLabel: String? = null,
-    val toolbarOptions: List<ToolbarOption>? = null,
     val termsOfService: OnboardingTermsOfService? = null,
     val marketingData: OnboardingMarketingData? = null,
 ) {
@@ -29,7 +28,6 @@ data class OnboardingPageUiData(
         SYNC_SIGN_IN(telemetryId = "sync"),
         ADD_SEARCH_WIDGET(telemetryId = "search_widget"),
         NOTIFICATION_PERMISSION(telemetryId = "notification"),
-        TOOLBAR_PLACEMENT(telemetryId = "toolbar_placement"),
         TERMS_OF_SERVICE(telemetryId = "terms_of_service"),
         MARKETING_DATA(telemetryId = "marketing_data"),
     }

@@ -3,4 +3,4 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_onboarding_key_features,@drawable/ic_onboarding_key_features_icons_only,@drawable/ic_onboarding_add_ons,@drawable/ic_onboarding_customize_toolbar,@drawable/ic_onboarding_top_toolbar,@drawable/ic_onboarding_bottom_toolbar,@drawable/ic_high_five" />
+    tools:keep="@drawable/ic_onboarding_key_features,@drawable/ic_onboarding_key_features_icons_only,@drawable/ic_onboarding_add_ons,@drawable/ic_high_five" />

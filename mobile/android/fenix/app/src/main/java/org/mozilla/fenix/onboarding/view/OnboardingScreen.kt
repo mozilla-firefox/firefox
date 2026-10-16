@@ -53,13 +53,8 @@ import mozilla.components.compose.base.PagerIndicator
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.appstate.AppAction
-import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
 import org.mozilla.fenix.components.components
-import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.onboarding.WidgetPinnedReceiver.WidgetPinnedState
-import org.mozilla.fenix.onboarding.store.OnboardingAction.OnboardingToolbarAction
-import org.mozilla.fenix.onboarding.store.OnboardingStore
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.isLargeScreenSize
 
@@ -79,9 +74,7 @@ private val SMALL_SCREEN_MAX_HEIGHT = 570.dp
  * @param onSkipNotificationClick Invoked when negative button on notification page is clicked.
  * @param onAddFirefoxWidgetClick Invoked when positive button on add search widget page is clicked.
  * @param onSkipFirefoxWidgetClick Invoked when negative button on add search widget page is clicked.
- * @param onboardingStore The store which contains all the state related to the add-ons onboarding screen.
  * @param termsOfServiceEventHandler Invoked when the primary button on the terms of service page is clicked.
- * @param onCustomizeToolbarClick Invoked when positive button customize toolbar page is clicked.
  * @param onMarketingDataLearnMoreClick callback for when the user clicks the learn more text link
  * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox
  * @param onMarketingDataContinueClick callback for when the user clicks the continue button on the marketing data opt
@@ -106,9 +99,7 @@ fun OnboardingScreen(
     onSkipNotificationClick: () -> Unit,
     onAddFirefoxWidgetClick: () -> Unit,
     onSkipFirefoxWidgetClick: () -> Unit,
-    onboardingStore: OnboardingStore? = null,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
-    onCustomizeToolbarClick: () -> Unit,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
     onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
@@ -225,10 +216,6 @@ fun OnboardingScreen(
             onSkipFirefoxWidgetClick()
             scrollToNextPageOrDismiss()
         },
-        onCustomizeToolbarButtonClick = {
-            onCustomizeToolbarClick()
-            scrollToNextPageOrDismiss()
-        },
         termsOfServiceEventHandler = termsOfServiceEventHandler,
         onAgreeAndConfirmTermsOfService = {
             termsOfServiceEventHandler.onAcceptTermsButtonClicked()
@@ -244,7 +231,6 @@ fun OnboardingScreen(
             onMarketingDataSkipClick()
             scrollToNextPageOrDismiss()
         },
-        onboardingStore = onboardingStore,
     )
 }
 
@@ -361,8 +347,6 @@ private fun OnboardingContent(
     onNotificationPermissionSkipClick: () -> Unit,
     onAddFirefoxWidgetClick: () -> Unit,
     onSkipFirefoxWidgetClick: () -> Unit,
-    onboardingStore: OnboardingStore? = null,
-    onCustomizeToolbarButtonClick: () -> Unit,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onAgreeAndConfirmTermsOfService: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -413,7 +397,6 @@ private fun OnboardingContent(
                         onNotificationPermissionSkipClick = onNotificationPermissionSkipClick,
                         onAddFirefoxWidgetClick = onAddFirefoxWidgetClick,
                         onAddFirefoxWidgetSkipClick = onSkipFirefoxWidgetClick,
-                        onCustomizeToolbarButtonClick = onCustomizeToolbarButtonClick,
                         onTermsOfServiceButtonClick = onAgreeAndConfirmTermsOfService,
                         isSmallDevice = layout.isSmall,
                     )
@@ -421,7 +404,6 @@ private fun OnboardingContent(
                 OnboardingPageForType(
                     type = pageUiState.type,
                     state = onboardingPageState,
-                    onboardingStore = onboardingStore,
                     termsOfServiceEventHandler = termsOfServiceEventHandler,
                     onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
                     onMarketingOptInToggle = onMarketingOptInToggle,
@@ -466,7 +448,6 @@ private fun OnboardingBackground(isVisible: Boolean, isSolidBackground: Boolean)
 private fun OnboardingPageForType(
     type: OnboardingPageUiData.Type,
     state: OnboardingPageState,
-    onboardingStore: OnboardingStore? = null,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -478,25 +459,6 @@ private fun OnboardingPageForType(
         OnboardingPageUiData.Type.SYNC_SIGN_IN,
         OnboardingPageUiData.Type.ADD_SEARCH_WIDGET,
         OnboardingPageUiData.Type.NOTIFICATION_PERMISSION -> OnboardingPage(state)
-
-        OnboardingPageUiData.Type.TOOLBAR_PLACEMENT -> {
-            val context = LocalContext.current
-            onboardingStore?.let { store ->
-                ToolbarOnboardingPage(
-                    onboardingStore = store,
-                    pageState = state,
-                    onToolbarSelectionClicked = {
-                        store.dispatch(OnboardingToolbarAction.UpdateSelected(it))
-                        context.components.appStore.dispatch(
-                            AppAction.SetupChecklistAction.TaskPreferenceUpdated(
-                                ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT,
-                                true,
-                            )
-                        )
-                    },
-                )
-            }
-        }
 
         OnboardingPageUiData.Type.MARKETING_DATA ->
             MarketingDataOnboardingPage(
@@ -682,7 +644,6 @@ private fun OnboardingScreenPreview() {
             onSignInSkipClick = {},
             onAddFirefoxWidgetClick = {},
             onSkipFirefoxWidgetClick = {},
-            onCustomizeToolbarButtonClick = {},
             onAgreeAndConfirmTermsOfService = {},
             termsOfServiceEventHandler = object : OnboardingTermsOfServiceEventHandler {},
             onMarketingDataLearnMoreClick = {},
@@ -701,7 +662,6 @@ private fun defaultPreviewPages() =
         defaultBrowserPageUiData(),
         touPageUIData(),
         syncPageUiData(),
-        toolbarPlacementPageUiData(),
     )
 
 @Composable
@@ -746,27 +706,4 @@ private fun syncPageUiData() =
         description = stringResource(R.string.nova_onboarding_sync_subtitle),
         primaryButtonLabel = stringResource(R.string.nova_onboarding_sync_button),
         secondaryButtonLabel = stringResource(R.string.nova_onboarding_negative_button),
-    )
-
-@Composable
-private fun toolbarPlacementPageUiData() =
-    OnboardingPageUiData(
-        type = OnboardingPageUiData.Type.TOOLBAR_PLACEMENT,
-        imageRes = R.drawable.ic_onboarding_customize_toolbar,
-        title = stringResource(R.string.nova_onboarding_toolbar_selection_title),
-        description = "", // Unused
-        primaryButtonLabel = stringResource(R.string.nova_onboarding_continue_button),
-        toolbarOptions =
-            listOf(
-                ToolbarOption(
-                    toolbarType = ToolbarOptionType.TOOLBAR_TOP,
-                    imageRes = R.drawable.ic_onboarding_top_toolbar,
-                    label = stringResource(R.string.nova_onboarding_toolbar_selection_top_label),
-                ),
-                ToolbarOption(
-                    toolbarType = ToolbarOptionType.TOOLBAR_BOTTOM,
-                    imageRes = R.drawable.ic_onboarding_bottom_toolbar,
-                    label = stringResource(R.string.nova_onboarding_toolbar_selection_bottom_label),
-                ),
-            ),
     )

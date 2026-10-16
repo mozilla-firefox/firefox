@@ -162,13 +162,8 @@ objects:
         default: null
 
   ExtraCardData:
-    description: Holds data for cards that require additional data, e.g. toolbar placement cards.
+    description: Holds data for cards that require additional data, e.g. terms of service cards.
     fields:
-      customization-toolbar-data:
-        type: List<CustomizationToolbarData>
-        description: >
-          An optional list of toolbar placements for the toolbar placement card.
-        default: []
       term-of-service-data:
         type: Option<TermsOfServiceData>
         description: >
@@ -179,25 +174,6 @@ objects:
         description: >
           An optional marketing data for the onboarding card.
         default: null
-
-  CustomizationToolbarData:
-    description: An object to describe the placement of the toolbar.
-    fields:
-      toolbar-type:
-        type: ToolbarType
-        description: The type of toolbar placement.
-        # This should never be defaulted.
-        default: toolbar-top
-      label:
-        type: Text
-        description: Display text for the toolbar placement option (e.g. "Top placement").
-        # This should never be defaulted.
-        default: ""
-      image-res:
-        type: Image
-        description: The resource id of toolbar placement image.
-        # Not used. This field as the image is defined in the Composable.
-        default: ic_onboarding_customize_toolbar
 
   TermsOfServiceData:
     description: An object to describe the terms of service onboarding card.
@@ -292,20 +268,10 @@ enums:
         description: Allows user to enable notification permission.
       add-search-widget:
         description: Allows user to add search widget to homescreen.
-      toolbar-placement:
-        description: Allows user to choose the toolbar position.
       terms-of-service:
         description: Page to display the terms of services.
       marketing-data:
         description: Allows user to opt out of marketing data collection.
-
-  ToolbarType:
-    description: An enum to describe a toolbar placement option.
-    variants:
-      toolbar-top:
-        description: Sets the toolbar placement on the top.
-      toolbar-bottom:
-        description: Sets the toolbar placement on the bottom.
 
   MarketingCardVariant:
     description: An enum to describe a marketing card variation.

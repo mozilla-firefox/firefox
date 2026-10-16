@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.WebExtensionAction
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.concept.engine.webextension.InstallationMethod
-import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.service.nimbus.evalJexlSafe
 import mozilla.components.service.nimbus.messaging.use
 import mozilla.components.support.base.ext.areNotificationsEnabledSafe
@@ -53,10 +52,6 @@ import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.nimbus.FxNimbus
-import org.mozilla.fenix.onboarding.store.DefaultOnboardingPreferencesRepository
-import org.mozilla.fenix.onboarding.store.OnboardingPreferencesMiddleware
-import org.mozilla.fenix.onboarding.store.OnboardingState
-import org.mozilla.fenix.onboarding.store.OnboardingStore
 import org.mozilla.fenix.onboarding.view.ManagePrivacyPreferencesDialogFragment
 import org.mozilla.fenix.onboarding.view.OnboardingPageUiData
 import org.mozilla.fenix.onboarding.view.OnboardingScreen
@@ -156,23 +151,6 @@ class OnboardingFragment : Fragment() {
                 ),
         )
     }
-
-    private val onboardingStore by
-        fragmentStore(OnboardingState()) {
-            OnboardingStore(
-                initialState = it,
-                middleware =
-                    listOf(
-                        OnboardingPreferencesMiddleware(
-                            repository =
-                                DefaultOnboardingPreferencesRepository(
-                                    context = requireContext(),
-                                    lifecycleOwner = viewLifecycleOwner,
-                                )
-                        )
-                    ),
-            )
-        }
 
     private val defaultBrowserPromptStorage by lazy { DefaultDefaultBrowserPromptStorage(requireContext()) }
     private val defaultBrowserPromptManager by lazy {
@@ -344,17 +322,7 @@ class OnboardingFragment : Fragment() {
 
                 defaultBrowserPromptManager.maybePromptToSetAsDefaultBrowser(it)
             },
-            onboardingStore = onboardingStore,
             termsOfServiceEventHandler = termsOfServiceEventHandler,
-            onCustomizeToolbarClick = {
-                requireComponents.settings.hasCompletedSetupStepToolbar = true
-
-                telemetryRecorder.onSelectToolbarPlacementClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.TOOLBAR_PLACEMENT),
-                    onboardingStore.state.toolbarOptionSelected.id,
-                )
-            },
             onMarketingDataLearnMoreClick = {
                 telemetryRecorder.onMarketingDataLearnMoreClick()
 
@@ -490,7 +458,6 @@ class OnboardingFragment : Fragment() {
                 showDefaultBrowserPage,
                 showNotificationPage,
                 showAddWidgetPage,
-                requireComponents.settings.isTabStripEnabled.not(),
                 jexlConditions,
             ) { condition ->
                 jexlHelper.evalJexlSafe(condition)
