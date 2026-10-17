@@ -606,6 +606,8 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             } else {
                 StartOnHome.enterHomeScreen.record(NoExtras())
             }
+        } else {
+            processLaunchIntentAfterOnboarding()
         }
 
         // This will record an event in Nimbus' internal event store. Used for behavioral targeting
@@ -1584,6 +1586,13 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
         if (directions != null) {
             navHost.navController.nav(fragmentId, directions)
         }
+    }
+
+    /**
+     * Onboarding skips processing of the launch intent in [onCreate], so process it once the user completes onboarding.
+     */
+    private fun processLaunchIntentAfterOnboarding() {
+        components.fenixOnboarding.registerOnboardingCompletedListener(this) { processIntent(intent) }
     }
 
     @VisibleForTesting
