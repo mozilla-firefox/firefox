@@ -9,6 +9,7 @@ import static org.mozilla.conventions.BuildConfigKt.getBuildId
 plugins {
     id 'com.android.application'
     id 'org.mozilla.conventions.zip-test-reports'
+    id 'org.mozilla.android-test-keep-rules'
     id 'org.mozilla.nimbus-gradle-plugin'
     id 'ApkSizePlugin'
     id 'jacoco'
@@ -83,6 +84,7 @@ android {
         shrinkResources = !project.hasProperty("disableOptimization")
         minifyEnabled = !project.hasProperty("disableOptimization")
         proguardFiles = [getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro']
+        testProguardFiles 'proguard-rules-android-test.pro'
         matchingFallbacks = ['release'] // Use on the "release" build type in dependencies (AARs)
 
         // Present in release builds.
