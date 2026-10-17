@@ -42,6 +42,22 @@ apilint:
             - "mobile/android/gradle/mozconfig.gradle"
             - "mobile/android/gradle/plugins/apilint/**"
 
+android-test-keep-rules:
+    description: "androidTest keep rules Gradle plugin tests"
+    treeherder:
+        symbol: android(test-keep-rules)
+    run:
+        gradle-project: mobile/android/gradle/plugins/android-test-keep-rules
+        gradle-args:
+            - test
+    when:
+        files-changed:
+            - "gradle/libs.versions.toml"
+            - "gradle/wrapper/gradle-wrapper.properties"
+            - "mobile/android/gradle/mach_env.gradle"
+            - "mobile/android/gradle/mozconfig.gradle"
+            - "mobile/android/gradle/plugins/android-test-keep-rules/**"
+
 conventions:
     description: "Conventions Gradle plugin tests"
     treeherder:

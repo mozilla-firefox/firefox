@@ -311,7 +311,6 @@ tasks:
         description: 'Fenix Nightly build for UI tests'
         dependencies:
             build-fat-aar: build-fat-aar-android-geckoview-fat-aar/opt
-        disable-optimization: true
         run:
             clone-with: hg
             gradle-build-type: nightly
@@ -438,7 +437,6 @@ tasks:
             #  * "{gradle_build_type}" is forced to "nightly"
             #  * "{fileName}" is forced to "app-nightly-androidTest.apk"
             path: '/builds/worker/workspace/obj-build/gradle/build/mobile/android/fenix/app/outputs/apk/androidTest/nightly/app-nightly-androidTest.apk'
-        disable-optimization: true
         run:
             clone-with: hg
             gradle-build-type: androidTest
