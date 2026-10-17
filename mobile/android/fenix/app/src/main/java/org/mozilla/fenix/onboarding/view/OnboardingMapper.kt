@@ -4,19 +4,14 @@
 
 package org.mozilla.fenix.onboarding.view
 
-import org.mozilla.fenix.nimbus.CustomizationToolbarData
 import org.mozilla.fenix.nimbus.MarketingData
 import org.mozilla.fenix.nimbus.OnboardingCardData
 import org.mozilla.fenix.nimbus.OnboardingCardType
 import org.mozilla.fenix.nimbus.TermsOfServiceData
-import org.mozilla.fenix.nimbus.ToolbarType
 
 /** Returns a list of all the required Nimbus 'cards' that have been converted to [OnboardingPageUiData]. */
 internal fun Collection<OnboardingCardData>.toPageUiData(
     showDefaultBrowserPage: Boolean,
-    showNotificationPage: Boolean,
-    showAddWidgetPage: Boolean,
-    showToolbarPage: Boolean,
     jexlConditions: Map<String, String>,
     jexlEvaluator: (String) -> Boolean,
 ): List<OnboardingPageUiData> {
@@ -25,7 +20,7 @@ internal fun Collection<OnboardingCardData>.toPageUiData(
         .filter { it.cardType != null }
         .filter { it.shouldDisplayCard(jexlEvaluator, jexlConditions) }
         // we are then filtering again based on device capabilities
-        .filter { it.isCardEnabled(showDefaultBrowserPage, showNotificationPage, showAddWidgetPage, showToolbarPage) }
+        .filter { it.isCardEnabled(showDefaultBrowserPage) }
         .sortedBy { it.ordering }
         // Cards that don't declare a card type are considered misconfigured so they are discarded
         .mapNotNull { it.toPageUiData() }
@@ -79,18 +74,9 @@ private fun OnboardingCardData.shouldDisplayCard(
     return validPrerequisites && !hasDisqualifiers
 }
 
-private fun OnboardingCardData.isCardEnabled(
-    showDefaultBrowserPage: Boolean,
-    showNotificationPage: Boolean,
-    showAddWidgetPage: Boolean,
-    showToolbarPage: Boolean,
-): Boolean =
+private fun OnboardingCardData.isCardEnabled(showDefaultBrowserPage: Boolean): Boolean =
     when (cardType) {
         OnboardingCardType.DEFAULT_BROWSER -> enabled && showDefaultBrowserPage
-        OnboardingCardType.NOTIFICATION_PERMISSION -> enabled && showNotificationPage
-        OnboardingCardType.ADD_SEARCH_WIDGET -> enabled && showAddWidgetPage
-        OnboardingCardType.TOOLBAR_PLACEMENT ->
-            showToolbarPage && enabled && extraData?.customizationToolbarData?.isNotEmpty() == true
         else -> enabled
     }
 
@@ -102,7 +88,6 @@ private fun OnboardingCardData.toPageUiData() = cardType?.let { type ->
         description = body,
         primaryButtonLabel = primaryButtonLabel,
         secondaryButtonLabel = secondaryButtonLabel.ifEmpty { null },
-        toolbarOptions = extraData?.customizationToolbarData?.takeIf { it.isNotEmpty() }?.toOnboardingToolbarOptions(),
         termsOfService = extraData?.termOfServiceData?.toOnboardingTermsOfService(),
         marketingData = extraData?.marketingData?.toOnboardingMarketingData(),
     )
@@ -112,14 +97,9 @@ private fun OnboardingCardType.toPageUiDataType() =
     when (this) {
         OnboardingCardType.DEFAULT_BROWSER -> OnboardingPageUiData.Type.DEFAULT_BROWSER
         OnboardingCardType.SYNC_SIGN_IN -> OnboardingPageUiData.Type.SYNC_SIGN_IN
-        OnboardingCardType.NOTIFICATION_PERMISSION -> OnboardingPageUiData.Type.NOTIFICATION_PERMISSION
-        OnboardingCardType.ADD_SEARCH_WIDGET -> OnboardingPageUiData.Type.ADD_SEARCH_WIDGET
-        OnboardingCardType.TOOLBAR_PLACEMENT -> OnboardingPageUiData.Type.TOOLBAR_PLACEMENT
         OnboardingCardType.TERMS_OF_SERVICE -> OnboardingPageUiData.Type.TERMS_OF_SERVICE
         OnboardingCardType.MARKETING_DATA -> OnboardingPageUiData.Type.MARKETING_DATA
     }
-
-private fun List<CustomizationToolbarData>.toOnboardingToolbarOptions() = map { it.toOnboardingCustomizeToolbar() }
 
 private fun TermsOfServiceData.toOnboardingTermsOfService() =
     with(this) {
@@ -147,21 +127,6 @@ private fun MarketingData.toOnboardingMarketingData() =
         bodyThreeText = bodyLineThreeText,
     )
 
-private fun CustomizationToolbarData.toOnboardingCustomizeToolbar() =
-    with(this) {
-        ToolbarOption(
-            toolbarType = toolbarType.toToolbarOptionType(),
-            imageRes = imageRes.resourceId,
-            label = label,
-        )
-    }
-
-private fun ToolbarType.toToolbarOptionType() =
-    when (this) {
-        ToolbarType.TOOLBAR_TOP -> ToolbarOptionType.TOOLBAR_TOP
-        ToolbarType.TOOLBAR_BOTTOM -> ToolbarOptionType.TOOLBAR_BOTTOM
-    }
-
 /**
  * Mapper to convert [OnboardingPageUiData] to [OnboardingPageState] that is a param for [OnboardingPage] composable.
  */
@@ -173,11 +138,6 @@ internal fun mapToOnboardingPageState(
     onMakeFirefoxDefaultSkipClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
     onSignInSkipClick: () -> Unit,
-    onNotificationPermissionButtonClick: () -> Unit = {},
-    onNotificationPermissionSkipClick: () -> Unit = {},
-    onAddFirefoxWidgetClick: () -> Unit,
-    onAddFirefoxWidgetSkipClick: () -> Unit,
-    onCustomizeToolbarButtonClick: () -> Unit,
     onTermsOfServiceButtonClick: () -> Unit,
     onMarketingDataContinueClick: () -> Unit = {},
 ): OnboardingPageState =
@@ -190,35 +150,11 @@ internal fun mapToOnboardingPageState(
                 isSmallDevice = isSmallDevice,
             )
 
-        OnboardingPageUiData.Type.ADD_SEARCH_WIDGET ->
-            createOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onAddFirefoxWidgetClick,
-                onNegativeButtonClick = onAddFirefoxWidgetSkipClick,
-                isSmallDevice = isSmallDevice,
-            )
-
         OnboardingPageUiData.Type.SYNC_SIGN_IN ->
             createOnboardingPageState(
                 onboardingPageUiData = onboardingPageUiData,
                 onPositiveButtonClick = onSignInButtonClick,
                 onNegativeButtonClick = onSignInSkipClick,
-                isSmallDevice = isSmallDevice,
-            )
-
-        OnboardingPageUiData.Type.NOTIFICATION_PERMISSION ->
-            createOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onNotificationPermissionButtonClick,
-                onNegativeButtonClick = onNotificationPermissionSkipClick,
-                isSmallDevice = isSmallDevice,
-            )
-
-        OnboardingPageUiData.Type.TOOLBAR_PLACEMENT ->
-            createOnboardingPageState(
-                onboardingPageUiData = onboardingPageUiData,
-                onPositiveButtonClick = onCustomizeToolbarButtonClick,
-                onNegativeButtonClick = {}, // No negative button option for toolbar placement.
                 isSmallDevice = isSmallDevice,
             )
 
@@ -254,7 +190,6 @@ private fun createOnboardingPageState(
             onboardingPageUiData.secondaryButtonLabel?.let {
                 Action(it, onNegativeButtonClick)
             },
-        toolbarOptions = onboardingPageUiData.toolbarOptions,
         termsOfService = onboardingPageUiData.termsOfService,
         marketingData = onboardingPageUiData.marketingData,
         isSmallDevice = isSmallDevice,

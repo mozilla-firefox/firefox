@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,20 +45,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import mozilla.components.compose.base.PagerIndicator
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.appstate.AppAction
-import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
 import org.mozilla.fenix.components.components
-import org.mozilla.fenix.ext.components
-import org.mozilla.fenix.onboarding.WidgetPinnedReceiver.WidgetPinnedState
-import org.mozilla.fenix.onboarding.store.OnboardingAction.OnboardingToolbarAction
-import org.mozilla.fenix.onboarding.store.OnboardingStore
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.isLargeScreenSize
 
@@ -75,13 +67,7 @@ private val SMALL_SCREEN_MAX_HEIGHT = 570.dp
  * @param onSkipDefaultClick Invoked when negative button on default browser page is clicked.
  * @param onSignInButtonClick Invoked when the positive button on the sign in page is clicked.
  * @param onSkipSignInClick Invoked when the negative button on the sign in page is clicked.
- * @param onNotificationPermissionButtonClick Invoked when positive button on notification page is clicked.
- * @param onSkipNotificationClick Invoked when negative button on notification page is clicked.
- * @param onAddFirefoxWidgetClick Invoked when positive button on add search widget page is clicked.
- * @param onSkipFirefoxWidgetClick Invoked when negative button on add search widget page is clicked.
- * @param onboardingStore The store which contains all the state related to the add-ons onboarding screen.
  * @param termsOfServiceEventHandler Invoked when the primary button on the terms of service page is clicked.
- * @param onCustomizeToolbarClick Invoked when positive button customize toolbar page is clicked.
  * @param onMarketingDataLearnMoreClick callback for when the user clicks the learn more text link
  * @param onMarketingOptInToggle callback for when the user toggles the opt-in checkbox
  * @param onMarketingDataContinueClick callback for when the user clicks the continue button on the marketing data opt
@@ -102,13 +88,7 @@ fun OnboardingScreen(
     onSkipDefaultClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
     onSkipSignInClick: () -> Unit,
-    onNotificationPermissionButtonClick: () -> Unit,
-    onSkipNotificationClick: () -> Unit,
-    onAddFirefoxWidgetClick: () -> Unit,
-    onSkipFirefoxWidgetClick: () -> Unit,
-    onboardingStore: OnboardingStore? = null,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
-    onCustomizeToolbarClick: () -> Unit,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
     onMarketingDataContinueClick: (allowMarketingDataCollection: Boolean) -> Unit,
@@ -126,8 +106,6 @@ fun OnboardingScreen(
         )
     val isSignedIn: State<Boolean?> =
         components.backgroundServices.syncStore.observeAsComposableState { it.account != null }
-    val widgetPinnedFlow: StateFlow<Boolean> = WidgetPinnedState.isPinned
-    val isWidgetPinnedState by widgetPinnedFlow.collectAsState()
     val isSetToDefault by components.appStore.observeAsComposableState { it.isDefaultBrowser }
     var lastSettledPage by remember { mutableIntStateOf(pagerState.settledPage) }
 
@@ -161,11 +139,10 @@ fun OnboardingScreen(
 
     val hasScrolledToNextPage = remember { mutableStateOf(false) }
 
-    LaunchedEffect(isSignedIn.value, isWidgetPinnedState, isSetToDefault) {
+    LaunchedEffect(isSignedIn.value, isSetToDefault) {
         val scrollToNextCard =
             shouldLaunchEffectScrollToNextPage(
                 isSignedIn = isSignedIn,
-                isWidgetPinnedState = isWidgetPinnedState,
                 isSetToDefault = isSetToDefault,
                 pagesToDisplay = pagesToDisplay,
                 pagerState = pagerState,
@@ -206,29 +183,6 @@ fun OnboardingScreen(
             onSkipSignInClick()
             scrollToNextPageOrDismiss()
         },
-        onNotificationPermissionButtonClick = {
-            onNotificationPermissionButtonClick()
-            scrollToNextPageOrDismiss()
-        },
-        onNotificationPermissionSkipClick = {
-            onSkipNotificationClick()
-            scrollToNextPageOrDismiss()
-        },
-        onAddFirefoxWidgetClick = {
-            if (isWidgetPinnedState) {
-                scrollToNextPageOrDismiss()
-            } else {
-                onAddFirefoxWidgetClick()
-            }
-        },
-        onSkipFirefoxWidgetClick = {
-            onSkipFirefoxWidgetClick()
-            scrollToNextPageOrDismiss()
-        },
-        onCustomizeToolbarButtonClick = {
-            onCustomizeToolbarClick()
-            scrollToNextPageOrDismiss()
-        },
         termsOfServiceEventHandler = termsOfServiceEventHandler,
         onAgreeAndConfirmTermsOfService = {
             termsOfServiceEventHandler.onAcceptTermsButtonClicked()
@@ -244,7 +198,6 @@ fun OnboardingScreen(
             onMarketingDataSkipClick()
             scrollToNextPageOrDismiss()
         },
-        onboardingStore = onboardingStore,
     )
 }
 
@@ -284,7 +237,6 @@ private fun setToDefaultClick(
 
 private fun shouldLaunchEffectScrollToNextPage(
     isSignedIn: State<Boolean?>,
-    isWidgetPinnedState: Boolean,
     isSetToDefault: Boolean,
     pagesToDisplay: List<OnboardingPageUiData>,
     pagerState: PagerState,
@@ -298,13 +250,6 @@ private fun shouldLaunchEffectScrollToNextPage(
             )
         } ?: false
 
-    val scrollToNextCardFromAddWidget =
-        scrollToNextCardFromAddWidget(
-            pagesToDisplay,
-            pagerState.currentPage,
-            isWidgetPinnedState,
-        )
-
     val scrollToNextCardFromSetToDefault =
         scrollToNextCardFromSetToDefault(
             pagesToDisplay,
@@ -312,20 +257,9 @@ private fun shouldLaunchEffectScrollToNextPage(
             isSetToDefault,
         )
 
-    val scrollToNextCard =
-        scrollToNextCardFromSignIn || scrollToNextCardFromAddWidget || scrollToNextCardFromSetToDefault
+    val scrollToNextCard = scrollToNextCardFromSignIn || scrollToNextCardFromSetToDefault
 
     return scrollToNextCard
-}
-
-private fun scrollToNextCardFromAddWidget(
-    pagesToDisplay: List<OnboardingPageUiData>,
-    currentPageIndex: Int,
-    isWidgetPinnedState: Boolean,
-): Boolean {
-    val indexOfWidgetPage = pagesToDisplay.indexOfFirst { it.type == OnboardingPageUiData.Type.ADD_SEARCH_WIDGET }
-    val currentPageIsWidgetPage = currentPageIndex == indexOfWidgetPage
-    return isWidgetPinnedState && currentPageIsWidgetPage
 }
 
 private fun scrollToNextCardFromSignIn(
@@ -357,12 +291,6 @@ private fun OnboardingContent(
     onMakeFirefoxDefaultSkipClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
     onSignInSkipClick: () -> Unit,
-    onNotificationPermissionButtonClick: () -> Unit,
-    onNotificationPermissionSkipClick: () -> Unit,
-    onAddFirefoxWidgetClick: () -> Unit,
-    onSkipFirefoxWidgetClick: () -> Unit,
-    onboardingStore: OnboardingStore? = null,
-    onCustomizeToolbarButtonClick: () -> Unit,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onAgreeAndConfirmTermsOfService: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -409,11 +337,6 @@ private fun OnboardingContent(
                         onMakeFirefoxDefaultSkipClick = onMakeFirefoxDefaultSkipClick,
                         onSignInButtonClick = onSignInButtonClick,
                         onSignInSkipClick = onSignInSkipClick,
-                        onNotificationPermissionButtonClick = onNotificationPermissionButtonClick,
-                        onNotificationPermissionSkipClick = onNotificationPermissionSkipClick,
-                        onAddFirefoxWidgetClick = onAddFirefoxWidgetClick,
-                        onAddFirefoxWidgetSkipClick = onSkipFirefoxWidgetClick,
-                        onCustomizeToolbarButtonClick = onCustomizeToolbarButtonClick,
                         onTermsOfServiceButtonClick = onAgreeAndConfirmTermsOfService,
                         isSmallDevice = layout.isSmall,
                     )
@@ -421,7 +344,6 @@ private fun OnboardingContent(
                 OnboardingPageForType(
                     type = pageUiState.type,
                     state = onboardingPageState,
-                    onboardingStore = onboardingStore,
                     termsOfServiceEventHandler = termsOfServiceEventHandler,
                     onMarketingDataLearnMoreClick = onMarketingDataLearnMoreClick,
                     onMarketingOptInToggle = onMarketingOptInToggle,
@@ -466,7 +388,6 @@ private fun OnboardingBackground(isVisible: Boolean, isSolidBackground: Boolean)
 private fun OnboardingPageForType(
     type: OnboardingPageUiData.Type,
     state: OnboardingPageState,
-    onboardingStore: OnboardingStore? = null,
     termsOfServiceEventHandler: OnboardingTermsOfServiceEventHandler,
     onMarketingDataLearnMoreClick: () -> Unit,
     onMarketingOptInToggle: (optIn: Boolean) -> Unit,
@@ -475,28 +396,7 @@ private fun OnboardingPageForType(
 ) {
     when (type) {
         OnboardingPageUiData.Type.DEFAULT_BROWSER,
-        OnboardingPageUiData.Type.SYNC_SIGN_IN,
-        OnboardingPageUiData.Type.ADD_SEARCH_WIDGET,
-        OnboardingPageUiData.Type.NOTIFICATION_PERMISSION -> OnboardingPage(state)
-
-        OnboardingPageUiData.Type.TOOLBAR_PLACEMENT -> {
-            val context = LocalContext.current
-            onboardingStore?.let { store ->
-                ToolbarOnboardingPage(
-                    onboardingStore = store,
-                    pageState = state,
-                    onToolbarSelectionClicked = {
-                        store.dispatch(OnboardingToolbarAction.UpdateSelected(it))
-                        context.components.appStore.dispatch(
-                            AppAction.SetupChecklistAction.TaskPreferenceUpdated(
-                                ChecklistItem.Task.Type.CHANGE_TOOLBAR_PLACEMENT,
-                                true,
-                            )
-                        )
-                    },
-                )
-            }
-        }
+        OnboardingPageUiData.Type.SYNC_SIGN_IN -> OnboardingPage(state)
 
         OnboardingPageUiData.Type.MARKETING_DATA ->
             MarketingDataOnboardingPage(
@@ -680,17 +580,12 @@ private fun OnboardingScreenPreview() {
             onMakeFirefoxDefaultSkipClick = {},
             onSignInButtonClick = {},
             onSignInSkipClick = {},
-            onAddFirefoxWidgetClick = {},
-            onSkipFirefoxWidgetClick = {},
-            onCustomizeToolbarButtonClick = {},
             onAgreeAndConfirmTermsOfService = {},
             termsOfServiceEventHandler = object : OnboardingTermsOfServiceEventHandler {},
             onMarketingDataLearnMoreClick = {},
             onMarketingOptInToggle = {},
             onMarketingDataContinueClick = {},
             onMarketingDataSkipClick = {},
-            onNotificationPermissionButtonClick = {},
-            onNotificationPermissionSkipClick = {},
         )
     }
 }
@@ -701,7 +596,6 @@ private fun defaultPreviewPages() =
         defaultBrowserPageUiData(),
         touPageUIData(),
         syncPageUiData(),
-        toolbarPlacementPageUiData(),
     )
 
 @Composable
@@ -746,27 +640,4 @@ private fun syncPageUiData() =
         description = stringResource(R.string.nova_onboarding_sync_subtitle),
         primaryButtonLabel = stringResource(R.string.nova_onboarding_sync_button),
         secondaryButtonLabel = stringResource(R.string.nova_onboarding_negative_button),
-    )
-
-@Composable
-private fun toolbarPlacementPageUiData() =
-    OnboardingPageUiData(
-        type = OnboardingPageUiData.Type.TOOLBAR_PLACEMENT,
-        imageRes = R.drawable.ic_onboarding_customize_toolbar,
-        title = stringResource(R.string.nova_onboarding_toolbar_selection_title),
-        description = "", // Unused
-        primaryButtonLabel = stringResource(R.string.nova_onboarding_continue_button),
-        toolbarOptions =
-            listOf(
-                ToolbarOption(
-                    toolbarType = ToolbarOptionType.TOOLBAR_TOP,
-                    imageRes = R.drawable.ic_onboarding_top_toolbar,
-                    label = stringResource(R.string.nova_onboarding_toolbar_selection_top_label),
-                ),
-                ToolbarOption(
-                    toolbarType = ToolbarOptionType.TOOLBAR_BOTTOM,
-                    imageRes = R.drawable.ic_onboarding_bottom_toolbar,
-                    label = stringResource(R.string.nova_onboarding_toolbar_selection_bottom_label),
-                ),
-            ),
     )

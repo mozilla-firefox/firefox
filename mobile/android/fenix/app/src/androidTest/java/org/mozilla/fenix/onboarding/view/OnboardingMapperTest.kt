@@ -11,14 +11,12 @@ import org.junit.Test
 import org.mozilla.experiments.nimbus.StringHolder
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
-import org.mozilla.fenix.nimbus.CustomizationToolbarData
 import org.mozilla.fenix.nimbus.ExtraCardData
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.nimbus.JunoOnboarding
 import org.mozilla.fenix.nimbus.OnboardingCardData
 import org.mozilla.fenix.nimbus.OnboardingCardType
 import org.mozilla.fenix.nimbus.TermsOfServiceData
-import org.mozilla.fenix.nimbus.ToolbarType
 
 class OnboardingMapperTest {
 
@@ -40,31 +38,12 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun showNotificationTrue_showAddWidgetFalse_pagesToDisplay_returnsSortedListOfAllConvertedPages_withoutAddWidgetPage_and_toolbarPage() {
-        val expected = listOf(defaultBrowserPageUiData, syncPageUiData, notificationPageUiData)
-        assertEquals(
-            expected,
-            unsortedAllKnownCardData.toPageUiData(
-                showDefaultBrowserPage = true,
-                showNotificationPage = true,
-                showAddWidgetPage = false,
-                showToolbarPage = false,
-                jexlConditions = jexlConditions,
-                jexlEvaluator = fakeJexlEvaluator,
-            ),
-        )
-    }
-
-    @Test
-    fun showNotificationFalse_showAddWidgetFalse_pagesToDisplay_returnsSortedListOfConvertedPages_withoutNotificationPage_and_addWidgetPage_and_toolbarPage() {
+    fun showDefaultBrowserPageTrue_pagesToDisplay_returnsSortedListOfAllConvertedPages() {
         val expected = listOf(defaultBrowserPageUiData, syncPageUiData)
         assertEquals(
             expected,
             unsortedAllKnownCardData.toPageUiData(
                 showDefaultBrowserPage = true,
-                showNotificationPage = false,
-                showAddWidgetPage = false,
-                showToolbarPage = false,
                 jexlConditions = jexlConditions,
                 jexlEvaluator = fakeJexlEvaluator,
             ),
@@ -72,76 +51,12 @@ class OnboardingMapperTest {
     }
 
     @Test
-    fun showDefaultBrowserPageFalse_showNotificationFalse_showToolbarPageFalse_showAddWidgetTrue_pagesToDisplay_returnsSortedListOfAllConvertedPages() {
-        val expected = listOf(addSearchWidgetPageUiData, syncPageUiData)
+    fun showDefaultBrowserPageFalse_pagesToDisplay_returnsSortedListOfConvertedPages_withoutDefaultBrowserPage() {
+        val expected = listOf(syncPageUiData)
         assertEquals(
             expected,
             unsortedAllKnownCardData.toPageUiData(
                 showDefaultBrowserPage = false,
-                showNotificationPage = false,
-                showAddWidgetPage = true,
-                showToolbarPage = false,
-                jexlConditions = jexlConditions,
-                jexlEvaluator = fakeJexlEvaluator,
-            ),
-        )
-    }
-
-    @Test
-    fun showNotificationFalse_showToolbarPageFalse_showAddWidgetTrue_pagesToDisplay_returnsSortedListOfAllConvertedPages_withoutNotificationPage() {
-        val expected = listOf(defaultBrowserPageUiData, addSearchWidgetPageUiData, syncPageUiData)
-        assertEquals(
-            expected,
-            unsortedAllKnownCardData.toPageUiData(
-                showDefaultBrowserPage = true,
-                showNotificationPage = false,
-                showAddWidgetPage = true,
-                showToolbarPage = false,
-                jexlConditions = jexlConditions,
-                jexlEvaluator = fakeJexlEvaluator,
-            ),
-        )
-    }
-
-    @Test
-    fun showToolbarPageFalse_showNotificationTrue_and_showAddWidgetTrue_pagesToDisplay_returnsSortedListOfConvertedPages() {
-        val expected =
-            listOf(
-                defaultBrowserPageUiData,
-                addSearchWidgetPageUiData,
-                syncPageUiData,
-                notificationPageUiData,
-            )
-        assertEquals(
-            expected,
-            unsortedAllKnownCardData.toPageUiData(
-                showDefaultBrowserPage = true,
-                showNotificationPage = true,
-                showAddWidgetPage = true,
-                showToolbarPage = false,
-                jexlConditions = jexlConditions,
-                jexlEvaluator = fakeJexlEvaluator,
-            ),
-        )
-    }
-
-    @Test
-    fun showToolbarPageTrue_showNotificationTrue_and_showAddWidgetTrue_pagesToDisplay_returnsSortedListOfConvertedPages() {
-        val expected =
-            listOf(
-                defaultBrowserPageUiData,
-                addSearchWidgetPageUiData,
-                syncPageUiData,
-                notificationPageUiData,
-                toolbarPageUiData,
-            )
-        assertEquals(
-            expected,
-            unsortedAllKnownCardData.toPageUiData(
-                showDefaultBrowserPage = true,
-                showNotificationPage = true,
-                showAddWidgetPage = true,
-                showToolbarPage = true,
                 jexlConditions = jexlConditions,
                 jexlEvaluator = fakeJexlEvaluator,
             ),
@@ -213,9 +128,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData, termsOfServiceCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 )
@@ -233,9 +145,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -249,12 +158,9 @@ class OnboardingMapperTest {
 
         assertEquals(
             expected,
-            listOf(addSearchWidgetCardDataNoConditions)
+            listOf(syncCardDataNoConditions)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -271,9 +177,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -290,9 +193,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -309,9 +209,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -325,12 +222,9 @@ class OnboardingMapperTest {
 
         assertEquals(
             expected,
-            listOf(addSearchWidgetCardDataNoConditions)
+            listOf(syncCardDataNoConditions)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -347,9 +241,6 @@ class OnboardingMapperTest {
             listOf(defaultBrowserCardDataNoDisqualifiers)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -366,9 +257,6 @@ class OnboardingMapperTest {
             listOf(syncCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -382,12 +270,9 @@ class OnboardingMapperTest {
 
         assertEquals(
             expected,
-            listOf(notificationCardData)
+            listOf(syncCardDataUnknownDisqualifier)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
@@ -404,35 +289,9 @@ class OnboardingMapperTest {
             listOf(syncCardData)
                 .toPageUiData(
                     showDefaultBrowserPage = true,
-                    showNotificationPage = false,
-                    showAddWidgetPage = false,
-                    showToolbarPage = false,
                     jexlConditions = jexlConditions,
                     jexlEvaluator = fakeJexlEvaluator,
                 ),
-        )
-    }
-
-    // WHEN the manufacturer is not Xiaomi THEN do not filter out the add search widget card
-    @Test
-    fun whenManufacturerIsNotXiaomi_thenDoNotFilterOutAddSearchWidgetCard() {
-        val expected =
-            listOf(
-                defaultBrowserPageUiData,
-                addSearchWidgetPageUiData,
-                syncPageUiData,
-                notificationPageUiData,
-            )
-        assertEquals(
-            expected,
-            unsortedAllKnownCardData.toPageUiData(
-                showDefaultBrowserPage = true,
-                showNotificationPage = true,
-                showAddWidgetPage = true,
-                showToolbarPage = false,
-                jexlConditions = jexlConditions,
-                jexlEvaluator = fakeJexlEvaluator,
-            ),
         )
     }
 
@@ -443,11 +302,11 @@ class OnboardingMapperTest {
         val cardDataWithoutType =
             OnboardingCardData(
                 cardType = null,
-                imageRes = R.drawable.ic_onboarding_search_widget,
-                title = StringHolder(null, "add search widget title"),
-                body = StringHolder(null, "add search widget body"),
-                primaryButtonLabel = StringHolder(null, "add search widget primary button text"),
-                secondaryButtonLabel = StringHolder(null, "add search widget secondary button text"),
+                imageRes = R.drawable.ic_onboarding_sync,
+                title = StringHolder(null, "unknown card title"),
+                body = StringHolder(null, "unknown card body"),
+                primaryButtonLabel = StringHolder(null, "unknown card primary button text"),
+                secondaryButtonLabel = StringHolder(null, "unknown card secondary button text"),
                 ordering = 15,
                 prerequisites = listOf(),
                 disqualifiers = listOf(),
@@ -459,9 +318,6 @@ class OnboardingMapperTest {
             expected,
             cardData.toPageUiData(
                 showDefaultBrowserPage = true,
-                showNotificationPage = true,
-                showAddWidgetPage = true,
-                showToolbarPage = false,
                 jexlConditions = jexlConditions,
                 jexlEvaluator = fakeJexlEvaluator,
             ),
@@ -478,15 +334,6 @@ private val defaultBrowserPageUiData =
         primaryButtonLabel = "default browser primary button text",
         secondaryButtonLabel = "default browser secondary button text",
     )
-private val addSearchWidgetPageUiData =
-    OnboardingPageUiData(
-        type = OnboardingPageUiData.Type.ADD_SEARCH_WIDGET,
-        imageRes = R.drawable.ic_onboarding_search_widget,
-        title = "add search widget title",
-        description = "add search widget body",
-        primaryButtonLabel = "add search widget primary button text",
-        secondaryButtonLabel = "add search widget secondary button text",
-    )
 private val syncPageUiData =
     OnboardingPageUiData(
         type = OnboardingPageUiData.Type.SYNC_SIGN_IN,
@@ -495,32 +342,6 @@ private val syncPageUiData =
         description = "sync body",
         primaryButtonLabel = "sync primary button text",
         secondaryButtonLabel = "sync secondary button text",
-    )
-private val toolbarPageUiData =
-    OnboardingPageUiData(
-        type = OnboardingPageUiData.Type.TOOLBAR_PLACEMENT,
-        imageRes = R.drawable.ic_onboarding_customize_toolbar,
-        title = "toolbar title",
-        description = "toolbar body",
-        primaryButtonLabel = "toolbar primary button text",
-        secondaryButtonLabel = "toolbar secondary button text",
-        toolbarOptions =
-            listOf(
-                ToolbarOption(
-                    label = "Toolbar placement",
-                    imageRes = R.drawable.ic_onboarding_top_toolbar,
-                    toolbarType = ToolbarOptionType.TOOLBAR_TOP,
-                )
-            ),
-    )
-private val notificationPageUiData =
-    OnboardingPageUiData(
-        type = OnboardingPageUiData.Type.NOTIFICATION_PERMISSION,
-        imageRes = R.drawable.ic_notification_permission,
-        title = "notification title",
-        description = "notification body",
-        primaryButtonLabel = "notification primary button text",
-        secondaryButtonLabel = "notification secondary button text",
     )
 
 private val defaultBrowserCardData =
@@ -549,30 +370,6 @@ private val defaultBrowserCardDataNoDisqualifiers =
         disqualifiers = listOf(),
     )
 
-private val addSearchWidgetCardDataNoConditions =
-    OnboardingCardData(
-        cardType = OnboardingCardType.ADD_SEARCH_WIDGET,
-        imageRes = R.drawable.ic_onboarding_search_widget,
-        title = StringHolder(null, "add search widget title"),
-        body = StringHolder(null, "add search widget body"),
-        primaryButtonLabel = StringHolder(null, "add search widget primary button text"),
-        secondaryButtonLabel = StringHolder(null, "add search widget secondary button text"),
-        ordering = 15,
-        prerequisites = listOf(),
-        disqualifiers = listOf(),
-    )
-
-private val addSearchWidgetCardData =
-    OnboardingCardData(
-        cardType = OnboardingCardType.ADD_SEARCH_WIDGET,
-        imageRes = R.drawable.ic_onboarding_search_widget,
-        title = StringHolder(null, "add search widget title"),
-        body = StringHolder(null, "add search widget body"),
-        primaryButtonLabel = StringHolder(null, "add search widget primary button text"),
-        secondaryButtonLabel = StringHolder(null, "add search widget secondary button text"),
-        ordering = 15,
-    )
-
 private val syncCardData =
     OnboardingCardData(
         cardType = OnboardingCardType.SYNC_SIGN_IN,
@@ -586,48 +383,34 @@ private val syncCardData =
         disqualifiers = listOf("NEVER"),
     )
 
-private val notificationCardData =
+private val syncCardDataNoConditions =
     OnboardingCardData(
-        cardType = OnboardingCardType.NOTIFICATION_PERMISSION,
-        imageRes = R.drawable.ic_notification_permission,
-        title = StringHolder(null, "notification title"),
-        body = StringHolder(null, "notification body"),
-        primaryButtonLabel = StringHolder(null, "notification primary button text"),
-        secondaryButtonLabel = StringHolder(null, "notification secondary button text"),
-        ordering = 30,
+        cardType = OnboardingCardType.SYNC_SIGN_IN,
+        imageRes = R.drawable.ic_onboarding_sync,
+        title = StringHolder(null, "sync title"),
+        body = StringHolder(null, "sync body"),
+        primaryButtonLabel = StringHolder(null, "sync primary button text"),
+        secondaryButtonLabel = StringHolder(null, "sync secondary button text"),
+        ordering = 20,
         prerequisites = listOf(),
-        disqualifiers = listOf("NEVER", "OTHER"),
+        disqualifiers = listOf(),
     )
 
-private val toolbarCardData =
+private val syncCardDataUnknownDisqualifier =
     OnboardingCardData(
-        cardType = OnboardingCardType.TOOLBAR_PLACEMENT,
-        imageRes = R.drawable.ic_onboarding_customize_toolbar,
-        title = StringHolder(null, "toolbar title"),
-        body = StringHolder(null, "toolbar body"),
-        primaryButtonLabel = StringHolder(null, "toolbar primary button text"),
-        secondaryButtonLabel = StringHolder(null, "toolbar secondary button text"),
-        ordering = 40,
-        extraData =
-            ExtraCardData(
-                customizationToolbarData =
-                    listOf(
-                        CustomizationToolbarData(
-                            label = StringHolder(null, "Toolbar placement"),
-                            imageRes = R.drawable.ic_onboarding_top_toolbar,
-                            toolbarType = ToolbarType.TOOLBAR_TOP,
-                        )
-                    )
-            ),
+        cardType = OnboardingCardType.SYNC_SIGN_IN,
+        imageRes = R.drawable.ic_onboarding_sync,
+        title = StringHolder(null, "sync title"),
+        body = StringHolder(null, "sync body"),
+        primaryButtonLabel = StringHolder(null, "sync primary button text"),
+        secondaryButtonLabel = StringHolder(null, "sync secondary button text"),
+        ordering = 20,
         prerequisites = listOf(),
-        disqualifiers = listOf("NEVER"),
+        disqualifiers = listOf("NEVER", "OTHER"),
     )
 
 private val unsortedAllKnownCardData =
     listOf(
         syncCardData,
-        notificationCardData,
         defaultBrowserCardData,
-        addSearchWidgetCardData,
-        toolbarCardData,
     )
