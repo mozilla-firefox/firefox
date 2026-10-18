@@ -16,7 +16,9 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import mozilla.components.feature.tabgroups.storage.data.TabGroupData
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -51,6 +53,7 @@ class CollectionsToTabGroupsMigrationWorkerTest {
         val components = testContext.components
         every { components.settings } returns settings
         every { components.core.tabCollectionStorage } returns tabCollectionStorage
+        every { components.core.tabGroupRepository.tabGroupDataFlow } returns flowOf(TabGroupData())
         every { components.collectionsMigrationRepository } returns collectionsMigrationRepository
     }
 

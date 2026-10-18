@@ -124,3 +124,6 @@ enum class TabGroupTheme {
         val default: TabGroupTheme = Yellow
     }
 }
+
+/** Returns the next [TabGroupTheme] that follows the last used theme or [TabGroupTheme.default] if there is none. */
+fun TabGroupTheme?.nextOrDefault(): TabGroupTheme = this?.next() ?: TabGroupTheme.default
