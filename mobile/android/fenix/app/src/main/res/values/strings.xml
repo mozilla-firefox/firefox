@@ -525,18 +525,6 @@
     <!-- "Set to default" onboarding button. -->
     <string name="nova_onboarding_set_to_default_button">Set as default browser</string>
 
-    <!-- Theme selection onboarding title. -->
-    <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Pick your theme</string>
-
-    <!-- Theme selection onboarding "automatic" option label. -->
-    <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automatic</string>
-
-    <!-- Theme selection onboarding "light" option label. -->
-    <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Light</string>
-
-    <!-- Theme selection onboarding "dark" option label. -->
-    <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Dark</string>
-
     <!-- Sync onboarding title. -->
     <string name="nova_onboarding_sync_title">Instantly pick up where you left off</string>
 
