@@ -11,12 +11,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.customannotations.Converted
 import org.mozilla.fenix.customannotations.SmokeTest
+import org.mozilla.fenix.helpers.AppAndSystemHelper.openAppFromExternalLink
 import org.mozilla.fenix.helpers.AppAndSystemHelper.runWithLauncherIntent
 import org.mozilla.fenix.helpers.FenixTestRule
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
+import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
 import org.mozilla.fenix.helpers.TestHelper.closeApp
 import org.mozilla.fenix.helpers.TestHelper.restartApp
 import org.mozilla.fenix.helpers.perf.DetectMemoryLeaksRule
+import org.mozilla.fenix.ui.robots.browserScreen
 import org.mozilla.fenix.ui.robots.homeScreen
 
 class OnboardingTest {
@@ -125,6 +128,25 @@ class OnboardingTest {
                 clickTheSetAsDefaultBrowserDialogCancelButton()
                 verifyTheSetAsDefaultBrowserOnboardingCard()
             }
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = 29)
+    @Test
+    fun verifyAnExternalLinkOpenedDuringOnboardingIsOpenedAfterOnboardingTest() {
+        val externalPage = fenixTestRule.mockWebServer.getGenericAsset(1)
+
+        runWithLauncherIntent(composeTestRule.activityRule) {
+            homeScreen(composeTestRule) {
+                verifyTheTermsOfUseOnboardingCard()
+                openAppFromExternalLink(composeTestRule, externalPage.url.toString())
+                verifyTheTermsOfUseOnboardingCard()
+                clickTheOnboardingCardContinueButton()
+                clickTheSetAsDefaultBrowserDialogCancelButton()
+                clickNotNowOnboardingCardButton()
+                clickContinueIfMarketingCardShown()
+            }
+            browserScreen(composeTestRule) { verifyUrl(externalPage.url.toString()) }
         }
     }
 

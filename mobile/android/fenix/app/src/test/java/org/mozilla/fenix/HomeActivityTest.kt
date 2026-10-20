@@ -16,8 +16,10 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlin.test.assertNotNull
 import mozilla.components.browser.state.state.ActiveOptionsPage
 import mozilla.components.browser.state.state.BrowserState
@@ -28,6 +30,7 @@ import mozilla.components.support.utils.toSafeIntent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -280,6 +283,53 @@ class HomeActivityTest {
         activity.handleNewIntent(intent)
 
         assertNull(NativeShareSheet.qrCodeTapped.testGetValue())
+    }
+
+    @Test
+    fun `GIVEN deferred intent processing is registered WHEN handleNewIntent is called THEN the intent is stored as the activity intent and not processed`() {
+        every { activity.applicationContext } returns testContext
+        every { testContext.components.fenixOnboarding.registerOnboardingCompletedListener(any(), any()) } just Runs
+        val intent = Intent(Intent.ACTION_VIEW)
+
+        activity.registerDeferredIntentProcessing()
+        activity.handleNewIntent(intent)
+
+        assertSame(intent, activity.intent)
+    }
+
+    @Test
+    fun `WHEN onboarding completes THEN the activity intent is processed and intents are no longer deferred`() {
+        // Capture the completion callback so the test can invoke it later.
+        val onboardingCompleted = slot<() -> Unit>()
+
+        val browsingModeManager: BrowsingModeManager = mockk(relaxed = true)
+        val intent = Intent(Intent.ACTION_VIEW).apply { putExtra(HomeActivity.PRIVATE_BROWSING_MODE, true) }
+        every { activity.applicationContext } returns testContext
+        every {
+            testContext.components.fenixOnboarding.registerOnboardingCompletedListener(
+                any(),
+                capture(onboardingCompleted),
+            )
+        } just Runs
+        every { activity.intent } returns intent
+        every { activity.processIntent(intent) } returns true
+        activity.browsingModeManager = browsingModeManager
+
+        // Register the callback that should run when onboarding completes.
+        activity.registerDeferredIntentProcessing()
+        // Confirm registration alone does not process an intent.
+        verify(exactly = 0) { activity.processIntent(any()) }
+        assertTrue(activity.isDeferringIntentsUntilOnboardingCompletes)
+
+        // Simulate onboarding completing by invoking the captured callback.
+        onboardingCompleted.captured()
+
+        // Confirm the browsing mode is updated before the intent is processed.
+        verifyOrder {
+            browsingModeManager.updateMode(intent)
+            activity.processIntent(intent)
+        }
+        assertFalse(activity.isDeferringIntentsUntilOnboardingCompletes)
     }
 
     @Test
