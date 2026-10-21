@@ -203,10 +203,10 @@ features:
     defaults:
       - channel: developer
         value:
-          enabled: false
+          enabled: true
       - channel: nightly
         value:
-          enabled: false
+          enabled: true
       - channel: beta
         value:
           enabled: false
