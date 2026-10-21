@@ -761,6 +761,7 @@ class Core(
             experiment = "",
             updateChannel = updateChannel,
             service = context.components.remoteSettingsService.value,
+            useSearchConfigV3 = context.components.settings.useSearchConfigV3,
         )
     }
 

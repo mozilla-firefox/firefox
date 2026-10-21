@@ -14,7 +14,10 @@ import java.util.Locale
 import kotlin.test.assertNotNull
 import mozilla.appservices.remotesettings.RemoteSettingsClient
 import mozilla.appservices.search.SearchEngineClassification
+import mozilla.appservices.search.SearchEngineClassificationV3
 import mozilla.appservices.search.SearchEngineDefinition
+import mozilla.appservices.search.SearchEngineDefinitionV3
+import mozilla.appservices.search.SearchEnginePartnerDetails
 import mozilla.appservices.search.SearchEngineUrl
 import mozilla.appservices.search.SearchEngineUrls
 import mozilla.appservices.search.SearchUrlParam
@@ -25,6 +28,7 @@ import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -267,6 +271,19 @@ class SearchEngineReaderTest {
     }
 
     @Test
+    fun `GIVEN null charset THEN throw exception`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionData()
+        searchEngineDefinition.charset = ""
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                reader.loadStreamAPI(searchEngineDefinition, emptyByteArray, "", mock())
+            }
+        assertEquals("Search engine charset cannot be empty", exception.message)
+    }
+
+    @Test
     fun `GIVEN null identifier THEN throw exception`() {
         val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
         val searchEngineDefinition = sampleSearchEngineDefinitionData()
@@ -438,6 +455,258 @@ class SearchEngineReaderTest {
         assertEquals(
             "https://www.google.com/trending/search?lang=$expectedLanguage&client=test-firefox-code",
             searchEngine.trendingUrl,
+        )
+    }
+
+    @Test
+    fun `GIVEN an empty partnerCode in a v2 definition THEN the parameter is still appended empty`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionData()
+        searchEngineDefinition.partnerCode = ""
+        searchEngineDefinition.urls.search.params +=
+            SearchUrlParam(
+                name = "client",
+                value = "{partnerCode}",
+                enterpriseValue = null,
+                experimentConfig = null,
+            )
+
+        val searchEngine = reader.loadStreamAPI(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("https://www.google.com/search?client=", searchEngine.resultUrls[0])
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with default partner details THEN the partner code and telemetry suffix are used`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.urls.search.params +=
+            SearchUrlParam(
+                name = "client",
+                value = "{partnerCode}",
+                enterpriseValue = null,
+                experimentConfig = null,
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("https://www.google.com/search?client=firefox-b-m", searchEngine.resultUrls[0])
+        assertEquals("b-m", searchEngine.telemetrySuffix)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with several access points THEN only the default one is read`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.partner =
+            mapOf(
+                DEFAULT_SEARCH_ACCESS_POINT to
+                    SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
+                "newtab" to SearchEnginePartnerDetails(code = "firefox-b-n", telemetrySuffix = "b-n"),
+            )
+        searchEngineDefinition.urls.search.params +=
+            SearchUrlParam(
+                name = "client",
+                value = "{partnerCode}",
+                enterpriseValue = null,
+                experimentConfig = null,
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("https://www.google.com/search?client=firefox-b-m", searchEngine.resultUrls[0])
+        assertEquals("b-m", searchEngine.telemetrySuffix)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with no partner details THEN the partner code is omitted and there is no suffix`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.partner = null
+        searchEngineDefinition.urls.search.params +=
+            SearchUrlParam(
+                name = "client",
+                value = "{partnerCode}",
+                enterpriseValue = null,
+                experimentConfig = null,
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("https://www.google.com/search", searchEngine.resultUrls[0])
+        assertNull(searchEngine.telemetrySuffix)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with no default access point THEN the partner code is omitted and there is no suffix`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.partner =
+            mapOf("newtab" to SearchEnginePartnerDetails(code = "firefox-b-n", telemetrySuffix = "b-n"))
+        searchEngineDefinition.urls.search.params +=
+            SearchUrlParam(
+                name = "client",
+                value = "{partnerCode}",
+                enterpriseValue = null,
+                experimentConfig = null,
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("https://www.google.com/search", searchEngine.resultUrls[0])
+        assertNull(searchEngine.telemetrySuffix)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with an empty partner code THEN the code is omitted but the suffix still applies`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.partner =
+            mapOf(DEFAULT_SEARCH_ACCESS_POINT to SearchEnginePartnerDetails(code = "", telemetrySuffix = "b-m"))
+        searchEngineDefinition.urls.search.params +=
+            SearchUrlParam(
+                name = "client",
+                value = "{partnerCode}",
+                enterpriseValue = null,
+                experimentConfig = null,
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("https://www.google.com/search", searchEngine.resultUrls[0])
+        assertEquals("b-m", searchEngine.telemetrySuffix)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with suggest and trending URLs THEN they are read with the default partner code`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.urls.suggestions =
+            SearchEngineUrl(
+                base = "https://www.google.com/complete/search",
+                method = "GET",
+                params =
+                    listOf(
+                        SearchUrlParam(
+                            name = "client",
+                            value = "{partnerCode}",
+                            enterpriseValue = null,
+                            experimentConfig = null,
+                        )
+                    ),
+                searchTermParamName = "q",
+                displayName = null,
+            )
+        searchEngineDefinition.urls.trending =
+            SearchEngineUrl(
+                base = "https://www.google.com/trending/search",
+                method = "GET",
+                params =
+                    listOf(
+                        SearchUrlParam(
+                            name = "client",
+                            value = "{partnerCode}",
+                            enterpriseValue = null,
+                            experimentConfig = null,
+                        )
+                    ),
+                searchTermParamName = null,
+                displayName = null,
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals(
+            "https://www.google.com/complete/search?client=firefox-b-m&q=%7BsearchTerms%7D",
+            searchEngine.suggestUrl,
+        )
+        assertEquals("https://www.google.com/trending/search?client=firefox-b-m", searchEngine.trendingUrl)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with an empty name THEN throw exception`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.name = ""
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, "", mock())
+            }
+        assertEquals("Search engine name cannot be empty", exception.message)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with an empty charset THEN throw exception`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.charset = ""
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, "", mock())
+            }
+        assertEquals("Search engine charset cannot be empty", exception.message)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition with an empty identifier THEN throw exception`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.identifier = ""
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, "", mock())
+            }
+        assertEquals("Search engine identifier cannot be empty", exception.message)
+    }
+
+    @Test
+    fun `GIVEN a v3 definition THEN the name, charset and optional flag are read`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.optional = true
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("google", searchEngine.id)
+        assertEquals("Google", searchEngine.name)
+        assertEquals("UTF-8", searchEngine.inputEncoding)
+        assertTrue(searchEngine.isOptional)
+    }
+
+    private fun sampleSearchEngineDefinitionDataV3(): SearchEngineDefinitionV3 {
+        return SearchEngineDefinitionV3(
+            aliases = listOf("google"),
+            charset = "UTF-8",
+            classification = SearchEngineClassificationV3.GENERAL,
+            identifier = "google",
+            isNewUntil = null,
+            name = "Google",
+            optional = false,
+            partner =
+                mapOf(
+                    DEFAULT_SEARCH_ACCESS_POINT to
+                        SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m")
+                ),
+            urls =
+                SearchEngineUrls(
+                    search =
+                        SearchEngineUrl(
+                            base = "https://www.google.com/search",
+                            method = "GET",
+                            params = emptyList(),
+                            searchTermParamName = null,
+                            displayName = null,
+                        ),
+                    suggestions = null,
+                    trending = null,
+                    searchForm = null,
+                    visualSearch = null,
+                ),
+            orderHint = null,
+            deprecated = false,
         )
     }
 

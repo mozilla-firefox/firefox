@@ -9,6 +9,8 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: Removed `ServiceState.OptedOut`. Gecko does not report an opted-out IP Protection service state. [Bug 2082578](https://bugzilla.mozilla.org/show_bug.cgi?id=2082578)
 * **service-firefox-accounts**
     * ⚠️ **Breaking change**: Removed `AccountState.Authenticating`. [Bug 2041509](https://bugzilla.mozilla.org/show_bug.cgi?id=2041509)
+* **feature-search**
+    * 🆕 Added `SearchEngineSelectorConfig.useSearchConfigV3`, which makes `SearchEngineSelectorRepository` read the configuration from the `search-config-v3` Remote Settings collection through the v3 `SearchEngineSelector` APIs. The partner code and telemetry suffix come from the `default` search access point, and an engine with no partner code for it has the partner code parameter omitted from its URLs rather than appended empty. [Bug 2075347](https://bugzilla.mozilla.org/show_bug.cgi?id=2075347)
 * **feature-awesomebar**
     * Suggestions from `HistoryStorageSuggestionProvider`, including those `CombinedHistorySuggestionProvider` gets from history storage, now have the `HISTORY` flag, like the other history and bookmark suggestions. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
     * `SessionSuggestionProvider` falls back to the URL formatted by `URLStringUtils.toLosslessDisplayUrl` when a tab has no title. [Bug 2047486](https://bugzilla.mozilla.org/show_bug.cgi?id=2047486)
