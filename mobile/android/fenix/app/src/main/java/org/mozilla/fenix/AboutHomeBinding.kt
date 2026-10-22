@@ -28,13 +28,18 @@ class AboutHomeBinding(
     mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : AbstractBinding<BrowserState>(browserStore, mainDispatcher) {
 
+    private var lastSelectedTabUrl: String? = null
+
     override suspend fun onState(flow: Flow<BrowserState>) {
         flow
             .map { it.selectedTab?.content?.url }
             .distinctUntilChanged()
             .collect { url ->
+                val isUrlChanged = url != lastSelectedTabUrl
+                lastSelectedTabUrl = url
                 if (
-                    url == ABOUT_HOME_URL &&
+                    isUrlChanged &&
+                        url == ABOUT_HOME_URL &&
                         listOf(
                                 R.id.browserFragment,
                                 R.id.menuFragment,
