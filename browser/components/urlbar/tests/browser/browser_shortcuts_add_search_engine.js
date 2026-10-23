@@ -73,21 +73,23 @@ add_task(async function test_shortcuts() {
 async function do_test_shortcuts(activateTask) {
   info("Checks the shortcuts with a page that offers two engines.");
   let url = getRootDirectory(gTestPath) + "add_search_engine_two.html";
-  await BrowserTestUtils.withNewTab(url, async browser => {
-    info("Waiting for tab favicon, which will be used by the search engine");
-    await new Promise(resolve => {
-      let listener = {
-        onLinkIconAvailable(b) {
-          if (b !== browser) {
-            return;
-          }
 
-          gBrowser.removeTabsProgressListener(listener);
-          resolve();
-        },
-      };
-      gBrowser.addTabsProgressListener(listener);
-    });
+  let faviconPromise = new Promise(resolve => {
+    let listener = {
+      onLinkIconAvailable(b) {
+        if (b.currentURI.spec != url) {
+          return;
+        }
+        gBrowser.removeTabsProgressListener(listener);
+        resolve();
+      },
+    };
+    gBrowser.addTabsProgressListener(listener);
+  });
+
+  await BrowserTestUtils.withNewTab(url, async () => {
+    info("Waiting for tab favicon, which will be used by the search engine");
+    await faviconPromise;
 
     let shortcutButtons = UrlbarTestUtils.getOneOffSearchButtons(window);
     let rebuildPromise = BrowserTestUtils.waitForEvent(
