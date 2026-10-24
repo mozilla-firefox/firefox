@@ -154,16 +154,16 @@ class BackgroundServicesTest {
     }
 
     @Test
-    fun `GIVEN Android Automotive is unavailable WHEN background services are created THEN passwords and credit cards are syncable`() {
-        val supportedEngines = createBackgroundServices(isAndroidAutomotiveAvailable = false).supportedEngines
+    fun `GIVEN credentials are syncable WHEN background services are created THEN passwords and credit cards are synced`() {
+        val supportedEngines = createBackgroundServices(areCredentialsSyncable = true).supportedEngines
 
         assertTrue(supportedEngines.contains(SyncEngine.Passwords))
         assertTrue(supportedEngines.contains(SyncEngine.CreditCards))
     }
 
     @Test
-    fun `GIVEN Android Automotive is available WHEN background services are created THEN passwords and credit cards are not syncable`() {
-        val supportedEngines = createBackgroundServices(isAndroidAutomotiveAvailable = true).supportedEngines
+    fun `GIVEN credentials are not syncable WHEN background services are created THEN passwords and credit cards are not synced`() {
+        val supportedEngines = createBackgroundServices(areCredentialsSyncable = false).supportedEngines
 
         assertFalse(supportedEngines.contains(SyncEngine.Passwords))
         assertFalse(supportedEngines.contains(SyncEngine.CreditCards))
@@ -172,7 +172,7 @@ class BackgroundServicesTest {
         assertTrue(supportedEngines.contains(SyncEngine.Tabs))
     }
 
-    private fun createBackgroundServices(isAndroidAutomotiveAvailable: Boolean) =
+    private fun createBackgroundServices(areCredentialsSyncable: Boolean) =
         BackgroundServices(
             context = testContext,
             push = mockk(relaxed = true),
@@ -185,6 +185,6 @@ class BackgroundServicesTest {
             creditCardsStorage = mockk(relaxed = true),
             strictMode = TestStrictModeManager(),
             applicationScope = mockk<CoroutineScope>(relaxed = true),
-            isAndroidAutomotiveAvailable = isAndroidAutomotiveAvailable,
+            areCredentialsSyncable = areCredentialsSyncable,
         )
 }

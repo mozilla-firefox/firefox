@@ -33,7 +33,6 @@ import mozilla.components.concept.sync.ConstellationState
 import mozilla.components.concept.sync.DeviceConstellationObserver
 import mozilla.components.concept.sync.Profile
 import mozilla.components.concept.sync.SyncEngine
-import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
 import mozilla.components.lib.state.ext.consumeFrom
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.service.fxa.manager.FxaAccountManager
@@ -72,9 +71,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     private val isNewUiEnabled: Boolean
         get() = requireComponents.settings.accountSettingsNewUi
 
-    // Password and credit card syncing is disabled on Android Automotive until we implement the UX Google
-    // requires for handling sensitive information there. See bug 2060936.
-    private val areCredentialsSyncable by lazy { !requireContext().isAndroidAutomotiveAvailable() }
+    private val isAutofillSupported by lazy { requireComponents.settings.isAutofillSupported }
 
     // Navigate away from this fragment when we encounter auth problems or logout events.
     private val accountStateObserver =
@@ -222,7 +219,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         SyncEngineUiData.entries
             .filter { it.needsPinWarning }
             .forEach { engineUiData ->
-                requirePreference<TwoStatePreference>(engineUiData.prefId).isVisible = areCredentialsSyncable
+                requirePreference<TwoStatePreference>(engineUiData.prefId).isVisible = isAutofillSupported
             }
     }
 
@@ -324,7 +321,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         setDisabledWhileSyncing(accountManager.isSyncActive())
 
         SyncEngineUiData.entries
-            .filter { !it.needsPinWarning || areCredentialsSyncable }
+            .filter { !it.needsPinWarning || isAutofillSupported }
             .forEach { engineUiData ->
                 requirePreference<TwoStatePreference>(engineUiData.prefId).apply {
                     tintIcon()
@@ -351,7 +348,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         val isAnyEngineEnabled =
             SyncEngineUiData.entries
                 .filterNot { it.engine == SyncEngine.Addresses && !settings.isAddressSyncEnabled }
-                .filterNot { it.needsPinWarning && !areCredentialsSyncable }
+                .filterNot { it.needsPinWarning && !isAutofillSupported }
                 .any {
                     syncEnginesStatus.getOrElse(it.engine) { false }
                 }

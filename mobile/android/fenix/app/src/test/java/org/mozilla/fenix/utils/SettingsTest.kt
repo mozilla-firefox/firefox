@@ -30,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.components.toolbar.ToolbarPosition
+import org.mozilla.fenix.nimbus.AutomotiveSensitiveData
 import org.mozilla.fenix.nimbus.DefaultBrowserPrompt
 import org.mozilla.fenix.nimbus.FakeNimbusEventStore
 import org.mozilla.fenix.nimbus.FxNimbus
@@ -343,6 +344,21 @@ class SettingsTest {
         assertFalse(automotiveSettings.shouldAutofillLogins)
         assertFalse(automotiveSettings.shouldAutofillCreditCardDetails)
         assertFalse(automotiveSettings.shouldAutofillAddressDetails)
+    }
+
+    @Test
+    fun `GIVEN Android Automotive and the sensitive data feature is enabled WHEN reading the autofill settings THEN they are all enabled by default`() {
+        shadowOf(testContext.packageManager).setSystemFeature(PackageManager.FEATURE_AUTOMOTIVE, true)
+        FxNimbus.features.automotiveSensitiveData.withCachedValue(AutomotiveSensitiveData(enabled = true))
+        val automotiveSettings = Settings(testContext)
+
+        assertTrue(automotiveSettings.isAutofillSupported)
+        assertTrue(automotiveSettings.shouldPromptToSaveLogins)
+        assertTrue(automotiveSettings.shouldAutofillLogins)
+        assertTrue(automotiveSettings.shouldAutofillCreditCardDetails)
+        assertTrue(automotiveSettings.shouldAutofillAddressDetails)
+
+        FxNimbus.features.automotiveSensitiveData.withCachedValue(null)
     }
 
     @Test

@@ -875,6 +875,18 @@ features:
         type: Boolean
         default: true
 
+  automotive-sensitive-data:
+    description: >
+      Enables or disables autofill, password management, and password and credit card sync on Android Automotive OS.
+    variables:
+      enabled:
+        description: >
+          Whether password and credit card autofill, password management, and password and credit card sync are
+          enabled on Android Automotive OS. Address autofill is also controlled by this flag. Has no effect on other
+          devices.
+        type: Boolean
+        default: false
+
   app-links:
     description: Control behavior of app links handling in the browser.
     variables:
