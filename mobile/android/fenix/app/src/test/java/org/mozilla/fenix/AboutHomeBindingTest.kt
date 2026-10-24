@@ -319,4 +319,94 @@ class AboutHomeBindingTest {
 
             verify(exactly = 0) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
         }
+
+    @Test
+    fun `GIVEN the menu dialog is shown and the selected tab is ABOUT_HOME_URL WHEN the binding is restarted THEN do not navigate to the homepage again`() =
+        runTest(testDispatcher) {
+            val mockDestination: NavDestination = mockk()
+            every { mockDestination.id } returns R.id.menuDialogFragment
+            every { navController.currentDestination } returns mockDestination
+
+            val binding =
+                AboutHomeBinding(
+                    browserStore = browserStore,
+                    navController = navController,
+                    mainDispatcher = testDispatcher,
+                )
+
+            binding.start()
+            browserStore.dispatch(
+                ContentAction.UpdateUrlAction(
+                    sessionId = tabId,
+                    url = ABOUT_HOME_URL,
+                )
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+            verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+
+            binding.stop()
+            binding.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+        }
+
+    @Test
+    fun `WHEN the URL is updated to ABOUT_HOME_URL while the binding is stopped THEN navigate to the homepage once the binding is restarted`() =
+        runTest(testDispatcher) {
+            val mockDestination: NavDestination = mockk()
+            every { mockDestination.id } returns R.id.browserFragment
+            every { navController.currentDestination } returns mockDestination
+
+            val binding =
+                AboutHomeBinding(
+                    browserStore = browserStore,
+                    navController = navController,
+                    mainDispatcher = testDispatcher,
+                )
+
+            binding.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+            binding.stop()
+
+            browserStore.dispatch(
+                ContentAction.UpdateUrlAction(
+                    sessionId = tabId,
+                    url = ABOUT_HOME_URL,
+                )
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+            verify(exactly = 0) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+
+            binding.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+        }
+
+    @Test
+    fun `GIVEN the selected tab is ABOUT_HOME_URL WHEN the binding is started for the first time THEN navigate to the homepage`() =
+        runTest(testDispatcher) {
+            val mockDestination: NavDestination = mockk()
+            every { mockDestination.id } returns R.id.browserFragment
+            every { navController.currentDestination } returns mockDestination
+            browserStore.dispatch(
+                ContentAction.UpdateUrlAction(
+                    sessionId = tabId,
+                    url = ABOUT_HOME_URL,
+                )
+            )
+
+            val binding =
+                AboutHomeBinding(
+                    browserStore = browserStore,
+                    navController = navController,
+                    mainDispatcher = testDispatcher,
+                )
+
+            binding.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+        }
 }
