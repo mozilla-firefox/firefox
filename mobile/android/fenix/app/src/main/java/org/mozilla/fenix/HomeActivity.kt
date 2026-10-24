@@ -74,6 +74,7 @@ import mozilla.components.feature.customtabs.isCustomTabIntent
 import mozilla.components.feature.media.ext.findActiveMediaTab
 import mozilla.components.feature.privatemode.notification.PrivateNotificationFeature
 import mozilla.components.feature.search.BrowserStoreSearchAdapter
+import mozilla.components.lib.crash.Crash
 import mozilla.components.lib.crash.store.CrashAction
 import mozilla.components.service.fxa.sync.SyncReason
 import mozilla.components.support.base.feature.ActivityResultHandler
@@ -220,6 +221,8 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
     lateinit var browsingModeManager: BrowsingModeManager
 
     private var isVisuallyComplete = false
+
+    @VisibleForTesting internal var isDeferringIntentsUntilOnboardingCompletes = false
 
     private var privateNotificationObserver: PrivateNotificationFeature<PrivateNotificationService>? = null
 
@@ -388,7 +391,6 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             StartSearchIntentProcessor(
                 fenixBrowserUseCases = components.useCases.fenixBrowserUseCases,
                 browsingModeManager = browsingModeManager,
-                userHasBeenOnboarded = { components.fenixOnboarding.userHasBeenOnboarded() },
             ),
             LensResultIntentProcessor(this),
             OpenHomeIntentProcessor(
@@ -608,7 +610,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
                 StartOnHome.enterHomeScreen.record(NoExtras())
             }
         } else {
-            processLaunchIntentAfterOnboarding()
+            registerDeferredIntentProcessing()
         }
 
         // This will record an event in Nimbus' internal event store. Used for behavioral targeting
@@ -1079,6 +1081,11 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
                     )
             }
         } else {
+            if (shouldDeferIntentUntilOnboardingCompletes(intent)) {
+                setIntent(intent)
+                return
+            }
+
             // Diagnostic breadcrumb for "Display already aquired" crash:
             // https://github.com/mozilla-mobile/android-components/issues/7960
             breadcrumb(
@@ -1578,10 +1585,29 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
     }
 
     /**
-     * Onboarding skips processing of the launch intent in [onCreate], so process it once the user completes onboarding.
+     * Whether [intent] should be stored as the activity intent for [registerDeferredIntentProcessing] to be processed
+     * once onboarding completes.
+     *
+     * Crash intents are never deferred because they only record crash state and are not handled by the post-onboarding
+     * intent processors. Crash intents that reach the HomeActivity are non-fatal.
      */
-    private fun processLaunchIntentAfterOnboarding() {
-        components.fenixOnboarding.registerOnboardingCompletedListener(this) { processIntent(intent) }
+    private fun shouldDeferIntentUntilOnboardingCompletes(intent: Intent): Boolean =
+        isDeferringIntentsUntilOnboardingCompletes && !Crash.isCrashIntent(intent)
+
+    /**
+     * Registers a listener to process the activity's current intent when onboarding completes, and defers new intents
+     * until then. Only registered when the onboarding flow should be shown.
+     */
+    @VisibleForTesting
+    internal fun registerDeferredIntentProcessing() {
+        isDeferringIntentsUntilOnboardingCompletes = true
+
+        components.fenixOnboarding.registerOnboardingCompletedListener(this) {
+            isDeferringIntentsUntilOnboardingCompletes = false
+
+            browsingModeManager.updateMode(intent)
+            processIntent(intent)
+        }
     }
 
     @VisibleForTesting
