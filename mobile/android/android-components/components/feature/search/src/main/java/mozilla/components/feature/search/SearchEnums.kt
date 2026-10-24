@@ -65,3 +65,45 @@ fun SearchApplicationName.into(): mozilla.appservices.search.SearchApplicationNa
         SearchApplicationName.FIREFOX -> mozilla.appservices.search.SearchApplicationName.FIREFOX
     }
 }
+
+/**
+ * Convert between the android-components defined [SearchUpdateChannel] type into the remote-services search-config-v3
+ * one, so consumers of android-components do not have to know about application services.
+ */
+fun SearchUpdateChannel.intoV3(): mozilla.appservices.search.SearchUpdateChannelV3 {
+    return when (this) {
+        SearchUpdateChannel.RELEASE -> mozilla.appservices.search.SearchUpdateChannelV3.RELEASE
+        SearchUpdateChannel.NIGHTLY -> mozilla.appservices.search.SearchUpdateChannelV3.NIGHTLY
+        SearchUpdateChannel.ESR -> mozilla.appservices.search.SearchUpdateChannelV3.ESR
+        SearchUpdateChannel.BETA -> mozilla.appservices.search.SearchUpdateChannelV3.BETA
+        SearchUpdateChannel.AURORA -> mozilla.appservices.search.SearchUpdateChannelV3.AURORA
+        SearchUpdateChannel.DEFAULT -> mozilla.appservices.search.SearchUpdateChannelV3.DEFAULT
+    }
+}
+
+/**
+ * Convert between the android-components defined [SearchDeviceType] type into the remote-services search-config-v3 one,
+ * so consumers of android-components do not have to know about application services.
+ */
+fun SearchDeviceType.intoV3(): mozilla.appservices.search.SearchDeviceTypeV3 {
+    return when (this) {
+        SearchDeviceType.TABLET -> mozilla.appservices.search.SearchDeviceTypeV3.TABLET
+        SearchDeviceType.SMARTPHONE -> mozilla.appservices.search.SearchDeviceTypeV3.SMARTPHONE
+        SearchDeviceType.NONE -> mozilla.appservices.search.SearchDeviceTypeV3.NONE
+    }
+}
+
+/**
+ * Convert between the android-components defined [SearchApplicationName] type into the remote-services search-config-v3
+ * one, so consumers of android-components do not have to know about application services.
+ *
+ * search-config-v3 has no generic desktop application name, so [SearchApplicationName.FIREFOX] maps to `UNKNOWN`, which
+ * the selector rejects.
+ */
+fun SearchApplicationName.intoV3(): mozilla.appservices.search.SearchApplicationNameV3 {
+    return when (this) {
+        SearchApplicationName.FIREFOX_ANDROID -> mozilla.appservices.search.SearchApplicationNameV3.FIREFOX_ANDROID
+        SearchApplicationName.FOCUS_ANDROID -> mozilla.appservices.search.SearchApplicationNameV3.FOCUS_ANDROID
+        SearchApplicationName.FIREFOX -> mozilla.appservices.search.SearchApplicationNameV3.UNKNOWN
+    }
+}
