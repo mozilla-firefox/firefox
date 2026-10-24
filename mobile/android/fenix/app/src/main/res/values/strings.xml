@@ -2993,6 +2993,14 @@
     <string name="credit_cards_warning_dialog_set_up_now">Set up now</string>
     <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
     <string name="credit_cards_warning_dialog_later">Later</string>
+    <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+    <string name="automotive_authentication_setup_dialog_title">Secure your sensitive data</string>
+    <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+    <string name="automotive_authentication_setup_dialog_message">Set up a device lock pattern, PIN, or password to protect your saved sensitive data from being accessed if someone else is driving your car.</string>
+    <!-- Positive button of the dialog shown on Android Automotive OS (in cars) that sends users to the device settings to set up a device lock -->
+    <string name="automotive_authentication_setup_dialog_set_up_now">Set up now</string>
+    <!-- Negative button of the dialog shown on Android Automotive OS (in cars) that closes the dialog. The action the user was trying to take is cancelled. -->
+    <string name="automotive_authentication_setup_dialog_cancel">Cancel</string>
     <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
     <string name="credit_cards_biometric_prompt_message_pin">Unlock your device</string>
     <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
