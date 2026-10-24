@@ -140,9 +140,11 @@
     <!-- Label for enabling listen to page -->
     <string name="preferences_key_enable_listen_to_page" translatable="false">Enable Listen to Page Feature Flag</string>
     <!-- Label for enabling the weekly privacy notification -->
-    <string name="preferences_debug_settings_privacy_report_notification" translatable="false">Enable Weekly Privacy Notification Feature</string>
+    <string name="preferences_debug_settings_privacy_report_notification" translatable="false">Enable Weekly Privacy Report Notification Feature</string>
     <!-- Label for forcing the weekly privacy report notification to show, with a fixed count of blocked trackers -->
-    <string name="preferences_debug_settings_force_weekly_privacy_report_notification" translatable="false">Force weekly privacy report notification trackers over threshold</string>
+    <string name="preferences_debug_settings_force_weekly_privacy_report_notification_title" translatable="false">Show Tracker Count in Weekly Privacy Report Notification</string>
+    <!-- Label for forcing the weekly privacy report notification to show, with a fixed count of blocked trackers -->
+    <string name="preferences_debug_settings_force_weekly_privacy_report_notification_summary" translatable="false">When enabled, sets blocked trackers to 48 to show the \“48 trackers blocked this week\” notification. When disabled, shows the \"feature prompt\" notification.</string>
     <!-- Label for enabling remote search configuration -->
     <string name="preferences_debug_settings_remote_search_configuration" translatable="false">Enable Remote Search Configuration (requires restart)</string>
     <!-- Label for selecting the search-config-v3 Remote Settings collection -->
