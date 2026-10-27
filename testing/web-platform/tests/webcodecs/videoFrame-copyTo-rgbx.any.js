@@ -18,7 +18,7 @@ const kPixels = [
 function makeData(format) {
   const data = new Uint8Array(kWidth * kHeight * 4);
   kPixels.forEach(({r, g, b, x}, i) => {
-    const bgr = format === 'BGRX';
+    const bgr = format.startsWith('BGR');
     data[4 * i + 0] = bgr ? b : r;
     data[4 * i + 1] = g;
     data[4 * i + 2] = bgr ? r : b;
@@ -87,4 +87,31 @@ for (const format of ['RGBX', 'BGRX']) {
     await clone.copyTo(copy);
     validateArrays(data, copy);
   }, `copyTo() of a clone of a ${format} VideoFrame`);
+}
+
+// An RGBX or BGRX frame is opaque: copying it to a format with alpha must give opaque pixels
+for (const [from, to, tolerance] of [
+         ['BGRX', 'BGRA', 0], ['RGBX', 'RGBA', 0], ['BGRX', 'RGBA', 1],
+         ['RGBX', 'BGRA', 1]]) {
+  promise_test(async t => {
+    // The padding byte of the pixels is not 0xff for most of them.
+    const frame = makeFrame(from, makeData(from));
+    t.add_cleanup(() => frame.close());
+
+    const options = {format: to};
+    const copy = new Uint8Array(frame.allocationSize(options));
+    const layout = await frame.copyTo(copy, options);
+    assert_equals(layout.length, 1);
+
+    const expected = makeData(to);
+    assert_equals(copy.byteLength, expected.byteLength, 'array length');
+    for (let i = 0; i < copy.byteLength; i++) {
+      if (i % 4 === 3) {
+        assert_equals(copy[i], 255, `alpha of pixel ${(i - 3) / 4}`);
+      } else {
+        assert_approx_equals(
+            copy[i], expected[i], tolerance, `byte ${i} of the copy`);
+      }
+    }
+  }, `copyTo() of a ${from} VideoFrame to ${to} gives opaque pixels`);
 }
