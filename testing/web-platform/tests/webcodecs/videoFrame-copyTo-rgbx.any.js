@@ -40,9 +40,8 @@ function validateArrays(original, copy)
 {
   assert_equals(original.byteLength, copy.byteLength, "array length");
   for (let i = 0;i < original.byteLength;i++) {
-    // FIXME: validate the X component once https://github.com/w3c/webcodecs/issues/971 is resolved.
-    if ((i % 4) !== 3)
-       assert_equals(original[i], copy[i]);
+    // FIXME: Revisit the 255 check once https://github.com/w3c/webcodecs/issues/971 is resolved.
+    assert_equals(copy[i],  (i % 4) !== 3 ? original[i] : 255);
   }
 }
 
