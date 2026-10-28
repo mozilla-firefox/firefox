@@ -12,10 +12,12 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.view.ContextThemeWrapper
 import androidx.annotation.VisibleForTesting
+import mozilla.appservices.fxaclient.contentUrl
 import mozilla.components.feature.intent.ext.sanitize
 import mozilla.components.feature.intent.processing.IntentProcessor
 import mozilla.components.feature.intent.processing.TabIntentProcessor.Companion.EXTRA_APP_LINK_LAUNCH_TYPE
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.ktx.kotlin.isSameOriginAs
 import mozilla.components.support.utils.EXTRA_ACTIVITY_REFERRER_CATEGORY
 import mozilla.components.support.utils.EXTRA_ACTIVITY_REFERRER_PACKAGE
 import mozilla.components.support.utils.INTENT_TYPE_PDF
@@ -24,6 +26,7 @@ import mozilla.components.support.utils.toSafeIntent
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.SyncAuth
 import org.mozilla.fenix.HomeActivity.Companion.PRIVATE_BROWSING_MODE
+import org.mozilla.fenix.components.FxaServer
 import org.mozilla.fenix.components.IntentProcessorType
 import org.mozilla.fenix.components.getType
 import org.mozilla.fenix.ext.components
@@ -76,7 +79,7 @@ class IntentReceiverActivity : Activity() {
 
     fun processIntent(intent: Intent) {
         val data = intent.toSafeIntent().data
-        if (intent.action == Intent.ACTION_VIEW && data != null && isFxaPairingLink(data)) {
+        if (intent.action == Intent.ACTION_VIEW && data != null && isFxaPairingLink(data, fxaServerUrl())) {
             SyncAuth.pairingLinkOpened.record(
                 SyncAuth.PairingLinkOpenedExtra(
                     campaignAttributed = components.settings.isUserPairingCampaignAttributed
@@ -119,6 +122,15 @@ class IntentReceiverActivity : Activity() {
 
         launch(intent, intentProcessorType)
     }
+
+    /**
+     * Returns the configured Firefox Accounts server URL.
+     *
+     * Reads the server config directly because this runs whenever an external link is opened. Accessing
+     * `components.backgroundServices.serverConfig.server` would initialize the account manager and sync stores just to
+     * compare a host.
+     */
+    private fun fxaServerUrl(): String = FxaServer.config(this).server.contentUrl()
 
     private fun persistUriReadPermission(uri: Uri) {
         try {
@@ -219,12 +231,12 @@ private fun Intent.stripUnwantedFlags() {
     flags = flags and Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS.inv()
 }
 
-private val FXA_PAIRING_HOSTS = setOf("accounts.firefox.com", "accounts.stage.mozaws.net")
-private const val FXA_PAIRING_PATH_PREFIX = "/pair"
+private const val FXA_PAIRING_PATH = "/pair"
 
-/** Whether [uri] is a Firefox Accounts pairing link on the production or stage server. */
+/**
+ * Returns whether [uri] has the same origin as [fxaServerUrl] and the Firefox Accounts pairing path. [fxaServerUrl] is
+ * the origin of the configured account server, as returned by `FxaServer.contentUrl()`.
+ */
 @VisibleForTesting
-internal fun isFxaPairingLink(uri: Uri): Boolean =
-    uri.scheme == "https" &&
-        uri.host?.lowercase() in FXA_PAIRING_HOSTS &&
-        uri.path.orEmpty().startsWith(FXA_PAIRING_PATH_PREFIX)
+internal fun isFxaPairingLink(uri: Uri, fxaServerUrl: String): Boolean =
+    uri.toString().lowercase().isSameOriginAs(fxaServerUrl.lowercase()) && uri.path == FXA_PAIRING_PATH
