@@ -4,12 +4,10 @@
 
 package org.mozilla.fenix.settings.biometric
 
-import android.app.KeyguardManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.getSystemService
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -18,6 +16,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import mozilla.components.ui.widgets.withCenterAlignedButtons
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.secure
+import org.mozilla.fenix.settings.biometric.ext.isDeviceLockSetUp
 
 /**
  * Prompt asking the user to set up a device lock before accessing sensitive data on Android Automotive OS.
@@ -86,7 +85,7 @@ private class DeviceLockSetupObserver(
             Lifecycle.Event.ON_RESUME ->
                 if (hasLeftActivity) {
                     source.lifecycle.removeObserver(this)
-                    if (activity.getSystemService<KeyguardManager>()?.isKeyguardSecure == true) {
+                    if (activity.isDeviceLockSetUp()) {
                         onSetUp()
                     } else {
                         onCancel()
