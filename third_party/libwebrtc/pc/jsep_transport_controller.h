@@ -312,15 +312,12 @@ class JsepTransportController final {
   bool GetStats(absl::string_view transport_name, TransportStats* stats) const;
 
   // Returns a task for a network thread ScopedOperationsBatcher that rolls
-  // back the transports to the last stable state. Its finalizer applies the
-  // resulting transport states on the signaling thread and stores the result
-  // of the rollback in `error`, which must outlive the batch. The task doesn't
-  // fail the batch, so the transport states are applied even if the rollback
-  // fails.
+  // back the transports to the last stable state. The task returns the result
+  // of the rollback. Its finalizer applies the resulting transport states on
+  // the signaling thread, also if the rollback fails.
   //
   // Must be called on the signaling thread.
-  ScopedOperationsBatcher::BatchTaskWithFinalizer MakeRollbackTask(
-      RTCError* absl_nonnull error);
+  ScopedOperationsBatcher::BatchTaskWithFinalizer MakeRollbackTask();
 
   // Must be called on the signaling thread.
   absl::AnyInvocable<void() &&> MakeCloseTask();

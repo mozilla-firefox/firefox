@@ -256,12 +256,9 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
   // Rolls back the transports the same way as SdpOfferAnswerHandler::Rollback()
   // does: with a task in a batch for the network thread.
   RTCError RollbackTransports() {
-    RTCError error;
     ScopedOperationsBatcher network_tasks(network_thread_.get());
-    network_tasks.AddWithFinalizer(
-        transport_controller_->MakeRollbackTask(&error));
-    EXPECT_TRUE(network_tasks.Run().ok());
-    return error;
+    network_tasks.AddWithFinalizer(transport_controller_->MakeRollbackTask());
+    return network_tasks.Run();
   }
 
   std::unique_ptr<SessionDescription> CreateSessionDescriptionWithoutBundle() {

@@ -564,26 +564,25 @@ bool JsepTransportController::GetStats(absl::string_view transport_name,
 }
 
 ScopedOperationsBatcher::BatchTaskWithFinalizer
-JsepTransportController::MakeRollbackTask(RTCError* absl_nonnull error) {
+JsepTransportController::MakeRollbackTask() {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   scoped_refptr<PendingTaskSafetyFlag> new_flag =
       PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true, signaling_thread_);
-  return [this, error, new_flag = std::move(new_flag)]() mutable
+  return [this, new_flag = std::move(new_flag)]() mutable
              -> ScopedOperationsBatcher::BatchTaskResult {
     RTC_DCHECK_RUN_ON(network_thread_);
     RTCError rollback_error = RollbackTransports_n();
     TransportStateSnapshot new_states = GetTransportStates_n();
     role_update_safety_flag_n_ = new_flag;
-    return ScopedOperationsBatcher::FinalizerTask(
-        [this, error, rollback_error = std::move(rollback_error),
-         new_states = std::move(new_states),
+    ScopedOperationsBatcher::FinalizerTask finalizer(
+        [this, new_states = std::move(new_states),
          new_flag = std::move(new_flag)]() mutable {
           RTC_DCHECK_RUN_ON(signaling_thread_);
           SetTransportStates(std::move(new_states));
           role_update_safety_flag_s_->SetNotAlive();
           role_update_safety_flag_s_ = std::move(new_flag);
-          *error = std::move(rollback_error);
         });
+    return {std::move(rollback_error), std::move(finalizer)};
   };
 }
 
