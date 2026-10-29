@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "api/async_dns_resolver.h"
@@ -116,7 +117,10 @@ JsepTransportController::JsepTransportController(
       role_update_safety_flag_s_(
           PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true,
                                                            signaling_thread_)),
-      role_update_safety_flag_n_(role_update_safety_flag_s_) {
+      role_update_safety_flag_n_(role_update_safety_flag_s_),
+      network_safety_(
+          PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true,
+                                                           network_thread_)) {
   RTC_DCHECK(signaling_thread_);
   RTC_DCHECK(network_thread_);
   RTC_DCHECK(port_allocator_);
@@ -139,6 +143,7 @@ JsepTransportController::~JsepTransportController() {
   // Channel destructors may try to send packets, so this needs to happen on
   // the network thread.
   RTC_DCHECK_RUN_ON(network_thread_);
+  network_safety_->SetNotAlive();
   DestroyAllJsepTransports_n();
 }
 
@@ -148,6 +153,7 @@ absl::AnyInvocable<void() &&> JsepTransportController::MakeCloseTask() {
 
   return [this]() mutable {
     RTC_DCHECK_RUN_ON(network_thread_);
+    network_safety_->SetNotAlive();
     DestroyAllJsepTransports_n();
   };
 }
@@ -361,23 +367,45 @@ void JsepTransportController::SetTransportStates(
   transport_states_ = std::move(snapshot);
 }
 
+void JsepTransportController::RunOnNetworkThread(
+    absl::AnyInvocable<void() &&> task) {
+  RTC_DCHECK_RUN_ON(signaling_thread_);
+  if (network_thread_->IsCurrent()) {
+    // Running right away keeps the order with blocking calls, which also run
+    // right away when the signaling and network threads are the same thread.
+    if (network_safety_->alive()) {
+      std::move(task)();
+    }
+    return;
+  }
+  // Tasks posted from the signaling thread run in order on the network thread,
+  // and before any blocking call that is made later.
+  network_thread_->PostTask(SafeTask(network_safety_, std::move(task)));
+}
+
 bool JsepTransportController::SetLocalCertificate(
     const scoped_refptr<RTCCertificate>& certificate) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  return network_thread_->BlockingCall([&] {
-    RTC_DCHECK_RUN_ON(network_thread_);
-    return SetLocalCertificate_n(certificate);
-  });
-}
-
-bool JsepTransportController::SetLocalCertificate_n(
-    const scoped_refptr<RTCCertificate>& certificate) {
-  RTC_DCHECK_RUN_ON(network_thread_);
+  RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
 
   // Can't change a certificate, or set a null certificate.
-  if (certificate_ || !certificate) {
+  if (local_certificate_set_ || !certificate) {
     return false;
   }
+  local_certificate_set_ = true;
+
+  // The certificate is applied before any description that is set later.
+  RunOnNetworkThread([this, certificate] {
+    RTC_DCHECK_RUN_ON(network_thread_);
+    SetLocalCertificate_n(certificate);
+  });
+  return true;
+}
+
+void JsepTransportController::SetLocalCertificate_n(
+    const absl_nonnull scoped_refptr<RTCCertificate>& certificate) {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  RTC_DCHECK(!certificate_);
   certificate_ = certificate;
 
   // Set certificate for JsepTransport, which verifies it matches the
@@ -390,7 +418,6 @@ bool JsepTransportController::SetLocalCertificate_n(
     bool set_cert_success = dtls->SetLocalCertificate(certificate_);
     RTC_DCHECK(set_cert_success);
   }
-  return true;
 }
 
 scoped_refptr<RTCCertificate> JsepTransportController::GetLocalCertificate(

@@ -330,6 +330,7 @@ rtc_library("jsep_transport_controller") {
     "../rtc_base:threading",
     "../rtc_base/containers:flat_map",
     "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]

@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "api/async_dns_resolver.h"
@@ -258,7 +259,11 @@ class JsepTransportController final {
    * DTLS-related methods
    *********************/
   // Specifies the identity to use in this session.
-  // Can only be called once.
+  // Can only be called once. Returns false if a certificate has already been
+  // set or if `certificate` is null. Doesn't block: the certificate is applied
+  // on the network thread, before any description that is set afterwards. If
+  // the signaling and network threads are the same thread, it's applied before
+  // this returns.
   //
   // Must be called on the signaling thread.
   bool SetLocalCertificate(const scoped_refptr<RTCCertificate>& certificate);
@@ -314,8 +319,18 @@ class JsepTransportController final {
   // Always called via a blocking call from the signaling thread.
   void MaybeStartGathering_n() RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
-  bool SetLocalCertificate_n(const scoped_refptr<RTCCertificate>& certificate)
+  // Runs `task` on the network thread without blocking. If the signaling and
+  // network threads are the same thread, `task` runs right away, as a blocking
+  // call would. Otherwise it's posted. Either way, it runs before any blocking
+  // call to the network thread that is made afterwards. `task` doesn't run
+  // once the transports have been destroyed.
+  //
+  // Must be called on the signaling thread.
+  void RunOnNetworkThread(absl::AnyInvocable<void() &&> task);
+
+  // Called from SetLocalCertificate(), via RunOnNetworkThread().
+  void SetLocalCertificate_n(
+      const absl_nonnull scoped_refptr<RTCCertificate>& certificate)
       RTC_RUN_ON(network_thread_);
 
   // Called from SetLocalDescription and SetRemoteDescription.
@@ -482,6 +497,9 @@ class JsepTransportController final {
   IceConfig ice_config_;
   IceRole ice_role_ = ICEROLE_CONTROLLING;
   scoped_refptr<RTCCertificate> certificate_;
+  // True once SetLocalCertificate() has accepted a certificate. The
+  // certificate itself is only used on the network thread (`certificate_`).
+  bool local_certificate_set_ RTC_GUARDED_BY(signaling_thread_) = false;
 
   BundleManager bundles_;
 
@@ -493,6 +511,9 @@ class JsepTransportController final {
       RTC_GUARDED_BY(signaling_thread_);
   scoped_refptr<PendingTaskSafetyFlag> role_update_safety_flag_n_
       RTC_GUARDED_BY(network_thread_);
+  // Guards the tasks that are posted to the network thread. Set to not alive
+  // on the network thread when the transports are destroyed.
+  const absl_nonnull scoped_refptr<PendingTaskSafetyFlag> network_safety_;
 };
 
 }  // namespace webrtc

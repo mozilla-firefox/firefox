@@ -323,6 +323,39 @@ TEST_P(PeerConnectionCryptoTest,
   ASSERT_TRUE(caller->SetRemoteDescription(std::move(answer)));
 }
 
+// The signaling and network threads are the same thread in these tests. A
+// certificate from the configuration must be usable by descriptions that are
+// applied right after the PeerConnection is created, before any posted task
+// has run.
+TEST_P(PeerConnectionCryptoTest,
+       DescriptionsAppliedRightAfterCreationUseCertificateInConfig) {
+  RTCConfiguration config;
+  config.certificates.push_back(
+      FakeRTCCertificateGenerator::GenerateCertificate());
+  auto caller = CreatePeerConnectionWithAudioVideo();
+  std::unique_ptr<SessionDescriptionInterface> offer =
+      caller->CreateOfferAndSetAsLocal();
+  ASSERT_THAT(offer, NotNull());
+  // A PeerConnection with the same certificate creates the answer, so the
+  // answer has the fingerprint of that certificate.
+  auto answerer = CreatePeerConnection(config);
+  ASSERT_TRUE(answerer->SetRemoteDescription(offer->Clone()));
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      answerer->CreateAnswer();
+  ASSERT_THAT(answer, NotNull());
+
+  auto callee = CreatePeerConnection(config);
+  ASSERT_THAT(callee, NotNull());
+  auto srd_observer = make_ref_counted<FakeSetRemoteDescriptionObserver>();
+  callee->pc()->SetRemoteDescription(std::move(offer), srd_observer);
+  auto sld_observer = make_ref_counted<FakeSetLocalDescriptionObserver>();
+  callee->pc()->SetLocalDescription(std::move(answer), sld_observer);
+  ASSERT_TRUE(srd_observer->called());
+  EXPECT_THAT(srd_observer->error(), IsRtcOk());
+  ASSERT_TRUE(sld_observer->called());
+  EXPECT_THAT(sld_observer->error(), IsRtcOk());
+}
+
 // The following parameterized test verifies that CreateOffer/CreateAnswer
 // returns successfully (or with failure if the underlying certificate generator
 // fails) no matter when the DTLS certificate is generated. If multiple

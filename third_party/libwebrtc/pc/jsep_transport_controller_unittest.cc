@@ -171,6 +171,13 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
   }
 
   void CreateJsepTransportController(JsepTransportController::Config config) {
+    CreateJsepTransportController(std::move(config), signaling_thread_);
+  }
+
+  // Passing `network_thread_` as `signaling_thread` tests the configuration
+  // where the signaling and network threads are the same thread.
+  void CreateJsepTransportController(JsepTransportController::Config config,
+                                     Thread* absl_nonnull signaling_thread) {
     if (!port_allocator_) {
       port_allocator_.emplace(env_, network_thread_->socketserver(),
                               network_thread_.get());
@@ -206,7 +213,7 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
       PostToSignalingThread([this, s] { OnGatheringState(s); });
     };
     transport_controller_ = std::make_unique<JsepTransportController>(
-        env_, signaling_thread_, network_thread_.get(), &*port_allocator_,
+        env_, signaling_thread, network_thread_.get(), &*port_allocator_,
         /*async_resolver_factory=*/nullptr,
         /*lna_permission_factory=*/nullptr, std::move(config));
   }
@@ -757,6 +764,63 @@ TEST_F(JsepTransportControllerTest, SetAndGetLocalCertificate) {
   scoped_refptr<RTCCertificate> certificate2 =
       RTCCertificate::Create(SSLIdentity::Create("session2", KT_DEFAULT));
   EXPECT_FALSE(transport_controller_->SetLocalCertificate(certificate2));
+}
+
+// The certificate is applied on the network thread after SetLocalCertificate()
+// has returned. Transports that already exist get it too.
+TEST_F(JsepTransportControllerTest,
+       SetLocalCertificateAppliesToExistingTransports) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  auto description = CreateSessionDescriptionWithoutBundle();
+  EXPECT_TRUE(
+      transport_controller_
+          ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
+          .ok());
+  FakeDtlsTransport* fake_audio_dtls = GetFakeDtlsTransport(kAudioMid1);
+  ASSERT_NE(fake_audio_dtls, nullptr);
+  SendTask(network_thread_.get(),
+           [&] { EXPECT_FALSE(fake_audio_dtls->IsDtlsActive()); });
+
+  scoped_refptr<RTCCertificate> certificate =
+      RTCCertificate::Create(SSLIdentity::Create("session", KT_DEFAULT));
+  EXPECT_TRUE(transport_controller_->SetLocalCertificate(certificate));
+  // Tasks posted to the network thread run in order, so this task runs after
+  // the certificate has been applied.
+  SendTask(network_thread_.get(), [&] {
+    EXPECT_EQ(transport_controller_->GetLocalCertificate(kAudioMid1),
+              certificate);
+    EXPECT_TRUE(fake_audio_dtls->IsDtlsActive());
+  });
+}
+
+TEST_F(JsepTransportControllerTest, SetLocalCertificateRejectsNull) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  EXPECT_FALSE(transport_controller_->SetLocalCertificate(nullptr));
+  // A rejected certificate doesn't prevent setting one later.
+  EXPECT_TRUE(transport_controller_->SetLocalCertificate(
+      RTCCertificate::Create(SSLIdentity::Create("session", KT_DEFAULT))));
+}
+
+// When the signaling and network threads are the same thread, the certificate
+// is applied before SetLocalCertificate() returns, so a description with its
+// fingerprint can be applied right after, in the same task.
+TEST_F(JsepTransportControllerTest,
+       SetLocalCertificateAppliesRightAwayWithMergedThreads) {
+  CreateJsepTransportController(JsepTransportController::Config(),
+                                /*signaling_thread=*/network_thread_.get());
+  scoped_refptr<RTCCertificate> certificate =
+      RTCCertificate::Create(SSLIdentity::Create("session", KT_DEFAULT));
+  auto description = std::make_unique<SessionDescription>();
+  AddAudioSection(description.get(), kAudioMid1, kIceUfrag1, kIcePwd1,
+                  ICEMODE_FULL, CONNECTIONROLE_ACTPASS, certificate);
+  SendTask(network_thread_.get(), [&] {
+    EXPECT_TRUE(transport_controller_->SetLocalCertificate(certificate));
+    EXPECT_THAT(transport_controller_->SetLocalDescription(
+                    SdpType::kOffer, description.get(), nullptr),
+                IsRtcOk());
+    EXPECT_EQ(transport_controller_->GetLocalCertificate(kAudioMid1),
+              certificate);
+  });
 }
 
 TEST_F(JsepTransportControllerTest, GetRemoteSSLCertChain) {
