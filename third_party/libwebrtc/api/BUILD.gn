@@ -96,7 +96,6 @@ if (!build_with_chromium && !build_with_mozilla) {
       ":peer_connection_interface",
       ":scoped_refptr",
       "../rtc_base:threading",
-      "../rtc_base/system:ignore_warnings",
       "../rtc_base/system:rtc_export",
       "audio:audio_device",
       "audio:audio_mixer_api",
