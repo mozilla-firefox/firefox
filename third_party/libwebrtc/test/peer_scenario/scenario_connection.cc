@@ -188,8 +188,7 @@ JsepTransportController::Config ScenarioIceConnectionImpl::CreateJsepConfig() {
 
 void ScenarioIceConnectionImpl::SendRtpPacket(
     std::span<const uint8_t> packet_view) {
-  CopyOnWriteBuffer packet(packet_view.data(), packet_view.size(),
-                           kMaxRtpPacketLen);
+  CopyOnWriteBuffer packet(packet_view, kMaxRtpPacketLen);
   network_thread_->PostTask([this, packet = std::move(packet)]() mutable {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (rtp_transport_ != nullptr)
@@ -200,8 +199,7 @@ void ScenarioIceConnectionImpl::SendRtpPacket(
 
 void ScenarioIceConnectionImpl::SendRtcpPacket(
     std::span<const uint8_t> packet_view) {
-  CopyOnWriteBuffer packet(packet_view.data(), packet_view.size(),
-                           kMaxRtpPacketLen);
+  CopyOnWriteBuffer packet(packet_view, kMaxRtpPacketLen);
   network_thread_->PostTask([this, packet = std::move(packet)]() mutable {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (rtp_transport_ != nullptr)

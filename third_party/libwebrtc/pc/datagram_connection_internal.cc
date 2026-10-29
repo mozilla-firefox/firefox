@@ -320,8 +320,7 @@ void DatagramConnectionInternal::SendSinglePacket(
       IsRtpOrRtcpPacket(packet.payload[0])) {
     // Copy the payload into a buffer with some extra capacity to allow space
     // for the SRTP encryption tag to be added.
-    CopyOnWriteBuffer buffer(packet.payload.data(), packet.payload.size(),
-                             kMaxRtpPacketLen);
+    CopyOnWriteBuffer buffer(packet.payload, kMaxRtpPacketLen);
 
     // Provide the flag PF_SRTP_BYPASS as these packets are being encrypted by
     // SRTP, so should bypass DTLS encryption.

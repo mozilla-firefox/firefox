@@ -61,17 +61,6 @@ class RTC_EXPORT CopyOnWriteBuffer {
   explicit CopyOnWriteBuffer(std::span<const uint8_t> data);
   CopyOnWriteBuffer(std::span<const uint8_t> data, size_t capacity);
 
-  // Construct a buffer and copy the specified number of bytes into it. The
-  // source array may be (const) uint8_t*, int8_t*, or char*.
-  template <typename T,
-            typename std::enable_if<
-                internal::BufferCompat<uint8_t, T>::value>::type* = nullptr>
-  ABSL_DEPRECATE_AND_INLINE()
-  CopyOnWriteBuffer(const T* data, size_t size, size_t capacity)
-      : CopyOnWriteBuffer(
-            std::span(reinterpret_cast<const uint8_t*>(data), size),
-            capacity) {}
-
   ~CopyOnWriteBuffer();
 
   // Get a pointer to the data. Just .data() will give you a (const) uint8_t*,

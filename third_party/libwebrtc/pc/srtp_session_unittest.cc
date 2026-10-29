@@ -196,12 +196,10 @@ TEST_F(SrtpSessionTest, TestBuffersTooSmall) {
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kTestKey1,
                           kEncryptedHeaderExtensionIds));
   // This buffer does not have extra capacity which we treat as an error.
-  CopyOnWriteBuffer rtp_packet(rtp_packet_.data(), rtp_packet_.size(),
-                               rtp_packet_.size());
+  CopyOnWriteBuffer rtp_packet(rtp_packet_, rtp_packet_.size());
   EXPECT_FALSE(s1_.ProtectRtp(rtp_packet));
   // This buffer does not have extra capacity which we treat as an error.
-  CopyOnWriteBuffer rtcp_packet(rtcp_packet_.data(), rtcp_packet_.size(),
-                                rtcp_packet_.size());
+  CopyOnWriteBuffer rtcp_packet(rtcp_packet_, rtcp_packet_.size());
   EXPECT_FALSE(s1_.ProtectRtcp(rtcp_packet));
 }
 
@@ -327,7 +325,8 @@ TEST_F(SrtpSessionTest, ProtectUnprotectWrapAroundRocMismatch) {
       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
       // clang-format on
   };
-  CopyOnWriteBuffer packet1(kFrame1, sizeof(kFrame1) - 10, sizeof(kFrame1));
+  CopyOnWriteBuffer packet1(std::span(kFrame1).first(sizeof(kFrame1) - 10),
+                            sizeof(kFrame1));
   unsigned char kFrame2[] = {
       // clang-format off
       // PT=0, SN=1, TS=0, SSRC=1
@@ -337,7 +336,8 @@ TEST_F(SrtpSessionTest, ProtectUnprotectWrapAroundRocMismatch) {
       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
       // clang-format on
   };
-  CopyOnWriteBuffer packet2(kFrame2, sizeof(kFrame2) - 10, sizeof(kFrame1));
+  CopyOnWriteBuffer packet2(std::span(kFrame2).first(sizeof(kFrame2) - 10),
+                            sizeof(kFrame1));
   const unsigned char kPayload[] = {0xBE, 0xEF};
 
   // Encrypt the frames in-order. There is a sequence number rollover from
@@ -382,7 +382,8 @@ TEST_F(SrtpSessionTest, ProtectGetPacketIndex) {
       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
       // clang-format on
   };
-  CopyOnWriteBuffer packet1(kFrame1, sizeof(kFrame1) - 10, sizeof(kFrame1));
+  CopyOnWriteBuffer packet1(std::span(kFrame1).first(sizeof(kFrame1) - 10),
+                            sizeof(kFrame1));
   unsigned char kFrame2[] = {
       // clang-format off
       // PT=0, SN=1, TS=0, SSRC=1
@@ -392,7 +393,8 @@ TEST_F(SrtpSessionTest, ProtectGetPacketIndex) {
       0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
       // clang-format on
   };
-  CopyOnWriteBuffer packet2(kFrame2, sizeof(kFrame2) - 10, sizeof(kFrame1));
+  CopyOnWriteBuffer packet2(std::span(kFrame2).first(sizeof(kFrame2) - 10),
+                            sizeof(kFrame1));
 
   // Encrypt the frames in-order. There is a sequence number rollover from
   // 65535 to 1 (skipping 0) and the second packet gets encrypted with a
@@ -431,7 +433,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRfc9335_A_1_1) {
   EXPECT_TRUE(s1_.UseCryptex(true, true, true));
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kEncrypted));
+  CopyOnWriteBuffer packet(kPacket, sizeof(kEncrypted));
   EXPECT_TRUE(s1_.ProtectRtp(packet));
   EXPECT_THAT(packet, SizeIs(sizeof(kEncrypted)));
   EXPECT_EQ(0, std::memcmp(packet.data(), kEncrypted, packet.size()));
@@ -459,7 +461,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRfc9335_A_1_2) {
   EXPECT_TRUE(s1_.UseCryptex(true, true, true));
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kEncrypted));
+  CopyOnWriteBuffer packet(kPacket, sizeof(kEncrypted));
   EXPECT_TRUE(s1_.ProtectRtp(packet));
   EXPECT_THAT(packet, SizeIs(sizeof(kEncrypted)));
   EXPECT_EQ(0, std::memcmp(packet.data(), kEncrypted, packet.size()));
@@ -490,7 +492,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRfc9335_A_1_3) {
   EXPECT_TRUE(s1_.UseCryptex(true, true, true));
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kEncrypted));
+  CopyOnWriteBuffer packet(kPacket, sizeof(kEncrypted));
   EXPECT_TRUE(s1_.ProtectRtp(packet));
   EXPECT_THAT(packet, SizeIs(sizeof(kEncrypted)));
   EXPECT_EQ(0, std::memcmp(packet.data(), kEncrypted, packet.size()));
@@ -521,7 +523,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRfc9335_A_1_4) {
   EXPECT_TRUE(s1_.UseCryptex(true, true, true));
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kEncrypted));
+  CopyOnWriteBuffer packet(kPacket, sizeof(kEncrypted));
   EXPECT_TRUE(s1_.ProtectRtp(packet));
   EXPECT_THAT(packet, SizeIs(sizeof(kEncrypted)));
   EXPECT_EQ(0, std::memcmp(packet.data(), kEncrypted, packet.size()));
@@ -552,7 +554,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRfc9335_A_1_5) {
   EXPECT_TRUE(s1_.UseCryptex(true, true, true));
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kEncrypted));
+  CopyOnWriteBuffer packet(kPacket, sizeof(kEncrypted));
   EXPECT_TRUE(s1_.ProtectRtp(packet));
   EXPECT_THAT(packet, SizeIs(sizeof(kEncrypted)));
   EXPECT_EQ(0, std::memcmp(packet.data(), kEncrypted, packet.size()));
@@ -583,7 +585,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRfc9335_A_1_6) {
   EXPECT_TRUE(s1_.UseCryptex(true, true, true));
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kEncrypted));
+  CopyOnWriteBuffer packet(kPacket, sizeof(kEncrypted));
   EXPECT_TRUE(s1_.ProtectRtp(packet));
   EXPECT_THAT(packet, SizeIs(sizeof(kEncrypted)));
   EXPECT_EQ(0, std::memcmp(packet.data(), kEncrypted, packet.size()));
@@ -607,7 +609,7 @@ TEST_F(SrtpSessionTestCryptex, TestCryptexRequire) {
   // Sender is not enabling or requiring cryptex.
   EXPECT_TRUE(s1_.SetSend(kSrtpAes128CmSha1_80, kCryptexKey, {}));
 
-  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket), sizeof(kPacket) + 10);
+  CopyOnWriteBuffer packet(kPacket, sizeof(kPacket) + 10);
   EXPECT_TRUE(s1_.ProtectRtp(packet));
 
   // Sender is enabling and requiring cryptex.
