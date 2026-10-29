@@ -98,7 +98,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_gtest_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "enable": true,
@@ -114,7 +114,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -320,7 +320,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_gtest_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "enable": true,
@@ -336,7 +336,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -838,7 +838,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_gtest_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "enable": true,
@@ -854,7 +854,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -1060,7 +1060,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_gtest_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "enable": true,
@@ -1076,7 +1076,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -1701,7 +1701,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_file": "${ISOLATED_OUTDIR}/gtest_output.json",
@@ -1714,7 +1714,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "args": [
@@ -1960,7 +1960,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -1972,7 +1972,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -2178,7 +2178,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -2190,7 +2190,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -2563,7 +2563,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -2575,7 +2575,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -2781,7 +2781,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -2793,7 +2793,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -3166,7 +3166,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -3178,7 +3178,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -3384,7 +3384,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -3396,7 +3396,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -3769,7 +3769,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -3781,7 +3781,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -3987,7 +3987,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -3999,7 +3999,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -4372,7 +4372,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -4384,7 +4384,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -4590,7 +4590,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -4602,7 +4602,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -4975,7 +4975,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -4987,7 +4987,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -5193,7 +5193,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -5205,7 +5205,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -5561,7 +5561,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -5573,7 +5573,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -5779,7 +5779,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -5791,7 +5791,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -6148,7 +6148,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -6160,7 +6160,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -6366,7 +6366,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -6378,7 +6378,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -6752,7 +6752,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -6764,7 +6764,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -6970,7 +6970,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -6982,7 +6982,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -7357,7 +7357,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -7369,7 +7369,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -7593,7 +7593,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -7605,7 +7605,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -7960,7 +7960,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -7972,7 +7972,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -8196,7 +8196,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -8208,7 +8208,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -8563,7 +8563,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -8575,7 +8575,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -8799,7 +8799,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -8811,7 +8811,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -9166,7 +9166,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -9178,7 +9178,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -9402,7 +9402,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -9414,7 +9414,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -9795,7 +9795,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -9807,7 +9807,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -10031,7 +10031,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -10043,7 +10043,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -10398,7 +10398,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -10410,7 +10410,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -10634,7 +10634,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -10646,7 +10646,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -11001,7 +11001,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -11013,7 +11013,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -11237,7 +11237,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -11249,7 +11249,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -11604,7 +11604,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests",
         "resultdb": {
           "result_format": "json"
@@ -11616,7 +11616,7 @@
           }
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/"
+        "test_id_prefix": "ninja://audio:audio_engine_tests/"
       },
       {
         "merge": {
@@ -11840,7 +11840,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests",
         "resultdb": {
           "result_format": "json"
@@ -11852,7 +11852,7 @@
           }
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/"
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/"
       },
       {
         "merge": {
@@ -12478,7 +12478,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests iPhone 14 17.5",
         "resultdb": {
           "enable": true,
@@ -12509,7 +12509,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/",
+        "test_id_prefix": "ninja://audio:audio_engine_tests/",
         "variant_id": "iPhone 14 17.5"
       },
       {
@@ -12527,7 +12527,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:audio_engine_tests",
+        "module_name": "//audio:audio_engine_tests",
         "name": "audio_engine_tests iPhone 15 18.2",
         "resultdb": {
           "enable": true,
@@ -12558,7 +12558,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "audio_engine_tests",
-        "test_id_prefix": "ninja://:audio_engine_tests/",
+        "test_id_prefix": "ninja://audio:audio_engine_tests/",
         "variant_id": "iPhone 15 18.2"
       },
       {
@@ -13362,7 +13362,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests iPhone 14 17.5",
         "resultdb": {
           "enable": true,
@@ -13393,7 +13393,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/",
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/",
         "variant_id": "iPhone 14 17.5"
       },
       {
@@ -13411,7 +13411,7 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
-        "module_name": "//:rtc_p2p_unittests",
+        "module_name": "//p2p:rtc_p2p_unittests",
         "name": "rtc_p2p_unittests iPhone 15 18.2",
         "resultdb": {
           "enable": true,
@@ -13442,7 +13442,7 @@
           "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
         },
         "test": "rtc_p2p_unittests",
-        "test_id_prefix": "ninja://:rtc_p2p_unittests/",
+        "test_id_prefix": "ninja://p2p:rtc_p2p_unittests/",
         "variant_id": "iPhone 15 18.2"
       },
       {

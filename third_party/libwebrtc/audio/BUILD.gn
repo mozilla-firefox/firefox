@@ -454,4 +454,25 @@ if (rtc_include_tests) {
       "//third_party/abseil-cpp/absl/strings",
     ]
   }
+
+  rtc_test_suite("audio_engine_tests") {
+    tests = [
+      ":audio_receive_stream_unittest",
+      ":audio_send_stream_tests",
+      ":audio_send_stream_unittest",
+      ":audio_state_unittest",
+      ":audio_stats_test",
+      ":channel_receive_frame_transformer_delegate_unittest",
+      ":channel_receive_unittest",
+      ":channel_send_frame_transformer_delegate_unittest",
+      ":channel_send_unittest",
+      ":nack_test",
+      ":nack_tracker_unittest",
+      ":non_sender_rtt_test",
+      ":remix_resample_unittest",
+      "utility:audio_frame_operations_unittest",
+      "utility:channel_mixer_unittest",
+      "utility:channel_mixing_matrix_unittest",
+    ]
+  }
 }

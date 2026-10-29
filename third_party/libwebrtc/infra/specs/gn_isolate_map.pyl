@@ -53,7 +53,7 @@
     "type": "console_test_launcher",
   },
   "audio_engine_tests": {
-    "label": "//:audio_engine_tests",
+    "label": "//audio:audio_engine_tests",
     "type": "console_test_launcher",
   },
   "audio_processing_unittests": {
@@ -113,7 +113,7 @@
     "type": "console_test_launcher",
   },
   "rtc_p2p_unittests": {
-    "label": "//:rtc_p2p_unittests",
+    "label": "//p2p:rtc_p2p_unittests",
     "type": "console_test_launcher",
   },
   "rtc_pc_unittests": {

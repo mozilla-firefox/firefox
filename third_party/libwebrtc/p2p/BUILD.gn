@@ -1787,6 +1787,36 @@ if (rtc_include_tests) {
     ]
   }
 
+  rtc_test_suite("rtc_p2p_unittests") {
+    tests = [
+      ":async_stun_tcp_socket_unittest",
+      ":basic_port_allocator_unittest",
+      ":connection_unittest",
+      ":dtls_ice_integration_test",
+      ":dtls_stun_piggyback_controller_unittest",
+      ":dtls_utils_unittest",
+      ":ice_credentials_iterator_unittest",
+      ":local_network_access_port_unittest",
+      ":nat_unittest",
+      ":p2p_constants_unittest",
+      ":p2p_dtls_transport_unittest",
+      ":p2p_transport_channel_unittest",
+      ":packet_transport_internal_unittest",
+      ":port_allocator_unittest",
+      ":port_unittest",
+      ":stun_dictionary_unittest",
+      ":stun_port_unittest",
+      ":stun_request_unittest",
+      ":stun_server_unittest",
+      ":tcp_port_unittest",
+      ":transport_description_factory_unittest",
+      ":transport_description_unittest",
+      ":turn_port_unittest",
+      ":turn_server_unittest",
+      ":wrapping_active_ice_controller_unittest",
+    ]
+  }
+
   rtc_test("dtls_ice_integration_bench") {
     testonly = true
 

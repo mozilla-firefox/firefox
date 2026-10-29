@@ -31,20 +31,33 @@ rtc_library("audio_frame_operations") {
 }
 
 if (rtc_include_tests) {
-  rtc_library("utility_tests") {
-    testonly = true
-    sources = [
-      "audio_frame_operations_unittest.cc",
-      "channel_mixer_unittest.cc",
-      "channel_mixing_matrix_unittest.cc",
-    ]
+  rtc_cc_test("audio_frame_operations_unittest") {
+    sources = [ "audio_frame_operations_unittest.cc" ]
     deps = [
       ":audio_frame_operations",
       "../../api/audio:audio_frame_api",
       "../../rtc_base:checks",
+      "../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("channel_mixer_unittest") {
+    sources = [ "channel_mixer_unittest.cc" ]
+    deps = [
+      ":audio_frame_operations",
+      "../../api/audio:audio_frame_api",
       "../../rtc_base:stringutils",
       "../../test:test_support",
-      "//testing/gtest",
+    ]
+  }
+
+  rtc_cc_test("channel_mixing_matrix_unittest") {
+    sources = [ "channel_mixing_matrix_unittest.cc" ]
+    deps = [
+      ":audio_frame_operations",
+      "../../api/audio:audio_frame_api",
+      "../../rtc_base:stringutils",
+      "../../test:test_support",
     ]
   }
 }
