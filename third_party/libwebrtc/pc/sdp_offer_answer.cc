@@ -3629,9 +3629,8 @@ bool SdpOfferAnswerHandler::RemoveIceCandidate(const IceCandidate* candidate) {
   }
 
   bool removed = mutable_remote_description()->RemoveCandidate(candidate);
-  // Remove the candidates from the transport controller.
-  // This involves a hop to the network thread - should we rather do this
-  // asynchronously?
+  // Remove the candidate from the transport controller. This doesn't block;
+  // the candidate is removed on the network thread.
   transport_controller_s()->RemoveRemoteCandidate(candidate);
   return removed;
 }

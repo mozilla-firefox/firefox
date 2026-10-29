@@ -276,8 +276,12 @@ class JsepTransportController final {
   void DiscardCandidatePool();
   RTCError AddRemoteCandidates(absl::string_view mid,
                                const std::vector<Candidate>& candidates);
+  // Removes `candidate` from the ICE transport that its mid uses. Doesn't
+  // block: the candidate is removed on the network thread. Candidates that are
+  // invalid or have no mid are ignored.
+  //
   // Must be called on the signaling thread.
-  bool RemoveRemoteCandidate(const IceCandidate* candidate);
+  void RemoveRemoteCandidate(const IceCandidate* absl_nonnull candidate);
 
   /**********************
    * DTLS-related methods
@@ -338,8 +342,9 @@ class JsepTransportController final {
                                   const SessionDescription* remote_desc)
       RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
-  bool RemoveRemoteCandidate_n(const IceCandidate* candidate)
+  // Called from a task that RemoveRemoteCandidate() posts.
+  void RemoveRemoteCandidate_n(absl::string_view mid,
+                               const Candidate& candidate)
       RTC_RUN_ON(network_thread_);
 
   // Called from the task that MakeRollbackTask() returns.

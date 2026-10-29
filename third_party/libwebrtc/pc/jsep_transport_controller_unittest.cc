@@ -861,10 +861,37 @@ TEST_F(JsepTransportControllerTest, AddRemoveRemoteCandidates) {
   });
 
   IceCandidate ice_candidate(kAudioMid1, -1, candidates[0]);
-  EXPECT_TRUE(transport_controller_->RemoveRemoteCandidate(&ice_candidate));
+  transport_controller_->RemoveRemoteCandidate(&ice_candidate);
+  // Tasks posted to the network thread run in order, so this task runs after
+  // the candidate has been removed.
   SendTask(network_thread_.get(), [&] {
     EXPECT_EQ(
         0U, fake_audio_dtls->fake_ice_transport()->remote_candidates().size());
+  });
+}
+
+TEST_F(JsepTransportControllerTest, RemoveRemoteCandidateWithoutMidIsIgnored) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  auto description = CreateSessionDescriptionWithoutBundle();
+  transport_controller_->SetLocalDescription(SdpType::kOffer, description.get(),
+                                             nullptr);
+  transport_controller_->SetRemoteDescription(
+      SdpType::kAnswer, description.get(), description.get());
+  auto fake_audio_dtls = GetFakeDtlsTransport(kAudioMid1);
+  ASSERT_NE(nullptr, fake_audio_dtls);
+  Candidates candidates;
+  candidates.push_back(CreateCandidate());
+  SendTask(network_thread_.get(), [&] {
+    EXPECT_TRUE(
+        transport_controller_->AddRemoteCandidates(kAudioMid1, candidates)
+            .ok());
+  });
+
+  IceCandidate ice_candidate(/*sdp_mid=*/"", -1, candidates[0]);
+  transport_controller_->RemoveRemoteCandidate(&ice_candidate);
+  SendTask(network_thread_.get(), [&] {
+    EXPECT_EQ(
+        1U, fake_audio_dtls->fake_ice_transport()->remote_candidates().size());
   });
 }
 

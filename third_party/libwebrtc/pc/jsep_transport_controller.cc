@@ -521,35 +521,42 @@ RTCError JsepTransportController::AddRemoteCandidates(
   return jsep_transport->AddRemoteCandidates(candidates);
 }
 
-bool JsepTransportController::RemoveRemoteCandidate(const IceCandidate* c) {
+void JsepTransportController::RemoveRemoteCandidate(
+    const IceCandidate* absl_nonnull c) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  return network_thread_->BlockingCall([&] {
-    RTC_DCHECK_RUN_ON(network_thread_);
-    return RemoveRemoteCandidate_n(c);
-  });
-}
-
-bool JsepTransportController::RemoveRemoteCandidate_n(const IceCandidate* c) {
-  RTC_DCHECK_RUN_ON(network_thread_);
+  RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
   std::string mid = c->sdp_mid();
   if (!VerifyCandidate(c->candidate()).ok() || mid.empty()) {
     RTC_LOG(LS_ERROR) << "Candidate invalid or missing sdp_mid: "
                       << c->candidate().ToSensitiveString();
-    return false;
+    return;
   }
+  // Candidates are added in tasks that are posted to the network thread from
+  // the signaling thread too, so the order of additions and removals is kept.
+  network_thread_->PostTask(
+      SafeTask(network_safety_,
+               [this, mid = std::move(mid), candidate = c->candidate()] {
+                 RTC_DCHECK_RUN_ON(network_thread_);
+                 RemoveRemoteCandidate_n(mid, candidate);
+               }));
+}
+
+void JsepTransportController::RemoveRemoteCandidate_n(
+    absl::string_view mid,
+    const Candidate& candidate) {
+  RTC_DCHECK_RUN_ON(network_thread_);
   JsepTransport* jsep_transport = GetJsepTransportForMid(mid);
   if (!jsep_transport) {
     RTC_LOG(LS_WARNING) << "No Transport for mid=" << mid;
-    return false;
+    return;
   }
   DtlsTransportInternal* dtls =
-      c->candidate().component() == ICE_CANDIDATE_COMPONENT_RTP
+      candidate.component() == ICE_CANDIDATE_COMPONENT_RTP
           ? jsep_transport->rtp_dtls_transport()
           : jsep_transport->rtcp_dtls_transport();
   if (dtls) {
-    dtls->ice_transport()->RemoveRemoteCandidate(c->candidate());
+    dtls->ice_transport()->RemoveRemoteCandidate(candidate);
   }
-  return true;
 }
 
 bool JsepTransportController::GetStats(absl::string_view transport_name,
