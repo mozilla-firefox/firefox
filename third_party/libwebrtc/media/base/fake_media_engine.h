@@ -1062,6 +1062,10 @@ class FakeVideoEngine : public VideoEngineInterface {
 class FakeMediaEngine : public CompositeMediaEngine {
  public:
   FakeMediaEngine();
+  // Uses the given engines instead of default constructed ones, e.g.
+  // subclasses that create custom media channels.
+  FakeMediaEngine(std::unique_ptr<FakeVoiceEngine> voice_engine,
+                  std::unique_ptr<FakeVideoEngine> video_engine);
 
   ~FakeMediaEngine() override;
 

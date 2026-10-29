@@ -773,8 +773,12 @@ void FakeVideoEngine::SetRtpHeaderExtensions(
 }
 
 FakeMediaEngine::FakeMediaEngine()
-    : CompositeMediaEngine(std::make_unique<FakeVoiceEngine>(),
-                           std::make_unique<FakeVideoEngine>()),
+    : FakeMediaEngine(std::make_unique<FakeVoiceEngine>(),
+                      std::make_unique<FakeVideoEngine>()) {}
+
+FakeMediaEngine::FakeMediaEngine(std::unique_ptr<FakeVoiceEngine> voice_engine,
+                                 std::unique_ptr<FakeVideoEngine> video_engine)
+    : CompositeMediaEngine(std::move(voice_engine), std::move(video_engine)),
       voice_(static_cast<FakeVoiceEngine*>(&voice())),
       video_(static_cast<FakeVideoEngine*>(&video())) {}
 FakeMediaEngine::~FakeMediaEngine() {}
