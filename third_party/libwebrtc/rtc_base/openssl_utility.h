@@ -14,6 +14,7 @@
 #include <openssl/ossl_typ.h>
 
 #include <cstdint>
+#include <span>
 
 #include "absl/strings/string_view.h"
 
@@ -38,6 +39,17 @@ bool ParseCertificate(CRYPTO_BUFFER* cert_buffer,
 // skip compiling this as it adds a dependency on OpenSSL X509 objects, which we
 // are trying to avoid in favor of CRYPTO_BUFFERs (see crbug.com/webrtc/11410).
 bool VerifyPeerCertMatchesHost(SSL* ssl, absl::string_view host);
+
+// Returns true if the SubjectPublicKeyInfo of the DER-encoded certificate
+// `cert_der` is explicitly distrusted (e.g. because the private key of a CA was
+// compromised). Matching on the public key also covers cross-signed and
+// reissued certificates for the same key.
+//
+// Fails closed: also returns true if `cert_der` cannot be parsed. WebPKI
+// certificates must be DER-encoded, and a lenient custom verifier could
+// otherwise accept a BER re-encoding of a distrusted certificate whose outer
+// SEQUENCE (not covered by the issuer's signature) this parser rejects.
+bool IsDistrustedCertificate(std::span<const uint8_t> cert_der);
 
 // Logs all the errors in the OpenSSL errror queue from the current thread. A
 // prefix can be provided for context.

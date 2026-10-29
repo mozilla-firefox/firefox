@@ -10,7 +10,10 @@
 
 #include "rtc_base/ssl_adapter.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,6 +22,8 @@
 #include "absl/strings/string_view.h"
 #include "api/test/rtc_error_matchers.h"
 #include "api/units/time_delta.h"
+#include "rtc_base/buffer.h"
+#include "rtc_base/distrusted_certificates_for_testing.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/socket.h"
@@ -179,6 +184,21 @@ class SSLAdapterTestDummyServer : public SSLAdapterTestDummy {
 
   SocketAddress GetAddress() const { return socket_->GetLocalAddress(); }
 
+  // Appends the DER-encoded certificate `der` to the certificate chain that
+  // the server presents in the handshake.
+  void AppendToCertificateChain(std::span<const uint8_t> der) {
+    std::string chain_pem;
+    const SSLCertChain& chain = ssl_identity_->cert_chain();
+    for (size_t i = 0; i < chain.GetSize(); ++i) {
+      chain_pem += chain.Get(i).ToPEMString();
+    }
+    chain_pem +=
+        SSLIdentity::DerToPem(kPemTypeCertificate, der.data(), der.size());
+    ssl_identity_ = SSLIdentity::CreateFromPEMChainStrings(
+        ssl_identity_->PrivateKeyToPEMString(), chain_pem);
+    ASSERT_NE(ssl_identity_, nullptr);
+  }
+
   std::string GetHostname() const {
     // Since we don't have a real certificate anyway, the value here doesn't
     // really matter.
@@ -233,6 +253,14 @@ class SSLAdapterTestBase : public ::testing::Test {
 
     SetIgnoreBadCert(false);
     SetCertVerifier(cert_verifier_.get());
+  }
+
+  // Makes the server present a certificate with a distrusted public key after
+  // its own (trusted, see SetMockCertVerifier()) certificate. Such a
+  // certificate is not needed to build the path, but still causes the chain
+  // to be rejected.
+  void AppendDistrustedCertificateToServerChain() {
+    server_->AppendToCertificateChain(kDistrustedCertificateCrossSigned);
   }
 
   void TestHandshake(bool expect_success) {
@@ -343,6 +371,59 @@ TEST_F(SSLAdapterTestTLS_ECDSA, TestTLSConnectCustomCertVerifierSucceeds) {
 TEST_F(SSLAdapterTestTLS_ECDSA, TestTLSConnectCustomCertVerifierFails) {
   SetMockCertVerifier(/*return_value=*/false);
   TestHandshake(/*expect_success=*/false);
+}
+
+// Test that handshake fails if the server presents a certificate with a
+// distrusted public key, even if the custom verifier accepts the chain. RSA.
+TEST_F(SSLAdapterTestTLS_RSA, TestTLSConnectDistrustedCertificateFails) {
+  SetMockCertVerifier(/*return_value=*/true);
+  ASSERT_NO_FATAL_FAILURE(AppendDistrustedCertificateToServerChain());
+  TestHandshake(/*expect_success=*/false);
+}
+
+// Test that handshake fails if the server presents a certificate with a
+// distrusted public key, even if the custom verifier accepts the chain. ECDSA.
+TEST_F(SSLAdapterTestTLS_ECDSA, TestTLSConnectDistrustedCertificateFails) {
+  SetMockCertVerifier(/*return_value=*/true);
+  ASSERT_NO_FATAL_FAILURE(AppendDistrustedCertificateToServerChain());
+  TestHandshake(/*expect_success=*/false);
+}
+
+// Control for the tests above: presenting an additional certificate that is
+// not distrusted does not make the handshake fail. RSA.
+TEST_F(SSLAdapterTestTLS_RSA, TestTLSConnectUnrelatedChainCertificate) {
+  SetMockCertVerifier(/*return_value=*/true);
+  std::unique_ptr<SSLIdentity> unrelated =
+      SSLIdentity::Create("unrelated.example.com", KeyParams::RSA());
+  ASSERT_NE(unrelated, nullptr);
+  Buffer der;
+  unrelated->certificate().ToDER(&der);
+  ASSERT_NO_FATAL_FAILURE(server_->AppendToCertificateChain(der));
+  TestHandshake(/*expect_success=*/true);
+}
+
+// Control for the tests above: presenting an additional certificate that is
+// not distrusted does not make the handshake fail. ECDSA.
+TEST_F(SSLAdapterTestTLS_ECDSA, TestTLSConnectUnrelatedChainCertificate) {
+  SetMockCertVerifier(/*return_value=*/true);
+  std::unique_ptr<SSLIdentity> unrelated =
+      SSLIdentity::Create("unrelated.example.com", KeyParams::ECDSA());
+  ASSERT_NE(unrelated, nullptr);
+  Buffer der;
+  unrelated->certificate().ToDER(&der);
+  ASSERT_NO_FATAL_FAILURE(server_->AppendToCertificateChain(der));
+  TestHandshake(/*expect_success=*/true);
+}
+
+// Test that ignoring bad certificates also overrides the distrust check.
+TEST_F(SSLAdapterTestTLS_ECDSA,
+       TestTLSConnectDistrustedCertificateWithIgnoreBadCert) {
+  // Accept the chain in the custom verifier, so that the distrust check is
+  // reached in both the X509 and the CRYPTO_BUFFER code paths.
+  SetMockCertVerifier(/*return_value=*/true);
+  SetIgnoreBadCert(true);
+  ASSERT_NO_FATAL_FAILURE(AppendDistrustedCertificateToServerChain());
+  TestHandshake(/*expect_success=*/true);
 }
 
 // Test transfer between client and server, using RSA

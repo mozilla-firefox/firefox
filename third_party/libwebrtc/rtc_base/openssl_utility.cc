@@ -11,6 +11,7 @@
 #include "rtc_base/openssl_utility.h"
 
 #include <openssl/err.h>
+#include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <openssl/ssl3.h>
 #include <openssl/x509.h>
@@ -19,15 +20,21 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <optional>
+#include <span>
+#include <string>
 
+#include "absl/algorithm/container.h"
 #include "absl/strings/string_view.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/openssl.h"
 #include "rtc_base/ssl_identity.h"
+#include "rtc_base/string_encode.h"
 #include "rtc_base/strings/string_builder.h"
 
 #ifdef OPENSSL_IS_BORINGSSL
+#include <openssl/bytestring.h>
 #include <openssl/pool.h>
 #endif
 
@@ -40,6 +47,95 @@ namespace openssl {
 
 // Holds various helper methods.
 namespace {
+
+// Hex-encoded SHA-256 hashes of SubjectPublicKeyInfo for distrusted
+// certificates. Matching SPKI covers cross-signed and reissued
+// certificates with the same key.
+// TODO(bugs.webrtc.org/576525998): Remove an entry once every certificate known
+// to use its key has expired.
+constexpr absl::string_view kDistrustedSpkiSha256[] = {
+    // eMudhra intermediates with compromised P-384 private keys, cross-signed
+    // by "AAA Certificate Services" (Sectigo).
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=2083449
+    // https://go.dev/issue/82345
+    // C=NL, O=eMudhra BV, CN=EM DV TLS CA - G3B
+    "ebed6475c2c2d80fcb199f3fe8dd6e6b3ce60b77eb15d4e42c3dec0c6f5b5105",
+    // C=US, O=eMudhra Inc, CN=EM DV TLS CA - G3C
+    "49dd353dc2b919a3770645117d0e60c16115e7d1bc259eefe734b00ea434fe5f",
+    // C=NL, O=eMudhra BV, CN=EM EV TLS CA - G3B
+    "e0254c7fcdc265e2f0f8a428dabb75ab4ae039b4872d62f5ee57f0877d5a8a41",
+    // C=US, O=eMudhra Inc, CN=EM EV TLS CA - G3C
+    "5c0660a2b164910d8ff589c18e14552e9e0ec237dcefe2cb736d41a4811f81a0",
+    // C=NL, O=eMudhra BV, CN=EM OV TLS CA - G3B
+    "43bffa19d6ef651451f6841e019931e96f6f2eaeff28ab4b6f1ce4576de2717b",
+    // C=US, O=eMudhra Inc, CN=EM OV TLS CA - G3C
+    "63ecefee431d49523bc1136c4e72d0206a477086caf606cd5cf025686c109cf8",
+    // C=NL, O=eMudhra BV, CN=EM OV CS CA - G3B
+    "ec4ffa1ad0ac88081314b7aaffef6a91f97cd57291bb5ba686c5415f5eb4f6b6",
+    // C=US, O=eMudhra Inc, CN=EM OV CS CA - G3C
+    "92c063d67e8f14db71d288e11266ffdaf69cbf115f7bab14f3bc2f68d25e0e30",
+};
+
+// Returns the hex SHA-256 of `cert_der`'s SubjectPublicKeyInfo, or nullopt
+// on parse failure.
+std::optional<std::string> GetSpkiSha256(std::span<const uint8_t> cert_der) {
+#ifdef OPENSSL_IS_BORINGSSL
+  // Extract SubjectPublicKeyInfo without re-encoding.
+  CBS cbs;
+  CBS_init(&cbs, cert_der.data(), cert_der.size());
+  CBS certificate;
+  CBS tbs_certificate;
+  CBS spki;
+  if (!CBS_get_asn1(&cbs, &certificate, CBS_ASN1_SEQUENCE) ||
+      !CBS_get_asn1(&certificate, &tbs_certificate, CBS_ASN1_SEQUENCE) ||
+      // version [0] EXPLICIT Version DEFAULT v1
+      !CBS_get_optional_asn1(
+          &tbs_certificate, nullptr, nullptr,
+          CBS_ASN1_CONSTRUCTED | CBS_ASN1_CONTEXT_SPECIFIC) ||
+      // serialNumber
+      !CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_INTEGER) ||
+      // signature
+      !CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE) ||
+      // issuer
+      !CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE) ||
+      // validity
+      !CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE) ||
+      // subject
+      !CBS_get_asn1(&tbs_certificate, nullptr, CBS_ASN1_SEQUENCE) ||
+      // subjectPublicKeyInfo
+      !CBS_get_asn1_element(&tbs_certificate, &spki, CBS_ASN1_SEQUENCE)) {
+    return std::nullopt;
+  }
+  const uint8_t* spki_data = CBS_data(&spki);
+  size_t spki_len = CBS_len(&spki);
+#else   // OPENSSL_IS_BORINGSSL
+  const unsigned char* cert_ptr = cert_der.data();
+  X509* x509 = d2i_X509(nullptr, &cert_ptr,
+                        checked_cast<long>(cert_der.size()));  // NOLINT
+  if (x509 == nullptr) {
+    return std::nullopt;
+  }
+  unsigned char* spki_data = nullptr;
+  int spki_len = i2d_X509_PUBKEY(X509_get_X509_PUBKEY(x509), &spki_data);
+  X509_free(x509);
+  if (spki_len <= 0) {
+    return std::nullopt;
+  }
+#endif  // !defined(OPENSSL_IS_BORINGSSL)
+
+  unsigned char digest[EVP_MAX_MD_SIZE];
+  unsigned int digest_len = 0;
+  bool ok = EVP_Digest(spki_data, spki_len, digest, &digest_len, EVP_sha256(),
+                       nullptr) == 1;
+#ifndef OPENSSL_IS_BORINGSSL
+  OPENSSL_free(spki_data);
+#endif
+  if (!ok) {
+    return std::nullopt;
+  }
+  return hex_encode(
+      absl::string_view(reinterpret_cast<const char*>(digest), digest_len));
+}
 
 // TODO(crbug.com/webrtc/11710): When OS certificate verification is available,
 // and we don't need VerifyPeerCertMatchesHost, don't compile this in order to
@@ -232,6 +328,15 @@ bool VerifyPeerCertMatchesHost(SSL* ssl, absl::string_view host) {
   X509_free(certificate);
   return is_valid_cert_name;
 #endif  // !defined(OPENSSL_IS_BORINGSSL)
+}
+
+bool IsDistrustedCertificate(std::span<const uint8_t> cert_der) {
+  std::optional<std::string> spki_sha256 = GetSpkiSha256(cert_der);
+  if (!spki_sha256) {
+    // Fail closed, see the comment in the header.
+    return true;
+  }
+  return absl::c_linear_search(kDistrustedSpkiSha256, *spki_sha256);
 }
 
 void LogSSLErrors(absl::string_view prefix) {
