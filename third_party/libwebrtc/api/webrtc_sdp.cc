@@ -11,6 +11,7 @@
 #include "api/webrtc_sdp.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <climits>
 #include <cstddef>
@@ -21,7 +22,6 @@
 #include <set>
 #include <span>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -1155,26 +1155,6 @@ void AddFeedbackParameters(const FeedbackParams& feedback_params,
   }
 }
 
-// Updates or creates a new codec entry in the media description.
-void AddOrReplaceCodec(MediaContentDescription* content_desc,
-                       const Codec& codec) {
-  std::vector<Codec> codecs = content_desc->codecs();
-  bool found = false;
-  for (Codec& existing_codec : codecs) {
-    if (codec.id == existing_codec.id) {
-      // Overwrite existing codec with the new codec.
-      existing_codec = codec;
-      found = true;
-      break;
-    }
-  }
-  if (!found) {
-    content_desc->AddCodec(codec);
-    return;
-  }
-  content_desc->set_codecs(codecs);
-}
-
 void BuildRtpmap(const MediaContentDescription* media_desc,
                  const MediaType media_type,
                  bool use_wildcard,
@@ -1201,15 +1181,7 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
 
   StringBuilder os;
   if (media_type == MediaType::VIDEO) {
-    for (Codec codec : media_desc->codecs()) {
-      // Include transport-wide codec parameters.
-      // TODO: issues.webrtc.org/489794442 - Remove when wildcards are
-      // OK to send.
-      if (!use_wildcard) {
-        if (media_desc->rtcp_fb_ack_ccfb()) {
-          codec.feedback_params.Add({"ack", "ccfb"});
-        }
-      }
+    for (const Codec& codec : media_desc->codecs()) {
       // RFC 4566
       // a=rtpmap:<payload type> <encoding name>/<clock rate>
       // [/<encodingparameters>]
@@ -1220,23 +1192,24 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
         AddLine(os.str(), message);
       }
       AddPacketizationLine(codec, message);
-      AddRtcpFbLines(codec, common_fb_params, message);
+      // Include transport-wide codec parameters.
+      // TODO: issues.webrtc.org/489794442 - Remove when wildcards are
+      // OK to send.
+      if (!use_wildcard && media_desc->rtcp_fb_ack_ccfb()) {
+        Codec codec_with_ccfb = codec;
+        codec_with_ccfb.feedback_params.Add({"ack", "ccfb"});
+        AddRtcpFbLines(codec_with_ccfb, common_fb_params, message);
+      } else {
+        AddRtcpFbLines(codec, common_fb_params, message);
+      }
       AddFmtpLine(codec, message);
     }
   } else if (media_type == MediaType::AUDIO) {
     std::vector<int> ptimes;
     std::vector<int> maxptimes;
     int max_minptime = 0;
-    for (Codec codec : media_desc->codecs()) {
+    for (const Codec& codec : media_desc->codecs()) {
       RTC_DCHECK(!codec.name.empty());
-      // Include transport-wide codec parameters.
-      // TODO: issues.webrtc.org/489794442 - Remove when wildcards are
-      // OK to send.
-      if (!use_wildcard) {
-        if (media_desc->rtcp_fb_ack_ccfb()) {
-          codec.feedback_params.Add({"ack", "ccfb"});
-        }
-      }
       // RFC 4566
       // a=rtpmap:<payload type> <encoding name>/<clock rate>
       // [/<encodingparameters>]
@@ -1247,7 +1220,16 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
         os << "/" << codec.channels;
       }
       AddLine(os.str(), message);
-      AddRtcpFbLines(codec, common_fb_params, message);
+      // Include transport-wide codec parameters.
+      // TODO: issues.webrtc.org/489794442 - Remove when wildcards are
+      // OK to send.
+      if (!use_wildcard && media_desc->rtcp_fb_ack_ccfb()) {
+        Codec codec_with_ccfb = codec;
+        codec_with_ccfb.feedback_params.Add({"ack", "ccfb"});
+        AddRtcpFbLines(codec_with_ccfb, common_fb_params, message);
+      } else {
+        AddRtcpFbLines(codec, common_fb_params, message);
+      }
       AddFmtpLine(codec, message);
       int minptime = 0;
       if (GetParameter(kCodecParamMinPTime, codec.params, &minptime)) {
@@ -2136,20 +2118,23 @@ void BackfillCodecParameters(std::vector<Codec>& codecs) {
 }
 
 // Gets the current codec setting associated with `payload_type`. If there
-// is no Codec associated with that payload type it returns an empty codec
-// with that payload type.
-Codec GetCodecWithPayloadType(MediaType type,
-                              const std::vector<Codec>& codecs,
-                              PayloadType payload_type) {
-  const Codec* codec = FindCodecById(codecs, payload_type);
-  if (codec)
-    return *codec;
-  // Return empty codec with `payload_type`.
-  if (type == MediaType::AUDIO) {
-    return CreateAudioCodec(payload_type, "", kDefaultAudioClockRateHz, 0);
-  } else {
-    return CreateVideoCodec(payload_type, "");
+// is no Codec associated with that payload type it adds an empty codec
+// with that payload type and returns a reference to it.
+Codec& GetOrAddCodecWithPayloadType(MediaContentDescription* content_desc,
+                                    PayloadType payload_type) {
+  std::vector<Codec>& codecs = content_desc->mutable_codecs();
+  for (Codec& codec : codecs) {
+    if (codec.id == payload_type) {
+      return codec;
+    }
   }
+  if (content_desc->type() == MediaType::AUDIO) {
+    codecs.push_back(
+        CreateAudioCodec(payload_type, "", kDefaultAudioClockRateHz, 0));
+  } else {
+    codecs.push_back(CreateVideoCodec(payload_type, ""));
+  }
+  return codecs.back();
 }
 
 // Adds or updates existing codec corresponding to `payload_type` according
@@ -2158,10 +2143,8 @@ void UpdateCodec(MediaContentDescription* content_desc,
                  PayloadType payload_type,
                  const CodecParameterMap& parameters) {
   // Codec might already have been populated (from rtpmap).
-  Codec new_codec = GetCodecWithPayloadType(
-      content_desc->type(), content_desc->codecs(), payload_type);
-  AddParameters(parameters, &new_codec);
-  AddOrReplaceCodec(content_desc, new_codec);
+  Codec& codec = GetOrAddCodecWithPayloadType(content_desc, payload_type);
+  AddParameters(parameters, &codec);
 }
 
 // Adds or updates existing codec corresponding to `payload_type` according
@@ -2170,10 +2153,8 @@ void UpdateCodec(MediaContentDescription* content_desc,
                  PayloadType payload_type,
                  const FeedbackParam& feedback_param) {
   // Codec might already have been populated (from rtpmap).
-  Codec new_codec = GetCodecWithPayloadType(
-      content_desc->type(), content_desc->codecs(), payload_type);
-  AddFeedbackParameter(feedback_param, &new_codec);
-  AddOrReplaceCodec(content_desc, new_codec);
+  Codec& codec = GetOrAddCodecWithPayloadType(content_desc, payload_type);
+  AddFeedbackParameter(feedback_param, &codec);
 }
 
 bool ParseFmtpAttributes(absl::string_view line,
@@ -2342,13 +2323,11 @@ void UpdateCodec(PayloadType payload_type,
                  MediaContentDescription* desc) {
   // Codec may already be populated with (only) optional parameters
   // (from an fmtp).
-  Codec codec =
-      GetCodecWithPayloadType(desc->type(), desc->codecs(), payload_type);
+  Codec& codec = GetOrAddCodecWithPayloadType(desc, payload_type);
   codec.name = std::string(name);
   codec.clockrate = clockrate;
   codec.bitrate = bitrate;
   codec.channels = channels;
-  AddOrReplaceCodec(desc, codec);
 }
 
 // Updates or creates a new codec entry in the video description according to
@@ -2358,10 +2337,8 @@ void UpdateCodec(PayloadType payload_type,
                  MediaContentDescription* desc) {
   // Codec may already be populated with (only) optional parameters
   // (from an fmtp).
-  Codec codec =
-      GetCodecWithPayloadType(desc->type(), desc->codecs(), payload_type);
+  Codec& codec = GetOrAddCodecWithPayloadType(desc, payload_type);
   codec.name = std::string(name);
-  AddOrReplaceCodec(desc, codec);
 }
 
 bool ParseRtpmapAttribute(absl::string_view line,
@@ -2476,10 +2453,8 @@ void UpdateVideoCodecPacketization(MediaContentDescription* desc,
   }
 
   // Codec might already have been populated (from rtpmap).
-  Codec codec =
-      GetCodecWithPayloadType(desc->type(), desc->codecs(), payload_type);
+  Codec& codec = GetOrAddCodecWithPayloadType(desc, payload_type);
   codec.packetization = std::string(packetization);
-  AddOrReplaceCodec(desc, codec);
 }
 
 bool ParsePacketizationAttribute(absl::string_view line,
@@ -2552,7 +2527,7 @@ std::optional<Codec> PopWildcardCodec(std::vector<Codec>* codecs) {
   RTC_DCHECK(codecs);
   for (auto iter = codecs->begin(); iter != codecs->end(); ++iter) {
     if (iter->id == kWildcardPayloadType) {
-      Codec wildcard_codec = *iter;
+      Codec wildcard_codec = std::move(*iter);
       codecs->erase(iter);
       return wildcard_codec;
     }
@@ -2562,7 +2537,7 @@ std::optional<Codec> PopWildcardCodec(std::vector<Codec>* codecs) {
 
 void UpdateFromWildcardCodecs(MediaContentDescription* desc) {
   RTC_DCHECK(desc);
-  auto codecs = desc->codecs();
+  std::vector<Codec>& codecs = desc->mutable_codecs();
   std::optional<Codec> wildcard_codec = PopWildcardCodec(&codecs);
   if (!wildcard_codec) {
     return;
@@ -2570,7 +2545,6 @@ void UpdateFromWildcardCodecs(MediaContentDescription* desc) {
   for (auto& codec : codecs) {
     AddFeedbackParameters(wildcard_codec->feedback_params, &codec);
   }
-  desc->set_codecs(codecs);
 }
 
 // Update settings that are only valid if media-section-wide, but
@@ -2599,11 +2573,9 @@ void AddAudioAttribute(absl::string_view name,
   if (value.empty()) {
     return;
   }
-  std::vector<Codec> codecs = desc->codecs();
-  for (Codec& codec : codecs) {
+  for (Codec& codec : desc->mutable_codecs()) {
     codec.SetParam(name, value);
   }
-  desc->set_codecs(codecs);
 }
 
 bool ParseContent(absl::string_view message,
@@ -3035,7 +3007,7 @@ bool ParseContent(absl::string_view message,
   // can happen if an SDP has an fmtp or rtcp-fb with a payload type but doesn't
   // have a corresponding "rtpmap" line. This should lead to a parse error.
   if (!absl::c_all_of(media_desc->codecs(),
-                      [](const Codec codec) { return !codec.name.empty(); })) {
+                      [](const Codec& codec) { return !codec.name.empty(); })) {
     return ParseFailed("Failed to parse codecs correctly.", error);
   }
   if (media_type == MediaType::AUDIO) {
@@ -3090,23 +3062,26 @@ std::unique_ptr<MediaContentDescription> ParseContentDescription(
     return nullptr;
   }
   // Sort the codecs according to the m-line fmt list.
-  std::unordered_map<int, int> payload_type_preferences;
   // "size + 1" so that the lowest preference payload type has a preference of
   // 1, which is greater than the default (0) for payload types not in the fmt
   // list.
+  constexpr int kMaxPayloadType = 127;
+  std::array<int, kMaxPayloadType + 1> payload_type_preferences{};
   int preference = static_cast<int>(payload_types.size() + 1);
   for (int pt : payload_types) {
+    RTC_DCHECK(IsValidRtpPayloadType(pt));
     payload_type_preferences[pt] = preference--;
   }
-  std::vector<Codec> codecs = media_desc->codecs();
+  std::vector<Codec>& codecs = media_desc->mutable_codecs();
   absl::c_sort(
       codecs, [&payload_type_preferences](const Codec& a, const Codec& b) {
+        RTC_DCHECK(IsValidRtpPayloadType(a.id));
+        RTC_DCHECK(IsValidRtpPayloadType(b.id));
         return payload_type_preferences[a.id] > payload_type_preferences[b.id];
       });
   // Backfill any default parameters.
   BackfillCodecParameters(codecs);
 
-  media_desc->set_codecs(codecs);
   return media_desc;
 }
 
