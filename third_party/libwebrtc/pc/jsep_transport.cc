@@ -399,7 +399,10 @@ bool JsepTransport::SetRtcpMux(bool enable,
 void JsepTransport::ActivateRtcpMux() {
   RTC_DCHECK_RUN_ON(&transport_sequence_);
   // If the transport is a DtlsSrtpTransport, it needs to know that RTCP mux
-  // is active to clear its RTCP transport.
+  // is active to clear its RTCP transport. This must happen before the RTCP
+  // transport is cleared, otherwise the active SRTP sessions would be reset
+  // and set up again with the same keys.
+  rtp_transport_->SetRtcpMuxEnabled(true);
   if (auto* dtls_srtp_transport = rtp_transport_->AsDtlsSrtpTransport()) {
     dtls_srtp_transport->SetDtlsTransports(rtp_dtls_transport(),
                                            /*rtcp_dtls_transport=*/nullptr);

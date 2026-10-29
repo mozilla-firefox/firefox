@@ -10,6 +10,8 @@
 
 #include "pc/jsep_transport.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <optional>
@@ -28,6 +30,7 @@
 #include "api/make_ref_counted.h"
 #include "api/rtp_header_extension_id.h"
 #include "api/scoped_refptr.h"
+#include "call/rtp_demuxer.h"
 #include "media/base/fake_rtp.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/p2p_constants.h"
@@ -39,7 +42,9 @@
 #include "pc/dtls_srtp_transport.h"
 #include "pc/dtls_transport.h"
 #include "pc/rtp_transport.h"
+#include "pc/rtp_transport_internal.h"
 #include "pc/srtp_transport.h"
+#include "pc/test/rtp_transport_test_util.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/byte_order.h"
@@ -1286,6 +1291,139 @@ TEST_F(JsepTransport2Test, RtcpMuxNegotiation) {
 
   EXPECT_NE(nullptr, jsep_transport_->rtcp_dtls_transport());
   EXPECT_FALSE(signal_rtcp_mux_active_received_);
+}
+
+// Simulates a completed DTLS handshake between two fake DTLS transports.
+void ConnectFakeDtlsTransports(DtlsTransportInternal* dtls1,
+                               DtlsTransportInternal* dtls2) {
+  auto* fake_dtls1 = static_cast<FakeDtlsTransport*>(dtls1);
+  auto* fake_dtls2 = static_cast<FakeDtlsTransport*>(dtls2);
+  fake_dtls1->SetLocalCertificate(
+      RTCCertificate::Create(SSLIdentity::Create("session1", KT_DEFAULT)));
+  fake_dtls2->SetLocalCertificate(
+      RTCCertificate::Create(SSLIdentity::Create("session2", KT_DEFAULT)));
+  fake_dtls1->SetDestination(fake_dtls2);
+}
+
+// Applies `description` as the offer from `offerer` and as the answer from
+// `answerer`.
+void NegotiateTransports(JsepTransport& offerer,
+                         JsepTransport& answerer,
+                         const JsepTransportDescription& description) {
+  ASSERT_TRUE(
+      offerer.SetLocalJsepTransportDescription(description, SdpType::kOffer)
+          .ok());
+  ASSERT_TRUE(
+      answerer.SetRemoteJsepTransportDescription(description, SdpType::kOffer)
+          .ok());
+  ASSERT_TRUE(
+      answerer.SetLocalJsepTransportDescription(description, SdpType::kAnswer)
+          .ok());
+  ASSERT_TRUE(
+      offerer.SetRemoteJsepTransportDescription(description, SdpType::kAnswer)
+          .ok());
+}
+
+// Negotiates without RTCP mux and completes the DTLS handshakes of both the RTP
+// and the RTCP transports, so that SRTP becomes active.
+void EstablishSrtpWithoutRtcpMux(JsepTransport& offerer,
+                                 JsepTransport& answerer) {
+  JsepTransportDescription description;
+  description.rtcp_mux_enabled = false;
+  ASSERT_NO_FATAL_FAILURE(NegotiateTransports(offerer, answerer, description));
+  ASSERT_NE(nullptr, offerer.rtcp_dtls_transport());
+  ASSERT_NE(nullptr, answerer.rtcp_dtls_transport());
+  ConnectFakeDtlsTransports(offerer.rtp_dtls_transport(),
+                            answerer.rtp_dtls_transport());
+  ConnectFakeDtlsTransports(offerer.rtcp_dtls_transport(),
+                            answerer.rtcp_dtls_transport());
+  ASSERT_TRUE(offerer.rtp_transport()->IsSrtpActive());
+  ASSERT_TRUE(answerer.rtp_transport()->IsSrtpActive());
+}
+
+// Sends an RTP packet and returns the SRTP packet as it was sent on the wire.
+CopyOnWriteBuffer SendRtpPacketAndGetWirePacket(JsepTransport& sender,
+                                                uint16_t sequence_number) {
+  // Room for the auth tag of the default crypto suite of FakeDtlsTransport.
+  constexpr size_t kRtpAuthTagLen = 10;
+  CopyOnWriteBuffer packet(kPcmuFrame,
+                           /*capacity=*/sizeof(kPcmuFrame) + kRtpAuthTagLen);
+  SetBE16(packet.AsMutableSpan().subspan(2), sequence_number);
+  AsyncSocketPacketOptions options;
+  EXPECT_TRUE(
+      sender.rtp_transport()->SendRtpPacket(&packet, options, PF_SRTP_BYPASS));
+  return static_cast<FakeDtlsTransport*>(sender.rtp_dtls_transport())
+      ->fake_ice_transport()
+      ->last_sent_packet();
+}
+
+// Counts the RTP packets that `rtp_transport` delivers, i.e. the packets that
+// passed SRTP processing. Must be destroyed before `rtp_transport`.
+class ReceivedRtpPacketCounter {
+ public:
+  explicit ReceivedRtpPacketCounter(RtpTransportInternal* rtp_transport)
+      : rtp_transport_(rtp_transport) {
+    RtpDemuxerCriteria criteria;
+    // 0x00 is the payload type used in kPcmuFrame.
+    criteria.payload_types() = {0x00};
+    EXPECT_TRUE(rtp_transport_->RegisterRtpDemuxerSink(criteria, &observer_));
+  }
+  ~ReceivedRtpPacketCounter() {
+    rtp_transport_->UnregisterRtpDemuxerSink(&observer_);
+  }
+
+  int count() const { return observer_.rtp_count(); }
+
+ private:
+  RtpTransportInternal* const rtp_transport_;
+  TransportObserver observer_;
+};
+
+// Tests that activating RTCP mux in a subsequent offer/answer exchange keeps
+// the SRTP sessions that were set up while RTCP mux was disabled. Recreating
+// the sessions with the same keys would reset their replay protection and
+// rollover counters, which the test detects by replaying earlier packets.
+TEST_F(JsepTransport2Test, RtcpMuxActivationPreservesSrtpSessions) {
+  std::unique_ptr<JsepTransport> transport1 =
+      CreateJsepTransport2(/*rtcp_mux_enabled=*/false);
+  std::unique_ptr<JsepTransport> transport2 =
+      CreateJsepTransport2(/*rtcp_mux_enabled=*/false);
+  ReceivedRtpPacketCounter received1(transport1->rtp_transport());
+  ReceivedRtpPacketCounter received2(transport2->rtp_transport());
+  ASSERT_NO_FATAL_FAILURE(
+      EstablishSrtpWithoutRtcpMux(*transport1, *transport2));
+
+  CopyOnWriteBuffer packet_1to2 =
+      SendRtpPacketAndGetWirePacket(*transport1, /*sequence_number=*/1);
+  CopyOnWriteBuffer packet_2to1 =
+      SendRtpPacketAndGetWirePacket(*transport2, /*sequence_number=*/1);
+  ASSERT_EQ(1, received2.count());
+  ASSERT_EQ(1, received1.count());
+
+  // `transport2` activates RTCP mux when applying the answer as a local
+  // description and `transport1` when applying it as a remote description.
+  JsepTransportDescription description;
+  description.rtcp_mux_enabled = true;
+  ASSERT_NO_FATAL_FAILURE(
+      NegotiateTransports(*transport1, *transport2, description));
+  ASSERT_EQ(nullptr, transport1->rtcp_dtls_transport());
+  ASSERT_EQ(nullptr, transport2->rtcp_dtls_transport());
+
+  // Send the earlier SRTP packets again, unmodified. Both receivers must
+  // reject them as replays.
+  AsyncSocketPacketOptions options;
+  transport1->rtp_dtls_transport()->SendPacket(
+      packet_1to2.data<char>(), packet_1to2.size(), options, PF_SRTP_BYPASS);
+  transport2->rtp_dtls_transport()->SendPacket(
+      packet_2to1.data<char>(), packet_2to1.size(), options, PF_SRTP_BYPASS);
+  EXPECT_EQ(1, received2.count());
+  EXPECT_EQ(1, received1.count());
+
+  // New packets are still received.
+  SendRtpPacketAndGetWirePacket(*transport1, /*sequence_number=*/2);
+  SendRtpPacketAndGetWirePacket(*transport2, /*sequence_number=*/2);
+  EXPECT_EQ(2, received2.count());
+  EXPECT_EQ(2, received1.count());
 }
 
 // Tests that the remote candidates can be added to the transports after both
