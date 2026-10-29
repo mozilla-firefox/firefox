@@ -12,6 +12,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -63,6 +64,24 @@ std::unique_ptr<SharedMemory> FakeSharedMemoryFactory::CreateSharedMemory(
     size_t size) {
   return std::unique_ptr<SharedMemory>(new FakeSharedMemory(size));
 }
+
+class SelectSourceFakeCapturer : public FakeDesktopCapturer {
+ public:
+  void set_select_source_result(bool result) { select_source_result_ = result; }
+
+  bool SelectSource(DesktopCapturer::SourceId id) override {
+    last_selected_source_ = id;
+    return select_source_result_;
+  }
+
+  std::optional<DesktopCapturer::SourceId> last_selected_source() const {
+    return last_selected_source_;
+  }
+
+ private:
+  bool select_source_result_ = true;
+  std::optional<DesktopCapturer::SourceId> last_selected_source_;
+};
 
 }  // namespace
 
@@ -202,6 +221,67 @@ TEST_F(FallbackDesktopCapturerWrapperTest, WithSharedMemory) {
     ASSERT_EQ(results_[i],
               std::make_pair(DesktopCapturer::Result::SUCCESS, true));
   }
+}
+
+class FallbackDesktopCapturerWrapperSelectSourceTest : public ::testing::Test {
+ protected:
+  // Creates `wrapper_` with fake capturers whose SelectSource() returns
+  // `main_result` and `secondary_result`.
+  void CreateWrapper(bool main_result, bool secondary_result) {
+    auto main = std::make_unique<SelectSourceFakeCapturer>();
+    auto secondary = std::make_unique<SelectSourceFakeCapturer>();
+    main->set_select_source_result(main_result);
+    secondary->set_select_source_result(secondary_result);
+    main_ = main.get();
+    secondary_ = secondary.get();
+    wrapper_ = std::make_unique<FallbackDesktopCapturerWrapper>(
+        std::move(main), std::move(secondary), "WebRTC.Test.SelectSource");
+  }
+
+  SelectSourceFakeCapturer* main_ = nullptr;
+  SelectSourceFakeCapturer* secondary_ = nullptr;
+  std::unique_ptr<FallbackDesktopCapturerWrapper> wrapper_;
+};
+
+TEST_F(FallbackDesktopCapturerWrapperSelectSourceTest, BothSucceed) {
+  CreateWrapper(/*main_result=*/true, /*secondary_result=*/true);
+
+  EXPECT_TRUE(wrapper_->SelectSource(123));
+  EXPECT_EQ(main_->last_selected_source(), 123);
+  EXPECT_EQ(secondary_->last_selected_source(), 123);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperSelectSourceTest,
+       MainSucceedsSecondaryFails) {
+  CreateWrapper(/*main_result=*/true, /*secondary_result=*/false);
+
+  // The wrapper returns the secondary capturer's result.
+  EXPECT_FALSE(wrapper_->SelectSource(123));
+  EXPECT_EQ(main_->last_selected_source(), 123);
+  EXPECT_EQ(secondary_->last_selected_source(), 123);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperSelectSourceTest,
+       MainFailsSecondarySucceeds) {
+  CreateWrapper(/*main_result=*/false, /*secondary_result=*/true);
+
+  EXPECT_TRUE(wrapper_->SelectSource(123));
+  EXPECT_EQ(main_->last_selected_source(), 123);
+  EXPECT_EQ(secondary_->last_selected_source(), 123);
+
+  // Subsequent SelectSource calls do not invoke the main capturer again.
+  main_->set_select_source_result(true);
+  EXPECT_TRUE(wrapper_->SelectSource(456));
+  EXPECT_EQ(main_->last_selected_source(), 123);
+  EXPECT_EQ(secondary_->last_selected_source(), 456);
+}
+
+TEST_F(FallbackDesktopCapturerWrapperSelectSourceTest, BothFail) {
+  CreateWrapper(/*main_result=*/false, /*secondary_result=*/false);
+
+  EXPECT_FALSE(wrapper_->SelectSource(123));
+  EXPECT_EQ(main_->last_selected_source(), 123);
+  EXPECT_EQ(secondary_->last_selected_source(), 123);
 }
 
 }  // namespace webrtc

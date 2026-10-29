@@ -9,7 +9,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/c2a275c690c1e6ebd
  1 file changed, 1 insertion(+)
 
 diff --git a/modules/desktop_capture/desktop_capture_options.h b/modules/desktop_capture/desktop_capture_options.h
-index aa3dd331fe..4ef972f184 100644
+index 4d0c364cb0..8dc342a949 100644
 --- a/modules/desktop_capture/desktop_capture_options.h
 +++ b/modules/desktop_capture/desktop_capture_options.h
 @@ -11,6 +11,7 @@

@@ -43,7 +43,7 @@ index d414fb7e25..4aeb6e2593 100644
                          max_adjusted_bitrate_pct) {}
    virtual ~BitrateAdjuster() = default;
 diff --git a/modules/desktop_capture/desktop_capture_options.h b/modules/desktop_capture/desktop_capture_options.h
-index 010e5e1e7c..aa3dd331fe 100644
+index ce3c2416ef..4d0c364cb0 100644
 --- a/modules/desktop_capture/desktop_capture_options.h
 +++ b/modules/desktop_capture/desktop_capture_options.h
 @@ -57,7 +57,7 @@ class RTC_EXPORT DesktopCaptureOptions {

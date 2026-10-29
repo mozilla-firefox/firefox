@@ -14,6 +14,7 @@
 #include <memory>
 #include <utility>
 
+#include "absl/strings/string_view.h"
 #include "api/sequence_checker.h"
 #include "modules/desktop_capture/desktop_capture_types.h"
 #include "modules/desktop_capture/desktop_capturer.h"
@@ -50,6 +51,25 @@ class SharedMemoryFactoryProxy : public SharedMemoryFactory {
   SequenceChecker thread_checker_;
 };
 
+void RecordSelectSourceResult(absl::string_view histogram_name,
+                              bool main_capturer_result,
+                              bool secondary_capturer_result) {
+  using SelectSourceResult = FallbackDesktopCapturerWrapper::SelectSourceResult;
+  constexpr int kBoundary = static_cast<int>(SelectSourceResult::kMaxValue) + 1;
+  SelectSourceResult result;
+  if (main_capturer_result) {
+    result = secondary_capturer_result
+                 ? SelectSourceResult::kMainSucceededSecondarySucceeded
+                 : SelectSourceResult::kMainSucceededSecondaryFailed;
+  } else {
+    result = secondary_capturer_result
+                 ? SelectSourceResult::kMainFailedSecondarySucceeded
+                 : SelectSourceResult::kMainFailedSecondaryFailed;
+  }
+  RTC_HISTOGRAM_ENUMERATION(histogram_name, static_cast<int>(result),
+                            kBoundary);
+}
+
 }  // namespace
 
 SharedMemoryFactoryProxy::SharedMemoryFactoryProxy(
@@ -75,9 +95,11 @@ std::unique_ptr<SharedMemory> SharedMemoryFactoryProxy::CreateSharedMemory(
 
 FallbackDesktopCapturerWrapper::FallbackDesktopCapturerWrapper(
     std::unique_ptr<DesktopCapturer> main_capturer,
-    std::unique_ptr<DesktopCapturer> secondary_capturer)
+    std::unique_ptr<DesktopCapturer> secondary_capturer,
+    absl::string_view select_source_histogram)
     : main_capturer_(std::move(main_capturer)),
-      secondary_capturer_(std::move(secondary_capturer)) {
+      secondary_capturer_(std::move(secondary_capturer)),
+      select_source_histogram_(select_source_histogram) {
   RTC_DCHECK(main_capturer_);
   RTC_DCHECK(secondary_capturer_);
 }
@@ -135,18 +157,23 @@ bool FallbackDesktopCapturerWrapper::GetSourceList(SourceList* sources) {
 }
 
 bool FallbackDesktopCapturerWrapper::SelectSource(SourceId id) {
-  if (main_capturer_permanent_error_) {
-    return secondary_capturer_->SelectSource(id);
-  }
-  const bool main_capturer_result = main_capturer_->SelectSource(id);
-  RTC_HISTOGRAM_BOOLEAN(
-      "WebRTC.DesktopCapture.PrimaryCapturerSelectSourceError",
-      main_capturer_result);
-  if (!main_capturer_result) {
-    main_capturer_permanent_error_ = true;
+  if (!main_capturer_permanent_error_) {
+    const bool main_capturer_result = main_capturer_->SelectSource(id);
+    RTC_HISTOGRAM_BOOLEAN(
+        "WebRTC.DesktopCapture.PrimaryCapturerSelectSourceError",
+        main_capturer_result);
+    if (!main_capturer_result) {
+      main_capturer_permanent_error_ = true;
+    }
   }
 
-  return secondary_capturer_->SelectSource(id);
+  const bool secondary_capturer_result = secondary_capturer_->SelectSource(id);
+  if (!select_source_histogram_.empty()) {
+    RecordSelectSourceResult(select_source_histogram_,
+                             !main_capturer_permanent_error_,
+                             secondary_capturer_result);
+  }
+  return secondary_capturer_result;
 }
 
 bool FallbackDesktopCapturerWrapper::FocusOnSelectedSource() {
