@@ -43,7 +43,7 @@ Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#488
  3 files changed, 58 insertions(+), 12 deletions(-)
 
 diff --git a/media/engine/webrtc_video_engine.cc b/media/engine/webrtc_video_engine.cc
-index 2f98ba1809..15f6fd7c40 100644
+index 7285a32beb..35fe15aada 100644
 --- a/media/engine/webrtc_video_engine.cc
 +++ b/media/engine/webrtc_video_engine.cc
 @@ -1274,30 +1274,30 @@ void WebRtcVideoSendChannel::ApplyEncoderSwitch(
@@ -136,7 +136,7 @@ index d4d77bc35d..db1a0df850 100644
  
    std::vector<RtpExtension> send_rtp_extensions_ RTC_GUARDED_BY(worker_thread_);
 diff --git a/media/engine/webrtc_video_engine_unittest.cc b/media/engine/webrtc_video_engine_unittest.cc
-index c8010b3eb9..fdc705a838 100644
+index d59306c645..d03bfae1f3 100644
 --- a/media/engine/webrtc_video_engine_unittest.cc
 +++ b/media/engine/webrtc_video_engine_unittest.cc
 @@ -2812,6 +2812,42 @@ TEST_F(WebRtcVideoChannelBaseTest, SendCodecIsMovedToFrontInRtpParameters) {

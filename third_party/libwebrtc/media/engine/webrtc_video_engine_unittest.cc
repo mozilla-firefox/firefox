@@ -5692,6 +5692,16 @@ TEST_F(WebRtcVideoChannelTest, SetRecvCodecsRejectUnsupportedCodec) {
   EXPECT_FALSE(receive_channel_->SetReceiverParameters(parameters));
 }
 
+TEST_F(WebRtcVideoChannelTest, SetRecvCodecsRejectUnsupportedCodecParameters) {
+  VideoReceiverParameters parameters;
+  parameters.codecs.push_back(GetEngineCodec("VP8"));
+  // The decoder factory only supports VP9 profile 0.
+  Codec vp9 = GetEngineCodec("VP9");
+  vp9.params["profile-id"] = "2";
+  parameters.codecs.push_back(vp9);
+  EXPECT_FALSE(receive_channel_->SetReceiverParameters(parameters));
+}
+
 TEST_F(WebRtcVideoChannelTest, SetRecvCodecsAcceptsMultipleVideoCodecs) {
   VideoReceiverParameters parameters;
   parameters.codecs.push_back(GetEngineCodec("VP8"));
