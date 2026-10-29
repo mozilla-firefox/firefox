@@ -72,18 +72,6 @@ class RTC_EXPORT CopyOnWriteBuffer {
             std::span(reinterpret_cast<const uint8_t*>(data), size),
             capacity) {}
 
-  // Construct a buffer from a vector like type.
-  template <typename VecT,
-            typename ElemT = typename std::remove_pointer_t<
-                decltype(std::declval<VecT>().data())>,
-            typename std::enable_if_t<
-                !std::is_same<VecT, CopyOnWriteBuffer>::value &&
-                HasDataAndSize<VecT, ElemT>::value &&
-                internal::BufferCompat<uint8_t, ElemT>::value>* = nullptr>
-  explicit CopyOnWriteBuffer(const VecT& v)
-      : CopyOnWriteBuffer(
-            std::span(reinterpret_cast<const uint8_t*>(v.data()), v.size())) {}
-
   ~CopyOnWriteBuffer();
 
   // Get a pointer to the data. Just .data() will give you a (const) uint8_t*,
