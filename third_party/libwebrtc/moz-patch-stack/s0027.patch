@@ -1191,7 +1191,7 @@ index 30e97e560e..59bcdced59 100644
      deps += [
        "..:logging",
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index df5b3501a7..9f73e58dfb 100644
+index e4b4a28a9b..9ef2c4e1d9 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -279,6 +279,7 @@ rtc_library("audio_test_common") {
@@ -1233,7 +1233,7 @@ index df5b3501a7..9f73e58dfb 100644
      sources += [ "testsupport/jpeg_frame_writer.cc" ]
    } else {
      sources += [ "testsupport/jpeg_frame_writer_ios.cc" ]
-@@ -1896,6 +1904,7 @@ if (!build_with_chromium) {
+@@ -1921,6 +1929,7 @@ if (!build_with_chromium) {
    }
  }
  
@@ -1241,7 +1241,7 @@ index df5b3501a7..9f73e58dfb 100644
  if (!build_with_chromium && is_android) {
    rtc_android_library("native_test_java") {
      testonly = true
-@@ -1938,6 +1947,7 @@ if (!build_with_chromium && is_android) {
+@@ -1963,6 +1972,7 @@ if (!build_with_chromium && is_android) {
      sources = [ "android/org/webrtc/native_test/NativeTestWebrtc.java" ]
    }
  }
@@ -1250,7 +1250,7 @@ index df5b3501a7..9f73e58dfb 100644
  rtc_library("call_config_utils") {
    testonly = true
 diff --git a/video/BUILD.gn b/video/BUILD.gn
-index 5551d2c13b..6b7363856c 100644
+index 77a283e342..d46de59dd5 100644
 --- a/video/BUILD.gn
 +++ b/video/BUILD.gn
 @@ -16,7 +16,7 @@ rtc_library("video_stream_encoder_interface") {

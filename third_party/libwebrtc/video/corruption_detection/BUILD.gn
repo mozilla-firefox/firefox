@@ -155,8 +155,7 @@ rtc_library("frame_instrumentation_generator_impl") {
 }
 
 if (rtc_include_tests) {
-  rtc_library("corruption_classifier_unittest") {
-    testonly = true
+  rtc_cc_test("corruption_classifier_unittest") {
     sources = [ "corruption_classifier_unittest.cc" ]
     deps = [
       ":corruption_classifier",
@@ -165,8 +164,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("frame_pair_corruption_score_unittest") {
-    testonly = true
+  rtc_cc_test("frame_pair_corruption_score_unittest") {
     sources = [ "frame_pair_corruption_score_unittest.cc" ]
     deps = [
       ":frame_pair_corruption_score",
@@ -184,8 +182,7 @@ if (rtc_include_tests) {
     }
   }
 
-  rtc_library("generic_mapping_functions_unittest") {
-    testonly = true
+  rtc_cc_test("generic_mapping_functions_unittest") {
     sources = [ "generic_mapping_functions_unittest.cc" ]
     deps = [
       ":generic_mapping_functions",
@@ -194,8 +191,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("halton_frame_sampler_unittest") {
-    testonly = true
+  rtc_cc_test("halton_frame_sampler_unittest") {
     sources = [ "halton_frame_sampler_unittest.cc" ]
     deps = [
       ":halton_frame_sampler",
@@ -207,8 +203,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("video_frame_sampler_unittest") {
-    testonly = true
+  rtc_cc_test("video_frame_sampler_unittest") {
     sources = [ "video_frame_sampler_unittest.cc" ]
     deps = [
       ":video_frame_sampler",
@@ -219,8 +214,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("halton_sequence_unittest") {
-    testonly = true
+  rtc_cc_test("halton_sequence_unittest") {
     sources = [ "halton_sequence_unittest.cc" ]
     deps = [
       ":halton_sequence",
@@ -228,8 +222,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("frame_selector_unittest") {
-    testonly = true
+  rtc_cc_test("frame_selector_unittest") {
     sources = [ "frame_selector_unittest.cc" ]
     deps = [
       ":frame_selector",
@@ -247,8 +240,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("utils_unittest") {
-    testonly = true
+  rtc_cc_test("utils_unittest") {
     sources = [ "utils_unittest.cc" ]
     deps = [
       ":utils",
@@ -258,8 +250,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("frame_instrumentation_generator_unittest") {
-    testonly = true
+  rtc_cc_test("frame_instrumentation_generator_unittest") {
     sources = [ "frame_instrumentation_generator_unittest.cc" ]
     deps = [
       ":frame_instrumentation_generator_impl",
@@ -277,22 +268,6 @@ if (rtc_include_tests) {
       "../../rtc_base:refcount",
       "../../test:create_test_environment",
       "../../test:test_support",
-    ]
-  }
-
-  rtc_cc_test("corruption_detection_unittests") {
-    testonly = true
-    sources = []
-    deps = [
-      ":corruption_classifier_unittest",
-      ":frame_instrumentation_generator_unittest",
-      ":frame_pair_corruption_score_unittest",
-      ":frame_selector_unittest",
-      ":generic_mapping_functions_unittest",
-      ":halton_frame_sampler_unittest",
-      ":halton_sequence_unittest",
-      ":utils_unittest",
-      ":video_frame_sampler_unittest",
     ]
   }
 }

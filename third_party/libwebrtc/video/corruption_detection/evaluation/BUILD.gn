@@ -159,8 +159,7 @@ rtc_library("webrtc_picture_pair_provider") {
 }
 
 if (rtc_include_tests) {
-  rtc_library("corruption_qp_parser_unittest") {
-    testonly = true
+  rtc_cc_test("corruption_qp_parser_unittest") {
     sources = [ "corruption_qp_parser_unittest.cc" ]
     deps = [
       "../../../api/video:video_frame",
@@ -169,8 +168,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("test_clip_unittest") {
-    testonly = true
+  rtc_cc_test("test_clip_unittest") {
     sources = [ "test_clip_unittest.cc" ]
     deps = [
       ":test_clip",
@@ -188,8 +186,7 @@ if (rtc_include_tests) {
     }
   }
 
-  rtc_library("corruption_utils_unittest") {
-    testonly = true
+  rtc_cc_test("corruption_utils_unittest") {
     sources = [ "corruption_utils_unittest.cc" ]
     deps = [
       ":utils",
@@ -202,8 +199,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("webrtc_picture_pair_provider_unittest") {
-    testonly = true
+  rtc_cc_test("webrtc_picture_pair_provider_unittest") {
     sources = [ "webrtc_picture_pair_provider_unittest.cc" ]
     deps = [
       ":picture_pair_provider",
@@ -243,16 +239,5 @@ if (rtc_include_tests) {
     } else {
       deps += [ "../../../resources:webrtc_perf_tests_data" ]
     }
-  }
-
-  rtc_cc_test("corruption_detection_eval_unittests") {
-    testonly = true
-    sources = []
-    deps = [
-      ":corruption_qp_parser_unittest",
-      ":corruption_utils_unittest",
-      ":test_clip_unittest",
-      ":webrtc_picture_pair_provider_unittest",
-    ]
   }
 }

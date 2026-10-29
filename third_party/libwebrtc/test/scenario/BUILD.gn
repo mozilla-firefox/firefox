@@ -24,21 +24,9 @@ rtc_library("column_printer") {
 }
 
 if (rtc_include_tests && !build_with_chromium) {
-  scenario_resources = [
-    "../../resources/difficult_photo_1850_1110.yuv",
-    "../../resources/photo_1850_1110.yuv",
-    "../../resources/presentation_1850_1110.yuv",
-    "../../resources/web_screenshot_1850_1110.yuv",
-  ]
   scenario_unittest_resources = [ "../../resources/foreman_cif.yuv" ]
 
   if (is_ios) {
-    bundle_data("scenario_resources_bundle_data") {
-      testonly = true
-      sources = scenario_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-
     bundle_data("scenario_unittest_bundle_data") {
       testonly = true
       sources = scenario_unittest_resources
@@ -190,9 +178,9 @@ if (rtc_include_tests && !build_with_chromium) {
     if (rtc_enable_protobuf) {
       deps += [ "../../modules/audio_coding:ana_config_proto" ]
     }
-    data = scenario_resources
+    data_deps = [ "..:test_support_unittests_resources" ]
     if (is_ios) {
-      deps += [ ":scenario_resources_bundle_data" ]
+      deps += [ "..:test_support_unittests_bundle_data" ]
     }
   }
 

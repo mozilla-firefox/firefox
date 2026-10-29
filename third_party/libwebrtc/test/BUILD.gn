@@ -711,15 +711,25 @@ if (rtc_include_tests) {
     }
 
     test_support_unittests_resources = [
+      "../resources/difficult_photo_1850_1110.yuv",
       "../resources/foreman_128x96.yuv",
       "../resources/foreman_cif_short.yuv",
+      "../resources/pc_quality_smoke_test_alice_source.wav",
+      "../resources/pc_quality_smoke_test_bob_source.wav",
+      "../resources/photo_1850_1110.yuv",
+      "../resources/presentation_1850_1110.yuv",
       "../resources/video_coding/frame-ethernet-ii.pcap",
       "../resources/video_coding/frame-loopback.pcap",
       "../resources/video_coding/pltype103.rtp",
       "../resources/video_coding/pltype103_header_only.rtp",
       "../resources/video_coding/ssrcs-2.pcap",
       "../resources/video_coding/ssrcs-3.pcap",
+      "../resources/web_screenshot_1850_1110.yuv",
     ]
+
+    group("test_support_unittests_resources") {
+      data = test_support_unittests_resources
+    }
 
     if (is_ios) {
       bundle_data("test_support_unittests_bundle_data") {
@@ -829,7 +839,7 @@ if (rtc_include_tests) {
         "../api/video:video_frame",
         "time_controller",
       ]
-      data_deps = [ "../resources:scenario_config_resources" ]
+      data = test_support_unittests_resources
       if (is_ios) {
         deps += [ ":test_support_unittests_bundle_data" ]
       }
@@ -1344,8 +1354,23 @@ if (rtc_include_tests) {
         "fuzzers:fuzz_data_helper_unittest",
         "jitter:delay_variation_calculator_unittest",
         "jitter:logging_delay_variation_calculator_unittest",
-        "pc/e2e:e2e_unittests",
-        "pc/e2e/analyzer/video:video_analyzer_unittests",
+        "pc/e2e:peer_connection_e2e_smoke_test",
+        "pc/e2e:peer_connection_quality_test_metric_names_test",
+        "pc/e2e:peer_connection_quality_test_test",
+        "pc/e2e:stats_based_network_quality_metrics_reporter_test",
+        "pc/e2e:stats_poller_test",
+        "pc/e2e/analyzer/video:analyzing_video_sink_test",
+        "pc/e2e/analyzer/video:analyzing_video_sinks_helper_test",
+        "pc/e2e/analyzer/video:default_video_quality_analyzer_frames_comparator_test",
+        "pc/e2e/analyzer/video:default_video_quality_analyzer_metric_names_test",
+        "pc/e2e/analyzer/video:default_video_quality_analyzer_stream_state_test",
+        "pc/e2e/analyzer/video:default_video_quality_analyzer_test",
+        "pc/e2e/analyzer/video:multi_reader_queue_test",
+        "pc/e2e/analyzer/video:names_collection_test",
+        "pc/e2e/analyzer/video:simulcast_dummy_buffer_helper_test",
+        "pc/e2e/analyzer/video:single_process_encoded_image_data_injector_unittest",
+        "pc/e2e/analyzer/video:video_dumping_test",
+        "pc/e2e/analyzer/video:video_frame_tracking_id_injector_unittest",
         "pc/e2e/analyzer/video/dvqa:frames_storage_test",
         "pc/e2e/analyzer/video/dvqa:pausable_state_test",
         "peer_scenario/tests:peer_scenario_quality_test",
