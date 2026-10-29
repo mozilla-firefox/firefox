@@ -72,12 +72,10 @@ class MockRtcEventLogDriverStreamFactory {
 
   std::unique_ptr<MockRtcEventLogDriverStream> Create(Environment,
                                                       uint32_t ssrc) {
-    if (ssrc == kSsrc1) {
-      RTC_CHECK(stream1_) << "Stream 1 was already moved";
+    if (stream1_) {
       return std::move(stream1_);
     }
-    if (ssrc == kSsrc2) {
-      RTC_CHECK(stream2_) << "Stream 2 was already moved";
+    if (stream2_) {
       return std::move(stream2_);
     }
     RTC_CHECK_NOTREACHED();
@@ -267,6 +265,24 @@ TEST_F(RtcEventLogDriverTest,
           Field(&RtpPacketSimulator::SimulatedPacket::has_rtx_osn, Eq(true))));
   RtcEventLogDriver driver(RtcEventLogDriver::Config(), parsed_log.get(),
                            kEmptyFieldTrialsString, BuildStreamFactory());
+  driver.Simulate();
+}
+
+TEST_F(RtcEventLogDriverTest,
+       DoesNotInsertPacketOnOldRtxSsrcWhenStreamIsOverwritten) {
+  parsed_log_builder_.LogVideoRecvConfig(kSsrc1, kRtxSsrc1);
+  parsed_log_builder_.LogVideoRecvConfig(kSsrc1, kRtxSsrc2);
+  parsed_log_builder_.LogRtpPacketIncoming(kRtxSsrc1, kRtxOsn);
+  parsed_log_builder_.LogRtpPacketIncoming(kRtxSsrc2, kRtxOsn);
+  std::unique_ptr<ParsedRtcEventLog> parsed_log = parsed_log_builder_.Build();
+
+  EXPECT_CALL(*stream_factory_.stream1_ptr_, InsertSimulatedPacket).Times(0);
+  EXPECT_CALL(*stream_factory_.stream1_ptr_, Close());
+  EXPECT_CALL(*stream_factory_.stream2_ptr_, InsertSimulatedPacket);
+  EXPECT_CALL(*stream_factory_.stream2_ptr_, Close());
+  RtcEventLogDriver driver(RtcEventLogDriver::Config{.reuse_streams = false},
+                           parsed_log.get(), kEmptyFieldTrialsString,
+                           BuildStreamFactory());
   driver.Simulate();
 }
 

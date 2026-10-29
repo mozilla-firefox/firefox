@@ -212,7 +212,7 @@ void RtcEventLogDriver::OnLoggedVideoRecvConfig(
                      << " (simulated_ts=" << env_.clock().CurrentTime() << ")";
     if (auto it = streams_.find(ssrc); it != streams_.end()) {
       if (config_.reuse_streams) {
-        // TODO(b/384950328): Support changing RTX SSRCs on the fly?
+        // TODO: b/384950328 - Remove unused `reuse_streams` option.
         RTC_LOG(LS_WARNING)
             << "Stream for ssrc=" << ssrc << " already existed. Reusing it."
             << " (simulated_ts=" << env_.clock().CurrentTime() << ")";
@@ -222,6 +222,10 @@ void RtcEventLogDriver::OnLoggedVideoRecvConfig(
             << "Stream for ssrc=" << ssrc << " already existed. Overwriting it."
             << " (simulated_ts=" << env_.clock().CurrentTime() << ")";
         it->second->Close();
+        absl::erase_if(receiving_streams_,
+                       [old_stream = it->second.get()](const auto& kv) {
+                         return kv.second == old_stream;
+                       });
       }
     }
     std::unique_ptr<StreamInterface> stream =
