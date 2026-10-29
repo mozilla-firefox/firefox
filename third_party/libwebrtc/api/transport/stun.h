@@ -23,14 +23,12 @@
 #include <string>
 #include <vector>
 
-#include "absl/base/macros.h"
 #include "absl/strings/string_view.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/net_helpers.h"
 #include "rtc_base/socket_address.h"
-#include "rtc_base/span_helpers.h"
 
 namespace webrtc {
 
@@ -500,12 +498,7 @@ class StunByteStringAttribute : public StunAttribute {
   explicit StunByteStringAttribute(uint16_t type);
   StunByteStringAttribute(uint16_t type, absl::string_view str);
   StunByteStringAttribute(uint16_t type, std::span<const uint8_t> bytes);
-  ABSL_DEPRECATE_AND_INLINE()
-  StunByteStringAttribute(uint16_t type, const void* bytes, size_t length)
-      : StunByteStringAttribute(
-            type,
-            AsUint8Span(std::span(static_cast<const char*>(bytes), length))) {}
-  StunByteStringAttribute(uint16_t type, const std::vector<uint32_t>& values);
+  StunByteStringAttribute(uint16_t type, std::span<const uint32_t> values);
   StunByteStringAttribute(uint16_t type, uint16_t length);
   ~StunByteStringAttribute() override;
 

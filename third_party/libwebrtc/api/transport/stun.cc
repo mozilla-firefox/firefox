@@ -1147,10 +1147,10 @@ StunByteStringAttribute::StunByteStringAttribute(uint16_t type,
 
 StunByteStringAttribute::StunByteStringAttribute(
     uint16_t type,
-    const std::vector<uint32_t>& values)
+    std::span<const uint32_t> values)
     : StunAttribute(type, 0), bytes_(nullptr) {
   ByteBufferWriter writer;
-  for (const auto& value : values) {
+  for (uint32_t value : values) {
     writer.WriteUInt32(value);
   }
   CopyBytes(writer.DataView());
