@@ -3090,7 +3090,8 @@ TEST_P(PeerConnectionEncodingsIntegrationParameterizedTest,
   // Confirm 640x360 is sent.
   EXPECT_THAT(
       GetStatsUntil(local_pc_wrapper,
-                    OutboundRtpStatsAre(ElementsAre(ResolutionIs(640, 360)))),
+                    OutboundRtpStatsAre(ElementsAre(ResolutionIs(640, 360))),
+                    {.timeout = kLongTimeoutForRampingUp}),
       IsRtcOk());
 }
 
