@@ -154,7 +154,7 @@ class RTC_EXPORT Port : public PortInterface {
  public:
   // Callbacks registered at Port construction time. `tag` is an optional
   // removal tag applied to all provided callbacks.
-  struct Callbacks {
+  struct RTC_EXPORT Callbacks {
     Callbacks();
     Callbacks(Callbacks&&);
     Callbacks& operator=(Callbacks&&);
