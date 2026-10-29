@@ -11,10 +11,10 @@
 #include "rtc_base/task_queue_gcd.h"
 
 #include <memory>
-#include <utility>
 
 #include "api/task_queue/task_queue_base.h"
 #include "api/task_queue/task_queue_factory.h"
+#include "api/units/time_delta.h"
 #include "rtc_base/event.h"
 #include "test/gtest.h"
 
@@ -31,6 +31,21 @@ TEST(TaskQueueGcdTest, DeleteFromTask) {
     queue.reset();
     done.Set();
   });
+  EXPECT_TRUE(done.Wait(TimeDelta::Seconds(1)));
+}
+
+TEST(TaskQueueGcdTest, DeleteFromHighPrecisionTask) {
+  std::unique_ptr<TaskQueueFactory> factory = CreateTaskQueueGcdFactory();
+  auto queue = factory->CreateTaskQueue("DeleteFromHighPrecisionTask",
+                                        TaskQueueFactory::Priority::kNormal);
+  Event done;
+  queue->PostDelayedHighPrecisionTask(
+      [&queue, &done] {
+        // This will call TaskQueueGcd::Delete() from the current queue.
+        queue.reset();
+        done.Set();
+      },
+      TimeDelta::Millis(1));
   EXPECT_TRUE(done.Wait(TimeDelta::Seconds(1)));
 }
 

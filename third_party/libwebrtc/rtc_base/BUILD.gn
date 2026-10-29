@@ -2686,6 +2686,7 @@ if (rtc_include_tests) {
           ":rtc_event",
           ":rtc_task_queue_gcd",
           "../api/task_queue",
+          "../api/units:time_delta",
           "../test:test_support",
         ]
       }

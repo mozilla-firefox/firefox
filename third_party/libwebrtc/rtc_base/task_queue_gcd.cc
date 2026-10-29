@@ -15,18 +15,20 @@
 #include "rtc_base/task_queue_gcd.h"
 
 #include <dispatch/dispatch.h>
-#include <string.h>
 
+#include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "api/location.h"
 #include "api/task_queue/task_queue_base.h"
+#include "api/task_queue/task_queue_factory.h"
 #include "api/units/time_delta.h"
 #include "rtc_base/checks.h"
-#include "rtc_base/logging.h"
 #include "rtc_base/system/gcd_helpers.h"
 
 namespace webrtc {
@@ -46,6 +48,13 @@ int TaskQueuePriorityToGCD(TaskQueueFactory::Priority priority) {
     case TaskQueueFactory::Priority::kLow:
       return DISPATCH_QUEUE_PRIORITY_LOW;
   }
+}
+
+// Returns the leeway of the strict timer that runs a high precision task. Like
+// for dispatch_after(), the leeway is 10% of the delay, but it's capped at
+// 1 ms.
+uint64_t HighPrecisionLeewayNs(TimeDelta delay) {
+  return std::min(delay / 10, TimeDelta::Millis(1)).ns<uint64_t>();
 }
 
 class TaskQueueGcd final : public TaskQueueBase {
@@ -71,10 +80,14 @@ class TaskQueueGcd final : public TaskQueueBase {
 
     TaskQueueGcd* const queue;
     absl::AnyInvocable<void() &&> task;
+    // Only set for tasks that are run by a strict timer. Released when the
+    // timer fires.
+    dispatch_source_t timer = nullptr;
   };
 
   ~TaskQueueGcd() override;
   static void RunTask(void* task_context);
+  static void RunTimerTask(void* task_context);
   static void SetNotActive(void* task_queue);
   static void DeleteQueue(void* task_queue);
 
@@ -131,8 +144,32 @@ void TaskQueueGcd::PostDelayedTaskImpl(absl::AnyInvocable<void() &&> task,
                                        const PostDelayedTaskTraits& traits,
                                        const Location& location) {
   auto* context = new TaskContext(this, std::move(task));
-  dispatch_after_f(dispatch_time(DISPATCH_TIME_NOW, delay.us() * NSEC_PER_USEC),
-                   queue_, context, &RunTask);
+  const dispatch_time_t when =
+      dispatch_time(DISPATCH_TIME_NOW, delay.us() * NSEC_PER_USEC);
+  // dispatch_after() posts tasks without a positive delay right away, so a
+  // timer is only needed for high precision tasks with a positive delay.
+  if (!traits.high_precision || delay <= TimeDelta::Zero()) {
+    dispatch_after_f(when, queue_, context, &RunTask);
+    return;
+  }
+
+  // The OS may coalesce the timers of dispatch_after() with other timers, which
+  // can delay tasks by much more than the timer leeway, up to 100 ms when the
+  // process runs with background policy. A strict timer asks the OS to observe
+  // the leeway instead. Like the timer behind dispatch_after(), the timer
+  // source retains its target queue, `queue_`, until it's released.
+  dispatch_source_t timer = dispatch_source_create(
+      DISPATCH_SOURCE_TYPE_TIMER, 0, DISPATCH_TIMER_STRICT, queue_);
+  RTC_CHECK(timer);
+  context->timer = timer;
+  // The event handler is called with the context that the source has when the
+  // handler is set.
+  dispatch_set_context(timer, context);
+  dispatch_source_set_event_handler_f(timer, &RunTimerTask);
+  dispatch_source_set_timer(timer, when, DISPATCH_TIME_FOREVER,
+                            HighPrecisionLeewayNs(delay));
+  // `context` may be deleted on `queue_` as soon as the timer is activated.
+  dispatch_activate(timer);
 }
 
 // static
@@ -145,6 +182,18 @@ void TaskQueueGcd::RunTask(void* task_context) {
   // Delete the task before CurrentTaskQueueSetter clears state that this code
   // is running on the task queue.
   tc = nullptr;
+}
+
+// static
+void TaskQueueGcd::RunTimerTask(void* task_context) {
+  auto* tc = static_cast<TaskContext*>(task_context);
+  // The timer is one-shot. Cancel it so that it never fires again and release
+  // it before running the task. GCD keeps the source alive while this handler
+  // runs.
+  dispatch_source_cancel(tc->timer);
+  dispatch_release(tc->timer);
+  tc->timer = nullptr;
+  RunTask(tc);  // Takes ownership of `tc`.
 }
 
 // static

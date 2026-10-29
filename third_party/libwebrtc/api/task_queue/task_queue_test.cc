@@ -30,7 +30,8 @@
 #include "absl/strings/string_view.h"
 #include "api/make_ref_counted.h"
 #include "api/ref_count.h"
-#if defined(WEBRTC_WIN)
+#if !defined(WEBRTC_CHROMIUM_BUILD) && \
+    (defined(WEBRTC_WIN) || defined(WEBRTC_MAC) || defined(WEBRTC_IOS))
 #include "api/task_queue/default_task_queue_factory.h"
 #endif
 #include "api/task_queue/task_queue_base.h"
@@ -416,6 +417,68 @@ TEST(TaskQueueTest, QueueUserAPC) {
   EXPECT_TRUE(done.Wait(TimeDelta::Seconds(1)));
 }
 #endif  // !defined(WEBRTC_CHROMIUM_BUILD) && defined(WEBRTC_WIN)
+
+#if !defined(WEBRTC_CHROMIUM_BUILD) && \
+    (defined(WEBRTC_MAC) || defined(WEBRTC_IOS))
+// Only TaskQueueGcd (the default factory on macOS and iOS) distinguishes
+// PostDelayedHighPrecisionTask() from PostDelayedTask() in standalone WebRTC.
+// Change these to `TEST_P(TaskQueueTest, ...)` using GetParam() when all
+// implementations support high-precision delayed tasks and Priority::kHigh.
+TEST(TaskQueueTest, PostDelayedHighPrecisionZero) {
+  std::unique_ptr<TaskQueueFactory> factory =
+      CreateDefaultTaskQueueFactory(nullptr);
+  Event event;
+  auto queue = CreateTaskQueue(factory, "PostDelayedHighPrecisionZero",
+                               TaskQueueFactory::Priority::kHigh);
+
+  queue->PostDelayedHighPrecisionTask([&event] { event.Set(); },
+                                      TimeDelta::Zero());
+  EXPECT_TRUE(event.Wait(TimeDelta::Seconds(1)));
+}
+
+TEST(TaskQueueTest, PostDelayedHighPrecision) {
+  std::unique_ptr<TaskQueueFactory> factory =
+      CreateDefaultTaskQueueFactory(nullptr);
+  Event event;
+  auto queue = CreateTaskQueue(factory, "PostDelayedHighPrecision",
+                               TaskQueueFactory::Priority::kHigh);
+
+  int64_t start = TimeMillis();
+  int64_t end = 0;
+  queue->PostDelayedHighPrecisionTask(
+      [&event, &queue, &end] {
+        EXPECT_TRUE(queue->IsCurrent());
+        end = TimeMillis();
+        event.Set();
+      },
+      TimeDelta::Millis(100));
+  EXPECT_TRUE(event.Wait(TimeDelta::Seconds(1)));
+  EXPECT_GE(end - start, 90u);
+  EXPECT_NEAR(end - start, 190u, 100u);  // Accept 90-290.
+}
+
+TEST(TaskQueueTest, PostMultipleDelayedHighPrecision) {
+  std::unique_ptr<TaskQueueFactory> factory =
+      CreateDefaultTaskQueueFactory(nullptr);
+  auto queue = CreateTaskQueue(factory, "PostMultipleDelayedHighPrecision",
+                               TaskQueueFactory::Priority::kHigh);
+
+  std::vector<Event> events(100);
+  for (int i = 0; i < 100; ++i) {
+    Event* event = &events[i];
+    queue->PostDelayedHighPrecisionTask(
+        [event, &queue] {
+          EXPECT_TRUE(queue->IsCurrent());
+          event->Set();
+        },
+        TimeDelta::Millis(i));
+  }
+
+  for (Event& e : events)
+    EXPECT_TRUE(e.Wait(TimeDelta::Seconds(1)));
+}
+#endif  // !defined(WEBRTC_CHROMIUM_BUILD) && (defined(WEBRTC_MAC) ||
+        // defined(WEBRTC_IOS))
 
 #ifdef BUILD_EXPERIMENTAL_TASK_QUEUE_COROUTINE_TESTS
 
