@@ -1,145 +1,1671 @@
-From: Tommi <tommi@webrtc.org>
-Date: Wed, 14 Oct 2026 14:32:40 +0200
-Subject: (cherry-pick-branch-heads/8103) [M157] Avoid reusing released
- decoders after SetDecoders()
+From: Byron Campen <docfaraday@gmail.com>
+Date: Thu, 29 Oct 2026 12:06:32 -0500
+Subject: (tmp-cherry-pick) Revert "Run audio_decoder_unittest, neteq tests and
+ webrtc_opus_fec_test in audio_coding_unittests" (1aeb0050d4)
+
+This reverts commit e848b240c80da1b6fc3ef690046c2958d75527e5.
+
+Reason for revert: breaks downstream
 
 Original change's description:
-> Avoid reusing released decoders after SetDecoders()
+> Run audio_decoder_unittest, neteq tests and webrtc_opus_fec_test in audio_coding_unittests
 >
-> SetDecoders() only deregistered decoders that were removed or changed,
-> but it also reset the decoder database's active payload type. The next
-> frame then released the active decoder and configured the same instance
-> again. Not all decoders support that: Chromium's hardware decoders fail
-> Configure() after Release() and permanently fall back to software
-> decoding. This happens e.g. when the receiving side creates a new offer,
-> since that typically changes the set of receive codecs.
+> * Add audio_coding_unittests to run on fuchsia (currently only audio_decoder_unittest was running)
+> * frame_size_ms flag is used in 2 neteq files and moved in neteq_quality_test.h
 >
-> Deregister all of the previous decoders instead, so that the factory
-> creates new instances on demand. This matches how decoders were handled
-> before the receive stream stopped being recreated on decoder changes
-> (https://webrtc-review.googlesource.com/c/src/+/494540).
+> Time to run audio_coding_unittests is still small after adding these tests.
 >
-> Bug: chromium:572220780
-> Change-Id: Ibe646151c9803aab1e01665b8a70352f09e5c101
-> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/508961
-> Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
-> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
-> Cr-Commit-Position: refs/heads/main@{#48904}
+> Change-Id: Id21aacef29b74bb4153b4aa5bf7f81bec86707d3
+> Bug: webrtc:498394143
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/508960
+> Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+> Commit-Queue: Jeremy Leconte <jleconte@google.com>
+> Cr-Commit-Position: refs/heads/main@{#48903}
 
-(cherry picked from commit 157bdfb63caa236d7bbdd0889f99ddba96a44fee)
-
-Bug: chromium:573916493,chromium:572220780
-Change-Id: Ibe646151c9803aab1e01665b8a70352f09e5c101
-Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509962
+Bug: webrtc:498394143
+No-Presubmit: true
+No-Tree-Checks: true
+No-Try: true
+Change-Id: I68a4e98c940b3e7643a36a66ff1f10dc46ac034b
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/508965
+Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
+Commit-Queue: Jeremy Leconte <jleconte@google.com>
 Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
-Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
-Cr-Commit-Position: refs/branch-heads/8103@{#1}
-Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#48872}
+Cr-Commit-Position: refs/heads/main@{#48905}
 ---
- video/video_receive_stream2.cc          | 13 ++++---
- video/video_receive_stream2.h           |  4 +-
- video/video_receive_stream2_unittest.cc | 51 +++++++++++++++++++++++++
- 3 files changed, 60 insertions(+), 8 deletions(-)
+ infra/specs/client.webrtc.json                | 456 ++++++++++++++-
+ infra/specs/gn_isolate_map.pyl                |   4 +
+ infra/specs/test_suites.pyl                   |   5 +-
+ infra/specs/tryserver.webrtc.json             | 547 +++++++++++++++++-
+ modules/audio_coding/BUILD.gn                 |  52 +-
+ .../neteq/test/neteq_pcm16b_quality_test.cc   |   2 +
+ .../neteq/test/neteq_pcmu_quality_test.cc     |   2 +
+ .../neteq/tools/neteq_quality_test.cc         |   2 -
+ .../neteq/tools/neteq_quality_test.h          |   3 -
+ 9 files changed, 1047 insertions(+), 26 deletions(-)
 
-diff --git a/video/video_receive_stream2.cc b/video/video_receive_stream2.cc
-index 82e22b6a68..e30453cca8 100644
---- a/video/video_receive_stream2.cc
-+++ b/video/video_receive_stream2.cc
-@@ -577,13 +577,14 @@ VideoReceiveStream2::GetReceiveCodecConfig() const {
- void VideoReceiveStream2::RegisterCodecsOnReceiver(
-     const std::vector<Decoder>& old_decoders,
-     const std::vector<Decoder>& new_decoders) {
--  // Deregister external decoders from the previous configuration that are
--  // removed or updated in the new configuration.
-+  // Deregister all external decoders from the previous configuration, also
-+  // the unchanged ones. DeregisterReceiveCodecs() below causes the active
-+  // decoder to be released before the next frame is decoded, and a released
-+  // decoder must not be configured again since not all implementations
-+  // support that (e.g. hardware decoders may fall back to software). New
-+  // decoder instances get created on demand instead.
-   for (const Decoder& old_decoder : old_decoders) {
--    if (!absl::c_linear_search(new_decoders, old_decoder)) {
--      video_receiver_.RegisterExternalDecoder(nullptr,
--                                              old_decoder.payload_type);
--    }
-+    video_receiver_.RegisterExternalDecoder(nullptr, old_decoder.payload_type);
+diff --git a/infra/specs/client.webrtc.json b/infra/specs/client.webrtc.json
+index 08aea88dcf..5d45ef51c0 100644
+--- a/infra/specs/client.webrtc.json
++++ b/infra/specs/client.webrtc.json
+@@ -72,6 +72,28 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_gtest_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "dimensions": {
++            "android_devices": "1",
++            "device_os": "AP2A.240705.004",
++            "device_type": "panther",
++            "os": "Android"
++          },
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_gtest_merge.py"
+@@ -790,6 +812,28 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_gtest_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "dimensions": {
++            "android_devices": "1",
++            "device_os": "AP2A.240705.004",
++            "device_type": "panther",
++            "os": "Android"
++          },
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_gtest_merge.py"
+@@ -1482,8 +1526,8 @@
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+         },
+-        "module_name": "//modules/audio_coding:audio_coding_unittests",
+-        "name": "audio_coding_unittests",
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
+         "resultdb": {
+           "result_file": "${ISOLATED_OUTDIR}/gtest_output.json",
+           "result_format": "gtest_json"
+@@ -1494,8 +1538,8 @@
+             "os": "Ubuntu-22.04"
+           }
+         },
+-        "test": "audio_coding_unittests",
+-        "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
+       },
+       {
+         "args": [
+@@ -1894,6 +1938,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -2479,6 +2541,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -3064,6 +3144,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -3649,6 +3747,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -4234,6 +4350,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -4819,6 +4953,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -5387,6 +5539,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -5956,6 +6126,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -6542,6 +6730,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -7129,6 +7335,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -7714,6 +7938,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -8299,6 +8541,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -8884,6 +9144,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64-64-Apple_M1",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -9495,6 +9773,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -10080,6 +10376,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -10665,6 +10979,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -11250,6 +11582,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -12015,6 +12365,104 @@
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/",
+         "variant_id": "iPhone 15 18.2"
+       },
++      {
++        "args": [
++          "--platform",
++          "iPhone 14",
++          "--version",
++          "17.5",
++          "--xcode-build-version",
++          "17f42",
++          "--out-dir",
++          "${ISOLATED_OUTDIR}",
++          "--xctest"
++        ],
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests iPhone 14 17.5",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "cipd_packages": [
++            {
++              "cipd_package": "infra/tools/mac_toolchain/${platform}",
++              "location": ".",
++              "revision": "git_revision:07e67ff89ff11ed0e3071867ed6bb49319a91b05"
++            }
++          ],
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          },
++          "named_caches": [
++            {
++              "name": "runtime_ios_17_5",
++              "path": "Runtime-ios-17.5"
++            },
++            {
++              "name": "xcode_ios_17f42",
++              "path": "Xcode.app"
++            }
++          ],
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/",
++        "variant_id": "iPhone 14 17.5"
++      },
++      {
++        "args": [
++          "--platform",
++          "iPhone 15",
++          "--version",
++          "18.2",
++          "--xcode-build-version",
++          "17f42",
++          "--out-dir",
++          "${ISOLATED_OUTDIR}",
++          "--xctest"
++        ],
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests iPhone 15 18.2",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "cipd_packages": [
++            {
++              "cipd_package": "infra/tools/mac_toolchain/${platform}",
++              "location": ".",
++              "revision": "git_revision:07e67ff89ff11ed0e3071867ed6bb49319a91b05"
++            }
++          ],
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          },
++          "named_caches": [
++            {
++              "name": "runtime_ios_18_2",
++              "path": "Runtime-ios-18.2"
++            },
++            {
++              "name": "xcode_ios_17f42",
++              "path": "Xcode.app"
++            }
++          ],
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/",
++        "variant_id": "iPhone 15 18.2"
++      },
+       {
+         "args": [
+           "--platform",
+diff --git a/infra/specs/gn_isolate_map.pyl b/infra/specs/gn_isolate_map.pyl
+index e723da9140..12bc2476d9 100644
+--- a/infra/specs/gn_isolate_map.pyl
++++ b/infra/specs/gn_isolate_map.pyl
+@@ -48,6 +48,10 @@
+     "label": "//modules/audio_coding:audio_coding_unittests",
+     "type": "console_test_launcher",
+   },
++  "audio_decoder_unittests": {
++    "label": "//modules/audio_coding:audio_decoder_unittests",
++    "type": "console_test_launcher",
++  },
+   "audio_engine_tests": {
+     "label": "//audio:audio_engine_tests",
+     "type": "console_test_launcher",
+diff --git a/infra/specs/test_suites.pyl b/infra/specs/test_suites.pyl
+index 433dc84628..7c0299dd13 100644
+--- a/infra/specs/test_suites.pyl
++++ b/infra/specs/test_suites.pyl
+@@ -23,6 +23,7 @@
+       'AppRTCMobile_test_apk': {},
+       'android_instrumentation_test_apk': {},
+       'audio_coding_unittests': {},
++      'audio_decoder_unittests': {},
+       'audio_engine_tests': {},
+       'audio_processing_unittests': {},
+       'call_tests': {},
+@@ -75,6 +76,7 @@
+     'desktop_tests': {
+       # keep-sorted start block=yes
+       'audio_coding_unittests': {},
++      'audio_decoder_unittests': {},
+       'audio_engine_tests': {},
+       'audio_processing_unittests': {},
+       'call_tests': {},
+@@ -138,7 +140,7 @@
+     },
+     'fuchsia_compatible_tests': {
+       # keep-sorted start block=yes
+-      'audio_coding_unittests': {},
++      'audio_decoder_unittests': {},
+       'call_tests': {},
+       'common_audio_unittests': {},
+       'common_video_unittests': {},
+@@ -174,6 +176,7 @@
+         'mixins': ['xcodebuild_sim_runner']
+       },
+       'audio_coding_unittests': {},
++      'audio_decoder_unittests': {},
+       'audio_engine_tests': {},
+       'audio_processing_unittests': {},
+       'call_tests': {},
+diff --git a/infra/specs/tryserver.webrtc.json b/infra/specs/tryserver.webrtc.json
+index 40cf02f5eb..b2a5e77a62 100644
+--- a/infra/specs/tryserver.webrtc.json
++++ b/infra/specs/tryserver.webrtc.json
+@@ -69,6 +69,28 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_gtest_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "dimensions": {
++            "android_devices": "1",
++            "device_os": "AP2A.240705.004",
++            "device_type": "panther",
++            "os": "Android"
++          },
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_gtest_merge.py"
+@@ -867,6 +889,28 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_gtest_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "dimensions": {
++            "android_devices": "1",
++            "device_os": "AP2A.240705.004",
++            "device_type": "panther",
++            "os": "Android"
++          },
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_gtest_merge.py"
+@@ -1588,8 +1632,8 @@
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+         },
+-        "module_name": "//modules/audio_coding:audio_coding_unittests",
+-        "name": "audio_coding_unittests",
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
+         "resultdb": {
+           "result_file": "${ISOLATED_OUTDIR}/gtest_output.json",
+           "result_format": "gtest_json"
+@@ -1600,8 +1644,8 @@
+             "os": "Ubuntu-22.04"
+           }
+         },
+-        "test": "audio_coding_unittests",
+-        "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
+       },
+       {
+         "args": [
+@@ -2159,6 +2203,104 @@
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/",
+         "variant_id": "iPhone 15 18.2"
+       },
++      {
++        "args": [
++          "--platform",
++          "iPhone 14",
++          "--version",
++          "17.5",
++          "--xcode-build-version",
++          "17f42",
++          "--out-dir",
++          "${ISOLATED_OUTDIR}",
++          "--xctest"
++        ],
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests iPhone 14 17.5",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "cipd_packages": [
++            {
++              "cipd_package": "infra/tools/mac_toolchain/${platform}",
++              "location": ".",
++              "revision": "git_revision:07e67ff89ff11ed0e3071867ed6bb49319a91b05"
++            }
++          ],
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          },
++          "named_caches": [
++            {
++              "name": "runtime_ios_17_5",
++              "path": "Runtime-ios-17.5"
++            },
++            {
++              "name": "xcode_ios_17f42",
++              "path": "Xcode.app"
++            }
++          ],
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/",
++        "variant_id": "iPhone 14 17.5"
++      },
++      {
++        "args": [
++          "--platform",
++          "iPhone 15",
++          "--version",
++          "18.2",
++          "--xcode-build-version",
++          "17f42",
++          "--out-dir",
++          "${ISOLATED_OUTDIR}",
++          "--xctest"
++        ],
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests iPhone 15 18.2",
++        "resultdb": {
++          "enable": true,
++          "has_native_resultdb_integration": true
++        },
++        "swarming": {
++          "cipd_packages": [
++            {
++              "cipd_package": "infra/tools/mac_toolchain/${platform}",
++              "location": ".",
++              "revision": "git_revision:07e67ff89ff11ed0e3071867ed6bb49319a91b05"
++            }
++          ],
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          },
++          "named_caches": [
++            {
++              "name": "runtime_ios_18_2",
++              "path": "Runtime-ios-18.2"
++            },
++            {
++              "name": "xcode_ios_17f42",
++              "path": "Xcode.app"
++            }
++          ],
++          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/",
++        "variant_id": "iPhone 15 18.2"
++      },
+       {
+         "args": [
+           "--platform",
+@@ -4642,6 +4784,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -5234,6 +5394,25 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "isolate_profile_data": true,
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "isolate_profile_data": true,
+         "merge": {
+@@ -5900,6 +6079,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -6509,6 +6706,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -7094,6 +7309,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -7727,6 +7960,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -8312,6 +8563,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -8897,6 +9166,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -9482,6 +9769,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -10049,6 +10354,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Ubuntu-22.04"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -10616,6 +10939,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -11203,6 +11544,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -11788,6 +12147,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64-64-Apple_M1",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -12373,6 +12750,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -13006,6 +13401,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "arm64-64-Apple_M1",
++            "os": "Mac-26"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -13591,6 +14004,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-11-22000"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -14176,6 +14607,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-11-22000"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -14809,6 +15258,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -15398,6 +15865,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -15983,6 +16468,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -16568,6 +17071,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+@@ -17153,6 +17674,24 @@
+         "test": "audio_coding_unittests",
+         "test_id_prefix": "ninja://modules/audio_coding:audio_coding_unittests/"
+       },
++      {
++        "merge": {
++          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
++        },
++        "module_name": "//modules/audio_coding:audio_decoder_unittests",
++        "name": "audio_decoder_unittests",
++        "resultdb": {
++          "result_format": "json"
++        },
++        "swarming": {
++          "dimensions": {
++            "cpu": "x86-64",
++            "os": "Windows-10-19045"
++          }
++        },
++        "test": "audio_decoder_unittests",
++        "test_id_prefix": "ninja://modules/audio_coding:audio_decoder_unittests/"
++      },
+       {
+         "merge": {
+           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
+index abbd6e01b7..124523c505 100644
+--- a/modules/audio_coding/BUILD.gn
++++ b/modules/audio_coding/BUILD.gn
+@@ -781,13 +781,18 @@ if (rtc_include_tests) {
+       ":acm_receive_test",
+       ":acm_send_test",
+       ":audio_codec_speed_tests",
++      ":audio_decoder_unittests",
+       ":g711_test",
+       ":g722_test",
++      ":neteq_opus_quality_test",
++      ":neteq_pcm16b_quality_test",
++      ":neteq_pcmu_quality_test",
+       ":neteq_speed_test",
+       ":rtp_analyze",
+       ":rtp_encode",
+       ":rtp_jitter",
+       ":rtpcat",
++      ":webrtc_opus_fec_test",
+     ]
+     if (rtc_enable_protobuf) {
+       public_deps +=  # no-presubmit-check TODO(webrtc:8603)
+@@ -914,7 +919,19 @@ if (rtc_include_tests) {
+     deps += audio_coding_deps
    }
  
-   video_receiver_.DeregisterReceiveCodecs();
-diff --git a/video/video_receive_stream2.h b/video/video_receive_stream2.h
-index ab9deb17e5..4ff12a7fb1 100644
---- a/video/video_receive_stream2.h
-+++ b/video/video_receive_stream2.h
-@@ -256,8 +256,8 @@ class VideoReceiveStream2
-   void UpdateHistograms();
-   void ConfigureCodecs() RTC_RUN_ON(worker_sequence_checker_);
-   // Registers new decoders with the internal VideoReceiver2 database and
--  // deregisters any external decoder instances from `old_decoders` whose
--  // payload type or video format is no longer present in `new_decoders`.
-+  // deregisters all external decoder instances from `old_decoders` so that new
-+  // instances get created on demand.
-   void RegisterCodecsOnReceiver(const std::vector<Decoder>& old_decoders,
-                                 const std::vector<Decoder>& new_decoders);
-   std::vector<RtpVideoStreamReceiver2::ReceiveCodec> GetReceiveCodecConfig()
-diff --git a/video/video_receive_stream2_unittest.cc b/video/video_receive_stream2_unittest.cc
-index db1fea0dd6..87eddc0c39 100644
---- a/video/video_receive_stream2_unittest.cc
-+++ b/video/video_receive_stream2_unittest.cc
-@@ -927,6 +927,57 @@ TEST_P(VideoReceiveStream2Test,
-   time_controller_.AdvanceTime(TimeDelta::Millis(100));
- }
+-  rtc_cc_test("audio_decoder_unittest") {
++  audio_decoder_unittests_resources =
++      [ "../../resources/audio_coding/testfile32kHz.pcm" ]
++
++  if (is_ios) {
++    bundle_data("audio_decoder_unittests_bundle_data") {
++      testonly = true
++      sources = audio_decoder_unittests_resources
++      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
++    }
++  }
++
++  rtc_test("audio_decoder_unittests") {
++    testonly = true
+     sources = [ "neteq/audio_decoder_unittest.cc" ]
  
-+// Changing the set of decoders while running releases the active decoder.
-+// Verify that a new instance is created for an unchanged decoder, instead of
-+// configuring the released instance again. Not all decoders support that, e.g.
-+// hardware decoders may fall back to software decoding.
-+TEST_P(VideoReceiveStream2Test, SetDecodersRecreatesUnchangedDecoder) {
-+  video_receive_stream_->Start();
-+  time_controller_.AdvanceTime(TimeDelta::Zero());
+     defines = neteq_defines
+@@ -935,9 +952,13 @@ if (rtc_include_tests) {
+              "../../test:test_support",
+            ] + audio_coding_deps
+ 
+-    data_deps = [ "../../resources:audio_coding_unittests_data" ]
++    data = audio_decoder_unittests_resources
 +
-+  // Decode initial frame to create and configure the AV1 decoder.
-+  EXPECT_CALL(mock_decoder_factory_,
-+              Create(_, Field(&SdpVideoFormat::name, Eq("AV1"))));
-+  EXPECT_CALL(mock_decoder_, Configure);
-+  EXPECT_CALL(mock_decoder_, RegisterDecodeCompleteCallback);
-+  EXPECT_CALL(mock_decoder_, Decode(_, _));
++    if (is_android) {
++      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
++    }
+     if (is_ios) {
+-      deps += [ "../../resources:audio_coding_unittests_bundle_data" ]
++      deps += [ ":audio_decoder_unittests_bundle_data" ]
+     }
+   }
+ 
+@@ -1170,7 +1191,9 @@ if (rtc_include_tests) {
+     ]
+   }
+ 
+-  rtc_cc_test("neteq_opus_quality_test") {
++  rtc_test("neteq_opus_quality_test") {
++    testonly = true
 +
-+  video_receive_stream_->OnCompleteFrame(test::FakeFrameBuilder()
-+                                             .Id(0)
-+                                             .PayloadType(kAv1PayloadType)
-+                                             .Time(10000)
-+                                             .AsLast()
-+                                             .Build());
-+  time_controller_.AdvanceTime(TimeDelta::Millis(100));
+     sources = [ "neteq/test/neteq_opus_quality_test.cc" ]
+ 
+     deps = [
+@@ -1183,6 +1206,7 @@ if (rtc_include_tests) {
+       "../../rtc_base:buffer",
+       "../../rtc_base:checks",
+       "../../test:test_support",
++      "//testing/gtest",
+       "//third_party/abseil-cpp/absl/flags:flag",
+       "//third_party/opus",
+     ]
+@@ -1201,7 +1225,9 @@ if (rtc_include_tests) {
+     ]
+   }
+ 
+-  rtc_cc_test("neteq_pcmu_quality_test") {
++  rtc_test("neteq_pcmu_quality_test") {
++    testonly = true
 +
-+  // Add a decoder while keeping the AV1 decoder unchanged, as happens when the
-+  // receiving side creates an offer listing all of its receive codecs.
-+  VideoReceiveStreamInterface::Decoder vp9_decoder;
-+  vp9_decoder.video_format = SdpVideoFormat("VP9");
-+  vp9_decoder.payload_type = kVp9PayloadType;
-+  std::vector<VideoReceiveStreamInterface::Decoder> decoders = config_.decoders;
-+  decoders.push_back(vp9_decoder);
+     sources = [ "neteq/test/neteq_pcmu_quality_test.cc" ]
+ 
+     deps = [
+@@ -1212,11 +1238,14 @@ if (rtc_include_tests) {
+       "../../rtc_base:checks",
+       "../../rtc_base:safe_conversions",
+       "../../test:test_support",
++      "//testing/gtest",
+       "//third_party/abseil-cpp/absl/flags:flag",
+     ]
+   }
+ 
+-  rtc_cc_test("neteq_pcm16b_quality_test") {
++  rtc_test("neteq_pcm16b_quality_test") {
++    testonly = true
 +
-+  video_receive_stream_->SetDecoders(std::move(decoders));
-+  time_controller_.AdvanceTime(TimeDelta::Millis(100));
+     sources = [ "neteq/test/neteq_pcm16b_quality_test.cc" ]
+ 
+     deps = [
+@@ -1227,6 +1256,7 @@ if (rtc_include_tests) {
+       "../../rtc_base:checks",
+       "../../rtc_base:safe_conversions",
+       "../../test:test_support",
++      "//testing/gtest",
+       "//third_party/abseil-cpp/absl/flags:flag",
+     ]
+   }
+@@ -1247,7 +1277,9 @@ if (rtc_include_tests) {
+     deps = [ ":g722" ]
+   }
+ 
+-  rtc_cc_test("webrtc_opus_fec_test") {
++  rtc_test("webrtc_opus_fec_test") {
++    testonly = true
 +
-+  // Verify that a new AV1 decoder is created.
-+  EXPECT_CALL(mock_decoder_factory_,
-+              Create(_, Field(&SdpVideoFormat::name, Eq("AV1"))));
-+  EXPECT_CALL(mock_decoder_, Configure);
-+  EXPECT_CALL(mock_decoder_, RegisterDecodeCompleteCallback);
-+  EXPECT_CALL(mock_decoder_, Decode(_, _));
+     sources = [ "codecs/opus/opus_fec_test.cc" ]
+ 
+     deps = [
+@@ -1255,6 +1287,7 @@ if (rtc_include_tests) {
+       "../../common_audio",
+       "../../test:fileutils",
+       "../../test:test_support",
++      "//testing/gtest",
+     ]
+     data_deps = [ "../../resources:audio_coding_unittests_data" ]
+     if (is_ios) {
+@@ -1300,7 +1333,6 @@ if (rtc_include_tests) {
+       ":audio_coding_modules_tests",
+       ":audio_decoder_multi_channel_opus_unittest",
+       ":audio_decoder_opus_unittest",
+-      ":audio_decoder_unittest",
+       ":audio_encoder_cng_unittest",
+       ":audio_encoder_copy_red_unittest",
+       ":audio_encoder_multi_channel_opus_unittest",
+@@ -1338,9 +1370,6 @@ if (rtc_include_tests) {
+       ":neteq_decoder_plc_unittest",
+       ":neteq_impl_unittest",
+       ":neteq_network_stats_unittest",
+-      ":neteq_opus_quality_test",
+-      ":neteq_pcm16b_quality_test",
+-      ":neteq_pcmu_quality_test",
+       ":neteq_stereo_unittest",
+       ":neteq_unittest",
+       ":normal_unittest",
+@@ -1357,7 +1386,6 @@ if (rtc_include_tests) {
+       ":time_stretch_unittest",
+       ":timestamp_scaler_unittest",
+       ":underrun_optimizer_unittest",
+-      ":webrtc_opus_fec_test",
+       "codecs/opus/test:audio_ring_buffer_unittest",
+       "codecs/opus/test:blocker_unittest",
+       "codecs/opus/test:lapped_transform_unittest",
+diff --git a/modules/audio_coding/neteq/test/neteq_pcm16b_quality_test.cc b/modules/audio_coding/neteq/test/neteq_pcm16b_quality_test.cc
+index 627502be00..b709139713 100644
+--- a/modules/audio_coding/neteq/test/neteq_pcm16b_quality_test.cc
++++ b/modules/audio_coding/neteq/test/neteq_pcm16b_quality_test.cc
+@@ -23,6 +23,8 @@
+ #include "rtc_base/numerics/safe_conversions.h"
+ #include "test/gtest.h"
+ 
++ABSL_FLAG(int, frame_size_ms, 20, "Codec frame size (milliseconds).");
 +
-+  video_receive_stream_->OnCompleteFrame(test::FakeFrameBuilder()
-+                                             .Id(1)
-+                                             .PayloadType(kAv1PayloadType)
-+                                             .Time(12345)
-+                                             .AsLast()
-+                                             .Build());
+ using ::testing::InitGoogleTest;
+ 
+ namespace webrtc {
+diff --git a/modules/audio_coding/neteq/test/neteq_pcmu_quality_test.cc b/modules/audio_coding/neteq/test/neteq_pcmu_quality_test.cc
+index 78a19aee7d..b060a92381 100644
+--- a/modules/audio_coding/neteq/test/neteq_pcmu_quality_test.cc
++++ b/modules/audio_coding/neteq/test/neteq_pcmu_quality_test.cc
+@@ -23,6 +23,8 @@
+ #include "rtc_base/numerics/safe_conversions.h"
+ #include "test/gtest.h"
+ 
++ABSL_FLAG(int, frame_size_ms, 20, "Codec frame size (milliseconds).");
 +
-+  time_controller_.AdvanceTime(TimeDelta::Millis(100));
-+}
-+
- TEST_P(VideoReceiveStream2Test, SetDecodersWhileStoppedUpdatesCodecs) {
-   VideoReceiveStreamInterface::Decoder av1_decoder;
-   av1_decoder.video_format = SdpVideoFormat("AV1");
+ using ::testing::InitGoogleTest;
+ 
+ namespace webrtc {
+diff --git a/modules/audio_coding/neteq/tools/neteq_quality_test.cc b/modules/audio_coding/neteq/tools/neteq_quality_test.cc
+index 00d2596aae..d50e3f5f18 100644
+--- a/modules/audio_coding/neteq/tools/neteq_quality_test.cc
++++ b/modules/audio_coding/neteq/tools/neteq_quality_test.cc
+@@ -94,8 +94,6 @@ ABSL_FLAG(std::string,
+           "<first_event_time> <first_event_duration>, <second_event_time> "
+           "<second_event_duration>, ...");
+ 
+-ABSL_FLAG(int, frame_size_ms, 20, "Codec frame size (milliseconds).");
+-
+ namespace webrtc {
+ namespace test {
+ 
+diff --git a/modules/audio_coding/neteq/tools/neteq_quality_test.h b/modules/audio_coding/neteq/tools/neteq_quality_test.h
+index 3a56d6ea47..9b84e239f2 100644
+--- a/modules/audio_coding/neteq/tools/neteq_quality_test.h
++++ b/modules/audio_coding/neteq/tools/neteq_quality_test.h
+@@ -17,7 +17,6 @@
+ #include <memory>
+ #include <set>
+ 
+-#include "absl/flags/declare.h"
+ #include "api/audio_codecs/audio_decoder_factory.h"
+ #include "api/audio_codecs/audio_format.h"
+ #include "api/audio_codecs/builtin_audio_decoder_factory.h"
+@@ -30,8 +29,6 @@
+ #include "rtc_base/buffer.h"
+ #include "test/gtest.h"
+ 
+-ABSL_DECLARE_FLAG(int, frame_size_ms);
+-
+ namespace webrtc {
+ namespace test {
+ 

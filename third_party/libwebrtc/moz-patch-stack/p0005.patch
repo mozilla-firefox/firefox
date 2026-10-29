@@ -1,0 +1,184 @@
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@google.com>
+Date: Tue, 20 Oct 2026 14:52:48 +0200
+Subject: (cherry-pick-branch-heads/8103) [M157] ApplyEncoderSwitch() must not
+ modify negotiated codecs list.
+
+Original change's description:
+> ApplyEncoderSwitch() must not modify negotiated codecs list.
+>
+> Modifying the negotiated list was an easy way to keep track of which
+> codecs remain that have not been attempted yet. Unfortunately, this
+> causes setParameters() to fail when the application is asking to
+> reconfigure the same codec again (which is perfectly valid to try since
+> it is still negotiated). The app should be allowed to try again and a
+> simple get+setParameters() that doesn't change anything should never
+> fail.
+>
+> The fix is to introduce `available_negotiated_codecs_`, which is
+> simply a copy of `negotiated_codecs_` that ApplyEncoderSwitch() is
+> able to modify.
+>
+> Bug: chromium:575782118, b/486823390
+> Change-Id: I437d7ebee4ae7bda0d0619e601de5ac0bc78ff9e
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/510220
+> Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
+> Commit-Queue: Guido Urdaneta <guidou@webrtc.org>
+> Commit-Queue: Ilya Nikolaevskiy <ilnik@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48987}
+
+(cherry picked from commit 9d738557a2492104bcea32a183a7106aa2fbd547)
+
+Bug: chromium:576141741,chromium:575782118,b/486823390
+Change-Id: I437d7ebee4ae7bda0d0619e601de5ac0bc78ff9e
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/510660
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8103@{#4}
+Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#48872}
+---
+ media/engine/webrtc_video_engine.cc          | 26 ++++++++------
+ media/engine/webrtc_video_engine.h           |  8 ++++-
+ media/engine/webrtc_video_engine_unittest.cc | 36 ++++++++++++++++++++
+ 3 files changed, 58 insertions(+), 12 deletions(-)
+
+diff --git a/media/engine/webrtc_video_engine.cc b/media/engine/webrtc_video_engine.cc
+index 7285a32beb..35fe15aada 100644
+--- a/media/engine/webrtc_video_engine.cc
++++ b/media/engine/webrtc_video_engine.cc
+@@ -1274,30 +1274,30 @@ void WebRtcVideoSendChannel::ApplyEncoderSwitch(
+ 
+   ChangedSenderParameters params;
+   if (!format) {
+-    if (negotiated_codecs_.size() <= 1) {
++    if (available_negotiated_codecs_.size() <= 1) {
+       RTC_LOG(LS_WARNING)
+           << "Encoder failed but no fallback codec is available";
+       return;
+     }
+ 
+-    params.negotiated_codecs = negotiated_codecs_;
+     // Find and remove the current codec. It might not be the first on the list
+     // because of SetParameters().
+     if (send_codec().has_value()) {
+-      auto it = std::find(params.negotiated_codecs->begin(),
+-                          params.negotiated_codecs->end(), *send_codec());
+-      if (it != params.negotiated_codecs->end()) {
+-        params.negotiated_codecs->erase(it);
++      auto it = std::find(available_negotiated_codecs_.begin(),
++                          available_negotiated_codecs_.end(), *send_codec());
++      if (it != available_negotiated_codecs_.end()) {
++        available_negotiated_codecs_.erase(it);
+       }
+     }
+-    params.send_codec = params.negotiated_codecs->front();
++    params.send_codec = available_negotiated_codecs_.front();
+   } else {
+     auto it = absl::c_find_if(
+-        negotiated_codecs_, [&](const VideoCodecSettings& codec_setting) {
++        available_negotiated_codecs_,
++        [&](const VideoCodecSettings& codec_setting) {
+           return format->IsSameCodec(
+               {codec_setting.codec.name, codec_setting.codec.params});
+         });
+-    if (it == negotiated_codecs_.end()) {
++    if (it == available_negotiated_codecs_.end()) {
+       RTC_LOG(LS_WARNING) << "Failed to switch encoder to: "
+                           << format->ToString()
+                           << ". Is default fallback allowed: "
+@@ -1321,16 +1321,20 @@ void WebRtcVideoSendChannel::ApplyEncoderSwitch(
+     params.send_codec = new_codec_setting;
+   }
+ 
+-  if (ApplyChangedParams(params) && parameters_changed_callback_) {
++  if (ApplyChangedParams(params, /*applying_encoder_switch=*/true) &&
++      parameters_changed_callback_) {
+     parameters_changed_callback_();
+   }
+ }
+ 
+ bool WebRtcVideoSendChannel::ApplyChangedParams(
+-    const ChangedSenderParameters& changed_params) {
++    const ChangedSenderParameters& changed_params,
++    bool applying_encoder_switch) {
+   RTC_DCHECK_RUN_ON(worker_thread_);
+   if (changed_params.negotiated_codecs)
+     negotiated_codecs_ = *changed_params.negotiated_codecs;
++  if (!applying_encoder_switch)
++    available_negotiated_codecs_ = negotiated_codecs_;
+ 
+   if (changed_params.send_codec)
+     send_codec() = changed_params.send_codec;
+diff --git a/media/engine/webrtc_video_engine.h b/media/engine/webrtc_video_engine.h
+index d4d77bc35d..db1a0df850 100644
+--- a/media/engine/webrtc_video_engine.h
++++ b/media/engine/webrtc_video_engine.h
+@@ -305,7 +305,8 @@ class WebRtcVideoSendChannel : public MediaChannelUtil,
+   bool GetChangedSenderParameters(const VideoSenderParameters& params,
+                                   ChangedSenderParameters* changed_params) const
+       RTC_EXCLUSIVE_LOCKS_REQUIRED(worker_thread_);
+-  bool ApplyChangedParams(const ChangedSenderParameters& changed_params);
++  bool ApplyChangedParams(const ChangedSenderParameters& changed_params,
++                          bool applying_encoder_switch = false);
+   bool ValidateSendSsrcAvailability(const StreamParams& sp) const
+       RTC_EXCLUSIVE_LOCKS_REQUIRED(worker_thread_);
+   // Executes the actual encoder switch operation.
+@@ -478,6 +479,11 @@ class WebRtcVideoSendChannel : public MediaChannelUtil,
+   std::optional<VideoCodecSettings> send_codec_ RTC_GUARDED_BY(worker_thread_);
+   std::vector<VideoCodecSettings> negotiated_codecs_
+       RTC_GUARDED_BY(worker_thread_);
++  // A version of `negotiated_codecs_` that is modified every time the encoder
++  // switches e.g. due to encoder failure. Thus represents the remaining
++  // fallback codecs, in negotiation order.
++  std::vector<VideoCodecSettings> available_negotiated_codecs_
++      RTC_GUARDED_BY(worker_thread_);
+   std::vector<VideoCodecSettings> send_codecs_ RTC_GUARDED_BY(worker_thread_);
+ 
+   std::vector<RtpExtension> send_rtp_extensions_ RTC_GUARDED_BY(worker_thread_);
+diff --git a/media/engine/webrtc_video_engine_unittest.cc b/media/engine/webrtc_video_engine_unittest.cc
+index d59306c645..d03bfae1f3 100644
+--- a/media/engine/webrtc_video_engine_unittest.cc
++++ b/media/engine/webrtc_video_engine_unittest.cc
+@@ -2812,6 +2812,42 @@ TEST_F(WebRtcVideoChannelBaseTest, SendCodecIsMovedToFrontInRtpParameters) {
+   EXPECT_THAT("VP8", send_codecs[0].name);
+ }
+ 
++TEST_F(WebRtcVideoChannelBaseTest,
++       SetRtpSendParametersAfterRequestEncoderSwitch) {
++  VideoSenderParameters parameters;
++  parameters.codecs.push_back(GetEngineCodec("VP9"));
++  parameters.codecs.push_back(GetEngineCodec("VP8"));
++  EXPECT_TRUE(send_channel_->SetSenderParameters(parameters));
++
++  std::optional<Codec> codec = send_channel_->GetSendCodec();
++  ASSERT_TRUE(codec);
++  EXPECT_EQ("VP9", codec->name);
++
++  // Switch from VP9 to VP8.
++  SendImpl()->RequestEncoderSwitch(std::nullopt, true);
++  time_controller_.AdvanceTime(kFrameDuration);
++  codec = send_channel_->GetSendCodec();
++  ASSERT_TRUE(codec);
++  EXPECT_EQ("VP8", codec->name);
++
++  // SetRtpSendParameters() can still select VP9 because it was negotiated,
++  // even though we previously switched from it.
++  RtpParameters rtp_parameters = send_channel_->GetRtpSendParameters(kSsrc);
++  ASSERT_EQ(rtp_parameters.encodings.size(), 1u);
++  rtp_parameters.encodings[0].codec = GetEngineCodec("VP9").ToCodecParameters();
++  EXPECT_TRUE(send_channel_->SetRtpSendParameters(kSsrc, rtp_parameters).ok());
++  codec = send_channel_->GetSendCodec();
++  ASSERT_TRUE(codec);
++  EXPECT_EQ("VP9", codec->name);
++
++  // A subsequent encoder switch can fall back to VP8 again.
++  SendImpl()->RequestEncoderSwitch(std::nullopt, true);
++  time_controller_.AdvanceTime(kFrameDuration);
++  codec = send_channel_->GetSendCodec();
++  ASSERT_TRUE(codec);
++  EXPECT_EQ("VP8", codec->name);
++}
++
+ #endif  // defined(RTC_ENABLE_VP9)
+ 
+ class WebRtcVideoChannelTest : public WebRtcVideoEngineTest {
