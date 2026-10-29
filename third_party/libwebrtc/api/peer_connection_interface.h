@@ -877,6 +877,7 @@ class RTC_EXPORT PeerConnectionInterface : public RefCountInterface {
   //
   // Common errors:
   // - INTERNAL_ERROR: The configuration does not have Unified Plan enabled.
+  // - INVALID_STATE: The PeerConnection is closed.
 
   // Adds a transceiver with a sender set to transmit the given track. The kind
   // of the transceiver (and sender/receiver) will be derived from the kind of

@@ -1138,6 +1138,30 @@ TEST_F(PeerConnectionRtpTestUnifiedPlan,
   EXPECT_EQ(RTCErrorType::INVALID_PARAMETER, result.error().type());
 }
 
+// Test that AddTransceiver fails with INVALID_STATE once the PeerConnection is
+// closed, for both the track and the media type overloads.
+TEST_F(PeerConnectionRtpTestUnifiedPlan, AddTransceiverErrorIfClosed) {
+  auto caller = CreatePeerConnection();
+
+  auto audio_track = caller->CreateAudioTrack("a");
+  auto video_track = caller->CreateVideoTrack("v");
+  caller->pc()->Close();
+
+  caller->observer()->clear_legacy_renegotiation_needed();
+  caller->observer()->clear_latest_negotiation_needed_event();
+  EXPECT_EQ(RTCErrorType::INVALID_STATE,
+            caller->pc()->AddTransceiver(audio_track).error().type());
+  EXPECT_EQ(RTCErrorType::INVALID_STATE,
+            caller->pc()->AddTransceiver(video_track).error().type());
+  EXPECT_EQ(RTCErrorType::INVALID_STATE,
+            caller->pc()->AddTransceiver(MediaType::AUDIO).error().type());
+  EXPECT_EQ(RTCErrorType::INVALID_STATE,
+            caller->pc()->AddTransceiver(MediaType::VIDEO).error().type());
+  EXPECT_THAT(caller->pc()->GetTransceivers(), ElementsAre());
+  EXPECT_FALSE(caller->observer()->legacy_renegotiation_needed());
+  EXPECT_FALSE(caller->observer()->has_negotiation_needed_event());
+}
+
 TEST_F(PeerConnectionRtpTestUnifiedPlan,
        CanClosePeerConnectionWithoutCrashing) {
   auto caller = CreatePeerConnection();
