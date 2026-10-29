@@ -196,6 +196,7 @@ def try_builder(
         cq = {},
         branch_cq = True,
         builder = None,
+        jobs = None,
         **kwargs):
     """Add a pre-submit builder.
 
@@ -206,6 +207,7 @@ def try_builder(
       cq: None to exclude this from all commit queues, or a dict of kwargs for cq_tryjob_verifier.
       branch_cq: False to exclude this builder just from the release-branch CQ.
       builder: builder to set in the dimensions, if None, builderless:1 is used.
+      jobs: int, number of remote jobs to allow in parallel.
       **kwargs: Pass on to webrtc_builder / luci.builder.
     Returns:
       A luci.builder.
@@ -218,7 +220,7 @@ def try_builder(
         dimensions["builderless"] = "1"
     properties = properties or {}
     properties["builder_group"] = "tryserver.webrtc"
-    properties.update(make_siso_properties("rbe-webrtc-untrusted"))
+    properties.update(make_siso_properties("rbe-webrtc-untrusted", jobs))
     if cq != None:
         luci.cq_tryjob_verifier(name, cq_group = "cq", **cq)
         if branch_cq:
@@ -287,6 +289,7 @@ def chromium_try_builder(name, **kwargs):
         recipe = "chromium_trybot",
         branch_cq = False,
         execution_timeout = 3 * time.hour,
+        jobs = 500,
         **kwargs
     )
 
