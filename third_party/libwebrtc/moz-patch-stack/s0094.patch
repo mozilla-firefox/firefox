@@ -74,7 +74,7 @@ index 9962d2845d..485df8f5e1 100644
  # The python interpreter to use by default. On Windows, this will look
  # for python3.exe and python3.bat.
 diff --git a/BUILD.gn b/BUILD.gn
-index 84fec3fdf6..a473978050 100644
+index a7b3cee16d..c8d5479047 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,8 +21,8 @@
@@ -99,7 +99,7 @@ index 84fec3fdf6..a473978050 100644
    import("//third_party/jni_zero/jni_zero.gni")
  }
  
-@@ -557,7 +557,7 @@ if (!build_with_chromium) {
+@@ -558,7 +558,7 @@ if (!build_with_chromium) {
      sources = []
  
      complete_static_lib = true
@@ -108,7 +108,7 @@ index 84fec3fdf6..a473978050 100644
      defines = []
  
      deps = [
-@@ -1049,7 +1049,7 @@ rtc_static_library("dcsctp") {
+@@ -1081,7 +1081,7 @@ rtc_static_library("dcsctp") {
    visibility = [ "//:default" ]
    sources = []
    complete_static_lib = true
@@ -117,7 +117,7 @@ index 84fec3fdf6..a473978050 100644
    defines = []
    deps = [
      "net/dcsctp/public:factory",
-@@ -1087,7 +1087,7 @@ group("poison_default_neural_residual_echo_estimator") {
+@@ -1119,7 +1119,7 @@ group("poison_default_neural_residual_echo_estimator") {
  if (!build_with_chromium) {
    # Write debug logs to gn_logs.txt.
    # This is also required for Siso builds.
@@ -277,7 +277,7 @@ index ed5849917f..e8b2fe5648 100644
  
  rtc_library("scalability_mode") {
 diff --git a/audio/BUILD.gn b/audio/BUILD.gn
-index bde46fd1e8..e2ce06d02d 100644
+index f9e685f602..639a4ba148 100644
 --- a/audio/BUILD.gn
 +++ b/audio/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -588,7 +588,7 @@ index 1dd843aa45..c6580781f7 100644
  import("../../webrtc.gni")
  
 diff --git a/pc/BUILD.gn b/pc/BUILD.gn
-index 043624e8e7..00ea6ae408 100644
+index 7e0f5758b1..3429e5a55c 100644
 --- a/pc/BUILD.gn
 +++ b/pc/BUILD.gn
 @@ -29,8 +29,8 @@
@@ -663,10 +663,10 @@ index 9f9f1f7a0d..306229f87a 100644
  
  rtc_source_set("arch") {
 diff --git a/rtc_tools/network_tester/BUILD.gn b/rtc_tools/network_tester/BUILD.gn
-index 1a9be46904..3520196b3b 100644
+index 43da21ca33..e0774e7148 100644
 --- a/rtc_tools/network_tester/BUILD.gn
 +++ b/rtc_tools/network_tester/BUILD.gn
-@@ -193,8 +193,8 @@ if (is_android) {
+@@ -194,8 +194,8 @@ if (is_android) {
        "//third_party/jni_zero",
      ]
  

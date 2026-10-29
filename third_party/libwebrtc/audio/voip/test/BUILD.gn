@@ -21,8 +21,7 @@ if (rtc_include_tests) {
   }
 
   if (!build_with_chromium) {
-    rtc_library("voip_core_unittests") {
-      testonly = true
+    rtc_cc_test("voip_core_unittests") {
       sources = [ "voip_core_unittest.cc" ]
       deps = [
         "..:voip_core",
@@ -43,8 +42,7 @@ if (rtc_include_tests) {
     }
   }
 
-  rtc_library("audio_channel_unittests") {
-    testonly = true
+  rtc_cc_test("audio_channel_unittests") {
     sources = [ "audio_channel_unittest.cc" ]
     deps = [
       ":mock_task_queue",
@@ -70,8 +68,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("audio_ingress_unittests") {
-    testonly = true
+  rtc_cc_test("audio_ingress_unittests") {
     sources = [ "audio_ingress_unittest.cc" ]
     deps = [
       "..:audio_egress",
@@ -98,8 +95,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("audio_egress_unittests") {
-    testonly = true
+  rtc_cc_test("audio_egress_unittests") {
     sources = [ "audio_egress_unittest.cc" ]
     deps = [
       "..:audio_egress",

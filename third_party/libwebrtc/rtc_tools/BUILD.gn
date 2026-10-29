@@ -25,9 +25,6 @@ group("rtc_tools") {
   if (!build_with_chromium && rtc_enable_protobuf) {
     deps += [ ":chart_proto" ]
   }
-  if (!build_with_chromium && rtc_include_tests) {
-    deps += [ ":tools_unittests" ]
-  }
   if (rtc_include_tests && rtc_enable_protobuf) {
     deps += [ "network_tester" ]
   }
@@ -389,21 +386,6 @@ if (!build_with_chromium) {
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
     }
-
-    rtc_library("event_log_visualizer_bindings_unittest") {
-      testonly = true
-      sources = [ "rtc_event_log_visualizer/analyzer_bindings_unittest.cc" ]
-      deps = [
-        ":chart_proto",
-        ":event_log_visualizer_bindings",
-        "../api/environment:force_test_environment",
-        "//rtc_base:protobuf_utils",
-        "//rtc_base/system:file_wrapper",
-        "//test:fileutils",
-        "//test:test_support",
-        "//third_party/abseil-cpp/absl/strings:string_view",
-      ]
-    }
   }
 
   rtc_executable("video_encoder") {
@@ -535,55 +517,158 @@ if (rtc_include_tests) {
       }
     }
 
-    rtc_test("tools_unittests") {
-      testonly = true
-
-      sources = [
-        "frame_analyzer/linear_least_squares_unittest.cc",
-        "frame_analyzer/reference_less_video_analysis_unittest.cc",
-        "frame_analyzer/video_color_aligner_unittest.cc",
-        "frame_analyzer/video_geometry_aligner_unittest.cc",
-        "frame_analyzer/video_quality_analysis_unittest.cc",
-        "frame_analyzer/video_temporal_aligner_unittest.cc",
-        "sanitizers_unittest.cc",
-        "video_file_reader_unittest.cc",
-        "video_file_writer_unittest.cc",
-      ]
-
+    rtc_cc_test("linear_least_squares_unittest") {
+      sources = [ "frame_analyzer/linear_least_squares_unittest.cc" ]
       deps = [
-        ":video_file_reader",
-        ":video_file_writer",
         ":video_quality_analysis",
+        "../test:test_support",
+      ]
+    }
+
+    rtc_cc_test("reference_less_video_analysis_unittest") {
+      sources = [ "frame_analyzer/reference_less_video_analysis_unittest.cc" ]
+      deps = [
+        ":reference_less_video_analysis_lib",
+        ":video_file_reader",
         "../api:scoped_refptr",
-        "../api/test/metrics:metric",
-        "../api/test/metrics:metrics_logger",
-        "../api/video:video_frame",
-        "../api/video:video_rtp_headers",
-        "../common_video",
-        "../rtc_base:checks",
-        "../rtc_base:null_socket_server",
-        "../rtc_base:threading",
-        "../system_wrappers",
         "../test:fileutils",
         "../test:test_support",
-        "//testing/gtest",
-        "//third_party/libyuv",
       ]
-
-      if (!build_with_chromium) {
-        deps += [ ":reference_less_video_analysis_lib" ]
-      }
-
-      if (rtc_enable_protobuf) {
-        deps += [
-          ":event_log_visualizer_bindings_unittest",
-          "network_tester:network_tester_unittests",
-        ]
-      }
-
       data = tools_unittests_resources
       if (is_ios) {
         deps += [ ":tools_unittests_bundle_data" ]
+      }
+    }
+
+    rtc_cc_test("video_color_aligner_unittest") {
+      sources = [ "frame_analyzer/video_color_aligner_unittest.cc" ]
+      deps = [
+        ":video_file_reader",
+        ":video_quality_analysis",
+        "../api:scoped_refptr",
+        "../api/video:video_frame",
+        "../test:fileutils",
+        "../test:test_support",
+      ]
+      data = tools_unittests_resources
+      if (is_ios) {
+        deps += [ ":tools_unittests_bundle_data" ]
+      }
+    }
+
+    rtc_cc_test("video_geometry_aligner_unittest") {
+      sources = [ "frame_analyzer/video_geometry_aligner_unittest.cc" ]
+      deps = [
+        ":video_file_reader",
+        ":video_quality_analysis",
+        "../api:scoped_refptr",
+        "../api/video:video_frame",
+        "../test:fileutils",
+        "../test:test_support",
+      ]
+      data = tools_unittests_resources
+      if (is_ios) {
+        deps += [ ":tools_unittests_bundle_data" ]
+      }
+    }
+
+    rtc_cc_test("video_quality_analysis_unittest") {
+      sources = [ "frame_analyzer/video_quality_analysis_unittest.cc" ]
+      deps = [
+        ":video_quality_analysis",
+        "../api/test/metrics:metric",
+        "../api/test/metrics:metrics_logger",
+        "../system_wrappers",
+        "../test:fileutils",
+        "../test:test_support",
+      ]
+    }
+
+    rtc_cc_test("video_temporal_aligner_unittest") {
+      sources = [ "frame_analyzer/video_temporal_aligner_unittest.cc" ]
+      deps = [
+        ":video_file_reader",
+        ":video_quality_analysis",
+        "../api:scoped_refptr",
+        "../test:fileutils",
+        "../test:test_support",
+      ]
+      data = tools_unittests_resources
+      if (is_ios) {
+        deps += [ ":tools_unittests_bundle_data" ]
+      }
+    }
+
+    rtc_cc_test("sanitizers_unittest") {
+      sources = [ "sanitizers_unittest.cc" ]
+      deps = [
+        "../rtc_base:checks",
+        "../rtc_base:null_socket_server",
+        "../rtc_base:threading",
+        "../test:test_support",
+      ]
+    }
+
+    rtc_cc_test("video_file_reader_unittest") {
+      sources = [ "video_file_reader_unittest.cc" ]
+      deps = [
+        ":video_file_reader",
+        "../api:scoped_refptr",
+        "../api/video:video_frame",
+        "../test:fileutils",
+        "../test:test_support",
+      ]
+    }
+
+    rtc_cc_test("video_file_writer_unittest") {
+      sources = [ "video_file_writer_unittest.cc" ]
+      deps = [
+        ":video_file_reader",
+        ":video_file_writer",
+        "../api:scoped_refptr",
+        "../api/video:video_frame",
+        "../test:fileutils",
+        "../test:test_support",
+      ]
+    }
+
+    if (rtc_enable_protobuf) {
+      rtc_cc_test("event_log_visualizer_bindings_unittest") {
+        sources = [ "rtc_event_log_visualizer/analyzer_bindings_unittest.cc" ]
+        deps = [
+          ":chart_proto",
+          ":event_log_visualizer_bindings",
+          "../api/environment:force_test_environment",
+          "//rtc_base:protobuf_utils",
+          "//rtc_base/system:file_wrapper",
+          "//test:fileutils",
+          "//test:test_support",
+          "//third_party/abseil-cpp/absl/strings:string_view",
+        ]
+        data = tools_unittests_resources
+        if (is_ios) {
+          deps += [ ":tools_unittests_bundle_data" ]
+        }
+      }
+    }
+
+    rtc_test_suite("tools_unittests") {
+      tests = [
+        ":linear_least_squares_unittest",
+        ":reference_less_video_analysis_unittest",
+        ":sanitizers_unittest",
+        ":video_color_aligner_unittest",
+        ":video_file_reader_unittest",
+        ":video_file_writer_unittest",
+        ":video_geometry_aligner_unittest",
+        ":video_quality_analysis_unittest",
+        ":video_temporal_aligner_unittest",
+      ]
+      if (rtc_enable_protobuf) {
+        tests += [
+          ":event_log_visualizer_bindings_unittest",
+          "network_tester:network_tester_unittests",
+        ]
       }
     }
 

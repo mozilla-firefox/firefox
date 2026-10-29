@@ -59,8 +59,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("voip_engine_factory_unittests") {
-    testonly = true
+  rtc_cc_test("voip_engine_factory_unittests") {
     sources = [ "test/voip_engine_factory_unittest.cc" ]
     deps = [
       ":voip_engine_factory",

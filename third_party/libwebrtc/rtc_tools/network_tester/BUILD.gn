@@ -67,43 +67,43 @@ if (rtc_enable_protobuf) {
     ]
   }
 
-  network_tester_unittests_resources = [
-    "../../resources/network_tester/client_config.dat",
-    "../../resources/network_tester/server_config.dat",
-  ]
-
-  if (is_ios) {
-    bundle_data("network_tester_unittests_bundle_data") {
-      testonly = true
-      sources = network_tester_unittests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
-  rtc_library("network_tester_unittests") {
-    testonly = true
-
-    sources = [ "network_tester_unittest.cc" ]
-
-    deps = [
-      ":network_tester",
-      "../../api/environment",
-      "../../rtc_base:random",
-      "../../test:create_test_environment",
-      "../../test:fileutils",
-      "../../test:run_loop",
-      "../../test:test_support",
-      "../../test:wait_until",
-      "//testing/gtest",
+  if (rtc_include_tests) {
+    network_tester_unittests_resources = [
+      "../../resources/network_tester/client_config.dat",
+      "../../resources/network_tester/server_config.dat",
     ]
 
     if (is_ios) {
-      deps += [ ":network_tester_unittests_bundle_data" ]
+      bundle_data("network_tester_unittests_bundle_data") {
+        testonly = true
+        sources = network_tester_unittests_resources
+        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
+      }
     }
 
-    defines = [ "WEBRTC_NETWORK_TESTER_TEST_ENABLED" ]
+    rtc_cc_test("network_tester_unittests") {
+      sources = [ "network_tester_unittest.cc" ]
 
-    data = network_tester_unittests_resources
+      deps = [
+        ":network_tester",
+        "../../api/environment",
+        "../../rtc_base:random",
+        "../../test:create_test_environment",
+        "../../test:fileutils",
+        "../../test:run_loop",
+        "../../test:test_support",
+        "../../test:wait_until",
+        "//testing/gtest",
+      ]
+
+      if (is_ios) {
+        deps += [ ":network_tester_unittests_bundle_data" ]
+      }
+
+      defines = [ "WEBRTC_NETWORK_TESTER_TEST_ENABLED" ]
+
+      data = network_tester_unittests_resources
+    }
   }
 
   rtc_executable("network_tester_server") {
@@ -121,6 +121,7 @@ if (rtc_enable_protobuf) {
 
 if (is_android) {
   import("//third_party/jni_zero/jni_zero.gni")
+
   generate_jni("generated_jni") {
     testonly = true
     sources =

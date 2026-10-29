@@ -53,11 +53,8 @@ if (!build_with_chromium && !build_with_mozilla) {
     }
     if (rtc_include_tests) {
       deps += [
-        ":audio_engine_tests",
-        ":rtc_p2p_unittests",
         ":rust_tests",
         ":test_suites",
-        ":voip_unittests",
         "examples:examples_unittests",
         "modules/audio_coding:audio_coding_tests",
         "modules/audio_processing:audio_processing_tests",
@@ -66,7 +63,6 @@ if (!build_with_chromium && !build_with_mozilla) {
         "modules/video_capture:video_capture_internal_impl",
         "modules/video_coding:video_codec_perf_tests",
         "p2p:dtls_ice_integration_bench",
-        "pc:rtc_pc_unittests",
         "pc:slow_peer_connection_unittests",
         "pc:svc_tests",
         "rtc_tools:video_encoder",
@@ -126,7 +122,10 @@ if (rtc_include_tests) {
   group("test_suites") {
     testonly = true
     deps = [
+      ":audio_engine_tests",
+      ":rtc_p2p_unittests",
       ":rtc_unittests",
+      ":voip_unittests",
       ":webrtc_nonparallel_tests",
       ":webrtc_perf_tests",
       "//call:call_tests",
@@ -141,6 +140,8 @@ if (rtc_include_tests) {
       "//modules/video_coding:video_coding_unittests",
       "//net/dcsctp:dcsctp_unittests",
       "//pc:peerconnection_unittests",
+      "//pc:rtc_pc_unittests",
+      "//rtc_tools:tools_unittests",
       "//stats:rtc_stats_unittests",
       "//system_wrappers:system_wrappers_unittests",
       "//test:test_support_unittests",
@@ -975,10 +976,34 @@ if (rtc_include_tests && !build_with_chromium) {
     }
   }
 
-  rtc_test("rtc_p2p_unittests") {
-    testonly = true
-
-    deps = [ "p2p:rtc_p2p_unittests" ]
+  rtc_test_suite("rtc_p2p_unittests") {
+    tests = [
+      "p2p:async_stun_tcp_socket_unittest",
+      "p2p:basic_port_allocator_unittest",
+      "p2p:connection_unittest",
+      "p2p:dtls_ice_integration_test",
+      "p2p:dtls_stun_piggyback_controller_unittest",
+      "p2p:dtls_utils_unittest",
+      "p2p:ice_credentials_iterator_unittest",
+      "p2p:local_network_access_port_unittest",
+      "p2p:nat_unittest",
+      "p2p:p2p_constants_unittest",
+      "p2p:p2p_dtls_transport_unittest",
+      "p2p:p2p_transport_channel_unittest",
+      "p2p:packet_transport_internal_unittest",
+      "p2p:port_allocator_unittest",
+      "p2p:port_unittest",
+      "p2p:stun_dictionary_unittest",
+      "p2p:stun_port_unittest",
+      "p2p:stun_request_unittest",
+      "p2p:stun_server_unittest",
+      "p2p:tcp_port_unittest",
+      "p2p:transport_description_factory_unittest",
+      "p2p:transport_description_unittest",
+      "p2p:turn_port_unittest",
+      "p2p:turn_server_unittest",
+      "p2p:wrapping_active_ice_controller_unittest",
+    ]
   }
 
   if (rtc_enable_google_benchmarks) {
@@ -992,13 +1017,22 @@ if (rtc_include_tests && !build_with_chromium) {
     }
   }
 
-  rtc_test("audio_engine_tests") {
-    testonly = true
-    deps = [ "audio:audio_tests" ]
-
-    if (is_android) {
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-    }
+  rtc_test_suite("audio_engine_tests") {
+    tests = [
+      "audio:audio_receive_stream_unittest",
+      "audio:audio_send_stream_tests",
+      "audio:audio_send_stream_unittest",
+      "audio:audio_state_unittest",
+      "audio:audio_stats_test",
+      "audio:channel_receive_frame_transformer_delegate_unittest",
+      "audio:channel_receive_unittest",
+      "audio:channel_send_frame_transformer_delegate_unittest",
+      "audio:channel_send_unittest",
+      "audio:nack_test",
+      "audio:nack_tracker_unittest",
+      "audio:non_sender_rtt_test",
+      "audio:remix_resample_unittest",
+    ]
   }
 
   rtc_test_suite("webrtc_perf_tests") {
@@ -1025,10 +1059,8 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  rtc_test("voip_unittests") {
-    testonly = true
-    deps = [
-      "api/voip:compile_all_headers",
+  rtc_test_suite("voip_unittests") {
+    tests = [
       "api/voip:voip_engine_factory_unittests",
       "audio/voip/test:audio_channel_unittests",
       "audio/voip/test:audio_egress_unittests",

@@ -11,10 +11,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/b050c455caa1d24a0
  3 files changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index dbbee875a9..84fec3fdf6 100644
+index 781f9a43c1..a7b3cee16d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -659,7 +659,7 @@ if (!build_with_chromium) {
+@@ -660,7 +660,7 @@ if (!build_with_chromium) {
      if (rtc_include_internal_audio_device) {
        deps += [ "api/audio:create_audio_device_module" ]
      }
