@@ -153,8 +153,7 @@ std::vector<EmulatedNetworkNode*> CreateNetworkPath(
     bool use_dual_pi) {
   std::unique_ptr<NetworkQueueFactory> queue_factory;
   if (use_dual_pi) {
-    queue_factory = std::make_unique<DualPi2NetworkQueueFactory>(
-        DualPi2NetworkQueue::Config({.target_delay = TimeDelta::Millis(10)}));
+    queue_factory = std::make_unique<DualPi2NetworkQueueFactory>();
     network_builder.queue_factory(*queue_factory);
   }
   return {network_builder.Build().node};

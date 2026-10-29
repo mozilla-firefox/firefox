@@ -151,14 +151,14 @@ TEST(DualPi2NetworkQueueTest,
     i = i + 2;
     queue.EnqueuePacket(PacketInFlightInfo(kPacketSize, now,
                                            /*packet_id=*/i, EcnMarking::kEct1));
-    now += TimeDelta::Micros(500);
+    now += TimeDelta::Millis(15);
     queue.EnqueuePacket(PacketInFlightInfo(kPacketSize, now,
                                            /*packet_id=*/i + 1,
                                            EcnMarking::kEct1));
 
     ASSERT_THAT(queue.DequeuePacket(now),
                 Optional(Field(&PacketInFlightInfo::packet_id, i)));
-    now += TimeDelta::Micros(500);
+    now += TimeDelta::Millis(15);
     ASSERT_THAT(queue.DequeuePacket(now),
                 Optional(Field(&PacketInFlightInfo::packet_id, i + 1)));
     if (queue.l4s_marking_probability() != 0 &&
