@@ -118,61 +118,19 @@ TimeDelta ScreamV2::ReactionInterval() const {
              : params_.virtual_rtt.Get();
 }
 
-double ScreamV2::ScaleBackoff(const ScreamFeedback& parsed, double backoff) {
-  if (!params_.use_non_linear_backoff_scale.Get()) {
-    // Legacy linear scaling: spread `backoff` evenly across the estimated
-    // number of feedbacks per RTT (`rtt / ReactionInterval()`).
-    return backoff / std::max(1.0, delay_based_congestion_control_.rtt() /
-                                       ReactionInterval());
+double ScreamV2::ScaleBackoff(double backoff) const {
+  if (params_.use_spec_backoff.Get()) {
+    // 4.5.3. Reference window undershoot at congestion.
+    // Reduce backoff when target bitrate is lower than the acknowledged rate;
+    // this may be an indication that the target rate is already reduced due to
+    // an increased RTT.
+    if (received_rate_.IsFinite() &&
+        target_rate_ < params_.acked_bitrate_margin.Get() * received_rate_) {
+      backoff *= params_.backoff_scale_low_target_rate.Get();
+    }
   }
-  // During a burst (e.g. a keyframe or pacing burst), `data_in_flight` can
-  // temporarily exceed `ref_window_`. Scale down the backoff proportionally so
-  // `ref_window_` is not overly reduced due to queue buildup caused by the
-  // excess in-flight bytes rather than `ref_window_` itself being too large.
-  const double ref_window_share =
-      parsed.data_in_flight >
-              ref_window_ * params_.bytes_in_flight_head_room.Get()
-          ? ref_window_ / parsed.data_in_flight
-          : 1.0;
-
-  if (parsed.feedback_time - last_ref_window_decrease_time_ <
-          delay_based_congestion_control_.rtt() &&
-      parsed.data_in_flight > ref_window_) {
-    // State 1: Draining in-flight data after a window reduction.
-    // A reduction in `ref_window_` does not reduce the bottleneck queue until
-    // actual `data_in_flight` drops down to the reduced `ref_window_`. Keep
-    // resetting the 1-RTT observation timer until `data_in_flight <=
-    // ref_window_`, for at most one RTT after the last window reduction.
-    last_backoff_rtt_start_time_ = parsed.feedback_time;
-  }
-  if (parsed.feedback_time - last_backoff_rtt_start_time_ >=
-      delay_based_congestion_control_.rtt()) {
-    // State 2: Start of a new backoff cycle.
-    // Either this is the very first congestion event
-    // (`last_backoff_rtt_start_time_` is MinusInfinity), or at least one full
-    // RTT has elapsed since `data_in_flight` drained to `ref_window_` (or at
-    // most two RTTs since the last window reduction). Apply the full `backoff`
-    // immediately.
-    last_backoff_rtt_start_time_ = parsed.feedback_time;
-    last_backoff_ = backoff;
-    return backoff * ref_window_share;
-  }
-  if (backoff > last_backoff_ && last_backoff_ < 1.0) {
-    // State 3: Congestion is worsening within the current backoff cycle.
-    // `l4s_alpha_` or `l4s_alpha_v()` has increased since the cycle started.
-    // Apply only the incremental reduction `delta_backoff` such that
-    // `(1 - last_backoff_) * (1 - delta_backoff) = 1 - backoff`, ensuring
-    // the cumulative reduction over the cycle matches the peak `backoff`.
-    double delta_backoff =
-        ref_window_share * (backoff - last_backoff_) / (1.0 - last_backoff_);
-    last_backoff_ = backoff;
-    return delta_backoff;
-  }
-  // State 4: Waiting for the current backoff to take effect.
-  // Within the current cycle and `backoff <= last_backoff_`; do not reduce
-  // `ref_window_` further while waiting one RTT after `data_in_flight <=
-  // ref_window_` to observe the effect of the already-applied reduction.
-  return 0.0;
+  return backoff / std::max(1.0, delay_based_congestion_control_.rtt() /
+                                     ReactionInterval());
 }
 
 void ScreamV2::UpdateL4SAlpha(const ScreamFeedback& parsed) {
@@ -196,28 +154,45 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
   bool is_ce = parsed.num_ce_marked_packets > 0;
   bool is_loss =
       loss_estimator_.Update(parsed, delay_based_congestion_control_.rtt());
-  bool is_virtual_ce = delay_based_congestion_control_.IsQueueDelayDetected();
   if (is_loss) {
-    if (!loss_estimator_.congested() && !is_virtual_ce) {
+    if (!loss_estimator_.congested() &&
+        !delay_based_congestion_control_.IsQueueDelayDetected()) {
       is_loss = false;
     }
   }
 
-  DataSize previous_ref_window = ref_window_;
-
   TimeDelta time_since_last_reaction =
       parsed.feedback_time - last_reaction_to_congestion_time_;
-  TimeDelta reaction_interval = ReactionInterval();
+  TimeDelta min_reaction_interval =
+      std::min(delay_based_congestion_control_.rtt(), ReactionInterval());
+
+  bool is_virtual_ce = false;
+  if (params_.use_spec_backoff.Get()) {
+    if (time_since_last_reaction >= min_reaction_interval && !is_loss &&
+        !is_ce && delay_based_congestion_control_.IsQueueDelayDetected() &&
+        delay_based_congestion_control_.queue_delay() >=
+            queue_delay_avg_prev_) {
+      is_virtual_ce = true;
+    }
+    if (parsed.feedback_time - last_queue_delay_avg_check_time_ >=
+        min_reaction_interval) {
+      queue_delay_avg_prev_ = delay_based_congestion_control_.queue_delay();
+      last_queue_delay_avg_check_time_ = parsed.feedback_time;
+    }
+  } else {
+    is_virtual_ce = delay_based_congestion_control_.IsQueueDelayDetected();
+  }
+
+  DataSize previous_ref_window = ref_window_;
 
   if ((is_virtual_ce || is_ce || is_loss) &&
-      time_since_last_reaction >=
-          std::min(delay_based_congestion_control_.rtt(), reaction_interval)) {
+      time_since_last_reaction >= min_reaction_interval) {
     last_reaction_to_congestion_time_ = parsed.feedback_time;
     double backoff = 0.0;
     if (is_loss) {  // Back off due to loss
       backoff = 1.0 - params_.beta_loss.Get();
     } else if (is_ce) {  // Backoff due to ECN-CE marking
-      backoff = ScaleBackoff(parsed, l4s_alpha_ / 2.0);
+      backoff = ScaleBackoff(l4s_alpha_ / 2.0);
 
       if (!delay_based_congestion_control_.IsQueueDelayDetected()) {
         // Scale down backoff if close to the last known max reference window
@@ -249,8 +224,8 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
                                  params_.min_ref_window.Get(), ref_window_);
       }
     } else if (is_virtual_ce) {  // Back off due to delay
-      backoff = ScaleBackoff(
-          parsed, delay_based_congestion_control_.l4s_alpha_v() / 2.0);
+      backoff =
+          ScaleBackoff(delay_based_congestion_control_.l4s_alpha_v() / 2.0);
     }
     if (allow_initial_ref_window_clamping_ && received_rate_.IsFinite()) {
       // Clamp ref_window to received rate on the first congestion event,
@@ -259,11 +234,7 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
           std::clamp(received_rate_ * (delay_based_congestion_control_.rtt() +
                                        feedback_hold_time_),
                      params_.min_ref_window.Get(), ref_window_);
-      double initial_backoff = 1.0 - (clamped_ref_window / ref_window_);
-      if (initial_backoff > backoff) {
-        backoff = initial_backoff;
-        last_backoff_ = std::max(last_backoff_, initial_backoff);
-      }
+      backoff = std::max(backoff, 1.0 - (clamped_ref_window / ref_window_));
       allow_initial_ref_window_clamping_ = false;
     }
     ref_window_ = (1.0 - backoff) * ref_window_;

@@ -725,5 +725,57 @@ TEST(ScreamV2Test, MaxDataInFlightBoundedByMinMaxDataInFlightMss) {
   EXPECT_EQ(scream_custom.max_data_in_flight(), DataSize::Bytes(5 * 1280));
 }
 
+TEST(ScreamV2Test, DelayBackoffInhibitedWhenQueueDelayDecreases) {
+  SimulatedClock clock(Timestamp::Seconds(1'234));
+  Environment env = CreateTestEnvironment({.time = &clock});
+  ScreamV2 scream(env);
+  scream.SetTargetBitrateConstraints(DataRate::Zero(),
+                                     DataRate::KilobitsPerSec(2000),
+                                     DataRate::KilobitsPerSec(1000));
+  CcFeedbackGenerator feedback_generator(
+      {.network_config = {.queue_delay_ms = 25,
+                          .link_capacity = DataRate::KilobitsPerSec(1000)},
+       .send_as_ect1 = false});
+
+  // Overuse the 1 Mbps link by sending at 2 Mbps until queue delay builds up
+  // well above the congestion threshold (30 ms).
+  for (int i = 0; i < 10; ++i) {
+    TransportPacketsFeedback feedback =
+        feedback_generator.ProcessUntilNextFeedback(
+            DataRate::KilobitsPerSec(2000), clock,
+            [&](const SentPacket& packet) {
+              scream.OnPacketSent(packet.data_in_flight);
+            });
+    scream.OnTransportPacketsFeedback(feedback);
+  }
+  ASSERT_TRUE(scream.delay_based_congestion_control().IsQueueDelayDetected());
+  ASSERT_TRUE(scream.last_reference_window_decrease_time().IsFinite());
+
+  // Reduce send rate below link capacity (500 kbps) so the queue drains.
+  int drained_feedbacks_while_congested = 0;
+  for (int i = 0; i < 20; ++i) {
+    TimeDelta prev_queue_delay =
+        scream.delay_based_congestion_control().queue_delay();
+    DataSize prev_ref_window = scream.ref_window();
+    TransportPacketsFeedback feedback =
+        feedback_generator.ProcessUntilNextFeedback(
+            DataRate::KilobitsPerSec(500), clock,
+            [&](const SentPacket& packet) {
+              scream.OnPacketSent(packet.data_in_flight);
+            });
+    scream.OnTransportPacketsFeedback(feedback);
+
+    if (scream.delay_based_congestion_control().IsQueueDelayDetected() &&
+        scream.delay_based_congestion_control().queue_delay() <
+            prev_queue_delay) {
+      ++drained_feedbacks_while_congested;
+      // Even though queue delay is still above the congestion threshold,
+      // reference window must not decrease while queue delay is decreasing.
+      EXPECT_GE(scream.ref_window(), prev_ref_window);
+    }
+  }
+  EXPECT_GT(drained_feedbacks_while_congested, 0);
+}
+
 }  // namespace
 }  // namespace webrtc
