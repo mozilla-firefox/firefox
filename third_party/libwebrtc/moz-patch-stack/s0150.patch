@@ -1,0 +1,26 @@
+From: Byron Campen <docfaraday@gmail.com>
+Date: Thu, 29 Oct 2026 14:46:00 -0500
+Subject: Bug 2086269 - (fix-f00ee0bdfc) Revert f00ee0bdfc, which introduced a
+ dependency on an in-tree python executable.
+
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d5803eca60b77e33d4769a2d5e49acec5ac8b8a2
+---
+ .gn | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/.gn b/.gn
+index fb1ddfa62c..41d0ada2cf 100644
+--- a/.gn
++++ b/.gn
+@@ -11,8 +11,9 @@ import("//chromium/build/dotfile_settings.gni")
+ # The location of the build configuration file.
+ buildconfig = "//chromium/build/config/BUILDCONFIG.gn"
+ 
+-# The hermetic Python interpreter to use by default.
+-script_executable = "//third_party/cpython3/host/bin/python3"
++# The python interpreter to use by default. On Windows, this will look
++# for python3.exe and python3.bat.
++script_executable = "python3"
+ 
+ # The secondary source root is a parallel directory tree where
+ # GN build files are placed when they can not be placed directly
