@@ -9,7 +9,6 @@
  */
 #include "rtc_tools/frame_analyzer/video_quality_analysis.h"
 
-#include <cstdio>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -19,7 +18,6 @@
 #include "system_wrappers/include/clock.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
-#include "test/testsupport/file_utils.h"
 
 namespace webrtc {
 namespace test {
@@ -137,10 +135,6 @@ TEST(VideoQualityAnalysisTest, PrintMaxRepeatedAndSkippedFramesSkippedFrames) {
 TEST(VideoQualityAnalysisTest,
      PrintMaxRepeatedAndSkippedFramesDecodeErrorInTest) {
   ResultsContainer result;
-
-  std::string log_filename = TempFilename(test::OutputPath(), "log.log");
-  FILE* logfile = fopen(log_filename.c_str(), "w");
-  ASSERT_TRUE(logfile != nullptr);
 
   result.max_repeated_frames = 1;
   result.max_skipped_frames = 0;

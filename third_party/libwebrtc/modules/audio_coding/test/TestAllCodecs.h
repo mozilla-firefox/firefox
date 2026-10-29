@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 #include "api/environment/environment.h"
 #include "modules/audio_coding/include/audio_coding_module.h"
@@ -72,6 +73,7 @@ class TestAllCodecs {
 
   void Run(TestPack* channel);
   void OpenOutFile(int test_number);
+  void CloseOutFile();
 
   const Environment env_;
   std::unique_ptr<AudioCodingModule> acm_a_;
@@ -79,6 +81,7 @@ class TestAllCodecs {
   TestPack* channel_a_to_b_;
   PCMFile infile_a_;
   PCMFile outfile_b_;
+  std::string outfile_b_name_;
   int test_count_;
   int packet_size_samples_;
   size_t packet_size_bytes_;

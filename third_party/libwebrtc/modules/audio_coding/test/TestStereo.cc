@@ -208,7 +208,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_g722, 16000, 64000, 960, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 
   channel_a2b_->set_codec_mode(kStereo);
@@ -223,7 +223,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_l16, 8000, 128000, 320, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
@@ -235,7 +235,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_l16, 16000, 256000, 640, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
@@ -243,7 +243,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_l16, 32000, 512000, 640, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #ifdef PCMA_AND_PCMU
   channel_a2b_->set_codec_mode(kStereo);
   audio_channels = 2;
@@ -263,7 +263,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_pcma, 8000, 64000, 480, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
@@ -280,7 +280,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_pcmu, 8000, 64000, 480, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 #ifdef WEBRTC_CODEC_OPUS
   channel_a2b_->set_codec_mode(kStereo);
@@ -307,7 +307,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_opus, 48000, 510000, 960, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
   //
   // Test Mono-To-Stereo for all codecs.
@@ -322,7 +322,7 @@ void TestStereo::Perform() {
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_g722, 16000, 64000, 160, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 
   test_cntr_++;
@@ -330,19 +330,19 @@ void TestStereo::Perform() {
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_l16, 8000, 128000, 80, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_l16, 16000, 256000, 160, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_l16, 32000, 512000, 320, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #ifdef PCMA_AND_PCMU
   test_cntr_++;
   channel_a2b_->set_codec_mode(kStereo);
@@ -351,7 +351,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_pcma, 8000, 64000, 80, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 #ifdef WEBRTC_CODEC_OPUS
   // Keep encode and decode in stereo.
@@ -364,7 +364,7 @@ void TestStereo::Perform() {
   // Encode in mono, decode in stereo mode.
   RegisterSendCodec('A', codec_opus, 48000, 64000, 960, 1);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 
   //
@@ -381,26 +381,26 @@ void TestStereo::Perform() {
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_g722, 16000, 64000, 160, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_l16, 8000, 128000, 80, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_l16, 16000, 256000, 160, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 
   test_cntr_++;
   OpenOutFile(test_cntr_);
   RegisterSendCodec('A', codec_l16, 32000, 512000, 320, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #ifdef PCMA_AND_PCMU
   test_cntr_++;
   OpenOutFile(test_cntr_);
@@ -408,7 +408,7 @@ void TestStereo::Perform() {
   Run(channel_a2b_, audio_channels, codec_channels);
   RegisterSendCodec('A', codec_pcma, 8000, 64000, 80, codec_channels);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 #ifdef WEBRTC_CODEC_OPUS
   test_cntr_++;
@@ -422,7 +422,7 @@ void TestStereo::Perform() {
   RegisterSendCodec('A', codec_opus, 48000, 32000, 960, 2);
   Run(channel_a2b_, audio_channels, codec_channels);
 
-  out_file_.Close();
+  CloseOutFile();
 
   // Test switching between decoding mono and stereo for Opus.
 
@@ -430,19 +430,19 @@ void TestStereo::Perform() {
   test_cntr_++;
   OpenOutFile(test_cntr_);
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
   // Decode in stereo.
   test_cntr_++;
   OpenOutFile(test_cntr_);
   neteq_->SetCodecs({{120, {"OPUS", 48000, 2, {{"stereo", "1"}}}}});
   Run(channel_a2b_, audio_channels, 2);
-  out_file_.Close();
+  CloseOutFile();
   // Decode in mono.
   test_cntr_++;
   OpenOutFile(test_cntr_);
   neteq_->SetCodecs({{120, {"OPUS", 48000, 2}}});
   Run(channel_a2b_, audio_channels, codec_channels);
-  out_file_.Close();
+  CloseOutFile();
 #endif
 
   // Delete the file pointers.
@@ -616,12 +616,15 @@ void TestStereo::Run(TestPackStereo* channel,
 }
 
 void TestStereo::OpenOutFile(int16_t test_number) {
-  std::string file_name;
   StringBuilder file_stream;
-  file_stream << test::OutputPath() << "teststereo_out_" << test_number
-              << ".pcm";
-  file_name = file_stream.str();
-  out_file_.Open(file_name, 32000, "wb");
+  file_stream << "teststereo_out_" << test_number << ".pcm";
+  out_file_name_ = test::TempFilename(test::OutputPath(), file_stream.str());
+  out_file_.Open(out_file_name_, 32000, "wb");
+}
+
+void TestStereo::CloseOutFile() {
+  out_file_.Close();
+  EXPECT_TRUE(test::RemoveFile(out_file_name_));
 }
 
 }  // namespace webrtc

@@ -24,7 +24,7 @@ namespace test {
 
 namespace {
 const std::string& DefaultArtifactPath() {
-  static const std::string path = OutputPathWithRandomDirectory();
+  static const std::string path = OutputPath();
   return path;
 }
 }  // namespace

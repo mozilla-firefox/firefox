@@ -84,13 +84,13 @@ void TestRedFec::Perform() {
 
   OpenOutFile(_testCntr);
   Run();
-  _outFileB.Close();
+  CloseOutFile();
 
   // Switch to another 8 kHz codec; RED should remain switched on.
   RegisterSendCodec(_acmA, {"PCMU", 8000, 1}, Vad::kVadAggressive, true);
   OpenOutFile(_testCntr);
   Run();
-  _outFileB.Close();
+  CloseOutFile();
 
 // TODO(bugs.webrtc.org/345525069): Either fix/enable or remove G722.
 #if defined(__has_feature) && !__has_feature(undefined_behavior_sanitizer)
@@ -102,7 +102,7 @@ void TestRedFec::Perform() {
   Run();
   RegisterSendCodec(_acmA, {"G722", 8000, 1}, Vad::kVadAggressive, false);
   Run();
-  _outFileB.Close();
+  CloseOutFile();
 
   _channelA2B->SetFECTestWithPacketLoss(true);
   // Following tests are under packet losses.
@@ -112,7 +112,7 @@ void TestRedFec::Perform() {
 
   OpenOutFile(_testCntr);
   Run();
-  _outFileB.Close();
+  CloseOutFile();
 #endif
 
   RegisterSendCodec(_acmA, {"opus", 48000, 2}, std::nullopt, false);
@@ -141,7 +141,7 @@ void TestRedFec::Perform() {
   _acmA->ModifyEncoder([&](std::unique_ptr<AudioEncoder>* enc) {
     EXPECT_EQ(true, (*enc)->SetFec(true));
   });
-  _outFileB.Close();
+  CloseOutFile();
 }
 
 void TestRedFec::RegisterSendCodec(
@@ -202,13 +202,15 @@ void TestRedFec::Run() {
 }
 
 void TestRedFec::OpenOutFile(int16_t test_number) {
-  std::string file_name;
   StringBuilder file_stream;
-  file_stream << test::OutputPath();
-  file_stream << "TestRedFec_outFile_";
-  file_stream << test_number << ".pcm";
-  file_name = file_stream.str();
-  _outFileB.Open(file_name, 16000, "wb");
+  file_stream << "TestRedFec_outFile_" << test_number << ".pcm";
+  _out_file_name = test::TempFilename(test::OutputPath(), file_stream.str());
+  _outFileB.Open(_out_file_name, 16000, "wb");
+}
+
+void TestRedFec::CloseOutFile() {
+  _outFileB.Close();
+  EXPECT_TRUE(test::RemoveFile(_out_file_name));
 }
 
 }  // namespace webrtc

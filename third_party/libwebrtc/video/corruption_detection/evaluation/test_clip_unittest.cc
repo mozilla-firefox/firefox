@@ -93,6 +93,7 @@ TEST(TestClipTest, CreateYuvClipWithExtension) {
   EXPECT_THAT(kDefaultTestClip.height(), kDummyVideoHeight);
   EXPECT_THAT(kDefaultTestClip.framerate(), kFramerate);
   EXPECT_THAT(kDefaultTestClip.is_yuv(), true);
+  EXPECT_TRUE(test::RemoveFile(yuv_filepath));
 }
 
 TEST(TestClipTest, CreateY4mClipWithExtension) {

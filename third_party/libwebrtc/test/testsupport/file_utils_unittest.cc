@@ -132,6 +132,7 @@ TEST_F(FileUtilsTest, RandomOutputPathFromUnchangedWorkingDir) {
   std::string result = test::OutputPathWithRandomDirectory();
 
   ASSERT_THAT(result, EndsWith(expected_end));
+  EXPECT_TRUE(test::RemoveDir(result));
 }
 
 TEST_F(FileUtilsTest, RandomOutputPathFromRootWorkingDir) {
@@ -144,6 +145,7 @@ TEST_F(FileUtilsTest, RandomOutputPathFromRootWorkingDir) {
   std::string result = test::OutputPathWithRandomDirectory();
 
   ASSERT_THAT(result, EndsWith(expected_end));
+  EXPECT_TRUE(test::RemoveDir(result));
 }
 
 TEST_F(FileUtilsTest, TempFilename) {
@@ -174,12 +176,11 @@ TEST_F(FileUtilsTest, GenerateTempFilename) {
 #define MAYBE_CreateDir CreateDir
 #endif
 TEST_F(FileUtilsTest, MAYBE_CreateDir) {
-  std::string directory =
-      test::OutputPathWithRandomDirectory() + "fileutils-unittest-empty-dir";
-  // Make sure it's removed if a previous test has failed:
-  remove(directory.c_str());
+  std::string random_dir = test::OutputPathWithRandomDirectory();
+  std::string directory = random_dir + "fileutils-unittest-empty-dir";
   ASSERT_TRUE(test::CreateDir(directory));
-  remove(directory.c_str());
+  EXPECT_TRUE(test::RemoveDir(directory));
+  EXPECT_TRUE(test::RemoveDir(random_dir));
 }
 
 TEST_F(FileUtilsTest, WorkingDirReturnsValue) {
@@ -257,8 +258,9 @@ TEST_F(FileUtilsTest, WriteReadDeleteFilesAndDirs) {
   size_t num_deleted_entries;
 
   // Create an empty temporary directory for this test.
+  const std::string random_dir = OutputPathWithRandomDirectory();
   const std::string temp_directory =
-      OutputPathWithRandomDirectory() + Path("TempFileUtilsTestReadDirectory/");
+      random_dir + Path("TempFileUtilsTestReadDirectory/");
   CreateDir(temp_directory);
   EXPECT_NO_FATAL_FAILURE(CleanDir(temp_directory, &num_deleted_entries));
   EXPECT_TRUE(DirExists(temp_directory));
@@ -282,11 +284,14 @@ TEST_F(FileUtilsTest, WriteReadDeleteFilesAndDirs) {
   EXPECT_EQ(2u, num_deleted_entries);
   EXPECT_TRUE(RemoveDir(temp_directory));
   EXPECT_FALSE(DirExists(temp_directory));
+  EXPECT_TRUE(RemoveDir(random_dir));
+  EXPECT_FALSE(DirExists(random_dir));
 }
 
 TEST_F(FileUtilsTest, DeleteNonEmptyDirectory) {
+  const std::string random_dir = OutputPathWithRandomDirectory();
   const std::string temp_directory =
-      OutputPathWithRandomDirectory() + Path("TempFileUtilsTestReadDirectory/");
+      random_dir + Path("TempFileUtilsTestReadDirectory/");
   CreateDir(temp_directory);
   EXPECT_TRUE(DirExists(temp_directory));
 
@@ -306,6 +311,8 @@ TEST_F(FileUtilsTest, DeleteNonEmptyDirectory) {
   // Checks.
   EXPECT_TRUE(RemoveNonEmptyDir(temp_directory));
   EXPECT_FALSE(DirExists(temp_directory));
+  EXPECT_TRUE(RemoveDir(random_dir));
+  EXPECT_FALSE(DirExists(random_dir));
 }
 
 TEST_F(FileUtilsTest, DirNameStripsFilename) {

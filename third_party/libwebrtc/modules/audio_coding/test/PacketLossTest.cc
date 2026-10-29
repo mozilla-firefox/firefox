@@ -180,6 +180,7 @@ void PacketLossTest::Perform() {
   receiver.Run();
   receiver.Teardown();
   rtpFile.Close();
+  EXPECT_TRUE(test::RemoveFile(fileName));
 #endif
 }
 

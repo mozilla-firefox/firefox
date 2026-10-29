@@ -28,19 +28,19 @@ namespace webrtc {
 
 class RtcEventLogOutputFileTest : public ::testing::Test {
  public:
-  RtcEventLogOutputFileTest() : output_file_name_(GetOutputFilePath()) {
-    // Ensure no leftovers from previous runs, which might not have terminated
-    // in an orderly fashion.
-    remove(output_file_name_.c_str());
+  RtcEventLogOutputFileTest()
+      : output_dir_(test::OutputPathWithRandomDirectory()),
+        output_file_name_(output_dir_ + GetOutputFileName()) {}
+
+  ~RtcEventLogOutputFileTest() override {
+    test::RemoveFile(output_file_name_);
+    EXPECT_TRUE(test::RemoveDir(output_dir_));
   }
 
-  ~RtcEventLogOutputFileTest() override { remove(output_file_name_.c_str()); }
-
  protected:
-  std::string GetOutputFilePath() const {
+  std::string GetOutputFileName() const {
     auto test_info = ::testing::UnitTest::GetInstance()->current_test_info();
-    return test::OutputPathWithRandomDirectory() + test_info->test_case_name() +
-           test_info->name();
+    return std::string(test_info->test_case_name()) + test_info->name();
   }
 
   std::string GetOutputFileContents() const {
@@ -53,6 +53,7 @@ class RtcEventLogOutputFileTest : public ::testing::Test {
     return file_str;
   }
 
+  const std::string output_dir_;
   const std::string output_file_name_;
 };
 

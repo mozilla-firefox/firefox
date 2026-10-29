@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 #include "api/neteq/neteq.h"
 #include "common_audio/resampler/include/push_resampler.h"
@@ -41,6 +42,7 @@ class OpusTest {
            int percent_loss = 0);
 
   void OpenOutFile(int test_number);
+  void CloseOutFile();
 
   std::unique_ptr<NetEq> neteq_;
   acm2::ResamplerHelper resampler_helper_;
@@ -49,6 +51,8 @@ class OpusTest {
   PCMFile in_file_mono_;
   PCMFile out_file_;
   PCMFile out_file_standalone_;
+  std::string out_file_name_;
+  std::string out_file_standalone_name_;
   int counter_;
   uint8_t payload_type_;
   uint32_t rtp_timestamp_;

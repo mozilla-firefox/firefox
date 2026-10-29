@@ -33,16 +33,23 @@ TEST(NetworkTesterTest, ServerClient) {
   const int kMaxPort = 65535;
   int port = Random(env.clock().TimeInMicroseconds()).Rand(kMinPort, kMaxPort);
 
-  TestController client(
-      env, 0, 0, test::ResourcePath("network_tester/client_config", "dat"),
-      test::OutputPath() + "client_packet_log.dat");
-  TestController server(
-      env, port, port,
-      test::ResourcePath("network_tester/server_config", "dat"),
-      test::OutputPath() + "server_packet_log.dat");
-  client.SendConnectTo("127.0.0.1", port);
-  EXPECT_TRUE(
-      WaitUntil([&] { return server.IsTestDone() && client.IsTestDone(); }));
+  const std::string client_log =
+      test::TempFilename(test::OutputPath(), "client_packet_log.dat");
+  const std::string server_log =
+      test::TempFilename(test::OutputPath(), "server_packet_log.dat");
+  {
+    TestController client(
+        env, 0, 0, test::ResourcePath("network_tester/client_config", "dat"),
+        client_log);
+    TestController server(
+        env, port, port,
+        test::ResourcePath("network_tester/server_config", "dat"), server_log);
+    client.SendConnectTo("127.0.0.1", port);
+    EXPECT_TRUE(
+        WaitUntil([&] { return server.IsTestDone() && client.IsTestDone(); }));
+  }
+  EXPECT_TRUE(test::RemoveFile(client_log));
+  EXPECT_TRUE(test::RemoveFile(server_log));
 }
 
 }  // namespace webrtc

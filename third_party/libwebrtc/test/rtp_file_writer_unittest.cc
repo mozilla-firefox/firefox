@@ -24,9 +24,16 @@ namespace webrtc {
 class RtpFileWriterTest : public ::testing::Test {
  public:
   void Init(const std::string& filename) {
-    filename_ = test::OutputPath() + filename;
+    filename_ = test::TempFilename(test::OutputPath(), filename);
     rtp_writer_.reset(
         test::RtpFileWriter::Create(test::RtpFileWriter::kRtpDump, filename_));
+  }
+
+  void TearDown() override {
+    rtp_writer_.reset();
+    if (!filename_.empty()) {
+      EXPECT_TRUE(test::RemoveFile(filename_));
+    }
   }
 
   void WriteRtpPackets(int num_packets, int time_ms_offset = 0) {

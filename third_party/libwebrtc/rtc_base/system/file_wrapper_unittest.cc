@@ -28,8 +28,8 @@ TEST(FileWrapper, FileSize) {
   std::string test_name =
       std::string(test_info->test_case_name()) + "_" + test_info->name();
   std::replace(test_name.begin(), test_name.end(), '/', '_');
-  const std::string temp_filename =
-      test::OutputPathWithRandomDirectory() + test_name;
+  const std::string temp_dir = test::OutputPathWithRandomDirectory();
+  const std::string temp_filename = temp_dir + test_name;
 
   // Write
   {
@@ -70,8 +70,9 @@ TEST(FileWrapper, FileSize) {
     EXPECT_TRUE(file.ReadEof());
   }
 
-  // Clean up temporary file.
-  remove(temp_filename.c_str());
+  // Clean up temporary file and directory.
+  EXPECT_TRUE(test::RemoveFile(temp_filename));
+  EXPECT_TRUE(test::RemoveDir(temp_dir));
 }
 
 }  // namespace webrtc

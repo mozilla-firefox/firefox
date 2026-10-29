@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 
 #include "api/environment/environment.h"
 #include "api/neteq/neteq.h"
@@ -85,6 +86,7 @@ class TestStereo {
            int out_channels,
            int percent_loss = 0);
   void OpenOutFile(int16_t test_number);
+  void CloseOutFile();
 
   const Environment env_;
   std::unique_ptr<AudioCodingModule> acm_a_;
@@ -96,6 +98,7 @@ class TestStereo {
   PCMFile* in_file_stereo_;
   PCMFile* in_file_mono_;
   PCMFile out_file_;
+  std::string out_file_name_;
   int16_t test_cntr_;
   uint16_t pack_size_samp_;
   uint16_t pack_size_bytes_;

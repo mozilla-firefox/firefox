@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "absl/strings/string_view.h"
 #include "api/audio_codecs/audio_decoder_factory.h"
@@ -112,6 +113,7 @@ class TestWebRtcVadDtx final : public TestVadDtx {
   void Test(bool new_outfile, bool expect_dtx_enabled);
 
   int output_file_num_;
+  std::string out_filename_;
 };
 
 // TestOpusDtx is to verify that the Opus DTX performs as it should.
