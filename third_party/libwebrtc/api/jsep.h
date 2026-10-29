@@ -148,14 +148,8 @@ class IceCandidateCollection final {
   IceCandidateCollection(const IceCandidateCollection&) = delete;
   IceCandidateCollection& operator=(const IceCandidateCollection&) = delete;
 
-  size_t count() const {
-    RTC_DCHECK_RUN_ON(&sequence_checker_);
-    return candidates_.size();
-  }
-  bool empty() const {
-    RTC_DCHECK_RUN_ON(&sequence_checker_);
-    return candidates_.empty();
-  }
+  size_t count() const { return candidates_.size(); }
+  bool empty() const { return candidates_.empty(); }
   const IceCandidate* at(size_t index) const;
 
   // Adds and takes ownership of the IceCandidate.
@@ -179,12 +173,13 @@ class IceCandidateCollection final {
   bool HasCandidate(const IceCandidate* candidate) const;
 
   IceCandidateCollection Clone() const;
-  void RelinquishThreadOwnership();
+
+  // TODO(tommi): Remove once downstream code no longer calls this.
+  [[deprecated("No-op, IceCandidateCollection isn't bound to a thread.")]]
+  void RelinquishThreadOwnership() {}
 
  private:
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
-  std::vector<std::unique_ptr<IceCandidate>> candidates_
-      RTC_GUARDED_BY(sequence_checker_);
+  std::vector<std::unique_ptr<IceCandidate>> candidates_;
 };
 
 // Enum that describes the type of the SessionDescriptionInterface.

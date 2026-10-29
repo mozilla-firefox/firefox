@@ -212,13 +212,6 @@ void SessionDescriptionInterface::RelinquishThreadOwnership() {
   // signaling) where a call is made into webrtc. At that point we'd hit a
   // dcheck like this in webrtc: RTC_DCHECK_RUN_ON(&sequence_checker_);
   sequence_checker_.Detach();
-  // Tie the checker to the current thread, which permits iterating
-  // `candidate_collection_`
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
-  for (IceCandidateCollection& collection : candidate_collection_) {
-    collection.RelinquishThreadOwnership();
-  }
-  sequence_checker_.Detach();  // Unties the checker from the current thread.
 }
 
 SessionDescriptionInterface::SessionDescriptionInterface(
@@ -243,11 +236,6 @@ SessionDescriptionInterface::SessionDescriptionInterface(
       UpdateConnectionAddress(candidate_collection_[i],
                               description_->contents()[i].media_description());
     }
-    // The calls above attach the collection's sequence checker to the current
-    // thread. Detach it so that, like `sequence_checker_`, the description
-    // isn't tied to the thread that constructs it. E.g. Chromium parses SDP on
-    // the main thread and then uses the description on the signaling thread.
-    candidate_collection_[i].RelinquishThreadOwnership();
   }
 }
 
