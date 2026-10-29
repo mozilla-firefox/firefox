@@ -1459,10 +1459,12 @@ TEST_F(SendStatisticsProxyTest, OnBitrateAllocationUpdatedSetsTargetBitrates) {
   statistics_proxy_->OnInactiveSsrc(kSecondSsrc);
 
   // Update target bitrates!
+  VideoCodec codec;
+  codec.numberOfSimulcastStreams = 2;
   VideoBitrateAllocation allocation;
   allocation.SetBitrate(0, 0, 123);
   allocation.SetBitrate(1, 0, 321);
-  statistics_proxy_->OnBitrateAllocationUpdated(VideoCodec(), allocation);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
   EXPECT_EQ(statistics_proxy_->GetStats().substreams[kFirstSsrc].target_bitrate,
             DataRate::BitsPerSec(123));
   EXPECT_EQ(
@@ -1472,10 +1474,30 @@ TEST_F(SendStatisticsProxyTest, OnBitrateAllocationUpdatedSetsTargetBitrates) {
   // 0 bitrate = no target.
   allocation.SetBitrate(0, 0, 0);
   allocation.SetBitrate(1, 0, 0);
-  statistics_proxy_->OnBitrateAllocationUpdated(VideoCodec(), allocation);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
   EXPECT_FALSE(statistics_proxy_->GetStats()
                    .substreams[kFirstSsrc]
                    .target_bitrate.has_value());
+  EXPECT_FALSE(statistics_proxy_->GetStats()
+                   .substreams[kSecondSsrc]
+                   .target_bitrate.has_value());
+}
+
+TEST_F(SendStatisticsProxyTest,
+       OnBitrateAllocationUpdatedSetsTargetBitrateSumForSvc) {
+  statistics_proxy_->OnInactiveSsrc(kFirstSsrc);
+  statistics_proxy_->OnInactiveSsrc(kSecondSsrc);
+
+  VideoCodec codec;
+  codec.numberOfSimulcastStreams = 1;
+  VideoBitrateAllocation allocation;
+  allocation.SetBitrate(0, 0, 100);
+  allocation.SetBitrate(0, 1, 50);
+  allocation.SetBitrate(1, 0, 200);
+  allocation.SetBitrate(2, 0, 400);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+  EXPECT_EQ(statistics_proxy_->GetStats().substreams[kFirstSsrc].target_bitrate,
+            DataRate::BitsPerSec(750));
   EXPECT_FALSE(statistics_proxy_->GetStats()
                    .substreams[kSecondSsrc]
                    .target_bitrate.has_value());

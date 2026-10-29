@@ -1417,21 +1417,24 @@ void SendStatisticsProxy::OnBitrateAllocationUpdated(
 
   bw_limited_layers_ = allocation.is_bw_limited();
 
-  // Store target bitrates per substream stats.
+  // Store target bitrates per substream stats. Without simulcast, all spatial
+  // layers are sent on the first SSRC.
+  const bool single_stream = codec.numberOfSimulcastStreams <= 1;
   for (auto& [ssrc, substream] : stats_.substreams) {
-    std::optional<size_t> simulcast_index;
+    std::optional<size_t> encoding_index;
     for (size_t i = 0; i < rtp_config_.ssrcs.size(); ++i) {
       if (rtp_config_.ssrcs[i] == ssrc) {
-        simulcast_index = i;
+        encoding_index = i;
         break;
       }
     }
-    if (!simulcast_index.has_value()) {
+    if (!encoding_index.has_value() || (single_stream && *encoding_index > 0)) {
       substream.target_bitrate = std::nullopt;
       continue;
     }
-    substream.target_bitrate =
-        DataRate::BitsPerSec(allocation.GetSpatialLayerSum(*simulcast_index));
+    substream.target_bitrate = DataRate::BitsPerSec(
+        single_stream ? allocation.get_sum_bps()
+                      : allocation.GetSpatialLayerSum(*encoding_index));
     if (substream.target_bitrate == DataRate::Zero()) {
       substream.target_bitrate = std::nullopt;
     }
