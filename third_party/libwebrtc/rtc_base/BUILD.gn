@@ -2366,7 +2366,6 @@ if (rtc_include_tests) {
         "../api/units:timestamp",
         "../system_wrappers",
         "../test:test_support",
-        "//third_party/abseil-cpp/absl/cleanup",
         "//third_party/abseil-cpp/absl/functional:any_invocable",
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]

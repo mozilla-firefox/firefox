@@ -247,7 +247,6 @@ class LoggingConfig {
   std::vector<std::unique_ptr<LogSink>> sinks_;
 };
 
-#if RTC_LOG_ENABLED()
 // Initializes logging with the given configuration.
 // Can be called only once. Returns true if successful.
 // If not called explicitly, logging will be implicitly initialized
@@ -256,12 +255,16 @@ bool InitializeLogging(LoggingConfig config);
 
 // Returns the current logging configuration.
 const LoggingConfig& GetLoggingConfig();
-#else
-inline bool InitializeLogging(LoggingConfig config) {
-  return false;
-}
-const LoggingConfig& GetLoggingConfig();
-#endif
+
+// Resets logging state for testing and returns the previously active
+// LoggingConfig by move.
+// - When `restore_config` is std::nullopt (e.g. in SetUp), the active
+//   configuration is replaced with a default one and the next
+//   InitializeLogging() call will succeed.
+// - When `restore_config` is provided (e.g. in TearDown), moves it back in as
+//   the active initialized configuration.
+LoggingConfig ResetLoggingForTesting(
+    std::optional<LoggingConfig> restore_config = std::nullopt);
 
 namespace webrtc_logging_impl {
 

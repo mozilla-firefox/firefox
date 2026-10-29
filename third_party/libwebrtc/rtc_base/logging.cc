@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -103,15 +104,22 @@ Mutex& GetLoggingLock() {
   return mutex;
 }
 
+// Set by ResetLoggingForTesting() to let the next InitializeLogging() call
+// replace the active configuration. Never set in production.
+constinit bool g_reinitialize_for_testing RTC_GUARDED_BY(GetLoggingLock()) =
+    false;
+
 // Internal helper to manage config state.
 // NOTE: The return value is non-const only while transitioning away from and
 // deprecating legacy global methods that allow modifying the logging config
 // after initialization. Once those methods are removed, this should return a
 // const reference again to ensure lockless read-only access.
-LoggingConfig& GetOrInitConfig(LoggingConfig* init_config,
-                               bool& config_applied) {
+LoggingConfig& GetOrInitConfig(LoggingConfig* init_config = nullptr,
+                               bool* config_applied = nullptr) {
   static absl::NoDestructor<LoggingConfig> config([&]() {
-    config_applied = true;
+    if (config_applied != nullptr) {
+      *config_applied = true;
+    }
     if (init_config != nullptr) {
       return std::move(*init_config);
     }
@@ -120,30 +128,46 @@ LoggingConfig& GetOrInitConfig(LoggingConfig* init_config,
   return *config;
 }
 
-}  // namespace
+void ApplyConfigToLogMessageLocked(const LoggingConfig& config)
+    RTC_EXCLUSIVE_LOCKS_REQUIRED(GetLoggingLock()) {
+  LogMessage::SetLogQueueNames(config.log_queue_name());
+  LogMessage::LogTimestamps(config.log_timestamp());
+  LogMessage::SetLogToStderr(config.log_to_stderr());
+  g_dbg_sev.store(config.debug_severity(), std::memory_order_relaxed);
+  LogMessage::UpdateMinLogSeverity();
+}
 
-LoggingConfig::LoggingConfig() = default;
-LoggingConfig::LoggingConfig(LoggingConfig&&) = default;
-LoggingConfig& LoggingConfig::operator=(LoggingConfig&&) = default;
-LoggingConfig::~LoggingConfig() = default;
+}  // namespace
 
 bool InitializeLogging(LoggingConfig config) {
   bool config_applied = false;
-  GetOrInitConfig(&config, config_applied);
+  LoggingConfig& active = GetOrInitConfig(&config, &config_applied);
+  MutexLock lock(&GetLoggingLock());
+  if (!config_applied && std::exchange(g_reinitialize_for_testing, false)) {
+    active = std::move(config);
+    config_applied = true;
+  }
   if (config_applied) {
-    MutexLock lock(&GetLoggingLock());
-    LogMessage::SetLogQueueNames(config.log_queue_name());
-    LogMessage::LogTimestamps(config.log_timestamp());
-    LogMessage::SetLogToStderr(config.log_to_stderr());
-    g_dbg_sev.store(config.debug_severity(), std::memory_order_relaxed);
-    LogMessage::UpdateMinLogSeverity();
+    ApplyConfigToLogMessageLocked(active);
   }
   return config_applied;
 }
 
 const LoggingConfig& GetLoggingConfig() {
-  bool dummy;
-  return GetOrInitConfig(nullptr, dummy);
+  return GetOrInitConfig();
+}
+
+LoggingConfig ResetLoggingForTesting(
+    std::optional<LoggingConfig> restore_config) {
+  LoggingConfig& active = GetOrInitConfig();
+  MutexLock lock(&GetLoggingLock());
+  // Unless a configuration is restored, let the next InitializeLogging() call
+  // replace the default configuration.
+  g_reinitialize_for_testing = !restore_config.has_value();
+  LoggingConfig previous = std::exchange(
+      active, std::move(restore_config).value_or(LoggingConfig()));
+  ApplyConfigToLogMessageLocked(active);
+  return previous;
 }
 
 LogLineRef::LogLineRef() = default;
@@ -299,8 +323,8 @@ LogMessage::~LogMessage() {
     OutputToDebug(log_line_);
   }
 
-  for (const auto& sink : config.sinks()) {
-    if (log_line_.severity() >= sink->min_severity_) {
+  if (log_line_.severity() >= config.min_severity()) {
+    for (const auto& sink : config.sinks()) {
       sink->OnLogMessage(log_line_);
     }
   }
@@ -341,8 +365,7 @@ uint32_t LogMessage::WallClockStartTime() {
 }
 
 bool LogMessage::LogThreads(bool enabled) {
-  bool dummy;
-  LoggingConfig& config = GetOrInitConfig(nullptr, dummy);
+  LoggingConfig& config = GetOrInitConfig();
   bool prev = config.log_thread();
   config.set_log_thread(enabled);
   return prev;
@@ -412,8 +435,7 @@ void LogMessage::ConfigureLogging(absl::string_view params) {
     if (token == "tstamp") {
       LogTimestamps();
     } else if (token == "thread") {
-      bool dummy;
-      GetOrInitConfig(nullptr, dummy).set_log_thread(true);
+      GetOrInitConfig().set_log_thread(true);
 
       // Logging levels
     } else if (token == "verbose") {
@@ -452,9 +474,6 @@ void LogMessage::UpdateMinLogSeverity()
   LoggingSeverity min_sev = g_dbg_sev.load(std::memory_order_relaxed);
   const LoggingConfig& config = GetLoggingConfig();
   min_sev = std::min(min_sev, config.min_severity());
-  for (const auto& sink : config.sinks()) {
-    min_sev = std::min(min_sev, sink->min_severity_);
-  }
   for (LogSink* entry = streams_; entry != nullptr; entry = entry->next_) {
     min_sev = std::min(min_sev, entry->min_severity_);
   }
@@ -677,14 +696,28 @@ void Log(const LogArgType* fmt, ...) {
 }  // namespace webrtc
 #else   // RTC_LOG_ENABLED()
 namespace webrtc {
+bool InitializeLogging(LoggingConfig /* config */) {
+  return false;
+}
+
 const LoggingConfig& GetLoggingConfig() {
   static const absl::NoDestructor<LoggingConfig> config;
   return *config;
+}
+
+LoggingConfig ResetLoggingForTesting(
+    std::optional<LoggingConfig> /* restore_config */) {
+  return LoggingConfig();
 }
 }  // namespace webrtc
 #endif  // RTC_LOG_ENABLED()
 
 namespace webrtc {
+LoggingConfig::LoggingConfig() = default;
+LoggingConfig::LoggingConfig(LoggingConfig&&) = default;
+LoggingConfig& LoggingConfig::operator=(LoggingConfig&&) = default;
+LoggingConfig::~LoggingConfig() = default;
+
 // Default implementation, override is recomended.
 void LogSink::OnLogMessage(const LogLineRef& log_line) {
 #if defined(WEBRTC_ANDROID)

@@ -1392,7 +1392,7 @@ index 75b30782ae..1b0f102f61 100644
    const bool enable_svc_for_simulcast_;
    std::optional<SimulcastToSvcConverter> simulcast_to_svc_converter_;
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index c415f5b0c1..1c6f09c135 100644
+index 9d28dc9686..7eb3121714 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -526,6 +526,12 @@ rtc_library("logging") {
@@ -1409,10 +1409,10 @@ index c415f5b0c1..1c6f09c135 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index a8e9b74acc..e18582442a 100644
+index bff81cdeb7..ef725f86ea 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
-@@ -27,6 +27,7 @@
+@@ -28,6 +28,7 @@
  #include "absl/strings/string_view.h"
  #include "api/task_queue/task_queue_base.h"
  #include "api/units/timestamp.h"
@@ -1420,7 +1420,7 @@ index a8e9b74acc..e18582442a 100644
  #include "rtc_base/checks.h"
  #include "rtc_base/platform_thread_types.h"
  #include "rtc_base/string_encode.h"
-@@ -55,6 +56,24 @@ static const int kMaxLogLineSize = 1024 - 60;
+@@ -56,6 +57,24 @@ static const int kMaxLogLineSize = 1024 - 60;
  #endif  // WEBRTC_MAC && !defined(WEBRTC_IOS) || WEBRTC_ANDROID
  
  namespace webrtc {
@@ -1445,7 +1445,7 @@ index a8e9b74acc..e18582442a 100644
  namespace {
  
  // By default, release builds don't log, debug builds at info level
-@@ -175,7 +194,7 @@ std::string LogLineRef::DefaultLogLine() const {
+@@ -199,7 +218,7 @@ std::string LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
@@ -1455,10 +1455,10 @@ index a8e9b74acc..e18582442a 100644
  // The list of logging streams currently configured.
  // Note: we explicitly do not clean this up, because of the uncertain ordering
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index 5721ba6054..bf58f612fa 100644
+index 093693b391..0903b307b4 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -651,6 +651,12 @@ class LogMessage {
+@@ -654,6 +654,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index 5721ba6054..bf58f612fa 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -698,6 +704,9 @@ class LogMessage {
+@@ -701,6 +707,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;
