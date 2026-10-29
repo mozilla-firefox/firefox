@@ -448,6 +448,8 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
   // there's no need to continue encoding the same repeated frame.
   QualityConvergenceController quality_convergence_controller_
       RTC_GUARDED_BY(encoder_queue_);
+  // TODO(crbug.com/328598314): Remove once the feature is fully deployed.
+  const bool qcm_ignore_enhancement_temporal_layers_;
 
   // Enables encoder switching on initialization failures.
   bool switch_encoder_on_init_failures_;
