@@ -167,8 +167,13 @@ def _GetArmVersion(arch):
     raise Exception('Unknown arch: ' + arch)
 
 
-def Build(build_dir, arch, use_remoteexec, extra_gn_args, extra_gn_switches,
-          extra_ninja_switches):
+def Build(build_dir,
+          arch,
+          use_remoteexec,
+          extra_gn_args,
+          extra_gn_switches,
+          extra_ninja_switches,
+          targets=None):
     """Generates target architecture using GN and builds it using ninja."""
     logging.info('Building: %s', arch)
     output_directory = _GetOutputDirectory(build_dir, arch)
@@ -197,7 +202,7 @@ def Build(build_dir, arch, use_remoteexec, extra_gn_args, extra_gn_switches,
     gn_args_list.extend(extra_gn_switches)
     _RunGN(gn_args_list)
 
-    ninja_args = TARGETS[:]
+    ninja_args = list(targets) if targets is not None else TARGETS[:]
     if use_remoteexec:
         ninja_args.extend(['-remote_jobs', '200'])
     ninja_args.extend(extra_ninja_switches)
@@ -243,9 +248,14 @@ def BuildAar(build_dir,
     extra_gn_switches = extra_gn_switches or []
     extra_ninja_switches = extra_ninja_switches or []
 
-    for arch in archs:
+    # classes.jar is only collected from archs[0], so only build the Java
+    # target ('sdk/android:libwebrtc') for the first architecture.
+    for i, arch in enumerate(archs):
+        targets = TARGETS if i == 0 else [
+            'sdk/android:libjingle_peerconnection_so'
+        ]
         Build(build_dir, arch, use_remoteexec, extra_gn_args,
-              extra_gn_switches, extra_ninja_switches)
+              extra_gn_switches, extra_ninja_switches, targets)
 
     with zipfile.ZipFile(output_file, 'w') as aar_file:
         # Architecture doesn't matter here, arbitrarily using the first one.
