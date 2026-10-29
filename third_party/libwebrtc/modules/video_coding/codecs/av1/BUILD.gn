@@ -243,6 +243,7 @@ if (rtc_include_tests) {
       ":libaom_av1_encoder_v2",
       "../../../../api:scoped_refptr",
       "../../../../api/units:data_size",
+      "../../../../api/units:time_delta",
       "../../../../api/units:timestamp",
       "../../../../api/video:resolution",
       "../../../../api/video:video_frame",

@@ -20,6 +20,7 @@
 
 #include "api/scoped_refptr.h"
 #include "api/units/data_size.h"
+#include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/resolution.h"
@@ -27,6 +28,7 @@
 #include "api/video_codecs/video_encoder_factory_interface.h"
 #include "api/video_codecs/video_encoder_interface.h"
 #include "api/video_codecs/video_encoding_general.h"
+#include "test/gmock.h"
 #include "test/gtest.h"
 #include "third_party/libgav1/src/src/buffer_pool.h"
 #include "third_party/libgav1/src/src/decoder_state.h"
@@ -42,6 +44,10 @@
 namespace webrtc {
 namespace {
 
+using ::testing::AllOf;
+using ::testing::Ge;
+using ::testing::Le;
+using ::testing::Ne;
 using FrameEncodeSettings = VideoEncoderInterface::FrameEncodeSettings;
 using FrameOutput = VideoEncoderInterface::FrameOutput;
 using FrameType = VideoEncoderInterface::FrameType;
@@ -217,6 +223,111 @@ TEST(LibaomAv1EncoderV2Test, CompoundPredictionUsedForTwoAndThreeReferences) {
       encode_after_p2(m02, {0, 1, 2});
   ASSERT_TRUE(comp3_hdr.has_value());
   EXPECT_TRUE(comp3_hdr->reference_mode_select);
+}
+
+TEST(LibaomAv1EncoderV2Test, CqpEnablesBoundedCyclicRefreshSegmentation) {
+  constexpr Resolution kRes = {.width = 256, .height = 256};
+  scoped_refptr<I420Buffer> f0 = MakeDisjointRangeFrame(256, 256, 64);
+  scoped_refptr<I420Buffer> f1 = MakeDisjointRangeFrame(256, 256, 96);
+
+  StaticEncoderSettings encoder_settings;
+  encoder_settings.set_max_encode_dimensions(kRes);
+  encoder_settings.set_encoding_format(
+      {.sub_sampling = EncodingFormat::k420, .bit_depth = 8});
+
+  LibaomAv1EncoderV2 enc;
+  ASSERT_TRUE(enc.InitEncode(encoder_settings, {}));
+
+  Av1HeaderParser parser;
+  Timestamp ts = Timestamp::Zero();
+  auto encode_frame = [&](scoped_refptr<I420Buffer> frame, FrameType type,
+                          std::initializer_list<int> refs,
+                          std::optional<int> update_slot, int qp) {
+    std::vector<uint8_t> bitstream;
+    FrameEncodeSettings settings;
+    settings.set_cqp_options(qp);
+    settings.set_frame_type(type);
+    settings.set_resolution(kRes);
+    settings.set_reference_buffers(refs);
+    settings.set_update_buffer(update_slot);
+    settings.set_effort_level(0);
+    settings.set_frame_output(std::make_unique<EncodedFrameData>(bitstream));
+    std::vector<FrameEncodeSettings> frame_settings;
+    frame_settings.push_back(std::move(settings));
+    enc.Encode(frame, TemporalUnitSettings(ts), std::move(frame_settings));
+    ts += TimeDelta::Millis(33);
+    return parser.ParseFrame(bitstream);
+  };
+
+  std::optional<libgav1::ObuFrameHeader> key_hdr =
+      encode_frame(f0, FrameType::kKeyframe, {}, 0, 120);
+  ASSERT_TRUE(key_hdr.has_value());
+  EXPECT_EQ(key_hdr->quantizer.base_index, 120);
+
+  std::optional<libgav1::ObuFrameHeader> delta_hdr =
+      encode_frame(f1, FrameType::kDeltaFrame, {0}, 0, 120);
+  ASSERT_TRUE(delta_hdr.has_value());
+  EXPECT_EQ(delta_hdr->quantizer.base_index, 120);
+  EXPECT_TRUE(delta_hdr->segmentation.enabled);
+  EXPECT_TRUE(delta_hdr->segmentation.FeatureActive(
+      1, libgav1::kSegmentFeatureQuantizer));
+  const int16_t delta_q =
+      delta_hdr->segmentation
+          .feature_data[1][libgav1::kSegmentFeatureQuantizer];
+  // When min_q == max_q == qindex, libaom still enables segmentation and
+  // kSegmentFeatureQuantizer on segment 1, but clamps its delta_q to 0. A
+  // non-zero delta_q verifies that the quantizer range gives cyclic refresh
+  // room to adjust segment QP.
+  EXPECT_THAT(delta_q, AllOf(Ne(0), Ge(-16), Le(16)));
+}
+
+TEST(LibaomAv1EncoderV2Test, CqpZeroEnablesLossless) {
+  constexpr Resolution kRes = {.width = 256, .height = 256};
+  scoped_refptr<I420Buffer> f0 = MakeDisjointRangeFrame(256, 256, 64);
+  scoped_refptr<I420Buffer> f1 = MakeDisjointRangeFrame(256, 256, 96);
+
+  StaticEncoderSettings encoder_settings;
+  encoder_settings.set_max_encode_dimensions(kRes);
+  encoder_settings.set_encoding_format(
+      {.sub_sampling = EncodingFormat::k420, .bit_depth = 8});
+
+  LibaomAv1EncoderV2 enc;
+  ASSERT_TRUE(enc.InitEncode(encoder_settings, {}));
+
+  Av1HeaderParser parser;
+  Timestamp ts = Timestamp::Zero();
+  auto encode_frame = [&](scoped_refptr<I420Buffer> frame, FrameType type,
+                          std::initializer_list<int> refs,
+                          std::optional<int> update_slot, int qp) {
+    std::vector<uint8_t> bitstream;
+    FrameEncodeSettings settings;
+    settings.set_cqp_options(qp);
+    settings.set_frame_type(type);
+    settings.set_resolution(kRes);
+    settings.set_reference_buffers(refs);
+    settings.set_update_buffer(update_slot);
+    settings.set_effort_level(0);
+    settings.set_frame_output(std::make_unique<EncodedFrameData>(bitstream));
+    std::vector<FrameEncodeSettings> frame_settings;
+    frame_settings.push_back(std::move(settings));
+    enc.Encode(frame, TemporalUnitSettings(ts), std::move(frame_settings));
+    ts += TimeDelta::Millis(33);
+    return parser.ParseFrame(bitstream);
+  };
+
+  std::optional<libgav1::ObuFrameHeader> key_hdr =
+      encode_frame(f0, FrameType::kKeyframe, {}, 0, 0);
+  ASSERT_TRUE(key_hdr.has_value());
+  EXPECT_EQ(key_hdr->quantizer.base_index, 0);
+  EXPECT_TRUE(key_hdr->coded_lossless);
+  EXPECT_FALSE(key_hdr->segmentation.enabled);
+
+  std::optional<libgav1::ObuFrameHeader> delta_hdr =
+      encode_frame(f1, FrameType::kDeltaFrame, {0}, 0, 0);
+  ASSERT_TRUE(delta_hdr.has_value());
+  EXPECT_EQ(delta_hdr->quantizer.base_index, 0);
+  EXPECT_TRUE(delta_hdr->coded_lossless);
+  EXPECT_FALSE(delta_hdr->segmentation.enabled);
 }
 
 }  // namespace

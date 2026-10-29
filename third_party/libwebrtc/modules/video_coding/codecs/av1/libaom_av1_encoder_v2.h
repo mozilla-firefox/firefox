@@ -69,6 +69,7 @@ class LibaomAv1EncoderV2 : public VideoEncoderInterface {
 
   std::optional<ContentHint> content_type_;
   std::optional<int> effort_level_;
+  std::optional<int> cq_level_;
   // Spatial layers declared to libaom: the most seen in a temporal unit since
   // `InitEncode`. Changing `number_spatial_layers` updates the sequence header
   // operating points and makes libaom force a keyframe. We keep the state for

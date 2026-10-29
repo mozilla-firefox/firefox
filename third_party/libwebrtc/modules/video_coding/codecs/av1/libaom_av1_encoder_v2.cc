@@ -83,6 +83,11 @@ constexpr int kRtpTicksPerSecond = 90000;
 constexpr int kRtpTicksPerMs = kRtpTicksPerSecond / 1000;
 // Only used in CQP mode, where libaom requires a value but does not act on it.
 constexpr int kDefaultMaxIntraBitratePct = 300;
+// Offset in [0, 63] quantizer units (16 q_index steps) around the target
+// quantizer in CQP mode, giving internal cyclic refresh and dynamic loop
+// filter / CDEF logic room to operate while keeping `worst_quality` close to
+// the target QP.
+constexpr int kCqpQuantizerOffset = 4;
 
 // The maximum number of spatial and temporal layers this encoder advertises.
 //
@@ -625,8 +630,13 @@ aom_svc_params_t LibaomAv1EncoderV2::GetSvcParams(
               // disabled or not. Set `layer_target_bitrate` to 1 so that libaom
               // knows the layer is active.
               layer_target_bitrate_view[id] = 1;
-              max_quantizers_view[id] = quantizer;
-              min_quantizers_view[id] = quantizer;
+              max_quantizers_view[id] =
+                  quantizer == 0 ? 0
+                                 : std::min(kMaxQuantizer,
+                                            quantizer + kCqpQuantizerOffset);
+              min_quantizers_view[id] =
+                  quantizer == 0 ? 0
+                                 : std::max(1, quantizer - kCqpQuantizerOffset);
             }
             RTC_LOG(LS_VERBOSE)
                 << __FUNCTION__ << " svc_params.qp[" << first_layer_id
@@ -733,6 +743,7 @@ bool LibaomAv1EncoderV2::InitEncode(
   rate_tracker_ = std::make_unique<CbrLayerRateTracker>();
   content_type_.reset();
   effort_level_.reset();
+  cq_level_.reset();
   applied_cfg_.reset();
   applied_svc_params_.reset();
   num_spatial_layers_ = 0;
@@ -890,16 +901,20 @@ void LibaomAv1EncoderV2::Encode(
                         << " cfg_.rc_target_bitrate=" << cfg_.rc_target_bitrate;
   } else if (cfg_.rc_end_usage == AOM_Q) {
     cfg_.rc_target_bitrate = 1;
-    // libaom disables SVC, and with it everything configured through
-    // `AV1E_SET_SVC_PARAMS`, when there is only a single layer. Pin the
-    // quantizer through the encoder config as well so that constant QP is
-    // honored in that case too. Only the lowest spatial layer is represented
-    // here; streams with several spatial layers keep SVC enabled and are
-    // configured per layer in `GetSvcParams`.
+    // With `use_fixed_qp_offsets == 2` the base q is `cq_level` (set per
+    // spatial layer via `AOME_SET_CQ_LEVEL`), while constraining the quantizer
+    // range to +/- `kCqpQuantizerOffset` around the target (or 0 when lossless
+    // is requested) so that cyclic refresh and dynamic loop-filter/CDEF logic
+    // can operate.
     int quantizer = ToLibaomQuantizer(
         std::get<Cqp>(frame_settings[0].rate_options()).target_qp);
-    cfg_.rc_min_quantizer = quantizer;
-    cfg_.rc_max_quantizer = quantizer;
+    cfg_.use_fixed_qp_offsets = 2;
+    cfg_.rc_min_quantizer =
+        quantizer == 0 ? 0 : std::max(1, quantizer - kCqpQuantizerOffset);
+    cfg_.rc_max_quantizer =
+        quantizer == 0
+            ? 0
+            : std::min(kMaxQuantizer, quantizer + kCqpQuantizerOffset);
   }
 
   if (static_cast<int>(cfg_.g_w) != frame_buffer->width() ||
@@ -1003,6 +1018,15 @@ void LibaomAv1EncoderV2::Encode(
       comp_pred.use_comp_pred[2] = 1;
     }
     SET_OR_RETURN(AV1E_SET_SVC_REF_FRAME_COMP_PRED, &comp_pred);
+
+    if (layer_enabled && std::holds_alternative<Cqp>(settings.rate_options())) {
+      const int cq_level =
+          ToLibaomQuantizer(std::get<Cqp>(settings.rate_options()).target_qp);
+      if (cq_level != cq_level_) {
+        SET_OR_RETURN(AOME_SET_CQ_LEVEL, cq_level);
+        cq_level_ = cq_level;
+      }
+    }
 
     if (layer_enabled && settings.effort_level() != effort_level_) {
       // For RTC we use speed level 5 to 11, with 9 being the default. Note
