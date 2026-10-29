@@ -253,10 +253,6 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
         // track and thus the congestion episode is shortened.
         ref_window_ = std::clamp(max_data_in_flight_prev_rtt_,
                                  params_.min_ref_window.Get(), ref_window_);
-        // In addition, bump up l4sAlpha to a more credible value
-        // This may over react but it is better than
-        // excessive queue delay
-        l4s_alpha_ = 0.25;
       }
     } else if (is_virtual_ce) {  // Back off due to delay
       backoff = ScaleBackoff(
