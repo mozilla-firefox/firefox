@@ -25,6 +25,7 @@
     - [SCTP](/pc/g3doc/sctp_transport.md)
     - [Pacing buffer](/modules/pacing/g3doc/index.md)
   - Congestion control and bandwidth estimation
+    - [SCReAMv2](/modules/congestion_controller/scream/g3doc/index.md)
   - Audio
     - [NetEq](/modules/audio_coding/neteq/g3doc/index.md)
     - AudioEngine
