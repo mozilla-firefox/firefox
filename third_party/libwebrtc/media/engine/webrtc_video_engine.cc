@@ -1413,14 +1413,7 @@ RtpParameters WebRtcVideoSendChannel::GetRtpSendParameters(
   // Need to add the common list of codecs to the send stream-specific
   // RTP parameters.
   for (const Codec& codec : send_params_.codecs) {
-    if (send_codec() && send_codec()->codec.id == codec.id) {
-      // Put the current send codec to the front of the codecs list.
-      RTC_DCHECK_EQ(codec.name, send_codec()->codec.name);
-      rtp_params.codecs.insert(rtp_params.codecs.begin(),
-                               codec.ToCodecParameters());
-    } else {
-      rtp_params.codecs.push_back(codec.ToCodecParameters());
-    }
+    rtp_params.codecs.push_back(codec.ToCodecParameters());
   }
 
   return rtp_params;

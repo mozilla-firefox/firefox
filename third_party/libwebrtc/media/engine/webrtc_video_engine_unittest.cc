@@ -2792,24 +2792,54 @@ TEST_F(WebRtcVideoChannelBaseTest, RequestEncoderSwitchStrictPreference) {
   EXPECT_EQ("VP9", codec->name);
 }
 
-TEST_F(WebRtcVideoChannelBaseTest, SendCodecIsMovedToFrontInRtpParameters) {
+TEST_F(WebRtcVideoChannelBaseTest,
+       SendCodecOrderInRtpParametersUnchangedAfterEncoderSwitch) {
   VideoSenderParameters parameters;
   parameters.codecs.push_back(GetEngineCodec("VP9"));
   parameters.codecs.push_back(GetEngineCodec("VP8"));
   EXPECT_TRUE(send_channel_->SetSenderParameters(parameters));
 
-  auto send_codecs = send_channel_->GetRtpSendParameters(kSsrc).codecs;
-  ASSERT_EQ(send_codecs.size(), 2u);
-  EXPECT_THAT("VP9", send_codecs[0].name);
+  EXPECT_THAT(send_channel_->GetRtpSendParameters(kSsrc).codecs,
+              ElementsAre(Field(&RtpCodecParameters::name, "VP9"),
+                          Field(&RtpCodecParameters::name, "VP8")));
 
   // RequestEncoderSwitch will post a task to the worker thread (which is also
-  // the current thread), hence the ProcessMessages call.
+  // the current thread).
   SendImpl()->RequestEncoderSwitch(std::nullopt, true);
   time_controller_.AdvanceTime(kFrameDuration);
 
-  send_codecs = send_channel_->GetRtpSendParameters(kSsrc).codecs;
-  ASSERT_EQ(send_codecs.size(), 2u);
-  EXPECT_THAT("VP8", send_codecs[0].name);
+  std::optional<Codec> send_codec = send_channel_->GetSendCodec();
+  ASSERT_TRUE(send_codec.has_value());
+  EXPECT_EQ(send_codec->name, "VP8");
+  EXPECT_THAT(send_channel_->GetRtpSendParameters(kSsrc).codecs,
+              ElementsAre(Field(&RtpCodecParameters::name, "VP9"),
+                          Field(&RtpCodecParameters::name, "VP8")));
+}
+
+TEST_F(WebRtcVideoChannelBaseTest,
+       SetRtpSendParametersWithParametersFetchedBeforeEncoderSwitch) {
+  VideoSenderParameters parameters;
+  parameters.codecs.push_back(GetEngineCodec("VP9"));
+  parameters.codecs.push_back(GetEngineCodec("VP8"));
+  EXPECT_TRUE(send_channel_->SetSenderParameters(parameters));
+
+  RtpParameters rtp_parameters = send_channel_->GetRtpSendParameters(kSsrc);
+  ASSERT_EQ(rtp_parameters.encodings.size(), 1u);
+
+  // Switch active send codec from VP9 to VP8 after fetching RtpParameters.
+  SendImpl()->RequestEncoderSwitch(std::nullopt, true);
+  time_controller_.AdvanceTime(kFrameDuration);
+  std::optional<Codec> send_codec = send_channel_->GetSendCodec();
+  ASSERT_TRUE(send_codec.has_value());
+  EXPECT_EQ(send_codec->name, "VP8");
+
+  // Setting parameters fetched before the encoder switch must succeed because
+  // the negotiated codecs order in RtpParameters did not change.
+  rtp_parameters.encodings[0].max_bitrate_bps = 500000;
+  EXPECT_TRUE(send_channel_->SetRtpSendParameters(kSsrc, rtp_parameters).ok());
+  EXPECT_EQ(
+      send_channel_->GetRtpSendParameters(kSsrc).encodings[0].max_bitrate_bps,
+      500000);
 }
 
 TEST_F(WebRtcVideoChannelBaseTest,
