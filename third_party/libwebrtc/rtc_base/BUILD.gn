@@ -2034,6 +2034,19 @@ if (rtc_include_tests) {
         "//third_party/google_benchmark",
       ]
     }
+
+    if (!rtc_disable_logging) {
+      rtc_library("logging_benchmark") {
+        testonly = true
+        sources = [ "logging_benchmark.cc" ]
+        deps = [
+          ":logging",
+          "//third_party/abseil-cpp/absl/strings",
+          "//third_party/abseil-cpp/absl/strings:string_view",
+          "//third_party/google_benchmark",
+        ]
+      }
+    }
   }
 
   rtc_cc_test("untyped_function_unittest") {

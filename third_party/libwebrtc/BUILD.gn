@@ -985,6 +985,9 @@ if (rtc_include_tests && !build_with_chromium) {
         "rtc_base/synchronization:mutex_benchmark",
         "test:benchmark_main",
       ]
+      if (!rtc_disable_logging) {
+        deps += [ "rtc_base:logging_benchmark" ]
+      }
     }
   }
 

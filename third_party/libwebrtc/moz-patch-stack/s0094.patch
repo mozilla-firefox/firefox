@@ -74,7 +74,7 @@ index 6a99da2a59..7f5e59fafa 100644
  # The hermetic Python interpreter to use by default.
  script_executable = "//third_party/cpython3/host/bin/python3"
 diff --git a/BUILD.gn b/BUILD.gn
-index ae9657a54f..19a3b2d7b2 100644
+index 10da56f1c5..bce404bcf7 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,8 +21,8 @@
@@ -108,7 +108,7 @@ index ae9657a54f..19a3b2d7b2 100644
      defines = []
  
      deps = [
-@@ -1034,7 +1034,7 @@ rtc_static_library("dcsctp") {
+@@ -1037,7 +1037,7 @@ rtc_static_library("dcsctp") {
    visibility = [ "//:default" ]
    sources = []
    complete_static_lib = true
@@ -117,7 +117,7 @@ index ae9657a54f..19a3b2d7b2 100644
    defines = []
    deps = [
      "net/dcsctp/public:factory",
-@@ -1072,7 +1072,7 @@ group("poison_default_neural_residual_echo_estimator") {
+@@ -1075,7 +1075,7 @@ group("poison_default_neural_residual_echo_estimator") {
  if (!build_with_chromium) {
    # Write debug logs to gn_logs.txt.
    # This is also required for Siso builds.
@@ -603,7 +603,7 @@ index 75ebdab694..86312e55b5 100644
  
  if (rtc_build_libsrtp) {
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index d68575f1eb..3deb864d86 100644
+index b14740aa9a..4163548507 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -9,8 +9,8 @@
