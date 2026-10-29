@@ -1122,6 +1122,7 @@ if (rtc_include_tests) {
     deps = [
       ":basic_packet_socket_factory",
       ":connection",
+      ":dtls_stun_piggyback_controller",
       ":port",
       ":port_interface",
       ":test_port",

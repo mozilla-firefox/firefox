@@ -103,7 +103,7 @@ int TestPort::SendTo(std::span<const uint8_t> data,
                      bool payload) {
   if (!payload) {
     auto msg = std::make_unique<IceMessage>();
-    auto buf = std::make_unique<BufferT<uint8_t>>(data);
+    auto buf = std::make_unique<Buffer>(data);
     ByteBufferReader read_buf(*buf);
     if (!msg->Read(&read_buf)) {
       return -1;

@@ -11,11 +11,13 @@
 #include "p2p/base/connection.h"
 
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <list>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,6 +33,7 @@
 #include "p2p/base/port.h"
 #include "p2p/base/port_interface.h"
 #include "p2p/base/transport_description.h"
+#include "p2p/dtls/dtls_stun_piggyback_callbacks.h"
 #include "p2p/test/test_port.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/network.h"
@@ -87,7 +90,7 @@ class ConnectionTest : public ::testing::Test {
   void SendPingAndCaptureReply(Connection* lconn,
                                Connection* rconn,
                                int64_t ms,
-                               BufferT<uint8_t>* reply) {
+                               Buffer* reply) {
     TestPort* lport =
         lconn->PortForTest() == lport_.get() ? lport_.get() : rport_.get();
     TestPort* rport =
@@ -111,7 +114,7 @@ class ConnectionTest : public ::testing::Test {
   void SendPingAndReceiveResponse(Connection* lconn,
                                   Connection* rconn,
                                   int64_t ms) {
-    BufferT<uint8_t> reply;
+    Buffer reply;
     SendPingAndCaptureReply(lconn, rconn, ms, &reply);
 
     lconn->OnReadPacket(ReceivedIpPacket(reply, SocketAddress(), std::nullopt));
@@ -201,7 +204,7 @@ TEST_F(ConnectionTest, ConnectionForgetLearnedStateDiscardsPendingPings) {
   EXPECT_TRUE(lconn->writable());
   EXPECT_TRUE(lconn->receiving());
 
-  BufferT<uint8_t> reply;
+  Buffer reply;
   SendPingAndCaptureReply(lconn, rconn, 10, &reply);
 
   lconn->ForgetLearnedState();
@@ -394,6 +397,73 @@ TEST_F(ConnectionTest, TooBigDeltaIsNotSent) {
       ReceivedIpPacket(rport_->last_stun_buf(), SocketAddress(), std::nullopt));
 
   EXPECT_FALSE(received_goog_delta_ack);
+}
+
+using DtlsStunPiggybackConnectionTest = ConnectionTest;
+
+TEST_F(DtlsStunPiggybackConnectionTest, SpedAttributesExecuteCallbacks) {
+  int rconn_callback_count = 0;
+  std::optional<size_t> rconn_data_size;
+  std::optional<size_t> rconn_ack_size;
+  int lconn_callback_count = 0;
+  std::optional<size_t> lconn_data_size;
+  std::optional<size_t> lconn_ack_size;
+
+  const absl::string_view kRequestData = "request";
+  std::vector<uint32_t> acks;
+  acks.push_back(0);
+  // lconn sends embedded data and acks.
+  Connection* lconn = CreateConnection(ICEROLE_CONTROLLING);
+  lconn->RegisterDtlsPiggyback(DtlsStunPiggybackCallbacks(
+      /*send_data=*/
+      [&](StunMessageType type)
+          -> std::pair<std::optional<absl::string_view>,
+                       std::optional<std::vector<uint32_t>>> {
+        return {kRequestData, {acks}};
+      },
+      /*recv_data=*/
+      [&](std::optional<std::span<uint8_t>> data,
+          std::optional<std::vector<uint32_t>> ack) {
+        ++lconn_callback_count;
+        if (data.has_value()) {
+          lconn_data_size = data->size();
+        }
+        if (ack.has_value()) {
+          lconn_ack_size = ack->size();
+        }
+      }));
+  // rconn does not send embedded data and acks.
+  Connection* rconn = CreateConnection(ICEROLE_CONTROLLED);
+  rconn->RegisterDtlsPiggyback(DtlsStunPiggybackCallbacks(
+      /*send_data=*/
+      [](StunMessageType type)
+          -> std::pair<std::optional<absl::string_view>,
+                       std::optional<std::vector<uint32_t>>> { return {}; },
+      /*recv_data=*/
+      [&](std::optional<std::span<uint8_t>> data,
+          std::optional<std::vector<uint32_t>> ack) {
+        ++rconn_callback_count;
+        if (data.has_value()) {
+          rconn_data_size = data->size();
+        }
+        if (ack.has_value()) {
+          rconn_ack_size = ack->size();
+        }
+      }));
+
+  Buffer reply;
+  SendPingAndCaptureReply(lconn, rconn, env().clock().CurrentTime().ms(),
+                          &reply);
+  lconn->OnReadPacket(ReceivedIpPacket(reply, SocketAddress(), std::nullopt));
+
+  // rconn received data and acks from lconn.
+  EXPECT_EQ(rconn_callback_count, 1);
+  EXPECT_EQ(rconn_data_size, kRequestData.size());
+  EXPECT_EQ(rconn_ack_size, acks.size());
+  // lconn received no data and no acks from rconn.
+  EXPECT_EQ(lconn_callback_count, 1);
+  EXPECT_EQ(lconn_data_size, std::nullopt);
+  EXPECT_EQ(lconn_ack_size, std::nullopt);
 }
 
 }  // namespace

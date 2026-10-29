@@ -76,7 +76,7 @@ class TestPort : public Port {
  private:
   void OnSentPacket(AsyncPacketSocket* socket,
                     const SentPacketInfo& sent_packet) override;
-  std::unique_ptr<BufferT<uint8_t>> last_stun_buf_;
+  std::unique_ptr<Buffer> last_stun_buf_;
   std::unique_ptr<IceMessage> last_stun_msg_;
   int type_preference_ = 0;
 };
