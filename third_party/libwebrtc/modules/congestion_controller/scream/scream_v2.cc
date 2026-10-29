@@ -296,7 +296,7 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
       double rtt_ratio =
           (delay_based_congestion_control_.rtt() + feedback_hold_time_) /
           params_.virtual_rtt.Get();
-      increase_scale_factor = increase_scale_factor * (rtt_ratio * rtt_ratio);
+      increase_scale_factor = increase_scale_factor * rtt_ratio;
     }
 
     // Limit increase when close to the last inflection point.
