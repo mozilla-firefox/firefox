@@ -1,0 +1,454 @@
+From: Byron Campen <docfaraday@gmail.com>
+Date: Thu, 29 Oct 2026 18:06:39 -0500
+Subject: (tmp-cherry-pick) Revert "Batch SDP candidates and O(1) TransportInfo
+ lookup" (1363664fa8)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This reverts commit b38573bb56e571405b318c761c23a5b247d24716.
+
+Reason for revert: Broke the chromium roll
+
+Failure Link: https://chromium-review.git.corp.google.com/c/chromium/src/+/8622522?tab=checks
+
+Original change's description:
+> Batch SDP candidates and O(1) TransportInfo lookup
+>
+> SdpDeserialize added candidates one at a time with AddCandidate(), which
+> looks up the m= section, copies the candidate and recomputes the
+> connection address on every call. SdpSerialize copied the candidates of
+> each m= section and looked up its TransportInfo by name.
+>
+> Now the parser fills one IceCandidateCollection per m= section and
+> passes them to SessionDescriptionInterface::Create(), which updates each
+> section's connection address once. The serializer reads the candidate
+> collections directly and tries the TransportInfo at the same index
+> before falling back to a lookup by name.
+>
+> BM_Sdp* benchmarks (release build, median of 5 runs):
+> - Deserialize: -2.9% (small), -4.6% (large)
+> - Serialize: -3.7% (small), -12.2% (large)
+>
+> Bug: none
+> Change-Id: I04eae8cab5870cf60708cea9668cc147807ba176
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509664
+> Reviewed-by: Henrik Boström <hbos@webrtc.org>
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#49014}
+
+Bug: none
+No-Presubmit: true
+No-Tree-Checks: true
+No-Try: true
+Change-Id: I361a5616f1d51402b270f8a3d180453b610293d2
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/510940
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#49024}
+---
+ api/jsep.cc                             |   6 --
+ api/jsep.h                              |   4 -
+ api/webrtc_sdp.cc                       | 131 +++++++++++-------------
+ api/webrtc_sdp_unittest.cc              |  27 -----
+ pc/jsep_session_description_unittest.cc |  31 ------
+ 5 files changed, 58 insertions(+), 141 deletions(-)
+
+diff --git a/api/jsep.cc b/api/jsep.cc
+index a8f3f3a748..ba996a92f9 100644
+--- a/api/jsep.cc
++++ b/api/jsep.cc
+@@ -238,12 +238,6 @@ SessionDescriptionInterface::SessionDescriptionInterface(
+   RTC_DCHECK(candidate_collection_.empty() ||
+              candidate_collection_.size() == number_of_mediasections());
+   candidate_collection_.resize(number_of_mediasections());
+-  for (size_t i = 0; i < candidate_collection_.size(); ++i) {
+-    if (!candidate_collection_[i].empty()) {
+-      UpdateConnectionAddress(candidate_collection_[i],
+-                              description_->contents()[i].media_description());
+-    }
+-  }
+ }
+ 
+ size_t SessionDescriptionInterface::number_of_mediasections() const {
+diff --git a/api/jsep.h b/api/jsep.h
+index 657b482c4a..d924dc294c 100644
+--- a/api/jsep.h
++++ b/api/jsep.h
+@@ -228,10 +228,6 @@ struct EncodingOptions {
+ 
+ class RTC_EXPORT SessionDescriptionInterface final {
+  public:
+-  // If `candidates` is not empty, it must contain one collection per media
+-  // section of `description`. The connection address of each media section
+-  // that has candidates is updated based on those candidates, the same way
+-  // AddCandidate() does.
+   static std::unique_ptr<SessionDescriptionInterface> Create(
+       SdpType type,
+       std::unique_ptr<SessionDescription> description,
+diff --git a/api/webrtc_sdp.cc b/api/webrtc_sdp.cc
+index 3979424322..04180490d5 100644
+--- a/api/webrtc_sdp.cc
++++ b/api/webrtc_sdp.cc
+@@ -602,23 +602,17 @@ void GetMediaStreamIds(const ContentInfo* content,
+ // The value of `component_id` currently supported are 1 (RTP) and 2 (RTCP).
+ // TODO(deadbeef): Decide the default destination in webrtcsession and
+ // pass it down via SessionDescription.
+-void GetDefaultDestination(
+-    const IceCandidateCollection* absl_nullable candidates,
+-    int component_id,
+-    std::string* port,
+-    std::string* ip,
+-    std::string* addr_type) {
++void GetDefaultDestination(const std::vector<Candidate>& candidates,
++                           int component_id,
++                           std::string* port,
++                           std::string* ip,
++                           std::string* addr_type) {
+   *addr_type = kConnectionIpv4Addrtype;
+   *port = kDummyPort;
+   *ip = kDummyAddress;
+-  if (candidates == nullptr) {
+-    return;
+-  }
+   int current_preference = 0;  // Start with lowest preference
+   int current_family = AF_UNSPEC;
+-  for (const std::unique_ptr<IceCandidate>& jsep_candidate :
+-       candidates->candidates()) {
+-    const Candidate& candidate = jsep_candidate->candidate();
++  for (const Candidate& candidate : candidates) {
+     if (candidate.component() != component_id) {
+       continue;
+     }
+@@ -649,8 +643,7 @@ void GetDefaultDestination(
+ }
+ 
+ // Gets "a=rtcp" line if found default RTCP candidate from `candidates`.
+-std::string GetRtcpLine(
+-    const IceCandidateCollection* absl_nullable candidates) {
++std::string GetRtcpLine(const std::vector<Candidate>& candidates) {
+   std::string rtcp_port, rtcp_ip, addr_type;
+   GetDefaultDestination(candidates, ICE_CANDIDATE_COMPONENT_RTCP, &rtcp_port,
+                         &rtcp_ip, &addr_type);
+@@ -669,6 +662,20 @@ std::string GetRtcpLine(
+   return os.Release();
+ }
+ 
++// Get candidates according to the mline index from SessionDescriptionInterface.
++void GetCandidatesByMindex(const SessionDescriptionInterface& desci,
++                           int mline_index,
++                           std::vector<Candidate>* candidates) {
++  if (!candidates) {
++    return;
++  }
++  const IceCandidateCollection* cc = desci.candidates(mline_index);
++  for (size_t i = 0; i < cc->count(); ++i) {
++    const IceCandidate* candidate = cc->at(i);
++    candidates->push_back(candidate->candidate());
++  }
++}
++
+ bool IsValidPort(int port) {
+   return port >= 0 && port <= 65535;
+ }
+@@ -991,22 +998,17 @@ void BuildMediaLine(const MediaType media_type,
+   AddLine(os.str(), message);
+ }
+ 
+-void BuildCandidate(const IceCandidateCollection* absl_nullable candidates,
++void BuildCandidate(const std::vector<Candidate>& candidates,
+                     bool include_ufrag,
+                     std::string* message) {
+-  if (candidates == nullptr) {
+-    return;
+-  }
+   StringBuilder os;
+-  for (const std::unique_ptr<IceCandidate>& jsep_candidate :
+-       candidates->candidates()) {
++  for (const Candidate& candidate : candidates) {
+     // RFC 5245
+     // a=candidate:<foundation> <component-id> <transport> <priority>
+     // <connection-address> <port> typ <candidate-types>
+     // [raddr <connection-address>] [rport <port>]
+     // *(SP extension-att-name SP extension-att-value)
+-    InitLine(kLineTypeAttributes,
+-             jsep_candidate->candidate().ToCandidateAttribute(include_ufrag),
++    InitLine(kLineTypeAttributes, candidate.ToCandidateAttribute(include_ufrag),
+              &os);
+     AddLine(os.str(), message);
+   }
+@@ -1461,14 +1463,13 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
+   }
+ }
+ 
+-void BuildMediaDescription(
+-    const ContentInfo* content_info,
+-    const TransportInfo* transport_info,
+-    const MediaType media_type,
+-    const IceCandidateCollection* absl_nullable candidates,
+-    int msid_signaling,
+-    bool use_wildcard,
+-    std::string* message) {
++void BuildMediaDescription(const ContentInfo* content_info,
++                           const TransportInfo* transport_info,
++                           const MediaType media_type,
++                           const std::vector<Candidate>& candidates,
++                           int msid_signaling,
++                           bool use_wildcard,
++                           std::string* message) {
+   RTC_DCHECK(message);
+   if (!content_info) {
+     return;
+@@ -2588,12 +2589,11 @@ bool ParseContent(absl::string_view message,
+                   int* msid_signaling,
+                   MediaContentDescription* media_desc,
+                   TransportDescription* transport,
+-                  IceCandidateCollection* candidates,
++                  std::vector<std::unique_ptr<IceCandidate>>* candidates,
+                   SdpParseError* error) {
+   RTC_DCHECK(media_desc != nullptr);
+   RTC_DCHECK(content_name != nullptr);
+   RTC_DCHECK(transport != nullptr);
+-  RTC_DCHECK(candidates != nullptr);
+ 
+   if (media_type == MediaType::AUDIO) {
+     MaybeCreateStaticPayloadAudioCodecs(payload_types, media_desc);
+@@ -3023,11 +3023,8 @@ bool ParseContent(absl::string_view message,
+     candidate.set_username(transport->ice_ufrag);
+     RTC_DCHECK(candidate.password().empty());
+     candidate.set_password(transport->ice_pwd);
+-    auto jsep_candidate =
+-        std::make_unique<IceCandidate>(mline_id, mline_index, candidate);
+-    if (!candidates->HasCandidate(jsep_candidate.get())) {
+-      candidates->add(std::move(jsep_candidate));
+-    }
++    candidates->push_back(
++        std::make_unique<IceCandidate>(mline_id, mline_index, candidate));
+   }
+ 
+   return true;
+@@ -3044,7 +3041,7 @@ std::unique_ptr<MediaContentDescription> ParseContentDescription(
+     bool* bundle_only,
+     int* msid_signaling,
+     TransportDescription* transport,
+-    IceCandidateCollection* candidates,
++    std::vector<std::unique_ptr<IceCandidate>>* candidates,
+     SdpParseError* error) {
+   std::unique_ptr<MediaContentDescription> media_desc;
+   if (media_type == MediaType::AUDIO) {
+@@ -3110,10 +3107,9 @@ bool ParseMediaDescription(
+     size_t* pos,
+     const SocketAddress& session_connection_addr,
+     SessionDescription* desc,
+-    std::vector<IceCandidateCollection>* candidate_collections,
++    std::vector<std::unique_ptr<IceCandidate>>* candidates,
+     SdpParseError* error) {
+   RTC_DCHECK(desc != nullptr);
+-  RTC_DCHECK(candidate_collections != nullptr);
+   int mline_index = -1;
+   int msid_signaling = desc->msid_signaling();
+ 
+@@ -3168,7 +3164,6 @@ bool ParseMediaDescription(
+     std::string content_name;
+     bool bundle_only = false;
+     int section_msid_signaling = kMsidSignalingNotUsed;
+-    IceCandidateCollection section_candidates;
+     absl::string_view media_type = fields[0];
+     if ((media_type == kSdpMediaTypeVideo ||
+          media_type == kSdpMediaTypeAudio) &&
+@@ -3179,12 +3174,12 @@ bool ParseMediaDescription(
+       content = ParseContentDescription(
+           message, MediaType::VIDEO, mline_index, protocol, payload_types, pos,
+           &content_name, &bundle_only, &section_msid_signaling, &transport,
+-          &section_candidates, error);
++          candidates, error);
+     } else if (media_type == kSdpMediaTypeAudio) {
+       content = ParseContentDescription(
+           message, MediaType::AUDIO, mline_index, protocol, payload_types, pos,
+           &content_name, &bundle_only, &section_msid_signaling, &transport,
+-          &section_candidates, error);
++          candidates, error);
+     } else if (media_type == kSdpMediaTypeData && IsDtlsSctp(protocol)) {
+       // The draft-03 format is:
+       // m=application <port> DTLS/SCTP <sctp-port>...
+@@ -3205,7 +3200,7 @@ bool ParseMediaDescription(
+       if (!ParseContent(message, MediaType::DATA, mline_index, protocol,
+                         payload_types, pos, &content_name, &bundle_only,
+                         &section_msid_signaling, data_desc.get(), &transport,
+-                        &section_candidates, error)) {
++                        candidates, error)) {
+         return false;
+       }
+       data_desc->set_protocol(protocol);
+@@ -3217,7 +3212,7 @@ bool ParseMediaDescription(
+       if (!ParseContent(message, MediaType::UNSUPPORTED, mline_index, protocol,
+                         payload_types, pos, &content_name, &bundle_only,
+                         &section_msid_signaling, unsupported_desc.get(),
+-                        &transport, &section_candidates, error)) {
++                        &transport, candidates, error)) {
+         return false;
+       }
+       unsupported_desc->set_protocol(protocol);
+@@ -3286,7 +3281,6 @@ bool ParseMediaDescription(
+                      content_rejected, bundle_only, std::move(content));
+     // Create TransportInfo with the media level "ice-pwd" and "ice-ufrag".
+     desc->AddTransportInfo(TransportInfo(content_name, transport));
+-    candidate_collections->push_back(std::move(section_candidates));
+   }
+   // Apply whole-description sanity checks
+   if (HasDuplicateMsidLines(desc)) {
+@@ -3421,31 +3415,14 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
+   }
+ 
+   // Preserve the order of the media contents.
+-  //
+-  // `transport_infos` normally has one entry per content, in the same order
+-  // as the contents: the SDP parser and MediaSessionDescriptionFactory add a
+-  // TransportInfo along with each content. So the entry at the content's
+-  // index is checked first. This avoids a linear search by name for each
+-  // m= section, which would be quadratic in the number of m= sections. If
+-  // there is no entry at that index or it belongs to another content, e.g.
+-  // because TransportInfos were removed or reordered through the
+-  // SessionDescription API, the search by name is the fallback. Both find
+-  // the same TransportInfo as long as no two TransportInfos have the same
+-  // content name, which holds when the MIDs are unique
+-  // (SetLocalDescription() and SetRemoteDescription() reject duplicates).
+-  const TransportInfos& transport_infos = desc->transport_infos();
+-  size_t mline_index = 0;
++  int mline_index = -1;
+   for (const ContentInfo& content : desc->contents()) {
+-    const TransportInfo* transport_info =
+-        (mline_index < transport_infos.size() &&
+-         transport_infos[mline_index].content_name == content.mid())
+-            ? &transport_infos[mline_index]
+-            : desc->GetTransportInfoByName(content.mid());
+-    BuildMediaDescription(&content, transport_info,
+-                          content.media_description()->type(),
+-                          jdesc.candidates(mline_index), desc->msid_signaling(),
++    std::vector<Candidate> candidates;
++    GetCandidatesByMindex(jdesc, ++mline_index, &candidates);
++    BuildMediaDescription(&content, desc->GetTransportInfoByName(content.mid()),
++                          content.media_description()->type(), candidates,
++                          desc->msid_signaling(),
+                           jdesc.encoding_options().use_wildcard, &message);
+-    ++mline_index;
+   }
+   return message;
+ }
+@@ -3470,16 +3447,24 @@ std::unique_ptr<SessionDescriptionInterface> SdpDeserialize(
+   }
+ 
+   // Media Description
+-  std::vector<IceCandidateCollection> candidates;
++  std::vector<std::unique_ptr<IceCandidate>> candidates;
+   if (!ParseMediaDescription(message, session_td, session_extmaps, &current_pos,
+                              session_connection_addr, desc.get(), &candidates,
+                              error)) {
+     return nullptr;
+   }
+ 
+-  return SessionDescriptionInterface::Create(sdp_type, std::move(desc),
+-                                             session_id, session_version,
+-                                             std::move(candidates));
++  std::unique_ptr<SessionDescriptionInterface> description =
++      CreateSessionDescription(sdp_type, session_id, session_version,
++                               std::move(desc));
++  if (!description) {
++    return nullptr;
++  }
++  for (const auto& candidate : candidates) {
++    description->AddCandidate(candidate.get());
++  }
++
++  return description;
+ }
+ 
+ }  // namespace webrtc
+diff --git a/api/webrtc_sdp_unittest.cc b/api/webrtc_sdp_unittest.cc
+index 05604e91f4..2cca4d5357 100644
+--- a/api/webrtc_sdp_unittest.cc
++++ b/api/webrtc_sdp_unittest.cc
+@@ -2092,18 +2092,6 @@ TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithoutCandidates) {
+   EXPECT_EQ(SdpSerialize(MakeDescriptionWithoutCandidates()), kSdpString);
+ }
+ 
+-// Tests that each m= section is serialized with its own transport info even
+-// when the transport infos are not stored in the same order as the contents.
+-TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithTransportInfosOutOfOrder) {
+-  TransportInfo audio_transport_info =
+-      *desc_.GetTransportInfoByName(kAudioContentName);
+-  ASSERT_TRUE(desc_.RemoveTransportInfoByName(kAudioContentName));
+-  desc_.AddTransportInfo(audio_transport_info);
+-  ASSERT_EQ(desc_.transport_infos()[0].content_name, kVideoContentName);
+-  TestMismatch(std::string(kSdpFullString),
+-               SdpSerialize(NewSessionDescriptionWithCandidates()));
+-}
+-
+ TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithBundles) {
+   ContentGroup group1(GROUP_TYPE_BUNDLE);
+   group1.AddContentName(kAudioContentName);
+@@ -2382,21 +2370,6 @@ TEST_F(WebRtcSdpTest, DeserializeSessionDescription) {
+       CompareSessionDescription(jdesc_, SdpDeserialize(kSdpFullString)));
+ }
+ 
+-// Tests that duplicate a=candidate lines within one m= section only add one
+-// candidate to the candidate collection of that m= section.
+-TEST_F(WebRtcSdpTest, DeserializeSessionDescriptionWithDuplicateCandidate) {
+-  std::string sdp = kSdpFullString;
+-  const std::string candidate_line =
+-      "a=candidate:a0+B/1 1 udp 2130706432 192.168.1.5 1234 typ host "
+-      "generation 2\r\n";
+-  InjectAfter(candidate_line, candidate_line, &sdp);
+-  std::unique_ptr<SessionDescriptionInterface> jdesc = SdpDeserialize(sdp);
+-  ASSERT_THAT(jdesc, NotNull());
+-  ASSERT_THAT(jdesc->candidates(0), NotNull());
+-  EXPECT_EQ(jdesc->candidates(0)->count(), jdesc_->candidates(0)->count());
+-  EXPECT_TRUE(CompareSessionDescription(jdesc_, jdesc));
+-}
+-
+ TEST_F(WebRtcSdpTest, DeserializeSessionDescriptionWithoutMline) {
+   const char kSdpWithoutMline[] =
+       "v=0\r\n"
+diff --git a/pc/jsep_session_description_unittest.cc b/pc/jsep_session_description_unittest.cc
+index a8d6f5e9c6..24423fbb7c 100644
+--- a/pc/jsep_session_description_unittest.cc
++++ b/pc/jsep_session_description_unittest.cc
+@@ -544,37 +544,6 @@ TEST_F(JsepSessionDescriptionTest, RemoveCandidateAndSetConnectionAddress) {
+   EXPECT_EQ("0.0.0.0:9", media_desc->connection_address().ToString());
+ }
+ 
+-// Tests that candidates passed to Create() update the connection address of
+-// their media section the same way AddCandidate() does, and that media
+-// sections without candidates keep their connection address.
+-TEST_F(JsepSessionDescriptionTest,
+-       CreateWithCandidatesUpdatesConnectionAddress) {
+-  Candidate candidate(ICE_CANDIDATE_COMPONENT_RTP, "udp",
+-                      SocketAddress("192.168.1.5", 1234), kCandidatePriority,
+-                      "", "", IceCandidateType::kHost, kCandidateGeneration,
+-                      kCandidateFoundation);
+-  std::vector<IceCandidateCollection> candidates(2);
+-  candidates[0].add(std::make_unique<IceCandidate>(kAudioMid, 0, candidate));
+-
+-  std::unique_ptr<SessionDescription> desc = CreateCricketSessionDescription();
+-  const SocketAddress video_address("10.0.0.1", 5678);
+-  desc->contents()[1].media_description()->set_connection_address(
+-      video_address);
+-  std::unique_ptr<SessionDescriptionInterface> jsep_desc =
+-      SessionDescriptionInterface::Create(SdpType::kOffer, std::move(desc),
+-                                          "id", "version",
+-                                          std::move(candidates));
+-  ASSERT_THAT(jsep_desc, NotNull());
+-  ASSERT_EQ(jsep_desc->number_of_mediasections(), 2u);
+-  EXPECT_EQ(jsep_desc->candidates(0)->count(), 1u);
+-  EXPECT_EQ(jsep_desc->candidates(1)->count(), 0u);
+-  const ContentInfos& contents = jsep_desc->description()->contents();
+-  EXPECT_EQ(contents[0].media_description()->connection_address().ToString(),
+-            "192.168.1.5:1234");
+-  EXPECT_EQ(contents[1].media_description()->connection_address(),
+-            video_address);
+-}
+-
+ class EnumerateAllSdpTypesTest : public ::testing::Test,
+                                  public ::testing::WithParamInterface<SdpType> {
+ };
