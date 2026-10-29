@@ -1,28 +1,23 @@
-From: Landry Breuil <landry@openbsd.org>
-Date: Wed, 15 Apr 2026 13:31:00 +0000
-Subject: Bug 2030612 - define AOM_EFLAG_FREEZE_INTERNAL_STATE if not defined
- r=mjf
+From: Byron Campen <docfaraday@gmail.com>
+Date: Tue, 19 May 2026 16:37:00 -0500
+Subject: Bug 2040478 - (fix-de183fb028) Remove this include of override code
+ that is gone. r?mjf
 
-fixes build with system-av1/aom after bug 2029247
-
-Differential Revision: https://phabricator.services.mozilla.com/D293051
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/70d2379819582d44092dee15e1e45ddbc9cd3f22
+It appears that this override code is no longer necessary.
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/dbd090975384251d83d3554677efcbb0e133feab
 ---
- modules/video_coding/codecs/av1/libaom_av1_encoder.cc | 4 ++++
- 1 file changed, 4 insertions(+)
+ call/call.h | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-index d92b797015..dda9a496bc 100644
---- a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-+++ b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-@@ -66,6 +66,10 @@
- #define AOM_EFLAG_CALCULATE_PSNR (1 << 3)
- #endif
- 
-+#ifndef AOM_EFLAG_FREEZE_INTERNAL_STATE
-+#define AOM_EFLAG_FREEZE_INTERNAL_STATE (1 << 2)
-+#endif
-+
- #if defined(WEBRTC_ENCODER_PSNR_STATS)
- constexpr bool kEnablePsnrStats = true;
- #else
+diff --git a/call/call.h b/call/call.h
+index 43051e68ae..3c77c69796 100644
+--- a/call/call.h
++++ b/call/call.h
+@@ -27,7 +27,6 @@
+ #include "api/video/video_stream_encoder_settings.h"
+ #include "call/audio_receive_stream.h"
+ #include "call/audio_send_stream.h"
+-#include "call/call_basic_stats.h"
+ #include "call/call_config.h"
+ #include "call/flexfec_receive_stream.h"
+ #include "call/packet_receiver.h"

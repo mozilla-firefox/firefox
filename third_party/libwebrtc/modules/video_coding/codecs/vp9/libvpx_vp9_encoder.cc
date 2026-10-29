@@ -542,6 +542,57 @@ void LibvpxVp9Encoder::SetRates(const RateControlParameters& parameters) {
   config_changed_ = true;
 }
 
+void LibvpxVp9Encoder::SetComplexity(
+    std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+    ComplexityControlMode /*complexity_control_mode*/) {
+  if (!inited_) {
+    return;
+  }
+
+  auto get_cpu_speed = [](VideoCodecComplexity complexity) {
+    switch (complexity) {
+      case VideoCodecComplexity::kComplexityLow:
+        return 9;
+      case VideoCodecComplexity::kComplexityNormal:
+        return 7;
+      case VideoCodecComplexity::kComplexityHigh:
+        return 6;
+      case VideoCodecComplexity::kComplexityHigher:
+      case VideoCodecComplexity::kComplexityMax:
+        return 5;
+    }
+  };
+
+  auto get_layer_complexity = [&](size_t si) {
+    if (complexity_by_spatial_layer.empty()) {
+      return VideoCodecComplexity::kComplexityNormal;
+    }
+    return complexity_by_spatial_layer[std::min(
+        si, complexity_by_spatial_layer.size() - 1)];
+  };
+
+  if (is_svc_ && performance_flags_.use_per_layer_speed) {
+    for (size_t si = 0; si < num_spatial_layers_; ++si) {
+      const int speed = get_cpu_speed(get_layer_complexity(si));
+      performance_flags_by_spatial_index_[si].base_layer_speed = speed;
+      performance_flags_by_spatial_index_[si].high_layer_speed = speed;
+      svc_params_.speed_per_layer[si] = speed;
+    }
+    libvpx_->codec_control(encoder_, VP9E_SET_SVC_PARAMETERS, &svc_params_);
+  } else {
+    VideoCodecComplexity lowest_complexity = get_layer_complexity(0);
+    for (size_t si = 1; si < num_spatial_layers_; ++si) {
+      lowest_complexity = std::min(lowest_complexity, get_layer_complexity(si));
+    }
+    const int speed = get_cpu_speed(lowest_complexity);
+    for (auto& flags : performance_flags_by_spatial_index_) {
+      flags.base_layer_speed = speed;
+      flags.high_layer_speed = speed;
+    }
+    libvpx_->codec_control(encoder_, VP8E_SET_CPUUSED, speed);
+  }
+}
+
 // TODO(eladalon): s/inst/codec_settings/g.
 int LibvpxVp9Encoder::InitEncode(const VideoCodec* inst,
                                  const Settings& settings) {
@@ -1152,15 +1203,9 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
       // resolution instead and base the speed on that.
       for (int i = num_spatial_layers_ - 1; i >= 0; --i) {
         if (config_->ss_target_bitrate[i] > 0) {
-          int width = (scaling_factors_num_[i] * codec_.width) /
-                      scaling_factors_den_[i];
-          int height = (scaling_factors_num_[i] * codec_.height) /
-                       scaling_factors_den_[i];
-          int speed =
-              std::prev(performance_flags_.settings_by_resolution.lower_bound(
-                            width * height))
-                  ->second.base_layer_speed;
-          libvpx_->codec_control(encoder_, VP8E_SET_CPUUSED, speed);
+          libvpx_->codec_control(
+              encoder_, VP8E_SET_CPUUSED,
+              performance_flags_by_spatial_index_[i].base_layer_speed);
           break;
         }
       }

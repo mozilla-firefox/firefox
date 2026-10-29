@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -56,6 +57,7 @@
 #include "test/gtest.h"
 #include "test/mappable_native_buffer.h"
 #include "test/video_codec_settings.h"
+#include "third_party/libvpx/source/libvpx/vpx/vp8cx.h"
 #include "third_party/libvpx/source/libvpx/vpx/vpx_codec.h"
 #include "third_party/libvpx/source/libvpx/vpx/vpx_encoder.h"
 #include "third_party/libvpx/source/libvpx/vpx/vpx_image.h"
@@ -67,8 +69,10 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::Field;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 using ::testing::Return;
+using ::testing::TypedEq;
 using ::testing::Values;
 using ::testing::WithParamInterface;
 using EncoderInfo = VideoEncoder::EncoderInfo;
@@ -216,6 +220,73 @@ TEST_F(TestVp8Impl, SetRates) {
       .WillOnce(Return(VPX_CODEC_OK));
   encoder.SetRates(VideoEncoder::RateControlParameters(
       bitrate_allocation, static_cast<double>(codec_settings_.maxFramerate)));
+}
+
+TEST_F(TestVp8Impl, SetComplexity) {
+  auto* const vpx = new NiceMock<MockLibvpxInterface>();
+  LibvpxVp8Encoder encoder(CreateTestEnvironment(), {}, absl::WrapUnique(vpx));
+  EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
+            encoder.InitEncode(&codec_settings_, kSettings));
+
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-12)));
+  encoder.SetComplexity({{VideoCodecComplexity::kComplexityLow}},
+                        VideoEncoder::ComplexityControlMode::kConstant);
+
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-10)));
+  encoder.SetComplexity({{VideoCodecComplexity::kComplexityNormal}},
+                        VideoEncoder::ComplexityControlMode::kConstant);
+
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-7)));
+  encoder.SetComplexity({{VideoCodecComplexity::kComplexityHigh}},
+                        VideoEncoder::ComplexityControlMode::kConstant);
+
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-5)));
+  encoder.SetComplexity({{VideoCodecComplexity::kComplexityHigher}},
+                        VideoEncoder::ComplexityControlMode::kConstant);
+
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-4)));
+  encoder.SetComplexity({{VideoCodecComplexity::kComplexityMax}},
+                        VideoEncoder::ComplexityControlMode::kConstant);
+}
+
+TEST_F(TestVp8Impl, SetComplexitySimulcast) {
+  auto* const vpx = new NiceMock<MockLibvpxInterface>();
+  LibvpxVp8Encoder encoder(CreateTestEnvironment(), {}, absl::WrapUnique(vpx));
+
+  codec_settings_.numberOfSimulcastStreams = 3;
+  for (int i = 0; i < codec_settings_.numberOfSimulcastStreams; ++i) {
+    std::span(codec_settings_.simulcastStream)[i] = {
+        .width = codec_settings_.width >>
+                 (codec_settings_.numberOfSimulcastStreams - i - 1),
+        .height = codec_settings_.height >>
+                  (codec_settings_.numberOfSimulcastStreams - i - 1),
+        .numberOfTemporalLayers = 1,
+        .maxBitrate = 30,
+        .targetBitrate = 30,
+        .minBitrate = 30,
+        .active = true};
+  }
+
+  EXPECT_CALL(*vpx, codec_enc_init_multi(_, _, _, 3, _, _))
+      .WillOnce(Return(VPX_CODEC_OK));
+  EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
+            encoder.InitEncode(&codec_settings_, kSettings));
+
+  // Encoders are stored in reverse order: index 0 is stream 2 (highest
+  // res), index 1 is stream 1, index 2 is stream 0 (lowest res).
+  InSequence s;
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-4)));
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-7)));
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(-12)));
+
+  const VideoCodecComplexity complexities[] = {
+      VideoCodecComplexity::kComplexityLow,     // stream 0
+      VideoCodecComplexity::kComplexityHigh,    // stream 1
+      VideoCodecComplexity::kComplexityMax,     // stream 2
+      VideoCodecComplexity::kComplexityNormal,  // out of bounds, ignored
+  };
+  encoder.SetComplexity(complexities,
+                        VideoEncoder::ComplexityControlMode::kConstant);
 }
 
 TEST_F(TestVp8Impl, EncodeFrameAndRelease) {

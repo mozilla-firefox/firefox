@@ -1,73 +1,51 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Mon, 3 Aug 2026 13:50:00 -0500
-Subject: Bug 2058693 - (fix-42b425a487) revert until we can build jni source
- files.
+Date: Fri, 21 Aug 2026 11:59:00 -0500
+Subject: Bug 2064200 - (fix-ce3d64be6a) support
+ AudioReceiveStreamInterface::Config.Copy()
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/53805ee26971a0371198ab423157c52dbea44c45
+Mirrors VideoReceiveStreamInterface::Config.Copy().
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/af2661e1040fbe7653b8133a8a9c7ce887791c0b
 ---
- rtc_base/java/src/org/webrtc/Logging.java | 23 ++++++++---------------
- 1 file changed, 8 insertions(+), 15 deletions(-)
+ call/audio_receive_stream.cc |  1 +
+ call/audio_receive_stream.h  | 10 +++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-diff --git a/rtc_base/java/src/org/webrtc/Logging.java b/rtc_base/java/src/org/webrtc/Logging.java
-index d306ed5da4..fd070dfe6c 100644
---- a/rtc_base/java/src/org/webrtc/Logging.java
-+++ b/rtc_base/java/src/org/webrtc/Logging.java
-@@ -16,7 +16,6 @@ import java.io.StringWriter;
- import java.util.EnumSet;
- import java.util.logging.Level;
- import java.util.logging.Logger;
--import org.jni_zero.NativeMethods;
- import org.webrtc.Loggable;
+diff --git a/call/audio_receive_stream.cc b/call/audio_receive_stream.cc
+index f2e80eef92..c8e818a1d0 100644
+--- a/call/audio_receive_stream.cc
++++ b/call/audio_receive_stream.cc
+@@ -16,6 +16,7 @@ AudioReceiveStreamInterface::Stats::Stats() = default;
+ AudioReceiveStreamInterface::Stats::~Stats() = default;
  
- /**
-@@ -67,11 +66,11 @@ public class Logging {
-   public enum Severity { LS_VERBOSE, LS_INFO, LS_WARNING, LS_ERROR, LS_NONE }
+ AudioReceiveStreamInterface::Config::Config() = default;
++AudioReceiveStreamInterface::Config::Config(const Config&) = default;
+ AudioReceiveStreamInterface::Config::Config(Config&&) = default;
+ AudioReceiveStreamInterface::Config&
+ AudioReceiveStreamInterface::Config::operator=(Config&&) = default;
+diff --git a/call/audio_receive_stream.h b/call/audio_receive_stream.h
+index 7d4ceaa20f..757ea3be88 100644
+--- a/call/audio_receive_stream.h
++++ b/call/audio_receive_stream.h
+@@ -121,13 +121,21 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
+     int round_trip_time_measurements = 0;
+   };
+   struct Config {
++   private:
++    // Access to the copy constructor is private to force use of the Copy()
++    // method for those exceptional cases where we do use it.
++    Config(const Config&);
++
++   public:
+     Config();
+-    Config(const Config&) = delete;
+     Config& operator=(const Config&) = delete;
+     Config(Config&&);
+     Config& operator=(Config&&);
+     ~Config();
  
-   public static void enableLogThreads() {
--    LoggingJni.get().enableLogThreads();
-+    nativeEnableLogThreads();
-   }
++    // Mostly used by tests.  Avoid creating copies if you can.
++    Config Copy() const { return Config(*this); }
++
+     std::string ToString() const;
  
-   public static void enableLogTimeStamps() {
--    LoggingJni.get().enableLogTimeStamps();
-+    nativeEnableLogTimeStamps();
-   }
- 
-   // Enable diagnostic logging for messages of `severity` to the platform debug
-@@ -85,7 +84,7 @@ public class Logging {
-           "Logging to native debug output not supported while Loggable is injected. "
-           + "Delete the Loggable before calling this method.");
-     }
--    LoggingJni.get().enableLogToDebugOutput(severity.ordinal());
-+    nativeEnableLogToDebugOutput(severity.ordinal());
-     loggingEnabled = true;
-   }
- 
-@@ -105,7 +104,7 @@ public class Logging {
- 
-     // Try native logging if no loggable is injected.
-     if (loggingEnabled) {
--      LoggingJni.get().log(severity.ordinal(), tag, message);
-+      nativeLog(severity.ordinal(), tag, message);
-       return;
-     }
- 
-@@ -167,14 +166,8 @@ public class Logging {
-     return sw.toString();
-   }
- 
--  @NativeMethods
--  interface Natives {
--    void enableLogToDebugOutput(int nativeSeverity);
--
--    void enableLogThreads();
--
--    void enableLogTimeStamps();
--
--    void log(int severity, String tag, String message);
--  }
-+  private static native void nativeEnableLogToDebugOutput(int nativeSeverity);
-+  private static native void nativeEnableLogThreads();
-+  private static native void nativeEnableLogTimeStamps();
-+  private static native void nativeLog(int severity, String tag, String message);
- }
+     // Receive-stream specific RTP settings.

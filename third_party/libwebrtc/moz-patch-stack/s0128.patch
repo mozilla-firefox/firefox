@@ -1,23 +1,27 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Mon, 6 Apr 2026 18:41:00 -0500
-Subject: Bug 2029247 - (fix-4520c7897c) fix new usage of GetRealTimeClock in
- bitrate_adjuster.h
+Date: Tue, 7 Apr 2026 18:03:00 -0500
+Subject: Bug 2030139 - (fix-1ccc59d5c9) don't use
+ std::make_unique_for_overwrite for now to fix build error
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a88b1959591bc4ddbf6deb88ff76dcc24fd8ae5d
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a4e2ac07bd6f2deb8fde32b147422c3918c31eca
 ---
- common_video/include/bitrate_adjuster.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ rtc_base/copy_on_write_buffer.cc | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/common_video/include/bitrate_adjuster.h b/common_video/include/bitrate_adjuster.h
-index 6cd92b7deb..d414fb7e25 100644
---- a/common_video/include/bitrate_adjuster.h
-+++ b/common_video/include/bitrate_adjuster.h
-@@ -40,7 +40,7 @@ class RTC_EXPORT BitrateAdjuster {
-   ABSL_DEPRECATE_AND_INLINE()
-   BitrateAdjuster(float min_adjusted_bitrate_pct,
-                   float max_adjusted_bitrate_pct)
--      : BitrateAdjuster(Clock::GetRealTimeClock(),
-+      : BitrateAdjuster(Clock::GetRealTimeClockRaw(),
-                         min_adjusted_bitrate_pct,
-                         max_adjusted_bitrate_pct) {}
-   virtual ~BitrateAdjuster() = default;
+diff --git a/rtc_base/copy_on_write_buffer.cc b/rtc_base/copy_on_write_buffer.cc
+index 143003dade..1cfa027db6 100644
+--- a/rtc_base/copy_on_write_buffer.cc
++++ b/rtc_base/copy_on_write_buffer.cc
+@@ -29,7 +29,11 @@
+ namespace webrtc {
+ 
+ CopyOnWriteBuffer::RawBuffer::RawBuffer(size_t size)
+-    : size_(size), data_(std::make_unique_for_overwrite<uint8_t[]>(size)) {}
++    : size_(size), data_(std::unique_ptr<uint8_t[]>(new uint8_t[size])) {}
++// We should be able to use the form below, but our current compile setup
++// doesn't find std::make_unique_for_overwrite.  See Bug 2030186 to revert
++// this change.
++//     : size_(size), data_(std::make_unique_for_overwrite<uint8_t[]>(size)) {}
+ 
+ scoped_refptr<CopyOnWriteBuffer::RefCountedBuffer>
+ CopyOnWriteBuffer::CreateBuffer(size_t capacity) {

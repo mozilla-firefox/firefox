@@ -1491,6 +1491,18 @@ if (rtc_include_tests) {
     ]
   }
 
+  rtc_cc_test("frame_dumping_encoder_unittest") {
+    sources = [ "frame_dumping_encoder_unittest.cc" ]
+    deps = [
+      ":frame_dumping_encoder",
+      "../api:mock_video_encoder",
+      "../api/environment",
+      "../api/video_codecs:video_codecs_api",
+      "../test:create_test_environment",
+      "../test:test_support",
+    ]
+  }
+
   rtc_cc_test("frame_encode_metadata_writer_unittest") {
     sources = [ "frame_encode_metadata_writer_unittest.cc" ]
     deps = [
@@ -2214,6 +2226,7 @@ if (rtc_include_tests) {
       ":fec_tests",
       ":frame_cadence_adapter_unittest",
       ":frame_decode_timing_unittest",
+      ":frame_dumping_encoder_unittest",
       ":frame_encode_metadata_writer_unittest",
       ":frame_encryption_tests",
       ":histogram_tests",

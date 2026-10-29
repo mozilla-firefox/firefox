@@ -23,6 +23,7 @@
 #include "api/environment/environment.h"
 #include "api/environment/environment_factory.h"
 #include "api/field_trials.h"
+#include "api/scoped_refptr.h"
 #include "api/test/create_frame_generator.h"
 #include "api/test/frame_generator_interface.h"
 #include "api/test/mock_video_encoder.h"
@@ -30,19 +31,25 @@
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "api/video/encoded_image.h"
+#include "api/video/i420_buffer.h"
 #include "api/video/render_resolution.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "api/video/video_codec_type.h"
 #include "api/video/video_frame.h"
+#include "api/video/video_frame_buffer.h"
 #include "api/video/video_frame_type.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/video_codec.h"
+#include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_encoder.h"
+#include "common_video/libyuv/include/webrtc_libyuv.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/video_coding/codecs/av1/av1_svc_config.h"
+#include "modules/video_coding/codecs/av1/dav1d_decoder.h"
 #include "modules/video_coding/codecs/test/encoded_video_frame_producer.h"
 #include "modules/video_coding/include/video_error_codes.h"
 #include "rtc_base/checks.h"
+#include "system_wrappers/include/clock.h"
 #include "test/create_test_environment.h"
 #include "test/create_test_field_trials.h"
 #include "test/gmock.h"
@@ -57,6 +64,7 @@ using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::Property;
 using ::testing::Return;
@@ -1033,6 +1041,146 @@ TEST_P(LibaomAv1EncoderTest, TriggerFrameDropOnLayer0WhileLayer1Encoded) {
   ASSERT_EQ(encoder->Encode(delta_frame, &delta_frame_types),
             WEBRTC_VIDEO_CODEC_OK);
 }
+
+class LibaomAv1EncoderComplexityTest
+    : public ::testing::TestWithParam<VideoEncoder::ComplexityControlMode> {};
+
+TEST_P(LibaomAv1EncoderComplexityTest, SetComplexityIncreasesQuality) {
+  constexpr int kWidth = 352;
+  constexpr int kHeight = 288;
+  constexpr int kNumSourceFrames = 10;
+
+  std::unique_ptr<test::FrameReader> frame_reader =
+      test::CreateYuvFrameReader(test::ResourcePath("foreman_cif", "yuv"),
+                                 {.width = kWidth, .height = kHeight});
+  std::vector<scoped_refptr<I420Buffer>> input_frames;
+  for (int i = 0; i < kNumSourceFrames; ++i) {
+    input_frames.push_back(frame_reader->PullFrame());
+  }
+
+  class DecodedCallback : public DecodedImageCallback {
+   public:
+    int32_t Decoded(VideoFrame& decoded_image) override {
+      last_decoded_frame_ = decoded_image;
+      return 0;
+    }
+    const std::optional<VideoFrame>& last_decoded_frame() const {
+      return last_decoded_frame_;
+    }
+
+   private:
+    std::optional<VideoFrame> last_decoded_frame_;
+  };
+
+  class EncodedCallback : public EncodedImageCallback {
+   public:
+    Result OnEncodedImage(
+        const EncodedImage& encoded_image,
+        const CodecSpecificInfo* /*codec_specific_info*/) override {
+      last_encoded_image_ = encoded_image;
+      return Result(Result::Error::OK);
+    }
+    void OnFrameDropped(uint32_t /*rtp_timestamp*/,
+                        int /*spatial_id*/,
+                        bool /*is_end_of_temporal_unit*/) override {}
+    const std::optional<EncodedImage>& last_encoded_image() const {
+      return last_encoded_image_;
+    }
+
+   private:
+    std::optional<EncodedImage> last_encoded_image_;
+  };
+
+  // In `kVariable` mode, `EncoderSpeedController` starts at a fast speed and
+  // steps down to slower speeds over time (requiring at least 6 frames per step
+  // and at least 1000ms between PSNR probes). Using a low framerate (5 fps =
+  // 200ms per frame) and a constrained bitrate (40 kbps across L1T2) ensures
+  // that PSNR probes see enough quality gain (and QP stays high enough) to
+  // unlock all effort levels down to speed 5 within 95 frames. In `kConstant`
+  // mode, speeds are applied immediately, so 10 frames are sufficient.
+  const VideoEncoder::ComplexityControlMode mode = GetParam();
+  const int num_frames =
+      mode == VideoEncoder::ComplexityControlMode::kConstant ? 10 : 100;
+  constexpr int kFramerateFps = 5;
+  constexpr int kBitrateKbps = 40;
+  SimulatedClock clock(Timestamp::Seconds(1000));
+  const Environment env = CreateTestEnvironment({.time = &clock});
+  std::optional<double> last_avg_psnr;
+  using enum VideoCodecComplexity;
+  for (VideoCodecComplexity complexity :
+       {kComplexityLow, kComplexityNormal, kComplexityHigh, kComplexityHigher,
+        kComplexityMax}) {
+    std::unique_ptr<VideoEncoder> encoder = CreateLibaomAv1Encoder(env);
+    VideoCodec codec_settings = DefaultCodecSettings();
+    codec_settings.width = kWidth;
+    codec_settings.height = kHeight;
+    codec_settings.maxFramerate = kFramerateFps;
+    codec_settings.startBitrate = kBitrateKbps;
+    codec_settings.maxBitrate = kBitrateKbps;
+    codec_settings.SetFrameDropEnabled(false);
+    codec_settings.SetScalabilityMode(ScalabilityMode::kL1T2);
+    ASSERT_EQ(encoder->InitEncode(&codec_settings, DefaultEncoderSettings()),
+              WEBRTC_VIDEO_CODEC_OK);
+
+    EncodedCallback encoded_callback;
+    encoder->RegisterEncodeCompleteCallback(&encoded_callback);
+
+    VideoEncoder::RateControlParameters rate_parameters;
+    rate_parameters.framerate_fps = codec_settings.maxFramerate;
+    rate_parameters.bitrate.SetBitrate(/*spatial_index=*/0, 0,
+                                       kBitrateKbps * 600);
+    rate_parameters.bitrate.SetBitrate(/*spatial_index=*/0, 1,
+                                       kBitrateKbps * 400);
+    encoder->SetRates(rate_parameters);
+    encoder->SetComplexity({{complexity}}, mode);
+
+    std::unique_ptr<VideoDecoder> decoder = CreateDav1dDecoder(env);
+    ASSERT_TRUE(decoder->Configure({}));
+    DecodedCallback decoded_callback;
+    ASSERT_EQ(decoder->RegisterDecodeCompleteCallback(&decoded_callback),
+              WEBRTC_VIDEO_CODEC_OK);
+
+    double psnr_sum = 0;
+    for (int i = 0; i < num_frames; ++i) {
+      const scoped_refptr<I420Buffer>& buffer =
+          input_frames[i % input_frames.size()];
+      VideoFrame input_frame =
+          VideoFrame::Builder()
+              .set_video_frame_buffer(buffer)
+              .set_rtp_timestamp((i + 1) * kVideoPayloadTypeFrequency /
+                                 codec_settings.maxFramerate)
+              .set_timestamp_us(clock.TimeInMicroseconds())
+              .build();
+      std::vector<VideoFrameType> frame_types = {
+          i == 0 ? VideoFrameType::kVideoFrameKey
+                 : VideoFrameType::kVideoFrameDelta};
+      ASSERT_EQ(encoder->Encode(input_frame, &frame_types),
+                WEBRTC_VIDEO_CODEC_OK);
+      clock.AdvanceTime(TimeDelta::Seconds(1) / codec_settings.maxFramerate);
+      ASSERT_TRUE(encoded_callback.last_encoded_image().has_value());
+      ASSERT_EQ(decoder->Decode(*encoded_callback.last_encoded_image(),
+                                /*render_time_ms=*/0),
+                WEBRTC_VIDEO_CODEC_OK);
+      ASSERT_TRUE(decoded_callback.last_decoded_frame().has_value());
+      psnr_sum += I420PSNR(*buffer, *decoded_callback.last_decoded_frame()
+                                         ->video_frame_buffer()
+                                         ->ToI420());
+    }
+    const double avg_psnr = psnr_sum / num_frames;
+    if (last_avg_psnr.has_value()) {
+      EXPECT_THAT(avg_psnr, Gt(*last_avg_psnr))
+          << "mode=" << static_cast<int>(mode)
+          << " complexity=" << static_cast<int>(complexity);
+    }
+    last_avg_psnr = avg_psnr;
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    LibaomAv1EncoderComplexityTests,
+    LibaomAv1EncoderComplexityTest,
+    Values(VideoEncoder::ComplexityControlMode::kConstant,
+           VideoEncoder::ComplexityControlMode::kVariable));
 
 }  // namespace
 }  // namespace webrtc

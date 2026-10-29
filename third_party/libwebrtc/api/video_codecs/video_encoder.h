@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -363,6 +364,11 @@ class RTC_EXPORT VideoEncoder {
     std::optional<int> encoder_thread_limit;
   };
 
+  enum class ComplexityControlMode {
+    kConstant,  // Fixed speed setting, intended for testing purposes.
+    kVariable   // Variable speed based on e.g. quality and encode duration.
+  };
+
   static VideoCodecVP8 GetDefaultVp8Settings();
   static VideoCodecVP9 GetDefaultVp9Settings();
   static VideoCodecH264 GetDefaultH264Settings();
@@ -433,6 +439,27 @@ class RTC_EXPORT VideoEncoder {
   // instantaneous (i.e. not moving averages) and should apply from now until
   // the next call to SetRates().
   virtual void SetRates(const RateControlParameters& parameters) = 0;
+
+  // Sets the desired encoding complexity per spatial or simulcast layer, on a
+  // best-effort basis. The order index into this vector is the same as for
+  // `VideoCodec::simulcastStream` and `VideoCodec::spatialLayers`, depending on
+  // which type is used. Values outside the configured layer count are ignored.
+  // If fewer elements are provided than the number of configured layers,
+  // remaining layers are assigned the value of the highest layer in
+  // `complexity_by_spatial_layer`, or `kComplexityNormal` if the span is empty.
+  // Note that `InitEncode()` (re)sets the default complexity, using a variety
+  // of heuristics. When called, this method overrides those settings. If a
+  // fixed complexity is specified, it is unconditionally set (regardless of
+  // e.g. the resolution used, etc). If a variable complexity is specified, the
+  // complexity given is treated as target - but a lower complexity may be
+  // used if e.g. the quality is already high (avoiding spending CPU cycles for
+  // imperceptible quality gains) or if the encode time is too high relative to
+  // the target frame rate.
+  virtual void SetComplexity(
+      std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+      ComplexityControlMode complexity_control_mode) {
+    // Default implementation does nothing.
+  }
 
   // Inform the encoder when the packet loss rate changes.
   //

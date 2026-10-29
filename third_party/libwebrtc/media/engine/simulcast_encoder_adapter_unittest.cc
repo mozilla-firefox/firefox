@@ -17,6 +17,7 @@
 #include <atomic>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -75,6 +76,7 @@
 #include "test/run_loop.h"
 
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::Return;
 using EncoderInfo = webrtc::VideoEncoder::EncoderInfo;
 using FramerateFractions =
@@ -306,6 +308,13 @@ class MockVideoEncoder : public VideoEncoder {
   void SetRates(const RateControlParameters& parameters) override {
     last_set_rates_ = parameters;
   }
+
+  MOCK_METHOD(
+      void,
+      SetComplexity,
+      (std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+       ComplexityControlMode complexity_control_mode),
+      (override));
 
   EncoderInfo GetEncoderInfo() const override {
     EncoderInfo info;
@@ -3240,6 +3249,85 @@ TEST_F(TestSimulcastEncoderAdapterFake,
   // Release, which will indirectly call Release on the encoders, flushing
   // their queues.
   EXPECT_EQ(0, adapter_->Release());
+}
+
+TEST_F(TestSimulcastEncoderAdapterFake, SetComplexityForwardsPerStream) {
+  SimulcastTestFixtureImpl::DefaultSettings(
+      &codec_, static_cast<const int*>(kTestTemporalLayerProfile),
+      kVideoCodecVP8);
+  codec_.numberOfSimulcastStreams = 3;
+  codec_.startBitrate = 3000;
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
+
+  const std::vector<MockVideoEncoder*>& encoders =
+      helper_->factory()->encoders();
+  ASSERT_EQ(3u, encoders.size());
+
+  const VideoCodecComplexity complexities[] = {
+      VideoCodecComplexity::kComplexityLow,
+      VideoCodecComplexity::kComplexityNormal,
+      VideoCodecComplexity::kComplexityHigh,
+      VideoCodecComplexity::kComplexityMax,  // Out of bounds, ignored.
+  };
+
+  EXPECT_CALL(*encoders[0],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(
+      *encoders[1],
+      SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityNormal),
+                    VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(*encoders[2],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityHigh),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  adapter_->SetComplexity(complexities,
+                          VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Fewer elements than streams: remaining streams use the highest provided
+  // layer's complexity.
+  const VideoCodecComplexity short_complexities[] = {
+      VideoCodecComplexity::kComplexityLow,
+      VideoCodecComplexity::kComplexityMax,
+  };
+  EXPECT_CALL(*encoders[0],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow),
+                            VideoEncoder::ComplexityControlMode::kConstant));
+  EXPECT_CALL(*encoders[1],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
+                            VideoEncoder::ComplexityControlMode::kConstant));
+  EXPECT_CALL(*encoders[2],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
+                            VideoEncoder::ComplexityControlMode::kConstant));
+  adapter_->SetComplexity(short_complexities,
+                          VideoEncoder::ComplexityControlMode::kConstant);
+}
+
+TEST_F(TestSimulcastEncoderAdapterFake,
+       SetComplexityBypassModeForwardsFullSpan) {
+  SimulcastTestFixtureImpl::DefaultSettings(
+      &codec_, static_cast<const int*>(kTestTemporalLayerProfile),
+      kVideoCodecVP8);
+  codec_.numberOfSimulcastStreams = 3;
+  helper_->factory()->set_supports_simulcast(true);
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
+
+  const std::vector<MockVideoEncoder*>& encoders =
+      helper_->factory()->encoders();
+  ASSERT_EQ(1u, encoders.size());
+
+  const VideoCodecComplexity complexities[] = {
+      VideoCodecComplexity::kComplexityLow,
+      VideoCodecComplexity::kComplexityNormal,
+      VideoCodecComplexity::kComplexityHigh,
+  };
+
+  EXPECT_CALL(*encoders[0],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                        VideoCodecComplexity::kComplexityNormal,
+                                        VideoCodecComplexity::kComplexityHigh),
+                            VideoEncoder::ComplexityControlMode::kConstant));
+  adapter_->SetComplexity(complexities,
+                          VideoEncoder::ComplexityControlMode::kConstant);
 }
 
 }  // namespace test

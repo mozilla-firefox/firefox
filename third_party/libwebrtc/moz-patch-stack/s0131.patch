@@ -1,33 +1,28 @@
-From: Michael Froman <mfroman@mozilla.com>
-Date: Wed, 8 Apr 2026 10:58:00 -0500
-Subject: Bug 2030139 - (fix-bb3693c382) fix linux builds for constexpr
- containing std::string
+From: Landry Breuil <landry@openbsd.org>
+Date: Wed, 15 Apr 2026 13:31:00 +0000
+Subject: Bug 2030612 - define AOM_EFLAG_FREEZE_INTERNAL_STATE if not defined
+ r=mjf
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/cab51cf0d4e9e67e9f5b053128d05e859d47b7c2
+fixes build with system-av1/aom after bug 2029247
+
+Differential Revision: https://phabricator.services.mozilla.com/D293051
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/70d2379819582d44092dee15e1e45ddbc9cd3f22
 ---
- modules/portal/pipewire_utils.cc | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ modules/video_coding/codecs/av1/libaom_av1_encoder.cc | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/modules/portal/pipewire_utils.cc b/modules/portal/pipewire_utils.cc
-index b17b4d1065..bdea4318e7 100644
---- a/modules/portal/pipewire_utils.cc
-+++ b/modules/portal/pipewire_utils.cc
-@@ -33,9 +33,18 @@
+diff --git a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
+index 6093995c96..8a2a9306ba 100644
+--- a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
++++ b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
+@@ -68,6 +68,10 @@
+ #define AOM_EFLAG_CALCULATE_PSNR (1 << 3)
+ #endif
  
- namespace webrtc {
- 
-+#if defined(__GNUC__) && defined(WEBRTC_MOZILLA_BUILD)
-+// Mozilla linux builds are using -std=gnu++20, which doesn't approve
-+// of using std::string in a constexpr.  PipewireVersion now contains
-+// std::string as of libwebrtc commit d167fe9296.
-+static const PipeWireVersion kReentrantDeinitMinVersion = {.major = 0,
-+                                                           .minor = 3,
-+                                                           .micro = 49};
-+#else
- constexpr PipeWireVersion kReentrantDeinitMinVersion = {.major = 0,
-                                                         .minor = 3,
-                                                         .micro = 49};
++#ifndef AOM_EFLAG_FREEZE_INTERNAL_STATE
++#define AOM_EFLAG_FREEZE_INTERNAL_STATE (1 << 2)
 +#endif
- 
- PipeWireVersion PipeWireVersion::Parse(const std::string_view& version) {
-   std::vector<std::string_view> parsed_version = split(version, '.');
++
+ #if defined(WEBRTC_ENCODER_PSNR_STATS)
+ constexpr bool kEnablePsnrStats = true;
+ #else

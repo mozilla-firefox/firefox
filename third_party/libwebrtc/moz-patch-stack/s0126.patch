@@ -1,121 +1,23 @@
-From: Andreas Pehrson <apehrson@mozilla.com>
-Date: Fri, 20 Mar 2026 10:54:00 +0000
-Subject: Bug 2012483 - Restore some VideoCapture related libwebrtc
- modifications. r=mjf
+From: Michael Froman <mfroman@mozilla.com>
+Date: Mon, 6 Apr 2026 14:37:00 -0500
+Subject: Bug 2029247 - (fix-0fc5aeecfb) base-toolchains build fix
 
-Differential Revision: https://phabricator.services.mozilla.com/D279880
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/537537c3174e469997239d7576796d26e7faa721
+Upstream was assigning a -2 to a uint16_t.
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f5dfd2e6901c9d79ee528bf3801ded81b6dd65c9
 ---
- modules/video_capture/video_capture.h       |  5 +---
- modules/video_capture/video_capture_impl.cc | 28 ++++++---------------
- modules/video_capture/video_capture_impl.h  |  6 ++---
- 3 files changed, 10 insertions(+), 29 deletions(-)
+ rtc_base/network_constants.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/modules/video_capture/video_capture.h b/modules/video_capture/video_capture.h
-index d577e73f06..6ee3365e10 100644
---- a/modules/video_capture/video_capture.h
-+++ b/modules/video_capture/video_capture.h
-@@ -122,14 +122,11 @@ class VideoCaptureModule : public RefCountInterface {
-       RawVideoSinkInterface* dataCallback) = 0;
+diff --git a/rtc_base/network_constants.h b/rtc_base/network_constants.h
+index 0b7ae9d567..8df31b683b 100644
+--- a/rtc_base/network_constants.h
++++ b/rtc_base/network_constants.h
+@@ -40,7 +40,7 @@ constexpr uint16_t kNetworkCostVpn = 1;
  
-   //  Remove capture data callback
--  virtual void DeRegisterCaptureDataCallback(
--      webrtc::VideoSinkInterface<VideoFrame> *dataCallback) = 0;
-+  virtual void DeRegisterCaptureDataCallback() = 0;
+ // Add -2 to the network cost when using network slicing so that e.g. premium 5G
+ // slice is preferred over regular 5G, everything else being equal.
+-constexpr uint16_t kNetworkCostSlice = -2;
++constexpr int16_t kNetworkCostSlice = -2;
  
-   // Start capture device
-   virtual int32_t StartCapture(const VideoCaptureCapability& capability) = 0;
- 
--  virtual int32_t StopCaptureIfAllClientsClose() = 0;
--
-   virtual bool FocusOnSelectedSource() { return false; }
- 
-   virtual int32_t StopCapture() = 0;
-diff --git a/modules/video_capture/video_capture_impl.cc b/modules/video_capture/video_capture_impl.cc
-index 2c370ce78e..ed83ab6e57 100644
---- a/modules/video_capture/video_capture_impl.cc
-+++ b/modules/video_capture/video_capture_impl.cc
-@@ -88,6 +88,7 @@ VideoCaptureImpl::VideoCaptureImpl(Clock* clock)
-       _requestedCapability(),
-       _lastProcessTimeNanos(clock->TimeInMicroseconds() * 1000),
-       _lastFrameRateCallbackTimeNanos(clock->TimeInMicroseconds() * 1000),
-+      _dataCallBack(nullptr),
-       _rawDataCallBack(nullptr),
-       _lastProcessFrameTimeNanos(clock->TimeInMicroseconds() * 1000),
-       _rotateFrame(kVideoRotation_0),
-@@ -111,44 +112,29 @@ void VideoCaptureImpl::RegisterCaptureDataCallback(
-     VideoSinkInterface<VideoFrame>* dataCallBack) {
-   MutexLock lock(&api_lock_);
-   RTC_DCHECK(!_rawDataCallBack);
--  _dataCallBacks.insert(dataCallBack);
-+  _dataCallBack = dataCallBack;
- }
- 
- void VideoCaptureImpl::RegisterCaptureDataCallback(
-     RawVideoSinkInterface* dataCallBack) {
-   MutexLock lock(&api_lock_);
--  RTC_DCHECK(_dataCallBacks.empty());
-+  RTC_DCHECK(!_dataCallBack);
-   _rawDataCallBack = dataCallBack;
- }
- 
--void VideoCaptureImpl::DeRegisterCaptureDataCallback(
--    webrtc::VideoSinkInterface<VideoFrame>* dataCallBack) {
-+void VideoCaptureImpl::DeRegisterCaptureDataCallback() {
-   MutexLock lock(&api_lock_);
--  auto it = _dataCallBacks.find(dataCallBack);
--  if (it != _dataCallBacks.end()) {
--    _dataCallBacks.erase(it);
--  }
-+  _dataCallBack = nullptr;
-   _rawDataCallBack = nullptr;
- }
- 
--int32_t VideoCaptureImpl::StopCaptureIfAllClientsClose() {
--  RTC_DCHECK_RUN_ON(&api_checker_);
--  {
--    MutexLock lock(&api_lock_);
--    if (!_dataCallBacks.empty()) {
--      return 0;
--    }
--  }
--  return StopCapture();
--}
--
- int32_t VideoCaptureImpl::DeliverCapturedFrame(VideoFrame& captureFrame) {
-   RTC_CHECK_RUNS_SERIALIZED(&capture_checker_);
- 
-   UpdateFrameCount();  // frame count used for local frame rate callback.
- 
--  for (auto* dataCallBack : _dataCallBacks) {
--    dataCallBack->OnFrame(captureFrame);
-+  if (_dataCallBack) {
-+    _dataCallBack->OnFrame(captureFrame);
-   }
- 
-   return 0;
-diff --git a/modules/video_capture/video_capture_impl.h b/modules/video_capture/video_capture_impl.h
-index 6beeec359d..3ad11498b9 100644
---- a/modules/video_capture/video_capture_impl.h
-+++ b/modules/video_capture/video_capture_impl.h
-@@ -65,10 +65,8 @@ class RTC_EXPORT VideoCaptureImpl : public VideoCaptureModule {
-       VideoSinkInterface<VideoFrame>* dataCallback) override;
-   void RegisterCaptureDataCallback(
-       RawVideoSinkInterface* dataCallback) override;
--  void DeRegisterCaptureDataCallback(
--      webrtc::VideoSinkInterface<VideoFrame>* dataCallback) override;
-+  void DeRegisterCaptureDataCallback() override;
- 
--  int32_t StopCaptureIfAllClientsClose() override;
-   int32_t SetCaptureRotation(VideoRotation rotation) override;
-   bool SetApplyRotation(bool enable) override;
-   bool GetApplyRotation() override;
-@@ -122,7 +120,7 @@ class RTC_EXPORT VideoCaptureImpl : public VideoCaptureModule {
-   // last time the frame rate callback function was called.
-   int64_t _lastFrameRateCallbackTimeNanos RTC_GUARDED_BY(capture_checker_);
- 
--  std::set<VideoSinkInterface<VideoFrame>*> _dataCallBacks RTC_GUARDED_BY(api_lock_);
-+  VideoSinkInterface<VideoFrame>* _dataCallBack RTC_GUARDED_BY(api_lock_);
-   RawVideoSinkInterface* _rawDataCallBack RTC_GUARDED_BY(api_lock_);
- 
-   int64_t _lastProcessFrameTimeNanos RTC_GUARDED_BY(capture_checker_);
+ // Aliases for correct wrap-around with network slice cost.
+ constexpr uint16_t kNetworkCostCellular5GSlice =  // 248

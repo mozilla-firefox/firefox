@@ -1,23 +1,39 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Fri, 16 Jan 2026 20:25:00 -0600
-Subject: Bug 2010312 - (fix-20159a54f6) fix new usage of GetRealTimeClock in
- libaom_av1_encoder.cc
+Date: Mon, 19 Jan 2026 13:10:00 -0600
+Subject: Bug 2010312 - (fix-d167fe9296) fix linux builds for constexpr
+ containing std::string. r?ng!
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/c00f6910cab76176f0caf946f2af480cac016e38
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/ece87d91b514ab155e600e067b4a99601bddbffc
 ---
- modules/video_coding/codecs/av1/libaom_av1_encoder.cc | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ .../linux/wayland/shared_screencast_stream.cc        | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-index ed4f9c4ffd..d92b797015 100644
---- a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-+++ b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-@@ -274,7 +274,7 @@ LibaomAv1Encoder::LibaomAv1Encoder(const Environment& env,
-       drop_repeat_frames_on_enhancement_layers_(env.field_trials().IsEnabled(
-           "WebRTC-LibaomAv1Encoder-DropRepeatFramesOnEnhancementLayers")),
-       encoder_speed_experiment_(env.field_trials()),
--      realtime_clock_(Clock::GetRealTimeClock()) {}
-+      realtime_clock_(Clock::GetRealTimeClockRaw()) {}
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index 505e22e272..b27a35a10e 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -82,12 +82,24 @@ constexpr int CursorMetaSize(int w, int h) {
+           w * h * kBytesPerPixel);
+ }
  
- LibaomAv1Encoder::~LibaomAv1Encoder() {
-   Release();
++#if defined(__GNUC__) && defined(WEBRTC_MOZILLA_BUILD)
++// Mozilla linux builds are using -std=gnu++20, which doesn't approve
++// of using std::string in a constexpr.  PipewireVersion now contains
++// std::string as of libwebrtc commit d167fe9296.
++static const PipeWireVersion kDmaBufModifierMinVersion = {.major = 0,
++                                                          .minor = 3,
++                                                          .micro = 33};
++static const PipeWireVersion kDropSingleModifierMinVersion = {.major = 0,
++                                                              .minor = 3,
++                                                              .micro = 40};
++#else
+ constexpr PipeWireVersion kDmaBufModifierMinVersion = {.major = 0,
+                                                        .minor = 3,
+                                                        .micro = 33};
+ constexpr PipeWireVersion kDropSingleModifierMinVersion = {.major = 0,
+                                                            .minor = 3,
+                                                            .micro = 40};
++#endif
+ 
+ class SharedScreenCastStreamPrivate {
+  public:

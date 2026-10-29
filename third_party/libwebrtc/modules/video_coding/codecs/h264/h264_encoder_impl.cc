@@ -12,6 +12,8 @@
 // Everything declared/defined in this header is only required when WebRTC is
 // build with H264 support, please do not move anything out of the
 // #ifdef unless needed and tested.
+#include <span>
+
 #include "api/units/time_delta.h"
 #include "modules/video_coding/utility/frame_sampler.h"
 #ifdef WEBRTC_USE_H264
@@ -433,6 +435,51 @@ void H264EncoderImpl::SetRates(const RateControlParameters& parameters) {
       configurations_[i].SetStreamState(false);
     }
   }
+}
+
+void H264EncoderImpl::SetComplexity(
+    std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+    ComplexityControlMode /*complexity_control_mode*/) {
+  if (encoders_.empty()) {
+    return;
+  }
+  size_t stream_idx = encoders_.size() - 1;
+  for (size_t i = 0; i < encoders_.size(); ++i, --stream_idx) {
+    const VideoCodecComplexity complexity =
+        complexity_by_spatial_layer.empty()
+            ? VideoCodecComplexity::kComplexityNormal
+            : complexity_by_spatial_layer[std::min(
+                  stream_idx, complexity_by_spatial_layer.size() - 1)];
+    int32_t complexity_mode = LOW_COMPLEXITY;
+    switch (complexity) {
+      case VideoCodecComplexity::kComplexityLow:
+      case VideoCodecComplexity::kComplexityNormal:
+        complexity_mode = LOW_COMPLEXITY;
+        break;
+      case VideoCodecComplexity::kComplexityHigh:
+        complexity_mode = MEDIUM_COMPLEXITY;
+        break;
+      case VideoCodecComplexity::kComplexityHigher:
+      case VideoCodecComplexity::kComplexityMax:
+        complexity_mode = HIGH_COMPLEXITY;
+        break;
+    }
+    encoders_[i]->SetOption(ENCODER_OPTION_COMPLEXITY, &complexity_mode);
+  }
+}
+
+std::optional<ECOMPLEXITY_MODE> H264EncoderImpl::ComplexityModeForTesting(
+    size_t stream_idx) const {
+  if (stream_idx >= encoders_.size()) {
+    return std::nullopt;
+  }
+  size_t encoder_idx = encoders_.size() - 1 - stream_idx;
+  int32_t complexity_mode = 0;
+  if (encoders_[encoder_idx]->GetOption(ENCODER_OPTION_COMPLEXITY,
+                                        &complexity_mode) != 0) {
+    return std::nullopt;
+  }
+  return static_cast<ECOMPLEXITY_MODE>(complexity_mode);
 }
 
 int32_t H264EncoderImpl::Encode(
