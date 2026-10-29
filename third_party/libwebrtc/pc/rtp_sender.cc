@@ -411,50 +411,12 @@ RtpParameters RtpSenderBase::GetParametersInternalWithAllLayers() const {
 
 RtpParameters RtpSenderBase::GetParameters() const {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-#if RTC_DCHECK_IS_ON
-  // TODO(tommi): Here, we can use `last_transaction_id_` to allow for
-  // multiple GetParameters() calls in a row return cached parameters
-  // (we could still generate a new transaction_id every time). Since
-  // `last_transaction_id_` will be reset whenever the parameters change, we
-  // could reliably cache the currently active parameters and whenever
-  // `last_transaction_id_` has been reset, only then take the penalty of
-  // refreshing the cached value (or even rely on the `changed` callback to
-  // refresh the cached parameters). Alternatively, we could maintain such a
-  // cache only at the GetParametersInternal() level that's used internally in
-  // webrtc, e.g. for stats purposes, and use the cache only when
-  // GetParametersInternal() is called directly and not via GetParameters().
-  //
-  // This `cached` variable and the `RTC_DCHECK` below are here temporarily
-  // to verify the correctness of the cache as the first implementation of it
-  // lands. Once we have confidence that the cache is reliably up to date,
-  // we can update GetParameters() to use the cache without having to thread
-  // hop.
-  auto cached = cached_parameters_;
-#endif
-
-  RtpParameters result = GetParametersInternal(/*may_use_cache=*/false,
+  RtpParameters result = GetParametersInternal(/*may_use_cache=*/true,
                                                /*with_all_layers=*/false);
   // Start a new transaction. `last_transaction_id_` will be reset whenever
   // the parameters change.
   last_transaction_id_ = CreateRandomUuid();
   result.transaction_id = last_transaction_id_.value();
-
-#if RTC_DCHECK_IS_ON
-  // The internal cache is only used when not stopped and ssrc_ is not 0.
-  // `cached_parameters_` might get reset if the media channel is gone.
-  if (cached && !stopped_ && ssrc_ != 0 && cached_parameters_) {
-    RtpParameters cached_filtered = *cached;
-    RemoveEncodingLayers(disabled_rids_, &cached_filtered.encodings);
-    if (cached_filtered != result) {
-      RTC_LOG(LS_ERROR)
-          << "Cached send params not equal to worker thread state.\n"
-          << "Cached: " << cached_filtered << "\n"
-          << "Result: " << result;
-    }
-    RTC_DCHECK(cached_filtered == result)
-        << "The cached value should have been equal (filtered)";
-  }
-#endif
   return result;
 }
 

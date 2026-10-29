@@ -233,6 +233,29 @@ class PeerConnectionRtpTestUnifiedPlan : public PeerConnectionRtpBaseTest {
     EXPECT_TRUE(set_remote_answer);
     return set_remote_answer;
   }
+
+  // Returns the parameters that the media channel reports for the send stream
+  // of `sender`, read on the worker thread.
+  RtpParameters GetMediaChannelParameters(PeerConnectionWrapper* pc,
+                                          const RtpSenderInterface& sender) {
+    const uint32_t ssrc = sender.ssrc();
+    for (const auto& transceiver :
+         pc->GetInternalPeerConnection()->GetTransceiversInternal()) {
+      if (transceiver->sender()->id() != sender.id()) {
+        continue;
+      }
+      MediaSendChannelInterface* media_channel =
+          transceiver->internal()->media_send_channel();
+      if (!media_channel) {
+        ADD_FAILURE() << "No media channel for sender " << sender.id();
+        return RtpParameters();
+      }
+      return pc->GetInternalPeerConnection()->worker_thread()->BlockingCall(
+          [&] { return media_channel->GetRtpSendParameters(ssrc); });
+    }
+    ADD_FAILURE() << "No transceiver for sender " << sender.id();
+    return RtpParameters();
+  }
 };
 
 // These tests cover `PeerConnectionObserver` callbacks firing upon
@@ -2140,12 +2163,12 @@ TEST_F(PeerConnectionRtpTestUnifiedPlan,
   // change the send codec without notifying RtpSender!
   ASSERT_TRUE(caller->ExchangeOfferAnswerWith(callee.get()));
 
-  // Call GetParameters(). The DCHECK evaluates cached_parameters_ against
-  // what's actually on the worker thread. Since we bypassed SetParameters,
-  // this should crash if the bug is present, or return the right values.
+  // GetParameters() must return the parameters of the media channel, although
+  // the send codec was changed without a call to SetParameters().
   auto parameters2 = sender->GetParameters();
   ASSERT_GT(parameters2.codecs.size(), 0u);
   EXPECT_NE(parameters1.codecs[0].name, parameters2.codecs[0].name);
+  EXPECT_EQ(parameters2, GetMediaChannelParameters(caller.get(), *sender));
 }
 
 TEST_F(PeerConnectionRtpTestUnifiedPlan,
@@ -2179,13 +2202,11 @@ TEST_F(PeerConnectionRtpTestUnifiedPlan,
   // on the worker thread.
   track->set_content_hint(VideoTrackInterface::ContentHint::kDetailed);
 
-  // Calling GetParameters will fetch the new parameters from the worker thread
-  // and compare them to the signaling thread cache, triggering the DCHECK if
-  // the cache is stale.
+  // GetParameters() must return the parameters of the media channel, which
+  // were changed on the worker thread.
   auto parameters_after = sender->GetParameters();
-
-  // If the DCHECK is not fatal, we manually verify the mismatch happened.
   EXPECT_EQ(parameters_after.encodings.size(), 1u);
+  EXPECT_EQ(parameters_after, GetMediaChannelParameters(caller.get(), *sender));
 }
 
 TEST_F(PeerConnectionRtpTestUnifiedPlan,
@@ -2254,12 +2275,12 @@ TEST_F(PeerConnectionRtpTestUnifiedPlan,
   // by RequestEncoderSwitch.
   run_loop_.Flush();
 
-  // Calling GetParameters will fetch the new parameters from the worker thread
-  // and compare them to the signaling thread cache, triggering the DCHECK if
-  // the cache is stale.
+  // GetParameters() must return the parameters of the media channel, which
+  // were changed by the encoder switch.
   auto parameters_after = sender->GetParameters();
 
   EXPECT_EQ(parameters_after.encodings.size(), 1u);
+  EXPECT_EQ(parameters_after, GetMediaChannelParameters(caller.get(), *sender));
 }
 
 TEST_F(PeerConnectionRtpTestUnifiedPlan, SendParamsCorrectWhenEncoderFallback) {
@@ -2300,10 +2321,11 @@ TEST_F(PeerConnectionRtpTestUnifiedPlan, SendParamsCorrectWhenEncoderFallback) {
   // by RequestEncoderSwitch(std::nullopt, true).
   run_loop_.Flush();
 
-  // Call GetParameters. This triggers an internal consistency check in the
-  // `GetParameters()` implementation.
+  // GetParameters() must return the parameters of the media channel, which
+  // were changed by the encoder fallback.
   auto parameters_after = sender->GetParameters();
   EXPECT_EQ(parameters_after.codecs.size(), parameters.codecs.size());
+  EXPECT_EQ(parameters_after, GetMediaChannelParameters(caller.get(), *sender));
 }
 
 RTC_ALLOW_PLAN_B_DEPRECATION_BEGIN()
