@@ -36,6 +36,7 @@
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/absolute_capture_time_sender.h"
 #include "modules/rtp_rtcp/source/active_decode_targets_helper.h"
+#include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
 #include "modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
@@ -52,7 +53,6 @@
 namespace webrtc {
 
 class FrameEncryptorInterface;
-class RtpPacketizer;
 class RtpPacketToSend;
 
 // kConditionallyRetransmitHigherLayers allows retransmission of video frames
@@ -212,6 +212,9 @@ class RTPSenderVideo : public RTPVideoFrameSenderInterface {
       size_t encoder_output_size);
 
   bool red_enabled() const { return red_payload_type_.has_value(); }
+
+  RtpPacketizer::PacketizationFormat GetPacketizationFormat(
+      VideoCodecType codec_type) const;
 
   bool UpdateConditionalRetransmit(uint8_t temporal_id,
                                    TimeDelta expected_retransmission_time)

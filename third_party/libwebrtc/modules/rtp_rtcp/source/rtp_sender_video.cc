@@ -168,28 +168,6 @@ bool PacketWillLikelyBeRequestedForRestransmissionIfLost(
                : false);
 }
 
-PacketizationFormat GetPacketizationFormat(const VideoCodecType codec_type,
-                                           bool raw_packetization) {
-  if (raw_packetization) {
-    return PacketizationFormat::kRaw;
-  }
-
-  switch (codec_type) {
-    case kVideoCodecH264:
-      return PacketizationFormat::kH264;
-    case kVideoCodecVP8:
-      return PacketizationFormat::kVP8;
-    case kVideoCodecVP9:
-      return PacketizationFormat::kVP9;
-    case kVideoCodecAV1:
-      return PacketizationFormat::kAV1;
-    case kVideoCodecH265:
-      return PacketizationFormat::kH265;
-    case kVideoCodecGeneric:
-      return PacketizationFormat::kGeneric;
-  }
-}
-
 }  // namespace
 
 RTPSenderVideo::RTPSenderVideo(const Config& config)
@@ -799,8 +777,7 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
   }
 
   std::unique_ptr<RtpPacketizer> packetizer = RtpPacketizer::Create(
-      GetPacketizationFormat(codec_type, raw_packetization_), payload, limits,
-      video_header);
+      GetPacketizationFormat(codec_type), payload, limits, video_header);
 
   const size_t num_packets = packetizer->NumPackets();
 
@@ -944,6 +921,28 @@ DataRate RTPSenderVideo::PostEncodeOverhead() const {
   MutexLock lock(&stats_mutex_);
   return post_encode_overhead_bitrate_.Rate(clock_->CurrentTime())
       .value_or(DataRate::Zero());
+}
+
+PacketizationFormat RTPSenderVideo::GetPacketizationFormat(
+    VideoCodecType codec_type) const {
+  if (raw_packetization_) {
+    return PacketizationFormat::kRaw;
+  }
+
+  switch (codec_type) {
+    case kVideoCodecH264:
+      return PacketizationFormat::kH264;
+    case kVideoCodecVP8:
+      return PacketizationFormat::kVP8;
+    case kVideoCodecVP9:
+      return PacketizationFormat::kVP9;
+    case kVideoCodecAV1:
+      return PacketizationFormat::kAV1;
+    case kVideoCodecH265:
+      return PacketizationFormat::kH265;
+    case kVideoCodecGeneric:
+      return PacketizationFormat::kGeneric;
+  }
 }
 
 bool RTPSenderVideo::AllowRetransmission(
