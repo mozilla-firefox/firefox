@@ -101,7 +101,7 @@
       'rust_tests': {},
       'slow_peer_connection_unittests': {},
       'svc_tests': {
-        'mixins': ['shards-4'],
+        'mixins': ['shards-8'],
       },
       'system_wrappers_unittests': {},
       'test_support_unittests': {
@@ -148,7 +148,7 @@
       'rtc_p2p_unittests': {},
       'rtc_pc_unittests': {},
       'svc_tests': {
-        'mixins': ['shards-4'],
+        'mixins': ['shards-8'],
       },
       'system_wrappers_unittests': {},
       'video_adaptation_tests': {},
