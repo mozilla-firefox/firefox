@@ -674,6 +674,21 @@ class RtpSenderReceiverTest
     worker_tasks.AddWithFinalizer(sender.SetSsrcTask(ssrc, layer_count));
   }
 
+  // Expects `sender` to return the parameters that `media_channel` reports for
+  // `ssrc`, from its cache, i.e. without a blocking call.
+  void ExpectParametersFromCache(const RtpSenderInternal& sender,
+                                 MediaSendChannelInterface* media_channel,
+                                 uint32_t ssrc) {
+    RtpParameters parameters;
+    {
+      RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
+      parameters = sender.GetParametersInternal(/*with_all_layers=*/false);
+    }
+    EXPECT_EQ(parameters, worker_thread_->BlockingCall([&] {
+      return media_channel->GetRtpSendParameters(ssrc);
+    }));
+  }
+
   test::RunLoop run_loop_;
   // Initialize `signaling_thread_` to point to the current thread.
   // This is the internal thread owned by `run_loop_`.
@@ -2219,6 +2234,37 @@ TEST_F(RtpSenderReceiverTest, SetParametersAsyncCompletionAfterSsrcChange) {
   EXPECT_EQ(video_rtp_sender_->GetParameters(), channel_params);
 
   DestroyVideoRtpSender();
+}
+
+// The parameters are read back when the sender is attached to a send stream,
+// also when there are no init parameters to apply.
+TEST_F(RtpSenderReceiverTest, SetSsrcPopulatesCachedParameters) {
+  CreateVideoRtpSender();
+  // The init parameters were applied to `kVideoSsrc`.
+  SetSsrc(kVideoSsrc2, *video_rtp_sender_);
+  ExpectParametersFromCache(*video_rtp_sender_, video_media_send_channel(),
+                            kVideoSsrc2);
+  DestroyVideoRtpSender();
+}
+
+// The parameters are read back after SetVideoSend(), which can change them.
+TEST_F(RtpSenderReceiverTest,
+       VideoSenderContentHintChangePopulatesCachedParameters) {
+  CreateVideoRtpSender();
+  video_track_->set_content_hint(VideoTrackInterface::ContentHint::kDetailed);
+  ExpectParametersFromCache(*video_rtp_sender_, video_media_send_channel(),
+                            kVideoSsrc);
+  DestroyVideoRtpSender();
+}
+
+// The parameters are read back after SetAudioSend().
+TEST_F(RtpSenderReceiverTest,
+       AudioSenderTrackEnabledChangePopulatesCachedParameters) {
+  CreateAudioRtpSender();
+  audio_track_->set_enabled(false);
+  ExpectParametersFromCache(*audio_rtp_sender_, voice_media_send_channel(),
+                            kAudioSsrc);
+  DestroyAudioRtpSender();
 }
 
 TEST_F(RtpSenderReceiverTest, VideoSenderDetectTransactionIdModification) {

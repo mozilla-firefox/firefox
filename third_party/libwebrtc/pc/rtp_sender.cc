@@ -837,6 +837,11 @@ void RtpSenderBase::SetSsrc(uint32_t ssrc) {
     if (sframe_encryption_config_) {
       media_channel_->SetSframeEncryptionConfig(*sframe_encryption_config_);
     }
+    // Read the parameters back also if there were no init parameters to
+    // apply, so that the cache stays populated.
+    if (!applied_parameters.has_value() && ssrc != 0 && media_channel_) {
+      applied_parameters = media_channel_->GetRtpSendParameters(ssrc);
+    }
   });
   if (applied_parameters.has_value()) {
     // The parameters were read back on the worker thread while this thread
@@ -998,6 +1003,11 @@ ScopedOperationsBatcher::BatchTaskWithFinalizer RtpSenderBase::SetSsrcTask(
     }
     if (sframe_encryption_config_) {
       media_channel_->SetSframeEncryptionConfig(*sframe_encryption_config_);
+    }
+    // Read the parameters back also if there were no init parameters to
+    // apply, so that the cache stays populated.
+    if (!applied_parameters.has_value() && ssrc != 0 && media_channel_) {
+      applied_parameters = media_channel_->GetRtpSendParameters(ssrc);
     }
 
     if (applied_parameters.has_value()) {
@@ -1478,13 +1488,21 @@ void AudioRtpSender::SetSend() {
   }
 #endif
   InvalidateCache();
+  std::optional<RtpParameters> parameters;
   bool success = worker_thread_->BlockingCall([&, ssrc = ssrc_] {
     RTC_DCHECK_RUN_ON(worker_thread_);
-    return media_channel_
-               ? voice_media_channel()->SetAudioSend(
-                     ssrc, track_enabled, options_ptr, sink_adapter_.get())
-               : false;
+    if (!media_channel_ ||
+        !voice_media_channel()->SetAudioSend(ssrc, track_enabled, options_ptr,
+                                             sink_adapter_.get())) {
+      return false;
+    }
+    // Read the parameters back so that the cache stays populated.
+    parameters = media_channel_->GetRtpSendParameters(ssrc);
+    return true;
   });
+  if (parameters.has_value()) {
+    UpdateCache(std::move(*parameters));
+  }
   if (!success) {
     RTC_LOG(LS_ERROR) << "SetAudioSend: ssrc is incorrect: " << ssrc_;
   }
@@ -1643,13 +1661,22 @@ void VideoRtpSender::SetSend() {
   }
   auto* video_track = static_cast<VideoTrackInterface*>(track_.get());
   InvalidateCache();
+  std::optional<RtpParameters> parameters;
   bool success = worker_thread_->BlockingCall([&, ssrc = ssrc_] {
     RTC_DCHECK_RUN_ON(worker_thread_);
-    return media_channel_ ? video_media_channel()->SetVideoSend(ssrc, &options,
-                                                                video_track)
-                          : false;
+    if (!media_channel_ ||
+        !video_media_channel()->SetVideoSend(ssrc, &options, video_track)) {
+      return false;
+    }
+    // SetVideoSend() can change the parameters, e.g. the scalability mode.
+    // Read them back so that the cache stays populated.
+    parameters = media_channel_->GetRtpSendParameters(ssrc);
+    return true;
   });
   RTC_DCHECK(success);
+  if (parameters.has_value()) {
+    UpdateCache(std::move(*parameters));
+  }
 }
 
 void VideoRtpSender::ClearSend() {
