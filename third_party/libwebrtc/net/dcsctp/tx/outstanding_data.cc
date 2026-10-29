@@ -274,9 +274,18 @@ void OutstandingData::NackBetweenAckBlocks(
       if (!GetItem(tsn).IsMissIndication(ack_info.highest_tsn_acked)) {
         continue;
       }
-      ack_info.has_packet_loss |=
-          NackItem(now, tsn, /*retransmit_now=*/false,
-                   /*do_fast_retransmit=*/!is_in_fast_recovery);
+      // https://tools.ietf.org/html/rfc4960#section-7.2.4
+      // "3) Determine how many of the earliest (i.e., lowest TSN) DATA chunks
+      // marked for retransmission will fit into a single packet [...]
+      // Retransmit those K DATA chunks in a single packet. When a Fast
+      // Retransmit is being performed, the sender SHOULD ignore the value of
+      // cwnd and SHOULD NOT delay retransmission for this single packet."
+      // This applies to every chunk that reaches the miss indication threshold,
+      // regardless of if the endpoint is already in fast recovery or not. Only
+      // the cwnd/ssthresh adjustment (step 2) is skipped while in fast
+      // recovery.
+      ack_info.has_packet_loss |= NackItem(now, tsn, /*retransmit_now=*/false,
+                                           /*do_fast_retransmit=*/true);
     }
     prev_block_last_acked = UnwrappedTSN::AddTo(cumulative_tsn_ack, block.end);
   }

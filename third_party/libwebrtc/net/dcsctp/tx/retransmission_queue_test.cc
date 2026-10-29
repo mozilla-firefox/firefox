@@ -1418,10 +1418,13 @@ TEST_F(RetransmissionQueueTest, AbandonsRtxLimit2WhenNackedNineTimes) {
                           Pair(TSN(15), State::kAcked),              //
                           Pair(TSN(16), State::kAcked)));
 
-  // The retransmission is sent together with new data (TSN 17 to 19).
-  EXPECT_THAT(queue.GetChunksToSend(now_, 1000),
-              ElementsAre(Pair(TSN(10), _), Pair(TSN(17), _), Pair(TSN(18), _),
-                          Pair(TSN(19), _)));
+  // The second retransmission is also a fast retransmission, even though the
+  // endpoint is in fast recovery. New data (TSN 17 to 19) is sent after it.
+  EXPECT_THAT(queue.GetChunksForFastRetransmit(now_, 1000),
+              ElementsAre(Pair(TSN(10), _)));
+  EXPECT_THAT(
+      queue.GetChunksToSend(now_, 1000),
+      ElementsAre(Pair(TSN(17), _), Pair(TSN(18), _), Pair(TSN(19), _)));
 
   // Ack TSN [17 to 18]
   for (int tsn = 17; tsn <= 18; ++tsn) {
@@ -1467,6 +1470,55 @@ TEST_F(RetransmissionQueueTest, AbandonsRtxLimit2WhenNackedNineTimes) {
                           Pair(TSN(19), State::kAcked)));
 
   EXPECT_TRUE(queue.ShouldSendForwardTsn(now_));
+}
+
+TEST_F(RetransmissionQueueTest,
+       FastRetransmitsLossDetectedWhileInFastRecovery) {
+  RetransmissionQueue queue = CreateQueue();
+  int chunks_to_produce = 8;
+  int next_message_id = 0;
+  EXPECT_CALL(producer_, Produce)
+      .WillRepeatedly(
+          [&](Timestamp, size_t) -> std::optional<SendQueue::DataToSend> {
+            if (chunks_to_produce == 0) {
+              return std::nullopt;
+            }
+            --chunks_to_produce;
+            return SendQueue::DataToSend(OutgoingMessageId(next_message_id++),
+                                         gen_.Ordered({1, 2, 3, 4}, "BE"));
+          });
+
+  // Send TSN 10 to 17. TSN 10 and TSN 14 are lost.
+  EXPECT_THAT(GetSentPacketTSNs(queue), SizeIs(8));
+  size_t initial_cwnd = queue.cwnd();
+
+  // SACKs for TSN 11 to 13 give TSN 10 three miss indications. It's fast
+  // retransmitted and the endpoint enters fast recovery, with exit point 17.
+  for (int tsn = 11; tsn <= 13; ++tsn) {
+    queue.HandleSack(
+        now_,
+        SackChunk(TSN(9), kArwnd, {SackChunk::GapAckBlock(2, (tsn - 9))}, {}));
+  }
+  EXPECT_THAT(GetTSNsForFastRetransmit(queue), ElementsAre(TSN(10)));
+  EXPECT_TRUE(queue.GetHandoverReadiness().Contains(
+      HandoverUnreadinessReason::kRetransmissionQueueFastRecovery));
+  size_t cwnd_in_fast_recovery = queue.cwnd();
+  EXPECT_LT(cwnd_in_fast_recovery, initial_cwnd);
+
+  // SACKs for TSN 15 to 17 give TSN 14 three miss indications, while still in
+  // fast recovery. It must also be fast retransmitted, i.e. without waiting
+  // for cwnd to allow it, but without reducing cwnd again.
+  for (int tsn = 15; tsn <= 17; ++tsn) {
+    queue.HandleSack(now_, SackChunk(TSN(9), kArwnd,
+                                     {SackChunk::GapAckBlock(2, 4),
+                                      SackChunk::GapAckBlock(6, (tsn - 9))},
+                                     {}));
+  }
+  EXPECT_TRUE(queue.GetHandoverReadiness().Contains(
+      HandoverUnreadinessReason::kRetransmissionQueueFastRecovery));
+  EXPECT_TRUE(queue.has_data_to_be_fast_retransmitted());
+  EXPECT_THAT(GetTSNsForFastRetransmit(queue), ElementsAre(TSN(14)));
+  EXPECT_EQ(queue.cwnd(), cwnd_in_fast_recovery);
 }
 
 TEST_F(RetransmissionQueueTest, CwndRecoversWhenAcking) {

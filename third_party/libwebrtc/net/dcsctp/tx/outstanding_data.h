@@ -394,8 +394,9 @@ class OutstandingData {
   // performed, meaning that packet loss was detected and acted upon. If
   // `do_fast_retransmit` is set and if the item has been nacked sufficiently
   // many times so that it should be retransmitted, this will schedule it to be
-  // "fast retransmitted". This is only done just before going into fast
-  // recovery.
+  // "fast retransmitted", i.e. retransmitted without regard to cwnd. This is
+  // done for losses detected by SACKs, but not for those detected by T3-rtx
+  // expiry.
   //
   // Note that since nacking an item may result in it becoming abandoned, which
   // in turn could alter `outstanding_data_`, any iterators are invalidated

@@ -515,7 +515,8 @@ TEST_F(OutstandingDataTest, SacksPredatingRetransmissionAreNotMissIndications) {
   std::vector<SackChunk::GapAckBlock> gab4 = {SackChunk::GapAckBlock(2, 24)};
   EXPECT_TRUE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab4, true)
                   .has_packet_loss);
-  EXPECT_THAT(buf_.GetChunksToBeRetransmitted(kNow, 1000),
+  // It is fast retransmitted again, even though in fast recovery.
+  EXPECT_THAT(buf_.GetChunksToBeFastRetransmitted(kNow, 1000),
               ElementsAre(Pair(TSN(10), _)));
 }
 
