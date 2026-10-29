@@ -3140,12 +3140,33 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
+  rtc_cc_test("legacy_stats_collector_plan_b_unittest") {
+    sources = [ "legacy_stats_collector_plan_b_unittest.cc" ]
+    deps = [
+      ":legacy_stats_collector",
+      ":legacy_stats_collector_test_helpers",
+      ":media_stream",
+      ":pc_test_utils",
+      ":video_track",
+      "../api:legacy_stats_types",
+      "../api:media_stream_interface",
+      "../api:peer_connection_interface",
+      "../api:rtp_sender_interface",
+      "../api:scoped_refptr",
+      "../call:call_interfaces",
+      "../media:media_channel",
+      "../rtc_base:threading",
+      "../rtc_base/system:plan_b_only",
+      "../test:test_support",
+      "//third_party/abseil-cpp/absl/strings",
+    ]
+  }
+
   rtc_cc_test("legacy_stats_collector_unittest") {
     sources = [ "legacy_stats_collector_unittest.cc" ]
     deps = [
       ":legacy_stats_collector",
       ":legacy_stats_collector_test_helpers",
-      ":media_stream",
       ":pc_test_utils",
       ":peer_connection_internal",
       ":sctp_data_channel",
@@ -4752,6 +4773,7 @@ if (rtc_include_tests && !build_with_chromium) {
       ":ice_server_parsing_unittest",
       ":jitter_buffer_delay_unittest",
       ":jsep_session_description_unittest",
+      ":legacy_stats_collector_plan_b_unittest",
       ":legacy_stats_collector_unittest",
       ":local_audio_source_unittest",
       ":media_stream_unittest",
