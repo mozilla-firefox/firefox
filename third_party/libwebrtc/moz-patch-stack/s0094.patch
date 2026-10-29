@@ -327,7 +327,7 @@ index 589142b014..2ee80ded55 100644
      }
    }
 diff --git a/examples/BUILD.gn b/examples/BUILD.gn
-index 03c73eeed1..0a9d628e74 100644
+index 1231eb5575..a5d26ec3c9 100644
 --- a/examples/BUILD.gn
 +++ b/examples/BUILD.gn
 @@ -9,15 +9,15 @@
@@ -351,7 +351,7 @@ index 03c73eeed1..0a9d628e74 100644
  }
  
  group("examples") {
-@@ -627,7 +627,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
+@@ -625,7 +625,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
            "../sdk:mediaconstraints_objc",
            "../sdk:peerconnectionfactory_base_objc",
            "../sdk:videocapture_objc",
@@ -360,7 +360,7 @@ index 03c73eeed1..0a9d628e74 100644
            "//third_party/ocmock",
          ]
        }
-@@ -731,7 +731,7 @@ if (is_linux || is_chromeos || is_win) {
+@@ -729,7 +729,7 @@ if (is_linux || is_chromeos || is_win) {
          "peerconnection/client/main_wnd.cc",
          "peerconnection/client/main_wnd.h",
        ]
@@ -575,7 +575,7 @@ index d675faee9e..a533779b78 100644
  import("../../webrtc.gni")
  
 diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index a15c307ebd..5b88eb295e 100644
+index 11a91aedab..942d3913a4 100644
 --- a/modules/video_coding/BUILD.gn
 +++ b/modules/video_coding/BUILD.gn
 @@ -6,7 +6,7 @@

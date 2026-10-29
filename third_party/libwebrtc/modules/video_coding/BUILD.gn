@@ -730,7 +730,7 @@ if (rtc_include_tests) {
         "../../api/video_codecs:video_codecs_api",
         "../../media:media_constants",
         "../../rtc_base:stringutils",
-        "../../sdk/android:libjingle_peerconnection_java",
+        "../../sdk/android:hwcodecs_java",
         "../../test:fileutils",
         "../../test:test_support",
       ]
