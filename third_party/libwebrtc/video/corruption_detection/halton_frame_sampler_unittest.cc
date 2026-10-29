@@ -16,9 +16,11 @@
 #include <span>
 #include <vector>
 
+#include "api/make_ref_counted.h"
 #include "api/scoped_refptr.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/video_frame.h"
+#include "api/video/video_frame_buffer.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 #include "video/corruption_detection/video_frame_sampler.h"
@@ -41,6 +43,14 @@ using Coordinates = HaltonFrameSampler::Coordinates;
 constexpr int kDefaultScaledWidth = 4;
 constexpr int kDefaultScaledHeight = 4;
 constexpr double kDefaultStdDevGaussianBlur = 0.02;
+
+class NullI420ConversionBuffer : public VideoFrameBuffer {
+ public:
+  Type type() const override { return Type::kNative; }
+  int width() const override { return kDefaultScaledWidth; }
+  int height() const override { return kDefaultScaledHeight; }
+  scoped_refptr<I420BufferInterface> ToI420() override { return nullptr; }
+};
 
 #if GTEST_HAS_DEATH_TEST
 // Defaults for blurring tests.
@@ -235,6 +245,23 @@ TEST(HaltonFrameSamplerGaussianFilteringTest,
   EXPECT_THAT(GetSampleValuesForFrame(MakeDefaultFrame(),
                                       MakeDefaultSampleCoordinates(),
                                       /*scaled_width=*/8, /*scaled_height=*/8,
+                                      kDefaultStdDevGaussianBlur),
+              IsEmpty());
+}
+
+TEST(HaltonFrameSamplerGaussianFilteringTest,
+     ShouldReturnEmptyListWhenToI420ConversionFails) {
+  VideoFrame frame =
+      VideoFrame::Builder()
+          .set_video_frame_buffer(make_ref_counted<NullI420ConversionBuffer>())
+          .build();
+
+  EXPECT_THAT(GetSampleValuesForFrame(frame, MakeDefaultSampleCoordinates(),
+                                      kDefaultScaledWidth, kDefaultScaledHeight,
+                                      kDefaultStdDevGaussianBlur),
+              IsEmpty());
+  EXPECT_THAT(GetSampleValuesForFrame(frame, MakeDefaultSampleCoordinates(),
+                                      /*scaled_width=*/2, /*scaled_height=*/2,
                                       kDefaultStdDevGaussianBlur),
               IsEmpty());
 }

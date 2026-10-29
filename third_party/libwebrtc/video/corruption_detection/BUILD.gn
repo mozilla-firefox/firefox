@@ -200,6 +200,7 @@ if (rtc_include_tests) {
     deps = [
       ":halton_frame_sampler",
       ":video_frame_sampler",
+      "../../api:make_ref_counted",
       "../../api:scoped_refptr",
       "../../api/video:video_frame",
       "../../test:test_support",

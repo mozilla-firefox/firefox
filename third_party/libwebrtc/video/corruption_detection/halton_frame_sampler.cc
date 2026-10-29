@@ -223,14 +223,14 @@ std::vector<FilteredSample> GetSampleValuesForFrame(
           /*crop_height=*/frame.height());
       scaled_frame.set_video_frame_buffer(scaled_buffer);
     } else {
-      scoped_refptr<I420Buffer> scaled_buffer =
-          I420Buffer::Create(scaled_width, scaled_height);
       scoped_refptr<I420BufferInterface> buffer =
           frame.video_frame_buffer()->ToI420ForInspection();
       if (buffer == nullptr) {
         RTC_LOG(LS_WARNING) << "Unable to convert frame to I420 format.";
         return {};
       }
+      scoped_refptr<I420Buffer> scaled_buffer =
+          I420Buffer::Create(scaled_width, scaled_height);
       scaled_buffer->ScaleFrom(*buffer);
       scaled_frame.set_video_frame_buffer(scaled_buffer);
     }
