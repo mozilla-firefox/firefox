@@ -13,10 +13,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/7017edc7cfc880bb1
  4 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/.gn b/.gn
-index 29f5cd76e4..9962d2845d 100644
+index 30df98fe83..6a99da2a59 100644
 --- a/.gn
 +++ b/.gn
-@@ -18,7 +18,7 @@ script_executable = "python3"
+@@ -17,7 +17,7 @@ script_executable = "//third_party/cpython3/host/bin/python3"
  # The secondary source root is a parallel directory tree where
  # GN build files are placed when they can not be placed directly
  # in the source tree, e.g. for third party source trees.

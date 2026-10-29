@@ -11,9 +11,8 @@ import("//chromium/build/dotfile_settings.gni")
 # The location of the build configuration file.
 buildconfig = "//chromium/build/config/BUILDCONFIG.gn"
 
-# The python interpreter to use by default. On Windows, this will look
-# for python3.exe and python3.bat.
-script_executable = "python3"
+# The hermetic Python interpreter to use by default.
+script_executable = "//third_party/cpython3/host/bin/python3"
 
 # The secondary source root is a parallel directory tree where
 # GN build files are placed when they can not be placed directly

@@ -8,10 +8,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/b4df73705cf0855de
  1 file changed, 1 insertion(+)
 
 diff --git a/.gn b/.gn
-index 0b8c216ad5..41d0ada2cf 100644
+index bc2f5a736e..fb1ddfa62c 100644
 --- a/.gn
 +++ b/.gn
-@@ -94,6 +94,7 @@ default_args = {
+@@ -93,6 +93,7 @@ default_args = {
    enable_rust = false # Mozilla
    enable_rust_cxx = true
    enable_chromium_prelude = true

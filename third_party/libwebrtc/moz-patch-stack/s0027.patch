@@ -104,10 +104,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/b86cb7278bc4e5571
  create mode 100644 api/rtp_sender_setparameters_callback.h
 
 diff --git a/.gn b/.gn
-index f4076f467a..d14f761f49 100644
+index a42c5d7aa7..f8e072fed5 100644
 --- a/.gn
 +++ b/.gn
-@@ -73,6 +73,8 @@ default_args = {
+@@ -72,6 +72,8 @@ default_args = {
    # Prevent jsoncpp to pass -Wno-deprecated-declarations to users
    jsoncpp_no_deprecated_declarations = false
  

@@ -57,7 +57,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a342f5eca8622c8b9
  41 files changed, 102 insertions(+), 101 deletions(-)
 
 diff --git a/.gn b/.gn
-index 9962d2845d..485df8f5e1 100644
+index 6a99da2a59..7f5e59fafa 100644
 --- a/.gn
 +++ b/.gn
 @@ -6,10 +6,10 @@
@@ -71,8 +71,8 @@ index 9962d2845d..485df8f5e1 100644
 -buildconfig = "//build/config/BUILDCONFIG.gn"
 +buildconfig = "//chromium/build/config/BUILDCONFIG.gn"
  
- # The python interpreter to use by default. On Windows, this will look
- # for python3.exe and python3.bat.
+ # The hermetic Python interpreter to use by default.
+ script_executable = "//third_party/cpython3/host/bin/python3"
 diff --git a/BUILD.gn b/BUILD.gn
 index 6dc9455ff2..2a9301e5b1 100644
 --- a/BUILD.gn
