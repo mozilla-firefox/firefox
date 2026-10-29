@@ -188,15 +188,9 @@ void ScreamV2::UpdateL4SAlpha(const ScreamFeedback& parsed) {
           : 1.0;
   double fraction_marked = static_cast<double>(parsed.num_ce_marked_packets) /
                            parsed.num_received_packets;
-  // Fast attack slow decay EWMA filter.
-  if (fraction_marked > l4s_alpha_) {
-    double g_up = params_.l4s_avg_g_up.Get() / steps_per_rtt;
-    l4s_alpha_ =
-        std::min(g_up * fraction_marked + (1.0 - g_up) * l4s_alpha_, 1.0);
-  } else {
-    double g_down = params_.l4s_avg_g_down.Get() / steps_per_rtt;
-    l4s_alpha_ = (1.0 - g_down) * l4s_alpha_;
-  }
+  double g = params_.l4s_avg_g.Get() / steps_per_rtt;
+  l4s_alpha_ =
+      std::clamp(g * fraction_marked + (1.0 - g) * l4s_alpha_, 0.0, 1.0);
 }
 void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
   bool is_ce = parsed.num_ce_marked_packets > 0;

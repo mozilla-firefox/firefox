@@ -263,7 +263,7 @@ TEST(ScreamV2Test, L4sAlphaScalesUpAndDownWithRtt) {
   TimeDelta feedback_interval = TimeDelta::Millis(25);
 
   // First feedback with 100% CE marks at RTT = 100ms (steps_per_rtt = 4).
-  // With L4sAvgGUp = 1/8 and steps_per_rtt = 4, g_up = (1/8) / 4 = 1/32.
+  // With L4sAvgG = 1/16 and steps_per_rtt = 4, g = (1/16) / 4 = 1/64.
   TransportPacketsFeedback ce_feedback =
       CreateFeedback(clock.CurrentTime(), rtt,
                      /*number_of_ect1_packets=*/20,
@@ -272,10 +272,10 @@ TEST(ScreamV2Test, L4sAlphaScalesUpAndDownWithRtt) {
     packet.ecn = EcnMarking::kCe;
   }
   scream.OnTransportPacketsFeedback(ce_feedback);
-  EXPECT_DOUBLE_EQ(scream.l4s_alpha(), (1.0 / 8.0) / 4.0);
+  EXPECT_DOUBLE_EQ(scream.l4s_alpha(), (1.0 / 16.0) / 4.0);
 
   // Next 4 feedbacks (1 RTT) with 0% CE marks.
-  // With L4sAvgGDown = 1/16 and steps_per_rtt = 4, g_down = (1/16) / 4 = 1/64.
+  // With L4sAvgG = 1/16 and steps_per_rtt = 4, g = (1/16) / 4 = 1/64.
   double alpha_before_decay = scream.l4s_alpha();
   for (int i = 0; i < 4; ++i) {
     clock.AdvanceTime(feedback_interval);

@@ -537,8 +537,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity600KbpsRtt100msEcn)) {
   SendMediaTestResult result = SendMedia(std::move(params), s);
   // Allow rampup to take 3s.
   EXPECT_THAT(result.caller().subspan(3), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(350),
-                                              DataRate::KilobitsPerSec(660))));
+                                              DataRate::KilobitsPerSec(370),
+                                              DataRate::KilobitsPerSec(620))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity1000KbpsRtt100msEcn)) {
@@ -555,8 +555,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity1000KbpsRtt100msEcn)) {
   // Ignore result first 2s since ramp up is rather slow at higher RTT.
   ASSERT_GT(result.caller().subspan(2).size(), 0u);
   EXPECT_THAT(result.caller().subspan(2), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(600),
-                                              DataRate::KilobitsPerSec(1000))));
+                                              DataRate::KilobitsPerSec(650),
+                                              DataRate::KilobitsPerSec(950))));
 }
 
 void TestVaryingCapacity1000To500KbpsRtt100ms(bool use_ecn) {
@@ -656,8 +656,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msEcn)) {
 
   SendMediaTestResult result = SendMedia(std::move(params), s);
   EXPECT_THAT(result.caller().subspan(3), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(1300),
-                                              DataRate::KilobitsPerSec(2300))));
+                                              DataRate::KilobitsPerSec(1400),
+                                              DataRate::KilobitsPerSec(2100))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msNoEcnWithGoogCC)) {

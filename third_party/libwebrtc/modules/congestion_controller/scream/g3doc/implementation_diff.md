@@ -153,20 +153,21 @@ yet fully implemented.
 ##### 4.2.1.3. Receiving ECN-CE for L4S
 
 - **`l4s_alpha` Update Frequency and RTT Gain Scaling:**
-  - The spec accumulates delivered and marked data units and updates `l4s_alpha`
-    at most once per `min(10 ms, s_rtt)` using fixed gains `L4S_AVG_G_UP = 1/8`
-    and `L4S_AVG_G_DOWN = 1/128`
-    ([Section 4.2.1.3](https://www.ietf.org/archive/id/draft-ietf-ccwg-rfc8298bis-screamv2-01.html#section-4.2.1.3)).
+  - Draft `-01` accumulates delivered and marked data units and updates
+    `l4s_alpha` at most once per `min(10 ms, s_rtt)` using an asymmetric
+    fast-attack / slow-decay EWMA (`L4S_AVG_G_UP = 1/8`,
+    `L4S_AVG_G_DOWN = 1/128`)
+    ([Section 4.2.1.3](https://www.ietf.org/archive/id/draft-ietf-ccwg-rfc8298bis-screamv2-01.html#section-4.2.1.3)),
+    while the latest editor's draft (`draft-ietf-ccwg-rfc8298bis-screamv2-02`)
+    uses a symmetric EWMA with `L4S_AVG_G = 1/16`.
   - The WebRTC implementation updates `l4s_alpha_` on **every feedback message**
-    with received packets, using `l4s_avg_g_up = 1/8` and a faster decay gain
-    `l4s_avg_g_down = 1/16`
-    ([scream_v2_parameters.cc:L27-L28](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2_parameters.cc#27)).
+    with received packets using a standard EWMA filter with `l4s_avg_g = 1/16`
+    ([scream_v2_parameters.cc:L27](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2_parameters.cc#27)).
   - When `scale_l4s_alpha_with_rtt` is enabled (default `true`), WebRTC divides
-    both `l4s_avg_g_up` and `l4s_avg_g_down` by
-    `steps_per_rtt = max(1.0, rtt / ReactionInterval())` so that `l4s_alpha_`
-    converges at a consistent rate per RTT regardless of how many feedback
-    reports arrive per RTT. See
-    [scream_v2.cc:L178-L200](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#178).
+    `l4s_avg_g` by `steps_per_rtt = max(1.0, rtt / ReactionInterval())` so that
+    `l4s_alpha_` converges at a consistent rate per RTT regardless of how many
+    feedback reports arrive per RTT. See
+    [scream_v2.cc:L178-L194](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#178).
 
 ##### 4.2.1.4. Detecting Increased Queue Delay
 

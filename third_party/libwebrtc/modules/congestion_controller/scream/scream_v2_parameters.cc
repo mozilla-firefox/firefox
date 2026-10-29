@@ -24,8 +24,7 @@ ScreamV2Parameters::ScreamV2Parameters(const FieldTrialsView& trials)
 
 ScreamV2Parameters::ScreamV2Parameters(const FieldTrialsView* trials)
     : min_ref_window("MinRefWindow", DataSize::Bytes(1000)),
-      l4s_avg_g_up("L4sAvgGUp", 1.0 / 8.0),
-      l4s_avg_g_down("L4sAvgGDown", 1.0 / 16.0),
+      l4s_avg_g("L4sAvgG", 1.0 / 16.0),
       scale_l4s_alpha_with_rtt("ScaleL4sAlphaWithRtt", true),
       rtts_with_loss_before_backoff("RttsWithLossBeforeBackoff", 3),
       lossless_rtts_before_clear("LosslessRttsBeforeClear", 2),
@@ -90,8 +89,7 @@ ScreamV2Parameters::ScreamV2Parameters(const FieldTrialsView* trials)
       safe_reset_on_route_change("SafeResetOnRouteChange", true) {
   ParseFieldTrial(
       {&min_ref_window,
-       &l4s_avg_g_up,
-       &l4s_avg_g_down,
+       &l4s_avg_g,
        &scale_l4s_alpha_with_rtt,
        &rtts_with_loss_before_backoff,
        &lossless_rtts_before_clear,
