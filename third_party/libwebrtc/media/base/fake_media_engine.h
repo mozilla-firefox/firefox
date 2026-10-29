@@ -21,6 +21,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -255,30 +256,16 @@ class RtpSendChannelHelper : public Base, public MediaChannelUtil {
     return send_extensions_;
   }
   bool sending() const { return sending_; }
-  const std::list<std::string>& rtp_packets() const { return rtp_packets_; }
 
-  bool SendPacket(const void* data,
-                  size_t len,
+  bool SendPacket(std::span<const uint8_t> data,
                   const AsyncSocketPacketOptions& options) {
     if (!sending_) {
       return false;
     }
-    CopyOnWriteBuffer packet(reinterpret_cast<const uint8_t*>(data), len,
-                             kMaxRtpPacketLen);
+    CopyOnWriteBuffer packet(data, kMaxRtpPacketLen);
     return MediaChannelUtil::SendPacket(&packet, options);
   }
 
-  bool CheckRtp(const void* data, size_t len) {
-    bool success = !rtp_packets_.empty();
-    if (success) {
-      std::string packet = rtp_packets_.front();
-      rtp_packets_.pop_front();
-      success = (packet == std::string(static_cast<const char*>(data), len));
-    }
-    return success;
-  }
-
-  bool CheckNoRtp() { return rtp_packets_.empty(); }
   void set_fail_set_send_codecs(bool fail) { fail_set_send_codecs_ = fail; }
   bool AddSendStream(const StreamParams& sp) override {
     if (absl::c_linear_search(send_streams_, sp)) {
@@ -437,7 +424,6 @@ class RtpSendChannelHelper : public Base, public MediaChannelUtil {
   // be the appropriate fix.
   std::atomic<bool> sending_;
   std::vector<RtpExtension> send_extensions_;
-  std::list<std::string> rtp_packets_;
   std::vector<StreamParams> send_streams_;
   std::set<uint32_t> muted_streams_;
   std::map<uint32_t, RtpParameters> rtp_send_parameters_;

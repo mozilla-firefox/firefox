@@ -462,8 +462,7 @@ class ChannelTest : public ::testing::Test {
   void SendRtp(typename T::MediaSendChannel* media_channel, Buffer data) {
     network_thread_->PostTask(SafeTask(
         network_thread_safety_, [media_channel, data = std::move(data)]() {
-          media_channel->SendPacket(data.data(), data.size(),
-                                    AsyncSocketPacketOptions());
+          media_channel->SendPacket(data, AsyncSocketPacketOptions());
         }));
   }
 
@@ -514,9 +513,6 @@ class ChannelTest : public ::testing::Test {
     }
     return data;
   }
-
-  bool CheckNoRtp1() { return media_send_channel1_impl()->CheckNoRtp(); }
-  bool CheckNoRtp2() { return media_send_channel2_impl()->CheckNoRtp(); }
 
   void CreateContent(int flags,
                      const Codec& audio_codec,
@@ -600,7 +596,6 @@ class ChannelTest : public ::testing::Test {
     }
     EXPECT_TRUE(media_send_channel1_impl()->send_codecs().empty());
     EXPECT_TRUE(media_receive_channel1_impl()->recv_streams().empty());
-    EXPECT_TRUE(media_send_channel1_impl()->rtp_packets().empty());
     // Basic sanity test for send and receive channel objects
     EXPECT_EQ(channel1_->media_send_channel()->media_type(),
               media_send_channel1_impl()->media_type());
@@ -1208,8 +1203,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
     EXPECT_TRUE(CheckRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
   }
 
   void TestDeinit() {
@@ -1240,8 +1233,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
     EXPECT_TRUE(CheckRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
   }
 
   // Test that we can send and receive early media when a provisional answer is
@@ -1288,8 +1279,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads(involved_threads);
     EXPECT_TRUE(CheckRtp1());
     EXPECT_TRUE(CheckRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
   }
 
   // Test that the mediachannel retains its sending state after the transport
@@ -1305,8 +1294,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
     EXPECT_TRUE(CheckRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
 
     // Lose writability, which should fail.
     SendTask(network_thread_,
@@ -1315,7 +1302,6 @@ class ChannelTest : public ::testing::Test {
     SendRtp2();
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
 
     // Regain writability
     SendTask(network_thread_,
@@ -1326,8 +1312,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
     EXPECT_TRUE(CheckRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
 
     // Lose writability completely
     SendTask(network_thread_, [this] {
@@ -1341,8 +1325,6 @@ class ChannelTest : public ::testing::Test {
     SendRtp2();
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
 
     // Gain writability back
     SendTask(network_thread_, [this] {
@@ -1356,8 +1338,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
     EXPECT_TRUE(CheckRtp2());
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
   }
 
   void SendBundleToBundle(std::span<const int, 2> pl_types,
@@ -1384,8 +1364,6 @@ class ChannelTest : public ::testing::Test {
     WaitForThreads();
     EXPECT_TRUE(CheckCustomRtp2(kSsrc1, sequence_number1_1, pl_type1));
     EXPECT_TRUE(CheckCustomRtp1(kSsrc2, sequence_number2_2, pl_type1));
-    EXPECT_TRUE(CheckNoRtp1());
-    EXPECT_TRUE(CheckNoRtp2());
 
     SendCustomRtp1(kSsrc3, ++sequence_number1_1, pl_type2);
     SendCustomRtp2(kSsrc4, ++sequence_number2_2, pl_type2);
