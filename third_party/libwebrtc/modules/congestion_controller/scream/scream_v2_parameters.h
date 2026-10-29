@@ -182,6 +182,7 @@ struct ScreamV2Parameters {
   FieldTrialParameter<bool> use_spec_backoff;
   FieldTrialParameter<double> acked_bitrate_margin;
   FieldTrialParameter<double> backoff_scale_low_target_rate;
+  FieldTrialParameter<bool> inhibit_backoff_if_data_in_flight_decreases;
 
   // If the time since last reaction to congestion is larger than this, the
   // pacing window is increased. I.e. packets are allowed to be sent in larger

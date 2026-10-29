@@ -475,19 +475,22 @@ yet fully implemented.
 - **Low Target Rate Backoff Scaling and Pacing Rate Floor:**
   - The spec describes an optional check
     (`if target_bitrate < acked_bitrate * ACKED_BITRATE_MARGIN`, with
-    `ACKED_BITRATE_MARGIN = 0.8`, scale `backoff_t` by
-    `BACKOFF_SCALE_LOW_TARGETRATE = 0.25`) to avoid undershooting when an RTT
+    `ACKED_BITRATE_MARGIN = 0.8`, set `backoff_t = 0` if
+    `bytes_in_flight < bytes_in_flight_prev`, else scale `backoff_t` by
+    `BACKOFF_SCALE_LOW_TARGET_RATE = 0.25`) to avoid undershooting when an RTT
     spike has already depressed `target_bitrate`
     ([Section 4.5.3](https://www.ietf.org/archive/id/draft-ietf-ccwg-rfc8298bis-screamv2-01.html#section-4.5.3)).
   - When `use_spec_backoff` is enabled (default `true`), WebRTC implements this
     check in `ScreamV2::ScaleBackoff()` for both ECN-CE (`is_ce`) and
     delay-based (`is_virtual_ce`) congestion: if `received_rate_` is finite and
     `target_rate_ < acked_bitrate_margin * received_rate_` (with
-    `acked_bitrate_margin = 0.8`), `backoff` is multiplied by
+    `acked_bitrate_margin = 0.8`), `backoff` is set to `0.0` when
+    `inhibit_backoff_if_data_in_flight_decreases` is enabled (default `true`)
+    and `data_in_flight < data_in_flight_prev_`, and otherwise multiplied by
     `backoff_scale_low_target_rate` (default `0.25`). Here `received_rate_` is
     measured over a `received_rate_window = 100 ms` window on the receiver's
     clock rather than a per-RTT EWMA. See
-    [scream_v2.cc:L121-L133](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#121).
+    [scream_v2.cc:L121-L138](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#121).
   - WebRTC also uses `received_rate_` to floor the pacing rate
     (`0.8 * received_rate_`) so pacing does not collapse if `target_rate()`
     temporarily dips during an RTT spike

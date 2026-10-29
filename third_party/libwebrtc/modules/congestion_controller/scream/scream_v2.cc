@@ -118,7 +118,7 @@ TimeDelta ScreamV2::ReactionInterval() const {
              : params_.virtual_rtt.Get();
 }
 
-double ScreamV2::ScaleBackoff(double backoff) const {
+double ScreamV2::ScaleBackoff(double backoff, DataSize data_in_flight) const {
   if (params_.use_spec_backoff.Get()) {
     // 4.5.3. Reference window undershoot at congestion.
     // Reduce backoff when target bitrate is lower than the acknowledged rate;
@@ -126,7 +126,12 @@ double ScreamV2::ScaleBackoff(double backoff) const {
     // an increased RTT.
     if (received_rate_.IsFinite() &&
         target_rate_ < params_.acked_bitrate_margin.Get() * received_rate_) {
-      backoff *= params_.backoff_scale_low_target_rate.Get();
+      if (params_.inhibit_backoff_if_data_in_flight_decreases.Get() &&
+          data_in_flight < data_in_flight_prev_) {
+        backoff = 0.0;
+      } else {
+        backoff *= params_.backoff_scale_low_target_rate.Get();
+      }
     }
   }
   return backoff / std::max(1.0, delay_based_congestion_control_.rtt() /
@@ -174,11 +179,6 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
             queue_delay_avg_prev_) {
       is_virtual_ce = true;
     }
-    if (parsed.feedback_time - last_queue_delay_avg_check_time_ >=
-        min_reaction_interval) {
-      queue_delay_avg_prev_ = delay_based_congestion_control_.queue_delay();
-      last_queue_delay_avg_check_time_ = parsed.feedback_time;
-    }
   } else {
     is_virtual_ce = delay_based_congestion_control_.IsQueueDelayDetected();
   }
@@ -192,7 +192,7 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
     if (is_loss) {  // Back off due to loss
       backoff = 1.0 - params_.beta_loss.Get();
     } else if (is_ce) {  // Backoff due to ECN-CE marking
-      backoff = ScaleBackoff(l4s_alpha_ / 2.0);
+      backoff = ScaleBackoff(l4s_alpha_ / 2.0, parsed.data_in_flight);
 
       if (!delay_based_congestion_control_.IsQueueDelayDetected()) {
         // Scale down backoff if close to the last known max reference window
@@ -225,7 +225,8 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
       }
     } else if (is_virtual_ce) {  // Back off due to delay
       backoff =
-          ScaleBackoff(delay_based_congestion_control_.l4s_alpha_v() / 2.0);
+          ScaleBackoff(delay_based_congestion_control_.l4s_alpha_v() / 2.0,
+                       parsed.data_in_flight);
     }
     if (allow_initial_ref_window_clamping_ && received_rate_.IsFinite()) {
       // Clamp ref_window to received rate on the first congestion event,
@@ -238,6 +239,15 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
       allow_initial_ref_window_clamping_ = false;
     }
     ref_window_ = (1.0 - backoff) * ref_window_;
+  }
+
+  if (params_.use_spec_backoff.Get() &&
+      (last_reaction_to_congestion_time_ == parsed.feedback_time ||
+       parsed.feedback_time - last_queue_delay_avg_check_time_ >=
+           min_reaction_interval)) {
+    queue_delay_avg_prev_ = delay_based_congestion_control_.queue_delay();
+    data_in_flight_prev_ = parsed.data_in_flight;
+    last_queue_delay_avg_check_time_ = parsed.feedback_time;
   }
 
   // Increase ref_window.

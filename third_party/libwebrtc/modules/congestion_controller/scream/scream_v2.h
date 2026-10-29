@@ -140,7 +140,7 @@ class ScreamV2 {
   // Scales `backoff` across the estimated number of reactions per RTT, and
   // further attenuates it when `target_rate_` is below `acked_bitrate_margin *
   // received_rate_` (Section 4.5.3).
-  double ScaleBackoff(double backoff) const;
+  double ScaleBackoff(double backoff, DataSize data_in_flight) const;
 
   const Environment env_;
   const ScreamV2Parameters params_;
@@ -198,6 +198,7 @@ class ScreamV2 {
 
   Timestamp drain_queue_start_ = Timestamp::MinusInfinity();
   TimeDelta queue_delay_avg_prev_ = TimeDelta::MinusInfinity();
+  DataSize data_in_flight_prev_ = DataSize::Zero();
   Timestamp last_queue_delay_avg_check_time_ = Timestamp::MinusInfinity();
 
   DelayBasedCongestionControl delay_based_congestion_control_;
