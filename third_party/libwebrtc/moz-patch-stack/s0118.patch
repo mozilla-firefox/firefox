@@ -143,10 +143,10 @@ index 7890e58841..4d8a540a17 100644
  
    // Erase the unrecognized characters plus the tone that's just processed.
 diff --git a/pc/sctp_data_channel.cc b/pc/sctp_data_channel.cc
-index f9d4ab7f29..4bf8a6dead 100644
+index ab5896e20e..8b6a19d0d4 100644
 --- a/pc/sctp_data_channel.cc
 +++ b/pc/sctp_data_channel.cc
-@@ -84,11 +84,15 @@ BYPASS_PROXY_METHOD2(void,
+@@ -83,11 +83,15 @@ BYPASS_PROXY_METHOD2(void,
  END_PROXY_MAP(DataChannel)
  }  // namespace
  

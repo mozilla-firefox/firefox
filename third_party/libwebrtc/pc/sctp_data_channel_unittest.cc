@@ -649,6 +649,38 @@ TEST_F(SctpDataChannelTest, TransportGotErrorCode) {
             channel_->error().sctp_cause_code());
 }
 
+TEST_F(SctpDataChannelTest, CachedIdStateAndErrorInSignalingThreadCallback) {
+  class SignalingObserver : public DataChannelObserver {
+   public:
+    explicit SignalingObserver(DataChannelInterface* dc) : dc_(dc) {}
+    void OnStateChange() override {
+      RTC_LOG_THREAD_BLOCK_COUNT();
+      observed_ids_.push_back(dc_->id());
+      observed_states_.push_back(dc_->state());
+      observed_errors_.push_back(dc_->error());
+      RTC_DCHECK_BLOCK_COUNT_NO_MORE_THAN(0);
+    }
+    void OnMessage(const DataBuffer& buffer) override {}
+    bool IsOkToCallOnTheNetworkThread() override { return false; }
+
+    DataChannelInterface* const dc_;
+    std::vector<int> observed_ids_;
+    std::vector<DataChannelInterface::DataState> observed_states_;
+    std::vector<RTCError> observed_errors_;
+  };
+
+  SignalingObserver obs(channel_.get());
+  channel_->RegisterObserver(&obs);
+  SetChannelReady();
+
+  ASSERT_EQ(obs.observed_states_.size(), 1u);
+  EXPECT_EQ(obs.observed_ids_[0], 0);
+  EXPECT_EQ(obs.observed_states_[0], DataChannelInterface::kOpen);
+  EXPECT_TRUE(obs.observed_errors_[0].ok());
+
+  channel_->UnregisterObserver();
+}
+
 class SctpSidAllocatorTest : public ::testing::Test {
  protected:
   SctpSidAllocator allocator_;
