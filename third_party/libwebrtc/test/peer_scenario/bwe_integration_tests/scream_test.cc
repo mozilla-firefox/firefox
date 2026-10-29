@@ -281,11 +281,10 @@ std::vector<EmulatedNetworkNode*> CreateNetworkPathWithVaryingCapacity(
 
   SchedulableNetworkNodeBuilder schedulable_builder(*s.net(),
                                                     std::move(schedule));
+  LeakyBucketNetworkQueueFactory queue_factory(LeakyBucketNetworkQueue::Config{
+      .max_ect1_sojourn_time = TimeDelta::Millis(40),
+      .target_ect1_sojourn_time = TimeDelta::Millis(20)});
   if (use_ecn) {
-    LeakyBucketNetworkQueueFactory queue_factory(
-        LeakyBucketNetworkQueue::Config{
-            .max_ect1_sojourn_time = TimeDelta::Millis(40),
-            .target_ect1_sojourn_time = TimeDelta::Millis(20)});
     schedulable_builder.set_queue_factory(queue_factory);
   }
   return {schedulable_builder.Build()};
