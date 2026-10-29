@@ -11,9 +11,9 @@
     'android_junit_tests': {
       'android_examples_junit_tests': {
         'args': [
-          # Force number of shards to be one because of none hermetic tests
+          # Force a single worker process because of non-hermetic tests
           # in TCPChannelClientTest and DirectRTCClientTest.
-          '--shards=1',
+          '--jobs=1',
         ]
       },
       'android_sdk_junit_tests': {},
