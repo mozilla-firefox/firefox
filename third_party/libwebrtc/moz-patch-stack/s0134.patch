@@ -91,7 +91,7 @@ index dda9a496bc..65d2ffc8e3 100644
  LibaomAv1Encoder::~LibaomAv1Encoder() {
    Release();
 diff --git a/rtc_base/event_tracer.cc b/rtc_base/event_tracer.cc
-index 0e6bca7a2c..2ecf454f74 100644
+index d407d2016f..07e12fb609 100644
 --- a/rtc_base/event_tracer.cc
 +++ b/rtc_base/event_tracer.cc
 @@ -121,7 +121,7 @@ class EventLogger final {

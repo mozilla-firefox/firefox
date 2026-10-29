@@ -2301,6 +2301,7 @@ if (rtc_include_tests) {
       deps = [
         ":event_tracer",
         ":macromagic",
+        "../test:fileutils",
         "../test:test_support",
         "synchronization:mutex",
       ]
