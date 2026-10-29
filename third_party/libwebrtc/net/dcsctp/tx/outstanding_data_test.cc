@@ -437,13 +437,22 @@ TEST_F(OutstandingDataTest, MustRetransmitBeforeGettingNackedAgain) {
               ElementsAre(Pair(TSN(10), _)));
   EXPECT_THAT(buf_.GetChunksToBeRetransmitted(kNow, 1000), IsEmpty());
 
+  // SACKs that only newly ack chunks sent before the retransmission don't count
+  // as miss indications - see
+  // SacksPredatingRetransmissionAreNotMissIndications. So send more data after
+  // the retransmission (TSN 21..23).
+  for (int tsn = 21; tsn <= 23; ++tsn) {
+    buf_.Insert(kMessageId, gen_.Ordered({1}, ""), kNow + TimeDelta::Millis(1),
+                kOneRetransmission);
+  }
+
   // And obviously lost, as it will get NACKed and abandoned.
-  std::vector<SackChunk::GapAckBlock> gab7 = {SackChunk::GapAckBlock(2, 8)};
+  std::vector<SackChunk::GapAckBlock> gab7 = {SackChunk::GapAckBlock(2, 12)};
   EXPECT_FALSE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab7, false)
                    .has_packet_loss);
   EXPECT_FALSE(buf_.has_data_to_be_retransmitted());
 
-  std::vector<SackChunk::GapAckBlock> gab8 = {SackChunk::GapAckBlock(2, 9)};
+  std::vector<SackChunk::GapAckBlock> gab8 = {SackChunk::GapAckBlock(2, 13)};
   EXPECT_FALSE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab8, false)
                    .has_packet_loss);
   EXPECT_FALSE(buf_.has_data_to_be_retransmitted());
@@ -451,12 +460,63 @@ TEST_F(OutstandingDataTest, MustRetransmitBeforeGettingNackedAgain) {
   EXPECT_CALL(on_discard_, Call(StreamID(1), kMessageId))
       .WillOnce(Return(false));
 
-  std::vector<SackChunk::GapAckBlock> gab9 = {SackChunk::GapAckBlock(2, 10)};
+  std::vector<SackChunk::GapAckBlock> gab9 = {SackChunk::GapAckBlock(2, 14)};
   OutstandingData::AckInfo ack3 =
       buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab9, false);
 
   EXPECT_TRUE(ack3.has_packet_loss);
   EXPECT_FALSE(buf_.has_data_to_be_retransmitted());
+}
+
+TEST_F(OutstandingDataTest, SacksPredatingRetransmissionAreNotMissIndications) {
+  // TSN 10..30 are sent in a burst, and TSN 10 is lost.
+  for (int tsn = 10; tsn <= 30; ++tsn) {
+    buf_.Insert(kMessageId, gen_.Ordered({1}, "BE"), kNow);
+  }
+
+  // The SACKs for TSN 11, 12 and 13 result in TSN 10 being fast retransmitted.
+  for (int end = 2; end <= 3; ++end) {
+    std::vector<SackChunk::GapAckBlock> gab = {SackChunk::GapAckBlock(2, end)};
+    EXPECT_FALSE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab, false)
+                     .has_packet_loss);
+  }
+  std::vector<SackChunk::GapAckBlock> gab = {SackChunk::GapAckBlock(2, 4)};
+  EXPECT_TRUE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab, false)
+                  .has_packet_loss);
+  EXPECT_THAT(buf_.GetChunksToBeFastRetransmitted(kNow, 1000),
+              ElementsAre(Pair(TSN(10), _)));
+  EXPECT_FALSE(buf_.has_data_to_be_retransmitted());
+
+  // The receiver will continue to receive TSN 14..30, which were all sent
+  // before the retransmission of TSN 10 could have reached it. The SACKs for
+  // those still report TSN 10 as missing, but they can't be used as evidence
+  // that the retransmission was lost.
+  for (int end = 5; end <= 21; ++end) {
+    std::vector<SackChunk::GapAckBlock> gab2 = {SackChunk::GapAckBlock(2, end)};
+    EXPECT_FALSE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab2, true)
+                     .has_packet_loss)
+        << "gap ack block end=" << end;
+    EXPECT_FALSE(buf_.has_data_to_be_retransmitted())
+        << "gap ack block end=" << end;
+  }
+
+  // New data (TSN 31..33) is sent after the retransmission. SACKs for these
+  // are valid miss indications for the retransmitted TSN 10.
+  for (int tsn = 31; tsn <= 33; ++tsn) {
+    buf_.Insert(kMessageId, gen_.Ordered({1}, "BE"),
+                kNow + TimeDelta::Millis(100));
+  }
+  for (int end = 22; end <= 23; ++end) {
+    std::vector<SackChunk::GapAckBlock> gab3 = {SackChunk::GapAckBlock(2, end)};
+    EXPECT_FALSE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab3, true)
+                     .has_packet_loss);
+    EXPECT_FALSE(buf_.has_data_to_be_retransmitted());
+  }
+  std::vector<SackChunk::GapAckBlock> gab4 = {SackChunk::GapAckBlock(2, 24)};
+  EXPECT_TRUE(buf_.HandleSack(kNow, unwrapper_.Unwrap(TSN(9)), gab4, true)
+                  .has_packet_loss);
+  EXPECT_THAT(buf_.GetChunksToBeRetransmitted(kNow, 1000),
+              ElementsAre(Pair(TSN(10), _)));
 }
 
 TEST_F(OutstandingDataTest, LifecyleReturnsAckedItemsInAckInfo) {

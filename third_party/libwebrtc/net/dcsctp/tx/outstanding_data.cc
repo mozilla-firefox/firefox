@@ -70,12 +70,13 @@ OutstandingData::Item::NackAction OutstandingData::Item::Nack(
   return NackAction::kNothing;
 }
 
-void OutstandingData::Item::MarkAsRetransmitted() {
+void OutstandingData::Item::MarkAsRetransmitted(UnwrappedTSN next_tsn) {
   lifecycle_ = Lifecycle::kActive;
   ack_state_ = AckState::kUnacked;
 
   nack_count_ = 0;
   ++num_retransmissions_;
+  retransmission_boundary_tsn_ = next_tsn;
 }
 
 void OutstandingData::Item::Abandon() {
@@ -264,6 +265,15 @@ void OutstandingData::NackBetweenAckBlocks(
          tsn < cur_block_first_acked && tsn <= max_tsn_to_nack &&
          tsn < next_tsn();
          tsn = tsn.next_value()) {
+      // https://tools.ietf.org/html/rfc4960#section-7.2.4
+      // "Mark the DATA chunk(s) as being fast retransmitted and thus
+      // ineligible for a subsequent Fast Retransmit."
+      // A chunk that has been retransmitted may be reported as missing by
+      // SACKs that the peer generated before the retransmission reached it.
+      // Those are not miss indications for the retransmitted chunk.
+      if (!GetItem(tsn).IsMissIndication(ack_info.highest_tsn_acked)) {
+        continue;
+      }
       ack_info.has_packet_loss |=
           NackItem(now, tsn, /*retransmit_now=*/false,
                    /*do_fast_retransmit=*/!is_in_fast_recovery);
@@ -335,7 +345,7 @@ void OutstandingData::AbandonAllFor(const Item& item) {
                      item.data().is_unordered);
     UnwrappedTSN tsn = next_tsn();
     Item& added_item = outstanding_data_.emplace_back(
-        item.message_id(), std::move(message_end), Timestamp::Zero(),
+        tsn, item.message_id(), std::move(message_end), Timestamp::Zero(),
         MaxRetransmits(0), Timestamp::PlusInfinity(), LifecycleId::NotSet());
 
     // The added chunk shouldn't be included in `unacked_bytes`, so set it
@@ -393,7 +403,7 @@ std::vector<std::pair<TSN, Data>> OutstandingData::ExtractChunksThatCanFit(
 
     size_t serialized_size = GetSerializedChunkSize(item.data());
     if (serialized_size <= max_size) {
-      item.MarkAsRetransmitted();
+      item.MarkAsRetransmitted(next_tsn());
       result.emplace_back(tsn.Wrap(), item.data().Clone());
       max_size -= serialized_size;
       unacked_payload_bytes_ += item.data().size();
@@ -491,7 +501,7 @@ std::optional<UnwrappedTSN> OutstandingData::Insert(
   unacked_packet_bytes_ += chunk_size;
   ++unacked_items_;
   UnwrappedTSN tsn = next_tsn();
-  Item& item = outstanding_data_.emplace_back(message_id, data.Clone(),
+  Item& item = outstanding_data_.emplace_back(tsn, message_id, data.Clone(),
                                               time_sent, max_retransmissions,
                                               expires_at, lifecycle_id);
 
@@ -699,7 +709,7 @@ void OutstandingData::RestoreFromState(webrtc::Timestamp now,
               Data::IsEnd(msg.is_end), IsUnordered(msg.is_unordered));
     size_t chunk_size = GetSerializedChunkSize(data);
     Item& item = outstanding_data_.emplace_back(
-        OutgoingMessageId(msg.message_id), std::move(data),
+        tsn, OutgoingMessageId(msg.message_id), std::move(data),
         now - webrtc::TimeDelta::Millis(msg.time_since_sent_ms),
         MaxRetransmits(msg.max_retransmissions),
         msg.expires_in_ms.has_value()

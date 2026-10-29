@@ -1334,20 +1334,30 @@ TEST_F(RetransmissionQueueTest, LimitsRetransmissionsOnlyWhenNackedThreeTimes) {
 }
 
 TEST_F(RetransmissionQueueTest, AbandonsRtxLimit2WhenNackedNineTimes) {
-  // This is a fairly long test.
+  // TSN 10 is sent with `MaxRetransmits(2)` and is lost on every transmission.
+  // Nine chunks (TSN 11..19) are sent in three batches of three (one batch
+  // after each transmission of TSN 10) so that their SACKs produce 3 miss
+  // indications per transmission (9 NACKs in total), triggering two
+  // retransmissions before abandoning TSN 10 on the 9th NACK.
   RetransmissionQueue queue = CreateQueue();
+
   EXPECT_CALL(producer_, Produce)
       .WillOnce([this](Timestamp, size_t) {
         SendQueue::DataToSend dts(kMessageId, gen_.Ordered({1, 2, 3, 4}, "BE"));
         dts.max_retransmissions = MaxRetransmits(2);
         return dts;
       })
+      // Batch 1 (TSN 11..13), sent with the initial transmission of TSN 10.
       .WillOnce(CreateChunk(OutgoingMessageId(0)))
       .WillOnce(CreateChunk(OutgoingMessageId(1)))
       .WillOnce(CreateChunk(OutgoingMessageId(2)))
+      .WillOnce(Return(std::nullopt))
+      // Batch 2 (TSN 14..16), sent after the 1st retransmission of TSN 10.
       .WillOnce(CreateChunk(OutgoingMessageId(3)))
       .WillOnce(CreateChunk(OutgoingMessageId(4)))
       .WillOnce(CreateChunk(OutgoingMessageId(5)))
+      .WillOnce(Return(std::nullopt))
+      // Batch 3 (TSN 17..19), sent with the 2nd retransmission of TSN 10.
       .WillOnce(CreateChunk(OutgoingMessageId(6)))
       .WillOnce(CreateChunk(OutgoingMessageId(7)))
       .WillOnce(CreateChunk(OutgoingMessageId(8)))
@@ -1358,28 +1368,16 @@ TEST_F(RetransmissionQueueTest, AbandonsRtxLimit2WhenNackedNineTimes) {
 
   EXPECT_FALSE(queue.ShouldSendForwardTsn(now_));
 
-  std::vector<std::pair<TSN, Data>> chunks_to_send =
-      queue.GetChunksToSend(now_, 1000);
-  EXPECT_THAT(chunks_to_send,
+  EXPECT_THAT(queue.GetChunksToSend(now_, 1000),
               ElementsAre(Pair(TSN(10), _), Pair(TSN(11), _), Pair(TSN(12), _),
-                          Pair(TSN(13), _), Pair(TSN(14), _), Pair(TSN(15), _),
-                          Pair(TSN(16), _), Pair(TSN(17), _), Pair(TSN(18), _),
-                          Pair(TSN(19), _)));
+                          Pair(TSN(13), _)));
 
   EXPECT_THAT(queue.GetChunkStatesForTesting(),
               ElementsAre(Pair(TSN(9), State::kAcked),      //
                           Pair(TSN(10), State::kInFlight),  //
                           Pair(TSN(11), State::kInFlight),  //
                           Pair(TSN(12), State::kInFlight),  //
-                          Pair(TSN(13), State::kInFlight),  //
-                          Pair(TSN(14), State::kInFlight),  //
-                          Pair(TSN(15), State::kInFlight),  //
-                          Pair(TSN(16), State::kInFlight),  //
-                          Pair(TSN(17), State::kInFlight),  //
-                          Pair(TSN(18), State::kInFlight),  //
-                          Pair(TSN(19), State::kInFlight)));
-
-  EXPECT_CALL(producer_, Discard(StreamID(1), OutgoingMessageId(8))).Times(0);
+                          Pair(TSN(13), State::kInFlight)));
 
   // Ack TSN [11 to 13] - three nacks for TSN(10), which will retransmit it.
   for (int tsn = 11; tsn <= 13; ++tsn) {
@@ -1393,16 +1391,15 @@ TEST_F(RetransmissionQueueTest, AbandonsRtxLimit2WhenNackedNineTimes) {
                           Pair(TSN(10), State::kToBeRetransmitted),  //
                           Pair(TSN(11), State::kAcked),              //
                           Pair(TSN(12), State::kAcked),              //
-                          Pair(TSN(13), State::kAcked),              //
-                          Pair(TSN(14), State::kInFlight),           //
-                          Pair(TSN(15), State::kInFlight),           //
-                          Pair(TSN(16), State::kInFlight),           //
-                          Pair(TSN(17), State::kInFlight),           //
-                          Pair(TSN(18), State::kInFlight),           //
-                          Pair(TSN(19), State::kInFlight)));
+                          Pair(TSN(13), State::kAcked)));
 
   EXPECT_THAT(queue.GetChunksForFastRetransmit(now_, 1000),
               ElementsAre(Pair(TSN(10), _)));
+
+  // Send new data (TSN 14 to 16) after the first retransmission.
+  EXPECT_THAT(
+      queue.GetChunksToSend(now_, 1000),
+      ElementsAre(Pair(TSN(14), _), Pair(TSN(15), _), Pair(TSN(16), _)));
 
   // Ack TSN [14 to 16] - three more nacks - second and last retransmission.
   for (int tsn = 14; tsn <= 16; ++tsn) {
@@ -1419,12 +1416,12 @@ TEST_F(RetransmissionQueueTest, AbandonsRtxLimit2WhenNackedNineTimes) {
                           Pair(TSN(13), State::kAcked),              //
                           Pair(TSN(14), State::kAcked),              //
                           Pair(TSN(15), State::kAcked),              //
-                          Pair(TSN(16), State::kAcked),              //
-                          Pair(TSN(17), State::kInFlight),           //
-                          Pair(TSN(18), State::kInFlight),           //
-                          Pair(TSN(19), State::kInFlight)));
+                          Pair(TSN(16), State::kAcked)));
 
-  EXPECT_THAT(queue.GetChunksToSend(now_, 1000), ElementsAre(Pair(TSN(10), _)));
+  // The retransmission is sent together with new data (TSN 17 to 19).
+  EXPECT_THAT(queue.GetChunksToSend(now_, 1000),
+              ElementsAre(Pair(TSN(10), _), Pair(TSN(17), _), Pair(TSN(18), _),
+                          Pair(TSN(19), _)));
 
   // Ack TSN [17 to 18]
   for (int tsn = 17; tsn <= 18; ++tsn) {

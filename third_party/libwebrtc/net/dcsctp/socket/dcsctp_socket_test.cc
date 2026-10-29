@@ -2249,6 +2249,32 @@ TEST(DcSctpSocketTest, RetransmissionMetricsAreSetForFastRetransmit) {
   EXPECT_EQ(a.socket.GetMetrics()->rtx_bytes_count, expected_data_size);
 }
 
+TEST(DcSctpSocketTest, RetransmitsLostPacketOnlyOnceInLargeBurst) {
+  SocketUnderTest a("A");
+  SocketUnderTest z("Z");
+  ConnectSockets(a, z);
+
+  // A message large enough that many packets are still in flight when the
+  // second packet is detected as lost and fast retransmitted. The SACKs for
+  // those in-flight packets reach A before the retransmission reaches Z, and
+  // they must not cause the lost packet to be retransmitted again.
+  std::vector<uint8_t> payload(kLargeMessageSize);
+  a.socket.Send(DcSctpMessage(StreamID(1), PPID(53), payload), kSendOptions);
+
+  // Receive first packet, drop second, receive the rest in order.
+  z.socket.ReceivePacket(a.cb.ConsumeSentPacket());
+  a.cb.ConsumeSentPacket();
+  ExchangeMessagesAndAdvanceTime(a, z);
+
+  EXPECT_THAT(
+      z.cb.ConsumeReceivedMessage(),
+      Optional(Property(&DcSctpMessage::payload, SizeIs(payload.size()))));
+  EXPECT_EQ(a.socket.GetMetrics()->rtx_packets_count, 1u);
+  EXPECT_EQ(
+      a.socket.GetMetrics()->rtx_bytes_count,
+      RoundDownTo4(DcSctpOptions::kMaxSafeMTUSize - SctpPacket::kHeaderSize));
+}
+
 TEST(DcSctpSocketTest, RetransmissionMetricsAreSetForNormalRetransmit) {
   SocketUnderTest a("A");
   SocketUnderTest z("Z");
