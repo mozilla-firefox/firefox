@@ -56,6 +56,7 @@ class RtpPacketizer {
     kVP8,
     kVP9,
     kAV1,
+    kSframe,
   };
   static absl_nonnull std::unique_ptr<RtpPacketizer> Create(
       PacketizationFormat format,

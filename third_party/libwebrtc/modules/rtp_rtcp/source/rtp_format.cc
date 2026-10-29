@@ -22,6 +22,7 @@
 #include "modules/rtp_rtcp/source/rtp_format_vp8.h"
 #include "modules/rtp_rtcp/source/rtp_format_vp9.h"
 #include "modules/rtp_rtcp/source/rtp_packetizer_av1.h"
+#include "modules/rtp_rtcp/source/rtp_packetizer_sframe.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #include "modules/video_coding/codecs/vp8/include/vp8_globals.h"
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
@@ -80,6 +81,9 @@ absl_nonnull std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(
       return std::make_unique<RtpPacketizerAv1>(
           payload, limits, rtp_video_header.frame_type,
           rtp_video_header.is_last_frame_in_picture);
+    case PacketizationFormat::kSframe:
+      return std::make_unique<RtpPacketizerSframe>(
+          payload, limits, rtp_video_header.is_last_frame_in_picture);
     case PacketizationFormat::kH265: {
 #ifdef RTC_ENABLE_H265
       return std::make_unique<RtpPacketizerH265>(payload, limits);
