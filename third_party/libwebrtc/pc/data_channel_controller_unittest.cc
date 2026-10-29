@@ -305,6 +305,62 @@ TEST_F(DataChannelControllerTest, AllocateSctpSidsUafRepro) {
   run_loop_.Flush();
 }
 
+// Closes `channel_to_close` from within the first `OnStateChange()` callback.
+// Callbacks are delivered directly on the network thread.
+class CloseOnStateChangeObserver : public DataChannelObserver {
+ public:
+  explicit CloseOnStateChangeObserver(DataChannelInterface* channel_to_close)
+      : channel_to_close_(channel_to_close) {}
+
+  void OnStateChange() override {
+    if (channel_to_close_ != nullptr) {
+      std::exchange(channel_to_close_, nullptr)->Close();
+    }
+  }
+  void OnMessage(const DataBuffer& /* buffer */) override {}
+  bool IsOkToCallOnTheNetworkThread() override { return true; }
+
+ private:
+  DataChannelInterface* channel_to_close_;
+};
+
+// Tests that AllocateSctpSids() doesn't start a channel that got closed (and
+// removed) while an earlier channel was being started. Here, the observer of
+// the first channel closes the second channel when the first channel opens.
+TEST_F(DataChannelControllerTest, AllocateSctpSidsSkipsChannelClosedByOther) {
+  NiceMock<MockDataChannelTransport> transport;
+  bool ready_to_send = false;
+  ON_CALL(transport, IsReadyToSend)
+      .WillByDefault(ReturnPointee(&ready_to_send));
+  // Don't assign stream ids when the channels are created.
+  ON_CALL(transport, DtlsRole).WillByDefault(Return(std::nullopt));
+  DataChannelControllerForTest dcc(pc_.get(), &transport);
+  // Complete the closing procedure of a channel synchronously.
+  ON_CALL(transport, CloseChannel).WillByDefault([&](int channel_id) {
+    dcc.OnChannelClosed(channel_id);
+    return RTCError::OK();
+  });
+
+  scoped_refptr<DataChannelInterface> ch1 =
+      dcc.InternalCreateDataChannelWithProxy(
+             "ch1", InternalDataChannelInit(DataChannelInit()))
+          .MoveValue();
+  scoped_refptr<DataChannelInterface> ch2 =
+      dcc.InternalCreateDataChannelWithProxy(
+             "ch2", InternalDataChannelInit(DataChannelInit()))
+          .MoveValue();
+  CloseOnStateChangeObserver observer(ch2.get());
+  ch1->RegisterObserver(&observer);
+
+  ready_to_send = true;
+  network_thread_.BlockingCall([&] { dcc.AllocateSctpSids(SSL_CLIENT); });
+  run_loop_.Flush();
+
+  EXPECT_EQ(ch1->state(), DataChannelInterface::kOpen);
+  EXPECT_EQ(ch2->state(), DataChannelInterface::kClosed);
+  ch1->UnregisterObserver();
+}
+
 TEST_F(DataChannelControllerTest, BufferedAmountIncludesFromTransport) {
   NiceMock<MockDataChannelTransport> transport;
   EXPECT_CALL(transport, buffered_amount(0)).WillOnce(Return(4711));

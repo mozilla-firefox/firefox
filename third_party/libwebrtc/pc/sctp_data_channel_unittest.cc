@@ -564,6 +564,21 @@ TEST_F(SctpDataChannelTest, DeprecatedSendEmptyData) {
   EXPECT_EQ(DataChannelInterface::kOpen, channel_->state());
 }
 
+// Tests that `SendAsync()` still invokes `on_complete`, with an error, if the
+// channel has been closed by the time the send operation runs.
+TEST_F(SctpDataChannelTest, SendAsyncAfterCloseCompletesWithInvalidState) {
+  SetChannelReady();
+  channel_->Close();
+  ASSERT_EQ(channel_->state(), DataChannelInterface::kClosed);
+
+  std::optional<RTCError> result;
+  channel_->SendAsync(DataBuffer("data"),
+                      [&](RTCError error) { result = error; });
+  FlushNetworkThread();
+  ASSERT_TRUE(result.has_value());
+  EXPECT_EQ(result->type(), RTCErrorType::INVALID_STATE);
+}
+
 // Tests that a channel can be closed without being opened or assigned an sid.
 TEST_F(SctpDataChannelTest, NeverOpened) {
   controller_->set_transport_available(true);
@@ -620,7 +635,9 @@ TEST_F(SctpDataChannelTest, ChannelDeletedWhileDataBuffered) {
   // Send a very large packet, forcing the message to become buffered.
   channel_->SendAsync(packet, nullptr);
 
-  // Delete the channel, expect no crashes.
+  // Close and delete the channel while the buffered SendAsync task is in
+  // flight, expect no crashes.
+  channel_->Close();
   inner_channel_ = nullptr;
   channel_ = nullptr;
 }

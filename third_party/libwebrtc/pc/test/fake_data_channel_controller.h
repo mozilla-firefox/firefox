@@ -78,12 +78,7 @@ class FakeDataChannelController : public SctpDataChannelControllerInterface {
             AddSctpDataStream(*channel->sid_n(), channel->priority());
           }
           if (ready_to_send_) {
-            network_thread_->PostTask([channel = channel] {
-              if (channel->state() !=
-                  DataChannelInterface::DataState::kClosed) {
-                channel->OnTransportReady();
-              }
-            });
+            channel->PostOnTransportReady();
           }
           connected_channels_.insert(channel.get());
           return channel;

@@ -298,12 +298,15 @@ SctpDataChannel::SctpDataChannel(
       observer_(nullptr),
       max_message_size_(max_message_size),
       controller_(std::move(controller)),
-      connected_to_transport_(connected_to_transport),
       controller_safety_(std::move(controller_safety)) {
   RTC_DCHECK_RUN_ON(network_thread_);
   // Since we constructed on the network thread we can't (yet) check the
   // `controller_` pointer since doing so will trigger a thread check.
   RTC_DCHECK(config.IsValid());
+
+  if (connected_to_transport) {
+    network_safety_->SetAlive();
+  }
 
   switch (config.open_handshake_role) {
     case InternalDataChannelInit::kNone:  // pre-negotiated
@@ -318,19 +321,7 @@ SctpDataChannel::SctpDataChannel(
   }
 }
 
-SctpDataChannel::~SctpDataChannel() {
-  if (!observer_adapter_) {
-    return;
-  }
-  if (signaling_thread_->IsCurrent()) {
-    observer_adapter_.reset();
-  } else {
-    signaling_thread_->PostTask(
-        [observer_adapter = std::move(observer_adapter_)]() mutable {
-          observer_adapter.reset();
-        });
-  }
-}
+SctpDataChannel::~SctpDataChannel() = default;
 
 void SctpDataChannel::RegisterObserver(DataChannelObserver* observer) {
   // Note: at this point, we do not know on which thread we're being called
@@ -584,16 +575,18 @@ void SctpDataChannel::SendAsync(
   // thread. So we always post to the network thread (even if the current thread
   // might be the network thread - in theory a call could even come from within
   // the `on_complete` callback).
-  scoped_refptr<SctpDataChannel> me(this);
-  network_thread_->PostTask([me = std::move(me), buffer = std::move(buffer),
+  network_thread_->PostTask([this, network_safety = network_safety_,
+                             buffer = std::move(buffer),
                              on_complete = std::move(on_complete)]() mutable {
-    RTC_DCHECK_RUN_ON(me->network_thread_);
-    if (!me->connected_to_transport()) {
-      return;
+    // Once closed, the channel may already have been deleted on the signaling
+    // thread, so only touch `this` while `network_safety` is alive.
+    RTCError err(RTCErrorType::INVALID_STATE);
+    if (network_safety->alive()) {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      err = SendImpl(std::move(buffer));
     }
-    RTCError err = me->SendImpl(std::move(buffer));
     if (on_complete)
-      std::move(on_complete)(err);
+      std::move(on_complete)(std::move(err));
   });
 }
 
@@ -637,7 +630,7 @@ void SctpDataChannel::OnClosingProcedureComplete() {
 
 void SctpDataChannel::OnTransportChannelCreated() {
   RTC_DCHECK_RUN_ON(network_thread_);
-  connected_to_transport_ = true;
+  network_safety_->SetAlive();
 }
 
 void SctpDataChannel::OnTransportChannelClosed(RTCError error) {
@@ -767,6 +760,11 @@ void SctpDataChannel::OnTransportReady() {
   UpdateState();
 }
 
+void SctpDataChannel::PostOnTransportReady() {
+  network_thread_->PostTask(
+      SafeTask(network_safety_, [this] { OnTransportReady(); }));
+}
+
 void SctpDataChannel::CloseAbruptlyWithError(RTCError error) {
   RTC_DCHECK_RUN_ON(network_thread_);
 
@@ -774,7 +772,7 @@ void SctpDataChannel::CloseAbruptlyWithError(RTCError error) {
     return;
   }
 
-  connected_to_transport_ = false;
+  network_safety_->SetNotAlive();
 
   // Still go to "kClosing" before "kClosed", since observers may be expecting
   // that.
@@ -806,11 +804,15 @@ void SctpDataChannel::UpdateState() {
           WriteDataChannelOpenMessage(label_, protocol_, priority_, ordered_,
                                       max_retransmits_, max_retransmit_time_,
                                       &payload);
-          SendControlMessage(payload);
+          if (!SendControlMessage(payload)) {
+            return;
+          }
         } else if (handshake_state_ == kHandshakeShouldSendAck) {
           CopyOnWriteBuffer payload;
           WriteDataChannelOpenAckMessage(&payload);
-          SendControlMessage(payload);
+          if (!SendControlMessage(payload)) {
+            return;
+          }
         }
         if (handshake_state_ == kHandshakeReady ||
             handshake_state_ == kHandshakeWaitingForAck) {
@@ -860,11 +862,17 @@ void SctpDataChannel::SetState(DataState state) {
   }
 
   state_ = state;
+  if (state_ == kClosed) {
+    network_safety_->SetNotAlive();
+  }
 
   if (observer_) {
     observer_->OnStateChange();
   }
 
+  // When notified of `kClosed`, the controller hands its reference to the
+  // channel over to the signaling thread, where the channel may get deleted at
+  // any time. Callers must not access members after the channel has closed.
   if (controller_)
     controller_->OnChannelStateChanged(this, state_);
 }
@@ -965,10 +973,11 @@ RTCError SctpDataChannel::SendDataMessage(const DataBuffer& buffer,
   RTC_LOG(LS_ERROR) << "Closing the DataChannel due to a failure to send data, "
                        "send_result = "
                     << ToString(error_.type()) << ":" << error_.message();
-  CloseAbruptlyWithError(
-      RTCError(RTCErrorType::NETWORK_ERROR, "Failure to send data"));
-
-  return error_;
+  // Return a copy of the error rather than `error_`, since the channel may get
+  // deleted on the signaling thread as soon as it's closed (see `SetState()`).
+  RTCError error(RTCErrorType::NETWORK_ERROR, "Failure to send data");
+  CloseAbruptlyWithError(error);
+  return error;
 }
 
 // RTC_RUN_ON(network_thread_).

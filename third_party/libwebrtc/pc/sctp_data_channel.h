@@ -198,6 +198,10 @@ class SctpDataChannel : public DataChannelInterface {
   // finished negotiation, or if the channel was created after negotiation has
   // already finished.
   void OnTransportReady();
+  // Posts a call to `OnTransportReady()` to the network thread. The call is
+  // dropped if, by the time the task runs, the channel isn't connected to the
+  // transport or has been closed. Can be called on any thread.
+  void PostOnTransportReady();
 
   void OnDataReceived(DataMessageType type, const CopyOnWriteBuffer& payload);
 
@@ -250,6 +254,9 @@ class SctpDataChannel : public DataChannelInterface {
                   scoped_refptr<PendingTaskSafetyFlag> controller_safety,
                   Thread* signaling_thread,
                   Thread* network_thread);
+  // The channel is deleted on the signaling thread. While the channel is open,
+  // the controller keeps it alive on the network thread and when the channel
+  // closes, the controller hands its reference over to the signaling thread.
   ~SctpDataChannel() override;
 
  private:
@@ -289,7 +296,7 @@ class SctpDataChannel : public DataChannelInterface {
       RTC_RUN_ON(network_thread_);
 
   bool connected_to_transport() const RTC_RUN_ON(network_thread_) {
-    return connected_to_transport_;
+    return network_safety_->alive();
   }
   void MaybeSendOnBufferedAmountChanged() RTC_RUN_ON(network_thread_);
 
@@ -324,8 +331,9 @@ class SctpDataChannel : public DataChannelInterface {
       kHandshakeInit;
   // Did we already start the graceful SCTP closing procedure?
   bool started_closing_procedure_ RTC_GUARDED_BY(network_thread_) = false;
-  bool connected_to_transport_ RTC_GUARDED_BY(network_thread_) = false;
   PacketQueue queued_received_data_ RTC_GUARDED_BY(network_thread_);
+  const scoped_refptr<PendingTaskSafetyFlag> network_safety_ =
+      PendingTaskSafetyFlag::CreateDetachedInactive();
   scoped_refptr<PendingTaskSafetyFlag> controller_safety_;
 };
 
