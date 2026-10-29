@@ -254,7 +254,7 @@ index 0cfd6ef2d1..ef70e0f538 100644
  config("x11_config") {
    if (rtc_use_x11_extensions) {
 diff --git a/webrtc.gni b/webrtc.gni
-index 92eb683a12..d9f904daf5 100644
+index 0015ee78b0..3cc99d87bd 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -160,7 +160,7 @@ declare_args() {

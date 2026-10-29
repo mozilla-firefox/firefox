@@ -1272,7 +1272,7 @@ index fa5eb3a887..8c4151be40 100644
      "../api:sequence_checker",
      "../api/adaptation:resource_adaptation_api",
 diff --git a/webrtc.gni b/webrtc.gni
-index 10aa1021b0..92eb683a12 100644
+index 3ef3d5f480..0015ee78b0 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -39,6 +39,11 @@ if (is_mac) {
