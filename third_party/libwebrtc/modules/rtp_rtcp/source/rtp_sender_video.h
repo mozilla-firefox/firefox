@@ -217,8 +217,7 @@ class RTPSenderVideo : public RTPVideoFrameSenderInterface {
   RtpPacketizer::PacketizationFormat GetPacketizationFormat(
       VideoCodecType codec_type) const;
 
-  // Returns whether frames can be encrypted with the configured Sframe
-  // encryptor and mode.
+  // Returns whether an Sframe encryptor is configured.
   bool IsSframeEncryptionSupported() const;
 
   // Returns whether negotiation requires Sframe and `mode` is configured.

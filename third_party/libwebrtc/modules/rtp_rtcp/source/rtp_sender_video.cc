@@ -57,9 +57,11 @@
 #include "modules/rtp_rtcp/source/rtp_generic_frame_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
+#include "modules/rtp_rtcp/source/rtp_packetizer_sframe.h"
 #include "modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
 #include "modules/rtp_rtcp/source/rtp_video_layers_allocation_extension.h"
+#include "modules/rtp_rtcp/source/sframe_descriptor.h"
 #include "modules/rtp_rtcp/source/video_fec_generator.h"
 #include "modules/sframe/sframe_encryption_config.h"
 #include "modules/sframe/sframe_media_encryptor_interface.h"
@@ -752,6 +754,14 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
           ? last_packet->headers_size() - middle_packet->headers_size()
           : 0;
 
+  if (IsSframeModeActive(SframeMode::kPerPacket)) {
+    // Every packet carries the Sframe descriptor and its own Sframe header and
+    // authentication tag.
+    limits.max_payload_len -= static_cast<int>(
+        SframeDescriptor::kSize +
+        sframe_encryption_config_->encryptor->GetMaxCiphertextByteSize(0));
+  }
+
   bool has_generic_descriptor =
       first_packet->HasExtension<RtpGenericFrameDescriptorExtension00>() ||
       first_packet->HasExtension<RtpDependencyDescriptorExtension>();
@@ -852,10 +862,38 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
     }
 
     packet->set_first_packet_of_frame(i == 0);
+    packet->set_last_packet_of_frame(i == num_packets - 1);
 
     if (!packetizer->NextPacket(packet.get()))
       return false;
     RTC_DCHECK_LE(packet->payload_size(), expected_payload_capacity);
+
+    if (IsSframeModeActive(SframeMode::kPerPacket)) {
+      SframeMediaEncryptorInterface& encryptor =
+          *sframe_encryption_config_->encryptor;
+
+      // Allocate buffer for the largest possible Sframe ciphertext.
+      sframe_payload.resize(
+          encryptor.GetMaxCiphertextByteSize(packet->payload_size()));
+
+      RTCErrorOr<size_t> bytes_written = encryptor.Encrypt(
+          packet->payload(), /*additional_data=*/{}, sframe_payload);
+      if (!bytes_written.ok()) {
+        RTC_LOG(LS_WARNING)
+            << "Dropping video frame: " << bytes_written.error().message();
+        return false;
+      }
+
+      sframe_payload.resize(bytes_written.value());
+      packet->SetPayload(sframe_payload);
+
+      RTCError error = PacketizeSframeRtpPacketOrError(
+          MediaType::VIDEO, packet.get(), SframeEncryptionLevel::kPacket);
+      if (!error.ok()) {
+        RTC_LOG(LS_WARNING) << "Dropping video frame: " << error.message();
+        return false;
+      }
+    }
 
     packet->set_allow_retransmission(allow_retransmission);
     packet->set_is_key_frame(video_header.frame_type ==
@@ -991,18 +1029,8 @@ bool RTPSenderVideo::IsSframeModeActive(SframeMode mode) const {
 }
 
 bool RTPSenderVideo::IsSframeEncryptionSupported() const {
-  if (!sframe_encryption_config_.has_value() ||
-      sframe_encryption_config_->encryptor == nullptr) {
-    return false;
-  }
-
-  switch (sframe_encryption_config_->mode) {
-    case SframeMode::kPerFrame:
-      return true;
-    case SframeMode::kPerPacket:
-      // TODO(bugs.webrtc.org/479862368): Support per-packet Sframe encryption.
-      return false;
-  }
+  return sframe_encryption_config_.has_value() &&
+         sframe_encryption_config_->encryptor != nullptr;
 }
 
 bool RTPSenderVideo::AllowRetransmission(

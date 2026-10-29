@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -87,6 +88,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::ContainerEq;
+using ::testing::DoDefault;
 using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
@@ -2048,24 +2050,6 @@ TEST_F(RtpSenderVideoTest, SframeEncryptorWithoutKeyDropsEncodedImage) {
   EXPECT_EQ(transport_.packets_sent(), 0);
 }
 
-TEST_F(RtpSenderVideoTest, SframePerPacketDropsEncodedImage) {
-  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
-      make_ref_counted<NiceMock<MockSframeMediaEncryptor>>();
-  EXPECT_CALL(*encryptor, Encrypt).Times(0);
-  TestRtpSenderVideo sender =
-      Create({.sframe_required_by_negotiation = true,
-              .sframe_encryption_config = SframeEncryptionConfig{
-                  .mode = SframeMode::kPerPacket, .encryptor = encryptor}});
-  std::unique_ptr<EncodedImage> encoded_image = CreateDefaultEncodedImage();
-  RTPVideoHeader video_header;
-  video_header.frame_type = VideoFrameType::kVideoFrameKey;
-
-  EXPECT_FALSE(sender.SendEncodedImage(
-      kPayloadType, kType, kRtpTimestamp, *encoded_image, video_header,
-      kDefaultExpectedRetransmissionTime, /*csrcs=*/{}));
-  EXPECT_EQ(transport_.packets_sent(), 0);
-}
-
 // SendVideoFrame can be called without SendEncodedImage, e.g. after an encoded
 // frame transform.
 TEST_F(RtpSenderVideoTest, SframeWithoutSupportedEncryptorDropsVideoFrame) {
@@ -2162,6 +2146,57 @@ TEST_F(RtpSenderVideoTest, SframePerFrameDoesNotMarkFrameNotLastInPicture) {
                               /*is_last_frame_in_picture=*/false));
 
   EXPECT_FALSE(transport_.last_sent_packet().Marker());
+}
+
+TEST_F(RtpSenderVideoTest, SframePerPacketEncryptsEveryPacket) {
+  const std::vector<uint8_t> ciphertext = {0xab, 0xcd};
+  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
+      CreateSframeEncryptor(ciphertext);
+  int encrypt_calls = 0;
+  EXPECT_CALL(*encryptor, Encrypt)
+      .WillRepeatedly([&](std::span<const uint8_t> /*packet_payload*/,
+                          std::span<const uint8_t> /*additional_data*/,
+                          std::span<uint8_t> encrypted_payload) {
+        ++encrypt_calls;
+        std::ranges::copy(ciphertext, encrypted_payload.begin());
+        return RTCErrorOr<size_t>(ciphertext.size());
+      });
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerPacket, .encryptor = encryptor}});
+
+  ASSERT_TRUE(SendVp8KeyFrame(sender, std::vector<uint8_t>(3000, 0x5a)));
+
+  // Every packet carries its own ciphertext, with the T bit set.
+  ASSERT_GT(transport_.packets_sent(), 1);
+  EXPECT_EQ(encrypt_calls, transport_.packets_sent());
+  for (const RtpPacketReceived& packet : transport_.sent_packets()) {
+    ASSERT_EQ(packet.payload_size(),
+              SframeDescriptor::kSize + ciphertext.size());
+    const std::bitset<SframeDescriptor::kNumBits> descriptor(
+        packet.payload()[0]);
+    EXPECT_TRUE(descriptor.test(SframeDescriptor::kTBit));
+    EXPECT_THAT(packet.payload().subspan(SframeDescriptor::kSize),
+                ElementsAreArray(ciphertext));
+  }
+}
+
+// Packets are only sent once the whole frame is encrypted, so a failure on any
+// packet drops the entire frame.
+TEST_F(RtpSenderVideoTest, SframePacketEncryptionFailureDropsWholeFrame) {
+  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
+      CreateSframeEncryptor({0xab, 0xcd});
+  EXPECT_CALL(*encryptor, Encrypt)
+      .WillOnce(DoDefault())
+      .WillOnce(Return(RTCError::InternalError("Encryption failed")));
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerPacket, .encryptor = encryptor}});
+
+  EXPECT_FALSE(SendVp8KeyFrame(sender, std::vector<uint8_t>(10000, 0x5a)));
+  EXPECT_EQ(transport_.packets_sent(), 0);
 }
 
 TEST_F(RtpSenderVideoTest,
