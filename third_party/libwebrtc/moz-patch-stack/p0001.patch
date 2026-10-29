@@ -1,969 +1,150 @@
-From: Byron Campen <docfaraday@gmail.com>
-Date: Thu, 29 Oct 2026 13:18:32 -0500
-Subject: (tmp-cherry-pick) Revert "Allow combining AV1 SVC frames without
- dependency descriptor." (b67a9ce02b)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-This reverts commit 52da778c185a17fe953ead983af213aa447e773e.
-
-Reason for revert: Breaks downstream test
-
-Failure Link: <LINK TO FAILURE>
+From: Danil Chapovalov <danilchap@webrtc.org>
+Date: Fri, 16 Oct 2026 16:35:33 +0200
+Subject: (cherry-pick-branch-heads/8103) [M157] Fail EncodeFec when packets
+ are passed radically out of order
 
 Original change's description:
-> Allow combining AV1 SVC frames without dependency descriptor.
+> Fail EncodeFec when packets are passed radically out of order
 >
-> Although using scalability features with without Dependency Descriptors
-> isn't a supported use case (falls outside the RTP Profile for AV1), it
-> would help in some cases where the full stream is received (no sequence
-> number gaps) and frames are otherwise detectable as complete (e.g. using
-> the marker bit), to allow decoding SVC frames without knowing the actual
-> spatial index.
->
-> When receiving AV1 SVC without a dependency descriptor, PacketBuffer
-> emits one RtpFrameObject per spatial layer and RtpSeqNumOnlyRefFinder
-> verifies sequence number continuity across the temporal unit.
-> RtpSeqNumOnlyRefFinder previously stamped SpatialIndex(0) onto every
-> subframe, causing CombineAndDeleteFrames to reject multi-layer temporal
-> units as having duplicate spatial indices.
->
-> Leave SpatialIndex unset (std::nullopt) in RtpSeqNumOnlyRefFinder and
-> only populate SpatialIndex and SpatialLayerFrameSize in
-> CombineAndDeleteFrames when spatial indices are present. Also replace
-> raw pointer arithmetic and memcpy in CombineAndDeleteFrames with
-> std::span and std::ranges::copy.
->
-> Bug: webrtc:560293075, chromium:569667447
-> Change-Id: I504fa458ebc1c6f902b39593de9680faa43f2d2a
-> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/508962
-> Commit-Queue: Erik Språng <sprang@webrtc.org>
-> Reviewed-by: Danil Chapovalov <danilchap@webrtc.org>
-> Reviewed-by: Philipp Hancke <philipp.hancke@googlemail.com>
-> Cr-Commit-Position: refs/heads/main@{#48922}
+> Bug: chromium:570927027
+> Change-Id: I9fd8d548e9e7935a4862dc95cb65548eba3b4c5f
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509462
+> Reviewed-by: Rasmus Brandt <brandtr@webrtc.org>
+> Commit-Queue: Danil Chapovalov <danilchap@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48960}
 
-Bug: webrtc:560293075, chromium:569667447
-No-Presubmit: true
-No-Tree-Checks: true
-No-Try: true
-Change-Id: Ic16301fde155db2eef2275568c9286b317d755ab
-Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/509420
+(cherry picked from commit d86ac8ab5e04c7efb8f474985e1bec1f82443a34)
+
+Bug: chromium:575705256,chromium:570927027
+Change-Id: I9fd8d548e9e7935a4862dc95cb65548eba3b4c5f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/510540
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
 Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
-Reviewed-by: Fredrik Solenberg <solenberg@webrtc.org>
-Commit-Queue: Fredrik Solenberg <solenberg@webrtc.org>
-Cr-Commit-Position: refs/heads/main@{#48934}
+Cr-Commit-Position: refs/branch-heads/8103@{#3}
+Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#48872}
 ---
- experiments/field_trials.py                   |   3 -
- modules/video_coding/BUILD.gn                 |   3 -
- modules/video_coding/frame_helpers.cc         |  34 ++--
- .../video_coding/frame_helpers_unittest.cc    |  43 ++---
- .../rtp_frame_reference_finder.cc             |  25 +--
- .../video_coding/rtp_frame_reference_finder.h |   7 +-
- .../rtp_frame_reference_finder_unittest.cc    |  73 +--------
- .../rtp_seq_num_only_ref_finder.cc            |  12 +-
- .../rtp_seq_num_only_ref_finder.h             |   7 +-
- unsafe_buffers_paths.txt                      |   2 +
- video/BUILD.gn                                |   5 -
- video/end_to_end_tests/codec_tests.cc         | 151 +++++-------------
- video/rtp_video_stream_receiver2.cc           |   5 +-
- ...video_stream_buffer_controller_unittest.cc |  16 --
- 14 files changed, 81 insertions(+), 305 deletions(-)
+ modules/rtp_rtcp/BUILD.gn                     |  1 +
+ .../source/forward_error_correction.cc        | 15 ++++--
+ modules/rtp_rtcp/source/rtp_fec_unittest.cc   | 47 +++++++++++++++++++
+ 3 files changed, 59 insertions(+), 4 deletions(-)
 
-diff --git a/experiments/field_trials.py b/experiments/field_trials.py
-index 213e43d874..aeda3d751e 100755
---- a/experiments/field_trials.py
-+++ b/experiments/field_trials.py
-@@ -257,9 +257,6 @@ ACTIVE_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
-     FieldTrial('WebRTC-Video-PerSsrcKeyframes',
-                527515375,
-                date(2027, 6, 1)),
--    FieldTrial('WebRTC-Video-SeqNumOnlyRefFinderSpatialIndexKillSwitch',
--               560293075,
--               date(2027, 10, 1)),
-     FieldTrial('WebRTC-VideoEncoderSettings',
-                40252667,
-                date(2024, 4, 1)),
-diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index 3bd70fa684..c39873e2ad 100644
---- a/modules/video_coding/BUILD.gn
-+++ b/modules/video_coding/BUILD.gn
-@@ -1273,7 +1273,6 @@ if (rtc_include_tests) {
-       "../../api/video:encoded_image",
-       "../../api/video/corruption_detection:frame_instrumentation_data",
-       "../../test:test_support",
--      "//third_party/abseil-cpp/absl/algorithm:container",
-       "//third_party/abseil-cpp/absl/container:inlined_vector",
-     ]
-   }
-@@ -1396,7 +1395,6 @@ if (rtc_include_tests) {
-     sources = [ "rtp_frame_reference_finder_unittest.cc" ]
-     deps = [
-       ":video_coding",
--      "../../api:field_trials",
-       "../../api:rtp_packet_info",
-       "../../api/video:encoded_frame",
-       "../../api/video:encoded_image",
-@@ -1404,7 +1402,6 @@ if (rtc_include_tests) {
-       "../../api/video:video_frame_type",
-       "../../api/video:video_rtp_headers",
+diff --git a/modules/rtp_rtcp/BUILD.gn b/modules/rtp_rtcp/BUILD.gn
+index ff27411af4..eab4eb1ffb 100644
+--- a/modules/rtp_rtcp/BUILD.gn
++++ b/modules/rtp_rtcp/BUILD.gn
+@@ -1216,6 +1216,7 @@ if (rtc_include_tests) {
+       ":rtp_rtcp",
+       ":rtp_rtcp_format",
+       "..:module_fec_api",
++      "../../rtc_base:byte_order",
+       "../../rtc_base:checks",
        "../../rtc_base:random",
--      "../../test:create_test_field_trials",
        "../../test:test_support",
-       "../rtp_rtcp",
-       "../rtp_rtcp:rtp_video_header",
-diff --git a/modules/video_coding/frame_helpers.cc b/modules/video_coding/frame_helpers.cc
-index 1c6a601474..1338ba4e28 100644
---- a/modules/video_coding/frame_helpers.cc
-+++ b/modules/video_coding/frame_helpers.cc
-@@ -10,12 +10,11 @@
+diff --git a/modules/rtp_rtcp/source/forward_error_correction.cc b/modules/rtp_rtcp/source/forward_error_correction.cc
+index 0e31bf1ca4..da6e43b061 100644
+--- a/modules/rtp_rtcp/source/forward_error_correction.cc
++++ b/modules/rtp_rtcp/source/forward_error_correction.cc
+@@ -296,9 +296,13 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+   size_t old_bit_index = 1;
+   // Insert zeros in the bit mask for every hole in the sequence.
+   while (media_packets_it != media_packets.end()) {
+-    if (new_bit_index == max_media_packets) {
+-      // We can only cover up to 48 packets.
+-      break;
++    if (new_bit_index >= max_media_packets) {
++      // `total_missing_seq_nums` calculation above should ensure all
++      // `media_packets` fit within the `max_media_packets`. That calculation is
++      // simple and fast normally, but wrong when sequence numbers wrap around
++      // a lot. This condition catches exactly that - when number of packets
++      // to protect turned to be larger than earlier estimated.
++      return -1;
+     }
+     uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data);
+     const int num_zeros_to_insert =
+@@ -307,8 +311,11 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+       internal::InsertZeroColumns(num_zeros_to_insert, tmp_packet_masks_,
+                                   tmp_packet_mask_size, num_fec_packets,
+                                   new_bit_index);
++      new_bit_index += num_zeros_to_insert;
++      if (new_bit_index >= max_media_packets) {
++        return -1;
++      }
+     }
+-    new_bit_index += num_zeros_to_insert;
+     internal::CopyColumn(tmp_packet_masks_, tmp_packet_mask_size, packet_masks_,
+                          packet_mask_size_, num_fec_packets, new_bit_index,
+                          old_bit_index);
+diff --git a/modules/rtp_rtcp/source/rtp_fec_unittest.cc b/modules/rtp_rtcp/source/rtp_fec_unittest.cc
+index 8548dd5ba1..ba11997116 100644
+--- a/modules/rtp_rtcp/source/rtp_fec_unittest.cc
++++ b/modules/rtp_rtcp/source/rtp_fec_unittest.cc
+@@ -25,14 +25,19 @@
+ #include "modules/rtp_rtcp/source/forward_error_correction.h"
+ #include "modules/rtp_rtcp/source/forward_error_correction_internal.h"
+ #include "modules/rtp_rtcp/source/ulpfec_header_reader_writer.h"
++#include "rtc_base/byte_order.h"
+ #include "rtc_base/checks.h"
+ #include "rtc_base/random.h"
++#include "test/gmock.h"
+ #include "test/gtest.h"
  
- #include "modules/video_coding/frame_helpers.h"
+ namespace webrtc {
  
--#include <algorithm>
- #include <cstddef>
- #include <cstdint>
-+#include <cstring>
- #include <memory>
- #include <optional>
--#include <span>
- #include <utility>
- 
- #include "absl/container/inlined_vector.h"
-@@ -98,18 +97,15 @@ std::unique_ptr<EncodedFrame> CombineAndDeleteFrames(
-   const EncodedFrame& last_frame = *frames.back();
-   std::unique_ptr<EncodedFrame> first_frame = std::move(frames[0]);
-   auto encoded_image_buffer = EncodedImageBuffer::Create(total_length);
--  std::span<uint8_t> buffer(*encoded_image_buffer);
--  if (any_spatial_index_defined) {
--    const int first_spatial_index = first_frame->SpatialIndex().value_or(0);
--    // Spatial index of combined frame is set equal to spatial index of its top
--    // spatial layer.
--    first_frame->SetSpatialIndex(last_frame.SpatialIndex().value_or(0));
--    first_frame->SetSpatialLayerFrameSize(first_spatial_index,
--                                          first_frame->size());
--  }
--  std::ranges::copy(*first_frame, buffer.begin());
--  buffer = buffer.subspan(first_frame->size());
--
-+  uint8_t* buffer = encoded_image_buffer->data();
-+  first_frame->SetSpatialLayerFrameSize(first_frame->SpatialIndex().value_or(0),
-+                                        first_frame->size());
-+  memcpy(buffer, first_frame->data(), first_frame->size());
-+  buffer += first_frame->size();
-+
-+  // Spatial index of combined frame is set equal to spatial index of its top
-+  // spatial layer.
-+  first_frame->SetSpatialIndex(last_frame.SpatialIndex().value_or(0));
-   // Each spatial layer (at the same rtp_timestamp) sends corruption data.
-   // Reconstructed (combined) frame will be of resolution of the highest spatial
-   // layer and that's why the corruption data for the highest layer should be
-@@ -129,12 +125,10 @@ std::unique_ptr<EncodedFrame> CombineAndDeleteFrames(
-   for (size_t i = 1; i < frames.size(); ++i) {
-     // Let |next_frame| fall out of scope so it is deleted after copying.
-     std::unique_ptr<EncodedFrame> next_frame = std::move(frames[i]);
--    if (any_spatial_index_defined) {
--      first_frame->SetSpatialLayerFrameSize(
--          next_frame->SpatialIndex().value_or(0), next_frame->size());
--    }
--    std::ranges::copy(*next_frame, buffer.begin());
--    buffer = buffer.subspan(next_frame->size());
-+    first_frame->SetSpatialLayerFrameSize(
-+        next_frame->SpatialIndex().value_or(0), next_frame->size());
-+    memcpy(buffer, next_frame->data(), next_frame->size());
-+    buffer += next_frame->size();
-   }
-   first_frame->SetEncodedData(encoded_image_buffer);
-   return first_frame;
-diff --git a/modules/video_coding/frame_helpers_unittest.cc b/modules/video_coding/frame_helpers_unittest.cc
-index cb49aff85f..902eff7cc0 100644
---- a/modules/video_coding/frame_helpers_unittest.cc
-+++ b/modules/video_coding/frame_helpers_unittest.cc
-@@ -16,7 +16,6 @@
- #include <optional>
- #include <utility>
- 
--#include "absl/algorithm/container.h"
- #include "absl/container/inlined_vector.h"
- #include "api/scoped_refptr.h"
- #include "api/units/timestamp.h"
-@@ -30,16 +29,15 @@ namespace webrtc {
  namespace {
  
- using ::testing::ElementsAre;
--using ::testing::IsNull;
--using ::testing::NotNull;
--using ::testing::SizeIs;
++using ::testing::IsEmpty;
++using ::testing::SizeIs;
++
+ // Transport header size in bytes. Assume UDP/IPv4 as a reasonable minimum.
+ constexpr size_t kTransportOverhead = 28;
  
- constexpr uint32_t kRtpTimestamp = 123456710;
- 
- scoped_refptr<EncodedImageBuffer> CreateEncodedImageBufferOfSizeN(size_t n,
-                                                                   uint8_t x) {
-   scoped_refptr<EncodedImageBuffer> buffer = EncodedImageBuffer::Create(n);
--  absl::c_iota(*buffer, x);
-+  for (size_t i = 0; i < n; ++i) {
-+    buffer->data()[i] = static_cast<uint8_t>(x + i);
-+  }
-   return buffer;
+@@ -267,6 +272,48 @@ TYPED_TEST(RtpFecTest,
+   EXPECT_TRUE(this->generated_fec_packets_.empty());
  }
  
-@@ -109,37 +107,26 @@ TEST(FrameInstrumentationDataTest,
- 
- TEST(CombineAndDeleteFramesTest, AllowsUndefinedSpatialIndices) {
-   EncodedFrame frame1 = CreateEncodedImageOfSizeN(/*n=*/10, /*x=*/1);
--  EncodedFrame frame2 = CreateEncodedImageOfSizeN(/*n=*/15, /*x=*/11);
-+  EncodedFrame frame2 = CreateEncodedImageOfSizeN(/*n=*/10, /*x=*/11);
- 
-   absl::InlinedVector<std::unique_ptr<EncodedFrame>, 4> frames;
-   frames.push_back(std::make_unique<EncodedFrame>(frame1));
-   frames.push_back(std::make_unique<EncodedFrame>(frame2));
- 
--  std::unique_ptr<EncodedFrame> combined =
--      CombineAndDeleteFrames(std::move(frames));
--  ASSERT_THAT(combined, NotNull());
--  EXPECT_THAT(*combined, SizeIs(25));
--  EXPECT_EQ(combined->SpatialIndex(), std::nullopt);
--  EXPECT_EQ(combined->SpatialLayerFrameSize(0), std::nullopt);
-+  EXPECT_NE(CombineAndDeleteFrames(std::move(frames)), nullptr);
- }
- 
- TEST(CombineAndDeleteFramesTest, AllowsIncreasingSpatialIndices) {
-   EncodedFrame frame1 = CreateEncodedImageOfSizeN(/*n=*/10, /*x=*/1);
-   frame1.SetSpatialIndex(0);
--  EncodedFrame frame2 = CreateEncodedImageOfSizeN(/*n=*/15, /*x=*/11);
-+  EncodedFrame frame2 = CreateEncodedImageOfSizeN(/*n=*/10, /*x=*/11);
-   frame2.SetSpatialIndex(1);
- 
-   absl::InlinedVector<std::unique_ptr<EncodedFrame>, 4> frames;
-   frames.push_back(std::make_unique<EncodedFrame>(frame1));
-   frames.push_back(std::make_unique<EncodedFrame>(frame2));
- 
--  std::unique_ptr<EncodedFrame> combined =
--      CombineAndDeleteFrames(std::move(frames));
--  ASSERT_THAT(combined, NotNull());
--  EXPECT_THAT(*combined, SizeIs(25));
--  EXPECT_EQ(combined->SpatialIndex(), 1);
--  EXPECT_EQ(combined->SpatialLayerFrameSize(0), 10u);
--  EXPECT_EQ(combined->SpatialLayerFrameSize(1), 15u);
-+  EXPECT_NE(CombineAndDeleteFrames(std::move(frames)), nullptr);
- }
- 
- TEST(CombineAndDeleteFramesTest, RejectsDecreasingSpatialIndices) {
-@@ -152,7 +139,7 @@ TEST(CombineAndDeleteFramesTest, RejectsDecreasingSpatialIndices) {
-   frames.push_back(std::make_unique<EncodedFrame>(frame1));
-   frames.push_back(std::make_unique<EncodedFrame>(frame2));
- 
--  EXPECT_THAT(CombineAndDeleteFrames(std::move(frames)), IsNull());
-+  EXPECT_EQ(CombineAndDeleteFrames(std::move(frames)), nullptr);
- }
- 
- TEST(CombineAndDeleteFramesTest, RejectsEqualSpatialIndices) {
-@@ -165,26 +152,20 @@ TEST(CombineAndDeleteFramesTest, RejectsEqualSpatialIndices) {
-   frames.push_back(std::make_unique<EncodedFrame>(frame1));
-   frames.push_back(std::make_unique<EncodedFrame>(frame2));
- 
--  EXPECT_THAT(CombineAndDeleteFrames(std::move(frames)), IsNull());
-+  EXPECT_EQ(CombineAndDeleteFrames(std::move(frames)), nullptr);
- }
- 
- TEST(CombineAndDeleteFramesTest, AllowsValidMixedSpatialIndices) {
-   EncodedFrame frame1 = CreateEncodedImageOfSizeN(/*n=*/10, /*x=*/1);
-   // nullopt (will be treated as 0)
--  EncodedFrame frame2 = CreateEncodedImageOfSizeN(/*n=*/15, /*x=*/11);
-+  EncodedFrame frame2 = CreateEncodedImageOfSizeN(/*n=*/10, /*x=*/11);
-   frame2.SetSpatialIndex(1);
- 
-   absl::InlinedVector<std::unique_ptr<EncodedFrame>, 4> frames;
-   frames.push_back(std::make_unique<EncodedFrame>(frame1));
-   frames.push_back(std::make_unique<EncodedFrame>(frame2));
- 
--  std::unique_ptr<EncodedFrame> combined =
--      CombineAndDeleteFrames(std::move(frames));
--  ASSERT_THAT(combined, NotNull());
--  EXPECT_THAT(*combined, SizeIs(25));
--  EXPECT_EQ(combined->SpatialIndex(), 1);
--  EXPECT_EQ(combined->SpatialLayerFrameSize(0), 10u);
--  EXPECT_EQ(combined->SpatialLayerFrameSize(1), 15u);
-+  EXPECT_NE(CombineAndDeleteFrames(std::move(frames)), nullptr);
- }
- 
- TEST(CombineAndDeleteFramesTest, RejectsInvalidMixedSpatialIndices) {
-@@ -200,7 +181,7 @@ TEST(CombineAndDeleteFramesTest, RejectsInvalidMixedSpatialIndices) {
-   frames.push_back(std::make_unique<EncodedFrame>(frame2));
-   frames.push_back(std::make_unique<EncodedFrame>(frame3));
- 
--  EXPECT_THAT(CombineAndDeleteFrames(std::move(frames)), IsNull());
-+  EXPECT_EQ(CombineAndDeleteFrames(std::move(frames)), nullptr);
- }
- 
- }  // namespace
-diff --git a/modules/video_coding/rtp_frame_reference_finder.cc b/modules/video_coding/rtp_frame_reference_finder.cc
-index 6d41ee1f9c..a24e61e0dd 100644
---- a/modules/video_coding/rtp_frame_reference_finder.cc
-+++ b/modules/video_coding/rtp_frame_reference_finder.cc
-@@ -14,11 +14,9 @@
- #include <cstdint>
- #include <memory>
- #include <optional>
--#include <type_traits>
- #include <utility>
- #include <variant>
- 
--#include "api/field_trials_view.h"
- #include "api/video/video_codec_type.h"
- #include "modules/rtp_rtcp/source/frame_object.h"
- #include "modules/rtp_rtcp/source/rtp_video_header.h"
-@@ -36,8 +34,7 @@ namespace webrtc {
- namespace internal {
- class RtpFrameReferenceFinderImpl {
-  public:
--  explicit RtpFrameReferenceFinderImpl(const FieldTrialsView* field_trials)
--      : field_trials_(field_trials) {}
-+  RtpFrameReferenceFinderImpl() = default;
- 
-   RtpFrameReferenceFinder::ReturnVector ManageFrame(
-       std::unique_ptr<RtpFrameObject> frame);
-@@ -54,8 +51,6 @@ class RtpFrameReferenceFinderImpl {
- 
-   template <typename T>
-   T& GetRefFinderAs();
--
--  const FieldTrialsView* const field_trials_;
-   RefFinder ref_finder_;
- };
- 
-@@ -152,25 +147,17 @@ T& RtpFrameReferenceFinderImpl::GetRefFinderAs() {
-   if (auto* ref_finder = std::get_if<T>(&ref_finder_)) {
-     return *ref_finder;
-   }
--  if constexpr (std::is_same_v<T, RtpSeqNumOnlyRefFinder>) {
--    return ref_finder_.emplace<T>(field_trials_);
--  } else {
--    return ref_finder_.emplace<T>();
--  }
-+  return ref_finder_.emplace<T>();
- }
- 
- }  // namespace internal
- 
--RtpFrameReferenceFinder::RtpFrameReferenceFinder(
--    const FieldTrialsView* field_trials)
--    : RtpFrameReferenceFinder(field_trials, 0) {}
-+RtpFrameReferenceFinder::RtpFrameReferenceFinder()
-+    : RtpFrameReferenceFinder(0) {}
- 
--RtpFrameReferenceFinder::RtpFrameReferenceFinder(
--    const FieldTrialsView* field_trials,
--    int64_t picture_id_offset)
-+RtpFrameReferenceFinder::RtpFrameReferenceFinder(int64_t picture_id_offset)
-     : picture_id_offset_(picture_id_offset),
--      impl_(std::make_unique<internal::RtpFrameReferenceFinderImpl>(
--          field_trials)) {}
-+      impl_(std::make_unique<internal::RtpFrameReferenceFinderImpl>()) {}
- 
- RtpFrameReferenceFinder::~RtpFrameReferenceFinder() = default;
- 
-diff --git a/modules/video_coding/rtp_frame_reference_finder.h b/modules/video_coding/rtp_frame_reference_finder.h
-index 51ac790d48..3c816741ea 100644
---- a/modules/video_coding/rtp_frame_reference_finder.h
-+++ b/modules/video_coding/rtp_frame_reference_finder.h
-@@ -16,7 +16,6 @@
- #include <optional>
- 
- #include "absl/container/inlined_vector.h"
--#include "api/field_trials_view.h"
- #include "modules/rtp_rtcp/source/frame_object.h"
- 
- namespace webrtc {
-@@ -28,10 +27,8 @@ class RtpFrameReferenceFinder {
-  public:
-   using ReturnVector = absl::InlinedVector<std::unique_ptr<RtpFrameObject>, 3>;
- 
--  explicit RtpFrameReferenceFinder(
--      const FieldTrialsView* field_trials = nullptr);
--  RtpFrameReferenceFinder(const FieldTrialsView* field_trials,
--                          int64_t picture_id_offset);
-+  RtpFrameReferenceFinder();
-+  explicit RtpFrameReferenceFinder(int64_t picture_id_offset);
-   ~RtpFrameReferenceFinder();
- 
-   // The RtpFrameReferenceFinder will hold onto the frame until:
-diff --git a/modules/video_coding/rtp_frame_reference_finder_unittest.cc b/modules/video_coding/rtp_frame_reference_finder_unittest.cc
-index 00363a9a22..cf025f65b7 100644
---- a/modules/video_coding/rtp_frame_reference_finder_unittest.cc
-+++ b/modules/video_coding/rtp_frame_reference_finder_unittest.cc
-@@ -18,7 +18,6 @@
- #include <set>
- #include <utility>
- 
--#include "api/field_trials.h"
- #include "api/rtp_packet_infos.h"
- #include "api/video/encoded_frame.h"
- #include "api/video/encoded_image.h"
-@@ -30,7 +29,6 @@
- #include "modules/rtp_rtcp/source/frame_object.h"
- #include "modules/rtp_rtcp/source/rtp_video_header.h"
- #include "rtc_base/random.h"
--#include "test/create_test_field_trials.h"
- #include "test/gmock.h"
- #include "test/gtest.h"
- 
-@@ -88,7 +86,7 @@ class TestRtpFrameReferenceFinder : public ::testing::Test {
-   void OnCompleteFrames(RtpFrameReferenceFinder::ReturnVector frames) {
-     for (auto& frame : frames) {
-       int64_t pid = frame->Id();
--      uint16_t sidx = frame->SpatialIndex().value_or(0);
-+      uint16_t sidx = *frame->SpatialIndex();
-       auto frame_it = frames_from_callback_.find(std::make_pair(pid, sidx));
-       if (frame_it != frames_from_callback_.end()) {
-         ADD_FAILURE() << "Already received frame with (pid:sidx): (" << pid
-@@ -398,75 +396,8 @@ TEST_F(TestRtpFrameReferenceFinder, Av1FrameNoDependencyDescriptor) {
- 
-   OnCompleteFrames(reference_finder_->ManageFrame(std::move(frame)));
- 
--  ASSERT_THAT(frames_from_callback_, SizeIs(1));
--  EXPECT_EQ(frames_from_callback_.begin()->second->SpatialIndex(),
--            std::nullopt);
-+  ASSERT_EQ(1UL, frames_from_callback_.size());
-   CheckReferencesGeneric(sn);
- }
- 
--TEST_F(TestRtpFrameReferenceFinder, Av1SvcFramesNoDependencyDescriptor) {
--  uint16_t sn = 100;
--
--  // Keyframe spatial layer 0 (packets 100..101).
--  std::unique_ptr<RtpFrameObject> s0_key = CreateFrame(
--      /*seq_num_start=*/sn, /*seq_num_end=*/sn + 1, /*keyframe=*/true,
--      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
--  // Keyframe spatial layer 1 (packets 102..103, marked as delta by AV1
--  // since it's using inter-layer prediction).
--  std::unique_ptr<RtpFrameObject> s1_key = CreateFrame(
--      /*seq_num_start=*/sn + 2, /*seq_num_end=*/sn + 3, /*keyframe=*/false,
--      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
--
--  // Reorder arrival time of spatial layers for second temporal unit:
--  // Delta frame spatial layer 1 arrives before spatial layer 0 (gap at 104).
--  std::unique_ptr<RtpFrameObject> s1_delta = CreateFrame(
--      /*seq_num_start=*/sn + 5, /*seq_num_end=*/sn + 5, /*keyframe=*/false,
--      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/2000);
--  // Missing delta frame spatial layer 0 (packet 104).
--  std::unique_ptr<RtpFrameObject> s0_delta = CreateFrame(
--      /*seq_num_start=*/sn + 4, /*seq_num_end=*/sn + 4, /*keyframe=*/false,
--      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/2000);
--
--  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s0_key)));
--  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s1_key)));
--  ASSERT_THAT(frames_from_callback_, SizeIs(2));
--
--  // `s1_delta` has a packet gap (`sn + 4` is missing), so it must be stashed.
--  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s1_delta)));
--  ASSERT_THAT(frames_from_callback_, SizeIs(2));
--
--  // Once `s0_delta` arrives, both `s0_delta` and `s1_delta` complete.
--  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s0_delta)));
--  ASSERT_THAT(frames_from_callback_, SizeIs(4));
--  for (const auto& [key, frame] : frames_from_callback_) {
--    EXPECT_EQ(frame->SpatialIndex(), std::nullopt);
--  }
--  CheckReferencesGeneric(sn + 1);
--  CheckReferencesGeneric(sn + 3, sn + 1);
--  CheckReferencesGeneric(sn + 4, sn + 3);
--  CheckReferencesGeneric(sn + 5, sn + 4);
--}
--
--TEST_F(TestRtpFrameReferenceFinder, Av1SvcFramesSpatialIdKillSwitch) {
--  FieldTrials field_trials = CreateTestFieldTrials(
--      "WebRTC-Video-SeqNumOnlyRefFinderSpatialIndexKillSwitch/Enabled/");
--  reference_finder_ = std::make_unique<RtpFrameReferenceFinder>(&field_trials);
--  uint16_t sn = 100;
--
--  std::unique_ptr<RtpFrameObject> s0_key = CreateFrame(
--      /*seq_num_start=*/sn, /*seq_num_end=*/sn + 1, /*keyframe=*/true,
--      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
--  std::unique_ptr<RtpFrameObject> s1_key = CreateFrame(
--      /*seq_num_start=*/sn + 2, /*seq_num_end=*/sn + 3, /*keyframe=*/false,
--      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
--
--  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s0_key)));
--  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s1_key)));
--
--  ASSERT_THAT(frames_from_callback_, SizeIs(2));
--  for (const auto& [key, frame] : frames_from_callback_) {
--    EXPECT_EQ(frame->SpatialIndex(), 0);
--  }
--}
--
- }  // namespace webrtc
-diff --git a/modules/video_coding/rtp_seq_num_only_ref_finder.cc b/modules/video_coding/rtp_seq_num_only_ref_finder.cc
-index 05069ff19f..f372c7c090 100644
---- a/modules/video_coding/rtp_seq_num_only_ref_finder.cc
-+++ b/modules/video_coding/rtp_seq_num_only_ref_finder.cc
-@@ -12,10 +12,8 @@
- 
- #include <cstdint>
- #include <memory>
--#include <optional>
- #include <utility>
- 
--#include "api/field_trials_view.h"
- #include "modules/rtp_rtcp/source/frame_object.h"
- #include "modules/video_coding/rtp_frame_reference_finder.h"
- #include "rtc_base/checks.h"
-@@ -25,13 +23,6 @@
- 
- namespace webrtc {
- 
--RtpSeqNumOnlyRefFinder::RtpSeqNumOnlyRefFinder(
--    const FieldTrialsView* field_trials)
--    : set_spatial_index_to_zero_by_default_(
--          field_trials != nullptr &&
--          field_trials->IsEnabled(
--              "WebRTC-Video-SeqNumOnlyRefFinderSpatialIndexKillSwitch")) {}
--
- RtpFrameReferenceFinder::ReturnVector RtpSeqNumOnlyRefFinder::ManageFrame(
-     std::unique_ptr<RtpFrameObject> frame) {
-   FrameDecision decision = ManageFrameInternal(frame.get());
-@@ -128,8 +119,7 @@ RtpSeqNumOnlyRefFinder::ManageFrameInternal(RtpFrameObject* frame) {
-   }
- 
-   UpdateLastPictureIdWithPadding(frame->Id());
--  frame->SetSpatialIndex(
--      set_spatial_index_to_zero_by_default_ ? std::optional(0) : std::nullopt);
-+  frame->SetSpatialIndex(0);
-   frame->SetId(rtp_seq_num_unwrapper_.Unwrap(frame->Id()));
-   return kHandOff;
- }
-diff --git a/modules/video_coding/rtp_seq_num_only_ref_finder.h b/modules/video_coding/rtp_seq_num_only_ref_finder.h
-index 810c22123b..88aa6dce96 100644
---- a/modules/video_coding/rtp_seq_num_only_ref_finder.h
-+++ b/modules/video_coding/rtp_seq_num_only_ref_finder.h
-@@ -18,7 +18,6 @@
- #include <set>
- #include <utility>
- 
--#include "api/field_trials_view.h"
- #include "modules/rtp_rtcp/source/frame_object.h"
- #include "modules/video_coding/rtp_frame_reference_finder.h"
- #include "rtc_base/numerics/sequence_number_unwrapper.h"
-@@ -28,8 +27,7 @@ namespace webrtc {
- 
- class RtpSeqNumOnlyRefFinder {
-  public:
--  explicit RtpSeqNumOnlyRefFinder(
--      const FieldTrialsView* field_trials = nullptr);
-+  RtpSeqNumOnlyRefFinder() = default;
- 
-   RtpFrameReferenceFinder::ReturnVector ManageFrame(
-       std::unique_ptr<RtpFrameObject> frame);
-@@ -66,9 +64,6 @@ class RtpSeqNumOnlyRefFinder {
-   // Unwrapper used to unwrap generic RTP streams. In a generic stream we derive
-   // a picture id from the packet sequence number.
-   SeqNumUnwrapper<uint16_t> rtp_seq_num_unwrapper_;
--
--  // TODO(bugs.webrtc.org/560293075): Remove after rollout.
--  const bool set_spatial_index_to_zero_by_default_;
- };
- 
- }  // namespace webrtc
-diff --git a/unsafe_buffers_paths.txt b/unsafe_buffers_paths.txt
-index b6fb2cedeb..bce7720d38 100644
---- a/unsafe_buffers_paths.txt
-+++ b/unsafe_buffers_paths.txt
-@@ -489,6 +489,8 @@
- -modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
- -modules/video_coding/codecs/vp9/test/vp9_impl_unittest.cc
- -modules/video_coding/encoded_frame.cc
-+-modules/video_coding/frame_helpers.cc
-+-modules/video_coding/frame_helpers_unittest.cc
- -modules/video_coding/h264_sps_pps_tracker_unittest.cc
- -modules/video_coding/h26x_packet_buffer.cc
- -modules/video_coding/media_opt_util.cc
-diff --git a/video/BUILD.gn b/video/BUILD.gn
-index 930415de1c..883bbd7dd4 100644
---- a/video/BUILD.gn
-+++ b/video/BUILD.gn
-@@ -998,11 +998,9 @@ if (rtc_include_tests) {
-       "../api:rtp_parameters",
-       "../api/environment",
-       "../api/test/video:function_video_factory",
--      "../api/transport:bitrate_settings",
-       "../api/units:timestamp",
-       "../api/video:video_frame",
-       "../api/video:video_rtp_headers",
--      "../api/video_codecs:scalability_mode",
-       "../api/video_codecs:video_codecs_api",
-       "../call:video_receive_stream_api",
-       "../call:video_send_stream_api",
-@@ -1011,9 +1009,6 @@ if (rtc_include_tests) {
-       "../modules/video_coding:webrtc_h264",
-       "../modules/video_coding:webrtc_vp8",
-       "../modules/video_coding:webrtc_vp9",
--      "../modules/video_coding/codecs/av1:dav1d_decoder",
--      "../modules/video_coding/codecs/av1:libaom_av1_encoder",
--      "../modules/video_coding/svc:scalability_mode_util",
-       "../test:frame_generator_capturer",
-       "../test:test_common",
-       "../test:test_support",
-diff --git a/video/end_to_end_tests/codec_tests.cc b/video/end_to_end_tests/codec_tests.cc
-index 55a37ae69b..2bfabcf42a 100644
---- a/video/end_to_end_tests/codec_tests.cc
-+++ b/video/end_to_end_tests/codec_tests.cc
-@@ -18,13 +18,11 @@
- #include "api/rtp_parameters.h"
- #include "api/test/video/function_video_decoder_factory.h"
- #include "api/test/video/function_video_encoder_factory.h"
--#include "api/transport/bitrate_settings.h"
- #include "api/units/timestamp.h"
- #include "api/video/color_space.h"
- #include "api/video/video_frame.h"
- #include "api/video/video_rotation.h"
- #include "api/video/video_sink_interface.h"
--#include "api/video_codecs/scalability_mode.h"
- #include "api/video_codecs/sdp_video_format.h"
- #include "api/video_codecs/video_codec.h"
- #include "api/video_codecs/video_decoder_factory.h"
-@@ -33,12 +31,9 @@
- #include "call/video_send_stream.h"
- #include "common_video/test/utilities.h"
- #include "media/base/media_constants.h"
--#include "modules/video_coding/codecs/av1/dav1d_decoder.h"
--#include "modules/video_coding/codecs/av1/libaom_av1_encoder.h"
- #include "modules/video_coding/codecs/h264/include/h264.h"
- #include "modules/video_coding/codecs/vp8/include/vp8.h"
- #include "modules/video_coding/codecs/vp9/include/vp9.h"
--#include "modules/video_coding/svc/scalability_mode_util.h"
- #include "test/call_test.h"
- #include "test/frame_generator_capturer.h"
- #include "test/gtest.h"
-@@ -51,22 +46,6 @@ namespace {
- constexpr RtpHeaderExtensionId kColorSpaceExtensionId(1);
- constexpr RtpHeaderExtensionId kVideoRotationExtensionId(2);
- 
--// Default CallTest bitrate (300 kbps) is too low to activate multiple spatial
--// layers in SVC modes; use 1 Mbps start / 2 Mbps max so all configured spatial
--// layers are active.
--constexpr int kSvcStartBitrateBps = 1'000'000;
--constexpr int kSvcMaxBitrateBps = 2'000'000;
--
--// Scales the default resolution (320x180) by 2^(spatial_layers - 1) so that the
--// lowest spatial layer stays at 320x180 and all configured spatial layers meet
--// minimum encoder resolution thresholds.
--int GetScaleFactor(std::optional<ScalabilityMode> scalability_mode) {
--  if (!scalability_mode.has_value()) {
--    return 1;
--  }
--  return 1 << (ScalabilityModeToNumSpatialLayers(*scalability_mode) - 1);
--}
--
- class CodecEndToEndTest : public test::CallTest {
-  public:
-   CodecEndToEndTest()
-@@ -82,25 +61,21 @@ class CodecEndToEndTest : public test::CallTest {
- class CodecObserver : public test::EndToEndTest,
-                       public VideoSinkInterface<VideoFrame> {
-  public:
--  struct Config {
--    int num_frames_to_wait_for = 5;
--    VideoRotation rotation = kVideoRotation_0;
--    std::optional<ColorSpace> color_space;
--    std::optional<ScalabilityMode> scalability_mode;
--  };
--
--  CodecObserver(const Config& config,
-+  CodecObserver(int no_frames_to_wait_for,
-+                VideoRotation rotation_to_test,
-+                std::optional<ColorSpace> color_space_to_test,
-                 const std::string& payload_name,
-                 VideoEncoderFactory* encoder_factory,
-                 VideoDecoderFactory* decoder_factory)
-       : EndToEndTest(4 * test::VideoTestConstants::kDefaultTimeout),
-         // TODO(hta): This timeout (120 seconds) is excessive.
-         // https://bugs.webrtc.org/6830
--        config_(config),
-+        no_frames_to_wait_for_(no_frames_to_wait_for),
-+        expected_rotation_(rotation_to_test),
-+        expected_color_space_(color_space_to_test),
-         payload_name_(payload_name),
-         encoder_factory_(encoder_factory),
-         decoder_factory_(decoder_factory),
--        scale_factor_(GetScaleFactor(config.scalability_mode)),
-         frame_counter_(0) {}
- 
-   void PerformTest() override {
-@@ -108,26 +83,11 @@ class CodecObserver : public test::EndToEndTest,
-         << "Timed out while waiting for enough frames to be decoded.";
-   }
- 
--  void ModifySenderBitrateConfig(BitrateConstraints* bitrate_config) override {
--    if (config_.scalability_mode.has_value()) {
--      bitrate_config->start_bitrate_bps = kSvcStartBitrateBps;
--      bitrate_config->max_bitrate_bps = kSvcMaxBitrateBps;
--    }
--  }
--
-   void ModifyVideoConfigs(
-       VideoSendStream::Config* send_config,
-       std::vector<VideoReceiveStreamInterface::Config>* receive_configs,
-       VideoEncoderConfig* encoder_config) override {
-     encoder_config->codec_type = PayloadStringToCodecType(payload_name_);
--    if (config_.scalability_mode.has_value()) {
--      encoder_config->max_bitrate_bps = kSvcStartBitrateBps;
--      encoder_config->simulcast_layers[0].max_bitrate_bps = kSvcStartBitrateBps;
--      encoder_config->simulcast_layers[0].target_bitrate_bps =
--          kSvcStartBitrateBps;
--      encoder_config->simulcast_layers[0].scalability_mode =
--          *config_.scalability_mode;
--    }
-     send_config->encoder_settings.encoder_factory = encoder_factory_;
-     send_config->rtp.payload_name = payload_name_;
-     send_config->rtp.payload_type =
-@@ -143,65 +103,35 @@ class CodecObserver : public test::EndToEndTest,
-   }
- 
-   void OnFrame(const VideoFrame& video_frame) override {
--    EXPECT_EQ(config_.rotation, video_frame.rotation());
--    if (config_.scalability_mode.has_value()) {
--      EXPECT_EQ(video_frame.width(),
--                scale_factor_ * test::VideoTestConstants::kDefaultWidth);
--      EXPECT_EQ(video_frame.height(),
--                scale_factor_ * test::VideoTestConstants::kDefaultHeight);
--    }
-+    EXPECT_EQ(expected_rotation_, video_frame.rotation());
-     // Test only if explicit color space has been specified since otherwise the
-     // color space is codec dependent.
--    if (config_.color_space) {
--      EXPECT_EQ(config_.color_space,
-+    if (expected_color_space_) {
-+      EXPECT_EQ(expected_color_space_,
-                 video_frame.color_space()
-                     ? std::make_optional(*video_frame.color_space())
-                     : std::nullopt);
-     }
--    if (++frame_counter_ == config_.num_frames_to_wait_for) {
-+    if (++frame_counter_ == no_frames_to_wait_for_)
-       observation_complete_.Set();
--    }
--  }
--
--  void ModifyVideoCaptureStartResolution(int* width,
--                                         int* height,
--                                         int* frame_rate) override {
--    *width = scale_factor_ * test::VideoTestConstants::kDefaultWidth;
--    *height = scale_factor_ * test::VideoTestConstants::kDefaultHeight;
-   }
- 
-   void OnFrameGeneratorCapturerCreated(
-       test::FrameGeneratorCapturer* frame_generator_capturer) override {
--    frame_generator_capturer->SetFakeRotation(config_.rotation);
--    frame_generator_capturer->SetFakeColorSpace(config_.color_space);
-+    frame_generator_capturer->SetFakeRotation(expected_rotation_);
-+    frame_generator_capturer->SetFakeColorSpace(expected_color_space_);
-   }
- 
-  private:
--  const Config config_;
--  const std::string payload_name_;
--  VideoEncoderFactory* const encoder_factory_;
--  VideoDecoderFactory* const decoder_factory_;
--  const int scale_factor_;
-+  int no_frames_to_wait_for_;
-+  VideoRotation expected_rotation_;
-+  std::optional<ColorSpace> expected_color_space_;
-+  std::string payload_name_;
-+  VideoEncoderFactory* encoder_factory_;
-+  VideoDecoderFactory* decoder_factory_;
-   int frame_counter_;
- };
- 
--TEST_F(CodecEndToEndTest, SendsAndReceivesAv1SvcWithoutDependencyDescriptor) {
--  test::FunctionVideoEncoderFactory encoder_factory(
--      [](const Environment& env, const SdpVideoFormat& format) {
--        return CreateLibaomAv1Encoder(env);
--      });
--  test::FunctionVideoDecoderFactory decoder_factory(
--      [](const Environment& env, const SdpVideoFormat& format) {
--        return CreateDav1dDecoder(env);
--      });
--  // Wait for 20 frames across multiple temporal units to cover both the
--  // multi-layer keyframe and subsequent multi-layer delta frames.
--  CodecObserver test({.num_frames_to_wait_for = 20,
--                      .scalability_mode = ScalabilityMode::kL2T3_KEY},
--                     "AV1", &encoder_factory, &decoder_factory);
--  RunBaseTest(&test);
--}
--
- TEST_F(CodecEndToEndTest, SendsAndReceivesVP8) {
-   test::FunctionVideoEncoderFactory encoder_factory(
-       [](const Environment& env, const SdpVideoFormat& format) {
-@@ -211,7 +141,8 @@ TEST_F(CodecEndToEndTest, SendsAndReceivesVP8) {
-       [](const Environment& env, const SdpVideoFormat& format) {
-         return CreateVp8Decoder(env);
-       });
--  CodecObserver test({}, "VP8", &encoder_factory, &decoder_factory);
-+  CodecObserver test(5, kVideoRotation_0, std::nullopt, "VP8", &encoder_factory,
-+                     &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -224,8 +155,8 @@ TEST_F(CodecEndToEndTest, SendsAndReceivesVP8Rotation90) {
-       [](const Environment& env, const SdpVideoFormat& format) {
-         return CreateVp8Decoder(env);
-       });
--  CodecObserver test({.rotation = kVideoRotation_90}, "VP8", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(5, kVideoRotation_90, std::nullopt, "VP8",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -237,8 +168,8 @@ TEST_F(CodecEndToEndTest, SendsAndReceivesVP9) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return VP9Decoder::Create(); });
--  CodecObserver test({.num_frames_to_wait_for = 500}, "VP9", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(500, kVideoRotation_0, std::nullopt, "VP9",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -249,8 +180,8 @@ TEST_F(CodecEndToEndTest, SendsAndReceivesVP9VideoRotation90) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return VP9Decoder::Create(); });
--  CodecObserver test({.rotation = kVideoRotation_90}, "VP9", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(5, kVideoRotation_90, std::nullopt, "VP9",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -261,10 +192,9 @@ TEST_F(CodecEndToEndTest, SendsAndReceivesVP9ExplicitColorSpace) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return VP9Decoder::Create(); });
--  CodecObserver test(
--      {.rotation = kVideoRotation_90,
--       .color_space = CreateTestColorSpace(/*with_hdr_metadata=*/false)},
--      "VP9", &encoder_factory, &decoder_factory);
-+  CodecObserver test(5, kVideoRotation_90,
-+                     CreateTestColorSpace(/*with_hdr_metadata=*/false), "VP9",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -276,10 +206,9 @@ TEST_F(CodecEndToEndTest,
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return VP9Decoder::Create(); });
--  CodecObserver test(
--      {.rotation = kVideoRotation_90,
--       .color_space = CreateTestColorSpace(/*with_hdr_metadata=*/true)},
--      "VP9", &encoder_factory, &decoder_factory);
-+  CodecObserver test(5, kVideoRotation_90,
-+                     CreateTestColorSpace(/*with_hdr_metadata=*/true), "VP9",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -311,8 +240,8 @@ TEST_P(EndToEndTestH264, SendsAndReceivesH264) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return H264Decoder::Create(); });
--  CodecObserver test({.num_frames_to_wait_for = 500}, "H264", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(500, kVideoRotation_0, std::nullopt, "H264",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -323,8 +252,8 @@ TEST_P(EndToEndTestH264, SendsAndReceivesH264VideoRotation90) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return H264Decoder::Create(); });
--  CodecObserver test({.rotation = kVideoRotation_90}, "H264", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(5, kVideoRotation_90, std::nullopt, "H264",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -337,8 +266,8 @@ TEST_P(EndToEndTestH264, SendsAndReceivesH264PacketizationMode0) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return H264Decoder::Create(); });
--  CodecObserver test({.num_frames_to_wait_for = 500}, "H264", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(500, kVideoRotation_0, std::nullopt, "H264",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- 
-@@ -351,8 +280,8 @@ TEST_P(EndToEndTestH264, SendsAndReceivesH264PacketizationMode1) {
-       });
-   test::FunctionVideoDecoderFactory decoder_factory(
-       []() { return H264Decoder::Create(); });
--  CodecObserver test({.num_frames_to_wait_for = 500}, "H264", &encoder_factory,
--                     &decoder_factory);
-+  CodecObserver test(500, kVideoRotation_0, std::nullopt, "H264",
-+                     &encoder_factory, &decoder_factory);
-   RunBaseTest(&test);
- }
- #endif  // defined(WEBRTC_USE_H264)
-diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index a3f72f6138..9ef9e51947 100644
---- a/video/rtp_video_stream_receiver2.cc
-+++ b/video/rtp_video_stream_receiver2.cc
-@@ -342,8 +342,7 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
-                                             &rtcp_feedback_buffer_)),
-       packet_buffer_(kPacketBufferStartSize,
-                      PacketBufferMaxSize(env_.field_trials())),
--      reference_finder_(
--          std::make_unique<RtpFrameReferenceFinder>(&env_.field_trials())),
-+      reference_finder_(std::make_unique<RtpFrameReferenceFinder>()),
-       has_received_frame_(false),
-       frames_decryptable_(false),
-       absolute_capture_time_interpolator_(&env_.clock()),
-@@ -711,7 +710,6 @@ std::optional<int64_t> RtpVideoStreamReceiver2::UnwrapSequenceNumberOrRecover(
-     // Drop state from the previous epoch and anchor at the recovery keyframe.
-     packet_buffer_.Clear();
-     reference_finder_ = std::make_unique<RtpFrameReferenceFinder>(
--        &env_.field_trials(),
-         last_completed_picture_id_ + std::numeric_limits<uint16_t>::max());
-     nack_module_ = MaybeConstructNackModule(
-         env_, worker_queue_, nack_periodic_processor_, config_.rtp.nack,
-@@ -1167,7 +1165,6 @@ void RtpVideoStreamReceiver2::OnAssembledFrame(
-         // start from the `last_completed_picture_id_` and add an offset in case
-         // of reordering.
-         reference_finder_ = std::make_unique<RtpFrameReferenceFinder>(
--            &env_.field_trials(),
-             last_completed_picture_id_ + std::numeric_limits<uint16_t>::max());
-         current_codec_ = frame->codec_type();
-       } else {
-diff --git a/video/video_stream_buffer_controller_unittest.cc b/video/video_stream_buffer_controller_unittest.cc
-index aba1bc7da7..eb7d290a9d 100644
---- a/video/video_stream_buffer_controller_unittest.cc
-+++ b/video/video_stream_buffer_controller_unittest.cc
-@@ -818,22 +818,6 @@ TEST_P(VideoStreamBufferControllerTest,
-               Optional(VariantWith<TimeDelta>(TimeDelta::Zero())));
- }
- 
--TEST_P(VideoStreamBufferControllerTest,
--       CombinesTemporalUnitFromSeqNumOnlyRefFinder) {
--  StartNextDecodeForceKeyframe();
--
--  // Without a dependency descriptor, AV1 goes through RtpSeqNumOnlyRefFinder
--  // which does not set a spatial index.
--  buffer_->InsertFrame(WithReceiveTimeFromRtpTimestamp(
--      test::FakeFrameBuilder().Id(1).Time(0).Build()));
--  buffer_->InsertFrame(WithReceiveTimeFromRtpTimestamp(
--      test::FakeFrameBuilder().Id(2).Time(0).Refs({1}).AsLast().Build()));
--
--  EXPECT_THAT(
--      WaitForFrameOrTimeout(TimeDelta::Zero()),
--      Frame(AllOf(test::WithId(1), test::FrameWithSize(2 * kFrameSize))));
--}
--
- INSTANTIATE_TEST_SUITE_P(VideoStreamBufferController,
-                          VideoStreamBufferControllerTest,
-                          ::testing::Bool(),
++TYPED_TEST(RtpFecTest,
++           WillNotProtectMediaPacketsWithOutOfOrderWrappedSequenceNumbers) {
++  ForwardErrorCorrection::PacketList media_packets =
++      this->media_packet_generator_.ConstructMediaPackets(3);
++  ASSERT_THAT(media_packets, SizeIs(3));
++  // Set RTP sequence numbers.
++  auto it = media_packets.begin();
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 0);
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 47);
++  // Sequence number = 2^16 + 20 after wrap around become 20.
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 20);
++
++  std::list<ForwardErrorCorrection::Packet*> generated_fec_packets;
++  EXPECT_LT(this->fec_.EncodeFec(media_packets, /*protection_factor=*/127,
++                                 /*num_important_packets=*/3,
++                                 /*use_unequal_protection=*/false,
++                                 kFecMaskBursty, &generated_fec_packets),
++            0);
++  EXPECT_THAT(generated_fec_packets, IsEmpty());
++}
++
++TYPED_TEST(RtpFecTest,
++           WillNotProtectMediaPacketsWithOutOfOrderWrappedSequenceNumbers2) {
++  ForwardErrorCorrection::PacketList media_packets =
++      this->media_packet_generator_.ConstructMediaPackets(3);
++  ASSERT_THAT(media_packets, SizeIs(3));
++  // Set RTP sequence numbers.
++  auto it = media_packets.begin();
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 0);
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 46);
++  // Sequence number = 2^16 + 20 after wrap around become 20.
++  SetBE16((**(it++)).data.AsMutableSpan().subspan(2), 20);
++
++  std::list<ForwardErrorCorrection::Packet*> generated_fec_packets;
++  EXPECT_LT(this->fec_.EncodeFec(media_packets, /*protection_factor=*/127,
++                                 /*num_important_packets=*/3,
++                                 /*use_unequal_protection=*/false,
++                                 kFecMaskBursty, &generated_fec_packets),
++            0);
++  EXPECT_THAT(generated_fec_packets, IsEmpty());
++}
++
+ TYPED_TEST(RtpFecTest, FecRecoveryNoLoss) {
+   constexpr int kNumImportantPackets = 0;
+   constexpr bool kUseUnequalProtection = false;
