@@ -10,7 +10,6 @@
 
 #include "pc/jsep_transport.h"
 
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <optional>
@@ -43,7 +42,6 @@
 #include "pc/srtp_transport.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/buffer.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/logging.h"
@@ -1397,16 +1395,12 @@ class JsepTransport2HeaderExtensionTest
 
   void TestOneWaySendRecvPacketWithEncryptedHeaderExtension(
       JsepTransport* sender_transport) {
-    size_t rtp_len = sizeof(kPcmuFrameWithExtensions);
-    size_t packet_size = rtp_len + GetRtpAuthLen();
-    Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtp_packet_data = rtp_packet_buffer.data<char>();
-    memcpy(rtp_packet_data, kPcmuFrameWithExtensions, rtp_len);
+    CopyOnWriteBuffer rtp_packet(
+        kPcmuFrameWithExtensions,
+        /*capacity=*/sizeof(kPcmuFrameWithExtensions) + GetRtpAuthLen());
     // In order to be able to run this test function multiple times we can not
     // use the same sequence number twice. Increase the sequence number by one.
-    SetBE16(std::span<uint8_t>(rtp_packet_buffer).subspan(2),
-            ++sequence_number_);
-    CopyOnWriteBuffer rtp_packet(rtp_packet_data, rtp_len, packet_size);
+    SetBE16(rtp_packet.AsMutableSpan().subspan(2), ++sequence_number_);
 
     int packet_count_before = received_packet_count_;
     AsyncSocketPacketOptions options;

@@ -108,84 +108,65 @@ class SrtpTransportTest : public ::testing::Test {
   }
 
   void TestSendRecvRtpPacket(int crypto_suite) {
-    size_t rtp_len = sizeof(kPcmuFrame);
-    size_t packet_size = rtp_len + rtp_auth_tag_len(crypto_suite);
-    Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtp_packet_data = rtp_packet_buffer.data<char>();
-    memcpy(rtp_packet_data, kPcmuFrame, rtp_len);
+    CopyOnWriteBuffer original_rtp_data(
+        kPcmuFrame,
+        /*capacity=*/sizeof(kPcmuFrame) + rtp_auth_tag_len(crypto_suite));
     // In order to be able to run this test function multiple times we can not
     // use the same sequence number twice. Increase the sequence number by one.
-    SetBE16(std::span<uint8_t>(rtp_packet_buffer).subspan(2),
-            ++sequence_number_);
-    CopyOnWriteBuffer rtp_packet1to2(rtp_packet_data, rtp_len, packet_size);
-    CopyOnWriteBuffer rtp_packet2to1(rtp_packet_data, rtp_len, packet_size);
-
-    char original_rtp_data[sizeof(kPcmuFrame)];
-    memcpy(original_rtp_data, rtp_packet_data, rtp_len);
+    SetBE16(original_rtp_data.AsMutableSpan().subspan(2), ++sequence_number_);
+    CopyOnWriteBuffer rtp_packet1to2 = original_rtp_data;
+    CopyOnWriteBuffer rtp_packet2to1 = original_rtp_data;
 
     AsyncSocketPacketOptions options;
     // Send a packet from `srtp_transport1_` to `srtp_transport2_` and verify
     // that the packet can be successfully received and decrypted.
     ASSERT_TRUE(srtp_transport1_->SendRtpPacket(&rtp_packet1to2, options,
                                                 PF_SRTP_BYPASS));
-    ASSERT_TRUE(rtp_sink2_.last_recv_rtp_packet().data());
-    EXPECT_EQ(0, memcmp(rtp_sink2_.last_recv_rtp_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_EQ(rtp_sink2_.last_recv_rtp_packet().Buffer(), original_rtp_data);
     // Get the encrypted packet from underneath packet transport and verify
     // the data is actually encrypted.
     auto fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
         srtp_transport1_->rtp_packet_transport());
-    EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_NE(*fake_rtp_packet_transport->last_sent_packet(),
+              original_rtp_data);
 
     // Do the same thing in the opposite direction;
     ASSERT_TRUE(srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
                                                 PF_SRTP_BYPASS));
-    ASSERT_TRUE(rtp_sink1_.last_recv_rtp_packet().data());
-    EXPECT_EQ(0, memcmp(rtp_sink1_.last_recv_rtp_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_EQ(rtp_sink1_.last_recv_rtp_packet().Buffer(), original_rtp_data);
     fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
         srtp_transport2_->rtp_packet_transport());
-    EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_NE(*fake_rtp_packet_transport->last_sent_packet(),
+              original_rtp_data);
   }
 
   void TestSendRecvRtcpPacket(int crypto_suite) {
-    size_t rtcp_len = sizeof(kFakeRtcpReport);
-    size_t packet_size = rtcp_len + 4 + rtcp_auth_tag_len(crypto_suite);
-    Buffer rtcp_packet_buffer =
-        Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtcp_packet_data = rtcp_packet_buffer.data<char>();
-    memcpy(rtcp_packet_data, kFakeRtcpReport, rtcp_len);
+    CopyOnWriteBuffer rtcp_packet_data(
+        kFakeRtcpReport, /*capacity=*/sizeof(kFakeRtcpReport) + 4 +
+                             rtcp_auth_tag_len(crypto_suite));
 
-    CopyOnWriteBuffer rtcp_packet1to2(rtcp_packet_data, rtcp_len, packet_size);
-    CopyOnWriteBuffer rtcp_packet2to1(rtcp_packet_data, rtcp_len, packet_size);
+    CopyOnWriteBuffer rtcp_packet1to2 = rtcp_packet_data;
+    CopyOnWriteBuffer rtcp_packet2to1 = rtcp_packet_data;
 
     AsyncSocketPacketOptions options;
     // Send a packet from `srtp_transport1_` to `srtp_transport2_` and verify
     // that the packet can be successfully received and decrypted.
     ASSERT_TRUE(srtp_transport1_->SendRtcpPacket(&rtcp_packet1to2, options,
                                                  PF_SRTP_BYPASS));
-    ASSERT_TRUE(rtp_sink2_.last_recv_rtcp_packet().data());
-    EXPECT_EQ(0, memcmp(rtp_sink2_.last_recv_rtcp_packet().data(),
-                        rtcp_packet_data, rtcp_len));
+    EXPECT_EQ(rtp_sink2_.last_recv_rtcp_packet(), rtcp_packet_data);
     // Get the encrypted packet from underneath packet transport and verify the
     // data is actually encrypted.
     auto fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
         srtp_transport1_->rtp_packet_transport());
-    EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
-                        rtcp_packet_data, rtcp_len));
+    EXPECT_NE(*fake_rtp_packet_transport->last_sent_packet(), rtcp_packet_data);
 
     // Do the same thing in the opposite direction;
     ASSERT_TRUE(srtp_transport2_->SendRtcpPacket(&rtcp_packet2to1, options,
                                                  PF_SRTP_BYPASS));
-    ASSERT_TRUE(rtp_sink1_.last_recv_rtcp_packet().data());
-    EXPECT_EQ(0, memcmp(rtp_sink1_.last_recv_rtcp_packet().data(),
-                        rtcp_packet_data, rtcp_len));
+    EXPECT_EQ(rtp_sink1_.last_recv_rtcp_packet(), rtcp_packet_data);
     fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
         srtp_transport2_->rtp_packet_transport());
-    EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
-                        rtcp_packet_data, rtcp_len));
+    EXPECT_NE(*fake_rtp_packet_transport->last_sent_packet(), rtcp_packet_data);
   }
 
   void TestSendRecvPacket(int crypto_suite,
@@ -210,48 +191,39 @@ class SrtpTransportTest : public ::testing::Test {
   void TestSendRecvPacketWithEncryptedHeaderExtension(
       int crypto_suite,
       const std::vector<RtpHeaderExtensionId>& encrypted_header_ids) {
-    size_t rtp_len = sizeof(kPcmuFrameWithExtensions);
-    size_t packet_size = rtp_len + rtp_auth_tag_len(crypto_suite);
-    Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtp_packet_data = rtp_packet_buffer.data<char>();
-    memcpy(rtp_packet_data, kPcmuFrameWithExtensions, rtp_len);
+    CopyOnWriteBuffer original_rtp_data(
+        kPcmuFrameWithExtensions,
+        /*capacity=*/sizeof(kPcmuFrameWithExtensions) +
+            rtp_auth_tag_len(crypto_suite));
     // In order to be able to run this test function multiple times we can not
     // use the same sequence number twice. Increase the sequence number by one.
-    SetBE16(std::span<uint8_t>(rtp_packet_buffer).subspan(2),
-            ++sequence_number_);
-    CopyOnWriteBuffer rtp_packet1to2(rtp_packet_data, rtp_len, packet_size);
-    CopyOnWriteBuffer rtp_packet2to1(rtp_packet_data, rtp_len, packet_size);
-
-    uint8_t original_rtp_data[sizeof(kPcmuFrameWithExtensions)];
-    memcpy(original_rtp_data, rtp_packet_data, rtp_len);
+    SetBE16(original_rtp_data.AsMutableSpan().subspan(2), ++sequence_number_);
+    CopyOnWriteBuffer rtp_packet1to2 = original_rtp_data;
+    CopyOnWriteBuffer rtp_packet2to1 = original_rtp_data;
 
     AsyncSocketPacketOptions options;
     // Send a packet from `srtp_transport1_` to `srtp_transport2_` and verify
     // that the packet can be successfully received and decrypted.
     ASSERT_TRUE(srtp_transport1_->SendRtpPacket(&rtp_packet1to2, options,
                                                 PF_SRTP_BYPASS));
-    ASSERT_TRUE(rtp_sink2_.last_recv_rtp_packet().data());
-    EXPECT_EQ(0, memcmp(rtp_sink2_.last_recv_rtp_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_EQ(rtp_sink2_.last_recv_rtp_packet().Buffer(), original_rtp_data);
     // Get the encrypted packet from underneath packet transport and verify the
     // data and header extension are actually encrypted.
     auto fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
         srtp_transport1_->rtp_packet_transport());
-    EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_NE(*fake_rtp_packet_transport->last_sent_packet(),
+              original_rtp_data);
     CompareHeaderExtensions(*fake_rtp_packet_transport->last_sent_packet(),
                             original_rtp_data, encrypted_header_ids, false);
 
     // Do the same thing in the opposite direction;
     ASSERT_TRUE(srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
                                                 PF_SRTP_BYPASS));
-    ASSERT_TRUE(rtp_sink1_.last_recv_rtp_packet().data());
-    EXPECT_EQ(0, memcmp(rtp_sink1_.last_recv_rtp_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_EQ(rtp_sink1_.last_recv_rtp_packet().Buffer(), original_rtp_data);
     fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
         srtp_transport2_->rtp_packet_transport());
-    EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_NE(*fake_rtp_packet_transport->last_sent_packet(),
+              original_rtp_data);
     CompareHeaderExtensions(*fake_rtp_packet_transport->last_sent_packet(),
                             original_rtp_data, encrypted_header_ids, false);
   }
@@ -374,14 +346,12 @@ TEST_F(SrtpTransportTest, RemoveSrtpReceiveStream) {
       srtp_transport->RegisterRtpDemuxerSink(demuxer_criteria, &rtp_sink));
 
   // Create a packet and try to send it three times.
-  size_t rtp_len = sizeof(kPcmuFrame);
-  size_t packet_size = rtp_len + rtp_auth_tag_len(kSrtpAeadAes128Gcm);
-  Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-  char* rtp_packet_data = rtp_packet_buffer.data<char>();
-  memcpy(rtp_packet_data, kPcmuFrame, rtp_len);
+  const CopyOnWriteBuffer rtp_packet_data(
+      kPcmuFrame,
+      /*capacity=*/sizeof(kPcmuFrame) + rtp_auth_tag_len(kSrtpAeadAes128Gcm));
 
   // First attempt will succeed.
-  CopyOnWriteBuffer first_try(rtp_packet_data, rtp_len, packet_size);
+  CopyOnWriteBuffer first_try = rtp_packet_data;
   EXPECT_TRUE(srtp_transport->SendRtpPacket(
       &first_try, AsyncSocketPacketOptions(), PF_SRTP_BYPASS));
   EXPECT_EQ(rtp_sink.rtp_count(), 1);
@@ -389,7 +359,7 @@ TEST_F(SrtpTransportTest, RemoveSrtpReceiveStream) {
   // Second attempt will be rejected by libSRTP as a replay attack
   // (srtp_err_status_replay_fail) since the sequence number was already seen.
   // Hence the packet never reaches the sink.
-  CopyOnWriteBuffer second_try(rtp_packet_data, rtp_len, packet_size);
+  CopyOnWriteBuffer second_try = rtp_packet_data;
   EXPECT_TRUE(srtp_transport->SendRtpPacket(
       &second_try, AsyncSocketPacketOptions(), PF_SRTP_BYPASS));
   EXPECT_EQ(rtp_sink.rtp_count(), 1);
@@ -401,7 +371,7 @@ TEST_F(SrtpTransportTest, RemoveSrtpReceiveStream) {
 
   // Third attempt will succeed again since libSRTP does not remember seeing
   // the sequence number after the reset.
-  CopyOnWriteBuffer third_try(rtp_packet_data, rtp_len, packet_size);
+  CopyOnWriteBuffer third_try = rtp_packet_data;
   EXPECT_TRUE(srtp_transport->SendRtpPacket(
       &third_try, AsyncSocketPacketOptions(), PF_SRTP_BYPASS));
   EXPECT_EQ(rtp_sink.rtp_count(), 2);

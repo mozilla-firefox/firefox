@@ -172,13 +172,8 @@ class DtlsSrtpTransportIntegrationTest : public ::testing::Test {
   }
 
   CopyOnWriteBuffer CreateRtpPacket() {
-    size_t rtp_len = sizeof(kPcmuFrame);
-    size_t packet_size = rtp_len + kRtpAuthTagLen;
-    Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtp_packet_data = rtp_packet_buffer.data<char>();
-    memcpy(rtp_packet_data, kPcmuFrame, rtp_len);
-
-    return {rtp_packet_data, rtp_len, packet_size};
+    return CopyOnWriteBuffer(kPcmuFrame, /*capacity=*/
+                             sizeof(kPcmuFrame) + kRtpAuthTagLen);
   }
 
   void SendRtpPacketFromSrtpToDtlsSrtp() {

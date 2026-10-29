@@ -10,7 +10,6 @@
 
 #include "pc/dtls_srtp_transport.h"
 
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <optional>
@@ -33,7 +32,6 @@
 #include "pc/rtp_transport.h"
 #include "pc/test/rtp_transport_test_util.h"
 #include "rtc_base/async_packet_socket.h"
-#include "rtc_base/buffer.h"
 #include "rtc_base/byte_order.h"
 #include "rtc_base/containers/flat_set.h"
 #include "rtc_base/copy_on_write_buffer.h"
@@ -134,16 +132,13 @@ class DtlsSrtpTransportTest : public ::testing::Test {
     ASSERT_TRUE(dtls_srtp_transport2_->IsSrtpActive());
 
     size_t rtp_len = sizeof(kPcmuFrame);
-    size_t packet_size = rtp_len + kRtpAuthTagLen;
-    Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtp_packet_data = rtp_packet_buffer.data<char>();
-    memcpy(rtp_packet_data, kPcmuFrame, rtp_len);
+    CopyOnWriteBuffer rtp_packet_buffer(kPcmuFrame,
+                                        /*capacity=*/rtp_len + kRtpAuthTagLen);
     // In order to be able to run this test function multiple times we can not
     // use the same sequence number twice. Increase the sequence number by one.
-    SetBE16(std::span<uint8_t>(rtp_packet_buffer).subspan(2),
-            ++sequence_number_);
-    CopyOnWriteBuffer rtp_packet1to2(rtp_packet_data, rtp_len, packet_size);
-    CopyOnWriteBuffer rtp_packet2to1(rtp_packet_data, rtp_len, packet_size);
+    SetBE16(rtp_packet_buffer.AsMutableSpan().subspan(2), ++sequence_number_);
+    CopyOnWriteBuffer rtp_packet1to2 = rtp_packet_buffer;
+    CopyOnWriteBuffer rtp_packet2to1 = rtp_packet_buffer;
 
     AsyncSocketPacketOptions options;
     // Send a packet from `srtp_transport1_` to `srtp_transport2_` and verify
@@ -168,13 +163,11 @@ class DtlsSrtpTransportTest : public ::testing::Test {
   void SendRecvRtcpPackets() {
     size_t rtcp_len = sizeof(kFakeRtcpReport);
     size_t packet_size = rtcp_len + 4 + kRtpAuthTagLen;
-    Buffer rtcp_packet_buffer =
-        Buffer::CreateUninitializedWithSize(packet_size);
 
     // TODO(zhihuang): Remove the extra copy when the SendRtpPacket method
     // doesn't take the CopyOnWriteBuffer by pointer.
-    CopyOnWriteBuffer rtcp_packet1to2(kFakeRtcpReport, rtcp_len, packet_size);
-    CopyOnWriteBuffer rtcp_packet2to1(kFakeRtcpReport, rtcp_len, packet_size);
+    CopyOnWriteBuffer rtcp_packet1to2(kFakeRtcpReport, packet_size);
+    CopyOnWriteBuffer rtcp_packet2to1(kFakeRtcpReport, packet_size);
 
     AsyncSocketPacketOptions options;
     // Send a packet from `srtp_transport1_` to `srtp_transport2_` and verify
@@ -204,54 +197,44 @@ class DtlsSrtpTransportTest : public ::testing::Test {
     ASSERT_TRUE(dtls_srtp_transport1_->IsSrtpActive());
     ASSERT_TRUE(dtls_srtp_transport2_->IsSrtpActive());
 
-    size_t rtp_len = sizeof(kPcmuFrameWithExtensions);
-    size_t packet_size = rtp_len + kRtpAuthTagLen;
-    Buffer rtp_packet_buffer = Buffer::CreateUninitializedWithSize(packet_size);
-    char* rtp_packet_data = rtp_packet_buffer.data<char>();
-    memcpy(rtp_packet_data, kPcmuFrameWithExtensions, rtp_len);
+    CopyOnWriteBuffer original_rtp_data(
+        kPcmuFrameWithExtensions,
+        /*capacity=*/sizeof(kPcmuFrameWithExtensions) + kRtpAuthTagLen);
     // In order to be able to run this test function multiple times we can not
     // use the same sequence number twice. Increase the sequence number by one.
-    SetBE16(std::span<uint8_t>(rtp_packet_buffer).subspan(2),
-            ++sequence_number_);
-    CopyOnWriteBuffer rtp_packet1to2(rtp_packet_data, rtp_len, packet_size);
-    CopyOnWriteBuffer rtp_packet2to1(rtp_packet_data, rtp_len, packet_size);
-
-    uint8_t original_rtp_data[sizeof(kPcmuFrameWithExtensions)];
-    memcpy(original_rtp_data, rtp_packet_data, rtp_len);
+    SetBE16(original_rtp_data.AsMutableSpan().subspan(2), ++sequence_number_);
+    CopyOnWriteBuffer rtp_packet1to2 = original_rtp_data;
+    CopyOnWriteBuffer rtp_packet2to1 = original_rtp_data;
 
     AsyncSocketPacketOptions options;
     // Send a packet from `srtp_transport1_` to `srtp_transport2_` and verify
     // that the packet can be successfully received and decrypted.
     ASSERT_TRUE(dtls_srtp_transport1_->SendRtpPacket(&rtp_packet1to2, options,
                                                      PF_SRTP_BYPASS));
-    ASSERT_TRUE(transport_observer2_.last_recv_rtp_packet().data());
-    EXPECT_EQ(0, memcmp(transport_observer2_.last_recv_rtp_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_EQ(transport_observer2_.last_recv_rtp_packet().Buffer(),
+              original_rtp_data);
     // Get the encrypted packet from underneath packet transport and verify the
     // data and header extension are actually encrypted.
     auto fake_dtls_transport = static_cast<FakeDtlsTransport*>(
         dtls_srtp_transport1_->rtp_packet_transport());
     auto fake_ice_transport = static_cast<FakeIceTransportInternal*>(
         fake_dtls_transport->ice_transport());
-    EXPECT_NE(0, memcmp(fake_ice_transport->last_sent_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_NE(fake_ice_transport->last_sent_packet(), original_rtp_data);
     CompareHeaderExtensions(fake_ice_transport->last_sent_packet(),
                             original_rtp_data, encrypted_header_ids, false);
 
     // Do the same thing in the opposite direction.
     ASSERT_TRUE(dtls_srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
                                                      PF_SRTP_BYPASS));
-    ASSERT_TRUE(transport_observer1_.last_recv_rtp_packet().data());
-    EXPECT_EQ(0, memcmp(transport_observer1_.last_recv_rtp_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_EQ(transport_observer1_.last_recv_rtp_packet().Buffer(),
+              original_rtp_data);
     // Get the encrypted packet from underneath packet transport and verify the
     // data and header extension are actually encrypted.
     fake_dtls_transport = static_cast<FakeDtlsTransport*>(
         dtls_srtp_transport2_->rtp_packet_transport());
     fake_ice_transport = static_cast<FakeIceTransportInternal*>(
         fake_dtls_transport->ice_transport());
-    EXPECT_NE(0, memcmp(fake_ice_transport->last_sent_packet().data(),
-                        original_rtp_data, rtp_len));
+    EXPECT_NE(fake_ice_transport->last_sent_packet(), original_rtp_data);
     CompareHeaderExtensions(fake_ice_transport->last_sent_packet(),
                             original_rtp_data, encrypted_header_ids, false);
   }
