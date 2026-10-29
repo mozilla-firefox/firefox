@@ -349,7 +349,13 @@
     ],
     'perfetto_x64': ['x64', 'perfetto', 'release_bot'],
     'perfetto_x86': ['x86', 'perfetto', 'release_bot'],
-    'pure_release_bot_arm64': ['openh264', 'pure_release_bot', 'arm64', 'h265'],
+    'pure_release_bot_arm64': [
+      'openh264',
+      'pure_release_bot',
+      'no_symbols',
+      'arm64',
+      'h265',
+    ],
     'pure_release_bot_x64': ['openh264', 'pure_release_bot', 'x64', 'h265'],
     'pure_release_bot_x86': ['openh264', 'pure_release_bot', 'x86', 'h265'],
     'release_bot_arm': ['openh264', 'release_bot', 'arm', 'h265'],
@@ -398,7 +404,6 @@
     'win_asan_clang_release_bot_x64': [
       'asan',
       'clang',
-      'full_symbols',
       'openh264',
       'pure_release_bot',
       'x64',
@@ -422,6 +427,7 @@
       'clang',
       'openh264',
       'pure_release_bot',
+      'no_symbols',
       'x64',
       'h265',
     ],
@@ -490,9 +496,6 @@
     'fuchsia': {
       'gn_args': 'target_os="fuchsia"'
     },
-    'full_symbols': {
-      'gn_args': 'symbol_level=2',
-    },
     'h265': {
       'gn_args': 'rtc_use_h265=true',
     },
@@ -539,6 +542,9 @@
     'no_sctp': {
       'gn_args': 'rtc_enable_sctp=false',
     },
+    'no_symbols': {
+      'gn_args': 'symbol_level=0',
+    },
     'openh264': {
       'gn_args': 'ffmpeg_branding="Chrome" rtc_use_h264=true',
     },
@@ -570,6 +576,7 @@
       'mixins': [
         'pure_release_bot',
         'dcheck_always_on',
+        'no_symbols',
         'strict_field_trials',
       ],
     },
