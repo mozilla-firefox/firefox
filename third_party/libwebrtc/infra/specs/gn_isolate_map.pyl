@@ -48,10 +48,6 @@
     "label": "//modules/audio_coding:audio_coding_unittests",
     "type": "console_test_launcher",
   },
-  "audio_decoder_unittests": {
-    "label": "//modules/audio_coding:audio_decoder_unittests",
-    "type": "console_test_launcher",
-  },
   "audio_engine_tests": {
     "label": "//audio:audio_engine_tests",
     "type": "console_test_launcher",

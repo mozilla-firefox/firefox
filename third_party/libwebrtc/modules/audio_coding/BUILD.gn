@@ -781,7 +781,6 @@ if (rtc_include_tests) {
       ":acm_receive_test",
       ":acm_send_test",
       ":audio_codec_speed_tests",
-      ":audio_decoder_unittests",
       ":g711_test",
       ":g722_test",
       ":neteq_opus_quality_test",
@@ -792,7 +791,6 @@ if (rtc_include_tests) {
       ":rtp_encode",
       ":rtp_jitter",
       ":rtpcat",
-      ":webrtc_opus_fec_test",
     ]
     if (rtc_enable_protobuf) {
       public_deps +=  # no-presubmit-check TODO(webrtc:8603)
@@ -919,19 +917,7 @@ if (rtc_include_tests) {
     deps += audio_coding_deps
   }
 
-  audio_decoder_unittests_resources =
-      [ "../../resources/audio_coding/testfile32kHz.pcm" ]
-
-  if (is_ios) {
-    bundle_data("audio_decoder_unittests_bundle_data") {
-      testonly = true
-      sources = audio_decoder_unittests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
-  rtc_test("audio_decoder_unittests") {
-    testonly = true
+  rtc_cc_test("audio_decoder_unittest") {
     sources = [ "neteq/audio_decoder_unittest.cc" ]
 
     defines = neteq_defines
@@ -952,13 +938,9 @@ if (rtc_include_tests) {
              "../../test:test_support",
            ] + audio_coding_deps
 
-    data = audio_decoder_unittests_resources
-
-    if (is_android) {
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-    }
+    data_deps = [ "../../resources:audio_coding_unittests_data" ]
     if (is_ios) {
-      deps += [ ":audio_decoder_unittests_bundle_data" ]
+      deps += [ "../../resources:audio_coding_unittests_bundle_data" ]
     }
   }
 
@@ -1277,9 +1259,7 @@ if (rtc_include_tests) {
     deps = [ ":g722" ]
   }
 
-  rtc_test("webrtc_opus_fec_test") {
-    testonly = true
-
+  rtc_cc_test("webrtc_opus_fec_test") {
     sources = [ "codecs/opus/opus_fec_test.cc" ]
 
     deps = [
@@ -1287,7 +1267,6 @@ if (rtc_include_tests) {
       "../../common_audio",
       "../../test:fileutils",
       "../../test:test_support",
-      "//testing/gtest",
     ]
     data_deps = [ "../../resources:audio_coding_unittests_data" ]
     if (is_ios) {
@@ -1333,6 +1312,7 @@ if (rtc_include_tests) {
       ":audio_coding_modules_tests",
       ":audio_decoder_multi_channel_opus_unittest",
       ":audio_decoder_opus_unittest",
+      ":audio_decoder_unittest",
       ":audio_encoder_cng_unittest",
       ":audio_encoder_copy_red_unittest",
       ":audio_encoder_multi_channel_opus_unittest",
@@ -1386,6 +1366,7 @@ if (rtc_include_tests) {
       ":time_stretch_unittest",
       ":timestamp_scaler_unittest",
       ":underrun_optimizer_unittest",
+      ":webrtc_opus_fec_test",
       "codecs/opus/test:audio_ring_buffer_unittest",
       "codecs/opus/test:blocker_unittest",
       "codecs/opus/test:lapped_transform_unittest",

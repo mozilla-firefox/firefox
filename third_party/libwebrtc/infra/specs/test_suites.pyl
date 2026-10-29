@@ -23,7 +23,6 @@
       'AppRTCMobile_test_apk': {},
       'android_instrumentation_test_apk': {},
       'audio_coding_unittests': {},
-      'audio_decoder_unittests': {},
       'audio_engine_tests': {},
       'audio_processing_unittests': {},
       'call_tests': {},
@@ -76,7 +75,6 @@
     'desktop_tests': {
       # keep-sorted start block=yes
       'audio_coding_unittests': {},
-      'audio_decoder_unittests': {},
       'audio_engine_tests': {},
       'audio_processing_unittests': {},
       'call_tests': {},
@@ -140,7 +138,7 @@
     },
     'fuchsia_compatible_tests': {
       # keep-sorted start block=yes
-      'audio_decoder_unittests': {},
+      'audio_coding_unittests': {},
       'call_tests': {},
       'common_audio_unittests': {},
       'common_video_unittests': {},
@@ -176,7 +174,6 @@
         'mixins': ['xcodebuild_sim_runner']
       },
       'audio_coding_unittests': {},
-      'audio_decoder_unittests': {},
       'audio_engine_tests': {},
       'audio_processing_unittests': {},
       'call_tests': {},
