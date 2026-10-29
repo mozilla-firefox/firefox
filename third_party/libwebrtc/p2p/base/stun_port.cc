@@ -135,10 +135,10 @@ class StunBindingRequest : public StunRequest {
     return now - start_time_ <= port_->stun_keepalive_lifetime();
   }
 
-  UDPPort* port_;
+  UDPPort* const port_;
   const SocketAddress server_addr_;
 
-  Timestamp start_time_;
+  const Timestamp start_time_;
 };
 
 UDPPort::AddressResolver::AddressResolver(

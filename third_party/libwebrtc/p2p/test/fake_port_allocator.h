@@ -143,6 +143,9 @@ class FakePortAllocatorSession : public PortAllocatorSession {
                                .network = &network,
                                .ice_username_fragment = username(),
                                .ice_password = password(),
+                               .content_name = content_name(),
+                               .component = component(),
+                               .generation = generation(),
                                .ice_tiebreaker = allocator_->ice_tiebreaker(),
                                .callbacks = std::move(callbacks)},
                               0, 0, false));
@@ -194,8 +197,6 @@ class FakePortAllocatorSession : public PortAllocatorSession {
 
  private:
   void AddPort(Port* port) {
-    port->set_component(component());
-    port->set_generation(generation());
     port->PrepareAddress();
     ready_ports_.push_back(port);
     NotifyPortReady(this, port);
@@ -215,9 +216,9 @@ class FakePortAllocatorSession : public PortAllocatorSession {
   }
 
   const Environment env_;
-  PortAllocator* allocator_;
-  TaskQueueBase* network_thread_;
-  PacketSocketFactory* factory_;
+  PortAllocator* const allocator_;
+  TaskQueueBase* const network_thread_;
+  PacketSocketFactory* const factory_;
   Network ipv4_network_;
   Network ipv6_network_;
   std::unique_ptr<Port> port_;
@@ -226,8 +227,8 @@ class FakePortAllocatorSession : public PortAllocatorSession {
   std::vector<PortInterface*> ready_ports_;
   bool allocation_done_ = false;
   bool is_cleared = false;
-  ServerAddresses stun_servers_;
-  std::vector<RelayServerConfig> turn_servers_;
+  const ServerAddresses stun_servers_;
+  const std::vector<RelayServerConfig> turn_servers_;
   uint32_t candidate_filter_ = CF_ALL;
   int transport_info_update_count_ = 0;
   bool running_ = false;
@@ -283,7 +284,7 @@ class FakePortAllocator : public PortAllocator {
 
  private:
   const Environment env_;
-  TaskQueueBase* absl_nonnull network_thread_;
+  TaskQueueBase* const absl_nonnull network_thread_;
   BasicPacketSocketFactory factory_;
   bool mdns_obfuscation_enabled_ = false;
   absl::AnyInvocable<void()> on_candidate_pool_discarded_;

@@ -913,13 +913,13 @@ void BasicPortAllocatorSession::AddAllocatedPort(Port* port,
                                                  AllocationSequence* seq) {
   RTC_DCHECK_RUN_ON(network_thread_);
   RTC_DCHECK_EQ(port->content_name(), content_name());
-
-  RTC_LOG(LS_INFO) << "Adding allocated port for " << content_name();
-  port->set_component(component());
-  port->set_generation(generation());
-  port->set_send_retransmit_count_attribute(
+  RTC_DCHECK_EQ(port->component(), component());
+  RTC_DCHECK_EQ(port->generation(), generation());
+  RTC_DCHECK_EQ(
+      port->send_retransmit_count_attribute(),
       (flags() & PORTALLOCATOR_ENABLE_STUN_RETRANSMIT_ATTRIBUTE) != 0);
 
+  RTC_LOG(LS_INFO) << "Adding allocated port for " << content_name();
   ports_.emplace_back(port, seq);
 
   RTC_LOG(LS_INFO) << port->ToString() << ": Added port to allocator";
@@ -1460,6 +1460,10 @@ void AllocationSequence::CreateUDPPorts() {
       .ice_username_fragment = session_->username(),
       .ice_password = session_->password(),
       .content_name = session_->content_name(),
+      .component = session_->component(),
+      .generation = session_->generation(),
+      .send_retransmit_count_attribute =
+          IsFlagSet(PORTALLOCATOR_ENABLE_STUN_RETRANSMIT_ATTRIBUTE),
       .lna_permission_factory = session_->allocator()->lna_permission_factory(),
       .ice_tiebreaker = session_->allocator()->ice_tiebreaker(),
       .callbacks = session_->GetPortCallbacks()};
@@ -1511,6 +1515,10 @@ void AllocationSequence::CreateTCPPorts() {
        .ice_username_fragment = session_->username(),
        .ice_password = session_->password(),
        .content_name = session_->content_name(),
+       .component = session_->component(),
+       .generation = session_->generation(),
+       .send_retransmit_count_attribute =
+           IsFlagSet(PORTALLOCATOR_ENABLE_STUN_RETRANSMIT_ATTRIBUTE),
        .ice_tiebreaker = session_->allocator()->ice_tiebreaker(),
        .callbacks = session_->GetPortCallbacks()},
       session_->allocator()->min_port(), session_->allocator()->max_port(),
@@ -1546,6 +1554,10 @@ void AllocationSequence::CreateStunPorts() {
        .ice_username_fragment = session_->username(),
        .ice_password = session_->password(),
        .content_name = session_->content_name(),
+       .component = session_->component(),
+       .generation = session_->generation(),
+       .send_retransmit_count_attribute =
+           IsFlagSet(PORTALLOCATOR_ENABLE_STUN_RETRANSMIT_ATTRIBUTE),
        .lna_permission_factory =
            session_->allocator()->lna_permission_factory(),
        .ice_tiebreaker = session_->allocator()->ice_tiebreaker(),
@@ -1617,6 +1629,10 @@ void AllocationSequence::CreateTurnPort(const RelayServerConfig& config,
     args.username = session_->username();
     args.password = session_->password();
     args.content_name = session_->content_name();
+    args.component = session_->component();
+    args.generation = session_->generation();
+    args.send_retransmit_count_attribute =
+        IsFlagSet(PORTALLOCATOR_ENABLE_STUN_RETRANSMIT_ATTRIBUTE);
     args.callbacks = session_->GetPortCallbacks();
     args.server_address = &(*relay_port);
     args.config = &config;

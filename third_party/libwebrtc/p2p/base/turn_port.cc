@@ -112,7 +112,7 @@ class TurnAllocateRequest : public StunRequest {
   void OnTryAlternate(StunMessage* response, int code);
   void OnUnknownAttribute(StunMessage* response);
 
-  TurnPort* port_;
+  TurnPort* const port_;
 };
 
 class TurnRefreshRequest : public StunRequest {
@@ -124,7 +124,7 @@ class TurnRefreshRequest : public StunRequest {
   void OnTimeout() override;
 
  private:
-  TurnPort* port_;
+  TurnPort* const port_;
 };
 
 class TurnCreatePermissionRequest : public StunRequest {
@@ -139,9 +139,9 @@ class TurnCreatePermissionRequest : public StunRequest {
   void OnTimeout() override;
 
  private:
-  TurnPort* port_;
+  TurnPort* const port_;
   TurnEntry* entry_;
-  SocketAddress ext_addr_;
+  const SocketAddress ext_addr_;
 };
 
 class TurnChannelBindRequest : public StunRequest {
@@ -230,10 +230,13 @@ TurnPort::TurnPort(PortParametersRef args,
                    const std::vector<std::string>& tls_alpn_protocols,
                    const std::vector<std::string>& tls_elliptic_curves,
                    TurnCustomizer* customizer,
-                   SSLCertificateVerifier* tls_cert_verifier)
+                   SSLCertificateVerifier* tls_cert_verifier,
+                   TlsCertPolicy tls_cert_policy,
+                   absl::string_view turn_logging_id)
     : Port(std::move(args), IceCandidateType::kRelay),
       server_address_(server_address),
       server_url_(ReconstructServerUrl()),
+      tls_cert_policy_(tls_cert_policy),
       tls_alpn_protocols_(tls_alpn_protocols),
       tls_elliptic_curves_(tls_elliptic_curves),
       tls_cert_verifier_(tls_cert_verifier),
@@ -250,7 +253,8 @@ TurnPort::TurnPort(PortParametersRef args,
       state_(STATE_CONNECTING),
       server_priority_(server_priority),
       allocate_mismatch_retries_(0),
-      turn_customizer_(customizer) {}
+      turn_customizer_(customizer),
+      turn_logging_id_(turn_logging_id) {}
 
 TurnPort::TurnPort(PortParametersRef args,
                    uint16_t min_port,
@@ -261,10 +265,13 @@ TurnPort::TurnPort(PortParametersRef args,
                    const std::vector<std::string>& tls_alpn_protocols,
                    const std::vector<std::string>& tls_elliptic_curves,
                    TurnCustomizer* customizer,
-                   SSLCertificateVerifier* tls_cert_verifier)
+                   SSLCertificateVerifier* tls_cert_verifier,
+                   TlsCertPolicy tls_cert_policy,
+                   absl::string_view turn_logging_id)
     : Port(std::move(args), IceCandidateType::kRelay, min_port, max_port),
       server_address_(server_address),
       server_url_(ReconstructServerUrl()),
+      tls_cert_policy_(tls_cert_policy),
       tls_alpn_protocols_(tls_alpn_protocols),
       tls_elliptic_curves_(tls_elliptic_curves),
       tls_cert_verifier_(tls_cert_verifier),
@@ -281,7 +288,8 @@ TurnPort::TurnPort(PortParametersRef args,
       state_(STATE_CONNECTING),
       server_priority_(server_priority),
       allocate_mismatch_retries_(0),
-      turn_customizer_(customizer) {}
+      turn_customizer_(customizer),
+      turn_logging_id_(turn_logging_id) {}
 
 TurnPort::~TurnPort() {
   // TODO(juberti): Should this even be necessary?
@@ -330,10 +338,6 @@ TlsCertPolicy TurnPort::GetTlsCertPolicy() const {
 
 void TurnPort::SetTlsCertPolicy(TlsCertPolicy tls_cert_policy) {
   tls_cert_policy_ = tls_cert_policy;
-}
-
-void TurnPort::SetTurnLoggingId(absl::string_view turn_logging_id) {
-  turn_logging_id_ = std::string(turn_logging_id);
 }
 
 const std::vector<std::string>& TurnPort::GetTlsAlpnProtocols() const {

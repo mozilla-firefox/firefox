@@ -109,15 +109,15 @@ class RTC_EXPORT BasicPortAllocator : public PortAllocator {
   bool MdnsObfuscationEnabled() const override;
 
   const Environment env_;
-  NetworkManager* network_manager_;
+  NetworkManager* const network_manager_;
   // Always externally-owned pointer to a socket factory.
   PacketSocketFactory* const socket_factory_;
   int network_ignore_mask_ = kDefaultNetworkIgnoreMask;
 
-  AlwaysValidPointer<RelayPortFactoryInterface, TurnPortFactory>
+  const AlwaysValidPointer<RelayPortFactoryInterface, TurnPortFactory>
       relay_port_factory_;
 
-  std::unique_ptr<LocalNetworkAccessPermissionFactoryInterface>
+  const std::unique_ptr<LocalNetworkAccessPermissionFactoryInterface>
       lna_permission_factory_;
 };
 
@@ -290,9 +290,9 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession {
   bool PruneTurnPorts(Port* newly_pairable_turn_port);
   bool PruneNewlyPairableTurnPort(PortData* newly_pairable_turn_port);
 
-  BasicPortAllocator* allocator_;
-  TaskQueueBase* network_thread_;
-  PacketSocketFactory* socket_factory_;
+  BasicPortAllocator* const allocator_;
+  TaskQueueBase* const network_thread_;
+  PacketSocketFactory* const socket_factory_;
   bool allocation_started_;
   bool network_manager_started_;
   bool allocation_sequences_created_;
@@ -302,7 +302,7 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession {
   std::vector<IceCandidateErrorEvent> candidate_error_events_;
   uint32_t candidate_filter_ = CF_ALL;
   // Policy on how to prune turn ports, taken from the port allocator.
-  PortPrunePolicy turn_port_prune_policy_;
+  const PortPrunePolicy turn_port_prune_policy_;
   SessionState state_ = SessionState::CLEARED;
   int allocation_epoch_ RTC_GUARDED_BY(network_thread_) = 0;
   ScopedTaskSafety network_safety_;
@@ -410,21 +410,21 @@ class AllocationSequence {
 
   void OnPortDestroyed(PortInterface* port);
 
-  BasicPortAllocatorSession* session_;
+  BasicPortAllocatorSession* const session_;
   bool network_failed_ = false;
-  const Network* network_;
+  const Network* const network_;
   // Compared with the new best IP in DisableEquivalentPhases.
   IPAddress previous_best_ip_;
-  PortConfiguration* config_;
+  PortConfiguration* const config_;
   State state_;
-  uint32_t flags_;
+  const uint32_t flags_;
   ProtocolList protocols_;
   std::unique_ptr<AsyncPacketSocket> udp_socket_;
   // There will be only one udp port per AllocationSequence.
   UDPPort* udp_port_;
   std::vector<Port*> relay_ports_;
   int phase_;
-  std::function<void()> port_allocation_complete_callback_;
+  const std::function<void()> port_allocation_complete_callback_;
   // This counter is sampled and passed together with tasks when tasks are
   // posted. If the sampled counter doesn't match `epoch_` on reception, the
   // posted task is ignored.

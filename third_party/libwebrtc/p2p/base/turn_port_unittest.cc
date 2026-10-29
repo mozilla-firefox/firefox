@@ -252,9 +252,11 @@ class TurnPortTest : public ::testing::Test {
 
   bool CreateTurnPort(absl::string_view username,
                       absl::string_view password,
-                      const ProtocolAddress& server_address) {
+                      const ProtocolAddress& server_address,
+                      absl::string_view turn_logging_id = "") {
     return CreateTurnPortWithAllParams(MakeNetwork(kLocalAddr1), username,
-                                       password, server_address);
+                                       password, server_address,
+                                       turn_logging_id);
   }
   bool CreateTurnPort(const SocketAddress& local_address,
                       absl::string_view username,
@@ -278,9 +280,11 @@ class TurnPortTest : public ::testing::Test {
   bool CreateTurnPortWithAllParams(const Network* network,
                                    absl::string_view username,
                                    absl::string_view password,
-                                   const ProtocolAddress& server_address) {
+                                   const ProtocolAddress& server_address,
+                                   absl::string_view turn_logging_id = "") {
     RelayServerConfig config;
     config.credentials = RelayCredentials(username, password);
+    config.turn_logging_id = std::string(turn_logging_id);
     CreateRelayPortArgs args = {.env = env_};
     args.network_thread = main_;
     args.socket_factory = socket_factory();
@@ -1078,8 +1082,7 @@ class TurnLoggingIdValidator : public StunMessageObserver {
 };
 
 TEST_F(TurnPortTest, TestTurnAllocateWithLoggingId) {
-  CreateTurnPort(kTurnUsername, kTurnPassword, kTurnUdpProtoAddr);
-  turn_port_->SetTurnLoggingId("KESO");
+  CreateTurnPort(kTurnUsername, kTurnPassword, kTurnUdpProtoAddr, "KESO");
   turn_server_.server()->SetStunMessageObserver(
       std::make_unique<TurnLoggingIdValidator>("KESO"));
   TestTurnAllocateSucceeds(kSimulatedRtt * 2);

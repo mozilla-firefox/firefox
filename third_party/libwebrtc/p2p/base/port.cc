@@ -80,25 +80,6 @@ const int kPortTimeoutDelay = STUN_TOTAL_TIMEOUT + 5000;
 
 }  // namespace
 
-Port::Callbacks::Callbacks() = default;
-Port::Callbacks::Callbacks(Callbacks&&) = default;
-Port::Callbacks& Port::Callbacks::operator=(Callbacks&&) = default;
-Port::Callbacks::Callbacks(const Callbacks& other) : tag(other.tag) {
-  RTC_CHECK(other.IsEmpty());
-}
-Port::Callbacks& Port::Callbacks::operator=(const Callbacks& other) {
-  RTC_CHECK(other.IsEmpty());
-  tag = other.tag;
-  candidate_ready = nullptr;
-  candidate_error = nullptr;
-  port_complete = nullptr;
-  port_destroyed = nullptr;
-  port_error = nullptr;
-  unknown_address = nullptr;
-  return *this;
-}
-Port::Callbacks::~Callbacks() = default;
-
 Port::Port(PortParametersRef args, IceCandidateType type)
     : Port(std::move(args), type, 0, 0, true) {}
 
@@ -112,13 +93,13 @@ Port::Port(PortParametersRef args,
       factory_(args.socket_factory),
       lna_permission_factory_(args.lna_permission_factory),
       type_(type),
-      send_retransmit_count_attribute_(false),
+      send_retransmit_count_attribute_(args.send_retransmit_count_attribute),
       network_(args.network),
       min_port_(min_port),
       max_port_(max_port),
       content_name_(args.content_name),
-      component_(ICE_CANDIDATE_COMPONENT_DEFAULT),
-      generation_(0),
+      component_(args.component),
+      generation_(args.generation),
       ice_username_fragment_(args.ice_username_fragment),
       password_(args.ice_password),
       timeout_delay_(kPortTimeoutDelay),
@@ -158,26 +139,14 @@ Port::Port(PortParametersRef args,
 
 void Port::RegisterCallbacks(Callbacks&& callbacks) {
   RTC_DCHECK_RUN_ON(thread_);
-  if (callbacks.candidate_ready) {
-    candidate_ready_callback_list_.AddReceiver(
-        callbacks.tag, std::move(callbacks.candidate_ready));
-  }
-  if (callbacks.candidate_error) {
-    candidate_error_callback_list_.AddReceiver(
-        callbacks.tag, std::move(callbacks.candidate_error));
-  }
-  if (callbacks.port_complete) {
-    port_complete_callback_list_.AddReceiver(
-        callbacks.tag, std::move(callbacks.port_complete));
-  }
+  candidate_ready_callback_ = std::move(callbacks.candidate_ready);
+  candidate_error_callback_ = std::move(callbacks.candidate_error);
+  port_complete_callback_ = std::move(callbacks.port_complete);
   if (callbacks.port_destroyed) {
     port_destroyed_callback_list_.AddReceiver(
         callbacks.tag, std::move(callbacks.port_destroyed));
   }
-  if (callbacks.port_error) {
-    port_error_callback_list_.AddReceiver(callbacks.tag,
-                                          std::move(callbacks.port_error));
-  }
+  port_error_callback_ = std::move(callbacks.port_error);
   if (callbacks.unknown_address) {
     unknown_address_callbacks_.AddReceiver(
         callbacks.tag, std::move(callbacks.unknown_address));
@@ -348,35 +317,11 @@ void Port::PostAddAddress(bool is_final) {
   }
 }
 
-void Port::SubscribePortComplete(const void* tag,
-                                 absl::AnyInvocable<void(Port*)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  port_complete_callback_list_.AddReceiver(tag, std::move(callback));
-}
-
-void Port::SubscribeCandidateError(
-    const void* tag,
-    std::function<void(Port*, const IceCandidateErrorEvent&)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  candidate_error_callback_list_.AddReceiver(tag, std::move(callback));
-}
-
 void Port::SendCandidateError(const IceCandidateErrorEvent& event) {
   RTC_DCHECK_RUN_ON(thread_);
-  candidate_error_callback_list_.Send(this, event);
-}
-
-void Port::SubscribeCandidateReadyCallback(
-    const void* tag,
-    absl::AnyInvocable<void(Port*, const Candidate&)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  candidate_ready_callback_list_.AddReceiver(tag, std::move(callback));
-}
-
-void Port::SubscribePortError(const void* tag,
-                              absl::AnyInvocable<void(Port*)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  port_error_callback_list_.AddReceiver(tag, std::move(callback));
+  if (candidate_error_callback_) {
+    candidate_error_callback_(this, event);
+  }
 }
 
 void Port::AddOrReplaceConnection(Connection* conn) {

@@ -24,8 +24,6 @@ class TurnPortFactory : public RelayPortFactoryInterface {
  public:
   ~TurnPortFactory() override;
 
-  using RelayPortFactoryInterface::Create;
-
   std::unique_ptr<Port> Create(CreateRelayPortArgs&& args,
                                AsyncPacketSocket* udp_socket) override;
 

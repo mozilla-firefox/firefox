@@ -215,7 +215,6 @@ class PortInterface {
 
   // Identifies the generation that this port was created in.
   virtual uint32_t generation() const = 0;
-  virtual void set_generation(uint32_t generation) = 0;
   virtual bool send_retransmit_count_attribute() const = 0;
   // For debugging purposes.
   virtual const std::string& content_name() const = 0;

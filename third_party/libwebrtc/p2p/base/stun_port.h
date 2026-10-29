@@ -184,11 +184,11 @@ class RTC_EXPORT UDPPort : public Port {
     typedef std::map<SocketAddress, std::unique_ptr<AsyncDnsResolverInterface>>
         ResolverMap;
 
-    PacketSocketFactory* socket_factory_;
+    PacketSocketFactory* const socket_factory_;
     // The function is called when resolving the specified address is finished.
     // The first argument is the input address, the second argument is the error
     // or 0 if it succeeded.
-    std::function<void(const SocketAddress&, int)> done_;
+    const std::function<void(const SocketAddress&, int)> done_;
     // Resolver may fire callbacks that refer to done_, so ensure
     // that all resolvers are destroyed first.
     ResolverMap resolvers_;
@@ -248,7 +248,7 @@ class RTC_EXPORT UDPPort : public Port {
 
   // This is true by default and false when
   // PORTALLOCATOR_DISABLE_DEFAULT_LOCAL_CANDIDATE is specified.
-  bool emit_local_for_anyaddress_;
+  const bool emit_local_for_anyaddress_;
 
   friend class StunBindingRequest;
 };

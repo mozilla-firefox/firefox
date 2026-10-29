@@ -14,12 +14,12 @@
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <utility>
 
 #include "api/environment/environment.h"
 #include "api/local_network_access_permission.h"
 #include "api/packet_socket_factory.h"
 #include "api/task_queue/task_queue_base.h"
+#include "p2p/base/p2p_constants.h"
 #include "p2p/base/port.h"
 #include "p2p/base/port_allocator.h"
 #include "rtc_base/async_packet_socket.h"
@@ -51,6 +51,9 @@ struct CreateRelayPortArgs {
   LocalNetworkAccessPermissionFactoryInterface* lna_permission_factory =
       nullptr;
   uint64_t ice_tiebreaker = 0;
+  int component = ICE_CANDIDATE_COMPONENT_DEFAULT;
+  uint32_t generation = 0;
+  bool send_retransmit_count_attribute = false;
   Port::Callbacks callbacks;
 };
 
@@ -62,47 +65,12 @@ class RelayPortFactoryInterface {
   // This variant is used for UDP connection to the relay server
   // using a already existing shared socket.
   virtual std::unique_ptr<Port> Create(CreateRelayPortArgs&& args,
-                                       AsyncPacketSocket* udp_socket) {
-    Port::Callbacks callbacks = std::move(args.callbacks);
-    std::unique_ptr<Port> port =
-        Create(static_cast<const CreateRelayPortArgs&>(args), udp_socket);
-    if (port != nullptr) {
-      port->RegisterCallbacks(std::move(callbacks));
-    }
-    return port;
-  }
-  // Legacy overload for callers and overrides that do not set `args.callbacks`.
-  // Callers that populate `args.callbacks` must pass `std::move(args)` to the
-  // rvalue overload above.
-  // TODO: bugs.webrtc.org/42224914 - Remove once downstream overrides take
-  // CreateRelayPortArgs&&.
-  virtual std::unique_ptr<Port> Create(const CreateRelayPortArgs& args,
-                                       AsyncPacketSocket* udp_socket) {
-    return Create(CreateRelayPortArgs(args), udp_socket);
-  }
+                                       AsyncPacketSocket* udp_socket) = 0;
 
   // This variant is used for the other cases.
   virtual std::unique_ptr<Port> Create(CreateRelayPortArgs&& args,
                                        int min_port,
-                                       int max_port) {
-    Port::Callbacks callbacks = std::move(args.callbacks);
-    std::unique_ptr<Port> port = Create(
-        static_cast<const CreateRelayPortArgs&>(args), min_port, max_port);
-    if (port != nullptr) {
-      port->RegisterCallbacks(std::move(callbacks));
-    }
-    return port;
-  }
-  // Legacy overload for callers and overrides that do not set `args.callbacks`.
-  // Callers that populate `args.callbacks` must pass `std::move(args)` to the
-  // rvalue overload above.
-  // TODO: bugs.webrtc.org/42224914 - Remove once downstream overrides take
-  // CreateRelayPortArgs&&.
-  virtual std::unique_ptr<Port> Create(const CreateRelayPortArgs& args,
-                                       int min_port,
-                                       int max_port) {
-    return Create(CreateRelayPortArgs(args), min_port, max_port);
-  }
+                                       int max_port) = 0;
 
  protected:
   RelayPortFactoryInterface() = default;

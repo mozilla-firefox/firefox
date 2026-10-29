@@ -153,23 +153,8 @@ typedef std::set<SocketAddress> ServerAddresses;
 class RTC_EXPORT Port : public PortInterface {
  public:
   // Callbacks registered at Port construction time. `tag` is an optional
-  // removal tag applied to all provided callbacks.
-  struct RTC_EXPORT Callbacks {
-    Callbacks();
-    Callbacks(Callbacks&&);
-    Callbacks& operator=(Callbacks&&);
-    // Copy is only supported when `other` is empty, for compatibility with
-    // callers that copy PortParametersRef or CreateRelayPortArgs without
-    // callbacks.
-    Callbacks(const Callbacks& other);
-    Callbacks& operator=(const Callbacks& other);
-    ~Callbacks();
-
-    bool IsEmpty() const {
-      return !candidate_ready && !candidate_error && !port_complete &&
-             !port_destroyed && !port_error && !unknown_address;
-    }
-
+  // removal tag applied to `port_destroyed` and `unknown_address`.
+  struct Callbacks {
     const void* tag = nullptr;
     absl::AnyInvocable<void(Port*, const Candidate&)> candidate_ready;
     absl::AnyInvocable<void(Port*, const IceCandidateErrorEvent&)>
@@ -195,6 +180,9 @@ class RTC_EXPORT Port : public PortInterface {
     absl::string_view ice_username_fragment;
     absl::string_view ice_password;
     absl::string_view content_name;
+    int component = ICE_CANDIDATE_COMPONENT_DEFAULT;
+    uint32_t generation = 0;
+    bool send_retransmit_count_attribute = false;
     LocalNetworkAccessPermissionFactoryInterface* lna_permission_factory =
         nullptr;
     uint64_t ice_tiebreaker = 0;
@@ -212,13 +200,6 @@ class RTC_EXPORT Port : public PortInterface {
 
  public:
   ~Port() override;
-
-  // Registers callbacks in `callbacks` with this port. Typically invoked by the
-  // Port constructor via `PortParametersRef::callbacks`.
-  // TODO: bugs.webrtc.org/42224914 - Move to private once
-  // RelayPortFactoryInterface::Create(const CreateRelayPortArgs&, ...) is
-  // removed.
-  void RegisterCallbacks(Callbacks&& callbacks);
 
   // Note that the port type does NOT uniquely identify different subclasses of
   // Port. Use the 2-tuple of the port type AND the protocol (GetProtocol()) to
@@ -273,29 +254,13 @@ class RTC_EXPORT Port : public PortInterface {
     RTC_DCHECK_RUN_ON(thread_);
     return component_;
   }
-  void set_component(int component) {
-    RTC_DCHECK_RUN_ON(thread_);
-    component_ = component;
-  }
 
   bool send_retransmit_count_attribute() const override {
-    RTC_DCHECK_RUN_ON(thread_);
     return send_retransmit_count_attribute_;
-  }
-  void set_send_retransmit_count_attribute(bool enable) {
-    RTC_DCHECK_RUN_ON(thread_);
-    send_retransmit_count_attribute_ = enable;
   }
 
   // Identifies the generation that this port was created in.
-  uint32_t generation() const override {
-    RTC_DCHECK_RUN_ON(thread_);
-    return generation_;
-  }
-  void set_generation(uint32_t generation) override {
-    RTC_DCHECK_RUN_ON(thread_);
-    generation_ = generation;
-  }
+  uint32_t generation() const override { return generation_; }
 
   const std::string& username_fragment() const;
   const std::string& password() const { return password_; }
@@ -309,33 +274,24 @@ class RTC_EXPORT Port : public PortInterface {
 
   // Fired when candidates are discovered by the port. When all candidates
   // are discovered that belong to port SignalAddressReady is fired.
-  // TODO: bugs.webrtc.org/42224914 - Deprecate once downstream uses
-  // PortParametersRef::callbacks.
-  void SubscribeCandidateReadyCallback(
-      const void* tag,
-      absl::AnyInvocable<void(Port*, const Candidate&)> callback);
   void NotifyCandidateReady(Port* port, const Candidate& candidate) {
     RTC_DCHECK_RUN_ON(thread_);
-    candidate_ready_callback_list_.Send(this, candidate);
+    if (candidate_ready_callback_) {
+      candidate_ready_callback_(this, candidate);
+    }
   }
   // Provides all of the above information in one handy object.
   const std::vector<Candidate>& Candidates() const override;
   // Fired when candidate discovery failed using certain server.
-  // TODO: bugs.webrtc.org/42224914 - Remove once all callers use
-  // PortParametersRef::callbacks.
-  [[deprecated("Use PortParametersRef::callbacks instead")]]
-  void SubscribeCandidateError(
-      const void* tag,
-      std::function<void(Port*, const IceCandidateErrorEvent&)> callback);
   void SendCandidateError(const IceCandidateErrorEvent& candidate_error_event);
 
   // SignalPortComplete is sent when port completes the task of candidates
   // allocation.
-  void SubscribePortComplete(const void* tag,
-                             absl::AnyInvocable<void(Port*)> callback);
   void NotifyPortComplete(Port* port) {
     RTC_DCHECK_RUN_ON(thread_);
-    port_complete_callback_list_.Send(this);
+    if (port_complete_callback_) {
+      port_complete_callback_(this);
+    }
   }
 
   // This signal sent when port fails to allocate candidates and this port
@@ -343,13 +299,11 @@ class RTC_EXPORT Port : public PortInterface {
   // and port fails to allocate one of the candidates, port shouldn't send
   // this signal as other candidates might be usefull in establishing the
   // connection.
-  // TODO: bugs.webrtc.org/42224914 - Deprecate once downstream uses
-  // PortParametersRef::callbacks.
-  void SubscribePortError(const void* tag,
-                          absl::AnyInvocable<void(Port*)> callback);
   void NotifyPortError(Port* port) {
     RTC_DCHECK_RUN_ON(thread_);
-    port_error_callback_list_.Send(this);
+    if (port_error_callback_) {
+      port_error_callback_(this);
+    }
   }
 
   void SubscribePortDestroyed(
@@ -406,14 +360,8 @@ class RTC_EXPORT Port : public PortInterface {
 
   // Debugging description of this port
   std::string ToString() const override;
-  uint16_t min_port() {
-    RTC_DCHECK_RUN_ON(thread_);
-    return min_port_;
-  }
-  uint16_t max_port() {
-    RTC_DCHECK_RUN_ON(thread_);
-    return max_port_;
-  }
+  uint16_t min_port() const { return min_port_; }
+  uint16_t max_port() const { return max_port_; }
 
   // Timeout shortening function to speed up unit tests.
   void set_timeout_delay(int delay);
@@ -566,6 +514,8 @@ class RTC_EXPORT Port : public PortInterface {
       absl::AnyInvocable<void(LocalNetworkAccessPermissionStatus)> callback);
 
  private:
+  void RegisterCallbacks(Callbacks&& callbacks);
+
   bool MaybeObfuscateAddress(const Candidate& c, bool is_final)
       RTC_RUN_ON(thread_);
 
@@ -590,22 +540,18 @@ class RTC_EXPORT Port : public PortInterface {
       absl::AnyInvocable<void(LocalNetworkAccessPermissionStatus)> callback,
       LocalNetworkAccessPermissionStatus status);
 
-  void SendCandidateReadyCallbackList(Port*, const Candidate&);
-  void SendPortCompleteCallbackList(Port*);
-  void SendPortErrorCallbackList(Port*);
-
   const Environment env_;
   TaskQueueBase* const thread_;
   PacketSocketFactory* const factory_;
   LocalNetworkAccessPermissionFactoryInterface* const lna_permission_factory_;
   const IceCandidateType type_;
-  bool send_retransmit_count_attribute_ RTC_GUARDED_BY(thread_);
-  const ::webrtc::Network* network_;
-  uint16_t min_port_ RTC_GUARDED_BY(thread_);
-  uint16_t max_port_ RTC_GUARDED_BY(thread_);
+  const bool send_retransmit_count_attribute_;
+  const ::webrtc::Network* const network_;
+  const uint16_t min_port_;
+  const uint16_t max_port_;
   std::string content_name_ RTC_GUARDED_BY(thread_);
   int component_ RTC_GUARDED_BY(thread_);
-  uint32_t generation_ RTC_GUARDED_BY(thread_);
+  const uint32_t generation_;
   // In order to establish a connection to this Port (so that real data can be
   // sent through), the other side must send us a STUN binding request that is
   // authenticated with this username_fragment and password.
@@ -652,12 +598,13 @@ class RTC_EXPORT Port : public PortInterface {
 
   CallbackList<PortInterface*> port_destroyed_callback_list_
       RTC_GUARDED_BY(thread_);
-  CallbackList<Port*, const IceCandidateErrorEvent&>
-      candidate_error_callback_list_ RTC_GUARDED_BY(thread_);
-  CallbackList<Port*, const Candidate&> candidate_ready_callback_list_
+  absl::AnyInvocable<void(Port*, const IceCandidateErrorEvent&)>
+      candidate_error_callback_ RTC_GUARDED_BY(thread_);
+  absl::AnyInvocable<void(Port*, const Candidate&)> candidate_ready_callback_
       RTC_GUARDED_BY(thread_);
-  CallbackList<Port*> port_complete_callback_list_ RTC_GUARDED_BY(thread_);
-  CallbackList<Port*> port_error_callback_list_ RTC_GUARDED_BY(thread_);
+  absl::AnyInvocable<void(Port*)> port_complete_callback_
+      RTC_GUARDED_BY(thread_);
+  absl::AnyInvocable<void(Port*)> port_error_callback_ RTC_GUARDED_BY(thread_);
 
   absl::AnyInvocable<void()> role_conflict_callback_ RTC_GUARDED_BY(thread_);
 

@@ -891,6 +891,7 @@ rtc_library("turn_port_factory") {
 rtc_source_set("relay_port_factory_interface") {
   sources = [ "client/relay_port_factory_interface.h" ]
   deps = [
+    ":p2p_constants",
     ":port",
     ":port_allocator",
     "../api:local_network_access_permission",
@@ -1339,6 +1340,7 @@ if (rtc_include_tests) {
       "../rtc_base:socket",
       "../rtc_base:socket_address",
       "../rtc_base:threading",
+      "../rtc_base/containers:flat_map",
       "../rtc_base/network:received_packet",
       "../rtc_base/system:unused",
       "../test:create_test_environment",
