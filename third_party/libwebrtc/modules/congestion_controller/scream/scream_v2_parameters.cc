@@ -45,6 +45,7 @@ ScreamV2Parameters::ScreamV2Parameters(const FieldTrialsView* trials)
       number_of_rtts_between_reset_ref_window_i_on_congestion(
           "NumberOfRttsBetweenResetRefWindowIOnCongestion",
           100),
+      ref_window_i_update_max_hold_rtts("RefWindowIUpdateMaxHoldRtts", 50),
       ref_window_overhead_min("RefWinMin", 1.5),
       ref_window_overhead_max("RefWinMax", 3.0),
       min_max_data_in_flight_mss("MinMaxDataInFlightMss", 4),
@@ -107,6 +108,7 @@ ScreamV2Parameters::ScreamV2Parameters(const FieldTrialsView* trials)
        &virtual_rtt,
        &backoff_scale_factor_close_to_ref_window_i,
        &number_of_rtts_between_reset_ref_window_i_on_congestion,
+       &ref_window_i_update_max_hold_rtts,
        &ref_window_overhead_min,
        &ref_window_overhead_max,
        &min_max_data_in_flight_mss,

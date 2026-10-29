@@ -77,9 +77,14 @@ struct ScreamV2Parameters {
   FieldTrialParameter<double> backoff_scale_factor_close_to_ref_window_i;
 
   // If CE is detected and this number of RTTs has passed since last
-  // congestion, ref_window_i will be reset.
+  // congestion, ref_window will be clamped to max_data_in_flight_prev_rtt.
   FieldTrialParameter<int>
       number_of_rtts_between_reset_ref_window_i_on_congestion;
+
+  // Maximum number of RTTs before `ref_window_i` is allowed to be updated on
+  // congestion even if `ref_window` has not increased by 5% above the lowest
+  // `ref_window` (`REF_WND_I_UPDATE_MAX_HOLD_RTTS` in the RFC).
+  FieldTrialParameter<int> ref_window_i_update_max_hold_rtts;
 
   // Max/Min used for calculating how much larger the send window is allowed to
   // be than the ref window.

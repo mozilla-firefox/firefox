@@ -273,18 +273,20 @@ yet fully implemented.
     `ref_window_scale_factor_due_to_avg_min_delay()`. See
     [scream_v2.cc:L228-L240](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#228).
 - **Inflection Point (`ref_window_i_`) Update Timing:**
-  - In the spec, `ref_wnd_i` is updated to `ref_wnd` *before* the reduction
+  - In draft `-02`, `ref_wnd_i` is updated to `ref_wnd` *before* the reduction
     whenever `is_loss_t || is_ce_t || is_virtual_ce_t` is true and
-    `ref_wnd_i_update_allowed` is true, and `ref_wnd_i_update_allowed` is
-    re-enabled when `ref_wnd` increases during the increase step
-    ([Section 4.2.2.1](https://www.ietf.org/archive/id/draft-ietf-ccwg-rfc8298bis-screamv2-01.html#section-4.2.2.1)).
+    `ref_wnd > ref_wnd_lowest * 1.05 || now - ref_wnd_i_update_time > REF_WND_I_UPDATE_MAX_HOLD_RTTS * s_rtt`
+    (with `REF_WND_I_UPDATE_MAX_HOLD_RTTS = 50`), and `ref_wnd_lowest` is set to
+    `ref_wnd` after the reduction.
   - In WebRTC, because window reduction and window increase can both execute on
-    the same feedback message, `ref_window_i_` and `allow_ref_window_i_update_`
-    are updated at the end of `UpdateRefWindow()` based on the **net change** in
-    `ref_window_` compared to `previous_ref_window` (recording
-    `previous_ref_window` only on a net decrease, and re-arming
-    `allow_ref_window_i_update_` only on a net increase). See
-    [scream_v2.cc:L340-L352](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#340).
+    the same feedback message, `ref_window_i_` and `ref_window_lowest_` are
+    updated at the end of `UpdateRefWindow()` when a **net decrease** occurs
+    (`previous_ref_window > ref_window_`): `ref_window_i_` is set to
+    `previous_ref_window` if `previous_ref_window > ref_window_lowest_ * 1.05`
+    or `ref_window_i_update_max_hold_rtts * max(virtual_rtt, rtt)` (default 50
+    RTTs) has elapsed since `last_ref_window_i_update_time_`, and
+    `ref_window_lowest_` is updated to `ref_window_`. See
+    [scream_v2.cc:L309-L330](https://webrtc.googlesource.com/src/+/main/modules/congestion_controller/scream/scream_v2.cc#309).
 
 ##### 4.2.2.2. Reference Window Increase
 

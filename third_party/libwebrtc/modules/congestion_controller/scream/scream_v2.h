@@ -156,9 +156,13 @@ class ScreamV2 {
   // noticed. Increase and decrease of `ref_window_` is scaled down around
   // `ref_window_i_`.
   DataSize ref_window_i_ = DataSize::Bytes(1);
-  // `allow_ref_window_i_update_` is set to true if `ref_window_` has increased
-  // since `ref_window_i_` was last set.
-  bool allow_ref_window_i_update_ = true;
+  // Lowest `ref_window_` observed on a reference window decrease
+  // (`ref_wnd_lowest` in 4.2.2.1). `ref_window_i_` is only updated when
+  // `ref_window_` before decrease has increased by >5% above
+  // `ref_window_lowest_` or `ref_window_i_update_max_hold_rtts` has elapsed
+  // since `last_ref_window_i_update_time_`.
+  DataSize ref_window_lowest_ = DataSize::Zero();
+  Timestamp last_ref_window_i_update_time_ = Timestamp::MinusInfinity();
 
   double last_ref_window_increase_scale_factor_ = 1.0;
 
@@ -182,10 +186,10 @@ class ScreamV2 {
   DataSize accumulated_received_bytes_ = DataSize::Zero();
   Timestamp last_window_receive_time_ = Timestamp::MinusInfinity();
 
-  // `last_reaction_to_congestion_time` is called
-  // `last_congestion_detected_time` in 4.2.2. Reference Window Update.
-  // Last received feedback that contained a congestion event that may have
-  // caused a reaction.
+  // `last_reaction_to_congestion_time_` tracks the last received feedback that
+  // contained a congestion event (`is_loss`, `is_ce`, or `is_virtual_ce`) that
+  // caused a reaction (corresponding to `last_reaction_to_congestion_time` and
+  // `last_congestion_detected_time` in 4.2.2).
   Timestamp last_reaction_to_congestion_time_ = Timestamp::MinusInfinity();
   // Last time the reference window decreased. This is not the same
   // as `last_reaction_to_congestion_time_` since a single CE mark does not

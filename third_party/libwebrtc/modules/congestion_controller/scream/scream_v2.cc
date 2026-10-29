@@ -288,8 +288,7 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
                    0.0, 1.0);
     double multiplicative_scale =
         1.0 + (ref_window_multiplicative_scale_factor() - 1.0) *
-                  post_congestion_scale *
-                  ref_window_scale_factor_close_to_ref_window_i();
+                  post_congestion_scale;
     RTC_DCHECK_GE(multiplicative_scale, 1.0);
     increase_scale_factor = increase_scale_factor * multiplicative_scale;
 
@@ -302,18 +301,22 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
     }
   }
 
-  if (previous_ref_window < ref_window_) {
-    // Allow setting a new `ref_window_i` if `ref_window_` increase.
-    // It means that `ref_window_i` can increase if `rew_window` increase and
-    // there is a congestion event.
-    allow_ref_window_i_update_ = true;
-  }
   if (previous_ref_window > ref_window_) {
     last_ref_window_decrease_time_ = parsed.feedback_time;
-    if (allow_ref_window_i_update_) {
+    // Allow update of `ref_window_i_` only if `ref_window_` before decrease
+    // had increased sufficiently (>5%) above `ref_window_lowest_` or the hold
+    // time has expired. This prevents `ref_window_i_` from being stepped down
+    // during a period of congestion (4.2.2.1).
+    const TimeDelta max_of_virtual_and_smoothed_rtt = std::max(
+        params_.virtual_rtt.Get(), delay_based_congestion_control_.rtt());
+    if (previous_ref_window > ref_window_lowest_ * 1.05 ||
+        parsed.feedback_time - last_ref_window_i_update_time_ >
+            params_.ref_window_i_update_max_hold_rtts.Get() *
+                max_of_virtual_and_smoothed_rtt) {
       ref_window_i_ = previous_ref_window;
-      allow_ref_window_i_update_ = false;
+      last_ref_window_i_update_time_ = parsed.feedback_time;
     }
+    ref_window_lowest_ = ref_window_;
   }
 
   RTC_LOG_IF(LS_VERBOSE, previous_ref_window != ref_window_)
