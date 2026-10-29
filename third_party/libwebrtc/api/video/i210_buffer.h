@@ -41,6 +41,12 @@ class I210Buffer : public I210BufferInterface {
   // VideoFrameBuffer implementation.
   scoped_refptr<I420BufferInterface> ToI420() override;
 
+  // Sets all three planes to all zeros. Used to work around for
+  // quirks in memory checkers
+  // (https://bugs.chromium.org/p/libyuv/issues/detail?id=377) and
+  // ffmpeg (http://crbug.com/390941).
+  void InitializeData();
+
   // PlanarYuv16BBuffer implementation.
   int width() const override;
   int height() const override;

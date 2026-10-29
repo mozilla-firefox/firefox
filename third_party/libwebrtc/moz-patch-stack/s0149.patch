@@ -14,7 +14,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/93cb056a0c8220b5b
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/common_video/video_frame_buffer_pool.cc b/common_video/video_frame_buffer_pool.cc
-index 07d3fd00c8..dc204423a4 100644
+index 7f65f87302..df349a2d5f 100644
 --- a/common_video/video_frame_buffer_pool.cc
 +++ b/common_video/video_frame_buffer_pool.cc
 @@ -139,8 +139,10 @@ scoped_refptr<I420Buffer> VideoFrameBufferPool::CreateI420Buffer(int width,

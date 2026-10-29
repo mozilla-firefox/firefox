@@ -9,7 +9,9 @@
  */
 #include "api/video/i010_buffer.h"
 
+#include <algorithm>
 #include <cstdint>
+#include <span>
 #include <utility>
 
 #include "api/make_ref_counted.h"
@@ -140,6 +142,14 @@ scoped_refptr<I420BufferInterface> I010Buffer::ToI420() {
   }
 
   return i420_buffer;
+}
+
+void I010Buffer::InitializeData() {
+  std::ranges::fill(
+      std::span(data_.get(),
+                I010DataSize(width_, height_, stride_y_, stride_u_, stride_v_) /
+                    kBytesPerPixel),
+      0);
 }
 
 int I010Buffer::width() const {

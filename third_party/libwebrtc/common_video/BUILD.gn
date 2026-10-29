@@ -224,6 +224,7 @@ if (rtc_include_tests && !build_with_chromium) {
       ":common_video",
       "../api:scoped_refptr",
       "../api/video:video_frame",
+      "../api/video:video_frame_i010",
       "../test:test_support",
     ]
   }
