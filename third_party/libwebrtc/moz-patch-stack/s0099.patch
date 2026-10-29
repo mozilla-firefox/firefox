@@ -16,7 +16,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/4527c41ef71d7683c
  4 files changed, 21 insertions(+), 9 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index e436beadf6..cf11991751 100644
+index 1100dc0b22..8f12b02363 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -543,6 +543,9 @@ if (!rtc_build_ssl) {
@@ -111,10 +111,10 @@ index 8bbe75d912..d79c0ecf92 100644
    public_configs = []
    if (!build_with_chromium) {
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 5be82f96cd..9c93f2b3b2 100644
+index 1dfac9ce84..ffb8350f3d 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
-@@ -1663,6 +1663,7 @@ rtc_source_set("ssl_header") {
+@@ -1668,6 +1668,7 @@ rtc_source_set("ssl_header") {
  }
  
  rtc_library("digest") {
@@ -122,7 +122,7 @@ index 5be82f96cd..9c93f2b3b2 100644
    visibility = [ "*" ]
    sources = [
      "message_digest.cc",
-@@ -1684,8 +1685,10 @@ rtc_library("digest") {
+@@ -1689,8 +1690,10 @@ rtc_library("digest") {
      configs += [ "..:external_ssl_library" ]
    }
  }
@@ -133,7 +133,7 @@ index 5be82f96cd..9c93f2b3b2 100644
    visibility = [ "*" ]
    sources = [
      "crypto_random.cc",
-@@ -1706,6 +1709,7 @@ rtc_library("crypto_random") {
+@@ -1711,6 +1714,7 @@ rtc_library("crypto_random") {
      configs += [ "..:external_ssl_library" ]
    }
  }

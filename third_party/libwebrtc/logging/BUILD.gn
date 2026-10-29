@@ -529,6 +529,7 @@ if (rtc_enable_protobuf) {
       "../rtc_base:protobuf_utils",
       "../rtc_base:rtc_numerics",
       "../rtc_base:safe_conversions",
+      "../rtc_base:sequence_number_util",
       "../rtc_base/system:file_wrapper",
       "//third_party/abseil-cpp/absl/memory",
       "//third_party/abseil-cpp/absl/strings:string_view",

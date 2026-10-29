@@ -2,5 +2,8 @@ specific_include_rules = {
   # Some internal headers are allowed even in API headers:
   "samples_stats_counter\\.h": [
     "+rtc_base/numerics/running_statistics.h",
-  ]
+  ],
+  "sequence_number_unwrapper\\.h": [
+    "+rtc_base/numerics/sequence_number_util.h",
+  ],
 }

@@ -841,6 +841,11 @@ rtc_library("windowed_min_filter") {
   deps = [ ":checks" ]
 }
 
+rtc_source_set("sequence_number_util") {
+  sources = [ "numerics/sequence_number_util.h" ]
+  deps = [ ":mod_ops" ]
+}
+
 rtc_library("rtc_numerics") {
   sources = [
     "numerics/event_based_exponential_moving_average.cc",
@@ -855,11 +860,11 @@ rtc_library("rtc_numerics") {
     "numerics/rational.h",
     "numerics/running_statistics.h",
     "numerics/sequence_number_unwrapper.h",
-    "numerics/sequence_number_util.h",
   ]
   deps = [
     ":checks",
     ":mod_ops",
+    "../api/numerics:sequence_number_unwrapper",
   ]
 }
 
@@ -2746,19 +2751,11 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_cc_test("sequence_number_unwrapper_unittest") {
-      sources = [ "numerics/sequence_number_unwrapper_unittest.cc" ]
-      deps = [
-        ":rtc_numerics",
-        "../test:test_support",
-      ]
-    }
-
     rtc_cc_test("sequence_number_util_unittest") {
       sources = [ "numerics/sequence_number_util_unittest.cc" ]
       deps = [
         ":mod_ops",
-        ":rtc_numerics",
+        ":sequence_number_util",
         "../test:test_support",
       ]
     }
