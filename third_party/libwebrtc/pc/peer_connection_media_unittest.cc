@@ -36,6 +36,7 @@
 #include "api/rtp_transceiver_direction.h"
 #include "api/rtp_transceiver_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/test/rtc_error_matchers.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "media/base/codec.h"
 #include "media/base/fake_media_engine.h"
@@ -57,15 +58,11 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/virtual_socket_server.h"
 #include "test/create_test_environment.h"
+#include "test/gmock.h"
 #include "test/gtest.h"
 #include "test/run_loop.h"
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-#include "api/test/rtc_error_matchers.h"
-#include "rtc_base/virtual_socket_server.h"
-#include "test/gmock.h"
 
 namespace webrtc {
 
@@ -146,11 +143,7 @@ class PeerConnectionMediaBaseTest : public ::testing::Test {
   explicit PeerConnectionMediaBaseTest(SdpSemantics sdp_semantics)
       : vss_(new VirtualSocketServer()),
         main_(vss_.get()),
-        sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
-  }
+        sdp_semantics_(sdp_semantics) {}
 
   WrapperPtr CreatePeerConnection() {
     return CreatePeerConnection(RTCConfiguration());

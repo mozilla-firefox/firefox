@@ -40,10 +40,6 @@
 #include "test/pc/sctp/fake_sctp_transport.h"
 #include "test/run_loop.h"
 
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-
 namespace webrtc {
 
 using ::testing::HasSubstr;
@@ -101,11 +97,7 @@ class PeerConnectionDataChannelBaseTest : public ::testing::Test {
       : env_(CreateTestEnvironment()),
         vss_(new VirtualSocketServer()),
         main_(vss_.get()),
-        sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
-  }
+        sdp_semantics_(sdp_semantics) {}
 
   WrapperPtr CreatePeerConnection() {
     return CreatePeerConnection(RTCConfiguration());

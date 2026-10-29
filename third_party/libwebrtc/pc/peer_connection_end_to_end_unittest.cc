@@ -41,6 +41,7 @@
 #include "api/sctp_transport_interface.h"
 #include "api/test/rtc_error_matchers.h"
 #include "api/units/time_delta.h"
+#include "pc/test/peer_connection_test_wrapper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/physical_socket_server.h"
@@ -50,11 +51,6 @@
 #include "test/gtest.h"
 #include "test/run_loop.h"
 #include "test/wait_until.h"
-
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-#include "pc/test/peer_connection_test_wrapper.h"
 // Notice that mockpeerconnectionobservers.h must be included after the above!
 #include "pc/test/mock_peer_connection_observers.h"
 #include "test/mock_audio_decoder.h"
@@ -96,10 +92,6 @@ class PeerConnectionEndToEndBaseTest : public ::testing::Test {
     caller_config_.sdp_semantics = sdp_semantics;
     callee_config_.servers.push_back(ice_server);
     callee_config_.sdp_semantics = sdp_semantics;
-
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
   }
 
   void CreatePcs(scoped_refptr<AudioEncoderFactory> audio_encoder_factory1,

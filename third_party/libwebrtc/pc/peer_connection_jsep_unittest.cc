@@ -51,10 +51,6 @@
 #include "test/pc/sctp/fake_sctp_transport.h"
 #include "test/run_loop.h"
 
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-
 // This file contains tests that ensure the PeerConnection's implementation of
 // CreateOffer/CreateAnswer/SetLocalDescription/SetRemoteDescription conform
 // to the JavaScript Session Establishment Protocol (JSEP).
@@ -79,9 +75,6 @@ class PeerConnectionJsepTest : public ::testing::Test {
     network_thread_ = Thread::CreateWithSocketServer();
     network_thread_->SetName("NetworkThread", nullptr);
     EXPECT_TRUE(network_thread_->Start());
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
   }
 
   PeerConnectionFactoryDependencies CreatePeerConnectionFactoryDependencies() {

@@ -8,6 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "api/webrtc_sdp.h"
+
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -50,11 +52,6 @@
 #include "system_wrappers/include/metrics.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
-
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-#include "api/webrtc_sdp.h"
 
 namespace webrtc {
 
@@ -977,9 +974,6 @@ std::unique_ptr<IceCandidate> NewCandidate(absl::string_view sdp,
 class WebRtcSdpTest : public ::testing::Test {
  public:
   WebRtcSdpTest() {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
     // AudioContentDescription
     audio_desc_ = CreateAudioContentDescription();
     StreamParams audio_stream;

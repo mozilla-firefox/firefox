@@ -69,10 +69,6 @@
 #include "test/run_loop.h"
 #include "test/wait_until.h"
 
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-
 namespace webrtc {
 
 using BundlePolicy = PeerConnectionInterface::BundlePolicy;
@@ -194,11 +190,7 @@ class PeerConnectionBundleBaseTest : public ::testing::Test {
   explicit PeerConnectionBundleBaseTest(SdpSemantics sdp_semantics)
       : env_(CreateTestEnvironment()),
         main_(&vss_),
-        sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
-  }
+        sdp_semantics_(sdp_semantics) {}
 
   WrapperPtr CreatePeerConnection() {
     return CreatePeerConnection(RTCConfiguration());

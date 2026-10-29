@@ -102,10 +102,6 @@
 #include "test/run_loop.h"
 #include "test/wait_until.h"
 
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-
 namespace webrtc {
 namespace {
 
@@ -648,11 +644,7 @@ class PeerConnectionInterfaceBaseTest : public ::testing::Test {
       : env_(CreateTestEnvironment()),
         vss_(new VirtualSocketServer()),
         main_(vss_.get()),
-        sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
-  }
+        sdp_semantics_(sdp_semantics) {}
 
   void SetUp() override {
     // Use fake audio capture module since we're only testing the interface

@@ -366,10 +366,10 @@ index 3979424322..04180490d5 100644
  
  }  // namespace webrtc
 diff --git a/api/webrtc_sdp_unittest.cc b/api/webrtc_sdp_unittest.cc
-index 05604e91f4..2cca4d5357 100644
+index 4f9f76a2ec..c6fdc80690 100644
 --- a/api/webrtc_sdp_unittest.cc
 +++ b/api/webrtc_sdp_unittest.cc
-@@ -2092,18 +2092,6 @@ TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithoutCandidates) {
+@@ -2086,18 +2086,6 @@ TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithoutCandidates) {
    EXPECT_EQ(SdpSerialize(MakeDescriptionWithoutCandidates()), kSdpString);
  }
  
@@ -388,7 +388,7 @@ index 05604e91f4..2cca4d5357 100644
  TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithBundles) {
    ContentGroup group1(GROUP_TYPE_BUNDLE);
    group1.AddContentName(kAudioContentName);
-@@ -2382,21 +2370,6 @@ TEST_F(WebRtcSdpTest, DeserializeSessionDescription) {
+@@ -2376,21 +2364,6 @@ TEST_F(WebRtcSdpTest, DeserializeSessionDescription) {
        CompareSessionDescription(jdesc_, SdpDeserialize(kSdpFullString)));
  }
  

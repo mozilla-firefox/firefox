@@ -73,10 +73,6 @@
 #include "test/run_loop.h"
 #include "test/wait_until.h"
 
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-
 namespace webrtc {
 
 using SignalingState = PeerConnectionInterface::SignalingState;
@@ -208,9 +204,6 @@ class PeerConnectionSignalingBaseTest : public ::testing::Test {
       : vss_(new VirtualSocketServer()),
         main_(vss_.get()),
         sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
     pc_factory_ = CreatePeerConnectionFactory(
         Thread::Current(), Thread::Current(),
         scoped_refptr<AudioDeviceModule>(FakeAudioCaptureModule::Create()),

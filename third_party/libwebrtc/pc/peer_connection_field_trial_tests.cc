@@ -39,10 +39,6 @@
 #include "test/gtest.h"
 #include "test/run_loop.h"
 
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-
 namespace webrtc {
 
 using RTCConfiguration = PeerConnectionInterface::RTCConfiguration;
@@ -55,9 +51,6 @@ class PeerConnectionFieldTrialTest : public ::testing::Test {
       : clock_(Clock::GetRealTimeClock()),
         socket_server_(CreateDefaultSocketServer()),
         main_thread_(socket_server_.get()) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
     PeerConnectionInterface::IceServer ice_server;
     ice_server.uri = "stun:stun.l.google.com:19302";
     config_.servers.push_back(ice_server);

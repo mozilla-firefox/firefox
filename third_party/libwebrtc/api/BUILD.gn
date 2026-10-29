@@ -2013,9 +2013,6 @@ if (rtc_include_tests) {
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
-    if (is_android) {
-      deps += [ "../pc:android_black_magic" ]
-    }
   }
 
   rtc_library("compile_all_headers") {
