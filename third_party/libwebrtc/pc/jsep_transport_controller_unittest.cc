@@ -64,6 +64,7 @@
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/task_queue_for_test.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/virtual_socket_server.h"
 #include "system_wrappers/include/metrics.h"
 #include "test/create_test_environment.h"
 #include "test/create_test_field_trials.h"
@@ -345,7 +346,8 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
         transport_controller_
             ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
             .ok());
-    transport_controller_->MaybeStartGathering();
+    transport_controller_->MaybeStartGathering(
+        /*discard_candidate_pool=*/false);
 
     SendTask(network_thread_.get(), [this] {
       auto fake_audio_dtls = static_cast<FakeDtlsTransport*>(
@@ -603,11 +605,45 @@ TEST_F(JsepTransportControllerTest, MaybeStartGathering) {
           .ok());
   // After setting the local description, we should be able to start gathering
   // candidates.
-  transport_controller_->MaybeStartGathering();
+  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false);
   EXPECT_THAT(WaitUntil([&] { return kIceGatheringGathering; },
                         ::testing::Eq(gathering_state_), {.timeout = kTimeout}),
               IsRtcOk());
   EXPECT_EQ(1, gathering_state_signal_count_);
+}
+
+TEST_F(JsepTransportControllerTest, MaybeStartGatheringDiscardsCandidatePool) {
+  // Pooled sessions create sockets. A virtual socket server makes that work
+  // without network access, which e.g. the Fuchsia test realm doesn't have.
+  network_thread_ =
+      std::make_unique<Thread>(std::make_unique<VirtualSocketServer>());
+  network_thread_->Start();
+  CreateJsepTransportController(JsepTransportController::Config(),
+                                network_thread_.get());
+  SendTask(network_thread_.get(), [&] {
+    port_allocator_->SetConfiguration(
+        /*stun_servers=*/{}, /*turn_servers=*/{}, /*candidate_pool_size=*/2,
+        NO_PRUNE, /*turn_customizer=*/nullptr,
+        /*stun_candidate_keepalive_interval=*/std::nullopt);
+  });
+  auto description = CreateSessionDescriptionWithBundleGroup();
+  EXPECT_TRUE(
+      transport_controller_
+          ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
+          .ok());
+  // The fake ICE transports don't take sessions from the pool.
+  EXPECT_EQ(transport_controller_
+                ->MaybeStartGathering(/*discard_candidate_pool=*/false)
+                .size(),
+            2u);
+  EXPECT_TRUE(transport_controller_
+                  ->MaybeStartGathering(/*discard_candidate_pool=*/true)
+                  .empty());
+
+  SendTask(network_thread_.get(), [&] {
+    EXPECT_EQ(port_allocator_->GetPooledSession(), nullptr);
+    transport_controller_.reset();
+  });
 }
 
 TEST_F(JsepTransportControllerTest, AddRemoveRemoteCandidates) {
@@ -1219,7 +1255,7 @@ TEST_F(JsepTransportControllerTest, SignalCandidatesGathered) {
       transport_controller_
           ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
           .ok());
-  transport_controller_->MaybeStartGathering();
+  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false);
 
   auto fake_audio_dtls = static_cast<FakeDtlsTransport*>(
       transport_controller_->GetDtlsTransport(kAudioMid1));

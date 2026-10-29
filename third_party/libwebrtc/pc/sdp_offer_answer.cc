@@ -3179,13 +3179,9 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
         codecs_mangled_to_raw);
   }
 
-  if (local_description()->GetType() == SdpType::kAnswer) {
+  const bool is_answer = local_description()->GetType() == SdpType::kAnswer;
+  if (is_answer) {
     RemoveStoppedTransceivers();
-
-    // TODO(deadbeef): We already had to hop to the network thread for
-    // MaybeStartGathering...
-    context_->network_thread()->BlockingCall(
-        [this] { port_allocator()->DiscardCandidatePool(); });
   }
 
   // Clear last created offer/answer and update SDP munging type.
@@ -3225,8 +3221,12 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
   // MaybeStartGathering needs to be called after informing the observer so
   // that we don't signal any candidates before signaling that
   // SetLocalDescription completed.
+  // For an answer, the candidate pool is discarded as well. This must happen
+  // after gathering has started, otherwise the new transports can't take
+  // sessions from the pool (see webrtc:572439023).
   cached_pooled_ice_credentials_ =
-      transport_controller_s()->MaybeStartGathering();
+      transport_controller_s()->MaybeStartGathering(
+          /*discard_candidate_pool=*/is_answer);
 }
 
 void SdpOfferAnswerHandler::DoCreateOffer(

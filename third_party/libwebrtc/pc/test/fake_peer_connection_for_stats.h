@@ -741,7 +741,8 @@ class FakePeerConnectionForStats : public FakePeerConnectionBase,
 
     transport_controller_->SetLocalDescription(type, description.get(),
                                                nullptr);
-    transport_controller_->MaybeStartGathering();
+    transport_controller_->MaybeStartGathering(
+        /*discard_candidate_pool=*/false);
   }
 
   Thread* const network_thread_;

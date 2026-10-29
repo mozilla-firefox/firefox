@@ -423,11 +423,17 @@ std::unique_ptr<SSLCertChain> JsepTransportController::GetRemoteSSLCertChain(
   return dtls->GetRemoteSSLCertChain();
 }
 
-std::vector<IceParameters> JsepTransportController::MaybeStartGathering() {
+std::vector<IceParameters> JsepTransportController::MaybeStartGathering(
+    bool discard_candidate_pool) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   return network_thread_->BlockingCall([&] {
     RTC_DCHECK_RUN_ON(network_thread_);
     MaybeStartGathering_n();
+    // Discard the pool only after gathering has started, so that new
+    // transports can take pooled sessions first (RFC 8829, section 5.11).
+    if (discard_candidate_pool) {
+      port_allocator_->DiscardCandidatePool();
+    }
     return port_allocator_->GetPooledIceCredentials();
   });
 }
