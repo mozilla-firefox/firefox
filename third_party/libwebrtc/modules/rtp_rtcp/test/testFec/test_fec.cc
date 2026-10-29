@@ -13,12 +13,14 @@
  * functions in ForwardErrorCorrection directly.
  */
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <list>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -168,8 +170,7 @@ void RunTest(bool use_flexfec) {
              mask_type_idx);
 
       const uint32_t packet_mask_max = kMaxMediaPackets[mask_type_idx];
-      std::unique_ptr<uint8_t[]> packet_mask(
-          new uint8_t[packet_mask_max * kNumMaskBytesL1]);
+      std::vector<uint8_t> packet_mask(packet_mask_max * kNumMaskBytesL1);
 
       FecMaskType fec_mask_type = kMaskTypes[mask_type_idx];
 
@@ -194,13 +195,15 @@ void RunTest(bool use_flexfec) {
             const uint32_t mask_bytes_per_fec_packet =
                 (num_media_packets > 16) ? kNumMaskBytesL1 : kNumMaskBytesL0;
 
-            memset(packet_mask.get(), 0,
-                   num_media_packets * mask_bytes_per_fec_packet);
+            std::ranges::fill(
+                std::span(packet_mask)
+                    .first(num_media_packets * mask_bytes_per_fec_packet),
+                0);
 
             // Transfer packet masks from bit-mask to byte-mask.
             internal::GeneratePacketMasks(
                 num_media_packets, num_fec_packets, num_imp_packets,
-                kUseUnequalProtection, &mask_table, packet_mask.get());
+                kUseUnequalProtection, &mask_table, packet_mask);
 
 #ifdef VERBOSE_OUTPUT
             printf(

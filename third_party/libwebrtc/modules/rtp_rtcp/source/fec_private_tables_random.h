@@ -15,12 +15,23 @@
 // this table are specifically designed to favor recovery to random loss.
 // These packet masks are defined to protect up to maximum of 48 media packets.
 
-#include <stdint.h>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 
 namespace webrtc {
 namespace fec_private_tables {
 
-extern const uint8_t kPacketMaskRandomTbl[];
+// Size of the flattened table for up to N=12 media packets.
+// The flattened table keeps 12 square tables sizes from 1 to 12.
+// Sum of all squared numbers N^2 from 1 to 12: 650.
+// Each line in each table is prepended by its size.
+// Sum of all numbers N from 1 to 12: 78
+// Each 2d table is prepended by its size, adding 12 more entries.
+// Table itself is prepended by the number of subtables, adding 1 more entry.
+// Total number of entries = 1 + 12 + 78 + 650 = 741.
+inline constexpr size_t kPacketMaskRandomTblSize = 741;
+extern const std::array<uint8_t, kPacketMaskRandomTblSize> kPacketMaskRandomTbl;
 
 }  // namespace fec_private_tables
 }  // namespace webrtc

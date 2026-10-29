@@ -30,10 +30,10 @@ Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#488
  3 files changed, 59 insertions(+), 4 deletions(-)
 
 diff --git a/modules/rtp_rtcp/BUILD.gn b/modules/rtp_rtcp/BUILD.gn
-index b20d71db75..81458386b5 100644
+index 68b51ed80f..9aebf6aed5 100644
 --- a/modules/rtp_rtcp/BUILD.gn
 +++ b/modules/rtp_rtcp/BUILD.gn
-@@ -1213,6 +1213,7 @@ if (rtc_include_tests) {
+@@ -1214,6 +1214,7 @@ if (rtc_include_tests) {
        ":rtp_rtcp",
        ":rtp_rtcp_format",
        "..:module_fec_api",
@@ -42,10 +42,10 @@ index b20d71db75..81458386b5 100644
        "../../rtc_base:random",
        "../../test:test_support",
 diff --git a/modules/rtp_rtcp/source/forward_error_correction.cc b/modules/rtp_rtcp/source/forward_error_correction.cc
-index 0bb81a8ef0..c3e4e22e13 100644
+index 0e31bf1ca4..da6e43b061 100644
 --- a/modules/rtp_rtcp/source/forward_error_correction.cc
 +++ b/modules/rtp_rtcp/source/forward_error_correction.cc
-@@ -294,9 +294,13 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+@@ -296,9 +296,13 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
    size_t old_bit_index = 1;
    // Insert zeros in the bit mask for every hole in the sequence.
    while (media_packets_it != media_packets.end()) {
@@ -60,9 +60,9 @@ index 0bb81a8ef0..c3e4e22e13 100644
 +      // to protect turned to be larger than earlier estimated.
 +      return -1;
      }
-     uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data.data());
+     uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data);
      const int num_zeros_to_insert =
-@@ -305,8 +309,11 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
+@@ -307,8 +311,11 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
        internal::InsertZeroColumns(num_zeros_to_insert, tmp_packet_masks_,
                                    tmp_packet_mask_size, num_fec_packets,
                                    new_bit_index);

@@ -357,6 +357,7 @@ rtc_library("rtp_rtcp") {
     "../../rtc_base:bitstream_reader",
     "../../rtc_base:buffer",
     "../../rtc_base:byte_buffer",
+    "../../rtc_base:byte_order",
     "../../rtc_base:checks",
     "../../rtc_base:copy_on_write_buffer",
     "../../rtc_base:event_tracer",

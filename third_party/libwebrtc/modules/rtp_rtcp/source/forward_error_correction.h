@@ -14,6 +14,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <array>
 #include <list>
 #include <memory>
 #include <span>
@@ -250,8 +251,8 @@ class ForwardErrorCorrection {
 
   // TODO(brandtr): Remove these functions when the Packet classes
   // have been refactored.
-  static uint16_t ParseSequenceNumber(const uint8_t* packet);
-  static uint32_t ParseSsrc(const uint8_t* packet);
+  static uint16_t ParseSequenceNumber(std::span<const uint8_t> packet);
+  static uint32_t ParseSsrc(std::span<const uint8_t> packet);
 
  protected:
   ForwardErrorCorrection(std::unique_ptr<FecHeaderReader> fec_header_reader,
@@ -363,8 +364,10 @@ class ForwardErrorCorrection {
   // Arrays used to avoid dynamically allocating memory when generating
   // the packet masks.
   // (There are never more than `kUlpfecMaxMediaPackets` FEC packets generated.)
-  uint8_t packet_masks_[kUlpfecMaxMediaPackets * kUlpfecMaxPacketMaskSize];
-  uint8_t tmp_packet_masks_[kUlpfecMaxMediaPackets * kUlpfecMaxPacketMaskSize];
+  std::array<uint8_t, kUlpfecMaxMediaPackets * kUlpfecMaxPacketMaskSize>
+      packet_masks_;
+  std::array<uint8_t, kUlpfecMaxMediaPackets * kUlpfecMaxPacketMaskSize>
+      tmp_packet_masks_;
   size_t packet_mask_size_;
 };
 
