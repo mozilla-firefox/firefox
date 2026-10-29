@@ -5,12 +5,14 @@
 package org.mozilla.fenix.settings
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -44,6 +46,44 @@ class IPProtectionScreenTest {
     @get:Rule val composeTestRule = createComposeRule()
 
     @Test
+    fun `GIVEN all data remains WHEN rendering the screen THEN the data limit progress bar is full`() {
+        val state =
+            IPProtectionState(
+                eligibilityStatus = EligibilityStatus.Eligible,
+                proxyStatus = Authorized.Active,
+                serviceStatus = ServiceState.Ready,
+                usageQuota =
+                    UsageQuota.Metered(
+                        max = DataVolume.roundedGigabytes(50),
+                        remaining = DataVolume.roundedGigabytes(50),
+                    ),
+            )
+
+        setScreen(state = state)
+
+        composeTestRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(1f, 0f..1f))).assertExists()
+    }
+
+    @Test
+    fun `GIVEN a portion of the quota is used WHEN rendering the screen THEN the progress bar shows the same percent as fraction`() {
+        val state =
+            IPProtectionState(
+                eligibilityStatus = EligibilityStatus.Eligible,
+                proxyStatus = Authorized.Active,
+                serviceStatus = ServiceState.Ready,
+                usageQuota =
+                    UsageQuota.Metered(
+                        max = DataVolume.roundedGigabytes(100),
+                        remaining = DataVolume.roundedGigabytes(80),
+                    ),
+            )
+
+        setScreen(state = state)
+
+        composeTestRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.8f, 0f..1f))).assertExists()
+    }
+
+    @Test
     fun `GIVEN the data limit is reached WHEN rendering the screen THEN the data limit UI is shown`() {
         val maxDataGb = 50f
         val state =
@@ -60,6 +100,8 @@ class IPProtectionScreenTest {
             )
 
         setScreen(state = state)
+
+        composeTestRule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0f, 0f..1f))).assertExists()
 
         composeTestRule.onNodeWithText(testContext.getString(R.string.ip_protection_data_limit_label)).assertExists()
 

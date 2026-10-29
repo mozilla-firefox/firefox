@@ -79,7 +79,6 @@ import mozilla.components.feature.ipprotection.store.state.UsageQuota
 import mozilla.components.feature.ipprotection.store.state.gigabytes
 import mozilla.components.feature.ipprotection.store.state.ipProtectionStatus
 import mozilla.components.feature.ipprotection.store.state.isActivationInFlight
-import mozilla.components.feature.ipprotection.store.state.used
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.list.TextListItem
@@ -288,7 +287,7 @@ private fun DataLimitSection(
     }
 
     LinearProgressIndicator(
-        progress = { if (isDataLimitReached) 1f else (quota.used / quota.max).coerceIn(0f, 1f) },
+        progress = { (quota.remaining / quota.max).coerceIn(0f, 1f) },
         modifier = Modifier.fillMaxWidth().padding(horizontal = FirefoxTheme.layout.space.dynamic200).clip(CircleShape),
         color = MaterialTheme.colorScheme.primary,
         trackColor = MaterialTheme.colorScheme.surfaceVariant,
