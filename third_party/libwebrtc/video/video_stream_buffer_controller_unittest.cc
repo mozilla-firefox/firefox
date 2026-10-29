@@ -818,6 +818,22 @@ TEST_P(VideoStreamBufferControllerTest,
               Optional(VariantWith<TimeDelta>(TimeDelta::Zero())));
 }
 
+TEST_P(VideoStreamBufferControllerTest,
+       CombinesTemporalUnitFromSeqNumOnlyRefFinder) {
+  StartNextDecodeForceKeyframe();
+
+  // Without a dependency descriptor, AV1 goes through RtpSeqNumOnlyRefFinder
+  // which does not set a spatial index.
+  buffer_->InsertFrame(WithReceiveTimeFromRtpTimestamp(
+      test::FakeFrameBuilder().Id(1).Time(0).Build()));
+  buffer_->InsertFrame(WithReceiveTimeFromRtpTimestamp(
+      test::FakeFrameBuilder().Id(2).Time(0).Refs({1}).AsLast().Build()));
+
+  EXPECT_THAT(
+      WaitForFrameOrTimeout(TimeDelta::Zero()),
+      Frame(AllOf(test::WithId(1), test::FrameWithSize(2 * kFrameSize))));
+}
+
 INSTANTIATE_TEST_SUITE_P(VideoStreamBufferController,
                          VideoStreamBufferControllerTest,
                          ::testing::Bool(),

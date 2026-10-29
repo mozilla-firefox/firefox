@@ -167,7 +167,7 @@ index 79af66f444..1506ae878d 100644
  }
  
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 87dfff0bd5..46cc5f5a46 100644
+index 6c6b5aa832..5537232c2f 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
 @@ -91,6 +91,7 @@
@@ -178,7 +178,7 @@ index 87dfff0bd5..46cc5f5a46 100644
  #include "system_wrappers/include/ntp_time.h"
  #include "video/buffered_frame_decryptor.h"
  
-@@ -1637,6 +1638,9 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
+@@ -1640,6 +1641,9 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
    }
    uint32_t num_packets_cleared = packet_buffer_.ClearTo(unwrapped_seq_num);
    if (num_packets_cleared > 0) {

@@ -1276,6 +1276,7 @@ if (rtc_include_tests) {
       "../../api/video:encoded_image",
       "../../api/video/corruption_detection:frame_instrumentation_data",
       "../../test:test_support",
+      "//third_party/abseil-cpp/absl/algorithm:container",
       "//third_party/abseil-cpp/absl/container:inlined_vector",
     ]
   }
@@ -1398,6 +1399,7 @@ if (rtc_include_tests) {
     sources = [ "rtp_frame_reference_finder_unittest.cc" ]
     deps = [
       ":video_coding",
+      "../../api:field_trials",
       "../../api:rtp_packet_info",
       "../../api/video:encoded_frame",
       "../../api/video:encoded_image",
@@ -1405,6 +1407,7 @@ if (rtc_include_tests) {
       "../../api/video:video_frame_type",
       "../../api/video:video_rtp_headers",
       "../../rtc_base:random",
+      "../../test:create_test_field_trials",
       "../../test:test_support",
       "../rtp_rtcp",
       "../rtp_rtcp:rtp_video_header",

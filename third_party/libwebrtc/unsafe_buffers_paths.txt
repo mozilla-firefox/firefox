@@ -489,8 +489,6 @@
 -modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
 -modules/video_coding/codecs/vp9/test/vp9_impl_unittest.cc
 -modules/video_coding/encoded_frame.cc
--modules/video_coding/frame_helpers.cc
--modules/video_coding/frame_helpers_unittest.cc
 -modules/video_coding/h264_sps_pps_tracker_unittest.cc
 -modules/video_coding/h26x_packet_buffer.cc
 -modules/video_coding/media_opt_util.cc

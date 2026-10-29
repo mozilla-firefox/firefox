@@ -18,6 +18,7 @@
 #include <set>
 #include <utility>
 
+#include "api/field_trials.h"
 #include "api/rtp_packet_infos.h"
 #include "api/video/encoded_frame.h"
 #include "api/video/encoded_image.h"
@@ -29,6 +30,7 @@
 #include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
 #include "rtc_base/random.h"
+#include "test/create_test_field_trials.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 
@@ -86,7 +88,7 @@ class TestRtpFrameReferenceFinder : public ::testing::Test {
   void OnCompleteFrames(RtpFrameReferenceFinder::ReturnVector frames) {
     for (auto& frame : frames) {
       int64_t pid = frame->Id();
-      uint16_t sidx = *frame->SpatialIndex();
+      uint16_t sidx = frame->SpatialIndex().value_or(0);
       auto frame_it = frames_from_callback_.find(std::make_pair(pid, sidx));
       if (frame_it != frames_from_callback_.end()) {
         ADD_FAILURE() << "Already received frame with (pid:sidx): (" << pid
@@ -396,8 +398,75 @@ TEST_F(TestRtpFrameReferenceFinder, Av1FrameNoDependencyDescriptor) {
 
   OnCompleteFrames(reference_finder_->ManageFrame(std::move(frame)));
 
-  ASSERT_EQ(1UL, frames_from_callback_.size());
+  ASSERT_THAT(frames_from_callback_, SizeIs(1));
+  EXPECT_EQ(frames_from_callback_.begin()->second->SpatialIndex(),
+            std::nullopt);
   CheckReferencesGeneric(sn);
+}
+
+TEST_F(TestRtpFrameReferenceFinder, Av1SvcFramesNoDependencyDescriptor) {
+  uint16_t sn = 100;
+
+  // Keyframe spatial layer 0 (packets 100..101).
+  std::unique_ptr<RtpFrameObject> s0_key = CreateFrame(
+      /*seq_num_start=*/sn, /*seq_num_end=*/sn + 1, /*keyframe=*/true,
+      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
+  // Keyframe spatial layer 1 (packets 102..103, marked as delta by AV1
+  // since it's using inter-layer prediction).
+  std::unique_ptr<RtpFrameObject> s1_key = CreateFrame(
+      /*seq_num_start=*/sn + 2, /*seq_num_end=*/sn + 3, /*keyframe=*/false,
+      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
+
+  // Reorder arrival time of spatial layers for second temporal unit:
+  // Delta frame spatial layer 1 arrives before spatial layer 0 (gap at 104).
+  std::unique_ptr<RtpFrameObject> s1_delta = CreateFrame(
+      /*seq_num_start=*/sn + 5, /*seq_num_end=*/sn + 5, /*keyframe=*/false,
+      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/2000);
+  // Missing delta frame spatial layer 0 (packet 104).
+  std::unique_ptr<RtpFrameObject> s0_delta = CreateFrame(
+      /*seq_num_start=*/sn + 4, /*seq_num_end=*/sn + 4, /*keyframe=*/false,
+      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/2000);
+
+  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s0_key)));
+  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s1_key)));
+  ASSERT_THAT(frames_from_callback_, SizeIs(2));
+
+  // `s1_delta` has a packet gap (`sn + 4` is missing), so it must be stashed.
+  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s1_delta)));
+  ASSERT_THAT(frames_from_callback_, SizeIs(2));
+
+  // Once `s0_delta` arrives, both `s0_delta` and `s1_delta` complete.
+  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s0_delta)));
+  ASSERT_THAT(frames_from_callback_, SizeIs(4));
+  for (const auto& [key, frame] : frames_from_callback_) {
+    EXPECT_EQ(frame->SpatialIndex(), std::nullopt);
+  }
+  CheckReferencesGeneric(sn + 1);
+  CheckReferencesGeneric(sn + 3, sn + 1);
+  CheckReferencesGeneric(sn + 4, sn + 3);
+  CheckReferencesGeneric(sn + 5, sn + 4);
+}
+
+TEST_F(TestRtpFrameReferenceFinder, Av1SvcFramesSpatialIdKillSwitch) {
+  FieldTrials field_trials = CreateTestFieldTrials(
+      "WebRTC-Video-SeqNumOnlyRefFinderSpatialIndexKillSwitch/Enabled/");
+  reference_finder_ = std::make_unique<RtpFrameReferenceFinder>(&field_trials);
+  uint16_t sn = 100;
+
+  std::unique_ptr<RtpFrameObject> s0_key = CreateFrame(
+      /*seq_num_start=*/sn, /*seq_num_end=*/sn + 1, /*keyframe=*/true,
+      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
+  std::unique_ptr<RtpFrameObject> s1_key = CreateFrame(
+      /*seq_num_start=*/sn + 2, /*seq_num_end=*/sn + 3, /*keyframe=*/false,
+      kVideoCodecAV1, RTPVideoTypeHeader(), /*rtp_timestamp=*/1000);
+
+  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s0_key)));
+  OnCompleteFrames(reference_finder_->ManageFrame(std::move(s1_key)));
+
+  ASSERT_THAT(frames_from_callback_, SizeIs(2));
+  for (const auto& [key, frame] : frames_from_callback_) {
+    EXPECT_EQ(frame->SpatialIndex(), 0);
+  }
 }
 
 }  // namespace webrtc

@@ -343,7 +343,8 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
       vcm_receive_statistics_(vcm_receive_statistics),
       packet_buffer_(kPacketBufferStartSize,
                      PacketBufferMaxSize(env_.field_trials())),
-      reference_finder_(std::make_unique<RtpFrameReferenceFinder>()),
+      reference_finder_(
+          std::make_unique<RtpFrameReferenceFinder>(&env_.field_trials())),
       has_received_frame_(false),
       frames_decryptable_(false),
       absolute_capture_time_interpolator_(&env_.clock()),
@@ -711,6 +712,7 @@ std::optional<int64_t> RtpVideoStreamReceiver2::UnwrapSequenceNumberOrRecover(
     // Drop state from the previous epoch and anchor at the recovery keyframe.
     packet_buffer_.Clear();
     reference_finder_ = std::make_unique<RtpFrameReferenceFinder>(
+        &env_.field_trials(),
         last_completed_picture_id_ + std::numeric_limits<uint16_t>::max());
     nack_module_ = MaybeConstructNackModule(
         env_, worker_queue_, nack_periodic_processor_, config_.rtp.nack,
@@ -1172,6 +1174,7 @@ void RtpVideoStreamReceiver2::OnAssembledFrame(
         // start from the `last_completed_picture_id_` and add an offset in case
         // of reordering.
         reference_finder_ = std::make_unique<RtpFrameReferenceFinder>(
+            &env_.field_trials(),
             last_completed_picture_id_ + std::numeric_limits<uint16_t>::max());
         current_codec_ = frame->codec_type();
       } else {

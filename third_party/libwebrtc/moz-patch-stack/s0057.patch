@@ -30,10 +30,10 @@ index 8b61f6bf0d..79af66f444 100644
  
  void ReceiveStatisticsProxy::OnPreDecode(VideoCodecType codec_type, int qp) {
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index f25486e902..87dfff0bd5 100644
+index 3555ac2fe6..6c6b5aa832 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -1636,7 +1636,9 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
+@@ -1639,7 +1639,9 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
                                       ++ts_it);
    }
    uint32_t num_packets_cleared = packet_buffer_.ClearTo(unwrapped_seq_num);

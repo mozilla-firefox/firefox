@@ -214,7 +214,7 @@ index 5ac8a77130..0b6b1ec6d7 100644
                                     int current_delay_ms,
                                     int target_delay_ms,
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 6549206d24..f25486e902 100644
+index 23e7a0c9b5..3555ac2fe6 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
 @@ -298,6 +298,7 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
@@ -232,8 +232,8 @@ index 6549206d24..f25486e902 100644
 +      vcm_receive_statistics_(vcm_receive_statistics),
        packet_buffer_(kPacketBufferStartSize,
                       PacketBufferMaxSize(env_.field_trials())),
-       reference_finder_(std::make_unique<RtpFrameReferenceFinder>()),
-@@ -1633,7 +1635,8 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
+       reference_finder_(
+@@ -1636,7 +1638,8 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
      last_timestamp_for_pic_id_.erase(last_timestamp_for_pic_id_.begin(),
                                       ++ts_it);
    }
