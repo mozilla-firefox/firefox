@@ -2125,6 +2125,101 @@ TEST_F(RtpSenderReceiverTest,
   DestroyVideoRtpSender();
 }
 
+// The parameters that are read back after SetParametersAsync() has applied
+// them, are used to populate the cache.
+TEST_F(RtpSenderReceiverTest, SetParametersAsyncPopulatesCachedParameters) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(1u, params.encodings.size());
+  params.encodings[0].max_bitrate_bps = 100000;
+  std::optional<RTCError> result;
+  video_rtp_sender_->SetParametersAsync(params, [&](RTCError error) {
+    result = std::move(error);
+    run_loop_.Quit();
+  });
+  run_loop_.Run();
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->ok());
+
+  RtpParameters cached_params;
+  {
+    // The parameters must be served from the cache.
+    RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
+    cached_params = video_rtp_sender_->GetParametersInternal();
+  }
+  ASSERT_EQ(1u, cached_params.encodings.size());
+  EXPECT_EQ(cached_params.encodings[0].max_bitrate_bps, 100000);
+
+  DestroyVideoRtpSender();
+}
+
+// The completion of SetParametersAsync() must not overwrite the cache with
+// parameters that are older than the parameters of the media channel. Here the
+// parameters are set again with a blocking call before the completion has run.
+TEST_F(RtpSenderReceiverTest,
+       SetParametersAsyncCompletionDoesNotOverwriteNewerParameters) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(1u, params.encodings.size());
+  params.encodings[0].max_bitrate_bps = 100000;
+  std::optional<RTCError> async_result;
+  video_rtp_sender_->SetParametersAsync(
+      params, [&](RTCError error) { async_result = std::move(error); });
+
+  // The worker thread applies the asynchronous operation before this one, but
+  // the completion of the asynchronous operation runs on this thread after
+  // this call returns.
+  params.encodings[0].max_bitrate_bps = 200000;
+  EXPECT_TRUE(video_rtp_sender_->SetParameters(params).ok());
+
+  FlushWorker();
+  ASSERT_TRUE(async_result.has_value());
+  EXPECT_TRUE(async_result->ok());
+
+  RtpParameters channel_params = worker_thread_->BlockingCall([&] {
+    return video_media_send_channel()->GetRtpSendParameters(kVideoSsrc);
+  });
+  ASSERT_EQ(1u, channel_params.encodings.size());
+  EXPECT_EQ(channel_params.encodings[0].max_bitrate_bps, 200000);
+  EXPECT_EQ(video_rtp_sender_->GetParametersInternal(), channel_params);
+  EXPECT_EQ(video_rtp_sender_->GetParameters(), channel_params);
+
+  DestroyVideoRtpSender();
+}
+
+// The completion of SetParametersAsync() must not populate the cache with the
+// parameters of the send stream that the sender was attached to when the
+// operation was started, if the sender has been attached to a different send
+// stream since.
+TEST_F(RtpSenderReceiverTest, SetParametersAsyncCompletionAfterSsrcChange) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(1u, params.encodings.size());
+  params.encodings[0].max_bitrate_bps = 100000;
+  std::optional<RTCError> async_result;
+  video_rtp_sender_->SetParametersAsync(
+      params, [&](RTCError error) { async_result = std::move(error); });
+
+  SetSsrc(kVideoSsrc2, *video_rtp_sender_);
+
+  FlushWorker();
+  ASSERT_TRUE(async_result.has_value());
+  EXPECT_TRUE(async_result->ok());
+
+  RtpParameters channel_params = worker_thread_->BlockingCall([&] {
+    return video_media_send_channel()->GetRtpSendParameters(kVideoSsrc2);
+  });
+  ASSERT_EQ(1u, channel_params.encodings.size());
+  EXPECT_EQ(channel_params.encodings[0].ssrc, kVideoSsrc2);
+  EXPECT_EQ(video_rtp_sender_->GetParametersInternal(), channel_params);
+  EXPECT_EQ(video_rtp_sender_->GetParameters(), channel_params);
+
+  DestroyVideoRtpSender();
+}
+
 TEST_F(RtpSenderReceiverTest, VideoSenderDetectTransactionIdModification) {
   CreateVideoRtpSender();
 

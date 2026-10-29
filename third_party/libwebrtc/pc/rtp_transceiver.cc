@@ -1533,9 +1533,9 @@ void RtpTransceiver::SetChannelContent(
           return RTCError::InvalidState() << "No channel";
         }
         RTCError result = std::move(set_content)();
-        if (!result.ok()) {
-          return result;
-        }
+        // Read back the parameters, and update the senders' caches, even if
+        // applying the content failed, since the media channel may have been
+        // partially updated before the failure.
         for (auto& entry : sender_parameters) {
           if (entry.ssrc != 0) {
             entry.parameters =
@@ -1543,7 +1543,7 @@ void RtpTransceiver::SetChannelContent(
                     entry.ssrc);
           }
         }
-        return ScopedOperationsBatcher::FinalizerTask(
+        ScopedOperationsBatcher::FinalizerTask finalizer(
             [sender_parameters = std::move(sender_parameters)]() mutable {
               for (auto& entry : sender_parameters) {
                 if (entry.parameters) {
@@ -1552,6 +1552,7 @@ void RtpTransceiver::SetChannelContent(
                 }
               }
             });
+        return {std::move(result), std::move(finalizer)};
       });
 }
 void RtpTransceiver::EnableChannel(bool enable) {

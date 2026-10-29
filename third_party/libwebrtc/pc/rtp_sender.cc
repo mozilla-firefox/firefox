@@ -333,11 +333,17 @@ void RtpSenderBase::SetCachedParameters(
     std::optional<RtpParameters> parameters) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   if (parameters.has_value()) {
-    cached_parameters_ = std::move(*parameters);
+    UpdateCache(std::move(*parameters));
   } else {
-    cached_parameters_.reset();
+    InvalidateCache();
     last_transaction_id_.reset();
   }
+}
+
+void RtpSenderBase::UpdateCache(RtpParameters parameters) {
+  RTC_DCHECK_RUN_ON(signaling_thread_);
+  cached_parameters_ = std::move(parameters);
+  ++cache_generation_;
 }
 
 void RtpSenderBase::SetMediaChannel(MediaSendChannelInterface* media_channel) {
@@ -357,7 +363,7 @@ void RtpSenderBase::SetMediaChannel(MediaSendChannelInterface* media_channel) {
 
 void RtpSenderBase::OnParametersChanged() {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  cached_parameters_.reset();
+  InvalidateCache();
   last_transaction_id_.reset();
   RTC_LOG(LS_INFO) << "RtpSender: OnParametersChanged cache cleared.";
 }
@@ -493,7 +499,7 @@ RTCError RtpSenderBase::SetParametersInternalWorkaround(
   });
   if (error.ok()) {
     init_parameters_ = fetched_parameters;
-    cached_parameters_ = std::move(fetched_parameters);
+    UpdateCache(std::move(fetched_parameters));
   }
   return error;
 }
@@ -514,7 +520,7 @@ RTCError RtpSenderBase::SetParametersInternal(const RtpParameters& parameters,
 
   // Invalidate the cache to ensure that GetParameters() doesn't use a stale
   // cache while the worker thread is updating the parameters.
-  cached_parameters_.reset();
+  InvalidateCache();
 
   if (blocking && worker_thread_ == signaling_thread_) {
     return SetParametersInternalWorkaround(parameters);
@@ -543,11 +549,13 @@ RTCError RtpSenderBase::SetParametersInternal(const RtpParameters& parameters,
       [this, blocking, &blocking_applied_parameters,
        signaling_safety = signaling_safety_.flag(),
        worker_safety_flag = worker_safety_, input_parameters = parameters,
-       callback = std::move(callback), ssrc = ssrc_](RTCError error) mutable {
+       callback = std::move(callback), ssrc = ssrc_,
+       generation = cache_generation_](RTCError error) mutable {
         auto on_worker_thread = [this, blocking, &blocking_applied_parameters,
                                  signaling_safety = std::move(signaling_safety),
                                  input_parameters = std::move(input_parameters),
                                  callback = std::move(callback), ssrc,
+                                 generation,
                                  error = std::move(error)]() mutable {
           RTC_DCHECK_RUN_ON(worker_thread_);
           std::unique_ptr<RtpParameters> fetched_parameters;
@@ -564,13 +572,24 @@ RTCError RtpSenderBase::SetParametersInternal(const RtpParameters& parameters,
                 std::move(signaling_safety),
                 [this, callback = std::move(callback), error = std::move(error),
                  fetched_parameters = std::move(fetched_parameters),
-                 input_parameters = std::move(input_parameters)]() mutable {
+                 input_parameters = std::move(input_parameters),
+                 generation]() mutable {
                   RTC_DCHECK_RUN_ON(signaling_thread_);
                   if (error.ok()) {
                     if (ssrc_ == 0) {
                       init_parameters_ = std::move(input_parameters);
                     }
-                    cached_parameters_ = *fetched_parameters;
+                    // `fetched_parameters` were read before this task was
+                    // posted. If another operation has updated or invalidated
+                    // the cache since this call was made, e.g. another call to
+                    // set the parameters or a change of ssrc, the parameters
+                    // may be stale. If the cache was populated by
+                    // GetParametersInternal() in the meantime, it already
+                    // reflects this operation.
+                    if (generation == cache_generation_ &&
+                        !cached_parameters_.has_value()) {
+                      cached_parameters_ = std::move(*fetched_parameters);
+                    }
                   }
                   std::move(callback)(std::move(error));
                 }));
@@ -601,7 +620,7 @@ RTCError RtpSenderBase::SetParametersInternal(const RtpParameters& parameters,
     worker_thread_->BlockingCall(task);
     done_event.Wait(Event::kForever);
     if (blocking_error.ok()) {
-      cached_parameters_ = std::move(*blocking_applied_parameters);
+      UpdateCache(std::move(*blocking_applied_parameters));
       if (ssrc_ == 0) {
         init_parameters_ = *cached_parameters_;
       }
@@ -621,20 +640,22 @@ RTCError RtpSenderBase::SetParametersInternalWithAllLayers(
   if (auto error = ValidateAndMaybeUpdateInitParameters(parameters)) {
     return *error;
   }
-  RtpParameters applied_parameters;
+  std::optional<RtpParameters> applied_parameters;
   RTCError error = worker_thread_->BlockingCall([&, ssrc = ssrc_] {
     RTC_DCHECK_RUN_ON(worker_thread_);
-    RTCError err = media_channel_ ? media_channel_->SetRtpSendParameters(
-                                        ssrc, parameters, nullptr)
-                                  : RTCError::InvalidState();
-    if (err.ok()) {
-      applied_parameters = media_channel_->GetRtpSendParameters(ssrc);
+    if (!media_channel_) {
+      return RTCError::InvalidState();
     }
+    RTCError err =
+        media_channel_->SetRtpSendParameters(ssrc, parameters, nullptr);
+    // Read the parameters back even if the call failed, since a failed call
+    // may still have changed some of them.
+    applied_parameters = media_channel_->GetRtpSendParameters(ssrc);
     return err;
   });
 
-  if (error.ok()) {
-    cached_parameters_ = std::move(applied_parameters);
+  if (applied_parameters.has_value()) {
+    UpdateCache(std::move(*applied_parameters));
   }
 
   return error;
@@ -805,7 +826,7 @@ void RtpSenderBase::SetSsrc(uint32_t ssrc) {
     return;
   }
 
-  cached_parameters_.reset();
+  InvalidateCache();
 
   // If we are already sending with a particular SSRC, stop sending.
   if (can_send_track()) {
@@ -859,11 +880,9 @@ void RtpSenderBase::SetSsrc(uint32_t ssrc) {
     }
   });
   if (applied_parameters.has_value()) {
-    // As a result of the `SetRtpSendParameters` call, an async task will be
-    // queued to update `cached_parameters_` - unless the parameters didn't
-    // really change. In any case, we might as well stash away the current
-    // parameters right away.
-    cached_parameters_ = std::move(applied_parameters);
+    // The parameters were read back on the worker thread while this thread
+    // was blocked, so they reflect the current state of the media channel.
+    UpdateCache(std::move(*applied_parameters));
   }
 }
 
@@ -972,7 +991,7 @@ ScopedOperationsBatcher::BatchTaskWithFinalizer RtpSenderBase::SetSsrcTask(
     init_parameters_.encodings.resize(layer_count);
   }
 
-  cached_parameters_.reset();
+  InvalidateCache();
 
   // If we are already sending with a particular SSRC, stop sending.
   if (can_send_track()) {
@@ -1026,7 +1045,7 @@ ScopedOperationsBatcher::BatchTaskWithFinalizer RtpSenderBase::SetSsrcTask(
       return ScopedOperationsBatcher::FinalizerTask(
           [this, applied_parameters = std::move(applied_parameters)]() mutable {
             RTC_DCHECK_RUN_ON(signaling_thread_);
-            cached_parameters_ = std::move(applied_parameters);
+            UpdateCache(std::move(*applied_parameters));
           });
     }
     return ScopedOperationsBatcher::FinalizerTask();
@@ -1059,7 +1078,7 @@ void RtpSenderBase::Stop() {
   });
 
   stopped_ = true;
-  cached_parameters_.reset();
+  InvalidateCache();
 }
 
 absl::AnyInvocable<void() &&> RtpSenderBase::DetachTrackAndGetStopTask() {
@@ -1080,7 +1099,7 @@ absl::AnyInvocable<void() &&> RtpSenderBase::DetachTrackAndGetStopTask() {
   }
 
   stopped_ = true;
-  cached_parameters_.reset();
+  InvalidateCache();
 
   return [this, clear_send, ssrc = ssrc_] {
     RTC_DCHECK_RUN_ON(worker_thread_);

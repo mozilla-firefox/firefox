@@ -285,10 +285,19 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
   void SetObserver(RtpSenderObserverInterface* observer) override;
 
  protected:
+  // Resets `cached_parameters_`. Used by operations that change, or may
+  // change, the parameters of the media channel without reading them back
+  // while this thread is blocked.
   void InvalidateCache() {
     RTC_DCHECK_RUN_ON(signaling_thread_);
     cached_parameters_.reset();
+    ++cache_generation_;
   }
+
+  // Sets `cached_parameters_` to `parameters`, which must have been read from
+  // the media channel while this thread was blocked waiting for them, i.e.
+  // after any change that this thread has requested has been applied.
+  void UpdateCache(RtpParameters parameters);
 
   // If `set_streams_observer` is not null, it is invoked when SetStreams()
   // is called. `set_streams_observer` is not owned by this object. If not
@@ -361,8 +370,20 @@ class RtpSenderBase : public RtpSenderInternal, public ObserverInterface {
 
   std::vector<std::string> stream_ids_;
   RtpParameters init_parameters_;
+  // The parameters of the media channel for `ssrc_`, cached on the signaling
+  // thread to avoid blocking calls to the worker thread. Operations that
+  // change the parameters of the media channel either update the cache with
+  // the resulting parameters (see `UpdateCache()`) or invalidate it (see
+  // `InvalidateCache()`). `GetParametersInternal()` populates an empty cache.
   mutable std::optional<RtpParameters> cached_parameters_
       RTC_GUARDED_BY(signaling_thread_);
+  // Incremented by `InvalidateCache()` and `UpdateCache()`. The completion of
+  // a non-blocking `SetParametersInternal()` call delivers parameters that
+  // were read on the worker thread before the completion was posted. Those
+  // only populate the cache if the cache is empty and the generation hasn't
+  // changed since the call was made, i.e. if no other operation has changed
+  // the parameters in the meantime.
+  uint64_t cache_generation_ RTC_GUARDED_BY(signaling_thread_) = 0;
   std::vector<Codec> send_codecs_;
 
   // TODO(tommi): Several member variables in this class (ssrc_, stopped_, etc)

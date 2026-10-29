@@ -12,6 +12,7 @@
 
 #include "pc/rtp_transceiver.h"
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -41,6 +42,7 @@
 #include "media/base/fake_media_engine.h"
 #include "media/base/media_channel.h"
 #include "media/base/media_config.h"
+#include "media/base/stream_params.h"
 #include "media/engine/fake_webrtc_call.h"
 #include "p2p/dtls/fake_dtls_transport.h"
 #include "pc/codec_vendor.h"
@@ -386,6 +388,46 @@ TEST_F(RtpTransceiverUnifiedPlanTest, StopSetsDirection) {
   EXPECT_EQ(RtpTransceiverDirection::kStopped, transceiver->direction());
   EXPECT_EQ(RtpTransceiverDirection::kStopped,
             *transceiver->current_direction());
+}
+
+// Applying content to the channel can fail after the media channel has been
+// partially updated. The parameters that the senders cache must still be
+// updated with the parameters of the media channel.
+TEST_F(RtpTransceiverUnifiedPlanTest,
+       UpdatesSenderParametersWhenSettingContentFails) {
+  constexpr uint32_t kSsrc = 1234;
+  scoped_refptr<MockRtpSenderInternal> sender = MockSender(MediaType::AUDIO);
+  EXPECT_CALL(*sender, ssrc()).WillRepeatedly(Return(kSsrc));
+  scoped_refptr<RtpTransceiver> transceiver =
+      CreateTransceiver(sender, MockReceiver(MediaType::AUDIO));
+
+  FakeVoiceMediaSendChannel send_channel(AudioOptions(), Thread::Current());
+  send_channel.AddSendStream(StreamParams::CreateLegacy(kSsrc));
+  const RtpParameters expected_parameters =
+      send_channel.GetRtpSendParameters(kSsrc);
+  ASSERT_EQ(expected_parameters.encodings.size(), 1u);
+
+  const std::string content_name("my_mid");
+  transceiver->set_mid(content_name);
+  auto channel = std::make_unique<NiceMock<MockChannelInterface>>();
+  EXPECT_CALL(*channel, media_type()).WillRepeatedly(Return(MediaType::AUDIO));
+  EXPECT_CALL(*channel, mid()).WillRepeatedly(ReturnRef(content_name));
+  EXPECT_CALL(*channel, SetRtpTransport(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(*channel, media_send_channel())
+      .WillRepeatedly(Return(&send_channel));
+  EXPECT_CALL(*channel, SetLocalContent(_, _))
+      .WillOnce(Return(RTCError::InvalidParameter()));
+  ASSERT_TRUE(transceiver->SetChannelForTest(std::move(channel)).ok());
+
+  EXPECT_CALL(*sender, SetCachedParameters(Optional(expected_parameters)));
+
+  AudioContentDescription description;
+  ScopedOperationsBatcher batcher(context()->worker_thread());
+  transceiver->SetChannelLocalContent(&description, SdpType::kOffer, batcher);
+  EXPECT_FALSE(batcher.Run().ok());
+
+  EXPECT_CALL(*sender, SetMediaChannel(IsNull())).WillRepeatedly(Return());
+  transceiver->ClearChannel();
 }
 
 class RtpTransceiverFilteredCodecPreferencesTest

@@ -4178,6 +4178,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../media:media_channel",
       "../media:rtc_media_config",
       "../media:rtc_media_tests_utils",
+      "../media:stream_params",
       "../p2p:p2p_test_utils",
       "../rtc_base:checks",
       "../rtc_base:logging",
