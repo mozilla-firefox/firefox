@@ -4038,6 +4038,9 @@ TEST_F(PeerConnectionIntegrationTestUnifiedPlan,
 
   caller()->CreateAndSetAndSignalOffer();
   ASSERT_TRUE(WaitUntil([&] { return SignalingStateStable(); }));
+  ASSERT_THAT(WaitUntil([&] { return caller()->ice_gathering_state(); },
+                        Eq(PeerConnectionInterface::kIceGatheringComplete)),
+              IsRtcOk());
 
   audio_transceiver->StopStandard();
   caller()->CreateAndSetAndSignalOffer();
