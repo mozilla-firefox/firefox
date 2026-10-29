@@ -157,6 +157,28 @@ ______________________________________________________________________
   all parameters are wildcards (applicable to non-overloaded methods).
   - *Reference:*
     [GoogleTest Mocking Reference - EXPECT_CALL](https://google.github.io/googletest/reference/mocking.html#EXPECT_CALL)
+- **Alias Testing Symbols with `using`:** In test `.cc` files, add a
+  using-declaration such as `using ::testing::IsTrue;` near the top of the file,
+  next to any existing ones, for each gMock matcher or other `::testing` symbol.
+  Do not spell out the `::testing::` prefix at each call site and do not use
+  `using namespace ::testing;`.
+  - *Correct:* `WaitUntil([&] { return done; }, IsTrue())`
+  - *Incorrect:* `WaitUntil([&] { return done; }, ::testing::IsTrue())`
+  - *Reference:*
+    [GoogleTest Cookbook](https://google.github.io/googletest/gmock_cook_book.html)
+  - *Reference:*
+    [Google C++ Style Guide - Namespaces](https://google.github.io/styleguide/cppguide.html#Namespaces)
+- **Prefer Container Matchers:** Use `EXPECT_THAT` with matchers such as
+  `SizeIs()`, `IsEmpty()` and `ElementsAre()` instead of checking the result of
+  `size()` or `empty()`. On failure, the matchers also print the contents of the
+  container. For a container held in a `std::optional`, wrap the matcher in
+  `Optional()`, e.g. `EXPECT_THAT(values, Optional(SizeIs(2)));`.
+  - *Correct:* `EXPECT_THAT(values, SizeIs(2));` /
+    `EXPECT_THAT(values, IsEmpty());`
+  - *Incorrect:* `EXPECT_EQ(values.size(), 2u);` /
+    `EXPECT_TRUE(values.empty());`
+  - *Reference:*
+    [GoogleTest Matchers Reference - Container Matchers](https://google.github.io/googletest/reference/matchers.html#container-matchers)
 - **Avoid Unrelated Assertions:** Do not assert expectations on calls that are
   not the focus of the test scenario. Use `ON_CALL` instead of `EXPECT_CALL` for
   setting default behavior without setting expectations.
