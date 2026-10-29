@@ -10,6 +10,7 @@
 
 #include "rtc_base/openssl_utility.h"
 
+#include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
@@ -79,6 +80,8 @@ constexpr absl::string_view kDistrustedSpkiSha256[] = {
 // Returns the hex SHA-256 of `cert_der`'s SubjectPublicKeyInfo, or nullopt
 // on parse failure.
 std::optional<std::string> GetSpkiSha256(std::span<const uint8_t> cert_der) {
+  unsigned char digest[EVP_MAX_MD_SIZE];
+  unsigned int digest_len = 0;
 #ifdef OPENSSL_IS_BORINGSSL
   // Extract SubjectPublicKeyInfo without re-encoding.
   CBS cbs;
@@ -106,8 +109,10 @@ std::optional<std::string> GetSpkiSha256(std::span<const uint8_t> cert_der) {
       !CBS_get_asn1_element(&tbs_certificate, &spki, CBS_ASN1_SEQUENCE)) {
     return std::nullopt;
   }
-  const uint8_t* spki_data = CBS_data(&spki);
-  size_t spki_len = CBS_len(&spki);
+  if (EVP_Digest(CBS_data(&spki), CBS_len(&spki), digest, &digest_len,
+                 EVP_sha256(), nullptr) != 1) {
+    return std::nullopt;
+  }
 #else   // OPENSSL_IS_BORINGSSL
   const unsigned char* cert_ptr = cert_der.data();
   X509* x509 = d2i_X509(nullptr, &cert_ptr,
@@ -121,18 +126,14 @@ std::optional<std::string> GetSpkiSha256(std::span<const uint8_t> cert_der) {
   if (spki_len <= 0) {
     return std::nullopt;
   }
-#endif  // !defined(OPENSSL_IS_BORINGSSL)
-
-  unsigned char digest[EVP_MAX_MD_SIZE];
-  unsigned int digest_len = 0;
   bool ok = EVP_Digest(spki_data, spki_len, digest, &digest_len, EVP_sha256(),
                        nullptr) == 1;
-#ifndef OPENSSL_IS_BORINGSSL
   OPENSSL_free(spki_data);
-#endif
   if (!ok) {
     return std::nullopt;
   }
+#endif  // !defined(OPENSSL_IS_BORINGSSL)
+
   return hex_encode(
       absl::string_view(reinterpret_cast<const char*>(digest), digest_len));
 }
@@ -337,6 +338,37 @@ bool IsDistrustedCertificate(std::span<const uint8_t> cert_der) {
     return true;
   }
   return absl::c_linear_search(kDistrustedSpkiSha256, *spki_sha256);
+}
+
+#ifdef OPENSSL_IS_BORINGSSL
+bool ContainsDistrustedCertificate(const STACK_OF(CRYPTO_BUFFER) * chain) {
+  for (size_t i = 0; i < sk_CRYPTO_BUFFER_num(chain); ++i) {
+    const CRYPTO_BUFFER* cert = sk_CRYPTO_BUFFER_value(chain, i);
+    if (IsDistrustedCertificate(std::span<const uint8_t>(
+            CRYPTO_BUFFER_data(cert), CRYPTO_BUFFER_len(cert)))) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
+bool ContainsDistrustedCertificate(const STACK_OF(X509) * chain) {
+  for (int i = 0; i < static_cast<int>(sk_X509_num(chain)); ++i) {
+    unsigned char* der = nullptr;
+    int der_len = i2d_X509(sk_X509_value(chain, i), &der);
+    if (der_len <= 0) {
+      // Fail closed, consistent with IsDistrustedCertificate().
+      return true;
+    }
+    bool distrusted = IsDistrustedCertificate(
+        std::span<const uint8_t>(der, static_cast<size_t>(der_len)));
+    OPENSSL_free(der);
+    if (distrusted) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void LogSSLErrors(absl::string_view prefix) {

@@ -16,15 +16,15 @@
 #include <openssl/ssl.h>
 #ifdef OPENSSL_IS_BORINGSSL
 #include <openssl/pool.h>
-#else
+#endif
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
-#endif
 
 #include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "rtc_base/checks.h"
@@ -326,6 +326,58 @@ TEST(OpenSSLUtilityTest,
   std::span<const uint8_t> contents = der.subspan(4);
   ber.insert(ber.end(), contents.begin(), contents.end());
   EXPECT_TRUE(openssl::IsDistrustedCertificate(ber));
+}
+
+#ifdef OPENSSL_IS_BORINGSSL
+TEST(OpenSSLUtilityTest, ContainsDistrustedCertificateCryptoBufferStack) {
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(
+      static_cast<const STACK_OF(CRYPTO_BUFFER)*>(nullptr)));
+
+  bssl::UniquePtr<STACK_OF(CRYPTO_BUFFER)> chain(sk_CRYPTO_BUFFER_new_null());
+  ASSERT_NE(chain, nullptr);
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain.get()));
+
+  bssl::UniquePtr<CRYPTO_BUFFER> trusted_cert(
+      CRYPTO_BUFFER_new(kFakeSSLCertificate, std::size(kFakeSSLCertificate),
+                        openssl::GetBufferPool()));
+  ASSERT_NE(trusted_cert, nullptr);
+  ASSERT_TRUE(bssl::PushToStack(chain.get(), std::move(trusted_cert)));
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain.get()));
+
+  bssl::UniquePtr<CRYPTO_BUFFER> distrusted_cert(CRYPTO_BUFFER_new(
+      kDistrustedCertificate, std::size(kDistrustedCertificate),
+      openssl::GetBufferPool()));
+  ASSERT_NE(distrusted_cert, nullptr);
+  ASSERT_TRUE(bssl::PushToStack(chain.get(), std::move(distrusted_cert)));
+  EXPECT_TRUE(openssl::ContainsDistrustedCertificate(chain.get()));
+}
+#endif
+
+TEST(OpenSSLUtilityTest, ContainsDistrustedCertificateX509Stack) {
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(
+      static_cast<const STACK_OF(X509)*>(nullptr)));
+
+  STACK_OF(X509)* chain = sk_X509_new_null();
+  ASSERT_NE(chain, nullptr);
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain));
+
+  const unsigned char* trusted_ptr = kFakeSSLCertificate;
+  X509* trusted_cert =
+      d2i_X509(nullptr, &trusted_ptr,
+               checked_cast<long>(std::size(kFakeSSLCertificate)));  // NOLINT
+  ASSERT_NE(trusted_cert, nullptr);
+  ASSERT_GT(static_cast<int>(sk_X509_push(chain, trusted_cert)), 0);
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain));
+
+  const unsigned char* distrusted_ptr = kDistrustedCertificate;
+  X509* distrusted_cert = d2i_X509(
+      nullptr, &distrusted_ptr,
+      checked_cast<long>(std::size(kDistrustedCertificate)));  // NOLINT
+  ASSERT_NE(distrusted_cert, nullptr);
+  ASSERT_GT(static_cast<int>(sk_X509_push(chain, distrusted_cert)), 0);
+  EXPECT_TRUE(openssl::ContainsDistrustedCertificate(chain));
+
+  sk_X509_pop_free(chain, X509_free);
 }
 
 }  // namespace webrtc

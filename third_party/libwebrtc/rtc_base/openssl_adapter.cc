@@ -21,7 +21,6 @@
 #include <cstring>
 #include <ctime>
 #include <memory>
-#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -177,51 +176,6 @@ static void LogSslError() {
 /////////////////////////////////////////////////////////////////////////////
 
 namespace webrtc {
-
-namespace {
-
-// The checks below see the certificates the peer presented in the handshake
-// and, in the X509 build, the chain OpenSSL built from them. This leaves two
-// gaps when a custom SSLCertificateVerifier builds its own path: intermediates
-// it adds itself, e.g. from a cache or via AIA fetching, are not checked, so a
-// server could leave a distrusted intermediate out of the handshake; and the
-// trust anchor it chains to is not checked either.
-// Conversely, a distrusted certificate that the peer presents but that is not
-// needed for the path still causes the chain to be rejected. All of this is
-// acceptable for this defense-in-depth check.
-
-#ifdef WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
-bool ContainsDistrustedCertificate(const STACK_OF(CRYPTO_BUFFER) * chain) {
-  for (size_t i = 0; i < sk_CRYPTO_BUFFER_num(chain); ++i) {
-    const CRYPTO_BUFFER* cert = sk_CRYPTO_BUFFER_value(chain, i);
-    if (openssl::IsDistrustedCertificate(std::span<const uint8_t>(
-            CRYPTO_BUFFER_data(cert), CRYPTO_BUFFER_len(cert)))) {
-      return true;
-    }
-  }
-  return false;
-}
-#else   // WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
-bool ContainsDistrustedCertificate(STACK_OF(X509) * chain) {
-  for (int i = 0; i < static_cast<int>(sk_X509_num(chain)); ++i) {
-    unsigned char* der = nullptr;
-    int der_len = i2d_X509(sk_X509_value(chain, i), &der);
-    if (der_len <= 0) {
-      // Fail closed, consistent with openssl::IsDistrustedCertificate().
-      return true;
-    }
-    bool distrusted = openssl::IsDistrustedCertificate(
-        std::span<const uint8_t>(der, static_cast<size_t>(der_len)));
-    OPENSSL_free(der);
-    if (distrusted) {
-      return true;
-    }
-  }
-  return false;
-}
-#endif  // !defined(WEBRTC_USE_CRYPTO_BUFFER_CALLBACK)
-
-}  // namespace
 
 bool OpenSSLAdapter::InitializeSSL() {
   // TODO: https://issues.webrtc.org/issues/339300437 - remove once
@@ -821,6 +775,16 @@ bool OpenSSLAdapter::SSLPostConnectionCheck(SSL* ssl, absl::string_view host) {
   return is_valid_cert_name;
 }
 
+// The ContainsDistrustedCertificate checks in SSLVerifyCallback below see the
+// certificates the peer presented in the handshake and, in the X509 build, the
+// chain OpenSSL built from them. This leaves two gaps when a custom
+// SSLCertificateVerifier builds its own path: intermediates it adds itself,
+// e.g. from a cache or via AIA fetching, are not checked, so a server could
+// leave a distrusted intermediate out of the handshake; and the trust anchor it
+// chains to is not checked either. Conversely, a distrusted certificate that
+// the peer presents but that is not needed for the path still causes the chain
+// to be rejected. All of this is acceptable for this defense-in-depth check.
+
 #ifdef WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
 // static
 enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyCallback(SSL* ssl,
@@ -834,7 +798,7 @@ enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyCallback(SSL* ssl,
   // Reject chains containing distrusted certificates even if accepted by the
   // custom verifier.
   if (ret == ssl_verify_ok &&
-      ContainsDistrustedCertificate(SSL_get0_peer_certificates(ssl))) {
+      openssl::ContainsDistrustedCertificate(SSL_get0_peer_certificates(ssl))) {
     RTC_LOG(LS_WARNING) << "Peer certificate chain contains a distrusted "
                            "certificate.";
     stream->custom_cert_verifier_status_ = false;
@@ -899,9 +863,10 @@ int OpenSSLAdapter::SSLVerifyCallback(int status, X509_STORE_CTX* store) {
   // trust store or custom verifier. The untrusted stack holds the certificates
   // the peer presented; the chain is the path built so far, which may also
   // include certificates from the trust store.
-  if (status &&
-      (ContainsDistrustedCertificate(X509_STORE_CTX_get0_untrusted(store)) ||
-       ContainsDistrustedCertificate(X509_STORE_CTX_get0_chain(store)))) {
+  if (status && (openssl::ContainsDistrustedCertificate(
+                     X509_STORE_CTX_get0_untrusted(store)) ||
+                 openssl::ContainsDistrustedCertificate(
+                     X509_STORE_CTX_get0_chain(store)))) {
     RTC_LOG(LS_WARNING) << "Certificate chain contains a distrusted "
                            "certificate.";
     X509_STORE_CTX_set_error(store, X509_V_ERR_CERT_REJECTED);
