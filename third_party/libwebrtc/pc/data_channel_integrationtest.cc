@@ -1815,11 +1815,9 @@ class DataChannelIntegrationTestUnifiedPlanFieldTrials
 
 const char* kTrialsVariants[] = {
     "",
-    "WebRTC-ForceDtls13/Enabled/",
     "WebRTC-IceHandshakeDtls/Enabled/",
-    "WebRTC-ForceDtls13/Enabled/WebRTC-EnableDtlsPqc/Enabled/",
-    "WebRTC-ForceDtls13/Enabled/WebRTC-IceHandshakeDtls/Enabled/",
-    ("WebRTC-ForceDtls13/Enabled/WebRTC-IceHandshakeDtls/Enabled/"
+    "WebRTC-EnableDtlsPqc/Enabled/",
+    ("WebRTC-IceHandshakeDtls/Enabled/"
      "WebRTC-EnableDtlsPqc/Enabled/"),
 };
 
