@@ -2620,8 +2620,10 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:rtc_error_matchers",
       "../api:rtp_transport_factory",
       "../api:scoped_refptr",
+      "../api:sequence_checker",
       "../api/crypto:options",
       "../api/environment",
+      "../api/task_queue:pending_task_safety_flag",
       "../api/transport:datagram_transport_interface",
       "../api/transport:enums",
       "../api/units:time_delta",
@@ -2652,6 +2654,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test:test_support",
       "../test:wait_until",
       "//third_party/abseil-cpp/absl/base:nullability",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
   }
