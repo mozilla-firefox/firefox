@@ -511,6 +511,28 @@ if (!build_with_chromium) {
   }
 }
 
+webrtc_fuzzer_test("stun_request_response_fuzzer") {
+  sources = [ "stun_request_response_fuzzer.cc" ]
+  deps = [
+    ":fuzz_data_helper",
+    "..:create_test_environment",
+    "../../api/environment",
+    "../../api/task_queue",
+    "../../api/transport:stun_types",
+    "../../api/units:time_delta",
+    "../../api/units:timestamp",
+    "../../p2p:stun_request",
+    "../../rtc_base:buffer",
+    "../../rtc_base:byte_buffer",
+    "../../rtc_base:ip_address",
+    "../../rtc_base:socket_address",
+    "../../rtc_base:span_helpers",
+    "../../test/time_controller",
+    "//third_party/abseil-cpp/absl/strings:string_view",
+  ]
+  seed_corpus = "corpora/stun-response-corpus"
+}
+
 webrtc_fuzzer_test("stun_parser_fuzzer") {
   sources = [ "stun_parser_fuzzer.cc" ]
   deps = [
@@ -859,6 +881,7 @@ group("fuzzers") {
     ":ssl_certificate_fuzzer",
     ":string_to_number_fuzzer",
     ":stun_parser_fuzzer",
+    ":stun_request_response_fuzzer",
     ":stun_validator_fuzzer",
     ":turn_unwrap_fuzzer",
     ":ulpfec_generator_fuzzer",
