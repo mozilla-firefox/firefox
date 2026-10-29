@@ -23,6 +23,7 @@
 #include "api/video/color_space.h"
 #include "api/video/encoded_image.h"
 #include "api/video/render_resolution.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
 #include "api/video_codecs/video_decoder.h"
@@ -271,6 +272,13 @@ int LibvpxVp9Decoder::ReturnFrame(const vpx_image_t* img,
                                   const ColorSpace* explicit_color_space) {
   if (img == nullptr) {
     // Decoder OK and nullptr image => No show frame.
+    return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
+  }
+
+  if (img->d_w > kMaxFrameSidePixels || img->d_h > kMaxFrameSidePixels) {
+    RTC_LOG(LS_ERROR)
+        << "Unsupported frame dimensions produced by the decoder: " << img->d_w
+        << "x" << img->d_h;
     return WEBRTC_VIDEO_CODEC_NO_OUTPUT;
   }
 

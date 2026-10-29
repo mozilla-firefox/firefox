@@ -233,6 +233,12 @@ int32_t Dav1dDecoder::OutputPicture(
 
   int width = dav1d_picture.p.w;
   int height = dav1d_picture.p.h;
+  if (width > kMaxFrameSidePixels || height > kMaxFrameSidePixels) {
+    RTC_LOG(LS_ERROR) << "Dav1dDecoder::Decode frame dimensions " << width
+                      << "x" << height << " exceed maximum side length "
+                      << kMaxFrameSidePixels;
+    return WEBRTC_VIDEO_CODEC_ERROR;
+  }
 
   if (crop_to_render_resolution_) {
     // Interpret render_width/height as resolution decoded frame should be

@@ -40,6 +40,7 @@ extern "C" {
 #include "api/video/i422_buffer.h"
 #include "api/video/i444_buffer.h"
 #include "api/video/render_resolution.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video/video_codec_type.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
@@ -122,10 +123,10 @@ int H264DecoderImpl::AVGetBuffer2(AVCodecContext* context,
   RTC_CHECK_GE(height, 0);
   int ret = av_image_check_size(static_cast<unsigned int>(width),
                                 static_cast<unsigned int>(height), 0, nullptr);
-  if (ret < 0) {
+  if (ret < 0 || width > kMaxFrameSidePixels || height > kMaxFrameSidePixels) {
     RTC_LOG(LS_ERROR) << "Invalid picture size " << width << "x" << height;
     decoder->ReportError();
-    return ret;
+    return ret < 0 ? ret : WEBRTC_VIDEO_CODEC_ERROR;
   }
 
   // The video frame is stored in `frame_buffer`. `av_frame` is FFmpeg's version
