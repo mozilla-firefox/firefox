@@ -663,10 +663,10 @@ index 59bcdced59..a6f2db7b60 100644
  
  rtc_source_set("arch") {
 diff --git a/rtc_tools/network_tester/BUILD.gn b/rtc_tools/network_tester/BUILD.gn
-index bdffdc259f..2f2532e557 100644
+index cfbd2ea64a..c2f5f58b78 100644
 --- a/rtc_tools/network_tester/BUILD.gn
 +++ b/rtc_tools/network_tester/BUILD.gn
-@@ -194,8 +194,8 @@ if (is_android) {
+@@ -193,8 +193,8 @@ if (is_android) {
        "//third_party/jni_zero",
      ]
  

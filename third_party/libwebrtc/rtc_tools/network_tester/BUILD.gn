@@ -87,7 +87,6 @@ if (rtc_enable_protobuf) {
       deps = [
         ":network_tester",
         "../../api/environment",
-        "../../rtc_base:random",
         "../../test:create_test_environment",
         "../../test:fileutils",
         "../../test:run_loop",

@@ -90,10 +90,10 @@ index 2f2834fb28..47557d31ba 100644
  
    android_resources("resources") {
 diff --git a/rtc_tools/network_tester/BUILD.gn b/rtc_tools/network_tester/BUILD.gn
-index 2f2532e557..4e01383097 100644
+index c2f5f58b78..dd655db4d0 100644
 --- a/rtc_tools/network_tester/BUILD.gn
 +++ b/rtc_tools/network_tester/BUILD.gn
-@@ -198,7 +198,5 @@ if (is_android) {
+@@ -197,7 +197,5 @@ if (is_android) {
      configs += [ "//chromium/build/config/android:hide_all_but_jni" ]
  
      output_extension = "so"
