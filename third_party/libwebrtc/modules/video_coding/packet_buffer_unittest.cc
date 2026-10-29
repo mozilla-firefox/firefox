@@ -533,7 +533,7 @@ TEST_P(PacketBufferH264ParameterizedTest, GetBitstreamOneFrameFullBuffer) {
 
 TEST_P(PacketBufferH264ParameterizedTest, GetBitstreamBufferPadding) {
   int64_t seq_num = Rand();
-  CopyOnWriteBuffer data = "some plain old data";
+  CopyOnWriteBuffer data("some plain old data");
 
   auto packet = std::make_unique<PacketBuffer::Packet>();
   auto& h264_header =

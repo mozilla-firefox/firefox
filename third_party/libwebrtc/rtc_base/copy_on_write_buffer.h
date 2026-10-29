@@ -79,14 +79,6 @@ class RTC_EXPORT CopyOnWriteBuffer {
             std::span(reinterpret_cast<const uint8_t*>(data), size),
             capacity) {}
 
-  // Construct a buffer from the contents of an array.
-  template <typename T,
-            size_t N,
-            typename std::enable_if<
-                internal::BufferCompat<uint8_t, T>::value>::type* = nullptr>
-  CopyOnWriteBuffer(const T (&array)[N])  // NOLINT: runtime/explicit
-      : CopyOnWriteBuffer(std::span(array)) {}
-
   // Construct a buffer from a vector like type.
   template <typename VecT,
             typename ElemT = typename std::remove_pointer_t<
