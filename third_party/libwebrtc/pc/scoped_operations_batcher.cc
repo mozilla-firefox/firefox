@@ -63,14 +63,11 @@ RTCError ScopedOperationsBatcher::Run() {
           auto* returning_task =
               std::get_if<BatchTaskWithFinalizer>(&tasks_[task_idx]);
           RTC_DCHECK(returning_task);
-          auto ret = std::move(*returning_task)();
-          if (ret.ok()) {
-            if (ret.value()) {
-              return_tasks.push_back(std::move(ret.value()));
-            }
-          } else {
-            error = ret.MoveError();
+          BatchTaskResult result = std::move(*returning_task)();
+          if (result.finalizer) {
+            return_tasks.push_back(std::move(result.finalizer));
           }
+          error = std::move(result.error);
         }
         ++task_idx;
         if (!error.ok()) {

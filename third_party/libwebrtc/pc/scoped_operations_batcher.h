@@ -11,6 +11,7 @@
 #ifndef PC_SCOPED_OPERATIONS_BATCHER_H_
 #define PC_SCOPED_OPERATIONS_BATCHER_H_
 
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -32,17 +33,32 @@ namespace webrtc {
 // batcher will cooperatively yield the thread and resume execution in a
 // subsequent `BlockingCall`.
 //
-// Tasks can either have a `void` return type, or return a new task or return an
-// error.
+// Tasks can either have a `void` return type, or return a `BatchTaskResult`
+// that holds an error, a new task or both.
 // Any tasks returned by the executed worker thread tasks are collected
 // and subsequently executed on the calling thread (typically the signaling
-// thread) after the worker thread operations have completed.
+// thread) after the worker thread operations have completed, including tasks
+// that were returned along with an error.
 class ScopedOperationsBatcher {
  public:
   using SimpleBatchTask = absl::AnyInvocable<void() &&>;
   using FinalizerTask = absl::AnyInvocable<void() &&>;
-  using BatchTaskWithFinalizer =
-      absl::AnyInvocable<RTCErrorOr<FinalizerTask>() &&>;
+
+  // The result of a `BatchTaskWithFinalizer`. If `error` is set, the remaining
+  // tasks are not executed. `finalizer`, if set, runs regardless of `error`.
+  struct BatchTaskResult {
+    BatchTaskResult() = default;
+    BatchTaskResult(RTCError error)  // NOLINT(runtime/explicit)
+        : error(std::move(error)) {}
+    BatchTaskResult(FinalizerTask finalizer)  // NOLINT(runtime/explicit)
+        : finalizer(std::move(finalizer)) {}
+    BatchTaskResult(RTCError error, FinalizerTask finalizer)
+        : error(std::move(error)), finalizer(std::move(finalizer)) {}
+
+    RTCError error = RTCError::OK();
+    FinalizerTask finalizer;
+  };
+  using BatchTaskWithFinalizer = absl::AnyInvocable<BatchTaskResult() &&>;
 
   explicit ScopedOperationsBatcher(Thread* target_thread);
   ~ScopedOperationsBatcher();

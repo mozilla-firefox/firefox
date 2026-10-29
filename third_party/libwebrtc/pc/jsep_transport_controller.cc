@@ -569,7 +569,7 @@ JsepTransportController::MakeRollbackTask(RTCError* absl_nonnull error) {
   scoped_refptr<PendingTaskSafetyFlag> new_flag =
       PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true, signaling_thread_);
   return [this, error, new_flag = std::move(new_flag)]() mutable
-             -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+             -> ScopedOperationsBatcher::BatchTaskResult {
     RTC_DCHECK_RUN_ON(network_thread_);
     RTCError rollback_error = RollbackTransports_n();
     TransportStateSnapshot new_states = GetTransportStates_n();

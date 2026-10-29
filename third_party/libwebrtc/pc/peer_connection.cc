@@ -761,7 +761,7 @@ PeerConnection::MakeCloseOnNetworkThreadTask() {
   auto jsep_close_task = transport_controller_copy_->MakeCloseTask();
 
   return [this, jsep_close_task = std::move(jsep_close_task)]() mutable
-             -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+             -> ScopedOperationsBatcher::BatchTaskResult {
     RTC_DCHECK_RUN_ON(network_thread());
     if (network_thread_safety_->alive()) {
       // port_allocator_ and transport_controller_ live on the network thread

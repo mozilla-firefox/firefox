@@ -72,7 +72,7 @@ TEST(ScopedOperationsBatcherTest, ExecutesReturnedTasksOnCallingThread) {
   {
     ScopedOperationsBatcher batcher(target_thread.get());
     ScopedOperationsBatcher::BatchTaskWithFinalizer task =
-        [&]() -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+        [&]() -> ScopedOperationsBatcher::BatchTaskResult {
       task_executed = true;
       task_thread = Thread::Current();
       return ScopedOperationsBatcher::FinalizerTask([&]() {
@@ -129,25 +129,22 @@ TEST(ScopedOperationsBatcherTest, StopsExecutionOnError) {
   {
     ScopedOperationsBatcher batcher(target_thread.get());
     // Task 1.
-    batcher.AddWithFinalizer(
-        [&]() -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
-          task1_executed = true;
-          return ScopedOperationsBatcher::FinalizerTask(
-              [&] { finalizer1_executed = true; });
-        });
+    batcher.AddWithFinalizer([&]() -> ScopedOperationsBatcher::BatchTaskResult {
+      task1_executed = true;
+      return ScopedOperationsBatcher::FinalizerTask(
+          [&] { finalizer1_executed = true; });
+    });
     // Task 2.
-    batcher.AddWithFinalizer(
-        [&]() -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
-          task2_executed = true;
-          return RTCError(RTCErrorType::INVALID_STATE, "Failed");
-        });
+    batcher.AddWithFinalizer([&]() -> ScopedOperationsBatcher::BatchTaskResult {
+      task2_executed = true;
+      return RTCError(RTCErrorType::INVALID_STATE, "Failed");
+    });
     // Task 3.
-    batcher.AddWithFinalizer(
-        [&]() -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
-          task3_executed = true;
-          return ScopedOperationsBatcher::FinalizerTask(
-              [&] { finalizer3_executed = true; });
-        });
+    batcher.AddWithFinalizer([&]() -> ScopedOperationsBatcher::BatchTaskResult {
+      task3_executed = true;
+      return ScopedOperationsBatcher::FinalizerTask(
+          [&] { finalizer3_executed = true; });
+    });
 
     error = batcher.Run();
   }
@@ -161,6 +158,32 @@ TEST(ScopedOperationsBatcherTest, StopsExecutionOnError) {
   EXPECT_TRUE(task2_executed);
   EXPECT_FALSE(task3_executed);
   EXPECT_FALSE(finalizer3_executed);
+}
+
+TEST(ScopedOperationsBatcherTest, RunsFinalizerReturnedWithError) {
+  auto target_thread = Thread::Create();
+  target_thread->Start();
+
+  bool finalizer_executed = false;
+  bool task2_executed = false;
+
+  RTCError error = RTCError::OK();
+  {
+    ScopedOperationsBatcher batcher(target_thread.get());
+    batcher.AddWithFinalizer([&]() -> ScopedOperationsBatcher::BatchTaskResult {
+      return {RTCError(RTCErrorType::INVALID_STATE, "Failed"),
+              [&] { finalizer_executed = true; }};
+    });
+    batcher.Add([&] { task2_executed = true; });
+
+    error = batcher.Run();
+  }
+
+  EXPECT_FALSE(error.ok());
+  EXPECT_EQ(error.type(), RTCErrorType::INVALID_STATE);
+  EXPECT_STREQ(error.message(), "Failed");
+  EXPECT_TRUE(finalizer_executed);
+  EXPECT_FALSE(task2_executed);
 }
 
 TEST(ScopedOperationsBatcherTest, IsEmptyReflectsTaskCount) {

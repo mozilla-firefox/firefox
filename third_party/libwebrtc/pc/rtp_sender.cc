@@ -989,7 +989,7 @@ ScopedOperationsBatcher::BatchTaskWithFinalizer RtpSenderBase::SetSsrcTask(
 
   return [this, ssrc, video_encoder_factory_override = std::move(video_factory),
           audio_encoder_factory_override = std::move(audio_factory)]() mutable
-             -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+             -> ScopedOperationsBatcher::BatchTaskResult {
     RTC_DCHECK_RUN_ON(worker_thread_);
 
     std::optional<RtpParameters> applied_parameters = ApplyInitParameters_w(

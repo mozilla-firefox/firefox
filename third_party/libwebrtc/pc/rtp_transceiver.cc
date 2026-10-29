@@ -557,7 +557,7 @@ void RtpTransceiver::CreateChannel(
         [this, media_send_channel = std::move(media_send_channel),
          media_receive_channel = std::move(media_receive_channel),
          construct_channel = std::move(construct_channel)]() mutable
-            -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+            -> ScopedOperationsBatcher::BatchTaskResult {
           RTC_DCHECK_RUN_ON(context()->worker_thread());
           SetMediaChannels(media_send_channel.get(),
                            media_receive_channel.get());
@@ -575,7 +575,7 @@ void RtpTransceiver::CreateChannel(
 
   network_tasks.AddWithFinalizer(
       [this, transport_lookup = std::move(transport_lookup)]() mutable
-          -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+          -> ScopedOperationsBatcher::BatchTaskResult {
         RTC_DCHECK_RUN_ON(context()->network_thread());
         auto result = InitializeOnNetworkThread(std::move(transport_lookup));
         if (!result.ok()) {
@@ -1126,7 +1126,7 @@ RtpTransceiver::StopStandardAsync() {
   auto stop_task = GetStopSendingAndReceiving();
 
   return [this, stop_task = std::move(stop_task)]() mutable
-             -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+             -> ScopedOperationsBatcher::BatchTaskResult {
     RTC_DCHECK_RUN_ON(context()->worker_thread());
     std::move(stop_task)();
     return ScopedOperationsBatcher::FinalizerTask([this]() {
@@ -1527,7 +1527,7 @@ void RtpTransceiver::SetChannelContent(
   batcher.AddWithFinalizer(
       [this, set_content = std::move(set_content),
        sender_parameters = std::move(sender_parameters)]() mutable
-          -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+          -> ScopedOperationsBatcher::BatchTaskResult {
         RTC_DCHECK_RUN_ON(context()->worker_thread());
         if (!channel_) {
           return RTCError::InvalidState() << "No channel";
