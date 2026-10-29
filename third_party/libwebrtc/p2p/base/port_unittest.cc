@@ -531,8 +531,7 @@ class PortTest : public ::testing::Test {
     args.server_address = &server_address;
     args.config = &config;
     args.ice_tiebreaker = kTiebreakerDefault;
-
-    return TurnPort::Create(args, 0, 0);
+    return TurnPort::Create(std::move(args), 0, 0);
   }
 
   std::unique_ptr<NATServer> CreateNatServer(const SocketAddress& addr,
@@ -764,16 +763,17 @@ class PortTest : public ::testing::Test {
       absl::string_view username,
       absl::string_view password,
       const FieldTrialsView* field_trials = nullptr) {
-    Port::PortParametersRef args = {
-        .env = CreateTestEnvironment(
-            {.field_trials = field_trials, .time = &time_controller_}),
-        .network_thread = main_,
-        .socket_factory = &socket_factory_,
-        .network = MakeNetwork(addr),
-        .ice_username_fragment = username,
-        .ice_password = password,
-        .ice_tiebreaker = kTiebreakerDefault};
-    auto port = std::make_unique<TestPort>(args, 0, 0);
+    auto port = std::make_unique<TestPort>(
+        Port::PortParametersRef{
+            .env = CreateTestEnvironment(
+                {.field_trials = field_trials, .time = &time_controller_}),
+            .network_thread = main_,
+            .socket_factory = &socket_factory_,
+            .network = MakeNetwork(addr),
+            .ice_username_fragment = username,
+            .ice_password = password,
+            .ice_tiebreaker = kTiebreakerDefault},
+        0, 0);
     port->SubscribeRoleConflict([this]() { OnRoleConflict(); });
     return port;
   }
@@ -789,26 +789,28 @@ class PortTest : public ::testing::Test {
   std::unique_ptr<TestPort> CreateTestPort(const Network* network,
                                            absl::string_view username,
                                            absl::string_view password) {
-    Port::PortParametersRef args = {.env = env_,
-                                    .network_thread = main_,
-                                    .socket_factory = &socket_factory_,
-                                    .network = network,
-                                    .ice_username_fragment = username,
-                                    .ice_password = password,
-                                    .ice_tiebreaker = kTiebreakerDefault};
-    auto port = std::make_unique<TestPort>(args, 0, 0);
+    auto port = std::make_unique<TestPort>(
+        Port::PortParametersRef{.env = env_,
+                                .network_thread = main_,
+                                .socket_factory = &socket_factory_,
+                                .network = network,
+                                .ice_username_fragment = username,
+                                .ice_password = password,
+                                .ice_tiebreaker = kTiebreakerDefault},
+        0, 0);
     port->SubscribeRoleConflict([this]() { OnRoleConflict(); });
     return port;
   }
 
   std::unique_ptr<TestPort> CreateRawTestPort() {
-    Port::PortParametersRef args = {
-        .env = env_,
-        .network_thread = main_,
-        .socket_factory = &socket_factory_,
-        .network = MakeNetwork(kLocalAddr1),
-    };
-    return std::make_unique<TestPort>(args, 0, 0);
+    return std::make_unique<TestPort>(
+        Port::PortParametersRef{
+            .env = env_,
+            .network_thread = main_,
+            .socket_factory = &socket_factory_,
+            .network = MakeNetwork(kLocalAddr1),
+        },
+        0, 0);
   }
 
   void OnRoleConflict() { role_conflict_ = true; }
@@ -4184,7 +4186,7 @@ TEST_F(PortTest, TestAddConnectionWithSameAddress) {
 // subclassed properly.
 class TestPortWrapper : public TurnPort {
   TestPortWrapper()
-      : TurnPort(args_,
+      : TurnPort(CreateArgs(),
                  /*socket=*/nullptr,
                  my_server_address_,
                  credentials_,
@@ -4195,7 +4197,10 @@ class TestPortWrapper : public TurnPort {
                  /*tls_cert_verifier=*/nullptr) {}
 
  private:
-  PortParametersRef args_{.env = CreateTestEnvironment()};
+  static PortParametersRef CreateArgs() {
+    return {.env = CreateTestEnvironment()};
+  }
+
   ProtocolAddress my_server_address_{kLocalAddr1, PROTO_UDP};
   RelayCredentials credentials_;
 };

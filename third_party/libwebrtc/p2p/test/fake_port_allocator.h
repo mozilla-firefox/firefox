@@ -43,11 +43,11 @@ namespace webrtc {
 
 class TestUDPPort : public UDPPort {
  public:
-  static TestUDPPort* Create(const PortParametersRef& args,
+  static TestUDPPort* Create(PortParametersRef args,
                              uint16_t min_port,
                              uint16_t max_port,
                              bool emit_localhost_for_anyaddress) {
-    TestUDPPort* port = new TestUDPPort(args, min_port, max_port,
+    TestUDPPort* port = new TestUDPPort(std::move(args), min_port, max_port,
                                         emit_localhost_for_anyaddress);
     if (!port->Init()) {
       delete port;
@@ -57,11 +57,11 @@ class TestUDPPort : public UDPPort {
   }
 
   static std::unique_ptr<TestUDPPort> Create(
-      const PortParametersRef& args,
+      PortParametersRef args,
       AsyncPacketSocket* socket,
       bool emit_localhost_for_anyaddress) {
-    auto port = absl::WrapUnique(
-        new TestUDPPort(args, socket, emit_localhost_for_anyaddress));
+    auto port = absl::WrapUnique(new TestUDPPort(
+        std::move(args), socket, emit_localhost_for_anyaddress));
     if (!port->Init()) {
       return nullptr;
     }
@@ -69,20 +69,20 @@ class TestUDPPort : public UDPPort {
   }
 
  protected:
-  TestUDPPort(const PortParametersRef& args,
+  TestUDPPort(PortParametersRef args,
               uint16_t min_port,
               uint16_t max_port,
               bool emit_localhost_for_anyaddress)
-      : UDPPort(args,
+      : UDPPort(std::move(args),
                 IceCandidateType::kHost,
                 min_port,
                 max_port,
                 emit_localhost_for_anyaddress) {}
 
-  TestUDPPort(const PortParametersRef& args,
+  TestUDPPort(PortParametersRef args,
               AsyncPacketSocket* socket,
               bool emit_localhost_for_anyaddress)
-      : UDPPort(args,
+      : UDPPort(std::move(args),
                 IceCandidateType::kHost,
                 socket,
                 emit_localhost_for_anyaddress) {}
@@ -130,6 +130,12 @@ class FakePortAllocatorSession : public PortAllocatorSession {
           (HasIPv6Enabled() && (flags() & PORTALLOCATOR_ENABLE_IPV6))
               ? ipv6_network_
               : ipv4_network_;
+      Port::Callbacks callbacks;
+      callbacks.tag = this;
+      callbacks.port_complete = [this](Port* port) { OnPortComplete(port); };
+      callbacks.port_destroyed = [this](PortInterface* port) {
+        OnPortDestroyed(port);
+      };
       port_.reset(
           TestUDPPort::Create({.env = env_,
                                .network_thread = network_thread_,
@@ -137,11 +143,10 @@ class FakePortAllocatorSession : public PortAllocatorSession {
                                .network = &network,
                                .ice_username_fragment = username(),
                                .ice_password = password(),
-                               .ice_tiebreaker = allocator_->ice_tiebreaker()},
+                               .ice_tiebreaker = allocator_->ice_tiebreaker(),
+                               .callbacks = std::move(callbacks)},
                               0, 0, false));
-      RTC_DCHECK(port_);
-      port_->SubscribePortDestroyed(
-          this, [this](PortInterface* port) { OnPortDestroyed(port); });
+      RTC_DCHECK(port_ != nullptr);
       AddPort(port_.get());
     }
     ++port_config_count_;
@@ -191,8 +196,6 @@ class FakePortAllocatorSession : public PortAllocatorSession {
   void AddPort(Port* port) {
     port->set_component(component());
     port->set_generation(generation());
-    port->SubscribePortComplete(this,
-                                [this](Port* port) { OnPortComplete(port); });
     port->PrepareAddress();
     ready_ports_.push_back(port);
     NotifyPortReady(this, port);

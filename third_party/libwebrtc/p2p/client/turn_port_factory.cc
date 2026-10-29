@@ -23,25 +23,31 @@ namespace webrtc {
 
 TurnPortFactory::~TurnPortFactory() {}
 
-std::unique_ptr<Port> TurnPortFactory::Create(const CreateRelayPortArgs& args,
+std::unique_ptr<Port> TurnPortFactory::Create(CreateRelayPortArgs&& args,
                                               AsyncPacketSocket* udp_socket) {
-  auto port = TurnPort::Create(args, udp_socket);
-  if (!port)
+  const RelayServerConfig* config = args.config;
+  std::unique_ptr<TurnPort> port =
+      TurnPort::Create(std::move(args), udp_socket);
+  if (port == nullptr) {
     return nullptr;
-  port->SetTlsCertPolicy(args.config->tls_cert_policy);
-  port->SetTurnLoggingId(args.config->turn_logging_id);
-  return std::move(port);
+  }
+  port->SetTlsCertPolicy(config->tls_cert_policy);
+  port->SetTurnLoggingId(config->turn_logging_id);
+  return port;
 }
 
-std::unique_ptr<Port> TurnPortFactory::Create(const CreateRelayPortArgs& args,
+std::unique_ptr<Port> TurnPortFactory::Create(CreateRelayPortArgs&& args,
                                               int min_port,
                                               int max_port) {
-  auto port = TurnPort::Create(args, min_port, max_port);
-  if (!port)
+  const RelayServerConfig* config = args.config;
+  std::unique_ptr<TurnPort> port =
+      TurnPort::Create(std::move(args), min_port, max_port);
+  if (port == nullptr) {
     return nullptr;
-  port->SetTlsCertPolicy(args.config->tls_cert_policy);
-  port->SetTurnLoggingId(args.config->turn_logging_id);
-  return std::move(port);
+  }
+  port->SetTlsCertPolicy(config->tls_cert_policy);
+  port->SetTurnLoggingId(config->turn_logging_id);
+  return port;
 }
 
 }  // namespace webrtc

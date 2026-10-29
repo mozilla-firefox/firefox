@@ -132,15 +132,16 @@ class ConnectionTest : public ::testing::Test {
                                            absl::string_view username,
                                            absl::string_view password,
                                            uint64_t tiebreaker) {
-    Port::PortParametersRef args = {
-        .env = env_,
-        .network_thread = time_controller_.GetMainThread(),
-        .socket_factory = &socket_factory_,
-        .network = MakeNetwork(addr),
-        .ice_username_fragment = username,
-        .ice_password = password,
-        .ice_tiebreaker = tiebreaker};
-    auto port = std::make_unique<TestPort>(args, 0, 0);
+    auto port = std::make_unique<TestPort>(
+        Port::PortParametersRef{
+            .env = env_,
+            .network_thread = time_controller_.GetMainThread(),
+            .socket_factory = &socket_factory_,
+            .network = MakeNetwork(addr),
+            .ice_username_fragment = username,
+            .ice_password = password,
+            .ice_tiebreaker = tiebreaker},
+        0, 0);
     port->SubscribeRoleConflict([this]() { OnRoleConflict(); });
     return port;
   }

@@ -102,11 +102,11 @@
 
 namespace webrtc {
 
-TCPPort::TCPPort(const PortParametersRef& args,
+TCPPort::TCPPort(PortParametersRef args,
                  uint16_t min_port,
                  uint16_t max_port,
                  bool allow_listen)
-    : Port(args, IceCandidateType::kHost, min_port, max_port),
+    : Port(std::move(args), IceCandidateType::kHost, min_port, max_port),
       allow_listen_(allow_listen),
       error_(0) {
   // TODO(mallinath) - Set preference value as per RFC 6544.

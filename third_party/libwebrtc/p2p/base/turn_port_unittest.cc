@@ -197,7 +197,7 @@ class TestConnectionWrapper {
 
 // Note: This test uses a fake clock with a simulated network round trip
 // (between local port and TURN server) of kSimulatedRtt.
-class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
+class TurnPortTest : public ::testing::Test {
  public:
   TurnPortTest()
       : ss_(new TurnPortTestVirtualSocketServer()),
@@ -227,14 +227,11 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
   }
   void OnTurnPortDestroyed(PortInterface* port) { turn_port_destroyed_ = true; }
 
-  // TurnPort::TestCallbacks
-  void OnTurnCreatePermissionResult(int code) override {
-    turn_create_permission_success_ = (code == 0);
+  bool HasPermission(const IPAddress& addr) {
+    TurnServerAllocation* alloc =
+        turn_server_.FindAllocation(turn_port_->socket()->GetLocalAddress());
+    return alloc && alloc->HasPermission(addr);
   }
-  void OnTurnRefreshResult(int code) override {
-    turn_refresh_success_ = (code == 0);
-  }
-  void OnTurnPortClosed() override { turn_port_closed_ = true; }
 
   void OnConnectionSignalDestroyed(Connection* connection) {
     connection->DeregisterReceivedPacketCallback();
@@ -295,15 +292,15 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
     args.turn_customizer = turn_customizer_.get();
     args.ice_tiebreaker = kTiebreakerDefault;
     args.lna_permission_factory = lna_permission_factory_.get();
+    args.callbacks = GetCallbacks();
 
-    turn_port_ = TurnPort::Create(args, 0, 0);
-    if (!turn_port_) {
+    turn_port_ = TurnPort::Create(std::move(args), 0, 0);
+    if (turn_port_ == nullptr) {
       return false;
     }
     // This TURN port will be the controlling.
     turn_port_->SetIceRole(ICEROLE_CONTROLLING);
     turn_port_->SetOption(Socket::OPT_RECV_ECN, 1);
-    ConnectSignals();
 
     if (server_address.proto == PROTO_TLS) {
       // The test TURN server has a self-signed certificate so will not pass
@@ -342,47 +339,51 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
     args.config = &config;
     args.turn_customizer = turn_customizer_.get();
     args.ice_tiebreaker = kTiebreakerDefault;
-    turn_port_ = TurnPort::Create(args, socket_.get());
+    args.callbacks = GetCallbacks();
+
+    turn_port_ = TurnPort::Create(std::move(args), socket_.get());
     // This TURN port will be the controlling.
     turn_port_->SetIceRole(ICEROLE_CONTROLLING);
-    ConnectSignals();
   }
 
-  void ConnectSignals() {
-    turn_port_->SubscribePortComplete(
-        this, [this](Port* port) { OnTurnPortComplete(port); });
-    turn_port_->SubscribePortError(
-        this, [this](Port* port) { OnTurnPortError(port); });
-    turn_port_->SubscribeCandidateError(
-        this, [this](Port* port, const IceCandidateErrorEvent& event) {
-          OnCandidateError(port, event);
-        });
-    turn_port_->SubscribeUnknownAddress(
-        this, [this](PortInterface* port, const SocketAddress& address,
-                     ProtocolType proto, IceMessage* stun_msg,
-                     const std::string& rf, bool port_muxed) {
-          OnTurnUnknownAddress(port, address, proto, stun_msg, rf, port_muxed);
-        });
-    turn_port_->SubscribePortDestroyed(
-        this, [this](PortInterface* port) { OnTurnPortDestroyed(port); });
-    turn_port_->SetCallbacksForTest(this);
+  Port::Callbacks GetCallbacks() {
+    Port::Callbacks callbacks;
+    callbacks.tag = this;
+    callbacks.port_complete = [this](Port* port) { OnTurnPortComplete(port); };
+    callbacks.port_error = [this](Port* port) { OnTurnPortError(port); };
+    callbacks.candidate_error = [this](Port* port,
+                                       const IceCandidateErrorEvent& event) {
+      OnCandidateError(port, event);
+    };
+    callbacks.port_destroyed = [this](PortInterface* port) {
+      OnTurnPortDestroyed(port);
+    };
+    callbacks.unknown_address = [this](PortInterface* port,
+                                       const SocketAddress& address,
+                                       ProtocolType proto, IceMessage* msg,
+                                       const std::string& rf, bool port_muxed) {
+      OnTurnUnknownAddress(port, address, proto, msg, rf, port_muxed);
+    };
+    return callbacks;
   }
 
   void CreateUdpPort() { CreateUdpPort(kLocalAddr2); }
 
   void CreateUdpPort(const SocketAddress& address) {
+    Port::Callbacks callbacks;
+    callbacks.tag = this;
+    callbacks.port_complete = [this](Port* port) { OnUdpPortComplete(port); };
     udp_port_ = UDPPort::Create({.env = env_,
                                  .network_thread = main_,
                                  .socket_factory = socket_factory(),
                                  .network = MakeNetwork(address),
                                  .ice_username_fragment = kIceUfrag2,
                                  .ice_password = kIcePwd2,
-                                 .ice_tiebreaker = kTiebreakerDefault},
+                                 .ice_tiebreaker = kTiebreakerDefault,
+                                 .callbacks = std::move(callbacks)},
                                 0, 0, false, std::nullopt);
     // UDP port will be controlled.
     udp_port_->SetIceRole(ICEROLE_CONTROLLED);
-    udp_port_->SubscribePortComplete(
-        this, [this](Port* port) { OnUdpPortComplete(port); });
     udp_port_->SetOption(Socket::OPT_RECV_ECN, 1);
   }
 
@@ -717,9 +718,8 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
     Connection* conn2 = turn_port_->CreateConnection(udp_port_->Candidates()[0],
                                                      Port::ORIGIN_MESSAGE);
     ASSERT_TRUE(conn2 != nullptr);
-    ASSERT_TRUE(
-        WaitUntil([&] { return turn_create_permission_success_; },
-                  {.timeout = kSimulatedRtt, .clock = &time_controller_}));
+    time_controller_.AdvanceTime(kSimulatedRtt);
+    ASSERT_TRUE(HasPermission(udp_port_->Candidates()[0].address().ipaddr()));
     conn2->Ping();
 
     // Two hops from TURN port to UDP port through TURN server, thus two RTTs.
@@ -756,9 +756,8 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
     turn_port_->set_timeout_delay(10 * 60 * 1000);
 
     ASSERT_TRUE(conn2 != nullptr);
-    ASSERT_TRUE(
-        WaitUntil([&] { return turn_create_permission_success_; },
-                  {.timeout = kSimulatedRtt, .clock = &time_controller_}));
+    time_controller_.AdvanceTime(kSimulatedRtt);
+    ASSERT_TRUE(HasPermission(udp_port_->Candidates()[0].address().ipaddr()));
     // Make sure turn connection can receive.
     conn1->Ping();
     EXPECT_THAT(
@@ -945,9 +944,9 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
     // This will send a REFRESH with lifetime 0 to server.
     turn_port_->Release();
 
-    // Wait for the TurnPort to signal closed.
+    // Wait for the TurnPort to close and destroy all connections.
     ASSERT_TRUE(
-        WaitUntil([&] { return turn_port_closed_; },
+        WaitUntil([&] { return turn_port_->connections().empty(); },
                   {.timeout = kSimulatedRtt, .clock = &time_controller_}));
 
     // But the data should have arrived first.
@@ -987,12 +986,9 @@ class TurnPortTest : public ::testing::Test, public TurnPort::CallbacksForTest {
   bool turn_ready_ = false;
   bool turn_error_ = false;
   bool turn_unknown_address_ = false;
-  bool turn_create_permission_success_ = false;
-  bool turn_port_closed_ = false;
   bool turn_port_destroyed_ = false;
   bool udp_ready_ = false;
   bool test_finish_ = false;
-  bool turn_refresh_success_ = false;
   std::vector<Packet> turn_packets_;
   std::vector<Packet> udp_packets_;
   AsyncSocketPacketOptions options;
@@ -1472,20 +1468,18 @@ TEST_F(TurnPortTest, TestRefreshRequestGetsErrorResponse) {
   // Set bad credentials.
   RelayCredentials bad_credentials("bad_user", "bad_pwd");
   turn_port_->set_credentials(bad_credentials);
-  turn_refresh_success_ = false;
   // This sends out the first RefreshRequest with correct credentials.
   // When this succeeds, it will schedule a new RefreshRequest with the bad
   // credential.
   turn_port_->request_manager().FlushForTest(TURN_REFRESH_REQUEST);
-  EXPECT_TRUE(
-      WaitUntil([&] { return turn_refresh_success_; },
-                {.timeout = kSimulatedRtt, .clock = &time_controller_}));
+  time_controller_.AdvanceTime(kSimulatedRtt);
+  EXPECT_TRUE(turn_port_->connected());
+  EXPECT_TRUE(turn_port_->HasRequests());
   // Flush it again, it will receive a bad response.
   turn_port_->request_manager().FlushForTest(TURN_REFRESH_REQUEST);
   EXPECT_TRUE(
-      WaitUntil([&] { return !turn_refresh_success_; },
+      WaitUntil([&] { return !turn_port_->connected(); },
                 {.timeout = kSimulatedRtt, .clock = &time_controller_}));
-  EXPECT_FALSE(turn_port_->connected());
   EXPECT_TRUE(CheckAllConnectionsFailedAndPruned());
   EXPECT_FALSE(turn_port_->HasRequests());
 }
@@ -1882,25 +1876,21 @@ TEST_F(TurnPortTest, TestRefreshCreatePermissionRequest) {
   Connection* conn = turn_port_->CreateConnection(udp_port_->Candidates()[0],
                                                   Port::ORIGIN_MESSAGE);
   ASSERT_TRUE(conn != nullptr);
-  EXPECT_TRUE(
-      WaitUntil([&] { return turn_create_permission_success_; },
-                {.timeout = kSimulatedRtt, .clock = &time_controller_}));
-  turn_create_permission_success_ = false;
+  time_controller_.AdvanceTime(kSimulatedRtt);
+  EXPECT_TRUE(HasPermission(udp_port_->Candidates()[0].address().ipaddr()));
   // A create-permission-request should be pending.
   // After the next create-permission-response is received, it will schedule
   // another request with bad_ufrag and bad_pwd.
   RelayCredentials bad_credentials("bad_user", "bad_pwd");
   turn_port_->set_credentials(bad_credentials);
   turn_port_->request_manager().FlushForTest(kAllRequestsForTest);
-  EXPECT_TRUE(
-      WaitUntil([&] { return turn_create_permission_success_; },
-                {.timeout = kSimulatedRtt, .clock = &time_controller_}));
+  time_controller_.AdvanceTime(kSimulatedRtt);
+  EXPECT_FALSE(CheckConnectionFailedAndPruned(conn));
   // Flush the requests again; the create-permission-request will fail.
   turn_port_->request_manager().FlushForTest(kAllRequestsForTest);
   EXPECT_TRUE(
-      WaitUntil([&] { return !turn_create_permission_success_; },
+      WaitUntil([&] { return CheckConnectionFailedAndPruned(conn); },
                 {.timeout = kSimulatedRtt, .clock = &time_controller_}));
-  EXPECT_TRUE(CheckConnectionFailedAndPruned(conn));
 }
 
 TEST_F(TurnPortTest, TestChannelBindGetErrorResponse) {
@@ -2047,9 +2037,7 @@ TEST_F(TurnPortTest, TestConnectionFailedAndPrunedOnCreatePermissionFailure) {
   EXPECT_TRUE(WaitUntil(
       [&] { return CheckConnectionFailedAndPruned(conn.connection()); },
       {.timeout = kSimulatedRtt, .clock = &time_controller_}));
-  EXPECT_TRUE(
-      WaitUntil([&] { return !turn_create_permission_success_; },
-                {.timeout = kSimulatedRtt, .clock = &time_controller_}));
+  EXPECT_FALSE(HasPermission(udp_port_->Candidates()[0].address().ipaddr()));
   // Check that the connection is not deleted asynchronously.
   time_controller_.AdvanceTime(kConnectionDestructionDelay);
   EXPECT_NE(nullptr, conn.connection());

@@ -189,6 +189,18 @@ class StunPortTest : public ::testing::Test {
     CreateStunPort(stun_servers, field_trials);
   }
 
+  Port::Callbacks GetCallbacks() {
+    Port::Callbacks callbacks;
+    callbacks.tag = this;
+    callbacks.port_complete = [this](Port* port) { OnPortComplete(port); };
+    callbacks.port_error = [this](Port* port) { OnPortError(port); };
+    callbacks.candidate_error = [this](Port* port,
+                                       const IceCandidateErrorEvent& event) {
+      OnCandidateError(port, event);
+    };
+    return callbacks;
+  }
+
   void CreateStunPort(const ServerAddresses& stun_servers,
                       const FieldTrialsView* field_trials = nullptr) {
     // Overwrite field trials if provided.
@@ -203,7 +215,8 @@ class StunPortTest : public ::testing::Test {
                           .network = network_,
                           .ice_username_fragment = CreateRandomString(16),
                           .ice_password = CreateRandomString(22),
-                          .ice_tiebreaker = kTiebreakerDefault},
+                          .ice_tiebreaker = kTiebreakerDefault,
+                          .callbacks = GetCallbacks()},
                          0, 0, stun_servers, std::nullopt);
     stun_port_->set_stun_keepalive_delay(stun_keepalive_delay_);
     // If `stun_keepalive_lifetime_` is not set, let the stun port choose its
@@ -211,15 +224,6 @@ class StunPortTest : public ::testing::Test {
     if (stun_keepalive_lifetime_.has_value()) {
       stun_port_->set_stun_keepalive_lifetime(*stun_keepalive_lifetime_);
     }
-    stun_port_->SubscribePortComplete(
-        this, [this](Port* port) { OnPortComplete(port); });
-    stun_port_->SubscribePortError(this,
-                                   [this](Port* port) { OnPortError(port); });
-
-    stun_port_->SubscribeCandidateError(
-        this, [this](Port* port, const IceCandidateErrorEvent& event) {
-          OnCandidateError(port, event);
-        });
   }
 
   void CreateSharedUdpPort(const SocketAddress& server_addr,
@@ -248,18 +252,11 @@ class StunPortTest : public ::testing::Test {
                          .network = network_,
                          .ice_username_fragment = CreateRandomString(16),
                          .ice_password = CreateRandomString(22),
-                         .ice_tiebreaker = kTiebreakerDefault},
+                         .ice_tiebreaker = kTiebreakerDefault,
+                         .callbacks = GetCallbacks()},
                         socket_.get(), false, std::nullopt);
     stun_port_->set_server_addresses(stun_servers);
     ASSERT_TRUE(stun_port_ != nullptr);
-    stun_port_->SubscribePortComplete(
-        this, [this](Port* port) { OnPortComplete(port); });
-    stun_port_->SubscribePortError(this,
-                                   [this](Port* port) { OnPortError(port); });
-    stun_port_->SubscribeCandidateError(
-        this, [this](Port* port, const IceCandidateErrorEvent& event) {
-          OnCandidateError(port, event);
-        });
   }
 
   void PrepareAddress() {

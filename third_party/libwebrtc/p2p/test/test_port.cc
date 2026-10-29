@@ -33,10 +33,8 @@
 
 namespace webrtc {
 
-TestPort::TestPort(const PortParametersRef& args,
-                   uint16_t min_port,
-                   uint16_t max_port)
-    : Port(args, IceCandidateType::kHost, min_port, max_port) {}
+TestPort::TestPort(PortParametersRef args, uint16_t min_port, uint16_t max_port)
+    : Port(std::move(args), IceCandidateType::kHost, min_port, max_port) {}
 TestPort::~TestPort() = default;
 
 std::span<const uint8_t> TestPort::last_stun_buf() {

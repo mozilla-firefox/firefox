@@ -257,6 +257,7 @@ class RTC_EXPORT BasicPortAllocatorSession : public PortAllocatorSession {
                                PortConfiguration* config,
                                uint32_t* flags);
   void AddAllocatedPort(Port* port, AllocationSequence* seq);
+  Port::Callbacks GetPortCallbacks();
   void OnCandidateReady(Port* port, const Candidate& c);
   void OnCandidateError(Port* port, const IceCandidateErrorEvent& event);
   void OnPortComplete(Port* port);

@@ -80,10 +80,29 @@ const int kPortTimeoutDelay = STUN_TOTAL_TIMEOUT + 5000;
 
 }  // namespace
 
-Port::Port(const PortParametersRef& args, IceCandidateType type)
-    : Port(args, type, 0, 0, true) {}
+Port::Callbacks::Callbacks() = default;
+Port::Callbacks::Callbacks(Callbacks&&) = default;
+Port::Callbacks& Port::Callbacks::operator=(Callbacks&&) = default;
+Port::Callbacks::Callbacks(const Callbacks& other) : tag(other.tag) {
+  RTC_CHECK(other.IsEmpty());
+}
+Port::Callbacks& Port::Callbacks::operator=(const Callbacks& other) {
+  RTC_CHECK(other.IsEmpty());
+  tag = other.tag;
+  candidate_ready = nullptr;
+  candidate_error = nullptr;
+  port_complete = nullptr;
+  port_destroyed = nullptr;
+  port_error = nullptr;
+  unknown_address = nullptr;
+  return *this;
+}
+Port::Callbacks::~Callbacks() = default;
 
-Port::Port(const PortParametersRef& args,
+Port::Port(PortParametersRef args, IceCandidateType type)
+    : Port(std::move(args), type, 0, 0, true) {}
+
+Port::Port(PortParametersRef args,
            IceCandidateType type,
            uint16_t min_port,
            uint16_t max_port,
@@ -130,9 +149,39 @@ Port::Port(const PortParametersRef& args,
         OnNetworkSliceChanged(network);
       });
 
+  RegisterCallbacks(std::move(args.callbacks));
+
   PostDestroyIfDead(/*delayed=*/true);
   RTC_LOG(LS_INFO) << ToString() << ": Port created with network cost "
                    << network_cost_;
+}
+
+void Port::RegisterCallbacks(Callbacks&& callbacks) {
+  RTC_DCHECK_RUN_ON(thread_);
+  if (callbacks.candidate_ready) {
+    candidate_ready_callback_list_.AddReceiver(
+        callbacks.tag, std::move(callbacks.candidate_ready));
+  }
+  if (callbacks.candidate_error) {
+    candidate_error_callback_list_.AddReceiver(
+        callbacks.tag, std::move(callbacks.candidate_error));
+  }
+  if (callbacks.port_complete) {
+    port_complete_callback_list_.AddReceiver(
+        callbacks.tag, std::move(callbacks.port_complete));
+  }
+  if (callbacks.port_destroyed) {
+    port_destroyed_callback_list_.AddReceiver(
+        callbacks.tag, std::move(callbacks.port_destroyed));
+  }
+  if (callbacks.port_error) {
+    port_error_callback_list_.AddReceiver(callbacks.tag,
+                                          std::move(callbacks.port_error));
+  }
+  if (callbacks.unknown_address) {
+    unknown_address_callbacks_.AddReceiver(
+        callbacks.tag, std::move(callbacks.unknown_address));
+  }
 }
 
 Port::~Port() {

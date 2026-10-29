@@ -152,6 +152,39 @@ typedef std::set<SocketAddress> ServerAddresses;
 // one add support for specific mechanisms like local UDP ports.
 class RTC_EXPORT Port : public PortInterface {
  public:
+  // Callbacks registered at Port construction time. `tag` is an optional
+  // removal tag applied to all provided callbacks.
+  struct Callbacks {
+    Callbacks();
+    Callbacks(Callbacks&&);
+    Callbacks& operator=(Callbacks&&);
+    // Copy is only supported when `other` is empty, for compatibility with
+    // callers that copy PortParametersRef or CreateRelayPortArgs without
+    // callbacks.
+    Callbacks(const Callbacks& other);
+    Callbacks& operator=(const Callbacks& other);
+    ~Callbacks();
+
+    bool IsEmpty() const {
+      return !candidate_ready && !candidate_error && !port_complete &&
+             !port_destroyed && !port_error && !unknown_address;
+    }
+
+    const void* tag = nullptr;
+    absl::AnyInvocable<void(Port*, const Candidate&)> candidate_ready;
+    absl::AnyInvocable<void(Port*, const IceCandidateErrorEvent&)>
+        candidate_error;
+    absl::AnyInvocable<void(Port*)> port_complete;
+    absl::AnyInvocable<void(PortInterface*)> port_destroyed;
+    absl::AnyInvocable<void(Port*)> port_error;
+    absl::AnyInvocable<void(PortInterface*,
+                            const SocketAddress&,
+                            ProtocolType,
+                            IceMessage*,
+                            const std::string&,
+                            bool)>
+        unknown_address;
+  };
   // A struct containing common arguments to creating a port. See also
   // CreateRelayPortArgs.
   struct PortParametersRef {
@@ -164,13 +197,14 @@ class RTC_EXPORT Port : public PortInterface {
     absl::string_view content_name;
     LocalNetworkAccessPermissionFactoryInterface* lna_permission_factory =
         nullptr;
-    uint64_t ice_tiebreaker;
+    uint64_t ice_tiebreaker = 0;
+    Callbacks callbacks;
   };
 
  protected:
   // Constructors for use only by via constructors in derived classes.
-  Port(const PortParametersRef& args, IceCandidateType type);
-  Port(const PortParametersRef& args,
+  Port(PortParametersRef args, IceCandidateType type);
+  Port(PortParametersRef args,
        IceCandidateType type,
        uint16_t min_port,
        uint16_t max_port,
@@ -178,6 +212,13 @@ class RTC_EXPORT Port : public PortInterface {
 
  public:
   ~Port() override;
+
+  // Registers callbacks in `callbacks` with this port. Typically invoked by the
+  // Port constructor via `PortParametersRef::callbacks`.
+  // TODO: bugs.webrtc.org/42224914 - Move to private once
+  // RelayPortFactoryInterface::Create(const CreateRelayPortArgs&, ...) is
+  // removed.
+  void RegisterCallbacks(Callbacks&& callbacks);
 
   // Note that the port type does NOT uniquely identify different subclasses of
   // Port. Use the 2-tuple of the port type AND the protocol (GetProtocol()) to
@@ -268,6 +309,8 @@ class RTC_EXPORT Port : public PortInterface {
 
   // Fired when candidates are discovered by the port. When all candidates
   // are discovered that belong to port SignalAddressReady is fired.
+  // TODO: bugs.webrtc.org/42224914 - Deprecate once downstream uses
+  // PortParametersRef::callbacks.
   void SubscribeCandidateReadyCallback(
       const void* tag,
       absl::AnyInvocable<void(Port*, const Candidate&)> callback);
@@ -278,7 +321,9 @@ class RTC_EXPORT Port : public PortInterface {
   // Provides all of the above information in one handy object.
   const std::vector<Candidate>& Candidates() const override;
   // Fired when candidate discovery failed using certain server.
-
+  // TODO: bugs.webrtc.org/42224914 - Remove once all callers use
+  // PortParametersRef::callbacks.
+  [[deprecated("Use PortParametersRef::callbacks instead")]]
   void SubscribeCandidateError(
       const void* tag,
       std::function<void(Port*, const IceCandidateErrorEvent&)> callback);
@@ -298,6 +343,8 @@ class RTC_EXPORT Port : public PortInterface {
   // and port fails to allocate one of the candidates, port shouldn't send
   // this signal as other candidates might be usefull in establishing the
   // connection.
+  // TODO: bugs.webrtc.org/42224914 - Deprecate once downstream uses
+  // PortParametersRef::callbacks.
   void SubscribePortError(const void* tag,
                           absl::AnyInvocable<void(Port*)> callback);
   void NotifyPortError(Port* port) {

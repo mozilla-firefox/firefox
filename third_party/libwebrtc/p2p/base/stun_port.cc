@@ -178,13 +178,13 @@ bool UDPPort::AddressResolver::GetResolvedAddress(const SocketAddress& input,
   return it->second->result().GetResolvedAddress(family, output);
 }
 
-UDPPort::UDPPort(const PortParametersRef& args,
+UDPPort::UDPPort(PortParametersRef args,
                  IceCandidateType type,
                  AsyncPacketSocket* socket,
                  bool emit_local_for_anyaddress)
-    : Port(args, type),
+    : Port(std::move(args), type),
       request_manager_(
-          args.network_thread,
+          thread(),
           [this](std::span<const uint8_t> data, StunRequest* request) {
             SendStunRequest(data, request);
           }),
@@ -195,14 +195,14 @@ UDPPort::UDPPort(const PortParametersRef& args,
       dscp_(DSCP_NO_CHANGE),
       emit_local_for_anyaddress_(emit_local_for_anyaddress) {}
 
-UDPPort::UDPPort(const PortParametersRef& args,
+UDPPort::UDPPort(PortParametersRef args,
                  IceCandidateType type,
                  uint16_t min_port,
                  uint16_t max_port,
                  bool emit_local_for_anyaddress)
-    : Port(args, type, min_port, max_port),
+    : Port(std::move(args), type, min_port, max_port),
       request_manager_(
-          args.network_thread,
+          thread(),
           [this](std::span<const uint8_t> data, StunRequest* request) {
             SendStunRequest(data, request);
           }),
@@ -671,13 +671,14 @@ bool UDPPort::HasStunCandidateWithAddress(const SocketAddress& addr) const {
 }
 
 std::unique_ptr<StunPort> StunPort::Create(
-    const PortParametersRef& args,
+    PortParametersRef args,
     uint16_t min_port,
     uint16_t max_port,
     const ServerAddresses& servers,
     std::optional<TimeDelta> stun_keepalive_interval) {
   // Using `new` to access a non-public constructor.
-  auto port = absl::WrapUnique(new StunPort(args, min_port, max_port, servers));
+  auto port = absl::WrapUnique(
+      new StunPort(std::move(args), min_port, max_port, servers));
   port->set_stun_keepalive_delay(stun_keepalive_interval);
   if (!port->Init()) {
     return nullptr;
@@ -685,11 +686,15 @@ std::unique_ptr<StunPort> StunPort::Create(
   return port;
 }
 
-StunPort::StunPort(const PortParametersRef& args,
+StunPort::StunPort(PortParametersRef args,
                    uint16_t min_port,
                    uint16_t max_port,
                    const ServerAddresses& servers)
-    : UDPPort(args, IceCandidateType::kSrflx, min_port, max_port, false) {
+    : UDPPort(std::move(args),
+              IceCandidateType::kSrflx,
+              min_port,
+              max_port,
+              false) {
   set_server_addresses(servers);
 }
 

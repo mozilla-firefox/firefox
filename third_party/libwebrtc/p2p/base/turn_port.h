@@ -18,6 +18,7 @@
 #include <set>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/base/macros.h"
@@ -84,7 +85,7 @@ class TurnPort : public Port {
   }
 
   // Create a TURN port using the shared UDP socket, `socket`.
-  static std::unique_ptr<TurnPort> Create(const CreateRelayPortArgs& args,
+  static std::unique_ptr<TurnPort> Create(CreateRelayPortArgs args,
                                           AsyncPacketSocket* socket) {
     if (!Validate(args)) {
       return nullptr;
@@ -99,7 +100,8 @@ class TurnPort : public Port {
                       .ice_password = args.password,
                       .content_name = args.content_name,
                       .lna_permission_factory = args.lna_permission_factory,
-                      .ice_tiebreaker = args.ice_tiebreaker},
+                      .ice_tiebreaker = args.ice_tiebreaker,
+                      .callbacks = std::move(args.callbacks)},
                      socket, *args.server_address, args.config->credentials,
                      args.relative_priority, args.config->tls_alpn_protocols,
                      args.config->tls_elliptic_curves, args.turn_customizer,
@@ -108,7 +110,7 @@ class TurnPort : public Port {
 
   // Create a TURN port that will use a new socket, bound to `network` and
   // using a port in the range between `min_port` and `max_port`.
-  static std::unique_ptr<TurnPort> Create(const CreateRelayPortArgs& args,
+  static std::unique_ptr<TurnPort> Create(CreateRelayPortArgs args,
                                           int min_port,
                                           int max_port) {
     if (!Validate(args)) {
@@ -123,7 +125,9 @@ class TurnPort : public Port {
          .ice_username_fragment = args.username,
          .ice_password = args.password,
          .content_name = args.content_name,
-         .lna_permission_factory = args.lna_permission_factory},
+         .lna_permission_factory = args.lna_permission_factory,
+         .ice_tiebreaker = args.ice_tiebreaker,
+         .callbacks = std::move(args.callbacks)},
         min_port, max_port, *args.server_address, args.config->credentials,
         args.relative_priority, args.config->tls_alpn_protocols,
         args.config->tls_elliptic_curves, args.turn_customizer,
@@ -220,18 +224,8 @@ class TurnPort : public Port {
 
   void CloseForTest() { Close(); }
 
-  // TODO(solenberg): Tests should be refactored to not peek at internal state.
-  class CallbacksForTest {
-   public:
-    virtual ~CallbacksForTest() {}
-    virtual void OnTurnCreatePermissionResult(int code) = 0;
-    virtual void OnTurnRefreshResult(int code) = 0;
-    virtual void OnTurnPortClosed() = 0;
-  };
-  void SetCallbacksForTest(CallbacksForTest* callbacks);
-
  protected:
-  TurnPort(const PortParametersRef& args,
+  TurnPort(PortParametersRef args,
            AsyncPacketSocket* socket,
            const ProtocolAddress& server_address,
            const RelayCredentials& credentials,
@@ -241,7 +235,7 @@ class TurnPort : public Port {
            TurnCustomizer* customizer,
            SSLCertificateVerifier* tls_cert_verifier = nullptr);
 
-  TurnPort(const PortParametersRef& args,
+  TurnPort(PortParametersRef args,
            uint16_t min_port,
            uint16_t max_port,
            const ProtocolAddress& server_address,
@@ -371,8 +365,6 @@ class TurnPort : public Port {
   std::string turn_logging_id_;
 
   ScopedTaskSafety task_safety_;
-
-  CallbacksForTest* callbacks_for_test_ = nullptr;
 
   friend class TurnEntry;
   friend class TurnAllocateRequest;

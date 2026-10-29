@@ -922,20 +922,6 @@ void BasicPortAllocatorSession::AddAllocatedPort(Port* port,
 
   ports_.emplace_back(port, seq);
 
-  port->SubscribeCandidateReadyCallback(
-      this,
-      [this](Port* port, const Candidate& c) { OnCandidateReady(port, c); });
-  port->SubscribeCandidateError(
-      this, [this](Port* port, const IceCandidateErrorEvent& event) {
-        OnCandidateError(port, event);
-      });
-  port->SubscribePortComplete(this,
-                              [this](Port* port) { OnPortComplete(port); });
-  port->SubscribePortDestroyed(
-      this, [this](PortInterface* port) { OnPortDestroyed(port); });
-
-  port->SubscribePortError(this, [this](Port* port) { OnPortError(port); });
-
   RTC_LOG(LS_INFO) << port->ToString() << ": Added port to allocator";
 
   port->PrepareAddress();
@@ -1436,6 +1422,25 @@ void AllocationSequence::Process(int epoch) {
   }
 }
 
+Port::Callbacks BasicPortAllocatorSession::GetPortCallbacks() {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  Port::Callbacks callbacks;
+  callbacks.tag = this;
+  callbacks.candidate_ready = [this](Port* port, const Candidate& c) {
+    OnCandidateReady(port, c);
+  };
+  callbacks.candidate_error = [this](Port* port,
+                                     const IceCandidateErrorEvent& event) {
+    OnCandidateError(port, event);
+  };
+  callbacks.port_complete = [this](Port* port) { OnPortComplete(port); };
+  callbacks.port_destroyed = [this](PortInterface* port) {
+    OnPortDestroyed(port);
+  };
+  callbacks.port_error = [this](Port* port) { OnPortError(port); };
+  return callbacks;
+}
+
 void AllocationSequence::CreateUDPPorts() {
   if (IsFlagSet(PORTALLOCATOR_DISABLE_UDP)) {
     RTC_LOG(LS_VERBOSE) << "AllocationSequence: UDP ports disabled, skipping.";
@@ -1447,34 +1452,26 @@ void AllocationSequence::CreateUDPPorts() {
   std::unique_ptr<UDPPort> port;
   bool emit_local_candidate_for_anyaddress =
       !IsFlagSet(PORTALLOCATOR_DISABLE_DEFAULT_LOCAL_CANDIDATE);
+  Port::PortParametersRef args = {
+      .env = session_->allocator()->env(),
+      .network_thread = session_->network_thread(),
+      .socket_factory = session_->socket_factory(),
+      .network = network_,
+      .ice_username_fragment = session_->username(),
+      .ice_password = session_->password(),
+      .content_name = session_->content_name(),
+      .lna_permission_factory = session_->allocator()->lna_permission_factory(),
+      .ice_tiebreaker = session_->allocator()->ice_tiebreaker(),
+      .callbacks = session_->GetPortCallbacks()};
+
   if (IsFlagSet(PORTALLOCATOR_ENABLE_SHARED_SOCKET) && udp_socket_) {
     port = UDPPort::Create(
-        {.env = session_->allocator()->env(),
-         .network_thread = session_->network_thread(),
-         .socket_factory = session_->socket_factory(),
-         .network = network_,
-         .ice_username_fragment = session_->username(),
-         .ice_password = session_->password(),
-         .content_name = session_->content_name(),
-         .lna_permission_factory =
-             session_->allocator()->lna_permission_factory(),
-         .ice_tiebreaker = session_->allocator()->ice_tiebreaker()},
-        udp_socket_.get(), emit_local_candidate_for_anyaddress,
+        std::move(args), udp_socket_.get(), emit_local_candidate_for_anyaddress,
         session_->allocator()->stun_candidate_keepalive_interval());
   } else {
     port = UDPPort::Create(
-        {.env = session_->allocator()->env(),
-         .network_thread = session_->network_thread(),
-         .socket_factory = session_->socket_factory(),
-         .network = network_,
-         .ice_username_fragment = session_->username(),
-         .ice_password = session_->password(),
-         .content_name = session_->content_name(),
-         .lna_permission_factory =
-             session_->allocator()->lna_permission_factory(),
-         .ice_tiebreaker = session_->allocator()->ice_tiebreaker()},
-        session_->allocator()->min_port(), session_->allocator()->max_port(),
-        emit_local_candidate_for_anyaddress,
+        std::move(args), session_->allocator()->min_port(),
+        session_->allocator()->max_port(), emit_local_candidate_for_anyaddress,
         session_->allocator()->stun_candidate_keepalive_interval());
   }
 
@@ -1514,7 +1511,8 @@ void AllocationSequence::CreateTCPPorts() {
        .ice_username_fragment = session_->username(),
        .ice_password = session_->password(),
        .content_name = session_->content_name(),
-       .ice_tiebreaker = session_->allocator()->ice_tiebreaker()},
+       .ice_tiebreaker = session_->allocator()->ice_tiebreaker(),
+       .callbacks = session_->GetPortCallbacks()},
       session_->allocator()->min_port(), session_->allocator()->max_port(),
       session_->allocator()->allow_tcp_listen());
   if (port) {
@@ -1550,7 +1548,8 @@ void AllocationSequence::CreateStunPorts() {
        .content_name = session_->content_name(),
        .lna_permission_factory =
            session_->allocator()->lna_permission_factory(),
-       .ice_tiebreaker = session_->allocator()->ice_tiebreaker()},
+       .ice_tiebreaker = session_->allocator()->ice_tiebreaker(),
+       .callbacks = session_->GetPortCallbacks()},
       session_->allocator()->min_port(), session_->allocator()->max_port(),
       config_->StunServers(),
       session_->allocator()->stun_candidate_keepalive_interval());
@@ -1618,6 +1617,7 @@ void AllocationSequence::CreateTurnPort(const RelayServerConfig& config,
     args.username = session_->username();
     args.password = session_->password();
     args.content_name = session_->content_name();
+    args.callbacks = session_->GetPortCallbacks();
     args.server_address = &(*relay_port);
     args.config = &config;
     args.turn_customizer = session_->allocator()->turn_customizer();
@@ -1634,11 +1634,11 @@ void AllocationSequence::CreateTurnPort(const RelayServerConfig& config,
     if (IsFlagSet(PORTALLOCATOR_ENABLE_SHARED_SOCKET) &&
         relay_port->proto == PROTO_UDP && udp_socket_) {
       port = session_->allocator()->relay_port_factory()->Create(
-          args, udp_socket_.get());
+          std::move(args), udp_socket_.get());
 
-      if (!port) {
+      if (port == nullptr) {
         RTC_LOG(LS_WARNING) << "Failed to create relay port with "
-                            << args.server_address->address.ToSensitiveString();
+                            << relay_port->address.ToSensitiveString();
         continue;
       }
 
@@ -1649,12 +1649,12 @@ void AllocationSequence::CreateTurnPort(const RelayServerConfig& config,
           this, [this](PortInterface* port) { OnPortDestroyed(port); });
     } else {
       port = session_->allocator()->relay_port_factory()->Create(
-          args, session_->allocator()->min_port(),
+          std::move(args), session_->allocator()->min_port(),
           session_->allocator()->max_port());
 
-      if (!port) {
+      if (port == nullptr) {
         RTC_LOG(LS_WARNING) << "Failed to create relay port with "
-                            << args.server_address->address.ToSensitiveString();
+                            << relay_port->address.ToSensitiveString();
         continue;
       }
     }
