@@ -1340,6 +1340,15 @@ bool IsMandatoryHeaderExtension(absl::string_view uri) {
   return uri == RtpExtension::kMidUri;
 }
 
+void ReofferMandatoryHeaderExtensions(
+    std::vector<RtpHeaderExtensionCapability>& capabilities) {
+  for (auto& capability : capabilities) {
+    if (IsMandatoryHeaderExtension(capability.uri)) {
+      capability.direction = RtpTransceiverDirection::kSendRecv;
+    }
+  }
+}
+
 RTCError RtpTransceiver::SetHeaderExtensionsToNegotiate(
     std::span<const RtpHeaderExtensionCapability> header_extensions) {
   RTC_DCHECK_RUN_ON(thread_);
@@ -1390,6 +1399,7 @@ void RtpTransceiver::OnNegotiationUpdate(
     if (!env_.field_trials().IsDisabled(
             "WebRTC-HeaderExtensionNegotiateMemory")) {
       header_extensions_to_negotiate_ = GetNegotiatedHeaderExtensions();
+      ReofferMandatoryHeaderExtensions(header_extensions_to_negotiate_);
     }
   } else if (sdp_type == SdpType::kOffer) {
     if (!env_.field_trials().IsDisabled(
@@ -1397,6 +1407,7 @@ void RtpTransceiver::OnNegotiationUpdate(
       header_extensions_for_rollback_ = header_extensions_to_negotiate_;
       header_extensions_to_negotiate_ =
           GetOfferedAndImplementedHeaderExtensions(content);
+      ReofferMandatoryHeaderExtensions(header_extensions_to_negotiate_);
     }
   } else if (sdp_type == SdpType::kRollback) {
     if (!env_.field_trials().IsDisabled(
