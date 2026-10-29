@@ -791,7 +791,7 @@ TEST(NetworkEmulationManagerTURNTest, ClientTraffic) {
   StunMessage ping(STUN_BINDING_REQUEST);
   ByteBufferWriter buf;
   ping.Write(&buf);
-  CopyOnWriteBuffer packet(buf.Data(), buf.Length());
+  CopyOnWriteBuffer packet(buf.DataView());
 
   // We expect to get a ping reply.
   EXPECT_CALL(recv, OnPacketReceived(::testing::_)).Times(1);

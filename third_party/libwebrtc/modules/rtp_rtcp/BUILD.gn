@@ -1165,6 +1165,7 @@ if (rtc_include_tests) {
       "../../rtc_base:buffer",
       "../../rtc_base:copy_on_write_buffer",
       "../../rtc_base:rtc_event",
+      "../../rtc_base:span_helpers",
       "../../rtc_base:task_queue_for_test",
       "../../system_wrappers",
       "../../test:rtp_test_utils",

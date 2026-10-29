@@ -30,10 +30,10 @@ Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#488
  3 files changed, 59 insertions(+), 4 deletions(-)
 
 diff --git a/modules/rtp_rtcp/BUILD.gn b/modules/rtp_rtcp/BUILD.gn
-index 68b51ed80f..9aebf6aed5 100644
+index e8d0c2a86a..4f7b1349c0 100644
 --- a/modules/rtp_rtcp/BUILD.gn
 +++ b/modules/rtp_rtcp/BUILD.gn
-@@ -1214,6 +1214,7 @@ if (rtc_include_tests) {
+@@ -1215,6 +1215,7 @@ if (rtc_include_tests) {
        ":rtp_rtcp",
        ":rtp_rtcp_format",
        "..:module_fec_api",

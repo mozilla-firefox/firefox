@@ -12,7 +12,13 @@
 
 #import "helpers/NSString+StdString.h"
 
+#include <cstdint>
 #include <memory>
+#include <span>
+#include <utility>
+
+#include "api/data_channel_interface.h"
+#include "rtc_base/copy_on_write_buffer.h"
 
 namespace webrtc {
 
@@ -54,9 +60,10 @@ class DataChannelDelegateAdapter : public DataChannelObserver {
   NSParameterAssert(data);
   self = [super init];
   if (self) {
-    webrtc::CopyOnWriteBuffer buffer(
-        reinterpret_cast<const uint8_t *>(data.bytes), data.length);
-    _dataBuffer.reset(new webrtc::DataBuffer(buffer, isBinary));
+    webrtc::CopyOnWriteBuffer buffer(std::span<const uint8_t>(
+        reinterpret_cast<const uint8_t *>(data.bytes), data.length));
+    _dataBuffer =
+        std::make_unique<webrtc::DataBuffer>(std::move(buffer), isBinary);
   }
   return self;
 }

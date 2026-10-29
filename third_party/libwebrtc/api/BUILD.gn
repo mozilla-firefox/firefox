@@ -435,6 +435,7 @@ rtc_library("data_channel_interface") {
     "../rtc_base:copy_on_write_buffer",
     "../rtc_base/system:rtc_export",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
+    "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 }
 

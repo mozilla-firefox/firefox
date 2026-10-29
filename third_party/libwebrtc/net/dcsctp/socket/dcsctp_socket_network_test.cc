@@ -128,7 +128,7 @@ class BoundSocket : public webrtc::EmulatedNetworkReceiverInterface {
 
   void SendPacket(std::span<const uint8_t> data) {
     endpoint_->SendPacket(source_address_, dest_address_,
-                          webrtc::CopyOnWriteBuffer(data.data(), data.size()));
+                          webrtc::CopyOnWriteBuffer(data));
   }
 
  private:

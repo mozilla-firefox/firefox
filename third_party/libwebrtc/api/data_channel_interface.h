@@ -19,8 +19,10 @@
 
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "absl/functional/any_invocable.h"
+#include "absl/strings/string_view.h"
 #include "api/priority.h"
 #include "api/ref_count.h"
 #include "api/rtc_error.h"
@@ -81,11 +83,10 @@ struct DataChannelInit {
 // this structure's `binary` flag tells whether the data should be interpreted
 // as binary or text.
 struct DataBuffer {
-  DataBuffer(const CopyOnWriteBuffer& data, bool binary)
-      : data(data), binary(binary) {}
+  DataBuffer(CopyOnWriteBuffer data, bool binary)
+      : data(std::move(data)), binary(binary) {}
   // For convenience for unit tests.
-  explicit DataBuffer(const std::string& text)
-      : data(text.data(), text.length()), binary(false) {}
+  explicit DataBuffer(absl::string_view text) : data(text), binary(false) {}
   size_t size() const { return data.size(); }
 
   CopyOnWriteBuffer data;

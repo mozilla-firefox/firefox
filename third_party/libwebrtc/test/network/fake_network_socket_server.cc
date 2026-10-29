@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -189,7 +190,7 @@ int FakeNetworkSocket::SendTo(const void* pv,
     error_ = ENETDOWN;
     return -1;
   }
-  CopyOnWriteBuffer packet(static_cast<const uint8_t*>(pv), cb);
+  CopyOnWriteBuffer packet(std::span(static_cast<const uint8_t*>(pv), cb));
   EcnMarking ecn = EcnMarking::kNotEct;
   auto it = options_map_.find(OPT_SEND_ECN);
   if (it != options_map_.end() && it->second == 1) {

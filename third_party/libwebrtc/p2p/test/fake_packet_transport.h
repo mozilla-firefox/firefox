@@ -76,7 +76,7 @@ class FakePacketTransport : public PacketTransportInternal {
     if (!dest_ || error_ != 0) {
       return -1;
     }
-    CopyOnWriteBuffer packet(data, len);
+    CopyOnWriteBuffer packet(absl::string_view(data, len));
     SendPacketInternal(packet, options);
 
     SentPacketInfo sent_packet(options.packet_id,

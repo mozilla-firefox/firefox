@@ -135,7 +135,7 @@ DatagramConnectionInternal::DatagramConnectionInternal(
           return;
         }
         this->OnDtlsPacket(
-            CopyOnWriteBuffer(packet.payload().data(), packet.payload().size()),
+            CopyOnWriteBuffer(packet.payload()),
             packet.arrival_time().value_or(Timestamp::MinusInfinity()));
       });
   if (wire_protocol_ == WireProtocol::kDtlsSrtp) {

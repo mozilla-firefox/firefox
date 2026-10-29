@@ -127,7 +127,7 @@ index a7b3cee16d..c8d5479047 100644
              "Generated during 'gn gen' by //BUILD.gn.",
              "",
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index 703439bf17..54c8e934c9 100644
+index f2a2dcb980..743c57e6a1 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -678,7 +678,7 @@ index 43da21ca33..e0774e7148 100644
      output_extension = "so"
  
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index e532dbd893..b47c3b1555 100644
+index 4c6f11c24e..e961dbfd24 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -9,12 +9,12 @@
@@ -707,7 +707,7 @@ index e532dbd893..b47c3b1555 100644
      }
    }
  
-@@ -1294,7 +1294,7 @@ if (is_ios || is_mac) {
+@@ -1295,7 +1295,7 @@ if (is_ios || is_mac) {
            }
  
            public_deps = [

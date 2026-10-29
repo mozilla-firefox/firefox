@@ -3400,12 +3400,12 @@ TEST_P(WebRtcVoiceEngineTestFake, ConfiguresAudioReceiveStreamRtpExtensions) {
 TEST_P(WebRtcVoiceEngineTestFake, DeliverAudioPacket_Call) {
   // Test that packets are forwarded to the Call when configured accordingly.
   const uint32_t kAudioSsrc = 1;
-  CopyOnWriteBuffer kPcmuPacket(kPcmuFrame, sizeof(kPcmuFrame));
+  CopyOnWriteBuffer kPcmuPacket(kPcmuFrame);
   static const uint8_t kRtcp[] = {
       0x80, 0xc9, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
       0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  CopyOnWriteBuffer kRtcpPacket(kRtcp, sizeof(kRtcp));
+  CopyOnWriteBuffer kRtcpPacket(kRtcp);
 
   EXPECT_TRUE(SetupSendStream());
   VoiceMediaReceiveChannelInterface* media_channel = ReceiveImpl();

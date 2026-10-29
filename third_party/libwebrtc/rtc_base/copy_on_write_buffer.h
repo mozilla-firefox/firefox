@@ -66,8 +66,8 @@ class RTC_EXPORT CopyOnWriteBuffer {
   template <typename T,
             typename std::enable_if<
                 internal::BufferCompat<uint8_t, T>::value>::type* = nullptr>
-  ABSL_DEPRECATE_AND_INLINE()
-  CopyOnWriteBuffer(const T* data, size_t size)
+  [[deprecated]] ABSL_REFACTOR_INLINE CopyOnWriteBuffer(const T* data,
+                                                        size_t size)
       : CopyOnWriteBuffer(
             std::span(reinterpret_cast<const uint8_t*>(data), size)) {}
   template <typename T,

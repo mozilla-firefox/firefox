@@ -26,7 +26,7 @@ index 9a0dc82cfa..b72f43f089 100644
        deps += [ "api/audio:create_audio_device_module" ]
      }
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index 06dc18c964..6b85b32b36 100644
+index 253368716c..91e7a321d0 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -565,6 +565,7 @@ if (is_ios || is_mac) {
@@ -69,7 +69,7 @@ index 06dc18c964..6b85b32b36 100644
      rtc_library("videocodec_objc") {
        visibility = [ "*" ]
        configs += [ "..:no_global_constructors" ]
-@@ -1829,5 +1834,6 @@ if (is_ios || is_mac) {
+@@ -1830,5 +1835,6 @@ if (is_ios || is_mac) {
          "VideoToolbox.framework",
        ]
      }
