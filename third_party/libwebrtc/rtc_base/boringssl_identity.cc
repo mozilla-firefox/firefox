@@ -130,10 +130,12 @@ std::unique_ptr<SSLIdentity> BoringSSLIdentity::CreateFromPEMChainStrings(
     long len;  // NOLINT
     int ret = PEM_read_bio(bio.get(), &name, &header, &data, &len);
     if (ret == 0) {
-      uint32_t err = ERR_peek_error();
+      // Check the error that PEM_read_bio() just added, not errors that may
+      // have been left in this thread's error queue by earlier operations.
+      uint32_t err = ERR_peek_last_error();
       if (ERR_GET_LIB(err) == ERR_LIB_PEM &&
           ERR_GET_REASON(err) == PEM_R_NO_START_LINE) {
-        err = ERR_get_error();
+        ERR_clear_error();
         break;
       }
       RTC_LOG(LS_ERROR) << "Failed to parse certificate from PEM string.";
