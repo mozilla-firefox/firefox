@@ -5137,6 +5137,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api/units:time_delta",
       "../api/units:timestamp",
       "../api/video:resolution",
+      "../api/video:video_adapter",
       "../api/video:video_broadcaster",
       "../api/video:video_frame",
       "../api/video:video_rtp_headers",

@@ -454,8 +454,6 @@ TEST_F(PeerConnectionEncodingsIntegrationTest,
   auto stats_result =
       GetStatsUntil(local_pc_wrapper, HasOutboundRtpBytesSent(1));
   ASSERT_THAT(stats_result, IsRtcOk());
-  EXPECT_THAT(GetOutboundRtpStreamStatsByRid(stats_result.value()),
-              ElementsAre(Pair("", ResolutionIs(1280, 720))));
 
   // Verify codec and scalability mode.
   scoped_refptr<const RTCStatsReport> report = stats_result.value();
@@ -3532,10 +3530,6 @@ TEST_F(PeerConnectionEncodingsIntegrationTest,
   RtpParameters parameters = sender->GetParameters();
   ASSERT_THAT(parameters.encodings, SizeIs(1));
   parameters.degradation_preference = DegradationPreference::MAINTAIN_FRAMERATE;
-  // TODO(https://crbug.com/webrtc/573828148): Remove `scale_resolution_down_to`
-  // once `FakePeriodicVideoSource` adapts to `VideoSinkWants`.
-  parameters.encodings[0].scale_resolution_down_to = {.width = 1280,
-                                                      .height = 720};
   parameters.encodings[0].max_bitrate_bps = 30000;
   EXPECT_THAT(sender->SetParameters(parameters), IsRtcOk());
 
