@@ -81,7 +81,7 @@ AudioIngress::AudioIngress(const Environment& env,
       rtp_rtcp_(rtp_rtcp),
       neteq_(DefaultNetEqFactory().Create(env,
                                           CreateNetEqConfig(env),
-                                          decoder_factory)),
+                                          std::move(decoder_factory))),
       ntp_estimator_(&env_.clock()) {}
 
 AudioIngress::~AudioIngress() = default;
