@@ -308,7 +308,8 @@ class SctpDataChannel : public DataChannelInterface {
   size_t expected_buffer_amount_ = 0;
 
   DataChannelObserver* observer_ RTC_GUARDED_BY(network_thread_) = nullptr;
-  std::unique_ptr<ObserverAdapter> observer_adapter_;
+  std::unique_ptr<ObserverAdapter> observer_adapter_
+      RTC_GUARDED_BY(signaling_thread_);
   CachedState* cached_state_ RTC_GUARDED_BY(signaling_thread_) = nullptr;
   DataState state_ RTC_GUARDED_BY(network_thread_) = kConnecting;
   RTCError error_ RTC_GUARDED_BY(network_thread_);
