@@ -3138,6 +3138,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:crypto_random",
       "../rtc_base:net_helper",
       "../rtc_base:socket_address",
+      "../rtc_base:task_queue_for_test",
       "../test:test_support",
       "//third_party/abseil-cpp/absl/strings",
     ]

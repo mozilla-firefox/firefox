@@ -2086,6 +2086,18 @@ TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithoutCandidates) {
   EXPECT_EQ(SdpSerialize(MakeDescriptionWithoutCandidates()), kSdpString);
 }
 
+// Tests that each m= section is serialized with its own transport info even
+// when the transport infos are not stored in the same order as the contents.
+TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithTransportInfosOutOfOrder) {
+  TransportInfo audio_transport_info =
+      *desc_.GetTransportInfoByName(kAudioContentName);
+  ASSERT_TRUE(desc_.RemoveTransportInfoByName(kAudioContentName));
+  desc_.AddTransportInfo(audio_transport_info);
+  ASSERT_EQ(desc_.transport_infos()[0].content_name, kVideoContentName);
+  TestMismatch(std::string(kSdpFullString),
+               SdpSerialize(NewSessionDescriptionWithCandidates()));
+}
+
 TEST_F(WebRtcSdpTest, SerializeSessionDescriptionWithBundles) {
   ContentGroup group1(GROUP_TYPE_BUNDLE);
   group1.AddContentName(kAudioContentName);
@@ -2362,6 +2374,21 @@ TEST_F(WebRtcSdpTest, DeserializeSessionDescription) {
   // Deserialize & Verify
   EXPECT_TRUE(
       CompareSessionDescription(jdesc_, SdpDeserialize(kSdpFullString)));
+}
+
+// Tests that duplicate a=candidate lines within one m= section only add one
+// candidate to the candidate collection of that m= section.
+TEST_F(WebRtcSdpTest, DeserializeSessionDescriptionWithDuplicateCandidate) {
+  std::string sdp = kSdpFullString;
+  const std::string candidate_line =
+      "a=candidate:a0+B/1 1 udp 2130706432 192.168.1.5 1234 typ host "
+      "generation 2\r\n";
+  InjectAfter(candidate_line, candidate_line, &sdp);
+  std::unique_ptr<SessionDescriptionInterface> jdesc = SdpDeserialize(sdp);
+  ASSERT_THAT(jdesc, NotNull());
+  ASSERT_THAT(jdesc->candidates(0), NotNull());
+  EXPECT_EQ(jdesc->candidates(0)->count(), jdesc_->candidates(0)->count());
+  EXPECT_TRUE(CompareSessionDescription(jdesc_, jdesc));
 }
 
 TEST_F(WebRtcSdpTest, DeserializeSessionDescriptionWithoutMline) {

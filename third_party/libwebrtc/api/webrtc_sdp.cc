@@ -602,7 +602,7 @@ void GetMediaStreamIds(const ContentInfo* content,
 // The value of `component_id` currently supported are 1 (RTP) and 2 (RTCP).
 // TODO(deadbeef): Decide the default destination in webrtcsession and
 // pass it down via SessionDescription.
-void GetDefaultDestination(const std::vector<Candidate>& candidates,
+void GetDefaultDestination(const IceCandidateCollection& candidates,
                            int component_id,
                            std::string* port,
                            std::string* ip,
@@ -612,7 +612,9 @@ void GetDefaultDestination(const std::vector<Candidate>& candidates,
   *ip = kDummyAddress;
   int current_preference = 0;  // Start with lowest preference
   int current_family = AF_UNSPEC;
-  for (const Candidate& candidate : candidates) {
+  for (const std::unique_ptr<IceCandidate>& jsep_candidate :
+       candidates.candidates()) {
+    const Candidate& candidate = jsep_candidate->candidate();
     if (candidate.component() != component_id) {
       continue;
     }
@@ -643,7 +645,7 @@ void GetDefaultDestination(const std::vector<Candidate>& candidates,
 }
 
 // Gets "a=rtcp" line if found default RTCP candidate from `candidates`.
-std::string GetRtcpLine(const std::vector<Candidate>& candidates) {
+std::string GetRtcpLine(const IceCandidateCollection& candidates) {
   std::string rtcp_port, rtcp_ip, addr_type;
   GetDefaultDestination(candidates, ICE_CANDIDATE_COMPONENT_RTCP, &rtcp_port,
                         &rtcp_ip, &addr_type);
@@ -660,20 +662,6 @@ std::string GetRtcpLine(const std::vector<Candidate>& candidates) {
   os << kSdpDelimiterColon << rtcp_port << " " << kConnectionNettype << " "
      << addr_type << " " << rtcp_ip;
   return os.Release();
-}
-
-// Get candidates according to the mline index from SessionDescriptionInterface.
-void GetCandidatesByMindex(const SessionDescriptionInterface& desci,
-                           int mline_index,
-                           std::vector<Candidate>* candidates) {
-  if (!candidates) {
-    return;
-  }
-  const IceCandidateCollection* cc = desci.candidates(mline_index);
-  for (size_t i = 0; i < cc->count(); ++i) {
-    const IceCandidate* candidate = cc->at(i);
-    candidates->push_back(candidate->candidate());
-  }
 }
 
 bool IsValidPort(int port) {
@@ -998,17 +986,19 @@ void BuildMediaLine(const MediaType media_type,
   AddLine(os.str(), message);
 }
 
-void BuildCandidate(const std::vector<Candidate>& candidates,
+void BuildCandidate(const IceCandidateCollection& candidates,
                     bool include_ufrag,
                     std::string* message) {
   StringBuilder os;
-  for (const Candidate& candidate : candidates) {
+  for (const std::unique_ptr<IceCandidate>& jsep_candidate :
+       candidates.candidates()) {
     // RFC 5245
     // a=candidate:<foundation> <component-id> <transport> <priority>
     // <connection-address> <port> typ <candidate-types>
     // [raddr <connection-address>] [rport <port>]
     // *(SP extension-att-name SP extension-att-value)
-    InitLine(kLineTypeAttributes, candidate.ToCandidateAttribute(include_ufrag),
+    InitLine(kLineTypeAttributes,
+             jsep_candidate->candidate().ToCandidateAttribute(include_ufrag),
              &os);
     AddLine(os.str(), message);
   }
@@ -1466,7 +1456,7 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
 void BuildMediaDescription(const ContentInfo* content_info,
                            const TransportInfo* transport_info,
                            const MediaType media_type,
-                           const std::vector<Candidate>& candidates,
+                           const IceCandidateCollection& candidates,
                            int msid_signaling,
                            bool use_wildcard,
                            std::string* message) {
@@ -2589,7 +2579,7 @@ bool ParseContent(absl::string_view message,
                   int* msid_signaling,
                   MediaContentDescription* media_desc,
                   TransportDescription* transport,
-                  std::vector<std::unique_ptr<IceCandidate>>* candidates,
+                  IceCandidateCollection& candidates,
                   SdpParseError* error) {
   RTC_DCHECK(media_desc != nullptr);
   RTC_DCHECK(content_name != nullptr);
@@ -3023,8 +3013,11 @@ bool ParseContent(absl::string_view message,
     candidate.set_username(transport->ice_ufrag);
     RTC_DCHECK(candidate.password().empty());
     candidate.set_password(transport->ice_pwd);
-    candidates->push_back(
-        std::make_unique<IceCandidate>(mline_id, mline_index, candidate));
+    auto jsep_candidate =
+        std::make_unique<IceCandidate>(mline_id, mline_index, candidate);
+    if (!candidates.HasCandidate(jsep_candidate.get())) {
+      candidates.add(std::move(jsep_candidate));
+    }
   }
 
   return true;
@@ -3041,7 +3034,7 @@ std::unique_ptr<MediaContentDescription> ParseContentDescription(
     bool* bundle_only,
     int* msid_signaling,
     TransportDescription* transport,
-    std::vector<std::unique_ptr<IceCandidate>>* candidates,
+    IceCandidateCollection& candidates,
     SdpParseError* error) {
   std::unique_ptr<MediaContentDescription> media_desc;
   if (media_type == MediaType::AUDIO) {
@@ -3107,7 +3100,7 @@ bool ParseMediaDescription(
     size_t* pos,
     const SocketAddress& session_connection_addr,
     SessionDescription* desc,
-    std::vector<std::unique_ptr<IceCandidate>>* candidates,
+    std::vector<IceCandidateCollection>& candidate_collections,
     SdpParseError* error) {
   RTC_DCHECK(desc != nullptr);
   int mline_index = -1;
@@ -3164,6 +3157,7 @@ bool ParseMediaDescription(
     std::string content_name;
     bool bundle_only = false;
     int section_msid_signaling = kMsidSignalingNotUsed;
+    IceCandidateCollection section_candidates;
     absl::string_view media_type = fields[0];
     if ((media_type == kSdpMediaTypeVideo ||
          media_type == kSdpMediaTypeAudio) &&
@@ -3174,12 +3168,12 @@ bool ParseMediaDescription(
       content = ParseContentDescription(
           message, MediaType::VIDEO, mline_index, protocol, payload_types, pos,
           &content_name, &bundle_only, &section_msid_signaling, &transport,
-          candidates, error);
+          section_candidates, error);
     } else if (media_type == kSdpMediaTypeAudio) {
       content = ParseContentDescription(
           message, MediaType::AUDIO, mline_index, protocol, payload_types, pos,
           &content_name, &bundle_only, &section_msid_signaling, &transport,
-          candidates, error);
+          section_candidates, error);
     } else if (media_type == kSdpMediaTypeData && IsDtlsSctp(protocol)) {
       // The draft-03 format is:
       // m=application <port> DTLS/SCTP <sctp-port>...
@@ -3200,7 +3194,7 @@ bool ParseMediaDescription(
       if (!ParseContent(message, MediaType::DATA, mline_index, protocol,
                         payload_types, pos, &content_name, &bundle_only,
                         &section_msid_signaling, data_desc.get(), &transport,
-                        candidates, error)) {
+                        section_candidates, error)) {
         return false;
       }
       data_desc->set_protocol(protocol);
@@ -3212,7 +3206,7 @@ bool ParseMediaDescription(
       if (!ParseContent(message, MediaType::UNSUPPORTED, mline_index, protocol,
                         payload_types, pos, &content_name, &bundle_only,
                         &section_msid_signaling, unsupported_desc.get(),
-                        &transport, candidates, error)) {
+                        &transport, section_candidates, error)) {
         return false;
       }
       unsupported_desc->set_protocol(protocol);
@@ -3281,6 +3275,7 @@ bool ParseMediaDescription(
                      content_rejected, bundle_only, std::move(content));
     // Create TransportInfo with the media level "ice-pwd" and "ice-ufrag".
     desc->AddTransportInfo(TransportInfo(content_name, transport));
+    candidate_collections.push_back(std::move(section_candidates));
   }
   // Apply whole-description sanity checks
   if (HasDuplicateMsidLines(desc)) {
@@ -3415,14 +3410,31 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
   }
 
   // Preserve the order of the media contents.
-  int mline_index = -1;
+  //
+  // `transport_infos` normally has one entry per content, in the same order
+  // as the contents: the SDP parser and MediaSessionDescriptionFactory add a
+  // TransportInfo along with each content. So the entry at the content's
+  // index is checked first. This avoids a linear search by name for each
+  // m= section, which would be quadratic in the number of m= sections. If
+  // there is no entry at that index or it belongs to another content, e.g.
+  // because TransportInfos were removed or reordered through the
+  // SessionDescription API, the search by name is the fallback. Both find
+  // the same TransportInfo as long as no two TransportInfos have the same
+  // content name, which holds when the MIDs are unique
+  // (SetLocalDescription() and SetRemoteDescription() reject duplicates).
+  const TransportInfos& transport_infos = desc->transport_infos();
+  size_t mline_index = 0;
   for (const ContentInfo& content : desc->contents()) {
-    std::vector<Candidate> candidates;
-    GetCandidatesByMindex(jdesc, ++mline_index, &candidates);
-    BuildMediaDescription(&content, desc->GetTransportInfoByName(content.mid()),
-                          content.media_description()->type(), candidates,
-                          desc->msid_signaling(),
-                          jdesc.encoding_options().use_wildcard, &message);
+    const TransportInfo* transport_info =
+        (mline_index < transport_infos.size() &&
+         transport_infos[mline_index].content_name == content.mid())
+            ? &transport_infos[mline_index]
+            : desc->GetTransportInfoByName(content.mid());
+    BuildMediaDescription(
+        &content, transport_info, content.media_description()->type(),
+        *jdesc.candidates(mline_index), desc->msid_signaling(),
+        jdesc.encoding_options().use_wildcard, &message);
+    ++mline_index;
   }
   return message;
 }
@@ -3447,24 +3459,16 @@ std::unique_ptr<SessionDescriptionInterface> SdpDeserialize(
   }
 
   // Media Description
-  std::vector<std::unique_ptr<IceCandidate>> candidates;
+  std::vector<IceCandidateCollection> candidates;
   if (!ParseMediaDescription(message, session_td, session_extmaps, &current_pos,
-                             session_connection_addr, desc.get(), &candidates,
+                             session_connection_addr, desc.get(), candidates,
                              error)) {
     return nullptr;
   }
 
-  std::unique_ptr<SessionDescriptionInterface> description =
-      CreateSessionDescription(sdp_type, session_id, session_version,
-                               std::move(desc));
-  if (!description) {
-    return nullptr;
-  }
-  for (const auto& candidate : candidates) {
-    description->AddCandidate(candidate.get());
-  }
-
-  return description;
+  return SessionDescriptionInterface::Create(sdp_type, std::move(desc),
+                                             session_id, session_version,
+                                             std::move(candidates));
 }
 
 }  // namespace webrtc

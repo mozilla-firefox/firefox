@@ -228,6 +228,10 @@ struct EncodingOptions {
 
 class RTC_EXPORT SessionDescriptionInterface final {
  public:
+  // If `candidates` is not empty, it must contain one collection per media
+  // section of `description`. The connection address of each media section
+  // that has candidates is updated based on those candidates, the same way
+  // AddCandidate() does.
   static std::unique_ptr<SessionDescriptionInterface> Create(
       SdpType type,
       std::unique_ptr<SessionDescription> description,

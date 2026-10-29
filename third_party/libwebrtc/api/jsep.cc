@@ -238,6 +238,17 @@ SessionDescriptionInterface::SessionDescriptionInterface(
   RTC_DCHECK(candidate_collection_.empty() ||
              candidate_collection_.size() == number_of_mediasections());
   candidate_collection_.resize(number_of_mediasections());
+  for (size_t i = 0; i < candidate_collection_.size(); ++i) {
+    if (!candidate_collection_[i].empty()) {
+      UpdateConnectionAddress(candidate_collection_[i],
+                              description_->contents()[i].media_description());
+    }
+    // The calls above attach the collection's sequence checker to the current
+    // thread. Detach it so that, like `sequence_checker_`, the description
+    // isn't tied to the thread that constructs it. E.g. Chromium parses SDP on
+    // the main thread and then uses the description on the signaling thread.
+    candidate_collection_[i].RelinquishThreadOwnership();
+  }
 }
 
 size_t SessionDescriptionInterface::number_of_mediasections() const {
