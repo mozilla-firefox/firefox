@@ -89,7 +89,7 @@ TEST(BufferTest, TestConstructArray) {
 
 TEST(BufferTest, TestStringViewConversion) {
   Buffer buf(kTestData);
-  absl::string_view view = buf;
+  absl::string_view view(buf);
   EXPECT_EQ(view, absl::string_view(
                       reinterpret_cast<const char*>(kTestData.data()), 16u));
 }
