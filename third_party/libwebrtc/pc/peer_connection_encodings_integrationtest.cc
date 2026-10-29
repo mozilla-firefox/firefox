@@ -3511,4 +3511,54 @@ TEST_F(PeerConnectionEncodingsIntegrationTest,
   EXPECT_TRUE(transceiver->sender()->SetParameters(parameters).ok());
 }
 
+TEST_F(PeerConnectionEncodingsIntegrationTest,
+       QualityLimitationReasonReportsBandwidthInMaintainResolution) {
+  scoped_refptr<PeerConnectionTestWrapper> local_pc_wrapper = CreatePc();
+  scoped_refptr<PeerConnectionTestWrapper> remote_pc_wrapper = CreatePc();
+  ExchangeIceCandidates(local_pc_wrapper, remote_pc_wrapper);
+
+  scoped_refptr<MediaStreamInterface> stream = local_pc_wrapper->GetUserMedia(
+      /*audio=*/false, {}, /*video=*/true, {.width = 1280, .height = 720},
+      /*fps=*/10);
+  scoped_refptr<VideoTrackInterface> track = stream->GetVideoTracks()[0];
+
+  RTCErrorOr<scoped_refptr<RtpTransceiverInterface>> transceiver_or_error =
+      local_pc_wrapper->pc()->AddTransceiver(track);
+  ASSERT_THAT(transceiver_or_error, IsRtcOk());
+  scoped_refptr<RtpTransceiverInterface> transceiver =
+      transceiver_or_error.MoveValue();
+
+  scoped_refptr<RtpSenderInterface> sender = transceiver->sender();
+  RtpParameters parameters = sender->GetParameters();
+  ASSERT_THAT(parameters.encodings, SizeIs(1));
+  parameters.degradation_preference =
+      DegradationPreference::MAINTAIN_RESOLUTION;
+  parameters.encodings[0].max_bitrate_bps = 10000;
+  EXPECT_THAT(sender->SetParameters(parameters), IsRtcOk());
+
+  Negotiate(local_pc_wrapper, remote_pc_wrapper);
+  local_pc_wrapper->WaitForConnection();
+  remote_pc_wrapper->WaitForConnection();
+
+  // Wait for 30 frames of 720p to be sent, this should give some impression of
+  // what the frame rate and limitations are.
+  auto error_or_stats = GetStatsUntil(
+      local_pc_wrapper,
+      OutboundRtpStatsAre(
+          UnorderedElementsAre(AllOf(HeightIs(720), FramesEncodedIs(Gt(30))))),
+      {.timeout = kLongTimeoutForRampingUp});
+  ASSERT_THAT(error_or_stats, IsRtcOk());
+  scoped_refptr<const RTCStatsReport> report = error_or_stats.MoveValue();
+  std::vector<const RTCOutboundRtpStreamStats*> outbound_rtps =
+      report->GetStatsOfType<RTCOutboundRtpStreamStats>();
+  ASSERT_THAT(outbound_rtps, SizeIs(1u));
+  // 720p is guaranteed because of "maintain-resolution", but if the test setup
+  // is correct, less than 80% of fps should be achieved due to BW limitation.
+  EXPECT_EQ(outbound_rtps[0]->frame_width.value_or(0), 1280u);
+  EXPECT_EQ(outbound_rtps[0]->frame_height.value_or(0), 720u);
+  EXPECT_LT(outbound_rtps[0]->frames_per_second.value_or(0), 8);
+  // The limitation should be reported correctly.
+  EXPECT_EQ(outbound_rtps[0]->quality_limitation_reason, "bandwidth");
+}
+
 }  // namespace webrtc

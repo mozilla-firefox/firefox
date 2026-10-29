@@ -3246,4 +3246,161 @@ TEST_F(SendStatisticsProxyTest, PsnrHistogramsScreenshare) {
                    metrics::NumEvents("WebRTC.Video.Screenshare.Psnr.V", 420));
 }
 
+TEST_F(SendStatisticsProxyTest,
+       QualityLimitationReasonIsBandwidthWhenFramesDroppedByEncoder) {
+  VideoCodec codec;
+  codec.simulcastStream[0].active = true;
+  VideoBitrateAllocation allocation;
+  allocation.SetBitrate(0, 0, 100);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+
+  EncodedImage encoded_image;
+  uint32_t rtp_timestamp = 0;
+  auto encode_frame = [&] {
+    rtp_timestamp += 3000;
+    encoded_image.SetRtpTimestamp(rtp_timestamp);
+    statistics_proxy_->OnSendEncodedImage(encoded_image, nullptr);
+  };
+
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // Encode 80 frames and drop 18 frames in the first bucket, then advance one
+  // bucket interval (100 ms) so RateTracker reports non-zero rates.
+  for (int i = 0; i < 80; ++i) {
+    encode_frame();
+  }
+  for (int i = 0; i < 18; ++i) {
+    statistics_proxy_->OnFrameDropped(
+        VideoStreamEncoderObserver::DropReason::kEncoder);
+  }
+  fake_clock_.AdvanceTimeMilliseconds(100);
+
+  // 19 dropped / (80 encoded + 19 dropped) = 19 / 99 (~19.2%) < 20%.
+  statistics_proxy_->OnFrameDropped(
+      VideoStreamEncoderObserver::DropReason::kEncoder);
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // 20 dropped / (80 encoded + 20 dropped) = 20 / 100 (20.0%) >= 20%.
+  statistics_proxy_->OnFrameDropped(
+      VideoStreamEncoderObserver::DropReason::kEncoder);
+  EXPECT_EQ(QualityLimitationReason::kBandwidth,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // 20 dropped / (81 encoded + 20 dropped) = 20 / 101 (~19.8%) < 20%.
+  encode_frame();
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+}
+
+TEST_F(SendStatisticsProxyTest,
+       QualityLimitationReasonIsBandwidthWhenFramesDroppedByMediaOptimization) {
+  VideoCodec codec;
+  codec.simulcastStream[0].active = true;
+  VideoBitrateAllocation allocation;
+  allocation.SetBitrate(0, 0, 100);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+
+  EncodedImage encoded_image;
+  uint32_t rtp_timestamp = 0;
+  auto encode_frame = [&] {
+    rtp_timestamp += 3000;
+    encoded_image.SetRtpTimestamp(rtp_timestamp);
+    statistics_proxy_->OnSendEncodedImage(encoded_image, nullptr);
+  };
+
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // Encode 80 frames and drop 18 frames in the first bucket, then advance one
+  // bucket interval (100 ms) so RateTracker reports non-zero rates.
+  for (int i = 0; i < 80; ++i) {
+    encode_frame();
+  }
+  for (int i = 0; i < 18; ++i) {
+    statistics_proxy_->OnFrameDropped(
+        VideoStreamEncoderObserver::DropReason::kMediaOptimization);
+  }
+  fake_clock_.AdvanceTimeMilliseconds(100);
+
+  // 19 dropped / (80 encoded + 19 dropped) = 19 / 99 (~19.2%) < 20%.
+  statistics_proxy_->OnFrameDropped(
+      VideoStreamEncoderObserver::DropReason::kMediaOptimization);
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // 20 dropped / (80 encoded + 20 dropped) = 20 / 100 (20.0%) >= 20%.
+  statistics_proxy_->OnFrameDropped(
+      VideoStreamEncoderObserver::DropReason::kMediaOptimization);
+  EXPECT_EQ(QualityLimitationReason::kBandwidth,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // 20 dropped / (81 encoded + 20 dropped) = 20 / 101 (~19.8%) < 20%.
+  encode_frame();
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+}
+
+TEST_F(SendStatisticsProxyTest,
+       QualityLimitationReasonIsNoneWhenFramesDroppedForOtherReasons) {
+  VideoCodec codec;
+  codec.simulcastStream[0].active = true;
+  VideoBitrateAllocation allocation;
+  allocation.SetBitrate(0, 0, 100);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+
+  for (auto reason :
+       {VideoStreamEncoderObserver::DropReason::kSource,
+        VideoStreamEncoderObserver::DropReason::kBadTimestamp,
+        VideoStreamEncoderObserver::DropReason::kEncoderQueue,
+        VideoStreamEncoderObserver::DropReason::kCongestionWindow}) {
+    statistics_proxy_->OnFrameDropped(reason);
+    fake_clock_.AdvanceTimeMilliseconds(100);
+    statistics_proxy_->OnFrameDropped(reason);
+    EXPECT_EQ(QualityLimitationReason::kNone,
+              statistics_proxy_->GetStats().quality_limitation_reason);
+  }
+}
+
+TEST_F(SendStatisticsProxyTest,
+       QualityLimitationReasonWhenFramesDroppedInSimulcast) {
+  VideoCodec codec;
+  codec.numberOfSimulcastStreams = 3;
+  codec.simulcastStream[0].active = true;
+  codec.simulcastStream[1].active = true;
+  codec.simulcastStream[2].active = true;
+  VideoBitrateAllocation allocation;
+  allocation.SetBitrate(0, 0, 100);
+  allocation.SetBitrate(1, 0, 200);
+  allocation.SetBitrate(2, 0, 400);
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+
+  // Drop frames well above the 20% threshold for both bandwidth-related drop
+  // reasons while 3 simulcast streams are active.
+  for (auto reason :
+       {VideoStreamEncoderObserver::DropReason::kEncoder,
+        VideoStreamEncoderObserver::DropReason::kMediaOptimization}) {
+    statistics_proxy_->OnFrameDropped(reason);
+    fake_clock_.AdvanceTimeMilliseconds(100);
+    statistics_proxy_->OnFrameDropped(reason);
+    EXPECT_EQ(QualityLimitationReason::kNone,
+              statistics_proxy_->GetStats().quality_limitation_reason);
+  }
+
+  // With 3 simulcast streams where only 1 is active, the frame drop rate
+  // triggers kBandwidth.
+  codec.simulcastStream[1].active = false;
+  codec.simulcastStream[2].active = false;
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+  EXPECT_EQ(QualityLimitationReason::kBandwidth,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+
+  // Disabling the last active simulcast stream lifts the bandwidth limitation.
+  codec.simulcastStream[0].active = false;
+  statistics_proxy_->OnBitrateAllocationUpdated(codec, allocation);
+  EXPECT_EQ(QualityLimitationReason::kNone,
+            statistics_proxy_->GetStats().quality_limitation_reason);
+}
+
 }  // namespace webrtc

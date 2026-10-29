@@ -181,6 +181,7 @@ SendStatisticsProxy::SendStatisticsProxy(
       quality_limitation_reason_tracker_(&env_.clock()),
       media_byte_rate_tracker_(kBucketSizeMs, kBucketCount),
       encoded_frame_rate_tracker_(kBucketSizeMs, kBucketCount),
+      dropped_due_to_bandwidth_rate_tracker_(kBucketSizeMs, kBucketCount),
       last_num_spatial_layers_(0),
       last_num_simulcast_streams_(0),
       last_spatial_layer_use_{},
@@ -1207,6 +1208,7 @@ void SendStatisticsProxy::OnSendEncodedImage(
     if (downscales.value() > 0)
       uma_container_->quality_downscales_counter_.Add(downscales.value());
   }
+  UpdateAdaptationStats();
 }
 
 void SendStatisticsProxy::OnEncoderImplementationChanged(
@@ -1257,6 +1259,7 @@ void SendStatisticsProxy::OnIncomingFrame(int width, int height) {
 
 void SendStatisticsProxy::OnFrameDropped(DropReason reason) {
   MutexLock lock(&mutex_);
+  Timestamp now = env_.clock().CurrentTime();
   switch (reason) {
     case DropReason::kSource:
       ++stats_.frames_dropped_by_capturer;
@@ -1269,14 +1272,17 @@ void SendStatisticsProxy::OnFrameDropped(DropReason reason) {
       break;
     case DropReason::kEncoder:
       ++stats_.frames_dropped_by_encoder;
+      dropped_due_to_bandwidth_rate_tracker_.Update(1, now);
       break;
     case DropReason::kMediaOptimization:
       ++stats_.frames_dropped_by_rate_limiter;
+      dropped_due_to_bandwidth_rate_tracker_.Update(1, now);
       break;
     case DropReason::kCongestionWindow:
       ++stats_.frames_dropped_by_congestion_window;
       break;
   }
+  UpdateAdaptationStats();
 }
 
 void SendStatisticsProxy::ClearAdaptationStats() {
@@ -1323,6 +1329,7 @@ void SendStatisticsProxy::OnAdaptationChanged(
 }
 
 void SendStatisticsProxy::UpdateAdaptationStats() {
+  Timestamp now = env_.clock().CurrentTime();
   auto cpu_counts = adaptation_limitations_.MaskedCpuCounts();
   auto quality_counts = adaptation_limitations_.MaskedQualityCounts();
 
@@ -1331,6 +1338,16 @@ void SendStatisticsProxy::UpdateAdaptationStats() {
   bool is_bandwidth_limited = quality_counts.resolution_adaptations > 0 ||
                               quality_counts.num_framerate_reductions > 0 ||
                               bw_limited_layers_ || internal_encoder_scaler_;
+  if (last_num_simulcast_streams_ == 1 && !is_bandwidth_limited) {
+    constexpr double kIsBandwidthLimitedFrameDropThreshold = 0.2;
+    double encode_fps = encoded_frame_rate_tracker_.Rate(now);
+    double drop_fps = dropped_due_to_bandwidth_rate_tracker_.Rate(now);
+    double total_fps = encode_fps + drop_fps;
+    if (total_fps > 0.0) {
+      is_bandwidth_limited = drop_fps / (encode_fps + drop_fps) >=
+                             kIsBandwidthLimitedFrameDropThreshold;
+    }
+  }
   if (is_bandwidth_limited) {
     // We may be both CPU limited and bandwidth limited at the same time but
     // there is no way to express this in standardized stats. Heuristically,
@@ -1399,7 +1416,6 @@ void SendStatisticsProxy::OnBitrateAllocationUpdated(
   MutexLock lock(&mutex_);
 
   bw_limited_layers_ = allocation.is_bw_limited();
-  UpdateAdaptationStats();
 
   // Store target bitrates per substream stats.
   for (auto& [ssrc, substream] : stats_.substreams) {
@@ -1433,6 +1449,7 @@ void SendStatisticsProxy::OnBitrateAllocationUpdated(
   }
   last_num_spatial_layers_ = num_spatial_layers;
   last_num_simulcast_streams_ = num_simulcast_streams;
+  UpdateAdaptationStats();
 }
 
 // Informes observer if an internal encoder scaler has reduced video

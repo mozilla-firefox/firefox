@@ -511,7 +511,8 @@ scoped_refptr<MediaStreamInterface> PeerConnectionTestWrapper::GetUserMedia(
     bool audio,
     const AudioOptions& audio_options,
     bool video,
-    Resolution resolution) {
+    Resolution resolution,
+    int fps) {
   std::string stream_id =
       kStreamIdBase + absl::StrCat(num_get_user_media_calls_++);
   scoped_refptr<MediaStreamInterface> stream =
@@ -530,9 +531,8 @@ scoped_refptr<MediaStreamInterface> PeerConnectionTestWrapper::GetUserMedia(
   }
 
   if (video) {
-    // Set max frame rate to 10fps to reduce the risk of the tests to be flaky.
     FakePeriodicVideoSource::Config config;
-    config.frame_interval = TimeDelta::Millis(100);
+    config.frame_interval = TimeDelta::Seconds(1) / fps;
     config.timestamp_offset = env_.clock().CurrentTime();
     config.width = resolution.width;
     config.height = resolution.height;

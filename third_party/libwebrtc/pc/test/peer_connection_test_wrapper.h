@@ -182,9 +182,10 @@ class PeerConnectionTestWrapper : public PeerConnectionObserver,
       bool audio,
       const AudioOptions& audio_options,
       bool video,
-      Resolution resolution = {
-          .width = FakePeriodicVideoSource::kDefaultWidth,
-          .height = FakePeriodicVideoSource::kDefaultHeight});
+      Resolution resolution = {.width = FakePeriodicVideoSource::kDefaultWidth,
+                               .height =
+                                   FakePeriodicVideoSource::kDefaultHeight},
+      int fps = 10);
   void StopFakeVideoSources();
 
  private:
