@@ -117,7 +117,7 @@ index a42c5d7aa7..f8e072fed5 100644
    # TODO(https://bugs.webrtc.org/14437):  Remove this section if general
    # Chromium fix resolves the problem.
 diff --git a/BUILD.gn b/BUILD.gn
-index 294c13b3b5..5c1e437429 100644
+index 3d9efdefd0..4490322b56 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -39,7 +39,7 @@ if (is_android) {
@@ -211,7 +211,7 @@ index 294c13b3b5..5c1e437429 100644
      }
  
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index a459536f98..4f2be0bca3 100644
+index 2b1ce12fc8..4a2725e9c1 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -34,6 +34,9 @@ rtc_library("enable_media") {

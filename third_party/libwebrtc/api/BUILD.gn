@@ -1967,6 +1967,19 @@ if (rtc_include_tests) {
     ]
   }
 
+  if (rtc_enable_google_benchmarks) {
+    rtc_library("webrtc_sdp_benchmark") {
+      testonly = true
+      sources = [ "webrtc_sdp_benchmark.cc" ]
+      deps = [
+        ":jsep",
+        "../rtc_base:checks",
+        "../rtc_base:stringutils",
+        "//third_party/google_benchmark",
+      ]
+    }
+  }
+
   rtc_cc_test("webrtc_sdp_unittest") {
     sources = [ "webrtc_sdp_unittest.cc" ]
     deps = [

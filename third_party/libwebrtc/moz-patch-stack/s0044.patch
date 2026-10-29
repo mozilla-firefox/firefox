@@ -18,7 +18,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/0300b32b7de70fb89
  5 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 22c50671a8..e7de5339fe 100644
+index 3e64f76f23..7d84167f89 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -275,6 +275,9 @@ config("common_inherited_config") {
