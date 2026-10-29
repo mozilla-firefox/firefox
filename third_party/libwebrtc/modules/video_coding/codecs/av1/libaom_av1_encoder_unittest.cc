@@ -1048,7 +1048,7 @@ class LibaomAv1EncoderComplexityTest
 TEST_P(LibaomAv1EncoderComplexityTest, SetComplexityIncreasesQuality) {
   constexpr int kWidth = 352;
   constexpr int kHeight = 288;
-  constexpr int kNumSourceFrames = 10;
+  constexpr int kNumSourceFrames = 100;
 
   std::unique_ptr<test::FrameReader> frame_reader =
       test::CreateYuvFrameReader(test::ResourcePath("foreman_cif", "yuv"),
@@ -1099,8 +1099,7 @@ TEST_P(LibaomAv1EncoderComplexityTest, SetComplexityIncreasesQuality) {
   // unlock all effort levels down to speed 5 within 95 frames. In `kConstant`
   // mode, speeds are applied immediately, so 10 frames are sufficient.
   const VideoEncoder::ComplexityControlMode mode = GetParam();
-  const int num_frames =
-      mode == VideoEncoder::ComplexityControlMode::kConstant ? 10 : 100;
+  const int num_frames = 100;
   constexpr int kFramerateFps = 5;
   constexpr int kBitrateKbps = 40;
   SimulatedClock clock(Timestamp::Seconds(1000));
