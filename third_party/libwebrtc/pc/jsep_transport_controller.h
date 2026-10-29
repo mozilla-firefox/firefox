@@ -56,6 +56,7 @@
 #include "pc/jsep_transport_collection.h"
 #include "pc/rtp_transport.h"
 #include "pc/rtp_transport_internal.h"
+#include "pc/scoped_operations_batcher.h"
 #include "pc/sctp_transport.h"
 #include "pc/session_description.h"
 #include "pc/transport_stats.h"
@@ -310,8 +311,16 @@ class JsepTransportController final {
 
   bool GetStats(absl::string_view transport_name, TransportStats* stats) const;
 
+  // Returns a task for a network thread ScopedOperationsBatcher that rolls
+  // back the transports to the last stable state. Its finalizer applies the
+  // resulting transport states on the signaling thread and stores the result
+  // of the rollback in `error`, which must outlive the batch. The task doesn't
+  // fail the batch, so the transport states are applied even if the rollback
+  // fails.
+  //
   // Must be called on the signaling thread.
-  RTCError RollbackTransports();
+  ScopedOperationsBatcher::BatchTaskWithFinalizer MakeRollbackTask(
+      RTCError* absl_nonnull error);
 
   // Must be called on the signaling thread.
   absl::AnyInvocable<void() &&> MakeCloseTask();
@@ -336,7 +345,7 @@ class JsepTransportController final {
   bool RemoveRemoteCandidate_n(const IceCandidate* candidate)
       RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
+  // Called from the task that MakeRollbackTask() returns.
   RTCError RollbackTransports_n() RTC_RUN_ON(network_thread_);
 
   // Called from a task that MaybeStartGathering() posts.

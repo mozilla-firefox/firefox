@@ -51,6 +51,7 @@
 #include "pc/dtls_transport.h"
 #include "pc/rtp_transport.h"
 #include "pc/rtp_transport_internal.h"
+#include "pc/scoped_operations_batcher.h"
 #include "pc/session_description.h"
 #include "pc/transport_stats.h"
 #include "rtc_base/checks.h"
@@ -250,6 +251,17 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
                 return transport_controller_->LookupDtlsTransportByMid_n(mid);
               }))
         << "mid: " << mid;
+  }
+
+  // Rolls back the transports the same way as SdpOfferAnswerHandler::Rollback()
+  // does: with a task in a batch for the network thread.
+  RTCError RollbackTransports() {
+    RTCError error;
+    ScopedOperationsBatcher network_tasks(network_thread_.get());
+    network_tasks.AddWithFinalizer(
+        transport_controller_->MakeRollbackTask(&error));
+    EXPECT_TRUE(network_tasks.Run().ok());
+    return error;
   }
 
   std::unique_ptr<SessionDescription> CreateSessionDescriptionWithoutBundle() {
@@ -657,7 +669,7 @@ TEST_F(JsepTransportControllerTest,
   EXPECT_FALSE(transport_controller_->GetTransportState(kAudioMid1));
   ExpectLookupMatchesNetworkThread(kAudioMid1);
 
-  EXPECT_TRUE(transport_controller_->RollbackTransports().ok());
+  EXPECT_TRUE(RollbackTransports().ok());
   EXPECT_EQ(transport_controller_->LookupDtlsTransportByMid(kAudioMid1),
             transport);
   ExpectLookupMatchesNetworkThread(kAudioMid1);
@@ -1509,7 +1521,7 @@ TEST_F(JsepTransportControllerTest,
 
   // For good measure, rollback the offer and verify that states return to
   // their previous values.
-  EXPECT_TRUE(transport_controller_->RollbackTransports().ok());
+  EXPECT_TRUE(RollbackTransports().ok());
   EXPECT_THAT(
       WaitUntil([&] { return ice_connection_state_; },
                 ::testing::Eq(PeerConnectionInterface::kIceConnectionChecking),
@@ -3052,7 +3064,7 @@ TEST_F(JsepTransportControllerTest, RollbackRestoresRejectedTransport) {
 
   // Rolling back shouldn't just create a new transport for MID 1, it should
   // restore the old transport.
-  EXPECT_TRUE(transport_controller_->RollbackTransports().ok());
+  EXPECT_TRUE(RollbackTransports().ok());
   mid1_transport = GetRtpTransport(kMid1Audio);
   EXPECT_EQ(old_mid1_transport, mid1_transport);
 }
@@ -3125,7 +3137,7 @@ TEST_F(JsepTransportControllerTest, RollbackRestoresPreviousTransportMapping) {
 
   // Rolling back shouldn't just create a new transport for MID 3, it should
   // restore the old transport.
-  EXPECT_TRUE(transport_controller_->RollbackTransports().ok());
+  EXPECT_TRUE(RollbackTransports().ok());
   mid3_transport = GetRtpTransport(kMid3Audio);
   EXPECT_EQ(old_mid3_transport, mid3_transport);
 }
@@ -3192,7 +3204,7 @@ TEST_F(JsepTransportControllerTest, RollbackAndAddToDifferentBundleGroup) {
   EXPECT_EQ(mid1_transport, mid3_transport);
 
   // Rollback and expect the transport to be reset.
-  EXPECT_TRUE(transport_controller_->RollbackTransports().ok());
+  EXPECT_TRUE(RollbackTransports().ok());
   EXPECT_EQ(nullptr, GetRtpTransport(kMid3Audio));
 
   // Apply an offer that adds kMid3Audio to the second BUNDLE group.,

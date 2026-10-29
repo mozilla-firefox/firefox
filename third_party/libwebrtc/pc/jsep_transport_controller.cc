@@ -60,6 +60,7 @@
 #include "pc/media_protocol_names.h"
 #include "pc/rtp_transport.h"
 #include "pc/rtp_transport_internal.h"
+#include "pc/scoped_operations_batcher.h"
 #include "pc/sctp_transport.h"
 #include "pc/session_description.h"
 #include "pc/transport_stats.h"
@@ -562,22 +563,28 @@ bool JsepTransportController::GetStats(absl::string_view transport_name,
   return transport->GetStats(stats);
 }
 
-RTCError JsepTransportController::RollbackTransports() {
+ScopedOperationsBatcher::BatchTaskWithFinalizer
+JsepTransportController::MakeRollbackTask(RTCError* absl_nonnull error) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   scoped_refptr<PendingTaskSafetyFlag> new_flag =
       PendingTaskSafetyFlag::CreateAttachedToTaskQueue(true, signaling_thread_);
-  TransportStateSnapshot new_states;
-  RTCError error = network_thread_->BlockingCall([&] {
+  return [this, error, new_flag = std::move(new_flag)]() mutable
+             -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
     RTC_DCHECK_RUN_ON(network_thread_);
-    RTCError err = RollbackTransports_n();
-    new_states = GetTransportStates_n();
+    RTCError rollback_error = RollbackTransports_n();
+    TransportStateSnapshot new_states = GetTransportStates_n();
     role_update_safety_flag_n_ = new_flag;
-    return err;
-  });
-  SetTransportStates(std::move(new_states));
-  role_update_safety_flag_s_->SetNotAlive();
-  role_update_safety_flag_s_ = std::move(new_flag);
-  return error;
+    return ScopedOperationsBatcher::FinalizerTask(
+        [this, error, rollback_error = std::move(rollback_error),
+         new_states = std::move(new_states),
+         new_flag = std::move(new_flag)]() mutable {
+          RTC_DCHECK_RUN_ON(signaling_thread_);
+          SetTransportStates(std::move(new_states));
+          role_update_safety_flag_s_->SetNotAlive();
+          role_update_safety_flag_s_ = std::move(new_flag);
+          *error = std::move(rollback_error);
+        });
+  };
 }
 
 RTCError JsepTransportController::RollbackTransports_n() {

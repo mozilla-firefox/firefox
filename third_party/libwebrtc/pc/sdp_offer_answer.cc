@@ -3959,6 +3959,10 @@ RTCError SdpOfferAnswerHandler::Rollback(SdpType desc_type) {
       transceivers()->Remove(transceiver);
     }
   };
+  // The rollback task in `network_tasks` writes to this. Declared before the
+  // batchers so that it outlives them, since their destructors run pending
+  // tasks.
+  RTCError rollback_error;
   ScopedOperationsBatcher worker_tasks(context_->worker_thread());
   ScopedOperationsBatcher network_tasks(context_->network_thread());
 
@@ -4050,17 +4054,25 @@ RTCError SdpOfferAnswerHandler::Rollback(SdpType desc_type) {
     }
   }
 
+  // Roll back the transports in the same batch, after the tasks above have
+  // detached the channels from their transports. Rolling back destroys the
+  // transports that are no longer used, which can include transports that
+  // those channels are attached to. GetDeleteChannelWorkerTask() has already
+  // made the channels unreachable from their transceivers, so the rollback
+  // can't attach them to a transport again.
+  network_tasks.AddWithFinalizer(
+      transport_controller_s()->MakeRollbackTask(&rollback_error));
+
   RTCError e = network_tasks.Run();
-  RTC_DCHECK(e.ok());  // only void tasks queued.
+  RTC_DCHECK(e.ok());  // Rollback errors are reported in `rollback_error`.
   e = worker_tasks.Run();
   RTC_DCHECK(e.ok());  // only void tasks queued.
 
   for (const auto& [sender, encodings] : senders_to_restore) {
     sender->set_init_send_encodings(encodings);
   }
-  e = transport_controller_s()->RollbackTransports();
-  if (!e.ok()) {
-    return e;
+  if (!rollback_error.ok()) {
+    return rollback_error;
   }
   transceivers()->DiscardStableStates();
   pending_local_description_.reset();
