@@ -856,6 +856,41 @@ TEST_F(ReceiveStatisticsProxyTest,
       0, metrics::NumSamples("WebRTC.Video.ReceiveStreamLifetimeInSeconds"));
 }
 
+TEST_F(ReceiveStatisticsProxyTest, PlayoutDelayModeHistogramIsUpdated) {
+  statistics_proxy_->UpdateHistograms(std::nullopt, StreamDataCounters(),
+                                      nullptr);
+  EXPECT_METRIC_EQ(0, metrics::NumSamples("WebRTC.Video.PlayoutDelayMode"));
+
+  // 0/0 (2), followed by a frame without the extension (still 2).
+  statistics_proxy_->OnPlayoutDelay(VideoPlayoutDelay::Minimal());
+  statistics_proxy_->OnPlayoutDelay(std::nullopt);
+  statistics_proxy_->UpdateHistograms(std::nullopt, StreamDataCounters(),
+                                      nullptr);
+  EXPECT_METRIC_EQ(1, metrics::NumEvents("WebRTC.Video.PlayoutDelayMode", 2));
+
+  // Add 0/X (4) -> 2 | 4 = 6.
+  statistics_proxy_->OnPlayoutDelay(
+      VideoPlayoutDelay(TimeDelta::Zero(), TimeDelta::Millis(100)));
+  statistics_proxy_->UpdateHistograms(std::nullopt, StreamDataCounters(),
+                                      nullptr);
+  EXPECT_METRIC_EQ(1, metrics::NumEvents("WebRTC.Video.PlayoutDelayMode", 6));
+
+  // Add X/Y (8) -> 6 | 8 = 14.
+  statistics_proxy_->OnPlayoutDelay(
+      VideoPlayoutDelay(TimeDelta::Millis(50), TimeDelta::Millis(100)));
+  statistics_proxy_->UpdateHistograms(std::nullopt, StreamDataCounters(),
+                                      nullptr);
+  EXPECT_METRIC_EQ(1, metrics::NumEvents("WebRTC.Video.PlayoutDelayMode", 14));
+}
+
+TEST_F(ReceiveStatisticsProxyTest, PlayoutDelayModeHistogramReportsDefault) {
+  statistics_proxy_->OnPlayoutDelay(std::nullopt);
+  statistics_proxy_->UpdateHistograms(std::nullopt, StreamDataCounters(),
+                                      nullptr);
+  EXPECT_METRIC_EQ(1, metrics::NumSamples("WebRTC.Video.PlayoutDelayMode"));
+  EXPECT_METRIC_EQ(1, metrics::NumEvents("WebRTC.Video.PlayoutDelayMode", 1));
+}
+
 TEST_F(ReceiveStatisticsProxyTest, PacketLossHistogramIsUpdated) {
   statistics_proxy_->UpdateHistograms(10, StreamDataCounters(), nullptr);
   EXPECT_METRIC_EQ(

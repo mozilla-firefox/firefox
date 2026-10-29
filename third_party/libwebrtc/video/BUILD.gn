@@ -1851,6 +1851,7 @@ if (rtc_include_tests) {
       "../modules/video_coding:nack_requester",
       "../rtc_base:logging",
       "../system_wrappers",
+      "../system_wrappers:metrics",
       "../test:create_test_environment",
       "../test:create_test_field_trials",
       "../test:fake_encoded_frame",
