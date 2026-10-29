@@ -709,5 +709,21 @@ TEST(ScreamV2Test, KeepsTrackOfReceivedRateOver100msWindow) {
             DataSize::Bytes(5000) / TimeDelta::Millis(101));
 }
 
+TEST(ScreamV2Test, MaxDataInFlightBoundedByMinMaxDataInFlightMss) {
+  SimulatedClock clock(Timestamp::Seconds(1'234));
+  Environment env_default = CreateTestEnvironment({.time = &clock});
+  ScreamV2 scream_default(env_default);
+  // Default min_ref_window is 1000 bytes, max_segment_size is 1280 bytes, and
+  // min_max_data_in_flight_mss is 4 -> 4 * 1280 = 5120 bytes.
+  EXPECT_EQ(scream_default.ref_window(), DataSize::Bytes(1000));
+  EXPECT_EQ(scream_default.max_data_in_flight(), DataSize::Bytes(4 * 1280));
+
+  Environment env_custom = CreateTestEnvironment(
+      {.field_trials = "WebRTC-Bwe-ScreamV2/MinMaxDataInFlightMss:5/",
+       .time = &clock});
+  ScreamV2 scream_custom(env_custom);
+  EXPECT_EQ(scream_custom.max_data_in_flight(), DataSize::Bytes(5 * 1280));
+}
+
 }  // namespace
 }  // namespace webrtc

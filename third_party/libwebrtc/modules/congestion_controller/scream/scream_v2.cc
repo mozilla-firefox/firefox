@@ -368,7 +368,9 @@ DataSize ScreamV2::max_data_in_flight() const {
               .ref_window_scale_factor_due_to_avg_min_delay(
                   /*allow_zero=*/true);
 
-  return ref_window_ * ref_window_overhead;
+  return std::max(ref_window_ * ref_window_overhead,
+                  params_.max_segment_size.Get() *
+                      params_.min_max_data_in_flight_mss.Get());
 }
 
 DataSize ScreamV2::max_allowed_ref_window() const {

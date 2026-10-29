@@ -85,6 +85,8 @@ struct ScreamV2Parameters {
   // be than the ref window.
   FieldTrialParameter<double> ref_window_overhead_min;
   FieldTrialParameter<double> ref_window_overhead_max;
+  // Minimum send window (max_data_in_flight), expressed in number of MSS.
+  FieldTrialParameter<int> min_max_data_in_flight_mss;
 
   // Exponentially Weighted Moving Average (EWMA) factor for updating queue
   // delay.
