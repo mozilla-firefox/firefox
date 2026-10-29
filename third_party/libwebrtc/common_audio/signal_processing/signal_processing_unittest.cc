@@ -507,6 +507,25 @@ TEST(SplTest, FilterTest) {
                                bStateLow, data_out, bTmp16Low));
 }
 
+TEST(SplTest, FilterMAFastQ12SaturatesAfterOverflow) {
+  const int16_t kCoefficients[] = {32767, 32767, 32767};
+  const int16_t kPositiveInput[] = {32767, 32767, 32767};
+  const int16_t kNegativeInput[] = {-32768, -32768, -32768};
+  int16_t output = 0;
+
+  // The sum is 3221028867. A 32-bit accumulator would wrap and saturate to
+  // the negative limit instead of the positive limit.
+  WebRtcSpl_FilterMAFastQ12(&kPositiveInput[2], &output, kCoefficients,
+                            std::size(kCoefficients), 1);
+  EXPECT_EQ(32767, output);
+
+  // The sum is -3221127168. A 32-bit accumulator would wrap and saturate to
+  // the positive limit instead of the negative limit.
+  WebRtcSpl_FilterMAFastQ12(&kNegativeInput[2], &output, kCoefficients,
+                            std::size(kCoefficients), 1);
+  EXPECT_EQ(-32768, output);
+}
+
 TEST(SplTest, RandTest) {
   const int kVectorSize = 4;
   int16_t BU[] = {3653, 12446, 8525, 30691};
