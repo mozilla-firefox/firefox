@@ -1713,6 +1713,84 @@ TEST_F(StunTest, RemovingSigningAttributesAllowsAddingNewAttributes) {
   EXPECT_EQ("newuser", username->string_view());
 }
 
+TEST_F(StunTest, ValidateMessageIntegrity32RestrictedToGoogPing) {
+  for (uint16_t type :
+       {GOOG_PING_REQUEST, GOOG_PING_RESPONSE, GOOG_PING_ERROR_RESPONSE}) {
+    IceMessage out_msg(type, "ABCDEFGHIJKL");
+    ASSERT_TRUE(out_msg.AddMessageIntegrity32(kRfc5769SampleMsgPassword));
+    ByteBufferWriter writer;
+    ASSERT_TRUE(out_msg.Write(&writer));
+
+    IceMessage in_msg;
+    ByteBufferReader reader(writer);
+    ASSERT_TRUE(in_msg.Read(&reader));
+    EXPECT_EQ(in_msg.ValidateMessageIntegrity(kRfc5769SampleMsgPassword),
+              StunMessage::IntegrityStatus::kIntegrityOk);
+    EXPECT_EQ(in_msg.RevalidateMessageIntegrity("wrong_password"),
+              StunMessage::IntegrityStatus::kIntegrityBad);
+  }
+
+  for (uint16_t type : {static_cast<uint16_t>(STUN_BINDING_REQUEST),
+                        static_cast<uint16_t>(STUN_BINDING_RESPONSE),
+                        static_cast<uint16_t>(STUN_BINDING_ERROR_RESPONSE),
+                        static_cast<uint16_t>(STUN_ALLOCATE_RESPONSE)}) {
+    IceMessage out_msg(type, "ABCDEFGHIJKL");
+    ASSERT_TRUE(out_msg.AddMessageIntegrity32(kRfc5769SampleMsgPassword));
+    ByteBufferWriter writer;
+    ASSERT_TRUE(out_msg.Write(&writer));
+
+    IceMessage in_msg;
+    ByteBufferReader reader(writer);
+    ASSERT_TRUE(in_msg.Read(&reader));
+    EXPECT_EQ(in_msg.ValidateMessageIntegrity(kRfc5769SampleMsgPassword),
+              StunMessage::IntegrityStatus::kNoIntegrity);
+  }
+}
+
+TEST_F(StunTest, ReadIgnoresAttributesAfterMessageIntegrity) {
+  IceMessage msg(STUN_BINDING_REQUEST, "ABCDEFGHIJKL");
+  auto username = StunAttribute::CreateByteString(STUN_ATTR_USERNAME);
+  username->CopyBytes("rfrag:lfrag");
+  msg.AddAttribute(std::move(username));
+  ASSERT_TRUE(msg.AddMessageIntegrity(kRfc5769SampleMsgPassword));
+
+  ByteBufferWriter signed_buf;
+  ASSERT_TRUE(msg.Write(&signed_buf));
+
+  // Build an unauthenticated message to serialize post-MI injected attributes
+  // and a valid FINGERPRINT over the combined packet.
+  IceMessage injected;
+  ByteBufferReader signed_reader(signed_buf);
+  ASSERT_TRUE(injected.Read(&signed_reader));
+  // Clear integrity status by removing and re-adding MI as a raw attribute so
+  // we can append post-MI attributes and compute FINGERPRINT for the wire test.
+  auto mi_attr = injected.RemoveAttribute(STUN_ATTR_MESSAGE_INTEGRITY);
+  ASSERT_THAT(mi_attr, NotNull());
+  injected.AddAttribute(std::move(mi_attr));
+
+  auto misc_info =
+      StunAttribute::CreateUInt16ListAttribute(STUN_ATTR_GOOG_MISC_INFO);
+  misc_info->AddTypeAtIndex(0, 0x0001U);
+  injected.AddAttribute(std::move(misc_info));
+  injected.AddAttribute(
+      StunAttribute::CreateByteString(STUN_ATTR_USE_CANDIDATE));
+  ASSERT_TRUE(injected.AddFingerprint());
+
+  ByteBufferWriter wire_buf;
+  ASSERT_TRUE(injected.Write(&wire_buf));
+  EXPECT_TRUE(StunMessage::ValidateFingerprint(wire_buf.DataView()));
+
+  IceMessage parsed;
+  ByteBufferReader wire_reader(wire_buf);
+  ASSERT_TRUE(parsed.Read(&wire_reader));
+  EXPECT_EQ(parsed.ValidateMessageIntegrity(kRfc5769SampleMsgPassword),
+            StunMessage::IntegrityStatus::kIntegrityOk);
+  EXPECT_NE(parsed.GetByteString(STUN_ATTR_USERNAME), nullptr);
+  EXPECT_NE(parsed.GetUInt32(STUN_ATTR_FINGERPRINT), nullptr);
+  EXPECT_EQ(parsed.GetUInt16List(STUN_ATTR_GOOG_MISC_INFO), nullptr);
+  EXPECT_EQ(parsed.GetByteString(STUN_ATTR_USE_CANDIDATE), nullptr);
+}
+
 #if RTC_DCHECK_IS_ON && GTEST_HAS_DEATH_TEST && !defined(WEBRTC_ANDROID)
 TEST_F(StunTest, AddingAttributesAfterSigningCrashesDeathTest) {
   IceMessage msg;

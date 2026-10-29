@@ -94,6 +94,11 @@ bool LengthValid(int type, int length) {
   return true;
 }
 
+bool IsGoogPingMethod(uint16_t type) {
+  return type == GOOG_PING_REQUEST || type == GOOG_PING_RESPONSE ||
+         type == GOOG_PING_ERROR_RESPONSE;
+}
+
 }  // namespace
 
 const char STUN_ERROR_REASON_TRY_ALTERNATE_SERVER[] = "Try Alternate Server";
@@ -281,7 +286,8 @@ StunMessage::IntegrityStatus StunMessage::ValidateMessageIntegrity(
     } else {
       integrity_ = IntegrityStatus::kIntegrityBad;
     }
-  } else if (GetByteString(STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32)) {
+  } else if (IsGoogPingMethod(type_) &&
+             GetByteString(STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32)) {
     if (ValidateMessageIntegrityOfType(STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32,
                                        kStunMessageIntegrity32Size, buffer_,
                                        password)) {
@@ -641,6 +647,7 @@ bool StunMessage::Read(ByteBufferReader* buf) {
   attrs_.resize(0);
 
   size_t rest = buf->Length() - length_;
+  bool seen_message_integrity = false;
   while (buf->Length() > rest) {
     uint16_t attr_type, attr_length;
     if (!buf->ReadUInt16(&attr_type))
@@ -648,10 +655,15 @@ bool StunMessage::Read(ByteBufferReader* buf) {
     if (!buf->ReadUInt16(&attr_length))
       return false;
 
-    std::unique_ptr<StunAttribute> attr(
-        CreateAttribute(attr_type, attr_length));
+    // Per RFC 5389 Section 15.4, with the exception of the FINGERPRINT
+    // attribute, which appears after MESSAGE-INTEGRITY, agents MUST ignore
+    // all other attributes that follow MESSAGE-INTEGRITY.
+    std::unique_ptr<StunAttribute> attr;
+    if (!seen_message_integrity || attr_type == STUN_ATTR_FINGERPRINT) {
+      attr.reset(CreateAttribute(attr_type, attr_length));
+    }
     if (!attr) {
-      // Skip any unknown or malformed attributes.
+      // Skip any unknown, malformed, or post-MESSAGE-INTEGRITY attributes.
       if ((attr_length % 4) != 0) {
         attr_length += (4 - (attr_length % 4));
       }
@@ -661,6 +673,10 @@ bool StunMessage::Read(ByteBufferReader* buf) {
     } else {
       if (!attr->Read(buf)) {
         return false;
+      }
+      if (attr_type == STUN_ATTR_MESSAGE_INTEGRITY ||
+          attr_type == STUN_ATTR_GOOG_MESSAGE_INTEGRITY_32) {
+        seen_message_integrity = true;
       }
       attrs_.push_back(std::move(attr));
     }
