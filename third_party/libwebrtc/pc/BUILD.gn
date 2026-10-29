@@ -939,14 +939,12 @@ rtc_library("connection_context") {
     "../media:rtc_data_sctp_transport_factory",
     "../p2p:basic_packet_socket_factory",
     "../rtc_base:checks",
-    "../rtc_base:logging",
     "../rtc_base:macromagic",
     "../rtc_base:network",
     "../rtc_base:socket_factory",
     "../rtc_base:socket_server",
     "../rtc_base:threading",
     "../rtc_base:unique_id_generator",
-    "../rtc_base/system:ignore_warnings",
     "//third_party/abseil-cpp/absl/base:nullability",
   ]
 }
@@ -3497,7 +3495,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:socket_address",
       "../rtc_base:socket_server",
       "../rtc_base:threading",
-      "../rtc_base/system:ignore_warnings",
       "../test:create_test_environment",
       "../test:create_test_field_trials",
       "../test:fileutils",

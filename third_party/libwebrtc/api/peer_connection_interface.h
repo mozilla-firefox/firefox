@@ -1463,6 +1463,8 @@ struct RTC_EXPORT PeerConnectionDependencies final {
 // clear which are mandatory and optional. If possible please allow the peer
 // connection factory to take ownership of the dependency by adding a unique_ptr
 // to this structure.
+// TODO(bugs.webrtc.org/558821261): Remove when downstream projects are updated.
+#define WEBRTC_REMOVED_WORKER_THREAD 1
 struct RTC_EXPORT PeerConnectionFactoryDependencies final {
   PeerConnectionFactoryDependencies();
   // This object is not copyable or assignable.
@@ -1477,15 +1479,10 @@ struct RTC_EXPORT PeerConnectionFactoryDependencies final {
   ~PeerConnectionFactoryDependencies();
 
   // Optional dependencies
-  Thread* network_thread = nullptr;
-  // Deprecated: Support for a worker thread that is distinct from the network
-  // thread is being removed. Applications must stop supplying a separate
-  // worker thread. See
+  // The network thread is also used as the worker thread. Support for a
+  // separate worker thread has been removed, see
   // https://groups.google.com/g/discuss-webrtc/c/Fs_Hd5XNJh0
-  [[deprecated(
-      "A worker thread that is distinct from the network thread is no longer "
-      "supported. Stop setting worker_thread.")]]
-  Thread* worker_thread = nullptr;
+  Thread* network_thread = nullptr;
   Thread* signaling_thread = nullptr;
   SocketFactory* socket_factory = nullptr;
 

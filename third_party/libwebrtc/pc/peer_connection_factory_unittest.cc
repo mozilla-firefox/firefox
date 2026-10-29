@@ -68,7 +68,6 @@
 #include "rtc_base/network.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/socket_server.h"
-#include "rtc_base/system/ignore_warnings.h"
 #include "rtc_base/thread.h"
 #include "test/create_test_environment.h"
 #include "test/create_test_field_trials.h"
@@ -806,61 +805,17 @@ TEST(ConnectionContextTest,
   EXPECT_EQ(context->worker_thread(), context->network_thread());
 }
 
-TEST(ConnectionContextTest,
-     WorkerThreadThatCanCreateSocketsIsUsedAsNetworkThread) {
-  Environment env = CreateTestEnvironment();
-  std::unique_ptr<Thread> worker_thread = Thread::CreateWithSocketServer();
-  worker_thread->Start();
-  PeerConnectionFactoryDependencies dependencies;
-  dependencies.signaling_thread = Thread::Current();
-  // The test intentionally sets the deprecated member without setting
-  // `network_thread`, like some applications still do.
-  RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
-  dependencies.worker_thread = worker_thread.get();
-  RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
-  auto context = ConnectionContext::Create(env, &dependencies);
-  ASSERT_THAT(context, NotNull());
-  EXPECT_EQ(context->network_thread(), worker_thread.get());
-}
-
-TEST(ConnectionContextTest,
-     WorkerThreadThatCannotCreateSocketsIsNotUsedAsNetworkThread) {
-  Environment env = CreateTestEnvironment();
-  // Thread::Create() uses a NullSocketServer, which can't create sockets.
-  std::unique_ptr<Thread> worker_thread = Thread::Create();
-  worker_thread->Start();
-  PeerConnectionFactoryDependencies dependencies;
-  dependencies.signaling_thread = Thread::Current();
-  // The test intentionally sets the deprecated member without setting
-  // `network_thread`, like some applications still do.
-  RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
-  dependencies.worker_thread = worker_thread.get();
-  RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
-  auto context = ConnectionContext::Create(env, &dependencies);
-  ASSERT_THAT(context, NotNull());
-  EXPECT_EQ(context->worker_thread(), worker_thread.get());
-  EXPECT_NE(context->network_thread(), worker_thread.get());
-}
-
-TEST(ConnectionContextTest,
-     WorkerThreadThatCanCreateSocketsIsNotUsedWhenNetworkThreadIsSet) {
+TEST(ConnectionContextTest, SuppliedNetworkThreadIsUsedAsWorkerThread) {
   Environment env = CreateTestEnvironment();
   std::unique_ptr<Thread> network_thread = Thread::CreateWithSocketServer();
   network_thread->Start();
-  std::unique_ptr<Thread> worker_thread = Thread::CreateWithSocketServer();
-  worker_thread->Start();
   PeerConnectionFactoryDependencies dependencies;
   dependencies.signaling_thread = Thread::Current();
   dependencies.network_thread = network_thread.get();
-  // The test intentionally sets the deprecated member in order to verify that
-  // `network_thread` takes precedence over it.
-  RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
-  dependencies.worker_thread = worker_thread.get();
-  RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
   auto context = ConnectionContext::Create(env, &dependencies);
   ASSERT_THAT(context, NotNull());
   EXPECT_EQ(context->network_thread(), network_thread.get());
-  EXPECT_EQ(context->worker_thread(), worker_thread.get());
+  EXPECT_EQ(context->worker_thread(), network_thread.get());
 }
 
 }  // namespace
