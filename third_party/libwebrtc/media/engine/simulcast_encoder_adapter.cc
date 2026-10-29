@@ -1205,6 +1205,7 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
       encoder_info.is_hardware_accelerated =
           encoder_impl_info.is_hardware_accelerated;
       encoder_info.is_qp_trusted = encoder_impl_info.is_qp_trusted;
+      encoder_info.min_qp = encoder_impl_info.min_qp;
     } else {
       // Native handle supported if any encoder supports it.
       encoder_info.supports_native_handle |=
@@ -1226,6 +1227,10 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
       encoder_info.is_qp_trusted =
           encoder_info.is_qp_trusted.value_or(true) &&
           encoder_impl_info.is_qp_trusted.value_or(true);
+
+      if (encoder_info.min_qp != encoder_impl_info.min_qp) {
+        encoder_info.min_qp = std::nullopt;
+      }
     }
     // If any encoder wants CPU overuse detection, enable it for all of them
     encoder_info.enable_cpu_overuse_detection |=

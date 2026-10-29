@@ -322,6 +322,7 @@ class MockVideoEncoder : public VideoEncoder {
     info.fps_allocation[0] = fps_allocation_;
     info.supports_simulcast = supports_simulcast_;
     info.is_qp_trusted = is_qp_trusted_;
+    info.min_qp = min_qp_;
     info.resolution_bitrate_limits = resolution_bitrate_limits;
     return info;
   }
@@ -429,6 +430,8 @@ class MockVideoEncoder : public VideoEncoder {
     is_qp_trusted_ = is_qp_trusted;
   }
 
+  void set_min_qp(std::optional<int> min_qp) { min_qp_ = min_qp; }
+
   void set_resolution_bitrate_limits(
       std::vector<VideoEncoder::ResolutionBitrateLimits> limits) {
     resolution_bitrate_limits = limits;
@@ -462,6 +465,7 @@ class MockVideoEncoder : public VideoEncoder {
   FramerateFractions fps_allocation_;
   bool supports_simulcast_ = false;
   std::optional<bool> is_qp_trusted_;
+  std::optional<int> min_qp_;
   SdpVideoFormat video_format_;
   std::vector<VideoEncoder::ResolutionBitrateLimits> resolution_bitrate_limits;
   bool is_async_ = false;
@@ -2444,6 +2448,50 @@ TEST_F(TestSimulcastEncoderAdapterFake, ReportsIsQpTrusted) {
   helper_->factory()->encoders()[2]->set_is_qp_trusted(false);
   EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
   EXPECT_FALSE(adapter_->GetEncoderInfo().is_qp_trusted.value_or(true));
+}
+
+TEST_F(TestSimulcastEncoderAdapterFake, ReportsMinQpWhenAllEncodersAgree) {
+  SimulcastTestFixtureImpl::DefaultSettings(
+      &codec_, static_cast<const int*>(kTestTemporalLayerProfile),
+      kVideoCodecVP8);
+  codec_.numberOfSimulcastStreams = 3;
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
+  ASSERT_EQ(3u, helper_->factory()->encoders().size());
+
+  for (MockVideoEncoder* encoder : helper_->factory()->encoders()) {
+    encoder->set_min_qp(12);
+  }
+  EXPECT_EQ(adapter_->GetEncoderInfo().min_qp, 12);
+}
+
+TEST_F(TestSimulcastEncoderAdapterFake,
+       DoesNotReportMinQpWhenEncodersDisagree) {
+  SimulcastTestFixtureImpl::DefaultSettings(
+      &codec_, static_cast<const int*>(kTestTemporalLayerProfile),
+      kVideoCodecVP8);
+  codec_.numberOfSimulcastStreams = 3;
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
+  ASSERT_EQ(3u, helper_->factory()->encoders().size());
+
+  helper_->factory()->encoders()[0]->set_min_qp(12);
+  helper_->factory()->encoders()[1]->set_min_qp(12);
+  helper_->factory()->encoders()[2]->set_min_qp(15);
+  EXPECT_EQ(adapter_->GetEncoderInfo().min_qp, std::nullopt);
+}
+
+TEST_F(TestSimulcastEncoderAdapterFake,
+       DoesNotReportMinQpWhenOneEncoderDoesNotReportIt) {
+  SimulcastTestFixtureImpl::DefaultSettings(
+      &codec_, static_cast<const int*>(kTestTemporalLayerProfile),
+      kVideoCodecVP8);
+  codec_.numberOfSimulcastStreams = 3;
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
+  ASSERT_EQ(3u, helper_->factory()->encoders().size());
+
+  helper_->factory()->encoders()[0]->set_min_qp(12);
+  helper_->factory()->encoders()[1]->set_min_qp(12);
+  helper_->factory()->encoders()[2]->set_min_qp(std::nullopt);
+  EXPECT_EQ(adapter_->GetEncoderInfo().min_qp, std::nullopt);
 }
 
 TEST_F(TestSimulcastEncoderAdapterFake, ReportsFpsAllocation) {

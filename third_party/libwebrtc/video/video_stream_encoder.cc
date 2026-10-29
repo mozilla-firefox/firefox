@@ -1339,10 +1339,6 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   codec.SetVideoEncoderComplexity(speed_experiment_.GetComplexity(
       codec.codecType, codec.mode == VideoCodecMode::kScreensharing));
 
-  quality_convergence_controller_.Initialize(
-      codec.numberOfSimulcastStreams, encoder_->GetEncoderInfo().min_qp,
-      codec.codecType, env_.field_trials());
-
   send_codec_ = codec;
 
   // Keep the same encoder, as long as the video_format is unchanged.
@@ -1441,6 +1437,10 @@ void VideoStreamEncoder::ReconfigureEncoder() {
         codec, env_.field_trials(), env_.clock());
     bitrate_adjuster_->OnEncoderInfo(info);
   }
+
+  quality_convergence_controller_.Initialize(codec.numberOfSimulcastStreams,
+                                             info.min_qp, codec.codecType,
+                                             env_.field_trials());
 
   if (rate_allocator_ && last_encoder_rate_settings_) {
     // We have a new rate allocator instance and already configured target
