@@ -31,6 +31,7 @@
 #include "api/scoped_refptr.h"
 #include "api/units/data_rate.h"
 #include "api/units/time_delta.h"
+#include "call/sframe_options.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -111,6 +112,10 @@ class ChannelSendInterface {
   // E2EE Custom Audio Frame Encryption (Optional)
   virtual void SetFrameEncryptor(
       scoped_refptr<FrameEncryptorInterface> frame_encryptor) = 0;
+
+  // Sets the Sframe end-to-end encryption options. While encryption is
+  // required but no Sframe encryptor is set up, audio frames are dropped.
+  virtual void SetSframeOptions(const SframeSendOptions& options) = 0;
 
   // Sets a frame transformer between encoder and packetizer, to transform
   // encoded frames before sending them out the network.

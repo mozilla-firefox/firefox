@@ -470,10 +470,10 @@ index 631c3a0c2c..d5ed4ec38b 100644
  if (rtc_include_tests) {
    rtc_source_set("test_feedback_generator_interface") {
 diff --git a/call/BUILD.gn b/call/BUILD.gn
-index d98be9852e..08670c4ac8 100644
+index 0bf2a14db0..f41281a6c4 100644
 --- a/call/BUILD.gn
 +++ b/call/BUILD.gn
-@@ -52,7 +52,7 @@ rtc_library("call_interfaces") {
+@@ -53,7 +53,7 @@ rtc_library("call_interfaces") {
      "../api:rtp_headers",
      "../api:rtp_packet_info",
      "../api:rtp_parameters",
@@ -483,7 +483,7 @@ index d98be9852e..08670c4ac8 100644
      "../api:transport_api",
      "../api/adaptation:resource_adaptation_api",
 diff --git a/call/audio_send_stream.h b/call/audio_send_stream.h
-index 40bfd812a4..46be3bcc47 100644
+index 4dc52c5100..12b741c040 100644
 --- a/call/audio_send_stream.h
 +++ b/call/audio_send_stream.h
 @@ -26,7 +26,7 @@

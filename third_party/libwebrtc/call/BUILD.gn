@@ -43,6 +43,7 @@ rtc_library("call_interfaces") {
     ":audio_sender_interface",
     ":receive_stream_interface",
     ":rtp_interfaces",
+    ":sframe_options",
     ":video_receive_stream_api",
     ":video_send_stream_api",
     "../api:fec_controller_api",

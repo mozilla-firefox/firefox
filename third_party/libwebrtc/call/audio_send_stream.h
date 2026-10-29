@@ -30,6 +30,7 @@
 #include "api/scoped_refptr.h"
 #include "api/units/time_delta.h"
 #include "call/audio_sender.h"
+#include "call/sframe_options.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
 #include "modules/rtp_rtcp/include/rtcp_statistics.h"
 
@@ -169,6 +170,9 @@ class AudioSendStream : public AudioSender {
 
     // Per PeerConnection crypto options.
     webrtc::CryptoOptions crypto_options;
+
+    // Sframe end-to-end encryption settings for this send stream.
+    SframeSendOptions sframe_options;
 
     // An optional custom frame encryptor that allows the entire frame to be
     // encryptor in whatever way the caller choses. This is not required by

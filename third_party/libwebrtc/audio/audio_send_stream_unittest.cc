@@ -43,6 +43,7 @@
 #include "audio/mock_voe_channel_proxy.h"
 #include "call/audio_state.h"
 #include "call/bitrate_allocator.h"
+#include "call/sframe_options.h"
 #include "call/test/mock_bitrate_allocator.h"
 #include "call/test/mock_rtp_transport_controller_send.h"
 #include "modules/audio_device/include/mock_audio_device.h"
@@ -233,6 +234,7 @@ class ConfigHelper {
     EXPECT_CALL(rtp_rtcp_, SSRC).WillRepeatedly(Return(kSsrc));
     EXPECT_CALL(*channel_send_, SetRTCP_CNAME(StrEq(kCName))).Times(1);
     EXPECT_CALL(*channel_send_, SetFrameEncryptor(_)).Times(1);
+    EXPECT_CALL(*channel_send_, SetSframeOptions).Times(1);
     EXPECT_CALL(*channel_send_, SetEncoderToPacketizerFrameTransformer(_))
         .Times(1);
     EXPECT_CALL(rtp_rtcp_, SetExtmapAllowMixed(false)).Times(1);
@@ -385,7 +387,7 @@ TEST(AudioSendStreamTest, ConfigToString) {
       "enable_non_sender_rtt: false, cng_payload_type: 42, "
       "red_payload_type: 43, payload_type: 103, "
       "format: {name: isac, clockrate_hz: 16000, num_channels: 1, "
-      "parameters: {}}}}",
+      "parameters: {}}}, sframe_required: false}",
       config.ToString());
 }
 
@@ -990,6 +992,23 @@ TEST(AudioSendStreamTest, ReconfigureWithFrameEncryptor) {
         .Times(1);
     send_stream->Reconfigure(new_config, nullptr);
   }
+}
+
+TEST(AudioSendStreamTest, ReconfigureWithSframeOptions) {
+  ConfigHelper helper(/*audio_bwe_enabled=*/false,
+                      /*expect_set_encoder_call=*/true,
+                      /*use_null_audio_processing=*/false);
+  std::unique_ptr<internal::AudioSendStream> send_stream =
+      helper.CreateAudioSendStream();
+  AudioSendStream::Config new_config = helper.config();
+  const SframeSendOptions options = {.required = true};
+  new_config.sframe_options = options;
+
+  EXPECT_CALL(*helper.channel_send(), SetSframeOptions(Eq(options))).Times(1);
+  send_stream->Reconfigure(new_config, nullptr);
+
+  EXPECT_CALL(*helper.channel_send(), SetSframeOptions).Times(0);
+  send_stream->Reconfigure(new_config, nullptr);
 }
 
 TEST(AudioSendStreamTest, DefaultsHonorsPriorityBitrate) {

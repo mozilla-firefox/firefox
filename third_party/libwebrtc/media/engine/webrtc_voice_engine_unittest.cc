@@ -3345,6 +3345,27 @@ TEST_P(WebRtcVoiceEngineTestFake, SetsSyncGroupFromStreamId) {
       << "SyncGroup should be set based on stream id";
 }
 
+// Enabling Sframe before a send stream is added is propagated to the stream
+// config at construction.
+TEST_P(WebRtcVoiceEngineTestFake, EnableSframePropagatesToSendStreamConfig) {
+  ASSERT_TRUE(SetupChannel());
+  send_channel_->EnableSframe();
+
+  ASSERT_TRUE(send_channel_->AddSendStream(StreamParams::CreateLegacy(kSsrcX)));
+
+  EXPECT_TRUE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+}
+
+// Enabling Sframe on an existing send stream reconfigures it in place.
+TEST_P(WebRtcVoiceEngineTestFake, EnableSframeReconfiguresExistingSendStream) {
+  ASSERT_TRUE(SetupSendStream());
+  ASSERT_FALSE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+
+  send_channel_->EnableSframe();
+
+  EXPECT_TRUE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+}
+
 // TODO(solenberg): Remove, once recv streams are configured through Call.
 //                  (This is then covered by TestSetRecvRtpHeaderExtensions.)
 TEST_P(WebRtcVoiceEngineTestFake, ConfiguresAudioReceiveStreamRtpExtensions) {

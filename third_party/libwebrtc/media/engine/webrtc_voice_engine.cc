@@ -75,6 +75,7 @@
 #include "call/payload_type_picker.h"
 #include "call/rtp_config.h"
 #include "call/rtp_transport_controller_send_interface.h"
+#include "call/sframe_options.h"
 #include "media/base/audio_source.h"
 #include "media/base/codec.h"
 #include "media/base/media_channel.h"
@@ -864,7 +865,8 @@ class WebRtcVoiceSendChannel::WebRtcAudioSendStream : public AudioSource::Sink {
       Call* call,
       Transport* send_transport,
       const scoped_refptr<AudioEncoderFactory>& encoder_factory,
-      const CryptoOptions& crypto_options)
+      const CryptoOptions& crypto_options,
+      const SframeSendOptions& sframe_options)
       : env_(env),
         adaptive_ptime_config_(env_.field_trials()),
         call_(call),
@@ -885,6 +887,7 @@ class WebRtcVoiceSendChannel::WebRtcAudioSendStream : public AudioSource::Sink {
     config_.encoder_factory = encoder_factory;
     config_.track_id = track_id;
     config_.crypto_options = crypto_options;
+    config_.sframe_options = sframe_options;
     config_.rtcp_report_interval_ms = rtcp_report_interval_ms;
     rtp_parameters_.encodings[0].ssrc = ssrc;
     rtp_parameters_.rtcp.cname = c_name;
@@ -949,6 +952,12 @@ class WebRtcVoiceSendChannel::WebRtcAudioSendStream : public AudioSource::Sink {
       scoped_refptr<FrameEncryptorInterface> frame_encryptor) {
     RTC_DCHECK_RUN_ON(&worker_thread_checker_);
     config_.frame_encryptor = std::move(frame_encryptor);
+    ReconfigureAudioSendStream(nullptr);
+  }
+
+  void UpdateSframeOptions(const SframeSendOptions& options) {
+    RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+    config_.sframe_options = options;
     ReconfigureAudioSendStream(nullptr);
   }
 
@@ -1665,7 +1674,8 @@ bool WebRtcVoiceSendChannel::AddSendStream(const StreamParams& sp) {
       env_, ssrc, mid_, sp.cname, sp.id, send_codec_spec_, ExtmapAllowMixed(),
       send_rtp_extensions_, rtcp_cc_ack_type_, max_send_bitrate_bps_,
       audio_config_.rtcp_report_interval_ms, audio_network_adaptor_config,
-      call_, transport(), engine()->encoder_factory(), crypto_options_);
+      call_, transport(), engine()->encoder_factory(), crypto_options_,
+      sframe_options_);
   send_streams_.insert(std::make_pair(ssrc, stream));
   if (ssrc_list_changed_callback_) {
     std::set<uint32_t> ssrcs_in_use;
@@ -1749,8 +1759,15 @@ void WebRtcVoiceSendChannel::SetFrameEncryptor(
 
 void WebRtcVoiceSendChannel::EnableSframe() {
   RTC_DCHECK_RUN_ON(worker_thread_);
+  if (sframe_options_.required) {
+    return;
+  }
+
   sframe_options_.required = true;
-  // TODO(bugs.webrtc.org/479862368): Propagate Sframe options to the streams.
+
+  for (auto& [ssrc, stream] : send_streams_) {
+    stream->UpdateSframeOptions(sframe_options_);
+  }
 }
 
 void WebRtcVoiceSendChannel::SetSframeEncryptionConfig(

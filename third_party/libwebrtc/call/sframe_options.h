@@ -24,6 +24,9 @@ struct SframeSendOptions {
   // Set once the sender has created an encryptor. Until then frames on a
   // stream with `required` set are dropped rather than sent as unencrypted.
   std::optional<SframeEncryptionConfig> encryption_config;
+
+  friend bool operator==(const SframeSendOptions&,
+                         const SframeSendOptions&) = default;
 };
 
 // Options for Sframe end-to-end encryption on a receive channel.
