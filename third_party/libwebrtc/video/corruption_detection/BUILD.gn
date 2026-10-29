@@ -235,6 +235,7 @@ if (rtc_include_tests) {
       "../../api/video:video_frame_type",
       "../../api/video:video_rtp_headers",
       "../../api/video_codecs:scalability_mode",
+      "../../system_wrappers",
       "../../test:create_test_environment",
       "../../test:test_support",
     ]
