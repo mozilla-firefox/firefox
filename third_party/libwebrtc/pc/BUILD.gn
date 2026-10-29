@@ -5052,7 +5052,6 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
 
     deps = [
-      ":channel",
       ":channel_interface",
       ":connection_context",
       ":data_channel_utils",
@@ -5154,6 +5153,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../media:codec",
       "../media:fake_video_renderer",
       "../media:media_channel",
+      "../media:rtc_media_config",
       "../media:rtc_media_tests_utils",
       "../media:rtc_simulcast_encoder_adapter",
       "../media:stream_params",
@@ -5180,7 +5180,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:task_queue_for_test",
       "../rtc_base:threading",
       "../rtc_base:timeutils",
-      "../rtc_base:unique_id_generator",
       "../rtc_base:weak_ptr",
       "../rtc_base/containers:flat_map",
       "../rtc_base/synchronization:mutex",
