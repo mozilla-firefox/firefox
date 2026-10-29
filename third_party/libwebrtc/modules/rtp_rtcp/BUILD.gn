@@ -388,6 +388,7 @@ rtc_library("rtp_rtcp") {
     "../sframe:sframe_encryption_config",
     "../video_coding:codec_globals_headers",
     "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:core_headers",
     "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/container:inlined_vector",
     "//third_party/abseil-cpp/absl/functional:any_invocable",

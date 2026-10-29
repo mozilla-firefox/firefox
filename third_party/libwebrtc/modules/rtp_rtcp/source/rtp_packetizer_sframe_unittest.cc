@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "api/media_types.h"
+#include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/sframe_descriptor.h"
 #include "test/gmock.h"
@@ -24,6 +25,7 @@
 namespace webrtc {
 namespace {
 
+using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 
 uint8_t MakeDescriptorByte(bool s, bool e, bool t) {
@@ -41,6 +43,86 @@ RtpPacketToSend MakeSendPacket(std::vector<uint8_t> payload) {
   packet.SetPayloadType(96);
   packet.SetPayload(payload);
   return packet;
+}
+
+TEST(RtpPacketizerSframeTest, SmallFrameFitsInOneMarkedPacket) {
+  const std::vector<uint8_t> payload = {1, 2, 3, 4};
+  RtpPacketizerSframe packetizer(payload, RtpPacketizer::PayloadSizeLimits(),
+                                 /*is_last_frame_in_picture=*/true);
+  ASSERT_EQ(packetizer.NumPackets(), 1u);
+
+  RtpPacketToSend packet = MakeSendPacket({});
+  ASSERT_TRUE(packetizer.NextPacket(&packet));
+  EXPECT_THAT(packet.payload(), ElementsAre(0b110'00000, 1, 2, 3, 4));
+  EXPECT_TRUE(packet.Marker());
+}
+
+TEST(RtpPacketizerSframeTest, ReturnsFalseAfterLastPacket) {
+  const std::vector<uint8_t> payload = {1, 2, 3, 4};
+  RtpPacketizerSframe packetizer(payload, RtpPacketizer::PayloadSizeLimits(),
+                                 /*is_last_frame_in_picture=*/true);
+  RtpPacketToSend packet = MakeSendPacket({});
+  ASSERT_TRUE(packetizer.NextPacket(&packet));
+
+  EXPECT_EQ(packetizer.NumPackets(), 0u);
+  EXPECT_FALSE(packetizer.NextPacket(&packet));
+}
+
+// The frame and the descriptor would fit in one 5-byte packet, but not with
+// the single packet reduction, so the frame is split into two packets.
+TEST(RtpPacketizerSframeTest, HonorsPacketReductionsWithDescriptor) {
+  const std::vector<uint8_t> payload = {1, 2, 3, 4};
+  RtpPacketizer::PayloadSizeLimits limits;
+  limits.max_payload_len = 5;
+  limits.single_packet_reduction_len = 1;
+  RtpPacketizerSframe packetizer(payload, limits,
+                                 /*is_last_frame_in_picture=*/true);
+
+  EXPECT_EQ(packetizer.NumPackets(), 2u);
+}
+
+// The limits cover the descriptor, so each packet carries 3 bytes of the frame.
+TEST(RtpPacketizerSframeTest, FragmentsFrameAndPrependsDescriptorToEachPacket) {
+  const std::vector<uint8_t> payload = {0, 1, 2, 3, 4, 5};
+  RtpPacketizer::PayloadSizeLimits limits;
+  limits.max_payload_len = 4;
+  RtpPacketizerSframe packetizer(payload, limits,
+                                 /*is_last_frame_in_picture=*/true);
+  ASSERT_EQ(packetizer.NumPackets(), 2u);
+
+  RtpPacketToSend first = MakeSendPacket({});
+  ASSERT_TRUE(packetizer.NextPacket(&first));
+  EXPECT_THAT(first.payload(), ElementsAre(0b100'00000, 0, 1, 2));
+  EXPECT_FALSE(first.Marker());
+
+  RtpPacketToSend last = MakeSendPacket({});
+  ASSERT_TRUE(packetizer.NextPacket(&last));
+  EXPECT_THAT(last.payload(), ElementsAre(0b010'00000, 3, 4, 5));
+  EXPECT_TRUE(last.Marker());
+}
+
+// With spatial scalability only the last frame of a picture ends with a marked
+// packet.
+TEST(RtpPacketizerSframeTest, DoesNotMarkFrameThatIsNotLastInPicture) {
+  const std::vector<uint8_t> payload = {1, 2, 3, 4};
+  RtpPacketizerSframe packetizer(payload, RtpPacketizer::PayloadSizeLimits(),
+                                 /*is_last_frame_in_picture=*/false);
+
+  RtpPacketToSend packet = MakeSendPacket({});
+  ASSERT_TRUE(packetizer.NextPacket(&packet));
+  EXPECT_FALSE(packet.Marker());
+}
+
+TEST(RtpPacketizerSframeTest, RejectsLimitsWithRoomOnlyForDescriptor) {
+  const std::vector<uint8_t> payload = {0x12};
+  RtpPacketizer::PayloadSizeLimits limits;
+  limits.max_payload_len = SframeDescriptor::kSize;
+  RtpPacketizerSframe packetizer(payload, limits,
+                                 /*is_last_frame_in_picture=*/true);
+  EXPECT_EQ(packetizer.NumPackets(), 0u);
+
+  RtpPacketToSend packet = MakeSendPacket({});
+  EXPECT_FALSE(packetizer.NextPacket(&packet));
 }
 
 TEST(PacketizeSframeRtpPacketOrErrorTest, PrependsDescriptorByteToPayload) {

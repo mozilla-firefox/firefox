@@ -19,6 +19,7 @@
 
 #include "api/media_types.h"
 #include "api/rtc_error.h"
+#include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/sframe_descriptor.h"
 #include "rtc_base/checks.h"
@@ -50,6 +51,49 @@ uint8_t BuildDescriptorByte(bool start,
 }
 
 }  // namespace
+
+RtpPacketizerSframe::RtpPacketizerSframe(std::span<const uint8_t> payload,
+                                         PayloadSizeLimits limits,
+                                         bool is_last_frame_in_picture)
+    : remaining_payload_(payload),
+      is_last_frame_in_picture_(is_last_frame_in_picture) {
+  limits.max_payload_len -= SframeDescriptor::kSize;
+  payload_sizes_ = SplitAboutEqually(payload.size(), limits);
+  current_packet_ = payload_sizes_.begin();
+}
+
+RtpPacketizerSframe::~RtpPacketizerSframe() = default;
+
+size_t RtpPacketizerSframe::NumPackets() const {
+  return payload_sizes_.end() - current_packet_;
+}
+
+bool RtpPacketizerSframe::NextPacket(RtpPacketToSend* packet) {
+  RTC_DCHECK(packet);
+  if (current_packet_ == payload_sizes_.end()) {
+    return false;
+  }
+
+  const bool first_packet = current_packet_ == payload_sizes_.begin();
+  const size_t media_size = *current_packet_;
+  ++current_packet_;
+  const bool last_packet = current_packet_ == payload_sizes_.end();
+
+  const size_t payload_size = SframeDescriptor::kSize + media_size;
+  std::span<uint8_t> payload(packet->AllocatePayload(payload_size),
+                             payload_size);
+  payload[0] = BuildDescriptorByte(first_packet, last_packet,
+                                   SframeEncryptionLevel::kFrame);
+  std::ranges::copy(remaining_payload_.first(media_size),
+                    payload.subspan(SframeDescriptor::kSize).begin());
+  remaining_payload_ = remaining_payload_.subspan(media_size);
+
+  // Packets left to produce and data left to split end at the same time.
+  RTC_DCHECK_EQ(last_packet, remaining_payload_.empty());
+
+  packet->SetMarker(last_packet && is_last_frame_in_picture_);
+  return true;
+}
 
 RTCError PacketizeSframeRtpPacketOrError(
     MediaType media_type,
