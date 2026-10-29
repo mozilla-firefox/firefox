@@ -975,6 +975,7 @@ if (rtc_include_tests) {
     sources = [ "codecs/test/video_codec_test.cc" ]
 
     deps = [
+      "../../api:field_trials",
       "../../api/environment",
       "../../api/test/metrics:global_metrics_logger_and_exporter",
       "../../api/units:data_rate",

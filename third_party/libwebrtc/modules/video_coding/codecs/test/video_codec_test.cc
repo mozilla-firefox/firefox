@@ -22,6 +22,7 @@
 
 #include "absl/flags/flag.h"
 #include "api/environment/environment.h"
+#include "api/field_trials.h"
 #include "api/test/metrics/global_metrics_logger_and_exporter.h"
 #include "api/units/data_rate.h"
 #include "api/units/frequency.h"
@@ -40,6 +41,7 @@
 #include "rtc_base/logging.h"
 #include "rtc_base/strings/string_builder.h"
 #include "test/create_test_environment.h"
+#include "test/create_test_field_trials.h"
 #include "test/gtest.h"
 #include "test/test_flags.h"
 #include "test/testsupport/file_utils.h"
@@ -187,6 +189,14 @@ std::string TestOutputPath() {
   bool result = CreateDir(output_dir);
   RTC_CHECK(result) << "Cannot create " << output_dir;
   return output_path;
+}
+
+Environment CreateTestEnvironment() {
+  FieldTrials field_trials =
+      CreateTestFieldTrials("WebRTC-EncoderSpeed/dynamic_speed:false/");
+  field_trials.Merge(CreateTestFieldTrials());
+  return webrtc::CreateTestEnvironment(
+      {.field_trials = std::move(field_trials)});
 }
 }  // namespace
 
