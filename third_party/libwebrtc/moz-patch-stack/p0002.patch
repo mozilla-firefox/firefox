@@ -1,0 +1,237 @@
+From: Tommi <tommi@webrtc.org>
+Date: Wed, 14 Oct 2026 15:50:16 +0200
+Subject: (cherry-pick-branch-heads/8103) [M157] Keep unchanged video decoders
+ across SetDecoders()
+
+Original change's description:
+> Keep unchanged video decoders across SetDecoders()
+>
+> Updating the receive codecs, e.g. when the receiving side creates a new
+> offer, deregistered all decoders and reset the decoder database. The
+> decoder in use was then recreated and needed a keyframe even if its
+> configuration hadn't changed, and a keyframe was always requested.
+>
+> Apply only the difference between the old and new decoders instead.
+> Removed or updated decoders are deregistered, added or updated ones are
+> registered and unchanged decoders, including the one in use, keep
+> running. A keyframe is now only requested if the decoder in use was
+> removed or replaced.
+>
+> Fixed: chromium:572220780
+> Change-Id: Ia4e6e4682c8ece42fc175f24d4b406345bd4a81d
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/508964
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48907}
+
+(cherry picked from commit 6870f3a8aa1b1bfdc97f2b8e1dcab9461f533352)
+
+Bug: chromium:572220780
+Fixed: chromium:573916493
+Change-Id: Ia4e6e4682c8ece42fc175f24d4b406345bd4a81d
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/510021
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/8103@{#2}
+Cr-Branched-From: b321f634929af0af61a8964487fbd7894a008f12-refs/heads/main@{#48872}
+---
+ video/video_receive_stream2.cc          | 56 ++++++++++++++++---------
+ video/video_receive_stream2.h           | 10 +++--
+ video/video_receive_stream2_unittest.cc | 36 ++++++++++------
+ 3 files changed, 66 insertions(+), 36 deletions(-)
+
+diff --git a/video/video_receive_stream2.cc b/video/video_receive_stream2.cc
+index e30453cca8..1d4f86e090 100644
+--- a/video/video_receive_stream2.cc
++++ b/video/video_receive_stream2.cc
+@@ -574,23 +574,32 @@ VideoReceiveStream2::GetReceiveCodecConfig() const {
+   return receive_codecs;
+ }
+ 
+-void VideoReceiveStream2::RegisterCodecsOnReceiver(
++bool VideoReceiveStream2::RegisterCodecsOnReceiver(
+     const std::vector<Decoder>& old_decoders,
+     const std::vector<Decoder>& new_decoders) {
+-  // Deregister all external decoders from the previous configuration, also
+-  // the unchanged ones. DeregisterReceiveCodecs() below causes the active
+-  // decoder to be released before the next frame is decoded, and a released
+-  // decoder must not be configured again since not all implementations
+-  // support that (e.g. hardware decoders may fall back to software). New
+-  // decoder instances get created on demand instead.
++  // Deregister decoders from the previous configuration that are removed or
++  // updated in the new configuration. Unchanged decoders are left as is, so
++  // that a decoder that is in use keeps running. Releasing and configuring it
++  // again would require a keyframe and isn't supported by all implementations
++  // (e.g. hardware decoders may fall back to software).
++  bool removed_decoder_instance = false;
+   for (const Decoder& old_decoder : old_decoders) {
+-    video_receiver_.RegisterExternalDecoder(nullptr, old_decoder.payload_type);
++    if (absl::c_linear_search(new_decoders, old_decoder)) {
++      continue;
++    }
++    if (video_receiver_.IsExternalDecoderRegistered(old_decoder.payload_type)) {
++      video_receiver_.RegisterExternalDecoder(nullptr,
++                                              old_decoder.payload_type);
++      removed_decoder_instance = true;
++    }
++    video_receiver_.DeregisterReceiveCodec(old_decoder.payload_type);
+   }
+ 
+-  video_receiver_.DeregisterReceiveCodecs();
+-
+-  // Register settings for the new decoder configuration.
++  // Register settings for added or updated decoders.
+   for (const Decoder& decoder : new_decoders) {
++    if (absl::c_linear_search(old_decoders, decoder)) {
++      continue;
++    }
+     VideoDecoder::Settings settings;
+     settings.set_codec_type(
+         PayloadStringToCodecType(decoder.video_format.name));
+@@ -600,6 +609,8 @@ void VideoReceiveStream2::RegisterCodecsOnReceiver(
+ 
+     video_receiver_.RegisterReceiveCodec(decoder.payload_type, settings);
+   }
++
++  return removed_decoder_instance;
+ }
+ 
+ void VideoReceiveStream2::ConfigureCodecs() {
+@@ -629,19 +640,26 @@ void VideoReceiveStream2::SetDecoders(std::vector<Decoder> decoders) {
+   // if Stop() is called, it synchronously flushes decode_queue_ before setting
+   // decoder_running_ to false, avoiding a clash with ConfigureCodecs().
+   decode_queue_->PostTask([this, old_decoders = std::move(old_decoders),
+-                           new_decoders = config_.decoders]() mutable {
++                           new_decoders = config_.decoders,
++                           task_safety_flag = task_safety_.flag()]() mutable {
+     RTC_DCHECK_RUN_ON(&decode_sequence_checker_);
+-    RegisterCodecsOnReceiver(old_decoders, new_decoders);
++    const bool removed_decoder_instance =
++        RegisterCodecsOnReceiver(old_decoders, new_decoders);
+     active_decoders_ = std::move(new_decoders);
++    if (!removed_decoder_instance) {
++      return;
++    }
++    // The decoder that was in use has been removed or replaced. Request a
++    // keyframe right away since delta frames currently in the jitter buffer or
++    // arriving before the keyframe will fail to decode due to missing state.
++    call_->worker_thread()->PostTask(
++        SafeTask(std::move(task_safety_flag), [this] {
++          RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
++          RequestKeyFrame(env_.clock().CurrentTime());
++        }));
+   });
+ 
+   rtp_video_stream_receiver_.SetReceiveCodecs(GetReceiveCodecConfig());
+-
+-  // Request a keyframe immediately because changing the decoder configuration
+-  // resets the decoder database and underlying decoders. Delta frames currently
+-  // in the jitter buffer or arriving before the keyframe will fail to decode
+-  // due to missing state.
+-  RequestKeyFrame(env_.clock().CurrentTime());
+ }
+ 
+ void VideoReceiveStream2::SetRawPayloadTypes(std::set<int> raw_payload_types) {
+diff --git a/video/video_receive_stream2.h b/video/video_receive_stream2.h
+index 4ff12a7fb1..a55b3488c3 100644
+--- a/video/video_receive_stream2.h
++++ b/video/video_receive_stream2.h
+@@ -255,10 +255,12 @@ class VideoReceiveStream2
+ 
+   void UpdateHistograms();
+   void ConfigureCodecs() RTC_RUN_ON(worker_sequence_checker_);
+-  // Registers new decoders with the internal VideoReceiver2 database and
+-  // deregisters all external decoder instances from `old_decoders` so that new
+-  // instances get created on demand.
+-  void RegisterCodecsOnReceiver(const std::vector<Decoder>& old_decoders,
++  // Applies the difference between `old_decoders` and `new_decoders` to the
++  // internal VideoReceiver2 database. Removed or updated decoders, including
++  // their external decoder instances, are deregistered and added or updated
++  // decoders are registered. Unchanged decoders are left as is. Returns true if
++  // an external decoder instance was deregistered.
++  bool RegisterCodecsOnReceiver(const std::vector<Decoder>& old_decoders,
+                                 const std::vector<Decoder>& new_decoders);
+   std::vector<RtpVideoStreamReceiver2::ReceiveCodec> GetReceiveCodecConfig()
+       const RTC_RUN_ON(worker_sequence_checker_);
+diff --git a/video/video_receive_stream2_unittest.cc b/video/video_receive_stream2_unittest.cc
+index 87eddc0c39..70b974e40c 100644
+--- a/video/video_receive_stream2_unittest.cc
++++ b/video/video_receive_stream2_unittest.cc
+@@ -899,6 +899,7 @@ TEST_P(VideoReceiveStream2Test,
+                                              .AsLast()
+                                              .Build());
+   time_controller_.AdvanceTime(TimeDelta::Millis(100));
++  const int pli_packets = rtcp_packet_parser_.pli()->num_packets();
+ 
+   // Reconfigure PT kH264PayloadType with modified video_format parameters.
+   VideoReceiveStreamInterface::Decoder new_decoder;
+@@ -908,6 +909,9 @@ TEST_P(VideoReceiveStream2Test,
+   video_receive_stream_->SetDecoders({new_decoder});
+   time_controller_.AdvanceTime(TimeDelta::Millis(100));
+ 
++  // Replacing the decoder that is in use requires a keyframe.
++  EXPECT_EQ(rtcp_packet_parser_.pli()->num_packets(), pli_packets + 1);
++
+   // Verify that modified format causes old decoder to be deregistered and a
+   // new decoder created.
+   EXPECT_CALL(mock_decoder_factory_,
+@@ -927,11 +931,11 @@ TEST_P(VideoReceiveStream2Test,
+   time_controller_.AdvanceTime(TimeDelta::Millis(100));
+ }
+ 
+-// Changing the set of decoders while running releases the active decoder.
+-// Verify that a new instance is created for an unchanged decoder, instead of
+-// configuring the released instance again. Not all decoders support that, e.g.
+-// hardware decoders may fall back to software decoding.
+-TEST_P(VideoReceiveStream2Test, SetDecodersRecreatesUnchangedDecoder) {
++// Changing the set of decoders while running should not affect an unchanged
++// decoder that is in use. Releasing and configuring it again would require a
++// keyframe and isn't supported by all decoders, e.g. hardware decoders may fall
++// back to software decoding.
++TEST_P(VideoReceiveStream2Test, SetDecodersKeepsUnchangedDecoder) {
+   video_receive_stream_->Start();
+   time_controller_.AdvanceTime(TimeDelta::Zero());
+ 
+@@ -949,6 +953,14 @@ TEST_P(VideoReceiveStream2Test, SetDecodersRecreatesUnchangedDecoder) {
+                                              .AsLast()
+                                              .Build());
+   time_controller_.AdvanceTime(TimeDelta::Millis(100));
++  const int pli_packets = rtcp_packet_parser_.pli()->num_packets();
++
++  // Verify that the AV1 decoder keeps decoding without being released,
++  // configured again or recreated.
++  EXPECT_CALL(mock_decoder_factory_, Create).Times(0);
++  EXPECT_CALL(mock_decoder_, Release).Times(0);
++  EXPECT_CALL(mock_decoder_, Configure).Times(0);
++  EXPECT_CALL(mock_decoder_, Decode(_, _));
+ 
+   // Add a decoder while keeping the AV1 decoder unchanged, as happens when the
+   // receiving side creates an offer listing all of its receive codecs.
+@@ -961,21 +973,19 @@ TEST_P(VideoReceiveStream2Test, SetDecodersRecreatesUnchangedDecoder) {
+   video_receive_stream_->SetDecoders(std::move(decoders));
+   time_controller_.AdvanceTime(TimeDelta::Millis(100));
+ 
+-  // Verify that a new AV1 decoder is created.
+-  EXPECT_CALL(mock_decoder_factory_,
+-              Create(_, Field(&SdpVideoFormat::name, Eq("AV1"))));
+-  EXPECT_CALL(mock_decoder_, Configure);
+-  EXPECT_CALL(mock_decoder_, RegisterDecodeCompleteCallback);
+-  EXPECT_CALL(mock_decoder_, Decode(_, _));
+-
+   video_receive_stream_->OnCompleteFrame(test::FakeFrameBuilder()
+                                              .Id(1)
+                                              .PayloadType(kAv1PayloadType)
+                                              .Time(12345)
+                                              .AsLast()
+                                              .Build());
+-
+   time_controller_.AdvanceTime(TimeDelta::Millis(100));
++
++  // No keyframe is needed since the decoder state is intact.
++  EXPECT_EQ(rtcp_packet_parser_.pli()->num_packets(), pli_packets);
++
++  // Allow the decoder to be released when the stream is stopped.
++  EXPECT_TRUE(testing::Mock::VerifyAndClearExpectations(&mock_decoder_));
+ }
+ 
+ TEST_P(VideoReceiveStream2Test, SetDecodersWhileStoppedUpdatesCodecs) {
