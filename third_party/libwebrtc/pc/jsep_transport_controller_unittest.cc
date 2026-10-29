@@ -239,6 +239,16 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
         [&] { return fake_dtls->fake_ice_transport()->GetIceRole(); });
   }
 
+  // Checks that the DTLS transport that the signaling thread looks up for
+  // `mid` is the one that the network thread uses.
+  void ExpectLookupMatchesNetworkThread(absl::string_view mid) {
+    EXPECT_EQ(transport_controller_->LookupDtlsTransportByMid(mid),
+              network_thread_->BlockingCall([&] {
+                return transport_controller_->LookupDtlsTransportByMid_n(mid);
+              }))
+        << "mid: " << mid;
+  }
+
   std::unique_ptr<SessionDescription> CreateSessionDescriptionWithoutBundle() {
     auto description = std::make_unique<SessionDescription>();
     AddAudioSection(description.get(), kAudioMid1, kIceUfrag1, kIcePwd1,
@@ -580,6 +590,91 @@ TEST_F(JsepTransportControllerTest, GetDtlsTransportWithRtcpMux) {
           .ok());
   EXPECT_NE(nullptr, GetDtlsTransport(kAudioMid1));
   EXPECT_NE(nullptr, GetDtlsTransport(kVideoMid1));
+}
+
+// LookupDtlsTransportByMid() reads the transport states that are cached on the
+// signaling thread. They must follow the transports that the network thread
+// uses when a mid gets bundled onto another transport.
+TEST_F(JsepTransportControllerTest, LookupDtlsTransportByMidFollowsBundling) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  auto description = CreateSessionDescriptionWithBundleGroup();
+  EXPECT_TRUE(
+      transport_controller_
+          ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
+          .ok());
+  // With the balanced bundle policy, the offer doesn't bundle the transports.
+  ExpectLookupMatchesNetworkThread(kAudioMid1);
+  ExpectLookupMatchesNetworkThread(kVideoMid1);
+  EXPECT_NE(transport_controller_->LookupDtlsTransportByMid(kAudioMid1),
+            transport_controller_->LookupDtlsTransportByMid(kVideoMid1));
+
+  EXPECT_TRUE(transport_controller_
+                  ->SetRemoteDescription(SdpType::kAnswer, description.get(),
+                                         description.get())
+                  .ok());
+  ExpectLookupMatchesNetworkThread(kAudioMid1);
+  ExpectLookupMatchesNetworkThread(kVideoMid1);
+  EXPECT_EQ(transport_controller_->LookupDtlsTransportByMid(kAudioMid1),
+            transport_controller_->LookupDtlsTransportByMid(kVideoMid1));
+  std::optional<JsepTransportController::TransportState> video_state =
+      transport_controller_->GetTransportState(kVideoMid1);
+  ASSERT_TRUE(video_state);
+  EXPECT_EQ(video_state->transport_name, kAudioMid1);
+}
+
+// A rejected mid has no transport state, even though its transport is kept
+// alive in case of a rollback. After the rollback, the mid uses the transport
+// again.
+TEST_F(JsepTransportControllerTest,
+       LookupDtlsTransportByMidAfterRejectAndRollback) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  auto local_offer = std::make_unique<SessionDescription>();
+  AddAudioSection(local_offer.get(), kAudioMid1, kIceUfrag1, kIcePwd1,
+                  ICEMODE_FULL, CONNECTIONROLE_ACTPASS, nullptr);
+  std::unique_ptr<SessionDescription> remote_answer(local_offer->Clone());
+  EXPECT_TRUE(
+      transport_controller_
+          ->SetLocalDescription(SdpType::kOffer, local_offer.get(), nullptr)
+          .ok());
+  EXPECT_TRUE(transport_controller_
+                  ->SetRemoteDescription(SdpType::kAnswer, local_offer.get(),
+                                         remote_answer.get())
+                  .ok());
+  scoped_refptr<DtlsTransport> transport =
+      transport_controller_->LookupDtlsTransportByMid(kAudioMid1);
+  EXPECT_NE(transport, nullptr);
+
+  std::unique_ptr<SessionDescription> local_reoffer(local_offer->Clone());
+  local_reoffer->contents()[0].rejected = true;
+  EXPECT_TRUE(transport_controller_
+                  ->SetLocalDescription(SdpType::kOffer, local_reoffer.get(),
+                                        remote_answer.get())
+                  .ok());
+  EXPECT_FALSE(transport_controller_->GetTransportState(kAudioMid1));
+  ExpectLookupMatchesNetworkThread(kAudioMid1);
+
+  EXPECT_TRUE(transport_controller_->RollbackTransports().ok());
+  EXPECT_EQ(transport_controller_->LookupDtlsTransportByMid(kAudioMid1),
+            transport);
+  ExpectLookupMatchesNetworkThread(kAudioMid1);
+}
+
+TEST_F(JsepTransportControllerTest, MakeCloseTaskClearsTransportStates) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  auto description = CreateSessionDescriptionWithoutBundle();
+  EXPECT_TRUE(
+      transport_controller_
+          ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
+          .ok());
+  EXPECT_NE(transport_controller_->LookupDtlsTransportByMid(kAudioMid1),
+            nullptr);
+
+  absl::AnyInvocable<void() &&> close_task =
+      transport_controller_->MakeCloseTask();
+  EXPECT_EQ(transport_controller_->LookupDtlsTransportByMid(kAudioMid1),
+            nullptr);
+  EXPECT_FALSE(transport_controller_->GetTransportState(kVideoMid1));
+  SendTask(network_thread_.get(), [&] { std::move(close_task)(); });
 }
 
 TEST_F(JsepTransportControllerTest, SetIceConfig) {

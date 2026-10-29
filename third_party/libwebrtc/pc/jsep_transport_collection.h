@@ -113,6 +113,11 @@ class JsepTransportCollection {
   // Only iterates through transports currently mapped to a MID.
   void ForEachActiveTransport(FunctionView<void(JsepTransport&)> callback);
 
+  // Iterates through all MIDs that are currently mapped to a transport. A
+  // transport that is used by several MIDs (BUNDLE) is visited once per MID.
+  void ForEachMid(FunctionView<void(absl::string_view mid,
+                                    JsepTransport& transport)> callback);
+
   void DestroyAllTransports();
 
   // Lookup a JsepTransport by the MID that was used to register it.

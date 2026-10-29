@@ -150,6 +150,9 @@ JsepTransportController::~JsepTransportController() {
 absl::AnyInvocable<void() &&> JsepTransportController::MakeCloseTask() {
   RTC_DCHECK_RUN_ON(signaling_thread_);
   role_update_safety_flag_s_->SetNotAlive();
+  // The returned task destroys all transports, so drop the cached references
+  // to them.
+  transport_states_.states.clear();
 
   return [this]() mutable {
     RTC_DCHECK_RUN_ON(network_thread_);
@@ -295,10 +298,19 @@ JsepTransportController::LookupDtlsTransportByMid_n(absl::string_view mid) {
 scoped_refptr<DtlsTransport> JsepTransportController::LookupDtlsTransportByMid(
     absl::string_view mid) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  return network_thread_->BlockingCall([&] {
-    RTC_DCHECK_RUN_ON(network_thread_);
-    return LookupDtlsTransportByMid_n(mid);
-  });
+  auto it = transport_states_.states.find(mid);
+  return it != transport_states_.states.end() ? it->second.dtls_transport
+                                              : nullptr;
+}
+
+std::optional<JsepTransportController::TransportState>
+JsepTransportController::GetTransportState(absl::string_view mid) const {
+  RTC_DCHECK_RUN_ON(signaling_thread_);
+  auto it = transport_states_.states.find(mid);
+  if (it == transport_states_.states.end()) {
+    return std::nullopt;
+  }
+  return it->second;
 }
 
 scoped_refptr<SctpTransport> JsepTransportController::GetSctpTransport(
@@ -899,30 +911,17 @@ JsepTransportController::GetTransportStates_n() {
   RTC_DCHECK_RUN_ON(network_thread_);
   TransportStateSnapshot snapshot;
   snapshot.version = ++transport_states_version_n_;
-  flat_map<std::string, TransportState>& states = snapshot.states;
-  transports_.ForEachTransport([&](JsepTransport& t) {
-    std::optional<SSLRole> role = t.GetDtlsRole();
-    bool needs_ice_restart = t.needs_ice_restart();
-
-    TransportState state;
-    state.dtls_role = role;
-    state.needs_ice_restart = needs_ice_restart;
-
-    bool bundled = false;
-    for (const std::unique_ptr<ContentGroup>& bundle_group :
-         bundles_.bundle_groups()) {
-      const std::string* first_mid = bundle_group->FirstContentName();
-      if (first_mid && *first_mid == t.name()) {
-        bundled = true;
-        for (const std::string& mid : bundle_group->content_names()) {
-          states[mid] = state;
-        }
-        break;
-      }
-    }
-    if (!bundled) {
-      states[std::string(t.name())] = state;
-    }
+  // Use the same mid to transport mapping as GetJsepTransportForMid(). This
+  // includes bundled mids and excludes transports that are only kept alive
+  // for a possible rollback.
+  transports_.ForEachMid([&](absl::string_view mid, JsepTransport& t) {
+    snapshot.states.emplace(
+        std::string(mid),
+        TransportState{
+            .dtls_role = t.GetDtlsRole(),
+            .needs_ice_restart = t.needs_ice_restart(),
+            .dtls_transport = t.RtpDtlsTransport(),
+            .transport_name = t.rtp_dtls_transport()->transport_name()});
   });
   return snapshot;
 }

@@ -1249,6 +1249,7 @@ rtc_library("sdp_offer_answer") {
     "../rtc_base/system:unused",
     "../system_wrappers:metrics",
     "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/cleanup",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/memory",

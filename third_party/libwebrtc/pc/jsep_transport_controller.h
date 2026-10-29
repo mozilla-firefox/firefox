@@ -158,6 +158,10 @@ class JsepTransportController final {
   struct TransportState {
     std::optional<SSLRole> dtls_role;
     bool needs_ice_restart = false;
+    // The RTP DTLS transport that the mid uses, and the name of that
+    // transport. With BUNDLE, several mids share a transport.
+    absl_nonnull scoped_refptr<DtlsTransport> dtls_transport;
+    std::string transport_name;
   };
 
   // Per-mid transport states, captured on the network thread. `version` is
@@ -219,7 +223,17 @@ class JsepTransportController final {
   // Gets the externally sharable version of the DtlsTransport.
   scoped_refptr<DtlsTransport> LookupDtlsTransportByMid_n(
       absl::string_view mid);
+  // Same as LookupDtlsTransportByMid_n(), but reads the transport states that
+  // are cached on the signaling thread instead of blocking on the network
+  // thread.
+  //
+  // Must be called on the signaling thread.
   scoped_refptr<DtlsTransport> LookupDtlsTransportByMid(absl::string_view mid);
+  // Returns the cached state of the transport that `mid` uses, or nullopt if
+  // `mid` doesn't use a transport (e.g. if it's rejected).
+  //
+  // Must be called on the signaling thread.
+  std::optional<TransportState> GetTransportState(absl::string_view mid) const;
   scoped_refptr<SctpTransport> GetSctpTransport(absl::string_view mid) const;
 
   DataChannelTransportInterface* GetDataChannelTransport(

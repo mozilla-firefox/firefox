@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/memory/memory.h"
@@ -212,42 +213,29 @@ flat_map<std::string, const ContentGroup*> GetBundleGroupsByMid(
   return bundle_groups_by_mid;
 }
 
-// Helper function to look up DTLS transports for all transceivers in a single
-// blocking call to the network thread.
+// Helper function to look up DTLS transports for all transceivers. Uses the
+// transport states that are cached on the signaling thread, so no blocking
+// call to the network thread is needed.
 flat_map<std::string, DtlsTransportAndName> GetDtlsTransports(
     const TransceiverList& transceivers,
-    Thread* network_thread,
-    JsepTransportController* transport_controller) {
+    const JsepTransportController* absl_nonnull transport_controller) {
+  RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
   const auto& transceiver_list = transceivers.ListRef();
-  std::vector<std::string> mids_to_lookup;
-  mids_to_lookup.reserve(transceiver_list.size());
+  std::vector<std::pair<std::string, DtlsTransportAndName>> entries;
+  entries.reserve(transceiver_list.size());
   for (const auto& transceiver : transceiver_list) {
-    if (const auto mid = transceiver->internal()->mid()) {
-      mids_to_lookup.push_back(*mid);
+    const std::optional<std::string> mid = transceiver->internal()->mid();
+    if (!mid) {
+      continue;
     }
+    std::optional<JsepTransportController::TransportState> state =
+        transport_controller->GetTransportState(*mid);
+    entries.emplace_back(
+        *mid, state ? DtlsTransportAndName{std::move(state->dtls_transport),
+                                           std::move(state->transport_name)}
+                    : DtlsTransportAndName{});
   }
-  if (mids_to_lookup.empty()) {
-    return flat_map<std::string, DtlsTransportAndName>();
-  }
-  return network_thread->BlockingCall([&] {
-    RTC_DCHECK_RUN_ON(network_thread);
-    std::vector<std::pair<std::string, DtlsTransportAndName>> entries;
-    entries.reserve(mids_to_lookup.size());
-    for (const auto& mid : mids_to_lookup) {
-      // Here we essentially look up the same transport twice because
-      // the `transport_controller` doesn't have a public method that allows us
-      // to look up the JsepTransport object. This could be improved.
-      auto transport = transport_controller->LookupDtlsTransportByMid_n(mid);
-      auto internal_transport = transport_controller->GetDtlsTransport(mid);
-      entries.emplace_back(
-          mid, DtlsTransportAndName{
-                   transport, internal_transport
-                                  ? std::optional<std::string>(
-                                        internal_transport->transport_name())
-                                  : std::nullopt});
-    }
-    return flat_map<std::string, DtlsTransportAndName>(std::move(entries));
-  });
+  return flat_map<std::string, DtlsTransportAndName>(std::move(entries));
 }
 
 // Returns true if `new_desc` requests an ICE restart (i.e., new ufrag/pwd).
@@ -2285,8 +2273,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
       std::vector<scoped_refptr<RtpTransceiverInterface>> remove_list;
       std::vector<scoped_refptr<MediaStreamInterface>> removed_streams;
       flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-          GetDtlsTransports(*transceivers(), context_->network_thread(),
-                            transport_controller_s());
+          GetDtlsTransports(*transceivers(), transport_controller_s());
 
       for (const auto& transceiver_ext : transceivers()->List()) {
         auto transceiver = transceiver_ext->internal();
@@ -2359,8 +2346,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
     }
     // Plan B transport synchronization.
     flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-        GetDtlsTransports(*transceivers(), context_->network_thread(),
-                          transport_controller_s());
+        GetDtlsTransports(*transceivers(), transport_controller_s());
     for (const auto& transceiver_ext : transceivers()->List()) {
       auto transceiver = transceiver_ext->internal();
       if (transceiver->mid()) {
@@ -2677,8 +2663,7 @@ void SdpOfferAnswerHandler::ApplyRemoteDescription(
 
     // Plan B transport synchronization.
     flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-        GetDtlsTransports(*transceivers(), context_->network_thread(),
-                          transport_controller_s());
+        GetDtlsTransports(*transceivers(), transport_controller_s());
     for (const auto& transceiver_ext : transceivers()->List()) {
       auto transceiver = transceiver_ext->internal();
       if (transceiver->mid()) {
@@ -2727,8 +2712,7 @@ void SdpOfferAnswerHandler::ApplyRemoteDescriptionUpdateTransceiverState(
   ScopedOperationsBatcher network_tasks(context_->network_thread());
   ScopedOperationsBatcher worker_tasks(context_->worker_thread());
   flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-      GetDtlsTransports(*transceivers(), context_->network_thread(),
-                        transport_controller_s());
+      GetDtlsTransports(*transceivers(), transport_controller_s());
 
   for (const auto& transceiver_ext : transceivers()->List()) {
     const auto transceiver = transceiver_ext->internal();
