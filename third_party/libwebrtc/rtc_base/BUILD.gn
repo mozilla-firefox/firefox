@@ -732,7 +732,7 @@ rtc_library("rtc_operations_chain") {
 if (is_mac || is_ios) {
   rtc_library("rtc_task_queue_gcd") {
     visibility = [
-      ":task_queue_gcd_unittest",
+      ":*",
       "../api/task_queue:default_task_queue_factory",
     ]
     sources = [

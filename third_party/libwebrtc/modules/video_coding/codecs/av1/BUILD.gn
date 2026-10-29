@@ -96,7 +96,7 @@ rtc_library("libaom_av1_encoder") {
 
 rtc_library("libaom_av1_encoder_v2") {
   visibility = [
-    ":libaom_av1_encoder_v2_unittest",
+    ":*",
     "../../../../api/video_codecs:libaom_av1_encoder_factory",
   ]
   poisonous = [ "software_video_codecs" ]

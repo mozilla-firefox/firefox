@@ -24,7 +24,7 @@ rtc_library("aligned_malloc") {
 rtc_library("fifo_buffer") {
   testonly = true
   visibility = [
-    ":fifo_buffer_unittest",
+    ":*",
     "..:rtc_base_tests_utils",
   ]
   sources = [

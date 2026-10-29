@@ -1294,6 +1294,10 @@ if (rtc_include_tests) {
         "../rtc_base:crypto_random",
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
+      data = test_support_unittests_resources
+      if (is_ios) {
+        deps += [ ":test_support_unittests_bundle_data" ]
+      }
     }
 
     rtc_cc_test("copy_to_file_audio_capturer_unittest") {

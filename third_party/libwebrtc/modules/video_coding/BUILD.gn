@@ -1744,6 +1744,10 @@ if (rtc_include_tests) {
         "../../test:fileutils",
         "../../test:test_support",
       ]
+      data_deps = [ "../../resources:video_coding_tests_data" ]
+      if (is_ios) {
+        deps += [ "../../resources:video_coding_tests_bundle_data" ]
+      }
     }
   }
 
@@ -1760,6 +1764,10 @@ if (rtc_include_tests) {
         "../../test:fileutils",
         "../../test:test_support",
       ]
+      data_deps = [ "../../resources:video_coding_tests_data" ]
+      if (is_ios) {
+        deps += [ "../../resources:video_coding_tests_bundle_data" ]
+      }
     }
   }
 

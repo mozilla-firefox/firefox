@@ -196,9 +196,7 @@ rtc_library("input_volume_controller") {
   ]
 
   visibility = [
-    "..:audio_processing",
-    "..:gain_controller2",
-    "..:gain_controller2_unittest",
+    "..:*",
     "./*",
   ]
 
@@ -556,7 +554,7 @@ if (rtc_include_tests) {
     testonly = true
     visibility = [
       ":*",
-      "..:gain_controller2_unittest",
+      "..:*",
     ]
     sources = [
       "agc2_testing_common.cc",

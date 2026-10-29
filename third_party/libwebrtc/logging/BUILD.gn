@@ -410,7 +410,7 @@ if (rtc_enable_protobuf) {
 if (rtc_enable_protobuf) {
   rtc_library("rtc_event_log_impl") {
     visibility = [
-      ":rtc_event_log_impl_unittest",
+      ":*",
       "../api/rtc_event_log:rtc_event_log_factory",
     ]
     sources = [

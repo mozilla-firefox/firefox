@@ -1400,7 +1400,6 @@ if (rtc_include_tests) {
     sources = [ "end_to_end_tests/transport_feedback_tests.cc" ]
     deps = [
       ":multi_stream_tester",
-      ":multi_stream_tests",
       "../api:rtp_header_extension_id",
       "../api:rtp_parameters",
       "../api:simulated_network_api",

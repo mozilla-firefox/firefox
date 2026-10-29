@@ -862,8 +862,7 @@ rtc_source_set("rtc_pc") {
 rtc_library("media_protocol_names") {
   visibility = [
     ":*",
-    "../api:jsep",
-    "../api:webrtc_sdp_unittest",
+    "../api:*",
   ]
   sources = [
     "media_protocol_names.cc",
