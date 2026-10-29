@@ -80,7 +80,7 @@ scoped_refptr<I010Buffer> I010Buffer::Copy(const I010BufferInterface& source) {
       source.DataV(), source.StrideV(), buffer->MutableDataY(),
       buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
       buffer->MutableDataV(), buffer->StrideV(), width, height);
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 
   return buffer;
 }
@@ -95,7 +95,7 @@ scoped_refptr<I010Buffer> I010Buffer::Copy(const I420BufferInterface& source) {
       source.DataV(), source.StrideV(), buffer->MutableDataY(),
       buffer->StrideY(), buffer->MutableDataU(), buffer->StrideU(),
       buffer->MutableDataV(), buffer->StrideV(), width, height);
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 
   return buffer;
 }
@@ -123,7 +123,7 @@ scoped_refptr<I010Buffer> I010Buffer::Rotate(const I010BufferInterface& src,
       buffer->MutableDataU(), buffer->StrideU(), buffer->MutableDataV(),
       buffer->StrideV(), src.width(), src.height(),
       static_cast<libyuv::RotationMode>(rotation));
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 
   return buffer;
 }
@@ -135,7 +135,9 @@ scoped_refptr<I420BufferInterface> I010Buffer::ToI420() {
       i420_buffer->MutableDataY(), i420_buffer->StrideY(),
       i420_buffer->MutableDataU(), i420_buffer->StrideU(),
       i420_buffer->MutableDataV(), i420_buffer->StrideV(), width(), height());
-  RTC_DCHECK_EQ(res, 0);
+  if (res != 0) {
+    return nullptr;
+  }
 
   return i420_buffer;
 }
@@ -207,7 +209,7 @@ void I010Buffer::CropAndScaleFrom(const I010BufferInterface& src,
       StrideU(), MutableDataV(), StrideV(), width(), height(),
       libyuv::kFilterBox);
 
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 }
 
 void I010Buffer::ScaleFrom(const I010BufferInterface& src) {

@@ -113,4 +113,18 @@ TEST(I444BufferTest, ToI420) {
   EXPECT_TRUE(test::FrameBufsEqual(reference, i420_buffer));
 }
 
+TEST(I444BufferTest, ToI420FailsForOversizedDimensions) {
+  // libyuv::ScalePlane rejects source dimensions > 32768. For I444, chroma
+  // dimensions equal luma dimensions.
+  scoped_refptr<I444Buffer> wide_buffer =
+      I444Buffer::Create(/*width=*/32769, /*height=*/2);
+  FillI444Buffer(wide_buffer);
+  EXPECT_EQ(wide_buffer->ToI420(), nullptr);
+
+  scoped_refptr<I444Buffer> tall_buffer =
+      I444Buffer::Create(/*width=*/2, /*height=*/32769);
+  FillI444Buffer(tall_buffer);
+  EXPECT_EQ(tall_buffer->ToI420(), nullptr);
+}
+
 }  // namespace webrtc

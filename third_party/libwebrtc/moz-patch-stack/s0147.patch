@@ -12,7 +12,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/b19588c8c0fc39e71
  3 files changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/api/video/i420_buffer.cc b/api/video/i420_buffer.cc
-index 4eec83cd3a..c941d9a5fe 100644
+index 2acb160b6e..6257cb6e6c 100644
 --- a/api/video/i420_buffer.cc
 +++ b/api/video/i420_buffer.cc
 @@ -77,6 +77,11 @@ scoped_refptr<I420Buffer> I420Buffer::Create(int width, int height) {
@@ -40,18 +40,18 @@ index e4935b430c..d802a8f766 100644
                                            int height,
                                            int stride_y,
 diff --git a/api/video/video_frame_buffer.cc b/api/video/video_frame_buffer.cc
-index bb405b7b12..f2fad6822c 100644
+index 929ff38e23..6192b11e16 100644
 --- a/api/video/video_frame_buffer.cc
 +++ b/api/video/video_frame_buffer.cc
-@@ -31,7 +31,10 @@ scoped_refptr<VideoFrameBuffer> VideoFrameBuffer::CropAndScale(
-     int scaled_width,
-     int scaled_height) {
+@@ -35,7 +35,10 @@ scoped_refptr<VideoFrameBuffer> VideoFrameBuffer::CropAndScale(
+     return nullptr;
+   }
    scoped_refptr<I420Buffer> result =
 -      I420Buffer::Create(scaled_width, scaled_height);
 +      I420Buffer::CreateOrNull(scaled_width, scaled_height);
 +  if (!result) {
 +    return nullptr;
 +  }
-   result->CropAndScaleFrom(*this->ToI420(), offset_x, offset_y, crop_width,
+   result->CropAndScaleFrom(*i420_buffer, offset_x, offset_y, crop_width,
                             crop_height);
    return result;

@@ -12,7 +12,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f0c6e846e0d332943
  3 files changed, 47 insertions(+), 6 deletions(-)
 
 diff --git a/api/video/i420_buffer.cc b/api/video/i420_buffer.cc
-index e9320ced2a..4eec83cd3a 100644
+index bea6e07cde..2acb160b6e 100644
 --- a/api/video/i420_buffer.cc
 +++ b/api/video/i420_buffer.cc
 @@ -54,15 +54,18 @@ I420Buffer::I420Buffer(int width,

@@ -130,11 +130,13 @@ scoped_refptr<I210Buffer> I210Buffer::Rotate(const I210BufferInterface& src,
 
 scoped_refptr<I420BufferInterface> I210Buffer::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
+                         StrideV(), i420_buffer->MutableDataY(),
+                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
+                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
+                         i420_buffer->StrideV(), width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
@@ -206,7 +208,7 @@ void I210Buffer::CropAndScaleFrom(const I210BufferInterface& src,
       StrideU(), MutableDataV(), StrideV(), width(), height(),
       libyuv::kFilterBox);
 
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 }
 
 void I210Buffer::ScaleFrom(const I210BufferInterface& src) {

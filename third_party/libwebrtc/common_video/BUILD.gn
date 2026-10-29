@@ -231,6 +231,7 @@ if (rtc_include_tests && !build_with_chromium) {
   rtc_cc_test("video_frame_unittest") {
     sources = [ "video_frame_unittest.cc" ]
     deps = [
+      ":common_video",
       "../api:scoped_refptr",
       "../api/video:video_frame",
       "../api/video:video_frame_i010",

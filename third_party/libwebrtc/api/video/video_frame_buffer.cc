@@ -30,12 +30,16 @@ scoped_refptr<VideoFrameBuffer> VideoFrameBuffer::CropAndScale(
     int crop_height,
     int scaled_width,
     int scaled_height) {
+  scoped_refptr<I420BufferInterface> i420_buffer = this->ToI420();
+  if (!i420_buffer) {
+    return nullptr;
+  }
   scoped_refptr<I420Buffer> result =
       I420Buffer::CreateOrNull(scaled_width, scaled_height);
   if (!result) {
     return nullptr;
   }
-  result->CropAndScaleFrom(*this->ToI420(), offset_x, offset_y, crop_width,
+  result->CropAndScaleFrom(*i420_buffer, offset_x, offset_y, crop_width,
                            crop_height);
   return result;
 }

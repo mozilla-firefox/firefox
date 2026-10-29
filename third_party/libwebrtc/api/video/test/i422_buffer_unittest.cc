@@ -129,4 +129,18 @@ TEST(I422BufferTest, ToI420) {
   EXPECT_TRUE(test::FrameBufsEqual(reference, i420_buffer));
 }
 
+TEST(I422BufferTest, ToI420FailsForOversizedDimensions) {
+  // libyuv::ScalePlane rejects source dimensions > 32768. For I422, chroma
+  // width is (width + 1) / 2 and chroma height is height.
+  scoped_refptr<I422Buffer> wide_buffer =
+      I422Buffer::Create(/*width=*/65537, /*height=*/2);
+  FillI422Buffer(wide_buffer);
+  EXPECT_EQ(wide_buffer->ToI420(), nullptr);
+
+  scoped_refptr<I422Buffer> tall_buffer =
+      I422Buffer::Create(/*width=*/2, /*height=*/32769);
+  FillI422Buffer(tall_buffer);
+  EXPECT_EQ(tall_buffer->ToI420(), nullptr);
+}
+
 }  // namespace webrtc
