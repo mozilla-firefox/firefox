@@ -40,11 +40,14 @@
 #include "api/set_remote_description_observer_interface.h"
 #include "api/stats/rtc_stats_collector_callback.h"
 #include "api/stats/rtc_stats_report.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
 #include "pc/stream_collection.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/string_encode.h"
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/system/plan_b_only.h"
+#include "rtc_base/task_queue_for_test.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/thread_annotations.h"
 
@@ -471,68 +474,134 @@ class MockDataChannelObserver : public DataChannelObserver {
     bool binary;
   };
 
-  explicit MockDataChannelObserver(DataChannelInterface* channel)
-      : channel_(channel) {
-    channel_->RegisterObserver(this);
-    states_.push_back(channel_->state());
+  MockDataChannelObserver(TaskQueueBase* network_thread,
+                          DataChannelInterface* channel)
+      : signaling_thread_(TaskQueueBase::Current()),
+        network_thread_(network_thread),
+        channel_(channel) {
+    RTC_DCHECK(signaling_thread_ != nullptr);
+    RTC_DCHECK(network_thread_ != nullptr);
+    // Record the initial state and register on the network thread so that a
+    // state change can't happen in between.
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      states_.push_back(channel_->state());
+      channel_->RegisterObserver(this);
+    });
   }
   ~MockDataChannelObserver() override { channel_->UnregisterObserver(); }
 
-  void OnBufferedAmountChange(uint64_t previous_amount) override {}
-  void OnMaxMessageSize(int max_message_size) override {}
+  void OnBufferedAmountChange(uint64_t previous_amount) override {
+    RTC_DCHECK_RUN_ON(network_thread_);
+  }
+  void OnMaxMessageSize(int max_message_size) override {
+    RTC_DCHECK_RUN_ON(network_thread_);
+  }
 
   void OnStateChange() override {
-    states_.push_back(channel_->state());
-    if (state_change_callback_) {
-      state_change_callback_(states_.back());
-    }
+    RTC_DCHECK_RUN_ON(network_thread_);
+    DataChannelInterface::DataState new_state = channel_->state();
+    states_.push_back(new_state);
+    signaling_thread_->PostTask(
+        SafeTask(signaling_safety_.flag(), [this, new_state] {
+          RTC_DCHECK_RUN_ON(signaling_thread_);
+          if (state_change_callback_) {
+            state_change_callback_(new_state);
+          }
+        }));
   }
 
   void OnMessage(const DataBuffer& buffer) override {
+    RTC_DCHECK_RUN_ON(network_thread_);
     messages_.push_back(
         {.data = std::string(buffer.data.data<char>(), buffer.data.size()),
          .binary = buffer.binary});
-    if (on_message_callback_) {
-      on_message_callback_(buffer);
-    }
+    signaling_thread_->PostTask(
+        SafeTask(signaling_safety_.flag(), [this, buffer] {
+          RTC_DCHECK_RUN_ON(signaling_thread_);
+          if (on_message_callback_) {
+            on_message_callback_(buffer);
+          }
+        }));
   }
+
+  bool IsOkToCallOnTheNetworkThread() override { return true; }
 
   bool IsOpen() const { return state() == DataChannelInterface::kOpen; }
-  std::vector<Message> messages() const { return messages_; }
+  std::vector<Message> messages() const {
+    std::vector<Message> result;
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      result = messages_;
+    });
+    return result;
+  }
   std::string last_message() const {
-    if (messages_.empty())
-      return {};
-
-    return messages_.back().data;
+    std::string result;
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      result = messages_.empty() ? std::string() : messages_.back().data;
+    });
+    return result;
   }
   bool last_message_is_binary() const {
-    if (messages_.empty())
-      return false;
-    return messages_.back().binary;
+    bool result;
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      result = !messages_.empty() && messages_.back().binary;
+    });
+    return result;
   }
-  size_t received_message_count() const { return messages_.size(); }
+  size_t received_message_count() const {
+    size_t result;
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      result = messages_.size();
+    });
+    return result;
+  }
 
-  DataChannelInterface::DataState state() const { return states_.back(); }
-  const std::vector<DataChannelInterface::DataState>& states() const {
-    return states_;
+  DataChannelInterface::DataState state() const {
+    DataChannelInterface::DataState result;
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      result = states_.back();
+    });
+    return result;
+  }
+  std::vector<DataChannelInterface::DataState> states() const {
+    std::vector<DataChannelInterface::DataState> result;
+    SendTask(network_thread_, [&] {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      result = states_;
+    });
+    return result;
   }
 
   void set_state_change_callback(
       std::function<void(DataChannelInterface::DataState)> func) {
+    RTC_DCHECK_RUN_ON(signaling_thread_);
     state_change_callback_ = std::move(func);
   }
 
   void set_on_message_callback(
       absl::AnyInvocable<void(const DataBuffer&)> func) {
+    RTC_DCHECK_RUN_ON(signaling_thread_);
     on_message_callback_ = std::move(func);
   }
 
  private:
-  scoped_refptr<DataChannelInterface> channel_;
-  std::vector<DataChannelInterface::DataState> states_;
-  std::vector<Message> messages_;
-  std::function<void(DataChannelInterface::DataState)> state_change_callback_;
-  absl::AnyInvocable<void(const DataBuffer&)> on_message_callback_;
+  TaskQueueBase* const signaling_thread_;
+  TaskQueueBase* const network_thread_;
+  const scoped_refptr<DataChannelInterface> channel_;
+  std::vector<DataChannelInterface::DataState> states_
+      RTC_GUARDED_BY(network_thread_);
+  std::vector<Message> messages_ RTC_GUARDED_BY(network_thread_);
+  std::function<void(DataChannelInterface::DataState)> state_change_callback_
+      RTC_GUARDED_BY(signaling_thread_);
+  absl::AnyInvocable<void(const DataBuffer&)> on_message_callback_
+      RTC_GUARDED_BY(signaling_thread_);
+  ScopedTaskSafety signaling_safety_;
 };
 
 class MockStatsObserver : public StatsObserver {

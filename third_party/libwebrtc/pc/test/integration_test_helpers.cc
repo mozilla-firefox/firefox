@@ -318,8 +318,8 @@ void PeerConnectionIntegrationWrapper::CreateDataChannel(
   ASSERT_TRUE(data_channel_or_error.ok());
   data_channels_.push_back(data_channel_or_error.MoveValue());
   ASSERT_TRUE(data_channels_.back().get() != nullptr);
-  data_observers_.push_back(
-      std::make_unique<MockDataChannelObserver>(data_channels_.back().get()));
+  data_observers_.push_back(std::make_unique<MockDataChannelObserver>(
+      network_thread_, data_channels_.back().get()));
 }
 
 DataChannelInterface* PeerConnectionIntegrationWrapper::data_channel() {
@@ -1157,8 +1157,8 @@ void PeerConnectionIntegrationWrapper::OnDataChannel(
     scoped_refptr<DataChannelInterface> data_channel) {
   RTC_LOG(LS_INFO) << debug_name_ << ": OnDataChannel";
   data_channels_.push_back(data_channel);
-  data_observers_.push_back(
-      std::make_unique<MockDataChannelObserver>(data_channel.get()));
+  data_observers_.push_back(std::make_unique<MockDataChannelObserver>(
+      network_thread_, data_channel.get()));
 }
 
 bool PeerConnectionIntegrationWrapper::IdExists(

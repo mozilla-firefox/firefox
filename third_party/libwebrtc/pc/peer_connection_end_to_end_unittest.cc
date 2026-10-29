@@ -160,11 +160,11 @@ class PeerConnectionEndToEndBaseTest : public ::testing::Test {
   void TestDataChannelSendAndReceive(DataChannelInterface* dc1,
                                      DataChannelInterface* dc2,
                                      size_t size = 6) {
-    std::unique_ptr<MockDataChannelObserver> dc1_observer(
-        new MockDataChannelObserver(dc1));
+    auto dc1_observer =
+        std::make_unique<MockDataChannelObserver>(network_thread_.get(), dc1);
 
-    std::unique_ptr<MockDataChannelObserver> dc2_observer(
-        new MockDataChannelObserver(dc2));
+    auto dc2_observer =
+        std::make_unique<MockDataChannelObserver>(network_thread_.get(), dc2);
 
     static const std::string kDummyData =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -530,8 +530,10 @@ TEST_P(PeerConnectionEndToEndTest, DataChannelIdAssignment) {
   scoped_refptr<DataChannelInterface> callee_dc_1 =
       callee_->CreateDataChannel("data", init);
 
-  MockDataChannelObserver caller_dc_1_observer(caller_dc_1.get());
-  MockDataChannelObserver callee_dc_1_observer(callee_dc_1.get());
+  MockDataChannelObserver caller_dc_1_observer(network_thread_.get(),
+                                               caller_dc_1.get());
+  MockDataChannelObserver callee_dc_1_observer(network_thread_.get(),
+                                               callee_dc_1.get());
 
   Negotiate();
   WaitForConnection();
@@ -548,8 +550,10 @@ TEST_P(PeerConnectionEndToEndTest, DataChannelIdAssignment) {
   scoped_refptr<DataChannelInterface> callee_dc_2 =
       callee_->CreateDataChannel("data", init);
 
-  MockDataChannelObserver caller_dc_2_observer(caller_dc_2.get());
-  MockDataChannelObserver callee_dc_2_observer(callee_dc_2.get());
+  MockDataChannelObserver caller_dc_2_observer(network_thread_.get(),
+                                               caller_dc_2.get());
+  MockDataChannelObserver callee_dc_2_observer(network_thread_.get(),
+                                               callee_dc_2.get());
 
   EXPECT_TRUE(WaitUntil([&] { return caller_dc_2_observer.IsOpen(); }));
   EXPECT_TRUE(WaitUntil([&] { return callee_dc_2_observer.IsOpen(); }));
@@ -581,11 +585,11 @@ TEST_P(PeerConnectionEndToEndTest,
   WaitForDataChannelsToOpen(caller_dc_2.get(), callee_signaled_data_channels_,
                             1);
 
-  std::unique_ptr<MockDataChannelObserver> dc_1_observer(
-      new MockDataChannelObserver(callee_signaled_data_channels_[0].get()));
+  auto dc_1_observer = std::make_unique<MockDataChannelObserver>(
+      network_thread_.get(), callee_signaled_data_channels_[0].get());
 
-  std::unique_ptr<MockDataChannelObserver> dc_2_observer(
-      new MockDataChannelObserver(callee_signaled_data_channels_[1].get()));
+  auto dc_2_observer = std::make_unique<MockDataChannelObserver>(
+      network_thread_.get(), callee_signaled_data_channels_[1].get());
 
   const std::string message_1 = "hello 1";
   const std::string message_2 = "hello 2";
@@ -736,7 +740,8 @@ TEST_P(PeerConnectionEndToEndTest, MaxMessageSizePropagated) {
   DataChannelInit init;
   scoped_refptr<DataChannelInterface> caller_dc =
       caller_->CreateDataChannel("caller", init);
-  MockDataChannelObserver caller_dc_observer(caller_dc.get());
+  MockDataChannelObserver caller_dc_observer(network_thread_.get(),
+                                             caller_dc.get());
 
   Negotiate();
   WaitForConnection();
@@ -751,8 +756,9 @@ TEST_P(PeerConnectionEndToEndTest, MaxMessageSizePropagated) {
 
   scoped_refptr<DataChannelInterface> callee_dc =
       callee_->CreateDataChannel("callee", init);
-  MockDataChannelObserver callee_dc_observer(callee_dc.get());
-  EXPECT_TRUE(WaitUntil([&] { return caller_dc_observer.IsOpen(); }));
+  MockDataChannelObserver callee_dc_observer(network_thread_.get(),
+                                             callee_dc.get());
+  EXPECT_TRUE(WaitUntil([&] { return callee_dc_observer.IsOpen(); }));
   EXPECT_FALSE(callee_dc->Send(buffer));
 }
 

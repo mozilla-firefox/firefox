@@ -4216,6 +4216,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api/transport:datagram_transport_interface",
       "../rtc_base:checks",
       "../rtc_base:copy_on_write_buffer",
+      "../rtc_base:macromagic",
       "../rtc_base:null_socket_server",
       "../rtc_base:ssl_adapter",
       "../rtc_base:threading",

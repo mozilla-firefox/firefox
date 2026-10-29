@@ -33,6 +33,7 @@
 #include "rtc_base/null_socket_server.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/thread_annotations.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 #include "test/run_loop.h"
@@ -50,34 +51,66 @@ using ::testing::Eq;
 
 class FakeDataChannelObserver : public DataChannelObserver {
  public:
-  FakeDataChannelObserver() { RTC_DCHECK(!IsOkToCallOnTheNetworkThread()); }
+  explicit FakeDataChannelObserver(Thread* network_thread)
+      : network_thread_(network_thread) {}
 
-  void OnStateChange() override { ++on_state_change_count_; }
+  void OnStateChange() override {
+    RTC_DCHECK_RUN_ON(network_thread_);
+    ++on_state_change_count_;
+  }
 
   void OnBufferedAmountChange(uint64_t previous_amount) override {
+    RTC_DCHECK_RUN_ON(network_thread_);
     ++on_buffered_amount_change_count_;
   }
 
-  void OnMessage(const DataBuffer& buffer) override { ++messages_received_; }
-
-  size_t messages_received() const { return messages_received_; }
-
-  void ResetOnStateChangeCount() { on_state_change_count_ = 0; }
-
-  void ResetOnBufferedAmountChangeCount() {
-    on_buffered_amount_change_count_ = 0;
+  void OnMessage(const DataBuffer& buffer) override {
+    RTC_DCHECK_RUN_ON(network_thread_);
+    ++messages_received_;
   }
 
-  size_t on_state_change_count() const { return on_state_change_count_; }
+  bool IsOkToCallOnTheNetworkThread() override { return true; }
+
+  size_t messages_received() const {
+    return network_thread_->BlockingCall([&]() {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      return messages_received_;
+    });
+  }
+
+  void ResetOnStateChangeCount() {
+    network_thread_->BlockingCall([&]() {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      on_state_change_count_ = 0;
+    });
+  }
+
+  void ResetOnBufferedAmountChangeCount() {
+    network_thread_->BlockingCall([&]() {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      on_buffered_amount_change_count_ = 0;
+    });
+  }
+
+  size_t on_state_change_count() const {
+    return network_thread_->BlockingCall([&]() {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      return on_state_change_count_;
+    });
+  }
 
   size_t on_buffered_amount_change_count() const {
-    return on_buffered_amount_change_count_;
+    return network_thread_->BlockingCall([&]() {
+      RTC_DCHECK_RUN_ON(network_thread_);
+      return on_buffered_amount_change_count_;
+    });
   }
 
  private:
-  size_t messages_received_ = 0u;
-  size_t on_state_change_count_ = 0u;
-  size_t on_buffered_amount_change_count_ = 0u;
+  Thread* const network_thread_;
+  size_t messages_received_ RTC_GUARDED_BY(network_thread_) = 0u;
+  size_t on_state_change_count_ RTC_GUARDED_BY(network_thread_) = 0u;
+  size_t on_buffered_amount_change_count_ RTC_GUARDED_BY(network_thread_) = 0u;
 };
 
 class SctpDataChannelTest : public ::testing::Test {
@@ -91,6 +124,9 @@ class SctpDataChannelTest : public ::testing::Test {
   }
   ~SctpDataChannelTest() override {
     run_loop_.Flush();
+    if (observer_ != nullptr && channel_ != nullptr) {
+      channel_->UnregisterObserver();
+    }
     inner_channel_ = nullptr;
     channel_ = nullptr;
     controller_.reset();
@@ -127,7 +163,7 @@ class SctpDataChannelTest : public ::testing::Test {
   }
 
   void AddObserver() {
-    observer_.reset(new FakeDataChannelObserver());
+    observer_ = std::make_unique<FakeDataChannelObserver>(&network_thread_);
     channel_->RegisterObserver(observer_.get());
   }
 
@@ -694,6 +730,45 @@ TEST_F(SctpDataChannelTest, CachedIdStateAndErrorInSignalingThreadCallback) {
   EXPECT_EQ(obs.observed_ids_[0], 0);
   EXPECT_EQ(obs.observed_states_[0], DataChannelInterface::kOpen);
   EXPECT_TRUE(obs.observed_errors_[0].ok());
+
+  channel_->UnregisterObserver();
+}
+
+// Tests that an observer that can't be called on the network thread receives
+// the message and buffered amount callbacks on the signaling thread.
+TEST_F(SctpDataChannelTest,
+       SignalingThreadObserverReceivesMessageAndBufferedAmount) {
+  class SignalingObserver : public DataChannelObserver {
+   public:
+    void OnStateChange() override {}
+    void OnMessage(const DataBuffer& buffer) override {
+      EXPECT_TRUE(signaling_thread_->IsCurrent());
+      ++messages_received_;
+    }
+    void OnBufferedAmountChange(uint64_t sent_data_size) override {
+      EXPECT_TRUE(signaling_thread_->IsCurrent());
+      sent_data_size_ += sent_data_size;
+    }
+    bool IsOkToCallOnTheNetworkThread() override { return false; }
+
+    Thread* const signaling_thread_ = Thread::Current();
+    int messages_received_ = 0;
+    uint64_t sent_data_size_ = 0;
+  };
+
+  SignalingObserver obs;
+  channel_->RegisterObserver(&obs);
+  SetChannelReady();
+
+  DataBuffer buffer("abcd");
+  network_thread_.BlockingCall([&] {
+    inner_channel_->OnDataReceived(DataMessageType::kText, buffer.data);
+  });
+  channel_->SendAsync(buffer, nullptr);
+  FlushNetworkThreadAndPendingOperations();
+
+  EXPECT_EQ(obs.messages_received_, 1);
+  EXPECT_EQ(obs.sent_data_size_, buffer.size());
 
   channel_->UnregisterObserver();
 }
