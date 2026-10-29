@@ -13,6 +13,7 @@
 #include <openssl/bio.h>
 #include <openssl/bn.h>
 #include <openssl/pem.h>
+#include <openssl/asn1.h>
 
 #include <cstdint>
 #include <ctime>
@@ -268,16 +269,18 @@ bool OpenSSLCertificate::operator!=(const OpenSSLCertificate& other) const {
 }
 
 int64_t OpenSSLCertificate::CertificateExpirationTime() const {
-  ASN1_TIME* expire_time = X509_get_notAfter(x509_);
+  const ASN1_TIME* expire_time = X509_get_notAfter(x509_);
   bool long_format;
-  if (expire_time->type == V_ASN1_UTCTIME) {
+  int type = ASN1_STRING_type(expire_time);
+  if (type == V_ASN1_UTCTIME) {
     long_format = false;
-  } else if (expire_time->type == V_ASN1_GENERALIZEDTIME) {
+  } else if (type == V_ASN1_GENERALIZEDTIME) {
     long_format = true;
   } else {
     return -1;
   }
-  return ASN1TimeToSec(expire_time->data, expire_time->length, long_format);
+  return ASN1TimeToSec(ASN1_STRING_get0_data(expire_time),
+                       ASN1_STRING_length(expire_time), long_format);
 }
 
 }  // namespace webrtc
