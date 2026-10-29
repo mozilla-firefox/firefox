@@ -106,6 +106,10 @@ struct ScreamV2Parameters {
   // Thresholds for average latency difference. Used for limiting ref_window
   // increase.
   FieldTrialParameter<TimeDelta> latency_diff_threshold;
+  // If true, uses the minimum of the avg min delay scale factor and latency
+  // difference scale factor when limiting ref_window increase, instead of
+  // multiplying them.
+  FieldTrialParameter<bool> use_min_delay_scale_on_increase;
   // Minimum (base) window from the latest sent packet in feedback to compute
   // min and max one-way delay.
   FieldTrialParameter<TimeDelta> burst_window_min;

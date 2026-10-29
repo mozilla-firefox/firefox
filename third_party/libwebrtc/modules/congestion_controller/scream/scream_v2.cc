@@ -279,13 +279,21 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
     // lot.
     // Better to enforce a slow increase in reference window and get
     // a more stable bitrate.
-    increase_scale_factor = increase_scale_factor *
-                            delay_based_congestion_control_
-                                .ref_window_scale_factor_due_to_avg_min_delay();
-    increase_scale_factor =
-        increase_scale_factor *
-        delay_based_congestion_control_
-            .ref_window_scale_factor_due_to_latency_difference();
+    if (params_.use_min_delay_scale_on_increase.Get()) {
+      increase_scale_factor =
+          increase_scale_factor *
+          std::min(delay_based_congestion_control_
+                       .ref_window_scale_factor_due_to_avg_min_delay(),
+                   delay_based_congestion_control_
+                       .ref_window_scale_factor_due_to_latency_difference());
+    } else {
+      increase_scale_factor =
+          increase_scale_factor *
+          (delay_based_congestion_control_
+               .ref_window_scale_factor_due_to_avg_min_delay() *
+           delay_based_congestion_control_
+               .ref_window_scale_factor_due_to_latency_difference());
+    }
 
     // Use lower multiplicative scale factor if congestion was detected
     // recently.
