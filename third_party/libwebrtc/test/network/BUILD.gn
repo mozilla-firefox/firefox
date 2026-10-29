@@ -290,7 +290,7 @@ rtc_library("token_bucket_network_behavior") {
   ]
 }
 if (rtc_include_tests) {
-  rtc_cc_test("token_bucket_network_behavior_test") {
+  rtc_cc_test("token_bucket_network_behavior_unittest") {
     sources = [ "token_bucket_network_behavior_unittest.cc" ]
 
     deps = [

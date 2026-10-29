@@ -1830,7 +1830,7 @@ if (rtc_include_tests) {
   }
 
   rtc_cc_test("peer_connection_interface_api_unittest") {
-    sources = [ "peer_connection_interface_unittest.cc" ]
+    sources = [ "peer_connection_interface_api_unittest.cc" ]
     deps = [
       ":peer_connection_interface",
       "../test:test_support",

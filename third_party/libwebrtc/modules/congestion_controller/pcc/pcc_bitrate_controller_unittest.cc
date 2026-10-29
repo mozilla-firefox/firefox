@@ -8,8 +8,6 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/congestion_controller/pcc/bitrate_controller.h"
-
 #include <cstddef>
 #include <memory>
 #include <optional>
@@ -21,6 +19,7 @@
 #include "api/units/data_size.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
+#include "modules/congestion_controller/pcc/bitrate_controller.h"
 #include "modules/congestion_controller/pcc/monitor_interval.h"
 #include "modules/congestion_controller/pcc/utility_function.h"
 #include "test/gmock.h"

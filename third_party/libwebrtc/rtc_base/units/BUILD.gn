@@ -23,7 +23,7 @@ rtc_source_set("unit_base") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("units_unittests") {
+  rtc_cc_test("unit_base_unittest") {
     sources = [ "unit_base_unittest.cc" ]
     deps = [
       ":unit_base",

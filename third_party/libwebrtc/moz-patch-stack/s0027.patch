@@ -117,7 +117,7 @@ index a42c5d7aa7..f8e072fed5 100644
    # TODO(https://bugs.webrtc.org/14437):  Remove this section if general
    # Chromium fix resolves the problem.
 diff --git a/BUILD.gn b/BUILD.gn
-index e40373746e..85cfdc3c91 100644
+index 71e67a158d..7fd6fddb8b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -39,7 +39,7 @@ if (is_android) {
@@ -211,7 +211,7 @@ index e40373746e..85cfdc3c91 100644
      }
  
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index 2b1ce12fc8..4a2725e9c1 100644
+index e9a7eb4cb4..1754d9b6f8 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -34,6 +34,9 @@ rtc_library("enable_media") {
@@ -430,7 +430,7 @@ index 0000000000..45194f5ace
 +
 +#endif  // API_RTP_SENDER_SETPARAMETERS_CALLBACK_H_
 diff --git a/api/task_queue/BUILD.gn b/api/task_queue/BUILD.gn
-index 792acbcade..2fbf6643f5 100644
+index 0ccee55df4..2d27ffad2e 100644
 --- a/api/task_queue/BUILD.gn
 +++ b/api/task_queue/BUILD.gn
 @@ -26,6 +26,7 @@ rtc_library("task_queue") {
@@ -470,7 +470,7 @@ index 631c3a0c2c..d5ed4ec38b 100644
  if (rtc_include_tests) {
    rtc_source_set("test_feedback_generator_interface") {
 diff --git a/call/BUILD.gn b/call/BUILD.gn
-index a950a57217..694b33f7e8 100644
+index d98be9852e..08670c4ac8 100644
 --- a/call/BUILD.gn
 +++ b/call/BUILD.gn
 @@ -52,7 +52,7 @@ rtc_library("call_interfaces") {
@@ -509,7 +509,7 @@ index 01c4e773d5..5924f9d9d1 100644
  #include "api/units/data_rate.h"
  #include "api/video/encoded_image.h"
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index 0059809320..6f8d15f384 100644
+index 99fd1796d8..ce4ad59e29 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -256,14 +256,10 @@ if (current_cpu == "x86" || current_cpu == "x64") {
@@ -694,7 +694,7 @@ index cb74a2710e..b1c02c5025 100644
      : content_hint(VideoTrackInterface::ContentHint::kNone) {}
  VideoOptions::~VideoOptions() = default;
 diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
-index 0e1d08693e..0494f4c538 100644
+index 4a9569dde6..171732e9ed 100644
 --- a/modules/audio_coding/BUILD.gn
 +++ b/modules/audio_coding/BUILD.gn
 @@ -340,7 +340,7 @@ rtc_library("webrtc_opus_wrapper") {
@@ -825,7 +825,7 @@ index b0f741468a..4709c977c3 100644
  #include <algorithm>
  #include <array>
 diff --git a/modules/audio_processing/agc2/rnn_vad/BUILD.gn b/modules/audio_processing/agc2/rnn_vad/BUILD.gn
-index 9af656832d..294daa4692 100644
+index 9998301331..1362cbc932 100644
 --- a/modules/audio_processing/agc2/rnn_vad/BUILD.gn
 +++ b/modules/audio_processing/agc2/rnn_vad/BUILD.gn
 @@ -114,7 +114,7 @@ rtc_source_set("vector_math") {
@@ -1000,7 +1000,7 @@ index 7198d72179..66e3ad0721 100644
          "/config/external/nspr",
          "/nsprpub/lib/ds",
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 10d76c41b2..f5e82704e2 100644
+index 661108d987..1e80bd7efd 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -406,6 +406,7 @@ rtc_library("sample_counter") {
@@ -1178,7 +1178,7 @@ index 10d76c41b2..f5e82704e2 100644
  
    generate_jni("base_java_jni") {
 diff --git a/rtc_base/system/BUILD.gn b/rtc_base/system/BUILD.gn
-index f22c695bc9..9f9f1f7a0d 100644
+index 30e97e560e..59bcdced59 100644
 --- a/rtc_base/system/BUILD.gn
 +++ b/rtc_base/system/BUILD.gn
 @@ -121,7 +121,7 @@ rtc_library("system_time") {
@@ -1191,7 +1191,7 @@ index f22c695bc9..9f9f1f7a0d 100644
      deps += [
        "..:logging",
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index f11ee23edc..cc9b893ce8 100644
+index df5b3501a7..9f73e58dfb 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -279,6 +279,7 @@ rtc_library("audio_test_common") {

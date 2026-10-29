@@ -107,7 +107,7 @@
 -common_audio/resampler/sinc_resampler_neon.cc
 -common_audio/resampler/sinc_resampler_sse.cc
 -common_audio/ring_buffer.c
--common_audio/ring_buffer_unittest.cc
+-common_audio/common_audio_ring_buffer_unittest.cc
 -common_audio/signal_processing/copy_set_operations.c
 -common_audio/signal_processing/cross_correlation.c
 -common_audio/signal_processing/cross_correlation_neon.c
@@ -159,7 +159,7 @@
 -common_video/h265/h265_inline.h
 -common_video/h265/h265_pps_parser.cc
 -common_video/h265/h265_sps_parser.cc
--common_video/libyuv/libyuv_unittest.cc
+-common_video/libyuv/webrtc_libyuv_unittest.cc
 -common_video/libyuv/webrtc_libyuv.cc
 -common_video/video_frame_unittest.cc
 -examples/peerconnection/client/conductor.cc
@@ -492,7 +492,7 @@
 -modules/video_coding/h264_sps_pps_tracker_unittest.cc
 -modules/video_coding/h26x_packet_buffer.cc
 -modules/video_coding/media_opt_util.cc
--modules/video_coding/packet_buffer_unittest.cc
+-modules/video_coding/video_packet_buffer_unittest.cc
 -modules/video_coding/rtp_frame_reference_finder.cc
 -modules/video_coding/rtp_frame_reference_finder_unittest.cc
 -modules/video_coding/rtp_generic_ref_finder.cc
@@ -533,7 +533,7 @@
 -p2p/base/turn_port_unittest.cc
 -p2p/client/basic_port_allocator.cc
 -p2p/dtls/dtls_transport.h
--p2p/dtls/dtls_transport_unittest.cc
+-p2p/dtls/p2p_dtls_transport_unittest.cc
 -p2p/dtls/dtls_utils.cc
 -p2p/test/nat_server.cc
 -p2p/test/nat_socket_factory.cc
@@ -645,7 +645,7 @@
 -video/adaptation/bitrate_constraint_unittest.cc
 -video/adaptation/video_stream_encoder_resource_manager.cc
 -video/corruption_detection/evaluation/utils.cc
--video/corruption_detection/evaluation/utils_unittest.cc
+-video/corruption_detection/evaluation/corruption_utils_unittest.cc
 -video/corruption_detection/evaluation/webrtc_picture_pair_provider_unittest.cc
 -video/corruption_detection/frame_instrumentation_generator_unittest.cc
 -video/corruption_detection/halton_sequence.cc

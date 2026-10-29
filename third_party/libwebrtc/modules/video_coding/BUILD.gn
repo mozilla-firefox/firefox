@@ -1235,7 +1235,7 @@ if (rtc_include_tests) {
   }
 
   rtc_cc_test("video_decoder_database_unittest") {
-    sources = [ "decoder_database_unittest.cc" ]
+    sources = [ "video_decoder_database_unittest.cc" ]
     deps = [
       ":video_coding",
       "../../api:mock_video_decoder",
@@ -1348,7 +1348,7 @@ if (rtc_include_tests) {
   }
 
   rtc_cc_test("video_histogram_unittest") {
-    sources = [ "histogram_unittest.cc" ]
+    sources = [ "video_histogram_unittest.cc" ]
     deps = [
       ":nack_requester",
       "../../test:test_support",
@@ -1381,7 +1381,7 @@ if (rtc_include_tests) {
   }
 
   rtc_cc_test("video_packet_buffer_unittest") {
-    sources = [ "packet_buffer_unittest.cc" ]
+    sources = [ "video_packet_buffer_unittest.cc" ]
     deps = [
       ":codec_globals_headers",
       ":packet_buffer",

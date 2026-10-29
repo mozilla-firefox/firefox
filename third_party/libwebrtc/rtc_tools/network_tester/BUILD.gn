@@ -81,7 +81,7 @@ if (rtc_enable_protobuf) {
       }
     }
 
-    rtc_cc_test("network_tester_unittests") {
+    rtc_cc_test("network_tester_unittest") {
       sources = [ "network_tester_unittest.cc" ]
 
       deps = [

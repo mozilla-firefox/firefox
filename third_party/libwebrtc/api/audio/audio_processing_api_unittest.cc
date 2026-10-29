@@ -8,10 +8,9 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "api/audio/audio_processing.h"
-
 #include <memory>
 
+#include "api/audio/audio_processing.h"
 #include "api/make_ref_counted.h"
 #include "api/scoped_refptr.h"
 #include "modules/audio_processing/include/mock_audio_processing.h"

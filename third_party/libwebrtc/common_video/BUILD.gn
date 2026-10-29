@@ -199,8 +199,8 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  rtc_cc_test("libyuv_unittest") {
-    sources = [ "libyuv/libyuv_unittest.cc" ]
+  rtc_cc_test("webrtc_libyuv_unittest") {
+    sources = [ "libyuv/webrtc_libyuv_unittest.cc" ]
     deps = [
       ":common_video",
       "../api:scoped_refptr",
@@ -289,12 +289,12 @@ if (rtc_include_tests && !build_with_chromium) {
       ":framerate_controller_unittest",
       ":h264_bitstream_parser_unittest",
       ":h264_common_unittest",
-      ":libyuv_unittest",
       ":pps_parser_unittest",
       ":sps_parser_unittest",
       ":sps_vui_rewriter_unittest",
       ":video_frame_buffer_pool_unittest",
       ":video_frame_unittest",
+      ":webrtc_libyuv_unittest",
     ]
 
     if (rtc_use_h265) {

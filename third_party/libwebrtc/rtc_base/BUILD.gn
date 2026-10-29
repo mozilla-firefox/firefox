@@ -986,7 +986,7 @@ rtc_library("async_dns_resolver") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("async_dns_resolver_unittests") {
+  rtc_cc_test("async_dns_resolver_unittest") {
     sources = [ "async_dns_resolver_unittest.cc" ]
     deps = [
       ":async_dns_resolver",
@@ -1873,7 +1873,7 @@ rtc_library("testclient") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("callback_list_unittests") {
+  rtc_cc_test("callback_list_unittest") {
     sources = [ "callback_list_unittest.cc" ]
     deps = [
       ":callback_list",
@@ -2061,7 +2061,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("rtc_operations_chain_unittests") {
+  rtc_cc_test("operations_chain_unittest") {
     sources = [ "operations_chain_unittest.cc" ]
     deps = [
       ":checks",
@@ -2686,7 +2686,7 @@ if (rtc_include_tests) {
       }
     }
 
-    rtc_cc_test("weak_ptr_unittests") {
+    rtc_cc_test("weak_ptr_unittest") {
       sources = [ "weak_ptr_unittest.cc" ]
       deps = [
         ":task_queue_for_test",
@@ -2772,7 +2772,7 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_cc_test("rtc_json_unittests") {
+    rtc_cc_test("json_unittest") {
       sources = [ "strings/json_unittest.cc" ]
       deps = [
         ":rtc_json",

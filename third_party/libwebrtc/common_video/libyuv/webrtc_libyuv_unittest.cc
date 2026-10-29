@@ -8,6 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "common_video/libyuv/include/webrtc_libyuv.h"
+
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -28,7 +30,6 @@
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
 #include "api/video/video_rotation.h"
-#include "common_video/libyuv/include/webrtc_libyuv.h"
 #include "test/frame_utils.h"
 #include "test/gmock.h"
 #include "test/gtest.h"

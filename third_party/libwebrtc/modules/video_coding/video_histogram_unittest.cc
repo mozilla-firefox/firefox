@@ -9,7 +9,6 @@
  */
 
 #include "modules/video_coding/histogram.h"
-
 #include "test/gtest.h"
 
 namespace webrtc {

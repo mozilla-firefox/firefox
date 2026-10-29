@@ -633,7 +633,7 @@ if (rtc_include_tests) {
     }
 
     if (rtc_enable_protobuf) {
-      rtc_cc_test("event_log_visualizer_bindings_unittest") {
+      rtc_cc_test("analyzer_bindings_unittest") {
         sources = [ "rtc_event_log_visualizer/analyzer_bindings_unittest.cc" ]
         deps = [
           ":chart_proto",
@@ -666,8 +666,8 @@ if (rtc_include_tests) {
       ]
       if (rtc_enable_protobuf) {
         tests += [
-          ":event_log_visualizer_bindings_unittest",
-          "network_tester:network_tester_unittests",
+          ":analyzer_bindings_unittest",
+          "network_tester:network_tester_unittest",
         ]
       }
     }

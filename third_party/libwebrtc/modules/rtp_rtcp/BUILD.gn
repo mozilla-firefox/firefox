@@ -549,7 +549,7 @@ if (rtc_include_tests) {
     }
   }
 
-  rtc_cc_test("rtp_rtcp_modules_tests") {
+  rtc_cc_test("test_fec") {
     sources = [ "test/testFec/test_fec.cc" ]
     deps = [
       ":rtp_rtcp",
@@ -1815,7 +1815,6 @@ if (rtc_include_tests) {
       ":rtp_packetizer_av1_unittest",
       ":rtp_packetizer_sframe_unittest",
       ":rtp_rtcp_impl2_unittest",
-      ":rtp_rtcp_modules_tests",
       ":rtp_sender_audio_unittest",
       ":rtp_sender_egress_unittest",
       ":rtp_sender_unittest",
@@ -1830,6 +1829,7 @@ if (rtc_include_tests) {
       ":sender_report_unittest",
       ":source_tracker_unittest",
       ":target_bitrate_unittest",
+      ":test_fec",
       ":tmmbn_unittest",
       ":tmmbr_unittest",
       ":transport_feedback_unittest",

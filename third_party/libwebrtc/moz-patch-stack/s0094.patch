@@ -74,7 +74,7 @@ index 6a99da2a59..7f5e59fafa 100644
  # The hermetic Python interpreter to use by default.
  script_executable = "//third_party/cpython3/host/bin/python3"
 diff --git a/BUILD.gn b/BUILD.gn
-index 10da56f1c5..bce404bcf7 100644
+index 97b207dafa..3d28f598c1 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,8 +21,8 @@
@@ -127,7 +127,7 @@ index 10da56f1c5..bce404bcf7 100644
              "Generated during 'gn gen' by //BUILD.gn.",
              "",
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index 4a2725e9c1..b05c67718c 100644
+index 1754d9b6f8..745a12996c 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -217,7 +217,7 @@ index 9c3c438d43..2b087726f1 100644
  
  rtc_source_set("audio_encoder_g722_config") {
 diff --git a/api/audio_codecs/opus/BUILD.gn b/api/audio_codecs/opus/BUILD.gn
-index 335287e87f..027d724e6c 100644
+index ae09637e61..3fc0b72411 100644
 --- a/api/audio_codecs/opus/BUILD.gn
 +++ b/api/audio_codecs/opus/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -292,7 +292,7 @@ index 873aaacb64..30a54c0fd6 100644
  
  rtc_library("audio") {
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index b1b55c390f..2d66ca0fe1 100644
+index e48719b1c2..c7c754fd02 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -280,7 +280,7 @@ if (rtc_build_with_neon) {
@@ -482,7 +482,7 @@ index 943e843d53..90496efd4e 100644
      }
    }
 diff --git a/modules/audio_processing/agc2/BUILD.gn b/modules/audio_processing/agc2/BUILD.gn
-index 60dd1c32c7..915288c2a5 100644
+index cb1f43b4de..508e176d03 100644
 --- a/modules/audio_processing/agc2/BUILD.gn
 +++ b/modules/audio_processing/agc2/BUILD.gn
 @@ -250,7 +250,7 @@ rtc_library("vad_wrapper") {
@@ -495,7 +495,7 @@ index 60dd1c32c7..915288c2a5 100644
    }
  
 diff --git a/modules/audio_processing/agc2/rnn_vad/BUILD.gn b/modules/audio_processing/agc2/rnn_vad/BUILD.gn
-index e0bbffd648..1fcc93de7f 100644
+index a4bb76f905..ea4622f963 100644
 --- a/modules/audio_processing/agc2/rnn_vad/BUILD.gn
 +++ b/modules/audio_processing/agc2/rnn_vad/BUILD.gn
 @@ -19,7 +19,7 @@ rtc_library("rnn_vad") {
@@ -575,7 +575,7 @@ index d675faee9e..a533779b78 100644
  import("../../webrtc.gni")
  
 diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index bd6b20877b..8ba1875240 100644
+index a15c307ebd..5b88eb295e 100644
 --- a/modules/video_coding/BUILD.gn
 +++ b/modules/video_coding/BUILD.gn
 @@ -6,7 +6,7 @@
@@ -603,7 +603,7 @@ index b7f7de1e26..277e145f15 100644
  
  if (rtc_build_libsrtp) {
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 5d4c5c494d..835fd0da40 100644
+index dc7a45655d..62d8545334 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -9,8 +9,8 @@
@@ -648,7 +648,7 @@ index f7a4620f5b..1dda32167d 100644
  
  rtc_library("yield") {
 diff --git a/rtc_base/system/BUILD.gn b/rtc_base/system/BUILD.gn
-index 9f9f1f7a0d..306229f87a 100644
+index 59bcdced59..a6f2db7b60 100644
 --- a/rtc_base/system/BUILD.gn
 +++ b/rtc_base/system/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -663,7 +663,7 @@ index 9f9f1f7a0d..306229f87a 100644
  
  rtc_source_set("arch") {
 diff --git a/rtc_tools/network_tester/BUILD.gn b/rtc_tools/network_tester/BUILD.gn
-index 43da21ca33..e0774e7148 100644
+index bdffdc259f..2f2532e557 100644
 --- a/rtc_tools/network_tester/BUILD.gn
 +++ b/rtc_tools/network_tester/BUILD.gn
 @@ -194,8 +194,8 @@ if (is_android) {
@@ -678,7 +678,7 @@ index 43da21ca33..e0774e7148 100644
      output_extension = "so"
  
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index 4c6f11c24e..e961dbfd24 100644
+index 6b4c5b368c..795549f790 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -9,12 +9,12 @@
@@ -732,7 +732,7 @@ index 2fcd3c144a..59959a0bb0 100644
  import("../webrtc.gni")
  
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index 2887fb11d9..310069579a 100644
+index 7f743f2bcc..822dc272fa 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -6,10 +6,10 @@

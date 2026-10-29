@@ -1678,7 +1678,7 @@ if (rtc_include_tests) {
   }
 
   rtc_cc_test("p2p_dtls_transport_unittest") {
-    sources = [ "dtls/dtls_transport_unittest.cc" ]
+    sources = [ "dtls/p2p_dtls_transport_unittest.cc" ]
     deps = [
       ":dtls_transport",
       ":dtls_transport_internal",

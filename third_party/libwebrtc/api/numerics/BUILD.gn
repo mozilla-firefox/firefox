@@ -24,7 +24,7 @@ rtc_library("numerics") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("numerics_unittests") {
+  rtc_cc_test("samples_stats_counter_unittest") {
     sources = [ "samples_stats_counter_unittest.cc" ]
 
     deps = [

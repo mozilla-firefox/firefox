@@ -80,7 +80,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "congestion_controller/scream:scream_feedback_unittest",
       "congestion_controller/scream:scream_network_controller_unittest",
       "congestion_controller/scream:scream_v2_unittest",
-      "congestion_controller/scream/test:cc_feedback_generator_unittests",
+      "congestion_controller/scream/test:cc_feedback_generator_unittest",
       "pacing:bitrate_prober_unittest",
       "pacing:interval_budget_unittest",
       "pacing:pacing_controller_unittest",

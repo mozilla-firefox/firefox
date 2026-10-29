@@ -314,7 +314,7 @@ if (rtc_include_tests) {
     configs += [ "..:apm_debug_dump" ]
   }
 
-  rtc_cc_test("speech_level_estimator_unittest_test") {
+  rtc_cc_test("speech_level_estimator_unittest") {
     sources = [ "speech_level_estimator_unittest.cc" ]
     deps = [
       ":common",
@@ -364,7 +364,7 @@ if (rtc_include_tests) {
     configs += [ "..:apm_debug_dump" ]
   }
 
-  rtc_cc_test("saturation_protector_unittest_test") {
+  rtc_cc_test("saturation_protector_unittest") {
     sources = [ "saturation_protector_unittest.cc" ]
     deps = [
       ":common",
@@ -375,7 +375,7 @@ if (rtc_include_tests) {
     configs += [ "..:apm_debug_dump" ]
   }
 
-  rtc_cc_test("biquad_filter_unittests") {
+  rtc_cc_test("biquad_filter_unittest") {
     sources = [ "biquad_filter_unittest.cc" ]
     deps = [
       ":biquad_filter",
@@ -523,7 +523,7 @@ if (rtc_include_tests) {
     configs += [ "..:apm_debug_dump" ]
   }
 
-  rtc_cc_test("noise_estimator_unittests") {
+  rtc_cc_test("noise_level_estimator_unittest") {
     configs += [ "..:apm_debug_dump" ]
 
     sources = [ "noise_level_estimator_unittest.cc" ]
@@ -538,7 +538,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("vad_wrapper_unittests") {
+  rtc_cc_test("vad_wrapper_unittest") {
     sources = [ "vad_wrapper_unittest.cc" ]
     deps = [
       ":common",
@@ -570,7 +570,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("input_volume_stats_reporter_unittests") {
+  rtc_cc_test("input_volume_stats_reporter_unittest") {
     sources = [ "input_volume_stats_reporter_unittest.cc" ]
     deps = [
       ":input_volume_stats_reporter",

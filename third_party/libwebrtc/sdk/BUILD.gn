@@ -30,7 +30,7 @@ rtc_library("media_constraints") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("sdk_tests") {
+  rtc_cc_test("media_constraints_unittest") {
     sources = [ "media_constraints_unittest.cc" ]
     deps = [
       ":media_constraints",

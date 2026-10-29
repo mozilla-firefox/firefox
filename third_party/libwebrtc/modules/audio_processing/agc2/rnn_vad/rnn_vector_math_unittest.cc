@@ -8,11 +8,10 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "modules/audio_processing/agc2/rnn_vad/vector_math.h"
-
 #include <vector>
 
 #include "modules/audio_processing/agc2/cpu_features.h"
+#include "modules/audio_processing/agc2/rnn_vad/vector_math.h"
 #include "test/gtest.h"
 
 namespace webrtc {

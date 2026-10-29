@@ -325,7 +325,7 @@ if (rtc_include_tests && !build_with_chromium) {
     deps = [ ":sinc_resampler" ]
   }
 
-  rtc_cc_test("allocation_counter_unittest") {
+  rtc_cc_test("allocation_counter") {
     sources = [
       "allocation_counter.cc",
       "allocation_counter.h",
@@ -423,7 +423,7 @@ if (rtc_include_tests && !build_with_chromium) {
   }
 
   rtc_cc_test("common_audio_ring_buffer_unittest") {
-    sources = [ "ring_buffer_unittest.cc" ]
+    sources = [ "common_audio_ring_buffer_unittest.cc" ]
     deps = [
       ":common_audio_c",
       "../test:test_support",
@@ -534,7 +534,7 @@ if (rtc_include_tests && !build_with_chromium) {
   rtc_test_suite("common_audio_unittests") {
     testonly = true
     tests = [
-      ":allocation_counter_unittest",
+      ":allocation_counter",
       ":audio_converter_unittest",
       ":audio_util_unittest",
       ":channel_buffer_unittest",

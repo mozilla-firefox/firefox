@@ -131,7 +131,7 @@ rtc_library("pending_task_safety_flag") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("task_queue_default_factory_unittests") {
+  rtc_cc_test("default_task_queue_factory_unittest") {
     sources = [ "default_task_queue_factory_unittest.cc" ]
     deps = [
       ":default_task_queue_factory",
@@ -140,7 +140,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("pending_task_safety_flag_unittests") {
+  rtc_cc_test("pending_task_safety_flag_unittest") {
     sources = [ "pending_task_safety_flag_unittest.cc" ]
     deps = [
       ":pending_task_safety_flag",

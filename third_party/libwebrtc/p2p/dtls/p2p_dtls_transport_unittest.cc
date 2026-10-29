@@ -8,8 +8,6 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
-#include "p2p/dtls/dtls_transport.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -41,6 +39,7 @@
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/packet_transport_internal.h"
 #include "p2p/base/transport_description.h"
+#include "p2p/dtls/dtls_transport.h"
 #include "p2p/dtls/dtls_transport_internal.h"
 #include "p2p/dtls/dtls_utils.h"
 #include "p2p/test/fake_ice_transport.h"
@@ -1372,16 +1371,21 @@ TEST_P(DtlsTransportInternalImplVersionTest,
       EV_CLIENT_SEND,  // p2 (retransmit)
 
       EV_SERVER_RECV,  // p1
-      EV_SERVER_SEND, EV_SERVER_SEND,
+      EV_SERVER_SEND,
+      EV_SERVER_SEND,
       EV_SERVER_RECV,  // p2 (retransmit)
-      EV_CLIENT_RECV, EV_CLIENT_RECV,
+      EV_CLIENT_RECV,
+      EV_CLIENT_RECV,
 
       // Flight 2
-      EV_CLIENT_SEND, EV_CLIENT_WRITABLE,
+      EV_CLIENT_SEND,
+      EV_CLIENT_WRITABLE,
 
       EV_SERVER_SEND,  // unknown??
 
-      EV_SERVER_RECV, EV_SERVER_SEND, EV_SERVER_WRITABLE,
+      EV_SERVER_RECV,
+      EV_SERVER_SEND,
+      EV_SERVER_WRITABLE,
 
       EV_CLIENT_RECV,  // unknown??
   };
