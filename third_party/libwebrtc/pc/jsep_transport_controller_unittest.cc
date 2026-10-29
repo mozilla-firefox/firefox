@@ -79,8 +79,11 @@ namespace webrtc {
 namespace {
 
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
+using ::testing::IsTrue;
 using ::testing::Optional;
 using ::testing::Pair;
+using ::testing::SizeIs;
 
 constexpr TimeDelta kTimeout = TimeDelta::Millis(100);
 const char kIceUfrag1[] = "u0001";
@@ -392,7 +395,8 @@ class JsepTransportControllerTest : public JsepTransportController::Observer,
             ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
             .ok());
     transport_controller_->MaybeStartGathering(
-        /*discard_candidate_pool=*/false);
+        /*discard_candidate_pool=*/false,
+        /*on_pooled_credentials=*/nullptr);
 
     SendTask(network_thread_.get(), [this] {
       auto fake_audio_dtls = static_cast<FakeDtlsTransport*>(
@@ -765,7 +769,8 @@ TEST_F(JsepTransportControllerTest, MaybeStartGathering) {
           .ok());
   // After setting the local description, we should be able to start gathering
   // candidates.
-  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false);
+  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false,
+                                             /*on_pooled_credentials=*/nullptr);
   EXPECT_THAT(
       WaitUntil([&] { return gathering_state_; },
                 ::testing::Eq(kIceGatheringGathering), {.timeout = kTimeout}),
@@ -786,15 +791,43 @@ TEST_F(JsepTransportControllerTest, MaybeStartGatheringDiscardsCandidatePool) {
       transport_controller_
           ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
           .ok());
+  // The credentials are delivered asynchronously on the signaling thread.
+  std::optional<std::vector<IceParameters>> credentials;
+  auto on_pooled_credentials = [&](std::vector<IceParameters> c) {
+    credentials = std::move(c);
+  };
   // The fake ICE transports don't take sessions from the pool.
-  EXPECT_EQ(transport_controller_
-                ->MaybeStartGathering(/*discard_candidate_pool=*/false)
-                .size(),
-            2u);
-  EXPECT_TRUE(transport_controller_
-                  ->MaybeStartGathering(/*discard_candidate_pool=*/true)
-                  .empty());
+  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false,
+                                             on_pooled_credentials);
+  EXPECT_THAT(WaitUntil([&] { return credentials.has_value(); }, IsTrue(),
+                        {.timeout = kTimeout}),
+              IsRtcOk());
+  EXPECT_THAT(credentials, Optional(SizeIs(2)));
 
+  credentials.reset();
+  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/true,
+                                             on_pooled_credentials);
+  EXPECT_THAT(WaitUntil([&] { return credentials.has_value(); }, IsTrue(),
+                        {.timeout = kTimeout}),
+              IsRtcOk());
+  EXPECT_THAT(credentials, Optional(IsEmpty()));
+
+  SendTask(network_thread_.get(),
+           [&] { EXPECT_EQ(port_allocator_->GetPooledSession(), nullptr); });
+}
+
+TEST_F(JsepTransportControllerTest, DiscardCandidatePool) {
+  CreateJsepTransportController(JsepTransportController::Config());
+  SendTask(network_thread_.get(), [&] {
+    port_allocator_->SetConfiguration(
+        /*stun_servers=*/{}, /*turn_servers=*/{}, /*candidate_pool_size=*/1,
+        NO_PRUNE, /*turn_customizer=*/nullptr,
+        /*stun_candidate_keepalive_interval=*/std::nullopt);
+    EXPECT_NE(port_allocator_->GetPooledSession(), nullptr);
+  });
+  transport_controller_->DiscardCandidatePool();
+  // Tasks posted to the network thread run in order, so this task runs after
+  // the pool has been discarded.
   SendTask(network_thread_.get(),
            [&] { EXPECT_EQ(port_allocator_->GetPooledSession(), nullptr); });
 }
@@ -1504,7 +1537,8 @@ TEST_F(JsepTransportControllerTest, SignalCandidatesGathered) {
       transport_controller_
           ->SetLocalDescription(SdpType::kOffer, description.get(), nullptr)
           .ok());
-  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false);
+  transport_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false,
+                                             /*on_pooled_credentials=*/nullptr);
 
   auto fake_audio_dtls = GetFakeDtlsTransport(kAudioMid1);
   SendTask(network_thread_.get(), [&] {

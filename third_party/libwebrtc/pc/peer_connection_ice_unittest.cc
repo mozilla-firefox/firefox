@@ -1676,6 +1676,47 @@ TEST_P(PeerConnectionIceTest, IceCredentialsCreateAnswer) {
   }
 }
 
+// Applies an offer and its answer in the same task, so that the remote answer
+// is applied before the pooled ICE credentials that gathering for the offer
+// reports arrive. Those credentials can include the ones the transport uses,
+// since the transport relabels whichever pooled session it takes. They must not
+// be used once the answer has discarded the candidate pool, otherwise the ICE
+// restart offer below would keep the current credentials.
+TEST_P(PeerConnectionIceTest, IceRestartAfterRemoteAnswerChangesCredentials) {
+  RTCConfiguration config;
+  config.ice_candidate_pool_size = 2;
+  auto caller = CreatePeerConnection(config);
+  caller->AddAudioTrack("a");
+  auto callee = CreatePeerConnection();
+
+  std::unique_ptr<SessionDescriptionInterface> offer = caller->CreateOffer();
+  ASSERT_TRUE(offer);
+  ASSERT_TRUE(callee->SetRemoteDescription(offer->Clone()));
+  std::unique_ptr<SessionDescriptionInterface> answer = callee->CreateAnswer();
+  ASSERT_TRUE(answer);
+
+  auto sld_observer = make_ref_counted<FakeSetLocalDescriptionObserver>();
+  auto srd_observer = make_ref_counted<FakeSetRemoteDescriptionObserver>();
+  caller->pc()->SetLocalDescription(std::move(offer), sld_observer);
+  caller->pc()->SetRemoteDescription(std::move(answer), srd_observer);
+  ASSERT_TRUE(sld_observer->called());
+  EXPECT_TRUE(sld_observer->error().ok());
+  ASSERT_TRUE(srd_observer->called());
+  EXPECT_TRUE(srd_observer->error().ok());
+  // Run the tasks posted to the network thread, then their replies.
+  caller->network_thread()->BlockingCall([] {});
+  main_.Flush();
+
+  RTCOfferAnswerOptions options;
+  options.ice_restart = true;
+  std::unique_ptr<SessionDescriptionInterface> restart_offer =
+      caller->CreateOffer(options);
+  ASSERT_TRUE(restart_offer);
+  EXPECT_NE(GetFirstTransportDescription(restart_offer.get())->ice_ufrag,
+            GetFirstTransportDescription(caller->pc()->local_description())
+                ->ice_ufrag);
+}
+
 // Regression test for https://bugs.chromium.org/p/webrtc/issues/detail?id=4728
 TEST_P(PeerConnectionIceTest, CloseDoesNotTransitionGatheringStateToComplete) {
   auto pc = CreatePeerConnectionWithAudioVideo();

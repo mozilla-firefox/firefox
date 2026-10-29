@@ -259,11 +259,20 @@ class JsepTransportController final {
   // Start gathering candidates for any new transports, or transports doing an
   // ICE restart. New transports take sessions from the port allocator's
   // candidate pool, if there are any. If `discard_candidate_pool` is true, the
-  // sessions that are left in the pool are discarded afterwards. Returns the
-  // pooled ICE credentials from the port allocator.
+  // sessions that are left in the pool are discarded afterwards. Doesn't
+  // block: if `on_pooled_credentials` is set, it's called on the signaling
+  // thread with the pooled ICE credentials that are left.
   //
   // Must be called on the signaling thread.
-  std::vector<IceParameters> MaybeStartGathering(bool discard_candidate_pool);
+  void MaybeStartGathering(
+      bool discard_candidate_pool,
+      absl::AnyInvocable<void(std::vector<IceParameters>) &&>
+          on_pooled_credentials);
+  // Discards the sessions in the port allocator's candidate pool. Doesn't
+  // block.
+  //
+  // Must be called on the signaling thread.
+  void DiscardCandidatePool();
   RTCError AddRemoteCandidates(absl::string_view mid,
                                const std::vector<Candidate>& candidates);
   // Must be called on the signaling thread.
@@ -330,7 +339,7 @@ class JsepTransportController final {
   // Always called via a blocking call from the signaling thread.
   RTCError RollbackTransports_n() RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
+  // Called from a task that MaybeStartGathering() posts.
   void MaybeStartGathering_n() RTC_RUN_ON(network_thread_);
 
   // Runs `task` on the network thread without blocking. If the signaling and

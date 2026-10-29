@@ -68,7 +68,6 @@
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/p2p_constants.h"
 #include "p2p/base/p2p_transport_channel.h"
-#include "p2p/base/port_allocator.h"
 #include "p2p/base/transport_description.h"
 #include "p2p/base/transport_description_factory.h"
 #include "p2p/base/transport_info.h"
@@ -1936,12 +1935,6 @@ const DataChannelController* SdpOfferAnswerHandler::data_channel_controller()
     const {
   return pc_->data_channel_controller();
 }
-PortAllocator* SdpOfferAnswerHandler::port_allocator() {
-  return pc_->port_allocator();
-}
-const PortAllocator* SdpOfferAnswerHandler::port_allocator() const {
-  return pc_->port_allocator();
-}
 RtpTransmissionManager* SdpOfferAnswerHandler::rtp_manager() {
   return pc_->rtp_manager();
 }
@@ -1960,7 +1953,19 @@ void SdpOfferAnswerHandler::PrepareForShutdown() {
 void SdpOfferAnswerHandler::UpdateCachedIceCredentials(
     std::vector<IceParameters> credentials) {
   RTC_DCHECK_RUN_ON(signaling_thread());
+  ++cached_pooled_ice_credentials_generation_;
   cached_pooled_ice_credentials_ = std::move(credentials);
+}
+
+void SdpOfferAnswerHandler::OnPooledIceCredentials(
+    uint32_t generation,
+    std::vector<IceParameters> credentials) {
+  RTC_DCHECK_RUN_ON(signaling_thread());
+  // If the cache was set or cleared since the MaybeStartGathering() call, these
+  // credentials are older than what it holds.
+  if (generation == cached_pooled_ice_credentials_generation_) {
+    cached_pooled_ice_credentials_ = std::move(credentials);
+  }
 }
 
 void SdpOfferAnswerHandler::Close() {
@@ -3208,9 +3213,19 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
   // For an answer, the candidate pool is discarded as well. This must happen
   // after gathering has started, otherwise the new transports can't take
   // sessions from the pool (see webrtc:572439023).
-  cached_pooled_ice_credentials_ =
-      transport_controller_s()->MaybeStartGathering(
-          /*discard_candidate_pool=*/is_answer);
+  if (is_answer) {
+    UpdateCachedIceCredentials({});
+  }
+  transport_controller_s()->MaybeStartGathering(
+      /*discard_candidate_pool=*/is_answer,
+      [this_weak_ptr = weak_ptr_factory_.GetWeakPtr(),
+       generation = cached_pooled_ice_credentials_generation_](
+          std::vector<IceParameters> credentials) {
+        if (this_weak_ptr) {
+          this_weak_ptr->OnPooledIceCredentials(generation,
+                                                std::move(credentials));
+        }
+      });
 }
 
 void SdpOfferAnswerHandler::DoCreateOffer(
@@ -3421,10 +3436,11 @@ void SdpOfferAnswerHandler::SetRemoteDescriptionPostProcess(bool was_answer) {
   RTC_DCHECK(remote_description());
 
   if (was_answer) {
-    // TODO(deadbeef): We already had to hop to the network thread for
-    // MaybeStartGathering...
-    context_->network_thread()->BlockingCall(
-        [this] { port_allocator()->DiscardCandidatePool(); });
+    transport_controller_s()->DiscardCandidatePool();
+    // Also drops replies of earlier MaybeStartGathering() calls that are still
+    // in flight. Their credentials are from the pool that is being discarded
+    // and can include the ones that are in use.
+    UpdateCachedIceCredentials({});
   }
 
   pc_->NoteUsageEvent(UsageEvent::SET_REMOTE_DESCRIPTION_SUCCEEDED);

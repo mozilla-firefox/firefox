@@ -462,19 +462,41 @@ std::unique_ptr<SSLCertChain> JsepTransportController::GetRemoteSSLCertChain(
   return dtls->GetRemoteSSLCertChain();
 }
 
-std::vector<IceParameters> JsepTransportController::MaybeStartGathering(
-    bool discard_candidate_pool) {
+void JsepTransportController::MaybeStartGathering(
+    bool discard_candidate_pool,
+    absl::AnyInvocable<void(std::vector<IceParameters>) &&>
+        on_pooled_credentials) {
   RTC_DCHECK_RUN_ON(signaling_thread_);
-  return network_thread_->BlockingCall([&] {
+  RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
+  network_thread_->PostTask(SafeTask(
+      network_safety_,
+      [this, discard_candidate_pool,
+       on_pooled_credentials = std::move(on_pooled_credentials)]() mutable {
+        RTC_DCHECK_RUN_ON(network_thread_);
+        MaybeStartGathering_n();
+        // Discard the pool only after gathering has started, so that new
+        // transports can take pooled sessions first (RFC 8829, section 5.11).
+        if (discard_candidate_pool) {
+          port_allocator_->DiscardCandidatePool();
+        }
+        if (on_pooled_credentials) {
+          // The reply doesn't use `this`. The callback guards its own state.
+          signaling_thread_->PostTask(
+              [on_pooled_credentials = std::move(on_pooled_credentials),
+               credentials =
+                   port_allocator_->GetPooledIceCredentials()]() mutable {
+                std::move(on_pooled_credentials)(std::move(credentials));
+              });
+        }
+      }));
+}
+
+void JsepTransportController::DiscardCandidatePool() {
+  RTC_DCHECK_RUN_ON(signaling_thread_);
+  network_thread_->PostTask(SafeTask(network_safety_, [this] {
     RTC_DCHECK_RUN_ON(network_thread_);
-    MaybeStartGathering_n();
-    // Discard the pool only after gathering has started, so that new
-    // transports can take pooled sessions first (RFC 8829, section 5.11).
-    if (discard_candidate_pool) {
-      port_allocator_->DiscardCandidatePool();
-    }
-    return port_allocator_->GetPooledIceCredentials();
-  });
+    port_allocator_->DiscardCandidatePool();
+  }));
 }
 
 void JsepTransportController::MaybeStartGathering_n() {

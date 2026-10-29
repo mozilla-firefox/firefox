@@ -240,7 +240,8 @@ void ScenarioIceConnectionImpl::SetLocalSdp(SdpType type,
       local_description_->GetType(), local_description_->description(),
       remote_description_ ? remote_description_->description() : nullptr);
   RTC_CHECK(res.ok()) << res.message();
-  jsep_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false);
+  jsep_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false,
+                                        /*on_pooled_credentials=*/nullptr);
 }
 
 bool ScenarioIceConnectionImpl::OnTransportChanged(
