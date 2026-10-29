@@ -25,7 +25,6 @@
 #include "api/video_codecs/video_encoder_factory_interface.h"
 #include "api/video_codecs/video_encoder_interface.h"
 #include "modules/video_coding/utility/cbr_layer_rate_tracker.h"
-#include "modules/video_coding/utility/reference_buffer_tracker.h"
 #include "rtc_base/numerics/rational.h"
 #include "third_party/libaom/source/libaom/aom/aom_codec.h"
 #include "third_party/libaom/source/libaom/aom/aom_encoder.h"
@@ -84,7 +83,6 @@ class LibaomAv1EncoderV2 : public VideoEncoderInterface {
   std::array<Rational, kMaxSpatialLayers> scaling_factor_by_spatial_id_;
   int max_number_of_threads_ = 0;
   std::array<std::optional<Resolution>, kNumBuffers> last_resolution_in_buffer_;
-  ReferenceBufferTracker reference_buffer_tracker_{kNumBuffers};
   // Recreated on every `InitEncode`, since what it has learned only describes
   // the configuration it was fed.
   std::unique_ptr<CbrLayerRateTracker> rate_tracker_;

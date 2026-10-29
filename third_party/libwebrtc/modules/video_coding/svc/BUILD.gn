@@ -66,6 +66,21 @@ rtc_library("scalability_structures") {
   ]
 }
 
+rtc_library("reference_buffer_manager") {
+  sources = [
+    "reference_buffer_manager.cc",
+    "reference_buffer_manager.h",
+  ]
+  deps = [
+    "../../../api/units:timestamp",
+    "../../../api/video_codecs:video_encoder_factory_interface",
+    "../../../api/video_codecs:video_encoder_interface",
+    "../../../rtc_base:checks",
+    "../../../rtc_base:logging",
+    "//third_party/abseil-cpp/absl/algorithm:container",
+  ]
+}
+
 rtc_library("svc_rate_allocator") {
   sources = [
     "svc_rate_allocator.cc",
@@ -109,6 +124,17 @@ rtc_library("simulcast_to_svc_converter") {
 }
 
 if (rtc_include_tests) {
+  rtc_cc_test("reference_buffer_manager_unittest") {
+    sources = [ "reference_buffer_manager_unittest.cc" ]
+    deps = [
+      ":reference_buffer_manager",
+      "../../../api/units:timestamp",
+      "../../../api/video_codecs:video_encoder_interface",
+      "../../../rtc_base:checks",
+      "../../../test:test_support",
+    ]
+  }
+
   rtc_library("scalability_structure_test_helpers") {
     testonly = true
     sources = [

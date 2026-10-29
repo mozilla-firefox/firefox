@@ -213,14 +213,14 @@ TEST(LibaomAv1EncoderV2Test, CompoundPredictionUsedForTwoAndThreeReferences) {
   // Two references (LAST=2, GOLDEN=1) on m12 = (p1 + p2) / 2: exercises
   // GOLDEN_LAST compound prediction.
   std::optional<libgav1::ObuFrameHeader> comp2_hdr =
-      encode_after_p2(m12, {1, 2});
+      encode_after_p2(m12, {2, 1});
   ASSERT_TRUE(comp2_hdr.has_value());
   EXPECT_TRUE(comp2_hdr->reference_mode_select);
 
   // Three references (LAST=2, GOLDEN=1, ALTREF=0) on m02 = (p0 + p2) / 2:
   // exercises ALTREF_LAST compound prediction.
   std::optional<libgav1::ObuFrameHeader> comp3_hdr =
-      encode_after_p2(m02, {0, 1, 2});
+      encode_after_p2(m02, {2, 1, 0});
   ASSERT_TRUE(comp3_hdr.has_value());
   EXPECT_TRUE(comp3_hdr->reference_mode_select);
 }

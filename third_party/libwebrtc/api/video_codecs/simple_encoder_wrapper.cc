@@ -168,6 +168,7 @@ void SimpleEncoderWrapper::Encode(scoped_refptr<VideoFrameBuffer> frame_buffer,
   const Resolution input_resolution{.width = frame_buffer->width(),
                                     .height = frame_buffer->height()};
 
+  std::vector<int> updated_in_temporal_unit;
   for (size_t s = 0; s < configs.size(); ++s) {
     const ScalableVideoController::LayerFrameConfig& config = configs[s];
     frame_infos.push_back(svc_controller_->OnEncodeDone(config));
@@ -189,6 +190,14 @@ void SimpleEncoderWrapper::Encode(scoped_refptr<VideoFrameBuffer> frame_buffer,
         RTC_CHECK(!update_buffer.has_value());
         update_buffer = buffer.id;
       }
+    }
+    // References are given most recent first. Buffers updated earlier in this
+    // temporal unit, i.e. inter-layer references, are the most recent.
+    absl::c_stable_partition(reference_buffers, [&](int id) {
+      return absl::c_linear_search(updated_in_temporal_unit, id);
+    });
+    if (update_buffer.has_value()) {
+      updated_in_temporal_unit.push_back(*update_buffer);
     }
     settings.set_frame_type(reference_buffers.empty() ? FrameType::kKeyframe
                                                       : FrameType::kDeltaFrame);

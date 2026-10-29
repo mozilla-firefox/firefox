@@ -341,8 +341,6 @@ rtc_library("video_coding_utility") {
     "utility/qp_parser.h",
     "utility/quality_scaler.cc",
     "utility/quality_scaler.h",
-    "utility/reference_buffer_tracker.cc",
-    "utility/reference_buffer_tracker.h",
     "utility/simulcast_rate_allocator.cc",
     "utility/simulcast_rate_allocator.h",
     "utility/simulcast_utility.cc",
@@ -1035,7 +1033,6 @@ if (rtc_include_tests) {
       ":nack_requester_unittest",
       ":qp_parser_unittest",
       ":quality_scaler_unittest",
-      ":reference_buffer_tracker_unittest",
       ":rtp_frame_reference_finder_unittest",
       ":rtp_vp8_ref_finder_unittest",
       ":rtp_vp9_ref_finder_unittest",
@@ -1059,6 +1056,7 @@ if (rtc_include_tests) {
       ":vp9_uncompressed_header_parser_unittest",
       "codecs/av1:av1_svc_config_unittest",
       "codecs/av1:dav1d_decoder_unittest",
+      "svc:reference_buffer_manager_unittest",
       "timing:decode_time_percentile_filter_unittest",
       "timing:timing_unittest",
     ]
@@ -1567,15 +1565,6 @@ if (rtc_include_tests) {
       "../../rtc_base:rtc_event",
       "../../rtc_base:task_queue_for_test",
       "../../test:create_test_field_trials",
-      "../../test:test_support",
-    ]
-  }
-
-  rtc_cc_test("reference_buffer_tracker_unittest") {
-    sources = [ "utility/reference_buffer_tracker_unittest.cc" ]
-    deps = [
-      ":video_coding_utility",
-      "../../api/units:timestamp",
       "../../test:test_support",
     ]
   }
