@@ -1031,6 +1031,9 @@ rtc_library("socket_address") {
     ":safe_conversions",
     ":stringutils",
     "system:rtc_export",
+    "//third_party/abseil-cpp/absl/base:core_headers",
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/strings:str_format",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
   if (is_win) {
@@ -1327,6 +1330,7 @@ if (!build_with_mozilla) {
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/memory",
     "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/strings:str_format",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 
@@ -2191,6 +2195,7 @@ if (rtc_include_tests) {
         ":net_helpers",
         ":socket_address",
         "../test:test_support",
+        "//third_party/abseil-cpp/absl/strings",
       ]
     }
 

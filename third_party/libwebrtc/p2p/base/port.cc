@@ -911,9 +911,11 @@ void Port::OnNetworkSliceChanged(const ::webrtc::Network* network) {
 std::string Port::ToString() const {
   RTC_DCHECK_RUN_ON(thread_);
   StringBuilder ss;
+  // Fits the typical description without reallocations.
+  ss.Reserve(128);
   ss << "Port[" << ToHex(reinterpret_cast<uintptr_t>(this)) << ":"
      << content_name_ << ":" << component_ << ":" << generation_ << ":"
-     << IceCandidateTypeToString(type_) << ":" << network_->ToString() << "]";
+     << IceCandidateTypeToString(type_) << ":" << *network_ << "]";
   return ss.Release();
 }
 

@@ -476,6 +476,8 @@ bool Candidate::MatchesForRemoval(const Candidate& c) const {
 
 std::string Candidate::ToStringInternal(bool sensitive) const {
   StringBuilder ost;
+  // Fits the typical description without reallocations.
+  ost.Reserve(256);
   std::string address =
       sensitive ? address_.ToSensitiveString() : address_.ToString();
   std::string related_address = sensitive ? related_address_.ToSensitiveString()

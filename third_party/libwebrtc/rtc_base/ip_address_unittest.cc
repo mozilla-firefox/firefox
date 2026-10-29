@@ -1074,6 +1074,26 @@ TEST(IPAddressTest, TestToSensitiveString) {
   EXPECT_EQ(kIPv6PublicAddr2AnonymizedString, addr_v6_2.ToSensitiveString());
 }
 
+TEST(IPAddressTest, SensitiveMatchesToSensitiveString) {
+  const struct {
+    IPAddress ip;
+    std::string expected;
+  } test_cases[] = {
+      {IPAddress(kIPv4PublicAddr), kIPv4PublicAddrAnonymizedString},
+      {IPAddress(kIPv6PublicAddr), kIPv6PublicAddrAnonymizedString},
+      {IPAddress(kIPv6PublicAddr2), kIPv6PublicAddr2AnonymizedString},
+      {IPAddress(kIPv4MappedPublicAddr), "0:0:0:x:x:x:x:x"},
+      {IPAddress(INADDR_ANY), "0.0.0.x"},
+      {IPAddress(in6addr_any), "0:0:0:x:x:x:x:x"},
+      {IPAddress(), ""},
+  };
+  for (const auto& [ip, expected] : test_cases) {
+    EXPECT_EQ(ip.ToSensitiveString(), expected);
+    EXPECT_EQ(IPAddress::Sensitive(ip).view(), expected);
+    EXPECT_EQ(absl::StrCat(IPAddress::Sensitive(ip)), expected);
+  }
+}
+
 TEST(IPAddressTest, TestInterfaceAddress) {
   in6_addr addr;
   InterfaceAddress addr1(kIPv6PublicAddr, IPV6_ADDRESS_FLAG_TEMPORARY);

@@ -1000,7 +1000,7 @@ index 7198d72179..66e3ad0721 100644
          "/config/external/nspr",
          "/nsprpub/lib/ds",
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index fed61fdcf3..8bf194cf0b 100644
+index 10d76c41b2..f5e82704e2 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -406,6 +406,7 @@ rtc_library("sample_counter") {
@@ -1029,7 +1029,7 @@ index fed61fdcf3..8bf194cf0b 100644
    if (rtc_build_json) {
      deps += [ "//third_party/jsoncpp" ]
    } else {
-@@ -1277,6 +1281,7 @@ if (!build_with_chromium) {
+@@ -1280,6 +1284,7 @@ if (!build_with_chromium) {
  }
  
  rtc_library("network") {
@@ -1037,7 +1037,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "network.cc",
-@@ -1317,16 +1322,20 @@ rtc_library("network") {
+@@ -1321,16 +1326,20 @@ rtc_library("network") {
      deps += [ ":win32" ]
    }
  }
@@ -1058,7 +1058,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "net_helper.cc",
-@@ -1337,8 +1346,10 @@ rtc_library("net_helper") {
+@@ -1341,8 +1350,10 @@ rtc_library("net_helper") {
      "//third_party/abseil-cpp/absl/strings",
    ]
  }
@@ -1069,7 +1069,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "socket_adapters.cc",
-@@ -1355,6 +1366,7 @@ rtc_library("socket_adapters") {
+@@ -1359,6 +1370,7 @@ rtc_library("socket_adapters") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  }
@@ -1077,7 +1077,7 @@ index fed61fdcf3..8bf194cf0b 100644
  
  rtc_library("network_route") {
    sources = [
-@@ -1369,6 +1381,7 @@ rtc_library("network_route") {
+@@ -1373,6 +1385,7 @@ rtc_library("network_route") {
  }
  
  rtc_library("async_tcp_socket") {
@@ -1085,7 +1085,7 @@ index fed61fdcf3..8bf194cf0b 100644
    sources = [
      "async_tcp_socket.cc",
      "async_tcp_socket.h",
-@@ -1388,6 +1401,7 @@ rtc_library("async_tcp_socket") {
+@@ -1392,6 +1405,7 @@ rtc_library("async_tcp_socket") {
      "//third_party/abseil-cpp/absl/memory",
    ]
  }
@@ -1093,7 +1093,7 @@ index fed61fdcf3..8bf194cf0b 100644
  
  rtc_library("clock_aligner") {
    visibility = [ "*" ]
-@@ -1407,6 +1421,7 @@ rtc_library("clock_aligner") {
+@@ -1411,6 +1425,7 @@ rtc_library("clock_aligner") {
  }
  
  rtc_library("async_udp_socket") {
@@ -1101,7 +1101,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "async_udp_socket.cc",
-@@ -1431,8 +1446,10 @@ rtc_library("async_udp_socket") {
+@@ -1435,8 +1450,10 @@ rtc_library("async_udp_socket") {
      "//third_party/abseil-cpp/absl/base:nullability",
    ]
  }
@@ -1112,7 +1112,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "async_packet_socket.cc",
-@@ -1453,6 +1470,7 @@ rtc_library("async_packet_socket") {
+@@ -1457,6 +1474,7 @@ rtc_library("async_packet_socket") {
      "//third_party/abseil-cpp/absl/functional:any_invocable",
    ]
  }
@@ -1120,7 +1120,7 @@ index fed61fdcf3..8bf194cf0b 100644
  
  if (rtc_include_tests) {
    rtc_cc_test("async_packet_socket_unittest") {
-@@ -1551,6 +1569,7 @@ rtc_library("data_rate_limiter") {
+@@ -1555,6 +1573,7 @@ rtc_library("data_rate_limiter") {
  }
  
  rtc_library("unique_id_generator") {
@@ -1128,7 +1128,7 @@ index fed61fdcf3..8bf194cf0b 100644
    sources = [
      "unique_id_generator.cc",
      "unique_id_generator.h",
-@@ -1567,6 +1586,7 @@ rtc_library("unique_id_generator") {
+@@ -1571,6 +1590,7 @@ rtc_library("unique_id_generator") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  }
@@ -1136,7 +1136,7 @@ index fed61fdcf3..8bf194cf0b 100644
  
  rtc_library("crc32") {
    sources = [
-@@ -1593,6 +1613,7 @@ rtc_library("stream") {
+@@ -1597,6 +1617,7 @@ rtc_library("stream") {
  }
  
  rtc_library("rtc_certificate_generator") {
@@ -1144,7 +1144,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "rtc_certificate_generator.cc",
-@@ -1607,6 +1628,7 @@ rtc_library("rtc_certificate_generator") {
+@@ -1611,6 +1632,7 @@ rtc_library("rtc_certificate_generator") {
      "//third_party/abseil-cpp/absl/functional:any_invocable",
    ]
  }
@@ -1152,7 +1152,7 @@ index fed61fdcf3..8bf194cf0b 100644
  
  rtc_source_set("ssl_header") {
    visibility = [ "*" ]
-@@ -1670,6 +1692,7 @@ rtc_library("crypto_random") {
+@@ -1674,6 +1696,7 @@ rtc_library("crypto_random") {
  }
  
  rtc_library("ssl") {
@@ -1160,7 +1160,7 @@ index fed61fdcf3..8bf194cf0b 100644
    visibility = [ "*" ]
    sources = [
      "openssl_key_pair.cc",
-@@ -1743,6 +1766,7 @@ rtc_library("ssl") {
+@@ -1747,6 +1770,7 @@ rtc_library("ssl") {
      deps += [ ":win32" ]
    }
  }
@@ -1168,7 +1168,7 @@ index fed61fdcf3..8bf194cf0b 100644
  
  rtc_library("ssl_adapter") {
    visibility = [ "*" ]
-@@ -3131,7 +3155,7 @@ if (rtc_include_tests) {
+@@ -3136,7 +3160,7 @@ if (rtc_include_tests) {
    }
  }
  

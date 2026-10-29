@@ -79,6 +79,7 @@ namespace webrtc {
 namespace {
 
 using ::testing::Eq;
+using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::IsTrue;
 using ::testing::NotNull;
@@ -1207,6 +1208,11 @@ class FakeAsyncListenSocket : public AsyncListenSocket {
 // Local -> XXXX
 TEST_F(PortTest, TestLocalToLocal) {
   TestLocalToLocal();
+}
+
+TEST_F(PortTest, ToStringIncludesNetworkDescription) {
+  std::unique_ptr<UDPPort> port = CreateUdpPort(kLocalAddr1);
+  EXPECT_THAT(port->ToString(), HasSubstr(port->Network()->ToString()));
 }
 
 TEST_F(PortTest, TestNetworkSliceInitiallyDefault) {

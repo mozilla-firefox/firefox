@@ -1328,18 +1328,8 @@ Network::GuessAdapterFromNetworkCost(int network_cost) {
 
 std::string Network::ToString() const {
   StringBuilder ss;
-  // Print out the first space-terminated token of the network desc, plus
-  // the IP address.
-  ss << "Net[" << description_.substr(0, description_.find(' ')) << ":"
-     << prefix_.ToSensitiveString() << "/" << prefix_length_ << ":"
-     << AdapterTypeToString(type_);
-  if (IsVpn()) {
-    ss << "/" << AdapterTypeToString(underlying_type_for_vpn_);
-  }
-  if (network_slice() != NetworkSlice::NO_SLICE) {
-    ss << "/" << NetworkSliceToString(network_slice());
-  }
-  ss << ":id=" << id_ << "]";
+  ss.Reserve(64);
+  ss << *this;
   return ss.Release();
 }
 

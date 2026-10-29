@@ -11,6 +11,8 @@
 #ifndef RTC_BASE_IP_ADDRESS_H_
 #define RTC_BASE_IP_ADDRESS_H_
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -111,6 +113,26 @@ class RTC_EXPORT IPAddress {
 
   // Same as ToString but anonymizes it by hiding the last part.
   std::string ToSensitiveString() const;
+
+  // The same string as ToSensitiveString(), stored without heap allocations.
+  // Supports AbslStringify, so that it can be appended to e.g. a StringBuilder
+  // without creating a temporary string:
+  //   sb << IPAddress::Sensitive(ip);
+  class RTC_EXPORT Sensitive {
+   public:
+    explicit Sensitive(const IPAddress& ip);
+
+    absl::string_view view() const;
+
+    template <typename Sink>
+    friend void AbslStringify(Sink& sink, const Sensitive& sensitive) {
+      sink.Append(sensitive.view());
+    }
+
+   private:
+    std::array<char, INET6_ADDRSTRLEN> buffer_;
+    size_t length_ = 0;
+  };
 
   // Returns an unmapped address from a possibly-mapped address.
   // Returns the same address if this isn't a mapped address.
