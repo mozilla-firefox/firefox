@@ -10,6 +10,7 @@
 
 #include "modules/rtp_rtcp/source/rtp_sender_video.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -26,6 +27,7 @@
 #include "api/frame_transformer_factory.h"
 #include "api/frame_transformer_interface.h"
 #include "api/make_ref_counted.h"
+#include "api/rtc_error.h"
 #include "api/rtp_header_extension_id.h"
 #include "api/rtp_headers.h"
 #include "api/scoped_refptr.h"
@@ -64,6 +66,8 @@
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
 #include "modules/rtp_rtcp/source/rtp_video_layers_allocation_extension.h"
+#include "modules/rtp_rtcp/source/sframe_descriptor.h"
+#include "modules/sframe/mock_sframe_media_encryptor.h"
 #include "modules/sframe/sframe_encryption_config.h"
 #include "modules/sframe/sframe_encryptor.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
@@ -91,6 +95,7 @@ using ::testing::Le;
 using ::testing::NiceMock;
 using ::testing::Not;
 using ::testing::Optional;
+using ::testing::Return;
 using ::testing::ReturnArg;
 using ::testing::SaveArg;
 using ::testing::SizeIs;
@@ -109,6 +114,7 @@ constexpr RtpHeaderExtensionId kVideoLayersAllocationExtensionId(10);
 constexpr RtpHeaderExtensionId kCorruptionDetectionExtensionId(11);
 
 constexpr int kPayloadType = 100;
+constexpr int kRedPayloadType = 101;
 constexpr VideoCodecType kType = VideoCodecType::kVideoCodecGeneric;
 constexpr uint32_t kRtpTimestamp = 10;
 constexpr RtpTimestampInfo kTimestampInfo =
@@ -172,6 +178,8 @@ class LoopbackTransportTest : public Transport {
 struct TestRtpSenderOptions {
   bool raw_packetization = false;
   bool sframe_required_by_negotiation = false;
+  std::optional<SframeEncryptionConfig> sframe_encryption_config;
+  std::optional<int> red_payload_type;
   FrameEncryptorInterface* frame_encryptor = nullptr;
   scoped_refptr<FrameTransformerInterface> transformer;
 };
@@ -192,6 +200,9 @@ class TestRtpSenderVideo : public RTPSenderVideo {
           config.frame_encryptor = options.frame_encryptor;
           config.sframe_required_by_negotiation =
               options.sframe_required_by_negotiation;
+          config.sframe_encryption_config =
+              std::move(options.sframe_encryption_config);
+          config.red_payload_type = options.red_payload_type;
           return config;
         }()) {}
   ~TestRtpSenderVideo() override = default;
@@ -1950,6 +1961,24 @@ TEST_F(RtpSenderVideoTest, SendEncodedImageIncludesProvidedCsrcs) {
 
 // When Sframe is required but no Sframe encryptor is set up, the frame is
 // dropped (fail closed) and nothing is put on the wire.
+// Returns an Sframe encryptor that produces `ciphertext` for any frame.
+scoped_refptr<NiceMock<MockSframeMediaEncryptor>> CreateSframeEncryptor(
+    std::vector<uint8_t> ciphertext) {
+  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
+      make_ref_counted<NiceMock<MockSframeMediaEncryptor>>();
+  ON_CALL(*encryptor, GetMaxCiphertextByteSize)
+      .WillByDefault(Return(ciphertext.size()));
+  ON_CALL(*encryptor, Encrypt)
+      .WillByDefault([ciphertext = std::move(ciphertext)](
+                         std::span<const uint8_t> /*frame*/,
+                         std::span<const uint8_t> /*additional_data*/,
+                         std::span<uint8_t> encrypted_frame) {
+        std::ranges::copy(ciphertext, encrypted_frame.begin());
+        return RTCErrorOr<size_t>(ciphertext.size());
+      });
+  return encryptor;
+}
+
 TEST_F(RtpSenderVideoTest, SframeRequiredWithoutEncryptorDropsEncodedImage) {
   TestRtpSenderVideo sframe_sender =
       Create({.sframe_required_by_negotiation = true});
@@ -1977,28 +2006,162 @@ TEST_F(RtpSenderVideoTest, SframeNotRequiredSendsEncodedImage) {
   EXPECT_GT(transport_.packets_sent(), 0);
 }
 
-TEST_F(RtpSenderVideoTest, SframeRequiredWithEncryptionStillDropsEncodedImage) {
+// An encryptor may be configured before negotiation requires Sframe; frames
+// are sent as plaintext until then.
+TEST_F(RtpSenderVideoTest, SframeConfiguredButNotRequiredSendsPlaintext) {
+  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
+      make_ref_counted<NiceMock<MockSframeMediaEncryptor>>();
+  EXPECT_CALL(*encryptor, Encrypt).Times(0);
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = false,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerFrame, .encryptor = encryptor}});
+  std::unique_ptr<EncodedImage> encoded_image = CreateDefaultEncodedImage();
+  RTPVideoHeader video_header;
+  video_header.codec = kVideoCodecVP8;
+  video_header.frame_type = VideoFrameType::kVideoFrameKey;
+  auto& vp8 = video_header.video_type_header.emplace<RTPVideoHeaderVP8>();
+  vp8.InitRTPVideoHeaderVP8();
+
+  ASSERT_TRUE(sender.SendEncodedImage(
+      kPayloadType, kVideoCodecVP8, kRtpTimestamp, *encoded_image, video_header,
+      kDefaultExpectedRetransmissionTime, {}));
+  // VP8 payload descriptor with the S bit set, followed by the frame.
+  EXPECT_THAT(transport_.last_sent_packet().payload(),
+              ElementsAre(0x10, 1, 2, 3, 4));
+}
+
+TEST_F(RtpSenderVideoTest, SframeEncryptorWithoutKeyDropsEncodedImage) {
+  TestRtpSenderVideo sframe_sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerFrame,
+                  .encryptor = SframeEncryptor::Create(
+                      SframeCipherSuite::kAes128GcmSha256_128)}});
   std::unique_ptr<EncodedImage> encoded_image = CreateDefaultEncodedImage();
   RTPVideoHeader video_header;
   video_header.frame_type = VideoFrameType::kVideoFrameKey;
 
-  for (SframeMode mode : {SframeMode::kPerFrame, SframeMode::kPerPacket}) {
-    RTPSenderVideo::Config config;
-    config.clock = &env_.clock();
-    config.rtp_sender = rtp_module_->RtpSender();
-    config.field_trials = &env_.field_trials();
-    config.sframe_required_by_negotiation = true;
-    config.sframe_encryption_config = SframeEncryptionConfig{
-        .mode = mode,
-        .encryptor =
-            SframeEncryptor::Create(SframeCipherSuite::kAes128GcmSha256_128)};
-    RTPSenderVideo sframe_sender(config);
+  EXPECT_FALSE(sframe_sender.SendEncodedImage(
+      kPayloadType, kType, kRtpTimestamp, *encoded_image, video_header,
+      kDefaultExpectedRetransmissionTime, /*csrcs=*/{}));
+  EXPECT_EQ(transport_.packets_sent(), 0);
+}
 
-    EXPECT_FALSE(sframe_sender.SendEncodedImage(
-        kPayloadType, kType, kRtpTimestamp, *encoded_image, video_header,
-        kDefaultExpectedRetransmissionTime, /*csrcs=*/{}));
-    EXPECT_EQ(transport_.packets_sent(), 0);
+TEST_F(RtpSenderVideoTest, SframePerPacketDropsEncodedImage) {
+  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
+      make_ref_counted<NiceMock<MockSframeMediaEncryptor>>();
+  EXPECT_CALL(*encryptor, Encrypt).Times(0);
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerPacket, .encryptor = encryptor}});
+  std::unique_ptr<EncodedImage> encoded_image = CreateDefaultEncodedImage();
+  RTPVideoHeader video_header;
+  video_header.frame_type = VideoFrameType::kVideoFrameKey;
+
+  EXPECT_FALSE(sender.SendEncodedImage(
+      kPayloadType, kType, kRtpTimestamp, *encoded_image, video_header,
+      kDefaultExpectedRetransmissionTime, /*csrcs=*/{}));
+  EXPECT_EQ(transport_.packets_sent(), 0);
+}
+
+// SendVideoFrame can be called without SendEncodedImage, e.g. after an encoded
+// frame transform.
+TEST_F(RtpSenderVideoTest, SframeWithoutSupportedEncryptorDropsVideoFrame) {
+  TestRtpSenderVideo sender = Create({.sframe_required_by_negotiation = true});
+  const std::vector<uint8_t> frame(100, 0x5a);
+  RTPVideoHeader video_header;
+  video_header.frame_type = VideoFrameType::kVideoFrameKey;
+
+  EXPECT_FALSE(sender.SendVideoFrame(
+      kPayloadType, kType, kTimestampInfo, env_.clock().CurrentTime(), frame,
+      frame.size(), video_header, kDefaultExpectedRetransmissionTime, {}));
+  EXPECT_EQ(transport_.packets_sent(), 0);
+}
+
+// Sends a VP8 key frame with `frame` as its payload.
+bool SendVp8KeyFrame(RTPSenderVideo& sender,
+                     std::span<const uint8_t> frame,
+                     bool is_last_frame_in_picture = true) {
+  EncodedImage encoded_image;
+  encoded_image.SetEncodedData(
+      EncodedImageBuffer::Create(frame.data(), frame.size()));
+  RTPVideoHeader video_header;
+  video_header.codec = kVideoCodecVP8;
+  video_header.frame_type = VideoFrameType::kVideoFrameKey;
+  video_header.is_last_frame_in_picture = is_last_frame_in_picture;
+  auto& vp8 = video_header.video_type_header.emplace<RTPVideoHeaderVP8>();
+  vp8.InitRTPVideoHeaderVP8();
+  return sender.SendEncodedImage(kPayloadType, kVideoCodecVP8, kRtpTimestamp,
+                                 encoded_image, video_header,
+                                 kDefaultExpectedRetransmissionTime, {});
+}
+
+TEST_F(RtpSenderVideoTest, SframePerFrameSendsEncryptedFrame) {
+  constexpr size_t kMaxRtpPacketSize = 1200;
+  rtp_module_->RtpSender()->SetMaxRtpPacketSize(kMaxRtpPacketSize);
+  const std::vector<uint8_t> frame = {1, 2, 3, 4};
+  // Larger than a packet, so that it is split across packets.
+  const std::vector<uint8_t> ciphertext(3000, 0xab);
+  scoped_refptr<NiceMock<MockSframeMediaEncryptor>> encryptor =
+      CreateSframeEncryptor(ciphertext);
+  EXPECT_CALL(*encryptor, Encrypt(ElementsAreArray(frame), _, _));
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerFrame, .encryptor = encryptor}});
+
+  ASSERT_TRUE(SendVp8KeyFrame(sender, frame));
+
+  ASSERT_GT(transport_.packets_sent(), 1);
+  std::vector<uint8_t> sent_ciphertext;
+  for (const RtpPacketReceived& packet : transport_.sent_packets()) {
+    EXPECT_LE(packet.size(), kMaxRtpPacketSize);
+    const std::span<const uint8_t> payload =
+        packet.payload().subspan(SframeDescriptor::kSize);
+    sent_ciphertext.insert(sent_ciphertext.end(), payload.begin(),
+                           payload.end());
   }
+  EXPECT_EQ(sent_ciphertext, ciphertext);
+  EXPECT_TRUE(transport_.sent_packets().back().Marker());
+}
+
+// RED encapsulates the Sframe payload, i.e. the descriptor and the ciphertext.
+TEST_F(RtpSenderVideoTest, SframePerFrameEncryptsBeforeRed) {
+  const std::vector<uint8_t> ciphertext = {0xab, 0xcd};
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config =
+                  SframeEncryptionConfig{
+                      .mode = SframeMode::kPerFrame,
+                      .encryptor = CreateSframeEncryptor(ciphertext)},
+              .red_payload_type = kRedPayloadType});
+
+  ASSERT_TRUE(SendVp8KeyFrame(sender, std::vector<uint8_t>{1, 2, 3, 4}));
+
+  ASSERT_EQ(transport_.packets_sent(), 1);
+  const RtpPacketReceived& packet = transport_.last_sent_packet();
+  EXPECT_EQ(packet.PayloadType(), kRedPayloadType);
+  // RED header with the media payload type, then the Sframe payload.
+  ASSERT_EQ(packet.payload_size(),
+            1 + SframeDescriptor::kSize + ciphertext.size());
+  EXPECT_EQ(packet.payload()[0], kPayloadType);
+  EXPECT_THAT(packet.payload().subspan(1 + SframeDescriptor::kSize),
+              ElementsAreArray(ciphertext));
+}
+
+TEST_F(RtpSenderVideoTest, SframePerFrameDoesNotMarkFrameNotLastInPicture) {
+  TestRtpSenderVideo sender =
+      Create({.sframe_required_by_negotiation = true,
+              .sframe_encryption_config = SframeEncryptionConfig{
+                  .mode = SframeMode::kPerFrame,
+                  .encryptor = CreateSframeEncryptor({0xab, 0xcd})}});
+
+  ASSERT_TRUE(SendVp8KeyFrame(sender, std::vector<uint8_t>{1, 2, 3, 4},
+                              /*is_last_frame_in_picture=*/false));
+
+  EXPECT_FALSE(transport_.last_sent_packet().Marker());
 }
 
 TEST_F(RtpSenderVideoTest,

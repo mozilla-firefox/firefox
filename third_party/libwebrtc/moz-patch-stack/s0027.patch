@@ -939,7 +939,7 @@ index 7fa6ae078e..19b3b3e209 100644
  }
 +
 diff --git a/modules/sframe/BUILD.gn b/modules/sframe/BUILD.gn
-index 5caf250a61..d9b3a570f7 100644
+index f6d566c60f..7b62e28f68 100644
 --- a/modules/sframe/BUILD.gn
 +++ b/modules/sframe/BUILD.gn
 @@ -9,6 +9,7 @@
