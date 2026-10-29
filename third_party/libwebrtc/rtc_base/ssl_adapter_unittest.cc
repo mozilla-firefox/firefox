@@ -10,6 +10,8 @@
 
 #include "rtc_base/ssl_adapter.h"
 
+#include <openssl/err.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -131,6 +133,7 @@ class SSLAdapterTestDummy {
   }
 
   void OnSSLAdapterCloseEvent(Socket* socket, int error) {
+    EXPECT_EQ(ERR_peek_error(), 0u);
     // OpenSSLAdapter signals handshake failure with a close event, but without
     // closing the socket! Let's close the socket here. This way GetState() can
     // return CS_CLOSED after failure.
@@ -294,6 +297,7 @@ class SSLAdapterTestBase : public ::testing::Test {
 
       RTC_LOG(LS_INFO) << "TLS handshake failed.";
     }
+    EXPECT_EQ(ERR_peek_error(), 0u);
   }
 
   void TestTransfer(absl::string_view message) {
@@ -426,6 +430,22 @@ TEST_F(SSLAdapterTestTLS_ECDSA,
   TestHandshake(/*expect_success=*/true);
 }
 
+// Test that a failed handshake drains all SSL errors from the thread's OpenSSL
+// error queue, not just the first ERR_LIB_SSL entry.
+TEST_F(SSLAdapterTestTLS_ECDSA, TestTLSConnectFailureDrainsErrorQueue) {
+  auto mock_verifier = std::make_unique<MockCertVerifier>();
+  EXPECT_CALL(*mock_verifier, Verify(_)).WillRepeatedly([](const auto&) {
+    // Queue an additional ERR_LIB_SSL error ahead of the one SSL_connect pushes
+    // when certificate verification fails.
+    ERR_put_error(ERR_LIB_SSL, 0, ERR_R_INTERNAL_ERROR, __FILE__, __LINE__);
+    return false;
+  });
+  cert_verifier_ = std::move(mock_verifier);
+  SetIgnoreBadCert(false);
+  SetCertVerifier(cert_verifier_.get());
+
+  TestHandshake(/*expect_success=*/false);
+}
 // Test transfer between client and server, using RSA
 TEST_F(SSLAdapterTestTLS_RSA, TestTLSTransfer) {
   TestHandshake(true);

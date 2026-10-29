@@ -164,14 +164,12 @@ static void LogSslError() {
   uint32_t error_code;
   const char* file;
   int line;
-  do {
-    error_code = ERR_get_error_line(&file, &line);
+  while ((error_code = ERR_get_error_line(&file, &line)) != 0) {
     if (ERR_GET_LIB(error_code) == ERR_LIB_SSL) {
       RTC_LOG(LS_ERROR) << "ERR_LIB_SSL: " << error_code << ", " << file << ":"
                         << line;
-      break;
     }
-  } while (error_code != 0);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -464,6 +462,9 @@ int OpenSSLAdapter::ContinueSSL() {
     case SSL_ERROR_WANT_WRITE:
       break;
 
+    case SSL_ERROR_SSL:
+      LogSslError();
+      [[fallthrough]];
     case SSL_ERROR_ZERO_RETURN:
     default:
       RTC_LOG(LS_WARNING) << "ContinueSSL -- error " << code;
