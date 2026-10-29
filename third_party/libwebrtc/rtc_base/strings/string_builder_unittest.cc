@@ -100,5 +100,29 @@ TEST(StringBuilder, Reset) {
   EXPECT_EQ("123!", sb.str());
 }
 
+TEST(StringBuilder, Reserve) {
+  constexpr size_t kCapacity = 100;
+  StringBuilder sb;
+  sb.Reserve(kCapacity);
+  EXPECT_EQ(sb.size(), 0u);
+
+  // Appending up to the reserved capacity does not reallocate the buffer.
+  const char* buffer = sb.str().c_str();
+  const std::string piece(10, 'x');
+  for (size_t i = 0; i < kCapacity / piece.size(); ++i) {
+    sb << piece;
+    EXPECT_EQ(sb.str().c_str(), buffer);
+  }
+  EXPECT_EQ(sb.str(), std::string(kCapacity, 'x'));
+}
+
+TEST(StringBuilder, ReservePreservesContent) {
+  StringBuilder sb("abc");
+  sb.Reserve(100);
+  EXPECT_EQ(sb.str(), "abc");
+  sb << "def";
+  EXPECT_EQ(sb.str(), "abcdef");
+}
+
 }  // namespace
 }  // namespace webrtc
