@@ -355,9 +355,7 @@ RtpTransceiver::RtpTransceiver(
   receivers_.push_back(std::move(receiver));
   if (media_type_ == MediaType::VIDEO) {
     ConfigureExtraVideoHeaderExtensions(
-        sender_internal
-            ->GetParametersInternal(/*may_use_cache*/ true,
-                                    /*with_all_layers=*/false)
+        sender_internal->GetParametersInternal(/*with_all_layers=*/false)
             .encodings,
         header_extensions_to_negotiate_);
   }
