@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -285,6 +286,71 @@ TEST_F(SframeEncryptorDecryptorTest, DecryptReportsKeyIdErrorForUnknownKey) {
   EXPECT_EQ(failure->type, SframeDecryptErrorType::kKeyId);
   EXPECT_EQ(failure->key_id, kKeyId);
 }
+
+class SframeCipherSuiteTest
+    : public ::testing::TestWithParam<SframeCipherSuite> {};
+
+TEST_P(SframeCipherSuiteTest, EncryptThenDecryptRoundTrip) {
+  scoped_refptr<SframeEncryptor> encryptor =
+      SframeEncryptor::Create(GetParam());
+  scoped_refptr<SframeDecryptor> decryptor =
+      SframeDecryptor::Create(GetParam());
+  ASSERT_TRUE(encryptor->SetEncryptionKey(kKeyId, kKeyMaterial).ok());
+  ASSERT_TRUE(decryptor->AddDecryptionKey(kKeyId, kKeyMaterial).ok());
+
+  std::vector<uint8_t> ciphertext(
+      encryptor->GetMaxCiphertextByteSize(kPlaintext.size()));
+  RTCErrorOr<size_t> enc_result = encryptor->Encrypt(
+      kPlaintext, /*additional_data=*/{}, std::span<uint8_t>(ciphertext));
+  ASSERT_TRUE(enc_result.ok());
+  ciphertext.resize(enc_result.value());
+
+  std::vector<uint8_t> plaintext(
+      decryptor->GetMaxPlaintextByteSize(ciphertext.size()));
+  SframeDecryptResult dec_result = decryptor->Decrypt(
+      ciphertext, /*additional_data=*/{}, std::span<uint8_t>(plaintext));
+  const SframeDecryptSuccess* success =
+      std::get_if<SframeDecryptSuccess>(&dec_result);
+  ASSERT_NE(success, nullptr);
+  plaintext.resize(success->bytes_written);
+
+  EXPECT_EQ(plaintext, kPlaintext);
+}
+
+std::string CipherSuiteName(
+    const ::testing::TestParamInfo<SframeCipherSuite>& info) {
+  switch (info.param) {
+    case SframeCipherSuite::kAes128CtrHmacSha256_80:
+      return "Aes128CtrHmacSha256_80";
+    case SframeCipherSuite::kAes128CtrHmacSha256_64:
+      return "Aes128CtrHmacSha256_64";
+    case SframeCipherSuite::kAes128CtrHmacSha256_32:
+      return "Aes128CtrHmacSha256_32";
+    case SframeCipherSuite::kAes128GcmSha256_128:
+      return "Aes128GcmSha256_128";
+    case SframeCipherSuite::kAes256GcmSha512_128:
+      return "Aes256GcmSha512_128";
+    case SframeCipherSuite::kAes256CtrHmacSha512_80:
+      return "Aes256CtrHmacSha512_80";
+    case SframeCipherSuite::kAes256CtrHmacSha512_64:
+      return "Aes256CtrHmacSha512_64";
+    case SframeCipherSuite::kAes256CtrHmacSha512_32:
+      return "Aes256CtrHmacSha512_32";
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    All,
+    SframeCipherSuiteTest,
+    ::testing::Values(SframeCipherSuite::kAes128CtrHmacSha256_80,
+                      SframeCipherSuite::kAes128CtrHmacSha256_64,
+                      SframeCipherSuite::kAes128CtrHmacSha256_32,
+                      SframeCipherSuite::kAes128GcmSha256_128,
+                      SframeCipherSuite::kAes256GcmSha512_128,
+                      SframeCipherSuite::kAes256CtrHmacSha512_80,
+                      SframeCipherSuite::kAes256CtrHmacSha512_64,
+                      SframeCipherSuite::kAes256CtrHmacSha512_32),
+    CipherSuiteName);
 
 }  // namespace
 }  // namespace webrtc

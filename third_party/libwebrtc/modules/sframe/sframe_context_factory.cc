@@ -30,6 +30,12 @@ sframe::CipherSuite ToSframeCipherSuite(SframeCipherSuite suite) {
       return sframe::CipherSuite::AES_GCM_128_SHA256;
     case SframeCipherSuite::kAes256GcmSha512_128:
       return sframe::CipherSuite::AES_GCM_256_SHA512;
+    case SframeCipherSuite::kAes256CtrHmacSha512_80:
+      return sframe::CipherSuite::AES_256_CTR_HMAC_SHA512_80;
+    case SframeCipherSuite::kAes256CtrHmacSha512_64:
+      return sframe::CipherSuite::AES_256_CTR_HMAC_SHA512_64;
+    case SframeCipherSuite::kAes256CtrHmacSha512_32:
+      return sframe::CipherSuite::AES_256_CTR_HMAC_SHA512_32;
   }
 }
 
