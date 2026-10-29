@@ -1409,7 +1409,7 @@ index 1f9a98c112..661108d987 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index 00f49c9a52..409c040026 100644
+index a8e9b74acc..e18582442a 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
 @@ -27,6 +27,7 @@
@@ -1445,7 +1445,7 @@ index 00f49c9a52..409c040026 100644
  namespace {
  
  // By default, release builds don't log, debug builds at info level
-@@ -169,7 +188,7 @@ std::string LogLineRef::DefaultLogLine() const {
+@@ -175,7 +194,7 @@ std::string LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
