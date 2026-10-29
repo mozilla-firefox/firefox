@@ -575,7 +575,7 @@ index d675faee9e..a533779b78 100644
  import("../../webrtc.gni")
  
 diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index 11a91aedab..942d3913a4 100644
+index 935b680c5c..ba7f78b34f 100644
 --- a/modules/video_coding/BUILD.gn
 +++ b/modules/video_coding/BUILD.gn
 @@ -6,7 +6,7 @@

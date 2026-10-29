@@ -1367,6 +1367,7 @@ if (rtc_include_tests) {
       ":time_stretch_unittest",
       ":timestamp_scaler_unittest",
       ":underrun_optimizer_unittest",
+      "../../api/neteq:tick_timer_unittest",
       "codecs/opus/test:audio_ring_buffer_unittest",
       "codecs/opus/test:blocker_unittest",
       "codecs/opus/test:lapped_transform_unittest",

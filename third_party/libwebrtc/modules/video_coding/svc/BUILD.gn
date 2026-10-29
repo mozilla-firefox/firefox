@@ -151,8 +151,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("scalability_mode_util_unittest") {
-    testonly = true
+  rtc_cc_test("scalability_mode_util_unittest") {
     sources = [ "scalability_mode_util_unittest.cc" ]
     deps = [
       ":scalability_mode_util",
@@ -165,8 +164,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("scalability_structure_full_svc_unittest") {
-    testonly = true
+  rtc_cc_test("scalability_structure_full_svc_unittest") {
     sources = [ "scalability_structure_full_svc_unittest.cc" ]
     deps = [
       ":scalability_structure_test_helpers",
@@ -176,8 +174,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("scalability_structure_key_svc_unittest") {
-    testonly = true
+  rtc_cc_test("scalability_structure_key_svc_unittest") {
     sources = [ "scalability_structure_key_svc_unittest.cc" ]
     deps = [
       ":scalability_structure_test_helpers",
@@ -187,8 +184,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("scalability_structure_l2t2_key_shift_unittest") {
-    testonly = true
+  rtc_cc_test("scalability_structure_l2t2_key_shift_unittest") {
     sources = [ "scalability_structure_l2t2_key_shift_unittest.cc" ]
     deps = [
       ":scalability_structure_test_helpers",
@@ -198,8 +194,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("scalability_structure_unittest") {
-    testonly = true
+  rtc_cc_test("scalability_structure_unittest") {
     sources = [ "scalability_structure_unittest.cc" ]
     deps = [
       ":scalability_mode_util",
@@ -216,20 +211,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("scalability_structure_tests") {
-    testonly = true
-    sources = []
-    deps = [
-      ":scalability_mode_util_unittest",
-      ":scalability_structure_full_svc_unittest",
-      ":scalability_structure_key_svc_unittest",
-      ":scalability_structure_l2t2_key_shift_unittest",
-      ":scalability_structure_unittest",
-    ]
-  }
-
-  rtc_library("svc_rate_allocator_tests") {
-    testonly = true
+  rtc_cc_test("svc_rate_allocator_unittest") {
     sources = [ "svc_rate_allocator_unittest.cc" ]
     deps = [
       ":svc_rate_allocator",
@@ -250,8 +232,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("simulcast_to_svc_converter_tests") {
-    testonly = true
+  rtc_cc_test("simulcast_to_svc_converter_unittest") {
     sources = [ "simulcast_to_svc_converter_unittest.cc" ]
     deps = [
       ":scalability_structures",

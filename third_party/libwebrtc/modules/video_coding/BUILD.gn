@@ -1058,6 +1058,13 @@ if (rtc_include_tests) {
       "codecs/av1:av1_svc_config_unittest",
       "codecs/av1:dav1d_decoder_unittest",
       "svc:reference_buffer_manager_unittest",
+      "svc:scalability_mode_util_unittest",
+      "svc:scalability_structure_full_svc_unittest",
+      "svc:scalability_structure_key_svc_unittest",
+      "svc:scalability_structure_l2t2_key_shift_unittest",
+      "svc:scalability_structure_unittest",
+      "svc:simulcast_to_svc_converter_unittest",
+      "svc:svc_rate_allocator_unittest",
       "timing:decode_time_percentile_filter_unittest",
       "timing:timing_unittest",
     ]
