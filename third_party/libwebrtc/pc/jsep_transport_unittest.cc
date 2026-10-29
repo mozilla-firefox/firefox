@@ -1359,22 +1359,16 @@ class JsepTransport2HeaderExtensionTest
   void OnReadPacket1(PacketTransportInternal* transport,
                      const ReceivedIpPacket& packet) {
     RTC_LOG(LS_INFO) << "JsepTransport 1 Received a packet.";
-    CompareHeaderExtensions(
-        reinterpret_cast<const char*>(kPcmuFrameWithExtensions),
-        sizeof(kPcmuFrameWithExtensions),
-        reinterpret_cast<const char*>(packet.payload().data()),
-        packet.payload().size(), recv_encrypted_headers1_, false);
+    CompareHeaderExtensions(kPcmuFrameWithExtensions, packet.payload(),
+                            recv_encrypted_headers1_, false);
     received_packet_count_++;
   }
 
   void OnReadPacket2(PacketTransportInternal* transport,
                      const ReceivedIpPacket& packet) {
     RTC_LOG(LS_INFO) << "JsepTransport 2 Received a packet.";
-    CompareHeaderExtensions(
-        reinterpret_cast<const char*>(kPcmuFrameWithExtensions),
-        sizeof(kPcmuFrameWithExtensions),
-        reinterpret_cast<const char*>(packet.payload().data()),
-        packet.payload().size(), recv_encrypted_headers2_, false);
+    CompareHeaderExtensions(kPcmuFrameWithExtensions, packet.payload(),
+                            recv_encrypted_headers2_, false);
     received_packet_count_++;
   }
 

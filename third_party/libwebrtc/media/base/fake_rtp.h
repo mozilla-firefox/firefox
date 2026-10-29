@@ -14,7 +14,8 @@
 #define MEDIA_BASE_FAKE_RTP_H_
 
 #include <cstddef>  // size_t
-#include <vector>
+#include <cstdint>
+#include <span>
 
 #include "api/rtp_header_extension_id.h"
 
@@ -297,11 +298,9 @@ static const unsigned char kDataPacket[] = {
 // Header extensions with an id in "encrypted_headers" are expected to be
 // different in the packets unless "expect_equal" is set to "true".
 void CompareHeaderExtensions(
-    const char* packet1,
-    size_t packet1_size,
-    const char* packet2,
-    size_t packet2_size,
-    const std::vector<RtpHeaderExtensionId>& encrypted_headers,
+    std::span<const uint8_t> packet1,
+    std::span<const uint8_t> packet2,
+    std::span<const RtpHeaderExtensionId> encrypted_headers,
     bool expect_equal);
 
 }  // namespace webrtc

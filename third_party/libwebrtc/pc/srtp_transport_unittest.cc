@@ -222,7 +222,7 @@ class SrtpTransportTest : public ::testing::Test {
     CopyOnWriteBuffer rtp_packet1to2(rtp_packet_data, rtp_len, packet_size);
     CopyOnWriteBuffer rtp_packet2to1(rtp_packet_data, rtp_len, packet_size);
 
-    char original_rtp_data[sizeof(kPcmuFrameWithExtensions)];
+    uint8_t original_rtp_data[sizeof(kPcmuFrameWithExtensions)];
     memcpy(original_rtp_data, rtp_packet_data, rtp_len);
 
     AsyncSocketPacketOptions options;
@@ -239,11 +239,8 @@ class SrtpTransportTest : public ::testing::Test {
         srtp_transport1_->rtp_packet_transport());
     EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
                         original_rtp_data, rtp_len));
-    CompareHeaderExtensions(
-        reinterpret_cast<const char*>(
-            fake_rtp_packet_transport->last_sent_packet()->data()),
-        fake_rtp_packet_transport->last_sent_packet()->size(),
-        original_rtp_data, rtp_len, encrypted_header_ids, false);
+    CompareHeaderExtensions(*fake_rtp_packet_transport->last_sent_packet(),
+                            original_rtp_data, encrypted_header_ids, false);
 
     // Do the same thing in the opposite direction;
     ASSERT_TRUE(srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
@@ -255,11 +252,8 @@ class SrtpTransportTest : public ::testing::Test {
         srtp_transport2_->rtp_packet_transport());
     EXPECT_NE(0, memcmp(fake_rtp_packet_transport->last_sent_packet()->data(),
                         original_rtp_data, rtp_len));
-    CompareHeaderExtensions(
-        reinterpret_cast<const char*>(
-            fake_rtp_packet_transport->last_sent_packet()->data()),
-        fake_rtp_packet_transport->last_sent_packet()->size(),
-        original_rtp_data, rtp_len, encrypted_header_ids, false);
+    CompareHeaderExtensions(*fake_rtp_packet_transport->last_sent_packet(),
+                            original_rtp_data, encrypted_header_ids, false);
   }
 
   void TestSendRecvEncryptedHeaderExtension(

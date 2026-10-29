@@ -10,9 +10,10 @@
 
 #include "media/base/fake_rtp.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
-#include <cstring>
-#include <vector>
+#include <span>
 
 #include "absl/algorithm/container.h"
 #include "api/rtp_header_extension_id.h"
@@ -22,36 +23,34 @@
 namespace webrtc {
 
 void CompareHeaderExtensions(
-    const char* packet1,
-    size_t packet1_size,
-    const char* packet2,
-    size_t packet2_size,
-    const std::vector<RtpHeaderExtensionId>& encrypted_headers,
+    std::span<const uint8_t> packet1,
+    std::span<const uint8_t> packet2,
+    std::span<const RtpHeaderExtensionId> encrypted_headers,
     bool expect_equal) {
   // Sanity check: packets must be large enough to contain the RTP header and
   // extensions header.
-  RTC_CHECK_GE(packet1_size, 12 + 4);
-  RTC_CHECK_GE(packet2_size, 12 + 4);
+  RTC_CHECK_GE(packet1.size(), 12 + 4);
+  RTC_CHECK_GE(packet2.size(), 12 + 4);
   // RTP extension headers are the same.
-  EXPECT_EQ(0, memcmp(packet1 + 12, packet2 + 12, 4));
+  EXPECT_TRUE(
+      std::ranges::equal(packet1.subspan<12, 4>(), packet2.subspan<12, 4>()));
   // Check for one-byte header extensions.
-  EXPECT_EQ('\xBE', packet1[12]);
-  EXPECT_EQ('\xDE', packet1[13]);
+  EXPECT_EQ(packet1[12], 0xBE);
+  EXPECT_EQ(packet1[13], 0xDE);
   // Determine position and size of extension headers.
   size_t extension_words = packet1[14] << 8 | packet1[15];
-  const char* extension_data1 = packet1 + 12 + 4;
-  const char* extension_end1 = extension_data1 + extension_words * 4;
-  const char* extension_data2 = packet2 + 12 + 4;
+  std::span<const uint8_t> extension_data1 =
+      packet1.subspan(12 + 4, extension_words * 4);
+  std::span<const uint8_t> extension_data2 = packet2.subspan(12 + 4);
   // Sanity check: packets must be large enough to contain the RTP header
   // extensions.
-  RTC_CHECK_GE(packet1_size, 12 + 4 + extension_words * 4);
-  RTC_CHECK_GE(packet2_size, 12 + 4 + extension_words * 4);
-  while (extension_data1 < extension_end1) {
-    uint8_t id = (*extension_data1 & 0xf0) >> 4;
-    uint8_t len = (*extension_data1 & 0x0f) + 1;
-    extension_data1++;
-    extension_data2++;
-    EXPECT_LE(extension_data1, extension_end1);
+  RTC_CHECK_GE(packet1.size(), 12 + 4 + extension_words * 4);
+  RTC_CHECK_GE(packet2.size(), 12 + 4 + extension_words * 4);
+  while (!extension_data1.empty()) {
+    uint8_t id = (extension_data1[0] & 0xf0) >> 4;
+    uint8_t len = (extension_data1[0] & 0x0f) + 1;
+    extension_data1 = extension_data1.subspan(1);
+    extension_data2 = extension_data2.subspan(1);
     if (id == 15) {
       // Finished parsing.
       break;
@@ -61,17 +60,19 @@ void CompareHeaderExtensions(
     // list of header extensions to encrypt.
     if (expect_equal ||
         !absl::c_linear_search(encrypted_headers, RtpHeaderExtensionId(id))) {
-      EXPECT_EQ(0, memcmp(extension_data1, extension_data2, len));
+      EXPECT_TRUE(std::ranges::equal(extension_data1.first(len),
+                                     extension_data2.first(len)));
     } else {
-      EXPECT_NE(0, memcmp(extension_data1, extension_data2, len));
+      EXPECT_FALSE(std::ranges::equal(extension_data1.first(len),
+                                      extension_data2.first(len)));
     }
 
-    extension_data1 += len;
-    extension_data2 += len;
+    extension_data1 = extension_data1.subspan(len);
+    extension_data2 = extension_data2.subspan(len);
     // Skip padding.
-    while (extension_data1 < extension_end1 && *extension_data1 == 0) {
-      extension_data1++;
-      extension_data2++;
+    while (!extension_data1.empty() && extension_data1[0] == 0) {
+      extension_data1 = extension_data1.subspan(1);
+      extension_data2 = extension_data2.subspan(1);
     }
   }
 }

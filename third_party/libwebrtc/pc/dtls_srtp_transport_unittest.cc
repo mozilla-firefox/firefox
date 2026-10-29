@@ -216,7 +216,7 @@ class DtlsSrtpTransportTest : public ::testing::Test {
     CopyOnWriteBuffer rtp_packet1to2(rtp_packet_data, rtp_len, packet_size);
     CopyOnWriteBuffer rtp_packet2to1(rtp_packet_data, rtp_len, packet_size);
 
-    char original_rtp_data[sizeof(kPcmuFrameWithExtensions)];
+    uint8_t original_rtp_data[sizeof(kPcmuFrameWithExtensions)];
     memcpy(original_rtp_data, rtp_packet_data, rtp_len);
 
     AsyncSocketPacketOptions options;
@@ -235,11 +235,8 @@ class DtlsSrtpTransportTest : public ::testing::Test {
         fake_dtls_transport->ice_transport());
     EXPECT_NE(0, memcmp(fake_ice_transport->last_sent_packet().data(),
                         original_rtp_data, rtp_len));
-    CompareHeaderExtensions(reinterpret_cast<const char*>(
-                                fake_ice_transport->last_sent_packet().data()),
-                            fake_ice_transport->last_sent_packet().size(),
-                            original_rtp_data, rtp_len, encrypted_header_ids,
-                            false);
+    CompareHeaderExtensions(fake_ice_transport->last_sent_packet(),
+                            original_rtp_data, encrypted_header_ids, false);
 
     // Do the same thing in the opposite direction.
     ASSERT_TRUE(dtls_srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
@@ -255,11 +252,8 @@ class DtlsSrtpTransportTest : public ::testing::Test {
         fake_dtls_transport->ice_transport());
     EXPECT_NE(0, memcmp(fake_ice_transport->last_sent_packet().data(),
                         original_rtp_data, rtp_len));
-    CompareHeaderExtensions(reinterpret_cast<const char*>(
-                                fake_ice_transport->last_sent_packet().data()),
-                            fake_ice_transport->last_sent_packet().size(),
-                            original_rtp_data, rtp_len, encrypted_header_ids,
-                            false);
+    CompareHeaderExtensions(fake_ice_transport->last_sent_packet(),
+                            original_rtp_data, encrypted_header_ids, false);
   }
 
   void SendRecvPackets() {
