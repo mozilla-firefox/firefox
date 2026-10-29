@@ -133,7 +133,7 @@ void RTC_NO_SANITIZE("signed-integer-overflow")  // bugs.webrtc.org/5486
 
   // lower allpass filter (operates on even input samples)
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i << 1] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i << 1] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[1];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
@@ -164,7 +164,7 @@ void RTC_NO_SANITIZE("signed-integer-overflow")  // bugs.webrtc.org/5486
 
   // upper allpass filter (operates on odd input samples)
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i << 1] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i << 1] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[5];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
@@ -206,7 +206,7 @@ void WebRtcSpl_UpBy2ShortToInt(const int16_t* in,
 
   // upper allpass filter (generates odd output samples)
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[5];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
@@ -235,7 +235,7 @@ void WebRtcSpl_UpBy2ShortToInt(const int16_t* in,
 
   // lower allpass filter (generates even output samples)
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[1];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
@@ -449,13 +449,13 @@ void WebRtcSpl_LPBy2ShortToInt(const int16_t* in,
 
     // scale down, round and store
     out[i << 1] = state[3] >> 1;
-    tmp0 = ((int32_t)in[i << 1] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i << 1] * (1 << 15)) + (1 << 14);
   }
   in--;
 
   // upper allpass filter: even input -> even output samples
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i << 1] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i << 1] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[5];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
@@ -485,7 +485,7 @@ void WebRtcSpl_LPBy2ShortToInt(const int16_t* in,
 
   // lower allpass filter: even input -> odd output samples
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i << 1] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i << 1] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[9];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
@@ -513,7 +513,7 @@ void WebRtcSpl_LPBy2ShortToInt(const int16_t* in,
   // upper allpass filter: odd input -> odd output samples
   in++;
   for (i = 0; i < len; i++) {
-    tmp0 = ((int32_t)in[i << 1] << 15) + (1 << 14);
+    tmp0 = ((int32_t)in[i << 1] * (1 << 15)) + (1 << 14);
     diff = tmp0 - state[13];
     // scale down and round
     diff = (diff + (1 << 13)) >> 14;
