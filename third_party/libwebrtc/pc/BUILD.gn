@@ -2468,6 +2468,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:mock_datagram_connection_observer",
       "../api:scoped_refptr",
       "../api/environment",
+      "../api/transport:ecn_marking",
       "../api/transport:enums",
       "../api/units:timestamp",
       "../modules/rtp_rtcp:rtp_rtcp_format",
@@ -2489,6 +2490,7 @@ if (rtc_include_tests && !build_with_chromium) {
     sources = [ "dtls_packet_processor_unittest.cc" ]
     deps = [
       ":datagram_connection_internal",
+      "../api/transport:ecn_marking",
       "../api/units:timestamp",
       "../rtc_base:copy_on_write_buffer",
       "../test:test_support",

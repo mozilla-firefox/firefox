@@ -1217,6 +1217,7 @@ rtc_library("datagram_connection") {
     ":ref_count",
     "../p2p:transport_description",
     "../rtc_base/system:rtc_export",
+    "transport:ecn_marking",
     "units:timestamp",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/strings:string_view",

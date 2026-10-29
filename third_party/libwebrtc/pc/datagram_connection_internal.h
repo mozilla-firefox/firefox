@@ -23,6 +23,7 @@
 #include "api/environment/environment.h"
 #include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
+#include "api/transport/ecn_marking.h"
 #include "api/units/timestamp.h"
 #include "call/rtp_packet_sink_interface.h"
 #include "p2p/base/ice_transport_internal.h"
@@ -78,7 +79,9 @@ class RTC_EXPORT DatagramConnectionInternal : public DatagramConnection,
   // RtpPacketSinkInterface
   void OnRtpPacket(const RtpPacketReceived& packet) override;
 
-  void OnDtlsPacket(CopyOnWriteBuffer packet, Timestamp receive_time);
+  void OnDtlsPacket(CopyOnWriteBuffer packet,
+                    Timestamp receive_time,
+                    EcnMarking ecn);
 
   void OnSentPacket(const SentPacketInfo& packet);
 

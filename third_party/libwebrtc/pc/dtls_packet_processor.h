@@ -14,6 +14,7 @@
 #include <optional>
 #include <span>
 
+#include "api/transport/ecn_marking.h"
 #include "api/units/timestamp.h"
 #include "pc/packet_processor.h"
 #include "rtc_base/copy_on_write_buffer.h"
@@ -50,7 +51,8 @@ class DtlsPacketProcessor : public PacketProcessor {
                                           Timestamp send_time) override;
   std::optional<CopyOnWriteBuffer> ProcessIncomingPacket(
       CopyOnWriteBuffer packet,
-      Timestamp receive_time) override;
+      Timestamp receive_time,
+      EcnMarking ecn) override;
 
   // Wire format packet types. Feedback types are reserved but not yet defined.
   static constexpr uint8_t kPacketTypeData = 0x01;
