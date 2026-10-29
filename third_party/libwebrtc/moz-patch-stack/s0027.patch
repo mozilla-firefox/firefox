@@ -509,7 +509,7 @@ index 01c4e773d5..5924f9d9d1 100644
  #include "api/units/data_rate.h"
  #include "api/video/encoded_image.h"
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index 99fd1796d8..ce4ad59e29 100644
+index 04c7aaab25..7875db5d4d 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -256,14 +256,10 @@ if (current_cpu == "x86" || current_cpu == "x64") {

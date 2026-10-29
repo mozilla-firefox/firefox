@@ -292,7 +292,7 @@ index 873aaacb64..30a54c0fd6 100644
  
  rtc_library("audio") {
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index e48719b1c2..c7c754fd02 100644
+index 298dd42016..32bc09484a 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -280,7 +280,7 @@ if (rtc_build_with_neon) {
