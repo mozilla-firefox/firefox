@@ -509,7 +509,7 @@ index 01c4e773d5..5924f9d9d1 100644
  #include "api/units/data_rate.h"
  #include "api/video/encoded_image.h"
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index 9b48cecffa..bb0c878dd2 100644
+index 0059809320..6f8d15f384 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -256,14 +256,10 @@ if (current_cpu == "x86" || current_cpu == "x64") {
@@ -1191,7 +1191,7 @@ index f22c695bc9..9f9f1f7a0d 100644
      deps += [
        "..:logging",
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index 560568c1a4..3c9baafe9e 100644
+index 67e1950c79..1b44866d2b 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -279,6 +279,7 @@ rtc_library("audio_test_common") {
@@ -1233,7 +1233,7 @@ index 560568c1a4..3c9baafe9e 100644
      sources += [ "testsupport/jpeg_frame_writer.cc" ]
    } else {
      sources += [ "testsupport/jpeg_frame_writer_ios.cc" ]
-@@ -1877,6 +1885,7 @@ if (!build_with_chromium) {
+@@ -1892,6 +1900,7 @@ if (!build_with_chromium) {
    }
  }
  
@@ -1241,7 +1241,7 @@ index 560568c1a4..3c9baafe9e 100644
  if (!build_with_chromium && is_android) {
    rtc_android_library("native_test_java") {
      testonly = true
-@@ -1919,6 +1928,7 @@ if (!build_with_chromium && is_android) {
+@@ -1934,6 +1943,7 @@ if (!build_with_chromium && is_android) {
      sources = [ "android/org/webrtc/native_test/NativeTestWebrtc.java" ]
    }
  }
@@ -1250,7 +1250,7 @@ index 560568c1a4..3c9baafe9e 100644
  rtc_library("call_config_utils") {
    testonly = true
 diff --git a/video/BUILD.gn b/video/BUILD.gn
-index c005db16dd..73d84a6854 100644
+index 883bbd7dd4..39884d9e09 100644
 --- a/video/BUILD.gn
 +++ b/video/BUILD.gn
 @@ -16,7 +16,7 @@ rtc_library("video_stream_encoder_interface") {

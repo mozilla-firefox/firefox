@@ -2246,7 +2246,8 @@ if (rtc_include_tests) {
       ":video_stream_encoder_unittest",
       "corruption_detection:corruption_detection_unittests",
       "corruption_detection/evaluation:corruption_detection_eval_unittests",
-      "config:video_config_tests",
+      "config:encoder_stream_factory_unittest",
+      "config:simulcast_unittest",
     ]
   }
 }

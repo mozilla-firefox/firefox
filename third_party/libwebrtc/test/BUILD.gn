@@ -1338,17 +1338,32 @@ if (rtc_include_tests) {
         ":fileutils_unittests",
         ":fixed_fps_video_frame_writer_adapter_test",
         "fuzzers:fuzz_data_helper_unittest",
-        "jitter:jitter_unittests",
+        "jitter:delay_variation_calculator_unittest",
+        "jitter:logging_delay_variation_calculator_unittest",
         "pc/e2e:e2e_unittests",
         "pc/e2e/analyzer/video:video_analyzer_unittests",
-        "pc/e2e/analyzer/video/dvqa:dvqa_unittests",
-        "peer_scenario/bwe_integration_tests:bwe_integration_tests",
-        "peer_scenario/tests:tests",
-        "scenario:scenario_unittests",
-        "time_controller:time_controller_unittests",
+        "pc/e2e/analyzer/video/dvqa:frames_storage_test",
+        "pc/e2e/analyzer/video/dvqa:pausable_state_test",
+        "peer_scenario/tests:peer_scenario_quality_test",
+        "peer_scenario/tests:remote_estimate_test",
+        "peer_scenario/tests:unsignaled_stream_test",
+        "scenario:performance_stats_unittest",
+        "scenario:probing_test",
+        "scenario:scenario_unittest",
+        "scenario:stats_collection_unittest",
+        "scenario:video_stream_unittest",
+        "time_controller:simulated_time_controller_unittest",
+        "time_controller:simulated_time_task_queue_controller_unittest",
+        "time_controller:time_controller_conformance_test",
       ]
       if (rtc_enable_protobuf) {
-        tests += [ ":perf_test_histogram_writer_unittest" ]
+        tests += [
+          ":perf_test_histogram_writer_unittest",
+          "peer_scenario/bwe_integration_tests:bwe_ramp_up_test",
+          "peer_scenario/bwe_integration_tests:l4s_test",
+          "peer_scenario/bwe_integration_tests:receive_side_bwe_test",
+          "peer_scenario/bwe_integration_tests:scream_test",
+        ]
       }
     }
   }

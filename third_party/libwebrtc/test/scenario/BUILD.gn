@@ -38,6 +38,7 @@ if (rtc_include_tests && !build_with_chromium) {
       sources = scenario_resources
       outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
     }
+
     bundle_data("scenario_unittest_resources_bundle_data") {
       testonly = true
       sources = scenario_unittest_resources
@@ -194,35 +195,74 @@ if (rtc_include_tests && !build_with_chromium) {
       deps += [ ":scenario_resources_bundle_data" ]
     }
   }
-  rtc_cc_test("scenario_unittests") {
-    testonly = true
-    sources = [
-      "performance_stats_unittest.cc",
-      "probing_test.cc",
-      "scenario_unittest.cc",
-      "stats_collection_unittest.cc",
-      "video_stream_unittest.cc",
+
+  rtc_cc_test("performance_stats_unittest") {
+    sources = [ "performance_stats_unittest.cc" ]
+    deps = [
+      "../../api/units:time_delta",
+      "../../api/units:timestamp",
+      "../../rtc_base:rtc_stats_counters",
+      "../../test:test_support",
     ]
+  }
+
+  rtc_cc_test("probing_test") {
+    sources = [ "probing_test.cc" ]
+    deps = [
+      ":scenario",
+      "../../api/transport:bitrate_settings",
+      "../../api/units:data_rate",
+      "../../api/units:time_delta",
+      "../../api/video_codecs:scalability_mode",
+      "../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("scenario_unittest") {
+    sources = [ "scenario_unittest.cc" ]
     deps = [
       ":scenario",
       "../../api/test/network_emulation",
       "../../api/test/network_emulation:create_cross_traffic",
-      "../../api/transport:bitrate_settings",
+      "../../api/units:data_rate",
+      "../../api/units:time_delta",
+      "../../call:video_send_stream_api",
+      "../../test:test_support",
+      "../logging:log_writer",
+    ]
+    data = scenario_unittest_resources
+    if (is_ios) {
+      deps += [ ":scenario_unittest_resources_bundle_data" ]
+    }
+  }
+
+  rtc_cc_test("stats_collection_unittest") {
+    sources = [ "stats_collection_unittest.cc" ]
+    deps = [
+      ":scenario",
+      "../../api/units:data_rate",
+      "../../api/units:time_delta",
+      "../../call:call_interfaces",
+      "../../call:video_receive_stream_api",
+      "../../call:video_send_stream_api",
+      "../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("video_stream_unittest") {
+    sources = [ "video_stream_unittest.cc" ]
+    deps = [
+      ":scenario",
+      "../../api/test/network_emulation",
+      "../../api/test/network_emulation:create_cross_traffic",
       "../../api/units:data_rate",
       "../../api/units:time_delta",
       "../../api/units:timestamp",
       "../../api/video_codecs:scalability_mode",
-      "../../call:call_interfaces",
-      "../../call:video_receive_stream_api",
       "../../call:video_send_stream_api",
-      "../../logging:mocks",
       "../../rtc_base:checks",
-      "../../rtc_base:rtc_stats_counters",
-      "../../system_wrappers",
       "../../test:test_support",
       "../../test:video_test_constants",
-      "../logging:log_writer",
-      "//testing/gmock",
     ]
     data = scenario_unittest_resources
     if (is_ios) {

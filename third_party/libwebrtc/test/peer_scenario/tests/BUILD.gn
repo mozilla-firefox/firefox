@@ -9,31 +9,45 @@
 import("../../../webrtc.gni")
 
 if (rtc_include_tests) {
-  rtc_cc_test("tests") {
-    testonly = true
-    sources = [
-      "peer_scenario_quality_test.cc",
-      "remote_estimate_test.cc",
-      "unsignaled_stream_test.cc",
+  rtc_cc_test("peer_scenario_quality_test") {
+    sources = [ "peer_scenario_quality_test.cc" ]
+    deps = [
+      "..:peer_scenario",
+      "../..:test_support",
+      "../../../api/units:time_delta",
+      "../../scenario",
     ]
+  }
+
+  rtc_cc_test("remote_estimate_test") {
+    sources = [ "remote_estimate_test.cc" ]
     deps = [
       "..:peer_scenario",
       "../..:test_support",
       "../../../api:audio_options_api",
       "../../../api:jsep",
-      "../../../api:rtp_header_extension_id",
-      "../../../api:rtp_parameters",
       "../../../api/test/network_emulation",
-      "../../../api/units:time_delta",
-      "../../../api/video:video_frame",
-      "../../../media:stream_params",
       "../../../modules/rtp_rtcp:rtp_rtcp_format",
       "../../../pc:media_session",
       "../../../pc:session_description",
       "../../../rtc_base:checks",
+    ]
+  }
+
+  rtc_cc_test("unsignaled_stream_test") {
+    sources = [ "unsignaled_stream_test.cc" ]
+    deps = [
+      "..:peer_scenario",
+      "../..:test_support",
+      "../../../api:jsep",
+      "../../../api:rtp_header_extension_id",
+      "../../../api:rtp_parameters",
+      "../../../api/test/network_emulation",
+      "../../../api/video:video_frame",
+      "../../../media:stream_params",
+      "../../../modules/rtp_rtcp:rtp_rtcp_format",
+      "../../../pc:session_description",
       "../../../rtc_base:copy_on_write_buffer",
-      "../../scenario",
-      "//third_party/abseil-cpp/absl/strings",
     ]
   }
 }

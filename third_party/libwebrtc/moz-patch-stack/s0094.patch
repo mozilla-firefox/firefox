@@ -292,7 +292,7 @@ index f9e685f602..639a4ba148 100644
  
  rtc_library("audio") {
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index 95e7a33c42..9ce0739968 100644
+index b1b55c390f..2d66ca0fe1 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -280,7 +280,7 @@ if (rtc_build_with_neon) {
@@ -732,7 +732,7 @@ index 2fcd3c144a..59959a0bb0 100644
  import("../webrtc.gni")
  
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index f2abed9bf9..60b8fde9f9 100644
+index 04128c7bc4..82d229e83c 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -6,10 +6,10 @@
