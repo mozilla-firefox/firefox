@@ -103,20 +103,34 @@ RTCError CheckScalabilityModeValues(const RtpParameters& rtp_parameters,
 
   for (size_t i = 0; i < rtp_parameters.encodings.size(); ++i) {
     if (rtp_parameters.encodings[i].codec) {
-      bool codecFound = false;
+      bool codec_found = false;
+      bool scalability_mode_supported = false;
       for (const Codec& codec : send_codecs) {
         if (IsSameRtpCodecIgnoringLevel(codec,
-                                        *rtp_parameters.encodings[i].codec) &&
-            SupportsMode(codec, rtp_parameters.encodings[i].scalability_mode)) {
-          codecFound = true;
-          send_codec = codec;
-          break;
+                                        *rtp_parameters.encodings[i].codec)) {
+          codec_found = true;
+          if (SupportsMode(codec,
+                           rtp_parameters.encodings[i].scalability_mode)) {
+            scalability_mode_supported = true;
+            send_codec = codec;
+            break;
+          }
         }
       }
-      if (!codecFound) {
+      if (!codec_found) {
+        return RTC_LOG_ERROR(RTCError(RTCErrorType::INVALID_MODIFICATION)
+                             << "Attempted to use an unsupported codec "
+                             << rtp_parameters.encodings[i].codec->name
+                             << " for encodings[" << i << "].");
+      }
+      if (!scalability_mode_supported) {
+        RTC_DCHECK(rtp_parameters.encodings[i].scalability_mode.has_value());
         return RTC_LOG_ERROR(
             RTCError(RTCErrorType::INVALID_MODIFICATION)
-            << "Attempted to use an unsupported codec for layer " << i);
+            << "Attempted to use an unsupported scalabilityMode '"
+            << *rtp_parameters.encodings[i].scalability_mode << "' for codec "
+            << rtp_parameters.encodings[i].codec->name << " in encodings[" << i
+            << "].");
       }
     }
     if (rtp_parameters.encodings[i].scalability_mode) {

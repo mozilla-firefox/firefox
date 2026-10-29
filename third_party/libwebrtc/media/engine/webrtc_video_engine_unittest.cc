@@ -9760,6 +9760,28 @@ TEST_F(WebRtcVideoChannelTest, SetAndGetRtpSendParameters) {
   EXPECT_EQ(initial_params, send_channel_->GetRtpSendParameters(last_ssrc_));
 }
 
+TEST_F(WebRtcVideoChannelTest, SetRtpSendParametersRejectsUnsupportedCodec) {
+  AddSendStream();
+  VideoSenderParameters parameters;
+  parameters.codecs.push_back(GetEngineCodec("VP8"));
+  ASSERT_TRUE(send_channel_->SetSenderParameters(parameters));
+
+  RtpParameters rtp_parameters =
+      send_channel_->GetRtpSendParameters(last_ssrc_);
+  ASSERT_EQ(1u, rtp_parameters.encodings.size());
+  RtpCodec vp9_rtp_codec;
+  vp9_rtp_codec.name = "VP9";
+  vp9_rtp_codec.kind = MediaType::VIDEO;
+  vp9_rtp_codec.clock_rate = 90000;
+  rtp_parameters.encodings[0].codec = vp9_rtp_codec;
+
+  RTCError error =
+      send_channel_->SetRtpSendParameters(last_ssrc_, rtp_parameters);
+  EXPECT_EQ(RTCErrorType::INVALID_MODIFICATION, error.type());
+  EXPECT_STREQ("Attempted to use an unsupported codec VP9 for encodings[0].",
+               error.message());
+}
+
 // Test that GetRtpReceiverParameters returns the currently configured codecs.
 TEST_F(WebRtcVideoChannelTest, GetRtpReceiveParametersCodecs) {
   AddRecvStream();

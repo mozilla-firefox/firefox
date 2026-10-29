@@ -777,9 +777,10 @@ RTCError ResolveSendCodecs(
                                                *requested_codec);
           });
       if (matched_codec == negotiated_codecs.end()) {
-        return RTCError(RTCErrorType::INVALID_MODIFICATION,
-                        "Attempted to use an unsupported codec for layer " +
-                            std::to_string(i));
+        return RTC_LOG_ERROR(RTCError(RTCErrorType::INVALID_MODIFICATION)
+                             << "Attempted to use an unsupported codec "
+                             << requested_codec->name << " for encodings[" << i
+                             << "].");
       }
       found_codec = *matched_codec;
     }
