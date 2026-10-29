@@ -815,10 +815,24 @@ TEST(DcSctpSocketTest, T2ShutdownTimerExpiresResendsShutdownAck) {
   EXPECT_EQ(a.socket.state(), SocketState::kShuttingDown);
   EXPECT_EQ(z.socket.state(), SocketState::kShuttingDown);
 
-  // Advance time to trigger timer expiry, which makes A resend SHUTDOWN_ACK.
-  AdvanceTime(a, z, a.options.rto_initial.ToTimeDelta());
+  for (int i = 0; i < *a.options.max_retransmissions; ++i) {
+    // Advance time to trigger timer expiry, which makes A resend SHUTDOWN_ACK.
+    AdvanceTime(a, z, a.options.rto_initial.ToTimeDelta() * (1 << i));
+    EXPECT_THAT(a.cb.ConsumeSentPacket(),
+                HasChunks(ElementsAre(IsChunkType(ShutdownAckChunk::kType))));
+    EXPECT_TRUE(a.cb.ConsumeSentPacket().empty());
+  }
+
+  // The last expiry makes it abort the connection.
+  EXPECT_CALL(a.cb, OnAborted(ErrorKind::kTooManyRetries, _)).Times(1);
+  AdvanceTime(a, z,
+              a.options.rto_initial.ToTimeDelta() *
+                  (1 << *a.options.max_retransmissions));
+
+  EXPECT_EQ(a.socket.state(), SocketState::kClosed);
   EXPECT_THAT(a.cb.ConsumeSentPacket(),
-              HasChunks(ElementsAre(IsChunkType(ShutdownAckChunk::kType))));
+              HasChunks(ElementsAre(IsChunkType(AbortChunk::kType))));
+  EXPECT_TRUE(a.cb.ConsumeSentPacket().empty());
 }
 
 TEST(DcSctpSocketTest, ShutdownResendsShutdownAckWhenInShutdownAckSent) {
