@@ -400,6 +400,18 @@ PeerConnectionIntegrationWrapper::NewGetStats(test::RunLoop& run_loop) {
   return report;
 }
 
+scoped_refptr<const RTCStatsReport>
+PeerConnectionIntegrationWrapper::NewGetStats(
+    scoped_refptr<RtpReceiverInterface> selector,
+    test::RunLoop& run_loop) {
+  scoped_refptr<const RTCStatsReport> report;
+  auto callback = RTCStatsObtainer::Create(&report, run_loop.QuitClosure());
+  peer_connection_->GetStats(std::move(selector), callback);
+  run_loop.Run();
+  EXPECT_TRUE(report);
+  return report;
+}
+
 std::string PeerConnectionIntegrationWrapper::DtlsCipher() {
   auto report = NewGetStats();
   if (!report)

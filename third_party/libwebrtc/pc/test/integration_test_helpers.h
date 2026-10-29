@@ -429,6 +429,12 @@ class PeerConnectionIntegrationWrapper : public PeerConnectionObserver,
 
   scoped_refptr<const RTCStatsReport> NewGetStats(test::RunLoop& run_loop);
 
+  // Gets stats filtered by the stats selection algorithm for `selector`, i.e.
+  // the equivalent of RTCRtpReceiver.getStats().
+  scoped_refptr<const RTCStatsReport> NewGetStats(
+      scoped_refptr<RtpReceiverInterface> selector,
+      test::RunLoop& run_loop);
+
   std::string DtlsCipher();
 
   std::string SrtpCipher();

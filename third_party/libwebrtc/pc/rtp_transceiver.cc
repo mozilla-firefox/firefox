@@ -875,11 +875,15 @@ void RtpTransceiver::OnFirstPacketReceived_s(uint32_t ssrc) {
       return;
     }
   }
+  // Bind the first receiver that doesn't have a signaled SSRC. If the receiver
+  // is already bound to an unsignaled SSRC (e.g. the remote endpoint changed
+  // the SSRC), the new SSRC replaces it, matching the worker thread where the
+  // most recent unsignaled stream is used (see `RtpReceiverBase::ssrc()`).
   for (const auto& receiver : receivers_) {
-    if (!receiver->internal()->ssrc_s().has_value()) {
-      receiver->internal()->SetSsrc_s(ssrc);
+    if (!receiver->internal()->has_signaled_ssrc_s()) {
+      receiver->internal()->SetUnsignaledSsrc_s(ssrc);
       receiver->internal()->NotifyFirstPacketReceived(ssrc);
-      break;  // Bind first unbound receiver.
+      break;
     }
   }
 }

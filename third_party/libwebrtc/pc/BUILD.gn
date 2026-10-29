@@ -1901,6 +1901,7 @@ rtc_library("rtp_receiver") {
     "../api/units:timestamp",
     "../media:media_channel",
     "../modules/rtp_rtcp",
+    "../rtc_base:checks",
     "../rtc_base:logging",
     "../rtc_base:macromagic",
     "../rtc_base:threading",
@@ -2356,6 +2357,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test:run_loop",
       "../test:test_support",
       "../test:wait_until",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
     ]
   }
 
@@ -2916,6 +2918,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:threading",
       "../test:run_loop",
       "../test:test_support",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
     ]
   }
 
