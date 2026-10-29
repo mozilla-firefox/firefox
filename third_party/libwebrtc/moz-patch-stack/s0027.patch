@@ -939,7 +939,7 @@ index 7fa6ae078e..19b3b3e209 100644
  }
 +
 diff --git a/modules/sframe/BUILD.gn b/modules/sframe/BUILD.gn
-index 3c5ce2661b..b5377c51d0 100644
+index 5caf250a61..d9b3a570f7 100644
 --- a/modules/sframe/BUILD.gn
 +++ b/modules/sframe/BUILD.gn
 @@ -9,6 +9,7 @@
@@ -950,8 +950,8 @@ index 3c5ce2661b..b5377c51d0 100644
    deps = [
      ":sframe_context_factory",
      ":sframe_decrypt_error_reporter",
-@@ -19,6 +20,7 @@ group("sframe") {
-     ":sframe_media_encryptor_interface",
+@@ -20,6 +21,7 @@ group("sframe") {
+     ":synchronized_sframe_encryptor",
    ]
  }
 +}

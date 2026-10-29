@@ -53,7 +53,7 @@
 #include "media/base/media_channel.h"
 #include "media/base/media_engine.h"
 #include "modules/sframe/sframe_encryption_config.h"
-#include "modules/sframe/sframe_encryptor.h"
+#include "modules/sframe/synchronized_sframe_encryptor.h"
 #include "pc/dtmf_sender.h"
 #include "pc/encoded_audio_frame_injector.h"
 #include "pc/encoded_video_frame_injector.h"
@@ -1274,7 +1274,7 @@ RtpSenderBase::CreateSframeEncryptorOrError(
 
   SframeEncryptionConfig sframe_encryption_config{
       .mode = options.mode,
-      .encryptor = SframeEncryptor::Create(options.cipher_suite)};
+      .encryptor = SynchronizedSframeEncryptor::Create(options.cipher_suite)};
 
   worker_thread_->PostTask(
       SafeTask(worker_safety_, [this, sframe_encryption_config]() mutable {

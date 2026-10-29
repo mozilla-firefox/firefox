@@ -89,6 +89,7 @@
 #include "pc/video_rtp_receiver.h"
 #include "pc/video_track.h"
 #include "rtc_base/checks.h"  // IWYU pragma: keep
+#include "rtc_base/task_queue_for_test.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/unique_id_generator.h"
 #include "test/create_test_environment.h"
@@ -2988,12 +2989,8 @@ TEST_F(RtpSenderReceiverTest, SetSsrcPropagatesSframeEncryptor) {
             options.mode);
 }
 
-// The application installs keys from its own thread while the media pipeline
-// encrypts on the worker thread. Both have to reach the same encryptor on the
-// same sequence, which is what the returned proxy takes care of: encryption
-// only succeeds if the key set through the handle landed in the object the
-// media channel was given.
-TEST_F(RtpSenderReceiverTest, SframeEncryptorHandleMarshalsToWorkerThread) {
+TEST_F(RtpSenderReceiverTest,
+       SframeEncryptorHandleSharesContextWithMediaThreads) {
   auto mock_channel = std::make_unique<MockVideoMediaSendChannel>(
       VideoOptions(), network_thread_.get());
   MockVideoMediaSendChannel* mock_channel_ptr = mock_channel.get();
@@ -3023,6 +3020,12 @@ TEST_F(RtpSenderReceiverTest, SframeEncryptorHandleMarshalsToWorkerThread) {
                     ->Encrypt(frame, /*additional_data=*/{},
                               std::span<uint8_t>(encrypted_frame))
                     .ok());
+  });
+  // Video frames are encrypted on the encoder or frame transformer queue, which
+  // is neither the signaling nor the worker thread.
+  TaskQueueForTest encoder_queue("EncoderQueue");
+  encoder_queue.SendTask([&] {
+    EXPECT_TRUE(encryptor->Encrypt(frame, {}, encrypted_frame).ok());
   });
 }
 

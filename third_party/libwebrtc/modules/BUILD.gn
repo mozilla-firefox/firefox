@@ -98,6 +98,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "remote_bitrate_estimator:transport_sequence_number_feedback_generator_unittest",
       "sframe:sframe_decrypt_error_reporter_unittest",
       "sframe:sframe_encryptor_decryptor_unittest",
+      "sframe:synchronized_sframe_encryptor_unittest",
     ]
 
     if (is_linux || is_chromeos || is_mac || is_win) {

@@ -20,10 +20,9 @@
 #include "absl/base/nullability.h"
 #include "api/rtc_error.h"
 #include "api/scoped_refptr.h"
-#include "api/sequence_checker.h"
 #include "api/sframe/sframe_types.h"
 #include "modules/sframe/sframe_media_encryptor_interface.h"
-#include "rtc_base/system/no_unique_address.h"
+#include "rtc_base/race_checker.h"
 #include "rtc_base/thread_annotations.h"
 
 namespace sframe {
@@ -55,12 +54,10 @@ class SframeEncryptor : public SframeMediaEncryptorInterface {
   explicit SframeEncryptor(SframeCipherSuite cipher_suite);
 
  private:
-  // Callers must use this object from a single sequence. Today that sequence
-  // is the media-pipeline (worker) thread reached via the signaling thread.
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
+  RaceChecker access_checker_;
 
-  std::unique_ptr<sframe::Context> context_ RTC_GUARDED_BY(sequence_checker_);
-  std::optional<uint64_t> active_key_id_ RTC_GUARDED_BY(sequence_checker_);
+  std::unique_ptr<sframe::Context> context_ RTC_GUARDED_BY(access_checker_);
+  std::optional<uint64_t> active_key_id_ RTC_GUARDED_BY(access_checker_);
 };
 
 }  // namespace webrtc
