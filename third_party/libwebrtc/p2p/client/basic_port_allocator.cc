@@ -1784,9 +1784,11 @@ bool PortConfiguration::SupportsProtocol(ProtocolType type) const {
 ServerAddresses PortConfiguration::GetRelayServerAddresses(
     ProtocolType type) const {
   ServerAddresses servers;
-  for (size_t i = 0; i < relays.size(); ++i) {
-    if (SupportsProtocol(relays[i], type)) {
-      servers.insert(relays[i].ports.front().address);
+  for (const RelayServerConfig& relay : relays) {
+    for (const ProtocolAddress& relay_port : relay.ports) {
+      if (relay_port.proto == type) {
+        servers.insert(relay_port.address);
+      }
     }
   }
   return servers;
