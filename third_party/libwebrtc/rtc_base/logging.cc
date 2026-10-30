@@ -347,6 +347,12 @@ StringBuilder& LogMessage::stream() {
   return print_stream_;
 }
 
+void LogMessage::ReserveStream(size_t size) {
+  // FinishPrintStream() appends " : " and `extra_`, if not empty.
+  const size_t extra_size = extra_.empty() ? 0 : extra_.size() + 3;
+  print_stream_.Reserve(print_stream_.size() + size + extra_size);
+}
+
 int LogMessage::GetMinLogSeverity() {
   return g_min_sev.load(std::memory_order_relaxed);
 }
@@ -576,8 +582,72 @@ void LogMessage::FinishPrintStream() {
 }
 
 namespace webrtc_logging_impl {
+namespace {
 
-void Log(const LogArgType* fmt, ...) {
+// Returns the total size of the std::string and string view arguments in
+// `args`, whose types are listed in `fmt`. The sizes of the other arguments
+// are estimated at compile time, see LogStreamer<>::Call().
+size_t StringArgsSize(const LogArgType* fmt, va_list args) {
+  size_t size = 0;
+  for (; *fmt != LogArgType::kEnd; ++fmt) {
+    switch (*fmt) {
+      case LogArgType::kInt:
+        va_arg(args, int);
+        break;
+      case LogArgType::kLong:
+        va_arg(args, long);
+        break;
+      case LogArgType::kLongLong:
+        va_arg(args, long long);
+        break;
+      case LogArgType::kUInt:
+        va_arg(args, unsigned);
+        break;
+      case LogArgType::kULong:
+        va_arg(args, unsigned long);
+        break;
+      case LogArgType::kULongLong:
+        va_arg(args, unsigned long long);
+        break;
+      case LogArgType::kDouble:
+        va_arg(args, double);
+        break;
+      case LogArgType::kLongDouble:
+        va_arg(args, long double);
+        break;
+      case LogArgType::kCharP:
+        va_arg(args, const char*);
+        break;
+      case LogArgType::kVoidP:
+        va_arg(args, const void*);
+        break;
+      case LogArgType::kStdString:
+        size += va_arg(args, const std::string*)->size();
+        break;
+      case LogArgType::kStringView:
+        size += va_arg(args, const absl::string_view*)->size();
+        break;
+      case LogArgType::kStdStringView:
+        size += va_arg(args, const std::string_view*)->size();
+        break;
+      case LogArgType::kEnd:
+      case LogArgType::kLogMetadata:
+      case LogArgType::kLogMetadataErr:
+#ifdef WEBRTC_ANDROID
+      case LogArgType::kLogMetadataTag:
+#else
+      case LogArgType::kReserved:
+#endif
+        // Unexpected types are reported when the message is formatted.
+        return size;
+    }
+  }
+  return size;
+}
+
+}  // namespace
+
+void Log(size_t size_hint, const LogArgType* fmt, ...) {
   va_list args;
   va_start(args, fmt);
 
@@ -628,6 +698,14 @@ void Log(const LogArgType* fmt, ...) {
   if (tag) {
     log_message.AddTag(tag);
   }
+
+  // Add the sizes of the string arguments, which are only known at runtime, so
+  // that the message can typically be formatted with a single allocation.
+  va_list size_args;
+  va_copy(size_args, args);
+  const size_t reserve_size = size_hint + StringArgsSize(fmt + 1, size_args);
+  va_end(size_args);
+  log_message.ReserveStream(reserve_size);
 
   for (++fmt; *fmt != LogArgType::kEnd; ++fmt) {
     switch (*fmt) {

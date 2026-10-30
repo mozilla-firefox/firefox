@@ -14,12 +14,14 @@
 
 #include <string.h>
 
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include "absl/functional/any_invocable.h"
@@ -41,6 +43,7 @@ namespace {
 
 using ::testing::HasSubstr;
 using ::testing::Not;
+using ::testing::SizeIs;
 using ::testing::StartsWith;
 
 #if defined(WEBRTC_WIN)
@@ -48,6 +51,25 @@ constexpr char kFakeFilePath[] = "some\\path\\myfile.cc";
 #else
 constexpr char kFakeFilePath[] = "some/path/myfile.cc";
 #endif
+
+// An array of unknown bound, i.e. of incomplete type until it is defined at the
+// end of this file.
+extern const char kUnboundedArray[];
+
+struct ConvertibleToCharPointer {
+  operator const char*() const { return "converted"; }
+};
+
+// Supports AbslStringify and also converts to a character pointer.
+struct StringifiableAndConvertibleToCharPointer {
+  operator const char*() const { return "converted"; }
+};
+
+template <typename Sink>
+void AbslStringify(Sink& sink,
+                   const StringifiableAndConvertibleToCharPointer& /*self*/) {
+  sink.Append("stringified");
+}
 
 }  // namespace
 
@@ -187,6 +209,52 @@ TEST_F(LogTest, LogLongDouble) {
   EXPECT_THAT(sink.data(), HasSubstr("123.456"));
 }
 
+// String literals provide their exact length as size hint. Other character
+// pointers provide an estimate, since their length is only known at runtime.
+static_assert(decltype(webrtc_logging_impl::MakeVal("abc"))::SizeHint() == 3);
+static_assert(decltype(webrtc_logging_impl::MakeVal(
+                  std::declval<const char*>()))::SizeHint() == 16);
+// AbslStringify takes precedence over a conversion to a character pointer.
+static_assert(std::is_same_v<decltype(webrtc_logging_impl::MakeVal(
+                                 StringifiableAndConvertibleToCharPointer())),
+                             webrtc_logging_impl::ToStringVal>);
+
+TEST_F(LogTest, CharacterPointersAndArraysAreLoggedAsStrings) {
+  TestLogSink& sink = InitializeLoggingWithSink();
+
+  char buffer[32] = "buffer";
+  char pointee[] = "pointer";
+  char* pointer = pointee;
+  const char* const_pointer = "const_pointer";
+  RTC_LOG(LS_INFO) << "|" << "literal" << "|" << buffer << "|" << pointer << "|"
+                   << const_pointer << "|" << kUnboundedArray << "|"
+                   << ConvertibleToCharPointer() << "|"
+                   << StringifiableAndConvertibleToCharPointer() << "|";
+
+  EXPECT_THAT(sink.data(),
+              HasSubstr("|literal|buffer|pointer|const_pointer|unbounded|"
+                        "converted|stringified|"));
+}
+
+TEST_F(LogTest, MessageLongerThanSizeHintIsLoggedCompletely) {
+  TestLogSink& sink = InitializeLoggingWithSink();
+
+  // `long_pointer` adds more characters than its compile-time estimate, so the
+  // message is longer than the reserved size.
+  constexpr char kLiteral[] =
+      "0123456789012345678901234567890123456789012345678901234567890123456789"
+      "012345678901234567890123456789";
+  const std::string long_string(1000, 's');
+  const absl::string_view long_view = long_string;
+  const char* long_pointer = long_string.c_str();
+  RTC_LOG(LS_INFO) << kLiteral << kLiteral << kLiteral << long_string
+                   << long_view << long_pointer;
+
+  EXPECT_THAT(sink.data(),
+              HasSubstr(std::string(kLiteral) + kLiteral + kLiteral +
+                        long_string + long_string + long_string + "\n"));
+}
+
 TEST_F(LogTest, LogIfLogIfConditionIsTrue) {
   TestLogSink& sink = InitializeLoggingWithSink();
 
@@ -291,6 +359,30 @@ TEST_F(LogTest, CheckExtraErrorField) {
   log_msg.stream() << "This gets added at dtor time";
 
   EXPECT_THAT(log_msg.get_extra(), StartsWith("[0x0000000D]"));
+}
+
+TEST_F(LogTest, LogErrnoAppendsExtraErrorField) {
+  TestLogSink& sink = InitializeLoggingWithSink();
+
+  RTC_LOG_ERRNO_EX(LS_INFO, EBADF) << "Message";
+
+  EXPECT_THAT(sink.data(), HasSubstr("Message : [0x00000009]"));
+}
+
+TEST_F(LogTest, ReserveStreamAccountsForExtraErrorField) {
+  LogMessageForTesting log_msg(kFakeFilePath, 100, LS_VERBOSE, ERRCTX_ERRNO,
+                               EBADF);
+  // The size of the message text, including the trailing newline.
+  constexpr size_t kMessageSize = 100;
+  log_msg.ReserveStream(kMessageSize);
+  const char* buffer = log_msg.stream().str().data();
+  log_msg.stream() << std::string(kMessageSize - 1, 'x');
+
+  // Appends " : ", the extra error information and the newline.
+  const std::string message = log_msg.GetPrintStream();
+  EXPECT_THAT(message, SizeIs(kMessageSize + log_msg.get_extra().size() + 3));
+  // The reserved buffer fits the complete message.
+  EXPECT_EQ(message.data(), buffer);
 }
 
 TEST_F(LogTest, CheckFilePathParsed) {
@@ -512,6 +604,10 @@ TEST_P(LogTestWithParam, LogQueueNameFromTaskQueueOverridingThread) {
 }
 
 INSTANTIATE_TEST_SUITE_P(All, LogTestWithParam, ::testing::Bool());
+
+namespace {
+const char kUnboundedArray[] = "unbounded";
+}  // namespace
 
 }  // namespace webrtc
 #endif  // RTC_LOG_ENABLED()

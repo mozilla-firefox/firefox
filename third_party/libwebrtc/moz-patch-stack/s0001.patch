@@ -1409,7 +1409,7 @@ index 9d28dc9686..7eb3121714 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index bff81cdeb7..ef725f86ea 100644
+index 267f54e724..e1611826b6 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
 @@ -28,6 +28,7 @@
@@ -1455,10 +1455,10 @@ index bff81cdeb7..ef725f86ea 100644
  // The list of logging streams currently configured.
  // Note: we explicitly do not clean this up, because of the uncertain ordering
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index 093693b391..0903b307b4 100644
+index 5c39fa5100..b0a9f8cae0 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -654,6 +654,12 @@ class LogMessage {
+@@ -701,6 +701,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index 093693b391..0903b307b4 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -701,6 +707,9 @@ class LogMessage {
+@@ -748,6 +754,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;
