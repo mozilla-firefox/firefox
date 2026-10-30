@@ -14,24 +14,36 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
+#include "api/audio_options.h"
 #include "api/legacy_stats_types.h"
+#include "api/make_ref_counted.h"
 #include "api/media_stream_interface.h"
+#include "api/media_types.h"
 #include "api/peer_connection_interface.h"
+#include "api/rtp_receiver_interface.h"
 #include "api/rtp_sender_interface.h"
+#include "api/rtp_transceiver_direction.h"
 #include "api/scoped_refptr.h"
 #include "call/call.h"
 #include "media/base/media_channel.h"
 #include "pc/legacy_stats_collector.h"
 #include "pc/media_stream.h"
+#include "pc/rtp_receiver.h"
+#include "pc/rtp_receiver_proxy.h"
+#include "pc/rtp_sender.h"
+#include "pc/rtp_sender_proxy.h"
+#include "pc/rtp_transceiver.h"
 #include "pc/test/fake_peer_connection_for_stats.h"
 #include "pc/test/fake_video_track_source.h"
 #include "pc/test/legacy_stats_collector_test_helpers.h"
 #include "pc/video_track.h"
 #include "rtc_base/system/plan_b_only.h"
 #include "rtc_base/thread.h"
+#include "test/create_test_environment.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 
@@ -39,14 +51,124 @@ namespace webrtc {
 
 using ::testing::UnorderedElementsAre;
 
+// FakePeerConnectionForStats with Plan B transceivers: there is one transceiver
+// per media type, which holds all senders and receivers of that type.
+class FakePlanBPeerConnectionForStats : public FakePeerConnectionForStats {
+ public:
+  using FakePeerConnectionForStats::FakePeerConnectionForStats;
+
+  PLAN_B_ONLY scoped_refptr<RtpSenderInterface> AddSender(
+      scoped_refptr<RtpSenderInternal> sender) {
+    auto sender_proxy = RtpSenderProxyWithInternal<RtpSenderInternal>::Create(
+        signaling_thread(), sender);
+    GetOrCreateTransceiver(sender->media_type())
+        ->internal()
+        ->AddSenderPlanB(sender_proxy);
+    return sender_proxy;
+  }
+
+  PLAN_B_ONLY void RemoveSender(scoped_refptr<RtpSenderInterface> sender) {
+    GetOrCreateTransceiver(sender->media_type())
+        ->internal()
+        ->RemoveSenderPlanB(sender.get());
+  }
+
+  PLAN_B_ONLY scoped_refptr<RtpReceiverInterface> AddReceiver(
+      scoped_refptr<RtpReceiverInternal> receiver) {
+    auto receiver_proxy =
+        RtpReceiverProxyWithInternal<RtpReceiverInternal>::Create(
+            signaling_thread(), worker_thread(), receiver);
+    GetOrCreateTransceiver(receiver->media_type())
+        ->internal()
+        ->AddReceiverPlanB(receiver_proxy);
+    return receiver_proxy;
+  }
+
+  // The channel is added to the transceiver of the media type.
+  PLAN_B_ONLY std::pair<FakeVoiceMediaSendChannelForStats*,
+                        FakeVoiceMediaReceiveChannelForStats*>
+  AddVoiceChannel(const std::string& mid,
+                  const std::string& transport_name,
+                  VoiceMediaInfo initial_stats = VoiceMediaInfo()) {
+    GetOrCreateTransceiver(MediaType::AUDIO);
+    return FakePeerConnectionForStats::AddVoiceChannel(mid, transport_name,
+                                                       initial_stats);
+  }
+
+  // The channel is added to the transceiver of the media type.
+  PLAN_B_ONLY std::pair<FakeVideoMediaSendChannelForStats*,
+                        FakeVideoMediaReceiveChannelForStats*>
+  AddVideoChannel(const std::string& mid,
+                  const std::string& transport_name,
+                  VideoMediaInfo initial_stats = VideoMediaInfo()) {
+    GetOrCreateTransceiver(MediaType::VIDEO);
+    return FakePeerConnectionForStats::AddVideoChannel(mid, transport_name,
+                                                       initial_stats);
+  }
+
+  std::vector<scoped_refptr<RtpSenderInterface>> GetSenders() const override {
+    std::vector<scoped_refptr<RtpSenderInterface>> senders;
+    for (auto transceiver : GetTransceiversInternal()) {
+      RTC_ALLOW_PLAN_B_DEPRECATION_BEGIN()
+      for (auto sender : transceiver->internal()->senders()) {
+        senders.push_back(sender);
+      }
+      RTC_ALLOW_PLAN_B_DEPRECATION_END()
+    }
+    return senders;
+  }
+
+  std::vector<scoped_refptr<RtpReceiverInterface>> GetReceivers()
+      const override {
+    std::vector<scoped_refptr<RtpReceiverInterface>> receivers;
+    for (auto transceiver : GetTransceiversInternal()) {
+      RTC_ALLOW_PLAN_B_DEPRECATION_BEGIN()
+      for (auto receiver : transceiver->internal()->receivers()) {
+        receivers.push_back(receiver);
+      }
+      RTC_ALLOW_PLAN_B_DEPRECATION_END()
+    }
+    return receivers;
+  }
+
+  bool IsUnifiedPlan() const override { return false; }
+
+ private:
+  // Returns the transceiver of `media_type`, creating it if needed.
+  scoped_refptr<RtpTransceiverProxyWithInternal<RtpTransceiver>>
+  GetOrCreateTransceiver(MediaType media_type) {
+    for (auto transceiver : GetTransceiversInternal()) {
+      if (transceiver->internal()->media_type() == media_type) {
+        return transceiver;
+      }
+    }
+    auto transceiver = RtpTransceiverProxyWithInternal<RtpTransceiver>::Create(
+        signaling_thread(),
+        make_ref_counted<RtpTransceiver>(
+            env(), media_type, connection_context(), codec_lookup_helper(),
+            nullptr, AudioOptions(), VideoOptions()));
+    transceiver->internal()->set_current_direction(
+        RtpTransceiverDirection::kSendRecv);
+    RegisterTransceiver(transceiver);
+    return transceiver;
+  }
+};
+
 // Variant of StatsCollectorTrackTest where the tracks are added to the
 // stats collector through MediaStreams, as is done in Plan B.
 class StatsCollectorTrackPlanBTest : public LegacyStatsCollectorTest {
  public:
+  // Hides LegacyStatsCollectorTest::CreatePeerConnection(), so that the tests
+  // use the Plan B fake.
+  scoped_refptr<FakePlanBPeerConnectionForStats> CreatePeerConnection() {
+    return make_ref_counted<FakePlanBPeerConnectionForStats>(
+        CreateTestEnvironment({.time = &clock_}));
+  }
+
   // Adds a outgoing video track with a given SSRC into the stats.
   // The track is also inserted into the local stream, which is created if
   // necessary.
-  void AddOutgoingVideoTrack(FakePeerConnectionForStats* pc,
+  void AddOutgoingVideoTrack(FakePlanBPeerConnectionForStats* pc,
                              LegacyStatsCollector* stats) {
     video_track_ = VideoTrack::Create(
         kLocalTrackId, FakeVideoTrackSource::Create(), Thread::Current());
@@ -60,7 +182,7 @@ class StatsCollectorTrackPlanBTest : public LegacyStatsCollectorTest {
   }
 
   // Adds a incoming video track with a given SSRC into the stats.
-  void AddIncomingVideoTrack(FakePeerConnectionForStats* pc,
+  void AddIncomingVideoTrack(FakePlanBPeerConnectionForStats* pc,
                              LegacyStatsCollector* stats) {
     video_track_ = VideoTrack::Create(
         kRemoteTrackId, FakeVideoTrackSource::Create(), Thread::Current());
@@ -77,7 +199,7 @@ class StatsCollectorTrackPlanBTest : public LegacyStatsCollectorTest {
   // The track is also inserted into the local stream, which is created if
   // necessary.
   scoped_refptr<RtpSenderInterface> AddOutgoingAudioTrack(
-      FakePeerConnectionForStats* pc,
+      FakePlanBPeerConnectionForStats* pc,
       LegacyStatsCollector* stats) {
     audio_track_ = CreateFakeAudioTrack(kLocalTrackId, true);
     if (!stream_)
@@ -91,7 +213,7 @@ class StatsCollectorTrackPlanBTest : public LegacyStatsCollectorTest {
   }
 
   // Adds a incoming audio track with a given SSRC into the stats.
-  void AddIncomingAudioTrack(FakePeerConnectionForStats* pc,
+  void AddIncomingAudioTrack(FakePlanBPeerConnectionForStats* pc,
                              LegacyStatsCollector* stats) {
     audio_track_ = CreateFakeAudioTrack(kRemoteTrackId, true);
     if (stream_ == nullptr)

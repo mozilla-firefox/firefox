@@ -56,6 +56,7 @@
 #include "p2p/test/fake_ice_transport.h"
 #include "p2p/test/fake_port_allocator.h"
 #include "pc/channel_interface.h"
+#include "pc/codec_vendor.h"
 #include "pc/connection_context.h"
 #include "pc/data_channel_utils.h"
 #include "pc/dtls_transport.h"
@@ -630,6 +631,16 @@ class FakePeerConnectionForStats : public FakePeerConnectionBase,
   PayloadTypePicker& payload_type_picker() override {
     return payload_type_picker_;
   }
+
+ protected:
+  // For subclasses that create their own transceivers.
+  void RegisterTransceiver(
+      scoped_refptr<RtpTransceiverProxyWithInternal<RtpTransceiver>>
+          transceiver) {
+    transceivers_.push_back(std::move(transceiver));
+  }
+  ConnectionContext* connection_context() { return context_.get(); }
+  CodecLookupHelper* codec_lookup_helper() { return &codec_lookup_helper_; }
 
  private:
   // Creates a channel for `mid` on a transceiver of type `media_type` and
