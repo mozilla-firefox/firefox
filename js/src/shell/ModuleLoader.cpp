@@ -701,6 +701,13 @@ JSObject* ModuleLoader::loadAndParse(JSContext* cx, HandleString pathArg,
       return nullptr;
     }
 
+    RootedObject info(cx, js::CreateScriptPrivate(cx, path));
+    if (!info) {
+      return nullptr;
+    }
+
+    JS::SetModulePrivate(module, ObjectValue(*info));
+
     if (!addModuleToRegistry(cx, moduleType, path, module)) {
       return nullptr;
     }
