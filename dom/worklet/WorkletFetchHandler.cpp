@@ -226,6 +226,10 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
   if (mHasWasmMimeTypeEssence) {
     request->SetHasWasmMimeTypeEssence();
     request->SetWasmBytes();
+    if (mScriptBuffer &&
+        !request->WasmBytes().append(mScriptBuffer.get(), mScriptLength)) {
+      return NS_ERROR_OUT_OF_MEMORY;
+    }
     request->SetBaseURL(mURI);
     request->OnFetchComplete(mResult);
     moduleLoader->RemoveRequest(mURI);
