@@ -1128,10 +1128,10 @@ static bool ModuleResolveExportWithResolveSet(
 
 // https://tc39.es/ecma262/#table-abstract-methods-of-module-records
 // Abstract Method 'ResolveExport(exportName)'
-static bool ModuleResolveExport(JSContext* cx, Handle<ModuleObject*> module,
-                                Handle<JSAtom*> exportName,
-                                MutableHandle<Value> result,
-                                ModuleErrorInfo* errorInfoOut = nullptr) {
+bool js::ModuleResolveExport(JSContext* cx, Handle<ModuleObject*> module,
+                             Handle<JSAtom*> exportName,
+                             MutableHandle<Value> result,
+                             ModuleErrorInfo* errorInfoOut) {
   // https://tc39.es/ecma262/#sec-resolveexport
   // Step 2. If resolveSet is not present, set resolveSet to a new empty List.
   Rooted<ResolveSet> resolveSet(cx);
@@ -1499,7 +1499,7 @@ ModuleNamespaceObject* js::GetOrCreateModuleNamespace(
   return ns;
 }
 
-static bool IsResolvedBinding(JSContext* cx, Handle<Value> resolution) {
+bool js::IsResolvedBinding(JSContext* cx, Handle<Value> resolution) {
   MOZ_ASSERT(resolution.isObjectOrNull() ||
              resolution.toString() == cx->names().ambiguous);
   return resolution.isObject();

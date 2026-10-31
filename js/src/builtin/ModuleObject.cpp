@@ -517,7 +517,7 @@ bool ModuleNamespaceObject::addBinding(JSContext* cx,
 
 constexpr char ModuleNamespaceObject::ProxyHandler::family = 0;
 
-static void ReportUninitializedModuleBinding(JSContext* cx, HandleId id) {
+void js::ReportUninitializedModuleBinding(JSContext* cx, HandleId id) {
   // Module export names are property keys and may not be identifier names,
   // so use IdIsPropertyKey rather than IdIsIdentifier.
   if (UniqueChars printable =

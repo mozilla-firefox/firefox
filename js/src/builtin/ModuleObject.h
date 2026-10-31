@@ -720,6 +720,8 @@ JSObject* GetOrCreateModuleMetaObject(JSContext* cx, HandleObject module);
 JSObject* StartDynamicModuleImport(JSContext* cx, HandleScript script,
                                    HandleValue specifier, HandleValue options,
                                    ImportPhase phase);
+
+void ReportUninitializedModuleBinding(JSContext* cx, HandleId id);
 }  // namespace js
 
 template <>

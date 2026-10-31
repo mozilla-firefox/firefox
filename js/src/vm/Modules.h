@@ -76,6 +76,16 @@ bool LoadRequestedModules(JSContext* cx, Handle<ModuleObject*> module,
                           HandleValue hostDefined,
                           MutableHandle<JSObject*> promiseOut);
 
+ModuleObject* GetImportedModule(JSContext* cx, Handle<ModuleObject*> referrer,
+                                Handle<ModuleRequestObject*> moduleRequest);
+
+bool ModuleResolveExport(JSContext* cx, Handle<ModuleObject*> module,
+                         Handle<JSAtom*> exportName,
+                         MutableHandle<Value> result,
+                         ModuleErrorInfo* errorInfoOut = nullptr);
+
+bool IsResolvedBinding(JSContext* cx, Handle<Value> resolution);
+
 bool HostLoadImportedModule(
     JSContext* cx, Handle<Value> referrer, Handle<JSObject*> moduleRequest,
     Handle<Value> hostDefined, Handle<Value> payload, uint32_t lineNumber = 0,
