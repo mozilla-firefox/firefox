@@ -27,6 +27,12 @@ android {
         viewBinding = true
     }
 
+    buildTypes {
+        release {
+            consumerProguardFiles 'proguard-rules-consumer.pro'
+        }
+    }
+
     namespace = 'mozilla.components.feature.addons'
 }
 
