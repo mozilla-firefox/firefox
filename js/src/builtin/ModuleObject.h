@@ -615,7 +615,8 @@ class ModuleObject : public NativeObject {
   static bool createSyntheticEnvironment(JSContext* cx,
                                          Handle<ModuleObject*> self,
                                          JS::HandleVector<Value> values);
-  static bool createWasmEnvironment(JSContext* cx, Handle<ModuleObject*> self);
+  static bool createWasmEnvironment(JSContext* cx, Handle<ModuleObject*> self,
+                                    Handle<ExportNameVector> exportNames);
 
   void initAsyncSlots(JSContext* cx, bool hasTopLevelAwait,
                       Handle<ListObject*> asyncParentModules);

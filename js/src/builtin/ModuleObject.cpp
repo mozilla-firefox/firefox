@@ -1788,9 +1788,10 @@ bool ModuleObject::createSyntheticEnvironment(JSContext* cx,
 
 /* static */
 bool ModuleObject::createWasmEnvironment(JSContext* cx,
-                                         Handle<ModuleObject*> self) {
+                                         Handle<ModuleObject*> self,
+                                         Handle<ExportNameVector> exportNames) {
   Rooted<ModuleEnvironmentObject*> env(
-      cx, ModuleEnvironmentObject::createForWasmModule(cx, self));
+      cx, ModuleEnvironmentObject::createForWasmModule(cx, self, exportNames));
   if (!env) {
     return false;
   }

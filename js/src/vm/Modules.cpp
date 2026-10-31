@@ -485,7 +485,28 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
   moduleObject->initImportExportData(&requestedModuleRecords, &importEntries,
                                      &exportEntries, 0, 0, 0);
 
-  if (!ModuleObject::createWasmEnvironment(cx, moduleObject)) {
+  JS::RootedVector<JSString*> exportNameStrings(cx);
+  if (!wasm::GetModuleExportNames(cx, wasmModuleObject, &exportNameStrings)) {
+    return nullptr;
+  }
+
+  Rooted<ExportNameVector> exportNames(cx);
+  if (!exportNames.reserve(exportNameStrings.length())) {
+    ReportOutOfMemory(cx);
+    return nullptr;
+  }
+
+  Rooted<JSAtom*> exportName(cx);
+  for (JSString* exportNameString : exportNameStrings) {
+    exportName = AtomizeString(cx, exportNameString);
+    if (!exportName) {
+      return nullptr;
+    }
+
+    exportNames.infallibleAppend(exportName);
+  }
+
+  if (!ModuleObject::createWasmEnvironment(cx, moduleObject, exportNames)) {
     return nullptr;
   }
 
