@@ -44,6 +44,7 @@
 #include "vm/JSAtomUtils-inl.h"           // AtomToId
 #include "vm/JSContext-inl.h"             // JSContext::{c,releaseC}heck
 #include "vm/JSObject-inl.h"
+#include "vm/List-inl.h"
 #include "vm/NativeObject-inl.h"
 
 using namespace js;
@@ -529,6 +530,14 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
           JS::ColumnNumberOneOrigin());
     }
   }
+
+  Rooted<ListObject*> asyncParentModulesList(cx, ListObject::create(cx));
+  if (!asyncParentModulesList) {
+    return nullptr;
+  }
+
+  moduleObject->initAsyncSlots(cx, /* hasTopLevelAwait = */ false,
+                               asyncParentModulesList);
 
   Rooted<ImportEntryVector> importEntries(cx);
   Rooted<ExportEntryVector> exportEntries(cx);
