@@ -3525,6 +3525,13 @@ static bool CheckImportsAgainstBuiltinModules(Decoder& d,
           continue;
         }
 
+        // Every import from the imported string module must match
+        // `global ref extern`, so a function import is always a type mismatch.
+        // https://webassembly.github.io/spec/js-api/#validate-builtins-and-imported-string-for-a-webassembly-module
+        if (*builtinModule == BuiltinModuleId::JSStringConstants) {
+          return d.fail("type mismatch");
+        }
+
         // Check if this import refers to a builtin module function
         const BuiltinModuleFunc* builtinFunc = nullptr;
         BuiltinModuleFuncId builtinFuncId;

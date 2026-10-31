@@ -15,6 +15,10 @@ assertErrorMessage(() => wasmEvalWithConstants(`(module
   (global (import "'" "") (mut (ref extern)))
 )`, "'"), WebAssembly.CompileError, /type mismatch/);
 
+assertErrorMessage(() => wasmEvalWithConstants(`(module
+  (func (import "'" ""))
+)`, "'"), WebAssembly.CompileError, /type mismatch/);
+
 function testString(type, literal, namespace) {
   return wasmEvalWithConstants(`(module
     (global (import "${namespace}" "${literal}") ${type})
