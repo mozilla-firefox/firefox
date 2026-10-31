@@ -471,6 +471,28 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
   }
   moduleObject->initScriptSourceObject(sso);
 
+  // https://webassembly.github.io/esm-integration/js-api/index.html#module-declaration-environment-setup
+  // Step 1. Let record be this WebAssembly Module Record.
+  // Step 2. Let env be NewModuleEnvironment(null).
+  // Step 3. Set record.[[Environment]] to env.
+  // Step 4. For each name in the export name list of record,
+  // Step 4.1. Perform ! env.CreateImmutableBinding(name, true).
+  //
+  // The specification does this in InitializeEnvironment, but we create the
+  // environment here, as we already do for JavaScript and synthetic modules.
+  // Module namespace bindings are resolved eagerly while linking, which
+  // requires the environment of an imported module to exist, and in a cycle
+  // linking can reach an importer before InitializeEnvironment has run for
+  // this record.
+  Rooted<ExportNameVector> exportNames(cx);
+  if (!GetWasmExportNameAtoms(cx, wasmModuleObject, &exportNames)) {
+    return nullptr;
+  }
+
+  if (!ModuleObject::createWasmEnvironment(cx, moduleObject, exportNames)) {
+    return nullptr;
+  }
+
   JS::RootedVector<std::pair<JSString*, JSString*>> wasmImports(cx);
   if (!wasm::GetModuleImports(cx, wasmModuleObject, &wasmImports)) {
     return nullptr;
@@ -512,15 +534,6 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
   Rooted<ExportEntryVector> exportEntries(cx);
   moduleObject->initImportExportData(&requestedModuleRecords, &importEntries,
                                      &exportEntries, 0, 0, 0);
-
-  Rooted<ExportNameVector> exportNames(cx);
-  if (!GetWasmExportNameAtoms(cx, wasmModuleObject, &exportNames)) {
-    return nullptr;
-  }
-
-  if (!ModuleObject::createWasmEnvironment(cx, moduleObject, exportNames)) {
-    return nullptr;
-  }
 
   if (!ModuleObject::Freeze(cx, moduleObject)) {
     return nullptr;
@@ -1866,6 +1879,42 @@ static bool ModuleInitializeEnvironment(JSContext* cx,
   return ModuleObject::instantiateFunctionDeclarations(cx, module);
 }
 
+#ifdef NIGHTLY_BUILD
+// https://webassembly.github.io/esm-integration/js-api/index.html#module-declaration-environment-setup
+static bool WasmModuleInitializeEnvironment(JSContext* cx,
+                                            Handle<ModuleObject*> module) {
+  MOZ_ASSERT(module->status() == ModuleStatus::Linking);
+
+  // The environment was created already by CreateWasmSourcePhaseModule.
+  // Here we just validate that the imports resolve correctly.
+  Rooted<ModuleRequestObject*> moduleRequest(cx);
+  Rooted<ModuleObject*> importedModule(cx);
+  Rooted<JSAtom*> importName(cx);
+  Rooted<Value> resolution(cx);
+  for (const ImportEntry& in : module->importEntries()) {
+    moduleRequest = in.moduleRequest();
+    importedModule = GetImportedModule(cx, module, moduleRequest);
+    if (!importedModule) {
+      return false;
+    }
+
+    importName = in.importName();
+    ModuleErrorInfo errorInfo{in.lineNumber(), in.columnNumber()};
+    if (!ModuleResolveExport(cx, importedModule, importName, &resolution,
+                             &errorInfo)) {
+      return false;
+    }
+
+    if (!IsResolvedBinding(cx, resolution)) {
+      ThrowResolutionError(cx, module, resolution, importName, &errorInfo);
+      return false;
+    }
+  }
+
+  return true;
+}
+#endif
+
 // Reject the load with the pending exception instead of unwinding out of it.
 // ContinueModuleLoading sets state.[[IsLoading]] to false and calls the state
 // record's rejected handler.
@@ -2285,9 +2334,21 @@ static bool InnerModuleLinking(JSContext* cx, Handle<ModuleObject*> module,
   }
 
   // Step 10. Perform ? module.InitializeEnvironment().
+#ifdef NIGHTLY_BUILD
+  if (module->isWasmModule()) {
+    if (!WasmModuleInitializeEnvironment(cx, module)) {
+      return false;
+    }
+  } else {
+    if (!ModuleInitializeEnvironment(cx, module)) {
+      return false;
+    }
+  }
+#else
   if (!ModuleInitializeEnvironment(cx, module)) {
     return false;
   }
+#endif
 
   // Step 11. Assert: module occurs exactly once in stack.
   MOZ_ASSERT(CountElements(stack, module) == 1);
