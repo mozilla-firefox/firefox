@@ -77,6 +77,8 @@ class IntentReceiverActivityTest {
         every { intentProcessors.webNotificationsIntentProcessor } returns mockIntentProcessor()
         every { intentProcessors.passwordManagerIntentProcessor } returns mockIntentProcessor()
         every { settings.isUserPairingCampaignAttributed } returns false
+        every { settings.overrideFxAServer } returns ""
+        every { settings.overrideSyncTokenServer } returns ""
 
         coEvery { intentProcessors.intentProcessor.process(any()) } returns true
     }
@@ -412,6 +414,27 @@ class IntentReceiverActivityTest {
         }
 
     @Test
+    fun `GIVEN a pairing link for a server the app is not configured for WHEN processing the intent THEN it opens as a normal link`() =
+        runTest {
+            val intent =
+                Intent(
+                    Intent.ACTION_VIEW,
+                    "https://accounts.stage.mozaws.net/pair#channel_id=test_id&channel_key=test_key&v=2".toUri(),
+                )
+
+            val activity = Robolectric.buildActivity(IntentReceiverActivity::class.java, intent).get()
+            attachMocks(activity)
+            activity.processIntent(intent)
+
+            assertNull(SyncAuth.pairingLinkOpened.testGetValue())
+            coVerify { intentProcessors.intentProcessor.process(any()) }
+            assertThat(
+                shadowOf(activity).peekNextStartedActivity(),
+                not(hasComponent(AuthIntentReceiverActivity::class.java.name)),
+            )
+        }
+
+    @Test
     fun `GIVEN a non-pairing link intent WHEN processing the intent THEN pairingLinkOpened is not recorded`() =
         runTest {
             val intent =
@@ -428,36 +451,82 @@ class IntentReceiverActivityTest {
         }
 
     @Test
-    fun `GIVEN a production pairing link intent WHEN isFxaPairingLink is called THEN it returns true`() {
-        assertTrue(
-            isFxaPairingLink("https://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2".toUri())
-        )
+    fun `WHEN the uri is on the given fxaServerUrl THEN isFxaPairingLink returns true`() {
+        assertTrue(isFxaPairingLink("$FXA_SERVER_URL$PAIRING_PATH_WITH_CHANNEL".toUri(), FXA_SERVER_URL))
     }
 
     @Test
-    fun `GIVEN a stage pairing link intent WHEN isFxaPairingLink is called THEN it returns true`() {
-        assertTrue(
+    fun `WHEN the uri is on a different server to fxaServerUrl THEN isFxaPairingLink returns false`() {
+        assertFalse(
+            isFxaPairingLink("https://accounts.stage.mozaws.net$PAIRING_PATH_WITH_CHANNEL".toUri(), FXA_SERVER_URL)
+        )
+        assertFalse(
             isFxaPairingLink(
-                "https://accounts.stage.mozaws.net/pair#channel_id=test_id&channel_key=test_key&v=2".toUri()
+                "https://accounts.firefox.com.example.com$PAIRING_PATH_WITH_CHANNEL".toUri(),
+                FXA_SERVER_URL,
             )
         )
     }
 
     @Test
-    fun `GIVEN a non-pairing link intent WHEN isFxaPairingLink is called THEN it returns false`() {
-        assertFalse(isFxaPairingLink("https://example.com".toUri()))
+    fun `WHEN fxaServerUrl has a trailing slash THEN isFxaPairingLink still returns true`() {
+        assertTrue(isFxaPairingLink("$FXA_SERVER_URL$PAIRING_PATH_WITH_CHANNEL".toUri(), "$FXA_SERVER_URL/"))
     }
 
     @Test
-    fun `GIVEN a pairing link intent with an unexpected scheme WHEN isFxaPairingLink is called THEN it returns false`() {
-        assertFalse(
-            isFxaPairingLink("http://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2".toUri())
+    fun `WHEN the uri host differs from fxaServerUrl only in case THEN isFxaPairingLink returns true`() {
+        assertTrue(
+            isFxaPairingLink(
+                "https://Accounts.Firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2".toUri(),
+                FXA_SERVER_URL,
+            )
         )
     }
 
     @Test
-    fun `GIVEN a pairing link intent with an unexpected path WHEN isFxaPairingLink is called THEN it returns false`() {
-        assertFalse(isFxaPairingLink("https://accounts.firefox.com/signin".toUri()))
+    fun `WHEN the uri scheme differs from fxaServerUrl only in case THEN isFxaPairingLink returns true`() {
+        assertTrue(isFxaPairingLink("HTTPS://accounts.firefox.com/pair".toUri(), FXA_SERVER_URL))
+    }
+
+    @Test
+    fun `WHEN the uri has query parameters THEN isFxaPairingLink returns true`() {
+        assertTrue(isFxaPairingLink("https://accounts.firefox.com/pair?test=value".toUri(), FXA_SERVER_URL))
+    }
+
+    @Test
+    fun `WHEN the uri port differs from fxaServerUrl THEN isFxaPairingLink returns false`() {
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com:8443/pair".toUri(), FXA_SERVER_URL))
+    }
+
+    @Test
+    fun `WHEN the uri or fxaServerUrl spells out the default port THEN isFxaPairingLink returns true`() {
+        assertTrue(isFxaPairingLink("https://accounts.firefox.com:443/pair".toUri(), FXA_SERVER_URL))
+        assertTrue(isFxaPairingLink("https://accounts.firefox.com/pair".toUri(), "$FXA_SERVER_URL:443"))
+    }
+
+    @Test
+    fun `WHEN the uri has no host THEN isFxaPairingLink returns false`() {
+        assertFalse(isFxaPairingLink("/pair".toUri(), FXA_SERVER_URL))
+    }
+
+    @Test
+    fun `WHEN the uri scheme differs from fxaServerUrl THEN isFxaPairingLink returns false`() {
+        assertFalse(
+            isFxaPairingLink(
+                "http://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2".toUri(),
+                FXA_SERVER_URL,
+            )
+        )
+    }
+
+    @Test
+    fun `WHEN the uri path is not exactly the pairing path THEN isFxaPairingLink returns false`() {
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com".toUri(), FXA_SERVER_URL))
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com/pair/supp".toUri(), FXA_SERVER_URL))
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com/pairing".toUri(), FXA_SERVER_URL))
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com/pair/".toUri(), FXA_SERVER_URL))
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com/Pair".toUri(), FXA_SERVER_URL))
+        assertFalse(isFxaPairingLink("https://accounts.firefox.com/signin".toUri(), FXA_SERVER_URL))
     }
 
     private fun attachMocks(activity: Activity) {
@@ -472,5 +541,10 @@ class IntentReceiverActivityTest {
         return mockk {
             coEvery { process(any()) } returns false
         }
+    }
+
+    companion object {
+        private const val FXA_SERVER_URL = "https://accounts.firefox.com"
+        private const val PAIRING_PATH_WITH_CHANNEL = "/pair#channel_id=test_id&channel_key=test_key&v=2"
     }
 }
