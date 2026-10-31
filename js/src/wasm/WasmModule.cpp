@@ -885,6 +885,10 @@ bool Module::instantiate(JSContext* cx, ImportValues& imports,
                          MutableHandle<WasmInstanceObject*> instance) const {
   MOZ_RELEASE_ASSERT(cx->wasm().haveSignalHandlers);
 
+  if (!GlobalObject::ensureConstructor(cx, cx->global(), JSProto_WebAssembly)) {
+    return false;
+  }
+
   if (!instantiateFunctions(cx, imports.funcs)) {
     return false;
   }
