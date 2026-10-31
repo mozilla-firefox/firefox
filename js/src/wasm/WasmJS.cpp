@@ -627,6 +627,56 @@ JS_PUBLIC_API JS::SharedWasmCompileArgs JS::BuildCompileArgsForESM(
                                      featureOptions, /* reportOOM */ true);
 }
 
+using ImportPtrVector = Vector<const Import*, 0, SystemAllocPolicy>;
+
+// https://webassembly.github.io/esm-integration/js-api/index.html#external-imports
+static bool GetExternalImports(JSContext* cx, const Module& module,
+                               ImportPtrVector* imports) {
+  MOZ_ASSERT(imports->empty());
+
+  // Step 1. Let module be moduleObject.[[Module]].
+  const ModuleMetadata& moduleMeta = module.moduleMeta();
+
+  // Step 2. Let builtinSetNames be moduleObject.[[BuiltinSets]].
+  const BuiltinModuleIds& builtinModules =
+      module.codeMeta().features().builtinModules;
+
+  // Step 3. Let importedStringModule be moduleObject.[[ImportedStringModule]].
+  Maybe<Span<const char>> importedStringModule;
+  if (builtinModules.jsStringConstants) {
+    importedStringModule = Some(
+        MakeStringSpan(builtinModules.jsStringConstantsNamespace->chars.get()));
+  }
+
+  // Step 4. Let imports be « ».
+  if (!imports->reserve(moduleMeta.imports.length())) {
+    ReportOutOfMemory(cx);
+    return false;
+  }
+
+  // Step 5. For each (moduleName, name, type) of module_imports(module),
+  for (const Import& import : moduleMeta.imports) {
+    // Step 5.1. If find a builtin for (moduleName, name, type)
+    //           and builtinSetNames is not null, then continue.
+    if (ImportMatchesBuiltinModule(import, builtinModules)) {
+      continue;
+    }
+
+    // Step 5.2. If importedStringModule is not null and moduleName equals
+    //           importedStringModule, then continue.
+    if (importedStringModule &&
+        import.module.utf8Bytes() == *importedStringModule) {
+      continue;
+    }
+
+    // Step 5.3. Append (moduleName, name, type) to imports.
+    imports->infallibleAppend(&import);
+  }
+
+  // Step 6. Return imports.
+  return true;
+}
+
 JS_PUBLIC_API JS::ESMCompileResult JS::CompileForESM(
     const WasmCompileArgs& compileArgs, const uint8_t* bytes, size_t length) {
   // Step 1. Let stableBytes be a copy of the bytes held by the buffer bytes.
@@ -701,21 +751,25 @@ JS_PUBLIC_API bool JS::FinishCompileForESM(
   }
 
   // Step 7. Let requestedModules be a set.
-  // TODO: Populate requestedModules for evaluation phase imports (Bug 2030454).
+  // (Performed when creating the module record)
 
   const ModuleMetadata& moduleMeta = module->moduleMeta();
-  const CodeMetadata& codeMeta = module->codeMeta();
 
-  // Step 8. For each (moduleName, name, type) in
-  // module_imports(module.[[Module]]),
-  for (const Import& import : moduleMeta.imports) {
-    Span<const char> moduleName = import.module.utf8Bytes();
-    Span<const char> name = import.field.utf8Bytes();
+  ImportPtrVector externalImports;
+  if (!GetExternalImports(cx, *module, &externalImports)) {
+    return false;
+  }
+
+  // Step 8. For each (moduleName, name, type) of the external imports of
+  // module,
+  for (const Import* import : externalImports) {
+    Span<const char> moduleName = import->module.utf8Bytes();
+    Span<const char> name = import->field.utf8Bytes();
 
     // Step 8.1. If moduleName starts with the prefix "wasm-js:",
     if (CharsStartsWith(moduleName, MakeStringSpan("wasm-js:"))) {
       // Step 8.1.1. Throw a LinkError exception.
-      UniqueChars moduleNameQuoted = import.module.toQuotedString(cx);
+      UniqueChars moduleNameQuoted = import->module.toQuotedString(cx);
       if (!moduleNameQuoted) {
         ReportOutOfMemory(cx);
         return false;
@@ -730,7 +784,7 @@ JS_PUBLIC_API bool JS::FinishCompileForESM(
     if (CharsStartsWith(name, MakeStringSpan("wasm:")) ||
         CharsStartsWith(name, MakeStringSpan("wasm-js:"))) {
       // Step 8.2.1. Throw a LinkError exception.
-      UniqueChars nameQuoted = import.field.toQuotedString(cx);
+      UniqueChars nameQuoted = import->field.toQuotedString(cx);
       if (!nameQuoted) {
         ReportOutOfMemory(cx);
         return false;
@@ -741,19 +795,8 @@ JS_PUBLIC_API bool JS::FinishCompileForESM(
       return false;
     }
 
-    // Step 8.3. Note: The following step only applies when integrating with the
-    // JS String Builtins proposal.
-
-    // Step 8.4. If Find a builtin with (moduleName, name, type) and builtins
-    // module.[[BuiltinSets]] is not null, then continue.
-    if (ImportMatchesBuiltinModule(moduleName,
-                                   codeMeta.features().builtinModules)) {
-      continue;
-    }
-
-    // Step 8.4.1. Append moduleName to requestedModules.
-    // TODO: Populate requestedModules for evaluation phase imports (Bug
-    // 2030454).
+    // Step 8.3. Append moduleName to requestedModules.
+    // (Performed when creating the module record)
   }
 
   // Step 9. For each (name, type) in module_exports(module.[[Module]])
