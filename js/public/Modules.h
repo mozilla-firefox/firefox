@@ -225,24 +225,17 @@ extern JS_PUBLIC_API JSObject* CreateDefaultExportSyntheticModule(
     JSContext* cx, Handle<Value> defaultExport);
 
 /**
- * Compile the given wasm source buffer as an evaluation phase module record.
+ * Compile the given wasm source buffer as a module record.
  */
 extern JS_PUBLIC_API JSObject* CompileWasmModule(
     JSContext* cx, const ReadOnlyCompileOptions& options,
     js::Vector<uint8_t, 0, js::MallocAllocPolicy>& srcBuf);
 
 /**
- * Compile the given wasm source buffer as a source phase module record.
+ * Create a module record for a WebAssembly.Module object produced by
+ * JS::FinishCompileForESM.
  */
-extern JS_PUBLIC_API JSObject* CompileWasmModuleAsSource(
-    JSContext* cx, const ReadOnlyCompileOptions& options,
-    js::Vector<uint8_t, 0, js::MallocAllocPolicy>& srcBuf);
-
-/**
- * Create a source phase module record for a WebAssembly.Module object
- * produced by JS::FinishCompileForESM.
- */
-extern JS_PUBLIC_API JSObject* CreateWasmSourcePhaseModule(
+extern JS_PUBLIC_API JSObject* CreateWasmModule(
     JSContext* cx, Handle<JSObject*> wasmModuleObject);
 
 /**

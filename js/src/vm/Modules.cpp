@@ -389,20 +389,6 @@ JS_PUBLIC_API JSObject* JS::CreateDefaultExportSyntheticModule(
 JS_PUBLIC_API JSObject* JS::CompileWasmModule(
     JSContext* cx, const ReadOnlyCompileOptions& options,
     js::Vector<uint8_t, 0, js::MallocAllocPolicy>& srcBuf) {
-  // TODO: Compilation of wasm modules will be added in
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=2030454.
-  // For now, we fail unconditionally.
-  JS_ReportErrorNumberUTF8(cx, GetErrorMessage, nullptr,
-                           JSMSG_WASM_COMPILE_ERROR,
-                           "Compilation of wasm modules not implemented.");
-
-  return nullptr;
-}
-
-// https://webassembly.github.io/esm-integration/js-api/index.html#esm-integration
-JS_PUBLIC_API JSObject* JS::CompileWasmModuleAsSource(
-    JSContext* cx, const ReadOnlyCompileOptions& options,
-    js::Vector<uint8_t, 0, js::MallocAllocPolicy>& srcBuf) {
   MOZ_ASSERT(!cx->zone()->isAtomsZone());
   AssertHeapIsIdle();
   CHECK_THREAD(cx);
@@ -421,7 +407,7 @@ JS_PUBLIC_API JSObject* JS::CompileWasmModuleAsSource(
     return nullptr;
   }
 
-  return CreateWasmSourcePhaseModule(cx, wasmModuleObject);
+  return CreateWasmModule(cx, wasmModuleObject);
 }
 
 static bool GetWasmExportNameAtoms(
@@ -452,7 +438,7 @@ static bool GetWasmExportNameAtoms(
   return true;
 }
 
-JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
+JS_PUBLIC_API JSObject* JS::CreateWasmModule(
     JSContext* cx, Handle<JSObject*> wasmModuleObject) {
   MOZ_ASSERT(!cx->zone()->isAtomsZone());
   AssertHeapIsIdle();
@@ -1901,7 +1887,7 @@ static bool WasmModuleInitializeEnvironment(JSContext* cx,
                                             Handle<ModuleObject*> module) {
   MOZ_ASSERT(module->status() == ModuleStatus::Linking);
 
-  // The environment was created already by CreateWasmSourcePhaseModule.
+  // The environment was created already by CreateWasmModule.
   // Here we just validate that the imports resolve correctly.
   Rooted<ModuleRequestObject*> moduleRequest(cx);
   Rooted<ModuleObject*> importedModule(cx);

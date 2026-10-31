@@ -2419,13 +2419,6 @@ nsresult ScriptLoader::AttemptOffThreadScriptCompile(
       TRACE_FOR_TEST(aRequest, "compile:main thread");
       return NS_OK;
     }
-
-    // Only source phase modules are compiled off-thread. Compilation of
-    // evaluation phase modules is not yet implemented (Bug 2030454).
-    if (!aRequest->AsModuleRequest()->IsSourcePhaseRequest()) {
-      TRACE_FOR_TEST(aRequest, "compile:main thread");
-      return NS_OK;
-    }
   } else {
     MOZ_ASSERT(aRequest->IsRetrievedAsSerializedStencil());
 
@@ -2808,7 +2801,7 @@ bool WasmCompileTask::StealResult(JSContext* aCx,
     return false;
   }
 
-  aModuleOut.set(JS::CreateWasmSourcePhaseModule(aCx, wasmModuleObject));
+  aModuleOut.set(JS::CreateWasmModule(aCx, wasmModuleObject));
   return !!aModuleOut;
 }
 

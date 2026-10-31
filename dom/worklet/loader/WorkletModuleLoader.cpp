@@ -129,13 +129,8 @@ nsresult WorkletModuleLoader::CompileJavaScriptOrWasmModule(
 #ifdef NIGHTLY_BUILD
   if (aRequest->HasWasmMimeTypeEssence()) {
     MOZ_ASSERT(aRequest->IsWasmBytes());
-    JSObject* wasmModule;
-    if (aRequest->IsSourcePhaseRequest()) {
-      wasmModule =
-          JS::CompileWasmModuleAsSource(aCx, aOptions, aRequest->WasmBytes());
-    } else {
-      wasmModule = JS::CompileWasmModule(aCx, aOptions, aRequest->WasmBytes());
-    }
+    JSObject* wasmModule =
+        JS::CompileWasmModule(aCx, aOptions, aRequest->WasmBytes());
     if (!wasmModule) {
       return NS_ERROR_FAILURE;
     }

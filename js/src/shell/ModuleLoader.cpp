@@ -341,7 +341,7 @@ JSObject* ModuleLoader::getOrCreateTest262ModuleSourceModule(JSContext* cx) {
 
   JS::CompileOptions options(cx);
   options.setFileAndLine("<module source>", 1);
-  module = JS::CompileWasmModuleAsSource(cx, options, srcBuf);
+  module = JS::CompileWasmModule(cx, options, srcBuf);
   if (!module) {
     return nullptr;
   }
@@ -696,7 +696,7 @@ JSObject* ModuleLoader::loadAndParse(JSContext* cx, HandleString pathArg,
 
     JS::CompileOptions options(cx);
     options.setFileAndLine(filename.get(), 1);
-    module = JS::CompileWasmModuleAsSource(cx, options, srcBuf);
+    module = JS::CompileWasmModule(cx, options, srcBuf);
     if (!module) {
       return nullptr;
     }
