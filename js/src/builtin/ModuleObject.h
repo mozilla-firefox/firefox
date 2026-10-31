@@ -483,6 +483,9 @@ class ModuleObject : public NativeObject {
     PreloadSlotIndex,
 #endif
     ModuleSourceSlotIndex,
+#ifdef NIGHTLY_BUILD
+    WasmInstanceSlotIndex,
+#endif
     SlotCount
   };
 
@@ -505,6 +508,11 @@ class ModuleObject : public NativeObject {
   // Module Source object if present. Otherwise `undefined`.
   JS_DEFINE_TYPED_SLOT(ModuleSourceSlotIndex, MODULE_SOURCE_SLOT, Object,
                        Undefined);
+#ifdef NIGHTLY_BUILD
+  // WebAssembly.Instance of an evaluated wasm module. Otherwise `undefined`.
+  JS_DEFINE_TYPED_SLOT(WasmInstanceSlotIndex, WASM_INSTANCE_SLOT, Object,
+                       Undefined);
+#endif
   static constexpr uint32_t SLOT_COUNT = SlotCount;
 
   static const JSClass class_;
@@ -545,6 +553,10 @@ class ModuleObject : public NativeObject {
   void setDeferredNamespace(Handle<ModuleNamespaceObject*> ns);
   JSObject* moduleSource() const;
   bool isWasmModule() const;
+#ifdef NIGHTLY_BUILD
+  JSObject* wasmInstance() const;
+  void setWasmInstance(JSObject* instance);
+#endif
   ModuleStatus status() const;
   mozilla::Maybe<uint32_t> maybeDfsAncestorIndex() const;
   uint32_t dfsAncestorIndex() const;

@@ -1313,6 +1313,20 @@ bool ModuleObject::isWasmModule() const {
   return source && source->is<WasmModuleObject>();
 }
 
+#ifdef NIGHTLY_BUILD
+JSObject* ModuleObject::wasmInstance() const {
+  Value value = getReservedSlotTyped(WASM_INSTANCE_SLOT);
+  if (value.isUndefined()) {
+    return nullptr;
+  }
+  return &value.toObject();
+}
+
+void ModuleObject::setWasmInstance(JSObject* instance) {
+  setReservedSlotTyped(WASM_INSTANCE_SLOT, ObjectValue(*instance));
+}
+#endif
+
 void ModuleObject::initAsyncSlots(JSContext* cx, bool hasTopLevelAwait,
                                   Handle<ListObject*> asyncParentModules) {
   cyclicModuleFields()->hasTopLevelAwait = hasTopLevelAwait;
