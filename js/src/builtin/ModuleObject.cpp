@@ -1704,6 +1704,11 @@ bool ModuleObject::execute(JSContext* cx, Handle<ModuleObject*> self) {
     return false;
   }
 #endif
+#ifdef NIGHTLY_BUILD
+  if (self->isWasmModule()) {
+    return WasmModuleExecute(cx, self);
+  }
+#endif
 
   RootedScript script(cx, self->script());
 

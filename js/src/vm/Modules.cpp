@@ -179,19 +179,6 @@ JS_PUBLIC_API bool JS::FinishLoadingImportedModule(
   MOZ_ASSERT(result);
   Rooted<ModuleObject*> module(cx, &result->as<ModuleObject>());
 
-  // TODO: Until we support evaluation phase imports of wasm modules, we need to
-  // guard against first importing a wasm module as source, and then
-  // subsequently as evaluation phase. The module will be retrieved from the
-  // module map, and then we'll attempt to link it, which isn't currently
-  // supported. See Bug 2030454.
-  if (moduleRequest->as<ModuleRequestObject>().phase() ==
-          ImportPhase::Evaluation &&
-      module->moduleSource()) {
-    JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                              JSMSG_WASM_ESM_EVAL_NOT_SUPPORTED);
-    return FinishLoadingImportedModuleFailedWithPendingException(cx, payload);
-  }
-
   // |loadedModules| is only required to be stored on modules.
   Rooted<ModuleObject*> referrerModule(cx, ReferrerModuleOrNull(referrer));
   if (referrerModule) {

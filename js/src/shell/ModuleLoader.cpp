@@ -604,18 +604,6 @@ JSObject* ModuleLoader::loadAndParse(JSContext* cx, HandleString pathArg,
   }
 
   if (module) {
-    // TODO: Until we support evaluation phase imports of wasm modules, we need
-    // to guard against first importing a wasm module as source, and then
-    // subsequently as evaluation phase. The module will be retrieved from the
-    // registry, and then we'll attempt to link it, which isn't currently
-    // supported. See Bug 2030454.
-    if (moduleRequestArg->as<ModuleRequestObject>().phase() ==
-            ImportPhase::Evaluation &&
-        module->as<ModuleObject>().moduleSource()) {
-      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                                JSMSG_WASM_ESM_EVAL_NOT_SUPPORTED);
-      return nullptr;
-    }
     return module;
   }
 
@@ -653,12 +641,6 @@ JSObject* ModuleLoader::loadAndParse(JSContext* cx, HandleString pathArg,
 #ifdef NIGHTLY_BUILD
   if (JS::Prefs::experimental_wasm_esm_integration() &&
       StringEndsWith(path, u".wasm")) {
-    js::ImportPhase phase = moduleRequestArg->as<ModuleRequestObject>().phase();
-    if (phase != ImportPhase::Source) {
-      JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
-                                JSMSG_WASM_ESM_EVAL_NOT_SUPPORTED);
-      return nullptr;
-    }
     RootedString resolvedPath(cx, ResolvePath(cx, path, RootRelative));
     if (!resolvedPath) {
       return nullptr;
