@@ -1308,6 +1308,11 @@ JSObject* ModuleObject::moduleSource() const {
   return &value.toObject();
 }
 
+bool ModuleObject::isWasmModule() const {
+  JSObject* source = moduleSource();
+  return source && source->is<WasmModuleObject>();
+}
+
 void ModuleObject::initAsyncSlots(JSContext* cx, bool hasTopLevelAwait,
                                   Handle<ListObject*> asyncParentModules) {
   cyclicModuleFields()->hasTopLevelAwait = hasTopLevelAwait;

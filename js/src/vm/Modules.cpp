@@ -632,8 +632,8 @@ JS_PUBLIC_API JSScript* JS::GetModuleScript(JS::HandleObject moduleRecord) {
 
   auto& module = moduleRecord->as<ModuleObject>();
 
-  // Synthetic modules and source phase modules do not have a script.
-  if (module.hasSyntheticModuleFields() || module.isSourcePhaseModule()) {
+  // Synthetic modules and wasm modules do not have a script.
+  if (module.hasSyntheticModuleFields() || module.isWasmModule()) {
     return nullptr;
   }
 

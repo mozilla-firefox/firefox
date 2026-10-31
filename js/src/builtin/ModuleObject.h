@@ -502,7 +502,7 @@ class ModuleObject : public NativeObject {
 #ifdef DEBUG
   JS_DEFINE_TYPED_SLOT(PreloadSlotIndex, PRELOAD_SLOT, Boolean, Undefined);
 #endif
-  // Module Source object for source phase imports. Otherwise `undefined`.
+  // Module Source object if present. Otherwise `undefined`.
   JS_DEFINE_TYPED_SLOT(ModuleSourceSlotIndex, MODULE_SOURCE_SLOT, Object,
                        Undefined);
   static constexpr uint32_t SLOT_COUNT = SlotCount;
@@ -544,7 +544,7 @@ class ModuleObject : public NativeObject {
   ModuleNamespaceObject* maybeDeferredNamespace() const;
   void setDeferredNamespace(Handle<ModuleNamespaceObject*> ns);
   JSObject* moduleSource() const;
-  bool isSourcePhaseModule() const { return moduleSource() != nullptr; }
+  bool isWasmModule() const;
   ModuleStatus status() const;
   mozilla::Maybe<uint32_t> maybeDfsAncestorIndex() const;
   uint32_t dfsAncestorIndex() const;
