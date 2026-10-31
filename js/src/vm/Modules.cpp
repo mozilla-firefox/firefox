@@ -423,6 +423,34 @@ JS_PUBLIC_API JSObject* JS::CompileWasmModuleAsSource(
   return CreateWasmSourcePhaseModule(cx, wasmModuleObject);
 }
 
+static bool GetWasmExportNameAtoms(
+    JSContext* cx, Handle<JSObject*> wasmModuleObject,
+    MutableHandle<ExportNameVector> exportNames) {
+  MOZ_ASSERT(exportNames.empty());
+
+  JS::RootedVector<JSString*> exportNameStrings(cx);
+  if (!wasm::GetModuleExportNames(cx, wasmModuleObject, &exportNameStrings)) {
+    return false;
+  }
+
+  if (!exportNames.reserve(exportNameStrings.length())) {
+    ReportOutOfMemory(cx);
+    return false;
+  }
+
+  Rooted<JSAtom*> exportName(cx);
+  for (JSString* exportNameString : exportNameStrings) {
+    exportName = AtomizeString(cx, exportNameString);
+    if (!exportName) {
+      return false;
+    }
+
+    exportNames.infallibleAppend(exportName);
+  }
+
+  return true;
+}
+
 JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
     JSContext* cx, Handle<JSObject*> wasmModuleObject) {
   MOZ_ASSERT(!cx->zone()->isAtomsZone());
@@ -485,25 +513,9 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
   moduleObject->initImportExportData(&requestedModuleRecords, &importEntries,
                                      &exportEntries, 0, 0, 0);
 
-  JS::RootedVector<JSString*> exportNameStrings(cx);
-  if (!wasm::GetModuleExportNames(cx, wasmModuleObject, &exportNameStrings)) {
-    return nullptr;
-  }
-
   Rooted<ExportNameVector> exportNames(cx);
-  if (!exportNames.reserve(exportNameStrings.length())) {
-    ReportOutOfMemory(cx);
+  if (!GetWasmExportNameAtoms(cx, wasmModuleObject, &exportNames)) {
     return nullptr;
-  }
-
-  Rooted<JSAtom*> exportName(cx);
-  for (JSString* exportNameString : exportNameStrings) {
-    exportName = AtomizeString(cx, exportNameString);
-    if (!exportName) {
-      return nullptr;
-    }
-
-    exportNames.infallibleAppend(exportName);
   }
 
   if (!ModuleObject::createWasmEnvironment(cx, moduleObject, exportNames)) {
@@ -872,6 +884,17 @@ static bool SyntheticModuleGetExportedNames(
   return true;
 }
 
+#ifdef NIGHTLY_BUILD
+static bool WasmModuleGetExportedNames(
+    JSContext* cx, Handle<ModuleObject*> module,
+    MutableHandle<ExportNameVector> exportedNames) {
+  MOZ_ASSERT(exportedNames.empty());
+
+  Rooted<JSObject*> wasmModuleObject(cx, module->moduleSource());
+  return GetWasmExportNameAtoms(cx, wasmModuleObject, exportedNames);
+}
+#endif
+
 // https://tc39.es/ecma262/#sec-GetImportedModule
 ModuleObject* js::GetImportedModule(
     JSContext* cx, Handle<ModuleObject*> referrer,
@@ -924,6 +947,12 @@ static bool ModuleGetExportedNames(
   if (module->hasSyntheticModuleFields()) {
     return SyntheticModuleGetExportedNames(cx, module, exportedNames);
   }
+
+#ifdef NIGHTLY_BUILD
+  if (module->isWasmModule()) {
+    return WasmModuleGetExportedNames(cx, module, exportedNames);
+  }
+#endif
 
   // Step 2. If exportStarSet contains module, then:
   if (exportStarSet.has(module)) {
