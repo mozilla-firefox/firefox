@@ -2422,7 +2422,7 @@ nsresult ScriptLoader::AttemptOffThreadScriptCompile(
 
     // Only source phase modules are compiled off-thread. Compilation of
     // evaluation phase modules is not yet implemented (Bug 2030454).
-    if (!aRequest->AsModuleRequest()->IsSourcePhaseRequest(cx)) {
+    if (!aRequest->AsModuleRequest()->IsSourcePhaseRequest()) {
       TRACE_FOR_TEST(aRequest, "compile:main thread");
       return NS_OK;
     }

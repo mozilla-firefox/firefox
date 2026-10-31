@@ -130,7 +130,7 @@ nsresult WorkletModuleLoader::CompileJavaScriptOrWasmModule(
   if (aRequest->HasWasmMimeTypeEssence()) {
     MOZ_ASSERT(aRequest->IsWasmBytes());
     JSObject* wasmModule;
-    if (aRequest->IsSourcePhaseRequest(aCx)) {
+    if (aRequest->IsSourcePhaseRequest()) {
       wasmModule =
           JS::CompileWasmModuleAsSource(aCx, aOptions, aRequest->WasmBytes());
     } else {

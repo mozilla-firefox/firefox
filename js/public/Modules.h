@@ -357,7 +357,7 @@ GetModuleRequestType(JSContext* cx, Handle<JSObject*> moduleRequestArg);
  * Return true if the specified module request is a source phase import.
  */
 extern JS_PUBLIC_API bool ModuleRequestIsSourcePhase(
-    JSContext* cx, Handle<JSObject*> moduleRequestArg);
+    JSObject* moduleRequestArg);
 
 /*
  * Get the module record for a module script.

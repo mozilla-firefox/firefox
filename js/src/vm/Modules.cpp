@@ -643,11 +643,8 @@ JS_PUBLIC_API JS::ModuleType JS::GetModuleRequestType(
   return moduleRequestArg->as<ModuleRequestObject>().moduleType();
 }
 
-JS_PUBLIC_API bool JS::ModuleRequestIsSourcePhase(
-    JSContext* cx, Handle<JSObject*> moduleRequestArg) {
+JS_PUBLIC_API bool JS::ModuleRequestIsSourcePhase(JSObject* moduleRequestArg) {
   AssertHeapIsIdle();
-  CHECK_THREAD(cx);
-  cx->check(moduleRequestArg);
 
   return moduleRequestArg->as<ModuleRequestObject>().phase() ==
          ImportPhase::Source;

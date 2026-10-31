@@ -849,7 +849,14 @@ void ModuleLoaderBase::OnFetchSucceeded(ModuleLoadRequest* aRequest) {
   // queue and invoke ProcessDynamicImport. To account for this behavior,
   // we perform the fetching of submodules in the host layer instead.
   if (aRequest->IsTopLevel() || aRequest->IsDynamicImport()) {
-    StartFetchingModuleDependencies(aRequest);
+    if (aRequest->IsSourcePhaseRequest()) {
+      if (!aRequest->IsCanceled()) {
+        aRequest->SetReady();
+        aRequest->LoadFinished();
+      }
+    } else {
+      StartFetchingModuleDependencies(aRequest);
+    }
   } else {
     MOZ_ASSERT(!aRequest->IsDynamicImport());
     AutoJSAPI jsapi;

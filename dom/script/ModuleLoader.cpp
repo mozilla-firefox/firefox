@@ -275,7 +275,7 @@ nsresult ModuleLoader::CompileWasmModuleBytes(
     JSContext* aCx, JS::CompileOptions& aOptions, ModuleLoadRequest* aRequest,
     WasmBytesBuffer& aBytes, JS::MutableHandle<JSObject*> aModuleOut) {
   JSObject* wasmModule;
-  if (aRequest->IsSourcePhaseRequest(aCx)) {
+  if (aRequest->IsSourcePhaseRequest()) {
     wasmModule = JS::CompileWasmModuleAsSource(aCx, aOptions, aBytes);
   } else {
     wasmModule = JS::CompileWasmModule(aCx, aOptions, aBytes);
@@ -333,7 +333,7 @@ nsresult ModuleLoader::CompileJavaScriptOrWasmModule(
     // bytes were moved into the WasmCompileTask, so the result has to be taken
     // from the task rather than recompiled.
     if (aRequest->GetScriptLoadContext()->mWasCompiledOMT) {
-      MOZ_ASSERT(aRequest->IsSourcePhaseRequest(aCx));
+      MOZ_ASSERT(aRequest->IsSourcePhaseRequest());
       if (!aRequest->GetScriptLoadContext()->StealOffThreadWasmResult(
               aCx, aModuleOut)) {
         return NS_ERROR_FAILURE;
