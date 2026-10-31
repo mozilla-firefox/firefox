@@ -630,6 +630,9 @@ class ModuleObject : public NativeObject {
   static bool createWasmEnvironment(JSContext* cx, Handle<ModuleObject*> self,
                                     Handle<ExportNameVector> exportNames);
 
+  static void initWasmExportBindings(JSContext* cx, Handle<ModuleObject*> self,
+                                     JS::HandleVector<Value> values);
+
   void initAsyncSlots(JSContext* cx, bool hasTopLevelAwait,
                       Handle<ListObject*> asyncParentModules);
 
