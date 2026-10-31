@@ -824,6 +824,33 @@ JS_PUBLIC_API bool JS::FinishCompileForESM(
   return true;
 }
 
+bool wasm::GetModuleExportNames(
+    JSContext* cx, HandleObject wasmModuleObject,
+    MutableHandle<JS::StackGCVector<JSString*>> exportNames) {
+  MOZ_ASSERT(exportNames.empty());
+
+  const ModuleMetadata& moduleMeta =
+      wasmModuleObject->as<WasmModuleObject>().module().moduleMeta();
+
+  if (!exportNames.reserve(moduleMeta.exports.length())) {
+    ReportOutOfMemory(cx);
+    return false;
+  }
+
+  Rooted<JSString*> exportName(cx);
+  for (const Export& exp : moduleMeta.exports) {
+    Span<const char> name = exp.fieldName().utf8Bytes();
+    exportName = AtomizeUTF8Chars(cx, name.data(), name.size());
+    if (!exportName) {
+      return false;
+    }
+
+    exportNames.infallibleAppend(exportName);
+  }
+
+  return true;
+}
+
 bool wasm::GetModuleImports(
     JSContext* cx, HandleObject wasmModuleObject,
     MutableHandle<JS::StackGCVector<std::pair<JSString*, JSString*>>> imports) {

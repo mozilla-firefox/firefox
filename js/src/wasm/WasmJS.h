@@ -86,6 +86,10 @@ struct ImportValues;
 [[nodiscard]] bool GetImports(JSContext* cx, const Module& module,
                               HandleObject importObj, ImportValues* imports);
 
+[[nodiscard]] bool GetModuleExportNames(
+    JSContext* cx, HandleObject wasmModuleObject,
+    MutableHandle<JS::StackGCVector<JSString*>> exportNames);
+
 // Each import is a (module specifier, export name) pair. Imports satisfied by a
 // builtin module are omitted, as they are not resolved against other modules.
 [[nodiscard]] bool GetModuleImports(
