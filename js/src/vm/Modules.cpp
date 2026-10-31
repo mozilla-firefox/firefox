@@ -500,12 +500,15 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
   }
 
   Rooted<RequestedModuleVector> requestedModuleRecords(cx);
-  if (!requestedModuleRecords.reserve(wasmImports.length())) {
+  Rooted<ImportEntryVector> importEntries(cx);
+  if (!requestedModuleRecords.reserve(wasmImports.length()) ||
+      !importEntries.reserve(wasmImports.length())) {
     ReportOutOfMemory(cx);
     return nullptr;
   }
 
   Rooted<JSAtom*> specifier(cx);
+  Rooted<JSAtom*> importName(cx);
   Rooted<ModuleRequestObject*> moduleRequest(cx);
   for (const auto& wasmImport : wasmImports.get()) {
     specifier = &wasmImport.first->asAtom();
@@ -529,6 +532,11 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
           moduleRequest, RequestedModule::WasmDefaultLineNumber,
           JS::ColumnNumberOneOrigin());
     }
+
+    importName = &wasmImport.second->asAtom();
+    importEntries.infallibleEmplaceBack(
+        moduleRequest, importName, importName, ImportNameValueType::String,
+        RequestedModule::WasmDefaultLineNumber, JS::ColumnNumberOneOrigin());
   }
 
   Rooted<ListObject*> asyncParentModulesList(cx, ListObject::create(cx));
@@ -539,7 +547,6 @@ JS_PUBLIC_API JSObject* JS::CreateWasmSourcePhaseModule(
   moduleObject->initAsyncSlots(cx, /* hasTopLevelAwait = */ false,
                                asyncParentModulesList);
 
-  Rooted<ImportEntryVector> importEntries(cx);
   Rooted<ExportEntryVector> exportEntries(cx);
   moduleObject->initImportExportData(&requestedModuleRecords, &importEntries,
                                      &exportEntries, 0, 0, 0);
