@@ -218,6 +218,8 @@ class RequestedModule {
   const JS::ColumnNumberOneOrigin columnNumber_;
 
  public:
+  static constexpr uint32_t WasmDefaultLineNumber = 1;
+
   RequestedModule(Handle<ModuleRequestObject*> moduleRequest,
                   uint32_t lineNumber, JS::ColumnNumberOneOrigin columnNumber);
   ModuleRequestObject* moduleRequest() const { return moduleRequest_; }
