@@ -599,6 +599,10 @@ class WasmComponentInstanceObject : public NativeObject {
 };
 #endif  // ENABLE_WASM_COMPONENTS
 
+#ifdef NIGHTLY_BUILD
+bool WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record);
+#endif
+
 }  // namespace js
 
 #endif  // wasm_js_h

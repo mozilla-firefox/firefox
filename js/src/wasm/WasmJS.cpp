@@ -23,6 +23,7 @@
 
 #include "jsapi.h"
 
+#include "builtin/ModuleObject.h"      // js::ModuleObject
 #include "ds/IdValuePair.h"            // js::IdValuePair
 #include "frontend/FrontendContext.h"  // AutoReportFrontendContext
 #include "gc/GCContext.h"
@@ -50,6 +51,7 @@
 #include "vm/JSAtomUtils.h"  // js::AtomizeUTF8Chars
 #include "vm/JSContext.h"    // CHECK_THREAD
 #include "vm/JSFunction.h"
+#include "vm/Modules.h"        // js::GetImportedModule
 #include "vm/PlainObject.h"    // js::PlainObject
 #include "vm/PromiseObject.h"  // js::PromiseObject
 #include "vm/SharedArrayObject.h"
@@ -358,7 +360,6 @@ bool js::wasm::GetImports(JSContext* cx, const Module& module,
   uint32_t memoryIndex = 0;
   uint32_t globalIndex = 0;
   uint32_t tagIndex = 0;
-  const GlobalDescVector& globals = codeMeta.globals;
   for (const Import& import : moduleMeta.imports) {
     Maybe<BuiltinModuleId> builtinModule =
         ImportMatchesBuiltinModule(import, builtinModules);
@@ -428,8 +429,8 @@ bool js::wasm::GetImports(JSContext* cx, const Module& module,
     }
   }
 
-  MOZ_ASSERT(globalIndex == globals.length() ||
-             !globals[globalIndex].isImport());
+  MOZ_ASSERT(globalIndex == codeMeta.globals.length() ||
+             !codeMeta.globals[globalIndex].isImport());
 
   return true;
 }
@@ -932,6 +933,340 @@ bool wasm::GetModuleImports(
 
   return true;
 }
+
+#ifdef NIGHTLY_BUILD
+// https://webassembly.github.io/esm-integration/js-api/index.html#module-execution
+bool js::WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record) {
+  // Step 1. Assert: promiseCapability was not provided.
+
+  // Step 2. Let record be this WebAssembly Module Record.
+
+  // Step 3. Let module be record.[[ModuleSource]].[[Module]].
+  Rooted<WasmModuleObject*> module(
+      cx, &record->moduleSource()->as<WasmModuleObject>());
+
+  // Step 4. Let imports be « ».
+  Rooted<ImportValues> imports(cx);
+
+  BuiltinModuleInstances builtinInstances(cx);
+  const ModuleMetadata& importModuleMeta = module->module().moduleMeta();
+  const CodeMetadata& importCodeMeta = module->module().codeMeta();
+  uint32_t funcIndex = 0;
+  uint32_t tableIndex = 0;
+  uint32_t memoryIndex = 0;
+  uint32_t globalIndex = 0;
+  uint32_t tagIndex = 0;
+  size_t entryIndex = 0;
+
+  MOZ_ASSERT(wasm::HasSupport(cx));
+
+  SharedCoreModuleType moduleType;
+  if (!importModuleMeta.buildModuleType(&moduleType)) {
+    ReportOutOfMemory(cx);
+    return false;
+  }
+
+  HashMap<const ModuleMetadata*, SharedCoreModuleType,
+          DefaultHasher<const ModuleMetadata*>, SystemAllocPolicy>
+      resolvedModuleTypes;
+
+  // Step 5. For each (importedModuleName, name, importtype) in
+  //         module_imports(module),
+  size_t importIndex = 0;
+  for (const Import& imp : importModuleMeta.imports) {
+    const CoreImportType& importType = moduleType->imports()[importIndex++];
+    uint32_t importTypeIndex = 0;
+    switch (imp.kind) {
+      case DefinitionKind::Function:
+        importTypeIndex = funcIndex++;
+        break;
+      case DefinitionKind::Table:
+        importTypeIndex = tableIndex++;
+        break;
+      case DefinitionKind::Memory:
+        importTypeIndex = memoryIndex++;
+        break;
+      case DefinitionKind::Global:
+        importTypeIndex = globalIndex++;
+        break;
+      case DefinitionKind::Tag:
+        importTypeIndex = tagIndex++;
+        break;
+    }
+
+    // Step 5.1. If Find a builtin with (importedModuleName, name) and builtins
+    //           module.[[BuiltinSets]] is not null, then continue.
+    Maybe<BuiltinModuleId> builtinModule = ImportMatchesBuiltinModule(
+        imp, importCodeMeta.features().builtinModules);
+    if (builtinModule) {
+      // A builtin module's own imports are read out of the import object, so
+      // passing nullptr here is only safe for builtins that declare none. The
+      // builtins reachable from ESM declare none; InstantiateBuiltinModule
+      // enforces that.
+
+      // Unlike the spec's "continue" above, an entry must still be appended:
+      // the ImportValues vectors are positional per kind, holding one entry
+      // per declared import of that kind, builtin-satisfied or not.
+      RootedValue importFieldValue(cx);
+      if (!GetBuiltinImportValue(cx, imp, *builtinModule, importModuleMeta,
+                                 importCodeMeta, nullptr, builtinInstances,
+                                 &importFieldValue)) {
+        return false;
+      }
+      if (!AppendImportValue(cx, imp, importTypeIndex, importCodeMeta,
+                             importFieldValue, imports.address())) {
+        return false;
+      }
+      continue;
+    }
+
+    // record.[[ImportEntries]] is built from the same list, with the builtin
+    // imports above skipped, so it is walked in lockstep here.
+    MOZ_RELEASE_ASSERT(entryIndex < record->importEntries().size());
+    const ImportEntry& import = record->importEntries()[entryIndex++];
+    Rooted<ModuleRequestObject*> moduleRequest(cx, import.moduleRequest());
+    Rooted<JSAtom*> importedModuleName(cx, moduleRequest->specifier());
+    Rooted<JSAtom*> name(cx, import.importName());
+
+    // Step 5.2. Let importedModule be GetImportedModule(record,
+    //           importedModuleName).
+    Rooted<ModuleObject*> importedModule(
+        cx, GetImportedModule(cx, record, moduleRequest));
+    if (!importedModule) {
+      return false;
+    }
+
+    // Step 5.3. Let resolution be importedModule.ResolveExport(name).
+    Rooted<Value> resolution(cx);
+    ModuleErrorInfo errorInfo{import.lineNumber(), import.columnNumber()};
+    if (!ModuleResolveExport(cx, importedModule, name, &resolution,
+                             &errorInfo)) {
+      return false;
+    }
+
+    // Step 5.4. Assert: resolution is a ResolvedBinding Record, as validated
+    //           during environment initialization.
+    MOZ_RELEASE_ASSERT(IsResolvedBinding(cx, resolution));
+
+    // Step 5.5. Let resolvedModule be resolution.[[Module]].
+    Rooted<ResolvedBindingObject*> resolvedBinding(
+        cx, &resolution.toObject().as<ResolvedBindingObject>());
+    Rooted<ModuleObject*> resolvedModule(cx, resolvedBinding->module());
+
+    // Step 5.6. Let resolvedName be resolution.[[BindingName]].
+    RootedId resolvedName(cx, AtomToId(resolvedBinding->bindingName()));
+
+    // Step 5.7. If resolvedModule is a WebAssembly Module Record,
+    if (resolvedModule->isWasmModule()) {
+      // Step 5.7.1. If resolvedModule.[[Instance]] is ~empty~, throw a
+      //             {LinkError} exception.
+      Rooted<JSObject*> resolvedInstance(cx, resolvedModule->wasmInstance());
+      if (!resolvedInstance) {
+        JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,
+                                  JSMSG_WASM_ESM_NOT_INSTANTIATED);
+        return false;
+      }
+
+      // Step 5.7.2. Assert: resolvedModule.[[Instance]] is a WebAssembly
+      //             Instance object.
+      MOZ_ASSERT(resolvedInstance->is<WasmInstanceObject>());
+
+      // Step 5.7.3. Assert: resolvedModule.[[ModuleSource]] is a WebAssembly
+      //             Module object.
+      MOZ_ASSERT(resolvedModule->moduleSource()->is<WasmModuleObject>());
+
+      // Step 5.7.4. Let module be resolvedModule.[[ModuleSource]].[[Module]].
+      Rooted<WasmModuleObject*> module(
+          cx, &resolvedModule->moduleSource()->as<WasmModuleObject>());
+
+      // Step 5.7.5. Let externval be
+      //             instance_export(resolvedModule.[[Instance]], resolvedName).
+      Rooted<JSObject*> instanceExports(
+          cx, &resolvedInstance->as<WasmInstanceObject>().exportsObj());
+
+      RootedValue externVal(cx);
+      if (!GetProperty(cx, instanceExports, instanceExports, resolvedName,
+                       &externVal)) {
+        return false;
+      }
+
+      // Step 5.7.6. Assert: externval is not error.
+      MOZ_ASSERT(!externVal.isUndefined());
+
+      // Step 5.7.7. Assert: module_exports(module) contains an element
+      //             (resolvedName, type).
+      const ModuleMetadata* resolvedModuleMeta = &module->module().moduleMeta();
+      auto resolvedModuleType =
+          resolvedModuleTypes.lookupForAdd(resolvedModuleMeta);
+      if (!resolvedModuleType) {
+        SharedCoreModuleType type;
+        if (!resolvedModuleMeta->buildModuleType(&type) ||
+            !resolvedModuleTypes.add(resolvedModuleType, resolvedModuleMeta,
+                                     std::move(type))) {
+          ReportOutOfMemory(cx);
+          return false;
+        }
+      }
+
+      UniqueChars resolvedNameChars =
+          StringToNewUTF8CharsZ(cx, *resolvedBinding->bindingName());
+      if (!resolvedNameChars) {
+        return false;
+      }
+      Maybe<const CoreExternType&> externType =
+          resolvedModuleType->value()->instanceType()->getExport(
+              CacheableName::fromUTF8Chars(std::move(resolvedNameChars)));
+      MOZ_ASSERT(externType);
+
+      // Step 5.7.8. Let externtype be the value of type for the element
+      //             (resolvedName, type) in module_exports(module).
+
+      // Step 5.7.9. If importtype is not an extern subtype of externtype, throw
+      //             a LinkError exception.
+      if (!CoreExternType::matches(*externType, importType.type)) {
+        UniqueChars moduleNameQuoted = imp.module.toQuotedString(cx);
+        UniqueChars nameQuoted = imp.field.toQuotedString(cx);
+        if (!moduleNameQuoted || !nameQuoted) {
+          ReportOutOfMemory(cx);
+          return false;
+        }
+
+        JS_ReportErrorNumberUTF8(cx, GetErrorMessage, nullptr,
+                                 JSMSG_WASM_ESM_IMPORT_TYPE,
+                                 moduleNameQuoted.get(), nameQuoted.get());
+        return false;
+      }
+
+      // Step 5.7.10. Append externval to imports.
+      if (!AppendImportValue(cx, imp, importTypeIndex, importCodeMeta,
+                             externVal, imports.address())) {
+        return false;
+      }
+    } else {
+      // Step 5.8. Otherwise,
+      // Step 5.8.1. Let env be resolvedModule.[[Environment]].
+      Rooted<ModuleEnvironmentObject*> env(cx, resolvedModule->environment());
+      MOZ_ASSERT(env);
+
+      // Step 5.8.2. Let v be ? env.GetBindingValue(resolvedName, true).
+      RootedValue v(cx);
+      if (!GetProperty(cx, env, env, resolvedName, &v)) {
+        return false;
+      }
+      if (v.isMagic(JS_UNINITIALIZED_LEXICAL)) {
+        ReportUninitializedModuleBinding(cx, resolvedName);
+        return false;
+      }
+
+      // Steps 5.8.3 - 5.8.6
+      if (!AppendImportValue(cx, imp, importTypeIndex, importCodeMeta, v,
+                             imports.address())) {
+        return false;
+      }
+    }
+  }
+  MOZ_ASSERT(entryIndex == record->importEntries().size());
+
+  // Step 6. Instantiate the core of a WebAssembly module module with imports,
+  //         and let instance be the result.
+  RootedObject proto(
+      cx, GlobalObject::getOrCreatePrototype(cx, JSProto_WasmInstance));
+  if (!proto) {
+    return false;
+  }
+
+  Rooted<WasmInstanceObject*> instanceObject(cx);
+  if (!module->module().instantiate(cx, imports.get(), proto,
+                                    &instanceObject)) {
+    return false;
+  }
+
+  // Step 7. Set record.[[Instance]] to instance.
+  record->setWasmInstance(instanceObject);
+
+  Rooted<JSObject*> exportsObject(cx, &instanceObject->exportsObj());
+
+  const ModuleMetadata& moduleMeta = module->module().moduleMeta();
+
+  RootedValueVector exportValues(cx);
+  if (!exportValues.reserve(moduleMeta.exports.length())) {
+    ReportOutOfMemory(cx);
+    return false;
+  }
+
+  // Step 8. For each (name, externtype) of module_exports(module),
+  for (const Export& exp : moduleMeta.exports) {
+    Span<const char> nameBytes = exp.fieldName().utf8Bytes();
+    Rooted<JSAtom*> exportName(
+        cx, AtomizeUTF8Chars(cx, nameBytes.data(), nameBytes.size()));
+    if (!exportName) {
+      return false;
+    }
+
+    RootedId exportId(cx, AtomToId(exportName));
+    RootedValue value(cx);
+
+    // Step 8.1. If externtype is of the form global mut globaltype,
+    if (exp.kind() == DefinitionKind::Global) {
+      RootedValue externVal(cx);
+      if (!GetProperty(cx, exportsObject, exportsObject, exportId,
+                       &externVal)) {
+        return false;
+      }
+
+      // Step 8.1.1. Assert: externval is of the form global globaladdr.
+      MOZ_ASSERT(externVal.isObject() &&
+                 externVal.toObject().is<WasmGlobalObject>());
+
+      // Step 8.1.2. Let global globaladdr be externval.
+      Rooted<WasmGlobalObject*> globalObject(
+          cx, &externVal.toObject().as<WasmGlobalObject>());
+
+      // Step 8.1.3. Let global_value be global_read(store, globaladdr).
+      RootedVal globalValue(cx, globalObject->val().get());
+
+      // Step 8.1.4. If globaltype does not match v128 or exnref,
+      if (globalObject->type().isExposable()) {
+        // Step 8.1.4.2. Perform !
+        // record.[[Environment]].InitializeBinding(name,
+        //                                          ToJSValue(global_value)).
+        if (!globalValue.get().toJSValue(cx, &value)) {
+          MOZ_ASSERT(cx->isThrowingOutOfMemory());
+          return false;
+        }
+
+        // Step 8.1.4.3. If mut is var, then associate all future mutations of
+        // globaladdr with the ECMA-262 binding record for name in
+        // record.[[Environment]], such that
+        // record.[[Environment]].GetBindingValue(resolution.[[BindingName]],
+        // true) always returns ToJSValue(global_read(store, globaladdr)) for
+        // the current surrounding agent’s associated store store.
+        // TODO(Bug 2078378): Implement this.
+      } else {
+        // Step 8.1.4.1. Note: The condition above leaves unsupported JS values
+        // as uninitialized in TDZ and therefore as a reference error on access.
+        // When integrating with shared globals, they may be excluded here
+        // similarly to v128 and exnref above. (reordered)
+        value.setMagic(JS_UNINITIALIZED_LEXICAL);
+      }
+    } else {
+      // Step 8.2. Otherwise,
+      // Step 8.2.1. Perform ! record.[[Environment]].InitializeBinding(name, !
+      //             Get(instance.[[Exports]], name)).
+      if (!GetProperty(cx, exportsObject, exportsObject, exportId, &value)) {
+        return false;
+      }
+    }
+
+    exportValues.infallibleAppend(value);
+  }
+
+  ModuleObject::initWasmExportBindings(cx, record, exportValues);
+  ModuleObject::onTopLevelEvaluationFinished(record);
+
+  return true;
+}
+#endif
 
 // ============================================================================
 // Common functions

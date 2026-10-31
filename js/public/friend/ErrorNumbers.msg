@@ -509,6 +509,8 @@ MSG_DEF(JSMSG_WASM_MEMORY_NOT_RESIZABLE,      0, JSEXN_TYPEERR,  "WebAssembly me
 MSG_DEF(JSMSG_WASM_ESM_RESERVED_MODULE_NAME,  1, JSEXN_WASMLINKERROR, "module import name '{0}' is reserved")
 MSG_DEF(JSMSG_WASM_ESM_RESERVED_FIELD_NAME,   1, JSEXN_WASMLINKERROR, "field import name '{0}' is reserved")
 MSG_DEF(JSMSG_WASM_ESM_RESERVED_EXPORT_NAME,  1, JSEXN_WASMLINKERROR, "export name '{0}' is reserved")
+MSG_DEF(JSMSG_WASM_ESM_NOT_INSTANTIATED,      0, JSEXN_WASMLINKERROR, "imported wasm module has not been instantiated")
+MSG_DEF(JSMSG_WASM_ESM_IMPORT_TYPE,           2, JSEXN_WASMLINKERROR, "incompatible type for import '{0}.{1}'")
 
 // Wasm deprecation warnings
 MSG_DEF(JSMSG_WASM_LEGACY_EXCEPTIONS_DEPRECATED, 0, JSEXN_WARN, "The WebAssembly exception handling 'try' instruction is deprecated and should no longer be used. Please recompile to use the 'try_table' instruction instead.")

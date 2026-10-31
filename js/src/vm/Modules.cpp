@@ -38,6 +38,7 @@
 #include "vm/List.h"               // ListObject
 #include "vm/Runtime.h"            // JSRuntime
 #include "wasm/WasmCompile.h"
+#include "wasm/WasmFeatures.h"
 #include "wasm/WasmJS.h"
 
 #include "builtin/HandlerFunction-inl.h"  // js::ExtraValueFromHandler, js::NewHandler{,WithExtraValue}, js::TargetFromHandler
@@ -392,6 +393,13 @@ JS_PUBLIC_API JSObject* JS::CompileWasmModule(
   MOZ_ASSERT(!cx->zone()->isAtomsZone());
   AssertHeapIsIdle();
   CHECK_THREAD(cx);
+
+  if (!wasm::HasSupport(cx)) {
+    JS_ReportErrorNumberUTF8(cx, GetErrorMessage, nullptr,
+                             JSMSG_WASM_COMPILE_ERROR,
+                             "WebAssembly is not supported");
+    return nullptr;
+  }
 
   SharedWasmCompileArgs compileArgs = BuildCompileArgsForESM(cx, options);
   if (!compileArgs) {

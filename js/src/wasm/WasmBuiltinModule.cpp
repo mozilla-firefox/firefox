@@ -480,6 +480,8 @@ bool wasm::InstantiateBuiltinModule(JSContext* cx, BuiltinModuleId module,
     ReportOutOfMemory(cx);
     return false;
   }
+  MOZ_RELEASE_ASSERT(importObj ||
+                     moduleObj->module().moduleMeta().imports.empty());
   Rooted<ImportValues> imports(cx);
   if (!wasm::GetImports(cx, moduleObj->module(), importObj,
                         imports.address())) {
