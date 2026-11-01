@@ -4,21 +4,9 @@
 
 package mozilla.components.feature.addons.update
 
-import android.app.Notification
-import android.app.PendingIntent
-import android.app.Service
 import android.content.Context
-import android.content.Intent
-import android.content.SharedPreferences
-import android.os.IBinder
-import android.text.SpannableStringBuilder
-import android.text.Spanned
 import androidx.annotation.VisibleForTesting
-import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.edit
-import androidx.core.text.HtmlCompat
-import androidx.core.text.toSpanned
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.Data
@@ -50,17 +38,12 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.webextension.isUnsupported
 import mozilla.components.feature.addons.Addon
-import mozilla.components.feature.addons.R
 import mozilla.components.feature.addons.update.db.UpdateAttemptsDatabase
 import mozilla.components.feature.addons.update.db.toEntity
 import mozilla.components.feature.addons.worker.shouldReport
-import mozilla.components.support.base.ids.SharedIdsHelper
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.base.worker.Frequency
-import mozilla.components.support.ktx.android.notification.ChannelData
-import mozilla.components.support.ktx.android.notification.ensureNotificationChannelExists
 import mozilla.components.support.webextensions.WebExtensionSupport
-import mozilla.components.ui.icons.R as iconsR
 
 /** Contract to define the behavior for updating addons. */
 interface AddonUpdater {
@@ -157,7 +140,6 @@ interface AddonUpdater {
  * @property store The [BrowserStore] that holds the updates waiting for the user. It must be the store given to
  *   [mozilla.components.feature.addons.AddonManager] and [WebExtensionSupport].
  */
-@Suppress("LargeClass")
 class DefaultAddonUpdater(
     private val applicationContext: Context,
     private val frequency: Frequency = Frequency(1, TimeUnit.DAYS),
@@ -169,6 +151,15 @@ class DefaultAddonUpdater(
     private val scope = CoroutineScope(ioDispatcher + SupervisorJob())
 
     internal var updateAttemptStorage = UpdateAttemptStorage(applicationContext)
+
+    init {
+        // Clean up after the update notification of older versions. Deleting the channel also cancels any notification
+        // still showing.
+        scope.launch {
+            NotificationManagerCompat.from(applicationContext).deleteNotificationChannel(LEGACY_NOTIFICATION_CHANNEL_ID)
+            applicationContext.deleteSharedPreferences(LEGACY_STATUS_PREFERENCE_FILE)
+        }
+    }
 
     /** See [AddonUpdater.registerForFutureUpdates]. If an add-on is already registered nothing will happen. */
     override fun registerForFutureUpdates(addonId: String) {
@@ -277,174 +268,15 @@ class DefaultAddonUpdater(
     @VisibleForTesting
     internal fun getUniqueImmediateWorkName(extensionId: String) = "$IDENTIFIER_PREFIX$extensionId.immediateWork"
 
-    @VisibleForTesting
-    internal fun createNotification(
-        extension: WebExtension,
-        newPermissions: List<String>,
-        newDataCollectionPermissions: List<String>,
-        notificationId: Int,
-    ): Notification {
-        val channel =
-            ChannelData(
-                NOTIFICATION_CHANNEL_ID,
-                R.string.mozac_feature_addons_updater_notification_channel_2,
-                NotificationManagerCompat.IMPORTANCE_LOW,
-            )
-        val channelId = ensureNotificationChannelExists(applicationContext, channel)
-
-        logger.info("Created update notification for add-on ${extension.id}")
-        return NotificationCompat.Builder(applicationContext, channelId)
-            .setSmallIcon(iconsR.drawable.mozac_ic_extension_24)
-            .setContentTitle(getNotificationTitle(extension))
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText(createContentText(newPermissions, newDataCollectionPermissions))
-            )
-            .addAction(createAllowAction(extension, notificationId))
-            .addAction(createDenyAction(extension, notificationId))
-            .setAutoCancel(true)
-            .build()
-    }
-
-    private fun getNotificationTitle(extension: WebExtension): String {
-        return applicationContext.getString(
-            R.string.mozac_feature_addons_updater_notification_title_2,
-            extension.getMetadata()?.name,
-        )
-    }
-
-    @VisibleForTesting
-    internal fun createContentText(permissions: List<String>, dataCollectionPermissions: List<String>): Spanned {
-        val hasPermissions = permissions.isNotEmpty()
-        val hasDataCollectionPermissions = dataCollectionPermissions.isNotEmpty()
-
-        val intro = applicationContext.getString(R.string.mozac_feature_addons_updater_notification_short_intro)
-        val builder = SpannableStringBuilder(HtmlCompat.fromHtml("$intro<br>", HtmlCompat.FROM_HTML_MODE_COMPACT))
-
-        if (hasPermissions) {
-            val localizedPermissions = Addon.localizePermissions(permissions, applicationContext, forUpdate = true)
-            var permissionsText =
-                applicationContext.getString(
-                    R.string.mozac_feature_addons_updater_notification_heading_permissions,
-                    localizedPermissions.joinToString(" "),
-                )
-            // When we have data collection permissions, we need to truncate the content of this section
-            // so that the data collection permissions section can also be displayed in the notification.
-            permissionsText = maybeAbbreviate(permissionsText, hasDataCollectionPermissions)
-
-            builder.append(HtmlCompat.fromHtml(permissionsText, HtmlCompat.FROM_HTML_MODE_COMPACT))
-
-            if (hasDataCollectionPermissions) {
-                builder.append(HtmlCompat.fromHtml("<br>", HtmlCompat.FROM_HTML_MODE_COMPACT))
-            }
-        }
-
-        if (hasDataCollectionPermissions) {
-            val localizedPermissions =
-                Addon.localizeDataCollectionPermissions(
-                    dataCollectionPermissions,
-                    applicationContext,
-                )
-            var permissionsText =
-                applicationContext.getString(
-                    R.string.mozac_feature_addons_updater_notification_heading_data_collection_permissions,
-                    Addon.formatLocalizedDataCollectionPermissions(localizedPermissions),
-                )
-            // When we have permissions, we need to truncate the content of this section so that the
-            // permissions section can also be displayed above (along with this one).
-            permissionsText = maybeAbbreviate(permissionsText, hasPermissions)
-
-            builder.append(HtmlCompat.fromHtml(permissionsText, HtmlCompat.FROM_HTML_MODE_COMPACT))
-        }
-
-        return builder.toSpanned()
-    }
-
-    private fun maybeAbbreviate(text: String, saveSpaceForOtherSection: Boolean): String {
-        // We take up to NARROW_MAX_LENGTH characters when we need to save some space for the other section in the
-        // notification. Otherwise, we still truncate the text because Android system notifications cannot be too tall,
-        // and we need to account for the short intro text.
-        val maxLength =
-            if (saveSpaceForOtherSection) {
-                NARROW_MAX_LENGTH
-            } else {
-                WIDE_MAX_LENGTH
-            }
-
-        var result = text
-        if (result.length > maxLength) {
-            result = result.take(maxLength - 1).plus(Typography.ellipsis)
-        }
-        return result
-    }
-
-    @VisibleForTesting
-    internal fun createNotificationIntent(extId: String, actionString: String): Intent {
-        return Intent(applicationContext, NotificationHandlerService::class.java).apply {
-            action = actionString
-            putExtra(NOTIFICATION_EXTRA_ADDON_ID, extId)
-        }
-    }
-
-    @VisibleForTesting
-    internal fun createAllowAction(ext: WebExtension, requestCode: Int): NotificationCompat.Action {
-        val allowIntent = createNotificationIntent(ext.id, NOTIFICATION_ACTION_ALLOW)
-        val allowPendingIntent =
-            PendingIntent.getService(
-                applicationContext,
-                requestCode,
-                allowIntent,
-                PendingIntent.FLAG_IMMUTABLE,
-            )
-
-        val allowText = applicationContext.getString(R.string.mozac_feature_addons_updater_notification_update_button)
-
-        return NotificationCompat.Action.Builder(
-                iconsR.drawable.mozac_ic_extension_24,
-                allowText,
-                allowPendingIntent,
-            )
-            .build()
-    }
-
-    @VisibleForTesting
-    internal fun createDenyAction(ext: WebExtension, requestCode: Int): NotificationCompat.Action {
-        val denyIntent = createNotificationIntent(ext.id, NOTIFICATION_ACTION_DENY)
-        val denyPendingIntent =
-            PendingIntent.getService(
-                applicationContext,
-                requestCode,
-                denyIntent,
-                PendingIntent.FLAG_IMMUTABLE,
-            )
-
-        val denyText = applicationContext.getString(R.string.mozac_feature_addons_updater_notification_cancel_button)
-
-        return NotificationCompat.Action.Builder(
-                iconsR.drawable.mozac_ic_extension_24,
-                denyText,
-                denyPendingIntent,
-            )
-            .build()
-    }
-
     companion object {
-        private const val NOTIFICATION_CHANNEL_ID = "mozilla.components.feature.addons.update.generic.channel"
-
-        @VisibleForTesting
-        internal const val NOTIFICATION_EXTRA_ADDON_ID = "mozilla.components.feature.addons.update.extra.extensionId"
-
-        @VisibleForTesting internal const val NOTIFICATION_TAG = "mozilla.components.feature.addons.update.addonUpdater"
-
-        @VisibleForTesting
-        internal const val NOTIFICATION_ACTION_DENY =
-            "mozilla.components.feature.addons.update.NOTIFICATION_ACTION_DENY"
-
-        @VisibleForTesting
-        internal const val NOTIFICATION_ACTION_ALLOW =
-            "mozilla.components.feature.addons.update.NOTIFICATION_ACTION_ALLOW"
         private const val IDENTIFIER_PREFIX = "mozilla.components.feature.addons.update."
+
+        @VisibleForTesting
+        internal const val LEGACY_NOTIFICATION_CHANNEL_ID = "mozilla.components.feature.addons.update.generic.channel"
+
+        @VisibleForTesting
+        internal const val LEGACY_STATUS_PREFERENCE_FILE =
+            "mozilla.components.feature.addons.update.addons_updates_status_preference"
 
         /** Identifies all the workers that periodically check for new updates. */
         @VisibleForTesting
@@ -453,114 +285,6 @@ class DefaultAddonUpdater(
         /** Identifies all the workers that immediately check for new updates. */
         @VisibleForTesting
         internal const val WORK_TAG_IMMEDIATE = "mozilla.components.feature.addons.update.addonUpdater.immediateWork"
-
-        @VisibleForTesting internal const val NARROW_MAX_LENGTH = 160
-
-        @VisibleForTesting internal const val WIDE_MAX_LENGTH = 320
-    }
-
-    /** Handles notification actions related to addons that require additional permissions to be updated. */
-    class NotificationHandlerService : Service() {
-
-        private val logger = Logger("NotificationHandlerService")
-
-        @VisibleForTesting internal var context: Context = this
-
-        internal fun onHandleIntent(intent: Intent?) {
-            val addonId = intent?.getStringExtra(NOTIFICATION_EXTRA_ADDON_ID) ?: return
-
-            when (intent.action) {
-                NOTIFICATION_ACTION_ALLOW -> {
-                    handleAllowAction(addonId)
-                }
-                NOTIFICATION_ACTION_DENY -> {
-                    removeNotification(addonId)
-                }
-            }
-        }
-
-        @VisibleForTesting
-        internal fun removeNotification(addonId: String) {
-            val notificationId = getNotificationId(context, addonId)
-            NotificationManagerCompat.from(context).cancel(notificationId)
-        }
-
-        @VisibleForTesting
-        internal fun handleAllowAction(addonId: String) {
-            val storage = UpdateStatusStorage()
-            logger.info("Addon $addonId permissions were granted")
-            storage.markAsAllowed(context, addonId)
-            GlobalAddonDependencyProvider.requireAddonUpdater().update(addonId)
-            removeNotification(addonId)
-        }
-
-        override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-            onHandleIntent(intent)
-            return super.onStartCommand(intent, flags, startId)
-        }
-
-        override fun onBind(intent: Intent?): IBinder? = null
-
-        companion object {
-            @VisibleForTesting
-            internal fun getNotificationId(context: Context, addonId: String): Int {
-                return SharedIdsHelper.getIdForTag(context, "$NOTIFICATION_TAG.$addonId")
-            }
-        }
-    }
-
-    /** Stores the status of an addon update. */
-    internal class UpdateStatusStorage {
-
-        fun isPreviouslyAllowed(context: Context, addonId: String) = getData(context).contains(addonId)
-
-        @Synchronized
-        fun markAsAllowed(context: Context, addonId: String) {
-            val allowSet = getData(context)
-            allowSet.add(addonId)
-            setData(context, allowSet)
-        }
-
-        @Synchronized
-        fun markAsUnallowed(context: Context, addonId: String) {
-            val allowSet = getData(context)
-            allowSet.remove(addonId)
-            setData(context, allowSet)
-        }
-
-        fun clear(context: Context) {
-            getSettings(context).edit { clear() }
-        }
-
-        @VisibleForTesting
-        internal fun getData(context: Context): MutableSet<String> {
-            val data = requireNotNull(getSettings(context).getStringSet(KEY_ALLOWED_SET, mutableSetOf()))
-            // We must return a mutable copy of the allowed set because we want to persist it on disk, and changes to
-            // this allowed set can only be detected when a new set is passed to `setData()`.
-            return data.toMutableSet()
-        }
-
-        private fun getSettings(context: Context) = getSharedPreferences(context)
-
-        private fun setData(context: Context, allowSet: MutableSet<String>) {
-            // Get rid of the old allowed set, if it still exists.
-            if (getSettings(context).contains(OLD_KEY_ALLOWED_SET)) {
-                clear(context)
-            }
-
-            getSettings(context).edit { putStringSet(KEY_ALLOWED_SET, allowSet) }
-        }
-
-        private fun getSharedPreferences(context: Context): SharedPreferences {
-            return context.getSharedPreferences(PREFERENCE_FILE, Context.MODE_PRIVATE)
-        }
-
-        companion object {
-            internal const val PREFERENCE_FILE =
-                "mozilla.components.feature.addons.update.addons_updates_status_preference"
-            internal const val OLD_KEY_ALLOWED_SET = "mozilla.components.feature.addons.update.KEY_ALLOWED_SET"
-            internal const val KEY_ALLOWED_SET = "mozilla.components.feature.addons.update.KEY_ALLOWED_SET_2"
-        }
     }
 
     /** A storage implementation to persist [AddonUpdater.UpdateAttempt]s. */

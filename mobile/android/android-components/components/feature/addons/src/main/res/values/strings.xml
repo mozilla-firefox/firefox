@@ -322,20 +322,6 @@
     <string name="mozac_feature_extensions_manager_notification_restart_button">Restart extensions</string>
     <!-- Button in the extensions manager that opens AMO in a tab -->
     <string name="mozac_feature_addons_find_more_extensions_button_text">Find more extensions</string>
-    <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-    <string name="mozac_feature_addons_updater_notification_update_button">Update</string>
-    <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated-->
-    <string name="mozac_feature_addons_updater_notification_cancel_button">Cancel</string>
-    <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
-    <string name="mozac_feature_addons_updater_notification_title_2">%1$s has an update</string>
-    <!-- A short explanation shown in the notification displayed when an add-on has a new update that requires new permissions. -->
-    <string name="mozac_feature_addons_updater_notification_short_intro">Cancel to keep your current version and settings.</string>
-    <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-    <string name="mozac_feature_addons_updater_notification_heading_permissions">New required permissions: %1$s</string>
-    <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
-    <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">New required data collection: The developer says the extension will collect %1$s.</string>
-    <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-    <string name="mozac_feature_addons_updater_notification_channel_2">Extension updates</string>
     <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
     <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Supported add-ons checker</string>
     <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available.-->

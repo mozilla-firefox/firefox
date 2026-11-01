@@ -47,6 +47,7 @@ permalink: /changelog/
         * `AddonsManagerAdapter.bindMessageBars` and `CustomViewHolder.AddonViewHolder` take a new `messageBarUpdateView: ComposeView`, and `bindMessageBars` takes optional `pendingUpdateMessage`, `onReviewUpdateClicked` and `onCancelUpdateClicked`.
         * Added `AddonsManagerAdapterDelegate.onReviewExtensionUpdateClicked` and `onCancelExtensionUpdateClicked`. Implement them, or the banner's buttons do nothing.
         * Added the `PendingExtensionUpdateBanner` composable. feature-addons now uses Jetpack Compose and depends on `compose-base`.
+        * Removed `DefaultAddonUpdater.NotificationHandlerService`.
 
 # 159.0
 * **feature-readerview**
