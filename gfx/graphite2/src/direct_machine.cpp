@@ -89,7 +89,10 @@ const void * direct_run(const bool          get_table_mode,
 
     end:
     __map  = map;
-    *__map = is;
+    if (map >= &smap[-1] && map <= smap.begin() + SlotMap::MAX_SLOTS)
+        *__map = is;
+    else
+        status = Machine::slot_offset_out_bounds;
     return sp;
 }
 

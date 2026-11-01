@@ -39,3 +39,4 @@ vendoring:
 
   patches:
     - geckoextra/patches/0001-slotmap-end-sentinel.patch
+    - geckoextra/patches/0002-temp-copy.patch

@@ -264,7 +264,7 @@ void Slot::setAttr(Segment *seg, attrCode ind, uint8 subindex, int16 value, cons
     case gr_slatAttTo :
     {
         const uint16 idx = uint16(value);
-        if (idx < map.size() && map[idx])
+        if (idx < SlotMap::MAX_SLOTS && idx < map.size() && map[idx])
         {
             Slot *other = map[idx];
             if (other == this || other == m_parent || other->isCopied()) break;

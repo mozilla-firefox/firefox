@@ -1,0 +1,137 @@
+diff --git a/src/Code.cpp b/src/Code.cpp
+--- a/src/Code.cpp
++++ b/src/Code.cpp
+@@ -43,12 +43,12 @@ inline bool is_return(const instr i) {
+ 
+ struct context
+ {
+-    context(uint8 ref=0) : codeRef(ref) {flags.changed=false; flags.referenced=false;}
++    context(size_t ref=0) : codeRef(ref) {flags.changed=false; flags.referenced=false;}
+     struct {
+         uint8   changed:1,
+                 referenced:1;
+     } flags;
+-    uint8       codeRef;
++    size_t      codeRef;
+ };
+ 
+ } // end namespace
+@@ -63,7 +63,7 @@ public:
+     decoder(limits & lims, Code &code, enum passtype pt) throw();
+ 
+     bool        load(const byte * bc_begin, const byte * bc_end);
+-    void        apply_analysis(instr * const code, instr * code_end);
++    bool        apply_analysis(instr * const code, instr * code_end);
+     byte        max_ref() { return _max_ref; }
+     int         out_index() const { return _out_index; }
+ 
+@@ -184,7 +184,8 @@ Machine::Code::Code(bool is_constraint, 
+     }
+ 
+     assert((_constraint && immutable()) || !_constraint);
+-    dec.apply_analysis(_code, _code + _instr_count);
++    if (!dec.apply_analysis(_code, _code + _instr_count))
++        return;
+     _max_ref = dec.max_ref();
+ 
+     // Now we know exactly how much code and data the program really needs
+@@ -492,7 +493,7 @@ void Machine::Code::decoder::analyse_opc
+     case NEXT :
+     case COPY_NEXT :
+       ++_slotref;
+-      _contexts[_slotref] = context(uint8(_code._instr_count+1));
++      _contexts[_slotref] = context(_code._instr_count+1);
+       // if (_analysis.slotref > _analysis.max_ref) _analysis.max_ref = _analysis.slotref;
+       break;
+     case INSERT :
+@@ -593,17 +594,26 @@ bool Machine::Code::decoder::emit_opcode
+ }
+ 
+ 
+-void Machine::Code::decoder::apply_analysis(instr * const code, instr * code_end)
++bool Machine::Code::decoder::apply_analysis(instr * const code, instr * code_end)
+ {
+     // insert TEMP_COPY commands for slots that need them (that change and are referenced later)
+-    int tempcount = 0;
+-    if (_code._constraint) return;
++    size_t tempcount = 0, last_ref = 0;
++    if (_code._constraint) return true;
+ 
+     const instr temp_copy = Machine::getOpcodeTable()[TEMP_COPY].impl[0];
+     for (const context * c = _contexts, * const ce = c + _slotref; c < ce; ++c)
+     {
+         if (!c->flags.referenced || !c->flags.changed) continue;
+ 
++        // References are offsets in the original instruction stream.  The
++        // tempcount adjustment is only valid when inserting in that order.
++        if (c->codeRef < last_ref || c->codeRef >= _code._instr_count)
++        {
++            failure(out_of_range_data);
++            return false;
++        }
++        last_ref = c->codeRef;
++
+         instr * const tip = code + c->codeRef + tempcount;
+         memmove(tip+1, tip, (code_end - tip) * sizeof(instr));
+         *tip = temp_copy;
+@@ -613,6 +623,7 @@ void Machine::Code::decoder::apply_analy
+     }
+ 
+     _code._instr_count = code_end - code;
++    return true;
+ }
+ 
+ 
+diff --git a/src/Slot.cpp b/src/Slot.cpp
+--- a/src/Slot.cpp
++++ b/src/Slot.cpp
+@@ -264,7 +264,7 @@ void Slot::setAttr(Segment *seg, attrCod
+     case gr_slatAttTo :
+     {
+         const uint16 idx = uint16(value);
+-        if (idx < map.size() && map[idx])
++        if (idx < SlotMap::MAX_SLOTS && idx < map.size() && map[idx])
+         {
+             Slot *other = map[idx];
+             if (other == this || other == m_parent || other->isCopied()) break;
+diff --git a/src/call_machine.cpp b/src/call_machine.cpp
+--- a/src/call_machine.cpp
++++ b/src/call_machine.cpp
+@@ -100,7 +100,10 @@ Machine::stack_t  Machine::run(const ins
+ 
+     check_final_stack(sp);
+     map = reg.map;
+-    *map = reg.is;
++    if (map >= &_map[-1] && map <= _map.begin() + SlotMap::MAX_SLOTS)
++        *map = reg.is;
++    else
++        _status = slot_offset_out_bounds;
+     return ret;
+ }
+ 
+diff --git a/src/direct_machine.cpp b/src/direct_machine.cpp
+--- a/src/direct_machine.cpp
++++ b/src/direct_machine.cpp
+@@ -89,7 +89,10 @@ const void * direct_run(const bool      
+ 
+     end:
+     __map  = map;
+-    *__map = is;
++    if (map >= &smap[-1] && map <= smap.begin() + SlotMap::MAX_SLOTS)
++        *__map = is;
++    else
++        status = Machine::slot_offset_out_bounds;
+     return sp;
+ }
+ 
+diff --git a/src/inc/opcodes.h b/src/inc/opcodes.h
+--- a/src/inc/opcodes.h
++++ b/src/inc/opcodes.h
+@@ -625,6 +625,7 @@ STARTOP(push_att_to_glyph_attr)
+ ENDOP
+ 
+ STARTOP(temp_copy)
++    if (map < &smap[-1] || map >= smap.begin() + SlotMap::MAX_SLOTS) DIE;
+     slotref newSlot = seg.newSlot();
+     if (!newSlot || !is) DIE;
+     int16 *tempUserAttrs = newSlot->userAttrs();

@@ -625,6 +625,7 @@ STARTOP(push_att_to_glyph_attr)
 ENDOP
 
 STARTOP(temp_copy)
+    if (map < &smap[-1] || map >= smap.begin() + SlotMap::MAX_SLOTS) DIE;
     slotref newSlot = seg.newSlot();
     if (!newSlot || !is) DIE;
     int16 *tempUserAttrs = newSlot->userAttrs();

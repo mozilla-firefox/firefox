@@ -100,7 +100,10 @@ Machine::stack_t  Machine::run(const instr   * program,
 
     check_final_stack(sp);
     map = reg.map;
-    *map = reg.is;
+    if (map >= &_map[-1] && map <= _map.begin() + SlotMap::MAX_SLOTS)
+        *map = reg.is;
+    else
+        _status = slot_offset_out_bounds;
     return ret;
 }
 
