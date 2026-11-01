@@ -1,7 +1,7 @@
-commit 6cd66a500b0bc4fe93e1b355ed5133c503fb946b
+commit 6b06411d8f253e03dfae7843325f4200284c8749
 Author: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
-Date:   Wed Sep 30 15:18:17 2026 +0000
+Date:   Thu Oct 29 08:08:10 2026 +0000
 
-    ICU-23249 TZDB 2026e
+    ICU-23594 TZDB 2026f
     
-    See #57
+    See #60

@@ -22,6 +22,10 @@ windowsZones:table(nofallback){
                 "rica/Sitka America/Yakutat"
             }
         }
+        "Alberta Standard Time"{
+            001{"America/Edmonton"}
+            CA{"America/Edmonton America/Inuvik"}
+        }
         "Aleutian Standard Time"{
             001{"America/Adak"}
             US{"America/Adak"}
@@ -96,6 +100,10 @@ windowsZones:table(nofallback){
         "Bougainville Standard Time"{
             001{"Pacific/Bougainville"}
             PG{"Pacific/Bougainville"}
+        }
+        "British Columbia Standard Time"{
+            001{"America/Vancouver"}
+            CA{"America/Vancouver"}
         }
         "Canada Central Standard Time"{
             001{"America/Regina"}
@@ -172,7 +180,7 @@ windowsZones:table(nofallback){
         }
         "Central Standard Time"{
             001{"America/Chicago"}
-            CA{"America/Winnipeg America/Rankin_Inlet America/Resolute"}
+            CA{"America/Rankin_Inlet America/Resolute"}
             MX{"America/Matamoros America/Ojinaga"}
             US{
                 "America/Chicago America/Indiana/Knox America/Indiana/Tell_City Ameri"
@@ -364,6 +372,10 @@ windowsZones:table(nofallback){
             001{"America/Punta_Arenas"}
             CL{"America/Punta_Arenas America/Coyhaique"}
         }
+        "Manitoba Standard Time"{
+            001{"America/Winnipeg"}
+            CA{"America/Winnipeg"}
+        }
         "Marquesas Standard Time"{
             001{"Pacific/Marquesas"}
             PF{"Pacific/Marquesas"}
@@ -393,7 +405,7 @@ windowsZones:table(nofallback){
         }
         "Mountain Standard Time"{
             001{"America/Denver"}
-            CA{"America/Edmonton America/Cambridge_Bay America/Inuvik"}
+            CA{"America/Cambridge_Bay"}
             MX{"America/Ciudad_Juarez"}
             US{"America/Denver America/Boise"}
         }
@@ -453,7 +465,6 @@ windowsZones:table(nofallback){
         }
         "Pacific Standard Time"{
             001{"America/Los_Angeles"}
-            CA{"America/Vancouver"}
             US{"America/Los_Angeles"}
         }
         "Pakistan Standard Time"{
