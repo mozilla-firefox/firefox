@@ -45,6 +45,8 @@ export class AboutaddonsThemesPicker extends MozLitElement {
   static properties = {
     currentThemeId: { type: String },
     visibleRows: { type: Number },
+    themesCollectionName: { type: String, attribute: "themes-collection-name" },
+    headingL10nId: { type: String, attribute: "heading-l10n-id" },
     _expanded: { state: true },
     _hasError: { state: true },
   };
@@ -90,6 +92,8 @@ export class AboutaddonsThemesPicker extends MozLitElement {
     super();
     this.currentThemeId = "";
     this.visibleRows = 3;
+    this.themesCollectionName = "nova";
+    this.headingL10nId = "aboutaddons-themes-picker-heading";
     this._expanded = false;
     this._hasError = false;
   }
@@ -106,7 +110,7 @@ export class AboutaddonsThemesPicker extends MozLitElement {
   #recordShownTelemetry() {
     // Do not record the theme-picker.shown Glean event if this component
     // is not going to be rendering its content.
-    if (!isNovaThemesPickerEnabled()) {
+    if (!isNovaThemesPickerEnabled() || this.themesCollectionName !== "nova") {
       return;
     }
     Glean.themePicker.shown.record({ source: "about:addons", layout: "full" });
@@ -132,7 +136,10 @@ export class AboutaddonsThemesPicker extends MozLitElement {
       lazy.AddonManager.getAddonsByTypes(["theme"]),
     ]);
     this.#manager = manager;
-    this.#themes = manager.getThemesInfo();
+    this.#themes =
+      this.themesCollectionName === "classic"
+        ? manager.getClassicThemesInfo()
+        : manager.getThemesInfo();
     this.#installedAddonIds = new Set(installedThemes.map(a => a.id));
     this.#updateCurrentThemeFromPref();
     this.requestUpdate();
@@ -215,7 +222,7 @@ export class AboutaddonsThemesPicker extends MozLitElement {
         : nothing}
       <moz-card
         id="aboutaddons-themes-picker-card"
-        data-l10n-id="aboutaddons-themes-picker-heading"
+        data-l10n-id=${this.headingL10nId}
         headingLevel="2"
         role="list"
       >

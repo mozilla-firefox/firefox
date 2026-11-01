@@ -147,6 +147,83 @@ add_task(async function test_getThemesInfo_showInCompactLayout() {
   );
 });
 
+const CLASSIC_THEME_IDS = [
+  "proton-theme@mozilla.org",
+  "{4223a94a-d3f9-40e9-95dd-99aca80ea04b}",
+  "{0683b144-0d4a-4815-963e-55a8ec8d386b}",
+  "{aab1adac-5449-47fd-b836-c2f43dc28f3f}",
+  "{7063abff-a690-4b87-a548-fc32d3ce5708}",
+  "{1d73a1eb-128d-4e9e-83f8-c0c51f8c5fd3}",
+  "{2b0fadbf-238d-43db-aa9d-e06c9a7e000b}",
+  "{cd6791f7-4b6d-47b4-8877-1d4c82c6699d}",
+  "{8de5f8c3-bfc2-443b-9913-7bbadbd1ba0d}",
+  "{7a301b7b-c3e2-40bf-a06b-6d517bbf138b}",
+];
+
+add_task(async function test_classic_themes() {
+  const manager = await getThemesList({
+    installSource: TEST_INSTALL_SOURCE,
+  });
+
+  Assert.deepEqual(
+    manager.getClassicThemesInfo().map(t => t.id),
+    CLASSIC_THEME_IDS,
+    "getClassicThemesInfo returns the classic themes in order"
+  );
+  for (const themeId of CLASSIC_THEME_IDS) {
+    Assert.ok(manager.hasThemeId(themeId), `hasThemeId is true for ${themeId}`);
+    Assert.ok(!manager.isBuiltIn(themeId), `${themeId} is not built-in`);
+    Assert.ok(
+      !manager.getThemesInfo().some(t => t.id === themeId),
+      `getThemesInfo excludes ${themeId}`
+    );
+    Assert.ok(
+      !manager
+        .getThemesInfo({ showInCompactLayout: true })
+        .some(t => t.id === themeId),
+      `compact getThemesInfo excludes ${themeId}`
+    );
+    const params = manager.getThemePreviewLinkParameters(themeId);
+    for (const name of [
+      "--tabbar-background",
+      "--text-color",
+      "--icon-color",
+      "--active-tab-stroke",
+      "--active-tab-background",
+      "--toolbar-background",
+      "--urlbar-background",
+      "--urlbar-border",
+    ]) {
+      Assert.ok(
+        params.includes(`param(${name}, light-dark(`),
+        `${name} is set for ${themeId}`
+      );
+    }
+  }
+
+  const blueParams = manager.getThemePreviewLinkParameters(
+    "{4223a94a-d3f9-40e9-95dd-99aca80ea04b}"
+  );
+  Assert.ok(
+    blueParams.includes(
+      "param(--tabbar-background, light-dark(linear-gradient(#ABDFFF, #ABDFFF), linear-gradient(#08152C, #08152C)))"
+    ),
+    "classic theme tabbar background is taken from its preview colors"
+  );
+  Assert.ok(
+    blueParams.includes(
+      "param(--toolbar-background, light-dark(#E2F7FF, #042356))"
+    ),
+    "classic theme surface colors override the shared Nova surfaces"
+  );
+  Assert.ok(
+    manager
+      .getThemePreviewLinkParameters("nova-sun@mozilla.org")
+      .includes("param(--toolbar-background, light-dark(#FFFFFF, #1D1B1F))"),
+    "Nova themes keep the shared surface colors"
+  );
+});
+
 add_task(async function test_updateThemeState_unknownThemeId_logsError() {
   const manager = await getThemesList({
     installSource: TEST_INSTALL_SOURCE,
