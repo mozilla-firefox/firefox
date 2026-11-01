@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.WebExtensionAction
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.CancellableOperation
@@ -41,6 +42,7 @@ import mozilla.components.feature.addons.R as addonsR
 import mozilla.components.feature.addons.ui.AddonDialogFragment
 import mozilla.components.feature.addons.ui.AddonInstallationDialogFragment
 import mozilla.components.feature.addons.ui.PermissionsDialogFragment
+import mozilla.components.feature.addons.ui.PermissionsDialogMode
 import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.android.content.appVersionName
@@ -199,7 +201,7 @@ class WebExtensionPromptFeature(
         showPermissionDialog(
             addon = addon,
             promptRequest = promptRequest,
-            forOptionalPermissions = true,
+            mode = PermissionsDialogMode.OPTIONAL,
             permissions = promptRequest.permissions,
             origins = promptRequest.origins,
             dataCollectionPermissions = promptRequest.dataCollectionPermissions,
@@ -353,10 +355,65 @@ class WebExtensionPromptFeature(
     internal fun showPermissionDialog(
         addon: Addon,
         promptRequest: WebExtensionPromptRequest.AfterInstallation.Permissions,
-        forOptionalPermissions: Boolean = false,
+        mode: PermissionsDialogMode = PermissionsDialogMode.INSTALL,
         permissions: List<String> = emptyList(),
         origins: List<String> = emptyList(),
         dataCollectionPermissions: List<String> = emptyList(),
+    ): PermissionsDialogFragment? =
+        showPermissionDialog(
+            addon = addon,
+            mode = mode,
+            permissions = permissions,
+            origins = origins,
+            dataCollectionPermissions = dataCollectionPermissions,
+            promptInstanceId = promptRequest.instanceId,
+            onPositiveButtonClicked = { _, privateBrowsingAllowed, technicalAndInteractionDataAllowed ->
+                handlePermissions(
+                    promptRequest,
+                    granted = true,
+                    privateBrowsingAllowed,
+                    technicalAndInteractionDataAllowed,
+                )
+            },
+            onNegativeButtonClicked = {
+                handlePermissions(
+                    promptRequest,
+                    granted = false,
+                    privateBrowsingAllowed = false,
+                    technicalAndInteractionDataGranted = false,
+                )
+            },
+        )
+
+    /**
+     * Shows the prompt for [pendingUpdate]. Cancelling the prompt leaves the update pending.
+     *
+     * @param addon The installed add-on the update is for.
+     * @param pendingUpdate The update waiting for the user.
+     */
+    internal fun showUpdatePermissionDialog(
+        addon: Addon,
+        pendingUpdate: PendingExtensionUpdate,
+    ): PermissionsDialogFragment? =
+        showPermissionDialog(
+            addon = addon,
+            mode = PermissionsDialogMode.UPDATE,
+            permissions = pendingUpdate.permissions,
+            origins = pendingUpdate.origins,
+            dataCollectionPermissions = pendingUpdate.dataCollectionPermissions,
+            promptInstanceId = pendingUpdate.instanceId,
+            onPositiveButtonClicked = { _, _, _ -> acceptPendingExtensionUpdate(pendingUpdate.instanceId) },
+        )
+
+    private fun showPermissionDialog(
+        addon: Addon,
+        mode: PermissionsDialogMode,
+        permissions: List<String>,
+        origins: List<String>,
+        dataCollectionPermissions: List<String>,
+        promptInstanceId: String? = null,
+        onPositiveButtonClicked: (Addon, Boolean, Boolean) -> Unit,
+        onNegativeButtonClicked: (() -> Unit)? = null,
     ): PermissionsDialogFragment? {
         if (isInstallationInProgress || hasExistingPermissionDialogFragment()) {
             return null
@@ -365,8 +422,8 @@ class WebExtensionPromptFeature(
         val dialog =
             PermissionsDialogFragment.newInstance(
                 addon = addon,
-                forOptionalPermissions = forOptionalPermissions,
-                promptInstanceId = promptRequest.instanceId,
+                mode = mode,
+                promptInstanceId = promptInstanceId,
                 permissions = permissions,
                 origins = origins,
                 dataCollectionPermissions = dataCollectionPermissions,
@@ -401,35 +458,25 @@ class WebExtensionPromptFeature(
                                 context,
                             ),
                     ),
-                onPositiveButtonClicked = { _, privateBrowsingAllowed, technicalAndInteractionDataAllowed ->
-                    handlePermissions(
-                        promptRequest,
-                        granted = true,
-                        privateBrowsingAllowed,
-                        technicalAndInteractionDataAllowed,
-                    )
-                },
-                onNegativeButtonClicked = {
-                    handlePermissions(
-                        promptRequest,
-                        granted = false,
-                        privateBrowsingAllowed = false,
-                        technicalAndInteractionDataGranted = false,
-                    )
-                },
-                onLearnMoreClicked = {
-                    onLinkClicked.invoke(
-                        SupportUtils.getSumoURLForTopic(
-                            context,
-                            SupportUtils.SumoTopic.EXTENSION_PERMISSIONS,
-                        ),
-                        false,
-                    )
-                },
+                onPositiveButtonClicked = onPositiveButtonClicked,
+                onNegativeButtonClicked = onNegativeButtonClicked,
+                onLearnMoreClicked = ::handleLearnMoreClicked,
             )
         dialog.show(fragmentManager, PERMISSIONS_DIALOG_FRAGMENT_TAG)
 
         return dialog
+    }
+
+    /** Installs the pending update identified by [instanceId]. Does nothing if it was answered or replaced. */
+    private fun acceptPendingExtensionUpdate(instanceId: String?) {
+        val pendingUpdate = store.state.pendingExtensionUpdates.values.find { it.instanceId == instanceId } ?: return
+
+        store.dispatch(WebExtensionAction.RemovePendingExtensionUpdateAction(pendingUpdate.extensionId))
+        pendingUpdate.complete(granted = true)
+    }
+
+    private fun handleLearnMoreClicked() {
+        onLinkClicked(SupportUtils.getSumoURLForTopic(context, SupportUtils.SumoTopic.EXTENSION_PERMISSIONS), false)
     }
 
     private fun tryToReAttachButtonHandlersToPreviousDialog() {
@@ -449,8 +496,8 @@ class WebExtensionPromptFeature(
     }
 
     /**
-     * Re-attaches a recreated permissions dialog to the prompt request with its
-     * [PermissionsDialogFragment.promptInstanceId], or dismisses the dialog if there is none.
+     * Re-attaches a recreated permissions dialog to the prompt request or extension update with its
+     * [PermissionsDialogFragment.promptInstanceId], or dismisses the dialog if neither has that id.
      */
     private fun reAttachPermissionDialog() {
         val dialog = findPreviousPermissionDialogFragment() ?: return
@@ -476,15 +523,10 @@ class WebExtensionPromptFeature(
                     technicalAndInteractionDataGranted = false,
                 )
             }
-            dialog.onLearnMoreClicked = {
-                onLinkClicked.invoke(
-                    SupportUtils.getSumoURLForTopic(
-                        context,
-                        SupportUtils.SumoTopic.EXTENSION_PERMISSIONS,
-                    ),
-                    false,
-                )
-            }
+            dialog.onLearnMoreClicked = ::handleLearnMoreClicked
+        } else if (store.state.pendingExtensionUpdates.values.any { it.instanceId == instanceId }) {
+            dialog.onPositiveButtonClicked = { _, _, _ -> acceptPendingExtensionUpdate(instanceId) }
+            dialog.onLearnMoreClicked = ::handleLearnMoreClicked
         } else {
             // Dismissed now, so that the request waiting in the store can show its own dialog.
             dialog.dismissNow()

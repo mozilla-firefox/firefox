@@ -50,10 +50,25 @@
                 tools:textColor="#000000" />
 
             <TextView
-                android:id="@+id/optional_or_required_text"
+                android:id="@+id/intro_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/title"
+                android:layout_alignStart="@id/title"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:paddingStart="5dp"
+                android:paddingEnd="5dp"
+                android:textColor="?android:attr/textColorPrimary"
+                android:visibility="gone"
+                tools:text="@string/mozac_feature_addons_updater_permissions_dialog_description"
+                tools:visibility="visible" />
+
+            <TextView
+                android:id="@+id/optional_or_required_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/intro_text"
                 android:layout_alignStart="@id/title"
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="16dp"

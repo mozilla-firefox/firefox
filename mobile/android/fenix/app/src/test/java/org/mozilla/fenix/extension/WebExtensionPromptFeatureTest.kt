@@ -19,7 +19,9 @@ import kotlin.test.assertNotNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.action.WebExtensionAction.UpdatePendingExtensionUpdateAction
 import mozilla.components.browser.state.action.WebExtensionAction.UpdatePromptRequestWebExtensionAction
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.webextension.InstallationMethod
@@ -28,6 +30,7 @@ import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.addons.R as addonsR
 import mozilla.components.feature.addons.ui.PermissionsDialogFragment
+import mozilla.components.feature.addons.ui.PermissionsDialogMode
 import mozilla.components.support.ktx.android.content.appVersionName
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
@@ -56,6 +59,8 @@ class WebExtensionPromptFeatureTest {
         onLinkClickedCalls.add(url to isFirstParty)
     }
     private val navController: NavController = mockk(relaxed = true)
+    private val updateAnswers = mutableListOf<Boolean>()
+    private val pendingUpdate = newPendingUpdate()
     private val extension = Addon(id = "extension", translatableName = mapOf(Addon.DEFAULT_LOCALE to "Extension"))
     private val fragmentManager: FragmentManager = mockk(relaxed = true)
     private val addonManager: AddonManager = mockk(relaxed = true)
@@ -735,7 +740,7 @@ class WebExtensionPromptFeatureTest {
                 webExtensionPromptFeature.showPermissionDialog(
                     eq(addon),
                     eq(promptRequest),
-                    eq(true),
+                    eq(PermissionsDialogMode.OPTIONAL),
                     eq(promptRequest.permissions),
                     eq(promptRequest.origins),
                     eq(promptRequest.dataCollectionPermissions),
@@ -789,7 +794,7 @@ class WebExtensionPromptFeatureTest {
                 webExtensionPromptFeature.showPermissionDialog(
                     eq(addon),
                     eq(promptRequest),
-                    eq(true),
+                    eq(PermissionsDialogMode.OPTIONAL),
                     eq(promptRequest.permissions),
                     eq(promptRequest.origins),
                     eq(promptRequest.dataCollectionPermissions),
@@ -900,7 +905,7 @@ class WebExtensionPromptFeatureTest {
                 webExtensionPromptFeature.showPermissionDialog(
                     addon = addon,
                     promptRequest = mockk(relaxed = true),
-                    forOptionalPermissions = false,
+                    mode = PermissionsDialogMode.INSTALL,
                     permissions = emptyList(),
                     origins = emptyList(),
                     dataCollectionPermissions = emptyList(),
@@ -976,6 +981,117 @@ class WebExtensionPromptFeatureTest {
             verify { dialog.dismissNow() }
             verify(exactly = 0) { dialog.onPositiveButtonClicked = any() }
         }
+
+    @Test
+    fun `WHEN showing an extension update prompt THEN show the update dialog for that update`() {
+        val dialog = webExtensionPromptFeature.showUpdatePermissionDialog(extension, pendingUpdate)
+        val spyDialog = spyk(dialog!!)
+        every { spyDialog.requireContext() } returns testContext
+
+        val title = spyDialog.onCreateDialog(null).findViewById<TextView>(addonsR.id.title)
+
+        assertEquals(pendingUpdate.instanceId, dialog.promptInstanceId)
+        assertEquals(
+            testContext.getString(addonsR.string.mozac_feature_addons_updater_permissions_dialog_title, "Extension"),
+            title.text.toString(),
+        )
+    }
+
+    @Test
+    fun `WHEN a permissions prompt is already shown THEN neither an update nor an install prompt is shown`() {
+        every { fragmentManager.findFragmentByTag(PERMISSIONS_DIALOG_TAG) } returns mockk<PermissionsDialogFragment>()
+
+        assertNull(webExtensionPromptFeature.showUpdatePermissionDialog(extension, pendingUpdate))
+        assertNull(webExtensionPromptFeature.showPermissionDialog(extension, mockk(relaxed = true)))
+    }
+
+    @Test
+    fun `WHEN the extension update prompt is accepted THEN install the update and remove it`() {
+        store.dispatch(UpdatePendingExtensionUpdateAction(pendingUpdate))
+        val dialog = webExtensionPromptFeature.showUpdatePermissionDialog(extension, pendingUpdate)
+
+        dialog!!.onPositiveButtonClicked?.invoke(extension, false, false)
+
+        assertEquals(listOf(true), updateAnswers)
+        assertTrue(store.state.pendingExtensionUpdates.isEmpty())
+    }
+
+    @Test
+    fun `WHEN the extension update prompt is accepted after the update was replaced THEN do nothing`() {
+        val newerUpdate = newPendingUpdate()
+        store.dispatch(UpdatePendingExtensionUpdateAction(newerUpdate))
+        val dialog = webExtensionPromptFeature.showUpdatePermissionDialog(extension, pendingUpdate)
+
+        dialog!!.onPositiveButtonClicked?.invoke(extension, false, false)
+
+        assertTrue(updateAnswers.isEmpty())
+        assertEquals(newerUpdate, store.state.pendingExtensionUpdates["extension"])
+    }
+
+    @Test
+    fun `WHEN the extension update prompt is cancelled THEN the update stays pending`() {
+        store.dispatch(UpdatePendingExtensionUpdateAction(pendingUpdate))
+        val dialog = webExtensionPromptFeature.showUpdatePermissionDialog(extension, pendingUpdate)
+
+        dialog!!.onNegativeButtonClicked?.invoke()
+
+        assertTrue(updateAnswers.isEmpty())
+        assertEquals(pendingUpdate, store.state.pendingExtensionUpdates["extension"])
+    }
+
+    @Test
+    fun `WHEN a recreated extension update prompt's update is pending THEN it gets its handlers back`() =
+        runTest(testDispatcher) {
+            store.dispatch(UpdatePendingExtensionUpdateAction(pendingUpdate))
+            val dialog = recreatedDialog(pendingUpdate.instanceId)
+
+            webExtensionPromptFeature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val onPositiveButtonClicked = slot<(Addon, Boolean, Boolean) -> Unit>()
+            verify { dialog.onPositiveButtonClicked = capture(onPositiveButtonClicked) }
+            verify(exactly = 0) { dialog.dismissNow() }
+            onPositiveButtonClicked.captured(extension, false, false)
+            assertEquals(listOf(true), updateAnswers)
+        }
+
+    @Test
+    fun `WHEN a recreated extension update prompt's update is gone THEN dismiss it`() =
+        runTest(testDispatcher) {
+            val dialog = recreatedDialog(pendingUpdate.instanceId)
+
+            webExtensionPromptFeature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify { dialog.dismissNow() }
+            verify(exactly = 0) { dialog.onPositiveButtonClicked = any() }
+        }
+
+    @Test
+    fun `WHEN clicking Learn More on the extension update prompt THEN open the SUMO page in a custom tab`() =
+        runTest(testDispatcher) {
+            store.dispatch(UpdatePendingExtensionUpdateAction(pendingUpdate))
+            val dialog = recreatedDialog(pendingUpdate.instanceId)
+            webExtensionPromptFeature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+            val onLearnMoreClicked = slot<() -> Unit>()
+            verify { dialog.onLearnMoreClicked = capture(onLearnMoreClicked) }
+
+            onLearnMoreClicked.captured()
+
+            val expectedUrl = SupportUtils.getSumoURLForTopic(testContext, SupportUtils.SumoTopic.EXTENSION_PERMISSIONS)
+            assertEquals(listOf(expectedUrl to false), onLinkClickedCalls)
+            assertTrue(updateAnswers.isEmpty())
+        }
+
+    private fun newPendingUpdate() =
+        PendingExtensionUpdate(
+            extensionId = "extension",
+            permissions = listOf("privacy"),
+            origins = emptyList(),
+            dataCollectionPermissions = emptyList(),
+            onPermissionsGranted = { updateAnswers.add(it) },
+        )
 
     private fun newOptionalRequest(onConfirm: (Boolean) -> Unit = {}) =
         WebExtensionPromptRequest.AfterInstallation.Permissions.Optional(

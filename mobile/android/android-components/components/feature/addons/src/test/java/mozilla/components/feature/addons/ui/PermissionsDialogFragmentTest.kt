@@ -82,6 +82,7 @@ class PermissionsDialogFragmentTest {
         val technicalAndInteractionDataCheckbox =
             dialog.findViewById<AppCompatCheckBox>(R.id.technical_and_interaction_data)
 
+        assertFalse(dialog.findViewById<TextView>(R.id.intro_text).isVisible)
         assertTrue(titleTextView.isVisible)
         assertEquals(
             testContext.getString(
@@ -631,6 +632,85 @@ class PermissionsDialogFragmentTest {
     }
 
     @Test
+    fun `build dialog for an update`() {
+        val addon =
+            Addon(
+                "id",
+                translatableName = mapOf(Addon.DEFAULT_LOCALE to "my_addon"),
+                permissions = listOf("privacy"),
+            )
+        val fragment =
+            createPermissionsDialogFragment(
+                addon,
+                mode = PermissionsDialogMode.UPDATE,
+                permissions = addon.permissions,
+                dataCollectionPermissions = listOf("healthInfo"),
+                promptInstanceId = "an-instance-id",
+            )
+
+        doReturn(testContext).`when`(fragment).requireContext()
+        val dialog = fragment.onCreateDialog(null)
+        dialog.show()
+
+        val introTextView = dialog.findViewById<TextView>(R.id.intro_text)
+        val titleTextView = dialog.findViewById<TextView>(R.id.title)
+        val optionalOrRequiredTextView = dialog.findViewById<TextView>(R.id.optional_or_required_text)
+        val dataCollectionTextView = dialog.findViewById<TextView>(R.id.optional_or_required_data_collection_text)
+        val allowButton = dialog.findViewById<Button>(R.id.allow_button)
+        val denyButton = dialog.findViewById<Button>(R.id.deny_button)
+        val optionalSettingsTitle = dialog.findViewById<TextView>(R.id.optional_settings_title)
+        val privateBrowsingCheckbox = dialog.findViewById<AppCompatCheckBox>(R.id.allow_in_private_browsing)
+        val technicalAndInteractionDataCheckbox =
+            dialog.findViewById<AppCompatCheckBox>(R.id.technical_and_interaction_data)
+
+        assertEquals(
+            testContext.getString(
+                R.string.mozac_feature_addons_updater_permissions_dialog_title,
+                addon.translateName(testContext),
+            ),
+            titleTextView.text,
+        )
+        assertTrue(introTextView.isVisible)
+        assertEquals(
+            testContext.getString(R.string.mozac_feature_addons_updater_permissions_dialog_description),
+            introTextView.text,
+        )
+        assertEquals(
+            testContext.getString(R.string.mozac_feature_addons_permissions_dialog_heading_optional_permissions),
+            optionalOrRequiredTextView.text,
+        )
+        assertEquals(
+            testContext.getString(R.string.mozac_feature_addons_permissions_dialog_heading_optional_data_collection),
+            dataCollectionTextView.text,
+        )
+        assertEquals(
+            testContext.getString(
+                R.string.mozac_feature_addons_permissions_data_collection_optional_description,
+                Addon.formatLocalizedDataCollectionPermissions(
+                    Addon.localizeDataCollectionPermissions(listOf("healthInfo"), testContext)
+                ),
+            ),
+            dialog.findViewById<TextView>(R.id.data_collection_permissions).text,
+        )
+        assertEquals(
+            testContext.getString(R.string.mozac_feature_addons_updater_permissions_dialog_update_button),
+            allowButton.text,
+        )
+        assertEquals(
+            testContext.getString(R.string.mozac_feature_addons_updater_permissions_dialog_cancel_button),
+            denyButton.text,
+        )
+        assertFalse(optionalSettingsTitle.isVisible)
+        assertFalse(privateBrowsingCheckbox.isVisible)
+        assertFalse(technicalAndInteractionDataCheckbox.isVisible)
+        assertEquals(
+            listOf(testContext.getString(R.string.mozac_feature_addons_permissions_privacy_description)),
+            fragment.buildPermissionsList(isAllUrlsPermissionFound = false),
+        )
+        assertEquals("an-instance-id", fragment.promptInstanceId)
+    }
+
+    @Test
     fun `build dialog for optional permissions`() {
         val addon =
             Addon(
@@ -641,7 +721,7 @@ class PermissionsDialogFragmentTest {
         val fragment =
             createPermissionsDialogFragment(
                 addon,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
                 permissions = addon.permissions,
             )
 
@@ -662,6 +742,7 @@ class PermissionsDialogFragmentTest {
         val technicalAndInteractionDataCheckbox =
             dialog.findViewById<AppCompatCheckBox>(R.id.technical_and_interaction_data)
 
+        assertFalse(dialog.findViewById<TextView>(R.id.intro_text).isVisible)
         assertTrue(titleTextView.isVisible)
         assertEquals(
             titleTextView.text,
@@ -749,7 +830,7 @@ class PermissionsDialogFragmentTest {
         val fragment =
             createPermissionsDialogFragment(
                 addon,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
                 // Gecko enforces that "userScripts" is the only permission
                 // included in an optional permission request. This is verified by
                 // the at_most_one_optional_only_permission_in_request test at:
@@ -848,7 +929,7 @@ class PermissionsDialogFragmentTest {
         val fragment =
             createPermissionsDialogFragment(
                 addon,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
                 permissions = listOf("userScripts"),
                 dispatcher = StandardTestDispatcher(testScheduler),
             )
@@ -1255,7 +1336,7 @@ class PermissionsDialogFragmentTest {
                 addon,
                 permissions = listOf("bookmarks"),
                 dataCollectionPermissions = dataCollectionPermissions,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
             )
 
         doReturn(testContext).`when`(fragment).requireContext()
@@ -1328,7 +1409,7 @@ class PermissionsDialogFragmentTest {
                 addon,
                 origins = listOf("*://*.mozilla.org/*"),
                 dataCollectionPermissions = dataCollectionPermissions,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
             )
 
         doReturn(testContext).`when`(fragment).requireContext()
@@ -1406,7 +1487,7 @@ class PermissionsDialogFragmentTest {
             createPermissionsDialogFragment(
                 addon,
                 dataCollectionPermissions = dataCollectionPermissions,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
             )
 
         doReturn(testContext).`when`(fragment).requireContext()
@@ -1467,7 +1548,7 @@ class PermissionsDialogFragmentTest {
             createPermissionsDialogFragment(
                 addon,
                 dataCollectionPermissions = dataCollectionPermissions,
-                forOptionalPermissions = true,
+                mode = PermissionsDialogMode.OPTIONAL,
             )
 
         doReturn(testContext).`when`(fragment).requireContext()
@@ -1526,7 +1607,8 @@ class PermissionsDialogFragmentTest {
         origins: List<String> = emptyList(),
         dataCollectionPermissions: List<String> = emptyList(),
         promptsStyling: PromptsStyling? = null,
-        forOptionalPermissions: Boolean = false,
+        mode: PermissionsDialogMode = PermissionsDialogMode.INSTALL,
+        promptInstanceId: String? = null,
         dispatcher: CoroutineDispatcher? = null,
     ): PermissionsDialogFragment {
         return spy(
@@ -1536,7 +1618,8 @@ class PermissionsDialogFragmentTest {
                     origins = origins,
                     dataCollectionPermissions = dataCollectionPermissions,
                     promptsStyling = promptsStyling,
-                    forOptionalPermissions = forOptionalPermissions,
+                    mode = mode,
+                    promptInstanceId = promptInstanceId,
                     mainDispatcher = dispatcher,
                 )
             )
