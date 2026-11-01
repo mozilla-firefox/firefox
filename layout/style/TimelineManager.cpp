@@ -141,42 +141,37 @@ nsTArray<RefPtr<const nsAtom>> TimelineManager::UpdateTimelines(
 }
 
 void TimelineManager::UpdateTimelineScopes(
-    const dom::Element* aElement, const ComputedStyle* aComputedStyle) {
+    Element* aElement, const ComputedStyle* aComputedStyle) {
+  // For now, a scope specified on a pseudo-element is recorded against its
+  // originating element.
+  const auto pseudo = PseudoStyleRequest::NotPseudo();
+  auto* scope = TimelineScope::Get(aElement, pseudo);
   const auto timelineScope =
       aComputedStyle->StyleUIReset()->mTimelineScope.value.AsSpan();
-  auto it = std::find_if(
-      mTimelineScopes.begin(), mTimelineScopes.end(),
-      [&](const auto& aEntry) { return aEntry.mElement == aElement; });
   if (timelineScope.IsEmpty()) {
-    // Delete the entry & we're done.
-    MOZ_ASSERT(it != mTimelineScopes.end(), "Timeline scopes out of sync");
-    mTimelineScopes.RemoveElementAt(it);
+    MOZ_ASSERT(scope, "Timeline scopes out of sync");
+    if (scope) {
+      scope->Destroy();
+    }
     return;
   }
 
-  TimelineScopeEntry* entry = nullptr;
-  if (it == mTimelineScopes.end()) {
-    // Skip the scope of the name - timeline names aren't scoped.
-    // https://github.com/w3c/csswg-drafts/issues/8135
-    entry = mTimelineScopes.AppendElement(TimelineScopeEntry{
-        aElement,
-        {},
-    });
-  } else {
-    entry = &(*it);
-    // Just clear existing names, likely not worth reusing.
-    entry->mNames.Clear();
+  if (!scope) {
+    scope =
+        &aElement->EnsureAnimationData().EnsureTimelineScope(*aElement, pseudo);
+    mTimelineScopes.insertBack(scope);
   }
 
+  nsTArray<RefPtr<const nsAtom>> names;
   if (timelineScope[0].AsAtom() == nsGkAtoms::all) {
     MOZ_ASSERT(timelineScope.Length() == 1);
-    // We represent "all" with the empty list.
-    return;
+  } else {
+    names.SetCapacity(timelineScope.Length());
+    for (const auto& name : timelineScope) {
+      names.AppendElement(name.AsAtom());
+    }
   }
-
-  for (const auto& name : timelineScope) {
-    entry->mNames.AppendElement(name.AsAtom());
-  }
+  scope->SetNames(std::move(names));
 }
 
 static bool ScopedNameLooselyMatches(const dom::ShadowRoot* aTargetShadowRoot,
@@ -195,22 +190,12 @@ static bool ScopedNameLooselyMatches(const dom::ShadowRoot* aTargetShadowRoot,
   return !timelineShadowRoot;
 }
 
+/* static */
 bool TimelineManager::TimelineNameScopedByElement(const dom::Element* aElement,
-                                                  const nsAtom* aName) const {
-  auto it = std::find_if(mTimelineScopes.cbegin(), mTimelineScopes.cend(),
-                         [&](const auto& aEntry) {
-                           if (aEntry.mElement != aElement) {
-                             return false;
-                           }
-                           // `all`, or specifically scoping given name.
-                           return aEntry.mNames.IsEmpty() ||
-                                  std::find_if(aEntry.mNames.cbegin(),
-                                               aEntry.mNames.cend(),
-                                               [&](const auto& aScopeName) {
-                                                 return aScopeName == aName;
-                                               }) != aEntry.mNames.cend();
-                         });
-  return it != mTimelineScopes.cend();
+                                                  const nsAtom* aName) {
+  const auto* scope =
+      TimelineScope::Get(aElement, PseudoStyleRequest::NotPseudo());
+  return scope && scope->Scopes(aName);
 }
 
 RefPtr<dom::AnimationTimeline> TimelineManager::GetNamedTimelineForThisElement(

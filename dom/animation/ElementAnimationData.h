@@ -17,6 +17,7 @@ template <typename Animation>
 class AnimationCollection;
 template <typename TimelineType>
 class TimelineCollection;
+class TimelineScope;
 namespace dom {
 class Element;
 class CSSAnimation;
@@ -52,6 +53,8 @@ class ElementAnimationData {
     // Animation objects only.
     UniquePtr<ScrollTimelineCollection> mScrollTimelines;
     UniquePtr<ViewTimelineCollection> mViewTimelines;
+    // The names scoped by the timeline-scope property on this element, if any.
+    UniquePtr<TimelineScope> mTimelineScope;
 
     PerElementOrPseudoData();
     ~PerElementOrPseudoData();
@@ -65,10 +68,12 @@ class ElementAnimationData {
         dom::Element&, const PseudoStyleRequest&);
     ViewTimelineCollection& DoEnsureViewTimelines(dom::Element&,
                                                   const PseudoStyleRequest&);
+    TimelineScope& DoEnsureTimelineScope(dom::Element&,
+                                         const PseudoStyleRequest&);
 
     bool IsEmpty() const {
       return !mEffectSet && !mAnimations && !mTransitions &&
-             !mScrollTimelines && !mViewTimelines;
+             !mScrollTimelines && !mViewTimelines && !mTimelineScope;
     }
 
     void Traverse(nsCycleCollectionTraversalCallback&);
@@ -206,6 +211,24 @@ class ElementAnimationData {
       return *collection;
     }
     return data.DoEnsureViewTimelines(aOwner, aRequest);
+  }
+
+  TimelineScope* GetTimelineScope(const PseudoStyleRequest& aRequest) const {
+    if (auto* data = GetData(aRequest)) {
+      return data->mTimelineScope.get();
+    }
+    return nullptr;
+  }
+
+  void ClearTimelineScopeFor(const PseudoStyleRequest& aRequest);
+
+  TimelineScope& EnsureTimelineScope(dom::Element& aOwner,
+                                     const PseudoStyleRequest& aRequest) {
+    auto& data = GetOrCreateData(aRequest);
+    if (auto* scope = data.mTimelineScope.get()) {
+      return *scope;
+    }
+    return data.DoEnsureTimelineScope(aOwner, aRequest);
   }
 
   ElementAnimationData() = default;

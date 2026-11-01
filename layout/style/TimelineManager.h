@@ -8,6 +8,7 @@
 #include "mozilla/LinkedList.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/TimelineCollection.h"
+#include "mozilla/TimelineScope.h"
 #include "mozilla/dom/Element.h"
 #include "nsStyleAutoArray.h"
 #include "nsStyleStruct.h"
@@ -41,6 +42,9 @@ class TimelineManager {
     while (auto* head = mViewTimelineCollections.getFirst()) {
       head->Destroy();
     }
+    while (auto* head = mTimelineScopes.getFirst()) {
+      head->Destroy();
+    }
 
     mPresContext = nullptr;
   }
@@ -53,10 +57,10 @@ class TimelineManager {
       dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
       const ComputedStyle* aComputedStyle, ProgressTimelineType aType);
 
-  void UpdateTimelineScopes(const dom::Element* aElement,
+  void UpdateTimelineScopes(dom::Element* aElement,
                             const ComputedStyle* aComputedStyle);
-  bool TimelineNameScopedByElement(const dom::Element* aElement,
-                                   const nsAtom* aName) const;
+  static bool TimelineNameScopedByElement(const dom::Element* aElement,
+                                          const nsAtom* aName);
   static RefPtr<dom::AnimationTimeline> GetNamedTimelineForThisElement(
       const dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
       const nsAtom* aName, const dom::ShadowRoot* aTargetShadowRoot);
@@ -78,20 +82,11 @@ class TimelineManager {
   using TimelineTargetsIter =
       TimelineManager::Timelines<TimelineType>::const_iterator;
 
-  struct TimelineScopeEntry {
-    RefPtr<const dom::Element> mElement;
-    nsTArray<RefPtr<nsAtom>> mNames;
-  };
-
   template <typename TimelineType>
   TimelineType* DoGetNamedTimelineInSubtree(
       const dom::Element* aRoot, const nsAtom* aName,
       const TimelineNameMap<TimelineType>& aTimelineNameMap,
       const dom::ShadowRoot* aTargetShadowRoot) const;
-
-  // TODO(dshin, bug 2021326): Depending on general usage, this may end up being
-  // a hashmap.
-  using TimelineScopes = nsTArray<TimelineScopeEntry>;
 
   template <typename TimelineType>
   nsTArray<RefPtr<const nsAtom>> DoUpdateTimelines(
@@ -132,6 +127,10 @@ class TimelineManager {
       const dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest);
 #endif
 
+  // The linked lists hold every live collection and scope, each owned by its
+  // element's ElementAnimationData, so that Disconnect() can clean them up when
+  // the pres shell is detached without the elements unbinding from the tree,
+  // e.g. for print preview. Lookups go through the name maps.
   LinkedList<TimelineCollection<dom::ScrollTimeline>>
       mScrollTimelineCollections;
   // Map containing all named scroll timelines, keyed by their names.
@@ -139,7 +138,7 @@ class TimelineManager {
   LinkedList<TimelineCollection<dom::ViewTimeline>> mViewTimelineCollections;
   // Map containing all named view timelines, keyed by their names.
   TimelineNameMap<dom::ViewTimeline> mViewTimelineNameMap;
-  TimelineScopes mTimelineScopes;
+  LinkedList<TimelineScope> mTimelineScopes;
   nsPresContext* mPresContext;
 };
 

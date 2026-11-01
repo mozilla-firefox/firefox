@@ -132,6 +132,7 @@ EXPORTS.mozilla += [
     "StyleSheetInlines.h",
     "TimelineCollection.h",
     "TimelineManager.h",
+    "TimelineScope.h",
     "URLExtraData.h",
 ]
 
@@ -282,6 +283,7 @@ UNIFIED_SOURCES += [
     "StyleSheet.cpp",
     "TimelineCollection.cpp",
     "TimelineManager.cpp",
+    "TimelineScope.cpp",
     "URLExtraData.cpp",
 ]
 
