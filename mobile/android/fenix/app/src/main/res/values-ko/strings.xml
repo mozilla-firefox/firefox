@@ -1305,6 +1305,12 @@
   <string name="preference_simple_toolbar">단순</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">확장</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">홈페이지 검색 위치</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">가운데</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">위쪽</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">새 탭 열기</string>
   <!-- Share shortcut in toolbar customization -->
@@ -3269,6 +3275,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">지금 설정</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">나중에</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">민감한 정보 보호</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">다른 사람이 차량을 운전할 때 저장된 민감한 정보에 접근할 수 없도록 기기 잠금 패턴, PIN 또는 비밀번호를 설정하세요.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">지금 설정</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">취소</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">기기 잠금 해제</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -4524,15 +4538,17 @@
   <string name="lens_camera_mode_qr">QR 스캐너</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">이미지에서 QR 코드를 찾을 수 없음</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">검색 중…</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">취소</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">이미지를 로드할 수 없습니다.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">이미지를 로드할 수 없습니다. 다른 이미지를 시도해 보세요.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Google 렌즈에서 결과를 얻을 수 없음</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">다시 시도</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Google 렌즈로 찾기</string>

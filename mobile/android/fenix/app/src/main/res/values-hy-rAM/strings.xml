@@ -918,6 +918,10 @@
   <string name="preferences_open_links_in_apps_ask">Հարցել բացելուց առաջ</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Երբեք</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Մեդիա</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Բացել հղումները YouTube հավելվածում</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Ֆայլերի պահեստ</string>
   <!-- Preference title for downloads default location. -->
@@ -1962,6 +1966,8 @@
   <string name="download_search_no_results_found">Արդյունքներ չկան</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Նշել բոլորը</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(տվյալներ)</string>
   <!--
     Downloads Content Type Filters
 
@@ -4533,15 +4539,15 @@
   <string name="lens_camera_mode_qr">QR սկաներ</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Պատկերում QR կոդ չի գտնվել</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">Սա փնտրում եմ</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Չեղարկել</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Չհաջողվեց բեռնել այս պատկերը։ Փորձեք մեկ այլը։</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Google Lens-ից արդյունքներ չստացվեցին</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Կրկին փորձել</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Գտեք այն Google Lens-ի միջոցով</string>
@@ -4629,6 +4635,14 @@
   <string name="pdf_tools_signature_clear_button">Մաքրել</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Հավելել</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">Ստորագրության ավելացում</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">Ընթերցողի դիտման ընտրանքներ</string>
   <!--
     Listen to page
 
@@ -4639,4 +4653,6 @@
   <string name="reader_mode_panel_listen_content_description">Բարձրաձայն կարդացեք</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Մեդիա նվագարկիչ</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">Ընթերցողի դիտում, կարդալ կամ լսել էջը</string>
 </resources>

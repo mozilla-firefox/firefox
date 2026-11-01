@@ -4520,15 +4520,15 @@
   <string name="lens_camera_mode_qr">اسکنر QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">هیچ کد QR در تصویر یافت نشد</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">به دنبال این هستم</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">انصراف</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">این تصویر بارگذاری نشد. تصویر دیگری را امتحان کنید.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">نتوانستم از Google Lens نتیجه بگیرم</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">تلاش دوباره</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">با Google Lens پیدایش کنید</string>

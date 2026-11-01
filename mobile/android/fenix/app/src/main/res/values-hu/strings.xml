@@ -1306,6 +1306,12 @@
   <string name="preference_simple_toolbar">Egyszerű</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Kinyitott</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">A keresősáv helye a kezdőlapon</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Középen</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Felül</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Új böngészőlap megnyitása</string>
   <!-- Share shortcut in toolbar customization -->
@@ -3276,6 +3282,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">Beállítás most</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Később</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Helyezze biztonságba az érzékeny adatait</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Állítson be képernyőzármintát, PIN-kódot vagy jelszót az eszközén, hogy más ne férhessen hozzá a mentett bizalmas adataihoz, amikor valaki más vezeti az autóját.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Beállítás most</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Mégse</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Eszköz feloldása</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -4539,15 +4553,17 @@
   <string name="lens_camera_mode_qr">QR-leolvasó</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Nem található QR-kód a képen</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">Keresés folyamatban</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Mégse</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Nem sikerült betölteni ezt a képet.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">A kép nem tölthető be. Próbálkozzon egy másikkal.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Nem sikerült lekérni a Google Lens találatait</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Próbálja újra</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Keresés a Google Lens használatával</string>

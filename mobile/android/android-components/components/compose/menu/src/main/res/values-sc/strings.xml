@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">Personaliza su menù</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">Traga setziones pro ddas torrare a assentare</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">Previsualizatzione</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">Setziones cuadas</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">Traga setziones inoghe pro dda scuare</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Torra a sa cunfiguratzione predefinida</string>
+  <!-- Content description for the back button in the Customize Menu top app bar -->
+  <string name="mozac_menu_customize_back_button_content_description">Nàviga a coa</string>
+</resources>

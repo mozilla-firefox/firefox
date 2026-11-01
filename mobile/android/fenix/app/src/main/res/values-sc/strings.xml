@@ -1093,6 +1093,12 @@
   <string name="preference_simple_toolbar">Sèmplitze</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Ismanniada</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Positzione de sa barra de chirca in sa pàgina printzipale</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">In mesu</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">In artu</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Aberi un’ischeda noa</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1989,6 +1995,8 @@
   <string name="menu_print">Imprenta</string>
   <!-- Sub-header in the dialog to share a link to another sync device -->
   <string name="share_device_subheader">Imbia a su dispositivu</string>
+  <!-- Content description for the drag handle that dismisses the Send to Device bottom sheet -->
+  <string name="send_to_devices_bottom_sheet_close_content_description">Serra s’imbiu a unu dispositivu</string>
   <!-- Sub-header in the dialog to share a link to an app from the full list -->
   <string name="share_link_all_apps_subheader">Totu is atziones</string>
   <!-- Sub-header in the dialog to share a link to an app from the most-recent sorted list -->
@@ -2003,6 +2011,8 @@
   <string name="sync_send_to_all">Imbia a totu is dispositivos</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Torra a colllegare a Sync</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Imbia</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">In foras de lìnia</string>
   <!-- An option to connect additional devices -->
@@ -2025,6 +2035,8 @@
   <string name="sent_from_firefox_template" tools:ignore="UnusedResources">%1$s\n\nImbiadu dae %2$s 🦊 Proa su navigadore mòbile: %3$s</string>
   <!-- A short message template for the shared link with a footer. %1$s is the shared link, %2$s is the app name (e.g. Firefox) and %3$s is a download link for the app. -->
   <string name="sent_from_firefox_template_short" tools:ignore="UnusedResources">%1$s\n\nImbiadu dae %2$s 🦊 %3$s</string>
+  <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Pro imbiare un’ischeda, identìfica·ti in Firefox in un’àteru dispositivu, a su mancu.</string>
   <!--
     Notifications
 
@@ -2668,6 +2680,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">Cunfigura immoe</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">A pustis</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Ampara is datos sensìbiles</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Cunfigura una secuèntzia de blocu, PIN o crae pro amparare is datos sensìbiles tuos de s’atzessu de àtera gente chi impreat sa màchina tua.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Cunfigura immoe</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Annulla</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Isbloca su disposivitu tuo</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3706,4 +3726,6 @@
   <string name="search_settings_google_lens_description">Imbiat immàgines e fotografias a Google pro fàghere chircas visuales.</string>
   <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
   <string name="preferences_google_lens_availability_caption">A disponimentu isceti si as ativadu Google e dd’as cunfiguradu comente motore de chirca predefinidu durante sa navigatzione.</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Impossìbile carrigare s’immàgine.</string>
 </resources>

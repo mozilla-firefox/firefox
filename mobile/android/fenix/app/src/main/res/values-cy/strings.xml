@@ -925,7 +925,7 @@
   <!-- Preference category header for media related open links in apps settings -->
   <string name="preferences_media_category">Cyfrwng</string>
   <!-- Preference label for choosing whether links open in the YouTube app -->
-  <string name="preferences_open_links_in_youtube">Agor dolenni yn YouTube app</string>
+  <string name="preferences_open_links_in_youtube">Agor dolenni yn ap YouTube</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Cadw ffeiliau</string>
   <!-- Preference title for downloads default location. -->
@@ -1310,6 +1310,12 @@
   <string name="preference_simple_toolbar">Syml</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Estynedig</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Lleoliad chwilio tudalen gartref</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Canol</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Brig</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Agor tab newydd</string>
   <!-- Share shortcut in toolbar customization -->
@@ -3304,6 +3310,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">Gosod nawr</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Yn hwyrach</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Diogelwch eich data sensitif</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Sefydlwch batrwm clo dyfais, PIN, neu gyfrinair i amddiffyn eich data sensitif a arbedwyd rhag cael mynediad ato os yw rhywun arall yn gyrru\'ch car.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Gosod nawr</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Diddymu</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Datgloi’ch dyfais</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -4599,15 +4613,17 @@
   <string name="lens_camera_mode_qr">Sganiwr QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Heb ganfod cod QR yn y llun</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">Yn chwilio am hyn</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Diddymu</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Methu llwytho\'r ddelwedd hon.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Methu llwytho\'r ddelwedd hon. Rhowch gynnig ar un gwahanol.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Methu cael canlyniadau gan Google Lens</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Ceisiwch eto</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Dod o hyd iddo gyda Google Lens</string>
@@ -4702,7 +4718,7 @@
 
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
-  <string name="reader_mode_panel_content_description_2">Opsiynau Gweld Darllenydd</string>
+  <string name="reader_mode_panel_content_description_2">Dewisiadau Golwg Darllenydd</string>
   <!--
     Listen to page
 
@@ -4714,5 +4730,5 @@
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Chwaraewr Cyfryngau</string>
   <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
-  <string name="browser_menu_read_or_listen">Darllenydd gweld, darllen neu wrando ar dudalen</string>
+  <string name="browser_menu_read_or_listen">Golwg Darllenydd, darllen neu wrando ar dudalen</string>
 </resources>

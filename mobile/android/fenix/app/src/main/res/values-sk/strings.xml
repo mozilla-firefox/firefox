@@ -362,7 +362,7 @@
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Vo %se máte vždy na výber</string>
   <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
-  <string name="ai_controls_banner_supporting_text_2">To zahŕňa aj to, či používať funkcie vylepšené umelou inteligenciou. %s</string>
+  <string name="ai_controls_banner_supporting_text_2">Napríklad aj to, či chcete používať funkcie vylepšené umelou inteligenciou. %s</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Ďalšie informácie</string>
   <!-- Title for the block AI enhancements toggle -->
@@ -1308,6 +1308,12 @@
   <string name="preference_simple_toolbar">Jednoduchý</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Rozbalený</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Umiestnenie vyhľadávacieho panela na domovskej stránke</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Uprostred</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Navrchu</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Otvoriť novú kartu</string>
   <!-- Share shortcut in toolbar customization -->
@@ -3290,6 +3296,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">Nastaviť teraz</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Neskôr</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Chráňte svoje citlivé údaje</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Nastavte si vzor zámku zariadenia, PIN kód alebo heslo, aby ste ochránili svoje uložené citlivé údaje pred prístupom, ak vaše auto šoféruje niekto iný.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Nastaviť teraz</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Zrušiť</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Odomknite svoje zariadenie</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -4569,15 +4583,17 @@
   <string name="lens_camera_mode_qr">Skener QR kódov</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Na obrázku sa nenašiel žiadny QR kód</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">Vyhľadáva sa</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Zrušiť</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Obrázok sa nepodarilo načítať.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Obrázok sa nepodarilo načítať. Skúste vybrať iný.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Nepodarilo sa získať výsledky zo služby Google Lens</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Skúsiť znova</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Nájdite to pomocou služby Google Lens</string>
