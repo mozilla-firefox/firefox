@@ -20,6 +20,7 @@
 #include "mozilla/GfxMessageUtils.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/Mutex.h"
+#include "mozilla/NotNull.h"
 #include "mozilla/dom/BindingUtils.h"
 
 namespace mozilla {
@@ -86,7 +87,7 @@ class HostWebGLContext final : public SupportsWeakPtr {
  private:
   RefPtr<WebGLContext> mContext;
 
-#define _(X) std::unordered_map<ObjectId, RefPtr<WebGL##X>> m##X##Map;
+#define _(X) std::unordered_map<ObjectId, NotNull<RefPtr<WebGL##X>>> m##X##Map;
 
   _(Buffer)
   _(Framebuffer)
