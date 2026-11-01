@@ -513,9 +513,8 @@ export var AUSTLMY = {
    *         The preference to check.
    * @param  aDefault
    *         The default value when the preference isn't present.
-   * @param  aExpected (optional)
-   *         If specified and the value is the same as the value that will be
-   *         added the value won't be added to telemetry.
+   * @param  aExpected
+   *         The expected value. Matching values are not counted.
    */
   pingBoolPref: function UT_pingBoolPref(aMetric, aPref, aDefault, aExpected) {
     try {

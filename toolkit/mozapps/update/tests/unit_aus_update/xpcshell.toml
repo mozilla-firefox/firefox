@@ -86,6 +86,11 @@ requesttimeoutfactor = 3 # Staging runs the updater in a separate process.
 
 ["remoteUpdateXML.js"]
 
+["servicePrefTelemetry.js"]
+run-if = [
+  "os == 'win'",
+]
+
 ["statusErrorCodeTelemetry.js"]
 
 ["test_blocked_metric_recorded_when_downloads_blocked_by_waf.js"]
