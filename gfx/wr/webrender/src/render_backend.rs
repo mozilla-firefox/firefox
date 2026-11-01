@@ -174,6 +174,7 @@ macro_rules! declare_dl_stores {
         #[derive(Default)]
         pub struct DlStores {
             $( pub $field: crate::dl_interner::DlStore<$key, $template>, )*
+            uids: crate::dl_interner::DlUids,
         }
 
         impl DlStores {
@@ -191,7 +192,7 @@ macro_rules! declare_dl_stores {
                     let (ins, rem) = crate::dl_interner::count_dl_ops(&updates.$field);
                     totals.0 += ins;
                     totals.1 += rem;
-                    self.$field.apply(updates.$field);
+                    self.$field.apply(updates.$field, &mut self.uids);
                     profile.set(profiler::$gauge, self.$field.len());
                 )*
                 totals
@@ -203,8 +204,9 @@ macro_rules! declare_dl_stores {
             fn with_pending(&self, updates: &DlUpdates) -> DlStores {
                 let mut stores = DlStores {
                     $( $field: self.$field.clone(), )*
+                    uids: self.uids.clone(),
                 };
-                $( stores.$field.apply(updates.$field.clone()); )*
+                $( stores.$field.apply(updates.$field.clone(), &mut stores.uids); )*
                 stores
             }
 

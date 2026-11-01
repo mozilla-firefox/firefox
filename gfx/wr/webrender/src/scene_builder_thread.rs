@@ -255,6 +255,7 @@ macro_rules! declare_scene_dl_stores {
         #[derive(Default)]
         pub struct SceneDlStores {
             $( pub $field: crate::dl_interner::DlStore<$key, $value>, )*
+            uids: crate::dl_interner::DlUids,
         }
 
         /// The op lists bound for `SceneDlStores`.
@@ -269,7 +270,7 @@ macro_rules! declare_scene_dl_stores {
             }
 
             fn apply(&mut self, updates: SceneDlUpdates) {
-                $( self.$field.apply(updates.$field); )*
+                $( self.$field.apply(updates.$field, &mut self.uids); )*
             }
         }
 
