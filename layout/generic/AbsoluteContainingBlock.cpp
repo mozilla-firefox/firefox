@@ -146,10 +146,9 @@ static LogicalSize* GetUnfragmentedSize(const ReflowInput& aCBReflowInput,
              : aFrame->FirstInFlow()->GetProperty(UnfragmentedSizeProperty());
 }
 
-// Return true if aInlineFrame is the first inline continuation in its
-// fragmentainer, i.e. no previous continuation shares its nearest block
-// ancestor.
-static bool IsFirstInlineContinuationInFragmentainer(
+// Return aInlineFrame's previous inline continuation if it shares
+// aInlineFrame's fragmentainer, or nullptr otherwise.
+static nsIFrame* GetPrevInlineContinuationInFragmentainer(
     const nsIFrame* aInlineFrame) {
   MOZ_ASSERT(aInlineFrame->IsInlineFrameOrSubclass());
   const nsBlockFrame* myBlock =
@@ -161,9 +160,28 @@ static bool IsFirstInlineContinuationInFragmentainer(
       // Skip IB-split block siblings.
       continue;
     }
-    return nsLayoutUtils::FindNearestBlockAncestor(prev) != myBlock;
+    return nsLayoutUtils::FindNearestBlockAncestor(prev) == myBlock ? prev
+                                                                    : nullptr;
   }
-  return true;
+  return nullptr;
+}
+
+// Return true if aInlineFrame is the first inline continuation in its
+// fragmentainer, i.e. no previous continuation shares its nearest block
+// ancestor.
+static bool IsFirstInlineContinuationInFragmentainer(
+    const nsIFrame* aInlineFrame) {
+  return !GetPrevInlineContinuationInFragmentainer(aInlineFrame);
+}
+
+nsIFrame* AbsoluteContainingBlock::FirstInlineContinuationInFragmentainer(
+    nsIFrame* aInlineFrame) {
+  MOZ_ASSERT(aInlineFrame->IsInlineFrameOrSubclass());
+  nsIFrame* first = aInlineFrame;
+  while (nsIFrame* prev = GetPrevInlineContinuationInFragmentainer(first)) {
+    first = prev;
+  }
+  return first;
 }
 
 // Walk aInlineFrame's continuation chain and return the *first* continuation
@@ -325,7 +343,7 @@ void AbsoluteContainingBlock::PullAbsoluteFramesFrom(
 }
 
 bool AbsoluteContainingBlock::PrepareAbsoluteFrames(
-    nsContainerFrame* aDelegatingFrame) {
+    nsContainerFrame* aDelegatingFrame, PrepareReason aReason) {
   if (const nsIFrame* prev =
           GetFirstContinuationInPrevFragmentainer(aDelegatingFrame)) {
     AbsoluteContainingBlock* prevAbsCB = prev->GetAbsoluteContainingBlock();
@@ -353,11 +371,16 @@ bool AbsoluteContainingBlock::PrepareAbsoluteFrames(
   // continuation in the fragmentainer) so that the rest of the
   // same-fragmentainer continuations don't have any abspos children. We enforce
   // this invariant in SanityCheckChildLists().
+  //
+  // Under PrepareReason::Destroy, walk past the fragmentainer boundary as well,
+  // to reparent the abspos children in later fragmentainers under us. This is
+  // to prevent them from being destroyed along with their containing blocks.
   if (StaticPrefs::layout_abspos_fragment_aware_inline_cb_enabled() &&
       aDelegatingFrame->IsInlineFrameOrSubclass() &&
       IsFirstInlineContinuationInFragmentainer(aDelegatingFrame)) {
     const nsBlockFrame* myBlock =
         nsLayoutUtils::FindNearestBlockAncestor(aDelegatingFrame);
+    const bool stopAtFragmentainerBoundary = aReason == PrepareReason::Reflow;
     for (nsIFrame* next = nsLayoutUtils::GetNextContinuationOrIBSplitSibling(
              aDelegatingFrame);
          next;
@@ -366,7 +389,8 @@ bool AbsoluteContainingBlock::PrepareAbsoluteFrames(
         // Skip IB-split block siblings.
         continue;
       }
-      if (nsLayoutUtils::FindNearestBlockAncestor(next) != myBlock) {
+      if (stopAtFragmentainerBoundary &&
+          nsLayoutUtils::FindNearestBlockAncestor(next) != myBlock) {
         // Reached a continuation in a later fragmentainer.
         break;
       }

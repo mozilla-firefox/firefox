@@ -69,14 +69,26 @@ class AbsoluteContainingBlock {
    */
   [[nodiscard]] nsFrameList StealPushedChildList();
 
+  // Used only when the delegating frame is an inline frame.
+  enum class PrepareReason : uint8_t {
+    // A normal reflow. Pull only from the continuations sharing
+    // aDelegatingFrame's fragmentainer.
+    Reflow,
+
+    // aDelegatingFrame's continuations are about to be destroyed, so pull the
+    // abspos children from all aDelegatingFrame's continuations, including
+    // those in later fragmentainers, to keep them alive.
+    Destroy,
+  };
+
   /**
-   * Prepare our absolute child list so that it is ready to reflow by moving all
-   * the pushed absolute frames in aDelegatingFrame's prev-in-flow's absCB, and
-   * some in our own pushed absolute child list, to our absolute child list.
+   * Prepare our absolute child list so that it is ready to reflow, or when
+   * aDelegatingFrame's continuations are about to be destroyed.
    *
    * @return true if we have absolute frames after we return.
    */
-  bool PrepareAbsoluteFrames(nsContainerFrame* aDelegatingFrame);
+  bool PrepareAbsoluteFrames(nsContainerFrame* aDelegatingFrame,
+                             PrepareReason aReason = PrepareReason::Reflow);
 
   /**
    * Return true if we have absolute frames.
@@ -133,6 +145,13 @@ class AbsoluteContainingBlock {
     nsRect mLocal;
     nsRect mScrollable;
   };
+
+  /**
+   * Return the first inline continuation in aInlineFrame's fragmentainer, i.e.
+   * the only continuation there that is allowed to own abspos children.
+   */
+  static nsIFrame* FirstInlineContinuationInFragmentainer(
+      nsIFrame* aInlineFrame);
 
  protected:
   /**
