@@ -2593,8 +2593,8 @@ impl TileCacheInstance {
                     prim_info.color_binding = Some(color_u.into());
                 }
             }
-            PrimitiveKind::Image { data_handle, .. } => {
-                let image_key = &data_stores.image[data_handle];
+            PrimitiveKind::Image { handle } => {
+                let image_key = &dl_stores.images[handle];
                 let image_data = &image_key.kind;
 
                 // For now, assume that for compositor surface purposes, any RGBA image may be

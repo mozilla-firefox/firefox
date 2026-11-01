@@ -24,11 +24,14 @@ use crate::color::{ColorF, ColorU};
 use crate::font::{FontInstanceKey, GlyphInstance, GlyphOptions};
 use crate::image::{ColorDepth, ImageKey};
 use crate::interned_prims::{
-    BoxShadow, BoxShadowKey, LineDecoration, LineDecorationKey, RectangleKey, RectanglePrim,
+    BoxShadow, BoxShadowKey, Image, ImagePrimKey, LineDecoration, LineDecorationKey, RectangleKey,
+    RectanglePrim,
 };
 use crate::interning::{self, DlDelta};
 use crate::path::Path;
-use crate::key_types::{EdgeMask, GradientStopKey, PrimKeyCommonData, StretchSizeKey};
+use crate::key_types::{
+    EdgeMask, GradientStopKey, PointKey, PrimKeyCommonData, StretchSizeKey, SubRectKey,
+};
 use crate::prim_geometry::{
     apply_gradient_local_clip, image_stretch_size, optimize_linear_gradient,
     optimize_radial_gradient, resolve_tile_size, simplify_repeated_primitive,
@@ -1243,6 +1246,7 @@ struct CapturedPrim {
 enum CapturedKey {
     Rectangle { transformed_aa_edges: EdgeMask },
     Line(LineDecoration),
+    Image(Image),
 }
 
 #[repr(C)]
@@ -1748,31 +1752,105 @@ impl DisplayListBuilder {
         );
     }
 
-    /// The one item both image pushes produce.
+    /// The one item both image pushes produce. An axis one tile plus its
+    /// spacing already covers collapses to that tile here, since the key is
+    /// built against the rect the primitive gets, and the visible part of the
+    /// image is taken against that rect.
     fn push_image_prim(
         &mut self,
         common: &di::CommonItemProperties,
         bounds: LayoutRect,
         stretch_size: StretchSizeKey,
-        tile_spacing: LayoutSize,
+        mut tile_spacing: LayoutSize,
         image_rendering: di::ImageRendering,
         alpha_type: di::AlphaType,
         key: ImageKey,
         color: ColorF,
     ) {
         let (common, offset) = self.normalize_common(common);
-        let item = di::DisplayItem::Image(di::ImageDisplayItem {
-            common,
-            bounds: self.shift_rect(bounds, offset),
+        let mut bounds = self.shift_rect(bounds, offset);
+        // Resolved against the unsnapped rect, as the scene builder did.
+        let stretch = stretch_size.resolve(&bounds);
+        simplify_repeated_primitive(&stretch, &mut tile_spacing, &mut bounds);
+
+        // Only part of the image may be visible, as with a CSS sprite sheet
+        // positioned by a negative background-position. Restrict sampling to
+        // that part, so that filtering cannot pull in the neighbouring cells.
+        //
+        // The visible part is what the item's clip rect leaves of its bounds, so
+        // it is already implied by the item and does not need sending. Recorded
+        // as a fraction of the image because the size the image is rasterized at
+        // is not known until frame build.
+        //
+        // Only for an image that covers its rect once. When the pattern repeats,
+        // each repetition samples the whole image, so a single fraction is
+        // meaningless.
+        let repeats = stretch.width < bounds.width()
+            || stretch.height < bounds.height()
+            || tile_spacing != LayoutSize::zero();
+        // The image is mapped onto the stretch size anchored at the prim rect's
+        // origin, which is not the prim rect: Gecko trims the rect of a
+        // repeating background to the fill area while leaving the origin on the
+        // first tile, so it can be narrower than one repetition (bug 2068996).
+        // Take the fraction of this rect, the same rect `prepare_image_quads`
+        // resolves the fraction back against.
+        let image_rect = LayoutRect::from_origin_and_size(bounds.min, stretch);
+        let visible = common.clip_rect.intersection_unchecked(&bounds);
+        let sub_rect = if repeats
+            || visible.is_empty()
+            || image_rect.width() <= 0.0
+            || image_rect.height() <= 0.0
+            || visible.contains_box(&bounds)
+        {
+            None
+        } else {
+            let fraction = |v: f32, min: f32, extent: f32| ((v - min) / extent).clamp(0.0, 1.0);
+            Some(SubRectKey {
+                min: PointKey {
+                    x: fraction(visible.min.x, image_rect.min.x, image_rect.width()),
+                    y: fraction(visible.min.y, image_rect.min.y, image_rect.height()),
+                },
+                max: PointKey {
+                    x: fraction(visible.max.x, image_rect.min.x, image_rect.width()),
+                    y: fraction(visible.max.y, image_rect.min.y, image_rect.height()),
+                },
+            })
+        };
+
+        let kind = Image {
+            key,
             stretch_size,
-            tile_spacing,
-            image_key: key,
+            tile_spacing: tile_spacing.into(),
+            color: color.into(),
             image_rendering,
             alpha_type,
-            color,
-        });
+            sub_rect,
+        };
+        let image = self.intern_image(&kind, bounds, &common);
 
-        self.push_item(&item);
+        // The sub-rect is a fraction of the bounds, so a copy that moves both
+        // by the shadow offset keeps it.
+        self.capture_prim(&common, bounds, CapturedKey::Image(kind));
+
+        self.push_item(&di::DisplayItem::Image(di::ImageDisplayItem {
+            spatial_id: common.spatial_id,
+            clip_chain_id: common.clip_chain_id,
+            image,
+        }));
+    }
+
+    fn intern_image(
+        &mut self,
+        kind: &Image,
+        bounds: LayoutRect,
+        common: &di::CommonItemProperties,
+    ) -> interning::Handle<ImagePrimKey> {
+        let key = ImagePrimKey::new(
+            prim_key_common(common, bounds, EdgeMask::all()),
+            kind.clone(),
+        );
+
+        self.interners.intern(&key)
     }
 
     /// Push a yuv image. All planar data in yuv image should use the same buffer type.
@@ -3031,7 +3109,8 @@ impl DisplayListBuilder {
     /// `SubpixelMode::Deny`, so the stacking context keeps `RasterSpace::Screen`
     /// like the scene builder's shadow picture did.
     fn desugar_shadow_scope(&mut self) {
-        // A shadowable/drawable item plus its aux (only text carries glyphs).
+        // A shadowable/drawable item plus its aux (only text carries glyphs)
+        // and, for an interned primitive, what its key was built from.
         struct DrawEntry {
             item: di::DisplayItem,
             glyphs: Vec<GlyphInstance>,
@@ -3084,7 +3163,9 @@ impl DisplayListBuilder {
                         // One entry per captured interned primitive, in capture
                         // order.
                         key: match draw {
-                            di::DisplayItem::Rectangle(..) | di::DisplayItem::Line(..) => Some(
+                            di::DisplayItem::Rectangle(..)
+                            | di::DisplayItem::Line(..)
+                            | di::DisplayItem::Image(..) => Some(
                                 captured_keys.next().expect("primitive item without its captured key"),
                             ),
                             _ => None,
@@ -3243,6 +3324,18 @@ impl DisplayListBuilder {
                     rect,
                 })
             }
+            CapturedKey::Image(ref image) => {
+                let image = self.intern_image(
+                    &Image { color: color.into(), ..image.clone() },
+                    bounds,
+                    &common,
+                );
+                di::DisplayItem::Image(di::ImageDisplayItem {
+                    spatial_id: common.spatial_id,
+                    clip_chain_id: common.clip_chain_id,
+                    image,
+                })
+            }
             CapturedKey::Line(ref decoration) => {
                 let line = self.intern_line(
                     &LineDecoration { color: color.into(), ..decoration.clone() },
@@ -3283,18 +3376,12 @@ impl DisplayListBuilder {
 
         Some(match item {
             // Interned from their captured keys, see `intern_shadow_copy`.
-            Rectangle(..) | Line(..) => unreachable!("shadow copy of a primitive with a captured key"),
+            Rectangle(..) | Line(..) | Image(..) => unreachable!("shadow copy of a primitive with a captured key"),
             Text(info) => Text(di::TextDisplayItem {
                 common: shift(info.common),
                 bounds: info.bounds.translate(offset),
                 color,
                 shadow: shadow_mode,
-                ..*info
-            }),
-            Image(info) => Image(di::ImageDisplayItem {
-                common: shift(info.common),
-                bounds: info.bounds.translate(offset),
-                color,
                 ..*info
             }),
             Border(info) => {
@@ -3948,6 +4035,238 @@ mod line_decoration_interning_tests {
         let items = line_items(&dl);
         assert_eq!(items.len(), 2);
         assert_ne!(items[0].line, items[1].line);
+    }
+}
+
+#[cfg(test)]
+mod image_interning_tests {
+    use super::*;
+    use crate::IdNamespace;
+
+    const BOUNDS: LayoutRect = LayoutRect {
+        min: LayoutPoint::new(0.0, 0.0),
+        max: LayoutPoint::new(100.0, 100.0),
+    };
+
+    fn common() -> di::CommonItemProperties {
+        let pipeline_id = PipelineId::dummy();
+        di::CommonItemProperties {
+            clip_rect: LayoutRect::from_size(LayoutSize::new(1000.0, 1000.0)),
+            clip_chain_id: di::ClipChainId::INVALID,
+            spatial_id: di::SpatialId::root_scroll_node(pipeline_id),
+            flags: di::PrimitiveFlags::default(),
+        }
+    }
+
+    fn image_key() -> ImageKey {
+        ImageKey::new(IdNamespace(1), 7)
+    }
+
+    fn push(builder: &mut DisplayListBuilder, bounds: LayoutRect, color: ColorF) {
+        builder.push_image(
+            &common(),
+            bounds,
+            di::ImageRendering::Auto,
+            di::AlphaType::PremultipliedAlpha,
+            image_key(),
+            color,
+        );
+    }
+
+    fn push_repeating(
+        builder: &mut DisplayListBuilder,
+        bounds: LayoutRect,
+        stretch_size: LayoutSize,
+        tile_spacing: LayoutSize,
+    ) {
+        builder.push_repeating_image(
+            &common(),
+            bounds,
+            stretch_size,
+            tile_spacing,
+            di::ImageRendering::Auto,
+            di::AlphaType::PremultipliedAlpha,
+            image_key(),
+            ColorF::WHITE,
+        );
+    }
+
+    fn image_items(dl: &BuiltDisplayList) -> Vec<di::ImageDisplayItem> {
+        let mut items = Vec::new();
+        let mut iter = dl.iter();
+        while let Some(item) = iter.next() {
+            if let di::DisplayItem::Image(info) = item.item() {
+                items.push(*info);
+            }
+        }
+        items
+    }
+
+    /// The bounds now live in the key, so read them from this build's add.
+    fn item_bounds(dl: &BuiltDisplayList) -> LayoutRect {
+        assert_eq!(image_items(dl).len(), 1, "expected exactly one image item");
+        let adds = &dl.delta().images.adds;
+        assert_eq!(adds.len(), 1, "expected the image's entry in this build's delta");
+        adds[0].key.common.prim_rect.into()
+    }
+
+    #[test]
+    fn identical_images_in_one_list_intern_once() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        push(&mut builder, BOUNDS, ColorF::BLACK);
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().images.adds.len(), 2, "colour is part of the key");
+        assert!(dl.delta().images.removes.is_empty());
+        let items = image_items(&dl);
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0].image, items[1].image);
+        assert_ne!(items[0].image, items[2].image);
+    }
+
+    #[test]
+    fn an_unchanged_image_keeps_its_entry() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+
+        builder.begin(60.0);
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        let (_, first) = builder.end();
+        assert_eq!(first.delta().images.adds.len(), 1);
+
+        builder.begin(60.0);
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        let (_, second) = builder.end();
+        assert!(second.delta().images.is_empty());
+    }
+
+    #[test]
+    fn a_stretched_image_fills_the_prim_whatever_its_size() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        // A repeating image whose tile is the bounds is the same thing, down to
+        // the normalised (zero) stored size.
+        push_repeating(&mut builder, BOUNDS, BOUNDS.size(), LayoutSize::zero());
+
+        let (_, dl) = builder.end();
+        let adds = &dl.delta().images.adds;
+        assert_eq!(adds.len(), 1);
+        assert_eq!(adds[0].key.kind.stretch_size, StretchSizeKey::fills_prim());
+    }
+
+    #[test]
+    fn a_tile_matching_one_axis_fills_only_that_axis() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push_repeating(
+            &mut builder,
+            BOUNDS,
+            LayoutSize::new(40.0, 100.0),
+            LayoutSize::zero(),
+        );
+
+        let (_, dl) = builder.end();
+        let stretch = &dl.delta().images.adds[0].key.kind.stretch_size;
+        assert!(!stretch.fills_width);
+        assert!(stretch.fills_height);
+        let stored: LayoutSize = stretch.size.into();
+        assert_eq!(stored, LayoutSize::new(40.0, 0.0));
+        assert_eq!(item_bounds(&dl), BOUNDS);
+    }
+
+    #[test]
+    fn an_axis_one_tile_covers_collapses_to_that_tile() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // Horizontally, tile plus spacing exceeds the bounds, so only one tile
+        // is ever visible: the bounds shrink to it and the spacing goes.
+        // Vertically the tile repeats and the spacing stays.
+        push_repeating(
+            &mut builder,
+            BOUNDS,
+            LayoutSize::new(60.0, 30.0),
+            LayoutSize::new(50.0, 5.0),
+        );
+
+        let (_, dl) = builder.end();
+        let key = &dl.delta().images.adds[0].key;
+        let spacing: LayoutSize = key.kind.tile_spacing.into();
+        assert_eq!(spacing, LayoutSize::new(0.0, 5.0));
+        let expected = LayoutRect::from_size(LayoutSize::new(60.0, 100.0));
+        assert_eq!(item_bounds(&dl), expected);
+        assert_eq!(LayoutRect::from(key.common.prim_rect), expected);
+    }
+
+    #[test]
+    fn a_shadowed_image_interns_its_copy_separately() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let space_and_clip = di::SpaceAndClipInfo {
+            spatial_id: di::SpatialId::root_scroll_node(PipelineId::dummy()),
+            clip_chain_id: di::ClipChainId::INVALID,
+        };
+        let red = ColorF::new(1.0, 0.0, 0.0, 1.0);
+        builder.push_shadow(
+            &space_and_clip,
+            di::Shadow {
+                offset: LayoutVector2D::new(4.0, 4.0),
+                color: red,
+                blur_radius: 0.0,
+            },
+            true,
+        );
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        builder.pop_all_shadows();
+
+        // The copy differs from the original in colour and position, both of
+        // which are in the key, so the desugar has to re-intern it.
+        let (_, dl) = builder.end();
+        let adds = &dl.delta().images.adds;
+        assert_eq!(adds.len(), 2);
+        let colors: Vec<ColorU> = adds.iter().map(|add| add.key.kind.color).collect();
+        assert!(colors.contains(&red.into()));
+        assert!(colors.contains(&ColorF::WHITE.into()));
+        let items = image_items(&dl);
+        assert_eq!(items.len(), 2);
+        assert!(items.iter().all(|item| item.image != interning::Handle::INVALID));
+    }
+
+    #[test]
+    fn a_restored_save_forgets_captured_images() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let space_and_clip = di::SpaceAndClipInfo {
+            spatial_id: di::SpatialId::root_scroll_node(PipelineId::dummy()),
+            clip_chain_id: di::ClipChainId::INVALID,
+        };
+        let shadow = di::Shadow {
+            offset: LayoutVector2D::new(4.0, 4.0),
+            color: ColorF::BLACK,
+            blur_radius: 0.0,
+        };
+
+        // A scope opened and abandoned between save and restore must not leave
+        // a captured value behind to be paired with the next scope's items.
+        builder.save();
+        builder.push_shadow(&space_and_clip, shadow, true);
+        push(&mut builder, BOUNDS, ColorF::WHITE);
+        builder.restore();
+
+        builder.push_shadow(&space_and_clip, shadow, true);
+        push(&mut builder, BOUNDS, ColorF::BLACK);
+        builder.pop_all_shadows();
+
+        let (_, dl) = builder.end();
+        assert_eq!(image_items(&dl).len(), 2);
     }
 }
 

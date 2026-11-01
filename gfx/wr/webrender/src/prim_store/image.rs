@@ -5,6 +5,8 @@
 use api::{
     AlphaType, ColorDepth, ColorF, ColorRange, ExternalImageData, ExternalImageType, ImageBufferKind, ImageKey as ApiImageKey, ImageRendering, PrimitiveFlags, YuvColorSpace, YuvFormat
 };
+use crate::dl_interner::{DlResolve, DlResolveContext};
+use crate::scene_building::validate_image_key;
 use api::units::*;
 use euclid::point2;
 use crate::command_buffer::CommandBufferIndex;
@@ -72,16 +74,13 @@ impl StretchSize {
     }
 }
 
-// `Image` and its key live in `webrender_api::interned_prims` so
-// content-process interning can hold them. Re-exported to keep existing
-// references working.
+// `Image` and its key live in `webrender_api::interned_prims`, since the
+// content display list builder interns them.
 pub use api::interned_prims::{Image, ImagePrimKey};
-
-impl InternDebug for ImagePrimKey {}
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(Debug, MallocSizeOf)]
+#[derive(Debug, MallocSizeOf, Clone)]
 pub struct ImageData {
     pub key: ApiImageKey,
     pub stretch_size: StretchSize,
@@ -496,41 +495,21 @@ fn edge_flags_for_tile_spacing(tile_spacing: &LayoutSize) -> EdgeMask {
 
 pub type ImageTemplate = PrimTemplate<ImageData>;
 
-impl From<ImagePrimKey> for ImageTemplate {
-    fn from(image: ImagePrimKey) -> Self {
-        let common = PrimTemplateCommonData::with_key_common(image.common);
+/// An image key from any namespace other than the one the display list was
+/// submitted with is replaced by `ImageKey::DUMMY`, which names no resource, so
+/// the entry draws nothing rather than reading across namespaces (bug 2054652).
+/// The item still carries a handle, so the entry has to exist; the scene
+/// builder used to drop the item instead.
+impl DlResolve<ImagePrimKey> for ImageTemplate {
+    fn resolve(key: &ImagePrimKey, ctx: &DlResolveContext) -> Self {
+        let mut kind = key.kind.clone();
+        if !validate_image_key(kind.key, ctx.id_namespace) {
+            kind.key = ApiImageKey::DUMMY;
+        }
 
         ImageTemplate {
-            common,
-            kind: image.kind.into(),
-        }
-    }
-}
-
-pub type ImageDataHandle = InternHandle<Image>;
-
-impl Internable for Image {
-    type Key = ImagePrimKey;
-    type StoreData = ImageTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_IMAGES;
-}
-
-impl InternablePrimitive for Image {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> ImagePrimKey {
-        ImagePrimKey::new(info.into(), self)
-    }
-
-    fn make_instance_kind(
-        _key: ImagePrimKey,
-        data_handle: ImageDataHandle,
-        _prim_store: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::Image {
-            data_handle,
+            common: PrimTemplateCommonData::with_key_common(key.common),
+            kind: kind.into(),
         }
     }
 }
@@ -758,7 +737,6 @@ fn test_struct_sizes() {
     //     be done with care, and after checking if talos performance regresses badly.
     assert_eq!(mem::size_of::<Image>(), 56, "Image size changed");
     assert_eq!(mem::size_of::<ImageTemplate>(), 104, "ImageTemplate size changed");
-    assert_eq!(mem::size_of::<ImagePrimKey>(), 92, "ImagePrimKey size changed");
     assert_eq!(mem::size_of::<YuvImage>(), 32, "YuvImage size changed");
     assert_eq!(mem::size_of::<YuvImageTemplate>(), 104, "YuvImageTemplate size changed");
     assert_eq!(mem::size_of::<YuvImagePrimKey>(), 68, "YuvImagePrimKey size changed");

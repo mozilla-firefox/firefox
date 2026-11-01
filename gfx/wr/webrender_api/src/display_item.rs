@@ -11,7 +11,7 @@ use crate::{APZScrollGeneration, HasScrollLinkedEffect, PipelineId, PropertyBind
 use crate::serde::{Serialize, Deserialize};
 use crate::color::ColorF;
 use crate::image::{ColorDepth, ImageKey};
-use crate::key_types::{EdgeMask, StretchSizeKey};
+use crate::key_types::EdgeMask;
 use crate::interning;
 use crate::path::Path;
 use crate::units::*;
@@ -1990,25 +1990,18 @@ pub struct IframeDisplayItem {
 
 /// An image drawn over `bounds`, either stretched to fill it or tiled across
 /// it. The builder's `push_image` and `push_repeating_image` both produce this
-/// item; which one it was is in `stretch_size`.
+/// item; which one it was is in the interned entry's stretch size.
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct ImageDisplayItem {
-    pub common: CommonItemProperties,
-    /// The area to tile the image over (first tile starts at origin of this rect)
-    // FIXME: this should ideally just be `tile_origin` here, with the clip_rect
-    // defining the bounds of the item. Needs non-trivial backend changes.
-    pub bounds: LayoutRect,
-    /// How large to make a single tile of the image. An axis that fills the
-    /// bounds is recorded as such rather than by its size, so a stretched
-    /// image's key does not depend on how big it is drawn.
-    pub stretch_size: StretchSizeKey,
-    /// The space between tiles (common case: 0)
-    pub tile_spacing: LayoutSize,
-    pub image_key: ImageKey,
-    pub image_rendering: ImageRendering,
-    pub alpha_type: AlphaType,
-    /// A hack used by gecko to color a simple bitmap font used for tofu glyphs
-    pub color: ColorF,
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The image key, tile size and spacing, rendering, alpha type and colour
+    /// live in the interned entry. Its prim rect is the area to tile the image
+    /// over (first tile starts at its origin), already collapsed to one tile on
+    /// any axis a single tile covers.
+    // FIXME: the prim rect should ideally just be a tile origin, with the clip
+    // rect defining the bounds of the item. Needs non-trivial backend changes.
+    pub image: crate::interning::Handle<crate::interned_prims::ImagePrimKey>,
 }
 
 #[repr(u8)]

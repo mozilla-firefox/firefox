@@ -712,10 +712,10 @@ fn prepare_prim_for_render(
 
             return;
         }
-        PrimitiveKind::Image { data_handle, .. } => {
+        PrimitiveKind::Image { handle } => {
             tracy_rs::profile_scope!("Image");
 
-            let prim_data = &data_stores.image[*data_handle];
+            let prim_data = &dl_stores.images[*handle];
             let common_data = &prim_data.common;
             let image_data = &prim_data.kind;
 

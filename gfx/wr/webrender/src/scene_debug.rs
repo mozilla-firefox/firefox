@@ -265,8 +265,8 @@ impl<'a> TreeWalker<'a> {
                 color = Some(data.resolve(self.scene_properties));
                 ("Rectangle", String::new(), None, Vec::new())
             }
-            PrimitiveKind::Image { data_handle } => {
-                let data = &data_stores.image[data_handle];
+            PrimitiveKind::Image { handle } => {
+                let data = &dl_stores.images[handle];
                 ("Image", format!("{:?}", data.kind.key), None, Vec::new())
             }
             PrimitiveKind::YuvImage { data_handle } => {

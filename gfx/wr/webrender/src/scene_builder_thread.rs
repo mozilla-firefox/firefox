@@ -24,7 +24,7 @@ use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
 use crate::prim_store::borders::{ImageBorder, NormalBorderPrim};
 use crate::prim_store::gradient::{LinearGradient, RadialGradient, ConicGradient};
-use crate::prim_store::image::{Image, YuvImage};
+use crate::prim_store::image::YuvImage;
 use crate::prim_store::picture::Picture;
 use crate::prim_store::text_run::TextRun;
 use crate::profiler::{self, TransactionProfile};

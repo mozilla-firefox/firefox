@@ -39,7 +39,7 @@ pub mod storage;
 use backdrop::{BackdropCaptureDataHandle, BackdropRenderDataHandle};
 use borders::{ImageBorderDataHandle, NormalBorderDataHandle};
 use gradient::{LinearGradientDataHandle, RadialGradientDataHandle, ConicGradientDataHandle};
-use image::{ImageDataHandle, YuvImageDataHandle};
+use image::{ImagePrimKey, YuvImageDataHandle};
 use line_dec::LineDecorationKey;
 use picture::PictureDataHandle;
 use rectangle::RectangleKey;
@@ -262,8 +262,9 @@ pub enum PrimitiveKind {
         data_handle: YuvImageDataHandle,
     },
     Image {
-        /// Handle to the common interned data for this primitive.
-        data_handle: ImageDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<ImagePrimKey>,
     },
     LinearGradient {
         /// Handle to the common interned data for this primitive.
@@ -432,8 +433,8 @@ impl PrimitiveInstance {
             PrimitiveKind::Rectangle { handle } => {
                 dl_stores.rectangles.uid(*handle)
             }
-            PrimitiveKind::Image { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::Image { handle } => {
+                dl_stores.images.uid(*handle)
             }
             PrimitiveKind::ImageBorder { data_handle, .. } => {
                 data_handle.uid()

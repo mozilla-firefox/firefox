@@ -352,9 +352,8 @@ impl DataStores {
             PrimitiveKind::Rectangle { handle } => {
                 &dl_stores.rectangles[handle].common
             }
-            PrimitiveKind::Image { data_handle, .. } => {
-                let prim_data = &self.image[data_handle];
-                &prim_data.common
+            PrimitiveKind::Image { handle } => {
+                &dl_stores.images[handle].common
             }
             PrimitiveKind::ImageBorder { data_handle, .. } => {
                 let prim_data = &self.image_border[data_handle];
