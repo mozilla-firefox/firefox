@@ -861,11 +861,6 @@
      the element */
   line-height: 1.4;
 
-  /* This targets both rich and non-rich results, so not using the child selector here. */
-  .urlbarView-row:not([selected]) & {
-    color: var(--link-color);
-  }
-
   .urlbarView-row:is([type="remotetab"], [sponsored]):not([selected], :hover) > .urlbarView-row-inner > &,
   .urlbarView-row:is([show-action-text], [restyled-search]) > .urlbarView-row-inner > &,
   .urlbarView:not([action-override]) .urlbarView-row[type="switchtab"] > .urlbarView-row-inner > & {
@@ -874,6 +869,11 @@
        changes while they're hidden (bug 1549787). */
     visibility: collapse;
   }
+}
+
+/* This targets both rich and non-rich results, so not using the child selector here. */
+.urlbarView-row:not([selected]) .urlbarView-url {
+  color: var(--link-color);
 }
 
 .urlbarView-explanation {

@@ -834,10 +834,6 @@
   /* Increase line-height to avoid cutting overhanging glyphs due to masking on
      the element */
   line-height: 1.4;
-
-  .urlbarView-row:not([selected]) & {
-    color: var(--link-color);
-  }
 }
 
 .urlbarView-url {
@@ -846,6 +842,10 @@
   flex: 100 1 var(--urlbarview-url-flex-basis);
   min-width: 0;
   max-width: max-content;
+
+  .urlbarView-row:not([selected]) & {
+    color: var(--link-color);
+  }
 
   .urlbarView-row:not([has-url]) &,
   .urlbarView:not([action-override]) .urlbarView-row[type="switchtab"] &,
