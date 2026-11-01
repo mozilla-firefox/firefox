@@ -385,9 +385,8 @@ impl DataStores {
                 let prim_data = &self.text_run[data_handle];
                 &prim_data.common
             }
-            PrimitiveKind::YuvImage { data_handle, .. } => {
-                let prim_data = &self.yuv_image[data_handle];
-                &prim_data.common
+            PrimitiveKind::YuvImage { handle } => {
+                &dl_stores.yuv_images[handle].common
             }
             PrimitiveKind::BackdropCapture { data_handle, .. } => {
                 let prim_data = &self.backdrop_capture[data_handle];

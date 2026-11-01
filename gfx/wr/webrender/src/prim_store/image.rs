@@ -14,11 +14,7 @@ use crate::pattern::image::ImagePattern;
 use crate::quad::{QuadDescriptor, QuadTransformState};
 use crate::quad_clip::QuadClipStack;
 use crate::frame_builder::{FrameBuildingContext, FrameBuildingState};
-use crate::intern::{Handle as InternHandle, InternDebug, Internable};
-use crate::internal_types::LayoutPrimitiveInfo;
-use crate::prim_store::{
-    EdgeMask, InternablePrimitive, PrimTemplate, PrimTemplateCommonData, PrimitiveKind, PrimitiveScratchBuffer, PrimitiveStore
-};
+use crate::prim_store::{EdgeMask, PrimTemplate, PrimTemplateCommonData, PrimitiveScratchBuffer};
 use crate::render_target::RenderTargetKind;
 use crate::render_task_graph::RenderTaskId;
 use crate::render_task::RenderTask;
@@ -609,15 +605,13 @@ impl AdjustedImageSource {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// `YuvImage` now lives in `webrender_api::interned_prims` so content-process
-// interning can hold it. Re-exported to keep existing references working.
+// `YuvImage` and its key live in `webrender_api::interned_prims`, since the
+// content display list builder interns them.
 pub use api::interned_prims::{YuvImage, YuvImagePrimKey};
-
-impl InternDebug for YuvImagePrimKey {}
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(MallocSizeOf)]
+#[derive(MallocSizeOf, Clone)]
 pub struct YuvImageData {
     pub color_depth: ColorDepth,
     pub yuv_key: [ApiImageKey; 3],
@@ -686,41 +680,20 @@ impl YuvImageData {
 
 pub type YuvImageTemplate = PrimTemplate<YuvImageData>;
 
-impl From<YuvImagePrimKey> for YuvImageTemplate {
-    fn from(image: YuvImagePrimKey) -> Self {
-        let common = PrimTemplateCommonData::with_key_common(image.common);
+/// As for `ImageTemplate`, a plane key from any namespace other than the one
+/// the display list was submitted with is replaced by `ImageKey::DUMMY`; all of
+/// them, since the item is one video. Frame building already tolerates a plane
+/// naming no resource: that is what a deleted video key looks like.
+impl DlResolve<YuvImagePrimKey> for YuvImageTemplate {
+    fn resolve(key: &YuvImagePrimKey, ctx: &DlResolveContext) -> Self {
+        let mut kind = key.kind.clone();
+        if !kind.yuv_key.iter().all(|plane| validate_image_key(*plane, ctx.id_namespace)) {
+            kind.yuv_key = [ApiImageKey::DUMMY; 3];
+        }
 
         YuvImageTemplate {
-            common,
-            kind: image.kind.into(),
-        }
-    }
-}
-
-pub type YuvImageDataHandle = InternHandle<YuvImage>;
-
-impl Internable for YuvImage {
-    type Key = YuvImagePrimKey;
-    type StoreData = YuvImageTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_YUV_IMAGES;
-}
-
-impl InternablePrimitive for YuvImage {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> YuvImagePrimKey {
-        YuvImagePrimKey::new(info.into(), self)
-    }
-
-    fn make_instance_kind(
-        _key: YuvImagePrimKey,
-        data_handle: YuvImageDataHandle,
-        _prim_store: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::YuvImage {
-            data_handle,
+            common: PrimTemplateCommonData::with_key_common(key.common),
+            kind: kind.into(),
         }
     }
 }
@@ -739,5 +712,4 @@ fn test_struct_sizes() {
     assert_eq!(mem::size_of::<ImageTemplate>(), 104, "ImageTemplate size changed");
     assert_eq!(mem::size_of::<YuvImage>(), 32, "YuvImage size changed");
     assert_eq!(mem::size_of::<YuvImageTemplate>(), 104, "YuvImageTemplate size changed");
-    assert_eq!(mem::size_of::<YuvImagePrimKey>(), 68, "YuvImagePrimKey size changed");
 }

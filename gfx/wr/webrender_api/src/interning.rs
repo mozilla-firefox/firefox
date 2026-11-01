@@ -451,6 +451,7 @@ macro_rules! enumerate_dl_interned_types {
             box_shadows: $crate::interned_prims::BoxShadowKey,
             line_decorations: $crate::interned_prims::LineDecorationKey,
             images: $crate::interned_prims::ImagePrimKey,
+            yuv_images: $crate::interned_prims::YuvImagePrimKey,
         }
     }
 }

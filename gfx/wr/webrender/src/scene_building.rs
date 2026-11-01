@@ -39,11 +39,11 @@ use api::{BorderDetails, BorderDisplayItem, BuiltDisplayList, BuiltDisplayListIt
 use api::{ClipId, ColorF, CommonItemProperties, ComplexClipRegion, ComponentTransferFuncType, RasterSpace};
 use api::{DebugFlags, DisplayItem, DisplayItemRef, DlParseContext, ExternalScrollId, FilterData};
 use api::{FilterOp, FontInstanceKey, FontSize, GlyphInstance, GlyphOptions, GlyphShadowMode, GradientStop};
-use api::{IdNamespace, IframeDisplayItem, ImageKey, ImageRendering, ItemRange, ColorDepth, QualitySettings};
+use api::{IdNamespace, IframeDisplayItem, ImageKey, ItemRange, QualitySettings};
 use api::{NinePatchBorderSource, PipelineId, MixBlendMode, StackingContextFlags};
 use api::{PropertyBinding, ReferenceFrameKind, ScrollFrameDescriptor};
 use api::{APZScrollGeneration, HasScrollLinkedEffect, SpatialId, StickyFrameDescriptor, ImageMask, ItemTag};
-use api::{ClipMode, TransformStyle, YuvColorSpace, ColorRange, YuvData, TempFilterData};
+use api::{ClipMode, TransformStyle, TempFilterData};
 use api::{ReferenceTransformBinding, Rotation, FillRule, SpatialTreeItem, ReferenceFrameDescriptor};
 use api::{FilterOpGraphPictureBufferId, SVGFE_GRAPH_MAX};
 use api::Path;
@@ -79,7 +79,6 @@ use crate::prim_store::borders::ImageBorder;
 use crate::prim_store::gradient::{
     GradientStopKey,
 };
-use crate::prim_store::image::YuvImage;
 use crate::prim_store::picture::{Picture, PictureKey};
 use crate::picture_composite_mode::{PictureCompositeKey, PictureCompositeMode};
 use crate::prim_store::text_run::TextRun;
@@ -1402,24 +1401,14 @@ impl<'a> SceneBuilder<'a> {
             DisplayItem::YuvImage(ref info) => {
                 tracy_rs::profile_scope!("yuv_image");
 
-                if !validate_yuv_data(&info.yuv_data, namespace) {
-                    return;
-                }
-
-                let (layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
-                    &info.common,
-                    info.bounds,
-                );
-
-                self.add_yuv_image(
-                    spatial_node_index,
-                    clip_node_id,
-                    &layout,
-                    info.yuv_data,
-                    info.color_depth,
-                    info.color_space,
-                    info.color_range,
-                    info.image_rendering,
+                // The planes' namespaces are checked where the entry is resolved.
+                let stores = self.scene_stores;
+                self.add_dl_prim(
+                    info.spatial_id,
+                    info.clip_chain_id,
+                    &stores.yuv_images,
+                    info.yuv_image,
+                    |handle| PrimitiveKind::YuvImage { handle },
                 );
             }
             DisplayItem::Text(ref info) => {
@@ -3012,37 +3001,6 @@ impl<'a> SceneBuilder<'a> {
         );
     }
 
-    /// The bounds were already collapsed to one tile on any axis a single
-    /// tile covers by the display list builder, which built the key against
-    /// them.
-    pub fn add_yuv_image(
-        &mut self,
-        spatial_node_index: SpatialNodeIndex,
-        clip_node_id: ClipNodeId,
-        info: &LayoutPrimitiveInfo,
-        yuv_data: YuvData,
-        color_depth: ColorDepth,
-        color_space: YuvColorSpace,
-        color_range: ColorRange,
-        image_rendering: ImageRendering,
-    ) {
-        let format = yuv_data.get_format();
-        let yuv_key = yuv_data.planes();
-
-        self.add_primitive(
-            spatial_node_index,
-            clip_node_id,
-            info,
-            YuvImage {
-                color_depth,
-                yuv_key,
-                format,
-                color_space,
-                color_range,
-                image_rendering,
-            },
-        );
-    }
 
     fn add_primitive_instance_to_3d_root(
         &mut self,
@@ -4057,10 +4015,6 @@ pub(crate) fn validate_image_key(key: ImageKey, namespace: IdNamespace) -> bool 
     validate_resource_namespace(key.0, namespace, "image key")
 }
 
-/// Checks the set of planes `add_yuv_image` uses, by construction.
-fn validate_yuv_data(yuv_data: &YuvData, namespace: IdNamespace) -> bool {
-    yuv_data.planes().iter().all(|key| validate_image_key(*key, namespace))
-}
 
 fn validate_font_instance_key(key: FontInstanceKey, namespace: IdNamespace) -> bool {
     validate_resource_namespace(key.0, namespace, "font instance key")

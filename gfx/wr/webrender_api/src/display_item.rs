@@ -10,7 +10,7 @@ use crate::{font, SnapshotImageKey};
 use crate::{APZScrollGeneration, HasScrollLinkedEffect, PipelineId, PropertyBinding};
 use crate::serde::{Serialize, Deserialize};
 use crate::color::ColorF;
-use crate::image::{ColorDepth, ImageKey};
+use crate::image::ImageKey;
 use crate::key_types::EdgeMask;
 use crate::interning;
 use crate::path::Path;
@@ -2020,13 +2020,11 @@ pub enum AlphaType {
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct YuvImageDisplayItem {
-    pub common: CommonItemProperties,
-    pub bounds: LayoutRect,
-    pub yuv_data: YuvData,
-    pub color_depth: ColorDepth,
-    pub color_space: YuvColorSpace,
-    pub color_range: ColorRange,
-    pub image_rendering: ImageRendering,
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The planes, format, colour depth, space and range and the rendering
+    /// live in the interned entry, with the bounds as its prim rect.
+    pub yuv_image: crate::interning::Handle<crate::interned_prims::YuvImagePrimKey>,
 }
 
 #[repr(u8)]

@@ -42,6 +42,7 @@ macro_rules! enumerate_dl_stores {
             box_shadows: api::interned_prims::BoxShadowKey => crate::box_shadow::BoxShadowTemplate, INTERNED_BOX_SHADOWS, box_shadow,
             line_decorations: api::interned_prims::LineDecorationKey => crate::prim_store::line_dec::LineDecorationTemplate, INTERNED_LINE_DECORATIONS, line_decoration,
             images: api::interned_prims::ImagePrimKey => crate::prim_store::image::ImageTemplate, INTERNED_IMAGES, image,
+            yuv_images: api::interned_prims::YuvImagePrimKey => crate::prim_store::image::YuvImageTemplate, INTERNED_YUV_IMAGES, yuv_image,
         }
     }
 }
@@ -60,6 +61,7 @@ macro_rules! enumerate_scene_dl_stores {
             box_shadows: api::interned_prims::BoxShadowKey => crate::prim_store::PrimPlacement, box_shadow,
             line_decorations: api::interned_prims::LineDecorationKey => crate::prim_store::PrimPlacement, line_decoration,
             images: api::interned_prims::ImagePrimKey => crate::prim_store::PrimPlacement, image,
+            yuv_images: api::interned_prims::YuvImagePrimKey => crate::prim_store::PrimPlacement, yuv_image,
         }
     }
 }

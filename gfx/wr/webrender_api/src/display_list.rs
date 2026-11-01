@@ -25,7 +25,7 @@ use crate::font::{FontInstanceKey, GlyphInstance, GlyphOptions};
 use crate::image::{ColorDepth, ImageKey};
 use crate::interned_prims::{
     BoxShadow, BoxShadowKey, Image, ImagePrimKey, LineDecoration, LineDecorationKey, RectangleKey,
-    RectanglePrim,
+    RectanglePrim, YuvImage, YuvImagePrimKey,
 };
 use crate::interning::{self, DlDelta};
 use crate::path::Path;
@@ -1865,16 +1865,28 @@ impl DisplayListBuilder {
         image_rendering: di::ImageRendering,
     ) {
         let (common, offset) = self.normalize_common(common);
-        let item = di::DisplayItem::YuvImage(di::YuvImageDisplayItem {
-            common,
-            bounds: self.shift_rect(bounds, offset),
-            yuv_data,
-            color_depth,
-            color_space,
-            color_range,
-            image_rendering,
-        });
-        self.push_item(&item);
+        let bounds = self.shift_rect(bounds, offset);
+
+        // The plane list padded to three and the format are both functions of
+        // the yuv data, so the key is built here directly.
+        let key = YuvImagePrimKey::new(
+            prim_key_common(&common, bounds, EdgeMask::all()),
+            YuvImage {
+                color_depth,
+                yuv_key: yuv_data.planes(),
+                format: yuv_data.get_format(),
+                color_space,
+                color_range,
+                image_rendering,
+            },
+        );
+
+        let yuv_image = self.interners.intern(&key);
+        self.push_item(&di::DisplayItem::YuvImage(di::YuvImageDisplayItem {
+            spatial_id: common.spatial_id,
+            clip_chain_id: common.clip_chain_id,
+            yuv_image,
+        }));
     }
 
     pub fn push_text(
@@ -4267,6 +4279,70 @@ mod image_interning_tests {
 
         let (_, dl) = builder.end();
         assert_eq!(image_items(&dl).len(), 2);
+    }
+}
+
+#[cfg(test)]
+mod yuv_image_interning_tests {
+    use super::*;
+    use crate::IdNamespace;
+
+    const BOUNDS: LayoutRect = LayoutRect {
+        min: LayoutPoint::new(0.0, 0.0),
+        max: LayoutPoint::new(640.0, 360.0),
+    };
+
+    fn common() -> di::CommonItemProperties {
+        let pipeline_id = PipelineId::dummy();
+        di::CommonItemProperties {
+            clip_rect: LayoutRect::from_size(LayoutSize::new(1000.0, 1000.0)),
+            clip_chain_id: di::ClipChainId::INVALID,
+            spatial_id: di::SpatialId::root_scroll_node(pipeline_id),
+            flags: di::PrimitiveFlags::default(),
+        }
+    }
+
+    fn plane(id: u32) -> ImageKey {
+        ImageKey::new(IdNamespace(1), id)
+    }
+
+    fn push(builder: &mut DisplayListBuilder, yuv_data: di::YuvData) {
+        builder.push_yuv_image(
+            &common(),
+            BOUNDS,
+            yuv_data,
+            ColorDepth::Color8,
+            di::YuvColorSpace::Rec709,
+            di::ColorRange::Limited,
+            di::ImageRendering::Auto,
+        );
+    }
+
+    #[test]
+    fn identical_yuv_images_intern_once() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push(&mut builder, di::YuvData::NV12(plane(1), plane(2)));
+        push(&mut builder, di::YuvData::NV12(plane(1), plane(2)));
+        // Same planes, different layout: a different entry.
+        push(&mut builder, di::YuvData::PlanarYCbCr(plane(1), plane(2), plane(3)));
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().yuv_images.adds.len(), 2);
+    }
+
+    #[test]
+    fn the_planes_and_format_are_derived_at_push_time() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push(&mut builder, di::YuvData::NV12(plane(1), plane(2)));
+
+        let (_, dl) = builder.end();
+        let kind = &dl.delta().yuv_images.adds[0].key.kind;
+        assert_eq!(kind.format, di::YuvFormat::NV12);
+        assert_eq!(kind.yuv_key, [plane(1), plane(2), ImageKey::DUMMY]);
     }
 }
 
