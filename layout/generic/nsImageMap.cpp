@@ -620,6 +620,9 @@ void nsImageMap::AreaRemoved(HTMLAreaElement* aArea) {
   if (aArea->GetPrimaryFrame() == mImageFrame) {
     aArea->SetPrimaryFrame(nullptr);
   }
+  if (aArea->GetImageFrame() == mImageFrame) {
+    aArea->SetImageFrame(nullptr);
+  }
 
   aArea->RemoveSystemEventListener(u"focus"_ns, this, false);
   aArea->RemoveSystemEventListener(u"blur"_ns, this, false);
@@ -723,6 +726,7 @@ void nsImageMap::AddArea(HTMLAreaElement* aArea) {
   // RestyleManager::ProcessRestyledFrames to work around this issue can
   // be removed.
   aArea->SetPrimaryFrame(mImageFrame);
+  aArea->SetImageFrame(mImageFrame);
 
   nsAutoString coords;
   aArea->GetAttr(nsGkAtoms::coords, coords);

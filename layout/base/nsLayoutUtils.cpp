@@ -87,6 +87,7 @@
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/DocumentInlines.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/HTMLAreaElement.h"
 #include "mozilla/dom/HTMLBodyElement.h"
 #include "mozilla/dom/HTMLCanvasElement.h"
 #include "mozilla/dom/HTMLImageElement.h"
@@ -1045,6 +1046,15 @@ const nsIFrame* nsLayoutUtils::GetPrimaryFrameFromStyleFrame(
     const nsIFrame* aStyleFrame) {
   return nsLayoutUtils::GetPrimaryFrameFromStyleFrame(
       const_cast<nsIFrame*>(aStyleFrame));
+}
+
+/* static */
+nsIFrame* nsLayoutUtils::GetPrimaryOrAreaImageFrame(
+    const nsIContent* aContent) {
+  if (const auto* area = HTMLAreaElement::FromNode(aContent)) {
+    return area->GetImageFrame();
+  }
+  return aContent->GetPrimaryFrame();
 }
 
 /*static*/

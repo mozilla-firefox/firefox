@@ -393,6 +393,12 @@ class nsLayoutUtils {
       const nsIFrame* aStyleFrame);
 
   /**
+   * Returns the primary frame of aContent, or the frame of the image using the
+   * image map if aContent is an <area>.  Areas have no frame of their own.
+   */
+  static nsIFrame* GetPrimaryOrAreaImageFrame(const nsIContent* aContent);
+
+  /**
    * Similar to nsIFrame::IsPrimaryFrame except that this will return true
    * for the inner table frame rather than for its wrapper frame.
    */
