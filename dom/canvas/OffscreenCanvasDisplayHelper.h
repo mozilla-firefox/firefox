@@ -11,6 +11,7 @@
 #include "mozilla/Mutex.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
+#include "mozilla/Units.h"
 #include "mozilla/dom/CanvasRenderingContextHelper.h"
 #include "mozilla/gfx/Point.h"
 #include "mozilla/ipc/ProtocolUtils.h"
@@ -38,6 +39,11 @@ class OffscreenCanvasDisplayHelper final {
  public:
   explicit OffscreenCanvasDisplayHelper(HTMLCanvasElement* aCanvasElement,
                                         uint32_t aWidth, uint32_t aHeight);
+
+  CSSIntSize GetPlaceholderSize() const {
+    MOZ_ASSERT(NS_IsMainThread());
+    return mPlaceholderSize;
+  }
 
   CanvasContextType GetContextType() const;
 
@@ -95,6 +101,9 @@ class OffscreenCanvasDisplayHelper final {
   already_AddRefed<gfx::SourceSurface> TransformSurface(
       gfx::SourceSurface* aSurface, bool aHasAlpha, bool aIsAlphaPremult,
       gl::OriginPos aOriginPos) const;
+
+  // Main-thread-only size used for placeholder layout.
+  CSSIntSize mPlaceholderSize;
 
   mutable Mutex mMutex;
   HTMLCanvasElement* MOZ_NON_OWNING_REF mCanvasElement MOZ_GUARDED_BY(mMutex);

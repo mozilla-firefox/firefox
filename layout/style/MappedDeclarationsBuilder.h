@@ -39,6 +39,7 @@ class MOZ_STACK_CLASS MappedDeclarationsBuilder final {
   }
 
   dom::Document& Document() { return mDocument; }
+  const dom::Element& Element() const { return mElement; }
 
   already_AddRefed<StyleLockedDeclarationBlock> TakeDeclarationBlock() {
     return mDecls.forget();
