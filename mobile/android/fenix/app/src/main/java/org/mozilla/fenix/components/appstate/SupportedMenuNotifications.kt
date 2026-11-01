@@ -27,4 +27,7 @@ sealed class SupportedMenuNotifications {
      * This is currently used for enabling users to discover the feature
      */
     data object Summarize : SupportedMenuNotifications()
+
+    /** An extension update is waiting for the user to approve its new permissions. */
+    data object ExtensionUpdate : SupportedMenuNotifications()
 }
