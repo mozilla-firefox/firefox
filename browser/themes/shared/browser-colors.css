@@ -40,6 +40,7 @@
 
   &[lwtheme]:not([theme-in-app]) {
     --tabs-navbar-separator-color: light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+    --color-accent-attention: light-dark(#2ac3a2, #54ffbd);
 
     @media not -moz-pref("browser.nova.enabled") {
       /**
@@ -52,7 +53,6 @@
       --link-color: light-dark(var(--color-blue-60), var(--color-cyan-30));
       --link-color-hover: light-dark(var(--color-blue-70), var(--color-cyan-20));
       --link-color-active: light-dark(var(--color-blue-80), var(--color-cyan-10));
-      --color-accent-attention: light-dark(#2ac3a2, #54ffbd);
 
       @media not (prefers-contrast) {
         --focus-outline-color: light-dark(#0061e0, #00ddff);
