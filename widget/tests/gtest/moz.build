@@ -40,6 +40,7 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     UNIFIED_SOURCES += [
         "TestDMABufSurface.cpp",
         "TestGtkDragDrop.cpp",
+        "TestSourceSurfaceToPixbuf.cpp",
     ]
 
 FINAL_LIBRARY = "xul-gtest"
@@ -64,6 +65,7 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
         "/gfx/layers",
     ]
 
+    CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
     CXXFLAGS += CONFIG["MOZ_GBM_CFLAGS"]
     if not CONFIG["MOZ_SYSTEM_GBM"]:
         LOCAL_INCLUDES += [
