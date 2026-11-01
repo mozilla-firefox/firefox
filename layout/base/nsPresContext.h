@@ -1046,10 +1046,11 @@ class nsPresContext : public nsISupports,
   /**
    * If we have a presshell, and if the given content's current
    * document is the same as our presshell's document, return the
-   * content's primary frame.  Otherwise, return null.  Only use this
-   * if you care about which presshell the primary frame is in.
+   * content's primary frame, or the image frame if the content is an
+   * <area>.  Otherwise, return null.  Only use this if you care about
+   * which presshell the frame is in.
    */
-  nsIFrame* GetPrimaryFrameFor(nsIContent* aContent);
+  nsIFrame* GetPrimaryOrAreaImageFrameFor(nsIContent* aContent);
 
   virtual size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
   virtual size_t SizeOfIncludingThis(

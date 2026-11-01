@@ -2828,7 +2828,8 @@ nsIContent* nsImageFrame::GetExplicitEventTargetContent(
     nsIContent* capturingContent = aEvent->HasMouseEventMessage()
                                        ? PresShell::GetCapturingContent()
                                        : nullptr;
-    if (capturingContent && capturingContent->GetPrimaryFrame() == this) {
+    if (capturingContent &&
+        nsLayoutUtils::GetPrimaryOrAreaImageFrame(capturingContent) == this) {
       return capturingContent;
     }
     const CSSIntPoint p = TranslateEventCoords(

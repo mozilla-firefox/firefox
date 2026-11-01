@@ -2392,7 +2392,8 @@ static nsIFrame* GetActiveSelectionFrame(nsPresContext* aPresContext,
                                          nsIFrame* aFrame) {
   nsIContent* capturingContent = PresShell::GetCapturingContent();
   if (capturingContent) {
-    nsIFrame* activeFrame = aPresContext->GetPrimaryFrameFor(capturingContent);
+    nsIFrame* activeFrame =
+        aPresContext->GetPrimaryOrAreaImageFrameFor(capturingContent);
     return activeFrame ? activeFrame : aFrame;
   }
 

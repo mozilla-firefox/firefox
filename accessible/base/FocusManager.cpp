@@ -15,6 +15,7 @@
 #include "nsAccessibilityService.h"
 #include "nsEventShell.h"
 #include "nsFocusManager.h"
+#include "nsLayoutUtils.h"
 
 namespace mozilla {
 namespace a11y {
@@ -433,7 +434,9 @@ void FocusManager::ProcessFocusEvent(AccEvent* aEvent) {
 nsINode* FocusManager::FocusedDOMNode() const {
   nsFocusManager* DOMFocusManager = nsFocusManager::GetFocusManager();
   nsIContent* focusedElm = DOMFocusManager->GetFocusedElement();
-  nsIFrame* focusedFrame = focusedElm ? focusedElm->GetPrimaryFrame() : nullptr;
+  nsIFrame* focusedFrame =
+      focusedElm ? nsLayoutUtils::GetPrimaryOrAreaImageFrame(focusedElm)
+                 : nullptr;
   // DOM elements retain their focused state when they get styled as display:
   // none/content or visibility: hidden. We should treat those cases as if those
   // elements were removed, and focus on doc.

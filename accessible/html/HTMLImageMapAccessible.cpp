@@ -51,7 +51,9 @@ void HTMLImageMapAccessible::UpdateChildAreas(bool aDoFireEvents) {
   // Remove areas that are not a valid part of the image map anymore.
   for (int32_t childIdx = mChildren.Length() - 1; childIdx >= 0; childIdx--) {
     LocalAccessible* area = mChildren.ElementAt(childIdx);
-    if (area->GetContent()->GetPrimaryFrame()) continue;
+    if (nsLayoutUtils::GetPrimaryOrAreaImageFrame(area->GetContent())) {
+      continue;
+    }
 
     mt.BeforeRemoval(area);
     RemoveChild(area);

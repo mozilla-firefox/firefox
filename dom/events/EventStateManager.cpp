@@ -2535,7 +2535,8 @@ void EventStateManager::FireContextClick() {
   // |mCurrentTarget| when we're through because no one else is doing anything
   // more with this event and it will get reset on the very next event to the
   // correct frame).
-  mCurrentTarget = mPresContext->GetPrimaryFrameFor(mGestureDownContent);
+  mCurrentTarget =
+      mPresContext->GetPrimaryOrAreaImageFrameFor(mGestureDownContent);
   // make sure the widget sticks around
   nsCOMPtr<nsIWidget> targetWidget;
   if (mCurrentTarget && (targetWidget = mCurrentTarget->GetNearestWidget())) {
@@ -2833,7 +2834,7 @@ void EventStateManager::GenerateDragGesture(
   // Try to find a suitable frame by looping through the ancestors chain.
   for (auto* content :
        mGestureDownFrameOwner->InclusiveFlatTreeAncestorsOfType<nsIContent>()) {
-    if (nsIFrame* target = content->GetPrimaryFrame()) {
+    if (nsIFrame* target = nsLayoutUtils::GetPrimaryOrAreaImageFrame(content)) {
       mCurrentTarget = target;
 
       if (content != mGestureDownFrameOwner) {
@@ -4230,7 +4231,7 @@ nsresult EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
         //
         // TODO: Probably this should be moved to Element::PostHandleEvent.
         for (; newFocus; newFocus = newFocus->GetFlattenedTreeParentElement()) {
-          nsIFrame* frame = newFocus->GetPrimaryFrame();
+          nsIFrame* frame = nsLayoutUtils::GetPrimaryOrAreaImageFrame(newFocus);
           if (!frame) {
             continue;
           }
@@ -5298,7 +5299,8 @@ class MOZ_STACK_CLASS ESMEventCB : public EventDispatchingCallback {
   MOZ_CAN_RUN_SCRIPT
   void HandleEvent(EventChainPostVisitor& aVisitor) override {
     if (aVisitor.mPresContext) {
-      nsIFrame* frame = aVisitor.mPresContext->GetPrimaryFrameFor(mTarget);
+      nsIFrame* frame =
+          aVisitor.mPresContext->GetPrimaryOrAreaImageFrameFor(mTarget);
       if (frame) {
         frame->HandleEvent(aVisitor.mPresContext, aVisitor.mEvent->AsGUIEvent(),
                            &aVisitor.mEventStatus);
@@ -5425,7 +5427,7 @@ EventStateManager::DispatchMouseOrPointerBoundaryEvent(
       return nullptr;
     }
     nsIFrame* const pointerLockedFrame =
-        mPresContext->GetPrimaryFrameFor(pointerLockedElement);
+        mPresContext->GetPrimaryOrAreaImageFrameFor(pointerLockedElement);
     if (NS_WARN_IF(!pointerLockedFrame)) {
       return nullptr;
     }
@@ -5443,7 +5445,7 @@ EventStateManager::DispatchMouseOrPointerBoundaryEvent(
   // from the tree.
   nsCOMPtr<nsIWidget> targetWidget;
   if (nsIFrame* const targetFrame =
-          mPresContext->GetPrimaryFrameFor(aTargetContent)) {
+          mPresContext->GetPrimaryOrAreaImageFrameFor(aTargetContent)) {
     targetWidget = targetFrame->GetNearestWidget();
   }
 
@@ -5477,7 +5479,8 @@ EventStateManager::DispatchMouseOrPointerBoundaryEvent(
         // old target and then dispatch a cross-process event. (mCurrentTarget
         // will be set back below.) HandleCrossProcessEvent will query for the
         // proper target via GetEventTarget which will return mCurrentTarget.
-        mCurrentTarget = mPresContext->GetPrimaryFrameFor(targetContent);
+        mCurrentTarget =
+            mPresContext->GetPrimaryOrAreaImageFrameFor(targetContent);
         HandleCrossProcessEvent(remoteEvent.get(), &status);
       } else if (aMessage == eMouseOver) {
         UniquePtr<WidgetMouseEvent> remoteEvent =
@@ -6438,7 +6441,8 @@ nsresult EventStateManager::InitAndDispatchClickEvent(
   nsIFrame* targetFrame = aCurrentTarget;
   if (aOverrideClickTarget) {
     target = aOverrideClickTarget;
-    targetFrame = aOverrideClickTarget->GetPrimaryFrame();
+    targetFrame =
+        nsLayoutUtils::GetPrimaryOrAreaImageFrame(aOverrideClickTarget);
   }
 
   if (!target->IsInComposedDoc()) {
@@ -6550,7 +6554,8 @@ nsresult EventStateManager::DispatchClickEvents(
 
   bool fireAuxClick = notDispatchToContents;
 
-  AutoWeakFrame currentTarget = aClickTarget->GetPrimaryFrame();
+  AutoWeakFrame currentTarget =
+      nsLayoutUtils::GetPrimaryOrAreaImageFrame(aClickTarget);
   nsresult rv = InitAndDispatchClickEvent(
       aMouseUpEvent, aStatus, ePointerClick, aPresShell, aClickTarget,
       currentTarget, notDispatchToContents, aOverrideClickTarget);
@@ -6741,7 +6746,8 @@ nsIFrame* EventStateManager::GetEventTarget() {
   }
 
   if (mCurrentTargetContent) {
-    mCurrentTarget = mPresContext->GetPrimaryFrameFor(mCurrentTargetContent);
+    mCurrentTarget =
+        mPresContext->GetPrimaryOrAreaImageFrameFor(mCurrentTargetContent);
     if (mCurrentTarget) {
       return mCurrentTarget;
     }
@@ -6894,7 +6900,9 @@ bool EventStateManager::SetContentState(nsIContent* aContent,
         NS_ASSERTION(!aContent || aContent->GetComposedDoc() ==
                                       mPresContext->PresShell()->GetDocument(),
                      "Unexpected document");
-        nsIFrame* frame = aContent ? aContent->GetPrimaryFrame() : nullptr;
+        nsIFrame* frame =
+            aContent ? nsLayoutUtils::GetPrimaryOrAreaImageFrame(aContent)
+                     : nullptr;
         if (frame && nsLayoutUtils::IsViewportScrollbarFrame(frame)) {
           // The scrollbars of viewport should not ignore the hover state.
           // Because they are *not* the content of the web page.

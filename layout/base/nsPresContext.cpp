@@ -2682,11 +2682,11 @@ bool nsPresContext::CheckForInterrupt(nsIFrame* aFrame) {
   return mHasPendingInterrupt;
 }
 
-nsIFrame* nsPresContext::GetPrimaryFrameFor(nsIContent* aContent) {
+nsIFrame* nsPresContext::GetPrimaryOrAreaImageFrameFor(nsIContent* aContent) {
   MOZ_ASSERT(aContent, "Don't do that");
   if (GetPresShell() &&
       GetPresShell()->GetDocument() == aContent->GetComposedDoc()) {
-    return aContent->GetPrimaryFrame();
+    return nsLayoutUtils::GetPrimaryOrAreaImageFrame(aContent);
   }
   return nullptr;
 }

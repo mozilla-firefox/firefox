@@ -3031,7 +3031,8 @@ RootAccessible* LocalAccessible::RootAccessible() const {
 }
 
 nsIFrame* LocalAccessible::GetFrame() const {
-  return mContent ? mContent->GetPrimaryFrame() : nullptr;
+  return mContent ? nsLayoutUtils::GetPrimaryOrAreaImageFrame(mContent)
+                  : nullptr;
 }
 
 nsINode* LocalAccessible::GetNode() const { return mContent; }

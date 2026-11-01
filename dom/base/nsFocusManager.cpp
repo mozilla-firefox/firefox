@@ -3459,7 +3459,7 @@ nsresult nsFocusManager::SetCaretVisible(PresShell* aPresShell, bool aVisible,
   if (aContent) {
     NS_ASSERTION(aContent->GetComposedDoc() == aPresShell->GetDocument(),
                  "Wrong document?");
-    nsIFrame* focusFrame = aContent->GetPrimaryFrame();
+    nsIFrame* focusFrame = nsLayoutUtils::GetPrimaryOrAreaImageFrame(aContent);
     if (focusFrame) {
       frameSelection = focusFrame->GetFrameSelection();
     }
@@ -4461,7 +4461,8 @@ nsIContent* nsFocusManager::GetNextTabbableContentInScope(
       if (IsScopeOwner(iterContent)) {
         tabIndex = ScopeOwnerTabIndexValue(iterContent);
       } else {
-        nsIFrame* frame = iterContent->GetPrimaryFrame();
+        nsIFrame* frame =
+            nsLayoutUtils::GetPrimaryOrAreaImageFrame(iterContent);
         if (!frame) {
           continue;
         }
@@ -4567,7 +4568,8 @@ nsIContent* nsFocusManager::GetNextTabbableContentInAncestorScopes(
     int32_t tabIndex = 0;
     if (IsScopeOwner(startContent)) {
       tabIndex = ScopeOwnerTabIndexValue(startContent);
-    } else if (nsIFrame* frame = startContent->GetPrimaryFrame()) {
+    } else if (nsIFrame* frame =
+                   nsLayoutUtils::GetPrimaryOrAreaImageFrame(startContent)) {
       tabIndex = frame->IsFocusable().mTabIndex;
     } else {
       tabIndex = startContent->IsFocusableWithoutStyle().mTabIndex;
@@ -4589,7 +4591,8 @@ nsIContent* nsFocusManager::GetNextTabbableContentInAncestorScopes(
   aStartContent = startContent;
   if (IsScopeOwner(startContent)) {
     *aCurrentTabIndex = ScopeOwnerTabIndexValue(startContent);
-  } else if (nsIFrame* frame = startContent->GetPrimaryFrame()) {
+  } else if (nsIFrame* frame =
+                 nsLayoutUtils::GetPrimaryOrAreaImageFrame(startContent)) {
     *aCurrentTabIndex = frame->IsFocusable().mTabIndex;
   } else {
     *aCurrentTabIndex = startContent->IsFocusableWithoutStyle().mTabIndex;
@@ -4710,7 +4713,8 @@ nsresult nsFocusManager::GetNextTabbableContent(
   nsIContent* topLevelScopeStartContent = startContent;
   // Iterate tab index to find corresponding contents
   while (true) {
-    nsIFrame* frame = iterStartContent->GetPrimaryFrame();
+    nsIFrame* frame =
+        nsLayoutUtils::GetPrimaryOrAreaImageFrame(iterStartContent);
     // if there is no frame, look for another content node that has a frame
     while (!frame) {
       // if the root content doesn't have a frame, just return
@@ -4725,7 +4729,7 @@ nsresult nsFocusManager::GetNextTabbableContent(
         break;
       }
 
-      frame = iterStartContent->GetPrimaryFrame();
+      frame = nsLayoutUtils::GetPrimaryOrAreaImageFrame(iterStartContent);
       // Host without frame, enter its scope.
       if (!frame && IsScopeOwner(iterStartContent)) {
         int32_t tabIndex = ScopeOwnerTabIndexValue(iterStartContent);

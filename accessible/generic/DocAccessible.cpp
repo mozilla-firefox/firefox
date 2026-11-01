@@ -1807,8 +1807,10 @@ LocalAccessible* DocAccessible::GetAccessibleEvenIfNotInMap(
     return GetAccessible(aNode);
   }
 
-  // XXX Bug 135040, incorrect when multiple images use the same map.
-  nsIFrame* frame = aNode->AsContent()->GetPrimaryFrame();
+  // XXX Incorrect when multiple images use the same map; the area only tracks
+  // the image frame that last set up the map.
+  nsIFrame* frame =
+      nsLayoutUtils::GetPrimaryOrAreaImageFrame(aNode->AsContent());
   nsImageFrame* imageFrame = do_QueryFrame(frame);
   if (imageFrame) {
     LocalAccessible* parent = GetAccessible(imageFrame->GetContent());
