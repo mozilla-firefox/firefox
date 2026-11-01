@@ -2,12 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { render, fireEvent } from "@testing-library/react";
+import { act, render, fireEvent } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { combineReducers, createStore } from "redux";
 import { INITIAL_STATE, reducers } from "common/Reducers.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
 import { Privacy } from "content-src/components/Widgets/Privacy/Privacy";
+import { SpaceActiveContext } from "content-src/lib/SpaceActiveContext";
 
 const mockState = {
   ...INITIAL_STATE,
@@ -98,6 +99,40 @@ function renderPrivacy(dispatch = jest.fn(), props = {}, state = mockState) {
   };
 }
 
+const findImpressions = dispatch =>
+  dispatch.mock.calls
+    .map(([action]) => action)
+    .filter(action => action.type === at.WIDGETS_IMPRESSION);
+
+// Swaps in an observer that only reports when the returned function is called
+// with an on-screen ratio (default fully on screen).
+const installManualObserver = () => {
+  const observers = [];
+  global.IntersectionObserver = class {
+    constructor(callback) {
+      this.callback = callback;
+      observers.push(this);
+    }
+    observe(el) {
+      this.el = el;
+    }
+    unobserve() {}
+    disconnect() {}
+  };
+  return (intersectionRatio = 1) =>
+    act(() => {
+      for (const observer of observers) {
+        observer.callback([
+          {
+            isIntersecting: intersectionRatio > 0,
+            intersectionRatio,
+            target: observer.el,
+          },
+        ]);
+      }
+    });
+};
+
 // Returns the WIDGETS_USER_EVENT action dispatched for a given user_action.
 function findUserEvent(dispatch, userAction) {
   return dispatch.mock.calls
@@ -110,9 +145,9 @@ function findUserEvent(dispatch, userAction) {
 }
 
 describe("Privacy widget", () => {
-  // The impression-time telemetry now waits for the widget to be seen. The
-  // default jest IntersectionObserver mock never fires, so install one that
-  // reports the element as intersecting the moment it's observed.
+  // The impression waits for the widget to be seen. The default jest
+  // IntersectionObserver mock never fires, so install one that reports the
+  // element fully on screen the moment it's observed.
   let originalIntersectionObserver;
   beforeEach(() => {
     originalIntersectionObserver = global.IntersectionObserver;
@@ -121,7 +156,9 @@ describe("Privacy widget", () => {
         this.callback = callback;
       }
       observe(el) {
-        this.callback([{ isIntersecting: true, target: el }]);
+        this.callback([
+          { isIntersecting: true, intersectionRatio: 1, target: el },
+        ]);
       }
       unobserve() {}
       disconnect() {}
@@ -157,14 +194,13 @@ describe("Privacy widget", () => {
   });
 
   it("fires widgets_impression once when the widget scrolls into view", () => {
-    // beforeEach installs a firing IntersectionObserver, so the hook's
-    // impression goes out on observe. This is the trigger the impression-time
-    // telemetry piggybacks on, so proving it fires anchors the timing fix.
     const dispatch = jest.fn();
-    renderPrivacy(dispatch);
-    const impressions = dispatch.mock.calls
-      .map(([action]) => action)
-      .filter(action => action.type === at.WIDGETS_IMPRESSION);
+    renderPrivacy(
+      dispatch,
+      {},
+      stateWithMessage({ variant: "blank", icon: "shieldCheck" })
+    );
+    const impressions = findImpressions(dispatch);
     expect(impressions).toHaveLength(1);
     expect(impressions[0].data.widget_name).toBe("privacy");
   });
@@ -699,10 +735,9 @@ describe("Privacy widget", () => {
         cta: { type: "OPEN_ABOUT_PAGE", data: { args: "protections" } },
       })
     );
-    // Blank logs a message_impression under the stable blank id, so the click
-    // (whose action_value is the destination) can be joined back to "blank".
-    const impression = findUserEvent(dispatch, "message_impression");
-    expect(impression.data.action_value).toBe("newtab-privacy-blank");
+    // Blank uses a stable id, so its impression and click share a variant.
+    const [impression] = findImpressions(dispatch);
+    expect(impression.data.widget_variant).toBe("newtab-privacy-blank");
     fireEvent.click(container.querySelector(".privacy-cta"));
     const ctaAction = dispatch.mock.calls.find(
       ([action]) => action.type === at.WIDGETS_PRIVACY_CTA
@@ -710,6 +745,7 @@ describe("Privacy widget", () => {
     expect(ctaAction[0].data.message_id).toBe("newtab-privacy-blank");
     const event = findUserEvent(dispatch, "message_cta_click");
     expect(event.data.action_value).toBe("about:protections");
+    expect(event.data.widget_variant).toBe("newtab-privacy-blank");
   });
   it("opens about:protections when the count block is clicked", () => {
     const dispatch = jest.fn();
@@ -784,95 +820,44 @@ describe("Privacy widget", () => {
   });
 
   describe("telemetry", () => {
-    it("logs the trackers_blocked impression with 'blocked' when trackers are blocked", () => {
-      const dispatch = jest.fn();
-      renderPrivacy(
-        dispatch,
-        {},
-        stateWithMessage({ variant: "blank", icon: "shieldCheck" }, 42)
-      );
-      const event = findUserEvent(dispatch, "trackers_blocked_impression");
-      expect(event).toBeTruthy();
-      expect(event.data.widget_name).toBe("privacy");
-      expect(event.data.widget_source).toBe("widget");
-      expect(event.data.action_value).toBe("blocked");
-    });
+    const TIP_A = {
+      variant: "tip",
+      messageId: "newtab-privacy-message-info-1",
+      icon: "shield",
+      cta: { type: "OPEN_ABOUT_PAGE", data: { args: "protections" } },
+    };
+    const TIP_B = {
+      variant: "tip",
+      messageId: "newtab-privacy-message-promo-vpn-1",
+      icon: "star",
+      cta: { type: "OPEN_URL", data: { args: "https://example.com/vpn" } },
+    };
 
-    it("logs the trackers_blocked impression with 'none' when nothing was blocked", () => {
+    it("records the shown message ID as widget_variant on the impression", () => {
       const dispatch = jest.fn();
-      renderPrivacy(
-        dispatch,
-        {},
-        stateWithMessage({ variant: "empty", icon: "shield" }, 0)
-      );
-      const event = findUserEvent(dispatch, "trackers_blocked_impression");
-      expect(event).toBeTruthy();
-      expect(event.data.action_value).toBe("none");
-    });
-
-    it("logs the trackers_blocked impression as 'etp_off' while ETP is off", () => {
-      // Distinct from 'none': protection being off is not the same as
-      // protection being on with nothing blocked yet. A non-zero count is used
-      // so a regression to the plain count branch would report 'blocked'.
-      const dispatch = jest.fn();
-      renderPrivacy(dispatch, {}, stateWithEtpOff(87, { variant: "blank" }));
-      const event = findUserEvent(dispatch, "trackers_blocked_impression");
-      expect(event).toBeTruthy();
-      expect(event.data.action_value).toBe("etp_off");
-    });
-
-    it("waits for the widget to be seen before logging impressions", () => {
-      // With no IntersectionObserver, the widget is never "seen" and the
-      // impression-time signals stay unsent (preloaded / never-viewed tab).
-      const savedObserver = global.IntersectionObserver;
-      global.IntersectionObserver = class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      };
-      try {
-        const dispatch = jest.fn();
-        renderPrivacy(
-          dispatch,
-          {},
-          stateWithMessage({ variant: "blank", icon: "shieldCheck" }, 42)
-        );
-        const firedImpression = dispatch.mock.calls
-          .map(([action]) => action)
-          .some(action => action.type === at.WIDGETS_IMPRESSION);
-        // Never seen: neither widgets_impression nor the impression-time
-        // user events go out.
-        expect(firedImpression).toBe(false);
-        expect(
-          findUserEvent(dispatch, "trackers_blocked_impression")
-        ).toBeUndefined();
-      } finally {
-        global.IntersectionObserver = savedObserver;
-      }
-    });
-
-    it("logs a message impression carrying the messageId when a message shows", () => {
-      const dispatch = jest.fn();
-      renderPrivacy(
-        dispatch,
-        {},
-        stateWithMessage({
-          variant: "tip",
-          messageId: "newtab-privacy-message-promo-vpn-1",
-          icon: "star",
-        })
-      );
-      const event = findUserEvent(dispatch, "message_impression");
-      expect(event.data.widget_source).toBe("message");
-      expect(event.data.action_value).toBe(
+      renderPrivacy(dispatch, {}, stateWithMessage(TIP_B));
+      const impressions = findImpressions(dispatch);
+      expect(impressions).toHaveLength(1);
+      expect(impressions[0].data.widget_variant).toBe(
         "newtab-privacy-message-promo-vpn-1"
       );
     });
 
-    it("does not log a message impression in the empty state", () => {
-      // The selector sets messageId to "newtab-privacy-empty-state" in the
-      // empty state, so the fixture mirrors that — otherwise this passes
-      // vacuously and wouldn't catch a spurious empty-state impression (Dré).
+    it("records the blank state under the stable blank id", () => {
+      const dispatch = jest.fn();
+      renderPrivacy(
+        dispatch,
+        {},
+        stateWithMessage({ variant: "blank", icon: "shieldCheck" })
+      );
+      expect(findImpressions(dispatch)[0].data.widget_variant).toBe(
+        "newtab-privacy-blank"
+      );
+    });
+
+    it("records no_trackers_blocked in the empty state", () => {
+      // The selector sets messageId to "newtab-privacy-empty-state" here, so
+      // the fixture mirrors it to prove that ID is never reported as shown.
       const dispatch = jest.fn();
       renderPrivacy(
         dispatch,
@@ -886,57 +871,323 @@ describe("Privacy widget", () => {
           0
         )
       );
-      expect(findUserEvent(dispatch, "message_impression")).toBeUndefined();
+      expect(findImpressions(dispatch)[0].data.widget_variant).toBe(
+        "no_trackers_blocked"
+      );
     });
 
-    it("does not log a message impression while ETP is off", () => {
-      // The card replaces the message, but the decision picked before the
-      // toggle is still in state — it must not be logged as shown.
+    it("records etp_off while ETP is off, even with a message picked", () => {
       const dispatch = jest.fn();
-      renderPrivacy(
+      renderPrivacy(dispatch, {}, stateWithEtpOff(87, TIP_A));
+      expect(findImpressions(dispatch)[0].data.widget_variant).toBe("etp_off");
+    });
+
+    it("no longer records impressions as user events", () => {
+      const dispatch = jest.fn();
+      renderPrivacy(dispatch, {}, stateWithMessage(TIP_A));
+      expect(findUserEvent(dispatch, "message_impression")).toBeUndefined();
+      expect(
+        findUserEvent(dispatch, "trackers_blocked_impression")
+      ).toBeUndefined();
+    });
+
+    it("waits for the widget to be seen before recording the impression", () => {
+      installManualObserver();
+      const dispatch = jest.fn();
+      renderPrivacy(dispatch, {}, stateWithMessage(TIP_A));
+      expect(findImpressions(dispatch)).toHaveLength(0);
+    });
+
+    it("doesn't count a widget in a peeked space as seen", () => {
+      const dispatch = jest.fn();
+      render(
+        <WrapWithProvider state={stateWithMessage(TIP_A)}>
+          <SpaceActiveContext.Provider value={false}>
+            <Privacy
+              dispatch={dispatch}
+              widgetsMayBeMaximized={true}
+              widgetEnabledMap={{}}
+            />
+          </SpaceActiveContext.Provider>
+        </WrapWithProvider>
+      );
+      expect(findImpressions(dispatch)).toHaveLength(0);
+    });
+
+    it("holds the impression until a message is picked, then records it", () => {
+      // A SYSTEM_TICK refresh flips `initialized` with counts but no variant.
+      const dispatch = jest.fn();
+      const { rerenderWithState } = renderPrivacy(
         dispatch,
         {},
-        stateWithEtpOff(87, {
-          variant: "tip",
-          messageId: "newtab-privacy-message-info-1",
+        stateWithTrackers(42)
+      );
+      expect(findImpressions(dispatch)).toHaveLength(0);
+
+      rerenderWithState(stateWithMessage(TIP_A, 42));
+      const impressions = findImpressions(dispatch);
+      expect(impressions).toHaveLength(1);
+      expect(impressions[0].data.widget_variant).toBe(
+        "newtab-privacy-message-info-1"
+      );
+    });
+
+    it("waits to record a message that arrives after the widget scrolled away", () => {
+      const report = installManualObserver();
+      const dispatch = jest.fn();
+      const { rerenderWithState } = renderPrivacy(
+        dispatch,
+        {},
+        stateWithTrackers(42)
+      );
+      report(1);
+      report(0);
+
+      rerenderWithState(stateWithMessage(TIP_A, 42));
+      expect(findImpressions(dispatch)).toHaveLength(0);
+
+      report(1);
+      const impressions = findImpressions(dispatch);
+      expect(impressions).toHaveLength(1);
+      expect(impressions[0].data.widget_variant).toBe(
+        "newtab-privacy-message-info-1"
+      );
+    });
+
+    it("waits to record a message that arrives while the tab is hidden", () => {
+      // Opening another tab is what usually broadcasts the pick, and it hides
+      // this one.
+      const setVisibility = value => {
+        Object.defineProperty(document, "visibilityState", {
+          configurable: true,
+          value,
+        });
+        fireEvent(document, new Event("visibilitychange"));
+      };
+      try {
+        const dispatch = jest.fn();
+        const { rerenderWithState } = renderPrivacy(
+          dispatch,
+          {},
+          stateWithTrackers(42)
+        );
+        setVisibility("hidden");
+
+        rerenderWithState(stateWithMessage(TIP_A, 42));
+        expect(findImpressions(dispatch)).toHaveLength(0);
+
+        setVisibility("visible");
+        expect(findImpressions(dispatch)).toHaveLength(1);
+      } finally {
+        setVisibility("visible");
+      }
+    });
+
+    it("records no impression, no error and no widget_variant if the feed never sends anything", () => {
+      // Default mockState has PrivacyWidget.initialized = false, as when the
+      // count read fails and nothing reaches the tab.
+      const dispatch = jest.fn();
+      const { container } = renderPrivacy(dispatch);
+      fireEvent.click(
+        container.querySelector(
+          '[data-l10n-id="newtab-privacy-menu-learn-more"]'
+        )
+      );
+
+      expect(findImpressions(dispatch)).toHaveLength(0);
+      expect(
+        dispatch.mock.calls.some(([action]) => action.type === at.WIDGETS_ERROR)
+      ).toBe(false);
+      expect(findUserEvent(dispatch, "learn_more").data).not.toHaveProperty(
+        "widget_variant"
+      );
+    });
+
+    it("gives a message CTA click the same widget_variant as the impression", () => {
+      const dispatch = jest.fn();
+      const { container } = renderPrivacy(
+        dispatch,
+        {},
+        stateWithMessage(TIP_A)
+      );
+      fireEvent.click(container.querySelector(".privacy-cta"));
+      expect(
+        findUserEvent(dispatch, "message_cta_click").data.widget_variant
+      ).toBe(findImpressions(dispatch)[0].data.widget_variant);
+    });
+
+    it("adds the current widget_variant to widgets_enabled when hidden from the menu", () => {
+      const dispatch = jest.fn();
+      const { container } = renderPrivacy(
+        dispatch,
+        {},
+        stateWithMessage(TIP_A)
+      );
+      fireEvent.click(
+        container.querySelector('[data-l10n-id="newtab-widget-menu-hide"]')
+      );
+      const enabled = dispatch.mock.calls
+        .map(([action]) => action)
+        .find(action => action.type === at.WIDGETS_ENABLED);
+      expect(enabled.data.widget_variant).toBe("newtab-privacy-message-info-1");
+    });
+
+    describe("after the impression", () => {
+      it("keeps this tab's message when another tab picks a new one", () => {
+        const dispatch = jest.fn();
+        const { container, rerenderWithState } = renderPrivacy(
+          dispatch,
+          {},
+          stateWithMessage(TIP_A, 87)
+        );
+
+        // PrivacyFeed broadcasts each new tab's pick to every open tab.
+        rerenderWithState(stateWithMessage(TIP_B, 120));
+
+        expect(
+          container.querySelector(
+            '[data-l10n-id="newtab-privacy-message-info-1"]'
+          )
+        ).toBeTruthy();
+        expect(
+          container.querySelector(
+            '[data-l10n-id="newtab-privacy-message-promo-vpn-1"]'
+          )
+        ).toBeFalsy();
+        expect(
+          container.querySelector(".privacy-count-number").textContent
+        ).toBe("120");
+
+        fireEvent.click(container.querySelector(".privacy-cta"));
+        expect(findImpressions(dispatch)).toHaveLength(1);
+        expect(
+          findUserEvent(dispatch, "message_cta_click").data.widget_variant
+        ).toBe("newtab-privacy-message-info-1");
+      });
+
+      it("takes the next real pick once an empty-state tab's count goes up", () => {
+        const empty = {
+          variant: "empty",
+          messageId: "newtab-privacy-empty-state",
           icon: "shield",
-        })
-      );
-      expect(findUserEvent(dispatch, "message_impression")).toBeUndefined();
+        };
+        const dispatch = jest.fn();
+        const { container, rerenderWithState } = renderPrivacy(
+          dispatch,
+          {},
+          stateWithMessage(empty, 0)
+        );
+        expect(findImpressions(dispatch)[0].data.widget_variant).toBe(
+          "no_trackers_blocked"
+        );
+
+        // Counts-only update: still the empty pick, so a count with no message.
+        rerenderWithState(stateWithMessage(empty, 42));
+        expect(container.querySelector(".privacy-cta")).toBeFalsy();
+
+        rerenderWithState(stateWithMessage(TIP_A, 42));
+        expect(
+          container.querySelector(
+            '[data-l10n-id="newtab-privacy-message-info-1"]'
+          )
+        ).toBeTruthy();
+
+        // Locked onto the new pick, so later rotation doesn't move it.
+        rerenderWithState(stateWithMessage(TIP_B, 50));
+        expect(
+          container.querySelector(
+            '[data-l10n-id="newtab-privacy-message-promo-vpn-1"]'
+          )
+        ).toBeFalsy();
+        fireEvent.click(container.querySelector(".privacy-cta"));
+        expect(
+          findUserEvent(dispatch, "message_cta_click").data.widget_variant
+        ).toBe("newtab-privacy-message-info-1");
+        expect(findImpressions(dispatch)).toHaveLength(1);
+      });
+
+      it("ignores another tab's daily-cap ceiling", () => {
+        const { container, rerenderWithState } = renderPrivacy(
+          jest.fn(),
+          {},
+          stateWithMessage(TIP_A, 87)
+        );
+
+        rerenderWithState(
+          stateWithMessage(
+            {
+              variant: "tip",
+              messageId: "newtab-privacy-message-daily-cap",
+              category: "dailyCap",
+              icon: "shield",
+              countCeiling: 100,
+              celebration: { awardedAt: 1000, fromCount: 100, toCount: 137 },
+            },
+            137
+          )
+        );
+
+        expect(
+          container.querySelector(".privacy-count-number").textContent
+        ).not.toContain("+");
+        expect(container.querySelector(".privacy-celebration-ring")).toBeNull();
+      });
+
+      it("shows the ETP-off card right away, and later events say etp_off", () => {
+        // Not kept stale: a mismatch with the impression marks the visit.
+        const dispatch = jest.fn();
+        const { container, rerenderWithState } = renderPrivacy(
+          dispatch,
+          {},
+          stateWithMessage(TIP_A)
+        );
+
+        rerenderWithState(stateWithEtpOff(87, TIP_A));
+        fireEvent.click(
+          container.querySelector(
+            '[data-l10n-id="newtab-privacy-menu-learn-more"]'
+          )
+        );
+
+        expect(container.querySelector(".privacy-etp-off")).toBeTruthy();
+        expect(findImpressions(dispatch)[0].data.widget_variant).toBe(
+          "newtab-privacy-message-info-1"
+        );
+        expect(findUserEvent(dispatch, "learn_more").data.widget_variant).toBe(
+          "etp_off"
+        );
+      });
     });
 
-    it("logs a blank message impression under the stable blank id", () => {
+    it("holds the impression for a count with no message until a real pick arrives", () => {
+      // A tab preloaded at zero keeps its empty pick; counts-only updates don't
+      // re-run the selector. Once seen, it shows a count and no message.
+      const report = installManualObserver();
+      const empty = {
+        variant: "empty",
+        messageId: "newtab-privacy-empty-state",
+        icon: "shield",
+      };
       const dispatch = jest.fn();
-      renderPrivacy(
+      const { container, rerenderWithState } = renderPrivacy(
         dispatch,
         {},
-        stateWithMessage({ variant: "blank", icon: "shieldCheck" })
+        stateWithMessage(empty, 0)
       );
-      const event = findUserEvent(dispatch, "message_impression");
-      expect(event).toBeTruthy();
-      expect(event.data.action_value).toBe("newtab-privacy-blank");
-    });
+      rerenderWithState(stateWithMessage(empty, 42));
+      report(1);
 
-    it("does not log impressions until the feed is initialized", () => {
-      // Default mockState has PrivacyWidget.initialized = false.
-      const dispatch = jest.fn();
-      renderPrivacy(dispatch);
-      expect(findUserEvent(dispatch, "message_impression")).toBeUndefined();
-      expect(
-        findUserEvent(dispatch, "trackers_blocked_impression")
-      ).toBeUndefined();
-    });
+      expect(container.querySelector(".privacy-count-number").textContent).toBe(
+        "42"
+      );
+      expect(findImpressions(dispatch)).toHaveLength(0);
 
-    it("does not log impressions on a counts-only update before a message is picked", () => {
-      // A SYSTEM_TICK refresh flips `initialized` with counts but no variant;
-      // the one-shot must not fire yet, or the message that renders next never
-      // logs its impression. stateWithTrackers sets no variant.
-      const dispatch = jest.fn();
-      renderPrivacy(dispatch, {}, stateWithTrackers(42));
-      expect(
-        findUserEvent(dispatch, "trackers_blocked_impression")
-      ).toBeUndefined();
-      expect(findUserEvent(dispatch, "message_impression")).toBeUndefined();
+      rerenderWithState(stateWithMessage(TIP_A, 42));
+      const impressions = findImpressions(dispatch);
+      expect(impressions).toHaveLength(1);
+      expect(impressions[0].data.widget_variant).toBe(
+        "newtab-privacy-message-info-1"
+      );
     });
 
     it("records widgets_enabled(false) from the context menu when hidden", () => {

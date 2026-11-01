@@ -5,6 +5,7 @@
 // eslint-disable-next-line no-unused-vars
 import React, {
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -25,37 +26,59 @@ import { useWidgetCelebration } from "../useWidgetCelebration";
 import { useCountUp } from "../useCountUp";
 import { usePageVisible } from "../usePageVisible";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
+import { SpaceActiveContext } from "content-src/lib/SpaceActiveContext";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 
 const USER_ACTION_TYPES = {
   CHANGE_SIZE: "change_size",
   LEARN_MORE: "learn_more",
   MESSAGE_CTA_CLICK: "message_cta_click",
-  MESSAGE_IMPRESSION: "message_impression",
-  TRACKERS_BLOCKED_IMPRESSION: "trackers_blocked_impression",
   TRACKING_MESSAGE_CLICK: "tracking_message_click",
 };
 
-// action_value for the trackers-blocked impression: whether the widget was
-// shown with any tracking activity blocked today. ETP_OFF is its own value
-// rather than folding into NONE, so "protection is off" stays distinguishable
-// from "protection is on and nothing has been blocked yet" (Bug 2063525).
-const TRACKERS_BLOCKED_VALUE = {
-  BLOCKED: "blocked",
-  NONE: "none",
+// widget_variant values for the states that show no message (Bug 2079330).
+const WIDGET_VARIANT = {
   ETP_OFF: "etp_off",
+  NO_TRACKERS_BLOCKED: "no_trackers_blocked",
 };
 
-// Kept out of the component: a nested ternary at the call site is disallowed,
-// and the branch is easier to read named.
-function trackersBlockedValue(isEtpOff, trackersToday) {
-  if (isEtpOff) {
-    return TRACKERS_BLOCKED_VALUE.ETP_OFF;
+// The message fields of a feed pick, the part a tab locks after its impression.
+const pickMessage = ({
+  variant,
+  messageId,
+  category,
+  icon,
+  countArg,
+  cta,
+}) => ({
+  variant,
+  messageId,
+  category,
+  icon,
+  countArg,
+  cta,
+});
+
+// What the widget is showing, for widget_variant. Undefined when nothing true
+// can be said yet: not loaded, or a count shown with no message.
+const privacyWidgetVariant = ({
+  initialized,
+  isEtpOff,
+  isEmptyState,
+  showsMessage,
+  ctaMessageId,
+}) => {
+  if (!initialized) {
+    return undefined;
   }
-  return trackersToday > 0
-    ? TRACKERS_BLOCKED_VALUE.BLOCKED
-    : TRACKERS_BLOCKED_VALUE.NONE;
-}
+  if (isEtpOff) {
+    return WIDGET_VARIANT.ETP_OFF;
+  }
+  if (isEmptyState) {
+    return WIDGET_VARIANT.NO_TRACKERS_BLOCKED;
+  }
+  return showsMessage ? ctaMessageId : undefined;
+};
 
 // Per design: the brief sparkle rides ordinary +10 count-ups and the smaller
 // earned moments; the longer, denser one is reserved for the count milestones
@@ -161,18 +184,12 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   // > registry defaultSize. Never read the size pref directly.
   const widgetSize = resolveWidgetSize(PRIVACY_ENTRY, prefs);
 
-  // Flipped when the widget is actually scrolled into view (same trigger as
-  // widgets_impression), so the impression-time signals below line up with it
-  // and skip preloaded tabs that were never seen.
-  const [hasBeenSeen, setHasBeenSeen] = useState(false);
-  const { impressionRef, recordUserAction, recordEnabled } = useWidgetTelemetry(
-    {
-      dispatch,
-      widget: PRIVACY_ENTRY,
-      widgetSize,
-      onImpression: () => setHasBeenSeen(true),
-    }
-  );
+  // Whether the widget is scrolled into view right now, so the impression below
+  // only fires while it can actually be seen.
+  const [isOnScreen, setIsOnScreen] = useState(false);
+  // This tab's message, frozen at its impression so a later tab's pick can't
+  // swap it and break click attribution (Bug 2079330). Counts stay live.
+  const [lockedDecision, setLockedDecision] = useState(null);
 
   const trackersToday = privacyData?.trackersToday ?? 0;
   const sitesToday = privacyData?.sitesToday ?? 0;
@@ -180,21 +197,16 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   // no metric state rather than a misleading empty/zero one.
   const initialized = privacyData?.initialized ?? false;
 
+  const etpOff = privacyData?.etpOff;
   // Message decision chosen by PrivacyFeed's selector (Bug 2050954).
-  const {
-    variant,
-    messageId,
-    category,
-    icon,
-    countArg,
-    cta,
-    countCeiling,
-    etpOff,
-  } = privacyData ?? {};
+  const { variant, messageId, category, icon, countArg, cta } =
+    lockedDecision ?? privacyData ?? {};
+  // Left live so a count refresh can clear "100+", but only honored while the
+  // feed's pick is this tab's message, so another tab's daily cap can't leak in.
+  const countCeiling =
+    privacyData?.messageId === messageId ? privacyData?.countCeiling : null;
   const isLarge = widgetSize === "large";
 
-  // impressionRef (from useWidgetTelemetry) is a callback ref for the impression
-  // observer, so the celebration keeps its own element ref for measurements.
   const celebrationRef = useRef(null);
   const {
     celebrationFrame,
@@ -212,6 +224,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   // A celebration is one-shot, so playing it on a preloaded tab would spend it
   // before the user could see it. Hold until the tab is actually shown.
   const isPageVisible = usePageVisible();
+  const spaceActive = useContext(SpaceActiveContext);
 
   // Track the article element via state so the effect below re-runs whenever
   // React mounts a new node. celebrationRef is a stable useRef and can't drive
@@ -228,7 +241,9 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
       ([entry]) => {
         // Ratio, not isIntersecting: that is true for any sliver on screen, and
         // stays true on the way back out past the threshold.
-        if (entry.intersectionRatio >= ON_SCREEN_THRESHOLD) {
+        const onScreen = entry.intersectionRatio >= ON_SCREEN_THRESHOLD;
+        setIsOnScreen(onScreen);
+        if (onScreen) {
           dispatch(ac.OnlyToMain({ type: at.WIDGETS_PRIVACY_VISIBLE }));
         }
       },
@@ -277,6 +292,20 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   // a stable, distinguishable id — otherwise its clicks report null and the
   // most-shown state can't be attributed (Dré).
   const ctaMessageId = isBlank ? "newtab-privacy-blank" : messageId;
+  const widgetVariant = privacyWidgetVariant({
+    initialized,
+    isEtpOff,
+    isEmptyState,
+    showsMessage: isBlank || Boolean(hasMessage),
+    ctaMessageId,
+  });
+  const { recordImpression, recordUserAction, recordEnabled } =
+    useWidgetTelemetry({
+      dispatch,
+      widget: PRIVACY_ENTRY,
+      widgetSize,
+      widgetVariant,
+    });
   // The single icon sits beside the count, except in the large tip layout where
   // it sits inside the tip.
   const iconBesideCount = !isEmptyState && !(isTip && isLarge);
@@ -404,49 +433,49 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
     completeCelebration();
   }, [completeCelebration]);
 
-  // Impression-time signals, logged once per mount. Gated on two things:
-  //   - hasBeenSeen: the widget actually scrolled into view, so these line up
-  //     with widgets_impression and don't fire on never-seen preloaded tabs.
+  // widgets_impression, once per mount. Gated on three things:
+  //   - the widget is visible right now: on screen, in a visible tab, and in
+  //     the active space (a peeked space doesn't count, as in useWidgetTelemetry).
+  //     Checked live, since the message can arrive after the user has moved on.
   //   - variant != null: the feed has picked a message. A counts-only refresh
   //     flips `initialized` before the decision is made, so gating on
-  //     `initialized` alone could burn the one-shot before the message renders,
-  //     losing its impression.
-  const impressionsLoggedRef = useRef(false);
+  //     `initialized` alone could burn the one-shot before the message renders.
+  //   - widgetVariant is defined, so a count shown with a stale empty pick
+  //     waits for a real pick instead of recording no value.
+  const isVisibleNow = isOnScreen && isPageVisible && spaceActive;
   useEffect(() => {
-    if (!hasBeenSeen || !variant || impressionsLoggedRef.current) {
+    if (
+      !isVisibleNow ||
+      !variant ||
+      widgetVariant === undefined ||
+      lockedDecision
+    ) {
       return;
     }
-    impressionsLoggedRef.current = true;
-    // A separate impression per view reporting whether the widget was shown
-    // with any tracking activity blocked today. The state rides action_value
-    // ("blocked", "none", or "etp_off"). No count is recorded.
-    recordUserAction(USER_ACTION_TYPES.TRACKERS_BLOCKED_IMPRESSION, {
-      source: "widget",
-      value: trackersBlockedValue(isEtpOff, trackersToday),
-    });
-    // Impression of the secondary message, keyed by ctaMessageId (blank ->
-    // "newtab-privacy-blank"). Gated on !isEmptyState: the selector sets
-    // messageId to "newtab-privacy-empty-state" in the empty state, so a bare
-    // ctaMessageId check would log a spurious impression for a state that shows
-    // no message/CTA. The blank state still logs, keeping its URL-valued CTA
-    // click attributable by joining to this impression on newtab_visit_id.
-    // The ETP-off card is gated for the same reason: it replaces the message,
-    // but a decision from before the toggle is still sitting in state.
-    if (!isEtpOff && !isEmptyState && ctaMessageId) {
-      recordUserAction(USER_ACTION_TYPES.MESSAGE_IMPRESSION, {
-        source: "message",
-        value: ctaMessageId,
-      });
-    }
+    setLockedDecision(pickMessage(privacyData));
+    recordImpression();
   }, [
-    hasBeenSeen,
+    isVisibleNow,
+    widgetVariant,
+    lockedDecision,
     variant,
-    trackersToday,
-    isEmptyState,
-    isEtpOff,
-    ctaMessageId,
-    recordUserAction,
+    privacyData,
+    recordImpression,
   ]);
+
+  // Zero to a count is a real change, not rotation: a tab locked on the empty
+  // pick takes the feed's next real pick and locks onto that instead.
+  useEffect(() => {
+    if (
+      lockedDecision?.variant !== "empty" ||
+      isEmptyState ||
+      !privacyData?.variant ||
+      privacyData.variant === "empty"
+    ) {
+      return;
+    }
+    setLockedDecision(pickMessage(privacyData));
+  }, [lockedDecision, isEmptyState, privacyData]);
 
   function handlePrivacyHide() {
     dispatch(
@@ -502,8 +531,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
       })
     );
     // action_value is the CTA destination (the click's endpoint, incl. the
-    // Bug 2061524 UTM params). Which message drove the click is recovered by
-    // joining to this visit's message_impression on newtab_visit_id.
+    // Bug 2061524 UTM params). widget_variant names the message clicked.
     recordUserAction(USER_ACTION_TYPES.MESSAGE_CTA_CLICK, {
       source: "message",
       value: ctaDestination(cta),
@@ -599,7 +627,6 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
           : ""
       }`}
       ref={el => {
-        impressionRef(el);
         celebrationRef.current = el;
         setRootEl(el);
       }}

@@ -42,11 +42,6 @@ const IMPRESSION_THRESHOLD = 0.3;
  * legacy events still exist alongside the unified events, FocusTimer and
  * Lists pass the matching legacy action types so the hook emits both. Both
  * co-dispatches fire legacy first, unified second.
- *
- * `onImpression` (optional) runs once, right after the widget impression fires
- * (from the IntersectionObserver, or a manual recordImpression). Use it to hang
- * extra, view-gated telemetry off the same trigger so it lines up with the
- * impression and never fires on a preloaded tab that was never seen.
  */
 export const useWidgetTelemetry = ({
   dispatch,
@@ -55,7 +50,6 @@ export const useWidgetTelemetry = ({
   widgetVariant,
   legacyImpressionTypes,
   legacyUserEventType,
-  onImpression,
 }) => {
   const { telemetryName } = widget;
 
@@ -73,13 +67,6 @@ export const useWidgetTelemetry = ({
   // refs keep them out of the recorder callbacks' dependency arrays.
   const legacyImpressionTypesRef = useRef(legacyImpressionTypes);
   const legacyUserEventTypeRef = useRef(legacyUserEventType);
-
-  // Kept in a ref so an inline callback from the caller doesn't rebuild
-  // fireImpression (and re-run the observer effect) every render.
-  const onImpressionRef = useRef(onImpression);
-  useEffect(() => {
-    onImpressionRef.current = onImpression;
-  }, [onImpression]);
 
   const buildPayload = useCallback(
     ({ size, rest } = {}) => ({
@@ -119,9 +106,6 @@ export const useWidgetTelemetry = ({
       } else {
         dispatch(ac.AlsoToMain({ type: at.WIDGETS_IMPRESSION, data }));
       }
-      // View-gated hook for extra telemetry that must line up with the
-      // impression (see the doc comment). Fires once, with the impression.
-      onImpressionRef.current?.();
     },
     [dispatch, buildPayload]
   );

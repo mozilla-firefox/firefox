@@ -24,7 +24,6 @@ function TestComponent({
   widgetVariant,
   legacyImpressionTypes,
   legacyUserEventType,
-  onImpression,
   showEl = true,
   onRender,
 }) {
@@ -35,7 +34,6 @@ function TestComponent({
     widgetVariant,
     legacyImpressionTypes,
     legacyUserEventType,
-    onImpression,
   });
   onRender(telemetry);
   return showEl ? <div ref={telemetry.impressionRef} /> : null;
@@ -234,47 +232,6 @@ describe("useWidgetTelemetry", () => {
       const secondEl = container.querySelector("div");
       expect(observerInstance.observe).toHaveBeenCalledTimes(2);
       expect(observerInstance.observe.mock.lastCall[0]).toBe(secondEl);
-    });
-  });
-
-  describe("onImpression", () => {
-    it("invokes onImpression once when the impression fires", () => {
-      const onImpression = jest.fn();
-      const { container } = render(
-        <TestComponent
-          dispatch={dispatch}
-          widget={WEATHER_WIDGET}
-          widgetSize="medium"
-          onImpression={onImpression}
-          onRender={() => {}}
-        />
-      );
-      const [observerInstance] = observerStub.mock.instances;
-      const el = container.querySelector("div");
-
-      observerInstance.callback([{ isIntersecting: true, target: el }]);
-      observerInstance.callback([{ isIntersecting: true, target: el }]);
-
-      expect(onImpression).toHaveBeenCalledTimes(1);
-    });
-
-    it("also fires onImpression for a manual recordImpression", () => {
-      let telemetry;
-      const onImpression = jest.fn();
-      render(
-        <TestComponent
-          dispatch={dispatch}
-          widget={WEATHER_WIDGET}
-          widgetSize="medium"
-          showEl={false}
-          onImpression={onImpression}
-          onRender={t => (telemetry = t)}
-        />
-      );
-
-      telemetry.recordImpression();
-
-      expect(onImpression).toHaveBeenCalledTimes(1);
     });
   });
 
