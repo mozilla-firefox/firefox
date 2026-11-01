@@ -387,6 +387,8 @@ pwmgr:
         "crypto_sdr" when the JSON store had to unlock the NSS key to encrypt
           or decrypt a login.
         "rust_storage" when the Rust store had to unlock the NSS key.
+        "migration" when the migration to the Rust store asked for it at
+          startup, before migrating the logins.
       Possible results are:
         "success" when the user entered the correct password.
         "cancel" when the user dismissed the dialog.
@@ -402,8 +404,10 @@ pwmgr:
       also mean that the operation failed before a dialog was shown.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2070108
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2087534
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2070108
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2087534
     data_sensitivity:
       - interaction
     notification_emails:
@@ -420,7 +424,7 @@ pwmgr:
           using the same values as `prompt_shown_os_reauth.trigger`. For
           "crypto_sdr", the operation that needed the key, "encrypt" or
           "decrypt". Not set for "rust_storage", which does not know what the
-          key is used for.
+          key is used for, nor for "migration".
         type: string
       result:
         description: >
@@ -794,11 +798,15 @@ pwmgr:
     type: event
     description: >
       One record per migration run, recording duration, login and vulnerable
-      password counts, the resulting state and any fatal error.
+      password counts, the resulting state and any fatal error. Also recorded,
+      with the end state "Deferred", on a startup on which the migration did
+      not run because the primary password was not entered.
     bugs:
       - https://bugzil.la/1985800
+      - https://bugzil.la/2087534
     data_reviews:
       - https://bugzil.la/1985800
+      - https://bugzil.la/2087534
     data_sensitivity:
       - technical
     notification_emails:
@@ -839,12 +847,26 @@ pwmgr:
       end_state:
         description: >
           Migrator state after the run, e.g. "RustPrimary" when the migration
-          completed or "MigrationPending" when it did not.
+          completed or "MigrationPending" when it did not, or "Deferred" when
+          it did not run because the primary password was not entered.
         type: string
       primary_password_set:
         description: >
           Whether a Primary Password was set at the time of the run.
         type: boolean
+      primary_password_deferrals:
+        description: >
+          How many startups in a row the primary password prompt for the
+          migration had been canceled: on a run, before it started; on a
+          deferred startup, including this one.
+        type: quantity
+      deferral_reason:
+        description: >
+          Why the migration was deferred, only set with the end state
+          "Deferred": "primary_password_canceled" when the user canceled the
+          primary password prompt, or "primary_password_limit" when it was not
+          shown because it had been canceled too often.
+        type: string
       error_message:
         description: >
           The fatal error that aborted the run, or empty if the run completed.

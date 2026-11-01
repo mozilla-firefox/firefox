@@ -36,6 +36,10 @@ const PREF_RESTORE_ATTEMPTS_VERSION =
 const PREF_RESTORE_VERSION = "signon.storage.rust.restoreVersion";
 const PREF_RESTORE_TARGET_VERSION = "signon.storage.rust.restoreTargetVersion";
 const PREF_SYNC_USERNAME = "services.sync.username";
+const PREF_PRIMARY_PASSWORD_DEFERRALS =
+  "signon.storage.rust.primaryPasswordDeferrals";
+const PREF_MAX_PRIMARY_PASSWORD_DEFERRALS =
+  "signon.storage.rust.maxPrimaryPasswordDeferrals";
 const MAX_RESTORE_ATTEMPTS = 5;
 
 // The version a completed restore records, which is whatever target was asked
@@ -59,6 +63,8 @@ function resetState() {
   Services.prefs.clearUserPref(PREF_RESTORE_VERSION);
   Services.prefs.clearUserPref(PREF_RESTORE_TARGET_VERSION);
   Services.prefs.clearUserPref(PREF_SYNC_USERNAME);
+  Services.prefs.clearUserPref(PREF_PRIMARY_PASSWORD_DEFERRALS);
+  Services.prefs.clearUserPref(PREF_MAX_PRIMARY_PASSWORD_DEFERRALS);
   Services.fog.testResetFOG();
 }
 
@@ -168,9 +174,10 @@ function makeRustStorage({
 
 // Stands in for the primary password dialog. `accept` decides whether the user
 // submits the correct password or cancels. Returns the CID to unregister.
-function mockPrimaryPasswordPrompt(accept) {
+function mockPrimaryPasswordPrompt(accept, onPrompt = () => {}) {
   const prompt = {
     promptPassword(_dialogTitle, _text, password) {
+      onPrompt();
       if (accept) {
         password.value = LoginTestUtils.primaryPassword.primaryPassword;
       }
@@ -1005,6 +1012,7 @@ add_task(async function test_migration_retries_then_completes() {
 add_task(async function test_primaryPassword_prompt_accepted_migrates() {
   resetState();
   Services.prefs.setBoolPref(PREF_ENABLED, true);
+  Services.prefs.setIntPref(PREF_PRIMARY_PASSWORD_DEFERRALS, 2);
   await LoginTestUtils.primaryPassword.enable();
   const cid = mockPrimaryPasswordPrompt(true);
   try {
@@ -1028,6 +1036,21 @@ add_task(async function test_primaryPassword_prompt_accepted_migrates() {
     );
     const { extra } = Glean.pwmgr.rustMigrationStatus.testGetValue()[0];
     Assert.equal(extra.primary_password_set, "true");
+    Assert.equal(
+      extra.primary_password_deferrals,
+      "2",
+      "the run reports the prompts canceled before it"
+    );
+    Assert.deepEqual(
+      Glean.pwmgr.primaryPasswordPrompt.testGetValue().map(e => e.extra),
+      [{ source: "migration", result: "success" }],
+      "the prompt is recorded"
+    );
+    Assert.equal(
+      Services.prefs.getIntPref(PREF_PRIMARY_PASSWORD_DEFERRALS),
+      0,
+      "a completed migration resets the canceled prompts"
+    );
   } finally {
     MockRegistrar.unregister(cid);
     await LoginTestUtils.primaryPassword.disable();
@@ -1066,10 +1089,91 @@ add_task(async function test_primaryPassword_prompt_canceled_defers() {
       "canceling does not consume the attempt budget"
     );
     Assert.equal(
-      Glean.pwmgr.rustMigrationStatus.testGetValue(),
-      null,
-      "no status event for a deferred run"
+      Services.prefs.getIntPref(PREF_PRIMARY_PASSWORD_DEFERRALS),
+      1,
+      "the canceled prompt is counted"
     );
+    const [deferred] = Glean.pwmgr.rustMigrationStatus.testGetValue();
+    Assert.equal(
+      deferred.extra.end_state,
+      "Deferred",
+      "the deferral is recorded"
+    );
+    Assert.equal(deferred.extra.deferral_reason, "primary_password_canceled");
+    Assert.equal(deferred.extra.primary_password_deferrals, "1");
+    Assert.equal(deferred.extra.attempt, "3");
+    Assert.deepEqual(
+      Glean.pwmgr.primaryPasswordPrompt.testGetValue().map(e => e.extra),
+      [{ source: "migration", result: "cancel" }],
+      "the canceled prompt is recorded"
+    );
+  } finally {
+    MockRegistrar.unregister(cid);
+    await LoginTestUtils.primaryPassword.disable();
+  }
+});
+
+add_task(async function test_primaryPassword_prompt_stops_after_cancels() {
+  resetState();
+  Services.prefs.setBoolPref(PREF_ENABLED, true);
+  Services.prefs.setIntPref(PREF_MAX_PRIMARY_PASSWORD_DEFERRALS, 2);
+  await LoginTestUtils.primaryPassword.enable();
+  let prompts = 0;
+  const cid = mockPrimaryPasswordPrompt(false, () => prompts++);
+  try {
+    const json = makeJsonStorage({
+      logins: [TestData.formLogin({})],
+      isLoggedIn: false,
+    });
+    const rust = makeRustStorage();
+
+    for (let startup = 0; startup < 4; startup++) {
+      const result = await new LoginStorageMigrator(json, rust).run();
+      Assert.equal(result, json, "the JSON store keeps serving");
+    }
+
+    Assert.equal(prompts, 2, "only prompted until the limit is reached");
+    Assert.deepEqual(
+      Glean.pwmgr.rustMigrationStatus
+        .testGetValue()
+        .map(e => [
+          e.extra.deferral_reason,
+          e.extra.primary_password_deferrals,
+        ]),
+      [
+        ["primary_password_canceled", "1"],
+        ["primary_password_canceled", "2"],
+        ["primary_password_limit", "2"],
+        ["primary_password_limit", "2"],
+      ],
+      "every startup records why the migration was deferred"
+    );
+    Assert.equal(
+      Services.prefs.getIntPref(PREF_PRIMARY_PASSWORD_DEFERRALS),
+      2,
+      "the count stops at the limit"
+    );
+    Assert.equal(rust.calls.length, 0, "no migration performed");
+    Assert.equal(
+      Services.prefs.getBoolPref(PREF_ENABLED),
+      true,
+      "rust.enabled is left alone"
+    );
+    Assert.equal(
+      Services.prefs.getIntPref(PREF_ATTEMPTS, 0),
+      0,
+      "the attempt budget is not touched"
+    );
+
+    Services.prefs.setIntPref(PREF_MAX_PRIMARY_PASSWORD_DEFERRALS, 3);
+    await new LoginStorageMigrator(json, rust).run();
+    Assert.equal(prompts, 3, "raising the limit prompts again");
+
+    Services.prefs.setIntPref(PREF_MAX_PRIMARY_PASSWORD_DEFERRALS, 0);
+    for (let startup = 0; startup < 2; startup++) {
+      await new LoginStorageMigrator(json, rust).run();
+    }
+    Assert.equal(prompts, 5, "a limit of 0 prompts on every startup");
   } finally {
     MockRegistrar.unregister(cid);
     await LoginTestUtils.primaryPassword.disable();

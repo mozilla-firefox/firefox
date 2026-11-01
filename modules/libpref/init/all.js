@@ -3003,6 +3003,9 @@ pref("signon.signupDetection.confidenceThreshold",     "0.75");
 #endif
 // Kill switch for restoring logins out of a deactivated Rust backend.
 pref("signon.storage.rust.restoreEnabled", true);
+// Stop prompting for the primary password at startup to migrate after this
+// many canceled prompts; 0 means no limit.
+pref("signon.storage.rust.maxPrimaryPasswordDeferrals", 3);
 // The following four prefs are managed by Fx internally:
 pref("signon.storage.rust.active", false);
 pref("signon.storage.rust.migrationAttempts", 0);
@@ -3010,6 +3013,7 @@ pref("signon.storage.rust.restoreAttempts", 0);
 pref("signon.storage.rust.restoreAttemptsVersion", 0);
 pref("signon.storage.rust.restoreVersion", 0);
 pref("signon.storage.rust.restoreTargetVersion", 1);
+pref("signon.storage.rust.primaryPasswordDeferrals", 0);
 
 // Satchel (Form Manager) prefs
 pref("browser.formfill.debug",            false);

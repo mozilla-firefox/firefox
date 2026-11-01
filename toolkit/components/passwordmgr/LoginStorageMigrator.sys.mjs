@@ -23,6 +23,13 @@ const PREFS = {
   RESTORE_VERSION: "signon.storage.rust.restoreVersion",
   // Raising this asks every profile for one more restore pass (bug 2065703).
   RESTORE_TARGET_VERSION: "signon.storage.rust.restoreTargetVersion",
+  // How many startups in a row the Primary Password prompt for the migration
+  // was canceled.
+  PRIMARY_PASSWORD_DEFERRALS: "signon.storage.rust.primaryPasswordDeferrals",
+  // After that many canceled prompts the migration stops prompting; 0 means no
+  // limit.
+  MAX_PRIMARY_PASSWORD_DEFERRALS:
+    "signon.storage.rust.maxPrimaryPasswordDeferrals",
 };
 
 const MAX_MIGRATION_ATTEMPTS = 10;
@@ -71,6 +78,8 @@ function recordMigrationStatus({
   attempt,
   endState,
   primaryPasswordSet,
+  primaryPasswordDeferrals,
+  deferralReason,
   error,
 }) {
   Glean.pwmgr.rustMigrationStatus.record({
@@ -84,7 +93,22 @@ function recordMigrationStatus({
     attempt,
     end_state: endState,
     primary_password_set: primaryPasswordSet,
+    primary_password_deferrals: primaryPasswordDeferrals,
+    deferral_reason: deferralReason,
     error_message: error ? normalizeRustStorageErrorMessage(error) : null,
+  });
+}
+
+// Records a startup on which the migration did not run because the primary
+// password was not entered.
+function recordMigrationDeferred(deferralReason, primaryPasswordDeferrals) {
+  recordMigrationStatus({
+    runId: Services.uuid.generateUUID(),
+    attempt: Services.prefs.getIntPref(PREFS.MIGRATION_ATTEMPTS, 0),
+    endState: "Deferred",
+    primaryPasswordSet: true,
+    primaryPasswordDeferrals,
+    deferralReason,
   });
 }
 
@@ -166,6 +190,21 @@ export class LoginStorageMigrator {
       lazy.LoginHelper.isPrimaryPasswordSet() &&
       !this.#jsonStorage.isLoggedIn
     ) {
+      const deferrals = Services.prefs.getIntPref(
+        PREFS.PRIMARY_PASSWORD_DEFERRALS,
+        0
+      );
+      const maxDeferrals = Services.prefs.getIntPref(
+        PREFS.MAX_PRIMARY_PASSWORD_DEFERRALS,
+        3
+      );
+      if (maxDeferrals > 0 && deferrals >= maxDeferrals) {
+        this.#logger.log(
+          "Migration deferred: primary password prompt canceled too often"
+        );
+        recordMigrationDeferred("primary_password_limit", deferrals);
+        return this.#jsonStorage;
+      }
       const token = Cc[
         "@mozilla.org/security/internalkeytoken;1"
       ].createInstance(Ci.nsIPKCS11Token);
@@ -175,8 +214,17 @@ export class LoginStorageMigrator {
       } catch (e) {
         // An exception is thrown if the user cancels the prompt.
       }
+      Glean.pwmgr.primaryPasswordPrompt.record({
+        source: "migration",
+        result: token.isLoggedIn ? "success" : "cancel",
+      });
       if (!token.isLoggedIn) {
         this.#logger.log("Migration deferred: primary password locked");
+        Services.prefs.setIntPref(
+          PREFS.PRIMARY_PASSWORD_DEFERRALS,
+          deferrals + 1
+        );
+        recordMigrationDeferred("primary_password_canceled", deferrals + 1);
         return this.#jsonStorage;
       }
     }
@@ -190,6 +238,10 @@ export class LoginStorageMigrator {
     const runId = Services.uuid.generateUUID();
     const attempt = Services.prefs.getIntPref(PREFS.MIGRATION_ATTEMPTS, 0);
     const primaryPasswordSet = lazy.LoginHelper.isPrimaryPasswordSet();
+    const primaryPasswordDeferrals = Services.prefs.getIntPref(
+      PREFS.PRIMARY_PASSWORD_DEFERRALS,
+      0
+    );
     let numberOfLoginsToMigrate = 0;
     let numberOfLoginsMigrated = 0;
     let numberOfLoginsQuarantined = 0;
@@ -288,6 +340,7 @@ export class LoginStorageMigrator {
         attempt,
         endState,
         primaryPasswordSet,
+        primaryPasswordDeferrals,
         error: fatalError,
       });
     }
@@ -298,6 +351,7 @@ export class LoginStorageMigrator {
     Services.prefs.setIntPref(PREFS.MIGRATION_ATTEMPTS, 0);
     Services.prefs.setIntPref(PREFS.RESTORE_VERSION, 0);
     Services.prefs.setIntPref(PREFS.RESTORE_ATTEMPTS, 0);
+    Services.prefs.setIntPref(PREFS.PRIMARY_PASSWORD_DEFERRALS, 0);
     return this.#rustStorage;
   }
 
