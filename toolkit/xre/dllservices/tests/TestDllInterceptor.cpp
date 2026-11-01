@@ -837,6 +837,9 @@ MOZ_GLOBINIT struct TestCase {
     TestCase("RexAndWithoutSib", NoStubAddressCheck),
     TestCase("JmpInsideEarlyBytes", ExpectedFail),
     TestCase("CallInsideEarlyBytes", ExpectedFail),
+    TestCase("StoreR10RipRelative", ExpectedFail),
+    TestCase("LoadRspRipRelative", ExpectedFail),
+    TestCase("RexCmpRipRelativeSpl", ExpectedFail),
 #  elif defined(_M_IX86)
     // Skip the stub address check as we always generate a trampoline for x86.
     TestCase("PushRet", NoStubAddressCheck,
@@ -1363,6 +1366,8 @@ bool TestDynamicCodePolicy() {
 }
 
 #if defined(_M_X64)
+static uint64_t gXorOperands[] = {0, kRipRelativeValue};
+
 constexpr unsigned char kTestValue = 0xcc;
 
 bool TestIsEqualToGlobalValue() {
@@ -1501,6 +1506,37 @@ extern "C" int wmain(int argc, wchar_t* argv[]) {
                        true, kTestValue) &&
       // ... and also after hooking.
       TestIsEqualToGlobalValue() &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadRaxRipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadR10RipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadR8RipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadR11RexWRBRipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadRdxRexWBRipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadR12RipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadR13RipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LoadRbpRipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LeaR8RipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", LeaRdxRexWBRipRelative, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", RexWIndirectJump, Equals,
+                kRipRelativeValue) &&
+      TEST_HOOK("TestDllInterceptor.exe", RexWIndirectCall, Equals,
+                ~kRipRelativeValue) &&
+      TEST_HOOK_PARAMS("TestDllInterceptor.exe", XorWithMemoryOperand, Equals,
+                       kRipRelativeValue & 0xffffffffULL, gXorOperands) &&
+      TEST_HOOK_PARAMS("TestDllInterceptor.exe", XorRexRBWithMemoryOperand,
+                       Equals, kRipRelativeValue & 0xffffffffULL, 0, 0, 0,
+                       gXorOperands) &&
+      TEST_HOOK("TestDllInterceptor.exe", CmpImm8RipRelativeBytePtr, Equals,
+                true) &&
 #endif
 #ifdef _M_IX86
       // We keep this test to hook complex code on x86. (Bug 850957)

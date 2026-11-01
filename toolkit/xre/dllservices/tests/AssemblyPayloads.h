@@ -246,6 +246,273 @@ __declspec(dllexport) MOZ_NAKED bool IsEqualToGlobalValue(
       "retq;");
 }
 
+// The following functions load kRipRelativeValue into a register through a
+// RIP-relative instruction located within the first 13 bytes, and return the
+// value of that register. They also XOR the result with the argument registers
+// other than the destination register, so that they return kRipRelativeValue
+// only if these registers are preserved when called with zero arguments.
+constexpr uint64_t kRipRelativeValue = 0x0123456789abcdefULL;
+static uint64_t __attribute__((used)) gRipRelativeValue = kRipRelativeValue;
+
+// 48 8b 05 XX XX XX XX    mov rax, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LoadRaxRipRelative(uint64_t, uint64_t,
+                                                            uint64_t,
+                                                            uint64_t) {
+  asm volatile(
+      "movq gRipRelativeValue(%rip), %rax;"
+      "nop;nop;nop;nop;nop;nop;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+// 4c 8b 15 XX XX XX XX    mov r10, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LoadR10RipRelative(uint64_t, uint64_t,
+                                                            uint64_t,
+                                                            uint64_t) {
+  asm volatile(
+      "movq gRipRelativeValue(%rip), %r10;"
+      "nop;nop;nop;nop;nop;nop;"
+      "movq %r10, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+// 4c 8b 05 XX XX XX XX    mov r8, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LoadR8RipRelative(uint64_t, uint64_t,
+                                                           uint64_t, uint64_t) {
+  asm volatile(
+      "movq gRipRelativeValue(%rip), %r8;"
+      "nop;nop;nop;nop;nop;nop;"
+      "movq %r8, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+// 4d 8b 1d XX XX XX XX    mov r11, qword ptr [rip + offset gRipRelativeValue]
+// (REX.WRB, where REX.B is ignored)
+__declspec(dllexport) MOZ_NAKED uint64_t LoadR11RexWRBRipRelative(uint64_t,
+                                                                  uint64_t,
+                                                                  uint64_t,
+                                                                  uint64_t) {
+  asm volatile(
+      ".byte 0x4d;"
+      "movl gRipRelativeValue(%rip), %ebx;"
+      "nop;nop;nop;nop;nop;nop;"
+      "movq %r11, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+// 49 8b 15 XX XX XX XX    mov rdx, qword ptr [rip + offset gRipRelativeValue]
+// (REX.WB, where REX.B is ignored)
+__declspec(dllexport) MOZ_NAKED uint64_t LoadRdxRexWBRipRelative(uint64_t,
+                                                                 uint64_t,
+                                                                 uint64_t,
+                                                                 uint64_t) {
+  asm volatile(
+      ".byte 0x49;"
+      "movl gRipRelativeValue(%rip), %edx;"
+      "nop;nop;nop;nop;nop;nop;"
+      "movq %rdx, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+// 41 54                   push r12
+// 4c 8b 25 XX XX XX XX    mov r12, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LoadR12RipRelative(uint64_t, uint64_t,
+                                                            uint64_t,
+                                                            uint64_t) {
+  asm volatile(
+      "pushq %r12;"
+      "movq gRipRelativeValue(%rip), %r12;"
+      "nop;nop;nop;nop;"
+      "movq %r12, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "popq %r12;"
+      "retq;");
+}
+
+// 41 55                   push r13
+// 4c 8b 2d XX XX XX XX    mov r13, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LoadR13RipRelative(uint64_t, uint64_t,
+                                                            uint64_t,
+                                                            uint64_t) {
+  asm volatile(
+      "pushq %r13;"
+      "movq gRipRelativeValue(%rip), %r13;"
+      "nop;nop;nop;nop;"
+      "movq %r13, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "popq %r13;"
+      "retq;");
+}
+
+// 55                      push rbp
+// 48 8b 2d XX XX XX XX    mov rbp, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LoadRbpRipRelative(uint64_t, uint64_t,
+                                                            uint64_t,
+                                                            uint64_t) {
+  asm volatile(
+      "pushq %rbp;"
+      "movq gRipRelativeValue(%rip), %rbp;"
+      "nop;nop;nop;nop;nop;"
+      "movq %rbp, %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "popq %rbp;"
+      "retq;");
+}
+
+// 4c 8d 05 XX XX XX XX    lea r8, [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED uint64_t LeaR8RipRelative(uint64_t, uint64_t,
+                                                          uint64_t, uint64_t) {
+  asm volatile(
+      "leaq gRipRelativeValue(%rip), %r8;"
+      "nop;nop;nop;nop;nop;nop;"
+      "movq (%r8), %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %rdx, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+// 49 8d 15 XX XX XX XX    lea rdx, [rip + offset gRipRelativeValue]
+// (REX.WB, where REX.B is ignored)
+__declspec(dllexport) MOZ_NAKED uint64_t LeaRdxRexWBRipRelative(uint64_t,
+                                                                uint64_t,
+                                                                uint64_t,
+                                                                uint64_t) {
+  asm volatile(
+      ".byte 0x49;"
+      "leal gRipRelativeValue(%rip), %edx;"
+      "nop;nop;nop;nop;nop;nop;"
+      "movq (%rdx), %rax;"
+      "xorq %rcx, %rax;"
+      "xorq %r8, %rax;"
+      "xorq %r9, %rax;"
+      "retq;");
+}
+
+__declspec(dllexport) MOZ_NAKED uint64_t RexWIndirectJumpTarget() {
+  asm volatile(
+      "movabsq %0, %%rax;"
+      "retq;"
+      :
+      : "i"(kRipRelativeValue));
+}
+
+// 48 ff 25 00 00 00 00    jmp qword ptr [rip + 0] (REX.W)
+// followed by the address of RexWIndirectJumpTarget.
+__declspec(dllexport) MOZ_NAKED uint64_t RexWIndirectJump() {
+  asm volatile(
+      "nop;nop;nop;nop;nop;nop;"
+      ".byte 0x48;"
+      "jmpq *0(%rip);"
+      ".quad RexWIndirectJumpTarget;");
+}
+
+// 48 ff 15 00 20 00 00    call qword ptr [rip + 0x2000] (REX.W)
+// The second byte of the displacement looks like the ModR/M byte of a jmp, and
+// the code after the call distinguishes a call from a jmp.
+__declspec(dllexport) MOZ_NAKED uint64_t RexWIndirectCall() {
+  asm volatile(
+      "nop;nop;nop;nop;nop;nop;"
+      ".byte 0x48;"
+      "callq *0x2000(%rip);"
+      "notq %rax;"
+      "retq;"
+      ".fill 0x2000 - 4, 1, 0xcc;"
+      ".quad RexWIndirectJumpTarget;");
+}
+
+// 31 c0                   xor eax, eax
+// 33 41 08                xor eax, dword ptr [rcx + 8]
+__declspec(dllexport) MOZ_NAKED uint64_t XorWithMemoryOperand(uint64_t*) {
+  asm volatile(
+      "xorl %eax, %eax;"
+      "xorl 8(%rcx), %eax;"
+      "nop;nop;nop;nop;nop;nop;nop;nop;"
+      "retq;");
+}
+
+// 31 c0                   xor eax, eax
+// 45 33 41 08             xor r8d, dword ptr [r9 + 8]
+__declspec(dllexport) MOZ_NAKED uint64_t XorRexRBWithMemoryOperand(uint64_t,
+                                                                   uint64_t,
+                                                                   uint64_t,
+                                                                   uint64_t*) {
+  asm volatile(
+      "xorl %eax, %eax;"
+      "xorl 8(%r9), %r8d;"
+      "nop;nop;nop;nop;nop;nop;nop;"
+      "movl %r8d, %eax;"
+      "retq;");
+}
+
+// The byte before the compared one differs from the immediate, so that the
+// function returns true only if the RIP-relative address accounts for the
+// imm8 that follows the displacement.
+static unsigned char __attribute__((used)) gCmpImm8Values[] = {0x00, 0xcc};
+
+// 31 c0                   xor eax, eax
+// 80 3d XX XX XX XX cc    cmp byte ptr [rip + offset gCmpImm8Values + 1], 0xcc
+__declspec(dllexport) MOZ_NAKED bool CmpImm8RipRelativeBytePtr() {
+  asm volatile(
+      "xorl %eax, %eax;"
+      "cmpb $0xcc, gCmpImm8Values+1(%rip);"
+      "nop;nop;nop;nop;"
+      "sete %al;"
+      "retq;");
+}
+
+// We don't support detouring the following functions.
+
+// 4c 89 15 XX XX XX XX    mov qword ptr [rip + offset gRipRelativeValue], r10
+__declspec(dllexport) MOZ_NAKED void StoreR10RipRelative() {
+  asm volatile(
+      "movq %r10, gRipRelativeValue(%rip);"
+      "nop;nop;nop;nop;nop;nop;"
+      "retq;");
+}
+
+// 48 8b 25 XX XX XX XX    mov rsp, qword ptr [rip + offset gRipRelativeValue]
+__declspec(dllexport) MOZ_NAKED void LoadRspRipRelative() {
+  asm volatile(
+      "movq gRipRelativeValue(%rip), %rsp;"
+      "nop;nop;nop;nop;nop;nop;"
+      "retq;");
+}
+
+// 40 38 25 XX XX XX XX    cmp byte ptr [rip + offset gGlobalValue], spl
+__declspec(dllexport) MOZ_NAKED void RexCmpRipRelativeSpl() {
+  asm volatile(
+      "cmpb %spl, gGlobalValue(%rip);"
+      "nop;nop;nop;nop;nop;nop;"
+      "retq;");
+}
+
 // This code reproduces bug 1798787: it uses the same prologue, the same unwind
 // info, and it has a call instruction that starts within the 13 first bytes.
 MOZ_NAKED void DetouredCallCode(uintptr_t aCallee) {
