@@ -4085,6 +4085,23 @@
 
     <!-- ==== End of Terms of use popup prompt. ==== -->
 
+    <!-- Sports widget -->
+    <!-- Label shown on the sports widget scoreboard when a match is currently being played live. -->
+    <string name="wrex_widget_match_live">LIVE</string>
+    <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+    <string name="wrex_widget_match_delayed">Delayed</string>
+    <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+    <string name="wrex_widget_match_suspended">Suspended</string>
+    <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+    <string name="wrex_widget_match_postponed">Postponed</string>
+    <!-- Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+      %s is the name of the competition the match belongs to (e.g. "FA Cup"). -->
+    <string name="wrex_widget_live_game_content_description">%s, live game</string>
+    <!-- Content description (for accessibility, not displayed) for a paginated item.
+      %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+      %2$d is the current page number, and %3$d is the total number of pages. -->
+    <string name="wrex_widget_page_position_content_description">%1$s, page %2$d of %3$d</string>
+
     <!-- Privacy notice homepage banner -->
     <!-- A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
     %1$s is replaced by an active link using privacy_notice_updated_homepage_message_privacy_notice as text (Privacy Notice)
