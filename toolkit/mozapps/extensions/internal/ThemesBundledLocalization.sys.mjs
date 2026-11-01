@@ -70,6 +70,43 @@ const THEME_L10N_IDS = new Map([
   ["nova-tide@mozilla.org", { name: "extension-nova-tide-name" }],
   ["nova-ash@mozilla.org", { name: "extension-nova-ash-name" }],
   ["nova-smoke@mozilla.org", { name: "extension-nova-smoke-name" }],
+  ["proton-theme@mozilla.org", { name: "extension-classic-proton-name" }],
+  [
+    "{4223a94a-d3f9-40e9-95dd-99aca80ea04b}",
+    { name: "extension-classic-blue-name" },
+  ],
+  [
+    "{0683b144-0d4a-4815-963e-55a8ec8d386b}",
+    { name: "extension-classic-cyan-name" },
+  ],
+  [
+    "{aab1adac-5449-47fd-b836-c2f43dc28f3f}",
+    { name: "extension-classic-violet-name" },
+  ],
+  [
+    "{7063abff-a690-4b87-a548-fc32d3ce5708}",
+    { name: "extension-classic-green-name" },
+  ],
+  [
+    "{1d73a1eb-128d-4e9e-83f8-c0c51f8c5fd3}",
+    { name: "extension-classic-purple-name" },
+  ],
+  [
+    "{2b0fadbf-238d-43db-aa9d-e06c9a7e000b}",
+    { name: "extension-classic-pink-name" },
+  ],
+  [
+    "{cd6791f7-4b6d-47b4-8877-1d4c82c6699d}",
+    { name: "extension-classic-yellow-name" },
+  ],
+  [
+    "{8de5f8c3-bfc2-443b-9913-7bbadbd1ba0d}",
+    { name: "extension-classic-red-name" },
+  ],
+  [
+    "{7a301b7b-c3e2-40bf-a06b-6d517bbf138b}",
+    { name: "extension-classic-orange-name" },
+  ],
 ]);
 
 /**

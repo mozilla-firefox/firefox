@@ -42,7 +42,11 @@ const DEFAULT_THEME_PREVIEW_NOVA_URL =
   "chrome://mozapps/content/extensions/default-theme/preview-nova.svg";
 const RTL_FLIP_PARAM = "param(--rtl-flip, var(--theme-preview-rtl-flip))";
 
+const CLASSIC_PROTON_ID = "proton-theme@mozilla.org";
+const CLASSIC_BLUE_ID = "{4223a94a-d3f9-40e9-95dd-99aca80ea04b}";
+
 let ALL_THEME_IDS;
+let CLASSIC_THEME_IDS;
 
 add_setup(async function () {
   const themesListManager = await getThemesList({
@@ -51,12 +55,26 @@ add_setup(async function () {
   ALL_THEME_IDS = themesListManager
     .getThemesInfo()
     .map(themeInfo => themeInfo.id);
+  CLASSIC_THEME_IDS = themesListManager
+    .getClassicThemesInfo()
+    .map(themeInfo => themeInfo.id);
 });
 
 const getThemesPicker = doc => doc.querySelector("aboutaddons-themes-picker");
 
 function getThemeCard(picker, idPrefix) {
   return [...picker.themeCards].find(card => card.dataset.theme === idPrefix);
+}
+
+const getClassicThemesPicker = doc =>
+  doc.querySelector(
+    'aboutaddons-themes-picker[themes-collection-name="classic"]'
+  );
+
+function getClassicThemeCard(picker, themeId) {
+  return [...picker.themeCards].find(
+    card => card.dataset.theme === themeIdPrefix(themeId)
+  );
 }
 
 function getThemeButton(card) {
@@ -1049,6 +1067,145 @@ add_task(async function test_picker_shown_not_recorded_when_pref_disabled() {
     Glean.themePicker.shown.testGetValue(),
     undefined,
     "theme_picker.shown is not recorded when the picker isn't shown"
+  );
+
+  await closeView(win);
+  await SpecialPowers.popPrefEnv();
+});
+
+// Verifies that the classic themes are shown in their own moz-card, with its
+// own expand toggle, with the expected names and recolored Nova preview images,
+// and that their button reflects whether they are installed or active.
+add_task(async function test_picker_classic_themes() {
+  await SpecialPowers.pushPrefEnv({
+    set: [[PREF_NOVA_THEMES_PICKER, true]],
+  });
+
+  const win = await loadInitialView("theme");
+  const picker = getThemesPicker(win.document);
+  const classicPicker = getClassicThemesPicker(win.document);
+  await waitForThemesPickerReady(picker);
+  await TestUtils.waitForCondition(
+    () => classicPicker.themeCards.length,
+    "Waiting for the classic themes cards"
+  );
+
+  const pickers = win.document.querySelector("aboutaddons-themes-pickers");
+  Assert.ok(pickers, "wrapper element is rendered in the themes list view");
+  Assert.equal(
+    win.getComputedStyle(pickers).display,
+    "contents",
+    "wrapper element does not participate in the page layout"
+  );
+  Assert.ok(classicPicker.pickerCard, "classic themes moz-card is rendered");
+  Assert.equal(
+    classicPicker.pickerCard.getAttribute("data-l10n-id"),
+    "aboutaddons-classic-themes-heading",
+    "classic themes card has the expected heading"
+  );
+  const expectedCollapsedCount = picker.visibleRows * 2;
+  Assert.equal(
+    classicPicker.themeCards.length,
+    expectedCollapsedCount,
+    "Only the first classic theme cards are shown initially"
+  );
+  Assert.ok(
+    BrowserTestUtils.isVisible(classicPicker.expandToggle),
+    "classic themes card shows its expand toggle"
+  );
+  Assert.equal(
+    classicPicker.expandToggle.getAttribute("data-l10n-id"),
+    "aboutaddons-themes-picker-see-more",
+    "While collapsed, classic toggle button shows the 'Show More' string"
+  );
+  Assert.equal(
+    picker.themeCards.length,
+    expectedCollapsedCount,
+    "Firefox themes card is unaffected by the classic themes toggle"
+  );
+
+  classicPicker.expandToggle.click();
+  await classicPicker.updateComplete;
+  Assert.equal(
+    classicPicker.themeCards.length,
+    CLASSIC_THEME_IDS.length,
+    "Expect a card for each classic theme after expanding"
+  );
+  Assert.equal(
+    classicPicker.expandToggle.getAttribute("data-l10n-id"),
+    "aboutaddons-themes-picker-see-less",
+    "While expanded, classic toggle button shows the 'Show Less' string"
+  );
+  Assert.equal(
+    picker.themeCards.length,
+    expectedCollapsedCount,
+    "Firefox themes card stays collapsed when expanding the classic themes"
+  );
+
+  const themesListManager = await getThemesList({
+    installSource: "about:addons",
+  });
+  for (const themeId of CLASSIC_THEME_IDS) {
+    const card = getClassicThemeCard(classicPicker, themeId);
+    Assert.ok(card, `classic theme card for "${themeId}" is rendered`);
+    Assert.equal(
+      card.querySelector(".theme-name").getAttribute("data-l10n-id"),
+      getL10nIdForThemeProp(themeId, "name"),
+      `"${themeId}" card has the expected name l10n-id`
+    );
+    Assert.equal(
+      getThemeButton(card).getAttribute("data-l10n-id"),
+      "aboutaddons-themes-picker-install-button",
+      `"${themeId}" card shows an Install button while not installed`
+    );
+    await assertNovaThemePreview(card, themeId, themesListManager);
+  }
+  for (const themeId of CLASSIC_THEME_IDS) {
+    Assert.ok(
+      !getThemeCard(picker, themeIdPrefix(themeId)),
+      `"${themeId}" is not in the Firefox themes card`
+    );
+  }
+
+  const xpi = createNovaThemeXPI(CLASSIC_BLUE_ID, "Blue");
+  const blueAddon = await AddonManager.installTemporaryAddon(xpi);
+  await blueAddon.disable();
+  await classicPicker.updateComplete;
+  const blueCard = getClassicThemeCard(classicPicker, CLASSIC_BLUE_ID);
+  Assert.equal(
+    getThemeButton(blueCard).getAttribute("data-l10n-id"),
+    "aboutaddons-themes-picker-enable-button",
+    "installed but inactive classic theme shows an Enable button"
+  );
+
+  const promiseActiveThemePrefChanged = TestUtils.waitForPrefChange(
+    PREF_ACTIVE_THEME_ID,
+    value => value === CLASSIC_BLUE_ID
+  );
+  await blueAddon.enable();
+  await promiseActiveThemePrefChanged;
+  await classicPicker.updateComplete;
+  Assert.equal(
+    getThemeButton(blueCard).getAttribute("data-l10n-id"),
+    "aboutaddons-themes-picker-disable-button",
+    "active classic theme shows a Disable button"
+  );
+  Assert.equal(
+    getThemeButton(
+      getClassicThemeCard(classicPicker, CLASSIC_PROTON_ID)
+    ).getAttribute("data-l10n-id"),
+    "aboutaddons-themes-picker-install-button",
+    "other classic themes are unaffected"
+  );
+
+  await blueAddon.uninstall();
+
+  classicPicker.expandToggle.click();
+  await classicPicker.updateComplete;
+  Assert.equal(
+    classicPicker.themeCards.length,
+    expectedCollapsedCount,
+    "Classic themes collapse back to the initial card count"
   );
 
   await closeView(win);
