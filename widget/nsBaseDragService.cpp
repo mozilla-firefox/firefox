@@ -1111,12 +1111,20 @@ nsresult nsBaseDragSession::DrawDragForImage(
 
     aScreenDragRect->SizeTo(aPresContext->CSSPixelsToDevPixels(imageWidth),
                             aPresContext->CSSPixelsToDevPixels(imageHeight));
+  } else {
+    // Bug 1907668: The canvas size should be converted to dev pixels.
+    NS_ASSERTION(aCanvas, "both image and canvas are null");
+    CSSIntSize sz = aCanvas->GetSize();
+    aScreenDragRect->SizeTo(sz.width, sz.height);
+  }
 
-    nsIntSize destSize(aScreenDragRect->Width(), aScreenDragRect->Height());
-    if (destSize.IsEmpty()) {
-      return NS_ERROR_FAILURE;
-    }
+  nsIntSize destSize;
+  destSize.width = aScreenDragRect->Width();
+  destSize.height = aScreenDragRect->Height();
+  if (destSize.width == 0 || destSize.height == 0) return NS_ERROR_FAILURE;
 
+  nsresult result = NS_OK;
+  if (aImageLoader) {
     RefPtr<DrawTarget> dt =
         gfxPlatform::GetPlatform()->CreateOffscreenContentDrawTarget(
             destSize, SurfaceFormat::B8G8R8A8);
@@ -1134,29 +1142,11 @@ nsresult nsBaseDragSession::DrawDragForImage(
       return NS_ERROR_FAILURE;
     }
     *aSurface = dt->Snapshot();
-    return NS_OK;
+  } else {
+    *aSurface = aCanvas->GetSurfaceSnapshot();
   }
 
-  NS_ASSERTION(aCanvas, "both image and canvas are null");
-  *aSurface = aCanvas->GetSurfaceSnapshot();
-  if (!*aSurface) {
-    return NS_ERROR_FAILURE;
-  }
-
-  // Size the drag rect from the snapshot so that the rect and the surface
-  // always agree. They can disagree for a placeholder canvas transferred to an
-  // OffscreenCanvas, whose element size can differ from the offscreen bitmap,
-  // which would leave the platform drag-image code with a mismatched
-  // rect/surface pair.
-  const IntSize size = (*aSurface)->GetSize();
-  if (size.IsEmpty()) {
-    return NS_ERROR_FAILURE;
-  }
-
-  // Bug 1907668: The canvas size should be converted to dev pixels.
-  aScreenDragRect->SizeTo(size.width, size.height);
-
-  return NS_OK;
+  return result;
 }
 
 NS_IMETHODIMP

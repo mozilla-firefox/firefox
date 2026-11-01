@@ -6,8 +6,6 @@
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
-#include <algorithm>
-
 #include "GRefPtr.h"
 #include "imgIContainer.h"
 #include "mozilla/RefPtr.h"
@@ -63,6 +61,9 @@ already_AddRefed<GdkPixbuf> nsImageToPixbuf::SourceSurfaceToPixbuf(
   using mozilla::gfx::Factory;
 
   MOZ_ASSERT(aSurface);
+  MOZ_ASSERT(aWidth <= aSurface->GetSize().width &&
+                 aHeight <= aSurface->GetSize().height,
+             "Requested rect is bigger than the supplied surface");
 
   RefPtr<GdkPixbuf> pixbuf =
       dont_AddRef(gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, aWidth, aHeight));
@@ -116,18 +117,8 @@ already_AddRefed<GdkPixbuf> nsImageToPixbuf::SourceSurfaceToPixbuf(
 
   SurfaceFormat format = dataSurface->GetFormat();
 
-  // The caller may request a region larger than the source surface. Clamp the
-  // read to the mapped surface so we never read past its allocation, and zero
-  // any pixels of the destination that we don't cover.
-  const mozilla::gfx::IntSize srcSize = dataSurface->GetSize();
-  const int32_t copyWidth = std::min(aWidth, srcSize.width);
-  const int32_t copyHeight = std::min(aHeight, srcSize.height);
-  if (copyWidth < aWidth || copyHeight < aHeight) {
-    gdk_pixbuf_fill(pixbuf, 0);
-  }
-
-  for (int32_t row = 0; row < copyHeight; ++row) {
-    for (int32_t col = 0; col < copyWidth; ++col) {
+  for (int32_t row = 0; row < aHeight; ++row) {
+    for (int32_t col = 0; col < aWidth; ++col) {
       guchar* destPixel = destPixels + row * destStride + 4 * col;
 
       uint32_t* srcPixel =

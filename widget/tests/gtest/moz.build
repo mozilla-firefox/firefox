@@ -40,7 +40,6 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     UNIFIED_SOURCES += [
         "TestDMABufSurface.cpp",
         "TestGtkDragDrop.cpp",
-        "TestSourceSurfaceToPixbuf.cpp",
     ]
 
 FINAL_LIBRARY = "xul-gtest"
