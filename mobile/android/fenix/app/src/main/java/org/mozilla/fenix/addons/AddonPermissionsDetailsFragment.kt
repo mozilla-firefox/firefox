@@ -8,15 +8,20 @@ import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.Addon.Companion.isAllURLsPermission
 import mozilla.components.feature.addons.ui.translateName
+import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.addons.ui.AddonPermissionsScreen
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.components
@@ -77,6 +82,8 @@ class AddonPermissionsDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
             allSitesHostPermissionsList.value = updatedAddon.optionalOrigins.getAllSitesPermissionsList()
         }
 
+        val pendingUpdate by observePendingUpdate()
+
         FirefoxTheme {
             AddonPermissionsScreen(
                 permissions = args.addon.translatePermissions(requireContext()),
@@ -116,9 +123,16 @@ class AddonPermissionsDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
                     openWebsite(learnMoreUrl)
                 },
                 learnMoreUrl = learnMoreUrl(requireContext()),
+                hasPendingUpdate = pendingUpdate != null,
+                onReviewUpdateClick = { showPendingExtensionUpdate(requireComponents.core.store, args.addon.id) },
+                onCancelUpdateClick = { cancelPendingExtensionUpdate(requireComponents.core.store, args.addon.id) },
             )
         }
     }
+
+    @Composable
+    private fun observePendingUpdate(): State<PendingExtensionUpdate?> =
+        requireComponents.core.store.observeAsComposableState { it.pendingExtensionUpdates[args.addon.id] }
 
     private fun learnMoreUrl(context: Context) =
         SupportUtils.getSumoURLForTopic(

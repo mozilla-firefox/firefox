@@ -521,6 +521,24 @@ class WebExtensionActionTest {
         assertTrue(state.pendingExtensionUpdates.isEmpty())
     }
 
+    @Test
+    fun `WHEN UpdatePendingExtensionUpdateReviewRequestAction is dispatched THEN the review request is set`() {
+        var state = BrowserState()
+        assertNull(state.pendingExtensionUpdateReviewRequest)
+
+        state =
+            BrowserStateReducer.reduce(state, WebExtensionAction.UpdatePendingExtensionUpdateReviewRequestAction("id"))
+        assertEquals("id", state.pendingExtensionUpdateReviewRequest)
+    }
+
+    @Test
+    fun `WHEN ConsumePendingExtensionUpdateReviewRequestAction is dispatched THEN the review request is removed`() {
+        var state = BrowserState(pendingExtensionUpdateReviewRequest = "id")
+
+        state = BrowserStateReducer.reduce(state, WebExtensionAction.ConsumePendingExtensionUpdateReviewRequestAction)
+        assertNull(state.pendingExtensionUpdateReviewRequest)
+    }
+
     private fun pendingExtensionUpdate() =
         PendingExtensionUpdate(
             extensionId = "id",

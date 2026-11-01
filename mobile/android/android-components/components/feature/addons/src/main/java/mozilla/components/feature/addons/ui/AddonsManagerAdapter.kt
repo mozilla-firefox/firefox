@@ -22,6 +22,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.isInvisible
@@ -29,7 +30,9 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import mozilla.components.browser.state.action.ExtensionsProcessAction
+import mozilla.components.browser.state.selector.pendingExtensionUpdatesNeedingAttention
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.R
 import mozilla.components.feature.addons.ui.CustomViewHolder.AddonViewHolder
@@ -162,6 +165,7 @@ class AddonsManagerAdapter(
         val allowedInPrivateBrowsingLabel = view.findViewById<ImageView>(R.id.allowed_in_private_browsing_label)
         val messageBarWarningView = view.findViewById<View>(R.id.add_on_messagebar_warning)
         val messageBarErrorView = view.findViewById<View>(R.id.add_on_messagebar_error)
+        val messageBarUpdateView = view.findViewById<ComposeView>(R.id.add_on_messagebar_update)
 
         return AddonViewHolder(
             view,
@@ -176,6 +180,7 @@ class AddonsManagerAdapter(
             allowedInPrivateBrowsingLabel,
             messageBarWarningView,
             messageBarErrorView,
+            messageBarUpdateView,
         )
     }
 
@@ -346,15 +351,26 @@ class AddonsManagerAdapter(
         style?.maybeSetAddonNameTextColor(holder.titleView)
         style?.maybeSetAddonSummaryTextColor(holder.summaryView)
 
+        val pendingUpdateMessage =
+            if (store.state.pendingExtensionUpdatesNeedingAttention.containsKey(addon.id)) {
+                context.getString(R.string.mozac_feature_addons_update_requires_new_settings, addonName)
+            } else {
+                null
+            }
+
         bindMessageBars(
             context,
             holder.messageBarWarningView,
             holder.messageBarErrorView,
+            holder.messageBarUpdateView,
             onLearnMoreLinkClicked = { link -> addonsManagerDelegate.onLearnMoreLinkClicked(link, addon) },
             addon,
             addonName,
             appName,
             appVersion,
+            pendingUpdateMessage = pendingUpdateMessage,
+            onReviewUpdateClicked = { addonsManagerDelegate.onReviewExtensionUpdateClicked(addon) },
+            onCancelUpdateClicked = { addonsManagerDelegate.onCancelExtensionUpdateClicked(addon) },
         )
     }
 
@@ -512,27 +528,49 @@ class AddonsManagerAdapter(
          * @param context UI context
          * @param messageBarWarningView The view of the "warning" message bar.
          * @param messageBarErrorView The view of the "error" messagebar.
+         * @param messageBarUpdateView The view of the "update" message bar.
          * @param onLearnMoreLinkClicked A callback function that reacts to a click on a learn more link. The link is
          *   passed to this function. In most cases, we'll want to open the link in a tab.
          * @param addon The [Addon] to bind.
          * @param addonName The add-on name.
          * @param appName The application name.
          * @param appVersion The application version.
+         * @param pendingUpdateMessage The message of the "update" message bar, or null to hide it.
+         * @param onReviewUpdateClicked Invoked when "Review changes" is clicked on the "update" message bar.
+         * @param onCancelUpdateClicked Invoked when the close button of the "update" message bar is clicked.
          */
         @Suppress("LongParameterList")
         fun bindMessageBars(
             context: Context,
             messageBarWarningView: View,
             messageBarErrorView: View,
+            messageBarUpdateView: ComposeView,
             onLearnMoreLinkClicked: (AddonsManagerAdapterDelegate.LearnMoreLinks) -> Unit,
             addon: Addon,
             addonName: String,
             appName: String,
             appVersion: String,
+            pendingUpdateMessage: String? = null,
+            onReviewUpdateClicked: () -> Unit = {},
+            onCancelUpdateClicked: () -> Unit = {},
         ) {
             // Make the message-bars invisible by default.
             messageBarWarningView.isVisible = false
             messageBarErrorView.isVisible = false
+            messageBarUpdateView.isVisible = false
+
+            if (pendingUpdateMessage != null) {
+                messageBarUpdateView.setContent {
+                    AcornTheme {
+                        PendingExtensionUpdateBanner(
+                            message = pendingUpdateMessage,
+                            onReviewClick = onReviewUpdateClicked,
+                            onCancelClick = onCancelUpdateClicked,
+                        )
+                    }
+                }
+                messageBarUpdateView.isVisible = true
+            }
 
             val messageBarErrorTextView = messageBarErrorView.findViewById<TextView>(R.id.add_on_messagebar_error_text)
             val messageBarErrorLearnMoreLink =

@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +20,8 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mozilla.components.concept.base.crash.Breadcrumb
@@ -29,6 +32,7 @@ import mozilla.components.feature.addons.AddonManagerException
 import mozilla.components.feature.addons.R as addonsR
 import mozilla.components.feature.addons.ui.AddonsManagerAdapter
 import mozilla.components.feature.addons.ui.translateName
+import mozilla.components.lib.state.ext.consumeFlow
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.content.appVersionName
@@ -36,6 +40,7 @@ import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.databinding.FragmentInstalledAddOnDetailsBinding
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.components
+import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.runIfFragmentIsAttached
 import org.mozilla.fenix.ext.showToolbar
 
@@ -76,6 +81,9 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         bindAddon()
+        consumeFlow(requireComponents.core.store) { flow ->
+            flow.map { it.pendingExtensionUpdates[addon.id] }.distinctUntilChanged().collect { bindMessageBars() }
+        }
     }
 
     override fun onResume() {
@@ -157,14 +165,23 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
         bindAllowInPrivateBrowsingSwitch()
         bindRemoveButton()
         bindReportButton()
+        bindMessageBars()
+    }
+
+    @VisibleForTesting
+    internal fun bindMessageBars() {
         context?.let {
             val messageBarWarningView = binding.root.findViewById<View>(addonsR.id.add_on_messagebar_warning)
             val messageBarErrorView = binding.root.findViewById<View>(addonsR.id.add_on_messagebar_error)
+            val messageBarUpdateView = binding.root.findViewById<ComposeView>(addonsR.id.add_on_messagebar_update)
+            val store = requireComponents.core.store
+            val hasPendingUpdate = store.state.pendingExtensionUpdates[addon.id] != null
 
             AddonsManagerAdapter.bindMessageBars(
                 it,
                 messageBarWarningView,
                 messageBarErrorView,
+                messageBarUpdateView,
                 onLearnMoreLinkClicked = { link ->
                     binding.root.openLearnMoreLink(link, addon)
                 },
@@ -172,6 +189,14 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
                 addon.translateName(it),
                 it.appName,
                 it.appVersionName,
+                pendingUpdateMessage =
+                    if (hasPendingUpdate) {
+                        it.getString(addonsR.string.mozac_feature_addons_update_requires_new_settings_this_extension)
+                    } else {
+                        null
+                    },
+                onReviewUpdateClicked = { showPendingExtensionUpdate(store, addon.id) },
+                onCancelUpdateClicked = { cancelPendingExtensionUpdate(store, addon.id) },
             )
         }
     }

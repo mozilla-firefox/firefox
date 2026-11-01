@@ -927,6 +927,15 @@ sealed class WebExtensionAction : BrowserAction() {
     data class RemovePendingExtensionUpdateAction(val extensionId: String) : WebExtensionAction()
 
     /**
+     * Sets [BrowserState.pendingExtensionUpdateReviewRequest] to [extensionId]: the user asked to review the pending
+     * update of that extension.
+     */
+    data class UpdatePendingExtensionUpdateReviewRequestAction(val extensionId: String) : WebExtensionAction()
+
+    /** Removes the [BrowserState.pendingExtensionUpdateReviewRequest]. */
+    object ConsumePendingExtensionUpdateReviewRequestAction : WebExtensionAction()
+
+    /**
      * Removes all state of the uninstalled extension from [BrowserState.extensions] and
      * [TabSessionState.extensionState].
      */

@@ -46,4 +46,20 @@ interface AddonsManagerAdapterDelegate {
 
     /** Handler for when a "learn more" link on an add-on item is clicked. */
     fun onLearnMoreLinkClicked(link: LearnMoreLinks, addon: Addon) = Unit
+
+    /**
+     * Handler for when "Review changes" is clicked on the message bar of a pending update.
+     *
+     * @param addon The [Addon] whose update is waiting for the user.
+     */
+    fun onReviewExtensionUpdateClicked(addon: Addon) = Unit
+
+    /**
+     * Handler for when the close button is clicked on the message bar of a pending update. The adapter does not observe
+     * the store: remove the update from [mozilla.components.browser.state.state.BrowserState.pendingExtensionUpdates]
+     * and rebind the row to hide the message bar.
+     *
+     * @param addon The [Addon] whose update is waiting for the user.
+     */
+    fun onCancelExtensionUpdateClicked(addon: Addon) = Unit
 }

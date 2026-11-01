@@ -22,6 +22,11 @@ import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.action.WebExtensionAction
+import mozilla.components.browser.state.state.BrowserState
+import mozilla.components.browser.state.state.WebExtensionState
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.base.profiler.Profiler
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.webextension.EnableSource
@@ -72,6 +77,7 @@ class InstalledAddonDetailsFragmentTest {
                 every { getProfilerTime() } returns PROFILER_START_TIME
                 every { isProfilerActive() } returns true
             }
+        every { testContext.components.core.store } returns BrowserStore()
     }
 
     @Test
@@ -659,6 +665,61 @@ class InstalledAddonDetailsFragmentTest {
                 originalInput = url,
             )
         }
+    }
+
+    @Test
+    fun `GIVEN an add-on with a pending update WHEN binding the message bars THEN show the update banner until the update is gone`() {
+        val store = setUpFragmentWithPendingUpdate(enabled = true, pendingUpdateIds = listOf("some-addon-id"))
+        val updateBanner = fragment.binding.root.findViewById<View>(addonsR.id.add_on_messagebar_update)
+
+        fragment.bindMessageBars()
+        assertTrue(updateBanner.isVisible)
+
+        store.dispatch(WebExtensionAction.RemovePendingExtensionUpdateAction("some-addon-id"))
+        fragment.bindMessageBars()
+        assertFalse(updateBanner.isVisible)
+    }
+
+    @Test
+    fun `GIVEN a disabled add-on with a pending update WHEN binding the message bars THEN show the update banner`() {
+        setUpFragmentWithPendingUpdate(enabled = false, pendingUpdateIds = listOf("some-addon-id"))
+        val updateBanner = fragment.binding.root.findViewById<View>(addonsR.id.add_on_messagebar_update)
+
+        fragment.bindMessageBars()
+        assertTrue(updateBanner.isVisible)
+    }
+
+    @Test
+    fun `GIVEN only another add-on has a pending update WHEN binding the message bars THEN do not show the update banner`() {
+        setUpFragmentWithPendingUpdate(enabled = true, pendingUpdateIds = listOf("other-addon-id"))
+        val updateBanner = fragment.binding.root.findViewById<View>(addonsR.id.add_on_messagebar_update)
+
+        fragment.bindMessageBars()
+        assertFalse(updateBanner.isVisible)
+    }
+
+    private fun setUpFragmentWithPendingUpdate(enabled: Boolean, pendingUpdateIds: List<String>): BrowserStore {
+        val addon = Addon(id = "some-addon-id", translatableName = mapOf(Addon.DEFAULT_LOCALE to "some-name"))
+        setUpFragmentForAddon(addon)
+        every { fragment.requireContext() } returns testContext
+        val store =
+            BrowserStore(
+                BrowserState(
+                    extensions = mapOf(addon.id to WebExtensionState(addon.id, enabled = enabled)),
+                    pendingExtensionUpdates =
+                        pendingUpdateIds.associateWith {
+                            PendingExtensionUpdate(
+                                extensionId = it,
+                                permissions = listOf("privacy"),
+                                origins = emptyList(),
+                                dataCollectionPermissions = emptyList(),
+                                onPermissionsGranted = {},
+                            )
+                        },
+                )
+            )
+        every { testContext.components.core.store } returns store
+        return store
     }
 
     private fun mockAddon(openOptionsPageInTab: Boolean = true): Addon {

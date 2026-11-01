@@ -21,13 +21,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.R as materialR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import mozilla.components.browser.state.selector.pendingExtensionUpdatesNeedingAttention
 import mozilla.components.concept.engine.webextension.InstallationMethod
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.addons.AddonManagerException
 import mozilla.components.feature.addons.R as addonsR
 import mozilla.components.feature.addons.ui.AddonsManagerAdapter
+import mozilla.components.lib.state.ext.consumeFlow
 import org.mozilla.fenix.R
 import org.mozilla.fenix.databinding.FragmentAddOnsManagementBinding
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
@@ -53,11 +57,22 @@ class AddonsManagementFragment : Fragment(R.layout.fragment_add_ons_management),
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentAddOnsManagementBinding.bind(view)
         bindRecyclerView()
+        observePendingExtensionUpdates()
     }
 
     override fun onResume() {
         super.onResume()
         showToolbar(getString(R.string.preferences_extensions))
+    }
+
+    // The add-on items show pending updates, which the adapter cannot detect, so redraw them when those change.
+    private fun observePendingExtensionUpdates() {
+        consumeFlow(requireComponents.core.store) { flow ->
+            flow
+                .map { it.pendingExtensionUpdatesNeedingAttention.keys }
+                .distinctUntilChanged()
+                .collect { adapter?.run { notifyItemRangeChanged(0, itemCount) } }
+        }
     }
 
     override fun onDestroyView() {
@@ -77,6 +92,8 @@ class AddonsManagementFragment : Fragment(R.layout.fragment_add_ons_management),
                 onLearnMoreClicked = { link, addon ->
                     binding?.root?.openLearnMoreLink(link, addon)
                 },
+                onReviewUpdateClicked = { showPendingExtensionUpdate(requireComponents.core.store, it.id) },
+                onCancelUpdateClicked = { cancelPendingExtensionUpdate(requireComponents.core.store, it.id) },
             )
 
         val recyclerView = binding?.addOnsList

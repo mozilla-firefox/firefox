@@ -18,13 +18,16 @@ import io.mockk.verify
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.WebExtensionAction.UpdatePendingExtensionUpdateAction
+import mozilla.components.browser.state.action.WebExtensionAction.UpdatePendingExtensionUpdateReviewRequestAction
 import mozilla.components.browser.state.action.WebExtensionAction.UpdatePromptRequestWebExtensionAction
 import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.webextension.InstallationMethod
+import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.webextension.WebExtensionInstallException
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.AddonManager
@@ -33,6 +36,7 @@ import mozilla.components.feature.addons.ui.PermissionsDialogFragment
 import mozilla.components.feature.addons.ui.PermissionsDialogMode
 import mozilla.components.support.ktx.android.content.appVersionName
 import mozilla.components.support.test.robolectric.testContext
+import mozilla.components.support.webextensions.WebExtensionSupport
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -1082,6 +1086,62 @@ class WebExtensionPromptFeatureTest {
             val expectedUrl = SupportUtils.getSumoURLForTopic(testContext, SupportUtils.SumoTopic.EXTENSION_PERMISSIONS)
             assertEquals(listOf(expectedUrl to false), onLinkClickedCalls)
             assertTrue(updateAnswers.isEmpty())
+        }
+
+    @Test
+    fun `WHEN the review of a pending extension update is requested THEN show its update prompt`() =
+        runTestWithInstalledExtension {
+            store.dispatch(UpdatePendingExtensionUpdateAction(pendingUpdate))
+            webExtensionPromptFeature.start()
+
+            store.dispatch(UpdatePendingExtensionUpdateReviewRequestAction("extension"))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 1) {
+                webExtensionPromptFeature.showUpdatePermissionDialog(match { it.id == "extension" }, pendingUpdate)
+            }
+            assertNull(store.state.pendingExtensionUpdateReviewRequest)
+        }
+
+    @Test
+    fun `WHEN the review of a pending extension update is requested again after the first request was handled THEN show it again`() =
+        runTestWithInstalledExtension {
+            store.dispatch(UpdatePendingExtensionUpdateAction(pendingUpdate))
+            webExtensionPromptFeature.start()
+
+            store.dispatch(UpdatePendingExtensionUpdateReviewRequestAction("extension"))
+            testDispatcher.scheduler.advanceUntilIdle()
+            store.dispatch(UpdatePendingExtensionUpdateReviewRequestAction("extension"))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 2) { webExtensionPromptFeature.showUpdatePermissionDialog(any(), pendingUpdate) }
+            assertNull(store.state.pendingExtensionUpdateReviewRequest)
+        }
+
+    @Test
+    fun `WHEN the review of an extension update that is no longer pending is requested THEN show nothing`() =
+        runTestWithInstalledExtension {
+            webExtensionPromptFeature.start()
+
+            store.dispatch(UpdatePendingExtensionUpdateReviewRequestAction("extension"))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 0) { webExtensionPromptFeature.showUpdatePermissionDialog(any(), any()) }
+            assertNull(store.state.pendingExtensionUpdateReviewRequest)
+        }
+
+    private fun runTestWithInstalledExtension(testBody: suspend TestScope.() -> Unit) =
+        runTest(testDispatcher) {
+            WebExtensionSupport.installedExtensions["extension"] =
+                mockk<WebExtension>(relaxed = true) {
+                    every { id } returns "extension"
+                    every { getMetadata() } returns null
+                }
+            try {
+                testBody()
+            } finally {
+                WebExtensionSupport.installedExtensions.remove("extension")
+            }
         }
 
     private fun newPendingUpdate() =

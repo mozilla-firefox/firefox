@@ -738,6 +738,7 @@ projects:
     upstream_dependencies:
     - components:browser-engine-gecko
     - components:browser-state
+    - components:compose-base
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine

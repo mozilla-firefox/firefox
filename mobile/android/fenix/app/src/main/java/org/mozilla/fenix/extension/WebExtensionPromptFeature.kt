@@ -26,6 +26,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.WebExtensionAction
@@ -47,6 +49,7 @@ import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import mozilla.components.support.ktx.android.content.appVersionName
 import mozilla.components.support.ktx.android.content.pixelSizeFor
+import mozilla.components.support.webextensions.WebExtensionSupport
 import mozilla.components.ui.widgets.withCenterAlignedButtons
 import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.R
@@ -72,6 +75,7 @@ class WebExtensionPromptFeature(
     private var isInstallationInProgress = false
     private var downloadAddonOperation: CancellableOperation? = null
     private var scope: CoroutineScope? = null
+    private var reviewRequestScope: CoroutineScope? = null
 
     /**
      * Job that completes once the [DownloadAddonDialogFragment] has been on screen for at least
@@ -110,6 +114,14 @@ class WebExtensionPromptFeature(
                             }
                         }
                     }
+            }
+        reviewRequestScope =
+            store.flowScoped(dispatcher = mainDispatcher) { flow ->
+                flow
+                    .map { state -> state.pendingExtensionUpdateReviewRequest }
+                    .distinctUntilChanged()
+                    .filterNotNull()
+                    .collect { extensionId -> handlePendingExtensionUpdateReviewRequest(extensionId) }
             }
         tryToReAttachButtonHandlersToPreviousDialog()
     }
@@ -293,6 +305,7 @@ class WebExtensionPromptFeature(
     /** Stops observing the selected session for incoming window requests. */
     override fun stop() {
         scope?.cancel()
+        reviewRequestScope?.cancel()
     }
 
     @VisibleForTesting
@@ -385,12 +398,23 @@ class WebExtensionPromptFeature(
             },
         )
 
+    private fun handlePendingExtensionUpdateReviewRequest(extensionId: String) {
+        store.dispatch(WebExtensionAction.ConsumePendingExtensionUpdateReviewRequestAction)
+        val pendingUpdate = store.state.pendingExtensionUpdates[extensionId] ?: return
+        val extension = WebExtensionSupport.installedExtensions[extensionId] ?: return
+        showUpdatePermissionDialog(
+            Addon.newFromWebExtension(extension, addonManager.toInstalledState(extension)),
+            pendingUpdate,
+        )
+    }
+
     /**
      * Shows the prompt for [pendingUpdate]. Cancelling the prompt leaves the update pending.
      *
      * @param addon The installed add-on the update is for.
      * @param pendingUpdate The update waiting for the user.
      */
+    @VisibleForTesting
     internal fun showUpdatePermissionDialog(
         addon: Addon,
         pendingUpdate: PendingExtensionUpdate,

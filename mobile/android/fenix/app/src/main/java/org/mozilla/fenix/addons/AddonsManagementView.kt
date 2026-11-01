@@ -16,6 +16,8 @@ class AddonsManagementView(
     private val onInstallButtonClicked: (Addon) -> Unit,
     private val onMoreAddonsButtonClicked: () -> Unit,
     private val onLearnMoreClicked: (link: AddonsManagerAdapterDelegate.LearnMoreLinks, addon: Addon) -> Unit,
+    private val onReviewUpdateClicked: (Addon) -> Unit,
+    private val onCancelUpdateClicked: (Addon) -> Unit,
 ) : AddonsManagerAdapterDelegate {
 
     override fun onAddonItemClicked(addon: Addon) {
@@ -42,6 +44,14 @@ class AddonsManagementView(
 
     override fun onLearnMoreLinkClicked(link: AddonsManagerAdapterDelegate.LearnMoreLinks, addon: Addon) {
         onLearnMoreClicked(link, addon)
+    }
+
+    override fun onReviewExtensionUpdateClicked(addon: Addon) {
+        onReviewUpdateClicked(addon)
+    }
+
+    override fun onCancelExtensionUpdateClicked(addon: Addon) {
+        onCancelUpdateClicked(addon)
     }
 
     private fun showInstalledAddonDetailsFragment(addon: Addon) {
