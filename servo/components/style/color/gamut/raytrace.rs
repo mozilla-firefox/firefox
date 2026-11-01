@@ -71,7 +71,8 @@ impl AbsoluteColor {
         //    as lightness, 0 as chroma, and `h_origin` as hue, converted to
         //    the linear-light form of destination
         let mut anchor = AbsoluteColor::new(ColorSpace::Oklch, l_origin, 0.0, h_origin, self.alpha)
-            .to_color_space(dest_linear_color_space);
+            .to_color_space(dest_linear_color_space)
+            .clip();
 
         // 8. let `origin_rgb` be `origin_OkLCh` converted to the linear-light
         //    form of destination
@@ -79,8 +80,8 @@ impl AbsoluteColor {
 
         // 9. if origin_rgb is not in gamut
         if !origin_rgb.in_gamut() {
-            // 9.1. let `low` be 1E-6 [^1]
-            const LOW: f32 = 1.0e-6;
+            // 9.1. let `low` be 1E-5 [^1]
+            const LOW: f32 = 1.0e-5;
 
             // 9.2 let `high` be 1.0 - `low` [^2]
             const HIGH: f32 = 1.0 - LOW;
@@ -184,80 +185,86 @@ impl AbsoluteColor {
         let start_array = start.to_array();
         let end_array = end.to_array();
 
-        // 5. `for (i = 0; i < 3; i++)`:
+        // 5. let `longest` be 0
+        let mut longest: f32 = 0.0;
+
+        // 6. let `magnitude` be 0
+        let mut magnitude: f32 = 0.0;
+
+        // 7. `for (i = 0; i < 3; i++)`:
         for i in 0..3 {
-            // 5.1. let `a` be `start[i]`
+            // 7.1. let `a` be `start[i]`
             let a = start_array[i];
 
-            // 5.2. let `b` be `end[i]`
+            // 7.2. let `b` be `end[i]`
             let b = end_array[i];
 
-            // 5.3. let `d` be `b - a`
+            // 7.3. let `d` be `b - a`
             let d = b - a;
 
-            // 5.4. let `direction[i]` be `d`
+            // 7.4. let `direction[i]` be `d`
             direction[i] = d;
 
-            // 5.5. if abs(d) > MIN_THRESHOLD:
-            // NOTE the 2026-02-27 spec is incorrect; it uses less-than -- should be greater-than.
-            //      Reference impls colorjs.io and ColorAide both use greater-than.
-            //      Issue reported to CSS Color 4 team; yet to be fixed in working draft ATOW.
-            //      See <https://github.com/w3c/csswg-drafts/issues/10579#issuecomment-4122988782>
-            // NOTE the spec and reference implementations all assume f64 precision, where
-            //      MIN_THRESHOLD is 1e-12 currently in the spec. This is too precise for f32.
-            //      Testing by working group members revealed the issue, and recommended
-            //      loosening the precision to accommodate f32 properly by using 1e-6.
-            //      See <https://github.com/w3c/csswg-drafts/issues/10579#issuecomment-4666657910>.
-            const MIN_THRESHOLD: f32 = 1e-6;
-            if d.abs() > MIN_THRESHOLD {
-                // 5.5.1. let `inv_d` be `1 / d`
-                let inv_d = 1.0 / d;
+            // 7.5. let `longest` be `max(longest, abs(d))`
+            longest = longest.max(d.abs());
 
-                // 5.5.2. let `t1` be `(bmin[i] - a) * inv_d`
-                let t1 = (bmin[i] - a) * inv_d;
+            // 7.6. let `magnitude` be `max(magnitude, abs(a), abs(b))`
+            magnitude = magnitude.max(a.abs()).max(b.abs());
 
-                // 5.5.3. let `t2` be `(bmax[i] - a) * inv_d`
-                let t2 = (bmax[i] - a) * inv_d;
+            // 7.7. if `d` is not 0
+            if d != 0.0 {
+                // 7.7.1. let `t1` be `(bmin[i] - a) / d`
+                let t1 = (bmin[i] - a) / d;
 
-                // 5.5.4. let `tnear` be `max(min(t1, t2), tnear)`
+                // 7.7.2. let `t2` be `(bmax[i] - a) / d`
+                let t2 = (bmax[i] - a) / d;
+
+                // 7.7.3. let `tnear` be `max(min(t1, t2), tnear)`
                 tnear = t1.min(t2).max(tnear);
 
-                // 5.5.5. let `tfar` be `min(max(t1, t2), tfar)`
+                // 7.7.4. let `tfar` be `min(max(t1, t2), tfar)`
                 tfar = t1.max(t2).min(tfar);
             }
-            // 5.6. else if (`a < bmin[i]` or `a > bmax[i]`)
+            // 7.8. else if (`a < bmin[i]` or `a > bmax[i]`)
             //      * return `INTERSECTION NOT FOUND`
             else if a < bmin[i] || a > bmax[i] {
                 return None;
             }
         }
 
-        // 6. if (`tnear > tfar` or `tfar < 0`)
+        // 8. if `longest` is less than or equal to `magnitude` * MIN_THRESHOLD
+        //    * return `INTERSECTION NOT FOUND`
+        const MIN_THRESHOLD: f32 = 1e-6;
+        if longest <= magnitude * MIN_THRESHOLD {
+            return None;
+        }
+
+        // 9. if (`tnear > tfar` or `tfar < 0`)
         //    * return `INTERSECTION NOT FOUND`
         if (tnear > tfar) || (tfar < 0.0) {
             return None;
         }
 
-        // 7. if `tnear < 0`
+        // 10. if `tnear < 0`
         //    * let `tnear` be `tfar` [^7]
         if tnear < 0.0 {
             tnear = tfar;
         }
 
-        // 8. if tnear is infinite (or matches the initial very large value)
+        // 11. if tnear is infinite (or matches the initial very large value)
         //    * return `INTERSECTION NOT FOUND`
         if tnear.is_infinite() {
             return None;
         }
 
         let mut result = [0.0, 0.0, 0.0];
-        // 9. for (`i = 0; i < 3; i++`):
+        // 12. for (`i = 0; i < 3; i++`):
         //    * let `result[i]` be `start[i] + direction[i] * tnear`
         for i in 0..3 {
             result[i] = start_array[i] + direction[i] * tnear;
         }
 
-        // 10. return `result`
+        // 13. return `result`
         Some(ColorComponents(result[0], result[1], result[2]))
     }
 }
