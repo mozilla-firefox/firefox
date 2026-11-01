@@ -54,9 +54,11 @@ ChromeUtils.defineESModuleGetters(lazy, {
  * @property {ThemePickerColors} [themePickerColors]
  *   The light and dark color or gradient variants representing the theme in the
  *   Firefox Themes Picker UI. Expected to not be set for the classic themes.
- * @property {{light: ThemePreviewColors, dark: ThemePreviewColors}} [themePreviewColors]
+ * @property {{light?: ThemePreviewColors, dark?: ThemePreviewColors}} [themePreviewColors]
  *   The colors used, along with themePickerColors, to render the theme preview
  *   image out of the default theme Nova preview svg through link-parameters.
+ *   At least one of light and dark is required, and the missing one defaults
+ *   to the other; set only one when both would be the same.
  *   Only expected for the AMO-hosted themes.
  */
 
@@ -68,7 +70,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 // we manage the list of built-in add-ons through "built_in_addons.json").
 
 /** @type {Array<ThemeListEntry>} */
-const FIREFOX_THEMES_LIST = [
+export const FIREFOX_THEMES_LIST = [
   {
     id: "default-theme@mozilla.org",
     isBuiltIn: true,
@@ -292,12 +294,15 @@ const FIREFOX_THEMES_MAP = new Map(
 // - urlbarBackground:    colors.toolbar_field
 // - urlbarBorder:        colors.toolbar_field_border
 //
+// When the AMO-hosted theme manifest only has "theme", or its "theme" and
+// "dark_theme" colors are identical, only "light" is set.
+//
 // Manifest colors with an alpha channel are flattened into opaque colors by
 // blending them over the color they are drawn on (toolbar_field over toolbar,
 // tab_selected over frame).
 
 /** @type {Array<ThemeListEntry>} */
-const CLASSIC_THEMES_LIST = [
+export const CLASSIC_THEMES_LIST = [
   {
     id: "proton-theme@mozilla.org",
     themePreviewColors: {
@@ -548,6 +553,21 @@ const CLASSIC_THEMES_LIST = [
       },
     },
   },
+  {
+    id: "firefox-oled@oled.firefox",
+    themePreviewColors: {
+      light: {
+        tabbarBackground: "#000000",
+        text: "#D6D5DA",
+        icons: "#949297",
+        activeTabStroke: "#817F84",
+        activeTabBackground: "#000000",
+        toolbarBackground: "#000000",
+        urlbarBackground: "#000000",
+        urlbarBorder: "#3F3E42",
+      },
+    },
+  },
 ];
 
 const CLASSIC_THEMES_MAP = new Map(
@@ -572,6 +592,15 @@ const NOVA_THEMES_PREVIEW_SURFACES = {
   "--urlbar-border": "light-dark(#00000024, #3F3E42)",
 };
 
+// Link-parameters of the preview surfaces mapped to the ThemePreviewColors key
+// that overrides them when set.
+const PREVIEW_SURFACE_OVERRIDES = {
+  "--active-tab-background": "activeTabBackground",
+  "--toolbar-background": "toolbarBackground",
+  "--urlbar-background": "urlbarBackground",
+  "--urlbar-border": "urlbarBorder",
+};
+
 /**
  * @param {ThemeColorVariant} variant
  * @returns {string} The variant as a CSS <image>, so that it can be used in
@@ -579,6 +608,25 @@ const NOVA_THEMES_PREVIEW_SURFACES = {
  */
 function themeColorVariantAsImage({ type, value }) {
   return type == "gradient" ? value : `linear-gradient(${value}, ${value})`;
+}
+
+/**
+ * @param {object} options
+ * @param {ThemeListEntry} options.theme
+ * @param {ThemePreviewColors} options.light
+ * @param {ThemePreviewColors} options.dark
+ * @returns {Array<ThemeColorVariant>} The light and dark variants of the tab
+ *   bar background: the theme's own tabbarBackground color when set (classic
+ *   themes), otherwise its themePickerColors variants.
+ */
+function tabbarBackgroundVariants({ theme, light, dark }) {
+  if (light.tabbarBackground) {
+    return [light, dark].map(({ tabbarBackground }) => ({
+      type: "color",
+      value: tabbarBackground,
+    }));
+  }
+  return [theme.themePickerColors.light, theme.themePickerColors.dark];
 }
 
 /**
@@ -653,35 +701,25 @@ class ThemesList {
     if (!theme?.themePreviewColors) {
       return null;
     }
-    const { themePickerColors, themePreviewColors } = theme;
-    const lightDark = key =>
-      `light-dark(${themePreviewColors.light[key]}, ${themePreviewColors.dark[key]})`;
+    const light =
+      theme.themePreviewColors.light ?? theme.themePreviewColors.dark;
+    const dark = theme.themePreviewColors.dark ?? light;
+    const lightDark = key => `light-dark(${light[key]}, ${dark[key]})`;
     const params = {
-      "--tabbar-background": themePreviewColors.light.tabbarBackground
-        ? `light-dark(${["light", "dark"]
-            .map(scheme =>
-              themeColorVariantAsImage({
-                type: "color",
-                value: themePreviewColors[scheme].tabbarBackground,
-              })
-            )
-            .join(", ")})`
-        : `light-dark(${themeColorVariantAsImage(
-            themePickerColors.light
-          )}, ${themeColorVariantAsImage(themePickerColors.dark)})`,
+      "--tabbar-background": `light-dark(${tabbarBackgroundVariants({
+        theme,
+        light,
+        dark,
+      })
+        .map(themeColorVariantAsImage)
+        .join(", ")})`,
       "--text-color": lightDark("text"),
       "--icon-color": lightDark("icons"),
       "--active-tab-stroke": lightDark("activeTabStroke"),
       ...NOVA_THEMES_PREVIEW_SURFACES,
     };
-    const surfaceOverrides = {
-      "--active-tab-background": "activeTabBackground",
-      "--toolbar-background": "toolbarBackground",
-      "--urlbar-background": "urlbarBackground",
-      "--urlbar-border": "urlbarBorder",
-    };
-    for (const [name, key] of Object.entries(surfaceOverrides)) {
-      if (themePreviewColors.light[key]) {
+    for (const [name, key] of Object.entries(PREVIEW_SURFACE_OVERRIDES)) {
+      if (light[key]) {
         params[name] = lightDark(key);
       }
     }
