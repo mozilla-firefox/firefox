@@ -6,6 +6,9 @@
 //! notifications. This is currently plumbing only and can be invoked from a console,
 //! but implements no commands yet.
 
+// Messages written to standard output are only visible in debug builds
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod lifecycle;
 mod preferences;
 mod pushconnection;
