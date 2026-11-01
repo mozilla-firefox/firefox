@@ -107,6 +107,7 @@ const THEME_L10N_IDS = new Map([
     "{7a301b7b-c3e2-40bf-a06b-6d517bbf138b}",
     { name: "extension-classic-orange-name" },
   ],
+  ["firefox-oled@oled.firefox", { name: "extension-classic-oled-name" }],
 ]);
 
 /**

@@ -14,9 +14,8 @@ const { AddonTestUtils } = ChromeUtils.importESModule(
 const { TestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/TestUtils.sys.mjs"
 );
-const { getThemesList } = ChromeUtils.importESModule(
-  "moz-src:///browser/themes/ThemesList.sys.mjs"
-);
+const { getThemesList, FIREFOX_THEMES_LIST, CLASSIC_THEMES_LIST } =
+  ChromeUtils.importESModule("moz-src:///browser/themes/ThemesList.sys.mjs");
 
 AddonTestUtils.init(this);
 AddonTestUtils.overrideCertDB();
@@ -158,6 +157,7 @@ const CLASSIC_THEME_IDS = [
   "{cd6791f7-4b6d-47b4-8877-1d4c82c6699d}",
   "{8de5f8c3-bfc2-443b-9913-7bbadbd1ba0d}",
   "{7a301b7b-c3e2-40bf-a06b-6d517bbf138b}",
+  "firefox-oled@oled.firefox",
 ];
 
 add_task(async function test_classic_themes() {
@@ -222,6 +222,23 @@ add_task(async function test_classic_themes() {
       .includes("param(--toolbar-background, light-dark(#FFFFFF, #1D1B1F))"),
     "Nova themes keep the shared surface colors"
   );
+});
+
+add_task(function test_themePreviewColors_light_dark_not_redundant() {
+  for (const theme of [...FIREFOX_THEMES_LIST, ...CLASSIC_THEMES_LIST]) {
+    if (!theme.themePreviewColors) {
+      continue;
+    }
+    const { light, dark } = theme.themePreviewColors;
+    Assert.ok(light || dark, `${theme.id} sets light or dark preview colors`);
+    if (light && dark) {
+      Assert.notDeepEqual(
+        light,
+        dark,
+        `${theme.id} sets only one of light and dark when they are identical`
+      );
+    }
+  }
 });
 
 add_task(async function test_updateThemeState_unknownThemeId_logsError() {

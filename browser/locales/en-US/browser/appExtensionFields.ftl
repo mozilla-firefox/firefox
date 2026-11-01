@@ -99,3 +99,6 @@ extension-classic-red-name = Red
 
 # Name for an orange theme.
 extension-classic-orange-name = Orange
+
+# Name for a pure black theme, optimized for OLED screens.
+extension-classic-oled-name = OLED Black
