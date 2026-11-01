@@ -1002,7 +1002,7 @@ MacStartupRunLoop:
     spins the native run loop during startup, in order, followed by the number
     of run loop wake-ups and the milliseconds since the loop started at the last
     one. Only present if the process crashed or hung inside that loop. macOS
-    only, early beta or earlier.
+    only, Nightly only.
   type: string
   scope: report
   bugs:
