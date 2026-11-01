@@ -919,7 +919,11 @@ pref("browser.urlbar.lastUrlbarSearchSeconds", 0);
 
 // When selecting and hovering over certain types of urlbar results, replace
 // their URLs with strings that explain why they're shown.
+#ifdef NIGHTLY_BUILD
+pref("browser.urlbar.resultExplanations.featureGate", true);
+#else
 pref("browser.urlbar.resultExplanations.featureGate", false);
+#endif
 
 pref("browser.altClickSave", false);
 
