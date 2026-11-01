@@ -1007,7 +1007,8 @@ class TabManagementFragment : Fragment() {
 
     @UiThread
     internal fun showUndoSnackbarForSyncedTab(closeOperation: CloseTabsUseCases.UndoableOperation) {
-        lifecycleScope.launch {
+        val viewLifecycleOwner = viewLifecycleOwnerLiveData.value ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
             snackbarHostState.displaySnackbar(
                 message = getString(R.string.snackbar_tab_closed),
                 actionLabel = getString(R.string.snackbar_deleted_undo),
@@ -1139,7 +1140,8 @@ class TabManagementFragment : Fragment() {
         tabSize: Int,
         parentFolderTitle: String?,
     ) {
-        lifecycleScope.launch {
+        val viewLifecycleOwner = viewLifecycleOwnerLiveData.value ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
             val displayFolderTitle = parentFolderTitle ?: getString(R.string.library_bookmarks)
             val displayResId =
                 when {
