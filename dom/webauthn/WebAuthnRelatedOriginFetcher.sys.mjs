@@ -87,6 +87,9 @@ async function fetchAndValidateRelatedOrigin(aRpId, aCallerOrigin, aSignal) {
     req = await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("GET", `https://${aRpId}/.well-known/webauthn`);
+      xhr.setRequestHeader("Sec-Fetch-Site", "none");
+      xhr.setRequestHeader("Sec-Fetch-Mode", "no-cors");
+      xhr.setRequestHeader("Sec-Fetch-Dest", "empty");
       xhr.timeout = 10000;
       aSignal?.addEventListener("abort", () => xhr.abort(), { once: true });
       xhr.addEventListener("load", () => resolve(xhr), { once: true });

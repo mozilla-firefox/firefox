@@ -168,6 +168,18 @@ add_task(async function test_not_found() {
   is(getErr.name, "SecurityError", "404 response: get gives SecurityError");
 });
 
+// Bug 2085450: some servers reject requests for the well-known resource unless
+// the Fetch Metadata headers show that the browser, not a web page, made them.
+add_task(async function test_fetch_metadata_headers() {
+  await setWellKnownState("require_fetch_metadata");
+  let cred = await navigator.credentials.create(makeCredOptions());
+  ok(cred !== null, "fetch metadata required: credential created");
+
+  let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
+  ok(assertion !== null, "fetch metadata required: assertion succeeds");
+  is(assertion.id, cred.id, "fetch metadata required: asserted the created credential");
+});
+
 add_task(async function test_timeout() {
   await setWellKnownState("timeout");
   let createErr = await navigator.credentials.create(makeCredOptions()).catch(e => e);
