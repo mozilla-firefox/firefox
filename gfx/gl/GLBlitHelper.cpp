@@ -1724,12 +1724,14 @@ bool GLBlitHelper::Blit(DMABufSurface* surface, const gfx::IntRect& destRect,
 
   const char* fragSample = nullptr;
   auto fragConvert = kFragConvert_None;
-  // Determine the reorder from source and destination formats. The blit
-  // output is RGBA-ordered for every source shape (the YUV color matrix and
-  // EGL named-channel imports expose RGB in .rgb), while the destination
-  // may store the opposite, BGRA order (e.g. canvas2d); swap R/B exactly
-  // when the two orders differ.
-  const bool srcIsBGRA = false;
+  // Determine the reorder from source and destination formats. YUV sources
+  // are converted to RGB by the color matrix, while single-plane RGBA
+  // sources are sampled raw, so a BGRA-ordered DMABuf (e.g. a WebGL
+  // backbuffer) already matches a BGRA destination. Swap R/B exactly when
+  // the two orders differ.
+  const auto srcFormat = surface->GetFormat();
+  const bool srcIsBGRA = srcFormat == gfx::SurfaceFormat::B8G8R8A8 ||
+                         srcFormat == gfx::SurfaceFormat::B8G8R8X8;
   const bool dstIsBGRA = aDestFormat == gfx::SurfaceFormat::B8G8R8A8 ||
                          aDestFormat == gfx::SurfaceFormat::B8G8R8X8;
   const bool swapRB = srcIsBGRA != dstIsBGRA;
