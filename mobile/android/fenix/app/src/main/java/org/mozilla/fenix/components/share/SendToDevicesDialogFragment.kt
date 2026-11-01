@@ -194,7 +194,7 @@ class SendToDevicesDialogFragment : BottomSheetDialogFragment() {
                 },
                 send = send,
             )
-            dismiss()
+            dismissAllowingStateLoss()
         }
     }
 
