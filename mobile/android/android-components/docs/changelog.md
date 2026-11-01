@@ -48,6 +48,7 @@ permalink: /changelog/
         * Added `AddonsManagerAdapterDelegate.onReviewExtensionUpdateClicked` and `onCancelExtensionUpdateClicked`. Implement them, or the banner's buttons do nothing.
         * Added the `PendingExtensionUpdateBanner` composable. feature-addons now uses Jetpack Compose and depends on `compose-base`.
         * Removed `DefaultAddonUpdater.NotificationHandlerService`.
+        * Removed `Addon.permissionToTranslationForUpdate` and the `forUpdate` parameter of `Addon.localizePermissions`.
 
 # 159.0
 * **feature-readerview**
