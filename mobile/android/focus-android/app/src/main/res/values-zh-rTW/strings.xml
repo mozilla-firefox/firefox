@@ -49,7 +49,7 @@
     See https://github.com/mozilla-mobile/focus-android/issues/2106
     %1$s will be replaced by the app name (e.g. Firefox Focus)
   -->
-  <string name="menu_custom_tab_branding">Powered by %1$s</string>
+  <string name="menu_custom_tab_branding">由 %1$s 提供</string>
   <!--
     This is the title of a dialog that shows all the share targets (apps or contacts) when
     sharing an URL.

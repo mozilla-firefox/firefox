@@ -149,6 +149,12 @@
   <string name="home_screen_shortcut_passwords">Craes</string>
   <!-- Shortcut action to open uninstall survey -->
   <string name="home_screen_shortcut_uninstall_survey">Disinstallare, pro ite?</string>
+  <!--
+    Recent Tabs
+
+    Header text on the homescreen for continuing to browse the most recent browser tab
+  -->
+  <string name="recent_tabs_header_2">Sighi</string>
   <!-- Button text for showing all the tabs in the tabs tray -->
   <string name="recent_tabs_show_all">Ammustra totu</string>
   <!-- Text for button in synced tab card that opens synced tabs tray -->
@@ -848,6 +854,8 @@
     Title for the customize home screen section with privacy report.
   -->
   <string name="customize_toggle_privacy_report">Informe de riservadesa</string>
+  <!-- Title for a customize home screen section. Continue is a section that displays the most recent browser tab, so users can continue browsing where they left off. -->
+  <string name="customize_toggle_continue">Sighi</string>
   <!-- Title for the customize home screen section with bookmarks. -->
   <string name="customize_toggle_bookmarks">Sinnalibros</string>
   <!--
@@ -2219,6 +2227,8 @@
     <item quantity="one">%d sighidore blocadu</item>
     <item quantity="other">%d sighidores blocados</item>
   </plurals>
+  <!-- Text shown on the trackers blocked card when no trackers have been blocked yet -->
+  <string name="trackers_blocked_empty">T\'amparamus</string>
   <!-- Preference for enhanced tracking protection for the standard protection settings -->
   <string name="preference_enhanced_tracking_protection_standard_default_1">Istàndard (predefinidu)</string>
   <!-- Preference description for enhanced tracking protection for the standard protection settings -->
@@ -3304,6 +3314,11 @@
     <item quantity="one">%1$d sighidore blocadu in custu situ.</item>
     <item quantity="other">%1$d sighidores blocados in custu situ.</item>
   </plurals>
+  <!--
+    Description text for the protection panel banner when privacy dashboard is enabled.
+    and there are no trackers blocked.
+  -->
+  <string name="protection_panel_banner_protected_no_blocked_trackers_description">T\'amparamus.</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">Amparu megioradu contra sa sighidura</string>
   <!-- Toggle if Enhanced Tracking Protection is turned on -->
