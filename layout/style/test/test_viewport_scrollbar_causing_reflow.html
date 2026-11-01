@@ -81,8 +81,19 @@ function main() {
      "Should reflow some frames when 'width' & 'height' change");
 
   const scrollbarsHaveButtons = navigator.platform.includes("Win");
-  // This is to allow for reflowing scrollbar parts themselves.
-  const scrollbarReflows = scrollbarsHaveButtons ? 5 : 2;
+  // The harness may give us scrollbars that take no space (scrolling="no").
+  document.body.style.overflow = "scroll";
+  const scrollbarsTakeSpace =
+    window.innerWidth > document.documentElement.clientWidth;
+  document.body.style = "";
+  // This is to allow for reflowing scrollbar parts themselves. Scrollbars that
+  // take space add more reflows of the viewport scroll frame and its parts.
+  let scrollbarReflows;
+  if (scrollbarsTakeSpace) {
+    scrollbarReflows = scrollbarsHaveButtons ? 25 : 17;
+  } else {
+    scrollbarReflows = scrollbarsHaveButtons ? 5 : 2;
+  }
   // Expected maximum number of frames reflowed for "overflow" changes
   const expectedMax = count + scrollbarReflows;
 

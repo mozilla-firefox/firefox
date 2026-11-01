@@ -782,9 +782,6 @@ support-files = ["support/external-variable-url.css"]
 ["test_video_object_fit.html"]
 
 ["test_viewport_scrollbar_causing_reflow.html"]
-skip-if = [
-  "standalone", # Bug 2026600
-]
 
 ["test_viewport_units.html"]
 
