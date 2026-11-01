@@ -18,6 +18,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.OvershootInterpolator
 import androidx.activity.compose.BackHandler
+import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -79,6 +80,7 @@ import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.Vpn
 import org.mozilla.fenix.R
+import org.mozilla.fenix.addons.pendingExtensionUpdateNames
 import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.components
@@ -335,6 +337,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                 val translateLanguageCode =
                     selectedTab?.translationsState?.translationEngineState?.requestedTranslationPair?.toLanguage
                 val isExtensionsProcessDisabled = browserStore.state.extensionsProcessDisabled
+                val pendingExtensionUpdateNames = browserStore.state.pendingExtensionUpdateNames()
                 val isDesktopMode by remember {
                     menuStore.stateFlow.map { state -> state.isDesktopMode }
                 }
@@ -445,6 +448,12 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                         availableAddons = availableAddons,
                         browserWebExtensionMenuItems = browserWebExtensionMenuItem,
                     )
+                val pendingExtensionUpdatesDescription =
+                    getPendingExtensionUpdatesDescription(
+                        accessPoint = args.accesspoint,
+                        isExtensionsProcessDisabled = isExtensionsProcessDisabled,
+                        pendingExtensionUpdateNames = pendingExtensionUpdateNames.values.toList(),
+                    )
 
                 val webExtensionMenuItems =
                     remember(availableAddons, browserWebExtensionMenuItem) {
@@ -552,6 +561,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                 canGoBack = browserStore.state.canGoBackInHistoryOrToStories(),
                                 canGoForward = selectedTab?.content?.canGoForward ?: true,
                                 extensionsMenuItemDescription = extensionsMenuItemDescription,
+                                pendingExtensionUpdatesDescription = pendingExtensionUpdatesDescription,
                                 scrollState = scrollState,
                                 showBanner = shouldShowMenuBanner && !defaultBrowser,
                                 isDownloadHighlighted = isDownloadHighlighted,
@@ -730,6 +740,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                 extensionSubmenu = {
                                     Addons(
                                         accessPoint = args.accesspoint,
+                                        pendingExtensionUpdateIds = pendingExtensionUpdateNames.keys,
                                         availableAddons = availableAddons,
                                         webExtensionMenuItems = webExtensionMenuItems,
                                         addonInstallationInProgress = addonInstallationInProgress,
@@ -1100,6 +1111,27 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
 
             else -> null
         }
+    }
+
+    @VisibleForTesting
+    internal fun getPendingExtensionUpdatesDescription(
+        accessPoint: MenuAccessPoint,
+        isExtensionsProcessDisabled: Boolean,
+        pendingExtensionUpdateNames: List<String>,
+    ): String? {
+        // Only a disabled extensions process outranks a pending update. Custom tabs can't act on it.
+        if (
+            pendingExtensionUpdateNames.isEmpty() ||
+                isExtensionsProcessDisabled ||
+                accessPoint == MenuAccessPoint.External
+        ) {
+            return null
+        }
+        return requireContext()
+            .getString(
+                R.string.browser_menu_extensions_review_update_description,
+                pendingExtensionUpdateNames.joinToString(),
+            )
     }
 
     private fun openToBrowser(params: BrowserNavigationParams) = runIfFragmentIsAttached {

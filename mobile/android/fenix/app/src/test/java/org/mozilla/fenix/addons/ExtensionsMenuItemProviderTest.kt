@@ -23,6 +23,7 @@ import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.state.createCustomTab
 import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.base.text.Text
@@ -558,6 +559,87 @@ class ExtensionsMenuItemProviderTest {
         assertEquals(NavGraphDirections.actionGlobalAddonsManagementFragment(), menu.directions)
     }
 
+    @Test
+    fun `GIVEN an extension update waits for the user WHEN building the menu item THEN point it out in warning colors`() =
+        runTest {
+            coEvery { addonManager.getAddons() } returns listOf(addon(INSTALLED_ID, installed = true, enabled = true))
+            val browserStore =
+                browserStoreWith(extension(INSTALLED_ID, INSTALLED_NAME), pendingUpdateIds = listOf(INSTALLED_ID))
+
+            val item = resolvedItem(browserStore) as ExpandableMenuItem
+
+            assertEquals(pendingUpdateSummary, item.summary)
+            assertEquals(MenuAction.OnExtensionsMenuClicked, item.onClickEvent)
+            assertEquals(
+                MenuItemSummary(
+                    text = Text.Resource(R.string.browser_menu_extension_review_update_description),
+                    state = MenuItemState.WARNING,
+                ),
+                item.subMenuItems.first().summary,
+            )
+        }
+
+    @Test
+    fun `GIVEN extension updates wait for the user WHEN building the item for home THEN name them and still open the extensions manager`() =
+        runTest {
+            val browserStore =
+                browserStoreWith(
+                    extension(INSTALLED_ID, INSTALLED_NAME),
+                    extension(RECOMMENDED_ID, "Dark Reader"),
+                    pendingUpdateIds = listOf(INSTALLED_ID, RECOMMENDED_ID),
+                )
+
+            val item = provider(browserStore, MenuTarget.Home).itemsFlow.value.single() as StandardMenuItem
+
+            assertEquals(
+                MenuItemSummary(
+                    text =
+                        Text.Resource(
+                            R.string.browser_menu_extensions_review_update_description,
+                            listOf("$INSTALLED_NAME, Dark Reader"),
+                        ),
+                    state = MenuItemState.WARNING,
+                ),
+                item.summary,
+            )
+            assertEquals(MenuAction.Navigate.ManageExtensions, item.onClickEvent)
+        }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `GIVEN an extension update waits for the user WHEN building the item for a custom tab THEN do not point it out`() =
+        runTest {
+            coEvery { addonManager.getAddons() } returns listOf(addon(INSTALLED_ID, installed = true, enabled = true))
+            val browserStore =
+                BrowserStore(
+                    BrowserState(
+                        customTabs = listOf(createCustomTab(url = "https://mozilla.org", id = TAB_ID)),
+                        extensions = mapOf(INSTALLED_ID to extension(INSTALLED_ID)),
+                        pendingExtensionUpdates = mapOf(INSTALLED_ID to pendingExtensionUpdate(INSTALLED_ID)),
+                    )
+                )
+
+            val item = resolvedItem(browserStore, MenuTarget.CustomTab(TAB_ID)) as ExpandableMenuItem
+
+            assertEquals(MenuItemSummary(text = Text.String(ACTION_TITLE)), item.summary)
+            assertNull(item.subMenuItems.first().summary)
+        }
+
+    private val pendingUpdateSummary =
+        MenuItemSummary(
+            text = Text.Resource(R.string.browser_menu_extensions_review_update_description, listOf(INSTALLED_NAME)),
+            state = MenuItemState.WARNING,
+        )
+
+    private fun pendingExtensionUpdate(extensionId: String) =
+        PendingExtensionUpdate(
+            extensionId = extensionId,
+            permissions = listOf("privacy"),
+            origins = emptyList(),
+            dataCollectionPermissions = emptyList(),
+            onPermissionsGranted = {},
+        )
+
     private fun TestScope.provider(
         browserStore: BrowserStore = browserStoreWith(),
         target: MenuTarget = MenuTarget.BrowserTab,
@@ -577,6 +659,7 @@ class ExtensionsMenuItemProviderTest {
     private fun browserStoreWith(
         vararg extensions: WebExtensionState,
         isExtensionsProcessDisabled: Boolean = false,
+        pendingUpdateIds: List<String> = emptyList(),
     ) =
         BrowserStore(
             BrowserState(
@@ -584,14 +667,15 @@ class ExtensionsMenuItemProviderTest {
                 selectedTabId = TAB_ID,
                 extensions = extensions.associateBy { it.id },
                 extensionsProcessDisabled = isExtensionsProcessDisabled,
+                pendingExtensionUpdates = pendingUpdateIds.associateWith { pendingExtensionUpdate(it) },
             )
         )
 
-    private fun extension(id: String) =
+    private fun extension(id: String, name: String = id) =
         WebExtensionState(
             id = id,
             url = "url",
-            name = id,
+            name = name,
             enabled = true,
             browserAction =
                 Action(
@@ -632,6 +716,7 @@ class ExtensionsMenuItemProviderTest {
 
     private companion object {
         const val INSTALLED_ID = "installed"
+        const val INSTALLED_NAME = "uBlock Origin"
         const val RECOMMENDED_ID = "recommended"
         const val TAB_ID = "tab1"
         const val ACTION_TITLE = "uBlock Origin (0)"
