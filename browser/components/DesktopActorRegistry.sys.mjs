@@ -799,6 +799,7 @@ let JSWINDOWACTORS = {
       },
     },
     matches: ["about:studies*"],
+    remoteTypes: ["privilegedabout"],
   },
 
   SpeechDispatcher: {
