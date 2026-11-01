@@ -65,6 +65,7 @@ JSObject* ReportingObserver::WrapObject(JSContext* aCx,
 
 void ReportingObserver::Observe() {
   mGlobal->RegisterReportingObserver(this, mBuffered);
+  mBuffered = false;
 }
 
 void ReportingObserver::Disconnect() {
