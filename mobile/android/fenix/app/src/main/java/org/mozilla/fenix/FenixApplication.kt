@@ -820,7 +820,10 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
      * [the Phabricator discussion](https://phabricator.services.mozilla.com/D326554#inline-1746839) for details.
      */
     fun maybeReconcileOnboardingCompletionState() {
-        if (components.fenixOnboarding.userHasBeenOnboarded()) {
+        if (
+            components.settings.migrateOnboardingStateFeatureEnabled &&
+                components.fenixOnboarding.userHasBeenOnboarded()
+        ) {
             components.settings.reconcileOnboardingCompletionState()
         }
     }

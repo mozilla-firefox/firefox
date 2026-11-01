@@ -68,6 +68,28 @@ features:
         type: Boolean
         default: true
 
+  migrate-onboarding-state:
+    description: >
+      Feature to enable the one-time reconciliation of onboarding completion state for users who
+      completed initial onboarding before continuous onboarding was enabled. See
+      Onboarding-state-migration-and-reconciliation.md in the onboarding package for the affected
+      user cohorts.
+    variables:
+      enabled:
+        description: If true, the feature is enabled.
+        type: Boolean
+        default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+      - channel: beta
+        value:
+          enabled: true
+
 objects:
 
   OnboardingCardData:

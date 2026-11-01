@@ -2487,6 +2487,13 @@ class Settings(
     val continuousOnboardingCompleted: Boolean
         get() = seventhDayOnboardingCompletedTimestamp != -1L
 
+    /** Indicates if the migrate onboarding state feature is enabled. */
+    var migrateOnboardingStateFeatureEnabled by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_migrate_onboarding_state_enabled),
+            default = { FxNimbus.features.migrateOnboardingState.value().enabled },
+        )
+
     /** Indicates if the marketing onboarding card should be shown to the user. */
     var shouldShowMarketingOnboarding by
         booleanPreference(

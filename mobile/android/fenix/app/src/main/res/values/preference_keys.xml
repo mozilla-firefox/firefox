@@ -136,6 +136,7 @@
     <string name="pref_key_continuous_onboarding_day_three_completed_timestamp" translatable="false">pref_key_continuous_onboarding_day_three_completed_timestamp</string>
     <string name="pref_key_continuous_onboarding_day_five_completed_timestamp" translatable="false">pref_key_continuous_onboarding_day_five_completed_timestamp</string>
     <string name="pref_key_continuous_onboarding_day_seven_completed_timestamp" translatable="false">pref_key_continuous_onboarding_day_seven_completed_timestamp</string>
+    <string name="pref_key_migrate_onboarding_state_enabled" translatable="false">pref_key_migrate_onboarding_state_enabled</string>
 
     <!-- Data Choices -->
     <string name="pref_key_telemetry" translatable="false">pref_key_telemetry</string>
