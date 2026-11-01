@@ -543,7 +543,7 @@ export class AddonList extends HTMLElement {
       this.sections[i].node = this.renderSection(sectionedAddons[i], i);
       frag.appendChild(this.sections[i].node);
       if (this.type == "theme" && i == 0) {
-        frag.appendChild(document.createElement("aboutaddons-themes-pickers"));
+        frag.appendChild(document.createElement("aboutaddons-themes-picker"));
       }
     }
 

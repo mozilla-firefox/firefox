@@ -175,10 +175,6 @@ aboutaddons-themes-mode {
   }
 }
 
-aboutaddons-themes-pickers {
-  display: contents;
-}
-
 aboutaddons-themes-picker {
   display: block;
   margin-block-end: var(--space-large);

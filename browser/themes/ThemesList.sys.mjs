@@ -33,16 +33,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
  * @property {string} text - Color of the tab and urlbar text placeholders.
  * @property {string} icons - Color of the toolbar and app menu icons.
  * @property {string} activeTabStroke - Color of the active tab outline.
- * @property {string} [tabbarBackground] - Color of the tab bar, used instead of
- *   the themePickerColors variants when set.
- * @property {string} [activeTabBackground] - Color of the active tab, overrides
- *   the surface color shared by the Nova themes.
- * @property {string} [toolbarBackground] - Color of the toolbar, overrides the
- *   surface color shared by the Nova themes.
- * @property {string} [urlbarBackground] - Color of the urlbar, overrides the
- *   surface color shared by the Nova themes.
- * @property {string} [urlbarBorder] - Color of the urlbar outline, overrides
- *   the surface color shared by the Nova themes.
  */
 
 /**
@@ -51,14 +41,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
  * @property {boolean} [isBuiltIn] - Whether the theme ships built-in with Firefox.
  * @property {boolean} [showInCompactLayout] - Whether the theme should be shown
  *   in the theme picker's compact layout mode.
- * @property {ThemePickerColors} [themePickerColors]
+ * @property {ThemePickerColors} themePickerColors
  *   The light and dark color or gradient variants representing the theme in the
- *   Firefox Themes Picker UI. Expected to not be set for the classic themes.
- * @property {{light?: ThemePreviewColors, dark?: ThemePreviewColors}} [themePreviewColors]
+ *   Firefox Themes Picker UI.
+ * @property {{light: ThemePreviewColors, dark: ThemePreviewColors}} [themePreviewColors]
  *   The colors used, along with themePickerColors, to render the theme preview
  *   image out of the default theme Nova preview svg through link-parameters.
- *   At least one of light and dark is required, and the missing one defaults
- *   to the other; set only one when both would be the same.
  *   Only expected for the AMO-hosted themes.
  */
 
@@ -70,7 +58,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 // we manage the list of built-in add-ons through "built_in_addons.json").
 
 /** @type {Array<ThemeListEntry>} */
-export const FIREFOX_THEMES_LIST = [
+const FIREFOX_THEMES_LIST = [
   {
     id: "default-theme@mozilla.org",
     isBuiltIn: true,
@@ -281,324 +269,12 @@ const FIREFOX_THEMES_MAP = new Map(
   FIREFOX_THEMES_LIST.map(theme => [theme.id, theme])
 );
 
-// The themePreviewColors light and dark values of the classic themes are taken
-// from the colors of the AMO-hosted theme manifest.json, "theme" for light and
-// "dark_theme" for dark, as follows:
-//
-// - tabbarBackground:    colors.frame
-// - text:                colors.tab_background_text
-// - icons:               colors.icons
-// - activeTabStroke:     colors.tab_line
-// - activeTabBackground: colors.tab_selected
-// - toolbarBackground:   colors.toolbar
-// - urlbarBackground:    colors.toolbar_field
-// - urlbarBorder:        colors.toolbar_field_border
-//
-// When the AMO-hosted theme manifest only has "theme", or its "theme" and
-// "dark_theme" colors are identical, only "light" is set.
-//
-// Manifest colors with an alpha channel are flattened into opaque colors by
-// blending them over the color they are drawn on (toolbar_field over toolbar,
-// tab_selected over frame).
-
-/** @type {Array<ThemeListEntry>} */
-export const CLASSIC_THEMES_LIST = [
-  {
-    id: "proton-theme@mozilla.org",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#EAEAED",
-        text: "#15141A",
-        icons: "#5B5B66",
-        activeTabStroke: "#B7B6BA",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#F9F9FB",
-        urlbarBackground: "#EDEDEE",
-        urlbarBorder: "#00000000",
-      },
-      dark: {
-        tabbarBackground: "#1C1B22",
-        text: "#FBFBFE",
-        icons: "#FBFBFE",
-        activeTabStroke: "#312F33",
-        activeTabBackground: "#53525E",
-        toolbarBackground: "#2B2A33",
-        urlbarBackground: "#1E1D24",
-        urlbarBorder: "#00000000",
-      },
-    },
-  },
-  {
-    id: "{4223a94a-d3f9-40e9-95dd-99aca80ea04b}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#ABDFFF",
-        text: "#00317E",
-        icons: "#0053CB",
-        activeTabStroke: "#60ADFF",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#E2F7FF",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#60ADFF",
-      },
-      dark: {
-        tabbarBackground: "#08152C",
-        text: "#ABDFFF",
-        icons: "#84C6FF",
-        activeTabStroke: "#0041A4",
-        activeTabBackground: "#00317E",
-        toolbarBackground: "#042356",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#00317E",
-      },
-    },
-  },
-  {
-    id: "{0683b144-0d4a-4815-963e-55a8ec8d386b}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#A6ECF4",
-        text: "#00485A",
-        icons: "#007792",
-        activeTabStroke: "#00CADB",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#CFFFFF",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#00CADB",
-      },
-      dark: {
-        tabbarBackground: "#001F2B",
-        text: "#A6ECF4",
-        icons: "#61DCE9",
-        activeTabStroke: "#005F75",
-        activeTabBackground: "#00485A",
-        toolbarBackground: "#00323D",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#00485A",
-      },
-    },
-  },
-  {
-    id: "{aab1adac-5449-47fd-b836-c2f43dc28f3f}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#DDCFFF",
-        text: "#3B2279",
-        icons: "#623AC3",
-        activeTabStroke: "#B295FF",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#F4F0FF",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#B295FF",
-      },
-      dark: {
-        tabbarBackground: "#16112B",
-        text: "#DCD3FF",
-        icons: "#C7B2FF",
-        activeTabStroke: "#4E2E9E",
-        activeTabBackground: "#3B2279",
-        toolbarBackground: "#281953",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#3B2279",
-      },
-    },
-  },
-  {
-    id: "{7063abff-a690-4b87-a548-fc32d3ce5708}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#B5F0B5",
-        text: "#004800",
-        icons: "#007700",
-        activeTabStroke: "#61CC69",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#E1FFE1",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#61CC69",
-      },
-      dark: {
-        tabbarBackground: "#051C07",
-        text: "#B5F0B5",
-        icons: "#8ADF8D",
-        activeTabStroke: "#005F00",
-        activeTabBackground: "#004800",
-        toolbarBackground: "#003200",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#004800",
-      },
-    },
-  },
-  {
-    id: "{1d73a1eb-128d-4e9e-83f8-c0c51f8c5fd3}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#F7CAFF",
-        text: "#521568",
-        icons: "#8627A8",
-        activeTabStroke: "#D98DFA",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#FFECFF",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#D98DFA",
-      },
-      dark: {
-        tabbarBackground: "#1E0E25",
-        text: "#F7CAFF",
-        icons: "#F0A3FF",
-        activeTabStroke: "#6B1E87",
-        activeTabBackground: "#521568",
-        toolbarBackground: "#381147",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#521568",
-      },
-    },
-  },
-  {
-    id: "{2b0fadbf-238d-43db-aa9d-e06c9a7e000b}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#FFC2DB",
-        text: "#6B0035",
-        icons: "#AD0059",
-        activeTabStroke: "#FF7EAD",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#FFE8F4",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#FF7EAD",
-      },
-      dark: {
-        tabbarBackground: "#270B15",
-        text: "#FFC2DB",
-        icons: "#FF94C3",
-        activeTabStroke: "#8B0047",
-        activeTabBackground: "#6B0035",
-        toolbarBackground: "#490624",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#6B0035",
-      },
-    },
-  },
-  {
-    id: "{cd6791f7-4b6d-47b4-8877-1d4c82c6699d}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#FFE699",
-        text: "#5D2800",
-        icons: "#9C5200",
-        activeTabStroke: "#F1AF00",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#FFF4D0",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#F1AF00",
-      },
-      dark: {
-        tabbarBackground: "#271000",
-        text: "#FFE699",
-        icons: "#F5CC58",
-        activeTabStroke: "#773800",
-        activeTabBackground: "#5D2800",
-        toolbarBackground: "#421B00",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#592B00",
-      },
-    },
-  },
-  {
-    id: "{8de5f8c3-bfc2-443b-9913-7bbadbd1ba0d}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#FFC3C9",
-        text: "#6E001F",
-        icons: "#B20037",
-        activeTabStroke: "#FF7E8E",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#FFE8EA",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#FF7E8E",
-      },
-      dark: {
-        tabbarBackground: "#290B0F",
-        text: "#FFC3C9",
-        icons: "#FFA0AA",
-        activeTabStroke: "#90002B",
-        activeTabBackground: "#6E001F",
-        toolbarBackground: "#4C0516",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#6E001F",
-      },
-    },
-  },
-  {
-    id: "{7a301b7b-c3e2-40bf-a06b-6d517bbf138b}",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#FFCD9E",
-        text: "#6A1500",
-        icons: "#AB2700",
-        activeTabStroke: "#FF8F31",
-        activeTabBackground: "#FFFFFF",
-        toolbarBackground: "#FFEDD6",
-        urlbarBackground: "#FFFFFF",
-        urlbarBorder: "#FF8F31",
-      },
-      dark: {
-        tabbarBackground: "#270F00",
-        text: "#FFCD9E",
-        icons: "#FFAD69",
-        activeTabStroke: "#8A1E00",
-        activeTabBackground: "#6A1500",
-        toolbarBackground: "#481200",
-        urlbarBackground: "#161616",
-        urlbarBorder: "#6A1500",
-      },
-    },
-  },
-  {
-    id: "firefox-oled@oled.firefox",
-    themePreviewColors: {
-      light: {
-        tabbarBackground: "#000000",
-        text: "#D6D5DA",
-        icons: "#949297",
-        activeTabStroke: "#817F84",
-        activeTabBackground: "#000000",
-        toolbarBackground: "#000000",
-        urlbarBackground: "#000000",
-        urlbarBorder: "#3F3E42",
-      },
-    },
-  },
-];
-
-const CLASSIC_THEMES_MAP = new Map(
-  CLASSIC_THEMES_LIST.map(theme => [theme.id, theme])
-);
-
-/**
- * @param {string} themeId
- * @returns {ThemeListEntry|undefined} Returns the theme metadata entry from either
- *   FIREFOX_THEMES_LIST or CLASSIC_THEMES_LIST, or undefined if the theme isn't
- *   managed by this module.
- */
-function getThemeEntry(themeId) {
-  return FIREFOX_THEMES_MAP.get(themeId) ?? CLASSIC_THEMES_MAP.get(themeId);
-}
-
 // Surface colors shared by the previews of all the AMO-hosted Nova themes.
 const NOVA_THEMES_PREVIEW_SURFACES = {
   "--active-tab-background": "light-dark(#FFFFFF, #1D1B1F)",
   "--toolbar-background": "light-dark(#FFFFFF, #1D1B1F)",
   "--urlbar-background": "light-dark(#FFFFFF, #1D1B1F)",
   "--urlbar-border": "light-dark(#00000024, #3F3E42)",
-};
-
-// Link-parameters of the preview surfaces mapped to the ThemePreviewColors key
-// that overrides them when set.
-const PREVIEW_SURFACE_OVERRIDES = {
-  "--active-tab-background": "activeTabBackground",
-  "--toolbar-background": "toolbarBackground",
-  "--urlbar-background": "urlbarBackground",
-  "--urlbar-border": "urlbarBorder",
 };
 
 /**
@@ -608,25 +284,6 @@ const PREVIEW_SURFACE_OVERRIDES = {
  */
 function themeColorVariantAsImage({ type, value }) {
   return type == "gradient" ? value : `linear-gradient(${value}, ${value})`;
-}
-
-/**
- * @param {object} options
- * @param {ThemeListEntry} options.theme
- * @param {ThemePreviewColors} options.light
- * @param {ThemePreviewColors} options.dark
- * @returns {Array<ThemeColorVariant>} The light and dark variants of the tab
- *   bar background: the theme's own tabbarBackground color when set (classic
- *   themes), otherwise its themePickerColors variants.
- */
-function tabbarBackgroundVariants({ theme, light, dark }) {
-  if (light.tabbarBackground) {
-    return [light, dark].map(({ tabbarBackground }) => ({
-      type: "color",
-      value: tabbarBackground,
-    }));
-  }
-  return [theme.themePickerColors.light, theme.themePickerColors.dark];
 }
 
 /**
@@ -663,21 +320,11 @@ class ThemesList {
   }
 
   /**
-   * @returns {Array<{id: string}>} Array of theme objects with the id of each
-   *   classic theme, which are not included in the {@link getThemesInfo}
-   *   results. Used for the "Classic themes" section shown in the about:addons
-   *   themes list view.
-   */
-  getClassicThemesInfo() {
-    return Array.from(CLASSIC_THEMES_MAP.values(), ({ id }) => ({ id }));
-  }
-
-  /**
    * @param {string} themeId
    * @returns {boolean} Whether the given ID belongs to a theme managed by this instance.
    */
   hasThemeId(themeId) {
-    return !!getThemeEntry(themeId);
+    return FIREFOX_THEMES_MAP.has(themeId);
   }
 
   /**
@@ -686,7 +333,7 @@ class ThemesList {
    *   requiring an AMO install).
    */
   isBuiltIn(themeId) {
-    return !!getThemeEntry(themeId)?.isBuiltIn;
+    return !!FIREFOX_THEMES_MAP.get(themeId)?.isBuiltIn;
   }
 
   /**
@@ -697,32 +344,22 @@ class ThemesList {
    *   this module.
    */
   getThemePreviewLinkParameters(themeId) {
-    const theme = getThemeEntry(themeId);
+    const theme = FIREFOX_THEMES_MAP.get(themeId);
     if (!theme?.themePreviewColors) {
       return null;
     }
-    const light =
-      theme.themePreviewColors.light ?? theme.themePreviewColors.dark;
-    const dark = theme.themePreviewColors.dark ?? light;
-    const lightDark = key => `light-dark(${light[key]}, ${dark[key]})`;
+    const { themePickerColors, themePreviewColors } = theme;
+    const lightDark = key =>
+      `light-dark(${themePreviewColors.light[key]}, ${themePreviewColors.dark[key]})`;
     const params = {
-      "--tabbar-background": `light-dark(${tabbarBackgroundVariants({
-        theme,
-        light,
-        dark,
-      })
-        .map(themeColorVariantAsImage)
-        .join(", ")})`,
+      "--tabbar-background": `light-dark(${themeColorVariantAsImage(
+        themePickerColors.light
+      )}, ${themeColorVariantAsImage(themePickerColors.dark)})`,
       "--text-color": lightDark("text"),
       "--icon-color": lightDark("icons"),
       "--active-tab-stroke": lightDark("activeTabStroke"),
       ...NOVA_THEMES_PREVIEW_SURFACES,
     };
-    for (const [name, key] of Object.entries(PREVIEW_SURFACE_OVERRIDES)) {
-      if (light[key]) {
-        params[name] = lightDark(key);
-      }
-    }
     return Object.entries(params)
       .map(([name, value]) => `param(${name}, ${value})`)
       .join(", ");
