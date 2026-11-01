@@ -907,6 +907,11 @@ pub trait TElement:
     /// document it is on.
     fn is_html_document_body_element(&self) -> bool;
 
+    /// Whether this element's presentational hints prevent style sharing.
+    fn has_unique_presentational_hints(&self) -> bool {
+        false
+    }
+
     /// Generate the proper applicable declarations due to presentational hints,
     /// and insert them into `hints`.
     fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(

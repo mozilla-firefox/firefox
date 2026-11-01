@@ -1646,6 +1646,12 @@ impl<'le> TElement for GeckoElement<'le> {
         }
     }
 
+    #[inline]
+    fn has_unique_presentational_hints(&self) -> bool {
+        // Mapped blocks are per-element.
+        self.has_attr_impl() && unsafe { (*self.0.mAttrs.mImpl.mPtr).mMappedAttributeBits != 0 }
+    }
+
     fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(
         &self,
         visited_handling: VisitedHandlingMode,

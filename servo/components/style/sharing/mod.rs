@@ -644,6 +644,11 @@ impl<E: TElement> StyleSharingCache<E> {
             return;
         }
 
+        if element.has_unique_presentational_hints() {
+            debug!("Failing to insert into the cache: unique presentational hints");
+            return;
+        }
+
         // If the element has running animations, we can't share style.
         //
         // This is distinct from the specifies_{animations,transitions} check below,
@@ -720,6 +725,14 @@ impl<E: TElement> StyleSharingCache<E> {
 
         if !target.matches_user_and_content_rules() {
             debug!("{:?} Cannot share style: content rules", target.element);
+            return None;
+        }
+
+        if target.element.has_unique_presentational_hints() {
+            debug!(
+                "{:?} Cannot share style: unique presentational hints",
+                target.element
+            );
             return None;
         }
 
