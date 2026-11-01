@@ -33,14 +33,20 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.Date
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.coroutines.resume
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import mozilla.components.browser.state.action.WebExtensionAction
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.webextension.WebExtension
 import mozilla.components.concept.engine.webextension.isUnsupported
 import mozilla.components.feature.addons.Addon
@@ -48,7 +54,6 @@ import mozilla.components.feature.addons.R
 import mozilla.components.feature.addons.update.db.UpdateAttemptsDatabase
 import mozilla.components.feature.addons.update.db.toEntity
 import mozilla.components.feature.addons.worker.shouldReport
-import mozilla.components.support.base.android.NotificationsDelegate
 import mozilla.components.support.base.ids.SharedIdsHelper
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.base.worker.Frequency
@@ -143,25 +148,26 @@ interface AddonUpdater {
  *
  * This class handles both periodic checks for updates and immediate update requests.
  *
- * When an update requires new permissions, it presents a system notification to the user. The update flow is then
- * paused until the user either grants or denies the new permissions via the notification.
+ * An update that requires new permissions is paused until the user decides. The request is added in memory only to
+ * [mozilla.components.browser.state.state.BrowserState.pendingExtensionUpdates], where the app answers it with
+ * [PendingExtensionUpdate.complete] and removes it. If dismissed or ignored, it may reappear at the next update check.
  *
  * @property applicationContext The application context.
  * @param frequency How often periodic updates should be checked for. Defaults to once a day.
- * @param notificationsDelegate The delegate responsible for posting system notifications.
+ * @property store The [BrowserStore] that holds the updates waiting for the user. It must be the store given to
+ *   [mozilla.components.feature.addons.AddonManager] and [WebExtensionSupport].
  */
 @Suppress("LargeClass")
 class DefaultAddonUpdater(
     private val applicationContext: Context,
     private val frequency: Frequency = Frequency(1, TimeUnit.DAYS),
-    private val notificationsDelegate: NotificationsDelegate,
+    private val store: BrowserStore,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : AddonUpdater {
     private val logger = Logger("DefaultAddonUpdater")
 
     private val scope = CoroutineScope(ioDispatcher + SupervisorJob())
 
-    @VisibleForTesting internal val updateStatusStorage = UpdateStatusStorage()
     internal var updateAttemptStorage = UpdateAttemptStorage(applicationContext)
 
     /** See [AddonUpdater.registerForFutureUpdates]. If an add-on is already registered nothing will happen. */
@@ -196,24 +202,7 @@ class DefaultAddonUpdater(
         logger.info("update $addonId")
     }
 
-    /**
-     * See [AddonUpdater.onUpdatePermissionRequest]
-     *
-     * IMPORTANT: The current extension update flow is a bit special when the extension requests new permissions.
-     *
-     * Because we are using a system notification, which lets users respond to it at any time, we do not update the
-     * extension in a single flow. In fact, we trigger the "update logic" of the engine twice.
-     *
-     * First, we initiate an update that will only be used to prompt the user via the notification. This update will be
-     * cancelled (as far as the engine is concerned), and the application will store some information about the pending
-     * update.
-     *
-     * The second step only occurs when the user responds to the system notification:
-     * - When the user denies the update, then we simply clear the notification and the information stored.
-     * - When the user accepts the update, which means they have granted the new extensions' permissions, we invoke the
-     *   update flow again as if there was no permission to grant (since the user has already granted them). At this
-     *   point, the update is applied.
-     */
+    /** See [AddonUpdater.onUpdatePermissionRequest] */
     override fun onUpdatePermissionRequest(
         extension: WebExtension,
         newPermissions: List<String>,
@@ -228,30 +217,25 @@ class DefaultAddonUpdater(
         val shouldGrantWithoutPrompt =
             Addon.localizePermissions(allPermissions, applicationContext).isEmpty() &&
                 Addon.localizeDataCollectionPermissions(newDataCollectionPermissions, applicationContext).isEmpty()
-        val shouldNotPrompt =
-            updateStatusStorage.isPreviouslyAllowed(applicationContext, extension.id) || shouldGrantWithoutPrompt
-        logger.debug("onUpdatePermissionRequest shouldNotPrompt=$shouldNotPrompt")
-
-        if (shouldNotPrompt) {
-            // Update has been completed at this point, so we can clear the storage data for this update, and proceed
-            // with the update itself.
-            updateStatusStorage.markAsUnallowed(applicationContext, extension.id)
+        if (shouldGrantWithoutPrompt) {
+            logger.debug("onUpdatePermissionRequest ${extension.id} granted without prompting")
             onPermissionsGranted(true)
-        } else {
-            // We create the Android notification here.
-            val notificationId = NotificationHandlerService.getNotificationId(applicationContext, extension.id)
-            val notification =
-                createNotification(
-                    extension,
-                    allPermissions,
-                    newDataCollectionPermissions,
-                    notificationId,
-                )
-            notificationsDelegate.notify(notificationId = notificationId, notification = notification)
-            // Abort the current update flow. A new update flow might be initiated when the user grants the new
-            // permissions via the system notification.
-            onPermissionsGranted(false)
+            return
         }
+
+        val supersededUpdate = store.state.pendingExtensionUpdates[extension.id]
+        store.dispatch(
+            WebExtensionAction.UpdatePendingExtensionUpdateAction(
+                PendingExtensionUpdate(
+                    extensionId = extension.id,
+                    permissions = newPermissions,
+                    origins = newOrigins,
+                    dataCollectionPermissions = newDataCollectionPermissions,
+                    onPermissionsGranted = onPermissionsGranted,
+                )
+            )
+        )
+        supersededUpdate?.complete(granted = false)
     }
 
     @VisibleForTesting
@@ -639,13 +623,37 @@ constructor(
             WebExtensionSupport.awaitInitialization()
 
             return@withContext suspendCancellableCoroutine { continuation ->
+                val unfinished = AtomicReference<CancellableContinuation<Result>?>(continuation)
+                var pendingUpdateJob: Job? = null
+
+                fun finish(result: Result, status: AddonUpdater.Status) {
+                    unfinished.getAndSet(null)?.let {
+                        pendingUpdateJob?.cancel()
+                        saveUpdateAttempt(extensionId, status)
+                        it.resume(result)
+                    }
+                }
+
                 continuation.invokeOnCancellation {
                     logger.info("Add-on update for $extensionId was cancelled.")
+                    pendingUpdateJob?.cancel()
                     // cancel the in-progress addon update when the AddonManager exposes a cancellation API
                 }
 
                 try {
                     val manager = GlobalAddonDependencyProvider.requireAddonManager()
+
+                    // An update requiring new permissions will be pending (potentially forever) until the user notices
+                    // the request and answers it. Instead of waiting for that, report an error as soon as the request
+                    // is pending.
+                    pendingUpdateJob = attemptScope.launch {
+                        // Note: this call only returns if the update waits for the user. Otherwise, the update check
+                        // below finishes first (no update, or one applied right away), and finish() cancels this job.
+                        manager.awaitPendingUpdateForExtension(extensionId)
+                        val message = "Update of $extensionId not applied yet because its new permissions need approval"
+                        logger.info(message)
+                        finish(Result.failure(), AddonUpdater.Status.Error(message, Exception(message)))
+                    }
 
                     manager.updateAddon(extensionId) { status ->
                         val result =
@@ -670,19 +678,17 @@ constructor(
                                     Result.failure()
                                 }
                             }
-                        saveUpdateAttempt(extensionId, status)
-                        continuation.resume(result)
+                        finish(result, status)
                     }
                 } catch (exception: Exception) {
                     logger.error(
                         "Unable to update extension $extensionId - reason=${exception.message}",
                         exception,
                     )
-                    saveUpdateAttempt(extensionId, AddonUpdater.Status.Error(exception.message ?: "", exception))
                     if (exception.shouldReport()) {
                         GlobalAddonDependencyProvider.onCrash?.invoke(exception)
                     }
-                    continuation.resume(Result.failure())
+                    finish(Result.failure(), AddonUpdater.Status.Error(exception.message ?: "", exception))
                 }
             }
         }

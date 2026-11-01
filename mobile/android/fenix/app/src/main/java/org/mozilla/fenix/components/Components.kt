@@ -219,7 +219,7 @@ class Components(
 
     @Suppress("MagicNumber")
     val addonUpdater by lazyMonitored {
-        DefaultAddonUpdater(context, Frequency(12, TimeUnit.HOURS), notificationsDelegate)
+        DefaultAddonUpdater(context, Frequency(12, TimeUnit.HOURS), core.store)
     }
 
     @Suppress("MagicNumber")

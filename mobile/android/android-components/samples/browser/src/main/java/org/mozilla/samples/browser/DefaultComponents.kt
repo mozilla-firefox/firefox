@@ -573,7 +573,7 @@ open class DefaultComponents(private val applicationContext: Context) {
         NotificationsDelegate(notificationManagerCompat)
     }
 
-    val addonUpdater = DefaultAddonUpdater(applicationContext, Frequency(1, TimeUnit.DAYS), notificationsDelegate)
+    val addonUpdater by lazy { DefaultAddonUpdater(applicationContext, Frequency(1, TimeUnit.DAYS), store) }
 
     val fileSizeFormatter: FileSizeFormatter by lazy { DefaultFileSizeFormatter(applicationContext) }
 
