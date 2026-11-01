@@ -52,6 +52,7 @@ private const val KEY_POSITIVE_BUTTON_DISABLED_TEXT_COLOR = "KEY_POSITIVE_BUTTON
 private const val KEY_POSITIVE_BUTTON_RADIUS = "KEY_POSITIVE_BUTTON_RADIUS"
 private const val KEY_LEARN_MORE_LINK_TEXT_COLOR = "KEY_LEARN_MORE_LINK_TEXT_COLOR"
 private const val KEY_FOR_OPTIONAL_PERMISSIONS = "KEY_FOR_OPTIONAL_PERMISSIONS"
+private const val KEY_PROMPT_INSTANCE_ID = "KEY_PROMPT_INSTANCE_ID"
 internal const val KEY_PERMISSIONS = "KEY_PERMISSIONS"
 internal const val KEY_ORIGINS = "KEY_ORIGINS"
 internal const val KEY_DATA_COLLECTION_PERMISSIONS = "KEY_DATA_COLLECTION_PERMISSIONS"
@@ -140,6 +141,13 @@ class PermissionsDialogFragment @JvmOverloads constructor(mainDispatcher: Corout
      */
     internal val forOptionalPermissions: Boolean
         get() = safeArguments.getBoolean(KEY_FOR_OPTIONAL_PERMISSIONS)
+
+    /**
+     * The id of the request this dialog answers, if any. Check it before answering: a recreated dialog can outlive its
+     * request.
+     */
+    val promptInstanceId: String?
+        get() = safeArguments.getString(KEY_PROMPT_INSTANCE_ID)
 
     internal val permissions
         get() = requireNotNull(safeArguments.getStringArray(KEY_PERMISSIONS))
@@ -537,6 +545,8 @@ class PermissionsDialogFragment @JvmOverloads constructor(mainDispatcher: Corout
          *   extension.
          * @param permissions The permissions requested by the extension.
          * @param origins The host permissions requested by the extension.
+         * @param promptInstanceId The id of the request the dialog answers, see
+         *   [PermissionsDialogFragment.promptInstanceId].
          * @param promptsStyling Styling properties for the dialog.
          * @param onPositiveButtonClicked A lambda called when the allow button is clicked.
          * @param onNegativeButtonClicked A lambda called when the deny button is clicked.
@@ -548,6 +558,7 @@ class PermissionsDialogFragment @JvmOverloads constructor(mainDispatcher: Corout
             origins: List<String>,
             dataCollectionPermissions: List<String>,
             forOptionalPermissions: Boolean = false,
+            promptInstanceId: String? = null,
             promptsStyling: PromptsStyling? =
                 PromptsStyling(
                     gravity = Gravity.BOTTOM,
@@ -564,6 +575,7 @@ class PermissionsDialogFragment @JvmOverloads constructor(mainDispatcher: Corout
             arguments.apply {
                 putParcelable(KEY_ADDON, addon)
                 putBoolean(KEY_FOR_OPTIONAL_PERMISSIONS, forOptionalPermissions)
+                putString(KEY_PROMPT_INSTANCE_ID, promptInstanceId)
                 putStringArray(KEY_PERMISSIONS, permissions.toTypedArray())
                 putStringArray(KEY_ORIGINS, origins.toTypedArray())
                 putStringArray(KEY_DATA_COLLECTION_PERMISSIONS, dataCollectionPermissions.toTypedArray())

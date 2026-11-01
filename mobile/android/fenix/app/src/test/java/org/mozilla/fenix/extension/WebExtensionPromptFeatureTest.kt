@@ -27,6 +27,7 @@ import mozilla.components.concept.engine.webextension.WebExtensionInstallExcepti
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.addons.R as addonsR
+import mozilla.components.feature.addons.ui.PermissionsDialogFragment
 import mozilla.components.support.ktx.android.content.appVersionName
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
@@ -55,6 +56,7 @@ class WebExtensionPromptFeatureTest {
         onLinkClickedCalls.add(url to isFirstParty)
     }
     private val navController: NavController = mockk(relaxed = true)
+    private val extension = Addon(id = "extension", translatableName = mapOf(Addon.DEFAULT_LOCALE to "Extension"))
     private val fragmentManager: FragmentManager = mockk(relaxed = true)
     private val addonManager: AddonManager = mockk(relaxed = true)
 
@@ -897,7 +899,7 @@ class WebExtensionPromptFeatureTest {
             val fragment =
                 webExtensionPromptFeature.showPermissionDialog(
                     addon = addon,
-                    promptRequest = mockk(),
+                    promptRequest = mockk(relaxed = true),
                     forOptionalPermissions = false,
                     permissions = emptyList(),
                     origins = emptyList(),
@@ -933,4 +935,68 @@ class WebExtensionPromptFeatureTest {
                 )
             }
         }
+
+    @Test
+    fun `WHEN showing a permissions prompt THEN the dialog has the request's instance id`() {
+        val promptRequest = newOptionalRequest()
+
+        val dialog = webExtensionPromptFeature.showPermissionDialog(extension, promptRequest)
+
+        assertEquals(promptRequest.instanceId, dialog!!.promptInstanceId)
+    }
+
+    @Test
+    fun `WHEN a recreated permissions prompt's request is in the store THEN it gets its handlers back`() =
+        runTest(testDispatcher) {
+            val answers = mutableListOf<Boolean>()
+            val promptRequest = newOptionalRequest { answers.add(it) }
+            store.dispatch(UpdatePromptRequestWebExtensionAction(promptRequest))
+            val dialog = recreatedDialog(promptRequest.instanceId)
+
+            webExtensionPromptFeature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val onPositiveButtonClicked = slot<(Addon, Boolean, Boolean) -> Unit>()
+            verify { dialog.onPositiveButtonClicked = capture(onPositiveButtonClicked) }
+            verify { dialog.onNegativeButtonClicked = any() }
+            verify(exactly = 0) { dialog.dismissNow() }
+            onPositiveButtonClicked.captured(extension, false, false)
+            assertEquals(listOf(true), answers)
+        }
+
+    @Test
+    fun `WHEN a recreated permissions prompt's request was replaced THEN dismiss it`() =
+        runTest(testDispatcher) {
+            store.dispatch(UpdatePromptRequestWebExtensionAction(newOptionalRequest()))
+            val dialog = recreatedDialog(newOptionalRequest().instanceId)
+
+            webExtensionPromptFeature.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify { dialog.dismissNow() }
+            verify(exactly = 0) { dialog.onPositiveButtonClicked = any() }
+        }
+
+    private fun newOptionalRequest(onConfirm: (Boolean) -> Unit = {}) =
+        WebExtensionPromptRequest.AfterInstallation.Permissions.Optional(
+            extension =
+                mockk(relaxed = true) {
+                    every { getMetadata() } returns
+                        mockk(relaxed = true) { every { updateDate } returns "2023-10-27T10:15:30.500Z" }
+                },
+            permissions = listOf("tabs"),
+            origins = emptyList(),
+            dataCollectionPermissions = emptyList(),
+            onConfirm = onConfirm,
+        )
+
+    private fun recreatedDialog(instanceId: String?): PermissionsDialogFragment {
+        val dialog: PermissionsDialogFragment = mockk(relaxed = true) { every { promptInstanceId } returns instanceId }
+        every { fragmentManager.findFragmentByTag(PERMISSIONS_DIALOG_TAG) } returns dialog
+        return dialog
+    }
+
+    private companion object {
+        const val PERMISSIONS_DIALOG_TAG = "ADDONS_PERMISSIONS_DIALOG_FRAGMENT"
+    }
 }

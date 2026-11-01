@@ -4,6 +4,7 @@
 
 package mozilla.components.browser.state.state.extension
 
+import java.util.UUID
 import mozilla.components.concept.engine.webextension.InstallationMethod
 import mozilla.components.concept.engine.webextension.PermissionPromptResponse
 import mozilla.components.concept.engine.webextension.WebExtension
@@ -57,6 +58,9 @@ sealed class WebExtensionPromptRequest {
     sealed class AfterInstallation(open val extension: WebExtension) : WebExtensionPromptRequest() {
         /** Value type that represents a request for showing a permissions prompt. */
         sealed class Permissions(override val extension: WebExtension) : AfterInstallation(extension) {
+            /** A unique ID to find this request again, e.g. from a recreated dialog. */
+            val instanceId: String = UUID.randomUUID().toString()
+
             /**
              * Value type that represents a request for a required permissions prompt.
              *

@@ -366,6 +366,7 @@ class WebExtensionPromptFeature(
             PermissionsDialogFragment.newInstance(
                 addon = addon,
                 forOptionalPermissions = forOptionalPermissions,
+                promptInstanceId = promptRequest.instanceId,
                 permissions = permissions,
                 origins = origins,
                 dataCollectionPermissions = dataCollectionPermissions,
@@ -436,48 +437,7 @@ class WebExtensionPromptFeature(
             dialog.onCancelled = ::handleDownloadAddonDialogCancelled
         }
 
-        findPreviousPermissionDialogFragment()?.let { dialog ->
-            dialog.onPositiveButtonClicked = { addon, privateBrowsingAllowed, technicalAndInteractionDataGranted ->
-                store.state.webExtensionPromptRequest?.let { promptRequest ->
-                    if (
-                        promptRequest is WebExtensionPromptRequest.AfterInstallation.Permissions &&
-                            addon.id == promptRequest.extension.id
-                    ) {
-                        handlePermissions(
-                            promptRequest,
-                            granted = true,
-                            privateBrowsingAllowed,
-                            technicalAndInteractionDataGranted,
-                        )
-                    }
-                }
-            }
-            dialog.onNegativeButtonClicked = {
-                store.state.webExtensionPromptRequest?.let { promptRequest ->
-                    if (promptRequest is WebExtensionPromptRequest.AfterInstallation.Permissions) {
-                        handlePermissions(
-                            promptRequest,
-                            granted = false,
-                            privateBrowsingAllowed = false,
-                            technicalAndInteractionDataGranted = false,
-                        )
-                    }
-                }
-            }
-            dialog.onLearnMoreClicked = {
-                store.state.webExtensionPromptRequest?.let { promptRequest ->
-                    if (promptRequest is WebExtensionPromptRequest.AfterInstallation.Permissions) {
-                        onLinkClicked.invoke(
-                            SupportUtils.getSumoURLForTopic(
-                                context,
-                                SupportUtils.SumoTopic.EXTENSION_PERMISSIONS,
-                            ),
-                            false,
-                        )
-                    }
-                }
-            }
-        }
+        reAttachPermissionDialog()
 
         findPreviousPostInstallationDialogFragment()?.let { dialog ->
             dialog.onDismissed = {
@@ -485,6 +445,49 @@ class WebExtensionPromptFeature(
                     consumePromptRequest()
                 }
             }
+        }
+    }
+
+    /**
+     * Re-attaches a recreated permissions dialog to the prompt request with its
+     * [PermissionsDialogFragment.promptInstanceId], or dismisses the dialog if there is none.
+     */
+    private fun reAttachPermissionDialog() {
+        val dialog = findPreviousPermissionDialogFragment() ?: return
+        val instanceId = dialog.promptInstanceId
+        val promptRequest = store.state.webExtensionPromptRequest
+        if (
+            promptRequest is WebExtensionPromptRequest.AfterInstallation.Permissions &&
+                promptRequest.instanceId == instanceId
+        ) {
+            dialog.onPositiveButtonClicked = { _, privateBrowsingAllowed, technicalAndInteractionDataGranted ->
+                handlePermissions(
+                    promptRequest,
+                    granted = true,
+                    privateBrowsingAllowed,
+                    technicalAndInteractionDataGranted,
+                )
+            }
+            dialog.onNegativeButtonClicked = {
+                handlePermissions(
+                    promptRequest,
+                    granted = false,
+                    privateBrowsingAllowed = false,
+                    technicalAndInteractionDataGranted = false,
+                )
+            }
+            dialog.onLearnMoreClicked = {
+                onLinkClicked.invoke(
+                    SupportUtils.getSumoURLForTopic(
+                        context,
+                        SupportUtils.SumoTopic.EXTENSION_PERMISSIONS,
+                    ),
+                    false,
+                )
+            }
+        } else {
+            // Dismissed now, so that the request waiting in the store can show its own dialog.
+            dialog.dismissNow()
         }
     }
 
