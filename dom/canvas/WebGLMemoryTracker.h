@@ -9,6 +9,9 @@
 
 namespace mozilla {
 
+template <typename ResolveValueT, typename RejectValueT, bool IsExclusive>
+class MozPromise;
+
 class WebGLMemoryTracker : public nsIMemoryReporter {
  public:
   NS_DECL_THREADSAFE_ISUPPORTS
@@ -18,6 +21,11 @@ class WebGLMemoryTracker : public nsIMemoryReporter {
 
  private:
   virtual ~WebGLMemoryTracker() = default;
+
+  struct MemoryReport;
+  using MemoryReportPromise = MozPromise<MemoryReport, nsresult, true>;
+
+  RefPtr<MemoryReportPromise> CollectMemoryReport();
 };
 
 }  // namespace mozilla

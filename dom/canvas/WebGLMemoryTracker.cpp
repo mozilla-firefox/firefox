@@ -9,27 +9,16 @@
 #include "WebGLRenderbuffer.h"
 #include "WebGLShader.h"
 #include "WebGLTexture.h"
+#include "mozilla/MozPromise.h"
+#include "mozilla/gfx/CanvasRenderThread.h"
 
 namespace mozilla {
 namespace webgl {
 MOZ_DEFINE_MALLOC_SIZE_OF(MallocSizeOf)
 }  // namespace webgl
 
-void WebGLMemoryTracker::EnsureRegistered() {
-  static bool sIsRegistered = []() {
-    RegisterStrongMemoryReporter(MakeAndAddRef<WebGLMemoryTracker>());
-    return true;
-  }();
-  (void)sIsRegistered;
-}
-
-NS_IMETHODIMP
-WebGLMemoryTracker::CollectReports(nsIHandleReportCallback* aHandleReport,
-                                   nsISupports* aData, bool) {
-  const auto locked = HostWebGLContext::OutstandingContexts();
-  const auto& contexts = locked->contexts;
-
-  const auto contextCount = contexts.size();
+struct WebGLMemoryTracker::MemoryReport final {
+  size_t contextCount = 0;
 
   size_t bufferCount = 0;
   int64_t bufferGpuSize = 0;
@@ -45,47 +34,106 @@ WebGLMemoryTracker::CollectReports(nsIHandleReportCallback* aHandleReport,
   size_t texHeapOverhead = 0;
   int64_t texGpuSize = 0;
 
-  for (const auto& context : contexts) {
-    bufferCount += context->mBufferMap.size();
-    for (const auto& pair : context->mBufferMap) {
-      const auto& buffer = *pair.second;
-      bufferGpuSize += buffer.mByteLength;
+  void Report(nsIHandleReportCallback* aHandleReport, nsISupports* aData) const;
+};
 
-      if (buffer.mIndexCache) {
-        bufferCacheSize += buffer.mByteLength;
-      }
-      bufferCacheSize += buffer.mIndexRanges.size() *
-                         sizeof(decltype(buffer.mIndexRanges)::value_type);
-    }
+void WebGLMemoryTracker::EnsureRegistered() {
+  static bool sIsRegistered = []() {
+    RegisterStrongAsyncMemoryReporter(MakeAndAddRef<WebGLMemoryTracker>());
+    return true;
+  }();
+  (void)sIsRegistered;
+}
 
-    // -
+NS_IMETHODIMP
+WebGLMemoryTracker::CollectReports(nsIHandleReportCallback* aHandleReport,
+                                   nsISupports* aData, bool) {
+  nsCOMPtr<nsIHandleReportCallback> handleReport = aHandleReport;
+  nsCOMPtr<nsISupports> data = aData;
 
-    rbCount += context->mRenderbufferMap.size();
-    for (const auto& pair : context->mRenderbufferMap) {
-      const auto& rb = pair.second;
-      rbGpuSize += rb->MemoryUsage();
-    }
+  CollectMemoryReport()->Then(
+      GetCurrentSerialEventTarget(), __func__,
+      [handleReport = std::move(handleReport), data = std::move(data)](
+          const MemoryReportPromise::ResolveOrRejectValue& result) {
+        if (result.IsResolve()) {
+          result.ResolveValue().Report(handleReport, data);
+        } else {
+          MemoryReport{}.Report(handleReport, data);
+        }
 
-    // -
+        nsCOMPtr<nsIMemoryReporterManager> manager =
+            do_GetService("@mozilla.org/memory-reporter-manager;1");
+        if (manager) {
+          manager->EndReport();
+        }
+      });
 
-    shaderCount += context->mShaderMap.size();
-    for (const auto& pair : context->mShaderMap) {
-      const auto& shader = pair.second;
-      shaderCpuSize += shader->SizeOfIncludingThis(webgl::MallocSizeOf);
-    }
+  return NS_OK;
+}
 
-    // -
-
-    texCount += context->mTextureMap.size();
-    for (const auto& pair : context->mTextureMap) {
-      const auto& texture = pair.second;
-      texGpuSize += texture->MemoryUsage();
-      texHeapOverhead += texture->SizeOfIncludingThis(webgl::MallocSizeOf);
-    }
+RefPtr<WebGLMemoryTracker::MemoryReportPromise>
+WebGLMemoryTracker::CollectMemoryReport() {
+  nsCOMPtr<nsIThread> canvasThread =
+      gfx::CanvasRenderThread::GetCanvasRenderThread();
+  if (!canvasThread) {
+    return MemoryReportPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);
   }
 
-  // -
+  return InvokeAsync(
+      canvasThread, __func__, []() -> RefPtr<MemoryReportPromise> {
+        const auto locked = HostWebGLContext::OutstandingContexts();
+        const auto& contexts = locked->contexts;
+        MemoryReport report;
+        report.contextCount = contexts.size();
 
+        for (const auto& context : contexts) {
+          report.bufferCount += context->mBufferMap.size();
+          for (const auto& pair : context->mBufferMap) {
+            const auto& buffer = *pair.second;
+            report.bufferGpuSize += buffer.mByteLength;
+
+            if (buffer.mIndexCache) {
+              report.bufferCacheSize += buffer.mByteLength;
+            }
+            report.bufferCacheSize +=
+                buffer.mIndexRanges.size() *
+                sizeof(decltype(buffer.mIndexRanges)::value_type);
+          }
+
+          // -
+
+          report.rbCount += context->mRenderbufferMap.size();
+          for (const auto& pair : context->mRenderbufferMap) {
+            const auto& rb = pair.second;
+            report.rbGpuSize += rb->MemoryUsage();
+          }
+
+          // -
+
+          report.shaderCount += context->mShaderMap.size();
+          for (const auto& pair : context->mShaderMap) {
+            const auto& shader = pair.second;
+            report.shaderCpuSize +=
+                shader->SizeOfIncludingThis(webgl::MallocSizeOf);
+          }
+
+          // -
+
+          report.texCount += context->mTextureMap.size();
+          for (const auto& pair : context->mTextureMap) {
+            const auto& texture = pair.second;
+            report.texGpuSize += texture->MemoryUsage();
+            report.texHeapOverhead +=
+                texture->SizeOfIncludingThis(webgl::MallocSizeOf);
+          }
+        }
+
+        return MemoryReportPromise::CreateAndResolve(report, __func__);
+      });
+}
+
+void WebGLMemoryTracker::MemoryReport::Report(
+    nsIHandleReportCallback* aHandleReport, nsISupports* aData) const {
   MOZ_COLLECT_REPORT(
       "webgl-texture-memory", KIND_OTHER, UNITS_BYTES, texGpuSize,
       "Memory used by WebGL textures. The OpenGL implementation is free to "
@@ -143,8 +191,6 @@ WebGLMemoryTracker::CollectReports(nsIHandleReportCallback* aHandleReport,
   MOZ_COLLECT_REPORT("webgl-context-count", KIND_OTHER, UNITS_COUNT,
                      static_cast<int64_t>(contextCount),
                      "Number of WebGL contexts.");
-
-  return NS_OK;
 }
 
 NS_IMPL_ISUPPORTS(WebGLMemoryTracker, nsIMemoryReporter)
