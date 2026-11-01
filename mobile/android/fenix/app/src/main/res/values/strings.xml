@@ -4094,6 +4094,16 @@
     <string name="wrex_widget_match_suspended">Suspended</string>
     <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
     <string name="wrex_widget_match_postponed">Postponed</string>
+    <!-- Sports widget menu item to view the team's match results. -->
+    <string name="wrex_widget_results">Results</string>
+    <!-- Sports widget menu item to view the league standings table. -->
+    <string name="wrex_widget_standings">Standings</string>
+    <!-- Sports widget menu item to browse the team's wallpapers. -->
+    <string name="wrex_widget_wallpapers">Wallpapers</string>
+    <!-- Sports widget menu item to remove the widget from the homepage. -->
+    <string name="wrex_widget_remove_widget">Remove Widget</string>
+    <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+    <string name="wrex_widget_more_options_content_description">More options</string>
     <!-- Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
       %s is the name of the competition the match belongs to (e.g. "FA Cup"). -->
     <string name="wrex_widget_live_game_content_description">%s, live game</string>
