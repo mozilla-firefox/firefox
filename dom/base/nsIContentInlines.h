@@ -53,22 +53,14 @@ inline void nsIContent::SetPrimaryFrame(nsIFrame* aFrame) {
              "This will end badly!");
   MOZ_ASSERT(!aFrame || IsInComposedDoc(), "This will end badly!");
 
-  // <area> is known to trigger this, see bug 749326 and bug 135040.
-  MOZ_ASSERT(IsHTMLElement(nsGkAtoms::area) || !aFrame || !mPrimaryFrame ||
-                 aFrame == mPrimaryFrame,
+  MOZ_ASSERT(!aFrame || !mPrimaryFrame || aFrame == mPrimaryFrame,
              "Losing track of existing primary frame");
 
   if (aFrame) {
     MOZ_ASSERT(!aFrame->IsPlaceholderFrame());
-    if (MOZ_LIKELY(!IsHTMLElement(nsGkAtoms::area)) ||
-        aFrame->GetContent() == this) {
-      aFrame->SetIsPrimaryFrame(true);
-    }
+    aFrame->SetIsPrimaryFrame(true);
   } else if (nsIFrame* currentPrimaryFrame = GetPrimaryFrame()) {
-    if (MOZ_LIKELY(!IsHTMLElement(nsGkAtoms::area)) ||
-        currentPrimaryFrame->GetContent() == this) {
-      currentPrimaryFrame->SetIsPrimaryFrame(false);
-    }
+    currentPrimaryFrame->SetIsPrimaryFrame(false);
   }
 
   mPrimaryFrame = aFrame;

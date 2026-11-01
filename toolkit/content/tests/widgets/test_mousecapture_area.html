@@ -10,12 +10,9 @@
     <p id="display"></p>
 
     <div id="content">
-      <!-- The border="0" on the images is needed so that when we use
-       synthesizeMouse we don't accidentally target the border of the image and
-       miss the area because synthesizeMouse gets the rect of the primary frame
-       of the target (the area), which is the image due to bug 135040, which
-       includes the border, but the events targetted at the border aren't
-       targeted at the area. -->
+      <!-- The border="0" on the images is needed so that the clicks below land
+       on the image content, not its border; events targeted at the border
+       aren't targeted at the area. -->
 
       <!-- 20x20 of red -->
       <img
@@ -73,8 +70,7 @@
 
       function runTests() {
         // XXX We send a useless click to each image to force it to setup its image
-        // map, because flushing layout won't do it. Hopefully bug 135040 will make
-        // this not suck.
+        // map, because flushing layout won't do it.
         synthesizeMouse($("image"), 5, 5, { type: "mousedown" });
         synthesizeMouse($("image"), 5, 5, { type: "mouseup" });
         synthesizeMouse($("img1"), 5, 5, { type: "mousedown" });
@@ -84,7 +80,9 @@
 
         // test that setCapture works on an area element (bug 517737)
         var area = document.getElementById("area");
-        synthesizeMouse(area, 5, 5, { type: "mousedown" });
+        // Areas have no box, so target the image; the clicks below land on the
+        // area through the image map.
+        synthesizeMouse($("image"), 5, 5, { type: "mousedown" });
         synthesizeMouseExpectEvent(
           $("otherelement"),
           5,
@@ -94,14 +92,13 @@
           "mousemove",
           "setCapture works on areas"
         );
-        synthesizeMouse(area, 5, 5, { type: "mouseup" });
+        synthesizeMouse($("image"), 5, 5, { type: "mouseup" });
 
         // test that setCapture works on an area element when it is part of an image
         // map that is used by two images
 
         var img1 = document.getElementById("img1");
         var sharedarea = document.getElementById("sharedarea");
-        // synthesizeMouse just sends the event by coordinates, so this is really a click on the area
         synthesizeMouse(img1, 5, 5, { type: "mousedown" });
         synthesizeMouseExpectEvent(
           $("otherelement"),
@@ -115,7 +112,6 @@
         synthesizeMouse(img1, 5, 5, { type: "mouseup" });
 
         var img2 = document.getElementById("img2");
-        // synthesizeMouse just sends the event by coordinates, so this is really a click on the area
         synthesizeMouse(img2, 5, 5, { type: "mousedown" });
         synthesizeMouseExpectEvent(
           $("otherelement"),

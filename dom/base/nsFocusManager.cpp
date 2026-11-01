@@ -3742,10 +3742,11 @@ nsresult nsFocusManager::DetermineElementToMoveFocus(
   nsCOMPtr<nsIContent> focusedContent = startContent;
   bool startingFromDescendantOfFocusedContent = false;
   if (startContent) {
+    // Deliberately not GetPrimaryOrAreaImageFrame: an <area> must use its own
+    // tabindex, not the image's.
     nsIFrame* frame = startContent->GetPrimaryFrame();
-    tabIndex = (frame && !startContent->IsHTMLElement(nsGkAtoms::area))
-                   ? frame->IsFocusable().mTabIndex
-                   : startContent->IsFocusableWithoutStyle().mTabIndex;
+    tabIndex = frame ? frame->IsFocusable().mTabIndex
+                     : startContent->IsFocusableWithoutStyle().mTabIndex;
 
     if (!aStartContent &&
         (aType == MOVEFOCUS_FORWARD || aType == MOVEFOCUS_BACKWARD)) {
@@ -5950,6 +5951,13 @@ static IsFocusableFlags FocusManagerFlagsToIsFocusableFlags(uint32_t aFlags) {
 Element* nsFocusManager::GetTheFocusableArea(Element* aTarget,
                                              uint32_t aFlags) {
   MOZ_ASSERT(aTarget);
+
+  // If focus target is an area element with one or more shapes that are
+  // focusable areas.
+  if (auto* area = HTMLAreaElement::FromNode(aTarget)) {
+    return IsAreaElementFocusable(*area) ? area : nullptr;
+  }
+
   nsIFrame* frame = aTarget->GetPrimaryFrame();
   if (!frame) {
     return nullptr;
@@ -5960,12 +5968,6 @@ Element* nsFocusManager::GetTheFocusableArea(Element* aTarget,
     // the root content can always be focused,
     // except in userfocusignored context.
     return aTarget;
-  }
-
-  // If focus target is an area element with one or more shapes that are
-  // focusable areas.
-  if (auto* area = HTMLAreaElement::FromNode(aTarget)) {
-    return IsAreaElementFocusable(*area) ? area : nullptr;
   }
 
   // For these 3 steps mentioned in the spec
@@ -6006,13 +6008,13 @@ Element* nsFocusManager::GetTheFocusableArea(Element* aTarget,
 
 /* static */
 bool nsFocusManager::IsAreaElementFocusable(HTMLAreaElement& aArea) {
-  nsIFrame* frame = aArea.GetPrimaryFrame();
+  nsIFrame* frame = aArea.GetImageFrame();
   if (!frame) {
     return false;
   }
-  // HTML areas do not have their own frame, and the img frame we get from
-  // GetPrimaryFrame() is not relevant as to whether it is focusable or
-  // not, so we have to do all the relevant checks manually for them.
+  // HTML areas do not have their own frame, and the img frame is not relevant
+  // as to whether the area is focusable or not, so we have to do all the
+  // relevant checks manually for them.
   return frame->IsVisibleConsideringAncestors() &&
          aArea.IsFocusableWithoutStyle();
 }

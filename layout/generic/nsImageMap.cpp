@@ -617,9 +617,6 @@ nsresult nsImageMap::GetBoundsForAreaContent(nsIContent* aContent,
 }
 
 void nsImageMap::AreaRemoved(HTMLAreaElement* aArea) {
-  if (aArea->GetPrimaryFrame() == mImageFrame) {
-    aArea->SetPrimaryFrame(nullptr);
-  }
   if (aArea->GetImageFrame() == mImageFrame) {
     aArea->SetImageFrame(nullptr);
   }
@@ -720,12 +717,6 @@ void nsImageMap::AddArea(HTMLAreaElement* aArea) {
   aArea->AddSystemEventListener(u"focus"_ns, this, false, false);
   aArea->AddSystemEventListener(u"blur"_ns, this, false, false);
 
-  // This is a nasty hack.  It needs to go away: see bug 135040.  Once this is
-  // removed, the code added to RestyleManager::RestyleElement,
-  // nsCSSFrameConstructor::ContentRemoved (both hacks there), and
-  // RestyleManager::ProcessRestyledFrames to work around this issue can
-  // be removed.
-  aArea->SetPrimaryFrame(mImageFrame);
   aArea->SetImageFrame(mImageFrame);
 
   nsAutoString coords;
