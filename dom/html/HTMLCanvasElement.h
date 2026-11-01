@@ -192,7 +192,7 @@ class HTMLCanvasElement final : public nsGenericHTMLElement,
   /**
    * Notify the placeholder offscreen canvas of an updated size.
    */
-  void InvalidateCanvasPlaceholder(bool aHasSizeChanged);
+  void InvalidateCanvasPlaceholder(uint32_t aWidth, uint32_t aHeight);
 
   /**
    * Notify that some canvas content has changed and the window may

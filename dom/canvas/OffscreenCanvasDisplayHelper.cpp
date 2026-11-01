@@ -24,11 +24,9 @@ namespace mozilla::dom {
 
 OffscreenCanvasDisplayHelper::OffscreenCanvasDisplayHelper(
     HTMLCanvasElement* aCanvasElement, uint32_t aWidth, uint32_t aHeight)
-    : mPlaceholderSize(aWidth, aHeight),
-      mMutex("mozilla::dom::OffscreenCanvasDisplayHelper"),
+    : mMutex("mozilla::dom::OffscreenCanvasDisplayHelper"),
       mCanvasElement(aCanvasElement),
       mImageProducerID(layers::ImageContainer::AllocateProducerID()) {
-  MOZ_ASSERT(NS_IsMainThread());
   mData.mSize.width = aWidth;
   mData.mSize.height = aHeight;
 }
@@ -436,21 +434,19 @@ void OffscreenCanvasDisplayHelper::InvalidateElement() {
   MOZ_ASSERT(NS_IsMainThread());
 
   HTMLCanvasElement* canvasElement;
-  CSSIntSize size;
+  gfx::IntSize size;
 
   {
     MutexAutoLock lock(mMutex);
     MOZ_ASSERT(mPendingInvalidate);
     mPendingInvalidate = false;
     canvasElement = mCanvasElement;
-    size = CSSIntSize(mData.mSize.width, mData.mSize.height);
+    size = mData.mSize;
   }
 
   if (canvasElement) {
-    const bool hasSizeChanged = size != mPlaceholderSize;
-    mPlaceholderSize = size;
     SVGObserverUtils::InvalidateDirectRenderingObservers(canvasElement);
-    canvasElement->InvalidateCanvasPlaceholder(hasSizeChanged);
+    canvasElement->InvalidateCanvasPlaceholder(size.width, size.height);
     canvasElement->InvalidateCanvasContent(nullptr);
   }
 }
