@@ -785,8 +785,7 @@ html:focus-visible {
  *
  * Exceptions:
  *
- *  * area declaration needs to be !important, see below / bug 135040.  That's
- *    hacky and broken.
+ *  * area declaration needs to be !important, see below.
  *
  *  * [hidden] is implemented as a presentation attribute to avoid a global
  *    selector in a UA sheet.
@@ -809,7 +808,7 @@ title {
 }
 
 area {
-  /* Don't give it frames other than its imageframe */
+  /* Never give it a frame, the image frame handles image maps */
   display: none !important;
 }
 

@@ -2823,8 +2823,7 @@ bool nsImageFrame::IsLeafDynamic() const {
 nsIContent* nsImageFrame::GetExplicitEventTargetContent(
     const WidgetEvent* aEvent /* = nullptr */) const {
   if (mImageMap && aEvent) {
-    // XXX We need to make this special check for area element's capturing the
-    // mouse due to bug 135040. Remove it once that's fixed.
+    // Areas capturing the mouse need the image frame to be their target.
     nsIContent* capturingContent = aEvent->HasMouseEventMessage()
                                        ? PresShell::GetCapturingContent()
                                        : nullptr;

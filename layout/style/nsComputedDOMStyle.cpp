@@ -565,11 +565,7 @@ nsComputedDOMStyle::DoGetComputedStyleNoFlush(const Element* aElement,
     return nullptr;
   }
 
-  // XXX the !aElement->IsHTMLElement(nsGkAtoms::area)
-  // check is needed due to bug 135040 (to avoid using
-  // mPrimaryFrame). Remove it once that's fixed.
-  if (inDocWithShell && aStyleType == StyleType::All &&
-      !aElement->IsHTMLElement(nsGkAtoms::area)) {
+  if (inDocWithShell && aStyleType == StyleType::All) {
     if (const Element* element = aElement->GetPseudoElement(aPseudo)) {
       if (element->HasServoData()) {
         const ComputedStyle* result =
@@ -1099,10 +1095,7 @@ void nsComputedDOMStyle::UpdateCurrentStyleSources(
 
   mComputedStyle = nullptr;
 
-  // XXX the !mElement->IsHTMLElement(nsGkAtoms::area) check is needed due to
-  // bug 135040 (to avoid using mPrimaryFrame). Remove it once that's fixed.
-  if (mStyleType == StyleType::All &&
-      !mElement->IsHTMLElement(nsGkAtoms::area)) {
+  if (mStyleType == StyleType::All) {
     mOuterFrame = GetOuterFrame();
     mInnerFrame = mOuterFrame;
     if (mOuterFrame) {

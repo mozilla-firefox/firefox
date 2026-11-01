@@ -1730,15 +1730,6 @@ void RestyleManager::ProcessRestyledFrames(nsStyleChangeList& aChangeList) {
       continue;
     }
 
-    if (frame && frame->GetContent() != content) {
-      // XXXbz this is due to image maps messing with the primary frame of
-      // <area>s.  See bug 135040.  Remove this block once that's fixed.
-      frame = nullptr;
-      if (!(hint & nsChangeHint_ReconstructFrame)) {
-        continue;
-      }
-    }
-
     TryToDealWithScrollbarChange(hint, content, frame, presContext);
     TryToHandleContainingBlockChange(hint, frame);
 
@@ -2901,13 +2892,6 @@ bool RestyleManager::ProcessPostTraversal(Element* aElement,
 
   RefPtr<ComputedStyle> upToDateStyleIfRestyled =
       wasRestyled ? ServoStyleSet::ResolveServoStyle(*aElement) : nullptr;
-
-  // We should really fix the weird primary frame mapping for image maps
-  // (bug 135040)...
-  if (styleFrame && styleFrame->GetContent() != aElement) {
-    MOZ_ASSERT(styleFrame->IsImageFrameOrSubclass());
-    styleFrame = nullptr;
-  }
 
   // Handle lazy frame construction by posting a reconstruct for any lazily-
   // constructed roots.
