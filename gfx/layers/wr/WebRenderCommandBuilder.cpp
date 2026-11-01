@@ -1108,10 +1108,12 @@ enum class ItemActivity : uint8_t {
   /// Could be active if it has no layerization cost.
   /// Typically active if first of an item group.
   Could = 1,
+  /// Should be active for animation unless affected by a complex mask.
+  ShouldForAnimation = 2,
   /// Should be active unless something external makes that less useful.
-  Should = 2,
+  Should = 3,
   /// Must be active regardless of external factors.
-  Must = 3,
+  Must = 4,
 };
 
 ItemActivity CombineActivity(ItemActivity a, ItemActivity b) {
@@ -1223,7 +1225,7 @@ static ItemActivity IsItemProbablyActive(
                                         aDisplayListBuilder, t2d * aTransform);
 
       if (transformItem->MayBeAnimated(aDisplayListBuilder)) {
-        activity = CombineActivity(activity, ItemActivity::Should);
+        activity = CombineActivity(activity, ItemActivity::ShouldForAnimation);
       }
 
       return activity;
@@ -1296,11 +1298,8 @@ static ItemActivity IsItemProbablyActive(
                 .IsSimpleClipShape()) {
           return activity;
         }
-        // The mask is painted and uploaded as an image either way, so a child
-        // that merely could be active is not worth the extra layers. A child
-        // that should be active is: any change inside an inactive masked group
-        // rasterizes the masked content and the mask again on the CPU, while
-        // the mask image of an active group is cached.
+        // Only split the masked group for native content or required activity,
+        // not for animated transforms over blob content.
         if (activity < ItemActivity::Should) {
           return ItemActivity::No;
         }
@@ -1355,11 +1354,11 @@ void Grouper::ConstructGroups(nsDisplayListBuilder* aDisplayListBuilder,
   // making it active won't add extra layers.
   bool isFirst = true;
 
-  // Items in the middle of the list normally need to be "Should" active to be
-  // worth splitting the blob. When most of the list could be active, the
-  // blob would be split many times anyway, so every item that could be
-  // active is made active instead, which yields no blob at all in the best
-  // case.
+  // Items in the middle of the list normally need to be at least
+  // ShouldForAnimation to be worth splitting the blob. When most of the list
+  // could be active, the blob would be split many times anyway, so every item
+  // that could be active is made active instead, which yields no blob at all
+  // in the best case.
   bool lowerMiddleThreshold =
       StaticPrefs::gfx_webrender_blob_relaxed_active_threshold();
   uint32_t mostlyActivePercent =
@@ -1413,7 +1412,7 @@ void Grouper::ConstructGroups(nsDisplayListBuilder* aDisplayListBuilder,
                                          encounteredActiveItem, Matrix());
     auto threshold = isFirst || isLast || lowerMiddleThreshold
                          ? ItemActivity::Could
-                         : ItemActivity::Should;
+                         : ItemActivity::ShouldForAnimation;
 
     if (activity >= threshold) {
       encounteredActiveItem = true;

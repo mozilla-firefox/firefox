@@ -20,12 +20,14 @@ run-if = [
   "os != 'mac'", # on Mac popup windows use basic layers so animation can't be run on the compositor
 ]
 
-["browser_windowless_browser_no_paint.js"]
-
-["browser_windowless_troubleshoot_crash.js"]
+["browser_svg_masked_animation.js"]
 
 ["browser_webrender_layer_compositor_overlay.js"]
 run-if = [
   "os == 'mac'",
   "os == 'win'",
 ]
+
+["browser_windowless_browser_no_paint.js"]
+
+["browser_windowless_troubleshoot_crash.js"]
