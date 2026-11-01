@@ -4474,6 +4474,59 @@ add_task(async function test_handleSpacesUserEvent_no_session() {
   );
 });
 
+add_task(async function test_handleUnifiedWidget_widget_variant() {
+  info("The four unified widget handlers should pass widget_variant through");
+  Services.fog.testResetFOG();
+
+  let instance = new TelemetryFeed();
+  const session = instance.addSession("foo", "about:newtab");
+  const meta = { fromTarget: "foo" };
+  const base = { widget_name: "privacy", widget_size: "medium" };
+  const withVariant = { ...base, widget_variant: "no_trackers_blocked" };
+
+  instance.handleUnifiedWidgetImpression({ data: withVariant, meta });
+  instance.handleUnifiedWidgetUserEvent({
+    data: { ...withVariant, user_action: "learn_more" },
+    meta,
+  });
+  instance.handleUnifiedWidgetEnabled({
+    data: { ...withVariant, enabled: false },
+    meta,
+  });
+  instance.handleUnifiedWidgetError({
+    data: { ...withVariant, error_type: "load_error" },
+    meta,
+  });
+  instance.handleUnifiedWidgetImpression({
+    data: { widget_name: "lists", widget_size: "large" },
+    meta,
+  });
+
+  for (const metric of [
+    "widgetsImpression",
+    "widgetsUserEvent",
+    "widgetsEnabled",
+    "widgetsError",
+  ]) {
+    const [event] = Glean.newtab[metric].testGetValue();
+    Assert.equal(
+      event.extra.widget_variant,
+      "no_trackers_blocked",
+      `${metric} should carry widget_variant`
+    );
+    Assert.equal(event.extra.newtab_visit_id, session.session_id);
+  }
+  Assert.deepEqual(
+    Glean.newtab.widgetsImpression.testGetValue()[1].extra,
+    {
+      newtab_visit_id: session.session_id,
+      widget_name: "lists",
+      widget_size: "large",
+    },
+    "a widget that sends no variant should record no widget_variant"
+  );
+});
+
 add_task(async function test_recordPageLayoutVariant_pref() {
   info("recordPageLayoutVariant should report the variant set by pref");
   Services.fog.testResetFOG();

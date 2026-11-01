@@ -1444,9 +1444,11 @@ newtab:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_sensitivity:
       - interaction
     notification_emails:
@@ -1470,6 +1472,12 @@ newtab:
           layout), sidebar (the page's inline-end sidebar, e.g. small Weather)
           or story_card (the first card of a story section).
         type: string
+      widget_variant: &widget_variant
+        description: >
+          Optional, widget-defined state the widget was showing. Privacy sends
+          etp_off, no_trackers_blocked, newtab-privacy-blank for the state with
+          no message, or the ID of the message shown.
+        type: string
     send_in_pings:
       - newtab
 
@@ -1483,9 +1491,11 @@ newtab:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_sensitivity:
       - interaction
     notification_emails:
@@ -1511,6 +1521,7 @@ newtab:
           Optional value associated with action (string representation).
         type: string
       widget_location: *widget_location
+      widget_variant: *widget_variant
     send_in_pings:
       - newtab
 
@@ -1522,10 +1533,13 @@ newtab:
       and weather_enabled.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_sensitivity:
       - technical
+      - interaction
     notification_emails:
       - mcrawford@mozilla.com
     expires: never
@@ -1538,6 +1552,7 @@ newtab:
         description: >
           Whether widget is now enabled (true) or disabled (false).
         type: boolean
+      widget_variant: *widget_variant
     send_in_pings:
       - newtab
 
@@ -1548,10 +1563,13 @@ newtab:
       This metric replaces weather_load_error.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
     data_sensitivity:
       - technical
+      - interaction
     notification_emails:
       - mcrawford@mozilla.com
     expires: never
@@ -1563,6 +1581,7 @@ newtab:
         description: >
           Type of error encountered (e.g., load_error, network_error, timeout).
         type: string
+      widget_variant: *widget_variant
     send_in_pings:
       - newtab
 

@@ -2674,6 +2674,10 @@ export class TelemetryFeed {
         payload.widget_size = action.data.widget_size;
       }
 
+      if (action.data.widget_variant) {
+        payload.widget_variant = action.data.widget_variant;
+      }
+
       if (action.data.action_value !== undefined) {
         payload.action_value = String(action.data.action_value);
       }
@@ -2700,6 +2704,10 @@ export class TelemetryFeed {
 
       if (typeof action.data.widget_location === "string") {
         payload.widget_location = action.data.widget_location;
+      }
+
+      if (action.data.widget_variant) {
+        payload.widget_variant = action.data.widget_variant;
       }
 
       Glean.newtab.widgetsImpression.record(payload);
@@ -2738,6 +2746,10 @@ export class TelemetryFeed {
 
       if (action.data.widget_size) {
         payload.widget_size = action.data.widget_size;
+      }
+
+      if (action.data.widget_variant) {
+        payload.widget_variant = action.data.widget_variant;
       }
 
       Glean.newtab.widgetsEnabled.record(payload);
@@ -2818,6 +2830,10 @@ export class TelemetryFeed {
 
       if (action.data.widget_size) {
         payload.widget_size = action.data.widget_size;
+      }
+
+      if (action.data.widget_variant) {
+        payload.widget_variant = action.data.widget_variant;
       }
 
       Glean.newtab.widgetsError.record(payload);

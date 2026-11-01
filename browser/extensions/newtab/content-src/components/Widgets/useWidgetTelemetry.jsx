@@ -26,6 +26,9 @@ const IMPRESSION_THRESHOLD = 0.3;
  *   <article ref={impressionRef}>...</article>
  *   recordUserAction("learn_more", { source: "context_menu" });
  *
+ * Optional `widgetVariant` is sent as `widget_variant` on all four events, and
+ * left off while it's undefined.
+ *
  * Per-call options on `recordUserAction`: `value` (action_value), `size`
  * (overrides widgetSize), `alsoToMain: true` (routes via AlsoToMain), and
  * `legacy: true` (co-dispatches `legacyUserEventType` with `{ userAction }`).
@@ -49,6 +52,7 @@ export const useWidgetTelemetry = ({
   dispatch,
   widget,
   widgetSize,
+  widgetVariant,
   legacyImpressionTypes,
   legacyUserEventType,
   onImpression,
@@ -59,6 +63,11 @@ export const useWidgetTelemetry = ({
   useEffect(() => {
     sizeRef.current = widgetSize;
   }, [widgetSize]);
+
+  const variantRef = useRef(widgetVariant);
+  useEffect(() => {
+    variantRef.current = widgetVariant;
+  }, [widgetVariant]);
 
   // Legacy bridge types are fixed per call site, so capture once at mount;
   // refs keep them out of the recorder callbacks' dependency arrays.
@@ -76,6 +85,9 @@ export const useWidgetTelemetry = ({
     ({ size, rest } = {}) => ({
       widget_name: telemetryName,
       widget_size: size ?? sizeRef.current,
+      ...(variantRef.current !== undefined && {
+        widget_variant: variantRef.current,
+      }),
       ...rest,
     }),
     [telemetryName]

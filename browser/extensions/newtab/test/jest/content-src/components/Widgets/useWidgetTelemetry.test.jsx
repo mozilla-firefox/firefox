@@ -21,6 +21,7 @@ function TestComponent({
   dispatch,
   widget,
   widgetSize,
+  widgetVariant,
   legacyImpressionTypes,
   legacyUserEventType,
   onImpression,
@@ -31,6 +32,7 @@ function TestComponent({
     dispatch,
     widget,
     widgetSize,
+    widgetVariant,
     legacyImpressionTypes,
     legacyUserEventType,
     onImpression,
@@ -548,6 +550,83 @@ describe("useWidgetTelemetry", () => {
       telemetry.recordError("load_error", { size: "small" });
 
       expect(dispatch.mock.calls[0][0].data.widget_size).toBe("small");
+    });
+  });
+
+  describe("widgetVariant", () => {
+    it("adds widget_variant to all four events", () => {
+      let telemetry;
+      render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          widgetVariant="variant-a"
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      telemetry.recordImpression();
+      telemetry.recordUserAction("learn_more", { source: "context_menu" });
+      telemetry.recordEnabled(false, { source: "context_menu" });
+      telemetry.recordError("load_error");
+
+      expect(dispatch.mock.calls.map(([action]) => action.type)).toEqual([
+        at.WIDGETS_IMPRESSION,
+        at.WIDGETS_USER_EVENT,
+        at.WIDGETS_ENABLED,
+        at.WIDGETS_ERROR,
+      ]);
+      for (const [action] of dispatch.mock.calls) {
+        expect(action.data.widget_variant).toBe("variant-a");
+      }
+    });
+
+    it("omits widget_variant when it isn't set", () => {
+      let telemetry;
+      render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      telemetry.recordImpression();
+      telemetry.recordUserAction("learn_more", { source: "context_menu" });
+      telemetry.recordEnabled(false, { source: "context_menu" });
+      telemetry.recordError("load_error");
+
+      expect(dispatch).toHaveBeenCalledTimes(4);
+      for (const [action] of dispatch.mock.calls) {
+        expect(action.data).not.toHaveProperty("widget_variant");
+      }
+    });
+
+    it("reads the latest widget_variant after a prop change", () => {
+      let telemetry;
+      const { rerender } = render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      rerender(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          widgetVariant="variant-b"
+          onRender={t => (telemetry = t)}
+        />
+      );
+      telemetry.recordUserAction("learn_more", { source: "context_menu" });
+
+      expect(dispatch.mock.calls[0][0].data.widget_variant).toBe("variant-b");
     });
   });
 
