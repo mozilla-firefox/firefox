@@ -25,6 +25,8 @@
     <item quantity="few">Vpřed o %1$d sekundy</item>
     <item quantity="other">Vpřed o %1$d sekund</item>
   </plurals>
+  <!-- Listen to Page media player: screen reader value of the playback position slider, such as "3:34 of 6:00". %1$s is the elapsed time and %2$s is the total duration. -->
+  <string name="mozac_feature_listentopage_seek_state">%1$s z %2$s</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_0_25">Rychlost přehrávání je o 75 procent pomalejší</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
@@ -47,8 +49,24 @@
   <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">Zvuk se nepodařilo přehrát až do konce. Zkuste to znovu.</string>
   <!-- Error text shown on the Listen to Page media player when no voice options are available to play the audio. -->
   <string name="mozac_feature_listentopage_error_voice_options_not_available">Výběr hlasu není k dispozici</string>
+  <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_title">Anonymní panel</string>
+  <!-- Message of the Listen to page lock-screen notification: displayed instead of the page URL, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_site">Webová stránka je skryta</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">Zavřít</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_voice_options">Možnosti hlasu</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
+  <string name="mozac_feature_listentopage_playback_speed">Rychlost přehrávání</string>
+  <!-- Listen to Page media player: screen reader state of the voice while its menu is closed. -->
+  <string name="mozac_feature_listentopage_dropdown_voice_collapsed">Sbalené</string>
+  <!-- Listen to Page media player: screen reader state of the playback speed button while its menu is closed. %1$s is the selected speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_collapsed">%1$s, sbalené</string>
+  <!-- Listen to Page media player: screen reader state of the voice and playback speed buttons while their menu is open. -->
+  <string name="mozac_feature_listentopage_dropdown_expanded">Rozbalené</string>
+  <!-- Listen to Page compact player: accessibility action read by screen readers for the article title, such as "Double tap to expand player". -->
+  <string name="mozac_feature_listentopage_expand_player">rozbalit přehrávač</string>
   <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
   <string name="mozac_feature_listentopage_audio">Zvuk</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->

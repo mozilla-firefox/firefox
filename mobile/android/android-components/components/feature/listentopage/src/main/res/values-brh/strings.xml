@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <plurals name="mozac_feature_listentopage_notification_skip_back">
+    <!--
+      Content description of the playback notification control that moves the
+      reading backwards. %1$d is how many seconds it moves by.
+    -->
+    <item quantity="one">%1$d سیکنڈ اس پدی</item>
+    <item quantity="other">%1$d سیکنڈ پدی</item>
+  </plurals>
+  <plurals name="mozac_feature_listentopage_notification_skip_forward">
+    <!--
+      Content description of the playback notification control that moves the
+      reading forwards. %1$d is how many seconds it moves by.
+    -->
+    <item quantity="one">%1$d سیکنڈ اس مونی</item>
+    <item quantity="other">%1$d سیکنڈ مونی</item>
+  </plurals>
+  <!-- Listen to Page media player: screen reader value of the playback position slider, such as "3:34 of 6:00". %1$s is the elapsed time and %2$s is the total duration. -->
+  <string name="mozac_feature_listentopage_seek_state">%1$s سلوک او %2$s ان</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_25">چلینگ نا تیزی 75 فیصد آہستہ</string>
+  <!-- Error text shown on the Listen to Page media player when the text-to-speech engine fails to convert the article into spoken audio -->
+  <string name="mozac_feature_listentopage_error_audio_not_available">ہچو توار اس موجود اف</string>
+  <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_title">ڈکوئ ٹیب</string>
+  <!-- Message of the Listen to page lock-screen notification: displayed instead of the page URL, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_site">ڈکوک ویب ڈس</string>
+  <!-- Listen to Page media player: content description for the button that closes the player. -->
+  <string name="mozac_feature_listentopage_close">بند</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_voice_options">توار نا اپشناک</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_audio">توار</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
+  <string name="mozac_feature_listentopage_play">چلیفبو</string>
+  <!-- Listen to Page media player: content description for play/pause button when the player is playing - tapping pauses playback. -->
+  <string name="mozac_feature_listentopage_pause">سلیفبو</string>
+  <!-- Playback speed menu item, such as "1.5×". %1$s is the multiplier already formatted with the decimal separator of the locale. -->
+  <string name="mozac_feature_listentopage_playback_speed_option">%1$s×</string>
+</resources>

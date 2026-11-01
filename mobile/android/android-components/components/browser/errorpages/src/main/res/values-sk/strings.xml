@@ -110,7 +110,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_host_title">Adresa sa nenašla</string>
   <!-- In the example, the two URLs in markup do not need to be translated. -->
-  <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>URL adresa nezodpovedá žiadnemu serveru a nie je možné ju načítať.</p>\n<ul>\n<li>Skontrolujte, či ste adresu napísali správne (napr. že neobsahuje <strong>ww</strong>.example.com namiesto <strong>www</strong>.example.com).</li>\n<li>Ak nemôžete načítať žiadnu stránku, skontrolujte pripojenie svojho zariadenia k internetu.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>Prehliadač nenašiel hostiteľský server pre zadanú adresu.</p>\n<ul>\n<li>Skontrolujte adresu, či neobsahuje preklepy, napríklad <strong>ww</strong>.example.com namiesto <strong>www</strong>.example.com.</li>\n<li>Ak sa vám nedarí načítať žiadne stránky, skontrolujte dáta alebo Wi‑Fi pripojenie vášho zariadenia.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_title_2">Zdá sa, že sa vyskytol problém s vaším internetovým pripojením</string>
   <!-- The main body text of this error page. It will be shown beneath the title -->
@@ -121,7 +121,7 @@
   <string name="mozac_browser_errorpages_no_internet_refresh_button">Obnoviť</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_malformed_uri_title">Neplatná adresa</string>
-  <string name="mozac_browser_errorpages_malformed_uri_message"><![CDATA[<p>Adresa (URL) nie je platná a nemožno ju načítať. Prosím, skontrolujte text v paneli s adresou a skúste to znova.</p>]]></string>
+  <string name="mozac_browser_errorpages_malformed_uri_message"><![CDATA[<p>Zadaná adresa nie je v rozpoznateľnom formáte. Skontrolujte panel s adresou, či neobsahuje chyby, a skúste to znova.</p>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_malformed_uri_title_alternative">Adresa nie je platná</string>
   <!-- This string contains markup. The URL should not be localized. -->
@@ -131,7 +131,7 @@
   <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>Adresa sa začína protokolom (napr. <q>wxyz://</q>), ktorý prehliadač nepozná, takže sa nemôže správne pripojiť k serveru.</p>\n<ul>\n<li>Pokúšate sa získať prístup k multimediálnym alebo iným netextovým službám? Na stránke budú zrejme uvedené ďalšie inštrukcie.</li>\n<li>Niektoré protokoly môžu vyžadovať softvér alebo doplnky tretích strán, aby ich prehliadač mohol rozpoznať.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_not_found_title">Súbor nebol nájdený</string>
-  <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Je možné, že bol odstránený, premenovaný alebo premiestnený?</li>\n<li>Skontrolujte, či má adresa správny formát a či neobsahuje chyby.</li>\n<li>Máte príslušné povolenia na zobrazenie daného súboru?</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Mohla byť položka premenovaná, odstránená alebo premiestnená?</li>\n<li>Je v adrese pravopisná chyba, chyba v používaní veľkých písmen alebo iná typografická chyba?</li>\n<li>Máte dostatočné prístupové oprávnenia k požadovanej položke?</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_access_denied_title">Prístup k súboru bol zamietnutý</string>
   <string name="mozac_browser_errorpages_file_access_denied_message"><![CDATA[<ul>\n<li>Mohol byť odstránený, premiestnený alebo vám v prístupe bránia oprávnenia.</li>\n</ul>]]></string>

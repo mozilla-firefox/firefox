@@ -327,8 +327,12 @@
   <string name="preferences_ai_controls">Кіраванне штучным інтэлектам</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Падрабязней</string>
+  <!-- Section header for the AI-powered features list -->
+  <string name="ai_controls_ai_powered_features">Функцыі на базе штучнага інтэлекту</string>
   <!-- Title for the translations AI feature toggle -->
   <string name="ai_controls_translations_title">Пераклады</string>
+  <!-- Description for the translations AI feature toggle -->
+  <string name="ai_controls_translations_description">Усе пераклады застаюцца прыватнымі на вашай прыладзе.</string>
   <!-- Title for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_title">Галасавы пошук</string>
   <!-- Cancel button text in the block AI enhancements confirmation dialog -->
@@ -748,6 +752,10 @@
   <string name="preferences_open_links_in_apps_ask">Спытаць перад адкрыццём</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Ніколі</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Медыя</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Адкрываць спасылкі ў праграме YouTube</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Захоўванне файлаў</string>
   <!-- Preference title for downloads default location. -->
@@ -1900,6 +1908,10 @@
   <string name="qr_code_display_close">Закрыць</string>
   <!-- Label for the download button on the QR code display screen -->
   <string name="qr_code_display_download">Сцягнуць</string>
+  <!-- Toast shown when the QR code is successfully saved to Downloads -->
+  <string name="qr_code_download_success">QR-код захаваны ў загрузках</string>
+  <!-- Toast shown when saving the QR code to Downloads fails -->
+  <string name="qr_code_download_failure">Не ўдалося захаваць QR-код</string>
   <!-- Sub-header in the dialog to share a link to an app from the full list -->
   <string name="share_link_all_apps_subheader">Усе дзеянні</string>
   <!-- Sub-header in the dialog to share a link to an app from the most-recent sorted list -->

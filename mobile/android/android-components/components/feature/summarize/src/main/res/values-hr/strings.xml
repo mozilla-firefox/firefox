@@ -51,6 +51,8 @@
   <string name="mozac_summarize_download_error_negative_button">Odustani</string>
   <!-- Title for the error screen when page is too long to summarize -->
   <string name="mozac_summarize_content_too_long_error_title">Stranica je predugačka za izradu sažetka</string>
+  <!-- Title for the error screen when the page content is behind a paywall -->
+  <string name="mozac_summarize_paywalled_content_error_title">Sadržaj pod plaćenim pristupom ne može se sažeti</string>
   <!-- Title for the info error screen -->
   <string name="mozac_summarize_info_error_title">Trenutačno se sažetak ne može izraditi</string>
   <!-- Generic fallback message for the info error screen -->
@@ -89,6 +91,16 @@
   <string name="mozac_feature_summarize_summary_model">Sažetak od %1$s</string>
   <!-- Disclaimer message -->
   <string name="mozac_feature_summarize_disclaimer_message">Umjetna inteligencija može griješiti</string>
+  <!-- Content description for the thumbs up button used to rate a generated summary as helpful -->
+  <string name="mozac_feature_summarize_feedback_good_content_description">Dobar sažetak</string>
+  <!-- Accessibility label for the action of the thumbs up button. This will be interpolated into a longer message, equivalent to "Double tap to [rate summary as good]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended. -->
+  <string name="mozac_feature_summarize_feedback_good_click_label">ocijeni sažetak kao dobar</string>
+  <!-- Content description for the thumbs down button used to rate a generated summary as unhelpful -->
+  <string name="mozac_feature_summarize_feedback_bad_content_description">Loš sažetak</string>
+  <!-- Accessibility label for the action of the thumbs down button. This will be interpolated into a longer message, equivalent to "Double tap to [rate summary as bad]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended. -->
+  <string name="mozac_feature_summarize_feedback_bad_click_label">ocijeni sažetak kao loš</string>
+  <!-- Accessibility state of the thumbs up or thumbs down button the user picked, announced when the rating is submitted and whenever that button is focused afterwards. Buttons the user did not pick have no state. -->
+  <string name="mozac_feature_summarize_feedback_state_submitted">Ocjena je poslana</string>
   <!-- Title for the page summary AI controllable feature -->
   <string name="mozac_ai_controls_page_summary_title">Sažeci stranica</string>
   <!-- Description for the page summary AI controllable feature -->

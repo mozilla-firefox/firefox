@@ -6,7 +6,23 @@
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
 -->
 
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
   <!-- Watermark/Hint for the find in page input field. -->
   <string name="mozac_feature_findindpage_input">صفحہ اٹ پٹ</string>
+  <!--
+    String to show the number of results found in the page and the position
+    the user is at. %1$d is the position, %2$d is the total number of results.
+  -->
+  <string name="mozac_feature_findindpage_result">%1$d/%2$d</string>
+  <!--
+    String to be read by the accessibility service presenting the number of results found in the page
+    and the position the user is at. %1$d is the position, %2$d is the total number of results.
+  -->
+  <string name="mozac_feature_findindpage_accessibility_result" tools:ignore="PluralsCandidate">%2$d ان %1$d</string>
+  <!-- String to be read by the accessibility service when focusing the next result button. -->
+  <string name="mozac_feature_findindpage_next_result">مستی نتیجہ پٹبو</string>
+  <!-- String to be read by the accessibility service when focusing the previous result button. -->
+  <string name="mozac_feature_findindpage_previous_result">گدروکا نتیجہ پٹبو</string>
+  <!-- String to be read by the accessibility service when focusing the dismiss button in the "find in page" UI. -->
+  <string name="mozac_feature_findindpage_dismiss">پنہ ٹی پٹنگ اے خلاس کبو</string>
 </resources>

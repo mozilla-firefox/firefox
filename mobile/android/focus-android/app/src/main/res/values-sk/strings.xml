@@ -34,7 +34,7 @@
   -->
   <string name="menu_open_with_a_browser2">Otvoriť pomocou…</string>
   <!-- Menu item: Add the current page as a shortcut to the device's home screen (launcher). -->
-  <string name="menu_add_to_home_screen">Pridať na úvodnú obrazovku</string>
+  <string name="menu_add_to_home_screen">Pridať na domovskú obrazovku</string>
   <!-- Menu item: Add the current site as a shortcut on the Home screen -->
   <string name="menu_add_to_shortcuts">Pridať medzi Skratky</string>
   <!-- Menu item: Remove the current site as a shortcut from the Home screen -->
@@ -153,9 +153,9 @@
     Description of the preference that enables/disables search suggestions
     %1$s will be replaced by the app name (e.g. Firefox Focus)
   -->
-  <string name="preference_show_search_suggestions_summary">%1$s bude odosielať vami napísaný text v paneli s adresou vyhľadávaciemu modulu</string>
+  <string name="preference_show_search_suggestions_summary">%1$s bude odosielať vami napísaný text v paneli s adresou do vyhľadávača</string>
   <!-- This label is shown above the currently selected search engine in settings -->
-  <string name="preference_search_engine_label">Vyhľadávací modul</string>
+  <string name="preference_search_engine_label">Vyhľadávač</string>
   <!-- Text that is shown below a "switch" preference that is enabled. -->
   <string name="preference_state_on">Zapnuté</string>
   <!-- Text that is shown below a "switch" preference that is disabled. -->
@@ -218,15 +218,15 @@
   <string name="preference_privacy_block_social_summary">Tieto sa používajú na sledovanie vašich návštev a na zobrazovanie špecifických funkcií, napríklad tlačidla na zdieľanie</string>
   <string name="preference_privacy_block_content">Blokovať ostatné sledovacie prvky</string>
   <string name="preference_privacy_block_content_summary2">Niektoré stránky sa môžu chovať neočakávane</string>
-  <string name="preference_privacy_category_cookies">Blokovať cookies</string>
+  <string name="preference_privacy_category_cookies">Blokovať súbory cookies</string>
   <!--
     Three options for Cookie blocking. Yes (All cookies Blocked), Block 3rd-party cookies
     only (Only 3rd-party Cookies Blocked), No (No cookies blocked)
   -->
   <string name="preference_privacy_should_block_cookies_no_option2">Nie, ďakujem</string>
-  <string name="preference_privacy_should_block_cookies_third_party_tracker_cookies_option">Len sledovacie cookies tretích strán</string>
-  <string name="preference_privacy_should_block_cookies_third_party_only_option">Len cookies tretích strán</string>
-  <string name="preference_privacy_should_block_cookies_cross_site_option">Blokovať súbory cookie tretích strán</string>
+  <string name="preference_privacy_should_block_cookies_third_party_tracker_cookies_option">Blokovať iba sledovacie súbory cookie tretích strán</string>
+  <string name="preference_privacy_should_block_cookies_third_party_only_option">Blokovať iba súbory cookie tretích strán</string>
+  <string name="preference_privacy_should_block_cookies_cross_site_option">Blokovať súbory cookie naprieč stránkami</string>
   <string name="preference_privacy_should_block_cookies_yes_option2">Áno, prosím</string>
   <!-- Preference Title: Biometrics can be used to unlock Focus if the previous session's data was not erased by the user. -->
   <string name="preference_security_biometric">Na odomknutie aplikácie používať odtlačok prsta</string>
@@ -285,25 +285,25 @@
   <!-- Item in Preferences that shows the about page. %1$s is the name of the app (for example "Firefox Focus" or "Firefox Klar"). -->
   <string name="preference_about">O aplikácii %1$s</string>
   <!-- Header for the list of installed search engines -->
-  <string name="preference_choose_search_engine">Zvoľte vyhľadávací modul</string>
+  <string name="preference_choose_search_engine">Vyberte vyhľadávač</string>
   <!-- Action for restoring the default list of search engines -->
-  <string name="preference_search_restore">Obnoviť predvolené vyhľadávacie moduly</string>
-  <string name="preference_search_remove_title">Odstrániť vyhľadávacie moduly</string>
+  <string name="preference_search_restore">Obnoviť predvolené vyhľadávače</string>
+  <string name="preference_search_remove_title">Odstrániť vyhľadávače</string>
   <string name="preference_search_remove">Odstrániť</string>
   <!-- Action for dding an additional search engine to the list -->
-  <string name="preference_search_add3">Pridať ďalší vyhľadávací modul</string>
+  <string name="preference_search_add3">Pridať ďalší vyhľadávač</string>
   <!-- Explanation text above the list of search engines -->
   <string name="preference_select_preferred_engine">Vyberte si vami požadovaný modul:</string>
   <!-- Clickable action text that shows when user long-presses on a search engine search field (this is similar to paste or copy when long-pressing a text field) -->
-  <string name="action_option_add_search_engine">Pridať vyhľadávací modul</string>
-  <string name="search_add_manually_name_hint">Názov vyhľadávacieho modulu</string>
+  <string name="action_option_add_search_engine">Pridať vyhľadávač</string>
+  <string name="search_add_manually_name_hint">Názov vyhľadávača</string>
   <string name="search_add_manually_string">Výraz vyhľadávania</string>
   <string name="search_add_manually_save">Uložiť</string>
   <!-- Example of search engine url. %s represents the search query and should be kept as-is. -->
   <string name="search_add_manually_example">Príklad: example.com/search/?q=%s</string>
-  <string name="search_add_confirmation">Bol pridaný nový vyhľadávací modul.</string>
-  <string name="search_add_error_empty_name">Zadajte názov vyhľadávacieho modulu</string>
-  <string name="search_add_error_duplicate_name">Tento názov už používa nainštalovaný vyhľadávací modul.</string>
+  <string name="search_add_confirmation">Pridaný nový vyhľadávač.</string>
+  <string name="search_add_error_empty_name">Zadajte názov vyhľadávača</string>
+  <string name="search_add_error_duplicate_name">Tento názov už používa iný nainštalovaný vyhľadávač.</string>
   <string name="search_add_error_empty_search">Zadajte hľadaný výraz</string>
   <string name="search_add_error_format">Skontrolujte, či sa hľadaný výraz formátovo zhoduje s príkladom</string>
   <!--
@@ -387,7 +387,7 @@
   <!-- First run tour (Search): Title -->
   <string name="firstrun_search_title">Prehliadanie podľa vás</string>
   <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Pridajte si na svoju úvodnú obrazovku skratky</string>
+  <string name="firstrun_shortcut_title">Pridajte si skratky na domovskú obrazovku</string>
   <!-- First run tour (Privacy): Title -->
   <string name="firstrun_privacy_title">Zvyknite si na súkromie</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
@@ -463,7 +463,7 @@
   <!-- First step for the allowing a permission -->
   <string name="phone_feature_blocked_step_settings">1. Prejdite do nastavení Androidu</string>
   <!-- Second step for the allowing a permission -->
-  <string name="phone_feature_blocked_step_permissions"><![CDATA[2. Ťuknite na <b>Povolenia</b>]]></string>
+  <string name="phone_feature_blocked_step_permissions"><![CDATA[2. Ťuknite na <b>Oprávnenia</b>]]></string>
   <!-- Button label that take the user to the Android App setting -->
   <string name="phone_feature_go_to_settings">Prejsť do nastavení</string>
   <!-- Third step for allowing a permission. %1$s is the permission name, for example, "Camera" -->
@@ -510,13 +510,13 @@
     Description for the prompt to enable search suggestions
     %1$s will be replaced by the app name (e.g. Firefox Focus)
   -->
-  <string name="enable_search_suggestion_description">Ak chcete získavať návrhy vyhľadávania, %1$s bude odosielať vami písaný text vyhľadávaciemu modulu.</string>
+  <string name="enable_search_suggestion_description">Ak chcete získavať návrhy vyhľadávania, %1$s bude odosielať vami písaný text do vyhľadávača.</string>
   <!-- Label used for the "NO button" for the prompt to enable search suggestions -->
   <string name="enable_search_suggestions_no">Nie</string>
   <!-- Label used for the "YES button" for the prompt to enable search suggestions -->
   <string name="enable_search_suggestions_yes">Áno</string>
   <!-- Message displayed when using a search engine that doesn't provide suggestions -->
-  <string name="no_suggestions_message">Niektoré vyhľadávacie moduly nedokážu zobrazovať návrhy vyhľadávania.</string>
+  <string name="no_suggestions_message">Niektoré vyhľadávače nedokážu zobrazovať návrhy vyhľadávania.</string>
   <!-- Button to dismiss the message displayed  when using a search engine that doesn't provide suggestions -->
   <string name="dismiss_no_suggestions_prompt_button">Zavrieť</string>
   <!-- Preference title for safe browsing which when enabled, blocks dangerous or deceptive webpages that may include phishing or malware -->

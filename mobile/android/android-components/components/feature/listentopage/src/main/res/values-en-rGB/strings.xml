@@ -23,6 +23,8 @@
     <item quantity="one">Forward %1$d second</item>
     <item quantity="other">Forward %1$d seconds</item>
   </plurals>
+  <!-- Listen to Page media player: screen reader value of the playback position slider, such as "3:34 of 6:00". %1$s is the elapsed time and %2$s is the total duration. -->
+  <string name="mozac_feature_listentopage_seek_state">%1$s of %2$s</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_0_25">Playback rate 75 percent slower</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
@@ -45,8 +47,24 @@
   <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">Couldn’t finish playing audio. Try again.</string>
   <!-- Error text shown on the Listen to Page media player when no voice options are available to play the audio. -->
   <string name="mozac_feature_listentopage_error_voice_options_not_available">Voice options not available</string>
+  <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_title">Private tab</string>
+  <!-- Message of the Listen to page lock-screen notification: displayed instead of the page URL, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_site">Web site hidden</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">Close</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_voice_options">Voice Options</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
+  <string name="mozac_feature_listentopage_playback_speed">Playback Speed</string>
+  <!-- Listen to Page media player: screen reader state of the voice while its menu is closed. -->
+  <string name="mozac_feature_listentopage_dropdown_voice_collapsed">Collapsed</string>
+  <!-- Listen to Page media player: screen reader state of the playback speed button while its menu is closed. %1$s is the selected speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_collapsed">%1$s, collapsed</string>
+  <!-- Listen to Page media player: screen reader state of the voice and playback speed buttons while their menu is open. -->
+  <string name="mozac_feature_listentopage_dropdown_expanded">Expanded</string>
+  <!-- Listen to Page compact player: accessibility action read by screen readers for the article title, such as "Double tap to expand player". -->
+  <string name="mozac_feature_listentopage_expand_player">expand player</string>
   <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
   <string name="mozac_feature_listentopage_audio">Audio</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->

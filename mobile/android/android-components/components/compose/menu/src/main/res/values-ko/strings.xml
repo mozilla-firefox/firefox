@@ -11,4 +11,18 @@
   <string name="mozac_menu_item_new_indicator_label">신규</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">프로모션 닫기</string>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">메뉴 사용자 지정</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">섹션을 드래그하여 순서 변경</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">미리보기</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">숨겨진 섹션</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">여기로 드래그하여 섹션 숨기기</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">기본값으로 재설정</string>
+  <!-- Content description for the back button in the Customize Menu top app bar -->
+  <string name="mozac_menu_customize_back_button_content_description">뒤로</string>
 </resources>

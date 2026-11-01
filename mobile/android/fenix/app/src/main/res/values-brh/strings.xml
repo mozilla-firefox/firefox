@@ -28,11 +28,11 @@
   <!-- Tab tray multi select title in app bar when no tabs are selected -->
   <string name="tab_tray_multi_select_title_empty">ٹیب اتے گچین کبو</string>
   <!-- Label of button in create collection dialog for creating a new collection -->
-  <string name="tab_tray_add_new_collection">پوستنو مچی اس ات</string>
+  <string name="tab_tray_add_new_collection">پوسکنو مچی اس اتبو</string>
   <!-- Label of editable text in create collection dialog for naming a new collection -->
   <string name="tab_tray_add_new_collection_name">پن</string>
   <!-- Label of button in save to collection dialog for selecting a current collection -->
-  <string name="tab_tray_select_collection">مچی ے گچین کر</string>
+  <string name="tab_tray_select_collection">مچی اے گچین کبو</string>
   <!-- The header text displayed on the synced tabs page when the user is not logged into an account. -->
   <string name="tab_manager_empty_synced_tabs_page_header">ہرا ہم ڈیوائس ان ٹیباتے اتبو</string>
   <!-- The action text displayed on the synced tabs page when the user is not logged into an account, prompting the user to sign into their account. When clicked, it takes the user to the account sign-in flow. -->
@@ -46,7 +46,7 @@
   -->
   <string name="home_bookmarks_title">بک مارکاک</string>
   <!-- Content description for the button which navigates the user to show all of their bookmarks. -->
-  <string name="home_bookmarks_show_all_content_description">بک مارکاتے نشان ایت</string>
+  <string name="home_bookmarks_show_all_content_description">نشانی تے نشان ایتبو</string>
   <!-- Text for the menu button to remove a recently saved bookmark from the user's home screen -->
   <string name="home_bookmarks_menu_item_remove">مٹائفبو</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
@@ -72,7 +72,7 @@
   -->
   <string name="home_screen_shortcut_open_new_tab_2">پوسکنو ٹیب اس</string>
   <!-- Shortcut action to open new private tab -->
-  <string name="home_screen_shortcut_open_new_private_tab_2">پوسکنا زاتی ٹیب</string>
+  <string name="home_screen_shortcut_open_new_private_tab_2">پوسکنا ڈکوئ ٹیب</string>
   <!-- Shortcut action to open Passwords screen -->
   <string name="home_screen_shortcut_passwords">کلیت لوزاک</string>
   <!-- Button text for showing all the tabs in the tabs tray -->
@@ -128,7 +128,7 @@
   <!-- Browser menu button that opens the translations dialog, which has options to translate the current browser page. -->
   <string name="browser_menu_translations">صفحہ اے مٹ کبو</string>
   <!-- Browser menu button that saves the current tab to a collection -->
-  <string name="browser_menu_save_to_collection_2">مچی ٹی گچین کر</string>
+  <string name="browser_menu_save_to_collection_2">مچی ٹی خوندی کبو</string>
   <!-- Browser menu button that open a share menu to share the current site -->
   <string name="browser_menu_share">بشخبو</string>
   <!-- Browser menu button that goes to the homepage screen -->
@@ -151,7 +151,7 @@
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">مینو اے بند کبو</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
-  <string name="browser_menu_bookmark_this_page_2">صفحہ اے نشانی کہ</string>
+  <string name="browser_menu_bookmark_this_page_2">صفحہ اے نشانی کبو</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
   <string name="browser_menu_edit_bookmark">نشانی بدل کبو</string>
   <!-- Browser menu label that the saves the currently visited page as a PDF -->
@@ -200,7 +200,7 @@
   <!-- Placeholder text shown in the search bar before a user enters text -->
   <string name="locale_search_hint">دووی گچین کر</string>
   <!-- Button in the search suggestions onboarding that allows search suggestions in private sessions -->
-  <string name="search_suggestions_onboarding_allow_button">اجازت ایت</string>
+  <string name="search_suggestions_onboarding_allow_button">اجازت ایتبو</string>
   <!-- Button in the search suggestions onboarding that does not allow search suggestions in private sessions -->
   <string name="search_suggestions_onboarding_do_not_allow_button">اجازت تفہ</string>
   <!-- Search engine suggestion title text. %s is the name of the suggested engine. -->
@@ -231,7 +231,7 @@
   <!-- Title for the startup crash page. %s is the name of the app (for example "Firefox") -->
   <string name="startup_crash_title">%s اے پدا ملوی تمک</string>
   <!-- Body text for the startup crash page. %s is the name of the app (for example "Firefox") -->
-  <string name="startup_crash_body">%s اے ملنگ ٹے مسعلہ اس مس۔\n\nپننگ نا رپرٹ اے رای کننگ ان براوزر نا مسعلہ گا ے درست و حل کننگ ٹی ننے کمک مریک۔ رپورٹ اتے ٹی زاتی و حساس ڑیٹا مننگ کیک۔\n</string>
+  <string name="startup_crash_body">%s اے ملنگ ٹے مسعلہ اس مس۔\n\nپننگ نا رپرٹ اے رای کننگ ان براوزر نا مسئلہ گا ے درست و حل کننگ ٹی ننے کمک مریک۔ رپورٹ اتے ٹی زاتی و حساس ڈیٹا مننگ کیک۔</string>
   <!-- Button text to submit a startup crash report -->
   <string name="startup_crash_positive">پننگ نا رپورٹ اے رائی کر</string>
   <!-- Button text to continue and not send a startup crash report -->
@@ -297,7 +297,7 @@
   <!-- Preference for changing default theme to dark or light mode -->
   <string name="preferences_theme">تیم</string>
   <!-- Preference for customizing the home screen -->
-  <string name="preferences_home_2">مون نا پنہ</string>
+  <string name="preferences_home_2">مون پنہ</string>
   <!-- Preference for language -->
   <string name="preferences_language">زبان</string>
   <!-- Preference for translations -->
@@ -374,7 +374,7 @@
   <!-- The body for a "closed synced tabs" notification. -->
   <string name="fxa_tabs_closed_text">ہر زوتیاٹ بندمروک ٹیب اتے</string>
   <!-- Title for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
-  <string name="crash_reporting_snack_bar_message">رپرٹ رائ \u0020مس</string>
+  <string name="crash_reporting_snack_bar_message">رپورٹ رائ مس</string>
   <!--
     Turn On Sync Preferences
 
@@ -424,9 +424,9 @@
   -->
   <string name="library_downloads">ڈاونلوڈآک</string>
   <!-- Option in library to open Bookmarks page -->
-  <string name="library_bookmarks">بک مارکاک</string>
+  <string name="library_bookmarks">نشانیک</string>
   <!-- Option in library to open Desktop Bookmarks "menu" page -->
-  <string name="library_desktop_bookmarks_menu">بکمارک مینو</string>
+  <string name="library_desktop_bookmarks_menu">نشانی تا مینو</string>
   <!-- Option in library to open Desktop Bookmarks "unfiled" page -->
   <string name="library_desktop_bookmarks_unfiled">ایلو بکمارکاک</string>
   <!-- Option in Library to open History page -->
@@ -470,7 +470,7 @@
   <!-- Option for auto closing tabs that will auto close tabs after one month -->
   <string name="close_tabs_after_one_month">تو اسے انپد</string>
   <!-- Option for always opening the homepage when re-opening the app -->
-  <string name="opening_screen_homepage">مون نا پنہ</string>
+  <string name="opening_screen_homepage">مون پنہ</string>
   <!-- Option for always opening the user's last-open tab when re-opening the app -->
   <string name="opening_screen_last_tab">گڈیکو ٹیب</string>
   <!-- Text for the tab search bar placeholder -->
@@ -588,7 +588,7 @@
   <!-- Content description (not visible, for screen readers etc.): Opens the collection menu when pressed -->
   <string name="collection_menu_button_content_description">مچی مینو</string>
   <!-- Title for the "select collection" step of the collection creator -->
-  <string name="create_collection_select_collection">مچی ے گچین کر</string>
+  <string name="create_collection_select_collection">مچی اے گچین کبو</string>
   <!-- Title for the "name collection" step of the collection creator -->
   <string name="create_collection_name_collection">مچی نا پن</string>
   <!-- Sub-header in the dialog to share a link to an app from the most-recent sorted list -->
@@ -606,7 +606,7 @@
   <!-- The header for the password for a login -->
   <string name="preferences_passwords_saved_logins_password">کلیت لوز</string>
   <!-- Shown in snackbar to tell user that the password has been copied -->
-  <string name="logins_password_copied">کلیت لوز کلیپبورڈ اٹ کاپی مس</string>
+  <string name="logins_password_copied">کلیت لوز کلپ بورڈ ٹی کاپی مس</string>
   <!-- Content description, used by tools like screenreaders, to press on the save new login button. -->
   <string name="add_login_save_new_login_button_content_description">پوسکن سائن ان اے خوندی کبو</string>
   <!-- Content Description (for screenreaders etc) read for the button to reveal a password in logins -->

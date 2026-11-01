@@ -11,4 +11,18 @@
   <string name="mozac_menu_item_new_indicator_label">新功能</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">關閉宣傳內容</string>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">自訂選單</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">拖曳段落即可調整順序</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">預覽</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">隱藏的段落</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">將段落拖曳至此處即可隱藏</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">還原為預設值</string>
+  <!-- Content description for the back button in the Customize Menu top app bar -->
+  <string name="mozac_menu_customize_back_button_content_description">瀏覽上一頁</string>
 </resources>

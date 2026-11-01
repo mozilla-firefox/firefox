@@ -111,7 +111,7 @@
   <!-- Text for the negative action button -->
   <string name="open_in_app_cfr_negative_button_text">Zavrieť</string>
   <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
-  <string name="camera_permissions_needed_message">Vyžaduje sa prístup ku fotoaparátu. Prejdite do nastavení Androidu a udeľte aplikácii dané povolenie.</string>
+  <string name="camera_permissions_needed_message">Vyžaduje sa prístup ku fotoaparátu. Prejdite do nastavení Androidu a udeľte aplikácii dané oprávnenie.</string>
   <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
   <string name="camera_permissions_needed_positive_button_text">Prejsť do nastavení</string>
   <!-- Text for the negative action button to dismiss the dialog. -->
@@ -154,7 +154,7 @@
 
     Header text on the homescreen for continuing to browse the most recent browser tab
   -->
-  <string name="recent_tabs_header_2">Pokračovať</string>
+  <string name="recent_tabs_header_2">Na pokračovanie</string>
   <!-- Button text for showing all the tabs in the tabs tray -->
   <string name="recent_tabs_show_all">Zobraziť všetky</string>
   <!-- Text for button in synced tab card that opens synced tabs tray -->
@@ -224,11 +224,11 @@
   <!-- Browser menu toggle that requests a desktop site -->
   <string name="browser_menu_desktop_site">Verzia pre počítače</string>
   <!-- Browser menu toggle that adds a shortcut to the site on the device home screen. -->
-  <string name="browser_menu_add_to_homescreen">Pridať na úvodnú obrazovku</string>
+  <string name="browser_menu_add_to_homescreen">Pridať na domovskú obrazovku</string>
   <!-- Browser menu toggle that adds a PWA of the site on the device home screen. -->
-  <string name="browser_menu_add_app_to_homescreen">Pridať aplikáciu na Úvodnú obrazovku</string>
+  <string name="browser_menu_add_app_to_homescreen">Pridať aplikáciu na domovskú obrazovku</string>
   <!-- Text for notifying users that Xiaomi devices require additional permissions to add to home screen -->
-  <string name="browser_menu_add_to_homescreen_xiaomi">Zariadenia Xiaomi môžu potrebovať dodatočné povolenia na pridávanie skratiek na domovskú obrazovku. Skontrolujte svoje nastavenia.</string>
+  <string name="browser_menu_add_to_homescreen_xiaomi">Zariadenia Xiaomi môžu potrebovať dodatočné oprávnenia na pridávanie skratiek na domovskú obrazovku. Skontrolujte svoje nastavenia.</string>
   <!-- Content description (not visible, for screen readers etc.) for the Resync tabs button -->
   <string name="resync_button_content_description">Synchronizovať znova</string>
   <!-- Browser menu button that opens the find in page menu -->
@@ -316,11 +316,9 @@
     Content description for a banner within the menu which prompt the user to make this app their default browser.
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="browser_menu_default_banner_title">Nastaviť %1$s ako predvolený</string>
+  <string name="browser_menu_default_banner_title">Nastavte si %1$s ako predvolený prehliadač</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">Rýchly, súkromný a vytvorený pre vás.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Zavrieť propagáciu</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Ďalšie informácie</string>
   <!--
@@ -360,21 +358,21 @@
 
     Title for the AI controls settings screen
   -->
-  <string name="preferences_ai_controls">Nastavenia umelej inteligencie</string>
+  <string name="preferences_ai_controls">Umelá inteligencia</string>
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Vo %se máte vždy na výber</string>
   <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
-  <string name="ai_controls_banner_supporting_text_2">To zahŕňa aj to, či používať funkcie vylepšené umelou inteligenciou. %s</string>
+  <string name="ai_controls_banner_supporting_text_2">Napríklad aj to, či chcete používať funkcie vylepšené umelou inteligenciou. %s</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Ďalšie informácie</string>
   <!-- Title for the block AI enhancements toggle -->
   <string name="ai_controls_block_ai_title">Blokovať funkcie využívajúce umelú inteligenciu</string>
   <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
-  <string name="ai_controls_block_ai_description">Blokovanie znamená, že vo %se neuvidíte nové ani aktuálne vylepšenia pomocou umelej inteligencie, ani vyskakovacie okná o nich.</string>
+  <string name="ai_controls_block_ai_description">Ak zapnete blokovanie, %s vám nebude zobrazovať existujúce ani nové funkcie využívajúce umelú inteligenciu. Nebudú sa zobrazovať ani kontextové okná, ktoré vás na tieto funkcie upozorňujú.</string>
   <!-- Link text to see what AI enhancements are and aren’t included -->
   <string name="ai_controls_see_whats_included">Pozrite sa, čo je a čo nie je zahrnuté</string>
   <!-- Banner text shown when AI enhancements are blocked -->
-  <string name="ai_controls_blocked_info_banner">Nové a aktuálne vylepšenia umelej inteligencie sú štandardne blokované. Nižšie nájdete možnosť odblokovania konkrétnych funkcií.</string>
+  <string name="ai_controls_blocked_info_banner">Nové aj existujúce funkcie využívajúce umelú inteligenciu sú teraz blokované. Nižšie však nájdete možnosť odblokovania konkrétnych funkcií.</string>
   <!-- Section header for the AI-powered features list -->
   <string name="ai_controls_ai_powered_features">Funkcie s umelou inteligenciou</string>
   <!-- Title for the translations AI feature toggle -->
@@ -390,15 +388,15 @@
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Zvuk sa prevádza na text pomocou služby Google Speech Services.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
-  <string name="ai_controls_block_dialog_title">Zablokovať vylepšenia umelej inteligencie?</string>
+  <string name="ai_controls_block_dialog_title">Zablokovať funkcie využívajúce umelú inteligenciu?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="ai_controls_block_dialog_body">Vo %1$se sa nezobrazia nové ani aktuálne vylepšenia umelej inteligencie, ani kontextové okná o nich. Následne môžete odblokovať čokoľvek, čo chcete naďalej používať.\n\nBlokovanie ovplyvňuje aj rozšírenia, ktoré využívajú umelú inteligenciu od %1$su.</string>
+  <string name="ai_controls_block_dialog_body">%1$s vám nebude zobrazovať existujúce ani nové funkcie využívajúce umelú inteligenciu, ani kontextové informácie o nich. Po zablokovaní môžete odblokovať čokoľvek, čo chcete naďalej používať.\n\nBlokovanie ovplyvňuje aj rozšírenia, ktoré využívajú umelú inteligenciu od %1$su.</string>
   <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
   <string name="ai_controls_block_dialog_what_will_be_blocked">Čo bude blokované:</string>
   <!-- Cancel button text in the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_cancel">Zrušiť</string>
   <!-- Block button text in the block AI enhancements confirmation dialog -->
-  <string name="ai_controls_block_dialog_block">Blokovať</string>
+  <string name="ai_controls_block_dialog_block">Zablokovať</string>
   <!--
     Locale Settings Fragment
 
@@ -435,7 +433,7 @@
     Content description (not visible, for screen readers etc.): Search engine icon.
     %s is the search engine name (for example: DuckDuckGo).
   -->
-  <string name="search_engine_icon_content_description_1">Vyhľadávací modul: %s</string>
+  <string name="search_engine_icon_content_description_1">Vyhľadávač: %s</string>
   <!--
     Content description (not visible, for screen readers etc.) of the search engine selector from the search toolbar.
     %s is the search engine name (for example: DuckDuckGo).
@@ -756,7 +754,7 @@
   <!-- Preference for settings related to Search -->
   <string name="preferences_search">Vyhľadávanie</string>
   <!-- Preference for settings related to Search engines -->
-  <string name="preferences_search_engines">Vyhľadávacie moduly</string>
+  <string name="preferences_search_engines">Vyhľadávače</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Miniaplikácia na domovskú obrazovku</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -887,7 +885,7 @@
   <!-- Preference for account and sync settings -->
   <string name="preferences_account_and_sync_settings">Účet a synchronizácia</string>
   <!-- Preference for enabling url autocomplete -->
-  <string name="preferences_enable_autocomplete_urls">Automaticky dokončovať URL adresy</string>
+  <string name="preferences_enable_autocomplete_urls">Automaticky dokončovať adresy URL</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
   <string name="preferences_show_sponsored_suggestions">Návrhy od sponzorov</string>
   <!--
@@ -922,6 +920,10 @@
   <string name="preferences_open_links_in_apps_ask">Pred otvorením sa opýtať</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Nikdy</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Médiá</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Otvárať odkazy v aplikácii YouTube</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Úložisko súborov</string>
   <!-- Preference title for downloads default location. -->
@@ -930,7 +932,7 @@
     Message shown as the summary of the download location preference when the
     app has lost the permission to access a previously selected custom folder.
   -->
-  <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">Nemáte povolenie na používanie tohto priečinka. Skúste vybrať iný.</string>
+  <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">Nemáte oprávnenie na používanie tohto priečinka. Skúste vybrať iný.</string>
   <!-- Preference title for choosing an app to handle downloads -->
   <string name="preferences_choose_app_for_downloads">Spravovať sťahovania pomocou inej aplikácie</string>
   <!-- Message shown when no app is available to let the user pick a download folder. -->
@@ -971,9 +973,9 @@
   -->
   <string name="addons_permissions_allow_for_all_sites">Povoliť pre všetky stránky</string>
   <!-- The subtitle for the allow for all sites preference toggle -->
-  <string name="addons_permissions_allow_for_all_sites_subtitle">Ak tomuto rozšíreniu dôverujete, môžete mu udeliť povolenie pre každú webovú stránku.</string>
+  <string name="addons_permissions_allow_for_all_sites_subtitle">Ak tomuto rozšíreniu dôverujete, môžete mu udeliť oprávnenie pre každú webovú stránku.</string>
   <!-- The text shown when an extension does not require permissions -->
-  <string name="addons_does_not_require_permissions">Toto rozšírenie nevyžaduje žiadne povolenia.</string>
+  <string name="addons_does_not_require_permissions">Toto rozšírenie nevyžaduje žiadne oprávnenia.</string>
   <!-- The description of data collection permissions listed in the addon's permissions screen.  %1$s is a formatted list of permissions. -->
   <string name="addons_permissions_required_data_collection_description_2">Vývojár uvádza, že toto rozšírenie zhromažďuje: %1$s</string>
   <!-- The description of the "none" data collection permission, when the extension doesn't collect anything according to the developer. -->
@@ -981,7 +983,7 @@
   <!-- The title of the required permissions section from addon's permissions screen. -->
   <string name="addons_permissions_heading_required_permissions">Požadované oprávnenia:</string>
   <!-- The title of the optional permissions section from addon's permissions screen. -->
-  <string name="addons_permissions_heading_optional_permissions">Voliteľné povolenia:</string>
+  <string name="addons_permissions_heading_optional_permissions">Voliteľné oprávnenia:</string>
   <!-- The title of the required data collection permissions section from addon's permissions screen. -->
   <string name="addons_permissions_heading_required_data_collection">Požadovaný zber údajov:</string>
   <!-- The title of the optional data collection permissions section from addon's permissions screen. -->
@@ -1007,9 +1009,9 @@
 
     Title for the customize home screen section with privacy report.
   -->
-  <string name="customize_toggle_privacy_report">Správa o ochrane osobných údajov</string>
+  <string name="customize_toggle_privacy_report">Správa o ochrane súkromia</string>
   <!-- Title for a customize home screen section. Continue is a section that displays the most recent browser tab, so users can continue browsing where they left off. -->
-  <string name="customize_toggle_continue">Pokračovať</string>
+  <string name="customize_toggle_continue">Na pokračovanie</string>
   <!-- Title for the customize home screen section with bookmarks. -->
   <string name="customize_toggle_bookmarks">Záložky</string>
   <!--
@@ -1024,7 +1026,7 @@
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">Tapety</string>
   <!-- Label for the menu item that opens the customize homepage settings screen. -->
-  <string name="browser_menu_customize_homepage">Upraviť domovskú stránku</string>
+  <string name="browser_menu_customize_homepage">Prispôsobiť domovskú stránku</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
   <string name="customize_toggle_contile">Sponzorované skratky</string>
   <!--
@@ -1306,6 +1308,12 @@
   <string name="preference_simple_toolbar">Jednoduchý</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Rozbalený</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Umiestnenie vyhľadávacieho panela na domovskej stránke</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Uprostred</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Navrchu</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Otvoriť novú kartu</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1466,11 +1474,11 @@
 
     Title of a preference that allows a user to choose what screen to show after opening the app
   -->
-  <string name="preferences_opening_screen">Úvodná obrazovka</string>
+  <string name="preferences_opening_screen">Po spustení zobraziť</string>
   <!-- Option for always opening the homepage when re-opening the app -->
   <string name="opening_screen_homepage">Domovská stránka</string>
   <!-- Option for always opening the user's last-open tab when re-opening the app -->
-  <string name="opening_screen_last_tab">Posledná karta</string>
+  <string name="opening_screen_last_tab">Naposledy otvorená stránka</string>
   <!-- Option for always opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity">Domovská stránka po štyroch hodinách nečinnosti</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to manual close -->
@@ -1506,7 +1514,7 @@
 
     Category header of a preference that allows a user to enable or disable the privacy report feature
   -->
-  <string name="preferences_privacy_report">Správa o ochrane osobných údajov</string>
+  <string name="preferences_privacy_report">Správa o ochrane súkromia</string>
   <!-- Title of the privacy report preference that allows a user to enable or disable the feature -->
   <string name="preferences_privacy_report_title">Povoliť správu o ochrane súkromia</string>
   <!--
@@ -1528,7 +1536,7 @@
 
     Title of the Remote Improvements (rollouts) data preference
   -->
-  <string name="remote_improvements_title">Povoliť vzdialené vylepšenia</string>
+  <string name="remote_improvements_title">Povoliť vylepšenia na diaľku</string>
   <!-- Description for remote improvements. Note: The word "Firefox" should NOT be translated -->
   <string name="remote_improvements_description" tools:ignore="BrandUsage">Firefox vylepší funkcie, výkon a stabilitu medzi aktualizáciami. Zmeny sa aplikujú na diaľku.</string>
   <!-- Learn more link for remote improvements, links to an article for more information about rollouts. -->
@@ -1976,6 +1984,8 @@
   <string name="download_search_no_results_found">Nenašli sa žiadne výsledky</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Vybrať všetko</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(data)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2173,7 +2183,7 @@
   <!-- Bookmark folder editing screen title -->
   <string name="edit_bookmark_folder_fragment_title">Upraviť priečinok</string>
   <!-- Bookmark URL editing field label -->
-  <string name="bookmark_url_label">URL</string>
+  <string name="bookmark_url_label">Adresa URL</string>
   <!-- Text indicating which folder a bookmark or folder will be saved in -->
   <string name="bookmark_save_in_label">Uložiť v</string>
   <!-- Label for a text input field for a bookmark or folder name -->
@@ -2181,7 +2191,7 @@
   <!-- Bookmark select folder screen title -->
   <string name="bookmark_select_folder_fragment_label">Výber priečinku</string>
   <!-- Bookmark editing error missing or improper URL -->
-  <string name="bookmark_invalid_url_error">Neplatná URL adresa</string>
+  <string name="bookmark_invalid_url_error">Neplatná adresa URL</string>
   <!--
     Bookmark snackbar message on deletion
     %1$s is the host part of the URL of the bookmark deleted, if any
@@ -2240,19 +2250,19 @@
   <!-- Label that indicates that this option it the recommended one -->
   <string name="phone_feature_recommended">Odporúčané</string>
   <!-- Button label for clearing all the information of site permissions -->
-  <string name="clear_permissions">Odstrániť povolenia</string>
+  <string name="clear_permissions">Odstrániť oprávnenia</string>
   <!-- Text for the OK button on Clear permissions dialog -->
   <string name="clear_permissions_positive">OK</string>
   <!-- Text for the cancel button on Clear permissions dialog -->
   <string name="clear_permissions_negative">Zrušiť</string>
   <!-- Button label for clearing a site permission -->
-  <string name="clear_permission">Odstrániť povolenie</string>
+  <string name="clear_permission">Odstrániť oprávnenie</string>
   <!-- Text for the OK button on Clear permission dialog -->
   <string name="clear_permission_positive">OK</string>
   <!-- Text for the cancel button on Clear permission dialog -->
   <string name="clear_permission_negative">Zrušiť</string>
   <!-- Button label for clearing all the information on all sites -->
-  <string name="clear_permissions_on_all_sites">Odstrániť povolenia pre všetky stránky</string>
+  <string name="clear_permissions_on_all_sites">Odstrániť oprávnenia na všetkých stránkach</string>
   <!-- Preference for altering video and audio autoplay for all websites -->
   <string name="preference_browser_feature_autoplay">Automatické prehrávanie</string>
   <!-- Preference for local device access for all websites -->
@@ -2320,7 +2330,7 @@
   <!-- Toggle if desktop site is turned off -->
   <string name="browser_feature_desktop_site_off">Vypnuté</string>
   <!-- Category header of a preference that allows a user to alter settings related to web permissions. -->
-  <string name="preferences_category_permissions">Povolenia</string>
+  <string name="preferences_category_permissions">Oprávnenia</string>
   <!-- Category header of a preference that allows a user to alter settings related to web content. -->
   <string name="preferences_category_content">Obsah</string>
   <!-- Preference for altering the default browsing mode. When enabled, the desktop site will always be requested. -->
@@ -2498,7 +2508,7 @@
 
     Name of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app.
   -->
-  <string name="notification_privacy_report_channel_name">Správa o ochrane osobných údajov</string>
+  <string name="notification_privacy_report_channel_name">Správa o ochrane súkromia</string>
   <!-- Description of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app. %1$s is the app name (e.g. Firefox) -->
   <string name="notification_privacy_report_channel_description">%1$s zobrazuje počet sledovacích prvkov zablokovaných počas prehliadania.</string>
   <!-- Body text for the weekly privacy report notification for when trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
@@ -2579,7 +2589,7 @@
   <!-- Title for the cookies and site data items in Delete browsing data -->
   <string name="preferences_delete_browsing_data_cookies_and_site_data">Cookies a údaje stránok</string>
   <!-- Subtitle for the cookies item in Delete browsing data -->
-  <string name="preferences_delete_browsing_data_cookies_subtitle">Príde k vášmu odhláseniu z väčšiny webových stránok</string>
+  <string name="preferences_delete_browsing_data_cookies_subtitle">Budete odhlásení z väčšiny stránok</string>
   <!-- Title for the cached images and files item in Delete browsing data -->
   <string name="preferences_delete_browsing_data_cached_files">Obrázky a súbory vo vyrovnávacej pamäti</string>
   <!-- Subtitle for the cached images and files item in Delete browsing data -->
@@ -2877,9 +2887,9 @@
   <!-- Text displayed above provider textfield under "DNS over HTTPS" -->
   <string name="preference_doh_provider_custom_dialog_textfield">Poskytovateľ</string>
   <!-- Error text displayed for provider textfield under "DNS over HTTPS" if the URL does not start with "https://" or its scheme is not "https" -->
-  <string name="preference_doh_provider_custom_dialog_error_https">Webová adresa musí začínať reťazcom “https://”</string>
+  <string name="preference_doh_provider_custom_dialog_error_https">Adresa URL musí začínať reťazcom “https://”</string>
   <!-- Error text displayed for provider textfield under "DNS over HTTPS" if the URL is invalid -->
-  <string name="preference_doh_provider_custom_dialog_error_invalid">Neplatná URL adresa</string>
+  <string name="preference_doh_provider_custom_dialog_error_invalid">Neplatná adresa URL</string>
   <!-- Cancel button text for provider textfield under "DNS over HTTPS" -->
   <string name="preference_doh_provider_custom_dialog_cancel">Zrušiť</string>
   <!-- Add button text for provider textfield under "DNS over HTTPS" -->
@@ -2931,9 +2941,9 @@
   <!-- Paste the text in the clipboard -->
   <string name="browser_toolbar_long_press_popup_paste">Prilepiť</string>
   <!-- Snackbar message shown after an URL has been copied to clipboard. -->
-  <string name="browser_toolbar_url_copied_to_clipboard_snackbar">Adresa bola skopírovaná do schránky</string>
+  <string name="browser_toolbar_url_copied_to_clipboard_snackbar">Adresa URL bola skopírovaná do schránky</string>
   <!-- Title text for the Add To Homescreen dialog -->
-  <string name="add_to_homescreen_title">Pridať na úvodnú obrazovku</string>
+  <string name="add_to_homescreen_title">Pridať na domovskú obrazovku</string>
   <!-- Cancel button text for the Add to Homescreen dialog -->
   <string name="add_to_homescreen_cancel">Zrušiť</string>
   <!-- Add button text for the Add to Homescreen dialog -->
@@ -3286,6 +3296,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">Nastaviť teraz</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Neskôr</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Chráňte svoje citlivé údaje</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Nastavte si vzor zámku zariadenia, PIN kód alebo heslo, aby ste ochránili svoje uložené citlivé údaje pred prístupom, ak vaše auto šoféruje niekto iný.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Nastaviť teraz</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Zrušiť</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Odomknite svoje zariadenie</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3409,17 +3427,17 @@
   <!-- First step for the allowing a permission -->
   <string name="phone_feature_blocked_step_settings">1. Prejdite do nastavení Androidu</string>
   <!-- Second step for the allowing a permission -->
-  <string name="phone_feature_blocked_step_permissions"><![CDATA[2. Ťuknite na <b>Povolenia</b>]]></string>
+  <string name="phone_feature_blocked_step_permissions"><![CDATA[2. Ťuknite na <b>Oprávnenia</b>]]></string>
   <!-- Third step for the allowing a permission (%1$s is the permission name, for example "Camera"). -->
   <string name="phone_feature_blocked_step_feature"><![CDATA[3. Prepnite prepínač <b>%1$s</b> do polohy ZAPNUTÉ]]></string>
   <!-- Label to clear site data -->
   <string name="clear_site_data">Vymazať cookies a údaje stránky</string>
   <!-- Confirmation message for a dialog confirming if the user wants to delete all the permissions for all sites -->
-  <string name="confirm_clear_permissions_on_all_sites">Naozaj chcete odstrániť všetky povolenia pre všetky stránky?</string>
+  <string name="confirm_clear_permissions_on_all_sites">Naozaj chcete odstrániť všetky oprávnenia pre všetky stránky?</string>
   <!-- Confirmation message for a dialog confirming if the user wants to delete all the permissions for a site -->
-  <string name="confirm_clear_permissions_site">Naozaj chcete odstrániť všetky povolenia pre túto stránku?</string>
+  <string name="confirm_clear_permissions_site">Naozaj chcete odstrániť všetky oprávnenia pre túto stránku?</string>
   <!-- Confirmation message for a dialog confirming if the user wants to set default value a permission for a site -->
-  <string name="confirm_clear_permission_site">Naozaj chcete odstrániť toto povolenie pre túto stránku?</string>
+  <string name="confirm_clear_permission_site">Naozaj chcete odstrániť toto oprávnenie pre túto stránku?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">Žiadne výnimky</string>
   <!-- Browser menu button that adds a shortcut to the home fragment -->
@@ -3506,7 +3524,7 @@
   <!-- Label for the "Add website" button in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_add_website">Pridať webovú stránku</string>
   <!-- Title text for the "Enter a Website URL" dialog for adding a shortcut. -->
-  <string name="homepage_shortcuts_add_website_title">Zadajte URL adresu webovej stránky</string>
+  <string name="homepage_shortcuts_add_website_title">Zadajte adres URL webovej stránky</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Populárne stránky</string>
   <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
@@ -3522,7 +3540,7 @@
   <!-- Hint for renaming title of a shortcut -->
   <string name="shortcut_name_hint">Názov skratky</string>
   <!-- Hint for editing URL of a shortcut. -->
-  <string name="shortcut_url_hint">Adresa skratky</string>
+  <string name="shortcut_url_hint">Adresa URL skratky</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->
   <string name="top_sites_rename_dialog_cancel">Zrušiť</string>
   <!-- Text for the menu button to open the homepage settings. -->
@@ -3538,7 +3556,7 @@
   <!-- Button caption to confirm the edit of the top site. -->
   <string name="top_sites_edit_dialog_save">Uložiť</string>
   <!-- Error message when the user entered an invalid URL -->
-  <string name="top_sites_edit_dialog_url_error">Zadajte platnú adresu</string>
+  <string name="top_sites_edit_dialog_url_error">Zadajte platnú adresu URL</string>
   <!-- Label for the URL edit field in the edit top site dialog. -->
   <string name="top_sites_edit_dialog_url_title">Adresa URL</string>
   <!--
@@ -3929,7 +3947,7 @@
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Nastavenia ochrany súkromia</string>
   <!-- Title text for the protection panel permissions section. -->
-  <string name="protection_panel_permissions_title">Povolenia</string>
+  <string name="protection_panel_permissions_title">Oprávnenia</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4384,7 +4402,7 @@
   <!-- The title of the explore extensions task for the setup checklist -->
   <string name="setup_checklist_task_explore_extensions">Pozrite si ďalšie rozšírenia</string>
   <!-- The title of the search widget task for the setup checklist -->
-  <string name="setup_checklist_task_search_widget_2">Preskúmať vyhľadávací widget</string>
+  <string name="setup_checklist_task_search_widget_2">Preskúmajte vyhľadávaciu miniaplikáciu</string>
   <!--
     ===== Setup checklist feature: Group titles =====
 
@@ -4565,15 +4583,17 @@
   <string name="lens_camera_mode_qr">Skener QR kódov</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Na obrázku sa nenašiel žiadny QR kód</string>
-  <!-- Status shown under an image picked from the gallery while it is being sent to Google Lens for a visual search -->
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
   <string name="lens_camera_loading_status">Vyhľadáva sa</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Zrušiť</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Obrázok sa nepodarilo načítať.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Obrázok sa nepodarilo načítať. Skúste vybrať iný.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Nepodarilo sa získať výsledky zo služby Google Lens</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Skúsiť znova</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Nájdite to pomocou služby Google Lens</string>
@@ -4624,11 +4644,17 @@
   <!-- Helper text shown beneath a Firefox Labs item when it is blocked from being turned on. -->
   <string name="firefox_labs_feature_conflict">Funkcia nie je k dispozícii na vyskúšanie.</string>
   <!-- Text displayed on the Firefox Labs screen when there are no Labs experimental features present. -->
-  <string name="firefox_labs_no_labs_available_description">Momentálne nie sú k dispozícii žiadne experimentálne funkcie na vyskúšanie</string>
+  <string name="firefox_labs_no_labs_available_description">Momentálne nie sú k dispozícii na vyskúšanie žiadne experimentálne funkcie.</string>
   <!-- Title of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Izolácia webových stránok</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Dodatočná bariéra medzi webovými stránkami, ktorá pomáha chrániť vaše údaje naprieč kartami. Môže ovplyvniť výkon, stabilitu, kompatibilitu webových stránok a spôsob ukladania histórie prehliadania.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">Pridať podpis</string>
   <!--
     PDF viewer toolbar and buttons
 
@@ -4655,14 +4681,24 @@
   <string name="pdf_tools_signature_clear_button">Vymazať</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Pridať</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">Pridáva sa podpis</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">Možnosti zobrazenia Čítačka</string>
   <!--
     Listen to page
 
     Content description for the reader mode panel: a group of buttons floating over the content
   -->
   <string name="reader_mode_panel_content_description">Možnosti režimu Čítačka</string>
-  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Čítať nahlas</string>
-  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Prehrávač médií</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">Zobrazenie Čítačka, čítanie alebo počúvanie stránky</string>
 </resources>

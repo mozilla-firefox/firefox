@@ -241,7 +241,7 @@
   <!-- The developer website (Homepage) of the add-on. -->
   <string name="mozac_feature_addons_home_page">Domovská stránka</string>
   <!-- A link where users can find more information about add-ons permissions. -->
-  <string name="mozac_feature_addons_learn_more">Ďalšie informácie o povoleniach</string>
+  <string name="mozac_feature_addons_learn_more">Ďalšie informácie o oprávneniach</string>
   <!-- The rating of the add-on. -->
   <string name="mozac_feature_addons_rating">Hodnotenie</string>
   <!-- A link that points to the detail page of the extension. -->
@@ -253,7 +253,7 @@
   <!-- Indicates the add-on is allowed in private browsing mode. -->
   <string name="mozac_feature_addons_settings_allow_in_private_browsing_2">Povoliť spustenie rozšírenia v režime súkromného prehliadania</string>
   <!-- Indicates the add-on is allowed in private browsing mode. -->
-  <string name="mozac_feature_addons_settings_run_in_private_browsing">Spustiť v súkromnom prehliadaní</string>
+  <string name="mozac_feature_addons_settings_run_in_private_browsing">Spúšťať v režime Súkromné prehliadanie</string>
   <!-- This is displayed when the add-on is not allowed to run in private browsing. -->
   <string name="mozac_feature_addons_not_allowed_in_private_browsing">Doplnok nie je povolený v súkromných oknách</string>
   <!-- Indicates the add-on is enabled. -->
@@ -271,7 +271,7 @@
   <!-- Displays a page with all the details of an add-on. -->
   <string name="mozac_feature_addons_details">Podrobnosti</string>
   <!-- Displays a page with all the permissions of an add-on. -->
-  <string name="mozac_feature_addons_permissions">Povolenia</string>
+  <string name="mozac_feature_addons_permissions">Oprávnenia</string>
   <!-- This is a button to remove (i.e. uninstall) an add-on. -->
   <string name="mozac_feature_addons_remove">Odstrániť</string>
   <!-- This is a button to report an add-on. -->
@@ -415,7 +415,7 @@
   <!-- Used as text for the link in the description of the post-installation dialog. -->
   <string name="mozac_feature_addons_installed_dialog_description_link_text">nastaveniach rozšírenia</string>
   <!-- Text shown in the dialog when add-on installation is completed. %1$s is replaced by an active link, using mozac_feature_addons_installed_dialog_description_link_text as text ("extension settings"). -->
-  <string name="mozac_feature_addons_installed_dialog_description_3">Povolenia a nastavenia údajov môžete kedykoľvek aktualizovať v %1$s.</string>
+  <string name="mozac_feature_addons_installed_dialog_description_3">Oprávnenia a nastavenia údajov môžete kedykoľvek aktualizovať v %1$s.</string>
   <!-- Confirmation button text for the dialog when add-on installation is completed. -->
   <string name="mozac_feature_addons_installed_dialog_okay_button_2">OK</string>
   <!-- "Learn more" link displayed below an add-on status message. -->

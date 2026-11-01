@@ -11,4 +11,6 @@
   <string name="mozac_menu_item_new_indicator_label">Jauns</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Noraidīt piedāvājumu</string>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">Pielāgot izvēlni</string>
 </resources>

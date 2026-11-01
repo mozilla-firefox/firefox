@@ -8,5 +8,7 @@
 
 <resources>
   <!-- Text for the positive action button, that will take the user to the settings page -->
-  <string name="mozac_support_base_permissions_needed_positive_button">سیٹنگ اتے ان</string>
+  <string name="mozac_support_base_permissions_needed_positive_button">سیٹنگ اتے انبو</string>
+  <!-- Text for the negative action button to dismiss the dialog. -->
+  <string name="mozac_support_base_permissions_needed_negative_button">خلاس</string>
 </resources>

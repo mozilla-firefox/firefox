@@ -12,7 +12,7 @@
   <!-- Name of the "notification channel" used for displaying site controls notification. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_pwa_site_controls_notification_channel">Ovládacie prvky pre stránku v režime celej obrazovky</string>
   <!-- Text shown on the second row of the site controls notification. -->
-  <string name="mozac_feature_pwa_site_controls_notification_text">Ťuknutím skopírujete webovú adresu pre túto aplikáciu</string>
+  <string name="mozac_feature_pwa_site_controls_notification_text">Ťuknutím skopírujete adresu URL pre túto aplikáciu</string>
   <!-- Refresh button in site controls notification. -->
   <string name="mozac_feature_pwa_site_controls_refresh">Obnoviť</string>
   <!-- Toast displayed when the website URL is copied. -->

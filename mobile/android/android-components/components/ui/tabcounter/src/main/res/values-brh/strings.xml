@@ -11,9 +11,16 @@
     Message announced to the user when tab tray is selected
     The %1$s will be replaced by the number of opened tabs
   -->
-  <string name="mozac_tab_counter_open_tab_tray">ملوکا ٹیباک: %1$s۔ ٹیب بدل کننگ کن دو خل۔</string>
+  <string name="mozac_tab_counter_open_tab_tray">ملوکا ٹیباک: %1$s۔ ٹیب بدل کننگ کن دو خلبو۔</string>
+  <!--
+    Message announced to the user when the tab counter is selected in private browsing mode.
+    Used by a11y services. The %1$s will be replaced by the number of opened tabs
+  -->
+  <string name="mozac_tab_counter_private">ملوکا ڈکائ ٹیباک: %1$s۔ ٹیب بدل کننگ کن دو خلبو۔</string>
   <!-- Browser menu button that creates a new tab -->
   <string name="mozac_browser_menu_new_tab">پوسکنو ٹیب اس</string>
+  <!-- Browser menu button that creates a private tab -->
+  <string name="mozac_browser_menu_new_private_tab">پوسکنا ڈکوئ ٹیب</string>
   <!-- Browser menu button to close tab. Closes the current session when pressed. -->
   <string name="mozac_close_tab">ٹیب اے بند کہ</string>
   <!-- Menu option to duplicate the current tab -->

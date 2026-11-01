@@ -12,15 +12,15 @@
   <!-- Content description: For the clear URL text button. -->
   <string name="mozac_clear_button_description">پاک کردن</string>
   <!-- Content description: For the tracking protection toolbar icon, it is set when the site has tracking protection enabled, but none trackers have been blocked or detected. -->
-  <string name="mozac_browser_toolbar_content_description_tracking_protection_on_no_trackers_blocked">حفاظت در برابر ردیابی روشن است</string>
+  <string name="mozac_browser_toolbar_content_description_tracking_protection_on_no_trackers_blocked">محافظت در برابر ردیابی روشن است</string>
   <!-- Content description: For the tracking protection toolbar icon, it is set when the site has tracking protection enabled, and trackers have been blocked or detected. -->
-  <string name="mozac_browser_toolbar_content_description_tracking_protection_on_trackers_blocked1">حفاظت در برابر ردیابی، ردیاب‌ها را مسدود کرده است</string>
+  <string name="mozac_browser_toolbar_content_description_tracking_protection_on_trackers_blocked1">محافظت در برابر ردیابی، ردیاب‌ها را مسدود کرده است</string>
   <!-- Content description: For the tracking protection toolbar icon, it is set when the site has tracking protection disabled. -->
-  <string name="mozac_browser_toolbar_content_description_tracking_protection_off_for_a_site1">حفاظت در برابر ردیابی برای این پایگاه خاموش است</string>
+  <string name="mozac_browser_toolbar_content_description_tracking_protection_off_for_a_site1">محافظت در برابر ردیابی برای این وبگاه خاموش است</string>
   <!-- Content description: For the site security information icon (the site security icon). -->
-  <string name="mozac_browser_toolbar_content_description_site_info">اطلاعات پایگاه</string>
+  <string name="mozac_browser_toolbar_content_description_site_info">اطلاعات وبگاه</string>
   <!-- Announcement made by the screen reader when the progress bar is shown and a page is loading -->
-  <string name="mozac_browser_toolbar_progress_loading">در حال بار کردن</string>
+  <string name="mozac_browser_toolbar_progress_loading">بار کردن</string>
   <!-- Content description: For the autoplay toolbar icon, it is set when the auto play permission is blocking content playing. -->
   <string name="mozac_browser_toolbar_content_description_autoplay_blocked">برخی از محتواها توسط تنظیمات پخش خودکار مسدود شده‌اند</string>
 </resources>

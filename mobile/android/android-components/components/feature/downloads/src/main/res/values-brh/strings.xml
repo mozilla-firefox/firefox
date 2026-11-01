@@ -28,7 +28,9 @@
   <!-- Alert dialog confirmation before downloading a previously downloaded file, this is the title when the size of the file is not known. -->
   <string name="mozac_feature_downloads_again_dialog_title_with_unknown_size">فائل وا ڈاونلود کیرے؟</string>
   <!-- Alert dialog confirmation before download a file, this is the positive action. -->
-  <string name="mozac_feature_downloads_dialog_download">ڈاؤن لوڈ</string>
+  <string name="mozac_feature_downloads_dialog_download">ڈاون لوڈ</string>
+  <!-- Alert dialog confirmation before downloading a file again, this is the positive action. -->
+  <string name="mozac_feature_downloads_dialog_download_again">وا ڈاونلوڈ</string>
   <!-- Alert dialog confirmation before download a file, this is the negative action. -->
   <string name="mozac_feature_downloads_dialog_cancel">کینسل</string>
   <!-- Alert dialog confirmation before downloading a file without network connection, this is the description. -->
@@ -42,5 +44,5 @@
   <!-- Message that appears when trying to download with an external app fails. %1$s will be replaced with the name the external app. -->
   <string name="mozac_feature_downloads_unable_to_open_third_party_app">%1$s ملینگ مفک</string>
   <!-- Alert dialog confirmation before cancelling downloads, this is the positive action. -->
-  <string name="mozac_feature_downloads_cancel_active_downloads_accept">ڈاونلوڈ آک کینسل</string>
+  <string name="mozac_feature_downloads_cancel_active_downloads_accept">ڈاونلوڈ۱ک کینسل</string>
 </resources>

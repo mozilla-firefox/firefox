@@ -9,6 +9,8 @@
 <resources>
   <!-- Title of an alert shown when there is an internal VPN error, and the VPN should be disabled to continue using the browser. -->
   <string name="mozac_feature_ipprotection_unavaliable_dialog_title">Nastaviti bez VPN-a?</string>
+  <!-- Body of an alert shown when there is an internal VPN error, and the VPN should be disabled to continue using the browser. -->
+  <string name="mozac_feature_ipprotection_unavaliable_dialog_body">VPN trenutno ne radi pa bi tvoja lokacija mogla biti vidljiva. Nastavi pregledavati bez VPN-a ili odaberi kartice koje želiš zatvoriti.</string>
   <!-- Title for a button on the alert shown when VPN errors. The button allows user to navigate into tabs tray, to close those they deem sensitive. -->
   <string name="mozac_feature_ipprotection_unavaliable_dialog_confirm_button">Upravljaj karticama</string>
   <!-- Title for a button on the alert shown when VPN errors. The button disabled the VPN, and allows the user to continue using the browser without the extra safety feature. -->

@@ -707,6 +707,8 @@
   <string name="search_widget_text_long">Ҷустуҷӯ дар Интернет</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Ҷустуҷӯи овозӣ</string>
+  <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
+  <string name="search_widget_private_search">Ҷустуҷӯи хусусӣ</string>
   <!--
     Preferences
 
@@ -904,6 +906,10 @@
   <string name="preferences_open_links_in_apps_ask">Пурсидан пеш аз кушодан</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Ҳеҷ гоҳ</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Расона</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Кушодани пайвандҳо дар барномаи «YouTube»</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Захирагоҳи файлҳо</string>
   <!-- Preference title for downloads default location. -->
@@ -1939,6 +1945,8 @@
   <string name="download_search_no_results_found">Ягон натиҷа ёфт нашуд</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Ҳамаро интихоб кардан</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(иттилоот)</string>
   <!--
     Downloads Content Type Filters
 
@@ -4508,9 +4516,9 @@
   <string name="lens_camera_mode_qr">Аксбардории «QR»</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Дар тасвир ягон рамзи «QR» ёфт нашуд</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Бекор кардан</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Аз нав кӯшиш кардан</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Онро ба воситаи «Google Lens» пайдо намоед</string>
@@ -4571,6 +4579,12 @@
 
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
+  <string name="pdf_tools_sign_content_description_2">Илова кардани имзо</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
   <string name="pdf_tools_sign_content_description">Имзо кардани «PDF»</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Боргирӣ кардани «PDF»</string>
@@ -4592,14 +4606,22 @@
   <string name="pdf_tools_signature_clear_button">Пок кардан</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Илова кардан</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">Дар ҳоли иловаи имзо</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">Имконоти «Намоиши хонанда»</string>
   <!--
     Listen to page
 
     Content description for the reader mode panel: a group of buttons floating over the content
   -->
   <string name="reader_mode_panel_content_description">Имконоти реҷаи «Намоиши хонанда»</string>
-  <!-- Content description for the button in reader mode panel that turns on the read aloud feature (playback of content begins when button is pressed) -->
+  <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Бо овози баланд хонед</string>
-  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Плеери расонаӣ</string>
 </resources>

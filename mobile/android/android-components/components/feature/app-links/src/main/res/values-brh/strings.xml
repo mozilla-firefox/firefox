@@ -8,9 +8,13 @@
 
 <resources>
   <!-- The tile for the list of external apps to open the link in -->
-  <string name="mozac_feature_applinks_open_in">… ٹی مل</string>
+  <string name="mozac_feature_applinks_open_in">… ٹی ملبو</string>
   <!-- The title of the prompt that warns users their normal browsing session is trying to open another app -->
   <string name="mozac_feature_applinks_normal_confirm_dialog_title">پین ایپ سے ٹی مل</string>
+  <!-- Opens the selected time -->
+  <string name="mozac_feature_applinks_confirm_dialog_confirm">ملبو</string>
+  <!-- Opens the selected app link -->
+  <string name="mozac_feature_applinks_confirm_dialog_confirm_2">ایپ ٹی ملبو</string>
   <!-- Cancels the prompt -->
   <string name="mozac_feature_applinks_confirm_dialog_deny">کینسل</string>
 </resources>

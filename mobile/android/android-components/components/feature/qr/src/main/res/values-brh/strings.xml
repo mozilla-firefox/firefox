@@ -7,6 +7,8 @@
 -->
 
 <resources>
+  <!-- Content description (not visible, for screen readers etc.): Description of an image view. -->
+  <string name="mozac_feature_qr_scanner">QR اسکین کروک</string>
   <!-- Text shown if no camera is available on the device and the QR scanner cannot be displayed. -->
   <string name="mozac_feature_qr_scanner_no_camera">ڈیوائس اے ہچو کیمرہ اف</string>
 </resources>

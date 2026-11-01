@@ -10,7 +10,15 @@
   <!-- Name of the "notification channel" used for displaying media notification. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_media_notification_channel">میڈیا</string>
   <!-- Title of notification shown when the device's camera is shared with a website (WebRTC) -->
-  <string name="mozac_feature_media_sharing_camera">کیمره ملوک اے</string>
+  <string name="mozac_feature_media_sharing_camera">کیمرہ ملوک اے</string>
   <!-- Title of notification shown when the device's microphone is shared with a website (WebRTC) -->
   <string name="mozac_feature_media_sharing_microphone">مائک ملوک اے</string>
+  <!-- Title of notification shown when the device's camera and microphone is shared with a website (WebRTC) -->
+  <string name="mozac_feature_media_sharing_camera_and_microphone">کیمرہ و مائک ملوک او</string>
+  <!-- This is the title of the "play" action media shown in the media notification while web content is playing media. Clicking it will resume playing paused media. On most modern Android system only an icon is visible. But screen readers may read this title. -->
+  <string name="mozac_feature_media_notification_action_play">چلیفبو</string>
+  <!-- This is the title of the "pause" action shown in the media notification while web content is playing media. Clicking it will pause currently playing media. On most modern Android system only an icon is visible. But screen readers may read this title. -->
+  <string name="mozac_feature_media_notification_action_pause">سلیفبو</string>
+  <!-- This is the title of the "next" action shown in the media notification when the playing web content advertises a next track handler. Clicking it advances to the next track. On most modern Android system only an icon is visible. But screen readers may read this title. -->
+  <string name="mozac_feature_media_notification_action_next">مُستی</string>
 </resources>

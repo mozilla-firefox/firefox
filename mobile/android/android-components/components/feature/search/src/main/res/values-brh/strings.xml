@@ -7,6 +7,12 @@
 -->
 
 <resources>
+  <!--
+    Search Widget
+
+    Content description for searching with a widget. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="search_widget_content_description">پوسکنو %1$s ٹیب اسے ٹی ملبو</string>
   <!-- Text preview for smaller sized widgets. -->
   <string name="search_widget_text_short">پٹبو</string>
   <!-- Text preview for larger sized widgets. -->

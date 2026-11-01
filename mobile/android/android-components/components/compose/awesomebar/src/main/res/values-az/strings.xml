@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Description for the button to accept the search suggestion and continue editing the search. -->
+  <string name="mozac_browser_awesomebar_edit_suggestion">Təklifi qəbul et və düzəlt</string>
+  <!-- Description for the button to remove the search suggestion from the displayed results. -->
+  <string name="mozac_browser_awesomebar_remove_suggestion">Təklifi sil</string>
+  <!--
+    The description for the stock suggestion card when the stock is decreasing.
+    %s is a placeholder that will be replaced by the change percent value
+  -->
+  <string name="mozac_browser_awesomebar_stock_suggestion_decrease">%s faiz düşdü</string>
+  <!--
+    The description for the stock suggestion card when the stock is increasing.
+    %s is a placeholder that will be replaced by the change percent value
+  -->
+  <string name="mozac_browser_awesomebar_stock_suggestion_increase">%s faiz dəyərləndi</string>
+  <!-- Description for the stock suggestion card when the stock is the same. -->
+  <string name="mozac_browser_awesomebar_stock_suggestion_no_change">Dəyişiklik yoxdur</string>
+  <!-- Description for the button to share the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_share_website_details">Paylaş</string>
+  <!-- Description for the button to copy the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_copy_website_details">Köçür</string>
+  <!-- Description for the button to edit the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_edit_website_details">URL-i düzəlt</string>
+  <!--
+    Description for the highlighted awesomebar element, which represents the current webpage - clicking it reloads the webpage.
+    This will be interpolated into a longer message, equivalent to "Double tap to [reload the current page]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended.
+  -->
+  <string name="mozac_browser_awesomebar_reload_website">cari səhifəni yenilə</string>
+</resources>

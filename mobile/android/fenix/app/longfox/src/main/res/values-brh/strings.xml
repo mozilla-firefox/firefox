@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- %1$d is a placeholder for the score value. -->
+  <string name="score">اسکور: %1$d</string>
+  <!--
+    Longfox is the name of an easter egg game available through
+    secret settings. Since that's not localized, keep the name unchanged.
+  -->
+  <string name="longfox">LONGFOX</string>
+  <string name="likes_cookies">🍪 کوکیز دوست کیک 🍪</string>
+  <string name="tap_to_play">گوازی کننگ کن دو خلبو!</string>
+  <!--
+    %1$d is a placeholder for the current high score. HISCORE is an
+    abbreviation for "Highest Score".
+  -->
+  <string name="hiscore">ریکارڈ: %1$d</string>
+  <string name="sound_on">توار ملوک اے</string>
+  <string name="sound_off">توار بند اے</string>
+  <!-- Back button -->
+  <string name="back">پدی</string>
+  <!-- Share hiscore action label. hiscore is an abbreviation for "Highest Score" -->
+  <string name="share_hiscore">ریکارڈ اے بشخبو</string>
+  <!--
+    The longest fox is your best game achievement so far (based on your highest score).
+    %1$d is a placeholder for the current highest score.
+    #longfox is a hashtag for sharing on social media and should not be translated.
+    %2$s is a placeholder for a string representation of the longest fox and should not be translated.
+    Example output: My longest fox is 6! #longfox 🦊🟧🟧🟧🟧🟧🟧
+  -->
+  <string name="my_longest_fox_is">کنا کل ان مرغنا شوک %1$d اے! #longfox %2$s</string>
+</resources>

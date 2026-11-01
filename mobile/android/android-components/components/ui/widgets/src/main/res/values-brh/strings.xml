@@ -8,5 +8,5 @@
 
 <resources>
   <!-- Text for confirmation "snackbar" shown after copying an image to the clipboard. -->
-  <string name="snackbar_copy_image_to_clipboard_confirmation">تصویر کلیپبورڈ اٹ کاپی مس</string>
+  <string name="snackbar_copy_image_to_clipboard_confirmation">تصویر کلپ بورڈ ٹی کاپی مس</string>
 </resources>

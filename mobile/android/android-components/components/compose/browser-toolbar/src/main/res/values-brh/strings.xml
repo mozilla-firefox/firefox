@@ -10,7 +10,7 @@
   <!-- Content description for the clear URL text button. -->
   <string name="mozac_clear_button_description">صفا</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
-  <string name="mozac_browser_toolbar_search_hint">پٹ یا ویب ڈس اس لکهہ</string>
+  <string name="mozac_browser_toolbar_search_hint">پٹ یا ویب ڈس اس لکھبو</string>
   <!-- Contextual menu option for long pressing on the toolbar URL. Clicking it will copy the current URL -->
   <string name="mozac_browser_toolbar_long_press_popup_copy">کاپی</string>
 </resources>

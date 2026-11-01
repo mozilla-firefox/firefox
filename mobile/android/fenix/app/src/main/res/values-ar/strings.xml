@@ -4325,4 +4325,10 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">عزل الموقع</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">حاجز إضافي بين المواقع الإلكترونية يساعد على حماية بياناتك عبر علامات التبويب. قد يؤثر على الأداء والاستقرار وتوافق المواقع الإلكترونية وكيفية حفظ سجل التصفح.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">أضِف توقيعًا</string>
 </resources>

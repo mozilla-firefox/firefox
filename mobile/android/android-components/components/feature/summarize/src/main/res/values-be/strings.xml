@@ -19,6 +19,8 @@
   <string name="mozac_summarize_shake_consent_on_device_negative_button">Не зараз</string>
   <!-- Button text for the consent to download an on-device model denying download consent -->
   <string name="mozac_summarize_download_consent_button_negative">Скасаваць</string>
+  <!-- Caption to describe the progress of the download. %1$.2f is bytes downloaded, %2$.2f is total bytes required for download to complete. -->
+  <string name="mozac_summarize_download_progress_caption">%1$.2f МБ / %2$.2f МБ</string>
   <!-- Button text shown while a download is in progress to cancel the download -->
   <string name="mozac_summarize_download_progress_button_negative">Скасаваць</string>
   <!-- Title for the download error screen -->

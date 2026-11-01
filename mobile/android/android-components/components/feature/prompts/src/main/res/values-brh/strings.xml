@@ -26,7 +26,7 @@
   <!-- Negative confirmation that we should not save the updated login -->
   <string name="mozac_feature_prompt_dont_update_2">داسہ نہ</string>
   <!-- Error text displayed underneath the password field when it is in an error case -->
-  <string name="mozac_feature_prompt_error_empty_password_2">کلیت لوز اس لکہبو</string>
+  <string name="mozac_feature_prompt_error_empty_password_2">کلیت لوز اس لکھبو</string>
   <!-- Error text displayed underneath the password field when it is in an error case -->
   <string name="mozac_feature_prompt_error_unknown_cause_2">کلیت لوز خوندی مفک</string>
   <!-- Prompt message displayed when app detects a user has entered a new username and password and user decides if app should save the new password. -->
@@ -38,7 +38,7 @@
   <!-- Title of a color picker dialog, this text is shown above a color picker. -->
   <string name="mozac_feature_prompts_choose_a_color">رنگ اس ارف</string>
   <!-- Text of a confirm button in dialog requesting to open a new window. -->
-  <string name="mozac_feature_prompts_allow">اجازت ایت</string>
+  <string name="mozac_feature_prompts_allow">اجازت ایتبو</string>
   <!-- Text of a negative button in dialog requesting to open a new window. -->
   <string name="mozac_feature_prompts_deny">پنہ کر</string>
   <!-- Title of the month chooser dialog. -->
@@ -72,7 +72,7 @@
   <!-- Option in expanded select password prompt that links to password settings -->
   <string name="mozac_feature_prompts_manage_logins_2">کلیت لوز تے نظم کبو</string>
   <!-- Header for the select password prompt to allow users to fill a form with a saved password -->
-  <string name="mozac_feature_prompts_saved_logins_2">خوندی آ کلیت لوزآک</string>
+  <string name="mozac_feature_prompts_saved_logins_2">خوندی آ کلیت لوزاک</string>
   <!-- Pressing this will use the suggested strong password -->
   <string name="mozac_feature_prompts_suggest_strong_password_use_password">کلیت لوز اے کاریم اٹ ات</string>
   <!-- Pressing this will dismiss the suggested strong password dialog -->

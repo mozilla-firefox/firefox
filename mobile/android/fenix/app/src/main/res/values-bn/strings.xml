@@ -783,4 +783,10 @@
   <string name="confirm_clear_permissions_site">আপনি কি নিশ্চিত যে আপনি এই সাইটের জন্য সব অনুমতি সাফ করতে চান?</string>
   <!-- Positive action of a dialog asking to delete -->
   <string name="dialog_delete_positive">মুছে ফেলুন</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">স্বাক্ষর যোগ করুন</string>
 </resources>

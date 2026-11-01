@@ -7,16 +7,136 @@
 -->
 
 <resources xmlns:tools="http://schemas.android.com/tools">
+  <!-- App name for private browsing mode. %s is the name of the app (for example "Firefox"). -->
+  <string name="app_name_private_5">Məxfi %s</string>
+  <!-- App name for private browsing mode. %s is the name of the app (for example "Firefox"). -->
+  <string name="app_name_private_4">%s (Məxfi)</string>
   <!--
     Home Fragment
 
     Content description (not visible, for screen readers etc.): "Three dot" menu button.
   -->
   <string name="content_description_menu">Digər seçimlər</string>
+  <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
+  <string name="content_description_private_browsing">Məxfi səyahət</string>
+  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
+  <string name="content_description_normal_browsing">Adi səyahət</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Ünvanı daxil et və ya axtar</string>
+  <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
+  <string name="search_hint_short">Axtar</string>
+  <!-- Placeholder text shown in the search bar before a user enters text for a general engine -->
+  <string name="search_hint_general_engine">İnternetdə axtar</string>
+  <!-- Placeholder text shown in search bar when using history search -->
+  <string name="history_search_hint">Tarixçədə axtar</string>
+  <!-- Placeholder text shown in search bar when using bookmarks search -->
+  <string name="bookmark_search_hint">Əlfəcinlərdə axtar</string>
+  <!-- Content description for the toolbar back button while searching bookmarks -->
+  <string name="bookmark_close_search_description">Geri qayıt və axtarışı bağla</string>
+  <!-- Placeholder text shown in search bar when using tabs search -->
+  <string name="tab_search_hint">Vərəqlərdə axtar</string>
+  <!-- Placeholder text shown in the search bar when using application search engines -->
+  <string name="application_search_hint">Axtarış sözlərini daxil edin</string>
+  <!-- The header text displayed on the private tabs page when no private tabs are open -->
+  <string name="tab_manager_empty_private_tabs_page_header">Məxfi səyahət</string>
+  <!-- The supplementary text displayed on the private tabs page when no private tabs are open. %1$s is the name of the app (for example "Firefox") -->
+  <string name="tab_manager_empty_private_tabs_page_description">%1$s tarixçənizi və çərəzlərinizi yadda saxlamayacaq, ancaq yeni əlfəcinlər saxlanılacaq.</string>
+  <!-- The header text displayed on the normal tabs page when no normal tabs are open -->
+  <string name="tab_manager_empty_normal_tabs_page_header">Axtarışa başlamaq üçün yeni vərəq yaradın</string>
+  <!-- Tab tray multi select title in app bar. %1$d is the number of tabs selected -->
+  <string name="tab_tray_multi_select_title">%1$d seçilib</string>
+  <!-- Tab tray multi select title in app bar when no tabs are selected -->
+  <string name="tab_tray_multi_select_title_empty">Vərəqləri seç</string>
+  <!-- Label of button in create collection dialog for creating a new collection -->
+  <string name="tab_tray_add_new_collection">Yeni kolleksiya əlavə et</string>
+  <!-- Label of editable text in create collection dialog for naming a new collection -->
+  <string name="tab_tray_add_new_collection_name">Ad</string>
+  <!-- Label of button in save to collection dialog for selecting a current collection -->
+  <string name="tab_tray_select_collection">Kolleksiya seç</string>
+  <!-- Content description for close button while in multiselect mode in tab tray -->
+  <string name="tab_tray_close_multiselect_content_description">Çoxsaylı seçim rejimindən çıx</string>
+  <!-- The header text displayed on the synced tabs page when the user is not logged into an account. -->
+  <string name="tab_manager_empty_synced_tabs_page_header">İstənilən cihazdakı vərəqləri əldə edin</string>
+  <!-- The supplementary text displayed on the synced tabs page when the user is not logged into an account. -->
+  <string name="tab_manager_empty_synced_tabs_page_description">Bütün cihazlarınızdakı sinxronlaşdırılmış vərəqləri idarə etmək üçün daxil olun.</string>
+  <!-- The action text displayed on the synced tabs page when the user is not logged into an account, prompting the user to sign into their account. When clicked, it takes the user to the account sign-in flow. -->
+  <string name="tab_manager_empty_synced_tabs_page_sign_in_cta">Daxil ol</string>
+  <!-- Text for the button used to show all stories -->
+  <string name="homepage_all_stories">Bütün hekayələr</string>
+  <!--
+    Home - Bookmarks
+
+    Title for the home screen section with bookmarks.
+  -->
+  <string name="home_bookmarks_title">Əlfəcinlər</string>
+  <!-- Content description for the button which navigates the user to show all of their bookmarks. -->
+  <string name="home_bookmarks_show_all_content_description">Bütün əlfəcinləri göstər</string>
+  <!-- Text for the menu button to remove a recently saved bookmark from the user's home screen -->
+  <string name="home_bookmarks_menu_item_remove">Sil</string>
+  <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="about_content" tools:ignore="BrandUsage">%1$s Mozilla tərəfindən hazırlanıb.</string>
   <!-- Private Browsing -->
   <string name="private_browsing_common_myths">Məxfi səyahət haqqında olan əfsanələr</string>
+  <!--
+    Private Browsing
+
+    Text to be announced by the accessibility service to inform the user that the private browsing mode is currently active.
+  -->
+  <string name="private_browsing_a11y_session_announcement">Məxfi səyahət sessiyası</string>
+  <!--
+    True Private Browsing Mode
+
+    Title for info card on private homescreen in True Private Browsing Mode.
+  -->
+  <string name="felt_privacy_desc_card_title">Bu cihazda iz buraxmayın</string>
+  <!--
+    Description of private browsing mode displayed to users on the homepage when they enable private mode.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="felt_privacy_info_card_subtitle_3">Bütün məxfi vərəqlərinizi bağladıqda %1$s çərəzlərinizi, tarixçənizi və sayt məlumatlarınızı silir.</string>
+  <!--
+    Clickable portion of the explanation for private browsing that links the user to our
+    about privacy page.
+    This string is used in felt_privacy_info_card_subtitle as the text for the link.
+  -->
+  <string name="felt_privacy_info_card_subtitle_link_text">Kim mənim fəaliyyətimi görə bilər?</string>
+  <!--
+    Open in App "contextual feature recommendation" (CFR)
+
+    Text for the info message. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="open_in_app_cfr_info_message_2">%1$s keçidləri avtomatik olaraq tətbiqlərdə açacaq şəkildə tənzimlənə bilər.</string>
+  <!-- Text for the positive action button -->
+  <string name="open_in_app_cfr_positive_button_text">Tənzimləmələrə keç</string>
+  <!-- Text for the negative action button -->
+  <string name="open_in_app_cfr_negative_button_text">Qapat</string>
+  <!-- Text for the info dialog when camera permissions have been denied but user tries to access a camera feature. -->
+  <string name="camera_permissions_needed_message">Kameraya giriş tələb olunur. Android tənzimləmələrinə keçin, icazələrə toxunun və icazə verin.</string>
+  <!-- Text for the positive action button to go to Android Settings to grant permissions. -->
+  <string name="camera_permissions_needed_positive_button_text">Tənzimləmələrə keç</string>
+  <!-- Text for the negative action button to dismiss the dialog. -->
+  <string name="camera_permissions_needed_negative_button_text">Qapat</string>
+  <!-- Text for the banner message to tell users about our auto close feature. -->
+  <string name="tab_tray_close_tabs_banner_message">Son bir gün, həftə və ya ay ərzində baxılmamış açıq vərəqlərin avtomatik bağlanmasını tənzimləyin.</string>
+  <!-- Text for the positive action button to go to Settings for auto close tabs. -->
+  <string name="tab_tray_close_tabs_banner_positive_button_text">Seçimlərə keç</string>
+  <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
+  <string name="tab_tray_close_tabs_banner_negative_button_text">Qapat</string>
+  <!-- Text for the banner message to tell users about our inactive tabs feature. -->
+  <string name="tab_tray_inactive_onboarding_message">İki həftə ərzində baxmadığınız vərəqlər buraya köçürülür.</string>
+  <!-- Text for the action link to go to Settings for inactive tabs. -->
+  <string name="tab_tray_inactive_onboarding_button_text">Tənzimləmələrdə söndür</string>
+  <!-- Text for title for the auto-close dialog of the inactive tabs. -->
+  <string name="tab_tray_inactive_auto_close_title">Bir aydan sonra avtomatik bağlansın?</string>
+  <!--
+    Text for the body for the auto-close dialog of the inactive tabs.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="tab_tray_inactive_auto_close_body_2">%1$s son bir ay ərzində baxmadığınız vərəqləri bağlaya bilər.</string>
+  <!-- Content description for close button in the auto-close dialog of the inactive tabs. -->
+  <string name="tab_tray_inactive_auto_close_button_content_description">Bağla</string>
+  <!-- Text for turn on auto close tabs button in the auto-close dialog of the inactive tabs. -->
+  <string name="tab_tray_inactive_turn_on_auto_close_button_2">Avtomatik bağlamanı aktivləşdir</string>
   <!--
     Home screen icons - Long press shortcuts
 
@@ -25,6 +145,49 @@
   <string name="home_screen_shortcut_open_new_tab_2">Yeni vərəq</string>
   <!-- Shortcut action to open new private tab -->
   <string name="home_screen_shortcut_open_new_private_tab_2">Yeni məxfi vərəq</string>
+  <!-- Shortcut action to open Passwords screen -->
+  <string name="home_screen_shortcut_passwords">Parollar</string>
+  <!-- Shortcut action to open uninstall survey -->
+  <string name="home_screen_shortcut_uninstall_survey">Niyə silirsiniz?</string>
+  <!--
+    Recent Tabs
+
+    Header text on the homescreen for continuing to browse the most recent browser tab
+  -->
+  <string name="recent_tabs_header_2">Davam et</string>
+  <!-- Button text for showing all the tabs in the tabs tray -->
+  <string name="recent_tabs_show_all">Hamısını göstər</string>
+  <!-- Text for button in synced tab card that opens synced tabs tray -->
+  <string name="recent_tabs_see_all_synced_tabs_button_text">Bütün sinxron vərəqlərə bax</string>
+  <!-- Accessibility description for device icon used for recent synced tab -->
+  <string name="recent_tabs_synced_device_icon_content_description">Sinxronlaşdırılmış cihaz</string>
+  <!-- Text for the dropdown menu to remove a recent synced tab from the homescreen -->
+  <string name="recent_synced_tab_menu_item_remove">Sil</string>
+  <!--
+    Text for the menu button to remove a grouped highlight from the user's browsing history
+    in the Recently visited section
+  -->
+  <string name="recent_tab_menu_item_remove">Sil</string>
+  <!--
+    History Metadata
+
+    Header text for a section on the home screen that displays grouped highlights from the
+    user's browsing history, such as topics they have researched or explored on the web
+  -->
+  <string name="history_metadata_header_2">Son baxılanlar</string>
+  <!--
+    Text for the menu button to remove a grouped highlight from the user's browsing history
+    in the Recently visited section
+  -->
+  <string name="recently_visited_menu_item_remove">Sil</string>
+  <!-- Content description for the button which navigates the user to show all of their history. -->
+  <string name="past_explorations_show_all_content_description_2">Bütün əvvəlki araşdırmaları göstər</string>
+  <!--
+    Browser Fragment
+
+    Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
+  -->
+  <string name="customize_menu">Menyunu fərdiləşdir</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Geri</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -33,6 +196,27 @@
   <string name="browser_menu_refresh">Yenilə</string>
   <!-- Content description (not visible, for screen readers etc.): Stop loading current website -->
   <string name="browser_menu_stop">Dayandır</string>
+  <!-- Browser menu button that opens the extensions manager -->
+  <string name="browser_menu_extensions">Uzantılar</string>
+  <!-- Browser menu button that opens the extensions manager -->
+  <string name="browser_menu_manage_extensions">Uzantıları idarə et</string>
+  <!-- Browser menu group that contains additional settings in collapsed state -->
+  <string name="browser_menu_more_settings">Daha çox</string>
+  <!--
+    Content description (not visible, for screen readers etc.): Label for plus icon used to add extension.
+    %1$s is the name of the extension (for example: ClearURLs).
+  -->
+  <string name="browser_menu_extension_plus_icon_content_description_2">%1$s əlavə et</string>
+  <!-- Browser menu button that opens AMO in a tab -->
+  <string name="browser_menu_discover_more_extensions">Daha çox uzantı kəşf et</string>
+  <!-- Browser menu description that is shown when one or more extensions are disabled due to extension errors -->
+  <string name="browser_menu_extensions_disabled_description">Müvəqqəti söndürülüb</string>
+  <!-- The description of the browser menu appears when the user hasn't installed any extensions. -->
+  <string name="browser_menu_no_extensions_installed_description">Aktiv uzantı yoxdur</string>
+  <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
+  <string name="browser_menu_try_a_recommended_extension_description">Tövsiyə edilən uzantını sınayın</string>
+  <!-- Browser menu button that opens account settings -->
+  <string name="browser_menu_account_settings">Hesab məlumatları</string>
   <!-- Browser menu button that opens the settings menu -->
   <string name="browser_menu_settings">Tənzimləmələr</string>
   <!-- Browser menu button that opens a user's library -->
@@ -41,12 +225,22 @@
   <string name="browser_menu_desktop_site">Masaüstü saytı</string>
   <!-- Browser menu toggle that adds a shortcut to the site on the device home screen. -->
   <string name="browser_menu_add_to_homescreen">Ana ekrana əlavə et</string>
+  <!-- Browser menu toggle that adds a PWA of the site on the device home screen. -->
+  <string name="browser_menu_add_app_to_homescreen">Tətbiqi ana ekrana əlavə et</string>
+  <!-- Text for notifying users that Xiaomi devices require additional permissions to add to home screen -->
+  <string name="browser_menu_add_to_homescreen_xiaomi">Xiaomi cihazlarında qısayolları ana ekrana əlavə etmək üçün əlavə icazələr tələb oluna bilər. Tənzimləmələrinizi yoxlayın.</string>
+  <!-- Content description (not visible, for screen readers etc.) for the Resync tabs button -->
+  <string name="resync_button_content_description">Yenidən sinxronlaşdır</string>
   <!-- Browser menu button that opens the find in page menu -->
   <string name="browser_menu_find_in_page">Səhifədə tap</string>
+  <!-- Browser menu button that opens the translations dialog, which has options to translate the current browser page. -->
+  <string name="browser_menu_translations">Səhifəni tərcümə et</string>
   <!-- Browser menu button that saves the current tab to a collection -->
   <string name="browser_menu_save_to_collection_2">Kolleksiyaya saxla</string>
   <!-- Browser menu button that open a share menu to share the current site -->
   <string name="browser_menu_share">Paylaş</string>
+  <!-- Browser menu button that goes to the homepage screen -->
+  <string name="browser_menu_homepage">Ana səhifə</string>
   <!--
     Browser menu button shown in custom tabs that opens the current tab in Fenix
     %1$s is the name of the app (for example "Firefox").
@@ -58,9 +252,121 @@
   -->
   <string name="browser_menu_powered_by2">%1$s Tərəfindən</string>
   <!-- Browser menu button to put the current page in reader mode -->
-  <string name="browser_menu_read">Oxuyucu vörünüşü</string>
+  <string name="browser_menu_read">Oxuyucu görünüşü</string>
+  <!-- Browser menu button content description to close reader mode and return the user to the regular browser -->
+  <string name="browser_menu_read_close">Oxuyucu görünüşünü bağla</string>
   <!-- Browser menu button to open the current page in an external app -->
   <string name="browser_menu_open_app_link">Tətbiqdə aç</string>
+  <!-- Browser menu button to show reader view appearance controls e.g. the used font type and size -->
+  <string name="browser_menu_customize_reader_view_2">Oxuyucu görünüşünü fərdiləşdir</string>
+  <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
+  <string name="browser_menu_sign_in">Daxil ol</string>
+  <!-- Browser menu caption label for the "Sign in" browser menu item described in `browser_menu_sign_in` -->
+  <string name="browser_menu_sign_in_caption_3">Parolları, əlfəcinləri və digər məlumatları sinxronlaşdırın</string>
+  <!-- Browser menu label to sign back in to sync on the device when the user's account needs to be reauthenticated -->
+  <string name="browser_menu_sign_back_in_to_sync">Sinxronlaşdırmaq üçün yenidən daxil olun</string>
+  <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
+  <string name="browser_menu_syncing_paused_caption">Sinxronlaşdırma dayandırılıb</string>
+  <!-- Browser menu caption label for an authenticated user -->
+  <string name="browser_menu_signed_in_caption">Nələrin yedəklənib sinxronlaşdırılacağını idarə edin</string>
+  <!-- Browser menu label that creates a private tab -->
+  <string name="browser_menu_new_private_tab">Yeni məxfi vərəq</string>
+  <!-- Browser menu label that navigates to the Password screen -->
+  <string name="browser_menu_passwords">Parollar</string>
+  <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
+  <string name="browser_close_main_menu_handlebar_content_description">Menyunu bağla</string>
+  <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
+  <string name="browser_main_menu_content_description_navigation_header">Naviqasiya</string>
+  <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
+  <string name="browser_custom_tab_menu_handlebar_content_description">Fərdi vərəq menyusu panelini bağla</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">Keşlənib</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Canlı səhifə</string>
+  <!-- Browser menu label that bookmarks the currently visited page -->
+  <string name="browser_menu_bookmark_this_page_2">Səhifəni əlfəcinlə</string>
+  <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
+  <string name="browser_menu_edit_bookmark">Əlfəcini düzəlt</string>
+  <!-- Browser menu label that the saves the currently visited page as a PDF -->
+  <string name="browser_menu_save_as_pdf_2">PDF kimi saxla</string>
+  <!-- Browser menu label for moving the current private tab to a non-private tab -->
+  <string name="browser_menu_move_to_non_private_tab">Məxfi olmayan vərəqə köçür</string>
+  <!-- Browser menu label for navigating to the translation feature, which provides language translation options the current visited page -->
+  <string name="browser_menu_translate_page_2">Səhifəni tərcümə et</string>
+  <!-- Browser menu label for navigating to the summarization feature, which provides site summarization for the current visited page -->
+  <string name="browser_menu_summarize_page">Səhifənin icmalını çıxart</string>
+  <!-- Browser menu badge text for summarization feature -->
+  <string name="browser_menu_summarize_page_badge">Yeni</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">Yeni</string>
+  <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
+  <string name="browser_menu_webcompat_reporter_2">İşləməyən saytı bildir</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">Qrupa əlavə et</string>
+  <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
+  <string name="browser_menu_translated">Tərcümə edilib</string>
+  <!-- Browser menu label for the print feature -->
+  <string name="browser_menu_print_2">Çap et</string>
+  <!--
+    Browser menu label for the Delete browsing data on quit feature.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="browser_menu_delete_browsing_data_on_quit">%1$s proqramından çıx</string>
+  <!--
+    Content description for a banner within the menu which prompt the user to make this app their default browser.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="browser_menu_default_banner_title">%1$s əsas səyyahınız olsun</string>
+  <!-- Label text within the set as default banner -->
+  <string name="browser_menu_default_banner_subtitle_2">Sürətli, məxfi və sizin üçün hazırlanıb.</string>
+  <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
+  <string name="browser_menu_recommended_extensions_content_description">Ətraflı məlumat</string>
+  <!--
+    Extensions management fragment
+
+    Text displayed when there are no extensions to be shown
+  -->
+  <string name="extensions_management_no_extensions">Burada uzantı yoxdur</string>
+  <!--
+    Browser Toolbar
+
+    Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
+  -->
+  <string name="browser_toolbar_translate">Səhifəni tərcümə et</string>
+  <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
+  <string name="browser_toolbar_summarize_cfr_description">Bu səhifəni saniyələr içində xülasə etmək üçün cihazınızı silkələyin. ⚡️</string>
+  <!--
+    Translation Toolbar
+
+    Translation toolbar label that is displayed when the current page has been translated by the translation feature.
+    %1$s is the name of the language that is displayed in the original page. (For example: English)
+    %2$s is the name of the language which the page was translated to. (For example: French)
+  -->
+  <string name="translation_toolbar_translated_from_and_to" tools:ignore="UnusedResources">%1$s dilindən %2$s dilinə tərcümə edilib</string>
+  <!-- Content description for the translate toolbar action that opens the translations dialog. -->
+  <string name="translation_toolbar_expand_action">Tərcümə panelini aç</string>
+  <!-- Content description for the translate toolbar action that closes the translations toolbar. -->
+  <string name="translation_toolbar_close_action">Bildirişi qapat</string>
+  <!--
+    Page summaries
+
+    Toolbar title for the Page summaries settings fragment
+  -->
+  <string name="preferences_page_summaries">Səhifə xülasələri</string>
+  <!--
+    AI Controls settings
+
+    Title for the AI controls settings screen
+  -->
+  <string name="preferences_ai_controls">Sİ idarəetmələri</string>
+  <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_banner_headline">%s proqramında seçim həmişə sizindir</string>
+  <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
+  <string name="ai_controls_banner_supporting_text_2">Buraya Süni İntellekt ilə təkmilləşdirilmiş funksiyalardan istifadə edib-etməmək də daxildir. %s</string>
+  <!-- Link text for learning more about AI controls -->
+  <string name="ai_controls_learn_more">Ətraflı öyrən</string>
+  <!-- Title for the block AI enhancements toggle -->
+  <string name="ai_controls_block_ai_title">Sİ təkmilləşdirmələrini əngəllə</string>
   <!--
     Locale Settings Fragment
 
@@ -248,22 +554,146 @@
   <string name="settings_title">Tənzimləmələr</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
   <string name="content_description_close_button">Qapat</string>
+  <!-- Option for always opening the homepage when re-opening the app -->
+  <string name="opening_screen_homepage">Ana səhifə</string>
+  <!-- Option for always opening the user's last-open tab when re-opening the app -->
+  <string name="opening_screen_last_tab">Son vərəq</string>
+  <!-- Option for always opening the homepage when re-opening the app after four hours of inactivity -->
+  <string name="opening_screen_after_four_hours_of_inactivity">Dörd saat fəaliyyətsizlikdən sonra ana səhifə</string>
+  <!-- Summary for tabs preference when auto closing tabs setting is set to manual close -->
+  <string name="close_tabs_manually_summary">Əl ilə bağla</string>
+  <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one day -->
+  <string name="close_tabs_after_one_day_summary">Bir gündən sonra bağla</string>
+  <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one week -->
+  <string name="close_tabs_after_one_week_summary">Bir həftədən sonra bağla</string>
+  <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one month -->
+  <string name="close_tabs_after_one_month_summary">Bir aydan sonra bağla</string>
+  <!-- Summary for homepage preference indicating always opening the homepage when re-opening the app -->
+  <string name="opening_screen_homepage_summary">Ana səhifədə aç</string>
+  <!-- Summary for homepage preference indicating always opening the last-open tab when re-opening the app -->
+  <string name="opening_screen_last_tab_summary">Son vərəqdə aç</string>
+  <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
+  <string name="opening_screen_after_four_hours_of_inactivity_summary">Dörd saatdan sonra ana səhifədə aç</string>
+  <!--
+    Tab organization
+
+    Category header for the preferences that control how tabs are organized
+  -->
+  <string name="preferences_tab_organization">Vərəqlərin təşkili</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Fəaliyyətsiz vərəqlər</string>
+  <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
+  <string name="preferences_inactive_tabs_title">İki həftə ərzində baxmadığınız vərəqlər buraya köçürülür.</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Vərəq qrupları</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Vərəqlərinizi adlandıra və saxlaya biləcəyiniz qruplarda təşkil edin.</string>
+  <!--
+    Privacy report
+
+    Category header of a preference that allows a user to enable or disable the privacy report feature
+  -->
+  <string name="preferences_privacy_report">Məxfilik hesabatı</string>
+  <!-- Title of the privacy report preference that allows a user to enable or disable the feature -->
+  <string name="preferences_privacy_report_title">Məxfilik hesabatını aktivləşdir</string>
+  <!--
+    Studies
+
+    Title of the remove studies button
+  -->
+  <string name="studies_remove">Sil</string>
+  <!-- Title of the active section on the studies list -->
+  <string name="studies_active">Aktiv</string>
+  <!-- Description for studies. Note: The word "Firefox" should NOT be translated -->
+  <string name="studies_description_4" tools:ignore="BrandUsage">Firefox özəllikləri sınamaq üçün istifadəçiləri təsadüfi seçir və bu, keyfiyyəti hamı üçün yaxşılaşdırır.</string>
+  <!-- Learn more link for studies, links to an article for more information about studies. -->
+  <string name="studies_learn_more">Ətraflı öyrən</string>
+  <!--
+    Remote Improvements (Rollouts)
+
+    Title of the Remote Improvements (rollouts) data preference
+  -->
+  <string name="remote_improvements_title">Məsafədən təkmilləşdirmələrə icazə ver</string>
   <!-- Content description (not visible, for screen readers etc.): Add tab button. Adds a news tab when pressed -->
   <string name="add_tab">Vərəq əlavə et</string>
+  <!-- Content description (not visible, for screen readers etc.): Add tab button. Adds a news tab when pressed -->
+  <string name="add_private_tab">Məxfi vərəq əlavə et</string>
+  <!-- Content description (not visible, for screen readers etc.): Create tab group button. Opens the create tab group sheet when pressed -->
+  <string name="create_tab_group_content_description">Vərəq qrupu yarat</string>
+  <!-- Text for the tab search bar placeholder -->
+  <string name="tab_manager_search_bar_placeholder">Vərəqlərimdə axtar</string>
+  <!-- Text shown in the menu to view recently closed tabs -->
+  <string name="tab_tray_menu_recently_closed">Son qapadılmış vərəqlər</string>
+  <!-- Text shown in the menu to select all tabs. -->
+  <string name="tab_tray_menu_select_all_tabs">Hamısını seç</string>
+  <!-- Text shown in the menu to view account settings -->
+  <string name="tab_tray_menu_account_settings">Hesab tənzimləmələri</string>
+  <!-- Text shown in the menu to view tab settings -->
+  <string name="tab_tray_menu_tab_settings">Vərəq tənzimləmələri</string>
+  <!-- Text shown in the menu for closing all tabs -->
+  <string name="tab_tray_menu_item_close">Bütün vərəqləri qapat</string>
+  <!-- Text shown as the title of the Close all tabs confirmation dialog in Tab Manager -->
+  <string name="tab_manager_close_all_tabs_dialog_title">Bütün vərəqlər bağlansın?</string>
+  <!-- Text shown in the body of the Close all tabs confirmation dialog in Tab Manager -->
+  <string name="tab_manager_close_all_tabs_dialog_body">Bu, bütün açıq vərəqləri bağlayacaq.</string>
+  <!-- Text shown on the confirm button in the Close all tabs confirmation dialog -->
+  <string name="tab_manager_close_all_tabs_dialog_confirm">Vərəqləri qapat</string>
+  <!-- Text shown on the cancel button in the Close all tabs confirmation dialog -->
+  <string name="tab_manager_close_all_tabs_dialog_cancel">Ləğv et</string>
+  <!-- Content description (not visible, for screen readers etc.): Bookmarks selected tabs. -->
+  <string name="tab_manager_multiselect_menu_item_bookmark_content_description">Seçilmiş vərəqləri əlfəcinlə</string>
+  <!-- Content description (not visible, for screen readers etc.): Closes selected tabs. -->
+  <string name="tab_manager_multiselect_menu_item_close_content_description">Seçilmiş vərəqləri qapat</string>
+  <!-- Text shown in the multiselect menu for sharing selected tabs. -->
+  <string name="tab_manager_multiselect_menu_item_share">Paylaş</string>
+  <!-- Text shown in the multiselect menu for adding selected tabs to collections. -->
+  <string name="tab_manager_multiselect_menu_item_add_to_collection">Kolleksiyaya əlavə et</string>
+  <!-- Text shown in the multiselect menu for adding selected tabs to a tab group. -->
+  <string name="tab_manager_multiselect_menu_item_add_to_tab_group">Qrupa əlavə et</string>
+  <!-- Content description for tabs tray multiselect menu -->
+  <string name="tab_tray_multiselect_menu_content_description">Seçilmiş vərəqlər menyusu</string>
+  <!-- Title text displayed for a homepage tab in the tabs tray. -->
+  <string name="tab_tray_homepage_tab">Ana səhifə</string>
+  <!-- Content description (not visible, for screen readers etc.): Removes tab from collection button. Removes the selected tab from collection when pressed -->
+  <string name="remove_tab_from_collection">Vərəqi kolleksiyadan çıxar</string>
+  <!-- Text for button to enter multiselect mode in tabs tray -->
+  <string name="tabs_tray_select_tabs">Vərəqləri seç</string>
+  <!-- Text for tab manager search page when there are no results. -->
+  <string name="tab_manager_no_search_results">Uyğun nəticə tapılmadı.</string>
+  <!-- Additional text for tab manager search page when there are no results. -->
+  <string name="tab_manager_no_search_results_additional_text">Başqa cür axtarın!</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button. Closes the current session when pressed -->
   <string name="close_tab">Vərəqi qapat</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab <title> button. %s is the tab title -->
   <string name="close_tab_title">%s vərəqini qapat</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Açıq vərəqlər menyusunu aç</string>
+  <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
+  <string name="tab_manager_search_bar_back_content_description">Vərəq idarəçisinə qayıt</string>
+  <!-- Open tabs menu item to save tabs to collection -->
+  <string name="tabs_menu_save_to_collection1">Vərəqləri kolleksiyada saxla</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Kolleksiyanı sil</string>
   <!-- Text for the menu button to rename a collection -->
   <string name="collection_rename">Kolleksiyanın adını dəyişdir</string>
   <!-- Text for the button to open tabs of the selected collection -->
   <string name="collection_open_tabs">Vərəqləri aç</string>
+  <!-- Hint for adding name of a collection -->
+  <string name="collection_name_hint">Kolleksiya adı</string>
   <!-- Text for the menu button to remove a top site -->
   <string name="remove_top_site">Sil</string>
+  <!-- Text for the menu button to delete a top site from history -->
+  <string name="delete_from_history">Tarixçədən sil</string>
+  <!-- Postfix for private WebApp titles. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="pwa_site_controls_title_private">%1$s (Məxfi rejim)</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button to open the Tab Search feature to search through tabs. -->
+  <string name="tab_manager_open_tab_search">Vərəq axtarışını aç</string>
+  <!-- Title for introducing tab groups via an onboarding card shown in the tab manager. -->
+  <string name="tab_group_onboarding_item_title">Vərəq qrupu yarat</string>
+  <!-- Description for tab groups onboarding shown in the tab manager when in grid view. -->
+  <string name="tab_group_onboarding_grid_item_description">Vərəqləri qruplaşdırmaq üçün birini digərinin üzərinə sürükləyin.</string>
+  <!-- Description for tab groups onboarding shown in the tab manager when in list view. -->
+  <string name="tab_group_onboarding_list_item_description">Qrup yaratmaq üçün bir neçə vərəq seçin.</string>
   <!-- Text for the button to clear all history -->
   <string name="history_delete_all">Tərixçəni sil</string>
   <!-- Context description text for the button to delete a single history item -->

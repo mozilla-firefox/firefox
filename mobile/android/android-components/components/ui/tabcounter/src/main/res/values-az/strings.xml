@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!--
+    Message announced to the user when tab tray is selected
+    The %1$s will be replaced by the number of opened tabs
+  -->
+  <string name="mozac_tab_counter_open_tab_tray">Açıq vərəq sayı: %1$s. Vərəqi dəyişdirmək üçün toxunun.</string>
+  <!--
+    Message announced to the user when tab tray is selected used by a11y services
+    The %1$s will be replaced by the number of opened tabs
+  -->
+  <string name="mozac_open_tab_counter_tab_tray">Məxfi olmayan %1$s açıq vərəq. Vərəqi dəyişdirmək üçün toxunun.</string>
+  <!--
+    Message announced to the user when the tab counter is selected in private browsing mode.
+    Used by a11y services. The %1$s will be replaced by the number of opened tabs
+  -->
+  <string name="mozac_tab_counter_private">%1$s açıq məxfi vərəq. Vərəqi dəyişdirmək üçün toxunun.</string>
+  <!-- Browser menu button that creates a new tab -->
+  <string name="mozac_browser_menu_new_tab">Yeni vərəq</string>
+  <!-- Browser menu button that creates a private tab -->
+  <string name="mozac_browser_menu_new_private_tab">Yeni məxfi vərəq</string>
+  <!-- Browser menu button to close tab. Closes the current session when pressed. -->
+  <string name="mozac_close_tab">Vərəqi qapat</string>
+  <!-- Menu option to duplicate the current tab -->
+  <string name="mozac_ui_tabcounter_duplicate_tab">Vərəqi çoxalt</string>
+  <!-- Content description of the tab counter toolbar button -->
+  <string name="mozac_tab_counter_content_description">Vərəq sayğacı alət qutusu düyməsi.</string>
+</resources>

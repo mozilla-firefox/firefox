@@ -7,8 +7,18 @@
 -->
 
 <resources>
+  <!--
+    TextField Design System Component
+
+    The default content description (not visible, for screen readers etc.): Eye trailing icon button in TextField used to show hidden password text.
+  -->
+  <string name="text_field_eye_trailing_icon_default_content_description">ڈکوک متن اے نشان ایتبو</string>
+  <!-- The default content description (not visible, for screen readers etc.): Cross trailing icon button in TextField used to clear input. -->
+  <string name="text_field_cross_trailing_icon_default_content_description">متن صفا کبو</string>
   <!-- Announcement made by the screen reader when the progress bar is shown and a page is loading -->
   <string name="mozac_compose_base_progress_loading">لوڈ مننگ اے</string>
   <!-- Content description for the close icon of a Banner -->
   <string name="mozac_compose_base_close_button_content_description">بند</string>
+  <!-- Label for the button that dismisses the LinkText links dialog without selecting a link. -->
+  <string name="mozac_compose_base_link_text_dismiss">خلاس</string>
 </resources>

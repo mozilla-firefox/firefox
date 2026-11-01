@@ -309,8 +309,6 @@
   <string name="browser_menu_default_banner_title">Bëjeni %1$s-in parazgjedhjen tuaj</string>
   <!-- Label text within the set as default banner -->
   <string name="browser_menu_default_banner_subtitle_2">I shpejtë, privat dhe krijuar për ju.</string>
-  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the set as default banner in the menu -->
-  <string name="browser_menu_default_banner_dismiss_promotion">Hidhe tej promovimin</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">Më tepër hollësi</string>
   <!--
@@ -4150,9 +4148,9 @@
   <string name="lens_camera_title_qr">Kod QR</string>
   <!-- Content description for the QR scanner half of the camera mode toggle -->
   <string name="lens_camera_mode_qr">Skanues QR-esh</string>
-  <!-- Button shown under an image picked from the gallery while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Anuloje</string>
-  <!-- Action in the snackbar shown when an image picked from the gallery could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Riprovoni</string>
   <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->
   <string name="lens_opt_out_try_it_now_button">Provojeni tani</string>
@@ -4197,6 +4195,6 @@
   <string name="pdf_tools_signature_clear_button">Spastroje</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Shtoje</string>
-  <!-- Content description for media player displayed in Reader Mode when the Listen to Page (Read Aloud) feature is selected -->
+  <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Lojtës Mediash</string>
 </resources>
