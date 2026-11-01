@@ -38,6 +38,8 @@ permalink: /changelog/
     * Download filenames from `onExternalResponse` are now validated by Gecko with the same rules as desktop, so `GeckoEngineSession` no longer applies the `String.sanitizeFileName` helper from **support-ktx** to them. [Bug 1822968](https://bugzilla.mozilla.org/show_bug.cgi?id=1822968)
 * **compose-base**
     * 🆕 Added `Slider`, an Acorn implementation of the M3 Slider component for Jetpack Compose. [Bug 2067129](https://bugzilla.mozilla.org/show_bug.cgi?id=2067129)
+* **browser-state**
+    * 🆕 Added `BrowserState.pendingExtensionUpdates`, extension updates waiting for the user to grant new permissions, with actions to update and remove them and the `pendingExtensionUpdatesNeedingAttention` selector. [Bug 2067732](https://bugzilla.mozilla.org/show_bug.cgi?id=2067732)
 
 # 159.0
 * **feature-readerview**

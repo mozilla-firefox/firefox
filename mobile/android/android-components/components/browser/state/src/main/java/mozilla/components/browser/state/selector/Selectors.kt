@@ -10,6 +10,7 @@ import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.CustomTabSessionState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabSessionState
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.support.base.log.logger.Logger
 
@@ -171,6 +172,10 @@ val BrowserState.normalTabs: List<TabSessionState>
 /** List of all tabs (normal, private and CustomTabs). */
 val BrowserState.allTabs: List<SessionState>
     get() = tabs + customTabs
+
+/** Pending updates of installed extensions that are enabled. */
+val BrowserState.pendingExtensionUpdatesNeedingAttention: Map<String, PendingExtensionUpdate>
+    get() = pendingExtensionUpdates.filterKeys { extensionId -> extensions[extensionId]?.enabled == true }
 
 /**
  * Returns true if the two urls are the same ignoring the fragment identifier - the string after the # in a url (eg,

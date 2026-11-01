@@ -269,6 +269,7 @@ object WebExtensionSupport {
                     // when the add-on has already been installed, we don't need to show anything
                     // either.
                     val shouldDispatchAction = !installedExtensions.containsKey(extension.id) && !extension.isBuiltIn()
+                    cancelPendingExtensionUpdate(store, extension.id)
                     registerInstalledExtension(store, extension)
                     if (shouldDispatchAction) {
                         store.dispatch(
@@ -296,6 +297,7 @@ object WebExtensionSupport {
 
                 override fun onUninstalled(extension: WebExtension) {
                     installedExtensions.remove(extension.id)
+                    cancelPendingExtensionUpdate(store, extension.id)
                     store.dispatch(WebExtensionAction.UninstallWebExtensionAction(extension.id))
                 }
 
@@ -478,6 +480,7 @@ object WebExtensionSupport {
     /** Marks the provided [updatedExtension] as updated in the [store]. */
     fun markExtensionAsUpdated(store: BrowserStore, updatedExtension: WebExtension) {
         installedExtensions[updatedExtension.id] = updatedExtension
+        cancelPendingExtensionUpdate(store, updatedExtension.id)
         store.dispatch(WebExtensionAction.UpdateWebExtensionAction(updatedExtension.toState()))
 
         // Register action handler for all existing engine sessions on the new extension
@@ -486,6 +489,12 @@ object WebExtensionSupport {
                 registerSessionHandlers(updatedExtension, store, session, tab.id)
             }
         }
+    }
+
+    private fun cancelPendingExtensionUpdate(store: BrowserStore, extensionId: String) {
+        val pendingUpdate = store.state.pendingExtensionUpdates[extensionId] ?: return
+        store.dispatch(WebExtensionAction.RemovePendingExtensionUpdateAction(extensionId))
+        pendingUpdate.complete(granted = false)
     }
 
     /**

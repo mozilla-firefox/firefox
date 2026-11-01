@@ -109,6 +109,15 @@ internal object WebExtensionReducer {
             is WebExtensionAction.ConsumePromptRequestWebExtensionAction -> {
                 state.copy(webExtensionPromptRequest = null)
             }
+            is WebExtensionAction.UpdatePendingExtensionUpdateAction -> {
+                state.copy(
+                    pendingExtensionUpdates =
+                        state.pendingExtensionUpdates + (action.pendingUpdate.extensionId to action.pendingUpdate)
+                )
+            }
+            is WebExtensionAction.RemovePendingExtensionUpdateAction -> {
+                state.copy(pendingExtensionUpdates = state.pendingExtensionUpdates - action.extensionId)
+            }
         }
     }
 

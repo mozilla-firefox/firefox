@@ -9,8 +9,10 @@ import mozilla.components.browser.state.action.CustomTabListAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.TabSessionState
+import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.state.createCustomTab
 import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.support.test.mock
@@ -381,4 +383,29 @@ class SelectorsKtTest {
             state.findNormalOrPrivateTabByUrlIgnoringFragment("https://getpocket.com/#/private#now", private = true)
         )
     }
+
+    @Test
+    fun `pending extension updates of disabled or unknown extensions do not need attention`() {
+        val updates = listOf("enabled", "disabled", "unknown").associateWith { pendingExtensionUpdate(it) }
+        val state =
+            BrowserState(
+                extensions =
+                    mapOf(
+                        "enabled" to WebExtensionState("enabled", enabled = true),
+                        "disabled" to WebExtensionState("disabled", enabled = false),
+                    ),
+                pendingExtensionUpdates = updates,
+            )
+
+        assertEquals(setOf("enabled"), state.pendingExtensionUpdatesNeedingAttention.keys)
+    }
+
+    private fun pendingExtensionUpdate(extensionId: String) =
+        PendingExtensionUpdate(
+            extensionId = extensionId,
+            permissions = listOf("privacy"),
+            origins = emptyList(),
+            dataCollectionPermissions = emptyList(),
+            onPermissionsGranted = {},
+        )
 }

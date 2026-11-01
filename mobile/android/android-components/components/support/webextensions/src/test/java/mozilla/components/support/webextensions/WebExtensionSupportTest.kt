@@ -21,6 +21,7 @@ import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.state.createCustomTab
 import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
@@ -1252,6 +1253,73 @@ class WebExtensionSupportTest {
 
         assertNotNull(store.state.findTab("4"))
     }
+
+    @Test
+    fun `WHEN an extension is updated THEN an update of it still waiting for the user is cancelled`() {
+        var answer: Boolean? = null
+        val pendingUpdate = pendingExtensionUpdate("extensionId") { answer = it }
+        val store = BrowserStore(BrowserState(pendingExtensionUpdates = mapOf("extensionId" to pendingUpdate)))
+
+        val ext: WebExtension = mock()
+        whenever(ext.id).thenReturn("extensionId")
+        whenever(ext.url).thenReturn("url")
+
+        WebExtensionSupport.markExtensionAsUpdated(store, ext)
+
+        assertEquals(false, answer)
+        assertTrue(store.state.pendingExtensionUpdates.isEmpty())
+    }
+
+    @Test
+    fun `WHEN an extension is uninstalled THEN an update of it still waiting for the user is cancelled`() {
+        var answer: Boolean? = null
+        val pendingUpdate = pendingExtensionUpdate("extensionId") { answer = it }
+        val store = BrowserStore(BrowserState(pendingExtensionUpdates = mapOf("extensionId" to pendingUpdate)))
+
+        val engine: Engine = mock()
+        val ext: WebExtension = mock()
+        whenever(ext.id).thenReturn("extensionId")
+        whenever(ext.url).thenReturn("url")
+
+        val delegateCaptor = argumentCaptor<WebExtensionDelegate>()
+        WebExtensionSupport.initialize(engine, store)
+        verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
+
+        delegateCaptor.value.onUninstalled(ext)
+
+        assertEquals(false, answer)
+        assertTrue(store.state.pendingExtensionUpdates.isEmpty())
+    }
+
+    @Test
+    fun `WHEN an extension is installed THEN an update of it still waiting for the user is cancelled`() {
+        var answer: Boolean? = null
+        val pendingUpdate = pendingExtensionUpdate("extensionId") { answer = it }
+        val store = BrowserStore(BrowserState(pendingExtensionUpdates = mapOf("extensionId" to pendingUpdate)))
+
+        val engine: Engine = mock()
+        val ext: WebExtension = mock()
+        whenever(ext.id).thenReturn("extensionId")
+        whenever(ext.url).thenReturn("url")
+
+        val delegateCaptor = argumentCaptor<WebExtensionDelegate>()
+        WebExtensionSupport.initialize(engine, store)
+        verify(engine).registerWebExtensionDelegate(delegateCaptor.capture())
+
+        delegateCaptor.value.onInstalled(ext)
+
+        assertEquals(false, answer)
+        assertTrue(store.state.pendingExtensionUpdates.isEmpty())
+    }
+
+    private fun pendingExtensionUpdate(extensionId: String, onPermissionsGranted: (Boolean) -> Unit) =
+        PendingExtensionUpdate(
+            extensionId = extensionId,
+            permissions = listOf("privacy"),
+            origins = emptyList(),
+            dataCollectionPermissions = emptyList(),
+            onPermissionsGranted = onPermissionsGranted,
+        )
 
     @Test
     fun `marks extensions as updated`() {

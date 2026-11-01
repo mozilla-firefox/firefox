@@ -9,6 +9,7 @@ import mozilla.components.browser.state.reducer.BrowserStateReducer
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.WebExtensionState
 import mozilla.components.browser.state.state.createTab
+import mozilla.components.browser.state.state.extension.PendingExtensionUpdate
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.webextension.WebExtensionBrowserAction
@@ -492,4 +493,40 @@ class WebExtensionActionTest {
         state = BrowserStateReducer.reduce(state, WebExtensionAction.ConsumePromptRequestWebExtensionAction)
         assertNull(state.webExtensionPromptRequest)
     }
+
+    @Test
+    fun `WHEN UpdatePendingExtensionUpdateAction is dispatched THEN the update replaces the one pending for the extension`() {
+        var state = BrowserState()
+        assertTrue(state.pendingExtensionUpdates.isEmpty())
+
+        val firstUpdate = pendingExtensionUpdate()
+        state = BrowserStateReducer.reduce(state, WebExtensionAction.UpdatePendingExtensionUpdateAction(firstUpdate))
+        assertEquals(firstUpdate, state.pendingExtensionUpdates["id"])
+
+        val secondUpdate = pendingExtensionUpdate()
+        state = BrowserStateReducer.reduce(state, WebExtensionAction.UpdatePendingExtensionUpdateAction(secondUpdate))
+        assertEquals(1, state.pendingExtensionUpdates.size)
+        assertEquals(secondUpdate, state.pendingExtensionUpdates["id"])
+    }
+
+    @Test
+    fun `WHEN RemovePendingExtensionUpdateAction is dispatched THEN the pending update is removed from the store`() {
+        val pendingUpdate = pendingExtensionUpdate()
+        var state = BrowserState(pendingExtensionUpdates = mapOf("id" to pendingUpdate))
+
+        state = BrowserStateReducer.reduce(state, WebExtensionAction.RemovePendingExtensionUpdateAction("other"))
+        assertEquals(pendingUpdate, state.pendingExtensionUpdates["id"])
+
+        state = BrowserStateReducer.reduce(state, WebExtensionAction.RemovePendingExtensionUpdateAction("id"))
+        assertTrue(state.pendingExtensionUpdates.isEmpty())
+    }
+
+    private fun pendingExtensionUpdate() =
+        PendingExtensionUpdate(
+            extensionId = "id",
+            permissions = listOf("privacy"),
+            origins = emptyList(),
+            dataCollectionPermissions = emptyList(),
+            onPermissionsGranted = {},
+        )
 }
