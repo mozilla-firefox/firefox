@@ -17,6 +17,7 @@
 #include "mozilla/Base64.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/EventDispatcher.h"
+#include "mozilla/MappedDeclarationsBuilder.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/PresShell.h"
@@ -599,6 +600,10 @@ void HTMLCanvasElement::AfterUpdateContext() {
 }
 
 CSSIntSize HTMLCanvasElement::GetWidthHeight() {
+  if (mOffscreenDisplay) {
+    return mOffscreenDisplay->GetPlaceholderSize();
+  }
+
   CSSIntSize size = kFallbackIntrinsicSizeInPixels;
   const nsAttrValue* value;
 
@@ -754,7 +759,10 @@ nsChangeHint HTMLCanvasElement::GetAttributeChangeHint(
   nsChangeHint retval =
       nsGenericHTMLElement::GetAttributeChangeHint(aAttribute, aModType);
   if (aAttribute == nsGkAtoms::width || aAttribute == nsGkAtoms::height) {
-    retval |= NS_STYLE_HINT_REFLOW;
+    // With OffscreenCanvas, use the placeholder size, not the attributes.
+    if (!mOffscreenDisplay) {
+      retval |= NS_STYLE_HINT_REFLOW;
+    }
   } else if (aAttribute == nsGkAtoms::moz_opaque) {
     retval |= NS_STYLE_HINT_VISUAL;
   }
@@ -763,7 +771,16 @@ nsChangeHint HTMLCanvasElement::GetAttributeChangeHint(
 
 void HTMLCanvasElement::MapAttributesIntoRule(
     MappedDeclarationsBuilder& aBuilder) {
-  MapAspectRatioInto(aBuilder);
+  const auto* canvas = FromNode(aBuilder.Element());
+  MOZ_ASSERT(canvas, "mapping the attributes of a different element?");
+  // Unlike <img>, <canvas> maps width and height only to the aspect ratio,
+  // not to CSS sizes.
+  if (canvas->mOffscreenDisplay) {
+    const CSSIntSize size = canvas->mOffscreenDisplay->GetPlaceholderSize();
+    aBuilder.SetAspectRatio(size.width, size.height);
+  } else {
+    MapAspectRatioInto(aBuilder);
+  }
   MapCommonAttributesInto(aBuilder);
 }
 
@@ -1311,15 +1328,38 @@ void HTMLCanvasElement::NodeInfoChanged(Document* aOldDoc) {
   NotifyOwnerDocumentActivityChanged();
 }
 
-void HTMLCanvasElement::InvalidateCanvasPlaceholder(uint32_t aWidth,
-                                                    uint32_t aHeight) {
+void HTMLCanvasElement::InvalidateCanvasPlaceholder(bool aHasSizeChanged) {
+  const CSSIntSize size = mOffscreenDisplay->GetPlaceholderSize();
+
+  // Mirror the size of the OffscreenCanvas bitmap into the content attributes,
+  // so that content reading canvas.width and canvas.height sees it.
   ErrorResult rv;
-  SetUnsignedIntAttr(nsGkAtoms::width, aWidth, kFallbackIntrinsicWidthInPixels,
-                     rv);
+  SetUnsignedIntAttr(nsGkAtoms::width, size.width,
+                     kFallbackIntrinsicWidthInPixels, rv);
   MOZ_ASSERT(!rv.Failed());
-  SetUnsignedIntAttr(nsGkAtoms::height, aHeight,
+  SetUnsignedIntAttr(nsGkAtoms::height, size.height,
                      kFallbackIntrinsicHeightInPixels, rv);
   MOZ_ASSERT(!rv.Failed());
+
+  if (!aHasSizeChanged) {
+    return;
+  }
+
+  // Our mapped aspect ratio comes from the placeholder size as well, so the
+  // declaration block has to be rebuilt whether or not the writes above
+  // changed an attribute.
+  if (!IsPendingMappedAttributeEvaluation() &&
+      mAttrs.MarkAsPendingPresAttributeEvaluation()) {
+    if (Document* doc = GetComposedDoc()) {
+      doc->ScheduleForPresAttrEvaluation(this);
+    }
+  }
+
+  if (nsIFrame* frame = GetPrimaryFrame()) {
+    frame->PresShell()->FrameNeedsReflow(
+        frame, IntrinsicDirty::FrameAndAncestors, NS_FRAME_HAS_DIRTY_CHILDREN,
+        ReflowRootHandling::PositionOrSizeChange);
+  }
 }
 
 static bool InvalidateCanvasData(nsIFrame* aFrame, uint32_t aKey) {
