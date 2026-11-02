@@ -361,8 +361,6 @@ class nsImageLoadingContent : public nsIImageLoadingContent {
    */
   void CancelPendingEvent();
 
-  RefPtr<mozilla::AsyncEventDispatcher> mPendingEvent;
-
  protected:
   /**
    * UpdateImageState recomputes the current state of this image loading
@@ -498,61 +496,92 @@ class nsImageLoadingContent : public nsIImageLoadingContent {
 
   virtual void LoadSelectedImage(bool aAlwaysLoad, bool aStopLazyLoading) = 0;
 
-  RefPtr<ImageLoadTask> mPendingImageLoadTask;
-
-  RefPtr<imgRequestProxy> mCurrentRequest;
-  RefPtr<imgRequestProxy> mPendingRequest;
-
- private:
   /**
-   * Typically we will have only one observer (our frame in the screen
-   * prescontext), so we want to only make space for one and to
-   * heap-allocate anything past that (saves memory and malloc churn
-   * in the common case).  The storage is a linked list, we just
-   * happen to actually hold the first observer instead of a pointer
-   * to it.
+   * Lazily allocated data that is needed once an image load is initiated.
    */
-  ImageObserver mObserverList;
+  struct ImageLoadData {
+    RefPtr<mozilla::AsyncEventDispatcher> mPendingEvent;
 
-  /**
-   * Typically we will have no scripted observers, as this is only used by
-   * chrome, legacy extensions, and some mochitests. An empty array reserves
-   * minimal memory.
-   */
-  nsTArray<RefPtr<ScriptedImageObserver>> mScriptedObservers;
+    RefPtr<ImageLoadTask> mPendingImageLoadTask;
 
-  // If the image was blocked or if there was an error loading, it's nice to
-  // still keep track of what the URI was despite not having an imgIRequest.
-  // We only maintain this in those situations (in the common case, this is
-  // always null).
-  nsCOMPtr<nsIURI> mCurrentURI;
+    RefPtr<imgRequestProxy> mCurrentRequest;
+    RefPtr<imgRequestProxy> mPendingRequest;
 
-  mozilla::TimeStamp mMostRecentRequestChange;
+    /**
+     * Typically we will have only one observer (our frame in the screen
+     * prescontext), so we want to only make space for one and to
+     * heap-allocate anything past that (saves memory and malloc churn
+     * in the common case).  The storage is a linked list, we just
+     * happen to actually hold the first observer instead of a pointer
+     * to it.
+     */
+    ImageObserver mObserverList{nullptr};
 
-  /**
-   * Promises created by QueueDecodeAsync that are still waiting to be
-   * fulfilled by the image being fully decoded.
-   */
-  nsTArray<RefPtr<mozilla::dom::Promise>> mDecodePromises;
+    /**
+     * Typically we will have no scripted observers, as this is only used by
+     * chrome, legacy extensions, and some mochitests. An empty array reserves
+     * minimal memory.
+     */
+    nsTArray<RefPtr<ScriptedImageObserver>> mScriptedObservers;
 
-  /**
-   * Total number of outstanding decode promises, including those stored in
-   * mDecodePromises and those embedded in runnables waiting to be enqueued.
-   * This is used to determine whether we need to register as an observer for
-   * document activity notifications.
-   */
-  size_t mOutstandingDecodePromises = 0;
+    // If the image was blocked or if there was an error loading, it's nice to
+    // still keep track of what the URI was despite not having an imgIRequest.
+    // We only maintain this in those situations (in the common case, this is
+    // always null).
+    nsCOMPtr<nsIURI> mCurrentURI;
 
-  /**
-   * An incrementing counter representing the current request generation;
-   * Each time mCurrentRequest is modified with a different URI, this will
-   * be incremented. Each QueueDecodeAsync call will cache the generation
-   * of the current request so that when it is processed, it knows if it
-   * should have rejected because the request changed.
-   */
-  uint32_t mRequestGeneration = 0;
+    mozilla::TimeStamp mMostRecentRequestChange =
+        mozilla::TimeStamp::ProcessCreation();
 
- protected:
+    /**
+     * Promises created by QueueDecodeAsync that are still waiting to be
+     * fulfilled by the image being fully decoded.
+     */
+    nsTArray<RefPtr<mozilla::dom::Promise>> mDecodePromises;
+
+    /**
+     * Total number of outstanding decode promises, including those stored in
+     * mDecodePromises and those embedded in runnables waiting to be enqueued.
+     * This is used to determine whether we need to register as an observer for
+     * document activity notifications.
+     */
+    size_t mOutstandingDecodePromises = 0;
+
+    /**
+     * An incrementing counter representing the current request generation;
+     * Each time mCurrentRequest is modified with a different URI, this will
+     * be incremented. Each QueueDecodeAsync call will cache the generation
+     * of the current request so that when it is processed, it knows if it
+     * should have rejected because the request changed.
+     */
+    uint32_t mRequestGeneration = 0;
+
+    // Flags to indicate whether each of the current and pending requests are
+    // registered with the refresh driver.
+    bool mCurrentRequestRegistered = false;
+    bool mPendingRequestRegistered = false;
+
+    uint8_t mCurrentRequestFlags = 0;
+    uint8_t mPendingRequestFlags = 0;
+  };
+
+  void CreateImageLoadData();
+
+  ImageLoadData& EnsureImageLoadData() {
+    if (!mImageLoadData) {
+      CreateImageLoadData();
+    }
+    return *mImageLoadData;
+  }
+
+  // For paths that can only run once a load was initiated.
+  ImageLoadData& RequireImageLoadData() {
+    MOZ_DIAGNOSTIC_ASSERT(mImageLoadData);
+    return *mImageLoadData;
+  }
+
+  mozilla::UniquePtr<ImageLoadData> mImageLoadData;
+
   bool mLoadingEnabled : 1 = true;
   /**
    * Flag to indicate whether the channel should be mark as urgent-start.
@@ -576,11 +605,6 @@ class nsImageLoadingContent : public nsIImageLoadingContent {
   bool mObservingResize : 1 = false;
 
  private:
-  // Flags to indicate whether each of the current and pending requests are
-  // registered with the refresh driver.
-  bool mCurrentRequestRegistered = false;
-  bool mPendingRequestRegistered = false;
-
   enum {
     // Set if the request is currently tracked with the document.
     REQUEST_IS_TRACKED = 1 << 0,
@@ -588,8 +612,6 @@ class nsImageLoadingContent : public nsIImageLoadingContent {
     // <picture>
     REQUEST_IS_IMAGESET = 1 << 1,
   };
-  uint8_t mCurrentRequestFlags = 0;
-  uint8_t mPendingRequestFlags = 0;
 };
 
 #endif  // nsImageLoadingContent_h_
