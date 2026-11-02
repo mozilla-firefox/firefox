@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-10-22_08-36-41_UTC
-// COMMIT: 8437e5262f13305f94087abe699b4fe2be1d1de8
+// VERSION: 2026-10-31_14-17-28_UTC
+// COMMIT: 73f8cc701c084fe07d888ec552b2f0b53281a674
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -6812,7 +6812,7 @@ org.zw
 
 // newGTLDs
 
-// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-10-16T18:37:24Z
+// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-10-30T19:51:02Z
 // This list is auto-generated, don't edit it manually.
 // aaa : American Automobile Association, Inc.
 // https://www.iana.org/domains/root/db/aaa.html
@@ -8497,10 +8497,6 @@ healthcare
 // help : Innovation service Limited
 // https://www.iana.org/domains/root/db/help.html
 help
-
-// helsinki : City of Helsinki
-// https://www.iana.org/domains/root/db/helsinki.html
-helsinki
 
 // here : Charleston Road Registry Inc.
 // https://www.iana.org/domains/root/db/here.html
