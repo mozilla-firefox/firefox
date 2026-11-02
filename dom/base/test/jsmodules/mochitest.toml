@@ -17,7 +17,6 @@ support-files = [
 ["test_nested_modules.html"]
 
 ["test_scriptDisabled_modules.html"]
-scheme = "https"
 support-files = [
   "!/dom/base/test/file_wasm_offthread_module.sjs",
   "exports-fun.wasm",
