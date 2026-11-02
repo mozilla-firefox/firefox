@@ -54,6 +54,7 @@ const UIButton = createFactory(
 class Worker extends PureComponent {
   static get propTypes() {
     return {
+      isDebugEnabled: PropTypes.bool.isRequired,
       worker: PropTypes.shape(Types.worker).isRequired,
       // this prop get automatically injected via `connect`
       dispatch: PropTypes.func.isRequired,
@@ -64,6 +65,7 @@ class Worker extends PureComponent {
     super(props);
 
     this.debug = this.debug.bind(this);
+    this.viewSource = this.viewSource.bind(this);
     this.start = this.start.bind(this);
   }
 
@@ -74,6 +76,17 @@ class Worker extends PureComponent {
     }
 
     services.openWorkerInDebugger(this.props.worker.workerDescriptorFront);
+  }
+
+  viewSource() {
+    if (!this.isRunning()) {
+      console.log(
+        "Service workers cannot be inspected if they are not running"
+      );
+      return;
+    }
+
+    services.viewWorkerSource(this.props.worker.workerDescriptorFront);
   }
 
   start() {
@@ -130,6 +143,8 @@ class Worker extends PureComponent {
   renderInspectLink(url) {
     // avoid rendering the inspect link if sw is not running
     const isDisabled = !this.isRunning();
+    // view source instead of debugging when debugging sw is not available
+    const callbackFn = this.props.isDebugEnabled ? this.debug : this.viewSource;
 
     const sourceUrl = span(
       { className: "js-source-url" },
@@ -140,7 +155,7 @@ class Worker extends PureComponent {
       ? sourceUrl
       : a(
           {
-            onClick: this.debug,
+            onClick: callbackFn,
             title: url,
             href: "#",
             className: "js-inspect-link",

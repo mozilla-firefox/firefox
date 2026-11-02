@@ -116,27 +116,13 @@ class TargetCommand extends EventEmitter {
 
     this.legacyImplementation = {};
 
-    this.listenForWorkers = false;
+    // Public flag to allow listening for workers even if the fission pref is off
+    // This allows listening for workers in the content toolbox outside of fission contexts
+    // For now, this is only toggled by tests.
+    this.listenForWorkers =
+      this.rootFront.traits.workerConsoleApiMessagesDispatchedToMainThread ===
+      false;
     this.listenForServiceWorkers = false;
-
-    // For all toolboxes possibly debugging nested workers, enable listening for them.
-    // (i.e. all toolboxes but (service/shared) workers spawned from about:debugging)
-    if (
-      descriptorFront.isTabDescriptor ||
-      descriptorFront.isWebExtensionDescriptor ||
-      descriptorFront.isBrowserProcessDescriptor
-    ) {
-      // We are listening for worker targets only when dom.worker.console.dispatch_events_to_main_thread=false
-      // on the backend and worker console messages aren't dispatched to its related main thread.
-      // Otherwise worker message would be duplicated between the worker target and its related window global target.
-      this.listenForWorkers =
-        this.rootFront.traits.workerConsoleApiMessagesDispatchedToMainThread ===
-        false;
-
-      // For now listening to service workers is only enabled for local tab debugging
-      this.listenForServiceWorkers = descriptorFront.isLocalTab;
-    }
-
     this.listenForContentScripts = false;
 
     // Tells us if we received the first top level target.

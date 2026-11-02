@@ -393,6 +393,10 @@ about-debugging-worker-push-service =
 about-debugging-worker-origin =
   .label = Origin
 
+# Displayed as title of the inspect button when service worker debugging is disabled.
+about-debugging-worker-inspect-action-disabled =
+  .title = Service Worker inspection is currently disabled for multiprocess { -brand-shorter-name }
+
 # Displayed as title of the inspect button for zombie tabs (e.g. tabs loaded via a session restore).
 about-debugging-zombie-tab-inspect-action-disabled =
   .title = Tab is not fully loaded and cannot be inspected
