@@ -8,7 +8,7 @@ add_task(async function test_about_glean_redesign_views_hidden_behind_pref() {
     ok(!browser.isRemoteBrowser, "Browser should not be remote.");
     await SpecialPowers.spawn(browser, [], async function () {
       let metrics_table_category_button = content.document.getElementById(
-        "category-metrics-table"
+        "category-metrics-table-button"
       );
       Assert.notEqual(
         metrics_table_category_button,
@@ -31,7 +31,7 @@ add_task(async function test_about_glean_metrics_table_loads_dynamically() {
       const { TestUtils } = ChromeUtils.importESModule(
         "resource://testing-common/TestUtils.sys.mjs"
       );
-      content.document.getElementById("category-metrics-table").click();
+      content.document.getElementById("category-metrics-table-button").click();
 
       let tableContainer, tableBody;
       const fetchTableBody = () => {
@@ -164,7 +164,7 @@ add_task(async function test_about_glean_histogram() {
       const { TestUtils } = ChromeUtils.importESModule(
         "resource://testing-common/TestUtils.sys.mjs"
       );
-      content.document.getElementById("category-metrics-table").click();
+      content.document.getElementById("category-metrics-table-button").click();
 
       let tableBody;
       const fetchTableBody = () => {
@@ -265,7 +265,7 @@ add_task(async function test_about_glean_event_timeline() {
       const { TestUtils } = ChromeUtils.importESModule(
         "resource://testing-common/TestUtils.sys.mjs"
       );
-      content.document.getElementById("category-metrics-table").click();
+      content.document.getElementById("category-metrics-table-button").click();
 
       let tableBody;
       const fetchTableBody = () => {
@@ -458,7 +458,7 @@ add_task(async function test_about_glean_metrics_table_settings() {
         "resource://testing-common/Assert.sys.mjs"
       );
 
-      content.document.getElementById("category-metrics-table").click();
+      content.document.getElementById("category-metrics-table-button").click();
 
       let tableBody;
       const fetchTableBody = () => {
@@ -547,7 +547,9 @@ add_task(
           "resource://testing-common/TestUtils.sys.mjs"
         );
 
-        content.document.getElementById("category-metrics-table").click();
+        content.document
+          .getElementById("category-metrics-table-button")
+          .click();
 
         let tableBody;
         const fetchTableBody = () => {

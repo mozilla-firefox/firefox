@@ -35,6 +35,14 @@ moz-toggle {
   flex: 1;
 }
 
+#about-glean,
+#manual-testing,
+#adhoc-testing,
+#profiler,
+#about-data {
+  width: var(--page-main-content-width);
+}
+
 #tag-pings:invalid + label > span {
   font-weight: var(--font-weight-semibold);
   text-decoration: underline;
@@ -75,6 +83,7 @@ moz-toggle {
   position: sticky;
   top: 0;
   background-color: var(--background-color-canvas);
+  text-align: start;
 }
 
 #metrics-table table td {
