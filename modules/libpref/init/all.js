@@ -3811,13 +3811,6 @@ pref("services.common.log.logger.tokenserverclient", "Debug");
   pref("services.sync.telemetry.submissionInterval", 43200); // 12 hours in seconds
   pref("services.sync.telemetry.maxPayloadCount", 500);
 
-  #ifdef EARLY_BETA_OR_EARLIER
-    // Enable the (fairly costly) client/server validation through early Beta, but
-    // not release candidates or Release.
-    pref("services.sync.engine.bookmarks.validation.enabled", true);
-    pref("services.sync.engine.passwords.validation.enabled", true);
-  #endif
-
   // We consider validation this frequently. After considering validation, even
   // if we don't end up validating, we won't try again unless this much time has passed.
   pref("services.sync.engine.bookmarks.validation.interval", 86400); // 24 hours in seconds
