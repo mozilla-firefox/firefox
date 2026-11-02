@@ -1462,6 +1462,7 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
         mTouchSwipeState.AssertCountConsistency();
 
         const bool touchSwipeEnabled =
+            mPiPType == PiPType::NoPiP &&
             StaticPrefs::widget_swipe_touchscreen_enabled();
         if (touchSwipeEnabled) {
           // Count touches before passing the input to APZ because APZ may
