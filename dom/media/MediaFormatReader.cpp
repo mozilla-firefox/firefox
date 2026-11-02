@@ -2654,7 +2654,7 @@ void MediaFormatReader::Update(TrackType aTrack) {
     // We failed to decode on Linux with HW decoder,
     // give it another try without HW decoder.
     if (decoder.mError.ref() == NS_ERROR_DOM_MEDIA_DECODE_ERR &&
-        !decoder.mHardwareDecodingDisabled &&
+        !decoder.mHardwareDecodingDisabled && decoder.mDecoder &&
         decoder.mDecoder->IsHardwareAccelerated(error)) {
       LOG("Error: {} decode error, disable HW acceleration",
           TrackTypeToStr(aTrack));
