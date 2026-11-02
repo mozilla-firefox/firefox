@@ -8,6 +8,7 @@
  */
 
 import { Log } from "resource://gre/modules/Log.sys.mjs";
+import { Weave } from "resource://services-sync/main.sys.mjs";
 
 import { CommonUtils } from "resource://services-common/utils.sys.mjs";
 import { Observers } from "resource://services-common/observers.sys.mjs";
@@ -21,6 +22,11 @@ export var DeclinedEngines = function (service) {
 
 DeclinedEngines.prototype = {
   updateDeclined(meta, engineManager = this.service.engineManager) {
+    if (Weave.perDeviceEngineChoices) {
+      this._log.debug("Per-device sync enabled; not reconciling declined.");
+      return false;
+    }
+
     let enabled = new Set(engineManager.getEnabled().map(e => e.name));
     let known = new Set(engineManager.getAll().map(e => e.name));
     let remoteDeclined = new Set(meta.payload.declined || []);

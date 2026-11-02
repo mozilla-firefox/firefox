@@ -26,6 +26,7 @@ import {
   WBORecord,
 } from "resource://services-sync/record.sys.mjs";
 import { Resource } from "resource://services-sync/resource.sys.mjs";
+import { Weave } from "resource://services-sync/main.sys.mjs";
 import {
   SerializableSet,
   Svc,
@@ -957,6 +958,11 @@ SyncEngine.prototype = {
       data == `services.sync.engine.${this.prefName}`
     ) {
       await this._tracker.onEngineEnabledChanged(this._enabled);
+      // Changes made while disabled may not have been tracked, and disabling
+      // an engine with per-device choices doesn't reset it.
+      if (this._enabled && Weave.perDeviceEngineChoices) {
+        await this.resetLastSync();
+      }
     }
   },
 

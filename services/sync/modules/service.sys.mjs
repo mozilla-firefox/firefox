@@ -537,6 +537,11 @@ Sync11Service.prototype = {
       this._log.info("Meta record is null, aborting engine state update.");
       return;
     }
+    if (Weave.perDeviceEngineChoices) {
+      // Show the choices the first sync will apply.
+      this.maybeUpdateEngineState(meta);
+      return;
+    }
     const declinedEngines = meta.payload.declined;
     const allEngines = this.engineManager.getAll().map(e => e.name);
     // We don't want our observer of the enabled prefs to treat the change as
@@ -548,6 +553,52 @@ Sync11Service.prototype = {
           `engine.${engine}`,
           !declinedEngines.includes(engine)
         );
+      }
+    } finally {
+      this._ignorePrefObserver = false;
+    }
+  },
+
+  /**
+   * Inherit the account's choices on the first sync after sign-in, as a
+   * legacy client would.
+   *
+   * @param {WBORecord} meta the already-fetched meta/global.
+   */
+  maybeUpdateEngineState(meta) {
+    // Set once a sync completes, and cleared on disconnect.
+    if (Svc.PrefBranch.getStringPref("lastSync", "")) {
+      return;
+    }
+
+    const { engines, declined } = meta.isNew ? {} : meta.payload;
+    const enabled = engines ? Object.keys(engines) : [];
+    const disabled = Array.isArray(declined) ? declined : [];
+
+    this._log.info("Applying initial account choices", { enabled, disabled });
+    // Account choices aren't local user changes.
+    this._ignorePrefObserver = true;
+    try {
+      // Local changes made since sign-in win, as they do for legacy clients.
+      const all = this.engineManager
+        .getAll()
+        .filter(
+          e =>
+            !Svc.PrefBranch.getBoolPref(
+              "engineStatusChanged." + e.prefName,
+              false
+            )
+        );
+      for (const engine of all) {
+        if (enabled.includes(engine.name)) {
+          engine.enabled = true;
+        }
+      }
+      // Declines win, including over engines that share a pref.
+      for (const engine of all) {
+        if (disabled.includes(engine.name)) {
+          engine.enabled = false;
+        }
       }
     } finally {
       this._ignorePrefObserver = false;
@@ -1453,7 +1504,9 @@ Sync11Service.prototype = {
     let meta = new WBORecord("meta", "global");
     meta.payload.syncID = this.syncID;
     meta.payload.storageVersion = STORAGE_VERSION;
-    meta.payload.declined = this.engineManager.getDeclined();
+    if (!Weave.perDeviceEngineChoices) {
+      meta.payload.declined = this.engineManager.getDeclined();
+    }
     meta.modified = 0;
     meta.isNew = true;
 
