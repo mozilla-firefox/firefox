@@ -101,6 +101,19 @@ pre.mermaid {
     width: auto;
   }
 
+  /* Paper does not scroll, so a diagram wider than the page scales down to
+     fit it, and the fade and its padding have nothing to mark. */
+  @media print {
+    margin-inline: 0;
+    padding-inline: 0;
+    mask-image: none;
+
+    :root & > svg {
+      max-width: 100% !important;
+      height: auto;
+    }
+  }
+
   /* The ZenUML plugin renders with ZenUML's own light theme in either color
      scheme, black lines and text on a white background, so the dark scheme
      takes the near-monochrome diagram and inverts it. */
@@ -121,5 +134,11 @@ pre.mermaid {
   /* The caption sits under the diagram it belongs to. */
   & + figcaption {
     text-align: center;
+  }
+
+  @media print {
+    .mermaid-fullscreen-btn {
+      display: none;
+    }
   }
 }
