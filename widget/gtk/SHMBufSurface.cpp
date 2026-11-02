@@ -16,6 +16,7 @@
 #include "gfxPlatform.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/ipc/SharedMemoryHandle.h"
+#include "mozilla/ipc/SharedMemoryMapping.h"
 #include "mozilla/layers/ImageDataSerializer.h"
 #include "mozilla/webrender/RenderTextureHost.h"
 #include "mozilla/widget/BufferSurface.h"
@@ -168,14 +169,17 @@ bool SHMBufSurfaceRGBA::CreateImpl(const IntSize& aSize,
   mHeight[0] = aSize.height;
   mFOURCCFormat = aFOURCCFormat;
   const int size = GetWidth() * GetHeight() * GetFormatBPP();
-  mShmHandle = ipc::shared_memory::Create(size);
+  // Compositors importing the wl_shm pool via udmabuf require the backing
+  // memfd to be a whole number of pages.
+  const int poolSize = ipc::shared_memory::PageAlignedSize(size);
+  mShmHandle = ipc::shared_memory::Create(poolSize);
   if (!mShmHandle) {
     NS_WARNING("SHMBufSurfaceRGBA: Unable to allocate shared memory!");
     return false;
   }
-  mShmPool = WUniquePtr<wl_shm_pool>(
-      wl_shm_create_pool(waylandDisplay->GetShm(),
-                         mShmHandle.Clone().TakePlatformHandle().get(), size));
+  mShmPool = WUniquePtr<wl_shm_pool>(wl_shm_create_pool(
+      waylandDisplay->GetShm(), mShmHandle.Clone().TakePlatformHandle().get(),
+      poolSize));
   if (!mShmPool) {
     NS_WARNING("SHMBufSurfaceRGBA: Unable to allocate shared memory pool!");
     return false;
