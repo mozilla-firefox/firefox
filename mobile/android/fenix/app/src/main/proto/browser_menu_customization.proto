@@ -22,7 +22,7 @@ message CustomizedMenuRecord {
   // A menu section as customized by the user.
   // Anything not set here, like the section's items, comes from the app's default menu configuration.
   message Section {
-    // Id of the section, as declared in [org.mozilla.fenix.components.menu.MenuConfigurations].
+    // Id of the section, as declared in [org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration].
     string id = 1;
   }
 }

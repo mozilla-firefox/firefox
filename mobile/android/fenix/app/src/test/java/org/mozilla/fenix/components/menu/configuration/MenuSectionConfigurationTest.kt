@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package org.mozilla.fenix.components.menu
+package org.mozilla.fenix.components.menu.configuration
 
 import kotlin.test.assertEquals
 import mozilla.components.compose.base.text.Text
@@ -10,9 +10,9 @@ import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
 import org.junit.Test
-import org.mozilla.fenix.components.menu.FenixMenuItem.FindInPage
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Grid
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Grid
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
 class MenuSectionConfigurationTest {
     private val shownItems = listOf(StandardMenuItem(title = MenuItemTitle(Text.String("Find in page"))))

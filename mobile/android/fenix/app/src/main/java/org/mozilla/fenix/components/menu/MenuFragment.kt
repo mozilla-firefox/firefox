@@ -77,6 +77,9 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.CustomizeMenuPopup
 import org.mozilla.fenix.components.menu.compose.MenuDialogBottomSheet
 import org.mozilla.fenix.components.menu.compose.MenuHandleState
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.configuration.CustomTabMenuConfiguration
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
 import org.mozilla.fenix.components.menu.middleware.MenuMiddleware
 import org.mozilla.fenix.components.menu.middleware.MenuTelemetryMiddleware
 import org.mozilla.fenix.ext.components
@@ -417,13 +420,13 @@ class MenuFragment : BottomSheetDialogFragment() {
     private fun buildMenuConfigurationFor(menuAccessPoint: MenuAccessPoint) =
         when (menuAccessPoint) {
             MenuAccessPoint.Browser ->
-                MenuConfigurations.browser(
+                BrowserMenuConfiguration.sections(
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                     isExpandedToolbarEnabled = requireComponents.settings.shouldUseExpandedToolbar,
                 )
-            MenuAccessPoint.Home -> MenuConfigurations.home()
+            MenuAccessPoint.Home -> HomeMenuConfiguration.sections()
             MenuAccessPoint.External ->
-                MenuConfigurations.customTab(
+                CustomTabMenuConfiguration.sections(
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                     shouldShowExtensions = requireComponents.settings.shouldShowCustomTabExtensions,
                 )

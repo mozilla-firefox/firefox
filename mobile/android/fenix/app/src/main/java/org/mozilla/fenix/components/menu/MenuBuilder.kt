@@ -12,6 +12,10 @@ import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItem as ShownMenuItem
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
+import org.mozilla.fenix.components.menu.configuration.FenixExpandableMenuItem
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
+import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
+import org.mozilla.fenix.components.menu.configuration.asMenuItemsGroup
 
 /**
  * Assembles a menu from the items each feature provides.

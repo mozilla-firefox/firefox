@@ -4,6 +4,10 @@
 
 package org.mozilla.fenix.components.menu
 
+import org.mozilla.fenix.components.menu.configuration.FenixExpandableMenuItem
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
+import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
+
 /**
  * Registry of all [MenuItemProvider]s used by the menu.
  *

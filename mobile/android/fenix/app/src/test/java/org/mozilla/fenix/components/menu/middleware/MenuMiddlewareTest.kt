@@ -21,14 +21,14 @@ import mozilla.components.compose.menu.store.MenuState
 import mozilla.components.compose.menu.store.MenuStore
 import mozilla.components.lib.state.Middleware
 import org.junit.Test
-import org.mozilla.fenix.components.menu.FenixMenuItem.CustomizeReaderView
 import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuHost
 import org.mozilla.fenix.components.menu.MenuItemEventRouter
 import org.mozilla.fenix.components.menu.MenuItemProvider
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Row
-import org.mozilla.fenix.components.menu.MenuSectionConfiguration
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeReaderView
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
 import org.mozilla.fenix.components.menu.fake.FakeMenuHost
 import org.mozilla.fenix.components.menu.store.MenuAction
 

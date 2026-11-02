@@ -11,9 +11,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import mozilla.components.compose.menu.data.MenuItem
 import mozilla.components.compose.menu.store.MenuEvent
 import org.junit.Test
-import org.mozilla.fenix.components.menu.FenixMenuItem.FindInPage
-import org.mozilla.fenix.components.menu.FenixMenuItem.Settings
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Settings
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
 import org.mozilla.fenix.components.menu.fake.FakeMenuHost
 
 class MenuItemEventRouterTest {
