@@ -384,17 +384,6 @@ class nsBlockFrame : public nsContainerFrame {
    */
   static nsBlockFrame* GetNearestAncestorBlock(nsIFrame* aCandidate);
 
-  /**
-   * Returns whether `margin-trim` on the block container aFrame discards the
-   * block-start / block-end margins of the children that adjoin the
-   * corresponding content edge, along with any margin collapsed with those.
-   * https://drafts.csswg.org/css-box-4/#margin-trim-block
-   *
-   * Note that this only reports what aFrame's own style asks for.
-   */
-  static bool StyleTrimsChildBStartMargins(const nsIFrame* aFrame);
-  static bool StyleTrimsChildBEndMargins(const nsIFrame* aFrame);
-
   struct FrameLines {
     nsLineList mLines;
     nsFrameList mFrames;

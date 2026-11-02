@@ -136,6 +136,8 @@ class BlockReflowState {
       bool aTrimChildBEndMargins, nsLineList::iterator aLine,
       bool aIsAdjacentToBStart);
 
+  bool ShouldTrimChildBStartMargins() const;
+
   /**
    * Unshifts coords, restores availableBSize to reality.
    * (Constructor applies any cached shift before reflow

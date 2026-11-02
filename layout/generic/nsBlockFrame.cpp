@@ -3604,7 +3604,7 @@ bool nsBlockFrame::ReflowDirtyLines(BlockReflowState& aState) {
   bool foundAnyClears = aState.mTrailingClearFromPIF != UsedClear::None;
   bool willReflowAgain = false;
   bool usedOverflowWrap = false;
-  const bool trimChildBStartMargins = StyleTrimsChildBStartMargins(this);
+  const bool trimChildBStartMargins = aState.ShouldTrimChildBStartMargins();
 
 #ifdef DEBUG
   if (gNoisyReflow) {
@@ -4876,10 +4876,11 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
   // Determine whether `margin-trim` discards this child's block-axis margins.
   // Note that this has to be decided before we start collapsing margins, since
   // a trimmed margin must not take part in the collapsing at all.
-  const bool trimChildBStartMargins = StyleTrimsChildBStartMargins(this);
+  const bool trimChildBStartMargins = aState.ShouldTrimChildBStartMargins();
   const ReflowInput::InitFlags marginTrimFlags =
       BlockReflowState::ComputeChildMarginTrim(
-          this, trimChildBStartMargins, StyleTrimsChildBEndMargins(this), aLine,
+          this, trimChildBStartMargins,
+          nsBlockReflowContext::StyleTrimsChildBEndMargins(this), aLine,
           trimChildBStartMargins && IsLineAdjacentToBStart(aState));
 
   nsIFrame* clearanceFrame = nullptr;
@@ -5276,7 +5277,8 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
       childReflowInput.reset();
       childReflowInput.emplace(
           aState.mPresContext, aState.mReflowInput, frame,
-          availSpace.Size(wm).ConvertTo(frame->GetWritingMode(), wm));
+          availSpace.Size(wm).ConvertTo(frame->GetWritingMode(), wm), Nothing(),
+          marginTrimFlags);
     } while (true);
 
     if (mayNeedRetry && clearanceFrame) {
@@ -6220,25 +6222,6 @@ bool nsBlockFrame::IsLineAdjacentToBEnd(LineIterator aLine) {
     }
   }
   return true;
-}
-
-/* static */
-bool nsBlockFrame::StyleTrimsChildBStartMargins(const nsIFrame* aFrame) {
-  // `margin-trim` on a multi-column container has to trim at the block-start
-  // edge of the first column rather than of the container; see bug 2051245.
-  if (aFrame->StyleColumn()->IsColumnContainerStyle()) {
-    return false;
-  }
-  return bool(aFrame->StyleMargin()->mMarginTrim &
-              StyleMarginTrim::BLOCK_START);
-}
-
-/* static */
-bool nsBlockFrame::StyleTrimsChildBEndMargins(const nsIFrame* aFrame) {
-  if (aFrame->StyleColumn()->IsColumnContainerStyle()) {
-    return false;
-  }
-  return bool(aFrame->StyleMargin()->mMarginTrim & StyleMarginTrim::BLOCK_END);
 }
 
 bool nsBlockFrame::PlaceLine(BlockReflowState& aState,
