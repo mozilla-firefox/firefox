@@ -67,7 +67,14 @@ export class GuestAuthProviderImpl extends AuthProviderImpl {
     if (lazy.mode === "tab") {
       return this.#signInWithTab(browser, url, origin, state);
     }
-    return this.#signInWithFetch(url);
+    try {
+      return await this.#signInWithFetch(url);
+    } catch (error) {
+      await lazy.ToUSpotlight.showUnavailable(browser).catch(e =>
+        console.error("Error showing unavailable modal:", e)
+      );
+      throw error;
+    }
   }
 
   async #signInWithFetch(url) {

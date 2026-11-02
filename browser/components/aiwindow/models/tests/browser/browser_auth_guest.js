@@ -117,13 +117,25 @@ add_task(async function test_signIn_fetch_invalid_response() {
     "fetch",
     () => ({ token_type: "Bearer" }),
     async () => {
-      const impl = new GuestAuthProviderImpl();
-      await Assert.rejects(
-        impl.signIn(gBrowser.selectedBrowser),
-        /Invalid guest token response/,
-        "signIn rejects without an access token"
-      );
-      Assert.equal(await impl.getToken(), null, "No token is cached");
+      const sb = sinon.createSandbox();
+      const showUnavailable = sb
+        .stub(ToUSpotlight, "showUnavailable")
+        .resolves(true);
+      try {
+        const impl = new GuestAuthProviderImpl();
+        await Assert.rejects(
+          impl.signIn(gBrowser.selectedBrowser),
+          /Invalid guest token response/,
+          "signIn rejects without an access token"
+        );
+        Assert.equal(await impl.getToken(), null, "No token is cached");
+        Assert.ok(
+          showUnavailable.calledOnce,
+          "The unavailable Spotlight is shown"
+        );
+      } finally {
+        sb.restore();
+      }
     }
   );
 });
@@ -133,15 +145,75 @@ add_task(async function test_signIn_fetch_http_error() {
     "fetch",
     () => 500,
     async () => {
-      const impl = new GuestAuthProviderImpl();
-      await Assert.rejects(
-        impl.signIn(gBrowser.selectedBrowser),
-        /Guest token request failed: 500/,
-        "signIn rejects on an HTTP error"
-      );
-      Assert.equal(await impl.getToken(), null, "No token is cached");
+      const sb = sinon.createSandbox();
+      const showUnavailable = sb
+        .stub(ToUSpotlight, "showUnavailable")
+        .resolves(true);
+      try {
+        const impl = new GuestAuthProviderImpl();
+        await Assert.rejects(
+          impl.signIn(gBrowser.selectedBrowser),
+          /Guest token request failed: 500/,
+          "signIn rejects on an HTTP error"
+        );
+        Assert.equal(await impl.getToken(), null, "No token is cached");
+        Assert.ok(
+          showUnavailable.calledOnce,
+          "The unavailable Spotlight is shown"
+        );
+      } finally {
+        sb.restore();
+      }
     }
   );
+});
+
+add_task(async function test_signIn_fetch_unavailable_rejects() {
+  await withMockMLPA(
+    "fetch",
+    () => 500,
+    async () => {
+      const sb = sinon.createSandbox();
+      const showUnavailable = sb
+        .stub(ToUSpotlight, "showUnavailable")
+        .rejects(new Error("Spotlight failure"));
+      try {
+        const impl = new GuestAuthProviderImpl();
+        await Assert.rejects(
+          impl.signIn(gBrowser.selectedBrowser),
+          /Guest token request failed: 500/,
+          "signIn rejects with the original error"
+        );
+        Assert.ok(
+          showUnavailable.calledOnce,
+          "The unavailable Spotlight is attempted"
+        );
+      } finally {
+        sb.restore();
+      }
+    }
+  );
+});
+
+add_task(async function test_signIn_fetch_success_no_unavailable() {
+  const sb = sinon.createSandbox();
+  const showUnavailable = sb.stub(ToUSpotlight, "showUnavailable");
+  try {
+    await withMockMLPA(
+      "fetch",
+      () => ({ access_token: "guest-token", token_type: "Bearer" }),
+      async () => {
+        const impl = new GuestAuthProviderImpl();
+        Assert.ok(await impl.signIn(gBrowser.selectedBrowser), "signIn");
+        Assert.ok(
+          showUnavailable.notCalled,
+          "The unavailable Spotlight is not shown"
+        );
+      }
+    );
+  } finally {
+    sb.restore();
+  }
 });
 
 add_task(async function test_signIn_stores_token_and_closes_tab() {
@@ -515,4 +587,26 @@ add_task(async function test_tou_spotlight_declined() {
   const { accepted, showSpotlightDialog } = await runToUSpotlight(false);
   Assert.ok(!accepted, "show resolves to false");
   Assert.ok(showSpotlightDialog.calledOnce, "The Spotlight is shown");
+});
+
+add_task(async function test_unavailable_spotlight() {
+  const sb = sinon.createSandbox();
+  const showSpotlightDialog = sb
+    .stub(Spotlight, "showSpotlightDialog")
+    .resolves(true);
+
+  try {
+    Assert.ok(
+      await ToUSpotlight.showUnavailable(gBrowser.selectedBrowser),
+      "showUnavailable resolves to true"
+    );
+    Assert.ok(showSpotlightDialog.calledOnce, "The Spotlight is shown");
+    Assert.equal(
+      showSpotlightDialog.firstCall.args[1].id,
+      "AI_WINDOW_GUEST_UNAVAILABLE_MODAL",
+      "The unavailable message is shown"
+    );
+  } finally {
+    sb.restore();
+  }
 });
