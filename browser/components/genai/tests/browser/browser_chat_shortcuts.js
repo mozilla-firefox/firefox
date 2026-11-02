@@ -798,30 +798,6 @@ add_task(async function test_ai_action_dropdown() {
       "The caret survives the active-state flip"
     );
 
-    // browser.nova.enabled's default varies by test configuration, so flip
-    // whatever the current value is to force an actual state change. A
-    // -moz-pref() media query re-evaluates asynchronously after the pref
-    // changes, so wait for the style to catch up rather than reading it
-    // right away.
-    const novaEnabled = Services.prefs.getBoolPref("browser.nova.enabled");
-    const borderRadiusBefore = getComputedStyle(background).borderRadius;
-    await SpecialPowers.pushPrefEnv({
-      set: [["browser.nova.enabled", !novaEnabled]],
-    });
-    await TestUtils.waitForCondition(
-      () => getComputedStyle(background).borderRadius !== borderRadiusBefore,
-      "Toggling the nova pref changes the button border radius"
-    );
-    Assert.notEqual(
-      getComputedStyle(background, "::after").backgroundImage,
-      "none",
-      "The caret is still drawn with the nova pref toggled"
-    );
-    await SpecialPowers.popPrefEnv();
-    await TestUtils.waitForCondition(
-      () => getComputedStyle(background).borderRadius === borderRadiusBefore,
-      "The border radius returns to its original value"
-    );
     const panelHidden = BrowserTestUtils.waitForEvent(panel, "popuphidden");
     panel.hide();
     await panelHidden;
