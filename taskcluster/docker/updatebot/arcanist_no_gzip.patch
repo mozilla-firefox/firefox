@@ -1,0 +1,19 @@
+diff --git a/src/conduit/ConduitClient.php b/src/conduit/ConduitClient.php
+index 441fe25c..91535ae4 100644
+--- a/src/conduit/ConduitClient.php
++++ b/src/conduit/ConduitClient.php
+@@ -158,9 +158,11 @@ final class ConduitClient extends Phobject {
+     // See T13507. If possible, try to compress requests. To compress requests,
+     // we must have "gzencode()" available and the server needs to have
+     // asserted it has the "gzip" capability.
+-    $can_gzip =
+-      (function_exists('gzencode')) &&
+-      (isset($this->capabilities['gzip']));
++    // Mozilla: don't compress requests. PHP parses a gzipped
++    // application/x-www-form-urlencoded body as form data before Phabricator
++    // decompresses it, so a large body's stray "&" bytes exceed max_input_vars
++    // and the resulting warning replaces the JSON response.
++    $can_gzip = false;
+     if ($can_gzip) {
+       $gzip_data = phutil_build_http_querystring($data);
+       $gzip_data = gzencode($gzip_data);

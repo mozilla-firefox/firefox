@@ -48,6 +48,9 @@ git checkout e50d1bc4eabac9c37e3220e9f3fb8e37ae20b957
 # Show the response when Phabricator (or something in front of it) answers a
 # Conduit call with something other than JSON.
 git apply /setup/arcanist_log_invalid_json.patch
+# Send Conduit requests uncompressed: Phabricator's PHP parses a gzipped form
+# body before decompressing it, and large ones fail on max_input_vars.
+git apply /setup/arcanist_no_gzip.patch
 ln -s /builds/worker/.mozbuild/arcanist/bin/arc /usr/local/bin/arc
 popd
 
