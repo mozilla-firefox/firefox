@@ -63,14 +63,22 @@ enum class SkeletonUIFlag : uint8_t {
   VerticalTabs
 };
 
+// A translucent color is a color plus an alpha in [0, 1], composited over
+// whatever is painted below it.
 struct ThemeColors {
   uint32_t backgroundColor;
   uint32_t toolbarForegroundColor;
-  uint32_t titlebarColor;
+  uint32_t toolboxColor;
+  uint32_t toolboxGradientLeadingColor;
+  uint32_t toolboxGradientTrailingColor;
+  uint32_t toolbarColor;
+  double toolbarAlpha;
   uint32_t tabColor;
   uint32_t tabOutlineColor;
   uint32_t chromeContentDividerColor;
+  double chromeContentDividerAlpha;
   uint32_t urlbarColor;
+  double urlbarAlpha;
   uint32_t urlbarBorderColor;
   uint32_t animationColor;
 };

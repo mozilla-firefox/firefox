@@ -114,6 +114,63 @@ uint32_t Composite(uint32_t color, double alpha, uint32_t base) {
   return RGBToUint(Lerp(UintToRGB(base), UintToRGB(color), alpha));
 }
 
+// The toolbox background, which browser-shared.css paints on the body: the
+// --toolbox-background-gradient from tokens-platform.css over the
+// --toolbox-background-color. Both gradient stops are at 50% opacity.
+class ToolboxBackground {
+ public:
+  ToolboxBackground(const ThemeColors& theme, int x, int y, int width,
+                    int height)
+      : mColor(theme.toolboxColor),
+        mLeading(UintToRGB(theme.toolboxGradientLeadingColor)),
+        mTrailing(UintToRGB(theme.toolboxGradientTrailingColor)),
+        mCenterX(x + width / 2.0),
+        mCenterY(y + height / 2.0),
+        mDirectionX(sin(kAngle)),
+        mDirectionY(-cos(kAngle)),
+        mLength(fabs(width * mDirectionX) + fabs(height * mDirectionY)) {}
+
+  uint32_t ColorAt(int x, int y) const {
+    double position = ((x + 0.5 - mCenterX) * mDirectionX +
+                       (y + 0.5 - mCenterY) * mDirectionY) /
+                          mLength +
+                      0.5;
+    double progress = std::clamp(
+        (position - kLeadingStop) / (kTrailingStop - kLeadingStop), 0.0, 1.0);
+    return Composite(RGBToUint(Lerp(mLeading, mTrailing, progress)), 0.5,
+                     mColor);
+  }
+
+  // The color of every pixel before LeadingEndAt(y) in row y.
+  uint32_t LeadingColor() const {
+    return Composite(RGBToUint(mLeading), 0.5, mColor);
+  }
+
+  // The first x in row y past the leading gradient stop.
+  int LeadingEndAt(int y) const {
+    double lastLeadingX =
+        mCenterX - 0.5 +
+        ((kLeadingStop - 0.5) * mLength - (y + 0.5 - mCenterY) * mDirectionY) /
+            mDirectionX;
+    return static_cast<int>(floor(lastLeadingX)) + 1;
+  }
+
+ private:
+  // 96deg, in radians.
+  static constexpr double kAngle = 96.0 * 3.14159265358979323846 / 180.0;
+  static constexpr double kLeadingStop = 0.3984;
+  static constexpr double kTrailingStop = 1.0172;
+
+  uint32_t mColor;
+  NormalizedRGB mLeading;
+  NormalizedRGB mTrailing;
+  double mCenterX;
+  double mCenterY;
+  double mDirectionX;
+  double mDirectionY;
+  double mLength;
+};
+
 struct Margin {
   int top = 0;
   int right = 0;
@@ -627,6 +684,21 @@ void RasterizeColorRect(const ColorRect& colorRect) {
   }
 }
 
+// Paints full-width rows of the toolbox background, with a translucent color
+// on top of it.
+void RasterizeToolboxRows(const ToolboxBackground& background, int y,
+                          int height, uint32_t color, double alpha) {
+  for (int row = y; row < y + height; ++row) {
+    uint32_t* lineStart = &sPixelBuffer[row * sWindowWidth];
+    int leadingEnd = std::clamp(background.LeadingEndAt(row), 0, sWindowWidth);
+    std::fill(lineStart, lineStart + leadingEnd,
+              Composite(color, alpha, background.LeadingColor()));
+    for (int x = leadingEnd; x < sWindowWidth; ++x) {
+      lineStart[x] = Composite(color, alpha, background.ColorAt(x, row));
+    }
+  }
+}
+
 // Paints the pixels to sPixelBuffer for the skeleton UI animation (a light
 // gradient which moves from left to right across the grey placeholder rects).
 // Takes in the rect to draw, together with a lookup table for the gradient,
@@ -765,7 +837,7 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
   // found in urlbar-searchbar.inc.css, "#urlbar[breakout]"
   int urlbarTopOffset = CSSToDevPixels(4, sCSSToDevPixelScaling);
   int urlbarHeight = CSSToDevPixels(32, sCSSToDevPixelScaling);
-  // found in browser-aero.css, "#navigator-toolbox::after" border-bottom
+  // found in content-area.css, ".browserContainer" border-block-start
   int chromeContentDividerHeight = CSSToDevPixels(1, sCSSToDevPixelScaling);
 
   int tabPlaceholderBarMarginLeft = CSSToDevPixels(10, sCSSToDevPixelScaling);
@@ -808,39 +880,25 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
 
   Vector<ColorRect> rects;
 
-  ColorRect menubar = {};
-  menubar.color = currentTheme.titlebarColor;
-  menubar.x = 0;
-  menubar.y = verticalOffset;
-  menubar.width = sWindowWidth;
-  menubar.height = menubarHeightDevPixels;
-  menubar.flipIfRTL = false;
-  if (!rects.append(menubar)) {
-    return Err(PreXULSkeletonUIError::OOM);
-  }
+  // The menubar, the tab bar and, with vertical tabs, the main toolbar show
+  // the toolbox background directly.
+  ToolboxBackground toolboxBackground(
+      currentTheme, horizontalOffset, verticalOffset,
+      sWindowWidth - 2 * horizontalOffset, sWindowHeight - verticalOffset);
+  int tabBarY = verticalOffset + menubarHeightDevPixels;
+  int toolbarY = tabBarY + tabBarHeight;
+  double toolbarAlpha = verticalTabs ? 0.0 : currentTheme.toolbarAlpha;
 
   // The placeholders and the urlbar are fully rounded.
   int placeholderBorderRadius = toolbarPlaceholderHeight / 2;
   int urlbarBorderRadius = urlbarHeight / 2;
-
-  // The (traditionally dark blue on Windows) background of the tab bar.
-  ColorRect tabBar = {};
-  tabBar.color = currentTheme.titlebarColor;
-  tabBar.x = 0;
-  tabBar.y = menubar.y + menubar.height;
-  tabBar.width = sWindowWidth;
-  tabBar.height = tabBarHeight;
-  tabBar.flipIfRTL = false;
-  if (!rects.append(tabBar)) {
-    return Err(PreXULSkeletonUIError::OOM);
-  }
 
   if (!verticalTabs) {
     // The initial selected tab
     ColorRect selectedTab = {};
     selectedTab.color = currentTheme.tabColor;
     selectedTab.x = titlebarSpacerWidth;
-    selectedTab.y = menubar.y + menubar.height + selectedTabMarginTop;
+    selectedTab.y = tabBarY + selectedTabMarginTop;
     selectedTab.width = selectedTabWidth;
     selectedTab.height = selectedTabHeight;
     selectedTab.borderColor = currentTheme.tabOutlineColor;
@@ -870,41 +928,29 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
     }
   }
 
-  // The toolbar background
-  ColorRect toolbar = {};
-  // In the vertical tabs case the main toolbar is in the titlebar:
-  toolbar.color =
-      verticalTabs ? currentTheme.titlebarColor : currentTheme.backgroundColor;
-  toolbar.x = 0;
-  toolbar.y = tabBar.y + tabBarHeight;
-  toolbar.width = sWindowWidth;
-  toolbar.height = toolbarHeight;
-  toolbar.flipIfRTL = false;
-  if (!rects.append(toolbar)) {
-    return Err(PreXULSkeletonUIError::OOM);
-  }
-
   // The single-pixel divider line below the toolbar
-  ColorRect chromeContentDivider = {};
-  chromeContentDivider.color = currentTheme.chromeContentDividerColor;
-  chromeContentDivider.x = 0;
-  chromeContentDivider.y = toolbar.y + toolbar.height;
-  chromeContentDivider.width = sWindowWidth;
-  chromeContentDivider.height = chromeContentDividerHeight;
-  chromeContentDivider.flipIfRTL = false;
-  if (!rects.append(chromeContentDivider)) {
-    return Err(PreXULSkeletonUIError::OOM);
-  }
+  int chromeContentDividerY = toolbarY + toolbarHeight;
+
+  // The urlbar and the searchbar are translucent, but get a solid color: the
+  // one at their center.
+  auto fieldColor = [&](const ColorRect& field) {
+    int x = field.x + field.width / 2;
+    int y = field.y + field.height / 2;
+    uint32_t toolbarColor = Composite(currentTheme.toolbarColor, toolbarAlpha,
+                                      toolboxBackground.ColorAt(x, y));
+    return Composite(currentTheme.urlbarColor, currentTheme.urlbarAlpha,
+                     toolbarColor);
+  };
 
   // The urlbar
   ColorRect urlbar = {};
-  urlbar.color = currentTheme.urlbarColor;
   urlbar.x = CSSToDevPixels(urlbarCSSSpan.start, sCSSToDevPixelScaling) +
              horizontalOffset;
-  urlbar.y = tabBar.y + tabBarHeight + urlbarTopOffset;
+  urlbar.y = toolbarY + urlbarTopOffset;
   urlbar.width = CSSToDevPixels((urlbarCSSSpan.end - urlbarCSSSpan.start),
                                 sCSSToDevPixelScaling);
   urlbar.height = urlbarHeight;
+  urlbar.color = fieldColor(urlbar);
   urlbar.borderColor = currentTheme.urlbarBorderColor;
   urlbar.borderWidth = CSSToDevPixels(1, sCSSToDevPixelScaling);
   urlbar.borderRadius = urlbarBorderRadius;
@@ -937,7 +983,6 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
   bool hasSearchbar = searchbarCSSSpan.start != 0 && searchbarCSSSpan.end != 0;
   ColorRect searchbarRect = {};
   if (hasSearchbar == true) {
-    searchbarRect.color = currentTheme.urlbarColor;
     searchbarRect.x =
         CSSToDevPixels(searchbarCSSSpan.start, sCSSToDevPixelScaling) +
         horizontalOffset;
@@ -945,6 +990,7 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
     searchbarRect.width = CSSToDevPixels(
         searchbarCSSSpan.end - searchbarCSSSpan.start, sCSSToDevPixelScaling);
     searchbarRect.height = urlbarHeight;
+    searchbarRect.color = fieldColor(searchbarRect);
     searchbarRect.borderRadius = urlbarBorderRadius;
     searchbarRect.borderColor = currentTheme.urlbarBorderColor;
     searchbarRect.borderWidth = CSSToDevPixels(1, sCSSToDevPixelScaling);
@@ -1061,7 +1107,7 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
     }
   }
 
-  sTotalChromeHeight = chromeContentDivider.y + chromeContentDivider.height;
+  sTotalChromeHeight = chromeContentDividerY + chromeContentDividerHeight;
   if (sTotalChromeHeight > sWindowHeight) {
     return Err(PreXULSkeletonUIError::BadWindowDimensions);
   }
@@ -1072,6 +1118,14 @@ Result<Ok, PreXULSkeletonUIError> DrawSkeletonUI(
 
   sPixelBuffer =
       (uint32_t*)calloc(sWindowWidth * sTotalChromeHeight, sizeof(uint32_t));
+
+  RasterizeToolboxRows(toolboxBackground, 0, toolbarY, 0, 0.0);
+  RasterizeToolboxRows(toolboxBackground, toolbarY, toolbarHeight,
+                       currentTheme.toolbarColor, toolbarAlpha);
+  RasterizeToolboxRows(toolboxBackground, chromeContentDividerY,
+                       chromeContentDividerHeight,
+                       currentTheme.chromeContentDividerColor,
+                       currentTheme.chromeContentDividerAlpha);
 
   for (auto& rect : *sAnimatedRects) {
     if (rtlEnabled && rect.flipIfRTL) {
@@ -1355,34 +1409,53 @@ ThemeColors GetTheme(ThemeMode themeId) {
     case ThemeMode::Dark:
       // Dark theme or default theme when in dark mode
 
-      // controlled by design token --toolbar-background-color
+      // --tabpanel-background-color in content-area.css
       theme.backgroundColor = 0x2b2a33;
-      theme.tabColor = 0x42414d;
+      // --tab-background-color-selected
+      theme.tabColor = 0x171519;
       theme.toolbarForegroundColor = 0x6a6a6d;
-      theme.tabOutlineColor = 0x1c1b22;
-      // controlled by css variable --lwt-accent-color
-      theme.titlebarColor = 0x1c1b22;
-      // controlled by design token --toolbar-text-color
-      theme.chromeContentDividerColor = 0x0c0c0d;
-      // controlled by css variable --toolbar-field-background-color
-      theme.urlbarColor = 0x42414d;
-      theme.urlbarBorderColor = 0x42414d;
-      theme.animationColor = theme.urlbarColor;
+      // --tab-border-color-accent is a gradient; this is its midpoint.
+      theme.tabOutlineColor = 0xdb98b2;
+      // --toolbox-background-color and --toolbox-background-gradient-*
+      theme.toolboxColor = 0x252428;
+      theme.toolboxGradientLeadingColor = 0x3e315f;
+      theme.toolboxGradientTrailingColor = 0x701c07;
+      // --toolbar-background-color
+      theme.toolbarColor = 0x000000;
+      theme.toolbarAlpha = 0.2;
+      // --chrome-content-separator-color in browser-colors.css
+      theme.chromeContentDividerColor = 0x3f3e42;
+      theme.chromeContentDividerAlpha = 0.5;
+      // --toolbar-field-background-color and --toolbar-field-border-color
+      theme.urlbarColor = 0x000000;
+      theme.urlbarAlpha = 0.2;
+      theme.urlbarBorderColor = 0x3f3e42;
+      theme.animationColor = theme.urlbarBorderColor;
       return theme;
     case ThemeMode::Light:
     case ThemeMode::Default:
     default:
-      // --toolbar-background-color
+      // --tabpanel-background-color in content-area.css
       theme.backgroundColor = 0xf9f9fb;
-      theme.tabColor = 0xf9f9fb;
+      // --tab-background-color-selected
+      theme.tabColor = 0xffffff;
       theme.toolbarForegroundColor = 0xdddde1;
-      theme.tabOutlineColor = 0xdddde1;
-      theme.titlebarColor = 0xeaeaed;
-      // --chrome-content-separator-color in browser.css
-      theme.chromeContentDividerColor = 0xe1e1e2;
-      // controlled by design token --toolbar-text-color
+      // --tab-border-color-accent is a gradient; this is its midpoint.
+      theme.tabOutlineColor = 0xdb98b2;
+      // --toolbox-background-color and --toolbox-background-gradient-*
+      theme.toolboxColor = 0xffffff;
+      theme.toolboxGradientLeadingColor = 0xeaddff;
+      theme.toolboxGradientTrailingColor = 0xffdbc5;
+      // --toolbar-background-color
+      theme.toolbarColor = 0xffffff;
+      theme.toolbarAlpha = 0.4;
+      // --chrome-content-separator-color in browser-colors.css
+      theme.chromeContentDividerColor = 0xc9c0e3;
+      theme.chromeContentDividerAlpha = 0.5;
+      // --toolbar-field-background-color and --toolbar-field-border-color
       theme.urlbarColor = 0xffffff;
-      theme.urlbarBorderColor = 0xdddde1;
+      theme.urlbarAlpha = 0.4;
+      theme.urlbarBorderColor = 0xd6d5da;
       theme.animationColor = theme.backgroundColor;
       return theme;
   }
