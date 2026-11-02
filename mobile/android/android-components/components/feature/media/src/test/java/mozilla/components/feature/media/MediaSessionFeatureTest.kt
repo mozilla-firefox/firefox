@@ -7,11 +7,13 @@ package mozilla.components.feature.media
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.coroutines.ContinuationInterceptor
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.MediaSessionAction
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.MediaSessionState
@@ -35,6 +37,8 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito.anyInt
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 
 @RunWith(AndroidJUnit4::class)
@@ -208,6 +212,113 @@ class MediaSessionFeatureTest {
                 captor.value.mediaSessionState?.audioSessionType,
             )
         }
+
+    @Test
+    fun `GIVEN media is playing WHEN the page title loads THEN only the media content is updated`() = runTest {
+        val mediaTab = getMediaTab(PlaybackState.PLAYING)
+        val store = BrowserStore(BrowserState(tabs = listOf(mediaTab)))
+        val feature =
+            MediaSessionFeature(
+                mock(),
+                MediaSessionServiceDelegate::class.java,
+                store,
+                mainDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
+            )
+        feature.mediaService = mock()
+        feature.start()
+        testScheduler.advanceUntilIdle()
+
+        store.dispatch(ContentAction.UpdateTitleAction(mediaTab.id, "Mozilla"))
+        testScheduler.advanceUntilIdle()
+
+        verify(feature.mediaService, times(1))!!.handleMediaPlaying(any())
+        val captor = argumentCaptor<SessionState>()
+        verify(feature.mediaService)!!.handleMediaUpdated(captor.capture())
+        assertEquals("Mozilla", captor.value.content.title)
+    }
+
+    @Test
+    fun `GIVEN media is paused WHEN the favicon loads THEN only the media content is updated`() = runTest {
+        val mediaTab = getMediaTab(PlaybackState.PAUSED)
+        val store = BrowserStore(BrowserState(tabs = listOf(mediaTab)))
+        val feature =
+            MediaSessionFeature(
+                mock(),
+                MediaSessionServiceDelegate::class.java,
+                store,
+                mainDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
+            )
+        feature.mediaService = mock()
+        feature.start()
+        testScheduler.advanceUntilIdle()
+
+        val icon = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        store.dispatch(ContentAction.UpdateIconAction(mediaTab.id, mediaTab.content.url, icon))
+        testScheduler.advanceUntilIdle()
+
+        verify(feature.mediaService, times(1))!!.handleMediaPaused(any())
+        val captor = argumentCaptor<SessionState>()
+        verify(feature.mediaService)!!.handleMediaUpdated(captor.capture())
+        assertEquals(icon, captor.value.content.icon)
+    }
+
+    @Test
+    fun `GIVEN media with a metadata title WHEN the page title changes THEN the media content is not updated`() =
+        runTest {
+            val mediaTab =
+                createTab(
+                    "https://www.mozilla.org",
+                    mediaSessionState =
+                        MediaSessionState(
+                            mock(),
+                            metadata = MediaSession.Metadata(title = "Song", getArtwork = null),
+                            playbackState = PlaybackState.PLAYING,
+                        ),
+                )
+            val store = BrowserStore(BrowserState(tabs = listOf(mediaTab)))
+            val feature =
+                MediaSessionFeature(
+                    mock(),
+                    MediaSessionServiceDelegate::class.java,
+                    store,
+                    mainDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
+                )
+            feature.mediaService = mock()
+            feature.start()
+            testScheduler.advanceUntilIdle()
+
+            store.dispatch(ContentAction.UpdateTitleAction(mediaTab.id, "Mozilla"))
+            testScheduler.advanceUntilIdle()
+
+            verify(feature.mediaService, never())!!.handleMediaUpdated(any())
+        }
+
+    @Test
+    fun `GIVEN media in a private tab WHEN the favicon loads THEN the media content is not updated`() = runTest {
+        val mediaTab =
+            createTab(
+                "https://www.mozilla.org",
+                private = true,
+                mediaSessionState = MediaSessionState(mock(), playbackState = PlaybackState.PLAYING),
+            )
+        val store = BrowserStore(BrowserState(tabs = listOf(mediaTab)))
+        val feature =
+            MediaSessionFeature(
+                mock(),
+                MediaSessionServiceDelegate::class.java,
+                store,
+                mainDispatcher = coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
+            )
+        feature.mediaService = mock()
+        feature.start()
+        testScheduler.advanceUntilIdle()
+
+        val icon = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+        store.dispatch(ContentAction.UpdateIconAction(mediaTab.id, mediaTab.content.url, icon))
+        testScheduler.advanceUntilIdle()
+
+        verify(feature.mediaService, never())!!.handleMediaUpdated(any())
+    }
 
     @Test
     fun `GIVEN feature and media service are started WHEN media starts playing in a custom tab THEN handle showing the new playing status`() =

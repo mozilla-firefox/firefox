@@ -36,6 +36,7 @@ import mozilla.components.feature.media.ext.findActiveMediaTab
 import mozilla.components.feature.media.ext.getArtistOrUrl
 import mozilla.components.feature.media.ext.getNonPrivateIcon
 import mozilla.components.feature.media.ext.getTitleOrUrl
+import mozilla.components.feature.media.ext.mediaDisplayKey
 import mozilla.components.lib.state.ext.flowScoped
 
 /**
@@ -68,7 +69,7 @@ internal class BrowserStorePlayer(
 
     private var artworkJob: Job? = null
 
-    private var lastArtworkKey: Pair<String, MozMediaSession.Metadata?>? = null
+    private var lastArtworkKey: Triple<String, MozMediaSession.Metadata?, Bitmap?>? = null
 
     // On a track change the page often keeps reporting the previous track's positionState for a
     // short while before pushing a fresh one. While that stale value persists we report position 0
@@ -94,7 +95,7 @@ internal class BrowserStorePlayer(
         store.flowScoped(dispatcher = mainDispatcher) { flow ->
             flow
                 .map { it.findActiveMediaTab() }
-                .distinctUntilChangedBy { it?.mediaSessionState }
+                .distinctUntilChangedBy { it.mediaDisplayKey(context) }
                 .collect { tab ->
                     refreshArtwork(tab)
                     trackStalePosition(tab)
@@ -262,11 +263,12 @@ internal class BrowserStorePlayer(
             return
         }
         val metadata = tab.mediaSessionState?.metadata
-        val key = tab.id to metadata
-        if (key == lastArtworkKey) return
+        val key = Triple(tab.id, metadata, tab.content.icon)
+        val last = lastArtworkKey
+        if (key == last) return
         lastArtworkKey = key
         artworkJob?.cancel()
-        cachedArtwork = null
+        if (tab.id != last?.first || metadata != last.second) cachedArtwork = null
         artworkJob = scope.launch {
             val bytes = runCatching {
                 tab.getNonPrivateIcon(metadata?.getArtwork)?.let { bitmap ->

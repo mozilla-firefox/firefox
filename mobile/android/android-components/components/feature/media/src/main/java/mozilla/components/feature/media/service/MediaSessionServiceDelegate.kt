@@ -228,6 +228,10 @@ internal class MediaSessionServiceDelegate(
         updateNotification(sessionState)
     }
 
+    override fun handleMediaUpdated(sessionState: SessionState) {
+        updateNotification(sessionState)
+    }
+
     override fun handleNoMedia() {
         shutdown()
     }

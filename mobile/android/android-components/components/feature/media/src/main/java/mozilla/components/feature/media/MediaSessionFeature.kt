@@ -21,6 +21,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.mediasession.MediaSession.PlaybackState.PAUSED
 import mozilla.components.concept.engine.mediasession.MediaSession.PlaybackState.PLAYING
 import mozilla.components.feature.media.ext.findActiveMediaTab
+import mozilla.components.feature.media.ext.mediaDisplayKey
 import mozilla.components.feature.media.service.MediaServiceBinder
 import mozilla.components.feature.media.service.MediaSessionDelegate
 import mozilla.components.lib.state.ext.flowScoped
@@ -65,10 +66,18 @@ class MediaSessionFeature(
     fun start() {
         scope =
             store.flowScoped(dispatcher = mainDispatcher) { flow ->
+                var last: SessionState? = null
                 flow
                     .map { state -> state.findActiveMediaTab() }
-                    .distinctUntilChangedBy { tab -> tab?.mediaSessionState }
-                    .collect { state -> showMediaStatus(state) }
+                    .distinctUntilChangedBy { tab -> tab.mediaDisplayKey(applicationContext) }
+                    .collect { tab ->
+                        if (tab != null && tab.mediaSessionState == last?.mediaSessionState) {
+                            mediaService?.handleMediaUpdated(tab)
+                        } else {
+                            showMediaStatus(tab)
+                        }
+                        last = tab
+                    }
             }
     }
 

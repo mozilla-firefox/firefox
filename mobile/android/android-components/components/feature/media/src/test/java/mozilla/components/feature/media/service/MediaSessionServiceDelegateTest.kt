@@ -504,6 +504,33 @@ class MediaSessionServiceDelegateTest {
     }
 
     @Test
+    fun `GIVEN a transient focus loss WHEN media content is updated THEN only the notification is refreshed`() =
+        runTest {
+            val mediaTab = getMediaTab(PlaybackState.PAUSED)
+            val notificationsDelegate: NotificationsDelegate = mock()
+            val delegate = createDelegate(notificationsDelegate = notificationsDelegate, scope = this)
+            delegate.onCreate()
+            delegate.isForegroundService = true
+            delegate.isTransientAudioFocusLoss = true
+            val notification: Notification = mock()
+            delegate.notificationHelper = coMock {
+                doReturn(notification).`when`(this).create(mediaTab, delegate.mediaSession)
+            }
+
+            CollectionProcessor.withFactCollection { facts ->
+                delegate.handleMediaUpdated(mediaTab)
+                testScheduler.advanceUntilIdle()
+
+                assertTrue(facts.isEmpty())
+            }
+
+            verify(notificationsDelegate)
+                .notify(any(), eq(delegate.notificationId), eq(notification), any(), any(), eq(false))
+            assertTrue(delegate.isForegroundService)
+            assertTrue(delegate.isTransientAudioFocusLoss)
+        }
+
+    @Test
     fun `WHEN starting the service as foreground THEN use start with a new notification for the current media state`() =
         runTest {
             val mediaTab = getMediaTab()

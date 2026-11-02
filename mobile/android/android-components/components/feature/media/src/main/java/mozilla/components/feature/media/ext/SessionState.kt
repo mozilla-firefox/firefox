@@ -11,6 +11,21 @@ import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.engine.mediasession.MediaSession
 import mozilla.components.feature.media.R
 
+internal fun SessionState?.mediaDisplayKey(context: Context): Any? =
+    when {
+        this == null -> null
+        content.private -> mediaSessionState
+        else -> {
+            val metadata = mediaSessionState?.metadata
+            listOf(
+                mediaSessionState,
+                getTitleOrUrl(context, metadata?.title),
+                getArtistOrUrl(metadata?.artist),
+                content.icon,
+            )
+        }
+    }
+
 internal fun SessionState?.getTitleOrUrl(context: Context, title: String? = null): String =
     when {
         this == null -> context.getString(R.string.mozac_feature_media_notification_private_mode)

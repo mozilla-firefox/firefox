@@ -18,6 +18,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.MediaSessionAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.state.BrowserState
@@ -158,6 +159,35 @@ class BrowserStorePlayerTest {
         }
 
     @Test
+    fun `GIVEN a tab with no metadata title WHEN the page title loads THEN the media item title updates`() = runTest {
+        val tab = mediaTab()
+        val store = BrowserStore(BrowserState(tabs = listOf(tab)))
+
+        val player = newPlayer(store)
+        drain()
+        assertEquals("https://www.mozilla.org", player.mediaMetadata.title.toString())
+
+        store.dispatch(ContentAction.UpdateTitleAction(tab.id, "Mozilla"))
+        drain()
+
+        assertEquals("Mozilla", player.mediaMetadata.title.toString())
+    }
+
+    @Test
+    fun `GIVEN a tab with no metadata WHEN its URL changes THEN the media item artist updates`() = runTest {
+        val tab = mediaTab()
+        val store = BrowserStore(BrowserState(tabs = listOf(tab)))
+
+        val player = newPlayer(store)
+        drain()
+
+        store.dispatch(ContentAction.UpdateUrlAction(tab.id, "https://www.mozilla.org/next"))
+        drain()
+
+        assertEquals("https://www.mozilla.org/next", player.mediaMetadata.artist.toString())
+    }
+
+    @Test
     fun `GIVEN a tab with metadata title WHEN state is read THEN the media item uses the metadata title`() = runTest {
         val tab =
             mediaTab(
@@ -205,6 +235,69 @@ class BrowserStorePlayerTest {
 
         assertNotNull(player.mediaMetadata.artworkData)
     }
+
+    @Test
+    fun `GIVEN a tab with no session artwork WHEN its favicon loads THEN state exposes artwork bytes`() = runTest {
+        val tab = mediaTab()
+        val store = BrowserStore(BrowserState(tabs = listOf(tab)))
+
+        val player = newPlayer(store)
+        drain()
+        assertNull(player.mediaMetadata.artworkData)
+
+        store.dispatch(
+            ContentAction.UpdateIconAction(tab.id, tab.content.url, Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888))
+        )
+        drain()
+
+        assertNotNull(player.mediaMetadata.artworkData)
+    }
+
+    @Test
+    fun `GIVEN a tab with session artwork WHEN its favicon loads THEN the artwork is kept while it is refetched`() =
+        runTest {
+            val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+            val pending = CompletableDeferred<Bitmap?>()
+            var fetches = 0
+            val tab =
+                mediaTab(
+                    metadata =
+                        MediaSession.Metadata(
+                            title = "Song",
+                            getArtwork = { if (fetches++ == 0) bitmap else pending.await() },
+                        )
+                )
+            val store = BrowserStore(BrowserState(tabs = listOf(tab)))
+            val player = newPlayer(store)
+            drain()
+
+            store.dispatch(ContentAction.UpdateIconAction(tab.id, tab.content.url, bitmap))
+            drain()
+
+            assertEquals(2, fetches)
+            assertNotNull(player.mediaMetadata.artworkData)
+        }
+
+    @Test
+    fun `GIVEN a tab whose session artwork fails WHEN its favicon loads THEN the favicon is exposed as artwork`() =
+        runTest {
+            val tab = mediaTab(metadata = MediaSession.Metadata(title = "Song", getArtwork = { null }))
+            val store = BrowserStore(BrowserState(tabs = listOf(tab)))
+            val player = newPlayer(store)
+            drain()
+            assertNull(player.mediaMetadata.artworkData)
+
+            store.dispatch(
+                ContentAction.UpdateIconAction(
+                    tab.id,
+                    tab.content.url,
+                    Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
+                )
+            )
+            drain()
+
+            assertNotNull(player.mediaMetadata.artworkData)
+        }
 
     @Test
     fun `GIVEN a private tab with artwork WHEN artwork is fetched THEN state does not expose artwork bytes`() =
