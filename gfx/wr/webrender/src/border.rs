@@ -9,6 +9,7 @@ use api::units::*;
 use crate::clip::ClipNodeId;
 use crate::ellipse::Ellipse;
 use crate::renderer::GpuBufferBuilderF;
+use crate::render_task::{RenderTask, RenderTaskKind};
 use crate::scene_building::SceneBuilder;
 use crate::spatial_tree::SpatialNodeIndex;
 use crate::gpu_types::{BorderInstance, BorderInstanceGpuData, BorderSegment};
@@ -543,6 +544,64 @@ pub struct NormalBorderSegment {
     pub task_size: LayoutSize,
     pub cache_key: BorderSegmentCacheKey,
     pub is_solid: Option<ColorF>,
+}
+
+impl NormalBorderSegment {
+    pub fn bounds(&self, clip_rect: &LayoutRect) -> LayoutRect {
+        let mut bounds = self.pattern_rect.intersection_unchecked(clip_rect);
+        if let Some(clip_rect) = self.clip_rect {
+            bounds = bounds.intersection_unchecked(&clip_rect);
+        }
+        bounds
+    }
+
+    pub fn render_task(
+        &self,
+        cache_size: DeviceIntSize,
+        border: &ApiNormalBorder,
+        scale: LayoutToDeviceScale,
+        gpu_buffer: &mut GpuBufferBuilderF,
+    ) -> RenderTask {
+        RenderTask::new_dynamic(
+            cache_size,
+            RenderTaskKind::new_border_segment(build_border_instances(
+                &self.cache_key, cache_size, border, scale, gpu_buffer,
+            )),
+        )
+    }
+
+    pub fn repetition(&self, cache_size: DeviceIntSize) -> (LayoutSize, LayoutSize) {
+        let mut stretch_size = self.pattern_rect.size();
+        let mut spacing = LayoutSize::zero();
+        let mut _repeat_offset = LayoutVector2D::zero();
+        crate::border::compute_border_repetition(
+            self.pattern_rect.size(),
+            cache_size.to_f32(),
+            self.repeat_x,
+            self.repeat_y,
+            &mut stretch_size,
+            &mut spacing,
+            &mut _repeat_offset,
+        );
+
+        if self.repeat_x == RepeatMode::Repeat {
+            let w = self.pattern_rect.width();
+            let sw = stretch_size.width;
+            let scale = w / ((w / sw).round() * sw);
+
+            stretch_size.width *= scale;
+        }
+
+        if self.repeat_y == RepeatMode::Repeat {
+            let h = self.pattern_rect.height();
+            let sh = stretch_size.height;
+            let scale = h / ((h / sh).round() * sh);
+
+            stretch_size.height *= scale;
+        }
+
+        (stretch_size, spacing)
+    }
 }
 
 /// Create the set of border segments and render task

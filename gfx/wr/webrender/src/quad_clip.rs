@@ -17,13 +17,17 @@
 
 use api::{BorderRadius, ClipMode, Path, FillRule, units::*};
 
+use crate::clip::BorderClipKey;
+use crate::quad::QuadTransformState;
 use crate::render_task_graph::RenderTaskId;
+use crate::segment::EdgeMask;
 use crate::spatial_tree::SpatialNodeIndex;
 use crate::util::MaxRect;
 
 /// The shape of a clip applied to a quad primitive.
 #[derive(Clone, Debug)]
 pub enum QuadClipShape {
+    Border { key: BorderClipKey },
     Rectangle {
         mode: ClipMode,
     },
@@ -216,6 +220,44 @@ impl QuadClipStack {
             spatial_node,
             uid,
         });
+    }
+
+    pub fn push_border(
+        &mut self, rect: LayoutRect, key: BorderClipKey,
+        spatial_node: SpatialNodeIndex, uid: u64,
+    ) {
+        self.clips.push(QuadClip {
+            shape: QuadClipShape::Border { key }, rect, spatial_node, uid,
+        });
+    }
+
+    pub fn adjust_border_clip_coverage(
+        &self,
+        local_bounds: LayoutRect,
+        aa_edges: EdgeMask,
+        transform: &QuadTransformState,
+        task_rect: &DeviceRect,
+    ) -> (LayoutRect, EdgeMask) {
+        let Some(clip) = self.clips.iter().find(|clip| {
+            matches!(clip.shape, QuadClipShape::Border { .. })
+                && clip.spatial_node == transform.prim_spatial_node_index()
+        }) else {
+            return (local_bounds, aa_edges);
+        };
+        let mut shared_edges = EdgeMask::empty();
+        shared_edges.set(EdgeMask::LEFT, local_bounds.min.x == clip.rect.min.x);
+        shared_edges.set(EdgeMask::TOP, local_bounds.min.y == clip.rect.min.y);
+        shared_edges.set(EdgeMask::RIGHT, local_bounds.max.x == clip.rect.max.x);
+        shared_edges.set(EdgeMask::BOTTOM, local_bounds.max.y == clip.rect.max.y);
+        if shared_edges.is_empty() {
+            return (local_bounds, aa_edges);
+        }
+        let Some(task_bounds) = transform.unmap_rect(&task_rect.inflate(1.0, 1.0)) else {
+            return (local_bounds, aa_edges);
+        };
+        // Extend shared edges past the task so only the border mask antialiases them.
+        let bounds = shared_edges.select(local_bounds.union(&task_bounds), local_bounds);
+        (bounds, aa_edges & !shared_edges)
     }
 
     pub fn push_mask(

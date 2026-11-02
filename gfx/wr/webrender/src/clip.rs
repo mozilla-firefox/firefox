@@ -94,6 +94,7 @@
 
 use api::{BorderRadius, ClipMode, ImageMask, ClipId, ClipChainId};
 use api::{FillRule, ImageKey, ImageRendering, Path};
+use api::{BorderStyle, BorderSide, ColorF, NormalBorder};
 use api::units::*;
 use crate::image_tiling::{self, Repetition};
 use crate::border::BorderRadiusAu;
@@ -112,6 +113,7 @@ use crate::render_task::RenderTask;
 use crate::render_task_graph::RenderTaskGraphBuilder;
 use crate::resource_cache::{ImageRequest, ResourceCache};
 use crate::space::{SpaceMapper, SpaceSnapper};
+use crate::space::SnapRounding;
 use crate::util::{extract_inner_rect_safe, project_rect, MatrixHelpers, MaxRect, ScaleOffset};
 use euclid::approxeq::ApproxEq;
 use std::{iter, ops, mem};
@@ -1037,6 +1039,9 @@ impl From<ClipItemKey> for ClipNode {
                     mode,
                 }
             }
+            ClipItemKeyKind::Border(key) => ClipItemKind::Border {
+                key,
+            },
             // The polygon is only read by the hit tester, at scene build.
             ClipItemKeyKind::ImageMask(image, _) => {
                 ClipItemKind::Image {
@@ -1512,6 +1517,9 @@ impl ClipStore {
                     uid,
                 );
             }
+            ClipItemKind::Border { key } => {
+                dest.push_border(instance.clip_rect, key, instance.spatial_node_index, uid);
+            }
             ClipItemKind::Image { .. } => {
                 dest.push_mask(
                     instance.clip_rect,
@@ -1577,11 +1585,17 @@ impl ClipStore {
 
         while current != clip_root && current != ClipNodeId::NONE {
             let node = clip_tree.get_node(current);
-
-            let clip_rect = match clip_snap {
+            let clip_rect = match (clip_snap, &clip_data_store[node.handle].item.kind) {
+                (_, ClipItemKind::Border { key }) => {
+                    snapper.set_target_spatial_node(node.spatial_node_index, spatial_tree);
+                    snapper.snap_rect_rounded(
+                        &node.unsnapped_clip_rect,
+                        SnapRounding::BorderInner { widths: LayoutSideOffsets::from_au(key.widths) },
+                    )
+                }
                 // An anti-aliased clip stays exact, like an anti-aliased prim.
-                ClipSnap::Nearest if node.anti_aliased => node.unsnapped_clip_rect,
-                ClipSnap::Nearest => node.snapped_clip_rect(snapper, spatial_tree),
+                (ClipSnap::Nearest, _) if node.anti_aliased => node.unsnapped_clip_rect,
+                (ClipSnap::Nearest, _) => node.snapped_clip_rect(snapper, spatial_tree),
                 // Device-space prim: leave the clip exact. A
                 // text run's clips must NOT be rounded out to the grid - an
                 // overflow clip sits flush with its container's painted
@@ -1590,7 +1604,7 @@ impl ClipStore {
                 // 2065629). Left exact, the clip rasterizes at the pixel
                 // centre, which is the same grid the container's own snapped
                 // geometry landed on.
-                ClipSnap::Exact => node.unsnapped_clip_rect,
+                (ClipSnap::Exact, _) => node.unsnapped_clip_rect,
             };
 
             if !add_clip_node_to_current_chain(
@@ -1641,6 +1655,7 @@ impl ClipStore {
                 // Ignore any clips which are complex or impossible to calculate
                 // inner rects for now
                 ClipItemKind::Rectangle { mode: ClipMode::ClipOut, .. } |
+                ClipItemKind::Border { .. } |
                 ClipItemKind::Image { .. } |
                 ClipItemKind::Path { .. } |
                 ClipItemKind::RoundedRectangle { mode: ClipMode::ClipOut, .. } => {
@@ -1776,6 +1791,7 @@ impl ClipStore {
                         needs_mask |= match node.item.kind {
                             ClipItemKind::Rectangle { mode: ClipMode::ClipOut, .. } |
                             ClipItemKind::RoundedRectangle { .. } |
+                            ClipItemKind::Border { .. } |
                             ClipItemKind::Image { .. } |
                             ClipItemKind::Path { .. } => {
                                 true
@@ -1879,6 +1895,41 @@ pub enum ClipItemKeyKind {
     /// Clip rects are snapped to the device pixel grid, but the path stays at
     /// its unsnapped position.
     Path(DlHandle<Path>, ItemUid, FillRule, LayoutPointAu),
+    Border(BorderClipKey),
+}
+
+#[derive(Copy, Debug, Clone, Eq, MallocSizeOf, PartialEq, Hash)]
+#[cfg_attr(feature = "capture", derive(Serialize))]
+#[cfg_attr(feature = "replay", derive(Deserialize))]
+pub struct BorderClipKey {
+    pub styles: [BorderStyle; 4],
+    pub radius: BorderRadiusAu,
+    pub widths: LayoutSideOffsetsAu,
+    pub inset: LayoutSideOffsetsAu,
+}
+
+impl BorderClipKey {
+    pub fn new(border: &NormalBorder, widths: LayoutSideOffsets) -> Self {
+        Self {
+            styles: [border.top.style, border.right.style, border.bottom.style, border.left.style],
+            radius: border.radius.into(),
+            widths: widths.to_au(),
+            inset: border.inset.to_au(),
+        }
+    }
+
+    pub fn border(self) -> NormalBorder {
+        let side = |style| BorderSide { color: ColorF::WHITE, style };
+        let mut border = NormalBorder {
+            top: side(self.styles[0]), right: side(self.styles[1]),
+            bottom: side(self.styles[2]), left: side(self.styles[3]),
+            radius: self.radius.into(),
+            inset: LayoutSideOffsets::from_au(self.inset),
+            do_aa: true,
+        };
+        border.normalize(&LayoutSideOffsets::from_au(self.widths));
+        border
+    }
 }
 
 impl ClipItemKeyKind {
@@ -1912,6 +1963,7 @@ impl ClipItemKeyKind {
 
             ClipItemKeyKind::Rectangle(ClipMode::ClipOut) |
             ClipItemKeyKind::RoundedRectangle(..) |
+            ClipItemKeyKind::Border(..) |
             ClipItemKeyKind::ImageMask(..) |
             ClipItemKeyKind::Path(..) => ClipNodeKind::Complex,
         }
@@ -1946,6 +1998,9 @@ impl intern::Internable for ClipIntern {
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
 pub enum ClipItemKind {
+    Border {
+        key: BorderClipKey,
+    },
     Rectangle {
         mode: ClipMode,
     },
@@ -2034,6 +2089,7 @@ impl ClipItemKind {
             ClipItemKind::Rectangle { mode: ClipMode::ClipOut } => None,
             ClipItemKind::RoundedRectangle { mode: ClipMode::Clip, .. } => Some(clip_rect),
             ClipItemKind::RoundedRectangle { mode: ClipMode::ClipOut, .. } => None,
+            ClipItemKind::Border { .. } |
             ClipItemKind::Image { .. } |
             ClipItemKind::Path { .. } => Some(clip_rect),
         }
@@ -2061,6 +2117,7 @@ impl ClipItemKind {
                 let inner_clip_rect = extract_inner_rect_safe(&clip_rect, &clamped, &inset);
                 (clip_rect, inner_clip_rect, mode)
             }
+            ClipItemKind::Border { .. } |
             ClipItemKind::Image { .. } |
             ClipItemKind::Path { .. } => {
                 (clip_rect, None, ClipMode::Clip)
@@ -2178,6 +2235,7 @@ impl ClipItemKind {
                     }
                 }
             }
+            ClipItemKind::Border { .. } |
             ClipItemKind::Image { .. } |
             ClipItemKind::Path { .. } => {
                 let rect = clip_rect;

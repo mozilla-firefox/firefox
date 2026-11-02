@@ -361,6 +361,7 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                 },
                 Debug::RectClip(v) => Real::RectClip(v),
                 Debug::RoundedRectClip(v) => Real::RoundedRectClip(v),
+                Debug::BorderClip(v) => Real::BorderClip(v),
                 Debug::ImageMaskClip(v) => Real::ImageMaskClip(v),
                 Debug::PathClip(v) => Real::PathClip(v),
                 Debug::Rectangle(v) => Real::Rectangle(v),
@@ -704,6 +705,7 @@ impl BuiltDisplayList {
                 ),
                 Real::RectClip(v) => Debug::RectClip(v),
                 Real::RoundedRectClip(v) => Debug::RoundedRectClip(v),
+                Real::BorderClip(v) => Debug::BorderClip(v),
                 Real::ImageMaskClip(v) => Debug::ImageMaskClip(v),
                 Real::PathClip(v) => Debug::PathClip(v),
                 Real::Rectangle(v) => Debug::Rectangle(v),
@@ -3013,6 +3015,25 @@ impl DisplayListBuilder {
         id
     }
 
+    pub fn define_clip_border(
+        &mut self,
+        spatial_id: di::SpatialId,
+        clip_rect: LayoutRect,
+        border: di::NormalBorder,
+        widths: LayoutSideOffsets,
+    ) -> di::ClipId {
+        let id = self.generate_clip_index();
+        let item = di::DisplayItem::BorderClip(di::BorderClipDisplayItem {
+            id,
+            spatial_id,
+            clip_rect: self.normalize_rect(clip_rect, spatial_id),
+            border,
+            widths,
+        });
+        self.push_item(&item);
+        id
+    }
+
     pub fn define_sticky_frame(
         &mut self,
         parent_spatial_id: di::SpatialId,
@@ -3141,6 +3162,7 @@ impl DisplayListBuilder {
                 parsed.push(match item.item() {
                     def @ (di::DisplayItem::RectClip(..)
                     | di::DisplayItem::RoundedRectClip(..)
+                    | di::DisplayItem::BorderClip(..)
                     | di::DisplayItem::ImageMaskClip(..)
                     | di::DisplayItem::PathClip(..)
                     | di::DisplayItem::ClipChain(..)) => Parsed::Definition {

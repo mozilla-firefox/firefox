@@ -657,6 +657,10 @@ class DisplayListBuilder final {
   wr::WrClipId DefineRoundedRectClip(Maybe<wr::WrSpatialId> aSpace,
                                      const wr::ComplexClipRegion& aComplex,
                                      bool aAntiAliased = false);
+  wr::WrClipId DefineBorderClip(
+      const wr::LayoutRect& aRect, const wr::LayoutSideOffsets& aWidths,
+      const mozilla::Range<const wr::BorderSide>& aSides,
+      const wr::BorderRadius& aRadius, const wr::LayoutSideOffsets& aInset);
   wr::WrClipId DefineRectClip(Maybe<wr::WrSpatialId> aSpace,
                               wr::LayoutRect aClipRect,
                               bool aAntiAliased = false);

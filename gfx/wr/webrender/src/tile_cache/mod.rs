@@ -3103,6 +3103,7 @@ impl TileCacheInstance {
             let clip_local_rect = match clip.item.kind {
                 ClipItemKind::Rectangle { .. }
                 | ClipItemKind::RoundedRectangle { .. }
+                | ClipItemKind::Border { .. }
                 | ClipItemKind::Image { .. }
                 | ClipItemKind::Path { .. } => Some(clip_instance.clip_rect),
             };

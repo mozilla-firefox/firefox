@@ -1409,6 +1409,15 @@ wr::WrClipId DisplayListBuilder::DefinePathClip(
                                 aRect, aFillRule);
 }
 
+wr::WrClipId DisplayListBuilder::DefineBorderClip(
+    const wr::LayoutRect& aRect, const wr::LayoutSideOffsets& aWidths,
+    const Range<const wr::BorderSide>& aSides, const wr::BorderRadius& aRadius,
+    const wr::LayoutSideOffsets& aInset) {
+  return wr_dp_define_border_clip(mWrState, mCurrentSpaceAndClipChain.space,
+                                  aRect, aWidths, aSides[0], aSides[1],
+                                  aSides[2], aSides[3], aRadius, aInset);
+}
+
 wr::WrClipId DisplayListBuilder::DefineRectClip(Maybe<wr::WrSpatialId> aSpace,
                                                 wr::LayoutRect aClipRect,
                                                 bool aAntiAliased) {

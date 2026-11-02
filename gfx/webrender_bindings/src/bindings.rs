@@ -3185,6 +3185,37 @@ pub extern "C" fn wr_dp_define_rounded_rect_clip(
 }
 
 #[no_mangle]
+pub extern "C" fn wr_dp_define_border_clip(
+    state: &mut WrState,
+    space: WrSpatialId,
+    rect: LayoutRect,
+    widths: LayoutSideOffsets,
+    top: BorderSide,
+    right: BorderSide,
+    bottom: BorderSide,
+    left: BorderSide,
+    radius: BorderRadius,
+    inset: LayoutSideOffsets,
+) -> WrClipId {
+    debug_assert!(unsafe { is_in_main_thread() });
+    let border = NormalBorder {
+        top,
+        right,
+        bottom,
+        left,
+        radius,
+        inset,
+        do_aa: true,
+    };
+    let clip_id =
+        state
+            .frame_builder
+            .dl_builder
+            .define_clip_border(space.to_webrender(state.pipeline_id), rect, border, widths);
+    WrClipId::from_webrender(clip_id)
+}
+
+#[no_mangle]
 pub extern "C" fn wr_dp_define_rect_clip(
     state: &mut WrState,
     space: WrSpatialId,

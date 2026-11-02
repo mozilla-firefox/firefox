@@ -85,6 +85,9 @@ impl HitTestClipNode {
             ClipItemKeyKind::Rectangle(mode) => {
                 HitTestRegion::Rectangle(clip_rect, mode)
             }
+            ClipItemKeyKind::Border(_) => {
+                HitTestRegion::Rectangle(clip_rect, ClipMode::Clip)
+            }
             ClipItemKeyKind::RoundedRectangle(radius, _, mode) => {
                 // TODO(wsmind): implement hit-testing for corner-shape
                 HitTestRegion::RoundedRectangle(clip_rect, radius.into(), mode)
