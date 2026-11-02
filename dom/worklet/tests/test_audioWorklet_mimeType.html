@@ -1,0 +1,46 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test MIME type checks for AudioWorklet module scripts</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+  <script type="application/javascript" src="common.js"></script>
+</head>
+<body>
+
+<script type="application/javascript">
+// A MIME type mismatch rejects with AbortError.  A module type the worklet
+// doesn't support is rejected before fetching, with a TypeError.
+const TESTS = [
+  { type: "text/javascript", body: "js" },
+  { type: "text/javascript; charset=utf-8", body: "js" },
+  { type: "text/plain", body: "js", error: "AbortError" },
+  { type: "application/octet-stream", body: "js", error: "AbortError" },
+  { type: "application/json", body: "json", error: "AbortError" },
+  { type: "text/javascript", body: "import-js", error: "AbortError" },
+  { type: "text/javascript", body: "import-json" },
+  { type: "text/javascript", body: "import-bad-json", error: "AbortError" },
+  { type: "text/javascript", body: "import-text" },
+  { type: "text/javascript", body: "import-text-octet-stream" },
+  { type: "text/javascript", body: "import-css", error: "TypeError" },
+];
+
+// This function is called into an iframe.
+async function runTestInIframe() {
+  const audioContext = new AudioContext();
+  for (const { type, body, error } of TESTS) {
+    const url =
+      "server_mime_type.sjs?type=" + encodeURIComponent(type) + "&body=" + body;
+    try {
+      await audioContext.audioWorklet.addModule(url);
+      ok(!error, `addModule() of ${body} with ${type} should resolve`);
+    } catch (e) {
+      ok(error, `addModule() of ${body} with ${type} should reject`);
+      is(e.name, error, `Rejected with ${error}`);
+    }
+  }
+  SimpleTest.finish();
+}
+</script>
+</body>
+</html>

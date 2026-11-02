@@ -28,6 +28,9 @@ skip-if = [
   "http3",
 ]
 
+["test_audioWorklet_mimeType.html"]
+support-files = ["server_mime_type.sjs"]
+
 ["test_audioWorklet_options.html"]
 run-if = [
   "!release_or_beta", # requires dom.postMessage.sharedArrayBuffer.bypassCOOP_COEP.insecure.enabled
