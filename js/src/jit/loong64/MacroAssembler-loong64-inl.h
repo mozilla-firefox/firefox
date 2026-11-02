@@ -536,11 +536,9 @@ void MacroAssembler::mulDouble(FloatRegister src, FloatRegister dest) {
 
 void MacroAssembler::mulDoublePtr(ImmPtr imm, Register temp,
                                   FloatRegister dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
   ScratchDoubleScope fpscratch(asMasm());
-  movePtr(imm, scratch);
-  loadDouble(Address(scratch, 0), fpscratch);
+  movePtr(imm, temp);
+  loadDouble(Address(temp, 0), fpscratch);
   mulDouble(fpscratch, dest);
 }
 
