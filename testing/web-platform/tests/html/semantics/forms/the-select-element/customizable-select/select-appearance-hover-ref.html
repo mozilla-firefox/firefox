@@ -1,5 +1,13 @@
 <!DOCTYPE html>
 <link rel=stylesheet href="resources/customizable-select-styles.css">
+<style>
+.customizable-select-button {
+  /* Use a sans-serif font, to avoid fuzzy-mismatches from serif fonts (when
+   * e.g. subpixel-antialiasing fringe extends outwards from a serif and
+   * happens to barely overstep the glyph's declared bounds). */
+  font-family: sans-serif;
+}
+</style>
 
 <div class="customizable-select-button hover" popovertarget=popover id=button>
   <span class=customizable-select-selectedoption>option</span>
