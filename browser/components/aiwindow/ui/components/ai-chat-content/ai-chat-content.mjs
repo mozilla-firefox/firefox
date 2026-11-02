@@ -382,7 +382,7 @@ export class AIChatContent extends MozLitElement {
   #initFooterActionListeners() {
     this.addEventListener("copy-message", event => {
       const { messageId } = event.detail ?? {};
-      const text = this.#getAssistantMessageBody(messageId);
+      const text = this.#getAssistantMessageCopyText(messageId);
       this.#dispatchAction("copy", { messageId, text });
     });
 
@@ -582,6 +582,27 @@ export class AIChatContent extends MozLitElement {
     });
 
     return msg?.body ?? "";
+  }
+
+  /**
+   * The text the copy button copies for an assistant message. A localized
+   * message copies the text the user sees, since its body holds text meant
+   * only for the model.
+   *
+   * @param {string} messageId - Id of the assistant message
+   * @returns {string}
+   */
+  #getAssistantMessageCopyText(messageId) {
+    const msg = this.conversationState.find(
+      m => m?.role === "assistant" && m?.messageId === messageId
+    );
+    if (!msg?.messageL10n) {
+      return this.#getAssistantMessageBody(messageId);
+    }
+    const messageEl = this.shadowRoot?.querySelector(
+      `ai-chat-message[data-message-id="${CSS.escape(messageId)}"]`
+    );
+    return messageEl?.localizedText ?? "";
   }
 
   #onFollowUpSelected(event) {

@@ -1,0 +1,12 @@
+[DEFAULT]
+prefs = [
+  "browser.newtab.preload=false",
+  "browser.search.suggest.enabled=false",
+  "browser.urlbar.suggest.searches=false",
+  "browser.smartwindow.endpoint=http://localhost:0/v1",
+  "browser.smartwindow.enabled=true",
+  "browser.smartwindow.firstrun.hasCompleted=true",
+]
+support-files = ["!/browser/components/aiwindow/ui/test/browser/head.js"]
+
+["browser_chat_copy_message.js"]
