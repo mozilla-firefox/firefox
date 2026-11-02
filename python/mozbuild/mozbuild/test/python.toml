@@ -43,6 +43,8 @@ subsuite = "mozbuild"
 
 ["backend/test_l10n_manifest.py"]
 
+["backend/test_l10n_stage.py"]
+
 ["backend/test_partialconfigenvironment.py"]
 
 ["backend/test_recursivemake.py"]
