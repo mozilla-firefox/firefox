@@ -782,7 +782,6 @@ add_task(async function test_ml_engine_not_enough_memory() {
       taskName: "moz-echo",
       dtype: "q8",
       numThreads: 1,
-      device: "wasm",
     }),
     /Not enough physical memory/,
     "The call should be rejected because of a lack of memory"

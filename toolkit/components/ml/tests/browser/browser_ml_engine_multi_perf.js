@@ -11,7 +11,6 @@ const ENGINES = {
     modelRevision: "main",
     modelHubUrlTemplate: "{model}/{revision}",
     dtype: "q8",
-    device: "wasm",
     request: {
       args: [["restaurants in seattle, wa"]],
     },
@@ -22,7 +21,6 @@ const ENGINES = {
     modelId: "Mozilla/distilbert-uncased-NER-LoRA",
     modelRevision: "main",
     dtype: "q8",
-    device: "wasm",
     request: {
       args: [["restaurants in seattle, wa"]],
     },
@@ -33,7 +31,6 @@ const ENGINES = {
     modelId: "Xenova/all-MiniLM-L6-v2",
     modelRevision: "main",
     dtype: "q8",
-    device: "wasm",
     request: {
       args: [["Yet another example sentence", "Checking sentence handling"]],
       options: {
@@ -48,7 +45,6 @@ const ENGINES = {
     modelId: "Xenova/all-MiniLM-L6-v2",
     modelRevision: "main",
     dtype: "q8",
-    device: "wasm",
     request: {
       args: [["Final example sentence", "Ensuring unique inputs"]],
       options: {

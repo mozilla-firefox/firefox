@@ -82,7 +82,6 @@ When calling that API, the object you pass to it can contain the following argum
 - **processorId**: The identifier for any processor required by the model, used for additional input processing.
 - **processorRevision**: The revision for any processor required by the model, used for additional input processing.
 - **dtype**: quantization level
-- **device**: device to use (wasm or gpu)
 
 Besides `taskName`, all other arguments are optional, and the API will pick sane defaults.
 

@@ -76,7 +76,6 @@ Below are the options available:
 - **logLevel**: The log level used in the worker
 - **runtimeFilename**: Name of the runtime wasm file.
 - **dtype**: quantization level, can be `fp32`, `fp16`, `fp8_e5m2`, `fp8_e4m3`, `q8`, `int8`, `uint8`, `q4`, `bnb4`, `q4f16`. Defaults to `q8`
-- **device**: device to use (`wasm`, `gpu`, or `cpu`). Defaults to `wasm`
 - **executionPriority**: priority for the engine, can be `HIGH` (critical to Firefox), `NORMAL` (default), or `LOW` (third-party calls).
 - **kvCacheDtype**: quantization level for the llama.cpp backend. It only applies to the llama.cpp backend when flash attention is enabled. Otherwise, it is always `f32`.
 - **numContext**: Maximum context size. Applies only to the llama.cpp backend.

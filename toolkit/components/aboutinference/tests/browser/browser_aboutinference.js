@@ -39,9 +39,15 @@ add_task(async function test_about_inference_disabled() {
       const element = document.querySelector(selectors.warning);
       const { display } = window.getComputedStyle(element);
       is(display, "block", "The warning should be visible");
-      Assert.stringContains(
-        element.message,
-        "browser.ml.enable is set to False !"
+      is(
+        element.getAttribute("data-l10n-id"),
+        "about-inference-ml-disabled",
+        "The warning asks to enable local inference"
+      );
+      document.getElementById("warning.enable").click();
+      await ContentTaskUtils.waitForCondition(
+        () => window.getComputedStyle(element).display === "none",
+        "Enabling local inference hides the warning"
       );
     },
   });
