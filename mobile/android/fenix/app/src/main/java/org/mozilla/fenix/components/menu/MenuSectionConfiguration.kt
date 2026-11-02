@@ -4,6 +4,9 @@
 
 package org.mozilla.fenix.components.menu
 
+import mozilla.components.compose.menu.data.MenuItem
+import mozilla.components.compose.menu.data.MenuItemsGroup
+
 /** Type of items that can be expanded to show other (even unrelated) menu items. */
 sealed interface FenixExpandableMenuItem {
 
@@ -128,6 +131,27 @@ data class MenuSectionConfiguration(
     val items: List<FenixMenuItem>,
     val isSticky: Boolean = false,
 )
+
+/**
+ * Map this [MenuSectionConfiguration] to a [MenuItemsGroup].
+ *
+ * @param shownItems The items to show in this menu group.
+ */
+internal fun MenuSectionConfiguration.asMenuItemsGroup(shownItems: List<MenuItem>) =
+    when (presentationMode) {
+        MenuPresentationMode.Row ->
+            MenuItemsGroup.Row(
+                id = id,
+                items = shownItems,
+                isSticky = isSticky,
+            )
+        MenuPresentationMode.Grid ->
+            MenuItemsGroup.Grid(
+                id = id,
+                items = shownItems,
+                isSticky = isSticky,
+            )
+    }
 
 /** How the [FenixMenuItem] should be shown inside a menu section. */
 sealed class MenuPresentationMode {

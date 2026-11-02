@@ -51,9 +51,9 @@ internal fun CustomizeMenuRowGroupContent(
         val rowModifier =
             Modifier.weight(1f)
                 .customizeRowGroupStyle(
+                    group = group,
                     isMandatory = isMandatory,
                     isHidden = isHidden,
-                    group = group,
                     backgroundColor = rowBackgroundColor,
                 )
 

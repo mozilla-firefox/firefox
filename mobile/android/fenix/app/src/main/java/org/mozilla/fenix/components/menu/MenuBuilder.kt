@@ -12,8 +12,6 @@ import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItem as ShownMenuItem
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Grid
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Row
 
 /**
  * Assembles a menu from the items each feature provides.
@@ -46,7 +44,7 @@ class MenuBuilder(private val registry: MenuItemsRegistry) {
      */
     private fun List<MenuSectionConfiguration>.toGroups(items: Map<FenixMenuItem, List<ShownMenuItem>>) =
         map { section ->
-            section.toGroup(shownItems = section.items.flatMap { it.getMenuItemsToShow(items) })
+            section.asMenuItemsGroup(shownItems = section.items.flatMap { it.getMenuItemsToShow(items) })
         }
         .filterNot { it.items.isEmpty() }
 
@@ -66,20 +64,4 @@ class MenuBuilder(private val registry: MenuItemsRegistry) {
         val provider = registry[this] as? ExpandableMenuItemProvider
         return listOfNotNull(provider?.updateWithSubMenuItems(header, children))
     }
-
-    private fun MenuSectionConfiguration.toGroup(shownItems: List<ShownMenuItem>) =
-        when (presentationMode) {
-            Row ->
-                MenuItemsGroup.Row(
-                    id = id,
-                    items = shownItems,
-                    isSticky = isSticky,
-                )
-            Grid ->
-                MenuItemsGroup.Grid(
-                    id = id,
-                    items = shownItems,
-                    isSticky = isSticky,
-                )
-        }
 }

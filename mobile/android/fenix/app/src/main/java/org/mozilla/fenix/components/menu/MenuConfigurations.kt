@@ -65,11 +65,60 @@ object MenuConfigurations {
     @VisibleForTesting internal val CUSTOMIZE_MENU_GROUP_5_ID = "customize_menu_group_5"
     @VisibleForTesting internal val CUSTOMIZE_MENU_GROUP_6_ID = "customize_menu_group_6"
 
-    /** The menu shown while browsing. */
+    /** Ids of browser menu sections that start as initially hidden. */
+    val BROWSER_MENU_HIDDEN_BY_DEFAULT_SECTION_IDS = emptySet<String>()
+
+    /**
+     * The menu shown while browsing.
+     *
+     * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
+     * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
+     * @param customizationInfo The order and visibility of the sections chosen by the user. The default sections are
+     *   shown if this is `null`.
+     */
     fun browser(
         isToolbarAtBottom: Boolean,
         isExpandedToolbarEnabled: Boolean,
+        customizationInfo: CustomizedMenuInfo? = null,
     ): List<MenuSectionConfiguration> {
+        val shouldShowNavigationItemsAtTheTop =
+            shouldShowNavigationItemsAtTheTop(isToolbarAtBottom, isExpandedToolbarEnabled)
+        val defaultSections = browserSections(shouldShowNavigationItemsAtTheTop)
+        if (customizationInfo == null) {
+            return defaultSections.filterNot { it.id in BROWSER_MENU_HIDDEN_BY_DEFAULT_SECTION_IDS }
+        }
+
+        val defaultSectionsIds = defaultSections.associateBy { it.id }
+        return customizationInfo.visibleSectionIds
+            .updateNavigationItemsPosition(shouldShowNavigationItemsAtTheTop)
+            .mapNotNull { defaultSectionsIds[it] }
+    }
+
+    /** The sections of the browser menu the user removed, in their stored order. */
+    fun browserHiddenSections(customization: CustomizedMenuInfo): List<MenuSectionConfiguration> {
+        val sections = browserSections(shouldShowNavigationItemsAtTheTop = true).associateBy { it.id }
+        return customization.hiddenSectionIds.mapNotNull { sections[it] }
+    }
+
+    /**
+     * The structure of the browser menu for users who didn't customize it.
+     *
+     * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
+     * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
+     */
+    fun browserDefaultMenuInfo(isToolbarAtBottom: Boolean, isExpandedToolbarEnabled: Boolean): CustomizedMenuInfo {
+        val (hiddenIds, shownIds) =
+            browserSections(shouldShowNavigationItemsAtTheTop(isToolbarAtBottom, isExpandedToolbarEnabled))
+                .map { it.id }
+                .partition { it in BROWSER_MENU_HIDDEN_BY_DEFAULT_SECTION_IDS }
+        return CustomizedMenuInfo(visibleSectionIds = shownIds, hiddenSectionIds = hiddenIds)
+    }
+
+    private fun shouldShowNavigationItemsAtTheTop(isToolbarAtBottom: Boolean, isExpandedToolbarEnabled: Boolean) =
+        !isToolbarAtBottom && !isExpandedToolbarEnabled
+
+    /** All the sections of the browser menu, including the ones hidden by default, in their default order. */
+    private fun browserSections(shouldShowNavigationItemsAtTheTop: Boolean): List<MenuSectionConfiguration> {
         val navSection =
             MenuSectionConfiguration(
                 id = BROWSER_MENU_NAVIGATION_ID,
@@ -130,7 +179,19 @@ object MenuConfigurations {
                     items = listOf(Quit),
                 ),
             )
-        return if (isToolbarAtBottom || isExpandedToolbarEnabled) rest + navSection else listOf(navSection) + rest
+        return if (shouldShowNavigationItemsAtTheTop) listOf(navSection) + rest else rest + navSection
+    }
+
+    /** Move the navigation section to the toolbar's side of the menu only if the user left it first or last. */
+    private fun List<String>.updateNavigationItemsPosition(shouldShowNavigationItemsAtTheTop: Boolean): List<String> {
+        val index = indexOf(BROWSER_MENU_NAVIGATION_ID)
+        if (index == -1 || (index != 0 && index != lastIndex)) return this
+
+        val rest = this - BROWSER_MENU_NAVIGATION_ID
+        return when (shouldShowNavigationItemsAtTheTop) {
+            true -> listOf(BROWSER_MENU_NAVIGATION_ID) + rest
+            else -> rest + BROWSER_MENU_NAVIGATION_ID
+        }
     }
 
     /** The menu shown on the customize menu screen. */
