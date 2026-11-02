@@ -2,7 +2,7 @@
 // navigation cache (SharedScriptCache) is fetched without opening a channel,
 // just like a module already present in the module map. Such a preload must
 // still fire a "load" event rather than a spurious "error".
-const BASE_URL = "http://mochi.test:8888/browser/dom/base/test/";
+const BASE_URL = "https://example.com/browser/dom/base/test/";
 const MODULE_URL = BASE_URL + "file_js_cache_small.js";
 
 add_task(async function () {
