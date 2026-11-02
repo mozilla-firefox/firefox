@@ -90,6 +90,7 @@ function toCreateOptions(options) {
     ubatchSize: options.numUbatch ?? undefined,
     flashAttn: options.flashAttn ?? undefined,
     featureId: options.featureId ?? "",
+    placement: options.device ?? undefined,
   };
   if (options.kvCacheDtype) {
     createOptions.kvCacheDtype = toKVCacheDtype(options.kvCacheDtype);

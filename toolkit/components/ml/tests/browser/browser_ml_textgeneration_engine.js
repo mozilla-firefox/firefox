@@ -121,3 +121,39 @@ add_task(async function test_engine_abort_signal() {
     await cleanup();
   }
 });
+
+add_task(async function test_engine_device() {
+  const { cleanup } = await setup({
+    prefs: [["browser.ml.llama.hwInference", true]],
+  });
+  let engine;
+  try {
+    // Falls back to the CPU on a machine with no accelerator.
+    engine = await createEngine({
+      ...TINYSTORIES_ENGINE_OPTIONS,
+      engineId: "hwi-device-gpu",
+      device: { kinds: ["gpu", "cpu"] },
+    });
+    const text = await collectGeneratedText(
+      engine.runWithGenerator({
+        prompt: TINYSTORIES_STORYTELLER_PROMPT,
+        nPredict: 4,
+        samplers: TINYSTORIES_GREEDY_SAMPLERS,
+      })
+    );
+    Assert.greater(text.length, 0, "A GPU-first placement generates");
+
+    await Assert.rejects(
+      createEngine({
+        ...TINYSTORIES_ENGINE_OPTIONS,
+        engineId: "hwi-device-none",
+        device: { devices: ["no-such-device"] },
+      }),
+      /no device matches/,
+      "A placement no device matches rejects"
+    );
+  } finally {
+    await engine?.terminate();
+    await cleanup();
+  }
+});

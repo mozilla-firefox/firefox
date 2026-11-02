@@ -77,6 +77,7 @@ Below are the options available:
 - **runtimeFilename**: Name of the runtime wasm file.
 - **dtype**: quantization level, can be `fp32`, `fp16`, `fp8_e5m2`, `fp8_e4m3`, `q8`, `int8`, `uint8`, `q4`, `bnb4`, `q4f16`. Defaults to `q8`
 - **executionPriority**: priority for the engine, can be `HIGH` (critical to Firefox), `NORMAL` (default), or `LOW` (third-party calls).
+- **device**: where the model loads, an `HWInferencePlacement`: device ids or device kinds, ordered by preference. Applies only to the llama.cpp backend.
 - **kvCacheDtype**: quantization level for the llama.cpp backend. It only applies to the llama.cpp backend when flash attention is enabled. Otherwise, it is always `f32`.
 - **numContext**: Maximum context size. Applies only to the llama.cpp backend.
 - **numBatch**: Number of tokens processed in a single forward pass. Applies only to the llama.cpp backend.
