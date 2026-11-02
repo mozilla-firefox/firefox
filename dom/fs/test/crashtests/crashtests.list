@@ -1,5 +1,5 @@
 # StorageManager isn't enabled on Android
-defaults skip-if(Android) pref(dom.fs.enabled,true) pref(dom.fs.writable_file_stream.enabled,true)
+defaults skip-if(Android) pref(dom.fs.enabled,true)
 
 # Most of the issues here are reproducible only with --verify
 load 1798773.html

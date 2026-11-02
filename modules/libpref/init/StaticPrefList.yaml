@@ -5536,12 +5536,6 @@
   value: true
   mirror: always
 
-# Whether the WritableFileStream is enabled or disabled.
-- name: dom.fs.writable_file_stream.enabled
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-
 # A pref that is used to enable testing features.
 - name: dom.fs.testing
   type: SequentiallyConsistentAtomicBool
