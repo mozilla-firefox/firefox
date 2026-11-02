@@ -251,9 +251,9 @@ APZEventResult InputQueue::ReceiveTouchInput(
         // APZ must also process touchstart to begin tap/long-press recognition.
         // TODO: Handle the case in which the target is not confirmed or touch
         // action is not confirmed.
-        if (block->IsTargetConfirmed() && block->HasAllowedTouchBehaviors()) {
+        if (block->IsTargetConfirmed() && block->HasAllowedTouchBehaviors() &&
+            block->TouchActionAllowsPanningX()) {
           MOZ_ASSERT(target, "A confirmed target should be non-null here");
-          // TODO: Consider touch action.
           result.mSwipableDirectionsForTouch =
               block->GetOverscrollHandoffChain()->GetSwipableDirections(
                   *target);

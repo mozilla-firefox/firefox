@@ -243,7 +243,9 @@ SideBits OverscrollHandoffChain::GetSwipableDirections(
   SideBits result = SideBits::eLeftRight;
   for (auto i = IndexOf(&aTarget); i < Length(); i++) {
     const auto& apzc = mChain[i];
-    result &= ~(apzc->ScrollableDirections()) & SideBits::eLeftRight;
+    result &= apzc->OverscrollBehaviorAllowsSwipe()
+                  ? ~(apzc->ScrollableDirections()) & SideBits::eLeftRight
+                  : SideBits::eNone;
     if (result == SideBits::eNone) {
       return result;
     }
