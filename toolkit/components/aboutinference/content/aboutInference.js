@@ -17,6 +17,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   DownloadUtils: "resource://gre/modules/DownloadUtils.sys.mjs",
   ModelHub: "chrome://global/content/ml/ModelHub.sys.mjs",
   getInferenceProcessInfo: "chrome://global/content/ml/Utils.sys.mjs",
+  TextGenerationEngine:
+    "moz-src:///toolkit/components/ml/textgeneration/TextGenerationEngine.sys.mjs",
   getOptimalCPUConcurrency: "chrome://global/content/ml/Utils.sys.mjs",
   BACKENDS: "chrome://global/content/ml/EngineProcess.sys.mjs",
 });
@@ -456,23 +458,23 @@ function ts2str(ts) {
  */
 
 async function updateStatus() {
-  const engineParent = await getEngineParent();
-  if (!engineParent) {
-    // The engine parent is not available.
-    return;
-  }
-
   /**
    * @type {StatusByEngineId}
    */
-  let statusByEngineId;
+  let statusByEngineId = new Map();
 
-  // Fetch the engine status info
-  try {
-    statusByEngineId = await engineParent.getStatusByEngineId();
-  } catch (error) {
-    console.error("Failed to get the engine status", error);
-    statusByEngineId = new Map();
+  // Asking the engine parent launches the inference process: only ask one
+  // that is already up.
+  if (EngineProcess.areAllEnginesTerminated()) {
+    engineParent = null;
+  } else {
+    const parent = await getEngineParent();
+    try {
+      statusByEngineId = await parent.getStatusByEngineId();
+    } catch (error) {
+      // The engine process went away under the poll.
+      engineParent = null;
+    }
   }
 
   // Get the container where the table will be displayed
@@ -819,10 +821,10 @@ async function runInference() {
       numContext,
       numBatch,
       numUbatch: numBatch,
-      timeoutMS: -1,
       useMlock: false,
       useMmap: true,
       kvCacheDtype: "q8_0",
+      flashAttn: true,
     };
   }
 
@@ -856,8 +858,9 @@ async function runInference() {
   let startTime;
   const e2eRunTimeKey = "e2e run time (ms)";
   let e2eMetrics = { [e2eRunTimeKey]: [] };
+  let pipelineOptions;
   try {
-    const pipelineOptions = new PipelineOptions(initData);
+    pipelineOptions = new PipelineOptions(initData);
     startTime = performance.now();
     engine = await createEngine(pipelineOptions, progressData => {
       engineNotification(progressData).catch(err => {
@@ -872,57 +875,67 @@ async function runInference() {
 
   resultsConsole.addLine("Running inference request");
 
-  let request = { args: inputData.inputArgs, options: inputData.runOptions };
+  try {
+    let request = { args: inputData.inputArgs, options: inputData.runOptions };
 
-  if (isLlama) {
-    request = { prompt: inputData.inputArgs, ...inputData.runOptions };
-  }
-
-  let res;
-  for (let i = 0; i < numRuns; i++) {
-    try {
-      startTime = performance.now();
-      res = await engine.run(request);
-      e2eMetrics[e2eRunTimeKey].push(performance.now() - startTime);
-    } catch (e) {
-      resultsConsole.addLine(e);
-      if (
-        e.message.includes("Invalid model hub root url: https://huggingface.co")
-      ) {
-        resultsConsole.addLine(
-          "Make sure you started Firefox with MOZ_ALLOW_EXTERNAL_ML_HUB=1"
-        );
-      }
-      engineParent = null; // let's re-create it on errors.
-      throw e;
+    if (isLlama) {
+      request = { prompt: inputData.inputArgs, ...inputData.runOptions };
     }
 
-    const results_filter = (key, value) => {
-      if (key === "metrics") {
-        return undefined;
+    let res;
+    for (let i = 0; i < numRuns; i++) {
+      try {
+        startTime = performance.now();
+        res = await engine.run(request);
+        e2eMetrics[e2eRunTimeKey].push(performance.now() - startTime);
+      } catch (e) {
+        resultsConsole.addLine(e);
+        if (
+          e.message.includes(
+            "Invalid model hub root url: https://huggingface.co"
+          )
+        ) {
+          resultsConsole.addLine(
+            "Make sure you started Firefox with MOZ_ALLOW_EXTERNAL_ML_HUB=1"
+          );
+        }
+        engineParent = null; // let's re-create it on errors.
+        throw e;
       }
-      return value;
-    };
+
+      const results_filter = (key, value) => {
+        if (key === "metrics") {
+          return undefined;
+        }
+        return value;
+      };
+
+      resultsConsole.addLine(
+        `Results: ${JSON.stringify(res, results_filter, 2)}`
+      );
+    }
+
+    resultsConsole.addLine(`Metrics: ${JSON.stringify(res.metrics, null, 2)}`);
+    const timeline = res.metrics?.runTimestamps ?? [];
+    const maxMemory = findMaxMemory(timeline);
+    resultsConsole.addLine(
+      `Resident Set Size (RSS) approximative peak usage: ${formatBytes(
+        maxMemory
+      )}`
+    );
+    resultsConsole.addLine(
+      `Timers: ${JSON.stringify(findTotalTime(timeline), null, 2)}`
+    );
 
     resultsConsole.addLine(
-      `Results: ${JSON.stringify(res, results_filter, 2)}`
+      `End to End Metrics: ${JSON.stringify(e2eMetrics, null, 2)}`
     );
+  } finally {
+    // Nothing manages an HWInference engine's lifetime but its creator.
+    if (lazy.TextGenerationEngine.shouldRoute(pipelineOptions)) {
+      await engine.terminate();
+    }
   }
-
-  resultsConsole.addLine(`Metrics: ${JSON.stringify(res.metrics, null, 2)}`);
-  const maxMemory = findMaxMemory(res.metrics);
-  resultsConsole.addLine(
-    `Resident Set Size (RSS) approximative peak usage: ${formatBytes(
-      maxMemory
-    )}`
-  );
-  resultsConsole.addLine(
-    `Timers: ${JSON.stringify(findTotalTime(res.metrics), null, 2)}`
-  );
-
-  resultsConsole.addLine(
-    `End to End Metrics: ${JSON.stringify(e2eMetrics, null, 2)}`
-  );
   await refreshPage();
 }
 
@@ -1205,6 +1218,7 @@ async function runBenchmark() {
         useMlock: false,
         useMmap: true,
         kvCacheDtype: "q8_0",
+        flashAttn: true,
       },
     },
   ];
@@ -1333,6 +1347,11 @@ window.onload = async function () {
     .addEventListener("click", runBenchmark);
 
   document.getElementById("benchmark.output").value = "";
+
+  window.addEventListener("unload", () => {
+    clearInterval(updateStatusInterval);
+    clearInterval(updateInterval);
+  });
 
   await refreshPage();
 };
