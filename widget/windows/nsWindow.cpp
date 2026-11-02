@@ -3408,6 +3408,12 @@ void nsWindow::TryDwmResizeHack() {
 
   // ---------------------------------------------------------------------------
 
+  // No renderer yet (e.g. sizemode=fullscreen before first paint): skip without
+  // using up the one-shot flag.
+  if (!mWindowRenderer) {
+    return;
+  }
+
   // Regardless of preferences or heuristics, only apply the hack if this is the
   // first time we've entered fullscreen across the entire Firefox session.
   // (Subsequent transitions to fullscreen, even with different windows, don't
