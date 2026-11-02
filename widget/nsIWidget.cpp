@@ -1310,6 +1310,19 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
         aResult.mInputBlockId, BrowserGestureResponse::NotConsumed);
   };
 
+  if (mSwipeTracker && mSwipeTracker->EventsAreControllingSwipe()) {
+    // A touchpad swipe is ongoing. Reject the touchscreen swipe so that it
+    // does not take over the touchpad one. Note that the touch input can still
+    // scroll the page because APZ has already handled it. See bug 2088133.
+    //
+    // Without checking EventsAreControllingSwipe(), a new swipe could not
+    // supersede a leftover one, because mSwipeTracker remains for a while to
+    // animate after the fingers are lifted. This matches the check in
+    // SwipeTracker::ProcessEvent() for input from the other source.
+    rejectSwipe();
+    return;
+  }
+
   const auto touchDelta =
       mTouchSwipeState.GetDelta(aInput.mTouches[0].mScreenPoint);
   // Reject swipe navigation when there is no horizontal movement.
@@ -1341,7 +1354,7 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
   // Note that TrackScrollEventAsSwipe() notifies APZ that the browser consumed
   // the gesture.
   TrackScrollEventAsSwipe(swipeStart, swipeInfo.allowedDirections,
-                          aResult.mInputBlockId);
+                          aResult.mInputBlockId, SwipeInputSource::Touchscreen);
   MOZ_ASSERT(mSwipeTracker,
              "mSwipeTracker must exist when the phase turns into Tracking.");
   mTouchSwipeState.phase = TouchSwipeState::Phase::Tracking;
@@ -1371,7 +1384,7 @@ void nsIWidget::HandleTouchInputAsSwipe(const MultiTouchInput& aInput) {
                  "mSwipeTracker must exist when the phase is Tracking.");
       // Note that ProcessEvent() handles swipe tracker cleanup for
       // PANGESTURE_END.
-      mSwipeTracker->ProcessEvent(convertedPan);
+      mSwipeTracker->ProcessEvent(convertedPan, SwipeInputSource::Touchscreen);
       if (aInput.mType == MultiTouchInput::MULTITOUCH_MOVE) {
         mTouchSwipeState.previousTouchPoint =
             Some(aInput.mTouches[0].mScreenPoint);
@@ -2441,9 +2454,10 @@ void nsIWidget::ReportSwipeStarted(uint64_t aInputBlockId, bool aStartSwipe) {
     if (aStartSwipe) {
       PanGestureInput& startEvent = mSwipeEventQueue->queuedEvents[0];
       TrackScrollEventAsSwipe(startEvent, mSwipeEventQueue->allowedDirections,
-                              aInputBlockId);
+                              aInputBlockId, SwipeInputSource::Touchpad);
       for (size_t i = 1; i < mSwipeEventQueue->queuedEvents.Length(); i++) {
-        mSwipeTracker->ProcessEvent(mSwipeEventQueue->queuedEvents[i]);
+        mSwipeTracker->ProcessEvent(mSwipeEventQueue->queuedEvents[i],
+                                    SwipeInputSource::Touchpad);
       }
     } else if (mAPZC) {
       // If the event wasn't start swipe, we need to notify it to APZ.
@@ -2456,7 +2470,8 @@ void nsIWidget::ReportSwipeStarted(uint64_t aInputBlockId, bool aStartSwipe) {
 
 void nsIWidget::TrackScrollEventAsSwipe(
     const mozilla::PanGestureInput& aSwipeStartEvent,
-    uint32_t aAllowedDirections, uint64_t aInputBlockId) {
+    uint32_t aAllowedDirections, uint64_t aInputBlockId,
+    SwipeInputSource aInputSource) {
   // If a swipe is currently being tracked kill it -- it's been interrupted
   // by another gesture event.
   if (mSwipeTracker) {
@@ -2470,8 +2485,8 @@ void nsIWidget::TrackScrollEventAsSwipe(
           ? (uint32_t)dom::SimpleGestureEvent_Binding::DIRECTION_RIGHT
           : (uint32_t)dom::SimpleGestureEvent_Binding::DIRECTION_LEFT;
 
-  mSwipeTracker =
-      new SwipeTracker(*this, aSwipeStartEvent, aAllowedDirections, direction);
+  mSwipeTracker = new SwipeTracker(*this, aSwipeStartEvent, aAllowedDirections,
+                                   direction, aInputSource);
   mSwipeTracker->StartTracking(aSwipeStartEvent);
 
   if (mAPZC) {
@@ -2529,7 +2544,8 @@ WidgetWheelEvent nsIWidget::MayStartSwipe(const PanGestureInput& aPanInput,
         // We know now that SendMayStartSwipe wants a swipe, so we can start
         // the swipe now.
         TrackScrollEventAsSwipe(aPanInput, swipeInfo.allowedDirections,
-                                aApzResult.mInputBlockId);
+                                aApzResult.mInputBlockId,
+                                SwipeInputSource::Touchpad);
       } else if (!aApzResult.GetHandledResult() ||
                  !aApzResult.GetHandledResult()->IsHandledByRoot()) {
         // We don't know whether this event can start a swipe, so we need

@@ -72,6 +72,7 @@ class WidgetGUIEvent;
 class WidgetInputEvent;
 class WidgetKeyboardEvent;
 enum ScreenRotation : uint8_t;
+enum class SwipeInputSource : uint8_t;
 enum class ColorScheme : uint8_t;
 enum class NativeKeyBindingsType : uint8_t;
 enum class WindowButtonType : uint8_t;
@@ -1256,7 +1257,8 @@ class nsIWidget : public nsSupportsWeakReference {
 
   void TrackScrollEventAsSwipe(const mozilla::PanGestureInput& aSwipeStartEvent,
                                uint32_t aAllowedDirections,
-                               uint64_t aInputBlockId);
+                               uint64_t aInputBlockId,
+                               mozilla::SwipeInputSource aInputSource);
   struct SwipeInfo {
     bool wantsSwipe;
     uint32_t allowedDirections;

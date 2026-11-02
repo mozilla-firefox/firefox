@@ -890,8 +890,8 @@ void nsWindow::SendAnAPZEvent(InputData& aEvent) {
     // Give the swipe tracker a first pass at the event. If a new pan gesture
     // has been started since the beginning of the swipe, the swipe tracker
     // will know to ignore the event.
-    nsEventStatus status =
-        mSwipeTracker->ProcessEvent(aEvent.AsPanGestureInput());
+    nsEventStatus status = mSwipeTracker->ProcessEvent(
+        aEvent.AsPanGestureInput(), SwipeInputSource::Touchpad);
     if (status == nsEventStatus_eConsumeNoDefault) {
       return;
     }
