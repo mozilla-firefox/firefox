@@ -199,6 +199,12 @@ ReflowInput::InitFlags BlockReflowState::ComputeChildMarginTrim(
 
   bool trimBStart = aTrimChildBStartMargins && aIsAdjacentToBStart;
   bool trimBEnd = aTrimChildBEndMargins && aBlock->IsLineAdjacentToBEnd(aLine);
+  // An empty block's margins collapses, so trimming either adjoining margin
+  // also trims the other.
+  if ((trimBStart || trimBEnd) && aLine->IsEmpty()) {
+    trimBStart = true;
+    trimBEnd = true;
+  }
   if (trimBStart) {
     flags += ReflowInput::InitFlag::TrimBStartMargin;
   }
