@@ -14,11 +14,11 @@ const lazy = XPCOMUtils.declareLazy({
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
-  setTimeout: "resource://gre/modules/Timer.sys.mjs",
   ChatStore:
     "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs",
   openAIEngine:
     "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
@@ -56,6 +56,10 @@ const UNKNOWN = "unknown";
 
 const RS_TELEMETRY_PROMPTS_COLLECTION = "ai-window-telemetry-prompts";
 const RS_TELEMETRY_TRIGGERS_COLLECTION = "ai-window-telemetry-triggers";
+
+// Pause before every prompt, including each conversation's first, so requests
+// stay under the 20 rpm rate limit (at most 15 rpm) regardless of latency.
+const PROMPT_PAUSE_MS = 4000;
 
 // ============================================================
 // Trigger
@@ -255,6 +259,10 @@ export class TelemetryEngine {
     return Math.random();
   }
 
+  _pause(ms) {
+    return new Promise(resolve => lazy.setTimeout(resolve, ms));
+  }
+
   async getTriggers(conversation) {
     await this.getTriggerDefinitions();
 
@@ -369,41 +377,34 @@ export class TelemetryEngine {
     return this._runPrompts(promptsToRun, conversation);
   }
 
+  /**
+   * Runs each prompt record once, without retries, pausing before each one.
+   * A 429 is rethrown so the caller can stop sending requests; other errors
+   * are logged and skipped.
+   *
+   * @param {object[]} promptsToRun
+   * @param {object} conversation
+   * @returns {Promise<object[]>}
+   */
   async _runPrompts(promptsToRun, conversation) {
     const results = [];
     for (const record of promptsToRun) {
-      let lastError;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) {
-          await new Promise(resolve =>
-            lazy.setTimeout(resolve, 1000 * 2 ** attempt + Math.random() * 500)
-          );
+      await this._pause(PROMPT_PAUSE_MS);
+      try {
+        const engine = await TelemetryPromptEngine.build(record);
+        const result = await engine.run(conversation);
+        results.push({
+          telemetry_name: record.telemetry_name,
+          result,
+          telemetry_version: record.version,
+        });
+      } catch (error) {
+        if (lazy.openAIEngine.is429Error(error)) {
+          throw error;
         }
-        try {
-          const engine = await TelemetryPromptEngine.build(record);
-          const result = await engine.run(conversation);
-          results.push({
-            telemetry_name: record.telemetry_name,
-            result,
-            telemetry_version: record.version,
-          });
-          lastError = null;
-          break;
-        } catch (error) {
-          if (lazy.openAIEngine.is429Error(error)) {
-            lastError = error;
-          } else {
-            lazy.console.error(
-              `Telemetry: evaluation failed for ${record.telemetry_name}:`,
-              error
-            ); // other errors fail
-            break;
-          }
-        }
-      }
-      if (lastError) {
         lazy.console.error(
-          `Encountered error running batch telemetry job: ${lastError}`
+          `Telemetry: evaluation failed for ${record.telemetry_name}:`,
+          error
         );
       }
     }

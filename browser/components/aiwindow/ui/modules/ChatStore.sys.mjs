@@ -100,6 +100,7 @@ import { migrations } from "./ChatMigrations.sys.mjs";
 
 const MAX_DB_SIZE_BYTES = 75 * 1024 * 1024;
 const SORTS = ["ASC", "DESC"];
+const MAX_TELEMETRY_CONVERSATIONS = 50;
 
 // time to wait/collect before running recordDatabaseSize
 //  prevents running this function after every chunk of the response
@@ -1636,10 +1637,16 @@ class ChatStore {
       });
   }
 
-  async getConversationsForTelemetry() {
+  /**
+   * Fetches unprocessed conversations awaiting end-of-conversation telemetry,
+   * oldest first.
+   *
+   * @param {number} [limit] - Maximum number of conversations to return
+   */
+  async getConversationsForTelemetry(limit = MAX_TELEMETRY_CONVERSATIONS) {
     await this.#ensureDatabase();
     const rows = await this.#conn
-      .executeCached(GET_CONVERSATIONS_FOR_TELEMETRY)
+      .executeCached(GET_CONVERSATIONS_FOR_TELEMETRY, { limit })
       .catch(e => {
         lazy.log.error(
           "Failed to fetch conversations for telemetry",

@@ -620,5 +620,7 @@ JOIN message m
   ON m.conv_id = lm.conv_id
  AND m.created_date = lm.last_message_time
 WHERE t.processed = 0
-  AND lm.last_message_time < strftime('%s', 'now', '-5 hours') * 1000;
+  AND lm.last_message_time < strftime('%s', 'now', '-5 hours') * 1000
+ORDER BY lm.last_message_time ASC
+LIMIT :limit;
 `;
