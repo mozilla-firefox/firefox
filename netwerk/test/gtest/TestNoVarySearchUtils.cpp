@@ -297,6 +297,14 @@ static const EquivTestData kEquivTests[] = {
     {"key-order: multi-value, values for same key in different order → MISS",
      "https://example.com/p?a=1&a=2", "https://example.com/p?a=2&a=1",
      "key-order", false},
+
+    // Header keys are percent-decoded before matching query names
+    {"Allowlist: percent-encoded non-ASCII key differs → MISS",
+     "https://example.com/p?%C2%A2=3", "https://example.com/p?%C2%A2=4",
+     R"(params, except=("%C2%A2"))", false},
+    {"Blocklist: percent-encoded non-ASCII key differs → HIT",
+     "https://example.com/p?%C2%A2=3", "https://example.com/p?%C2%A2=4",
+     R"(params=("%C2%A2"))", true},
 };
 
 class TestNoVarySearchEquivalence
