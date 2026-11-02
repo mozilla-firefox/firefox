@@ -9,6 +9,7 @@ import { INITIAL_STATE, reducers } from "common/Reducers.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
 import { Privacy } from "content-src/components/Widgets/Privacy/Privacy";
 import { SpaceActiveContext } from "content-src/lib/SpaceActiveContext";
+import { WidgetsSidebar } from "content-src/components/Widgets/WidgetsSidebar";
 
 const mockState = {
   ...INITIAL_STATE,
@@ -75,6 +76,16 @@ function atLargeSize(state) {
     Prefs: {
       ...state.Prefs,
       values: { ...state.Prefs.values, "widgets.privacy.size": "large" },
+    },
+  };
+}
+
+function atSmallSize(state) {
+  return {
+    ...state,
+    Prefs: {
+      ...state.Prefs,
+      values: { ...state.Prefs.values, "widgets.privacy.size": "small" },
     },
   };
 }
@@ -817,6 +828,141 @@ describe("Privacy widget", () => {
     expect(clickEvent.data.action_value).toBe(
       "about:preferences#privacy-trackingprotection"
     );
+  });
+
+  describe("small size", () => {
+    const tipWithCta = {
+      variant: "tip",
+      messageId: "newtab-privacy-message-info-1",
+      icon: "shield",
+      cta: { type: "OPEN_ABOUT_PAGE", data: { args: "protections" } },
+    };
+
+    it("renders the small-widget class", () => {
+      const { container } = renderPrivacy(
+        jest.fn(),
+        {},
+        atSmallSize(stateWithTrackers(87))
+      );
+      expect(container.querySelector("article.privacy").className).toContain(
+        "small-widget"
+      );
+    });
+
+    it("drops the tip, divider and CTA even when the decision carries them", () => {
+      const { container } = renderPrivacy(
+        jest.fn(),
+        {},
+        atSmallSize(stateWithMessage(tipWithCta))
+      );
+      expect(container.querySelector(".privacy-count-number")).toBeTruthy();
+      expect(container.querySelector(".privacy-tip")).toBeFalsy();
+      expect(container.querySelector(".privacy-divider")).toBeFalsy();
+      expect(container.querySelector(".privacy-cta")).toBeFalsy();
+      expect(container.querySelector("article.privacy").className).toContain(
+        "is-count-only"
+      );
+    });
+
+    it("records the sidebar location when the sidebar renders it", () => {
+      const dispatch = jest.fn();
+      const state = atSmallSize(stateWithMessage(tipWithCta));
+      render(
+        <WrapWithProvider
+          state={{
+            ...state,
+            Prefs: {
+              ...state.Prefs,
+              values: {
+                ...state.Prefs.values,
+                "nova.enabled": true,
+                trainhopConfig: { widgets: { privacySidebar: true } },
+              },
+            },
+          }}
+        >
+          <WidgetsSidebar dispatch={dispatch} />
+        </WrapWithProvider>
+      );
+      const impressions = findImpressions(dispatch);
+      expect(impressions).toHaveLength(1);
+      expect(impressions[0].data).toMatchObject({
+        widget_name: "privacy",
+        widget_size: "small",
+        widget_location: "sidebar",
+        widget_variant: "count_only",
+      });
+    });
+
+    it("drops the streak message", () => {
+      const { container } = renderPrivacy(
+        jest.fn(),
+        {},
+        atSmallSize(
+          stateWithMessage({
+            variant: "streak",
+            messageId: "newtab-privacy-message-streak",
+            icon: "kit",
+          })
+        )
+      );
+      expect(container.querySelector(".privacy-streak")).toBeFalsy();
+      expect(
+        container.querySelector("article.privacy").className
+      ).not.toContain("has-streak");
+    });
+
+    it("drops the blank-state CTA", () => {
+      const { container } = renderPrivacy(
+        jest.fn(),
+        {},
+        atSmallSize(
+          stateWithMessage({
+            variant: "blank",
+            icon: "shieldCheck",
+            cta: { type: "OPEN_ABOUT_PAGE", data: { args: "protections" } },
+          })
+        )
+      );
+      expect(container.querySelector(".privacy-cta")).toBeFalsy();
+    });
+
+    it("uses the short empty-state copy, without the arrow", () => {
+      const { container } = renderPrivacy(
+        jest.fn(),
+        {},
+        atSmallSize(stateWithTrackers(0))
+      );
+      expect(container.querySelector("article.privacy").className).toContain(
+        "is-empty"
+      );
+      const messages = container.querySelectorAll(
+        ".privacy-empty-message-wrapper p"
+      );
+      expect([...messages].map(p => p.getAttribute("data-l10n-id"))).toEqual([
+        "newtab-privacy-empty-state-small-title",
+        "newtab-privacy-empty-state-small-message",
+      ]);
+      expect(container.querySelector(".privacy-empty-message")).toBeFalsy();
+    });
+
+    it("shows only the ETP-off subtitle, still inside the settings link", () => {
+      const { container } = renderPrivacy(
+        jest.fn(),
+        {},
+        atSmallSize(stateWithEtpOff())
+      );
+      expect(container.querySelector(".privacy-etp-off-bold")).toBeFalsy();
+      const link = container.querySelector("a.privacy-etp-off-details");
+      expect(link.getAttribute("href")).toBe(
+        "about:preferences#privacy-trackingprotection"
+      );
+      expect(
+        link
+          .querySelector(".privacy-etp-off-message")
+          .getAttribute("data-l10n-id")
+      ).toBe("newtab-privacy-etp-off-turn-on-tracking");
+    });
   });
 
   describe("telemetry", () => {
@@ -1840,5 +1986,19 @@ describe("Privacy widget celebration tiers", () => {
     expect(
       container.querySelector(".privacy-image-icon").getAttribute("src")
     ).toContain("kit-circle-animated.svg");
+  });
+
+  it("still plays at the small size", () => {
+    const { container } = renderPrivacy(
+      jest.fn(),
+      {},
+      atSmallSize(
+        withCategory("milestoneMonth", "newtab-privacy-message-milestone-month")
+      )
+    );
+    expect(sparkleCount(container)).toBe(12);
+    expect(container.querySelector("article.privacy").className).toContain(
+      "is-major-celebration"
+    );
   });
 });

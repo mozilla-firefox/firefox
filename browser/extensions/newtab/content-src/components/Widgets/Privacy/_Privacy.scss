@@ -41,9 +41,12 @@
   &.medium-widget {
     padding-block-start: var(--space-small);
     grid-row: span 2;
+  }
 
-    // The count sits close to the card edge here, so a large overhang would
-    // spill out; keep the sparkle layer tight to the badge + number.
+  // The count sits close to the card edge here, so a large overhang would
+  // spill out; keep the sparkle layer tight to the badge + number.
+  &.medium-widget,
+  &.small-widget {
     .privacy-celebration-sparkles {
       /* stylelint-disable-next-line declaration-property-value-disallowed-list */
       inset: -4px -4px -2px;
@@ -52,6 +55,13 @@
 
   &.large-widget {
     grid-row: span 4;
+  }
+
+  // Two columns by two rows, like small weather.
+  &.small-widget {
+    grid-column: span 2;
+    grid-row: span 2;
+    padding: var(--space-medium);
   }
 }
 
@@ -95,6 +105,13 @@
 
     .medium-widget & {
       margin-block-end: var(--space-medium);
+      font-size: var(--newtab-font-size-xsmall);
+    }
+
+    // Both lines flow as one sentence and wrap where the card runs out.
+    .small-widget & {
+      flex-flow: row wrap;
+      column-gap: var(--space-xsmall);
       font-size: var(--newtab-font-size-xsmall);
     }
 
@@ -155,6 +172,15 @@
     }
   }
 
+  .small-widget & {
+    justify-content: center;
+    gap: var(--space-small);
+
+    .privacy-image-icon {
+      height: var(--icon-size-large);
+    }
+  }
+
   .privacy-empty-details,
   .privacy-etp-off-details {
     color: inherit;
@@ -163,6 +189,10 @@
 
     .large-widget & {
       font-size: var(--font-size-root);
+    }
+
+    .small-widget & {
+      line-height: 1.2;
     }
 
     &:hover {
@@ -184,6 +214,18 @@
 
     .large-widget & {
       max-width: 95%;
+    }
+
+    .small-widget & {
+      max-width: 100%;
+    }
+  }
+
+  .privacy-empty-message-wrapper {
+    .small-widget & {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-medium);
     }
   }
 
@@ -227,6 +269,11 @@
     max-height: none;
   }
 
+  .small-widget & {
+    height: var(--icon-size-xlarge);
+    max-height: none;
+  }
+
   .large-widget & {
     max-height: calc(var(--icon-size-large) * 2);
   }
@@ -259,6 +306,10 @@
     gap: var(--space-small);
   }
 
+  .small-widget & {
+    gap: var(--space-xsmall);
+  }
+
   .privacy-count-number-wrapper {
     align-items: center;
     display: flex;
@@ -269,6 +320,11 @@
     width: fit-content;
 
     .medium-widget.is-count-only & {
+      gap: var(--space-xsmall);
+    }
+
+    .small-widget & {
+      align-items: last baseline;
       gap: var(--space-xsmall);
     }
 
@@ -284,6 +340,11 @@
 
     .medium-widget.is-count-only & {
       font-size: calc(var(--font-size-root) * 3.2); // 48px
+    }
+
+    .small-widget & {
+      font-size: calc(var(--font-size-root) * 2.8); // 42px
+      line-height: 1;
     }
 
     .large-widget & {

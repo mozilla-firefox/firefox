@@ -1391,6 +1391,9 @@ newtab-privacy-empty-state = { -brand-short-name } automatically blocks trackers
 # Here we are referring to the number of trackers blocked, which increases as the user browses.
 # An alternative can be "See a running total here"
 newtab-privacy-empty-state-tally = See a running tally here.
+# Shorter empty-state copy for the small card, shown as two separate lines.
+newtab-privacy-empty-state-small-title = Fewer trackers, faster browsing.
+newtab-privacy-empty-state-small-message = Browse to start blocking.
 
 ## Privacy widget — Enhanced Tracking Protection off state
 

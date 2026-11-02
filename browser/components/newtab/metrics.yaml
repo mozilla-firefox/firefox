@@ -1475,8 +1475,9 @@ newtab:
       widget_variant: &widget_variant
         description: >
           Optional, widget-defined state the widget was showing. Privacy sends
-          etp_off, no_trackers_blocked, newtab-privacy-blank for the state with
-          no message, or the ID of the message shown.
+          etp_off, no_trackers_blocked, count_only for the small card,
+          newtab-privacy-blank for the state with no message, or the ID of the
+          message shown.
         type: string
     send_in_pings:
       - newtab
