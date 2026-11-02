@@ -54,7 +54,7 @@ export class GuestAuthProviderImpl extends AuthProviderImpl {
 
   async signIn(browser) {
     if (
-      !lazy.AuthProvider.hasToSConsent &&
+      !lazy.AuthProvider.hasToUConsent &&
       !(await lazy.ToUSpotlight.show(browser))
     ) {
       return false;

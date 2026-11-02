@@ -790,7 +790,7 @@ export class MemoriesManager {
    * Gating logic for all schedulers:
    * - browser.smartwindow.enabled pref
    * - memories-from-source specific pref (history / conversation)
-   * - ToS consent
+   * - ToU consent
    * - browser.smartwindow.firstrun.hasCompleted pref
    * - and whether any AIWindow is currently active
    *
@@ -819,7 +819,7 @@ export class MemoriesManager {
       );
     }
 
-    const hasConsent = AuthProvider.hasToSConsent;
+    const hasConsent = AuthProvider.hasToUConsent;
 
     const hasFirstrunCompleted = Services.prefs.getBoolPref(
       PREF_FIRSTRUN_HAS_COMPLETED,

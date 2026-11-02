@@ -703,7 +703,7 @@ export const AIWindow = {
 
     if (this.isAIWindowActive(win)) {
       // Window already opened as Smart via the BrowserContentHandler
-      // startup gate, which uses ToS consentTime as a synchronous proxy for
+      // startup gate, which uses ToU consentTime as a synchronous proxy for
       // "previously signed in". Verify the actual auth state now and prompt
       // sign-in if the user has since logged out — without this, signed-out
       // users would get a Smart Window with broken auth-gated features.
@@ -1677,7 +1677,7 @@ export const AIWindow = {
    * @returns {Promise<void>}
    */
   async makeAvailable() {
-    lazy.AuthProvider.clearToSConsent();
+    lazy.AuthProvider.clearToUConsent();
     // Set memory generation pref to default
     Services.prefs.setBoolPref(PREF_MEMORIES_CONVERSATION, true);
     Services.prefs.setBoolPref(PREF_MEMORIES_HISTORY, true);

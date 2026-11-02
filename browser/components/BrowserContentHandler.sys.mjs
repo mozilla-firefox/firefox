@@ -32,7 +32,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 /**
  * Whether `openBrowserWindow` should open the window as Smart Window: the
  * feature is on and set as default, it's not an explicitly private window, and
- * the user previously signed in (approximated synchronously via the ToS consent
+ * the user previously signed in (approximated synchronously via the ToU consent
  * timestamp; the async FxA check happens later in `onFirstWindowReady`, which
  * prompts sign-in if they've since signed out). It deliberately avoids
  * `SessionStartup.willRestore()`/`sessionType`: called this early, before the
@@ -48,7 +48,7 @@ function canOpenAsSmartWindow(forcePrivate = false) {
   return (
     !forcePrivate &&
     lazy.AIWindow.shouldOpenAsSmartWindow() &&
-    lazy.AuthProvider.hasToSConsent
+    lazy.AuthProvider.hasToUConsent
   );
 }
 

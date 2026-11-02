@@ -8,12 +8,13 @@ import { FxaAuthProviderImpl } from "moz-src:///browser/components/aiwindow/mode
 import { GuestAuthProviderImpl } from "moz-src:///browser/components/aiwindow/models/auth/GuestAuthProviderImpl.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const PREF_TOS_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
+// "tos" is legacy naming: the consent is for the Firefox Terms of Use (ToU).
+const PREF_TOU_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
 const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 
 const lazy = XPCOMUtils.declareLazy({
-  hasAIWindowToSConsent: {
-    pref: PREF_TOS_CONSENT_TIME,
+  hasAIWindowToUConsent: {
+    pref: PREF_TOU_CONSENT_TIME,
     default: 0,
   },
   log: () =>
@@ -26,7 +27,7 @@ const lazy = XPCOMUtils.declareLazy({
 });
 
 /**
- * Handles authentication and Terms of Service consent for Smart Window.
+ * Handles authentication and Terms of Use consent for Smart Window.
  * Account-specific operations are delegated to an AuthProviderImpl.
  *
  * @fires AuthProviderSingleton#"AuthProvider:Logout"
@@ -89,19 +90,19 @@ class AuthProviderSingleton extends EventTarget {
     );
   }
 
-  get hasToSConsent() {
-    return !!lazy.hasAIWindowToSConsent;
+  get hasToUConsent() {
+    return !!lazy.hasAIWindowToUConsent;
   }
 
-  recordToSConsent() {
+  recordToUConsent() {
     Services.prefs.setIntPref(
-      PREF_TOS_CONSENT_TIME,
+      PREF_TOU_CONSENT_TIME,
       Math.floor(Date.now() / 1000)
     );
   }
 
-  clearToSConsent() {
-    Services.prefs.clearUserPref(PREF_TOS_CONSENT_TIME);
+  clearToUConsent() {
+    Services.prefs.clearUserPref(PREF_TOU_CONSENT_TIME);
   }
 
   /**
@@ -180,7 +181,7 @@ class AuthProviderSingleton extends EventTarget {
    * @returns {string} One of signed_out, no_consent, both, or none
    */
   #denialReason(signedIn) {
-    if (this.hasToSConsent) {
+    if (this.hasToUConsent) {
       return signedIn ? "none" : "signed_out";
     }
     return signedIn ? "no_consent" : "both";
@@ -188,12 +189,12 @@ class AuthProviderSingleton extends EventTarget {
 
   /**
    * Whether the user can use Smart Window without going through the sign-in
-   * flow: they have consented to the Terms of Service and are signed in.
+   * flow: they have consented to the Terms of Use and are signed in.
    *
    * @returns {Promise<boolean>}
    */
   async hasAccess() {
-    return this.hasToSConsent && (await this.isSignedIn());
+    return this.hasToUConsent && (await this.isSignedIn());
   }
 
   /**
@@ -211,7 +212,7 @@ class AuthProviderSingleton extends EventTarget {
 
   /**
    * Runs the sign-in flow regardless of the current sign-in state, and records
-   * Terms of Service consent once the user signs in.
+   * Terms of Use consent once the user signs in.
    *
    * @param {Browser} browser
    * @returns {Promise<boolean>} Whether the user signed in successfully
@@ -226,7 +227,7 @@ class AuthProviderSingleton extends EventTarget {
       lazy.log.error("User did not sign in successfully.");
       return false;
     }
-    this.recordToSConsent();
+    this.recordToUConsent();
     return true;
   }
 }

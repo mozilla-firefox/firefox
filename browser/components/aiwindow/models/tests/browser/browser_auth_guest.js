@@ -20,7 +20,7 @@ const PREF_TOKEN = "browser.smartwindow.auth.guest.token";
 const PREF_MODE = "browser.smartwindow.auth.guest.mode";
 const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 const PREF_FIRSTRUN_COMPLETED = "browser.smartwindow.firstrun.hasCompleted";
-const PREF_TOS_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
+const PREF_TOU_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
 const SUCCESS_PATH = "/verify/v1/guest/success";
 
 /**
@@ -92,7 +92,7 @@ function waitForSuccessTab(origin) {
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
-    set: [[PREF_TOS_CONSENT_TIME, 1735689600]],
+    set: [[PREF_TOU_CONSENT_TIME, 1735689600]],
   });
 });
 
@@ -388,7 +388,7 @@ add_task(async function test_rejected_token_with_guest_disabled() {
 });
 
 add_task(async function test_signIn_declined_tou() {
-  await SpecialPowers.pushPrefEnv({ set: [[PREF_TOS_CONSENT_TIME, 0]] });
+  await SpecialPowers.pushPrefEnv({ set: [[PREF_TOU_CONSENT_TIME, 0]] });
   const sb = sinon.createSandbox();
   const show = sb.stub(ToUSpotlight, "show").resolves(false);
   let verifyRequests = 0;
@@ -410,7 +410,7 @@ add_task(async function test_signIn_declined_tou() {
         Assert.equal(verifyRequests, 0, "MLPA is not contacted");
         Assert.equal(await impl.getToken(), null, "No token is cached");
         Assert.equal(
-          Services.prefs.getIntPref(PREF_TOS_CONSENT_TIME),
+          Services.prefs.getIntPref(PREF_TOU_CONSENT_TIME),
           0,
           "No consent is recorded"
         );
@@ -425,7 +425,7 @@ add_task(async function test_signIn_declined_tou() {
 add_task(async function test_signIn_accepted_tou() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF_TOS_CONSENT_TIME, 0],
+      [PREF_TOU_CONSENT_TIME, 0],
       [PREF_AUTH_IMPL, "guest"],
     ],
   });
@@ -443,7 +443,7 @@ add_task(async function test_signIn_accepted_tou() {
         );
         Assert.ok(show.calledOnce, "The ToU Spotlight is shown");
         Assert.greater(
-          Services.prefs.getIntPref(PREF_TOS_CONSENT_TIME),
+          Services.prefs.getIntPref(PREF_TOU_CONSENT_TIME),
           0,
           "AuthProvider records the consent"
         );
