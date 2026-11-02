@@ -49,7 +49,7 @@ from mozbuild.frontend.data import (
     XPCOMComponentManifests,
     XPIDLModule,
 )
-from mozbuild.frontend.jar_manifest import parse_jar_manifest
+from mozbuild.frontend.jar_manifest import jar_manifest_defines, parse_jar_manifest
 from mozbuild.frontend.l10n_manifest import (
     L10nManifestContext,
     build_l10n_manifest_from_substs,
@@ -721,13 +721,11 @@ class CommonBackend(BuildBackend):
         # - DEFINES from config/config.mk
         # - The equivalent of -e when USE_EXTENSION_MANIFEST is set in
         #   moz.build, but it doesn't matter in dist/bin.
-        defines = {}
-        if obj.defines:
-            defines.update(obj.defines.defines)
-        defines.update(self.environment.defines)
         ab_cd = obj.config.substs["MOZ_UI_LOCALE"]
 
-        sections, inputs = parse_jar_manifest(obj.path.full_path, defines, ab_cd)
+        sections, inputs = parse_jar_manifest(
+            obj.path.full_path, jar_manifest_defines(obj._context), ab_cd
+        )
         self.backend_input_files |= inputs
 
         for jarinfo in sections:

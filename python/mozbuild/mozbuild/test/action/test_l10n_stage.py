@@ -9,11 +9,10 @@ from pathlib import Path
 from mozunit import main
 
 from mozbuild.action.l10n_stage import MissingJarSource, stage_locale
+from mozbuild.frontend.jar_manifest import JarEntry, JarSection
 from mozbuild.frontend.l10n_manifest import (
     MANIFEST_VERSION,
     MOZ_L10N_AB_CD_PLACEHOLDER,
-    JarEntry,
-    JarSection,
     L10nManifest,
     L10nManifestContextData,
     write_l10n_manifest,
@@ -39,9 +38,8 @@ def _necko_manifest():
                         name=f"chrome/{MOZ_L10N_AB_CD_PLACEHOLDER}",
                         base="",
                         relativesrcdir="dom/locales",
-                        chrome_manifests=[],
-                        pp_includes=[],
-                        entries=[
+                        chrome_manifests=(),
+                        entries=(
                             JarEntry(
                                 source="necko.properties",
                                 output=(
@@ -50,8 +48,8 @@ def _necko_manifest():
                                 ),
                                 is_locale=True,
                                 preprocess=False,
-                            )
-                        ],
+                            ),
+                        ),
                     )
                 ],
             )
@@ -65,13 +63,12 @@ def _two_section_manifest():
             name=name,
             base="",
             relativesrcdir="",
-            chrome_manifests=[
+            chrome_manifests=tuple(
                 f"locale {package} {MOZ_L10N_AB_CD_PLACEHOLDER} "
                 f"%locale/{MOZ_L10N_AB_CD_PLACEHOLDER}/{package}/"
                 for package in chrome_packages
-            ],
-            pp_includes=[],
-            entries=[
+            ),
+            entries=tuple(
                 JarEntry(
                     source=source,
                     output=f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}/{name}/{source}",
@@ -79,7 +76,7 @@ def _two_section_manifest():
                     preprocess=False,
                 )
                 for source in sources
-            ],
+            ),
         )
 
     return L10nManifest(
@@ -123,9 +120,8 @@ def _comm_manifest():
                         name=f"chrome/{MOZ_L10N_AB_CD_PLACEHOLDER}",
                         base="",
                         relativesrcdir="",
-                        chrome_manifests=[],
-                        pp_includes=[],
-                        entries=[
+                        chrome_manifests=(),
+                        entries=(
                             JarEntry(
                                 source="chrome/messenger/messenger.dtd",
                                 output=(
@@ -134,8 +130,8 @@ def _comm_manifest():
                                 ),
                                 is_locale=True,
                                 preprocess=False,
-                            )
-                        ],
+                            ),
+                        ),
                     )
                 ],
             )

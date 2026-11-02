@@ -9,10 +9,9 @@ from pathlib import Path
 import mozpack.path as mozpath
 from mozunit import main
 
+from mozbuild.frontend.jar_manifest import JarEntry, JarSection
 from mozbuild.frontend.l10n_manifest import (
     MANIFEST_VERSION,
-    JarEntry,
-    JarSection,
     L10nManifest,
     L10nManifestContextData,
     LocalizedFileGroup,
@@ -54,16 +53,15 @@ class TestL10nManifestRoundTrip(unittest.TestCase):
                             name="browser",
                             base="",
                             relativesrcdir="browser/locales",
-                            chrome_manifests=["locale browser %en-US %"],
-                            pp_includes=[],
-                            entries=[
+                            chrome_manifests=("locale browser %en-US %",),
+                            entries=(
                                 JarEntry(
                                     source="en-US/foo.ftl",
                                     output="foo.ftl",
                                     is_locale=True,
                                     preprocess=False,
                                 ),
-                            ],
+                            ),
                         ),
                     ],
                     localized_files=[
@@ -232,16 +230,15 @@ class TestL10nManifestRoots(unittest.TestCase):
             name="chrome",
             base="",
             relativesrcdir="",
-            chrome_manifests=[],
-            pp_includes=[],
-            entries=[
+            chrome_manifests=(),
+            entries=(
                 JarEntry(
                     source="en-US/necko.properties",
                     output="locale/necko.properties",
                     is_locale=True,
                     preprocess=False,
-                )
-            ],
+                ),
+            ),
         )
 
     def _gen_script(self):

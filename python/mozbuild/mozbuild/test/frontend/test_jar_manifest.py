@@ -117,5 +117,30 @@ class TestParseJarManifest(unittest.TestCase):
         self.assertIn("content/browser/resolved.js", outputs)
 
 
+class _Context(dict):
+    def __init__(self, declared, configured):
+        from types import SimpleNamespace
+
+        super().__init__(DEFINES=declared)
+        self.config = SimpleNamespace(defines=configured)
+
+
+class TestJarManifestDefines(unittest.TestCase):
+    def _defines(self, declared, configured):
+        from mozbuild.frontend.jar_manifest import jar_manifest_defines
+
+        return jar_manifest_defines(_Context(declared, configured))
+
+    def test_a_configured_define_wins(self):
+        defines = self._defines({"A": "moz"}, {"A": "cfg", "B": 1})
+
+        self.assertEqual(defines, {"A": "cfg", "B": 1})
+
+    def test_a_false_define_is_absent(self):
+        defines = self._defines({"A": False, "B": True}, {"C": False, "D": ""})
+
+        self.assertEqual(defines, {"B": True, "D": ""})
+
+
 if __name__ == "__main__":
     mozunit.main()

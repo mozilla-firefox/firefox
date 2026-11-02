@@ -26,11 +26,15 @@ import mozpack.path as mozpath
 
 from mozbuild.frontend.context import SourcePath
 from mozbuild.frontend.data import ContextDerived
+from mozbuild.frontend.jar_manifest import (
+    JarEntry,
+    JarSection,
+    jar_manifest_defines,
+    parse_jar_manifest,
+)
 from mozbuild.frontend.reader import SandboxValidationError
-from mozbuild.jar import DeprecatedJarManifest, JarManifestParser
-from mozbuild.preprocessor import Preprocessor
 
-MANIFEST_VERSION = 2
+MANIFEST_VERSION = 3
 MOZ_L10N_AB_CD_PLACEHOLDER = "MOZ_L10N_AB_CD_PLACEHOLDER"
 
 
@@ -43,32 +47,6 @@ def locale_pp_placeholder(name: str) -> str:
     MOZ_L10N_DEFINE_ANDROID_MARKETPLACE_AB_CD_PLACEHOLDER.
     """
     return f"MOZ_L10N_DEFINE_{name}_PLACEHOLDER"
-
-
-@dataclass
-class JarEntry:
-    """One entry inside a jar.mn group."""
-
-    source: str
-    output: str
-    is_locale: bool
-    preprocess: bool
-
-
-@dataclass
-class JarSection:
-    """One jar.mn group's locale-aware data, captured for any locale.
-
-    relativesrcdir mirrors jarinfo.relativesrcdir and drives the
-    merge-tree subdir for is_locale entries.
-    """
-
-    name: str
-    base: str
-    relativesrcdir: str
-    chrome_manifests: list[str]
-    pp_includes: list[str]
-    entries: list[JarEntry]
 
 
 @dataclass
@@ -150,9 +128,8 @@ def load_l10n_manifest(path: Path) -> L10nManifest:
                     name=s["name"],
                     base=s["base"],
                     relativesrcdir=s["relativesrcdir"],
-                    chrome_manifests=s["chrome_manifests"],
-                    pp_includes=s["pp_includes"],
-                    entries=[JarEntry(**e) for e in s["entries"]],
+                    entries=tuple(JarEntry(**e) for e in s["entries"]),
+                    chrome_manifests=tuple(s["chrome_manifests"]),
                 )
                 for s in c["jar_sections"]
             ],
@@ -276,9 +253,7 @@ def _extract_l10n_manifest_context_data(
 
     if has_jar:
         for path in context["JAR_MANIFESTS"]:
-            context_data.jar_sections.extend(
-                _extract_jar_sections(emitter, context, path)
-            )
+            context_data.jar_sections.extend(_extract_jar_sections(context, path))
 
     if has_localized_files:
         context_data.localized_files = _extract_localized_files(localized_files)
@@ -340,7 +315,7 @@ def _normalize_defines(defines) -> dict[str, object]:
     return out
 
 
-def _extract_jar_sections(emitter, context, path) -> Iterator[JarSection]:
+def _extract_jar_sections(context, path) -> Iterator[JarSection]:
     """Parse a jar.mn and yield JarSections for groups that contain at
     least one locale entry, a locale-marked chrome.manifest line, or a
     [localization] block.
@@ -355,11 +330,11 @@ def _extract_jar_sections(emitter, context, path) -> Iterator[JarSection]:
     value, or skips the entry when the placeholder doesn't resolve
     (so unsupported locales fall back to the first pass's #else).
     """
-    yield from _run_jar_pp(emitter, context, path, locale_pp_overrides=None)
+    yield from _run_jar_pp(context, path, locale_pp_overrides=None)
     locale_pp_defines = context.get("LOCALE_PP_DEFINES") or {}
     if locale_pp_defines:
         overrides = {k: locale_pp_placeholder(k) for k in locale_pp_defines}
-        yield from _run_jar_pp(emitter, context, path, locale_pp_overrides=overrides)
+        yield from _run_jar_pp(context, path, locale_pp_overrides=overrides)
 
 
 def _is_locale_aware(entry) -> bool:
@@ -376,50 +351,30 @@ def _is_locale_aware(entry) -> bool:
 
 
 def _run_jar_pp(
-    emitter,
     context,
     path,
     *,
     locale_pp_overrides: Optional[dict[str, str]],
 ) -> Iterator[JarSection]:
-    pp = Preprocessor()
-    if defines := context.get("DEFINES"):
-        pp.context.update(defines)
-    pp.context.update(emitter.config.defines)
-    pp.context.update(AB_CD=MOZ_L10N_AB_CD_PLACEHOLDER)
+    defines = jar_manifest_defines(context)
     if locale_pp_overrides:
-        pp.context.update(locale_pp_overrides)
-    pp.out = JarManifestParser()
-    try:
-        pp.do_include(path.full_path)
-    except DeprecatedJarManifest as e:
-        raise DeprecatedJarManifest(
-            f"Parsing error while processing {path.full_path}: {e}"
-        )
+        defines.update(locale_pp_overrides)
+    sections, inputs = parse_jar_manifest(
+        path.full_path, defines, MOZ_L10N_AB_CD_PLACEHOLDER
+    )
+    # Reading the manifest happens outside the sandbox, so the paths it read
+    # are recorded on the context the l10n object is derived from.
+    for read in inputs:
+        context.add_source(mozpath.normsep(read))
 
-    for jarinfo in pp.out:
+    for jarinfo in sections:
         has_locale_aware_entry = any(_is_locale_aware(e) for e in jarinfo.entries)
         has_locale_manifest = any(
             m.lstrip().startswith("locale ") for m in jarinfo.chrome_manifests
         )
         if not (has_locale_aware_entry or has_locale_manifest):
             continue
-        yield JarSection(
-            name=jarinfo.name,
-            base=jarinfo.base or "",
-            relativesrcdir=jarinfo.relativesrcdir or "",
-            chrome_manifests=list(jarinfo.chrome_manifests),
-            pp_includes=sorted(pp.includes),
-            entries=[
-                JarEntry(
-                    source=e.source,
-                    output=e.output,
-                    is_locale=e.is_locale,
-                    preprocess=e.preprocess,
-                )
-                for e in jarinfo.entries
-            ],
-        )
+        yield jarinfo
 
 
 def _extract_localized_files(files) -> list[LocalizedFileGroup]:
