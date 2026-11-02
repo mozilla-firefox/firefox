@@ -197,19 +197,6 @@ class nsComputedDOMStyle final : public nsDOMCSSDeclaration,
 
   already_AddRefed<CSSValue> GetMarginFor(mozilla::Side aSide);
 
-  /**
-   * Returns whether the used value of aFrame's margin on aSide can differ from
-   * its computed value because `margin-trim` on an ancestor discards it, which
-   * means we have to read the used margin rather than the specified one.
-   *
-   * This is deliberately conservative: working out whether aFrame's margin
-   * really adjoins the trimmed content edge needs layout. It does stop walking
-   * as soon as the margin can no longer collapse out to an ancestor's content
-   * edge, so in practice it only looks at a handful of frames.
-   * https://drafts.csswg.org/css-box-4/#margin-trim
-   */
-  static bool MarginMayBeTrimmed(const nsIFrame* aFrame, mozilla::Side aSide);
-
   already_AddRefed<CSSValue> GetTransformValue(const mozilla::StyleTransform&);
 
   already_AddRefed<nsROCSSPrimitiveValue> GetGridTrackSize(

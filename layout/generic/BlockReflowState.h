@@ -39,9 +39,7 @@ class BlockReflowState {
           mShouldApplyTextBoxTrimStart(false),
           mShouldApplyTextBoxTrimAtBlockEnd(false),
           mShouldApplyTextBoxTrimAtFragmentEnd(false),
-          mShouldApplyLineClampAuto(false),
-          mIsCurrentLineAdjacentToBStart(false),
-          mShouldTrimInheritedBEndMargins(false) {}
+          mShouldApplyLineClampAuto(false) {}
 
     // Set in the BlockReflowState constructor when reflowing a "block margin
     // root" frame (i.e. a frame with any of the NS_BLOCK_BFC flag set, for
@@ -104,16 +102,6 @@ class BlockReflowState {
     // BStart being available, so it should only be applied after the first
     // reflow.
     bool mShouldApplyLineClampAuto : 1;
-
-    // Whether the current line can still adjoin the block-start content edge.
-    // Initially true only for the first fragment; cleared when a preceding
-    // line is nonempty or has clearance.
-    bool mIsCurrentLineAdjacentToBStart : 1;
-
-    // Trim child margins at the block-end edge because they collapse through
-    // this block to an ancestor's trimmed edge. Enabled after a completed
-    // untrimmed reflow confirms that collapse.
-    bool mShouldTrimInheritedBEndMargins : 1;
   };
 
  public:
@@ -123,27 +111,6 @@ class BlockReflowState {
                    const nscoord aConsumedBSize,
                    const nscoord aEffectiveContentBoxBSize,
                    const nscoord aInset = 0);
-
-  /**
-   * Computes which of the block-axis margins of aBlock's block-level child on
-   * aLine are discarded by `margin-trim`, in the form of the InitFlags to build
-   * the child's ReflowInput with.
-   *
-   * aTrimChildBStartMargins and aTrimChildBEndMargins indicate which content
-   * edges aBlock's style trims.
-   *
-   * aIsAdjacentToBStart says whether aLine's margins adjoin aBlock's
-   * block-start content edge; the block-end adjacency is determined here.
-   *
-   * https://drafts.csswg.org/css-box-4/#margin-trim-block
-   */
-  static ReflowInput::InitFlags ComputeChildMarginTrim(
-      nsBlockFrame* aBlock, bool aTrimChildBStartMargins,
-      bool aTrimChildBEndMargins, nsLineList::iterator aLine,
-      bool aIsAdjacentToBStart);
-
-  bool ShouldTrimChildBStartMargins() const;
-  bool ShouldTrimChildBEndMargins() const;
 
   /**
    * Unshifts coords, restores availableBSize to reality.

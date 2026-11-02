@@ -427,12 +427,6 @@ nsChangeHint nsStyleMargin::CalcDifference(
             nsChangeHint_ClearAncestorIntrinsics;
   }
 
-  if (mMarginTrim != aNewData.mMarginTrim) {
-    // Which margins are trimmed determines the used margins of our
-    // descendants, so they need to be reflowed as well.
-    hint |= NS_STYLE_HINT_REFLOW;
-  }
-
   if (mScrollMargin != aNewData.mScrollMargin) {
     // FIXME: Bug 1530253 Support re-snapping when scroll-margin changes.
     hint |= nsChangeHint_NeutralChange;

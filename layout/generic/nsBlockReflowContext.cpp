@@ -30,26 +30,6 @@ nsBlockReflowContext::nsBlockReflowContext(nsPresContext* aPresContext,
       mBCoord(0),
       mMetrics(aParentRI) {}
 
-/* static */
-bool nsBlockReflowContext::StyleTrimsChildBStartMargins(
-    const nsIFrame* aFrame) {
-  // `margin-trim` on a multi-column container has to trim at the block-start
-  // edge of the first column rather than of the container; see bug 2051245.
-  if (aFrame->StyleColumn()->IsColumnContainerStyle()) {
-    return false;
-  }
-  return bool(aFrame->StyleMargin()->mMarginTrim &
-              StyleMarginTrim::BLOCK_START);
-}
-
-/* static */
-bool nsBlockReflowContext::StyleTrimsChildBEndMargins(const nsIFrame* aFrame) {
-  if (aFrame->StyleColumn()->IsColumnContainerStyle()) {
-    return false;
-  }
-  return bool(aFrame->StyleMargin()->mMarginTrim & StyleMarginTrim::BLOCK_END);
-}
-
 static nsIFrame* DescendIntoBlockLevelFrame(nsIFrame* aFrame) {
   LayoutFrameType type = aFrame->Type();
   if (type == LayoutFrameType::ColumnSet) {
@@ -173,22 +153,8 @@ bool nsBlockReflowContext::ComputeCollapsedBStartMargin(
           {
             LogicalSize availSpace =
                 outerReflowInput->ComputedSize(kid->GetWritingMode());
-
-            const bool trimChildBStartMargins =
-                !block->GetPrevInFlow() &&
-                (StyleTrimsChildBStartMargins(block) ||
-                 outerReflowInput->mFlags.mTrimBStartMargin);
-
-            const ReflowInput::InitFlags marginTrimFlags =
-                BlockReflowState::ComputeChildMarginTrim(
-                    block, trimChildBStartMargins,
-                    !overflowLines && StyleTrimsChildBEndMargins(block), line,
-                    true);
-
             ReflowInput innerReflowInput(prescontext, *outerReflowInput, kid,
-                                         availSpace, Nothing(),
-                                         marginTrimFlags);
-
+                                         availSpace);
             // Record that we're being optimistic by assuming the kid
             // has no clearance
             if (kid->StyleDisplay()->mClear != StyleClear::None ||

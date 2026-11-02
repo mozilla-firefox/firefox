@@ -232,8 +232,6 @@ skip-if = [
 
 ["test_key_space_single_summary.html"]
 
-["test_margin_trim_interrupt.html"]
-
 ["test_movement_by_characters.html"]
 
 ["test_movement_by_words.html"]
