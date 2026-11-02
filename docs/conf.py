@@ -74,15 +74,19 @@ mermaid_height = "auto"
 
 mermaid_version = "12.2.0"
 
+# sphinxcontrib-mermaid always hands Mermaid a theme for the page's color
+# scheme, "default" or "dark" unless set here, which overrides Mermaid's own
+# default of "redux-color".
+mermaid_light_theme = "redux-color"
+mermaid_dark_theme = "redux-dark-color"
+
 # startOnLoad must stay off: the extension renders via mermaid.run() itself.
 # Only theme-neutral values belong here, as this config is shared by the light
 # and dark themes.
 mermaid_init_config = {
     "startOnLoad": False,
-    # Mermaid defaults to its "neo" look, and gives flowchart and state nodes a
-    # 120px minimum width and wrapping width. The docs use the classic look and
-    # nodes sized to their labels.
-    "look": "classic",
+    # Mermaid gives flowchart and state nodes a 120px minimum width and
+    # wrapping width. The docs size nodes to their labels.
     "themeVariables": {
         "fontSize": "18px",
     },

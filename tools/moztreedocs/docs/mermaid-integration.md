@@ -166,7 +166,7 @@ fades at the edges to indicate it overflows.
 ## Colors
 
 A diagram follows the page's color scheme. A node you do not style takes the
-theme's default fill, pale in light mode and near-black in dark mode, so prose
+theme's default fill, white in light mode and black in dark mode, so prose
 cannot identify a node by that color.
 
 A node you style with an explicit `fill:` keeps that color in both schemes.
