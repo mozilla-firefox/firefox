@@ -892,6 +892,12 @@ class Pref {
 
   nsresult SetDefaultValue(PrefType aType, PrefValue aValue, bool aIsSticky,
                            bool aIsLocked, bool* aValueChanged) {
+    // A typeless pref is an entry that shadows a deleted shared pref, so it
+    // holds no value whose type could conflict.
+    if (IsTypeNone()) {
+      SetType(aType);
+    }
+
     // Types must always match when setting the default value.
     if (!IsType(aType)) {
       return NS_ERROR_UNEXPECTED;
