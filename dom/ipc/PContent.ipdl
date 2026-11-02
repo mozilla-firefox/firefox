@@ -1842,8 +1842,7 @@ parent:
 
     async NotifyOnHistoryReload(MaybeDiscardedBrowsingContext aContext,
                                 uint32_t aReloadFlags)
-            returns (bool canReload, nsDocShellLoadState? loadState,
-                     bool? reloadActiveEntry);
+            returns (bool canReload, nsDocShellLoadState? loadState);
 
     async HistoryCommit(MaybeDiscardedBrowsingContext aContext,
                         uint64_t aLoadID, nsID aChangeID, uint32_t aLoadType,

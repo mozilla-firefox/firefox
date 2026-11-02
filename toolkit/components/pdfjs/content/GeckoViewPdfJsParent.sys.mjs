@@ -17,7 +17,6 @@ import { GeckoViewActorParent } from "resource://gre/modules/GeckoViewActorParen
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
-  PdfJsPrint: "resource://pdf.js/PdfJsPrint.sys.mjs",
   PdfJsTelemetry: "resource://pdf.js/PdfJsTelemetry.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
 });
@@ -301,8 +300,6 @@ export class GeckoViewPdfJsParent extends GeckoViewActorParent {
         return this.#recordExposure();
       case "PDFJS:Parent:reportTelemetry":
         return this.#reportTelemetry(aMsg);
-      case "PDFJS:Parent:printToPDF":
-        return this.#printToPDF(aMsg);
       default:
         break;
     }
@@ -405,15 +402,6 @@ export class GeckoViewPdfJsParent extends GeckoViewActorParent {
 
   #reportTelemetry(aMsg) {
     lazy.PdfJsTelemetry.report(aMsg.data);
-  }
-
-  #printToPDF({ data: { id, width, height } }) {
-    return lazy.PdfJsPrint.printToPDF(
-      this.browsingContext,
-      BrowsingContext.get(id),
-      width,
-      height
-    );
   }
 }
 

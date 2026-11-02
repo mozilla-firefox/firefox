@@ -241,6 +241,9 @@ class UsingStmt(Node):
     def isRefcounted(self):
         return "RefCounted" in self.attributes
 
+    def isTainted(self):
+        return "Tainted" in self.attributes
+
     def isSendMoveOnly(self):
         moveonly = self.attributes.get("MoveOnly")
         return moveonly and moveonly.value in (None, "send")

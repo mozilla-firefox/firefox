@@ -1900,8 +1900,8 @@ async function setupUrlClassifierTest(options = {}) {
     "resource://testing-common/UrlClassifierTestUtils.sys.mjs"
   );
   await UrlClassifierTestUtils.addTestTrackers();
-  registerCleanupFunction(function () {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async function () {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 
   const { enableTrackingProtection = true } = options;

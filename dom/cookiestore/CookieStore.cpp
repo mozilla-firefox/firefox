@@ -499,6 +499,10 @@ already_AddRefed<Promise> CookieStore::Set(const CookieInit& aOptions,
   NS_DispatchToCurrentThread(NS_NewRunnableFunction(
       __func__, [self = RefPtr(this), promise = RefPtr(promise), aOptions,
                  cookiePrincipal = RefPtr(cookiePrincipal.get())]() {
+        if (promise->GetParentObject()->IsDying()) {
+          return;
+        }
+
         nsCOMPtr<nsIURI> cookieURI = cookiePrincipal->GetURI();
 
         nsString name(TrimTabAndSpace(aOptions.mName));
@@ -642,6 +646,10 @@ already_AddRefed<Promise> CookieStore::Delete(
   NS_DispatchToCurrentThread(NS_NewRunnableFunction(
       __func__, [self = RefPtr(this), promise = RefPtr(promise), aOptions,
                  cookiePrincipal = RefPtr(cookiePrincipal.get())]() {
+        if (promise->GetParentObject()->IsDying()) {
+          return;
+        }
+
         nsCOMPtr<nsIURI> cookieURI = cookiePrincipal->GetURI();
         nsString name(TrimTabAndSpace(aOptions.mName));
 
@@ -785,6 +793,10 @@ already_AddRefed<Promise> CookieStore::GetInternal(
        cookiePrincipal = RefPtr(cookiePrincipal.get()),
        partitionedCookiePrincipal = RefPtr(partitionedCookiePrincipal.get()),
        aOnlyTheFirstMatch]() {
+        if (promise->GetParentObject()->IsDying()) {
+          return;
+        }
+
         nsAutoString name;
         if (aOptions.mName.WasPassed()) {
           name = TrimTabAndSpace(aOptions.mName.Value());
@@ -910,6 +922,10 @@ already_AddRefed<Promise> CookieStore::GetInternal(
             [promise = RefPtr<dom::Promise>(promise), aOnlyTheFirstMatch](
                 const CookieStoreChild::GetRequestPromise::ResolveOrRejectValue&
                     aResult) {
+              if (promise->GetParentObject()->IsDying()) {
+                return;
+              }
+
               if (!aResult.IsResolve()) {
                 promise->MaybeResolveWithUndefined();
                 return;

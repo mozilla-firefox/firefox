@@ -656,7 +656,7 @@ struct Limits final {
 
   // Exts
   bool astcHdr = false;
-  std::array<uint8_t, 3> _padding;
+  std::array<uint8_t, 3> _padding = {};
   uint32_t maxColorDrawBuffers = 1;
   uint32_t maxMultiviewLayers = 0;
   uint64_t queryCounterBitsTimeElapsed = 0;

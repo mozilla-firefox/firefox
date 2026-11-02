@@ -1198,6 +1198,11 @@ template <typename T>
 static PlainObject* AtomicsWaitAsync(
     JSContext* cx, SharedArrayRawBuffer* sarb, size_t byteOffset, T value,
     const mozilla::Maybe<mozilla::TimeDuration>& timeout) {
+  if (!cx->runtime()->offThreadPromiseState.ref().initialized()) {
+    JS_ReportErrorASCII(cx, "Atomics.waitAsync not supported in this runtime.");
+    return nullptr;
+  }
+
   // Step 16a.
   Rooted<PromiseObject*> promiseObject(
       cx, CreatePromiseObjectWithoutResolutionFunctions(cx));

@@ -297,6 +297,7 @@ class GitFetchSchema(Schema, forbid_unknown_fields=False, kw_only=True):
     artifact_name: Optional[str] = None
     path_prefix: Optional[str] = None
     # ssh-key is a taskcluster secret path (e.g. project/civet/github-deploy-key)
+    # The path may contain `{level}`, which is replaced by the SCM level.
     # In the secret dictionary, the key should be specified as
     #  "ssh_privkey": "-----BEGIN OPENSSH PRIVATE KEY-----\nkfksnb3jc..."
     # n.b. The OpenSSH private key file format requires a newline at the end of the file.
@@ -337,6 +338,7 @@ def create_git_fetch_task(config, name, fetch):
 
     ssh_key = fetch.get("ssh-key")
     if ssh_key:
+        ssh_key = ssh_key.format(level=config.params["level"])
         args.append("--ssh-key-secret")
         args.append(ssh_key)
 

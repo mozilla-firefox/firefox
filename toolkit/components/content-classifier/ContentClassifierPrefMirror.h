@@ -18,15 +18,12 @@ namespace mozilla {
 // Driven by privacy.trackingprotection.content.mirror.mode, which has three
 // states:
 //
-//   0 (off, the default) - the mirror is down and clears the content prefs if
-//     it mirrored them before.
+//   0 (off) - the mirror is down and clears the content prefs if it mirrored
+//     them before.
 //   1 (on) - the mirror owns the content engine/enabled prefs and recomputes
 //     them on every relevant ETP pref change.
 //   2 (handover) - the mirror stops mirroring but leaves the mirrored values
 //     in place, handing them to whoever owns the content prefs next.
-//
-// Off is the state reached by doing nothing, so a lapsed rollout releases the
-// prefs rather than stranding them.
 //
 // The whole class is meant to be deleted once the migration to the content
 // classifier is complete.

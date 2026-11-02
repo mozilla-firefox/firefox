@@ -18,4 +18,9 @@ internal sealed interface SignatureFailure {
     data object EngineError : SignatureFailure {
         override val telemetryName = "engine_error"
     }
+
+    /** When adding a signature, the request didn't complete within the expected timeframe. */
+    data object Timeout : SignatureFailure {
+        override val telemetryName = "timeout"
+    }
 }

@@ -109,3 +109,56 @@ add_task(
     Assert.ok(originWin.closed, "window closed once no popped tabs remained");
   }
 );
+
+add_task(async function test_move_to_mini_window_menu_from_only_tab() {
+  let originWin = await BrowserTestUtils.openNewBrowserWindow();
+  let og = originWin.gBrowser;
+  let tab = og.selectedTab;
+  BrowserTestUtils.startLoadingURIString(
+    tab.linkedBrowser,
+    EXAMPLE_URL + "menu"
+  );
+  await BrowserTestUtils.browserLoaded(
+    tab.linkedBrowser,
+    false,
+    EXAMPLE_URL + "menu"
+  );
+  Assert.equal(og.tabs.length, 1, "origin window has a single tab");
+
+  let doc = originWin.document;
+  let menu = doc.getElementById("tabContextMenu");
+  let shown = BrowserTestUtils.waitForPopupEvent(menu, "shown");
+  EventUtils.synthesizeMouseAtCenter(tab, { type: "contextmenu" }, originWin);
+  await shown;
+
+  let item = doc.getElementById("context_openTabInMiniWindow");
+  Assert.ok(
+    !doc.getElementById("context_moveTabOptions").disabled,
+    "Move Tab submenu is enabled for the only tab"
+  );
+  Assert.ok(!item.hidden, "Move to Mini Window is shown");
+  Assert.ok(!item.disabled, "Move to Mini Window is enabled");
+  Assert.ok(
+    doc.getElementById("context_openTabInWindow").disabled,
+    "Move to New Window is disabled for the only tab"
+  );
+
+  let opened = BrowserTestUtils.domWindowOpenedAndLoaded(null);
+  item.doCommand();
+  let hidden = BrowserTestUtils.waitForPopupEvent(menu, "hidden");
+  menu.hidePopup();
+  await hidden;
+  let miniWin = await opened;
+
+  await TestUtils.waitForCondition(
+    () => MiniWindowManager._miniwindows.size === 1,
+    "mini window registered"
+  );
+  Assert.ok(!originWin.closed, "origin window did not close");
+
+  let closed = BrowserTestUtils.domWindowClosed(miniWin);
+  [...MiniWindowManager._miniwindows][0].close();
+  await closed;
+  assertNoMiniWindowsOpen();
+  await BrowserTestUtils.closeWindow(originWin);
+});

@@ -29,8 +29,8 @@ Every failure below is invisible until the built page is open in a browser:
     including what the unstyled default fill means for prose that points at a
     node by color.
 -   **A ZenUML diagram is inverted in the dark scheme**, because its plugin
-    ignores the theme and draws black on transparent. Avoid colors a
-    light-to-dark inversion would misrepresent.
+    ignores the theme and draws black on white. Avoid colors a light-to-dark
+    inversion would misrepresent.
 -   **Do not distinguish two kinds of node by fill color alone**: it fails for
     readers with a color vision deficiency and on poor displays. Vary the shape as
     well -- a stadium `(["text"])` reads clearly against a plain `["text"]`,
@@ -107,13 +107,12 @@ box and cannot tell what leaves it.
 -   **Step numbers tie the diagram to a numbered list in the prose; method
     names make it self-contained.** Either works, as does `3: startQuery`. Take
     method names from the code.
--   **Edge declaration order decides which side a sibling lands on.** The layout
-    places a node's children in the order their edges are declared; reordering
-    node declarations does nothing. Declaring a later round trip's edges first
-    sends the outbound path down one side and the return up the other, so a
-    cycle reads as a loop. Leave a `%%` comment saying why the edges are out of
-    order. Once the node has a second outgoing edge, an invisible link between
-    the siblings, `view ~~~ muxer`, decides the order instead.
+-   **Edge declaration order decides which side a sibling lands on, unless
+    another order crosses fewer edges.** The ELK layout places a node's children
+    in the order their edges are declared, and overrides that order where it
+    saves a crossing; reordering node declarations does nothing. Declare the
+    edges in the order the numbered steps run, so the steps read left to
+    right, and check the rendered page.
 -   **Dotted arrows (`-. "label" .->`) for the return path** separate requests
     from results at no cost in width.
 

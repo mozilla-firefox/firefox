@@ -68,11 +68,12 @@ export function getHostName() {
  * @returns {{ port: string, isIPLiteral: boolean } | null}
  */
 export function getLoopbackInfo() {
-  let { protocol, host, port } = document.location;
+  let { protocol, hostname, port } = document.location;
   if (protocol != "http:" && protocol != "https:") {
     return null;
   }
-  host = host.toLowerCase();
+  // Use hostname, not host: host includes the port (e.g. "localhost:5000").
+  const host = hostname.toLowerCase();
   const isIPLiteral =
     host == "[::1]" || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
   if (!isIPLiteral && host != "localhost" && !host.endsWith(".localhost")) {

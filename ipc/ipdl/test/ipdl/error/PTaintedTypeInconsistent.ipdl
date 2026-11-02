@@ -1,0 +1,10 @@
+//error: inconsistent tainted status of type `::mozilla::TaintedThing`
+
+[Tainted] using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
+using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
+
+[ChildProc=any]
+protocol PTaintedTypeInconsistent {
+parent:
+    async Foo(TaintedThing a);
+};

@@ -22,6 +22,8 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   BrowserTestUtils: "resource://testing-common/BrowserTestUtils.sys.mjs",
+  UrlClassifierTestUtils:
+    "resource://testing-common/UrlClassifierTestUtils.sys.mjs",
 });
 
 XPCOMUtils.defineLazyServiceGetter(
@@ -66,6 +68,10 @@ add_setup(async function setup() {
       ["urlclassifier.trackingSkipURLs", "*://trackertest.org/*"],
       ["urlclassifier.trackingAnnotationSkipURLs", "*://trackertest.org/*"],
     ],
+  });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 });
 

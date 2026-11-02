@@ -118,6 +118,8 @@ https_first_disabled = true
 
 ["browser_browsingContext-getAllBrowsingContextsInSubtree.js"]
 
+["browser_browsingContext-getCurrentTopByBrowserId.js"]
+
 ["browser_browsingContext-getWindowByName.js"]
 
 ["browser_browsingContext-webProgress.js"]

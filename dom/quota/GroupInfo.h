@@ -18,12 +18,17 @@ class GroupInfoPair;
 class OriginInfo;
 class DirtyTrackingAutoLock;
 
+namespace test {
+class GTEST_CLASS(TestGroupInfo, ReplacementNullsMGroupInfo);
+}
+
 class GroupInfo final {
   friend class CanonicalQuotaObject;
   friend class DirtyTrackingAutoLock;
   friend class GroupInfoPair;
   friend class OriginInfo;
   friend class QuotaManager;
+  friend class test::GTEST_CLASS(TestGroupInfo, ReplacementNullsMGroupInfo);
 
  public:
   GroupInfo(GroupInfoPair* aGroupInfoPair, PersistenceType aPersistenceType)

@@ -25,7 +25,9 @@ add_setup(async function () {
       ["urlclassifier.features.fingerprinting.annotate.blacklistHosts", ""],
     ],
   });
-  registerCleanupFunction(() => {
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
     Services.fog.testResetFOG();
   });
 });

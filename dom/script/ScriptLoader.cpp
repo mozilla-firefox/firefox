@@ -1379,7 +1379,7 @@ void ScriptLoader::TryUseCache(ReferrerPolicy aReferrerPolicy,
     //           different encoding, and thus this cache entry shouldn't be
     //           used.
     if (aRequestType == ScriptLoadRequestType::Preload &&
-        !aRequest->mClassicScriptHintEncoding && mDocument &&
+        !aRequest->mClassicScriptHintEncoding &&
         mDocument->GetDocumentCharacterSetSource() == 0) {
       // This is the (b-1) case above.
       LOG(
@@ -3289,7 +3289,9 @@ void ScriptLoader::CalculateCacheFlag(ScriptLoadRequest* aRequest) {
     return;
   }
 
-  if (!net::SchemeIsHttpOrHttps(aRequest->URI())) {
+  bool isHTTPS = aRequest->URI()->SchemeIs("https");
+
+  if (!aRequest->URI()->SchemeIs("http") && !isHTTPS) {
     LOG(("ScriptLoadRequest (%p): Bytecode-cache: Skip all: Unsupported scheme",
          aRequest));
     // Internal resources can be exposed to the web content, but they don't
@@ -3374,6 +3376,13 @@ void ScriptLoader::CalculateCacheFlag(ScriptLoadRequest* aRequest) {
   }
 
   if (mCache) {
+    if (!isHTTPS) {
+      LOG(("ScriptLoadRequest (%p): Bytecode-cache: Skip all: non-https",
+           aRequest));
+      aRequest->MarkNotCacheable();
+      return;
+    }
+
     if (mCache->IsLowMemory()) {
       // During the low-memory situation, we avoid creating another cache,
       // with the following rationale.

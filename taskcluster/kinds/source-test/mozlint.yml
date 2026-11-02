@@ -1043,6 +1043,21 @@ source-headers:
             - 'tools/lint/source-headers.yml'
             - 'tools/lint/source_headers/**'
 
+ffvpx-symbols:
+    description: Check that FFmpegLibWrapper only binds symbols bundled ffvpx exports
+    treeherder:
+        symbol: misc(ffvpx-symbols)
+    run:
+        mach: lint -v -l ffvpx-symbols -f treeherder -f json:/builds/worker/mozlint.json .
+    when:
+        files-changed:
+            - 'dom/media/platforms/ffmpeg/FFmpegLibWrapper.cpp'
+            - 'media/ffvpx/libavcodec/avcodec.symbols'
+            - 'media/ffvpx/libavcodec/version_major.h'
+            - 'media/ffvpx/libavutil/avutil.symbols'
+            - 'tools/lint/ffvpx-symbols.yml'
+            - 'tools/lint/ffvpx-symbols/**'
+
 gecko-trace:
     description: Check that all `gecko-trace.yaml` files are correct
     treeherder:

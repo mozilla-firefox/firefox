@@ -11,5 +11,6 @@ interface nsIEarlyHintObserver : nsISupports
    * This method is called when the transaction has early hint (i.e. the
    * '103 Early Hint' informational response) headers.
    */
-  void earlyHint(in ACString linkHeader, in ACString referrerPolicy, in ACString cspHeader);
+  void earlyHint(in ACString linkHeader, in ACString referrerPolicy,
+                 in ACString cspHeader, in ACString connectionAllowlistHeader);
 };

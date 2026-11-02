@@ -2,11 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import fnmatch
 import functools
 import hashlib
 import inspect
 import os
 import sys
+import time
+from collections import defaultdict
 from pathlib import Path
 
 from mozfile import json
@@ -17,6 +20,12 @@ _topsrcdir = Path(__file__).resolve().parent.parent.parent.parent
 _cache_dir = Path(get_state_dir()) / "mach_func_cache"
 _debug = "MACH_FUNC_CACHE_DEBUG" in os.environ
 _INPUTS_FILENAME = "_dynamic_inputs.json"
+_HASHES_FILENAME = "_file_hashes.json"
+_COMPILED_SUFFIXES = (".pyc", ".pyd", ".pyo")
+# A file modified this close to the last scan is read again, because a second edit
+# in the same mtime tick leaves its size, mtime and inode unchanged. See
+# https://git-scm.com/docs/racy-git
+_RACY_NS = 2_000_000_000
 
 
 def _log(msg):
@@ -44,19 +53,32 @@ def _is_glob_pattern(path):
     return "*" in path or "?" in path
 
 
+def _find_names(base, name_patterns):
+    full_base = _topsrcdir / base
+    if not full_base.is_dir():
+        return
+    for root, _dirs, files in os.walk(full_base):
+        for f in files:
+            if any(fnmatch.fnmatch(f, p) for p in name_patterns):
+                yield Path(root) / f
+
+
 def _resolve_inputs(inputs):
     """Resolve input paths to individual files, expanding globs and
     recursing into directories.
     """
     result = set()
+    names_by_base = defaultdict(list)
     for input_path in sorted(inputs):
         if _is_glob_pattern(input_path):
+            base, sep, name = input_path.partition("/**/")
+            if sep and name and "/" not in name and not _is_glob_pattern(base):
+                names_by_base[base].append(name)
+                continue
             for filepath in _topsrcdir.glob(input_path):
-                if filepath.is_file() and not filepath.name.endswith((
-                    ".pyc",
-                    ".pyd",
-                    ".pyo",
-                )):
+                if filepath.is_file() and not filepath.name.endswith(
+                    _COMPILED_SUFFIXES
+                ):
                     result.add(filepath)
             continue
 
@@ -64,15 +86,43 @@ def _resolve_inputs(inputs):
         if full_path.is_dir():
             for root, _dirs, files in os.walk(full_path):
                 for f in files:
-                    if f.endswith((".pyc", ".pyd", ".pyo")):
+                    if f.endswith(_COMPILED_SUFFIXES):
                         continue
                     result.add(Path(root) / f)
         elif full_path.is_file():
             result.add(full_path)
+    for base, names in names_by_base.items():
+        for filepath in _find_names(base, names):
+            if not filepath.name.endswith(_COMPILED_SUFFIXES):
+                result.add(filepath)
     return sorted(result)
 
 
-def _hash_inputs(inputs, env_vars=None, python_version=False, arg_key=None):
+def _load_file_hashes(hashes_file):
+    if hashes_file is None:
+        return 0, {}
+    try:
+        with open(hashes_file) as f:
+            saved = json.load(f)
+        return saved["written_ns"], saved["files"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return 0, {}
+
+
+def _save_file_hashes(hashes_file, files, written_ns):
+    tmp = hashes_file.with_name(f"{hashes_file.name}.{os.getpid()}.tmp")
+    try:
+        hashes_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(tmp, "w") as f:
+            json.dump({"written_ns": written_ns, "files": files}, f)
+        os.replace(tmp, hashes_file)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+
+
+def _hash_inputs(
+    inputs, env_vars=None, python_version=False, arg_key=None, hashes_file=None
+):
     """Compute a SHA-256 hash over the contents of input files/directories,
     plus optional environment variables, Python version, and argument key.
 
@@ -85,14 +135,33 @@ def _hash_inputs(inputs, env_vars=None, python_version=False, arg_key=None):
         python_version: If True, include sys.version in the hash.
         arg_key: Optional JSON-serialized argument string to include in
             the hash.
+        hashes_file: Optional path to store the hash of each input file in,
+            keyed by its size, modification time and inode, so that files
+            that did not change are not read again.
     """
     h = hashlib.sha256()
 
+    scan_ns = time.time_ns()
+    written_ns, saved = _load_file_hashes(hashes_file)
+    files = {}
+    stale = False
     for filepath in _resolve_inputs(inputs):
-        rel = filepath.relative_to(_topsrcdir)
-        h.update(str(rel).encode())
-        with open(filepath, "rb") as fh:
-            h.update(fh.read())
+        rel = str(filepath.relative_to(_topsrcdir))
+        st = filepath.stat()
+        key = [st.st_size, st.st_mtime_ns, str(st.st_ino)]
+        entry = saved.get(rel)
+        if entry and entry[:3] == key and st.st_mtime_ns < written_ns - _RACY_NS:
+            digest = entry[3]
+        else:
+            with open(filepath, "rb") as fh:
+                digest = hashlib.sha256(fh.read()).hexdigest()
+            stale = True
+        files[rel] = key + [digest]
+        h.update(rel.encode())
+        h.update(digest.encode())
+
+    if hashes_file is not None and (stale or files.keys() != saved.keys()):
+        _save_file_hashes(hashes_file, files, scan_ns)
 
     if env_vars:
         for var in sorted(env_vars):
@@ -111,7 +180,11 @@ def _hash_inputs(inputs, env_vars=None, python_version=False, arg_key=None):
 def _prune_cache_dir(cache_dir, max_entries):
     """Remove the oldest entries beyond max_entries, based on mtime."""
     entries = sorted(
-        (p for p in cache_dir.iterdir() if p.name != _INPUTS_FILENAME),
+        (
+            p
+            for p in cache_dir.iterdir()
+            if p.name not in (_INPUTS_FILENAME, _HASHES_FILENAME)
+        ),
         key=lambda p: p.stat().st_mtime,
         reverse=True,
     )
@@ -160,6 +233,7 @@ def mach_func_cache(
         def wrapper(*args, **kwargs):
             cache_dir = _cache_dir / cache_name
             inputs_file = cache_dir / _INPUTS_FILENAME
+            hashes_file = cache_dir / _HASHES_FILENAME
 
             arg_key = None
             if args or kwargs:
@@ -182,7 +256,9 @@ def mach_func_cache(
                         f"{len(all_inputs) - len(inputs)} dynamic inputs"
                     )
 
-                full_hash = _hash_inputs(all_inputs, env_vars, python_version, arg_key)
+                full_hash = _hash_inputs(
+                    all_inputs, env_vars, python_version, arg_key, hashes_file
+                )
 
                 cache_file = cache_dir / f"{full_hash}.json"
                 if cache_file.is_file():
@@ -205,7 +281,9 @@ def mach_func_cache(
                 all_inputs.extend(new_extra)
                 _log(f"{fn.__qualname__}: extracted {len(new_extra)} dynamic inputs")
 
-            full_hash = _hash_inputs(all_inputs, env_vars, python_version, arg_key)
+            full_hash = _hash_inputs(
+                all_inputs, env_vars, python_version, arg_key, hashes_file
+            )
 
             cache_dir.mkdir(parents=True, exist_ok=True)
             cache_file = cache_dir / f"{full_hash}.json"

@@ -442,7 +442,7 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     const Register scratch = temps.AcquireX().asUnsized();
     if (val.isGCThing()) {
       BufferOffset load =
-          movePatchablePtr(ImmPtr(val.bitsAsPunboxPointer()), scratch);
+          movePatchableGCPtr(ImmPtr(val.bitsAsPunboxPointer()), scratch);
       writeDataRelocation(val, load);
       push(scratch);
     } else {
@@ -471,7 +471,7 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
   void moveValue(const Value& val, Register dest) {
     if (val.isGCThing()) {
       BufferOffset load =
-          movePatchablePtr(ImmPtr(val.bitsAsPunboxPointer()), dest);
+          movePatchableGCPtr(ImmPtr(val.bitsAsPunboxPointer()), dest);
       writeDataRelocation(val, load);
     } else {
       movePtr(ImmWord(val.asRawBits()), dest);
@@ -490,11 +490,13 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
   }
 
   CodeOffset movWithPatch(ImmWord imm, Register dest) {
-    BufferOffset off = immPool64(ARMRegister(dest, 64), imm.value);
+    BufferOffset off =
+        immPool64(ARMRegister(dest, 64), imm.value, PoolEntryKind::Unshared);
     return CodeOffset(off.getOffset());
   }
   CodeOffset movWithPatch(ImmPtr imm, Register dest) {
-    BufferOffset off = immPool64(ARMRegister(dest, 64), uint64_t(imm.value));
+    BufferOffset off = immPool64(ARMRegister(dest, 64), uint64_t(imm.value),
+                                 PoolEntryKind::Unshared);
     return CodeOffset(off.getOffset());
   }
 
@@ -842,7 +844,7 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     append(wasm::SymbolicAccess(CodeOffset(off.getOffset()), imm));
   }
   void movePtr(ImmGCPtr imm, Register dest) {
-    BufferOffset load = movePatchablePtr(ImmPtr(imm.value), dest);
+    BufferOffset load = movePatchableGCPtr(ImmPtr(imm.value), dest);
     writeDataRelocation(imm, load);
   }
 
@@ -859,11 +861,11 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     Mov(ARMRegister(dest, 32), ARMRegister(src, 32));
   }
 
-  // Move a pointer using a literal pool, so that the pointer
-  // may be easily patched or traced.
+  // Move a pointer using a literal pool, so that the pointer may be easily
+  // patched (ImmWord) or traced (a GC thing or boxed Value as ImmPtr).
   // Returns the BufferOffset of the load instruction emitted.
   BufferOffset movePatchablePtr(ImmWord ptr, Register dest);
-  BufferOffset movePatchablePtr(ImmPtr ptr, Register dest);
+  BufferOffset movePatchableGCPtr(ImmPtr ptr, Register dest);
 
   void loadPtr(wasm::SymbolicAddress address, Register dest) {
     vixl::UseScratchRegisterScope temps(this);
@@ -2077,9 +2079,6 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     return testGCThing(cond, scratch);
   }
 
-  Condition testBigIntTruthy(bool truthy, const ValueOperand& value);
-  Condition testStringTruthy(bool truthy, const ValueOperand& value);
-
   void int32OrDouble(Register src, ARMFPRegister dest) {
     Label isInt32;
     Label join;
@@ -2125,7 +2124,7 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     return ret;
   }
 
-  // load: offset to the load instruction obtained by movePatchablePtr().
+  // load: offset to the load instruction obtained by movePatchableGCPtr().
   void writeDataRelocation(ImmGCPtr ptr, BufferOffset load) {
     // Raw GC pointer relocations and Value relocations both end up in
     // Assembler::TraceDataRelocations.
@@ -2229,7 +2228,8 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
       MOZ_ASSERT(temps.IsAvailable(ScratchReg2_64));
       temps.Exclude(ScratchReg2_64);
 
-      loadOffset = immPool64(ScratchReg2_64, uint64_t(target->raw()));
+      loadOffset = immPool64(ScratchReg2_64, uint64_t(target->raw()),
+                             PoolEntryKind::Constant);
 
       if (enabled) {
         blr(ScratchReg2_64);

@@ -2174,8 +2174,13 @@ void MacroAssembler::branchTestStringImpl(Condition cond, const T& t,
 void MacroAssembler::branchTestStringTruthy(bool truthy,
                                             const ValueOperand& value,
                                             Label* label) {
-  Condition c = testStringTruthy(truthy, value);
-  B(label, c);
+  vixl::UseScratchRegisterScope temps(this);
+  const Register scratch = temps.AcquireX().asUnsized();
+  MOZ_ASSERT(value.valueReg() != scratch);
+
+  unboxString(value, scratch);
+  load32(Address(scratch, JSString::offsetOfLength()), scratch);
+  branchTest32(truthy ? NonZero : Zero, scratch, scratch, label);
 }
 
 void MacroAssembler::branchTestSymbol(Condition cond, Register tag,
@@ -2235,8 +2240,13 @@ void MacroAssembler::branchTestBigIntImpl(Condition cond, const T& t,
 void MacroAssembler::branchTestBigIntTruthy(bool truthy,
                                             const ValueOperand& value,
                                             Label* label) {
-  Condition c = testBigIntTruthy(truthy, value);
-  B(label, c);
+  vixl::UseScratchRegisterScope temps(this);
+  const Register scratch = temps.AcquireX().asUnsized();
+  MOZ_ASSERT(value.valueReg() != scratch);
+
+  unboxBigInt(value, scratch);
+  load32(Address(scratch, BigInt::offsetOfDigitLength()), scratch);
+  branchTest32(truthy ? NonZero : Zero, scratch, scratch, label);
 }
 
 void MacroAssembler::branchTestNull(Condition cond, Register tag,

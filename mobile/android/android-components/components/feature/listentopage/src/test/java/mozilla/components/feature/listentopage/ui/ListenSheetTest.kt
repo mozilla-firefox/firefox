@@ -4,7 +4,6 @@
 
 package mozilla.components.feature.listentopage.ui
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.requiredWidth
@@ -19,10 +18,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasStateDescription
@@ -69,10 +66,6 @@ class ListenSheetTest {
     private val voiceOptions = testContext.getString(R.string.mozac_feature_listentopage_voice_options)
     private val playbackSpeed = testContext.getString(R.string.mozac_feature_listentopage_playback_speed)
     private val expandedState = testContext.getString(R.string.mozac_feature_listentopage_dropdown_expanded)
-
-    // The player formats times with DateUtils, whose exact output is platform dependent (Robolectric
-    // zero-pads the minutes where a device does not), so the expected value comes from the same call.
-    private fun formatted(seconds: Long) = DateUtils.formatElapsedTime(seconds / 1000)
 
     // The track hangs off the left of the window, so the drag starts inside the bar. It ends past the bar so that the
     // thumb lands on the end. The first move only takes the finger past the touch slop.
@@ -126,9 +119,7 @@ class ListenSheetTest {
         composeTestRule.onNodeWithContentDescription(forward).assertExists()
         composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertExists()
         composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT).assertDoesNotExist()
-        composeTestRule
-            .onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED, useUnmergedTree = true)
-            .assertTextEquals(formatted(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS))
+        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -143,7 +134,7 @@ class ListenSheetTest {
         composeTestRule.onNodeWithContentDescription(forward).assertDoesNotExist()
         composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertDoesNotExist()
         composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_COMPACT).assertExists()
-        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED, useUnmergedTree = true).assertDoesNotExist()
+        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test
@@ -257,7 +248,6 @@ class ListenSheetTest {
         )
         composeTestRule.onNodeWithTag(PLAY_PAUSE_BUTTON_TEST_TAG).assertIsNotEnabled()
         composeTestRule.onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED).assertIsNotEnabled()
-        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED, useUnmergedTree = true).assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription(playbackSpeed).assertIsNotEnabled()
         composeTestRule.onNodeWithContentDescription(voiceOptions).assertIsNotEnabled()
         composeTestRule.onNodeWithContentDescription(rewind).assertIsNotEnabled()
@@ -310,20 +300,18 @@ class ListenSheetTest {
     }
 
     @Test
-    fun `WHEN the thumb is dragged THEN the elapsed time follows it before a seek is asked for`() {
+    fun `WHEN the thumb is dragged THEN no time is shown and no seek is asked for before it is let go`() {
         val actions = mutableListOf<ListenAction>()
         setContent(expanded = true, onAction = { actions.add(it) })
 
         dragThumbPastEnd(release = false)
 
-        composeTestRule
-            .onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED, useUnmergedTree = true)
-            .assertTextEquals(formatted(TOTAL_DURATION_MS))
+        composeTestRule.onNodeWithTag(ELAPSED_TIME_TEST_TAG, useUnmergedTree = true).assertDoesNotExist()
         assertTrue("a seek was asked for before the thumb was let go", actions.isEmpty())
     }
 
     @Test
-    fun `WHEN the thumb is let go THEN a seek is asked for and the elapsed time stops following the thumb`() {
+    fun `WHEN the thumb is let go THEN a seek is asked for`() {
         val actions = mutableListOf<ListenAction>()
         setContent(expanded = true, onAction = { actions.add(it) })
 
@@ -331,10 +319,6 @@ class ListenSheetTest {
 
         val seek = actions.single() as ListenAction.Playback.SeekRequested
         assertEquals(1f, seek.fraction, 0.01f)
-        // The store moves the elapsed time once it takes the seek in, and this test has no store.
-        composeTestRule
-            .onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED, useUnmergedTree = true)
-            .assertTextEquals(formatted(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS))
     }
 
     @Test
@@ -386,9 +370,6 @@ class ListenSheetTest {
             .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
             .performSemanticsAction(SemanticsActions.SetProgress) { it(0.5f) }
 
-        composeTestRule
-            .onNodeWithTag(ELAPSED_TIME_TEST_TAG_EXPANDED, useUnmergedTree = true)
-            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.HideFromAccessibility))
         assertEquals(listOf(ListenAction.Playback.SeekRequested(0.5f)), actions)
     }
 
@@ -428,6 +409,9 @@ class ListenSheetTest {
         const val TOTAL_DURATION_MS = 45000L
         const val LESS_THAN_ONE_SEC_ELAPSED_TIME_MS = 300L
         const val MORE_THAN_ONE_SEC_ELAPSED_TIME_MS = 1200L
+
+        // The tag the elapsed time had, kept so that the tests notice if a time is shown again.
+        const val ELAPSED_TIME_TEST_TAG = "PlayerExpandedElapsedTime"
         val NARROW_WINDOW_WIDTH = 400.dp
         val WIDE_WINDOW_WIDTH = 840.dp
     }

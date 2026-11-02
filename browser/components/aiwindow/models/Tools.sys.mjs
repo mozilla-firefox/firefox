@@ -659,6 +659,7 @@ export function getTabList(amount = MAX_TABS) {
             title: sanitizeUntrustedContent(title),
             lastAccessed: tab.lastAccessed,
             windowId,
+            pinned: tab.pinned,
           });
         }
       }
@@ -678,6 +679,7 @@ export function getTabList(amount = MAX_TABS) {
  * @property {string} title - Title of the tab.
  * @property {number} lastAccessed - When the tab was last accessed in milliseconds.
  * @property {string|null} windowId - SessionStore ID of the browser window.
+ * @property {boolean} pinned - Whether the tab is pinned.
  */
 
 /**

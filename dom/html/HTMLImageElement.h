@@ -183,7 +183,8 @@ class HTMLImageElement final : public nsGenericHTMLElement,
   }
 
   bool IsAwaitingLoadOrLazyLoading() const {
-    return mLazyLoading || mPendingImageLoadTask;
+    return mLazyLoading ||
+           (mImageLoadData && mImageLoadData->mPendingImageLoadTask);
   }
 
   bool IsLazyLoading() const { return mLazyLoading; }

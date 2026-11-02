@@ -88,6 +88,7 @@ is(s.sanitize("<fieldset><legend></legend></fieldset>", u.SanitizerDropForms), '
 is(s.sanitize("<input>", u.SanitizerDropForms), '<html><head></head><body></body></html>', "Wrong sanitizer result 52");
 is(s.sanitize("<label for=stripme class=keepme>kept</label>", u.SanitizerDropForms), '<html><head></head><body><label class="keepme">kept</label></body></html>', "Wrong sanitizer result: label for should be stripped");
 is(s.sanitize("<label for=keepme>kept</label>"), '<html><head></head><body><label for="keepme">kept</label></body></html>', "Wrong sanitizer result: label for should be kept");
+is(s.sanitize("<div contenteditable=true>kept</div>", u.SanitizerDropForms), '<html><head></head><body><div>kept</div></body></html>', "Wrong sanitizer result: div contenteditable should be stripped");
 is(s.sanitize("<output>kept</output>", u.SanitizerDropForms), '<html><head></head><body>kept</body></html>', "Wrong sanitizer result: output");
 is(s.sanitize("<textarea>x</textarea>", u.SanitizerDropForms), '<html><head></head><body></body></html>', "Wrong sanitizer result: textarea");
 is(s.sanitize("<button>foo</button>", u.SanitizerDropForms), '<html><head></head><body></body></html>', "Wrong sanitizer result 53");

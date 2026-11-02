@@ -50,6 +50,18 @@ function menuItems(menu) {
 }
 
 describe("<MozWidgetCard>", () => {
+  it("draws the entry's icon before its name in the header", () => {
+    const { header } = renderCard({ icon: "chrome://test/content/icon.png" });
+    const icon = header.querySelector(':scope > img[slot="leading"]');
+    expect(icon.getAttribute("src")).toBe("chrome://test/content/icon.png");
+    expect(icon.getAttribute("alt")).toBe("");
+  });
+
+  it("draws no icon for an entry without one", () => {
+    const { header } = renderCard();
+    expect(header.querySelector("img")).toBeNull();
+  });
+
   it("renders the shared widget items", () => {
     const { menu } = renderCard();
     expect(menuItems(menu)).toEqual([

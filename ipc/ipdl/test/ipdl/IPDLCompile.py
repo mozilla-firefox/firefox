@@ -15,6 +15,7 @@ class IPDLCompile:
         self.stdout = None
         self.stderr = None
         self.returncode = None
+        self.outputs = {}
 
     def run(self):
         """Run |self.specfilename| through the IPDL compiler."""
@@ -23,7 +24,7 @@ class IPDLCompile:
         tmpoutdir = tempfile.mkdtemp(prefix="ipdl_unit_test")
 
         try:
-            self.argv.extend(["-d", tmpoutdir, self.specfilename])
+            self.argv.extend(["-d", tmpoutdir, "-o", tmpoutdir, self.specfilename])
 
             proc = subprocess.Popen(
                 args=self.argv,
@@ -35,6 +36,12 @@ class IPDLCompile:
 
             self.returncode = proc.returncode
             assert self.returncode is not None
+
+            for name in os.listdir(tmpoutdir):
+                path = os.path.join(tmpoutdir, name)
+                if os.path.isfile(path):
+                    with open(path) as f:
+                        self.outputs[name] = f.read()
 
         finally:
             for root, dirs, files in os.walk(tmpoutdir, topdown=0):

@@ -36,7 +36,7 @@ See the [DevTools Backward Compatitility Tests](tests/backward-compat-tests.md)
 documentation.
 
 The DevTools backward compatibility job was added in [Bug 2053559](https://bugzilla.mozilla.org/show_bug.cgi?id=2053559).
-Results can be found on the [devtools-backward-monitor](https://juliandescottes.github.io/devtools-backward-monitor/).
+Results can be found on the [devtools-backward-monitor](https://firefox-devtools.github.io/devtools-backward-monitor/).
 
 The automated job currently only covers testing Desktop Firefox. Once we are
 confident the job works correctly and [Android coverage has been added](https://bugzilla.mozilla.org/show_bug.cgi?id=2062545),

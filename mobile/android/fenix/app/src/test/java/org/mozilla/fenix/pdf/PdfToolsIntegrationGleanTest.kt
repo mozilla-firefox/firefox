@@ -12,6 +12,7 @@ import io.mockk.slot
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import mozilla.components.browser.state.engine.EngineMiddleware
 import mozilla.components.browser.state.state.BrowserState
@@ -34,6 +35,8 @@ class PdfToolsIntegrationGleanTest {
 
     @get:Rule val gleanTestRule = FenixGleanTestRule(testContext)
 
+    private val testDispatcher = StandardTestDispatcher()
+
     private val tabId = "1"
 
     private val container = CoordinatorLayout(ApplicationProvider.getApplicationContext())
@@ -53,6 +56,7 @@ class PdfToolsIntegrationGleanTest {
             container = container,
             browserStore = store,
             isAddressBarAtBottom = true,
+            mainDispatcher = testDispatcher,
         )
 
     private fun integrationWith(engineSession: EngineSession) =
@@ -156,6 +160,20 @@ class PdfToolsIntegrationGleanTest {
         assertEquals(SignatureFailure.EngineError.telemetryName, extra["reason"])
         assertEquals(SignatureType.Typed.telemetryName, extra["signature_type"])
         assertNull(PdfViewer.signDialogAddCompleted.testGetValue())
+    }
+
+    @Test
+    fun `GIVEN the PDF viewer does not respond WHEN the signature is added THEN the timeout is recorded`() {
+        val engineSession = mockk<EngineSession>()
+        every { engineSession.addSignatureToPdf(any(), any(), any()) } returns Unit
+        val integration = integrationWith(engineSession)
+        integration.start()
+        integration.addSignature()
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val extra = assertNotNull(PdfViewer.signDialogAddFailure.testGetValue()).single().extra!!
+        assertEquals(SignatureFailure.Timeout.telemetryName, extra["reason"])
     }
 
     @Test

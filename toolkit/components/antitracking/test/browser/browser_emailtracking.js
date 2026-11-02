@@ -9,6 +9,13 @@ add_setup(async function () {
   // current test. This also setup prefs for testing email tracking.
   await SpecialPowers.pushPrefEnv({
     set: [
+      // Email tracking data collection is url-classifier only, so keep it as
+      // the channel classifier where the content classifier is the default.
+      ["privacy.trackingprotection.content.mirror.mode", 0],
+      [
+        "privacy.trackingprotection.urlclassifier.disable_for_channel_classifier",
+        false,
+      ],
       ["privacy.trackingprotection.enabled", false],
       ["privacy.trackingprotection.pbmode.enabled", false],
       ["privacy.trackingprotection.annotate_channels", false],
@@ -34,8 +41,8 @@ add_setup(async function () {
 
   await UrlClassifierTestUtils.addTestTrackers();
 
-  registerCleanupFunction(_ => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 });
 

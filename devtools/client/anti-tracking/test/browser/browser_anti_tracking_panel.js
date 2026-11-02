@@ -63,8 +63,9 @@ add_setup(async function () {
     ],
   });
   await UrlClassifierTestUtils.addTestTrackers();
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
   registerCleanupFunction(async () => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 });
 

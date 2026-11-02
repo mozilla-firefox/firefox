@@ -2372,6 +2372,10 @@ nsresult nsHttpTransaction::ParseLineSegment(char* segment, uint32_t len) {
         (void)mResponseHead->GetHeader(nsHttp::Content_Security_Policy,
                                        cspHeader);
 
+        nsCString connectionAllowlistHeader;
+        (void)mResponseHead->GetHeader(nsHttp::Connection_Allowlist,
+                                       connectionAllowlistHeader);
+
         nsCOMPtr<nsIEarlyHintObserver> earlyHint;
         {
           MutexAutoLock lock(mLock);
@@ -2383,8 +2387,11 @@ nsresult nsHttpTransaction::ParseLineSegment(char* segment, uint32_t len) {
                   "nsIEarlyHintObserver->EarlyHint",
                   [obs{std::move(earlyHint)}, header{std::move(linkHeader)},
                    referrerPolicy{std::move(referrerPolicy)},
-                   cspHeader{std::move(cspHeader)}]() {
-                    obs->EarlyHint(header, referrerPolicy, cspHeader);
+                   cspHeader{std::move(cspHeader)},
+                   connectionAllowlistHeader{
+                       std::move(connectionAllowlistHeader)}]() {
+                    obs->EarlyHint(header, referrerPolicy, cspHeader,
+                                   connectionAllowlistHeader);
                   }),
               NS_DISPATCH_NORMAL);
           MOZ_ASSERT(NS_SUCCEEDED(rv));
@@ -2925,10 +2932,17 @@ nsresult nsHttpTransaction::ProcessData(char* buf, uint32_t count,
     }
 
     if (!mContentDecodingCheck) {
-      // The main thread may take mResponseHead once the data is in the pipe.
-      MutexAutoLock lock(mLock);
-      if (mResponseHead) {
-        mContentDecoding = mResponseHead->HasHeader(nsHttp::Content_Encoding);
+      Maybe<bool> contentDecoding;
+      {
+        // The main thread may take mResponseHead once the data is in the pipe.
+        MutexAutoLock lock(mLock);
+        if (mResponseHead) {
+          contentDecoding =
+              Some(mResponseHead->HasHeader(nsHttp::Content_Encoding));
+        }
+      }
+      if (contentDecoding) {
+        mContentDecoding = *contentDecoding;
         mContentDecodingCheck = true;
       }
     }

@@ -175,13 +175,32 @@ struct EnginesPrefsSnapshot {
         mAnnotatePBM);
   }
 
+  // Whether test_block and test_annotate stand in for the trackers engine.
+  static bool UseTestTrackersEngines() {
+    return Preferences::GetBool(
+        "privacy.trackingprotection.content.testing.use_test_trackers_engines",
+        false);
+  }
+
+  // Appends the feature names listed in the engines pref |aPref|. With
+  // UseTestTrackersEngines(), the trackers engine is replaced by test_block in
+  // the protection engines prefs and by test_annotate in the annotation ones.
   static void AppendFeatureNamesFromPref(const char* aPref,
                                          nsTArray<nsCString>& aOut) {
     nsAutoCString value;
     Preferences::GetCString(aPref, value);
+    const bool useTestEngines = UseTestTrackersEngines();
+    const bool isProtectionPref =
+        !strcmp(aPref,
+                "privacy.trackingprotection.content.protection.engines") ||
+        !strcmp(aPref,
+                "privacy.trackingprotection.content.protection.engines.pbmode");
     for (const auto& part : value.Split(',')) {
       nsAutoCString name(part);
       name.Trim("\b\t\r\n ");
+      if (useTestEngines && name.EqualsLiteral("trackers")) {
+        name = isProtectionPref ? "test_block"_ns : "test_annotate"_ns;
+      }
       if (!name.IsEmpty() && !aOut.Contains(name)) {
         aOut.AppendElement(name);
       }

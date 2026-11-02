@@ -1,4 +1,4 @@
-//error: argument typename `int' of message `foo' has a NoTaint attribute, but the message lacks the Tainted attribute
+//error: argument typename `int' of message `foo' has a NoTaint attribute, but neither the message nor the type is Tainted
 
 [ChildProc=any]
 sync protocol PNoTaintWithoutTainted {

@@ -22,7 +22,9 @@ import androidx.core.view.isVisible
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -41,6 +43,8 @@ import org.mozilla.fenix.pdf.ui.PdfTools
 import org.mozilla.fenix.pdf.ui.PdfToolsContent
 import org.mozilla.fenix.pdf.ui.SignatureDialogContent
 import org.mozilla.fenix.theme.FirefoxTheme
+
+private const val ADDING_SIGNATURE_TIMEOUT_MS = 5000L
 
 /**
  * This integration is responsible for adding or removing PDF tools and properly anchoring it to the browser. [PdfTools]
@@ -65,6 +69,7 @@ class PdfToolsIntegration(
     private var pdfTabId by mutableStateOf(browserStore.state.findPdfTabId(customTabSessionId))
     private var isSigning by mutableStateOf(false)
     private var isAddingSignature by mutableStateOf(false)
+    private var isAddingSignatureTimeout: Job? = null
     private val signature = TextFieldState()
 
     private val currentSession
@@ -261,6 +266,21 @@ class PdfToolsIntegration(
         }
 
         isAddingSignature = true
+
+        // Timeout to ensure [engineSession.addSignatureToPdf] completes in a timely way.
+        // If it doesn't complete within [ADDING_SIGNATURE_TIMEOUT_MS], it is likely something on the backend failed
+        // without reporting.
+        isAddingSignatureTimeout = scope?.launch {
+            delay(ADDING_SIGNATURE_TIMEOUT_MS)
+
+            PdfViewer.signDialogAddFailure.record(
+                PdfViewer.SignDialogAddFailureExtra(
+                    reason = SignatureFailure.Timeout.telemetryName,
+                    signatureType = SignatureType.Typed.telemetryName,
+                )
+            )
+            dismissSignatureDialog()
+        }
         engineSession.addSignatureToPdf(
             text = signature.text.toString(),
             onResult = {
@@ -306,6 +326,8 @@ class PdfToolsIntegration(
     }
 
     private fun dismissSignatureDialog() {
+        isAddingSignatureTimeout?.cancel()
+        isAddingSignatureTimeout = null
         isSigning = false
         isAddingSignature = false
         signature.clearText()

@@ -1010,9 +1010,8 @@ auto DocumentLoadListener::Open(nsDocShellLoadState* aLoadState,
   }
 
   if (!nsDocShell::CreateAndConfigureRealChannelForLoadState(
-          loadingContext, aLoadState, aLoadInfo, mParentChannelListener,
-          nullptr, attrs, aLoadFlags, aCacheKey, *aRv,
-          getter_AddRefs(mChannel))) {
+          loadingContext, aLoadState, aLoadInfo, mParentChannelListener, attrs,
+          aLoadFlags, aCacheKey, *aRv, getter_AddRefs(mChannel))) {
     LOG(("DocumentLoadListener::Open failed to create channel [this=%p]",
          this));
     mParentChannelListener = nullptr;
@@ -3767,14 +3766,15 @@ NS_IMETHODIMP DocumentLoadListener::OnStatus(nsIRequest* aRequest,
   return NS_OK;
 }
 
-NS_IMETHODIMP DocumentLoadListener::EarlyHint(const nsACString& aLinkHeader,
-                                              const nsACString& aReferrerPolicy,
-                                              const nsACString& aCSPHeader) {
+NS_IMETHODIMP DocumentLoadListener::EarlyHint(
+    const nsACString& aLinkHeader, const nsACString& aReferrerPolicy,
+    const nsACString& aCSPHeader,
+    const nsACString& aConnectionAllowlistHeader) {
   LOG(("DocumentLoadListener::EarlyHint.\n"));
   RefPtr<DocumentLoadListener> kungFuDeathGrip(this);
-  mEarlyHintsService.EarlyHint(aLinkHeader, GetChannelCreationURI(), mChannel,
-                               aReferrerPolicy, aCSPHeader,
-                               GetLoadingBrowsingContext());
+  mEarlyHintsService.EarlyHint(
+      aLinkHeader, GetChannelCreationURI(), mChannel, aReferrerPolicy,
+      aCSPHeader, aConnectionAllowlistHeader, GetLoadingBrowsingContext());
   return NS_OK;
 }
 

@@ -26,7 +26,9 @@ add_setup(async function () {
       ["urlclassifier.features.cryptomining.annotate.blacklistTables", ""],
     ],
   });
-  registerCleanupFunction(() => {
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
     Services.fog.testResetFOG();
   });
 });

@@ -17,8 +17,8 @@
 #include "mozilla/Logging.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/ReferrerInfo.h"
-#include "mozilla/dom/nsCSPContext.h"
 #include "mozilla/dom/nsMixedContentBlocker.h"
 #include "mozilla/glean/NetwerkProtocolHttpMetrics.h"
 #include "mozilla/ipc/BackgroundUtils.h"
@@ -33,7 +33,6 @@
 #include "nsHttpChannel.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
 #include "nsIChannel.h"
-#include "nsIContentSecurityPolicy.h"
 #include "nsICookieJarSettings.h"
 #include "nsIHttpChannel.h"
 #include "nsIInputStream.h"
@@ -196,7 +195,7 @@ void EarlyHintPreloader::MaybeCreateAndInsertPreload(
     nsIURI* aBaseURI, nsIPrincipal* aPrincipal,
     nsICookieJarSettings* aCookieJarSettings,
     const nsACString& aResponseReferrerPolicy, const nsACString& aCSPHeader,
-    uint64_t aBrowsingContextID,
+    const nsACString& aConnectionAllowlistHeader, uint64_t aBrowsingContextID,
     dom::CanonicalBrowsingContext* aLoadingBrowsingContext,
     bool aIsModulepreload) {
   nsAttrValue as;
@@ -333,16 +332,15 @@ void EarlyHintPreloader::MaybeCreateAndInsertPreload(
   }
   nsCOMPtr<nsILoadInfo> secCheckLoadInfo = maybeLoadInfo.unwrap();
 
-  if (aCSPHeader.Length() != 0) {
-    // If the CSP header is present then create a new CSP and apply the header
-    // directives to it
-    nsCOMPtr<nsIContentSecurityPolicy> csp = new nsCSPContext();
-    nsresult rv = csp->SetRequestContextWithPrincipal(
-        aPrincipal, aBaseURI, ""_ns, 0 /* aInnerWindowId */);
-    NS_ENSURE_SUCCESS_VOID(rv);
-    rv = CSP_AppendCSPFromHeader(csp, NS_ConvertUTF8toUTF16(aCSPHeader),
-                                 false /* report only */);
-    NS_ENSURE_SUCCESS_VOID(rv);
+  if (!aCSPHeader.IsEmpty() || !aConnectionAllowlistHeader.IsEmpty()) {
+    auto policyContainerOrErr = PolicyContainer::CreateForNonDocument(
+        aPrincipal, aBaseURI,
+        {.mContentSecurityPolicy = nsCString(aCSPHeader),
+         .mConnectionAllowlist = nsCString(aConnectionAllowlistHeader)});
+    if (NS_WARN_IF(policyContainerOrErr.isErr())) {
+      return;
+    }
+    RefPtr<PolicyContainer> policyContainer = policyContainerOrErr.unwrap();
 
     // We create a temporary ClientInfo. This is required on the loadInfo as
     // that is how the CSP is queried. More specificially, as a hack to be able
@@ -360,21 +358,14 @@ void EarlyHintPreloader::MaybeCreateAndInsertPreload(
     // around ClientChannelHelper.
 
     mozilla::ipc::PrincipalInfo principalInfo;
-    rv = PrincipalToPrincipalInfo(aPrincipal, &principalInfo);
+    nsresult rv = PrincipalToPrincipalInfo(aPrincipal, &principalInfo);
     NS_ENSURE_SUCCESS_VOID(rv);
     dom::ClientInfo clientInfo(nsID::GenerateUUID(), Nothing(),
                                dom::ClientType::Window, principalInfo,
                                TimeStamp::Now(), ""_ns, dom::FrameType::None);
 
-    // Our newly-created CSP is set on the ClientInfo via the indirect route of
-    // first serializing to CSPInfo
-    ipc::CSPInfo cspInfo;
-    rv = CSPToCSPInfo(csp, &cspInfo);
-    NS_ENSURE_SUCCESS_VOID(rv);
-
     ipc::PolicyContainerArgs policyContainerArgs;
-    policyContainerArgs.csp() = Some(cspInfo);
-
+    PolicyContainer::ToArgs(policyContainer, policyContainerArgs);
     clientInfo.SetPolicyContainerArgs(policyContainerArgs);
 
     // This ClientInfo is then set on the new loadInfo.

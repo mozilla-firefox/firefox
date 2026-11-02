@@ -85,8 +85,10 @@ add_task(async function test_idleDailyRerecordsPrefValues() {
 });
 
 /**
- * browser.nova.enabled is reported on the same schedule, so that we can tell
- * how many people turn the Nova redesign off once it is enabled by default.
+ * browser.nova.enabled is reported on the same schedule.
+ * While the pref isn't locked in yet (see Bug 2082898), verify it is
+ * correctly recorded so we can tell how many people turn the Nova redesign
+ * off after the pref is enabled by default.
  */
 add_task(async function test_idleDailyRecordsNovaEnabled() {
   // The task above already fired idle-daily, so clear that value: otherwise the
@@ -98,23 +100,19 @@ add_task(async function test_idleDailyRecordsNovaEnabled() {
     "the metric should start out unset"
   );
 
-  for (let novaEnabled of [true, false]) {
-    await SpecialPowers.pushPrefEnv({ set: [[NOVA_PREF, novaEnabled]] });
+  let novaEnabled = Services.prefs.getBoolPref(NOVA_PREF, true);
 
-    Services.obs.notifyObservers(null, "idle-daily");
+  Services.obs.notifyObservers(null, "idle-daily");
 
-    await TestUtils.waitForCondition(
-      () => Glean.nova.enabled.testGetValue() === novaEnabled,
-      `wait for idle-daily to record browser.nova.enabled=${novaEnabled}`
-    );
-    Assert.equal(
-      Glean.nova.enabled.testGetValue(),
-      novaEnabled,
-      `idle-daily should have recorded browser.nova.enabled=${novaEnabled}`
-    );
-
-    await SpecialPowers.popPrefEnv();
-  }
+  await TestUtils.waitForCondition(
+    () => Glean.nova.enabled.testGetValue() === novaEnabled,
+    `wait for idle-daily to record browser.nova.enabled=${novaEnabled}`
+  );
+  Assert.equal(
+    Glean.nova.enabled.testGetValue(),
+    novaEnabled,
+    `idle-daily should have recorded browser.nova.enabled=${novaEnabled}`
+  );
 });
 
 /**

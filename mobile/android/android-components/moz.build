@@ -6,216 +6,138 @@ with Files("**"):
     BUG_COMPONENT = ("Firefox for Android", "General")
 
 with Files(
-    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/ipprotection/**"
+    "plugins/config/**",
+    "plugins/publicsuffixlist/**",
 ):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
+    BUG_COMPONENT = ("Firefox Build System", "Android Studio and Gradle Integration")
 
 with Files(
-    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/permission/**"
+    "components/concept/sync/**",
+    "components/feature/accounts-push/**",
+    "components/feature/accounts/**",
+    "components/feature/syncedtabs/**",
+    "components/service/firefox-accounts/**",
+    "samples/sync-logins/**",
+    "samples/sync/**",
 ):
-    BUG_COMPONENT = ("Firefox for Android", "Browser Engine")
-
-with Files(
-    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/translate/**"
-):
-    BUG_COMPONENT = ("Firefox for Android", "Translations")
-
-with Files(
-    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/webextension/**"
-):
-    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
-
-with Files(
-    "components/browser/state/src/*/java/mozilla/components/browser/state/search/**"
-):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
-
-with Files("components/browser/toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("components/compose/awesomebar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
-
-with Files("components/compose/base/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
-
-with Files("components/compose/browser-toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("components/compose/menu/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Menu")
-
-with Files("components/compose/tabstray/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
-
-with Files("components/concept/awesomebar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
-
-with Files(
-    "components/concept/engine/src/*/java/mozilla/components/concept/engine/translate/**"
-):
-    BUG_COMPONENT = ("Firefox for Android", "Translations")
-
-with Files(
-    "components/concept/engine/src/*/java/mozilla/components/concept/engine/webextension/**"
-):
-    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
-
-with Files("components/concept/llm/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("components/concept/sync/**"):
     BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("components/concept/toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("components/feature/accounts/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("components/feature/accounts-push/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("components/feature/addons/**"):
-    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
 
 with Files("components/feature/app-links/**"):
     BUG_COMPONENT = ("Firefox for Android", "App Links")
 
-with Files("components/feature/awesomebar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
+with Files("components/feature/importer/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Bookmarks")
 
 with Files(
-    "components/feature/customtabs/src/*/java/mozilla/components/feature/customtabs/feature/**"
+    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/permission/**",
+    "components/lib/integrity-googleplay/**",
+    "components/ui/richtext/**",
 ):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
+    BUG_COMPONENT = ("Firefox for Android", "Browser Engine")
+
+with Files(
+    "components/concept/llm/**",
+    "components/feature/listentopage/**",
+    "components/feature/summarize/**",
+    "components/lib/llm-gemininano/**",
+    "components/lib/llm-mlpa/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
+
+with Files(
+    "components/lib/crash-sentry/**",
+    "components/lib/crash/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Crash Reporting")
+
+with Files(
+    "components/compose/base/**",
+    "components/compose/tabstray/**",
+    "components/ui/colors/**",
+    "components/ui/tabcounter/**",
+    "samples/acorn-components/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
 
 with Files("components/feature/downloads/**"):
     BUG_COMPONENT = ("Firefox for Android", "Downloads")
 
-with Files("components/feature/fxsuggest/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
+with Files("components/service/nimbus/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
 
-with Files("components/feature/importer/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Bookmarks")
-
-with Files("components/feature/ipprotection/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("components/feature/listentopage/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
+with Files("components/service/sync-logins/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Logins")
 
 with Files("components/feature/media/**"):
     BUG_COMPONENT = ("Firefox for Android", "Media")
 
-with Files(
-    "components/feature/prompts/src/*/java/mozilla/components/feature/prompts/emailmask/**"
-):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
+with Files("components/compose/menu/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Menu")
 
-with Files("components/feature/protection-dashboard/**"):
+with Files(
+    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/ipprotection/**",
+    "components/feature/ipprotection/**",
+    "components/feature/prompts/src/*/java/mozilla/components/feature/prompts/emailmask/**",
+    "components/feature/protection-dashboard/**",
+    "components/service/firefox-relay/**",
+    "samples/firefox-relay/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Privacy")
 
 with Files("components/feature/qr/**"):
     BUG_COMPONENT = ("Firefox for Android", "QR")
 
-with Files("components/feature/search/**"):
+with Files(
+    "components/browser/state/src/*/java/mozilla/components/browser/state/search/**",
+    "components/compose/awesomebar/**",
+    "components/concept/awesomebar/**",
+    "components/feature/awesomebar/**",
+    "components/feature/fxsuggest/**",
+    "components/feature/search/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Search")
 
-with Files("components/feature/summarize/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("components/feature/syncedtabs/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
+with Files("components/service/pocket/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Stories")
 
 with Files("components/feature/tabs/**"):
     BUG_COMPONENT = ("Firefox for Android", "Tabs")
 
 with Files(
-    "components/feature/tabs/src/*/java/mozilla/components/feature/tabs/toolbar/**"
+    "components/browser/toolbar/**",
+    "components/compose/browser-toolbar/**",
+    "components/concept/toolbar/**",
+    "components/feature/customtabs/src/*/java/mozilla/components/feature/customtabs/feature/**",
+    "components/feature/tabs/src/*/java/mozilla/components/feature/tabs/toolbar/**",
+    "components/feature/toolbar/**",
+    "samples/compose-browser/**",
+    "samples/toolbar/**",
 ):
     BUG_COMPONENT = ("Firefox for Android", "Toolbar")
 
-with Files("components/feature/toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
+with Files(
+    "components/tooling/**",
+    "config/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Tooling")
 
 with Files("components/feature/top-sites/**"):
     BUG_COMPONENT = ("Firefox for Android", "Top Sites")
 
+with Files(
+    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/translate/**",
+    "components/concept/engine/src/*/java/mozilla/components/concept/engine/translate/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Translations")
+
+with Files(
+    "components/browser/engine-gecko/src/*/java/mozilla/components/browser/engine/gecko/webextension/**",
+    "components/concept/engine/src/*/java/mozilla/components/concept/engine/webextension/**",
+    "components/feature/addons/**",
+    "components/support/webextensions/**",
+    "samples/browser/src/*/java/org/mozilla/samples/browser/addons/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
+
 with Files("components/feature/webcompat/**"):
     BUG_COMPONENT = ("Web Compatibility", "Interventions")
-
-with Files("components/lib/crash/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Crash Reporting")
-
-with Files("components/lib/crash-sentry/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Crash Reporting")
-
-with Files("components/lib/integrity-googleplay/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Browser Engine")
-
-with Files("components/lib/llm-gemininano/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("components/lib/llm-mlpa/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("components/service/firefox-accounts/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("components/service/firefox-relay/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("components/service/nimbus/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("components/service/pocket/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Stories")
-
-with Files("components/service/sync-logins/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Logins")
-
-with Files("components/support/webextensions/**"):
-    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
-
-with Files("components/tooling/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tooling")
-
-with Files("components/ui/colors/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
-
-with Files("components/ui/richtext/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Browser Engine")
-
-with Files("components/ui/tabcounter/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
-
-with Files("config/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tooling")
-
-with Files("plugins/config/**"):
-    BUG_COMPONENT = ("Firefox Build System", "Android Studio and Gradle Integration")
-
-with Files("plugins/publicsuffixlist/**"):
-    BUG_COMPONENT = ("Firefox Build System", "Android Studio and Gradle Integration")
-
-with Files("samples/acorn-components/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
-
-with Files("samples/browser/src/*/java/org/mozilla/samples/browser/addons/**"):
-    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
-
-with Files("samples/compose-browser/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("samples/firefox-relay/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("samples/sync/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("samples/sync-logins/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("samples/toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")

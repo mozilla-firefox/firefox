@@ -10,6 +10,7 @@
  */
 
 interface nsISupports;
+interface OutputStream;
 
 typedef (HTMLCanvasElement or OffscreenCanvas) CanvasSource;
 
@@ -43,6 +44,14 @@ partial interface HTMLCanvasElement {
 
   [Throws, NeedsSubjectPrincipal]
   CanvasCaptureMediaStream captureStream(optional double frameRate);
+
+  // Write one PDF page per detached canvas, using its dimensions as points.
+  // Each chrome mozPrintCallback runs synchronously with the canvas' 2D
+  // context targeting the PDF. The existing bitmap and drawing state are reset
+  // before the callback, and the bitmap is discarded afterward.
+  [ChromeOnly, Throws]
+  static undefined printToPDF(sequence<HTMLCanvasElement> canvases,
+                              OutputStream stream);
 };
 
 // For OffscreenCanvas

@@ -742,8 +742,6 @@ win64-cmake:
 
 talos-pdfs:
     description: "Gathers all the PDFs needed for the pdfpaint test"
-    attributes:
-        local-toolchain: true
     treeherder:
         symbol: TL(talos-pdfs)
     worker:
@@ -753,7 +751,8 @@ talos-pdfs:
         sparse-profile: null
         resources:
             - 'taskcluster/scripts/misc/fetch-talos-pdfs.py'
-        toolchain-artifact: public/build/talos-pdfs.tar.zst
+        toolchain-artifact: project/gecko/talos-pdfs/talos-pdfs.tar.zst
     fetches:
         fetch:
             - mozilla-pdf.js
+            - mozilla-pdf.js.pdfs

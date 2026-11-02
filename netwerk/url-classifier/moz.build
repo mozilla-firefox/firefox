@@ -16,7 +16,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = "url-classifier"
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "UrlClassifierExceptionListService.sys.mjs",
 ]
 

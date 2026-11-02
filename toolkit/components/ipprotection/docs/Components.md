@@ -18,11 +18,6 @@ A diagram of all the main components is the following:
 :align: center
 :caption: IP Protection architecture
 
----
-config:
-  flowchart:
-    defaultRenderer: "elk"
----
 flowchart LR
 
   %% browser/components/ipprotection

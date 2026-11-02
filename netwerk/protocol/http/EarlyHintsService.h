@@ -31,6 +31,7 @@ class EarlyHintsService {
   void EarlyHint(const nsACString& aLinkHeader, nsIURI* aBaseURI,
                  nsIChannel* aChannel, const nsACString& aReferrerPolicy,
                  const nsACString& aCSPHeader,
+                 const nsACString& aConnectionAllowlistHeader,
                  dom::CanonicalBrowsingContext* aLoadingBrowsingContext);
   void Reset();
   void Cancel(const nsACString& aReason);

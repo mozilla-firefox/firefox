@@ -141,6 +141,12 @@ head = "head.js head_schemas.js"
 ["test_ext_unknown_permissions.js"]
 
 ["test_ext_urlclassifier.js"]
+# Covers url-classifier's own harmful-addon feature, so keep url-classifier
+# as the channel classifier even where the content classifier is the default.
+prefs = [
+  "privacy.trackingprotection.content.mirror.mode=0",
+  "privacy.trackingprotection.urlclassifier.disable_for_channel_classifier=false",
+]
 
 ["test_ext_webRequest_handlerBehaviorChanged.js"]
 

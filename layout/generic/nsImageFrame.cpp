@@ -2898,7 +2898,7 @@ nsresult nsImageFrame::HandleEvent(nsPresContext* aPresContext,
                 aEvent->IsTrusted() ? UserNavigationInvolvement::Activation
                                     : UserNavigationInvolvement::None);
           } else {
-            nsContentUtils::TriggerLinkMouseOver(anchorNode, uri, target);
+            nsContentUtils::TriggerLinkMouseOver(anchorNode, uri);
           }
         }
       }

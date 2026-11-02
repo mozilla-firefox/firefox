@@ -22,8 +22,15 @@ server.registerPathHandler("/", (req, res) => {
 add_task(async function test_extension_tab_create() {
   Services.fog.testResetFOG();
 
+  // This exercises url-classifier's own harmful-addon feature, so keep it as
+  // the channel classifier where the content classifier is the default.
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["privacy.trackingprotection.content.mirror.mode", 0],
+      [
+        "privacy.trackingprotection.urlclassifier.disable_for_channel_classifier",
+        false,
+      ],
       [
         "urlclassifier.features.harmfuladdon.blocklistHosts",
         "expected.example.org",

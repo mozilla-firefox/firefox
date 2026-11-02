@@ -6,6 +6,9 @@ const { UrlClassifierTestUtils } = ChromeUtils.importESModule(
 const { RemoteSettings } = ChromeUtils.importESModule(
   "resource://services-settings/remote-settings.sys.mjs"
 );
+const { ContentClassifierTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/ContentClassifierTestUtils.sys.mjs"
+);
 
 const TEST_DOMAIN = "https://example.net/";
 const TEST_BLOCKED_3RD_PARTY_DOMAIN = "https://example.org/";
@@ -72,28 +75,7 @@ async function assertScriptLoaded(browser, domain, msg) {
 
 // content: string-encoded filter list content (may include CRLF etc.).
 async function makeListRecordFromContent(id, name, content) {
-  let encoder = new TextEncoder();
-  let bytes = encoder.encode(content);
-  let blob = new Blob([bytes]);
-  let buffer = await blob.arrayBuffer();
-  let hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
-  let hashArray = Array.from(new Uint8Array(hashBuffer));
-  let hash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-  return {
-    record: {
-      id,
-      Name: name,
-      last_modified: Date.now(),
-      attachment: {
-        hash,
-        size: bytes.length,
-        filename: name + ".txt",
-        location: "main-workspace/content-classifier-lists/" + id + ".txt",
-        mimetype: "text/plain",
-      },
-    },
-    blob,
-  };
+  return ContentClassifierTestUtils.makeListRecord(id, name, content);
 }
 
 async function makeListRecord(id, name, rules) {
@@ -103,25 +85,7 @@ async function makeListRecord(id, name, rules) {
 // Populate the RS database with one or more lists. Each entry is
 // { id, name, rules } or { id, name, content } (raw string content).
 async function populateMultipleRS(db, lists) {
-  let records = [];
-  let attachments = [];
-  for (let entry of lists) {
-    let { id, name } = entry;
-    let made = entry.content
-      ? await makeListRecordFromContent(id, name, entry.content)
-      : await makeListRecord(id, name, entry.rules);
-    records.push(made.record);
-    attachments.push({
-      id: made.record.id,
-      record: made.record,
-      blob: made.blob,
-    });
-  }
-  await db.importChanges({}, Date.now(), records, { clear: true });
-  for (let { id, record, blob } of attachments) {
-    await db.saveAttachment(id, { record, blob });
-  }
-  return records;
+  return ContentClassifierTestUtils.publishLists(lists);
 }
 
 async function populateRS(db, id, name, rules) {
@@ -129,86 +93,10 @@ async function populateRS(db, id, name, rules) {
   return record;
 }
 
-// Wait until the content-classifier filter lists have settled after a
-// change. The C++ service rebuilds engines off the main thread and fires
-// LISTS_LOADED_TOPIC once a rebuild completes.
-//
-// Key invariant we rely on: every change bumps a global generation counter
-// synchronously, and a rebuild only fires the topic if its generation is
-// still the latest when it finishes. So a *batch* of changes applied
-// synchronously (all the prefs in one pushPrefEnv, or one RS sync) leaves
-// exactly one un-superseded rebuild, i.e. exactly one notification, and it
-// carries the final state. That lets callers who make a single such batch
-// wait for exactly one notification and stop - no quiet-window drain, which
-// is pure dead time and dominated test runtime.
-//
-//   minNotifies  How many notifications to wait for before settling. A
-//                guaranteed-rebuild batch (an RS sync, a real engines-pref
-//                change) uses 1; best-effort drains, where zero rebuilds is
-//                a legitimate outcome, use 0.
-//   quietMs      0 (default) settles as soon as minNotifies is reached.
-//                A positive value instead waits for that long a gap with no
-//                further notification - only needed when a single call may
-//                legitimately produce several rebuilds whose order matters
-//                and must all be drained (see test_rs_back_to_back).
-//   timeoutMs    Deadlock backstop only: if an expected notification never
-//                arrives we resolve anyway (after logging) rather than hang.
-//
-// The minNotifies gate is also what makes this robust under MOZ_CHAOSMODE,
-// where a rebuild's notification can arrive long after its trigger: we never
-// settle until the rebuild has actually reported in.
-async function waitForListsSettled({
-  quietMs = 0,
-  minNotifies = 0,
-  timeoutMs = 30000,
-} = {}) {
-  return new Promise(resolve => {
-    let quietTimer;
-    let deadlineTimer;
-    let notifies = 0;
-
-    function finish() {
-      clearTimeout(quietTimer);
-      clearTimeout(deadlineTimer);
-      Services.obs.removeObserver(observer, LISTS_LOADED_TOPIC);
-      resolve();
-    }
-
-    // Settle once enough notifications have been seen. With quietMs === 0
-    // that is immediate; otherwise we (re)arm a quiet window so trailing
-    // rebuilds within quietMs are drained first.
-    function maybeSettle() {
-      if (notifies < minNotifies) {
-        return;
-      }
-      if (!quietMs) {
-        finish();
-        return;
-      }
-      clearTimeout(quietTimer);
-      quietTimer = setTimeout(finish, quietMs);
-    }
-
-    let observer = () => {
-      notifies++;
-      maybeSettle();
-    };
-
-    Services.obs.addObserver(observer, LISTS_LOADED_TOPIC);
-
-    // Best-effort drains (minNotifies === 0) settle on the quiet window even
-    // if no rebuild ever fires, so evaluate the settle condition immediately.
-    maybeSettle();
-
-    deadlineTimer = setTimeout(() => {
-      if (notifies < minNotifies) {
-        info(
-          `waitForListsSettled: timed out after ${timeoutMs}ms with ` +
-            `${notifies}/${minNotifies} notification(s); resolving anyway`
-        );
-      }
-      finish();
-    }, timeoutMs);
+async function waitForListsSettled(options = {}) {
+  return ContentClassifierTestUtils.waitForListsSettled({
+    minNotifies: 0,
+    ...options,
   });
 }
 
@@ -216,11 +104,7 @@ async function waitForListsSettled({
 // single synchronous change, so it yields exactly one notification carrying
 // the final state (see waitForListsSettled): wait for that one and stop.
 async function syncAndWaitForLists(client, records) {
-  let settled = waitForListsSettled({ minNotifies: 1 });
-  await client.emit("sync", {
-    data: { created: records, updated: [], deleted: [] },
-  });
-  await settled;
+  return ContentClassifierTestUtils.syncLists(records);
 }
 
 // Get the RS client and register cleanup to clear its DB and disable

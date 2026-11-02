@@ -229,6 +229,9 @@ add_task(async function testMoveStartEnabledWithCollapsedGroupAtEnd() {
 });
 
 add_task(async function testMoveTabOptionsDisabledFromOnlyTab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.mini-window.enabled", false]],
+  });
   let tab = gBrowser.selectedTab;
   let menuItemMoveTabOptions = document.getElementById(
     "context_moveTabOptions"
@@ -239,4 +242,29 @@ add_task(async function testMoveTabOptionsDisabledFromOnlyTab() {
     true,
     "Move Tab Options Submenu is disabled"
   );
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function testMoveTabOptionsEnabledFromOnlyTabWithMiniWindow() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.mini-window.enabled", true]],
+  });
+  let tab = gBrowser.selectedTab;
+  updateTabContextMenu(tab);
+  is(
+    document.getElementById("context_moveTabOptions").disabled,
+    false,
+    "Move Tab Options Submenu is enabled"
+  );
+  let miniWindowItem = document.getElementById("context_openTabInMiniWindow");
+  ok(!miniWindowItem.hidden, "Move to Mini Window is shown");
+  ok(!miniWindowItem.disabled, "Move to Mini Window is enabled");
+  for (let id of [
+    "context_moveToStart",
+    "context_moveToEnd",
+    "context_openTabInWindow",
+  ]) {
+    ok(document.getElementById(id).disabled, `${id} is disabled`);
+  }
+  await SpecialPowers.popPrefEnv();
 });

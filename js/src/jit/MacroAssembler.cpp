@@ -3393,7 +3393,11 @@ void MacroAssembler::emitMegamorphicCachedSetSlot(
   loadMegamorphicSetPropCache(scratch2);
   // scratch3 = &scratch2->entries_[scratch3]
   constexpr size_t entrySize = sizeof(MegamorphicSetPropCache::Entry);
-  mul32(Imm32(entrySize), scratch3);
+  if constexpr (std::has_single_bit(entrySize)) {
+    lshift32(Imm32(mozilla::FloorLog2(entrySize)), scratch3);
+  } else {
+    mul32(Imm32(entrySize), scratch3);
+  }
   computeEffectiveAddress(BaseIndex(scratch2, scratch3, TimesOne,
                                     MegamorphicSetPropCache::offsetOfEntries()),
                           scratch3);

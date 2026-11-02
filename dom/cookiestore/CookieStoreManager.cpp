@@ -94,6 +94,10 @@ already_AddRefed<Promise> CookieStoreManager::GetSubscriptions(
   NS_DispatchToCurrentThread(NS_NewRunnableFunction(
       __func__, [self = RefPtr(this), principal = RefPtr(principal.get()),
                  promise = RefPtr(promise)]() {
+        if (promise->GetParentObject()->IsDying()) {
+          return;
+        }
+
         if (!self->MaybeCreateActor()) {
           promise->MaybeRejectWithNotAllowedError("Permission denied");
           return;
@@ -119,6 +123,10 @@ already_AddRefed<Promise> CookieStoreManager::GetSubscriptions(
             [promise = RefPtr(promise)](
                 const CookieStoreChild::GetSubscriptionsRequestPromise::
                     ResolveOrRejectValue& aResult) {
+              if (promise->GetParentObject()->IsDying()) {
+                return;
+              }
+
               if (aResult.IsReject()) {
                 promise->MaybeResolve(nsTArray<CookieStoreGetOptions>());
                 return;
@@ -172,6 +180,10 @@ already_AddRefed<Promise> CookieStoreManager::SubscribeOrUnsubscribe(
       __func__,
       [self = RefPtr(this), promise = RefPtr(promise),
        principal = RefPtr(principal.get()), aSubscriptions, aAction]() {
+        if (promise->GetParentObject()->IsDying()) {
+          return;
+        }
+
         nsCOMPtr<nsIURI> baseURI;
         nsresult rv = NS_NewURI(getter_AddRefs(baseURI), self->mScopeURL,
                                 nullptr, nullptr);

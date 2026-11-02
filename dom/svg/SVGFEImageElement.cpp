@@ -360,17 +360,21 @@ SVGFEImageElement::FrameCreated(nsIFrame* aFrame) {
 
   mImageAnimationMode = mode;
 
-  if (mPendingRequest) {
+  if (!mImageLoadData) {
+    return;
+  }
+
+  if (mImageLoadData->mPendingRequest) {
     nsCOMPtr<imgIContainer> container;
-    mPendingRequest->GetImage(getter_AddRefs(container));
+    mImageLoadData->mPendingRequest->GetImage(getter_AddRefs(container));
     if (container) {
       container->SetAnimationMode(mode);
     }
   }
 
-  if (mCurrentRequest) {
+  if (mImageLoadData->mCurrentRequest) {
     nsCOMPtr<imgIContainer> container;
-    mCurrentRequest->GetImage(getter_AddRefs(container));
+    mImageLoadData->mCurrentRequest->GetImage(getter_AddRefs(container));
     if (container) {
       container->SetAnimationMode(mode);
     }

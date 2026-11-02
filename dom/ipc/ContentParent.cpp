@@ -7614,16 +7614,14 @@ mozilla::ipc::IPCResult ContentParent::RecvNotifyOnHistoryReload(
     const uint32_t& aReloadFlags, NotifyOnHistoryReloadResolver&& aResolver) {
   bool canReload = false;
   Maybe<NotNull<RefPtr<nsDocShellLoadState>>> loadState;
-  Maybe<bool> reloadActiveEntry;
   if (!aContext.IsNullOrDiscarded() &&
       aContext.get_canonical()->IsOwnedByProcess(ChildID())) {
-    aContext.get_canonical()->NotifyOnHistoryReload(
-        aReloadFlags, canReload, loadState, reloadActiveEntry);
+    aContext.get_canonical()->NotifyOnHistoryReload(aReloadFlags, canReload,
+                                                    loadState);
   }
-  aResolver(
-      std::tuple<const bool&,
-                 const Maybe<NotNull<RefPtr<nsDocShellLoadState>>>&,
-                 const Maybe<bool>&>(canReload, loadState, reloadActiveEntry));
+  aResolver(std::tuple<const bool&,
+                       const Maybe<NotNull<RefPtr<nsDocShellLoadState>>>&>(
+      canReload, loadState));
   return IPC_OK();
 }
 

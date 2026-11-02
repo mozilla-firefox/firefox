@@ -101,27 +101,25 @@ pre.mermaid {
     width: auto;
   }
 
-  /* ZenUML lays its diagram out as HTML inside a foreignObject and then sizes
-     the SVG to what the HTML's root measured. The root fills the foreignObject,
-     so it measures the box, not the diagram: the 300px default object size in
-     a content-sized box, and the column in a column-wide one, either of which
-     clips a wider diagram. Shrink-wrapping the root makes it measure the
-     diagram, and the SVG then sizes and scrolls like every other type. The
-     plugin marks nothing but the SVG's contents, and a page holds few
-     diagrams. */
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/no-has-selector */
-  &:has(.zenuml) {
-    foreignObject > div {
-      width: max-content;
-    }
+  /* Paper does not scroll, so a diagram wider than the page scales down to
+     fit it, and the fade and its padding have nothing to mark. */
+  @media print {
+    margin-inline: 0;
+    padding-inline: 0;
+    mask-image: none;
 
-    /* The plugin renders with ZenUML's own light theme in either color
-       scheme, black lines and text on a transparent background, so the dark
-       scheme takes the near-monochrome diagram and inverts it. */
-    @media (prefers-color-scheme: dark) {
-      :root & > svg {
-        filter: invert(1) hue-rotate(180deg);
-      }
+    :root & > svg {
+      max-width: 100% !important;
+      height: auto;
+    }
+  }
+
+  /* The ZenUML plugin renders with ZenUML's own light theme in either color
+     scheme, black lines and text on a white background, so the dark scheme
+     takes the near-monochrome diagram and inverts it. */
+  @media (prefers-color-scheme: dark) {
+    :root & > svg[aria-roledescription="zenuml"] {
+      filter: invert(1) hue-rotate(180deg);
     }
   }
 }
@@ -136,5 +134,11 @@ pre.mermaid {
   /* The caption sits under the diagram it belongs to. */
   & + figcaption {
     text-align: center;
+  }
+
+  @media print {
+    .mermaid-fullscreen-btn {
+      display: none;
+    }
   }
 }

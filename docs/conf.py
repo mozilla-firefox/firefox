@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import gc
 import os
 import sys
 from pathlib import Path
@@ -72,26 +73,37 @@ myst_enable_extensions = [
 mermaid_width = "fit-content"
 mermaid_height = "auto"
 
+mermaid_version = "12.2.0"
+
+# sphinxcontrib-mermaid always hands Mermaid a theme for the page's color
+# scheme, "default" or "dark" unless set here, which overrides Mermaid's own
+# default of "redux-color".
+mermaid_light_theme = "redux-color"
+mermaid_dark_theme = "redux-dark-color"
+
 # startOnLoad must stay off: the extension renders via mermaid.run() itself.
 # Only theme-neutral values belong here, as this config is shared by the light
 # and dark themes.
 mermaid_init_config = {
     "startOnLoad": False,
+    # Mermaid gives flowchart and state nodes a 120px minimum width and
+    # wrapping width. The docs size nodes to their labels.
     "themeVariables": {
         "fontSize": "18px",
     },
     # useMaxWidth is configured per diagram type; these are the types the tree
     # uses.
-    "flowchart": {"useMaxWidth": False},
+    "flowchart": {"useMaxWidth": False, "wrappingWidth": 200, "minNodeWidth": 0},
     "sequence": {"useMaxWidth": False},
     "class": {"useMaxWidth": False},
-    "state": {"useMaxWidth": False},
+    "state": {"useMaxWidth": False, "wrappingWidth": 200, "minNodeWidth": 0},
     "gantt": {"useMaxWidth": False},
     "er": {"useMaxWidth": False},
 }
 
 # ZenUML sequence diagrams. The plugin is fetched only on a page that has one.
 mermaid_include_zenuml = True
+mermaid_zenuml_version = "1.0.1"
 
 # The paths are loaded from config.yml so they can be shared with a CI
 # optimization strategy that ensures the doc task runs when these files change.
@@ -104,6 +116,7 @@ jsdoc_config_path = "jsdoc.json"
 
 templates_path = ["_templates"]
 source_suffix = [".md"]
+autodoc_preserve_defaults = True
 master_doc = "index"
 project = "Firefox Source Docs"
 
@@ -239,6 +252,14 @@ def make_sphinx_js_skip_missing_objects():
 make_sphinx_js_skip_missing_objects()
 
 
+def freeze_gc(app, *args):
+    # Sphinx forks a worker per chunk of documents. Collect before that and
+    # freeze the survivors so that later collections don't touch them, which
+    # keeps their pages shared between the main process and the workers.
+    gc.collect()
+    gc.freeze()
+
+
 def reattach_nested_rst_nodes(app, doctree):
     """Point nodes parsed from eval-rst blocks back at their own doctree.
 
@@ -252,7 +273,28 @@ def reattach_nested_rst_nodes(app, doctree):
             node.document = doctree
 
 
+def disable_gc(app, *args):
+    """Turn off the cyclic garbage collector for the rest of the build.
+
+    Automatic full collections over the growing environment and doctrees took
+    a large share of the build, and the worker processes forked afterwards
+    inherit the setting. collect_garbage() reclaims the cycles left by merging
+    the environments of the parallel readers.
+    """
+    gc.disable()
+
+
+def collect_garbage(app, env):
+    gc.collect()
+
+
+def enable_gc(app, exception):
+    gc.enable()
+
+
 def setup(app):
+    app.connect("env-before-read-docs", freeze_gc)
+    app.connect("write-started", freeze_gc)
     # sphinx-js does not declare it, but it only reads the jsdoc analysis that
     # runs once before the sources are read.
     app.extensions["sphinx_js"].parallel_read_safe = True
@@ -262,3 +304,6 @@ def setup(app):
     app.connect("html-page-context", install_sphinx_design)
     app.connect("html-page-context", add_github_source_link)
     app.connect("doctree-read", reattach_nested_rst_nodes)
+    app.connect("env-before-read-docs", disable_gc, priority=900)
+    app.connect("env-updated", collect_garbage)
+    app.connect("build-finished", enable_gc)

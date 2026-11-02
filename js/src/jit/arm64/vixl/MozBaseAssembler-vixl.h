@@ -137,12 +137,13 @@ class MozBaseAssembler : public js::jit::AssemblerShared {
   // Propagate OOM errors.
   BufferOffset allocLiteralLoadEntry(size_t numInst, unsigned numPoolEntries,
 				     uint8_t* inst, uint8_t* data,
+				     js::jit::PoolEntryKind kind,
 				     const LiteralDoc& doc = LiteralDoc())
   {
     MOZ_ASSERT(inst);
     MOZ_ASSERT(numInst == 1);	/* If not, then fix disassembly */
     BufferOffset offset = armbuffer_.allocEntry(numInst, numPoolEntries, inst,
-                                                data);
+                                                data, kind);
     propagateOOM(offset.assigned());
 #ifdef JS_DISASM_ARM64
     Instruction* instruction = armbuffer_.getInstOrNull(offset);

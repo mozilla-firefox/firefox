@@ -1,0 +1,19 @@
+//expect: PTaintedTypeParent.cpp: maybe__a = IPC::ReadParam<Tainted<TaintedThing>>
+//expect: PTaintedTypeParent.cpp: maybe__b = IPC::ReadParam<Tainted<RefPtr<nsITaintedRef>>>
+//expect: PTaintedTypeParent.cpp: maybe__c = IPC::ReadParam<Tainted<mozilla::Maybe<mozilla::NotNull<RefPtr<nsITaintedRef>>>>>
+//expect: PTaintedTypeParent.cpp: maybe__d = IPC::ReadParam<Tainted<nsTArray<TaintedThing>>>
+//expect: PTaintedTypeParent.cpp: maybe__e = IPC::ReadParam<TaintedThing>
+//expect: PTaintedTypeParent.cpp: maybe__f = IPC::ReadParam<int>
+//expect: PTaintedTypeChild.cpp: maybe__a = IPC::ReadParam<TaintedThing>
+
+[Tainted] using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
+[RefCounted, Tainted] using class nsITaintedRef from "nsITaintedRef.h";
+
+[ChildProc=any]
+protocol PTaintedType {
+parent:
+    async Foo(TaintedThing a, nullable nsITaintedRef b, nsITaintedRef? c,
+              TaintedThing[] d, [NoTaint=passback] TaintedThing e, int f);
+child:
+    async Bar(TaintedThing a);
+};

@@ -77,7 +77,16 @@ export function MozWidgetCard({
         slot="header"
         title={entry.name}
         data-l10n-id={entry.l10nId}
-      />
+      >
+        {entry.icon && (
+          <img
+            slot="leading"
+            className="moz-widget-card-icon"
+            src={entry.icon}
+            alt=""
+          />
+        )}
+      </moz-widget-header>
       <panel-list slot="menu" className="panel-list-no-icons">
         <WidgetMenuFooter
           dispatch={dispatch}

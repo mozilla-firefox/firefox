@@ -986,13 +986,6 @@ SessionHistoryEntry::SetScrollRestorationIsManual(
 }
 
 NS_IMETHODIMP
-SessionHistoryEntry::GetLoadedInThisProcess(bool* /*aLoadedInThisProcess*/) {
-  // FIXME
-  //*aLoadedInThisProcess = mInfo->mLoadedInThisProcess;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 SessionHistoryEntry::GetShistory(nsISHistory** aShistory) {
   nsCOMPtr<nsISHistory> sHistory = do_QueryReferent(SharedInfo()->mSHistory);
   sHistory.forget(aShistory);
@@ -1072,23 +1065,6 @@ SessionHistoryEntry::InitLayoutHistoryState(
   }
 
   return GetLayoutHistoryState(aLayoutHistoryState);
-}
-
-NS_IMETHODIMP
-SessionHistoryEntry::Create(
-    nsIURI* /*aURI*/, const nsAString& /*aTitle*/,
-    nsIInputStream* /*aInputStream*/, uint32_t /*aCacheKey*/,
-    const nsACString& /*aContentType*/, nsIPrincipal* /*aTriggeringPrincipal*/,
-    nsIPrincipal* /*aPrincipalToInherit*/,
-    nsIPrincipal* /*aPartitionedPrincipalToInherit*/,
-    nsIPolicyContainer* /*aPolicyContainer*/, const nsID& /*aDocshellID*/,
-    bool /*aDynamicCreation*/, nsIURI* /*aOriginalURI*/,
-    nsIURI* /*aResultPrincipalURI*/, nsIURI* /*aUnstrippedURI*/,
-    bool /*aLoadReplace*/, nsIReferrerInfo* /*aReferrerInfo*/,
-    const nsAString& /*aSrcdoc*/, bool /*aSrcdocEntry*/, nsIURI* /*aBaseURI*/,
-    bool /*aSaveLayoutState*/, bool /*aExpired*/, bool /*aUserActivation*/) {
-  MOZ_CRASH("Might need to implement this");
-  return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 NS_IMETHODIMP
@@ -1353,12 +1329,6 @@ SessionHistoryEntry::ClearEntry() {
     GetChildAt(i - 1, getter_AddRefs(child));
     RemoveChild(child);
   }
-}
-
-NS_IMETHODIMP
-SessionHistoryEntry::CreateLoadInfo(nsDocShellLoadState** /*aLoadState*/) {
-  NS_WARNING("We shouldn't be calling this!");
-  return NS_OK;
 }
 
 NS_IMETHODIMP

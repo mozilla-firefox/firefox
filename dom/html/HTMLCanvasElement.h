@@ -6,6 +6,7 @@
 
 #include "LayoutConstants.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/OwningNonNull.h"
 #include "mozilla/StateWatching.h"
 #include "mozilla/WeakPtr.h"
 #include "mozilla/dom/CanvasRenderingContextHelper.h"
@@ -19,6 +20,7 @@
 
 class nsICanvasRenderingContextInternal;
 class nsIInputStream;
+class nsIOutputStream;
 class nsITimerCallback;
 enum class gfxAlphaType;
 enum class FrameCaptureState : uint8_t;
@@ -40,6 +42,7 @@ class WebRenderCanvasData;
 }  // namespace layers
 namespace gfx {
 class DrawTarget;
+class PrintTarget;
 class SourceSurface;
 class VRLayerChild;
 }  // namespace gfx
@@ -162,6 +165,11 @@ class HTMLCanvasElement final : public nsGenericHTMLElement,
   }
   PrintCallback* GetMozPrintCallback() const;
   void SetMozPrintCallback(PrintCallback* aCallback);
+
+  MOZ_CAN_RUN_SCRIPT static void PrintToPDF(
+      const GlobalObject& aGlobal,
+      const Sequence<OwningNonNull<HTMLCanvasElement>>& aCanvases,
+      nsIOutputStream* aStream, ErrorResult& aRv);
 
   already_AddRefed<CanvasCaptureMediaStream> CaptureStream(
       const Optional<double>& aFrameRate, nsIPrincipal& aSubjectPrincipal,
@@ -340,6 +348,10 @@ class HTMLCanvasElement final : public nsGenericHTMLElement,
 
   MOZ_CAN_RUN_SCRIPT void CallPrintCallback(
       RefPtr<HTMLCanvasPrintState> aPrintState);
+
+  // Draw one canvas-sized PDF page using mozPrintCallback.
+  MOZ_CAN_RUN_SCRIPT void PrintPageToPDF(gfx::PrintTarget& aTarget,
+                                         ErrorResult& aRv);
 
   virtual void AfterSetAttr(int32_t aNamespaceID, nsAtom* aName,
                             const nsAttrValue* aValue,

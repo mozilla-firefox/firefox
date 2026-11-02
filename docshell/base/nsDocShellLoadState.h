@@ -79,8 +79,7 @@ class nsDocShellLoadState final {
       const mozilla::dom::LoadURIOptions& aLoadURIOptions,
       nsDocShellLoadState** aResult);
   static nsresult CreateFromLoadURIOptions(
-      BrowsingContext* aBrowsingContext, nsIURI* aURI,
-      const mozilla::dom::LoadURIOptions& aLoadURIOptions,
+      nsIURI* aURI, const mozilla::dom::LoadURIOptions& aLoadURIOptions,
       nsDocShellLoadState** aResult);
 
   // Getters and Setters
@@ -530,8 +529,7 @@ class nsDocShellLoadState final {
   const char* ValidateWithOriginalState(nsDocShellLoadState* aOriginalState);
 
   static nsresult CreateFromLoadURIOptions(
-      BrowsingContext* aBrowsingContext, nsIURI* aURI,
-      const mozilla::dom::LoadURIOptions& aLoadURIOptions,
+      nsIURI* aURI, const mozilla::dom::LoadURIOptions& aLoadURIOptions,
       uint32_t aLoadFlagsOverride, nsIInputStream* aPostDataOverride,
       nsDocShellLoadState** aResult);
 

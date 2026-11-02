@@ -177,10 +177,7 @@ void MacroAssembler::andPtr(Imm32 imm, const Address& dest) {
 }
 
 void MacroAssembler::and64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-  as_and(dest.reg, dest.reg, scratch);
+  ma_and(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::and64(Register64 src, Register64 dest) {
@@ -215,10 +212,7 @@ void MacroAssembler::and32(const Address& src, Register dest) {
 }
 
 void MacroAssembler::or64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-  as_or(dest.reg, dest.reg, scratch);
+  ma_or(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::or32(Register src, Register dest) {
@@ -240,10 +234,7 @@ void MacroAssembler::or32(Imm32 imm, const Address& dest) {
 }
 
 void MacroAssembler::xor64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-  as_xor(dest.reg, dest.reg, scratch);
+  ma_xor(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::orPtr(Register src, Register dest) {
@@ -341,10 +332,7 @@ void MacroAssembler::addPtr(Imm32 imm, Register dest) {
 }
 
 void MacroAssembler::addPtr(ImmWord imm, Register dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  movePtr(imm, scratch);
-  addPtr(scratch, dest);
+  ma_add_d(dest, dest, imm);
 }
 
 void MacroAssembler::add64(Register64 src, Register64 dest) {
@@ -356,11 +344,7 @@ void MacroAssembler::add64(Imm32 imm, Register64 dest) {
 }
 
 void MacroAssembler::add64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(dest.reg != scratch);
-  mov(ImmWord(imm.value), scratch);
-  as_add_d(dest.reg, dest.reg, scratch);
+  ma_add_d(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::add32(Register src, Register dest) {
@@ -449,11 +433,7 @@ void MacroAssembler::sub64(Register64 src, Register64 dest) {
 }
 
 void MacroAssembler::sub64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(dest.reg != scratch);
-  mov(ImmWord(imm.value), scratch);
-  as_sub_d(dest.reg, dest.reg, scratch);
+  ma_sub_d(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::sub32(Register src, Register dest) {
@@ -499,11 +479,7 @@ void MacroAssembler::mul64(const Register64& rhs, const Register64& srcDest) {
 }
 
 void MacroAssembler::mul64(Imm64 imm, const Register64& dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(dest.reg != scratch);
-  mov(ImmWord(imm.value), scratch);
-  as_mul_d(dest.reg, dest.reg, scratch);
+  ma_mul_d(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::mul64(Imm64 imm, const Register64& dest,
@@ -523,19 +499,14 @@ void MacroAssembler::mulPtr(Register rhs, Register srcDest) {
 }
 
 void MacroAssembler::mulPtr(ImmWord rhs, Register srcDest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(srcDest != scratch);
-  mov(rhs, scratch);
-  mulPtr(scratch, srcDest);
+  ma_mul_d(srcDest, srcDest, rhs);
 }
 
 void MacroAssembler::mulBy3(Register src, Register dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(src != scratch);
-  as_add_d(scratch, src, src);
-  as_add_d(dest, scratch, src);
+  // tmp = (GR[rj][63:0]<<(sa2+1)) + GR[rk][63:0]
+  // GR[rd] = tmp[63:0]
+  // <https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html#_alsl_wud>
+  as_alsl_d(dest, src, src, 0);
 }
 
 void MacroAssembler::mul32(Register rhs, Register srcDest) {
@@ -543,10 +514,7 @@ void MacroAssembler::mul32(Register rhs, Register srcDest) {
 }
 
 void MacroAssembler::mul32(Imm32 imm, Register srcDest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  move32(imm, scratch);
-  mul32(scratch, srcDest);
+  ma_mul(srcDest, srcDest, imm);
 }
 
 void MacroAssembler::mulHighUnsigned32(Imm32 imm, Register src, Register dest) {
@@ -567,11 +535,9 @@ void MacroAssembler::mulDouble(FloatRegister src, FloatRegister dest) {
 
 void MacroAssembler::mulDoublePtr(ImmPtr imm, Register temp,
                                   FloatRegister dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
   ScratchDoubleScope fpscratch(asMasm());
-  movePtr(imm, scratch);
-  loadDouble(Address(scratch, 0), fpscratch);
+  movePtr(imm, temp);
+  loadDouble(Address(temp, 0), fpscratch);
   mulDouble(fpscratch, dest);
 }
 

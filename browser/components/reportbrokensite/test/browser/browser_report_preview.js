@@ -9,6 +9,8 @@
 
 /* import-globals-from head.js */
 
+add_setup(setupBuiltInTestTrackers);
+
 function setClipboard(string) {
   Cc["@mozilla.org/widget/clipboardhelper;1"]
     .getService(Ci.nsIClipboardHelper)

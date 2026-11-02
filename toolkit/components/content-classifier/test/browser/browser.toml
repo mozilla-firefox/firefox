@@ -1,4 +1,7 @@
 [DEFAULT]
+# These tests drive the content classifier prefs directly; the two that cover
+# the ETP pref mirror turn it on themselves.
+prefs = ["privacy.trackingprotection.content.mirror.mode=0"]
 support-files = [
   "head.js",
   "page.html",
@@ -31,5 +34,7 @@ support-files = ["!/toolkit/components/antitracking/test/browser/cookies.sjs"]
 ["browser_content_classifier_remote_settings.js"]
 
 ["browser_content_classifier_subdomain_rules.js"]
+
+["browser_content_classifier_test_trackers_engines.js"]
 
 ["browser_urlclassifier_disable_for_channel_classifier.js"]

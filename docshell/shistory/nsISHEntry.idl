@@ -231,12 +231,6 @@ interface nsISHEntry : nsISupports
     [infallible] attribute boolean scrollRestorationIsManual;
 
     /**
-     * Flag to indicate that the history entry was originally loaded in the
-     * current process. This flag does not survive a browser process switch.
-     */
-    [infallible] readonly attribute boolean loadedInThisProcess;
-
-    /**
      * The session history it belongs to. This is set only on the root entries.
      */
     [noscript, infallible] attribute nsISHistory shistory;
@@ -284,29 +278,6 @@ interface nsISHEntry : nsISupports
      * and returns a reference to it.
      */
     nsILayoutHistoryState initLayoutHistoryState();
-
-    /** Additional ways to create an entry */
-    [noscript] void create(in nsIURI URI, in AString title,
-                           in nsIInputStream inputStream,
-                           in unsigned long cacheKey,
-                           in ACString contentType,
-                           in nsIPrincipal triggeringPrincipal,
-                           in nsIPrincipal principalToInherit,
-                           in nsIPrincipal partitionedPrincipalToInherit,
-                           in nsIPolicyContainer policyContainer,
-                           in nsIDRef docshellID,
-                           in boolean dynamicCreation,
-                           in nsIURI originalURI,
-                           in nsIURI resultPrincipalURI,
-                           in nsIURI unstrippedURI,
-                           in boolean loadReplace,
-                           in nsIReferrerInfo referrerInfo,
-                           in AString srcdoc,
-                           in boolean srcdocEntry,
-                           in nsIURI baseURI,
-                           in boolean saveLayoutState,
-                           in boolean expired,
-                           in boolean userActivation);
 
     nsISHEntry clone();
 
@@ -381,12 +352,6 @@ interface nsISHEntry : nsISupports
     * Remove all children of this entry and call abandonBFCacheEntry.
     */
     [notxpcom] void ClearEntry();
-
-    /**
-     * Create nsDocShellLoadState and fill it with information.
-     * Don't set nsSHEntry here to avoid serializing it.
-     */
-    [noscript] nsDocShellLoadStatePtr CreateLoadInfo();
 
     [infallible] readonly attribute unsigned long long bfcacheID;
 

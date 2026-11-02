@@ -494,7 +494,6 @@ nsresult nsDocShellLoadState::CreateFromPendingChannel(
 }
 
 static uint32_t WebNavigationFlagsToFixupFlags(nsIURI* aURI,
-                                               const nsACString& /*aURIString*/,
                                                uint32_t aNavigationFlags) {
   if (aURI) {
     aNavigationFlags &= ~nsIWebNavigation::LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP;
@@ -548,8 +547,7 @@ nsresult nsDocShellLoadState::CreateFromLoadURIOptions(
 
   RefPtr<nsIInputStream> fixupStream;
   if (fixup) {
-    uint32_t fixupFlags =
-        WebNavigationFlagsToFixupFlags(uri, uriString, loadFlags);
+    uint32_t fixupFlags = WebNavigationFlagsToFixupFlags(uri, loadFlags);
 
     // If we don't allow keyword lookups for this URL string, make sure to
     // update loadFlags to indicate this as well.
@@ -600,7 +598,7 @@ nsresult nsDocShellLoadState::CreateFromLoadURIOptions(
 
   RefPtr<nsDocShellLoadState> loadState;
   rv = CreateFromLoadURIOptions(
-      aBrowsingContext, uri, aLoadURIOptions, loadFlags,
+      uri, aLoadURIOptions, loadFlags,
       fixupStream ? fixupStream : aLoadURIOptions.mPostData,
       getter_AddRefs(loadState));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -610,17 +608,17 @@ nsresult nsDocShellLoadState::CreateFromLoadURIOptions(
 }
 
 nsresult nsDocShellLoadState::CreateFromLoadURIOptions(
-    BrowsingContext* aBrowsingContext, nsIURI* aURI,
-    const LoadURIOptions& aLoadURIOptions, nsDocShellLoadState** aResult) {
-  return CreateFromLoadURIOptions(aBrowsingContext, aURI, aLoadURIOptions,
+    nsIURI* aURI, const LoadURIOptions& aLoadURIOptions,
+    nsDocShellLoadState** aResult) {
+  return CreateFromLoadURIOptions(aURI, aLoadURIOptions,
                                   aLoadURIOptions.mLoadFlags,
                                   aLoadURIOptions.mPostData, aResult);
 }
 
 nsresult nsDocShellLoadState::CreateFromLoadURIOptions(
-    BrowsingContext* /*aBrowsingContext*/, nsIURI* aURI,
-    const LoadURIOptions& aLoadURIOptions, uint32_t aLoadFlagsOverride,
-    nsIInputStream* aPostDataOverride, nsDocShellLoadState** aResult) {
+    nsIURI* aURI, const LoadURIOptions& aLoadURIOptions,
+    uint32_t aLoadFlagsOverride, nsIInputStream* aPostDataOverride,
+    nsDocShellLoadState** aResult) {
   nsresult rv = NS_OK;
   uint32_t loadFlags = aLoadFlagsOverride;
   RefPtr<nsIInputStream> postData = aPostDataOverride;

@@ -142,12 +142,10 @@ flowchart TD
     input -- "2: UrlbarQueryContext" --> child
     child -- "2: UrlbarQueryContext" --> parent
     parent -- "3: fetch results" --> manager
-    %% dagre places siblings in edge order, so the muxer edges come first to
-    %% keep the numbered path descending on the right and returning on the left.
-    manager -. "7: sort" .-> muxer
-    muxer -. "8: sorted results" .-> manager
     manager -- "4: isActive<br/>5: startQuery" --> providers
     providers -. "6: results" .-> manager
+    manager -. "7: sort" .-> muxer
+    muxer -. "8: sorted results" .-> manager
     manager -. "9: results ready" .-> parent
     parent -. "10: notification" .-> child
     child -. "10: notification" .-> view

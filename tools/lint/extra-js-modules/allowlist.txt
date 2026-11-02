@@ -164,12 +164,10 @@ mobile/shared/modules/geckoview/Messaging.sys.mjs
 netwerk/base/EssentialDomainsRemoteSettings.sys.mjs
 netwerk/base/NetUtil.sys.mjs
 netwerk/base/SimpleURIUnknownSchemesRemoteObserver.sys.mjs
-netwerk/cookie/ThirdPartyCookieBlockingExceptionListService.sys.mjs
 netwerk/protocol/http/HPKEConfigManager.sys.mjs
 netwerk/protocol/http/NetworkErrorLogging.sys.mjs
 netwerk/protocol/http/ObliviousHTTP.sys.mjs
 netwerk/protocol/http/WellKnownOpportunisticUtils.sys.mjs
-netwerk/url-classifier/UrlClassifierExceptionListService.sys.mjs
 security/manager/pki/pippki.sys.mjs
 security/manager/ssl/ClientAuthDialogService.sys.mjs
 security/manager/ssl/DER.sys.mjs

@@ -10,9 +10,12 @@ const SKIP_PREF =
 const TRACKER_DOMAIN_FOR_URLCLASSIFIER = "https://tracking.example.com/";
 
 add_setup(async function () {
+  // Only install url-classifier's tables. The tasks drive the content
+  // classifier's test_block engine themselves.
+  await SpecialPowers.pushPrefEnv({ set: [[SKIP_PREF, false]] });
   await UrlClassifierTestUtils.addTestTrackers();
-  registerCleanupFunction(() => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 });
 

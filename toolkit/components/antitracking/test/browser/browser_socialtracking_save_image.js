@@ -59,11 +59,13 @@ add_setup(async function () {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
 
   info("Setting MockFilePicker.");
   mockTransferRegisterer.register();
 
-  registerCleanupFunction(function () {
+  registerCleanupFunction(async function () {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
     mockTransferRegisterer.unregister();
     MockFilePicker.cleanup();
     tempDir.remove(true);

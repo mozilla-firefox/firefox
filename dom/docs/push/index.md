@@ -91,8 +91,7 @@ stateDiagram-v2
 		 SD --> W1: beginWSSetup
 		 W1 --> W2: wsOnStart Success
 		 W2 --> R: handleHelloReply
-		 R --> R: send (subscribe)
-         R --> R: Receive + notify observers
+		 R --> R: send (subscribe)<br/>receive + notify observers
 		 R --> SD: wsOnStop
 		 R --> SD: sendPing Fails
 		 W1 --> SD: wsOnStart fails

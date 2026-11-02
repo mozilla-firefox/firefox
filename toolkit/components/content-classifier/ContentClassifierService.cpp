@@ -443,7 +443,10 @@ void ContentClassifierService::OnPrefChange(const char* aPref, void*) {
       prefStr.EqualsLiteral(
           "privacy.trackingprotection.content.annotation.engines") ||
       prefStr.EqualsLiteral(
-          "privacy.trackingprotection.content.annotation.engines.pbmode");
+          "privacy.trackingprotection.content.annotation.engines.pbmode") ||
+      prefStr.EqualsLiteral(
+          "privacy.trackingprotection.content.testing.use_test_trackers_"
+          "engines");
 
   if (isFeatureSelectionPref) {
     if (!sEnabled) {
@@ -550,6 +553,14 @@ void ContentClassifierService::Init() {
     rv = Preferences::RegisterCallback(
         &ContentClassifierService::OnPrefChange,
         "privacy.trackingprotection.content.annotation.test_list_urls"_ns);
+    if (NS_FAILED(rv)) {
+      mInitPhase = InitPhase::InitFailed;
+      return;
+    }
+
+    rv = Preferences::RegisterCallback(
+        &ContentClassifierService::OnPrefChange,
+        "privacy.trackingprotection.content.testing.use_test_trackers_engines"_ns);
     if (NS_FAILED(rv)) {
       mInitPhase = InitPhase::InitFailed;
       return;
@@ -737,6 +748,9 @@ NS_IMETHODIMP ContentClassifierService::BlockShutdown(
     Preferences::UnregisterCallback(
         &ContentClassifierService::OnPrefChange,
         "privacy.trackingprotection.content.annotation.test_list_urls"_ns);
+    Preferences::UnregisterCallback(
+        &ContentClassifierService::OnPrefChange,
+        "privacy.trackingprotection.content.testing.use_test_trackers_engines"_ns);
     Preferences::UnregisterCallback(
         &ContentClassifierService::OnPrefChange,
         "privacy.trackingprotection.content.protection.engines"_ns);
@@ -978,10 +992,17 @@ net::ChannelBlockDecision ContentClassifierService::MaybeCancelChannel(
     return net::ChannelBlockDecision::Allowed;
   }
 
-  // Check if the scoped pref overrides the blocking decision.
-  if (blockingFeature->mReferencedScopedPref.isSome() &&
-      !ScopedPrefs::BoolPrefScoped(blockingFeature->mReferencedScopedPref.ref(),
-                                   aChannel)) {
+  // Check if the scoped pref overrides the blocking decision. test_block
+  // standing in for trackers follows the trackers scoped pref.
+  Maybe<nsIScopedPrefs::Pref> scopedPref =
+      blockingFeature->mReferencedScopedPref;
+  if (blockingFeature->mName.EqualsLiteral("test_block") &&
+      EnginesPrefsSnapshot::UseTestTrackersEngines()) {
+    scopedPref =
+        Some(nsIScopedPrefs::PRIVACY_TRACKINGPROTECTION_CONTENT_ENABLED);
+  }
+  if (scopedPref.isSome() &&
+      !ScopedPrefs::BoolPrefScoped(scopedPref.ref(), aChannel)) {
     return net::ChannelBlockDecision::Allowed;
   }
 
@@ -1413,14 +1434,20 @@ bool ContentClassifierService::IsBlockingFeatureActive(
     return false;
   }
 
-  // The feature is active only if it is listed in the protection engines pref.
+  // The feature is active only if it is listed in the protection engines pref,
+  // where test_block may stand in for trackers.
+  nsAutoCString featureName(aFeatureName);
+  if (featureName.EqualsLiteral("trackers") &&
+      EnginesPrefsSnapshot::UseTestTrackersEngines()) {
+    featureName.AssignLiteral("test_block");
+  }
   nsTArray<nsCString> names;
   EnginesPrefsSnapshot::AppendFeatureNamesFromPref(
       aIsPrivate
           ? "privacy.trackingprotection.content.protection.engines.pbmode"
           : "privacy.trackingprotection.content.protection.engines",
       names);
-  return names.Contains(aFeatureName);
+  return names.Contains(featureName);
 }
 
 void ContentClassifierService::PruneInactiveEngines(
@@ -1486,6 +1513,11 @@ void ContentClassifierService::ProcessListChanges(
       uint64_t& v = mFeatureVersions.LookupOrInsert(feature->mName);
       featureVersions.AppendElement(++v);
     }
+
+    // Let the engines that are already built follow the new prefs right away,
+    // as url-classifier applies a pref change to the next classification. The
+    // rebuild below refreshes the lists again once its fetches settle.
+    PopulateAllActiveEnginesFromPreferenceSnapshot(snapshot);
   }
 
   UpdateFeatures(std::move(toUpdate), std::move(featureVersions), generation,

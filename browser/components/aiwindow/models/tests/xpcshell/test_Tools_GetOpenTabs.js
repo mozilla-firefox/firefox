@@ -120,7 +120,7 @@ add_task(async function test_getOpenTabs_return_structure() {
 
   try {
     const fakeWindow = createFakeWindow([
-      createFakeTab("https://test.com", "Test Page", 1000),
+      { ...createFakeTab("https://test.com", "Test Page", 1000), pinned: true },
     ]);
 
     sb.stub(BrowserWindowTracker, "orderedWindows").get(() => [fakeWindow]);
@@ -158,6 +158,7 @@ add_task(async function test_getOpenTabs_return_structure() {
     //   "description should be fetched from PageDataService"
     // );
     Assert.equal(tab.lastAccessed, 1000, "lastAccessed value correct");
+    Assert.equal(tab.pinned, true, "pinned value correct");
   } finally {
     sb.restore();
   }
