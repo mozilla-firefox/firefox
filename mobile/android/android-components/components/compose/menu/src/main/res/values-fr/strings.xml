@@ -14,13 +14,13 @@
   <!-- Title for the Customize Menu screen toolbar -->
   <string name="mozac_menu_customize_toolbar_title">Personnaliser le menu</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
-  <string name="mozac_menu_customize_drag_to_reorder">Faites glisser les sections pour réorganiser</string>
+  <string name="mozac_menu_customize_drag_to_reorder">Faites glisser les sections pour modifier leur ordre</string>
   <!-- Button text to preview the changes made to the menu -->
   <string name="mozac_menu_customize_preview">Aperçu</string>
   <!-- Header text for the section containing hidden menu items -->
   <string name="mozac_menu_customize_hidden_sections">Sections masquées</string>
   <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
-  <string name="mozac_menu_customize_drag_to_hide">Faites glisser les sections ici à masquer</string>
+  <string name="mozac_menu_customize_drag_to_hide">Faites glisser des sections ici pour les masquer</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Réinitialiser</string>
   <!-- Content description for the back button in the Customize Menu top app bar -->

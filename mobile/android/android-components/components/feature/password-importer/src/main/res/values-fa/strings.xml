@@ -8,7 +8,7 @@
 
 <resources>
   <!-- Title for the passwords import loading dialog. -->
-  <string name="mozac_feature_passwords_importer_dialog_title">وارد کردن گذرواژه‌ها</string>
+  <string name="mozac_feature_passwords_importer_dialog_title">در حال درون‌ریزی گذرواژه‌ها</string>
   <!-- Description for the passwords import loading dialog. -->
   <string name="mozac_feature_passwords_importer_dialog_description">این صفحه را باز نگه دارید. فقط چند ثانیه طول می‌کشد.</string>
   <!-- Label for the cancel action on the passwords import loading dialog. -->

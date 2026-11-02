@@ -192,6 +192,12 @@
   <string name="preferences_sync_change_device_name">Mainīt ierīces nosaukumu</string>
   <!-- Text displayed when there are no exceptions, with learn more link that brings users to a tracking protection SUMO page -->
   <string name="exceptions_empty_message_learn_more_link">Uzzināt vairāk</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Meklēšanas novietojums sākumlapā</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Vidū</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Augšā</string>
   <!-- Add bookmark shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_add_bookmark">Pievienot grāmatzīmi</string>
   <!-- Homepage shortcut in toolbar customization -->
@@ -444,6 +450,14 @@
   <string name="credit_cards_add_card">Pievienot karti</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Jāpievieno vārds</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Aizsargā savus jūtīgos datus</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Jāiestata ierīces aizslēgšanas rakstu, PIN vai paroli, lai aizsargātu savus saglabātos datus no piekļūšanas tiem, ja kāds cits vada Tavu mašīnu.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Iestatīt tagad</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Atcelt</string>
   <!-- Title of the "Add address" screen -->
   <string name="addresses_add_address">Pievienot adresi</string>
   <!-- Title of the Add search engine screen -->
@@ -590,6 +604,8 @@
   <string name="lens_camera_loading_status">Uzmeklē šo</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Atcelt</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Šo attēlu nevarēja ielādēt.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Nevarēja ielādēt šo attēlu. Jāmēģina kāds cits.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->

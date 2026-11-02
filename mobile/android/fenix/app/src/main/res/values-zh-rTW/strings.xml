@@ -250,7 +250,7 @@
     Browser menu text shown in custom tabs to indicate this is a Fenix tab
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="browser_menu_powered_by2">Powered by %1$s</string>
+  <string name="browser_menu_powered_by2">由 %1$s 提供</string>
   <!-- Browser menu button to put the current page in reader mode -->
   <string name="browser_menu_read">閱讀畫面</string>
   <!-- Browser menu button content description to close reader mode and return the user to the regular browser -->

@@ -1307,9 +1307,9 @@
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Développée</string>
   <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
-  <string name="preferences_homepage_search_location">Rechercher une adresse en page d’accueil</string>
+  <string name="preferences_homepage_search_location">Emplacement de la barre de recherche sur la page d’accueil</string>
   <!-- Preference for showing the homepage search bar in the middle of the homepage -->
-  <string name="preference_homepage_search_location_middle">Milieu</string>
+  <string name="preference_homepage_search_location_middle">Au centre</string>
   <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
   <string name="preference_homepage_search_location_top">En haut</string>
   <!-- New tab shortcut in toolbar customization -->
@@ -3283,7 +3283,7 @@
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Plus tard</string>
   <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
-  <string name="automotive_authentication_setup_dialog_title">Sécurisez vos données sensibles</string>
+  <string name="automotive_authentication_setup_dialog_title">Protégez vos données sensibles</string>
   <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
   <string name="automotive_authentication_setup_dialog_message">Configurez un schéma de verrouillage, un code PIN ou un mot de passe pour protéger vos données sensibles enregistrées si quelqu’un d’autre conduit votre voiture.</string>
   <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->

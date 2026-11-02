@@ -1307,6 +1307,12 @@
   <string name="preference_simple_toolbar">פשוט</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">מורחב</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">מיקום החיפוש במסך הבית</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">מרכז</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">למעלה</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">פתיחת לשונית חדשה</string>
   <!-- Share shortcut in toolbar customization -->
@@ -3032,7 +3038,7 @@
   <!-- Title of warning dialog if users have no device authentication set up -->
   <string name="logins_warning_dialog_title_2">אבטחת הססמאות השמורות שלך</string>
   <!-- Message of warning dialog if users have no device authentication set up -->
-  <string name="logins_warning_dialog_message_2">ניתן להגדיר תבנית נעילת מכשיר, קוד או ססמה כדי להגן על הססמאות השמורות שלך מפני גורמים בלתי מהימנים שמחזיקים במכשיר שלך.</string>
+  <string name="logins_warning_dialog_message_2">ניתן להגדיר דפוס נעילה, קוד או ססמה במכשיר כדי להגן על הססמאות השמורות שלך מפני גורמים בלתי מהימנים שמחזיקים במכשיר שלך.</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="logins_warning_dialog_later">מאוחר יותר</string>
   <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
@@ -3278,11 +3284,19 @@
   <!-- Title of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_title_2">אבטחת אמצעי התשלום השמורים שלך</string>
   <!-- Message of warning dialog if users have no device authentication set up -->
-  <string name="credit_cards_warning_dialog_message_3">ניתן להגדיר תבנית נעילת מכשיר, קוד או ססמה כדי להגן על אמצעי התשלום השמורים שלך מפני גורמים בלתי מהימנים שמחזיקים במכשיר שלך.</string>
+  <string name="credit_cards_warning_dialog_message_3">ניתן להגדיר דפוס נעילה, קוד או ססמה במכשיר כדי להגן על אמצעי התשלום השמורים שלך מפני גורמים בלתי מהימנים שמחזיקים במכשיר שלך.</string>
   <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_set_up_now">להגדיר כעת</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">מאוחר יותר</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">אבטחת הנתונים הרגישים שלך</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">ניתן להגדיר דפוס נעילה, קוד או ססמה במכשיר כדי להגן על הנתונים הרגישים השמורים שלך מפני גישה של אחרים במקרה שמישהו אחר נוהג ברכב שלך.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">להגדיר כעת</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">ביטול</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">שחרור נעילת המכשיר שלך</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -4554,6 +4568,8 @@
   <string name="lens_camera_loading_status">בתהליך חיפוש ברשת</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">ביטול</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">לא ניתן היה לטעון תמונה זו.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">לא ניתן היה לטעון תמונה זו. נא לנסות תמונה אחרת.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->

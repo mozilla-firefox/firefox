@@ -11,4 +11,18 @@
   <string name="mozac_menu_item_new_indicator_label">חדש</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">סגירת ההצעה</string>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">התאמה אישית של התפריט</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">ניתן לגרור מקטעים כדי לסדר מחדש</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">תצוגה מקדימה</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">מקטעים מוסתרים</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">ניתן לגרור מקטעים לכאן כדי להסתיר</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">איפוס לברירת מחדל</string>
+  <!-- Content description for the back button in the Customize Menu top app bar -->
+  <string name="mozac_menu_customize_back_button_content_description">ניווט אחורה</string>
 </resources>

@@ -8,27 +8,57 @@
 
 <resources>
   <!-- Text for context menu item to open the link in a new tab. -->
-  <string name="mozac_feature_contextmenu_open_link_in_new_tab">لنک اے پوسکن ٹیب ٹی مل</string>
+  <string name="mozac_feature_contextmenu_open_link_in_new_tab">لنک اے پوسکن ٹیب ٹی ملبو</string>
+  <!-- Text for context menu item to open the link in a private tab. -->
+  <string name="mozac_feature_contextmenu_open_link_in_private_tab">لنک اے پوسکن ڈکوئ ٹیب ٹی ملبو</string>
   <!-- Text for context menu item to open the image in a new tab. -->
-  <string name="mozac_feature_contextmenu_open_image_in_new_tab">تصویر اے پوسکن ٹیب ٹی مل</string>
+  <string name="mozac_feature_contextmenu_open_image_in_new_tab">تصویر اے پوسکن ٹیب ٹی ملبو</string>
   <!-- Text for context menu item to save / download the link. -->
-  <string name="mozac_feature_contextmenu_download_link">لنک اے ڈاونلوڈ کہ</string>
+  <string name="mozac_feature_contextmenu_download_link">لنک اے ڈاونلوڈ کبو</string>
   <!-- Text for context menu item to share the link with an other app. -->
-  <string name="mozac_feature_contextmenu_share_link">لنک اے بشخ</string>
+  <string name="mozac_feature_contextmenu_share_link">لنک اے بشخبو</string>
   <!-- Text for context menu item to share the image with an other app. -->
-  <string name="mozac_feature_contextmenu_share_image">تصویر اے بشخ</string>
+  <string name="mozac_feature_contextmenu_share_image">تصویر اے بشخبو</string>
+  <!-- Text for context menu item to copy the link to the clipboard. -->
+  <string name="mozac_feature_contextmenu_copy_link">لنک کاپی کبو</string>
+  <!-- Text for context menu item to copy the link text to the clipboard. -->
+  <string name="mozac_feature_contextmenu_copy_link_text">لنک نا متن کاپی کبو</string>
+  <!-- Text for context menu item to copy the URL pointing to the image to the clipboard. -->
+  <string name="mozac_feature_contextmenu_copy_image_location">تصویر نا ڈس کاپی کبو</string>
   <!-- Text for context menu item to save / download the image. -->
-  <string name="mozac_feature_contextmenu_save_image">تصویر خوندی کر</string>
+  <string name="mozac_feature_contextmenu_save_image">تصویر خوندی کبو</string>
   <!-- Text for context menu item to copy the image to the clipboard. -->
-  <string name="mozac_feature_contextmenu_copy_image">تصویر کاپی کر</string>
+  <string name="mozac_feature_contextmenu_copy_image">تصویر کاپی کبو</string>
   <!-- Text for context menu item to save / download the file. -->
-  <string name="mozac_feature_contextmenu_save_file_to_device">فائل ڈیوائس ٹی خوندی کر</string>
+  <string name="mozac_feature_contextmenu_save_file_to_device">فائل ڈیوائس ٹی خوندی کبو</string>
   <!-- Text for confirmation "snackbar" shown after opening a link in a new tab. -->
   <string name="mozac_feature_contextmenu_snackbar_new_tab_opened">پوسکن ٹیب ملنگا</string>
+  <!-- Text for confirmation "snackbar" shown after opening a link in a new private tab. -->
+  <string name="mozac_feature_contextmenu_snackbar_new_private_tab_opened">پوسکنو ڈکوئ ٹیب اس ملنگا</string>
+  <!-- Text for confirmation "snackbar" shown after copying a link or image URL to the clipboard. -->
+  <string name="mozac_feature_contextmenu_snackbar_link_copied">لنک کلپ بورڈ ٹی کاپی مس</string>
+  <!-- Text for confirmation "snackbar" shown after copying a link text to the clipboard. -->
+  <string name="mozac_feature_contextmenu_snackbar_link_text_copied">لنک نا متن کلپ بورڈ ٹی کاپی مس</string>
+  <!-- Action shown in a "snacbkar" after opening a new/private tab. Clicking this action will switch to the newly opened tab. -->
+  <string name="mozac_feature_contextmenu_snackbar_action_switch">بدل کبو</string>
   <!-- Text for context menu item to open the link in an external app. -->
   <string name="mozac_feature_contextmenu_open_link_in_external_app">لنک پین ایپ سے ٹی مل</string>
   <!-- Text for context menu item to share the email with another app. -->
   <string name="mozac_feature_contextmenu_share_email_address">ای میل ڈس بشخ</string>
+  <!-- Text for context menu item to copy the email address to the clipboard. -->
+  <string name="mozac_feature_contextmenu_copy_email_address">ای میل ڈس کاپی کبو</string>
+  <!-- Text for confirmation "snackbar" shown after copying a email address to the clipboard. -->
+  <string name="mozac_feature_contextmenu_snackbar_email_address_copied">ای میل ڈس کلپ بورڈ ٹی کاپی مس</string>
+  <!-- Text for context menu item to add to a contact. -->
+  <string name="mozac_feature_contextmenu_add_to_contact">کانٹیکٹ اتے ٹی شاغبو</string>
   <!-- Action shown in a text selection context menu. This will prompt a search using the selected text. -->
   <string name="mozac_selection_context_menu_search_2">پٹبو</string>
+  <!-- Action shown in a text selection context menu. This will prompt a search in a private tab using the selected text -->
+  <string name="mozac_selection_context_menu_search_privately_2">ڈکوئ پٹ</string>
+  <!-- Action shown in a text selection context menu. This will prompt a share of the selected text. -->
+  <string name="mozac_selection_context_menu_share">بشخبو</string>
+  <!-- Action shown in a text selection context menu. This will prompt a new email from the selected text. -->
+  <string name="mozac_selection_context_menu_email">ای میل</string>
+  <!-- Action shown in a text selection context menu. This will prompt a new call from the selected text. -->
+  <string name="mozac_selection_context_menu_call">فون</string>
 </resources>

@@ -8,7 +8,7 @@
 
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
-  <string name="mozac_feature_importer_dialog_title">در حال وارد کردن نشانک‌ها</string>
+  <string name="mozac_feature_importer_dialog_title">در حال درون‌ریزی نشانک‌ها</string>
   <!-- Description for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">این صفحه را باز نگه دارید. فقط چند ثانیه طول می‌کشد.</string>
   <!-- Label for the cancel action on the bookmarks import loading dialog. -->

@@ -21,4 +21,6 @@
   <string name="mozac_browser_errorpages_security_bad_hsts_cert_back">پدی ان</string>
   <!-- Text that will show up on the button at the bottom of the error page -->
   <string name="mozac_browser_errorpages_no_internet_refresh_button">وا لوڈ کہ</string>
+  <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->
+  <string name="mozac_browser_errorpages_httpsonly_back">پدی انبو (Recommended)</string>
 </resources>
