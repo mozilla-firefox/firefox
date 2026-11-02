@@ -66,6 +66,8 @@ BlockReflowState::BlockReflowState(
     mFlags.mBlockNeedsFloatManager = true;
   }
 
+  mFlags.mIsCurrentLineAdjacentToBStart = !aFrame->GetPrevInFlow();
+
   // Determine the requested text-box-trim sides for this block by checking
   // the request both from the block's ancestors (passed down via `ReflowInput`)
   // and from the block itself.
@@ -181,6 +183,28 @@ void BlockReflowState::UndoAlignContentShift() {
   if (mReflowInput.AvailableBSize() != NS_UNCONSTRAINEDSIZE) {
     mContentArea.BSize(mReflowInput.GetWritingMode()) -= mAlignContentShift;
   }
+}
+
+/* static */
+ReflowInput::InitFlags BlockReflowState::ComputeChildMarginTrim(
+    nsBlockFrame* aBlock, bool aTrimChildBStartMargins,
+    bool aTrimChildBEndMargins, nsLineList::iterator aLine,
+    bool aIsAdjacentToBStart) {
+  ReflowInput::InitFlags flags;
+  if (!aTrimChildBStartMargins && !aTrimChildBEndMargins) {
+    return flags;
+  }
+  MOZ_ASSERT(aLine->IsBlock(), "Only block-level margins can be trimmed");
+
+  bool trimBStart = aTrimChildBStartMargins && aIsAdjacentToBStart;
+  bool trimBEnd = aTrimChildBEndMargins && aBlock->IsLineAdjacentToBEnd(aLine);
+  if (trimBStart) {
+    flags += ReflowInput::InitFlag::TrimBStartMargin;
+  }
+  if (trimBEnd) {
+    flags += ReflowInput::InitFlag::TrimBEndMargin;
+  }
+  return flags;
 }
 
 void BlockReflowState::ComputeFloatAvoidingOffsets(
