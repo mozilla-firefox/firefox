@@ -40,10 +40,9 @@ OffThreadPromiseTask::OffThreadPromiseTask(JSContext* cx,
 OffThreadPromiseTask::~OffThreadPromiseTask() {
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime_));
 
-  OffThreadPromiseRuntimeState& state = runtime_->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
-
   if (registered_) {
+    OffThreadPromiseRuntimeState& state = runtime_->offThreadPromiseState.ref();
+    MOZ_RELEASE_ASSERT(state.initialized());
     unregister(state);
   }
 }
@@ -59,7 +58,13 @@ bool OffThreadPromiseTask::init(JSContext* cx,
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime_));
 
   OffThreadPromiseRuntimeState& state = runtime_->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
+  if (!state.initialized()) {
+    // A task registered after shutdown would never be cancelled or freed
+    // before the runtime goes away.  We may hold the futex lock here, so use
+    // the non-allocating error report.
+    ReportOutOfMemory(cx);
+    return false;
+  }
 
   state.registerTask(cx, this);
   return true;
@@ -78,10 +83,7 @@ bool OffThreadPromiseTask::InitCancellable(
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(task->runtime_));
   OffThreadPromiseRuntimeState& state =
       task->runtime_->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
-
   if (!task->init(cx, lock)) {
-    ReportOutOfMemory(cx);
     return false;
   }
 
@@ -127,7 +129,7 @@ void OffThreadPromiseTask::run(JSContext* cx,
   // The unregister method synchronizes on the helper thread lock and ensures
   // that we don't delete the task while the helper thread is still running.
   OffThreadPromiseRuntimeState& state = runtime_->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
+  MOZ_RELEASE_ASSERT(state.initialized());
   unregister(state);
 
   if (maybeShuttingDown == JS::Dispatchable::NotShuttingDown) {
@@ -149,7 +151,7 @@ void OffThreadPromiseTask::transferToRuntime() {
   // The unregister method synchronizes on the helper thread lock and ensures
   // that we don't delete the task while the helper thread is still running.
   OffThreadPromiseRuntimeState& state = runtime_->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
+  MOZ_RELEASE_ASSERT(state.initialized());
 
   // Task is now owned by the state and will be deleted on ::shutdown.
   state.stealFailedTask(this);
@@ -190,7 +192,7 @@ void OffThreadPromiseTask::removeFromCancellableListAndDispatch() {
 void OffThreadPromiseTask::removeFromCancellableListAndDispatch(
     const AutoLockHelperThreadState& lock) {
   OffThreadPromiseRuntimeState& state = runtime_->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
+  MOZ_RELEASE_ASSERT(state.initialized());
   MOZ_ASSERT(state.cancellable().has(this));
 
   MOZ_ASSERT(registered_);
@@ -220,7 +222,7 @@ void OffThreadPromiseTask::DispatchResolveAndDestroy(
     const AutoLockHelperThreadState& lock) {
   OffThreadPromiseRuntimeState& state =
       task->runtime()->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
+  MOZ_RELEASE_ASSERT(state.initialized());
 
   MOZ_ASSERT(task->registered_);
   MOZ_ASSERT(!task->cancellable_);
@@ -600,7 +602,7 @@ js::PromiseObject* OffThreadPromiseTask::ExtractAndForget(
     OffThreadPromiseTask* task, const AutoLockHelperThreadState& lock) {
   OffThreadPromiseRuntimeState& state =
       task->runtime()->offThreadPromiseState.ref();
-  MOZ_ASSERT(state.initialized());
+  MOZ_RELEASE_ASSERT(state.initialized());
   MOZ_ASSERT(task->registered_);
   js::PromiseObject* promise = task->promise_;
   // Call the unregister method manually with our provided lock, otherwise the
