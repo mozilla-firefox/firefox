@@ -7,3 +7,4 @@ browser.jar:
     content/browser/widgets/moz-widget.css           (content/moz-widget.css)
     content/browser/widgets/moz-widget-header.mjs    (content/moz-widget-header.mjs)
     content/browser/widgets/moz-widget-header.css    (content/moz-widget-header.css)
+    content/browser/widgets/prompt.md                (prompt.md)

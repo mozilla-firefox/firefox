@@ -2531,6 +2531,14 @@ pref("browser.smartwindow.conversationStore.logLevel", "Error");
 pref("browser.smartwindow.smartbarMentions.loglevel", "Error");
 pref("browser.smartwindow.telemetryLogLevel", "Error");
 
+pref("browser.widgets.generated.enabled", false);
+pref("browser.widgets.generated.loglevel", "Warn");
+pref("browser.widgets.generated.endpoint", "");
+pref("browser.widgets.generated.apiKey", "");
+pref("browser.widgets.generated.model", "");
+pref("browser.widgets.generated.maxTurns", 20);
+pref("browser.widgets.generated.localPrompt", false);
+
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);
 

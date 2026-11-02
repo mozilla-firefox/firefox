@@ -7,4 +7,11 @@ with Files("**"):
 
 JAR_MANIFESTS += ["jar.mn"]
 
+MOZ_SRC_FILES += [
+    "Tools.sys.mjs",
+    "WidgetGenerator.sys.mjs",
+]
+
+BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
+
 MOCHITEST_CHROME_MANIFESTS += ["tests/chrome/chrome.toml"]
