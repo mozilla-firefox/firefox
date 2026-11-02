@@ -528,7 +528,7 @@ void GCRuntime::noteWeakRefTargets(JS::NoteWeakRefTargetCallback callback,
 void FinalizationObservers::noteWeakRefTargets(
     JS::NoteWeakRefTargetCallback callback, void* data) {
   for (auto iter = weakRefMap.iter(); !iter.done(); iter.next()) {
-    callback(iter.get().key().toGCCellPtr(), data);
+    callback(JS::GCCellPtr(iter.get().key().get()), data);
   }
 }
 

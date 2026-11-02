@@ -60,6 +60,7 @@
 
 #include "js/Debug.h"
 #include "js/RealmOptions.h"
+#include "js/friend/CycleCollector.h"
 #include "js/friend/DumpFunctions.h"  // js::DumpHeap
 #include "js/GCAPI.h"
 #include "js/HeapAPI.h"
