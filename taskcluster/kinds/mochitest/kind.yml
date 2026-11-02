@@ -688,12 +688,14 @@ tasks:
         treeherder-symbol: M(bc-ml)
         schedules-component: mochitest-browser-chrome-ml-models
         loopback-video: true
+        tier: 2
         run-on-projects:
             by-test-platform:
                 # Shippable Linux opt only. The `.*` glob previously also
                 # matched sanitizer variants (asan/tsan), which abort on
                 # upstream ggml UB in the native llama.cpp backend.
                 linux2404-64-shippable/opt: ['mozilla-central']
+                macosx1500-aarch64-shippable/opt: ['mozilla-central']
                 default: []
         max-run-time: 1800
         mozharness:
