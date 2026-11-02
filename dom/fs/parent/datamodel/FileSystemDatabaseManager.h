@@ -218,6 +218,14 @@ class FileSystemDatabaseManager {
                                bool aAbort) = 0;
 
   /**
+   * @brief Removes files which are not the main file of any entry, along with
+   * their file ids and usage. Such files are temporary files left behind by a
+   * crash; they can only be removed safely while nothing can reference them,
+   * i.e. right after the database has been opened.
+   */
+  virtual nsresult RemoveFileIdsWithoutMainFile() = 0;
+
+  /**
    * @brief Close database connection.
    */
   virtual void Close() = 0;

@@ -104,6 +104,8 @@ class FileSystemDatabaseManagerVersion001 : public FileSystemDatabaseManager {
   nsresult MergeFileId(const EntryId& aEntryId, const FileId& aFileId,
                        bool aAbort) override;
 
+  nsresult RemoveFileIdsWithoutMainFile() override;
+
   void Close() override;
 
   nsresult BeginUsageTracking(const FileId& aFileId) override;

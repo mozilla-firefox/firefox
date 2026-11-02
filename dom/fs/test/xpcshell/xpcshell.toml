@@ -8,6 +8,8 @@ tags = "inc-origin-init"
 
 ["test_databaseWorkStarted.js"]
 
+["test_fileIdCarry.js"]
+
 ["test_fileSystemDirectoryHandle.js"]
 requesttimeoutfactor = 2  # Slow on Linux
 
@@ -15,6 +17,11 @@ requesttimeoutfactor = 2  # Slow on Linux
 requesttimeoutfactor = 2  # Slow on Linux
 
 ["test_getDirectoryFailure.js"]
+
+["test_orphanUsageCleanup.js"]
+# The injected rows bypass usage accounting, so the quota manager must recompute
+# usage from the database instead of trusting its cache.
+prefs = ["dom.quotaManager.loadQuotaFromCache=false"]
 
 ["test_slowDatabaseInitialization.js"]
 

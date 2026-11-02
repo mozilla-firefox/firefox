@@ -56,6 +56,8 @@ class FileSystemDatabaseManagerVersion002
   nsresult MergeFileId(const EntryId& aEntryId, const FileId& aFileId,
                        bool aAbort) override;
 
+  nsresult RemoveFileIdsWithoutMainFile() override;
+
  protected:
   Result<bool, QMResult> DoesFileIdExist(const FileId& aFileId) const override;
 

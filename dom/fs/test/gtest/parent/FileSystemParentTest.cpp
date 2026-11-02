@@ -5,11 +5,13 @@
 #include "FileSystemParentTest.h"
 
 #include "FileSystemParentTestHelpers.h"
+#include "FileSystemParentTypes.h"
 #include "TestHelpers.h"
 #include "datamodel/FileSystemDataManager.h"
 #include "datamodel/FileSystemDatabaseManager.h"
 #include "gtest/gtest.h"
 #include "mozilla/dom/PFileSystemManager.h"
+#include "nsIFile.h"
 
 namespace mozilla::dom::fs::test {
 
@@ -107,6 +109,36 @@ void FileSystemParentTest::UnlockExclusive(const EntryId& aEntryId) {
 
   PerformOnBackgroundThread(
       [this, &aEntryId]() { mDataManager->UnlockExclusive(aEntryId); });
+}
+
+void FileSystemParentTest::LockShared(const EntryId& aEntryId,
+                                      FileId& aFileId) {
+  ASSERT_TRUE(mDataManager);
+
+  TEST_TRY_UNWRAP(FileId fileId, PerformOnBackgroundThread([this, &aEntryId]() {
+                    return mDataManager->LockShared(aEntryId);
+                  }));
+
+  aFileId = fileId;
+}
+
+void FileSystemParentTest::GetFileObject(const EntryId& aEntryId,
+                                         const FileId& aFileId,
+                                         nsCOMPtr<nsIFile>& aFile) {
+  ASSERT_TRUE(mDataManager);
+
+  TEST_TRY(PerformOnThread(
+      mDataManager->MutableIOTaskQueuePtr(),
+      [this, &aEntryId, &aFileId, &aFile]() -> Result<Ok, QMResult> {
+        ContentType type;
+        TimeStamp lastModifiedMs = 0;
+        Path path;
+        QM_TRY(QM_TO_RESULT(mDataManager->MutableDatabaseManagerPtr()->GetFile(
+            aEntryId, aFileId, FileMode::SHARED_FROM_EMPTY, type,
+            lastModifiedMs, path, aFile)));
+
+        return Ok{};
+      }));
 }
 
 void FileSystemParentTest::CreateNewEmptyFile(EntryId& aEntryId) {

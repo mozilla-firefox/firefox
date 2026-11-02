@@ -447,6 +447,44 @@ nsresult FileSystemDatabaseManagerVersion002::RescanTrackedUsages(
       aConnection, aOriginMetadata);
 }
 
+nsresult FileSystemDatabaseManagerVersion002::RemoveFileIdsWithoutMainFile() {
+  MOZ_ASSERT(mConnection);
+
+  const nsLiteralCString orphansQuery =
+      "SELECT fileId FROM FileIds WHERE fileId NOT IN "
+      "( SELECT fileId FROM MainFiles WHERE fileId IS NOT NULL ) ;"_ns;
+
+  nsTArray<FileId> orphans;
+  {
+    QM_TRY_UNWRAP(
+        ResultStatement stmt,
+        ResultStatement::Create(mConnection, orphansQuery).mapErr(toNSResult));
+
+    while (true) {
+      QM_TRY_INSPECT(const bool& moreResults,
+                     stmt.ExecuteStep().mapErr(toNSResult));
+      if (!moreResults) {
+        break;
+      }
+
+      QM_TRY_UNWRAP(FileId fileId,
+                    stmt.GetFileIdByColumn(/* Column */ 0u).mapErr(toNSResult));
+      orphans.AppendElement(std::move(fileId));
+    }
+  }
+
+  LOG_VERBOSE(("Found %zu file(s) without a main file", orphans.Length()));
+
+  // Aborting a merge removes the file, its file id and its usage; the entry
+  // id is not consulted on abort.
+  for (const auto& fileId : orphans) {
+    QM_WARNONLY_TRY(
+        MOZ_TO_RESULT(MergeFileId(EntryId(), fileId, /* aAbort */ true)));
+  }
+
+  return NS_OK;
+}
+
 /* static */
 Result<Usage, QMResult> FileSystemDatabaseManagerVersion002::GetFileUsage(
     const FileSystemConnection& aConnection) {
@@ -730,7 +768,21 @@ nsresult FileSystemDatabaseManagerVersion002::MergeFileId(
       return NS_OK;
     }
 
-    // Removal failed
+    // Removal failed: abandon the blob and release the quota reservation.
+    const nsLiteralCString removeUsageQuery =
+        "DELETE FROM Usages WHERE handle = :fileId ;"_ns;
+
+    QM_TRY_UNWRAP(ResultStatement removeUsageStmt,
+                  ResultStatement::Create(mConnection, removeUsageQuery)
+                      .mapErr(toNSResult));
+    QM_TRY(MOZ_TO_RESULT(
+        removeUsageStmt.BindFileIdByName("fileId"_ns, aCleanable)));
+    QM_TRY(MOZ_TO_RESULT(removeUsageStmt.Execute()));
+
+    if (usage > 0) {
+      DecreaseCachedQuotaUsage(usage);
+    }
+
     const nsLiteralCString forgetCleanable =
         "UPDATE FileIds SET handle = NULL WHERE fileId = :fileId ; "_ns;
 
