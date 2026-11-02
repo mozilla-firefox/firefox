@@ -109,8 +109,6 @@ bool RenderCompositorOGL::UseWindowPartialPresent() {
   return gfx::gfxVars::WebRenderMaxPartialPresentRects() > 0;
 }
 
-bool RenderCompositorOGL::ShouldUseBufferAge() { return true; }
-
 size_t RenderCompositorOGL::GetBufferAge() const {
   if (!StaticPrefs::
           gfx_webrender_allow_partial_present_buffer_age_AtStartup()) {

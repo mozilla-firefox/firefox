@@ -176,12 +176,10 @@ void wr_compositor_get_window_properties(void* aCompositor,
 }
 
 void wr_compositor_get_swapchain_mode(void* aCompositor, bool* aUsesOsLayers,
-                                      size_t* aMaxPartialPresentRects,
-                                      bool* aUsesBufferAge) {
+                                      size_t* aMaxPartialPresentRects) {
   RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
   *aUsesOsLayers = compositor->UseLayerCompositor();
   *aMaxPartialPresentRects = compositor->GetMaxPartialPresentRects();
-  *aUsesBufferAge = compositor->ShouldUseBufferAge();
 }
 
 void wr_compositor_unbind(void* aCompositor) {

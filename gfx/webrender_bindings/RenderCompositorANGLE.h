@@ -115,6 +115,7 @@ class RenderCompositorANGLE final : public RenderCompositor {
   bool UseWindowPartialPresent() override;
   bool RequestFullRender() override;
   uint32_t GetMaxPartialPresentRects() override;
+  size_t GetBufferAge() const override { return 1; }
 
   RefPtr<layers::Fence> GetAndResetReadFence() override;
 

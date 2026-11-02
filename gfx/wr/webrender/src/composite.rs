@@ -324,15 +324,11 @@ pub enum CompositorConfig {
         /// If this is zero, a full screen present occurs at the end of the
         /// frame. This is the simplest and default mode. If this is non-zero,
         /// then the operating system supports a form of 'partial present' where
-        /// only dirty regions of the framebuffer need to be updated.
+        /// only dirty regions of the framebuffer need to be updated. WR also
+        /// redraws the regions that the back buffer is missing, based on the
+        /// buffer age passed to `Renderer::render`.
         max_partial_present_rects: usize,
-        /// If this is true, the back buffer can be several frames old, and WR must
-        /// also draw the previous frames' dirty regions when doing a partial present,
-        /// using the buffer age passed to `Renderer::render`. This is used for EGL
-        /// which requires the front buffer to always be fully consistent.
-        uses_buffer_age: bool,
         /// A client provided interface that receives the region WR renders to.
-        /// Required if webrender must query the backbuffer's age.
         buffer_damage: Option<Box<dyn BufferDamageCompositor>>,
     },
     Layer {
@@ -382,7 +378,6 @@ impl Default for CompositorConfig {
     fn default() -> Self {
         CompositorConfig::Draw {
             max_partial_present_rects: 0,
-            uses_buffer_age: false,
             buffer_damage: None,
         }
     }
@@ -399,8 +394,6 @@ pub enum CompositorKind {
     Draw {
         /// Partial present support.
         max_partial_present_rects: usize,
-        /// See CompositorConfig::Draw.
-        uses_buffer_age: bool,
     },
     /// WR composites picture cache tiles into the swapchains of a Layer compositor.
     Layer {
@@ -418,7 +411,6 @@ impl Default for CompositorKind {
     fn default() -> Self {
         CompositorKind::Draw {
             max_partial_present_rects: 0,
-            uses_buffer_age: false,
         }
     }
 }
@@ -436,8 +428,6 @@ pub enum SwapchainMode {
     WindowFramebuffer {
         /// See CompositorConfig::Draw.
         max_partial_present_rects: usize,
-        /// See CompositorConfig::Draw.
-        uses_buffer_age: bool,
     },
     /// Each layer gets its own OS swapchain, and external surfaces can be
     /// given their own OS surface. The swapchains keep their content between

@@ -219,13 +219,11 @@ class RenderCompositor {
   // Whether the window's own swapchain is partially presented.
   virtual bool UseWindowPartialPresent() { return false; }
   virtual bool RequestFullRender() { return false; }
-  // Whether WebRender must also redraw the regions presented since the window's
-  // back buffer was last used, using GetBufferAge().
-  virtual bool ShouldUseBufferAge() { return false; }
-  // Returns the age of the current backbuffer., This should be used, if
-  // ShouldUseBufferAge() returns true, to determine the
-  // region which must be rendered in addition to the current frame's dirty
-  // rect.
+  // Returns the number of frames since the window's current back buffer was
+  // last presented. WebRender uses it to determine the region which must be
+  // rendered in addition to the current frame's dirty rect. 1 means that the
+  // back buffer holds the previous frame. 0 means that its content is unknown,
+  // which forces a full render.
   virtual size_t GetBufferAge() const { return 0; }
   // Allows webrender to specify the total region that will be rendered to this
   // frame, ie the frame's dirty region and some previous frames' dirty regions,

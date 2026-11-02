@@ -326,8 +326,6 @@ uint32_t RenderCompositorEGL::GetMaxPartialPresentRects() {
   return gfx::gfxVars::WebRenderMaxPartialPresentRects();
 }
 
-bool RenderCompositorEGL::ShouldUseBufferAge() { return true; }
-
 size_t RenderCompositorEGL::GetBufferAge() const {
   if (!StaticPrefs::
           gfx_webrender_allow_partial_present_buffer_age_AtStartup()) {
