@@ -40,7 +40,11 @@
 #  include "mozilla/StaticMutex.h"
 #  include "mozilla/StaticPrefs_media.h"
 #  ifdef __linux__
+#    include <fcntl.h>
+#    include <libdrm/drm.h>
+#    include <sys/ioctl.h>
 #    include <sys/sysmacros.h>
+#    include <unistd.h>
 #  elif defined(XP_SOLARIS) || defined(__sun)
 #    include <sys/mkdev.h>  // major(), minor() for st_rdev
 #  elif defined(XP_FREEBSD) || defined(XP_OPENBSD) || defined(XP_NETBSD)
@@ -996,19 +1000,104 @@ static bool PhysicalDeviceHasVulkanVideoDecodeStack(
 }
 
 #  ifdef XP_LINUX
-static bool NvidiaDrmModesetDisabled() {
+static bool NvidiaDrmModesetDisabled(
+    const VkPhysicalDeviceDrmPropertiesEXT& aDrmProps) {
+  enum class ModesetStatus { Enabled, Disabled, Unknown };
   static std::once_flag sOnce;
-  static bool sDisabled = true;
-  // Set disabled to false only if nvidia_drm is loaded and not set to N/n/0.
+  static ModesetStatus sStatus = ModesetStatus::Disabled;
   std::call_once(sOnce, [] {
     FILE* f = fopen("/sys/module/nvidia_drm/parameters/modeset", "r");
+    // Prefer the explicit module setting when it is readable.
     if (f) {
       const int c = fgetc(f);
       fclose(f);
-      sDisabled = c == 'N' || c == 'n' || c == '0';
+      // A failed or empty read must not be treated as enabled modesetting.
+      if (c == EOF) {
+        FFMPEGV_LOG("Cannot read nvidia_drm modeset value: skipping NVIDIA");
+        return;
+      }
+      sStatus = c == 'N' || c == 'n' || c == '0' ? ModesetStatus::Disabled
+                                                 : ModesetStatus::Enabled;
+    } else {
+      const int error = errno;
+      // Older drivers restrict this file to root; its value remains unknown.
+      if (error == EACCES || error == EPERM) {
+        FFMPEGV_LOG(
+            "Cannot read nvidia_drm modeset (errno={}): checking DRM "
+            "capability",
+            error);
+        sStatus = ModesetStatus::Unknown;
+      } else {
+        FFMPEGV_LOG(
+            "Cannot open nvidia_drm modeset (errno={}): skipping NVIDIA",
+            error);
+      }
     }
   });
-  return sDisabled;
+  // Only unknown sysfs results need a per-GPU DRM capability query.
+  if (sStatus != ModesetStatus::Unknown) {
+    return sStatus == ModesetStatus::Disabled;
+  }
+  // Missing DRM properties leave the probe inconclusive; keep Vulkan eligible.
+  if (!aDrmProps.hasRender) {
+    FFMPEGV_LOG(
+        "No DRM render node reported: modeset status unknown, trying Vulkan "
+        "decode");
+    return false;
+  }
+
+  static nsTHashMap<uint64_t, bool> sDisabledByRenderNode;
+  const uint64_t key = (static_cast<uint64_t>(aDrmProps.renderMajor) << 32) |
+                       static_cast<uint32_t>(aDrmProps.renderMinor);
+  return sDisabledByRenderNode.LookupOrInsertWith(key, [&] {
+    nsPrintfCString path("/dev/dri/renderD%lld",
+                         static_cast<long long>(aDrmProps.renderMinor));
+    const int fd = open(path.get(), O_RDWR | O_CLOEXEC);
+    // Access or sandbox restrictions do not establish that modesetting is
+    // disabled.
+    if (fd < 0) {
+      const int error = errno;
+      FFMPEGV_LOG(
+          "Cannot open {} (errno={}): modeset status unknown, trying Vulkan "
+          "decode",
+          path.get(), error);
+      return false;
+    }
+    auto closeFd = MakeScopeExit([&] { close(fd); });
+
+    struct stat st = {};
+    // Only trust capabilities from the candidate GPU's own DRM render node.
+    if (fstat(fd, &st) != 0 || !S_ISCHR(st.st_mode) ||
+        static_cast<int64_t>(major(st.st_rdev)) != aDrmProps.renderMajor ||
+        static_cast<int64_t>(minor(st.st_rdev)) != aDrmProps.renderMinor) {
+      FFMPEGV_LOG(
+          "DRM fd does not match candidate GPU: modeset status unknown, trying "
+          "Vulkan decode");
+      return false;
+    }
+
+    struct drm_get_cap cap = {};
+    cap.capability = DRM_CAP_DUMB_BUFFER;
+    // NVIDIA exposes dumb-buffer support when modesetting is enabled.
+    // Querying it requires no buffer allocation.
+    if (ioctl(fd, DRM_IOCTL_GET_CAP, &cap) < 0) {
+      const int error = errno;
+      // The kernel rejects this KMS capability when DRIVER_MODESET is absent.
+      if (error == EOPNOTSUPP) {
+        FFMPEGV_LOG(
+            "NVIDIA DRM modesetting is unsupported: skipping candidate");
+        return true;
+      }
+      FFMPEGV_LOG(
+          "Cannot query DRM_CAP_DUMB_BUFFER (errno={}): modeset status "
+          "unknown, "
+          "trying Vulkan decode",
+          error);
+      return false;
+    }
+    FFMPEGV_LOG("NVIDIA DRM_CAP_DUMB_BUFFER={}", cap.value);
+    return cap.value == 0;
+  });
 }
 #  endif
 
@@ -1096,20 +1185,20 @@ bool FFmpegVideoDecoder<LIBAV_VER>::FFmpegVulkanVideoDecoder::
   for (uint32_t i = 0; i < count; i++) {
     VkPhysicalDeviceProperties p = {};
     bool isDecoderMatchesRendererFound = false;
-    if (rendererDrmMajor && rendererDrmMinor &&
-        vkGetPhysicalDeviceProperties2) {
-      VkPhysicalDeviceDrmPropertiesEXT drmProps = {};
-      drmProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+    VkPhysicalDeviceDrmPropertiesEXT drmProps = {};
+    drmProps.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRM_PROPERTIES_EXT;
+    if (vkGetPhysicalDeviceProperties2) {
       VkPhysicalDeviceProperties2 props2 = {};
       props2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
       props2.pNext = &drmProps;
       vkGetPhysicalDeviceProperties2(devices[i], &props2);
       p = props2.properties;
       isDecoderMatchesRendererFound =
-          (drmProps.hasRender && rendererDrmMajor == drmProps.renderMajor &&
-           rendererDrmMinor == drmProps.renderMinor) ||
-          (drmProps.hasPrimary && rendererDrmMajor == drmProps.primaryMajor &&
-           rendererDrmMinor == drmProps.primaryMinor);
+          rendererDrmMajor && rendererDrmMinor &&
+          ((drmProps.hasRender && rendererDrmMajor == drmProps.renderMajor &&
+            rendererDrmMinor == drmProps.renderMinor) ||
+           (drmProps.hasPrimary && rendererDrmMajor == drmProps.primaryMajor &&
+            rendererDrmMinor == drmProps.primaryMinor));
     } else {
       vkGetPhysicalDeviceProperties(devices[i], &p);
     }
@@ -1123,11 +1212,12 @@ bool FFmpegVideoDecoder<LIBAV_VER>::FFmpegVulkanVideoDecoder::
           continue;
         }
 #  ifdef XP_LINUX
+        // The modeset workaround and DRM capability fallback are NVIDIA-only.
         if (p.vendorID == 0x10de) {
           FFMPEGV_LOG("Checking {}: nvidia_drm modeset status", p.deviceName);
-          if (NvidiaDrmModesetDisabled()) {
+          if (NvidiaDrmModesetDisabled(drmProps)) {
             FFMPEGV_LOG(
-                "Skipping {}: nvidia_drm modeset disabled or module not loaded",
+                "Skipping {}: nvidia_drm modeset unavailable or disabled",
                 p.deviceName);
             continue;
           }
