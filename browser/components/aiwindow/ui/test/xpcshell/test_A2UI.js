@@ -339,6 +339,71 @@ describe("A2UI", () => {
           a2uiData.dataModel.sources
         );
       });
+
+      it("drops a highlights block with no statements", () => {
+        a2uiData.dataModel.highlightItems = [null];
+        a2uiData.components[2].items = { path: "/highlightItems" };
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(
+          a2ui.toUI().children.map(child => child.id),
+          ["hdr"]
+        );
+      });
+
+      it("turns a single statement into a text block", () => {
+        a2uiData.dataModel.sources.push({ title: "route", href: "route-id" });
+        a2uiData.components[2].items = [
+          null,
+          {
+            eyebrow: "Verdict",
+            body: "Eight of nine sources back dual-fuel.",
+            sources: { items: { path: "/sources" } },
+          },
+        ];
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1], {
+          id: "ans",
+          component: "TextBlock",
+          lead: "Highlights Title",
+          paragraphs: ["Eight of nine sources back dual-fuel."],
+          references: [
+            { title: "site1 name", href: "https://www.site1.com" },
+            { title: "site2 name", href: "https://www.site2.com" },
+            { title: "site3 name", href: "https://www.site3.com" },
+          ],
+        });
+      });
+
+      it("takes the text block lead from the first title it finds", () => {
+        const leadOf = (highlights, item) => {
+          a2uiData.components[2] = {
+            id: "ans",
+            component: "Highlights",
+            ...highlights,
+            items: [item],
+          };
+          return new A2UI(a2uiData).toUI().children[1].lead;
+        };
+
+        Assert.equal(
+          leadOf({ title: "Group" }, { eyebrow: "Monday", title: "Showers" }),
+          "Showers",
+          "The statement title comes first"
+        );
+        Assert.equal(
+          leadOf({ title: "Group" }, { eyebrow: "Monday", body: "Rain." }),
+          "Group",
+          "Then the highlights title"
+        );
+        Assert.equal(
+          leadOf({}, { eyebrow: "Monday", body: "Rain." }),
+          "Monday",
+          "Then the eyebrow"
+        );
+        Assert.equal(leadOf({}, { body: "Rain." }), "", "Else no lead");
+      });
     });
 
     describe("when there is a text block with a string lead", () => {

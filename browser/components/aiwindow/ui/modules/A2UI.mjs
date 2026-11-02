@@ -23,6 +23,8 @@
  * @property {AITabComponent[]} children - Hydrated header and content components.
  */
 
+import { httpUrl } from "chrome://browser/content/aiwindow/modules/AITabUtils.mjs";
+
 /**
  * Parses A2UI JSON objects to prepare for rendering
  */
@@ -225,7 +227,7 @@ export class A2UI {
         }
 
         const component = this.#components.get(child);
-        page.children.push(this.#hydrateComponent(component));
+        this.#pushChild(page, this.#hydrateComponent(component));
       }
 
       return;
@@ -248,13 +250,54 @@ export class A2UI {
     const template = this.#components.get(componentId);
     for (const dataModel of dataModels) {
       const component = structuredClone(template);
-      page.children.push(this.#hydrateComponent(component, dataModel));
+      this.#pushChild(page, this.#hydrateComponent(component, dataModel));
     }
   }
 
+  #pushChild(page, component) {
+    const child = this.#normalizeHighlights(component);
+    if (child) {
+      page.children.push(child);
+    }
+  }
+
+  /**
+   * Drops a Highlights block with no statements and turns one with a single
+   * statement into a TextBlock. The stored surface is not changed, so the
+   * block keeps its id.
+   *
+   * Link-click telemetry reports the converted block as a TextBlock.
+   * Bug 2088273 decides how Glean reports these conversions.
+   *
+   * @param {AITabComponent} component - A hydrated body component.
+   * @returns {AITabComponent|null} The component to render, or null to drop it.
+   */
+  #normalizeHighlights(component) {
+    if (component?.component != "Highlights") {
+      return component;
+    }
+    const items = (component.items ?? []).filter(Boolean);
+    if (!items.length) {
+      return null;
+    }
+    if (items.length > 1) {
+      return component;
+    }
+    const [item] = items;
+    return {
+      id: component.id,
+      component: "TextBlock",
+      lead: item.title || component.title || item.eyebrow || "",
+      paragraphs: item.body ? [item.body] : [],
+      references: (item.sources?.items ?? []).filter(source =>
+        httpUrl(source?.href)
+      ),
+    };
+  }
+
   #hydrateComponent(component, dataModel = undefined) {
-    const hydrator = this.#hydrators.get(component.component);
-    if (typeof hydrator === "function") {
+    const hydrator = this.#hydrators.get(component?.component);
+    if (component && typeof hydrator === "function") {
       return hydrator(component, dataModel);
     }
 
@@ -288,7 +331,9 @@ export class A2UI {
       return defaultValue;
     }
 
-    return itemMapper ? value.map(itemMapper) : value;
+    return itemMapper
+      ? value.map(item => (item ? itemMapper(item) : item))
+      : value;
   }
 
   #hydrateHighlightItem(highlightItem, dataModel = undefined) {

@@ -285,7 +285,7 @@
 
     "Highlights": {
       "type": "object",
-      "description": "One or more evidence-backed statements that are related topically or parallel in construction. Use TextBlock instead for unrelated bullet points. Each statement can attach the sources behind it via its own `sources`.",
+      "description": "One or more evidence-backed statements that are related topically or parallel in construction. Place it after the main body content, never as the first body block. Use TextBlock instead for unrelated bullet points, or when nothing stands out enough to highlight. Each statement can attach the sources behind it via its own `sources`.",
       "required": ["items"],
       "additionalProperties": false,
       "properties": {

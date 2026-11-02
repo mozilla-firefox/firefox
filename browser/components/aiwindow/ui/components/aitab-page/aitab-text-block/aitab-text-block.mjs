@@ -60,9 +60,11 @@ export class AITextBlock extends MozLitElement {
         href="chrome://browser/content/aiwindow/components/aitab-text-block.css"
       />
       <section class="aitab-text-block">
-        <h2 class="aitab-text-block-heading aitab-heading-3">
-          ${this.heading}
-        </h2>
+        ${this.heading
+          ? html`<h2 class="aitab-text-block-heading aitab-heading-3">
+              ${this.heading}
+            </h2>`
+          : nothing}
         <div class="aitab-text-block-content">
           ${this.paragraphs.map(
             p => html`<p class="aitab-text-block-p">${p}</p>`
