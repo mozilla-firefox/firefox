@@ -54,6 +54,11 @@ class Instance final : public nsWrapperCache {
 
   nsIGlobalObject* GetParentObject() const { return mGlobal; }
 
+  /// If WebGPU is disabled by `dom.webgpu.enabled` or
+  /// `dom.webgpu.service-workers-enabled`, return a static string explaining
+  /// why. Otherwise, return nullptr.
+  static const char* DisabledByPrefWithExplanation();
+
   static bool PrefEnabled();
   static bool PrefEnabled(JSContext* aCx, JSObject* aObj) {
     return PrefEnabled();

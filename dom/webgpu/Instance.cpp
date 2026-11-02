@@ -31,21 +31,29 @@ GPU_IMPL_CYCLE_COLLECTION(WGSLLanguageFeatures, mParent)
 
 GPU_IMPL_CYCLE_COLLECTION(Instance, mGlobal, mWgslLanguageFeatures)
 
-/* static */ bool Instance::PrefEnabled() {
+/* static */ const char* Instance::DisabledByPrefWithExplanation() {
   if (!StaticPrefs::dom_webgpu_enabled()) {
-    return false;
+    return "WebGPU is disabled because the `dom.webgpu.enabled` pref "
+           "is set to `false`.";
   }
 
   if (NS_IsMainThread()) {
-    return true;
+    return nullptr;
   }
 
   dom::WorkerPrivate* wp = dom::GetCurrentThreadWorkerPrivate();
-  if (wp && wp->IsServiceWorker()) {
-    return StaticPrefs::dom_webgpu_service_workers_enabled();
+  if (wp && wp->IsServiceWorker() &&
+      !StaticPrefs::dom_webgpu_service_workers_enabled()) {
+    return "WebGPU is disabled because the "
+           "`dom.webgpu.service-workers-enabled` pref "
+           "is set to `false`.";
   }
 
-  return true;
+  return nullptr;
+}
+
+/* static */ bool Instance::PrefEnabled() {
+  return !DisabledByPrefWithExplanation();
 }
 
 /* static */ bool Instance::ExternalTexturePrefEnabled(JSContext* aCx,
@@ -126,9 +134,10 @@ already_AddRefed<dom::Promise> Instance::RequestAdapter(
   };
 
   rejectIf(!gfx::gfxVars::AllowWebGPU(), "WebGPU is disabled by blocklist.");
-  rejectIf(!StaticPrefs::dom_webgpu_enabled(),
-           "WebGPU is disabled because the `dom.webgpu.enabled` pref. is set "
-           "to `false`.");
+
+  // Check the basic `dom.webgpu.enabled` prefs.
+  auto explanation = DisabledByPrefWithExplanation();
+  rejectIf(explanation, explanation);
 #ifndef HAVE_64BIT_BUILD
   rejectIf(true, "WebGPU is only available on 64-bit architectures.");
 #endif

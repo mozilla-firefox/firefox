@@ -146,6 +146,12 @@ already_AddRefed<dom::PWebGLParent> CanvasManagerParent::AllocPWebGLParent() {
 
 already_AddRefed<webgpu::PWebGPUParent>
 CanvasManagerParent::AllocPWebGPUParent() {
+  // As long as we check `dom.webgpu.enabled` here, we don't need to check
+  // `dom.webgpu.service-workers-enabled` as well. Such a check would only
+  // matter if `d.w.enabled` were true while `d.w.service-workers-enabled` was
+  // false, and a compromised child process could simply lie about which thread
+  // was asking for WebGPU. If the child process is not compromised, then its
+  // checks are sufficient.
   if (NS_WARN_IF(!gfxVars::AllowWebGPU() ||
                  !StaticPrefs::dom_webgpu_enabled())) {
     MOZ_ASSERT_UNREACHABLE("AllocPWebGPUParent without WebGPU");
