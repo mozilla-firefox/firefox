@@ -259,6 +259,10 @@ try {
     throw new GradleException("Failed to parse ${machEnvFile.absolutePath}: ${e.message}")
 }
 
+if (new File(json.topsrcdir).canonicalPath != new File(topsrcdir).canonicalPath) {
+    throw new GradleException("${machEnvFile.absolutePath} was configured for topsrcdir ${json.topsrcdir}, but Gradle is running in ${topsrcdir}. Rerun ./mach configure.")
+}
+
 def elapsed = System.currentTimeMillis() - startTime
 logger.info("mozconfig.gradle> Loaded mach environment for ${topobjdir} in ${elapsed} ms")
 
