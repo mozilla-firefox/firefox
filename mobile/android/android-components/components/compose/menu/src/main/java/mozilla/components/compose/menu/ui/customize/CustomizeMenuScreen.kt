@@ -13,23 +13,19 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.modifier.dashedBorder
@@ -67,27 +63,30 @@ fun CustomizeMenuContent(
             modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainer)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CustomizeMenuDragBar(onPreviewClick = onPreviewClick)
+        Column(modifier = Modifier.widthIn(max = AcornTheme.layout.size.containerMaxWidth).fillMaxWidth()) {
+            CustomizeMenuDragBar(onPreviewClick = onPreviewClick)
 
-        val onInteraction: (MenuEvent) -> Unit = remember(menuStore) { { menuStore.dispatch(it) } }
-        val menuState by menuStore.observeAsComposableState { it }
-        val visibleGroups = menuState.menuGroups.filterNot { it.isHidden }
-        val hiddenGroups = menuState.menuGroups.filter { it.isHidden }
+            val onInteraction: (MenuEvent) -> Unit = remember(menuStore) { { menuStore.dispatch(it) } }
+            val menuState by menuStore.observeAsComposableState { it }
+            val visibleGroups = menuState.menuGroups.filterNot { it.isHidden }
+            val hiddenGroups = menuState.menuGroups.filter { it.isHidden }
 
-        CustomizeMenu(menuGroups = visibleGroups, onInteraction = onInteraction)
+            CustomizeMenu(menuGroups = visibleGroups, onInteraction = onInteraction)
 
-        CustomizeMenuHiddenSections(hasHiddenItems = hiddenGroups.isNotEmpty())
+            CustomizeMenuHiddenSections(hasHiddenItems = hiddenGroups.isNotEmpty())
 
-        if (hiddenGroups.isNotEmpty()) {
-            CustomizeMenu(
-                menuGroups = hiddenGroups,
-                onInteraction = onInteraction,
-            )
+            if (hiddenGroups.isNotEmpty()) {
+                CustomizeMenu(
+                    menuGroups = hiddenGroups,
+                    onInteraction = onInteraction,
+                )
+            }
+
+            CustomizeMenuResetButton(onClick = onResetToDefault)
         }
-
-        CustomizeMenuResetButton(onClick = onResetToDefault)
     }
 }
 
@@ -190,35 +189,6 @@ private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modif
             }
         }
     }
-}
-
-/**
- * Top app bar for the customize menu screen.
- *
- * @param onNavigateBack Callback invoked when the back navigation button is clicked.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CustomizeMenuTopAppBar(onNavigateBack: () -> Unit) {
-    TopAppBar(
-        title = {
-            Text(
-                text = stringResource(R.string.mozac_menu_customize_toolbar_title),
-                style = AcornTheme.typography.headline5,
-            )
-        },
-        navigationIcon = {
-            IconButton(
-                onClick = onNavigateBack,
-                contentDescription = stringResource(R.string.mozac_menu_customize_back_button_content_description),
-            ) {
-                Icon(
-                    painter = painterResource(iconsR.drawable.mozac_ic_back_24),
-                    contentDescription = null,
-                )
-            }
-        },
-    )
 }
 
 @PreviewLightDark
