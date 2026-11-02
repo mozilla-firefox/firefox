@@ -46,9 +46,6 @@
       "chrome://browser/content/aiwindow/components/ai-sff-tab-selector.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-sff-tab-selector/ai-sff-tab-selector.mjs"
       ],
-      "chrome://browser/content/aiwindow/components/ai-website-chip.mjs": [
-        "../../../browser/components/aiwindow/ui/components/ai-website-chip/ai-website-chip.mjs"
-      ],
       "chrome://browser/content/aiwindow/components/ai-website-confirmation.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-website-confirmation/ai-website-confirmation.mjs"
       ],
@@ -129,6 +126,9 @@
       ],
       "chrome://browser/content/aiwindow/components/monitors-display.mjs": [
         "../../../browser/components/aiwindow/ui/components/monitors-display/monitors-display.mjs"
+      ],
+      "chrome://browser/content/aiwindow/components/smartwindow-chip.mjs": [
+        "../../../browser/components/aiwindow/ui/components/smartwindow-chip/smartwindow-chip.mjs"
       ],
       "chrome://browser/content/aiwindow/components/smartwindow-footer.mjs": [
         "../../../browser/components/aiwindow/ui/components/smartwindow-footer/smartwindow-footer.mjs"
@@ -339,6 +339,9 @@
       ],
       "chrome://browser/content/preferences/config/account-sync.mjs": [
         "../../../browser/components/preferences/config/account-sync.mjs"
+      ],
+      "chrome://browser/content/preferences/config/default-browser.mjs": [
+        "../../../browser/components/preferences/config/default-browser.mjs"
       ],
       "chrome://browser/content/preferences/config/downloads.mjs": [
         "../../../browser/components/preferences/config/downloads.mjs"
@@ -2212,6 +2215,9 @@
       "resource://devtools/client/application/src/actions/session-history.js": [
         "../../../devtools/client/application/src/actions/session-history.js"
       ],
+      "resource://devtools/client/application/src/actions/speculative-loads.js": [
+        "../../../devtools/client/application/src/actions/speculative-loads.js"
+      ],
       "resource://devtools/client/application/src/actions/ui.js": [
         "../../../devtools/client/application/src/actions/ui.js"
       ],
@@ -2322,6 +2328,9 @@
       ],
       "resource://devtools/client/application/src/reducers/session-history-state.js": [
         "../../../devtools/client/application/src/reducers/session-history-state.js"
+      ],
+      "resource://devtools/client/application/src/reducers/speculative-loads-state.js": [
+        "../../../devtools/client/application/src/reducers/speculative-loads-state.js"
       ],
       "resource://devtools/client/application/src/reducers/ui-state.js": [
         "../../../devtools/client/application/src/reducers/ui-state.js"
@@ -5769,6 +5778,9 @@
       ],
       "resource://gre/modules/ContentBlockingAllowList.sys.mjs": [
         "../../../toolkit/components/antitracking/ContentBlockingAllowList.sys.mjs"
+      ],
+      "resource://gre/modules/ContentClassifierRemoteSettingsClient.sys.mjs": [
+        "../../../toolkit/components/content-classifier/ContentClassifierRemoteSettingsClient.sys.mjs"
       ],
       "resource://gre/modules/ContentDOMReference.sys.mjs": [
         "../../../toolkit/modules/ContentDOMReference.sys.mjs"
