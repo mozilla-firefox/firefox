@@ -1010,9 +1010,8 @@ auto DocumentLoadListener::Open(nsDocShellLoadState* aLoadState,
   }
 
   if (!nsDocShell::CreateAndConfigureRealChannelForLoadState(
-          loadingContext, aLoadState, aLoadInfo, mParentChannelListener,
-          nullptr, attrs, aLoadFlags, aCacheKey, *aRv,
-          getter_AddRefs(mChannel))) {
+          loadingContext, aLoadState, aLoadInfo, mParentChannelListener, attrs,
+          aLoadFlags, aCacheKey, *aRv, getter_AddRefs(mChannel))) {
     LOG(("DocumentLoadListener::Open failed to create channel [this=%p]",
          this));
     mParentChannelListener = nullptr;

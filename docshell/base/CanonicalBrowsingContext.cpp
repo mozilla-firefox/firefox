@@ -1439,8 +1439,7 @@ already_AddRefed<nsDocShellLoadState> CanonicalBrowsingContext::CreateLoadInfo(
 
 void CanonicalBrowsingContext::NotifyOnHistoryReload(
     uint32_t aReloadFlags, bool& aCanReload,
-    Maybe<NotNull<RefPtr<nsDocShellLoadState>>>& aLoadState,
-    Maybe<bool>& aReloadActiveEntry) {
+    Maybe<NotNull<RefPtr<nsDocShellLoadState>>>& aLoadState) {
   MOZ_DIAGNOSTIC_ASSERT(!aLoadState);
 
   aCanReload = true;
@@ -1452,24 +1451,24 @@ void CanonicalBrowsingContext::NotifyOnHistoryReload(
     return;
   }
 
+  bool reloadActiveEntry = false;
   if (mActiveEntry) {
     shistory->PrepareReloadEntry(mActiveEntry, aReloadFlags);
     aLoadState.emplace(WrapMovingNotNull(
         RefPtr{CreateLoadInfo(mActiveEntry, NavigationType::Reload)}));
-    aReloadActiveEntry.emplace(true);
+    reloadActiveEntry = true;
   } else if (!mLoadingEntries.IsEmpty()) {
     RefPtr<SessionHistoryEntry> loadingEntry =
         mLoadingEntries.LastElement().mEntry;
     shistory->PrepareReloadEntry(loadingEntry, aReloadFlags);
     aLoadState.emplace(WrapMovingNotNull(
         RefPtr{CreateLoadInfo(loadingEntry, NavigationType::Reload)}));
-    aReloadActiveEntry.emplace(false);
+    reloadActiveEntry = false;
   }
 
   if (aLoadState) {
     // Use 0 as the offset, since aLoadState will be be used for reload.
-    aLoadState.ref()->SetLoadIsFromSessionHistory(0,
-                                                  aReloadActiveEntry.value());
+    aLoadState.ref()->SetLoadIsFromSessionHistory(0, reloadActiveEntry);
   }
   // If we don't have an active entry and we don't have a loading entry then
   // the nsDocShell will create a load state based on its document.
@@ -2191,7 +2190,7 @@ void CanonicalBrowsingContext::LoadURI(nsIURI* aURI,
                                        ErrorResult& aError) {
   RefPtr<nsDocShellLoadState> loadState;
   nsresult rv = nsDocShellLoadState::CreateFromLoadURIOptions(
-      this, aURI, aOptions, getter_AddRefs(loadState));
+      aURI, aOptions, getter_AddRefs(loadState));
   MOZ_ASSERT(rv != NS_ERROR_MALFORMED_URI);
 
   if (NS_FAILED(rv)) {

@@ -2305,10 +2305,8 @@ class nsContentUtils {
    *
    * @param aContent the node on which a link was triggered.
    * @param aLinkURI the URI of the link, must be non-null.
-   * @param aTargetSpec the target (like target=, may be empty).
    */
-  static void TriggerLinkMouseOver(nsIContent* aContent, nsIURI* aLinkURI,
-                                   const nsString& aTargetSpec);
+  static void TriggerLinkMouseOver(nsIContent* aContent, nsIURI* aLinkURI);
 
   /**
    * Get the link location.

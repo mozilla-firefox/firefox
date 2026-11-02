@@ -7683,8 +7683,7 @@ void nsContentUtils::TriggerLinkClick(
 
 /* static */
 void nsContentUtils::TriggerLinkMouseOver(nsIContent* aContent,
-                                          nsIURI* aLinkURI,
-                                          const nsString& aTargetSpec) {
+                                          nsIURI* aLinkURI) {
   MOZ_ASSERT(aLinkURI, "No link URI");
 
   if (aContent->IsEditable() || !aContent->OwnerDoc()->LinkHandlingEnabled()) {
@@ -7697,7 +7696,7 @@ void nsContentUtils::TriggerLinkMouseOver(nsIContent* aContent,
     return;
   }
 
-  docShell->OnOverLink(aContent, aLinkURI, aTargetSpec);
+  docShell->OnOverLink(aContent, aLinkURI);
 
   if (nsPresContext* pc = aContent->OwnerDoc()->GetPresContext()) {
     pc->EventStateManager()->SetLinkOverFrame(aContent->GetPrimaryFrame());

@@ -47,9 +47,8 @@ nsresult ChildSHistory::PendingAsyncHistoryNavigation::Run() {
     remove();
     if (mKey) {
       RefPtr browsingContext = mBrowsingContext;
-      mHistory->GotoKey(*mKey, browsingContext, mRequireUserInteraction,
-                        mUserActivation, mCheckForCancelation, *mResolver,
-                        IgnoreErrors());
+      mHistory->GotoKey(*mKey, browsingContext, mUserActivation,
+                        mCheckForCancelation, *mResolver);
     } else {
       mHistory->Go(mOffset, mRequireUserInteraction, mUserActivation,
                    IgnoreErrors());
@@ -177,8 +176,7 @@ void ChildSHistory::Go(int32_t aOffset, bool aRequireUserInteraction,
     }
   }
 
-  GotoIndex(index.value(), aOffset, aRequireUserInteraction, aUserActivation,
-            aRv);
+  GotoIndex(index.value(), aOffset, aRequireUserInteraction, aUserActivation);
 }
 
 void ChildSHistory::AsyncGo(int32_t aOffset, bool aRequireUserInteraction,
@@ -212,7 +210,7 @@ void ChildSHistory::AsyncGo(const nsID& aKey, BrowsingContext* aNavigable,
 
 void ChildSHistory::GotoIndex(int32_t aIndex, int32_t aOffset,
                               bool aRequireUserInteraction,
-                              bool aUserActivation, ErrorResult& /*aRv*/) {
+                              bool aUserActivation) {
   MOZ_LOG(gSHLog, LogLevel::Debug,
           ("ChildSHistory::GotoIndex(%d, %d), epoch %" PRIu64, aIndex, aOffset,
            mHistoryEpoch));
@@ -239,10 +237,8 @@ void ChildSHistory::GotoIndex(int32_t aIndex, int32_t aOffset,
 }
 
 void ChildSHistory::GotoKey(const nsID& aKey, BrowsingContext* aNavigable,
-                            bool /*aRequireUserInteraction*/,
                             bool aUserActivation, bool aCheckForCancelation,
-                            const std::function<void(nsresult)>& aResolver,
-                            ErrorResult& /*aRv*/) {
+                            const std::function<void(nsresult)>& aResolver) {
   if (!mPendingEpoch) {
     mPendingEpoch = true;
     RefPtr<ChildSHistory> self(this);
