@@ -107,13 +107,12 @@ box and cannot tell what leaves it.
 -   **Step numbers tie the diagram to a numbered list in the prose; method
     names make it self-contained.** Either works, as does `3: startQuery`. Take
     method names from the code.
--   **Edge declaration order decides which side a sibling lands on.** The layout
-    places a node's children in the order their edges are declared; reordering
-    node declarations does nothing. Declaring a later round trip's edges first
-    sends the outbound path down one side and the return up the other, so a
-    cycle reads as a loop. Leave a `%%` comment saying why the edges are out of
-    order. Once the node has a second outgoing edge, an invisible link between
-    the siblings, `view ~~~ muxer`, decides the order instead.
+-   **Edge declaration order decides which side a sibling lands on, unless
+    another order crosses fewer edges.** The ELK layout places a node's children
+    in the order their edges are declared, and overrides that order where it
+    saves a crossing; reordering node declarations does nothing. Declare the
+    edges in the order the numbered steps run, so the steps read left to
+    right, and check the rendered page.
 -   **Dotted arrows (`-. "label" .->`) for the return path** separate requests
     from results at no cost in width.
 

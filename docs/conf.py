@@ -79,10 +79,9 @@ mermaid_version = "12.2.0"
 # and dark themes.
 mermaid_init_config = {
     "startOnLoad": False,
-    # Mermaid defaults to the ELK layout and its "neo" look, and gives
-    # flowchart and state nodes a 120px minimum width and wrapping width. The
-    # docs use dagre, the classic look, and nodes sized to their labels.
-    "layout": "dagre",
+    # Mermaid defaults to its "neo" look, and gives flowchart and state nodes a
+    # 120px minimum width and wrapping width. The docs use the classic look and
+    # nodes sized to their labels.
     "look": "classic",
     "themeVariables": {
         "fontSize": "18px",
