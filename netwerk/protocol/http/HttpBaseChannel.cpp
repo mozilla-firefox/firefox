@@ -3340,6 +3340,14 @@ void WarnWrongMIMEOfScript(HttpBaseChannel* aChannel, nsIURI* aURI,
     return;
   }
 
+  // Worklets check the MIME type against the module type themselves, and
+  // report any mismatch as an error.
+  nsContentPolicyType internalType = aLoadInfo->InternalContentPolicyType();
+  if (internalType == nsIContentPolicy::TYPE_INTERNAL_AUDIOWORKLET ||
+      internalType == nsIContentPolicy::TYPE_INTERNAL_PAINTWORKLET) {
+    return;
+  }
+
   bool succeeded;
   MOZ_ALWAYS_SUCCEEDS(aChannel->GetRequestSucceeded(&succeeded));
   if (!succeeded) {

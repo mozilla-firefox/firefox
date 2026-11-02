@@ -95,9 +95,9 @@ bool WorkletModuleLoader::CanStartLoad(ModuleLoadRequest* aRequest,
 nsresult WorkletModuleLoader::StartFetch(ModuleLoadRequest* aRequest) {
   InsertRequest(aRequest->URI(), aRequest);
 
-  RefPtr<StartFetchRunnable> runnable =
-      new StartFetchRunnable(aRequest->GetWorkletLoadContext()->GetHandlerRef(),
-                             aRequest->URI(), aRequest->mReferrer);
+  RefPtr<StartFetchRunnable> runnable = new StartFetchRunnable(
+      aRequest->GetWorkletLoadContext()->GetHandlerRef(), aRequest->URI(),
+      aRequest->mReferrer, aRequest->mModuleType);
   NS_DispatchToMainThread(runnable.forget());
   return NS_OK;
 }

@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ctx = new subwin.AudioContext();
   const url = URL.createObjectURL(
     new Blob([`registerProcessor("noop",
-                                 class extends AudioWorkletProcessor {})`]),
-    {type: "application/javascript"});
+                                 class extends AudioWorkletProcessor {})`],
+             {type: "application/javascript"}));
   await ctx.audioWorklet.addModule(url);
 
   frame.remove();

@@ -30,7 +30,9 @@ class ErrorProcessor extends AudioWorkletProcessor {
 }
 registerProcessor("error", ErrorProcessor);
 `;
-const workletScriptUrl = URL.createObjectURL(new Blob([workletScript]));
+const workletScriptUrl = URL.createObjectURL(
+  new Blob([workletScript], { type: "text/javascript" })
+);
 const context = new AudioContext();
 context.audioWorklet.addModule(workletScriptUrl).then(() => {
   const workletNode = new AudioWorkletNode(context, "error");
