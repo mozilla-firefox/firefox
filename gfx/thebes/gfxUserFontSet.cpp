@@ -521,7 +521,7 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aIsContinue) {
         // local fonts are just available all the time.
         StoreUserFontData(fe, mCurrentSrcIndex, false, nsCString(), nullptr, 0,
                           gfxUserFontData::kUnknownCompression, nullptr);
-        mPlatformFontEntry = fe.forget();
+        SetPlatformFontEntry(std::move(fe));
         SetLoadState(STATUS_LOADED);
         glean::webfont::srctype.AccumulateSingleSample(currSrc.mSourceType + 1);
         return;
@@ -554,10 +554,10 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aIsContinue) {
 
         // see if we have an existing entry for this source
         if (canCheckCache) {
-          gfxFontEntry* fe =
+          RefPtr<gfxFontEntry> fe =
               gfxUserFontSet::UserFontCache::GetFont(currSrc, *this);
           if (fe) {
-            mPlatformFontEntry = fe;
+            SetPlatformFontEntry(std::move(fe));
             SetLoadState(STATUS_LOADED);
             LOG(
                 ("userfonts (%p) [src %d] "
@@ -877,7 +877,7 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
     gfxUserFontSet::UserFontCache::CacheFont(fe);
   }
 
-  mPlatformFontEntry = std::move(fe);
+  SetPlatformFontEntry(std::move(fe));
   SetLoadState(STATUS_LOADED);
 
   return true;
@@ -1149,19 +1149,18 @@ void gfxUserFontSet::ForgetLocalFace(gfxUserFontFamily* aFontFamily) {
     auto ufe = static_cast<gfxUserFontEntry*>(f.get());
     // If the user font entry has loaded an entry using src:local(),
     // discard it as no longer valid.
-    if (ufe->GetPlatformFontEntry() &&
-        ufe->GetPlatformFontEntry()->IsLocalUserFont()) {
+    RefPtr pfe = ufe->GetPlatformFontEntry();
+    if (pfe && pfe->IsLocalUserFont()) {
       // Clear shmem pointers on the local-user-font entry: it is not tracked
       // in gfxPlatformFontList::mFontEntries, so InitFontList()'s cleanup loop
       // misses it.
-      gfxFontEntry* pfe = ufe->GetPlatformFontEntry();
       {
         AutoWriteLock lock(pfe->mLock);
         pfe->mShmemCharacterMap = nullptr;
         pfe->mShmemFace = nullptr;
         pfe->mShmemFamily = nullptr;
       }
-      ufe->mPlatformFontEntry = nullptr;
+      ufe->SetPlatformFontEntry(nullptr);
     }
     // If the entry had a local source, we need to re-evaluate the source list
     // in the context of the new platform fontlist, whether or not the entry
