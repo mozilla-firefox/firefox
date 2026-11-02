@@ -1,10 +1,25 @@
-// url=https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=496-6135
+import figma, { html } from "@figma/code-connect/html";
+
 // Nova Components
+figma.connect(
+  "https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=496-6135",
+  {
+    props: {
+      items: figma.children("*"),
+    },
+    example: props =>
+      html` <moz-box-group type="list"> ${props.items} </moz-box-group>`,
+  }
+);
 
-import figma from "figma";
-const items = figma.properties.children(["*"]);
-
-export default {
-  id: "moz-box-group",
-  example: figma.code` <moz-box-group type="list"> ${items} </moz-box-group>`,
-};
+// Desktop v3 (newest)
+figma.connect(
+  "https://www.figma.com/design/3WoKOSGtaSjhUHKldHCXbc/Desktop-Components-3?node-id=496-6135",
+  {
+    props: {
+      items: figma.children("*"),
+    },
+    example: props =>
+      html` <moz-box-group type="list"> ${props.items} </moz-box-group>`,
+  }
+);

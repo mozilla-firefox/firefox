@@ -1,23 +1,24 @@
-// url=https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=442-2086
+import figma, { html } from "@figma/code-connect/html";
+
 // Nova Components
-
-import figma from "figma";
-const label = figma.selectedInstance.getString("Label");
-const description = figma.selectedInstance.getBoolean("Show description", {
-  true: figma.selectedInstance.getString("Description"),
-});
-const supportPage = figma.selectedInstance.getBoolean("Show support link", {
-  true: "sumo-slug",
-});
-const iconSrc = figma.selectedInstance.getBoolean("Show icon", {
-  true: "chrome://example.svg",
-});
-const disabled = figma.selectedInstance.getBoolean("Disabled");
-
-export default {
-  id: "moz-label",
-  example: figma.code`
-      <label is="moz-label"> ${label} </label>
+figma.connect(
+  "https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=442-2086",
+  {
+    props: {
+      label: figma.string("Label"),
+      description: figma.boolean("Show description", {
+        true: figma.string("Description"),
+      }),
+      supportPage: figma.boolean("Show support link", {
+        true: "sumo-slug",
+      }),
+      iconSrc: figma.boolean("Show icon", {
+        true: "chrome://example.svg",
+      }),
+      disabled: figma.boolean("Disabled"),
+    },
+    example: props => html`
+      <label is="moz-label"> ${props.label} </label>
       <!--
 In Figma, the Label component can be configured with description,
 support-page, iconsrc, and disabled properties. These are not
@@ -35,4 +36,28 @@ There is a full example below.
 <input id="radio" type="radio" id="radio"/>
 -->
     `,
-};
+  }
+);
+
+// Desktop v3
+figma.connect(
+  "https://www.figma.com/design/3WoKOSGtaSjhUHKldHCXbc/Desktop-Components-3?node-id=442-2086",
+  {
+    props: {
+      label: figma.string("Label"),
+    },
+    example: props => html`
+      <label is="moz-label"> ${props.label} </label>
+      <!--
+The moz-label also accepts an accesskey attribute, and should include
+the for attribute corresponding to the id of a corresponding control.
+There is a full example below.
+
+<label is="moz-label" accesskey="r" for="radio">
+  This is the label
+</label>
+<input id="radio" type="radio" id="radio"/>
+-->
+    `,
+  }
+);

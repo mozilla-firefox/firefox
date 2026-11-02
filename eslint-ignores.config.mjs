@@ -24,8 +24,6 @@ export default [
 
   // Exclude TypeScript files.
   "*.ts",
-  // However, Figma Code Connect templates are included
-  "!**/*.figma.ts",
 
   // Ignore VSCode files
   ".vscode/",

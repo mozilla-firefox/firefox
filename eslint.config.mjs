@@ -164,23 +164,6 @@ let config = [
     },
   },
   {
-    name: "figma-code-connect",
-    files: ["**/*.figma.ts"],
-    languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
-    },
-    settings: {
-      "import/resolver": {
-        node: {},
-      },
-    },
-    plugins: { import: importPlugin },
-    rules: {
-      "import/no-unresolved": "off",
-    },
-  },
-  {
     name: "eslint-plugin-html",
     files: ["**/*.html", "**/*.xhtml"],
     plugins: { html },

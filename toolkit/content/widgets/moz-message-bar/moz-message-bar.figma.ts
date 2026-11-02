@@ -1,50 +1,95 @@
-// url=https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=243-1299
+import figma, { html } from "@figma/code-connect/html";
+
 // Nova Components
-
-import figma from "figma";
-const heading = figma.selectedInstance.getBoolean("Show heading", {
-  true: figma.selectedInstance.getString("Heading"),
-  false: undefined,
-});
-const message = figma.selectedInstance.getBoolean("Show message", {
-  true: figma.selectedInstance.getString("Message"),
-  false: undefined,
-});
-const type = figma.selectedInstance.getEnum("Type", {
-  Success: "success",
-  Warning: "warning",
-  Critical: "critical",
-  Information: "information",
-});
-const supportPage = figma.selectedInstance.getBoolean("Show support link", {
-  true: "sumo-slug",
-});
-const dismissable = figma.selectedInstance.getBoolean("Dismissible");
-const action = figma.selectedInstance.getBoolean("Show action", {
-  true: '<moz-button slot="actions" label="Label"></moz-button\n          ><moz-button slot="actions" label="Label"></moz-button>',
-  false: undefined,
-});
-const buttonGroupProps = (function () {
-  const nestedLayer13 = figma.selectedInstance.findInstance("Button group");
-  return {
-    additionalAction:
-      nestedLayer13.type !== "ERROR"
-        ? nestedLayer13.getBoolean("Show 3rd button", {
-            true: '<moz-button slot="actions" label="Label"></moz-button>',
-            false: undefined,
-          })
-        : undefined,
-  };
-})();
-
-export default {
-  id: "moz-message-bar",
-  example: figma.code`<moz-message-bar
-        ${type ? `type="${type}"` : ""}
-        ${message ? `message="${message}"` : ""}
-        ${heading ? `heading="${heading}"` : ""}
-        ${supportPage ? `support-page="${supportPage}"` : ""}
-        ${dismissable ? "dismissable" : ""}
-        >${action ?? ""}${buttonGroupProps.additionalAction ?? ""}</moz-message-bar
+figma.connect(
+  "https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=243-1299",
+  {
+    props: {
+      heading: figma.boolean("Show heading", {
+        true: figma.string("Heading"),
+        false: undefined,
+      }),
+      message: figma.boolean("Show message", {
+        true: figma.string("Message"),
+        false: undefined,
+      }),
+      type: figma.enum("Type", {
+        Success: "success",
+        Warning: "warning",
+        Critical: "critical",
+        Information: "information",
+      }),
+      supportPage: figma.boolean("Show support link", {
+        true: "sumo-slug",
+      }),
+      dismissable: figma.boolean("Dismissible"),
+      action: figma.boolean("Show action", {
+        true: html`<moz-button slot="actions" label="Label"></moz-button
+          ><moz-button slot="actions" label="Label"></moz-button>`,
+        false: undefined,
+      }),
+      buttonGroupProps: figma.nestedProps("Button group", {
+        additionalAction: figma.boolean("Show 3rd button", {
+          true: html`<moz-button slot="actions" label="Label"></moz-button>`,
+          false: undefined,
+        }),
+      }),
+    },
+    example: props =>
+      html`<moz-message-bar
+        type=${props.type}
+        message=${props.message}
+        heading=${props.heading}
+        support-page=${props.supportPage}
+        dismissable=${props.dismissable}
+        >${props.action}${props.buttonGroupProps
+          .additionalAction}</moz-message-bar
       >`,
-};
+  }
+);
+
+// Desktop v3 (newest)
+figma.connect(
+  "https://www.figma.com/design/3WoKOSGtaSjhUHKldHCXbc/Desktop-v3?node-id=243-1299&m=dev",
+  {
+    props: {
+      heading: figma.boolean("Show heading", {
+        true: figma.string("Heading"),
+        false: undefined,
+      }),
+      message: figma.boolean("Show message", {
+        true: figma.string("Message"),
+        false: undefined,
+      }),
+      type: figma.enum("Type", {
+        Success: "success",
+        Warning: "warning",
+        Critical: "critical",
+        Information: "information",
+      }),
+      supportPage: figma.boolean("Show support link", {
+        true: "sumo-slug",
+      }),
+      action: figma.boolean("Show action", {
+        true: html`<moz-button slot="actions" label="Label"></moz-button
+          ><moz-button slot="actions" label="Label"></moz-button>`,
+        false: undefined,
+      }),
+      buttonGroupProps: figma.nestedProps("Button group", {
+        additionalAction: figma.boolean("Show 3rd button", {
+          true: html`<moz-button slot="actions" label="Label"></moz-button>`,
+          false: undefined,
+        }),
+      }),
+    },
+    example: props =>
+      html`<moz-message-bar
+        type=${props.type}
+        message=${props.message}
+        heading=${props.heading}
+        support-page=${props.supportPage}
+        >${props.action}${props.buttonGroupProps
+          .additionalAction}</moz-message-bar
+      >`,
+  }
+);

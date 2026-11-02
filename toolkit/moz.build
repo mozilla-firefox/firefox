@@ -114,9 +114,6 @@ with Files("l10n-registry.manifest"):
 with Files("jsconfig.json"):
     BUG_COMPONENT = ("Developer Infrastructure", "Lint and Formatting")
 
-with Files("figma.config.json"):
-    BUG_COMPONENT = ("Toolkit", "UI Widgets")
-
 GeneratedFile(
     "content/neterror/aboutNetErrorCodes.js",
     script="content/neterror/gen_aboutneterror_codes.py",

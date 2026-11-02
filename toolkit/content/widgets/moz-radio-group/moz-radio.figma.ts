@@ -1,54 +1,75 @@
-// url=https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=3907-17657
+import figma, { html } from "@figma/code-connect/html";
+
 // Nova Components
-
-import figma from "figma";
-
-const labelInstance = figma.selectedInstance.findInstance("Label");
-const description =
-  labelInstance.type !== "ERROR"
-    ? labelInstance.getBoolean("Show description", {
-        true: labelInstance.getString("Description"),
-      })
-    : undefined;
-const supportPage =
-  labelInstance.type !== "ERROR"
-    ? labelInstance.getBoolean("Show support link", {
-        true: "sumo-slug",
-      })
-    : undefined;
-const label =
-  labelInstance.type !== "ERROR" ? labelInstance.getString("Label") : undefined;
-const iconSrc =
-  labelInstance.type !== "ERROR"
-    ? labelInstance.getBoolean("Show icon", {
-        true: "chrome://example.svg",
-      })
-    : undefined;
-
-const radioInstance = figma.selectedInstance.findInstance(
-  "Radio Button / Input"
-);
-const checked =
-  radioInstance.type !== "ERROR"
-    ? (radioInstance.getBoolean("Checked", {
-        true: true,
-        false: undefined,
-      }) ?? radioInstance.getEnum("State", { Checked: true }))
-    : undefined;
-const disabled = figma.selectedInstance.getBoolean("Disabled");
-
-export default {
-  id: "moz-radio",
-  example: figma.code`
+figma.connect(
+  "https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=3907-17657",
+  {
+    props: {
+      labelProps: figma.nestedProps("Label", {
+        description: figma.boolean("Show description", {
+          true: figma.string("Description"),
+        }),
+        supportPage: figma.boolean("Show support link", {
+          true: "sumo-slug",
+        }),
+        label: figma.string("Label"),
+        iconSrc: figma.boolean("Show icon", {
+          true: "chrome://example.svg",
+        }),
+      }),
+      radioProps: figma.nestedProps("Radio Button", {
+        checked: figma.boolean("Checked"),
+      }),
+      disabled: figma.boolean("Disabled"),
+    },
+    example: props => html`
       <moz-radio
-        ${checked === true ? "checked" : ""}
-        ${description ? `description="${description}"` : ""}
-        ${disabled ? "disabled" : ""}
-        ${iconSrc ? `iconsrc="${iconSrc}"` : ""}
-        ${label ? `label="${label}"` : ""}
+        checked=${props.radioProps.checked}
+        description=${props.labelProps.description}
+        disabled=${props.disabled}
+        iconsrc=${props.labelProps.iconSrc}
+        label=${props.labelProps.label}
         name="example-moz-radio-group-name"
-        ${supportPage ? `support-page="${supportPage}"` : ""}
+        support-page=${props.labelProps.supportPage}
         value="example moz-radio value"
       ></moz-radio>
     `,
-};
+  }
+);
+
+// Desktop Components v3 (newest)
+figma.connect(
+  "https://www.figma.com/design/3WoKOSGtaSjhUHKldHCXbc/Desktop-Components-3?node-id=3907-17657",
+  {
+    props: {
+      labelProps: figma.nestedProps("Label", {
+        description: figma.boolean("Show description", {
+          true: figma.string("Description"),
+        }),
+        supportPage: figma.boolean("Show support link", {
+          true: "sumo-slug",
+        }),
+        label: figma.string("Label"),
+        iconSrc: figma.boolean("Show icon", {
+          true: "chrome://example.svg",
+        }),
+      }),
+      radioProps: figma.nestedProps("Radio Button", {
+        checked: figma.boolean("Checked"),
+      }),
+      disabled: figma.boolean("Disabled"),
+    },
+    example: props => html`
+      <moz-radio
+        checked=${props.radioProps.checked}
+        description=${props.labelProps.description}
+        disabled=${props.disabled}
+        iconsrc=${props.labelProps.iconSrc}
+        label=${props.labelProps.label}
+        name="example-moz-radio-group-name"
+        support-page=${props.labelProps.supportPage}
+        value="example moz-radio value"
+      ></moz-radio>
+    `,
+  }
+);
