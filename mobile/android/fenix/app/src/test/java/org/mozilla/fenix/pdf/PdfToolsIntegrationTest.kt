@@ -18,7 +18,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlin.test.assertIs
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
@@ -59,6 +59,8 @@ class PdfToolsIntegrationTest {
     private val activity = Robolectric.buildActivity(ComponentActivity::class.java).setup().get()
 
     private val container = CoordinatorLayout(activity)
+
+    private val testDispatcher = StandardTestDispatcher()
 
     private val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
 
@@ -101,7 +103,7 @@ class PdfToolsIntegrationTest {
             browserStore = store,
             isAddressBarAtBottom = isAddressBarAtBottom,
             customTabSessionId = customTabSessionId,
-            mainDispatcher = Dispatchers.Unconfined,
+            mainDispatcher = testDispatcher,
         )
 
     @Before
@@ -235,6 +237,30 @@ class PdfToolsIntegrationTest {
     }
 
     @Test
+    fun `GIVEN an answered signature WHEN the next signature gets no response THEN only the next one times out`() {
+        val engineSession = mockk<EngineSession>()
+        val onResult = slot<() -> Unit>()
+        every { engineSession.addSignatureToPdf(any(), capture(onResult), any()) } returns Unit
+        val integration = integration(store = storeOf(pdfTabWith(engineSession)))
+        integration.start()
+        integration.handleSignClick()
+        integration.handleSignAddClick()
+        onResult.captured()
+        integration.handleSignClick()
+        integration.signatureState.signature.setTextAndPlaceCursorAtEnd("Test User")
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue("An answered signature does not time out.", integration.signatureState.isSigning)
+
+        integration.handleSignAddClick()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(integration.signatureState.isSigning)
+        assertFalse(integration.signatureState.isAddingSignature)
+    }
+
+    @Test
     fun `WHEN download is activated THEN the selected tab is saved as a PDF`() {
         integration().handleDownloadClick()
 
@@ -339,6 +365,7 @@ class PdfToolsIntegrationTest {
         integration.handleSignClick()
 
         browserStore.dispatch(ContentAction.ExitedPdfViewer(tabId))
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertFalse(integration.signatureState.isSigning)
     }
@@ -384,10 +411,12 @@ class PdfToolsIntegrationTest {
         integration.handleSignClick()
 
         store.dispatch(ContentAction.ExitedPdfViewer(tabId))
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue("The selected tab leaving does not affect the custom tab.", integration.signatureState.isSigning)
 
         store.dispatch(ContentAction.ExitedPdfViewer(customTabId))
+        testDispatcher.scheduler.advanceUntilIdle()
 
         assertFalse(integration.signatureState.isSigning)
     }

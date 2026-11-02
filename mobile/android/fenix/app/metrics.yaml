@@ -18068,12 +18068,14 @@ pdf_viewer:
       reason:
         description: |
           Why the signature could not be handed to the PDF viewer. Possible values
-          are: `no_engine_session` and `engine_error`.
+          are: `no_engine_session`, `engine_error` and `timeout`.
         type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2069504
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086088
     data_reviews:
       - https://phabricator.services.mozilla.com/D325530
+      - https://phabricator.services.mozilla.com/D338066
     notification_emails:
       - android-probes@mozilla.com
     data_sensitivity:
