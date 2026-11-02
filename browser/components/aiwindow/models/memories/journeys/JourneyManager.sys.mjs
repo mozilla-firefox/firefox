@@ -280,6 +280,43 @@ export const JourneyManager = {
   },
 
   /**
+   * Retrieves the URLs to reopen from a journey suggestion.
+   *
+   * @param {object} journeySuggestion - Journey suggestion data, object returned by suggestJourneysToResume()
+   * @returns {Array<string>} Array of URLs to reopen
+   */
+  getUrlsToReopen(journeySuggestion) {
+    return journeySuggestion?.content?.previewTabs?.map(tab => tab.url) ?? [];
+  },
+
+  /**
+   * Dismisses a journey suggestion forever. Survives browser restarts.
+   *
+   * @param {object} journeySuggestion - Journey suggestion data
+   * @returns {Promise<boolean>} False if no stored journey matches the suggestion
+   */
+  async dismiss(journeySuggestion) {
+    return lazy.JourneyStore.addOrUpdateJourney({
+      memoryId: journeySuggestion.memory.id,
+      dismissed: true,
+    });
+  },
+
+  /**
+   * Dismisses a journey suggestion until a specific time. Survives browser restarts.
+   *
+   * @param {object} journeySuggestion - Journey suggestion data
+   * @param {number} until - Unix epoch milliseconds until which the journey is dismissed
+   * @returns {Promise<boolean>} False if no stored journey matches the suggestion
+   */
+  async dismissUntil(journeySuggestion, until) {
+    return lazy.JourneyStore.addOrUpdateJourney({
+      memoryId: journeySuggestion.memory.id,
+      dismissed_until: until,
+    });
+  },
+
+  /**
    * Generates a conversation initialized with a journey suggestion.
    *
    * @param {object} journeySuggestion - Journey suggestion data

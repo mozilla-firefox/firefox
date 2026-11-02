@@ -1897,3 +1897,123 @@ add_task(async function stored_journey_suppression() {
     await JourneyStore.clear();
   }
 });
+
+add_task(function get_urls_to_reopen() {
+  Assert.deepEqual(
+    JourneyManager.getUrlsToReopen({
+      memory: { id: "memory-1" },
+      content: {
+        previewTabs: [
+          { url: "https://a.example/", title: "A" },
+          { url: "https://b.example/", title: "B" },
+        ],
+      },
+    }),
+    ["https://a.example/", "https://b.example/"],
+    "Returns preview tab URLs in order"
+  );
+  for (const suggestion of [null, {}, { content: {} }]) {
+    Assert.deepEqual(
+      JourneyManager.getUrlsToReopen(suggestion),
+      [],
+      "Returns no URLs for incomplete suggestions"
+    );
+  }
+});
+
+add_task(async function test_dismissed_journeys_are_not_suggested() {
+  let memories = [];
+  try {
+    memories = await addJourneyTestMemories([makeMemory("Compare hotels")]);
+    const [memory] = memories;
+    for (const timed of [false, true]) {
+      await JourneyStore.clear();
+      await JourneyStore.addOrUpdateJourney({
+        memoryId: memory.id,
+        headline: "Compare hotels",
+        status: "Deciding between two hotels.",
+      });
+      const suggestions = await JourneyManager.suggestJourneysToResume();
+      Assert.deepEqual(
+        suggestions.map(suggestion => suggestion.memory.id),
+        [memory.id],
+        "The journey is suggested before dismissal"
+      );
+
+      if (timed) {
+        const until = Date.now() + 60 * 60_000;
+        Assert.ok(
+          await JourneyManager.dismissUntil(suggestions[0], until),
+          "Snoozing the suggested journey succeeds"
+        );
+      } else {
+        Assert.ok(
+          await JourneyManager.dismiss(suggestions[0]),
+          "Permanently dismissing the suggested journey succeeds"
+        );
+      }
+      await JourneyStore.testOnlyFlushAndResetCache();
+
+      const suggestionsAfterDismissal =
+        await JourneyManager.suggestJourneysToResume();
+      Assert.deepEqual(
+        suggestionsAfterDismissal,
+        [],
+        "The dismissed journey is no longer suggested"
+      );
+    }
+  } finally {
+    await JourneyStore.clear();
+    await cleanupJourneyTestMemories(memories);
+  }
+});
+
+add_task(async function dismiss_and_dismiss_until() {
+  try {
+    for (const memoryId of ["forever", "timed"]) {
+      await JourneyStore.addOrUpdateJourney({
+        memoryId,
+        headline: "Compare hotels",
+        status: "Compared two hotels.",
+      });
+    }
+
+    Assert.ok(
+      await JourneyManager.dismiss({ memory: { id: "forever" } }),
+      "Dismiss reports success"
+    );
+    Assert.ok(
+      await JourneyManager.dismissUntil({ memory: { id: "timed" } }, 5000),
+      "DismissUntil reports success"
+    );
+    Assert.ok(
+      !(await JourneyManager.dismiss({ memory: { id: "unknown" } })),
+      "Dismissing an unknown journey reports failure"
+    );
+    await Assert.rejects(
+      JourneyManager.dismiss(null),
+      () => true,
+      "Dismiss rejects a missing suggestion"
+    );
+    await Assert.rejects(
+      JourneyManager.dismissUntil({ memory: {} }, 5000),
+      /memoryId must be a nonblank string/,
+      "DismissUntil rejects a suggestion without a memory id"
+    );
+    await JourneyStore.testOnlyFlushAndResetCache();
+
+    const forever = await JourneyStore.get("forever");
+    Assert.strictEqual(forever.dismissed, true, "Dismiss persists");
+
+    const timed = await JourneyStore.get("timed");
+    Assert.strictEqual(timed.dismissed, false, "DismissUntil is not permanent");
+    Assert.strictEqual(timed.dismissed_until, 5000, "DismissUntil persists");
+    Assert.equal(
+      timed.headline,
+      "Compare hotels",
+      "Dismissal preserves journey text"
+    );
+  } finally {
+    await JourneyStore.clear();
+  }
+});
