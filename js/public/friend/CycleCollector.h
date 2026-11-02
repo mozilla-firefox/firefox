@@ -15,6 +15,12 @@
 
 namespace JS {
 
+using NoteWeakRefTargetCallback = void (*)(GCCellPtr ptr, void* data);
+
+extern JS_PUBLIC_API void NoteWeakRefTargets(JSRuntime* runtime,
+                                             NoteWeakRefTargetCallback callback,
+                                             void* data);
+
 using ShouldClearWeakRefTargetCallback = bool (*)(GCCellPtr ptr, void* data);
 
 extern JS_PUBLIC_API void MaybeClearWeakRefTargets(
