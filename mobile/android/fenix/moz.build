@@ -6,197 +6,159 @@ with Files("**"):
     BUG_COMPONENT = ("Firefox for Android", "General")
     SCHEDULES.exclusive = ["android", "fenix"]
 
-with Files("app/longfox/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tooling")
-
-with Files("app/src/*/java/org/mozilla/fenix/addons/**"):
-    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
-
-with Files("app/src/*/java/org/mozilla/fenix/bookmarks/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Bookmarks")
+with Files("app/src/*/java/org/mozilla/fenix/components/accounts/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
 
 with Files("app/src/*/java/org/mozilla/fenix/browser/applinks/**"):
     BUG_COMPONENT = ("Firefox for Android", "App Links")
 
-with Files("app/src/*/java/org/mozilla/fenix/browser/menu/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Menu")
+with Files(
+    "app/src/*/java/org/mozilla/fenix/settings/address/**",
+    "app/src/*/java/org/mozilla/fenix/settings/creditcards/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Autofill")
 
-with Files("app/src/*/java/org/mozilla/fenix/browser/relay/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("app/src/*/java/org/mozilla/fenix/browser/store/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/accounts/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Accounts and Sync")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/appstate/setup/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Onboarding")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/bookmarks/**"):
+with Files(
+    "app/src/*/java/org/mozilla/fenix/bookmarks/**",
+    "app/src/*/java/org/mozilla/fenix/components/bookmarks/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Bookmarks")
 
-with Files("app/src/*/java/org/mozilla/fenix/components/lens/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/listentopage/**"):
+with Files(
+    "app/src/*/java/org/mozilla/fenix/components/listentopage/**",
+    "app/src/*/java/org/mozilla/fenix/components/llm/**",
+    "app/src/*/java/org/mozilla/fenix/listentopage/**",
+    "app/src/*/java/org/mozilla/fenix/summarization/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
 
-with Files("app/src/*/java/org/mozilla/fenix/components/llm/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/menu/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Menu")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/metrics/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/share/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Share")
-
-with Files("app/src/*/java/org/mozilla/fenix/components/toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("app/src/*/java/org/mozilla/fenix/crashes/**"):
+with Files(
+    "app/src/*/java/org/mozilla/fenix/crashes/**",
+    "app/src/*/java/org/mozilla/fenix/startupCrash/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Crash Reporting")
-
-with Files("app/src/*/java/org/mozilla/fenix/debugsettings/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tooling")
-
-with Files("app/src/*/java/org/mozilla/fenix/distributions/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/downloads/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Downloads")
-
-with Files("app/src/*/java/org/mozilla/fenix/experiments/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/home/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Homepage")
-
-with Files("app/src/*/java/org/mozilla/fenix/home/pocket/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Stories")
-
-with Files("app/src/*/java/org/mozilla/fenix/home/setup/store/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Onboarding")
-
-with Files("app/src/*/java/org/mozilla/fenix/home/toolbar/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
-
-with Files("app/src/*/java/org/mozilla/fenix/home/topsites/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Top Sites")
-
-with Files("app/src/*/java/org/mozilla/fenix/iconpicker/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Settings")
-
-with Files("app/src/*/java/org/mozilla/fenix/ipprotection/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("app/src/*/java/org/mozilla/fenix/library/history/**"):
-    BUG_COMPONENT = ("Firefox for Android", "History")
-
-with Files("app/src/*/java/org/mozilla/fenix/listentopage/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("app/src/*/java/org/mozilla/fenix/messaging/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/microsurvey/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/nimbus/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/onboarding/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Onboarding")
-
-with Files("app/src/*/java/org/mozilla/fenix/pbmlock/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("app/src/*/java/org/mozilla/fenix/pdf/**"):
-    BUG_COMPONENT = ("GeckoView", "PDF Viewer")
-
-with Files("app/src/*/java/org/mozilla/fenix/perf/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Performance")
-
-with Files("app/src/*/java/org/mozilla/fenix/privacyreport/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/reviewprompt/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/search/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/address/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Autofill")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/biometric/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Logins")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/creditcards/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Autofill")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/downloads/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Downloads")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/emailmasks/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/ipprotection/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Privacy")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/labs/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/logins/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Logins")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/search/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
-
-with Files("app/src/*/java/org/mozilla/fenix/settings/settingssearch/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Settings")
-
-with Files("app/src/*/java/org/mozilla/fenix/share/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Share")
-
-with Files("app/src/*/java/org/mozilla/fenix/startupCrash/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Crash Reporting")
-
-with Files("app/src/*/java/org/mozilla/fenix/summarization/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Contextual AI")
-
-with Files("app/src/*/java/org/mozilla/fenix/tabgroups/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tabs")
-
-with Files("app/src/*/java/org/mozilla/fenix/tabstray/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tabs")
 
 with Files("app/src/*/java/org/mozilla/fenix/theme/**"):
     BUG_COMPONENT = ("Firefox for Android", "Design System and Theming")
 
-with Files("app/src/*/java/org/mozilla/fenix/trackingprotection/**"):
+with Files(
+    "app/src/*/java/org/mozilla/fenix/downloads/**",
+    "app/src/*/java/org/mozilla/fenix/settings/downloads/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Downloads")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/components/metrics/**",
+    "app/src/*/java/org/mozilla/fenix/distributions/**",
+    "app/src/*/java/org/mozilla/fenix/experiments/**",
+    "app/src/*/java/org/mozilla/fenix/messaging/**",
+    "app/src/*/java/org/mozilla/fenix/microsurvey/**",
+    "app/src/*/java/org/mozilla/fenix/nimbus/**",
+    "app/src/*/java/org/mozilla/fenix/privacyreport/**",
+    "app/src/*/java/org/mozilla/fenix/reviewprompt/**",
+    "app/src/*/java/org/mozilla/fenix/settings/labs/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Experimentation and Telemetry")
+
+with Files("app/src/*/java/org/mozilla/fenix/library/history/**"):
+    BUG_COMPONENT = ("Firefox for Android", "History")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/home/**",
+    "app/src/*/java/org/mozilla/fenix/wallpapers/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Homepage")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/settings/biometric/**",
+    "app/src/*/java/org/mozilla/fenix/settings/logins/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Logins")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/browser/menu/**",
+    "app/src/*/java/org/mozilla/fenix/components/menu/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Menu")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/components/appstate/setup/**",
+    "app/src/*/java/org/mozilla/fenix/home/setup/store/**",
+    "app/src/*/java/org/mozilla/fenix/onboarding/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Onboarding")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/perf/**",
+    "benchmark/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Performance")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/browser/relay/**",
+    "app/src/*/java/org/mozilla/fenix/ipprotection/**",
+    "app/src/*/java/org/mozilla/fenix/pbmlock/**",
+    "app/src/*/java/org/mozilla/fenix/settings/emailmasks/**",
+    "app/src/*/java/org/mozilla/fenix/settings/ipprotection/**",
+    "app/src/*/java/org/mozilla/fenix/trackingprotection/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Privacy")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/components/lens/**",
+    "app/src/*/java/org/mozilla/fenix/search/**",
+    "app/src/*/java/org/mozilla/fenix/settings/search/**",
+    "app/src/*/java/org/mozilla/fenix/widget/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Search")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/iconpicker/**",
+    "app/src/*/java/org/mozilla/fenix/settings/settingssearch/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Settings")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/components/share/**",
+    "app/src/*/java/org/mozilla/fenix/share/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Share")
+
+with Files("app/src/*/java/org/mozilla/fenix/home/pocket/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Stories")
+
+with Files(
+    "app/src/*/java/org/mozilla/fenix/browser/store/**",
+    "app/src/*/java/org/mozilla/fenix/components/toolbar/**",
+    "app/src/*/java/org/mozilla/fenix/home/toolbar/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Toolbar")
+
+with Files(
+    "app/longfox/**",
+    "app/src/*/java/org/mozilla/fenix/debugsettings/**",
+):
+    BUG_COMPONENT = ("Firefox for Android", "Tooling")
+
+with Files("app/src/*/java/org/mozilla/fenix/home/topsites/**"):
+    BUG_COMPONENT = ("Firefox for Android", "Top Sites")
 
 with Files("app/src/*/java/org/mozilla/fenix/translations/**"):
     BUG_COMPONENT = ("Firefox for Android", "Translations")
 
-with Files("app/src/*/java/org/mozilla/fenix/wallpapers/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Homepage")
+with Files("app/src/*/java/org/mozilla/fenix/addons/**"):
+    BUG_COMPONENT = ("Firefox for Android", "WebExtensions")
 
-with Files("app/src/*/java/org/mozilla/fenix/widget/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Search")
+with Files("app/src/*/java/org/mozilla/fenix/pdf/**"):
+    BUG_COMPONENT = ("GeckoView", "PDF Viewer")
 
+# Later blocks take precedence: the androidTest tests go to "UI Tests", except
+# the tabs ones which stay in "Tabs".
 with Files("app/src/androidTest/**"):
     BUG_COMPONENT = ("Firefox for Android", "UI Tests")
 
-with Files("app/src/androidTest/java/org/mozilla/fenix/tabgroups/**"):
+with Files(
+    "app/src/*/java/org/mozilla/fenix/tabgroups/**",
+    "app/src/*/java/org/mozilla/fenix/tabstray/**",
+):
     BUG_COMPONENT = ("Firefox for Android", "Tabs")
-
-with Files("app/src/androidTest/java/org/mozilla/fenix/tabstray/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Tabs")
-
-with Files("benchmark/**"):
-    BUG_COMPONENT = ("Firefox for Android", "Performance")
