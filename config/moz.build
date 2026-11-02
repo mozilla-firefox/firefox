@@ -13,10 +13,6 @@ DIST_INSTALL = False
 # headers, so that we can use it to set up the wrapped system headers.
 NoVisibilityFlags()
 
-CONFIGURE_SUBST_FILES += [
-    "tests/src-simple/Makefile",
-]
-
 if CONFIG["HOST_OS_ARCH"] != "WINNT":
     HOST_SOURCES += [
         "nsinstall.c",

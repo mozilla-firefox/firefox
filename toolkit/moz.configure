@@ -1154,18 +1154,6 @@ option(
 set_config("MOZ_PACKAGER_MINIFY_PDFJS", True, when="--enable-minify-pdfjs")
 
 
-@depends(host, build_project)
-def jar_maker_format(host, build_project):
-    # Multilocales for mobile/android use the same mergedirs for all locales,
-    # so we can't use symlinks for those builds.
-    if host.os == "WINNT" or build_project == "mobile/android":
-        return "flat"
-    return "symlink"
-
-
-set_config("MOZ_JAR_MAKER_FILE_FORMAT", jar_maker_format)
-
-
 @depends(toolkit)
 def omnijar_name(toolkit):
     # Fennec's static resources live in the assets/ folder of the

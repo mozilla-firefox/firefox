@@ -2673,16 +2673,6 @@ VARIABLES = {
         the $(DIST_SUBDIR) directory of the otherwise default value is used.
         """,
     ),
-    "USE_EXTENSION_MANIFEST": (
-        bool,
-        bool,
-        """Controls the name of the manifest for JAR files.
-
-        By default, the name of the manifest is ${JAR_MANIFEST}.manifest.
-        Setting this variable to `True` changes the name of the manifest to
-        chrome.manifest.
-        """,
-    ),
     "GYP_DIRS": (
         StrictOrderingOnAppendListWithFlagsFactory({
             "variables": dict,

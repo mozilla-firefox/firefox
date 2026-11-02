@@ -1,5 +1,3 @@
-set_config("MOZ_JAR_MAKER_FILE_FORMAT", "jar")
-
 include("newtab/webext-glue/locales.configure")
 
 # The newtab extension generates its JS/CSS bundles at build time (see

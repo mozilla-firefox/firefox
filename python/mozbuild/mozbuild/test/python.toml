@@ -3,8 +3,6 @@ subsuite = "mozbuild"
 
 ["action/test_assemble_macos_bundle.py"]
 
-["action/test_buildlist.py"]
-
 ["action/test_fat_aar.py"]
 
 ["action/test_generate_archive_symbols.py"]
@@ -134,8 +132,6 @@ subsuite = "mozbuild"
 ["test_expression.py"]
 
 ["test_generate_sbom.py"]
-
-["test_jarmaker.py"]
 
 ["test_legacy_test.py"]
 

@@ -749,43 +749,6 @@ endif
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
 
-###############################################################################
-# Bunch of things that extend the 'export' rule (in order):
-###############################################################################
-
-ifneq ($(XPI_NAME),)
-$(FINAL_TARGET):
-	$(NSINSTALL) -D $@
-
-export:: $(FINAL_TARGET)
-endif
-
-################################################################################
-# CHROME PACKAGING
-
-chrome::
-	$(MAKE) realchrome
-	$(LOOP_OVER_DIRS)
-
-$(FINAL_TARGET)/chrome: $(call mkdir_deps,$(FINAL_TARGET)/chrome)
-
-ifneq (,$(JAR_MANIFEST))
-ifndef NO_DIST_INSTALL
-
-misc realchrome:: $(FINAL_TARGET)/chrome
-	$(call py_action,jar_maker $(subst $(topsrcdir)/,,$(JAR_MANIFEST)),\
-	  $(QUIET) -d $(FINAL_TARGET) \
-	  $(MAKE_JARS_FLAGS) $(DEFINES) $(ACDEFINES) \
-	  $(JAR_MANIFEST))
-
-ifdef AB_CD
-.PHONY: l10n
-l10n: misc ;
-endif
-endif
-
-endif
-
 #############################################################################
 # MDDEPDIR is the subdirectory where all the dependency files are placed.
 #   This uses a make rule (instead of a macro) to support parallel
@@ -1005,7 +968,7 @@ endif
 # Fake targets.  Always run these rules, even if a file/directory with that
 # name already exists.
 #
-.PHONY: all alltags boot chrome realchrome export install libs makefiles run_apprunner tools $(DIRS) FORCE
+.PHONY: all alltags boot export install libs makefiles run_apprunner tools $(DIRS) FORCE
 
 # Used as a dependency to force targets to rebuild
 FORCE:

@@ -1363,7 +1363,6 @@ class TreeMetadataEmitter(LoggingMixin):
             "RCFILE",
             "RCINCLUDE",
             "WIN32_EXE_LDFLAGS",
-            "USE_EXTENSION_MANIFEST",
             "WASM_LIBS",
         ]
         for v in varlist:

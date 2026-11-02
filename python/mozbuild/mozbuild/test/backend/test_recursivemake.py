@@ -1642,21 +1642,18 @@ class TestRecursiveMakeBackend(BackendTester):
         """Test that FINAL_TARGET is written to backend.mk correctly."""
         env = self._consume("final_target", RecursiveMakeBackend)
 
-        final_target_rule = "FINAL_TARGET = $(if $(XPI_NAME),$(DIST)/xpi-stage/$(XPI_NAME),$(DIST)/bin)$(DIST_SUBDIR:%=/%)"  # noqa
         expected = dict()
         expected[env.topobjdir] = []
         expected[mozpath.join(env.topobjdir, "both")] = [
-            "XPI_NAME = mycrazyxpi",
             "DIST_SUBDIR = asubdir",
-            final_target_rule,
+            "FINAL_TARGET = $(DEPTH)/dist/xpi-stage/mycrazyxpi/asubdir",
         ]
         expected[mozpath.join(env.topobjdir, "dist-subdir")] = [
             "DIST_SUBDIR = asubdir",
-            final_target_rule,
+            "FINAL_TARGET = $(DEPTH)/dist/bin/asubdir",
         ]
         expected[mozpath.join(env.topobjdir, "xpi-name")] = [
-            "XPI_NAME = mycrazyxpi",
-            final_target_rule,
+            "FINAL_TARGET = $(DEPTH)/dist/xpi-stage/mycrazyxpi",
         ]
         expected[mozpath.join(env.topobjdir, "final-target")] = [
             "FINAL_TARGET = $(DEPTH)/random-final-target"
@@ -2063,26 +2060,11 @@ class TestRecursiveMakeBackend(BackendTester):
         # after cargo has already looked for the archive in dist/lib.
         self.assertIn("STATIC_LIB_TARGET := target", backend)
 
-    def _backend_mk(self, env):
-        with open(os.path.join(env.topobjdir, "backend.mk")) as fh:
-            return [line.rstrip() for line in fh.readlines()]
-
-    def test_jar_manifests(self):
-        """An application tree jar manifest is expanded before any backend."""
-        env = self._consume("jar-manifests", RecursiveMakeBackend)
-
-        self.assertNotIn(
-            f"JAR_MANIFEST := {env.topsrcdir}/jar.mn", self._backend_mk(env)
-        )
-
     def test_jar_manifests_non_application(self):
-        env, reg = self._dist_bin_registry(
+        _, reg = self._dist_bin_registry(
             "jar-manifests-non-application", manifest="_tests"
         )
 
-        self.assertNotIn(
-            f"JAR_MANIFEST := {env.topsrcdir}/jar.mn", self._backend_mk(env)
-        )
         self.assertIn(
             "jar-manifests/chrome/test/content/test/thing.js",
             [dest for dest, _ in reg],

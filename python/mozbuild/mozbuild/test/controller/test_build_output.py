@@ -80,7 +80,6 @@ SAMPLE_LOG_BUILD_OUTPUT_TEMPLATES = [
     (STDOUT, logging.WARNING,     '  6010: install function "ExitProcess" not referenced - zeroing code (0-1) out'),
     (STDOUT, logging.WARNING,     '  6010: install function "createProfileCleanup" not referenced - zeroing code (798-855) out'),
     (STDOUT, logging.WARNING,     '  6012: label "OnError" not used'),
-    (STDOUT, logging.INFO,        "Packaging mozscreenshots@mozilla.org.xpi..."),
     (STDERR, logging.WARNING,     "592 compiler warnings present."),
     (STDERR, logging.WARNING,     "(suppressed 588 warnings in third-party code)"),
     (STDERR, logging.WARNING,     "(suppressed 2 warnings in ipc/chromium/src/base)"),

@@ -11,8 +11,6 @@ DIRS += [
 
 XPI_NAME = "mochijar"
 
-USE_EXTENSION_MANIFEST = True
-
 FINAL_TARGET_FILES += [
     "api.js",
     "manifest.json",

@@ -1,4 +1,0 @@
-content test chrome/test/one
-locale ab-X-stuff chrome/test/three
-overlay chrome://one/file.xml chrome://two/otherfile.xml
-skin test classic chrome/test/one

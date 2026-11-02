@@ -1136,22 +1136,6 @@ class XPIArchive(ContextDerived):
         return mozpath.join(destdir, self.name + ".xpi")
 
 
-class JARManifest(ContextDerived):
-    """Describes an individual JAR manifest file and how to process it.
-
-    This class isn't very useful for optimizing backends yet because we don't
-    capture defines. We can't capture defines safely until all of them are
-    defined in moz.build and not Makefile.in files.
-    """
-
-    __slots__ = ("path",)
-
-    def __init__(self, context, path):
-        ContextDerived.__init__(self, context)
-
-        self.path = path
-
-
 class BaseSources(ContextDerived):
     """Base class for files to be compiled during the build."""
 

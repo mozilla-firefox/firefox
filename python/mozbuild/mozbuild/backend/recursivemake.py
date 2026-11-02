@@ -56,7 +56,6 @@ from ..frontend.data import (
     HostSimpleProgram,
     HostSources,
     InstallationTarget,
-    JARManifest,
     LegacyRunTests,
     Linkable,
     LocalInclude,
@@ -94,8 +93,6 @@ _MOZBUILD_ONLY_VARIABLES = set(frontend.context.VARIABLES.keys()) - {
     # These remaining variables are excluded from our blacklist. As the variables here
     # are migrated from Makefiles in the future, they should be removed from this
     # "override" list.
-    "XPI_NAME",
-    "USE_EXTENSION_MANIFEST",
     "CFLAGS",
     "CXXFLAGS",
 }
@@ -606,10 +603,6 @@ class RecursiveMakeBackend(MakeBackend):
 
         elif isinstance(obj, MacOSBundle):
             self._process_macos_bundle(obj, backend_file)
-
-        elif isinstance(obj, JARManifest):
-            self._no_skip["misc"].add(backend_file.relobjdir)
-            backend_file.write("JAR_MANIFEST := %s\n" % obj.path.full_path)
 
         elif isinstance(obj, RustProgram):
             self._process_rust_program(obj, backend_file)
@@ -1343,20 +1336,9 @@ class RecursiveMakeBackend(MakeBackend):
             backend_file.write_once("%s += %s\n" % (which, defines))
 
     def _process_installation_target(self, obj, backend_file):
-        # A few makefiles need to be able to override the following rules via
-        # make XPI_NAME=blah commands, so we default to the lazy evaluation as
-        # much as possible here to avoid breaking things.
-        if obj.xpiname:
-            backend_file.write("XPI_NAME = %s\n" % (obj.xpiname))
         if obj.subdir:
             backend_file.write("DIST_SUBDIR = %s\n" % (obj.subdir))
-        if obj.target and not obj.is_custom():
-            backend_file.write("FINAL_TARGET = $(DEPTH)/%s\n" % (obj.target))
-        else:
-            backend_file.write(
-                "FINAL_TARGET = $(if $(XPI_NAME),$(DIST)/xpi-stage/$(XPI_NAME),"
-                "$(DIST)/bin)$(DIST_SUBDIR:%=/%)\n"
-            )
+        backend_file.write(f"FINAL_TARGET = $(DEPTH)/{obj.target}\n")
 
         if not obj.enabled:
             backend_file.write("NO_DIST_INSTALL := 1\n")

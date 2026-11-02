@@ -29,17 +29,3 @@ endif
 include $(topsrcdir)/config/rules.mk
 
 FORCE:
-
-ifndef JS_STANDALONE
-check-preqs += check-jar-mn
-endif
-
-check:: $(check-preqs)
-
-check-jar-mn::
-	$(MAKE) -C tests/src-simple check-jar
-	$(MAKE) -C tests/src-simple check-flat
-	$(MAKE) -C tests/src-simple check-flat USE_EXTENSION_MANIFEST=1
-ifneq (,$(filter-out WINNT,$(OS_ARCH)))
-	$(MAKE) -C tests/src-simple check-symlink
-endif

@@ -102,7 +102,6 @@ class TestBuild(unittest.TestCase):
             build._config_environment = config
             overrides = [
                 "install_manifest_depends=",
-                "MOZ_JAR_MAKER_FILE_FORMAT=flat",
                 "TEST_MOZBUILD=1",
             ]
             with self.line_handler() as handle_make_line:
@@ -131,7 +130,6 @@ class TestBuild(unittest.TestCase):
             build._config_environment = config
             overrides = [
                 "install_manifest_depends=",
-                "MOZ_JAR_MAKER_FILE_FORMAT=flat",
                 "TEST_MOZBUILD=1",
             ]
             with self.line_handler() as handle_make_line:
