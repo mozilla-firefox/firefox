@@ -1202,20 +1202,10 @@ nsresult nsHttpChannel::ContinueOnBeforeConnect(bool aShouldUpgrade,
     } else {
       mCaps |= NS_HTTP_DISALLOW_SPDY;
     }
-    // Upgrades cannot use HTTP/3 -- extended CONNECT can't be issued before the
-    // peer's SETTINGS are known. A MASQUE proxy is the exception: its outer hop
-    // *is* HTTP/3 (CONNECT-UDP) and the upgrade rides the inner tunnel, so
-    // disallowing h3 leaves only a TCP attempt against a QUIC-only port, which
-    // can never connect. Only Happy Eyeballs dispatches the upgrade onto that
-    // tunnel, so the exception is tied to the same pref. Keep Http3Allowed() in
-    // sync.
-    bool masqueProxy =
-        mProxyInfo &&
-        static_cast<nsProxyInfo*>(mProxyInfo.get())->IsHttp3Proxy() &&
-        StaticPrefs::network_http_happy_eyeballs_proxy_enabled();
-    if (!masqueProxy) {
-      mCaps |= NS_HTTP_DISALLOW_HTTP3;
-    }
+    // Upgrades cannot use HTTP/3.
+    // TODO: When mUpgradeProtocolCallback is not null, we should allow HTTP/3
+    // for connect-udp.
+    mCaps |= NS_HTTP_DISALLOW_HTTP3;
     // NS_HTTP_STICKY_CONNECTION breaks the (non-Happy-Eyeballs) HTTPS RR
     // fallback mechanism, which restarts the transaction to fall back. Happy
     // Eyeballs instead races endpoints (honoring the HTTPS RR port, hints and
@@ -8304,8 +8294,7 @@ nsresult nsHttpChannel::BeginConnect() {
       return false;
     }
 
-    if (mProxyInfo &&
-        !StaticPrefs::network_http_happy_eyeballs_proxy_enabled()) {
+    if (mProxyInfo) {
       return false;
     }
 
@@ -8315,8 +8304,10 @@ nsresult nsHttpChannel::BeginConnect() {
       return false;
     }
 
-    // Connect-only needs the extended-CONNECT tunnel path, which Happy
-    // Eyeballs does not establish yet.
+    // Connect-only requests need the extended-CONNECT tunnel path, which is
+    // untested with Happy Eyeballs. These only reach us via a proxy today
+    // (already excluded above), but guard explicitly against a future
+    // non-proxied consumer.
     if (mCaps & NS_HTTP_CONNECT_ONLY) {
       return false;
     }

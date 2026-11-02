@@ -35,29 +35,6 @@ impl From<IpPreference> for happy_eyeballs::IpPreference {
     }
 }
 
-/// How the origin host is turned into connection attempts. Mirrors
-/// `happy_eyeballs::ResolutionMode` across the FFI boundary.
-///
-/// `ByName` is what a SOCKS proxy with `TRANSPARENT_PROXY_RESOLVES_HOST`
-/// (`network.proxy.socks_remote_dns`) needs: the proxy resolves the origin, so
-/// the client must not emit a single DNS query for it.
-#[repr(C)]
-pub enum ResolutionMode {
-    ByIp = 0,
-    ByName = 1,
-    ByNameWithHttpsRr = 2,
-}
-
-impl From<ResolutionMode> for happy_eyeballs::ResolutionMode {
-    fn from(v: ResolutionMode) -> Self {
-        match v {
-            ResolutionMode::ByIp => Self::ByIp,
-            ResolutionMode::ByName => Self::ByName,
-            ResolutionMode::ByNameWithHttpsRr => Self::ByNameWithHttpsRr,
-        }
-    }
-}
-
 /// Which HTTP versions Firefox is willing to use, derived from prefs such as
 /// `network.http.http2.enabled` and `network.http.http3.enable`. Mirrors
 /// `happy_eyeballs::HttpVersions` across the FFI boundary.
@@ -87,7 +64,6 @@ pub unsafe extern "C" fn happy_eyeballs_create(
     alt_svc: *const ThinVec<AltSvc>,
     ip_preference: IpPreference,
     http_versions: HttpVersions,
-    resolution: ResolutionMode,
 ) -> nsresult {
     *result = ptr::null_mut();
 
@@ -148,7 +124,6 @@ pub unsafe extern "C" fn happy_eyeballs_create(
         resolution_delay: Duration::from_millis(resolution_delay_ms as u64),
         connection_attempt_delay: Duration::from_millis(connection_attempt_delay_ms as u64),
         connection_attempt_delay_multiplier,
-        resolution: resolution.into(),
         ..Default::default()
     };
 
@@ -520,33 +495,24 @@ impl HappyEyeballs {
                 endpoint,
                 is_ech_retry,
             }) => {
-                self.profiler.connection_attempt_started(id, &endpoint);
-                self.metrics.connection_attempt_started(id);
-                if let Some(ref ech) = endpoint.ech_config {
-                    ech_config.extend_from_slice(ech.as_ref());
-                }
-                match &endpoint.target {
-                    happy_eyeballs::EndpointTarget::Address(address) => {
-                        *ret_event = Output::AttemptConnection {
-                            id: id.into(),
-                            http_version: endpoint.http_version.into(),
-                            addr: address.ip().into(),
-                            port: address.port(),
-                            is_ech_retry,
-                        };
+                if let Some(address) = endpoint.address() {
+                    self.profiler.connection_attempt_started(id, &endpoint);
+                    self.metrics.connection_attempt_started(id);
+                    if let Some(ref ech) = endpoint.ech_config {
+                        ech_config.extend_from_slice(ech.as_ref());
                     }
-                    happy_eyeballs::EndpointTarget::Name { host, port } => {
-                        // No client-side address: the host travels in the
-                        // dns_hostname out-param and resolution happens
-                        // downstream (a SOCKS proxy).
-                        dns_hostname.assign(host);
-                        *ret_event = Output::AttemptConnectionByName {
-                            id: id.into(),
-                            http_version: endpoint.http_version.into(),
-                            port: *port,
-                            is_ech_retry,
-                        };
-                    }
+                    *ret_event = Output::AttemptConnection {
+                        id: id.into(),
+                        http_version: endpoint.http_version.into(),
+                        addr: address.ip().into(),
+                        port: address.port(),
+                        is_ech_retry,
+                    };
+                } else {
+                    // Only the by-name resolution modes lack an address, and we
+                    // use the default `ResolutionMode::ByIp`.
+                    debug_assert!(false, "connection attempt without an address");
+                    *ret_event = Output::None;
                 }
             }
             Some(happy_eyeballs::Output::CancelConnection { id }) => {
@@ -724,16 +690,6 @@ pub enum Output {
         id: u64,
         http_version: ConnectionAttemptHttpVersions,
         addr: IpAddr,
-        port: u16,
-        is_ech_retry: bool,
-    },
-    /// A by-name connection attempt (`EndpointTarget::Name`): there is no
-    /// client-side address because resolution is left to a downstream party
-    /// (e.g. a SOCKS proxy). The host is returned in the `dns_hostname`
-    /// out-param of `happy_eyeballs_process_output`.
-    AttemptConnectionByName {
-        id: u64,
-        http_version: ConnectionAttemptHttpVersions,
         port: u16,
         is_ech_retry: bool,
     },

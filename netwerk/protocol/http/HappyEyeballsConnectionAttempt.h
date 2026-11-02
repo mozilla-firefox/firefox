@@ -257,32 +257,12 @@ class HappyEyeballsConnectionAttempt final : public ConnectionAttempt,
   already_AddRefed<HappyEyeballsTransaction> CreateAttemptTransaction(
       nsHttpConnectionInfo* aInfo, uint64_t aEstablisherId);
 
-  // Re-home an established outer proxy connection onto the wildcard proxy entry
-  // (located via this attempt's original proxy conn info) and point aConn at
-  // the wildcard conn info. No-op unless UsingHttpsProxy().
-  void MakeConnEntryWildCard(HttpConnectionBase* aConn);
-
-  // Handle the outer connection to a CONNECT/MASQUE proxy (H2 and H3): convert
-  // it to a wildcard proxy connection and re-inject the pending transaction to
-  // tunnel through it. Returns true if handled; false for a non-proxy
-  // connection (caller falls through to normal dispatch).
-  // Deliver the statuses the race recorded while a speculative transaction was
-  // in place, so the real transaction gets its DNS and connect timings.
-  void ReplayTransportStatuses(nsAHttpTransaction* aTransaction);
-
-  bool MaybeDispatchOuterProxyConn(HttpConnectionBase* aConn,
-                                   ConnectionEntry* aEntry);
-
   // TLS handshake saw a CertificateRequest: pause polling (no new attempts)
   // until the prompt resolves. Selected clears the pause.
   void OnClientAuthCertificateRequested(uint64_t aEstablisherId);
   void OnClientAuthCertificateSelected(uint64_t aEstablisherId);
 
-  nsresult FixupProxyDnsError(nsresult aStatus) const;
-
-  // aTarget is either a raced address or a name the proxy resolves; see
-  // EndpointTarget.
-  nsresult EstablishTCPConnection(const EndpointTarget& aTarget, uint16_t aPort,
+  nsresult EstablishTCPConnection(NetAddr aAddr, uint16_t aPort,
                                   nsTArray<uint8_t>&& aEchConfig, uint64_t aId,
                                   bool aIsEchRetry);
   // Handles both TCP and UDP results; IsUDP() distinguishes where it matters.
@@ -361,10 +341,6 @@ class HappyEyeballsConnectionAttempt final : public ConnectionAttempt,
 
   // Shared 0-RTT coordinator. Created lazily (first time we hand out a
   // per-attempt HappyEyeballsTransaction) and passed to every racer.
-  // The outer connection targets the proxy host rather than the origin (a
-  // non-SOCKS proxy), so mHost is the proxy's and a failure to resolve it is
-  // reported as NS_ERROR_UNKNOWN_PROXY_HOST.
-  bool mProxyNotTransparent = false;
   RefPtr<ZeroRttHandle> mZeroRttHandle;
 
   // True once the real transaction has been handed to a winning carrier. After

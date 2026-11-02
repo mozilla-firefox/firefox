@@ -37,8 +37,7 @@ class HappyEyeballsConnMgrDelegate {
                                        HttpConnectionBase* aConn) = 0;
   virtual void AddTransaction(nsHttpTransaction* aTrans, int32_t aPriority) = 0;
   virtual void ReportSpdyConnection(HttpConnectionBase* aConn, bool aUsingSpdy,
-                                    bool aDisallowHttp3,
-                                    ConnectionEntry* aEntry) = 0;
+                                    bool aDisallowHttp3) = 0;
   virtual void ReportHttp3Connection(HttpConnectionBase* aConn,
                                      ConnectionEntry* aEntry) = 0;
   virtual void ReclaimConnection(HttpConnectionBase* aConn) = 0;

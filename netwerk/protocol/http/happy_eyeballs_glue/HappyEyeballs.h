@@ -23,9 +23,7 @@ class HappyEyeballs final {
                        const nsACString& aOrigin, uint16_t aPort,
                        const nsTArray<happy_eyeballs::AltSvc>* aAltSvc,
                        happy_eyeballs::IpPreference aPref,
-                       happy_eyeballs::HttpVersions aHttpVersions,
-                       happy_eyeballs::ResolutionMode aResolution =
-                           happy_eyeballs::ResolutionMode::ByIp);
+                       happy_eyeballs::HttpVersions aHttpVersions);
 
   void AddRef() { happy_eyeballs::happy_eyeballs_addref(this); }
   void Release() { happy_eyeballs::happy_eyeballs_release(this); }

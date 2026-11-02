@@ -365,13 +365,7 @@ void nsHttpConnection::StartSpdy(nsITLSSocketControl* sslControl,
   nsresult rv = NS_OK;
   bool spdyProxy = mConnInfo->UsingHttpsProxy() && mConnInfo->UsingConnect() &&
                    !mHasTLSTransportLayer;
-  // For Happy Eyeballs, leave the wildcard conversion and transaction handling
-  // to HappyEyeballsConnectionAttempt (see MaybeDispatchOuterProxyConn).
-  bool isHE = mTransaction && mTransaction->IsHappyEyeballsTransaction();
-  // TODO: this is the legacy H2 outer-proxy path. Remove it (and the !isHE
-  // split below) once Happy Eyeballs establishes the outer proxy connection by
-  // default (network.http.happy_eyeballs_proxy_enabled).
-  if (spdyProxy && !isHE) {
+  if (spdyProxy) {
     RefPtr<nsHttpConnectionInfo> wildCardProxyCi;
     rv = mConnInfo->CreateWildCard(getter_AddRefs(wildCardProxyCi));
     MOZ_ASSERT(NS_SUCCEEDED(rv));
@@ -382,17 +376,7 @@ void nsHttpConnection::StartSpdy(nsITLSSocketControl* sslControl,
   }
 
   if (!mDid0RTTSpdy && mTransaction) {
-    if (spdyProxy && isHE) {
-      // Don't reset (NET_RESET would look like a connection failure to HE) or
-      // add the speculative transaction to the session (asserts without a
-      // CONNECT response); hand the connection to the spdy session and succeed.
-      mSpdySession->SetConnection(mTransaction->Connection());
-      mTransaction->SetConnection(nullptr);
-      mTransaction->DoNotRemoveAltSvc();
-      mTransaction->InvokeCallback();
-      mTransaction->Close(NS_OK);
-      mTransaction = nullptr;
-    } else if (spdyProxy) {
+    if (spdyProxy) {
       if (NS_FAILED(status)) {
         // proxy upgrade needs Restartable for transaction reset
         // note that using NonSticky here won't work because it breaks
@@ -679,16 +663,7 @@ nsresult nsHttpConnection::Activate(nsAHttpTransaction* trans, uint32_t caps,
   nsresult rv = NS_OK;
   // If this is an extended connection then we have already performed the proxy
   // connect and don't need to do it a second time.
-  //
-  // Happy Eyeballs drives the outer connection with a speculative transaction
-  // that carries no request data, and the tunnel belongs to the real
-  // transaction: it is the one that needs OnProxyConnectComplete and the inner
-  // TLS layer. A CONNECT issued by the speculative transaction would consume
-  // the tunnel and leave the real transaction with a connection it can't use.
-  // Staying in UNINITIALIZED means the real transaction's own Activate sets the
-  // tunnel up, exactly as on the legacy DnsAndConnectSocket path.
-  if (!mExtendedCONNECTHttp2Session &&
-      !mTransaction->IsHappyEyeballsTransaction()) {
+  if (!mExtendedCONNECTHttp2Session) {
     rv = CheckTunnelIsNeeded(mTransaction);
   }
   if (NS_FAILED(rv)) goto failed_activation;
@@ -2725,16 +2700,6 @@ void nsHttpConnection::HandshakeDoneInternal() {
 }
 
 void nsHttpConnection::SetTunnelSetupDone() {
-  // Happy Eyeballs' speculative transaction skips tunnel setup (see Activate),
-  // so an HE-driven outer proxy connection reaches here with no proxy-connect
-  // stream to retire. The end state is the same either way: an H2 outer hop
-  // tunnels per stream via CreateTunnelStream, not through this one.
-  if (mState == HttpConnectionState::UNINITIALIZED) {
-    MOZ_ASSERT(!mProxyConnectStream);
-    ChangeState(HttpConnectionState::REQUEST);
-    return;
-  }
-
   MOZ_ASSERT(mProxyConnectStream);
   MOZ_ASSERT(mState == HttpConnectionState::SETTING_UP_TUNNEL);
 

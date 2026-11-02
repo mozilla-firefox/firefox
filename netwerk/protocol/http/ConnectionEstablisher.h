@@ -32,13 +32,6 @@ struct DnsMetadata {
   void Fill(nsIDNSAddrRecord* aRecord);
 };
 
-// What a ConnectionEstablisher connects to. Mirrors
-// happy_eyeballs::EndpointTarget.
-struct ByNameTarget {
-  nsCString mHost;
-};
-using EndpointTarget = Variant<NetAddr, ByNameTarget>;
-
 class ConnectionEstablisher : public nsITransportEventSink,
                               public nsIInterfaceRequestor {
  public:
@@ -53,9 +46,8 @@ class ConnectionEstablisher : public nsITransportEventSink,
       std::function<void(nsITransport*, nsresult, int64_t)>;
   using LnaCheckCallback = std::function<nsresult(nsISocketTransport*)>;
 
-  ConnectionEstablisher(nsHttpConnectionInfo* aConnInfo,
-                        const EndpointTarget& aTarget, uint32_t aCaps,
-                        bool aAllow1918);
+  ConnectionEstablisher(nsHttpConnectionInfo* aConnInfo, const NetAddr& aAddr,
+                        uint32_t aCaps, bool aAllow1918);
 
   virtual bool Start(DoneCallback&& aCallback) = 0;
   void SetSecurityCallbacks(nsIInterfaceRequestor* aCallbacks) {
@@ -78,12 +70,8 @@ class ConnectionEstablisher : public nsITransportEventSink,
     mTransaction = aTrans;
   }
   HappyEyeballsTransaction* Transaction() const { return mTransaction; }
-  // The address being raced, or the all-zero address for a by-name target.
-  // Only meaningful for logging and for the by-IP path; use mTarget to branch.
-  NetAddr Addr() const {
-    return mTarget.is<NetAddr>() ? mTarget.as<NetAddr>() : NetAddr{};
-  }
-  bool IsByName() const { return mTarget.is<ByNameTarget>(); }
+  const NetAddr& Addr() const { return mAddr; }
+  already_AddRefed<nsIDNSAddrRecord> AddrRecord() const;
   void ClearResultConnection();
   HttpConnectionBase* ResultConn() const { return mResultConn; }
   virtual bool IsUDP() const { return false; }
@@ -109,7 +97,8 @@ class ConnectionEstablisher : public nsITransportEventSink,
   void MaybeSetConnectingDone();
 
   RefPtr<nsHttpConnectionInfo> mConnInfo;
-  EndpointTarget mTarget;
+  NetAddr mAddr;
+  nsCOMPtr<nsIDNSAddrRecord> mAddrRecord;
   uint32_t mCaps = 0;
   // When false, a local (RFC1918) peer is refused; Claim() flips it true once a
   // real transaction takes over.
@@ -141,9 +130,8 @@ class TCPConnectionEstablisher : public ConnectionEstablisher,
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIOUTPUTSTREAMCALLBACK
 
-  TCPConnectionEstablisher(nsHttpConnectionInfo* aConnInfo,
-                           const EndpointTarget& aTarget, uint32_t aCaps,
-                           bool aSpeculative, bool aAllow1918);
+  TCPConnectionEstablisher(nsHttpConnectionInfo* aConnInfo, NetAddr aAddr,
+                           uint32_t aCaps, bool aSpeculative, bool aAllow1918);
 
   // Starts creating the socket transport + streams, and arms AsyncWait.
   // If it fails synchronously, the callback is invoked before returning.
@@ -170,9 +158,8 @@ class UDPConnectionEstablisher : public ConnectionEstablisher {
   NS_INLINE_DECL_REFCOUNTING_INHERITED(UDPConnectionEstablisher,
                                        ConnectionEstablisher)
 
-  UDPConnectionEstablisher(nsHttpConnectionInfo* aConnInfo,
-                           const EndpointTarget& aTarget, uint32_t aCaps,
-                           bool aSpeculative, bool aAllow1918);
+  UDPConnectionEstablisher(nsHttpConnectionInfo* aConnInfo, NetAddr aAddr,
+                           uint32_t aCaps, bool aSpeculative, bool aAllow1918);
 
   bool Start(DoneCallback&& aCallback) override;
   void ResetSpeculativeFlags() override {}
@@ -196,7 +183,7 @@ class ConnectionEstablisherFactory {
 
   virtual already_AddRefed<ConnectionEstablisher> Create(
       ConnectionEstablisherType aType, nsHttpConnectionInfo* aConnInfo,
-      const EndpointTarget& aTarget, uint32_t aCaps, bool aSpeculative,
+      const NetAddr& aAddr, uint32_t aCaps, bool aSpeculative,
       bool aAllow1918) = 0;
 
  protected:
@@ -208,15 +195,15 @@ class DefaultConnectionEstablisherFactory final
  public:
   already_AddRefed<ConnectionEstablisher> Create(
       ConnectionEstablisherType aType, nsHttpConnectionInfo* aConnInfo,
-      const EndpointTarget& aTarget, uint32_t aCaps, bool aSpeculative,
+      const NetAddr& aAddr, uint32_t aCaps, bool aSpeculative,
       bool aAllow1918) override {
     switch (aType) {
       case ConnectionEstablisherType::TCP:
         return MakeAndAddRef<TCPConnectionEstablisher>(
-            aConnInfo, aTarget, aCaps, aSpeculative, aAllow1918);
+            aConnInfo, aAddr, aCaps, aSpeculative, aAllow1918);
       case ConnectionEstablisherType::UDP:
         return MakeAndAddRef<UDPConnectionEstablisher>(
-            aConnInfo, aTarget, aCaps, aSpeculative, aAllow1918);
+            aConnInfo, aAddr, aCaps, aSpeculative, aAllow1918);
     }
     MOZ_ASSERT_UNREACHABLE("unknown ConnectionEstablisherType");
     return nullptr;
