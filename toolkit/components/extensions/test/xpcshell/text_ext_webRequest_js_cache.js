@@ -1,8 +1,92 @@
 "use strict";
 
-const server = createHttpServer({ hosts: ["example.com"] });
+let TEST_URL;
+let TEST_URL_PATTERN;
+let GOOD_JS_URL;
 
-server.registerDirectory("/data/", do_get_file("data"));
+add_setup(async function () {
+  const { NodeHTTPSServer } = ChromeUtils.importESModule(
+    "resource://testing-common/NodeServer.sys.mjs"
+  );
+
+  const server = new NodeHTTPSServer();
+  await server.start();
+
+  registerCleanupFunction(async function () {
+    await server.stop();
+  });
+
+  await server.registerPathHandler("/", (req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.setHeader("Cache-Control", "max-age=10000");
+    res.writeHead(200);
+    const body = `
+<!DOCTYPE HTML>
+
+<html>
+<head>
+<meta charset="utf-8">
+<script type="application/javascript" src="file_script_good.js"></script>
+<script type="application/javascript" src="file_script_bad.js"></script>
+</head>
+<body>
+
+<div id="test">Sample text</div>
+
+</body>
+</html>
+`;
+    res.end(body);
+  });
+
+  await server.registerPathHandler("/file_script_good.js", (req, res) => {
+    res.setHeader("Content-Type", "text/javascript");
+    res.setHeader("Cache-Control", "max-age=10000");
+    res.writeHead(200);
+    const body = `
+"use strict";
+
+window.success = window.success ? window.success + 1 : 1;
+window.addEventListener(
+  "load",
+  () => {
+    let el = document.createElement("div");
+    el.setAttribute("id", "good");
+    document.body.appendChild(el);
+  },
+  { once: true }
+);
+`;
+    res.end(body);
+  });
+
+  await server.registerPathHandler("/file_script_bad.js", (req, res) => {
+    res.setHeader("Content-Type", "text/javascript");
+    res.setHeader("Cache-Control", "max-age=10000");
+    res.writeHead(200);
+    const body = `
+"use strict";
+
+window.failure = true;
+window.addEventListener(
+  "load",
+  () => {
+    let el = document.createElement("div");
+    el.setAttribute("id", "bad");
+    document.body.appendChild(el);
+  },
+  { once: true }
+);
+`;
+    res.end(body);
+  });
+
+  TEST_URL = server.origin() + "/";
+
+  // Replace port to work around bug 1468162.
+  TEST_URL_PATTERN = TEST_URL.replace(/:[0-9]+\//, "/") + "*";
+  GOOD_JS_URL = TEST_URL.replace(/:[0-9]+\//, "/") + "file_script_good.js";
+});
 
 // The JavaScript disk cache stores the serialized stencil into the necko's
 // alternative data stream.  The request that uses the disk cache goes through
@@ -83,12 +167,14 @@ async function test_filterResponseData({
 
   let extension = ExtensionTestUtils.loadExtension({
     background() {
+      const GOOD_JS_URL = browser.runtime.getManifest().description;
+
       browser.webRequest.onBeforeRequest.addListener(
         () => {
           browser.test.sendMessage("onBeforeRequest");
         },
         {
-          urls: ["http://example.com/data/file_script_good.js"],
+          urls: [GOOD_JS_URL],
         },
         ["blocking"]
       );
@@ -98,7 +184,7 @@ async function test_filterResponseData({
           browser.test.sendMessage("onHeadersReceived");
         },
         {
-          urls: ["http://example.com/data/file_script_good.js"],
+          urls: [GOOD_JS_URL],
         },
         ["blocking"]
       );
@@ -108,19 +194,18 @@ async function test_filterResponseData({
     },
 
     manifest: {
-      permissions: ["webRequest", "webRequestBlocking", "http://example.com/*"],
+      permissions: ["webRequest", "webRequestBlocking", TEST_URL_PATTERN],
+      description: GOOD_JS_URL,
     },
   });
 
-  let contentPage = await ExtensionTestUtils.loadContentPage(
-    "http://example.com/data/file_script.html"
-  );
+  let contentPage = await ExtensionTestUtils.loadContentPage(TEST_URL);
 
   await extension.startup();
 
   // Use the same ContentPage, so that the in-memory cache is shared across
   // those two loads.
-  await contentPage.loadURL("http://example.com/data/file_script.html");
+  await contentPage.loadURL(TEST_URL);
 
   if (listenersShouldBeCalled) {
     await Promise.all([
