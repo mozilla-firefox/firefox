@@ -488,7 +488,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "90" },
         "firefox_esr": { "version_added": "91" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "Only applicable to Windows."
       },
       "x-restart-required": true,
       "description": "Enable or disable automatic application update in the background, when the application is not running.",
@@ -910,6 +911,11 @@
             },
             "ClipboardCopy": {
               "type": "object",
+              "x-compatibility": {
+                "firefox": { "version_added": "158" },
+                "firefox_esr": { "version_added": false },
+                "firefox_enterprise": { "version_added": "158" }
+              },
               "properties": {
                 "Enabled": {
                   "type": "boolean"
@@ -921,6 +927,11 @@
             },
             "Download": {
               "type": "object",
+              "x-compatibility": {
+                "firefox": { "version_added": "141" },
+                "firefox_esr": { "version_added": "140.2.0" },
+                "firefox_enterprise": { "version_added": "149" }
+              },
               "properties": {
                 "Enabled": {
                   "type": "boolean"
@@ -982,6 +993,9 @@
       "properties": {
         "Allow": {
           "type": "array",
+          "x-compatibility": {
+            "notes": "From Firefox 154, using `Allow` to exempt sites from clearing on shutdown is deprecated. Use `SanitizeOnShutdown` `Exceptions` instead."
+          },
           "items": { "$ref": "#/definitions/origin" }
         },
 
@@ -1047,7 +1061,8 @@
           "x-compatibility": {
             "firefox": { "version_added": "95" },
             "firefox_esr": { "version_added": "91.4.0" },
-            "firefox_enterprise": { "version_added": "149" }
+            "firefox_enterprise": { "version_added": "149" },
+            "notes": "`partition-foreign` was added in Firefox 153 / Firefox ESR 153, replacing `reject-tracker-and-partition-foreign`, which is deprecated."
           },
           "oneOf": [
             {
@@ -1090,6 +1105,12 @@
 
         "BehaviorPrivateBrowsing": {
           "type": "string",
+          "x-compatibility": {
+            "firefox": { "version_added": "95" },
+            "firefox_esr": { "version_added": "91.4.0" },
+            "firefox_enterprise": { "version_added": "149" },
+            "notes": "`partition-foreign` was added in Firefox 153 / Firefox ESR 153, replacing `reject-tracker-and-partition-foreign`, which is deprecated."
+          },
           "oneOf": [
             {
               "const": "accept",
@@ -1630,7 +1651,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "60" },
         "firefox_esr": { "version_added": "60" },
-        "firefox_enterprise": { "version_added": false }
+        "firefox_enterprise": { "version_added": false },
+        "notes": "From Firefox 83 / Firefox ESR 78.5, local storage of telemetry data is also turned off."
       },
       "x-restart-required": true,
       "description": "Prevent the upload of telemetry data.",
@@ -1644,7 +1666,10 @@
         "firefox": { "version_added": "110" },
         "firefox_esr": { "version_added": "115" },
         "firefox_enterprise": { "version_added": "149" },
-        "notes": "Only applicable to Windows."
+        "notes": [
+          "Only applicable to Windows.",
+          "Set through Group Policy, Firefox does not load the dynamic blocklist. Set in `policies.json`, it only removes the option to block modules in `about:third-party`, and modules blocked earlier stay blocked."
+        ]
       },
       "x-restart-required": true,
       "description": "Prevent the user from using Third-party Module Information (about:third-party) to block third-party modules injected into the Firefox process.",
@@ -1697,7 +1722,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "60" },
         "firefox_esr": { "version_added": "60" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "Only applicable to Windows and some Linux desktops."
       },
       "x-restart-required": true,
       "description": "Set the state of the menubar.",
@@ -2032,7 +2058,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "69" },
         "firefox_esr": { "version_added": "68.1.0" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "From Firefox 85 / Firefox ESR 78.7, a theme installed by this policy becomes the active theme."
       },
       "x-restart-required": false,
       "description": "Manage all aspects of extensions.",
@@ -2400,16 +2427,27 @@
       ],
       "properties": {
         "WebSuggestions": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "notes": "From Firefox 146 / Firefox ESR 153, `false` turns off Firefox Suggest completely. Earlier versions turn off only non-sponsored suggestions."
+          }
         },
         "SponsoredSuggestions": {
           "type": "boolean"
         },
         "ImproveSuggest": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "notes": "Deprecated in Firefox 146. Use `OnlineEnabled` instead."
+          }
         },
         "OnlineEnabled": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "146" },
+            "firefox_esr": { "version_added": "153" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "Locked": {
           "type": "boolean"
@@ -2441,7 +2479,12 @@
           "type": "boolean"
         },
         "SmartWindow": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "150" },
+            "firefox_esr": { "version_added": "153" },
+            "firefox_enterprise": { "version_added": "150" }
+          }
         },
         "LinkPreviews": {
           "type": "boolean"
@@ -2747,7 +2790,11 @@
       "x-compatibility": {
         "firefox": { "version_added": "70" },
         "firefox_esr": { "version_added": "68.2.0" },
-        "firefox_enterprise": { "version_added": false }
+        "firefox_enterprise": { "version_added": false },
+        "notes": [
+          "Only applicable to Windows.",
+          "Only takes effect when set through Group Policy. Firefox ignores it in `policies.json`."
+        ]
       },
       "x-restart-required": true,
       "description": "Disable the feature enforcing a separate profile for each installation.",
@@ -3025,7 +3072,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "60" },
         "firefox_esr": { "version_added": "60" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "Multiple URLs separated by `|` are accepted from Firefox 83 / Firefox ESR 78.5."
       },
       "x-restart-required": true,
       "description": "Override the first run page.",
@@ -3051,7 +3099,11 @@
       "x-compatibility": {
         "firefox": { "version_added": "70" },
         "firefox_esr": { "version_added": "68.2.0" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": [
+          "Blocking `about:logins` was added in Firefox 70 / Firefox ESR 78.",
+          "From Firefox 153 / Firefox ESR 153, `false` also turns off the passwords sidebar."
+        ]
       },
       "x-restart-required": true,
       "description": "Enable or disable saving passwords to the password manager. If disabled, Passwords (about:logins) is also blocked.",
@@ -3734,7 +3786,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "64" },
         "firefox_esr": { "version_added": "60.4.0" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "A string value is accepted from Firefox 68 / Firefox ESR 68, so an empty value (`\"\"`) can be set. Earlier versions accept only an array."
       },
       "x-restart-required": true,
       "description": "Set the list of requested locales for the application in order of preference.",
@@ -3750,7 +3803,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "60" },
         "firefox_esr": { "version_added": "60" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "The object form was added in Firefox 68 / Firefox ESR 68. Earlier versions accept only `true` / `false`."
       },
       "x-restart-required": true,
       "description": "Clear specified data on shutdown, such as History, Cookies, Logins, Cache, Form History, Site Preferences and Offline Website Data.",
@@ -3777,7 +3831,10 @@
           "type": "boolean"
         },
         "FormData": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "notes": "From Firefox 136 / Firefox ESR 140, form data is cleared separately from `History`. In earlier versions, `History` also clears form data."
+          }
         },
         "History": {
           "type": "boolean"
@@ -4333,7 +4390,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "91" },
         "firefox_esr": { "version_added": "91" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "Only applicable to Windows."
       },
       "x-restart-required": true,
       "description": "Allow Windows single sign-on for Microsoft, work, and school accounts.",
