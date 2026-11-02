@@ -408,12 +408,6 @@ notes = "Backwards-compatible patching crate for toml 0.9."
 [policy.unicode-bidi]
 audit-as-crates-io = true
 
-[policy.utf16_iter]
-audit-as-crates-io = true
-
-[policy.utf8_iter]
-audit-as-crates-io = true
-
 [policy.viaduct]
 audit-as-crates-io = false
 notes = "This is a first-party crate, maintained by the appservices team, which is entirely unrelated to the crates.io package of the same name."

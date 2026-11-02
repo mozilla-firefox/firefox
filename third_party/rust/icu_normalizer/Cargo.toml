@@ -172,16 +172,18 @@ version = "1.10.0"
 default-features = false
 
 [dependencies.utf16_iter]
-version = "1.0.2"
+version = "1.1.0"
 optional = true
 default-features = false
-features = ["icu_collections"]
 
 [dependencies.utf8_iter]
-version = "1.0.2"
+version = "1.1.0"
 optional = true
 default-features = false
-features = ["icu_collections"]
+
+[dependencies.utf_types]
+version = "1.0.0"
+default-features = false
 
 [dependencies.write16]
 version = "1.0.0"
