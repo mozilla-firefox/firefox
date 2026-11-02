@@ -8,7 +8,6 @@
 #include "Cookie.h"
 #include "CookieCommons.h"
 #include "ThirdPartyCookieBlockingExceptions.h"
-#include "mozilla/Maybe.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/MozPromise.h"
 #include "nsICookieManager.h"
@@ -97,7 +96,7 @@ class CookieService final : public nsICookieService,
    */
   nsresult Remove(const nsACString& aHost, const OriginAttributes& aAttrs,
                   const nsACString& aName, const nsACString& aPath,
-                  bool aFromHttp, const Maybe<nsID>& aOperationID = Nothing());
+                  bool aFromHttp, const nsID* aOperationID);
 
   nsICookieValidation::ValidationError SetCookiesFromIPC(
       const nsACString& aBaseDomain, const OriginAttributes& aAttrs,
@@ -154,7 +153,7 @@ class CookieService final : public nsICookieService,
                        bool aIsHttpOnly, bool aIsSession, int64_t aExpiry,
                        OriginAttributes* aOriginAttributes, int32_t aSameSite,
                        nsICookie::schemeType aSchemeMap, bool aIsPartitioned,
-                       bool aFromHttp, const Maybe<nsID>& aOperationID,
+                       bool aFromHttp, const nsID* aOperationID,
                        nsICookieValidation** aValidation);
 };
 

@@ -2528,13 +2528,13 @@ void CookiePersistentStorage::RecordValidationTelemetry() {
     AddCookie(nullptr, data.mBaseDomain, data.mOriginAttributes, data.mCookie,
               data.mCookie->CreationTimeInUSec(), nullptr, VoidCString(), true,
               !data.mOriginAttributes.mPartitionKey.IsEmpty(), nullptr,
-              Nothing());
+              nullptr);
   }
 
   for (CookieToAddOrRemove& data : listToRemove) {
     RemoveCookie(data.mBaseDomain, data.mOriginAttributes, data.mCookie->Host(),
                  data.mCookie->Name(), data.mCookie->Path(),
-                 /* is http: */ true, Nothing());
+                 /* is http: */ true, nullptr);
   }
 
   // Only mark this epoch as complete if no fixes were needed. If we did fix

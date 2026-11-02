@@ -389,7 +389,7 @@ void CookieStorage::RemoveCookie(const nsACString& aBaseDomain,
                                  const nsACString& aHost,
                                  const nsACString& aName,
                                  const nsACString& aPath, bool aFromHttp,
-                                 const Maybe<nsID>& aOperationID) {
+                                 const nsID* aOperationID) {
   CookieListIter matchIter{};
   RefPtr<Cookie> cookie;
   if (FindCookieIncludingExpired(aBaseDomain, aOriginAttributes, aHost, aName,
@@ -407,7 +407,7 @@ void CookieStorage::RemoveCookie(const nsACString& aBaseDomain,
   if (cookie) {
     // Everything's done. Notify observers.
     NotifyChanged(cookie, nsICookieNotification::COOKIE_DELETED, aBaseDomain,
-                  false, nullptr, false, aOperationID);
+                  aOperationID);
   }
 }
 
@@ -564,7 +564,7 @@ void CookieStorage::NotifyChanged(nsISupports* aSubject,
                                   bool aIsThirdParty,
                                   dom::BrowsingContext* aBrowsingContext,
                                   bool aOldCookieIsSession,
-                                  const Maybe<nsID>& aOperationID) {
+                                  const nsID* aOperationID) {
   nsCOMPtr<nsIObserverService> os = services::GetObserverService();
   if (!os) {
     return;
@@ -713,7 +713,7 @@ void CookieStorage::AddCookie(CookieParser* aCookieParser,
                               nsIURI* aHostURI, const nsACString& aCookieHeader,
                               bool aFromHttp, bool aIsThirdParty,
                               dom::BrowsingContext* aBrowsingContext,
-                              const Maybe<nsID>& aOperationID) {
+                              const nsID* aOperationID) {
   if (CookieCommons::IsFirstPartyPartitionedCookieWithoutCHIPS(
           aCookie, aBaseDomain, aOriginAttributes)) {
     COOKIE_LOGFAILURE(SET_COOKIE, aHostURI, aCookieHeader,

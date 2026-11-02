@@ -32,6 +32,8 @@ class CookieStoreNotificationWatcher final : public nsIObserver,
   CookieStoreNotificationWatcher() = default;
   ~CookieStoreNotificationWatcher() = default;
 
+  void MaybeResolveOperations(const nsID* aOperationID);
+
   struct PendingOperation {
     MoveOnlyFunction<void()> mCallback;
     nsID mOperationID;

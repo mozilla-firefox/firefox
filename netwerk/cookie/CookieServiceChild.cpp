@@ -542,8 +542,9 @@ void CookieServiceChild::NotifyObservers(Cookie* aCookie,
     return;
   }
 
-  nsCOMPtr<nsICookieNotification> notification = new CookieNotification(
-      notificationAction, aCookie, baseDomain, false, nullptr, 0, aOperationID);
+  nsCOMPtr<nsICookieNotification> notification =
+      new CookieNotification(notificationAction, aCookie, baseDomain, false,
+                             nullptr, 0, aOperationID.ptrOr(nullptr));
 
   os->NotifyObservers(
       notification,

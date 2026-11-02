@@ -5,7 +5,6 @@
 #ifndef mozilla_net_CookieNotification_h
 #define mozilla_net_CookieNotification_h
 
-#include "mozilla/Maybe.h"
 #include "nsCOMPtr.h"
 #include "nsIArray.h"
 #include "nsICookie.h"
@@ -26,14 +25,17 @@ class CookieNotification final : public nsICookieNotification {
                               bool aIsThirdParty = false,
                               nsIArray* aBatchDeletedCookies = nullptr,
                               uint64_t aBrowsingContextId = 0,
-                              const Maybe<nsID>& aOperationID = Nothing())
+                              const nsID* aOperationID = nullptr)
       : mAction(aAction),
         mCookie(aCookie),
         mBaseDomain(aBaseDomain),
         mIsThirdParty(aIsThirdParty),
         mBatchDeletedCookies(aBatchDeletedCookies),
-        mBrowsingContextId(aBrowsingContextId),
-        mOperationID(aOperationID) {}
+        mBrowsingContextId(aBrowsingContextId) {
+    if (aOperationID) {
+      mOperationID = aOperationID->Clone();
+    }
+  };
 
  private:
   nsICookieNotification::Action mAction;
@@ -42,9 +44,13 @@ class CookieNotification final : public nsICookieNotification {
   bool mIsThirdParty;
   nsCOMPtr<nsIArray> mBatchDeletedCookies;
   uint64_t mBrowsingContextId = 0;
-  Maybe<nsID> mOperationID;
+  nsID* mOperationID = nullptr;
 
-  ~CookieNotification() = default;
+  ~CookieNotification() {
+    if (mOperationID) {
+      free(mOperationID);
+    }
+  }
 };
 
 }  // namespace mozilla::net
