@@ -1947,6 +1947,15 @@ bool IsGeckoSearchingForClientAuthCertificates(uint64_t uniqueSlotID) {
 }
 
 AutoSearchingForCertificates::AutoSearchingForCertificates() {
+  // Cache remote cryptoki objects before acquiring the lock, so that it's not
+  // held while doing that work (which may involve waiting on a dispatch to the
+  // main thread).
+  // Also, doing this work first ensures that the results are already there
+  // when a call to IsGeckoSearchingForCertificates eventually returns true.
+#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+  CacheRemoteCryptokiObjects(SearchingFor::CACertificates);
+#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
+
   auto certificateSearchState = sCertificateSearchState.Lock();
   // If some other thread is already searching, there's no point in updating
   // any state here.
@@ -1954,9 +1963,6 @@ AutoSearchingForCertificates::AutoSearchingForCertificates() {
     return;
   }
   certificateSearchState.ref() = Some(SearchState{PR_GetCurrentThread()});
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
-  CacheRemoteCryptokiObjects(SearchingFor::CACertificates);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
 }
 
 AutoSearchingForCertificates::~AutoSearchingForCertificates() {
@@ -1969,6 +1975,11 @@ AutoSearchingForCertificates::~AutoSearchingForCertificates() {
 
 AutoSearchingForClientAuthCertificates::
     AutoSearchingForClientAuthCertificates() {
+  // See the comment for the corresponding CacheRemoteCryptokiObjects call in
+  // AutoSearchingForCertificates::AutoSearchingForCertificates().
+#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
+  CacheRemoteCryptokiObjects(SearchingFor::ClientCertificates);
+#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
   auto clientCertificateSearchState = sClientCertificateSearchState.Lock();
   // If some other thread is already searching, there's no point in updating
   // any state here.
@@ -1976,9 +1987,6 @@ AutoSearchingForClientAuthCertificates::
     return;
   }
   clientCertificateSearchState.ref() = Some(SearchState{PR_GetCurrentThread()});
-#if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
-  CacheRemoteCryptokiObjects(SearchingFor::ClientCertificates);
-#endif  // NIGHTLY_BUILD && !MOZ_NO_SMART_CARDS
 }
 
 AutoSearchingForClientAuthCertificates::
