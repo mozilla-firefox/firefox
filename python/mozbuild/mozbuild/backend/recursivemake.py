@@ -1775,6 +1775,7 @@ class RecursiveMakeBackend(MakeBackend):
                 {tier}:: {track}
                 {track}: {self._built_install_manifest_path(name)}
                 \t{self._built_install_command(name)}
+                \t@$(TOUCH) $@
                 """)
         )
         backend_file.write(f"{track}: {self._pretty_path(f, backend_file)}\n")
