@@ -34,10 +34,89 @@ const GLOBALCACHE_TABLE_PREF = "urlclassifier.globalCacheTable";
 const GLOBALCACHE_V5_TABLE_NAME = "test-globalcache-proto";
 const GLOBALCACHE_HOST = "globalcache-test.example.com/";
 
+const SKIP_URLCLASSIFIER_PREF =
+  "privacy.trackingprotection.urlclassifier.disable_for_channel_classifier";
+
 let timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
 
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  ContentClassifierTestUtils:
+    "resource://testing-common/ContentClassifierTestUtils.sys.mjs",
+});
+
+// The content classifier only stands in for url-classifier's tracking
+// protection features once it is the engine actually consulted for channel
+// classification. While url-classifier still runs, its own tables are the ones
+// under test and equivalent content classifier lists would have no effect.
+function contentClassifierInUse() {
+  return Services.prefs.getBoolPref(SKIP_URLCLASSIFIER_PREF, false);
+}
+
+// Whether lists were handed to ContentClassifierTestUtils, so that
+// cleanupTestTrackers() takes them down even if the content classifier is no
+// longer in use by then.
+let gContentClassifierListsPublished = false;
+
+// url-classifier prefs that tests seed tracker hosts through, keyed by the
+// content classifier engine covering the same feature.
+const HOST_PREFS_BY_ENGINE = {
+  test_block: ["urlclassifier.trackingTable.testEntries"],
+  test_annotate: ["urlclassifier.trackingAnnotationTable.testEntries"],
+  cryptominers: [
+    "urlclassifier.features.cryptomining.blacklistHosts",
+    "urlclassifier.features.cryptomining.annotate.blacklistHosts",
+  ],
+  fingerprinters: [
+    "urlclassifier.features.fingerprinting.blacklistHosts",
+    "urlclassifier.features.fingerprinting.annotate.blacklistHosts",
+  ],
+  "social-trackers": [
+    "urlclassifier.features.socialtracking.blacklistHosts",
+    "urlclassifier.features.socialtracking.annotate.blacklistHosts",
+  ],
+  "email-trackers": ["urlclassifier.features.emailtracking.blocklistHosts"],
+  "harmful-addon": ["urlclassifier.features.harmfuladdon.blocklistHosts"],
+};
+
+// Hosts url-classifier's tracking tables carry as built-in test entries (see
+// LookupCacheV2::LoadMozEntries), which the content classifier lacks.
+const BUILT_IN_TRACKER_HOSTS = ["trackertest.org", "itisatracker.org"];
+
+// url-classifier skips the URLs matching these prefs, for tracking protection
+// and tracking annotation respectively. Only host-only patterns like
+// "*://host/*" or "*://*.host/*" are understood.
+const TRACKING_SKIP_URLS_PREF = "urlclassifier.trackingSkipURLs";
+const TRACKING_ANNOTATION_SKIP_URLS_PREF =
+  "urlclassifier.trackingAnnotationSkipURLs";
+
+function skipHostsFromPref(pref) {
+  // url-classifier ignores its skip lists while webcompat is disabled.
+  if (
+    !Services.prefs.getBoolPref("privacy.antitracking.enableWebcompat", true)
+  ) {
+    return [];
+  }
+  let hosts = new Set();
+  for (let pattern of Services.prefs.getStringPref(pref, "").split(",")) {
+    let match = /^\*:\/\/(?:\*\.)?([^/*]+)\/\*$/.exec(pattern.trim());
+    if (match) {
+      hosts.add(match[1]);
+    }
+  }
+  return Array.from(hosts);
+}
+
+function setContentClassifierSkipHosts() {
+  lazy.ContentClassifierTestUtils.setSkipHosts(
+    skipHostsFromPref(TRACKING_SKIP_URLS_PREF),
+    skipHostsFromPref(TRACKING_ANNOTATION_SKIP_URLS_PREF)
+  );
+}
+
 export var UrlClassifierTestUtils = {
-  addTestTrackers() {
+  async addTestTrackers() {
     // Add some URLs to the tracking databases
     let annotationURL1 = "tracking.example.org/"; // only for annotations
     let annotationURL2 = "itisatracker.org/";
@@ -253,10 +332,61 @@ export var UrlClassifierTestUtils = {
       );
     };
 
-    return doOneUpdate();
+    await doOneUpdate();
+
+    if (contentClassifierInUse()) {
+      gContentClassifierListsPublished = true;
+      setContentClassifierSkipHosts();
+      await lazy.ContentClassifierTestUtils.addTestTrackers();
+    }
   },
 
-  cleanupTestTrackers() {
+  /**
+   * Publish the hosts currently set in the url-classifier host prefs (see
+   * HOST_PREFS_BY_ENGINE) as content classifier lists, so that a test seeding
+   * trackers through those prefs keeps working once the content classifier is
+   * the channel classifier. Call it after setting the prefs; it is a no-op
+   * while url-classifier is the channel classifier. cleanupTestTrackers()
+   * drops the published lists again.
+   */
+  async addTestHostsFromPrefs() {
+    if (!contentClassifierInUse()) {
+      return;
+    }
+    gContentClassifierListsPublished = true;
+    setContentClassifierSkipHosts();
+    let hostsByEngine = {};
+    for (let [engine, prefs] of Object.entries(HOST_PREFS_BY_ENGINE)) {
+      let hosts = prefs
+        .flatMap(pref => Services.prefs.getStringPref(pref, "").split(","))
+        .map(host => host.trim())
+        .filter(host => host);
+      if (hosts.length) {
+        hostsByEngine[engine] = hosts;
+      }
+    }
+    await lazy.ContentClassifierTestUtils.addTestHosts(hostsByEngine);
+  },
+
+  /**
+   * Give the content classifier the tracker hosts url-classifier classifies
+   * out of the box, for tests that rely on them without seeding anything.
+   * A no-op while url-classifier is the channel classifier.
+   * cleanupTestTrackers() drops them again.
+   */
+  async addBuiltInTestTrackers() {
+    if (!contentClassifierInUse()) {
+      return;
+    }
+    gContentClassifierListsPublished = true;
+    setContentClassifierSkipHosts();
+    await lazy.ContentClassifierTestUtils.addTestHosts({
+      test_block: BUILT_IN_TRACKER_HOSTS,
+      test_annotate: BUILT_IN_TRACKER_HOSTS,
+    });
+  },
+
+  async cleanupTestTrackers() {
     Services.prefs.clearUserPref(ANNOTATION_TABLE_PREF);
     Services.prefs.clearUserPref(SOCIAL_ANNOTATION_TABLE_PREF);
     Services.prefs.clearUserPref(CONSENTMANAGER_ANNOTATION_TABLE_PREF);
@@ -266,6 +396,11 @@ export var UrlClassifierTestUtils = {
     Services.prefs.clearUserPref(SOCIAL_TRACKING_TABLE_PREF);
     Services.prefs.clearUserPref(EMAIL_TRACKING_TABLE_PREF);
     Services.prefs.clearUserPref(ENTITYLIST_TABLE_PREF);
+
+    if (gContentClassifierListsPublished) {
+      gContentClassifierListsPublished = false;
+      await lazy.ContentClassifierTestUtils.cleanupTestTrackers();
+    }
   },
 
   /**

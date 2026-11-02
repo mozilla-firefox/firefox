@@ -33,6 +33,10 @@ EXTRA_JS_MODULES += [
     "ContentClassifierRemoteSettingsClient.sys.mjs",
 ]
 
+TESTING_JS_MODULES += [
+    "test/ContentClassifierTestUtils.sys.mjs",
+]
+
 XPCOM_MANIFESTS += [
     "components.conf",
 ]
