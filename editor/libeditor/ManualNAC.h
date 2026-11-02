@@ -60,7 +60,8 @@ class ManualNACPtr final {
     if (!mPtr) {
       return;
     }
-    RemoveContentFromNACArray(std::move(mPtr));
+    RefPtr ptr = std::move(mPtr);
+    RemoveContentFromNACArray(ptr);
   }
 
   static bool IsManualNAC(nsIContent* aAnonContent) {
@@ -74,13 +75,12 @@ class ManualNACPtr final {
 
   template <typename StrongNodePtr>
   MOZ_CAN_RUN_SCRIPT static void RemoveContentFromNACArray(
-      StrongNodePtr&& aAnonymousContent) {
+      StrongNodePtr& aAnonymousContent) {
     static_assert(std::is_same_v<StrongNodePtr, RefPtr<dom::Element>> ||
                   std::is_same_v<StrongNodePtr, nsCOMPtr<nsIContent>>);
     // aAnonymousContent may be a class member. Let's move the ownership to
     // the local strong pointer.
-    StrongNodePtr anonymousContent =
-        std::forward<StrongNodePtr>(aAnonymousContent);
+    StrongNodePtr anonymousContent = std::move(aAnonymousContent);
     MOZ_ASSERT(!aAnonymousContent);
     nsIContent* parentContent = anonymousContent->GetParent();
     if (!parentContent) {
