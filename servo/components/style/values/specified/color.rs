@@ -123,7 +123,7 @@ impl ColorMix {
                 match missing {
                     0 => None,
                     m if m == items.len() => Some(Percentage::new(1.0 / items.len() as f32)),
-                    m => Some(Percentage::new((1.0 - sum_specified) / m as f32)),
+                    m => Some(Percentage::new((1.0 - sum_specified).max(0.0) / m as f32)),
                 }
             };
 

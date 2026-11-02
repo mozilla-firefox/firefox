@@ -151,7 +151,7 @@ impl<Color, Percentage> ColorMix<Color, Percentage> {
             }
         }
         Some(if omitted > 0 {
-            (1.0 - specified_sum) / omitted as f32
+            (1.0 - specified_sum).max(0.0) / omitted as f32
         } else {
             0.0
         })
