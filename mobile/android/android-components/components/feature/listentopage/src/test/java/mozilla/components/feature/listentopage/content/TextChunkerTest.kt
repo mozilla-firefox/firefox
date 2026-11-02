@@ -208,11 +208,73 @@ class TextChunkerTest {
     }
 
     @Test
-    fun `test that the whitespace between two sentences is read out as a single space`() {
+    fun `test that the whitespace between two sentences on one line is read out as a single space`() {
+        val text = "First sentence.     Second sentence.\t Third sentence."
+
+        assertEquals(
+            listOf("First sentence. Second sentence. Third sentence."),
+            chunker.chunk(text, 100, languageTag = "en"),
+        )
+    }
+
+    @Test
+    fun `test that the whitespace between two lines is read out as a single line break`() {
         val text = "First paragraph.\n\n     Second paragraph.\n"
 
-        assertEquals(listOf("First paragraph. Second paragraph."), chunker.chunk(text, 40, languageTag = "en"))
+        assertEquals(listOf("First paragraph.\nSecond paragraph."), chunker.chunk(text, 40, languageTag = "en"))
         assertEquals(listOf("First paragraph.", "Second paragraph."), chunker.chunk(text, 20, languageTag = "en"))
+    }
+
+    @Test
+    fun `test that a line without a sentence terminator is kept apart from the next one`() {
+        val text = "A heading\nThe first sentence. The second sentence.\r\nA list item\u2028Another list item"
+
+        assertEquals(
+            listOf("A heading\nThe first sentence. The second sentence.\nA list item\nAnother list item"),
+            chunker.chunk(text, 200, languageTag = "en"),
+        )
+    }
+
+    @Test
+    fun `test that a line break at the start of the text is dropped`() {
+        assertEquals(listOf("A heading\nA sentence."), chunker.chunk("\n\nA heading\nA sentence.", 100, "en"))
+    }
+
+    @Test
+    fun `test that a blank line holding other whitespace is read out as a single line break`() {
+        val text = "First paragraph.\n   \t    \n  Second paragraph."
+
+        assertEquals(listOf("First paragraph.\nSecond paragraph."), chunker.chunk(text, 100, languageTag = "en"))
+    }
+
+    @Test
+    fun `test that a paragraph separator is read out as a line break`() {
+        assertEquals(listOf("A heading\nA sentence."), chunker.chunk("A heading A sentence.", 100, "en"))
+    }
+
+    @Test
+    fun `test that a next line character is read out as a line break`() {
+        assertEquals(listOf("A heading\nA sentence."), chunker.chunk("A heading\u0085A sentence.", 100, "en"))
+    }
+
+    @Test
+    fun `test that the parts of a sentence longer than the limit share a chunk with nothing`() {
+        val sentence = (1..15).joinToString(" ") { "word$it" } + "."
+        val text = "A heading\n$sentence\nThe end."
+
+        val chunks = chunker.chunk(text, maxInputLength = 50, languageTag = "en")
+
+        assertEquals("A heading", chunks.first())
+        assertEquals("The end.", chunks.last())
+        assertEquals(sentence, chunks.subList(1, chunks.size - 1).joinToString(" "))
+    }
+
+    @Test
+    fun `test that a line break counts towards the limit`() {
+        val text = "A heading\nA sentence."
+
+        assertEquals(listOf("A heading\nA sentence."), chunker.chunk(text, 21, languageTag = "en"))
+        assertEquals(listOf("A heading", "A sentence."), chunker.chunk(text, 20, languageTag = "en"))
     }
 
     @Test

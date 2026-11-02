@@ -55,7 +55,7 @@ internal class AndroidTextChunker : TextChunker {
 
         val locale = localeFor(languageTag)
 
-        return partitionIntoChunks(sentences(text, locale), maxInputLength, locale)
+        return sentences(text, locale).flatMap { it.toSegments(maxInputLength, locale) }.packInto(maxInputLength)
     }
 
     override fun firstSentenceEnd(text: String, languageTag: String): Int {
@@ -63,7 +63,7 @@ internal class AndroidTextChunker : TextChunker {
         boundaries.setText(text)
 
         var end = boundaries.next()
-        while (end != BreakIterator.DONE && text.substring(0, end).isBlank()) {
+        while (end != BreakIterator.DONE && text.substring(0, end).all(::isSpace)) {
             end = boundaries.next()
         }
 
@@ -71,56 +71,73 @@ internal class AndroidTextChunker : TextChunker {
     }
 
     /**
-     * Fills a chunk with [sentences] until the next one would not fit, then starts the next chunk on it.
+     * The sentences of [text], excluding any "sentences" that contain only whitespace.
      *
-     * The whitespace the article had around a sentence is dropped, and sentences sharing a chunk are put back together
-     * with a single [SEPARATOR].
+     * A sentence that follows a line break is separated from the one before it by a single [LINE_SEPARATOR], so that
+     * the engine pauses there. We associate the separator with the beginning of a sentence to allow the parts of an
+     * oversized sentence to easily start chunks of their own. Otherwise, the first part may get packed together with
+     * the sentence before it and lead to chunks of more uneven size.
      */
-    private fun partitionIntoChunks(sentences: List<String>, maxInputLength: Int, locale: Locale): List<String> {
-        val chunks = mutableListOf<String>()
-        val pending = StringBuilder()
-
-        for (rawSentence in sentences) {
-            val sentence = rawSentence.trim()
-            if (sentence.isEmpty()) continue
-
-            val oversized = sentence.length > maxInputLength
-            val full = pending.length + SEPARATOR.length + sentence.length > maxInputLength
-            if (pending.isNotEmpty() && (oversized || full)) {
-                chunks.add(pending.toString())
-                pending.clear()
-            }
-
-            if (oversized) {
-                chunks.addAll(splitOversizedSentence(sentence, maxInputLength, locale))
-            } else {
-                if (pending.isNotEmpty()) pending.append(SEPARATOR)
-                pending.append(sentence)
-            }
-        }
-        if (pending.isNotEmpty()) chunks.add(pending.toString())
-
-        return chunks
-    }
-
-    /**
-     * The sentences of [text], each one carrying the whitespace that separates it from the next. A blank line between
-     * two paragraphs is a sentence of nothing but whitespace, which is why a caller has to expect blank ones.
-     */
-    private fun sentences(text: String, locale: Locale): List<String> {
+    private fun sentences(text: String, locale: Locale): List<Sentence> {
         val boundaries = BreakIterator.getSentenceInstance(locale)
         boundaries.setText(text)
 
-        val sentences = mutableListOf<String>()
+        val sentences = mutableListOf<Sentence>()
+        var separator = SEPARATOR
         var start = boundaries.first()
         var end = boundaries.next()
         while (end != BreakIterator.DONE) {
-            sentences.add(text.substring(start, end))
+            val rawSentence = text.substring(start, end)
+            val sentence = rawSentence.trim(::isSpace)
+            if (sentence.isNotEmpty()) {
+                sentences.add(Sentence(sentence, separator))
+                separator = SEPARATOR
+            }
+            if (rawSentence.takeLastWhile(::isSpace).any(::isLineBreak)) separator = LINE_SEPARATOR
+
             start = end
             end = boundaries.next()
         }
 
         return sentences
+    }
+
+    /** The sentence as a single segment when it fits in [maxInputLength], or else broken into roughly even parts. */
+    private fun Sentence.toSegments(maxInputLength: Int, locale: Locale): List<Segment> =
+        if (text.length <= maxInputLength) {
+            listOf(Segment(text, separator))
+        } else {
+            splitOversizedSentence(text, maxInputLength, locale).map { Segment(it, separator = null) }
+        }
+
+    /** Fills a chunk with segments until the next one would not fit, and then starts the next chunk on it. */
+    private fun List<Segment>.packInto(maxInputLength: Int): List<String> {
+        val chunks = mutableListOf<String>()
+        val pending = StringBuilder()
+
+        fun flush() {
+            if (pending.isNotEmpty()) chunks.add(pending.toString())
+            pending.clear()
+        }
+
+        for ((text, separator) in this) {
+            when {
+                separator == null -> {
+                    flush()
+                    chunks.add(text)
+                }
+                pending.isEmpty() -> pending.append(text)
+                pending.length + separator.length + text.length > maxInputLength -> {
+                    flush()
+                    pending.append(text)
+                }
+                else -> pending.append(separator).append(text)
+            }
+        }
+
+        flush()
+
+        return chunks
     }
 
     /**
@@ -165,4 +182,24 @@ internal class AndroidTextChunker : TextChunker {
     }
 }
 
+// Separators can be different whitespace to break them up appropriately when they share a chunk.
+// Semantically separated from Segment to indicate complete sentences.
+private class Sentence(val text: String, val separator: String)
+
+/**
+ * Text that is inserted into a chunk. Semantically separated from Sentence because this can be either a whole
+ * [Sentence] or a part of one, if the sentence is too long for a chunk.
+ *
+ * @property text The text, with no whitespace around it.
+ * @property separator What goes between [text] and the segment before it when the two share a chunk. Null if [text] is
+ *   a chunk of its own.
+ */
+private data class Segment(val text: String, val separator: String?)
+
 private const val SEPARATOR = " "
+private const val LINE_SEPARATOR = "\n"
+
+private fun isLineBreak(char: Char) = char in "\n\r\u000B\u000C\u0085\u2028\u2029"
+
+/** Whether [char] is whitespace, counting the line breaks such as U+0085 that [Char.isWhitespace] does not. */
+private fun isSpace(char: Char) = char.isWhitespace() || isLineBreak(char)
