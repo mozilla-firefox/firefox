@@ -542,34 +542,6 @@ void MacroAssemblerCompat::profilerExitFrame() {
   jump(asMasm().runtime()->jitRuntime()->getProfilerExitFrameTail());
 }
 
-Assembler::Condition MacroAssemblerCompat::testStringTruthy(
-    bool truthy, const ValueOperand& value) {
-  vixl::UseScratchRegisterScope temps(this);
-  const Register scratch = temps.AcquireX().asUnsized();
-  const ARMRegister scratch32(scratch, 32);
-  const ARMRegister scratch64(scratch, 64);
-
-  MOZ_ASSERT(value.valueReg() != scratch);
-
-  unboxString(value, scratch);
-  Ldr(scratch32, MemOperand(scratch64, JSString::offsetOfLength()));
-  Cmp(scratch32, Operand(0));
-  return truthy ? Condition::NonZero : Condition::Zero;
-}
-
-Assembler::Condition MacroAssemblerCompat::testBigIntTruthy(
-    bool truthy, const ValueOperand& value) {
-  vixl::UseScratchRegisterScope temps(this);
-  const Register scratch = temps.AcquireX().asUnsized();
-
-  MOZ_ASSERT(value.valueReg() != scratch);
-
-  unboxBigInt(value, scratch);
-  load32(Address(scratch, BigInt::offsetOfDigitLength()), scratch);
-  cmp32(scratch, Imm32(0));
-  return truthy ? Condition::NonZero : Condition::Zero;
-}
-
 void MacroAssemblerCompat::breakpoint() {
   // Note, other payloads are possible, but GDB is known to misinterpret them
   // sometimes and iloop on the breakpoint instead of stopping properly.

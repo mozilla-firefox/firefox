@@ -2079,9 +2079,6 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
     return testGCThing(cond, scratch);
   }
 
-  Condition testBigIntTruthy(bool truthy, const ValueOperand& value);
-  Condition testStringTruthy(bool truthy, const ValueOperand& value);
-
   void int32OrDouble(Register src, ARMFPRegister dest) {
     Label isInt32;
     Label join;
