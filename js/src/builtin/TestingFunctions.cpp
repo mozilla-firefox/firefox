@@ -2711,6 +2711,7 @@ static bool HasSameBytecodeData(JSContext* cx, unsigned argc, Value* vp) {
 
     RootedObject obj(cx, CheckedUnwrapDynamic(&v.toObject(), cx));
     if (!obj) {
+      JS_ReportErrorASCII(cx, "The arguments must be interpreted functions.");
       return nullptr;
     }
 
