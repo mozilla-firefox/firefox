@@ -1,3 +1,6 @@
+//expect: PTaintedTypeReversedParent.cpp: maybe__a = IPC::ReadParam<TaintedThing>
+//expect: PTaintedTypeReversedChild.cpp: maybe__a = IPC::ReadParam<Tainted<TaintedThing>>
+
 [Tainted] using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
 
 [ParentProc=GPU, ChildProc=Parent]

@@ -35,13 +35,34 @@ class IPDLTestCase(unittest.TestCase):
 
 class OkTestCase(IPDLTestCase):
     """An invocation of the IPDL compiler on a valid specification.
-    The IPDL compiler should not produce errors or exceptions."""
+    The IPDL compiler should not produce errors or exceptions.
+    Lines of the form "//expect: <generated file>: <text>" require <text>
+    to appear in that generated file."""
 
     def __init__(self, ipdlargv, filename):
         IPDLTestCase.__init__(self, ipdlargv, filename)
 
+        self.expectedOutput = []
+        with open(filename) as f:
+            for l in f:
+                if l.startswith("//expect:"):
+                    outfile, text = l[len("//expect:") :].split(":", 1)
+                    self.expectedOutput.append((outfile.strip(), text.strip()))
+
     def checkPassed(self):
         self.assertTrue(self.compile.ok(), self.mkFailMsg())
+
+        for outfile, text in self.expectedOutput:
+            self.assertIn(
+                outfile,
+                self.compile.outputs,
+                self.mkCustomMsg('Did not generate "' + outfile + '"'),
+            )
+            self.assertIn(
+                text,
+                self.compile.outputs[outfile],
+                self.mkCustomMsg('Did not see "' + text + '" in "' + outfile + '"'),
+            )
 
 
 class ErrorTestCase(IPDLTestCase):

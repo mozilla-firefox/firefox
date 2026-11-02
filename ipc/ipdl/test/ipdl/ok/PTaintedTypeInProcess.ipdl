@@ -1,3 +1,6 @@
+//expect: PTaintedTypeInProcessParent.cpp: maybe__a = IPC::ReadParam<TaintedThing>
+//expect: PTaintedTypeInProcessChild.cpp: maybe__a = IPC::ReadParam<TaintedThing>
+
 [Tainted] using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
 
 [ChildProc=Parent]
