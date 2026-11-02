@@ -18,18 +18,12 @@ const PDF_VIEWER_ORIGIN = "resource://pdf.js";
 const PDF_VIEWER_WEB_PAGE = "resource://pdf.js/web/viewer.html";
 const PDF_VIEWER_WORKER_URL = "resource://pdf.js/build/pdf.worker.mjs";
 const MAX_NUMBER_OF_PREFS = 60;
-const POINTS_PER_INCH = 72;
-const MIN_PRINT_TO_PDF_PAGE_SIZE_IN_PT = POINTS_PER_INCH;
-// Match PdfJsPrint's 14,400-point page-box cap.
-const MAX_PRINT_TO_PDF_PAGE_SIZE_IN_PT = 200 * POINTS_PER_INCH;
+// Recommended page-size limit in ISO 32000-1, Annex C.
+const MAX_PRINT_TO_PDF_PAGE_SIZE_IN_PT = 14400;
 const MAX_PRINT_TO_PDF_FONT_SIZE_IN_PT = 1000;
-// Match the line height used by the pdf.js viewer and by the appearances it
-// generates itself (LINE_FACTOR in pdf.js).
-const PRINT_TO_PDF_LINE_HEIGHT = 1.35;
 const VERTICAL_ALIGN_VALUES = new Set(["top", "center"]);
 const PDF_CONTENT_TYPE = "application/pdf";
 const SUMO_URL = "https://support.mozilla.org/";
-const SVG_DATA_URL_REGEX = /^data:image\/svg\+xml(?:[;,]|$)/i;
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
@@ -46,6 +40,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   PdfJs: "resource://pdf.js/PdfJs.sys.mjs",
   PdfJsFeaturesNotification:
     "resource://pdf.js/PdfJsFeaturesNotification.sys.mjs",
+  PdfJsPrint: "resource://pdf.js/PdfJsPrint.sys.mjs",
   PdfJsTelemetryContent: "resource://pdf.js/PdfJsTelemetry.sys.mjs",
   PdfSandbox: "resource://pdf.js/PdfSandbox.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
@@ -500,16 +495,12 @@ class ChromeActions {
     }
 
     const entries = [];
-    let largestEntryWidth = 0;
-    let largestEntryHeight = 0;
-
     for (const item of items) {
       const pdfData = item?.data;
       if (typeof pdfData !== "object" || pdfData === null) {
         return null;
       }
-      // Only the size of the appearance box matters: each entry is laid out on
-      // its own page, and its position in the PDF is the caller's business.
+      // The caller positions each generated appearance in the original PDF.
       const { width, height } = pdfData;
       if (
         !Number.isFinite(width) ||
@@ -522,171 +513,64 @@ class ChromeActions {
         return null;
       }
 
-      const hasText = typeof pdfData.text === "string" && pdfData.text !== "";
-      const hasSVG =
-        typeof pdfData.svgUrl === "string" && pdfData.svgUrl !== "";
-      if (hasText === hasSVG) {
+      const { text, color, fontSize, fontFamily, verticalAlign } = pdfData;
+      if (
+        typeof text !== "string" ||
+        text === "" ||
+        typeof color !== "string" ||
+        !/^#[0-9a-f]{6}$/i.test(color) ||
+        !Number.isFinite(fontSize) ||
+        fontSize <= 0 ||
+        fontSize > MAX_PRINT_TO_PDF_FONT_SIZE_IN_PT ||
+        (fontFamily != null && typeof fontFamily !== "string") ||
+        (verticalAlign != null && !VERTICAL_ALIGN_VALUES.has(verticalAlign))
+      ) {
         return null;
       }
-
-      if (hasText) {
-        const { color, fontSize, fontFamily, verticalAlign } = pdfData;
-        if (
-          typeof color !== "string" ||
-          !/^#[0-9a-f]{6}$/i.test(color) ||
-          typeof fontSize !== "number" ||
-          !Number.isFinite(fontSize) ||
-          fontSize <= 0 ||
-          fontSize > MAX_PRINT_TO_PDF_FONT_SIZE_IN_PT ||
-          (fontFamily != null && typeof fontFamily !== "string") ||
-          (verticalAlign != null && !VERTICAL_ALIGN_VALUES.has(verticalAlign))
-        ) {
-          return null;
-        }
-      } else if (!SVG_DATA_URL_REGEX.test(pdfData.svgUrl)) {
-        return null;
-      }
-
-      // All the entries share one sheet size, hence keep the largest ones.
-      largestEntryWidth = Math.max(largestEntryWidth, width);
-      largestEntryHeight = Math.max(largestEntryHeight, height);
-      entries.push(pdfData);
+      entries.push({
+        width,
+        height,
+        text,
+        color,
+        fontSize,
+        fontFamily: fontFamily || "sans-serif",
+        verticalAlign: verticalAlign || "center",
+      });
     }
-
-    // Round up without clipping fractional entry dimensions.
-    return {
-      entries,
-      largestEntryWidth: Math.ceil(largestEntryWidth),
-      largestEntryHeight: Math.ceil(largestEntryHeight),
-    };
-  }
-
-  #makeElementForSVG({ svgUrl }, parent, doc) {
-    const img = doc.createElement("img");
-    parent.append(img);
-    img.style.width = img.style.height = "100%";
-    // Avoid inline-image baseline space.
-    img.style.display = "block";
-    img.src = svgUrl;
-    return img;
-  }
-
-  #makeElementForText({ text, color, fontFamily, fontSize }, parent, doc) {
-    const span = doc.createElement("span");
-    parent.append(span);
-    const { style } = span;
-    style.display = "block";
-    // Preserve the newlines in `text` as line breaks.
-    style.whiteSpace = "pre";
-    style.color = color;
-    style.fontSize = `${fontSize}pt`;
-    style.lineHeight = `${PRINT_TO_PDF_LINE_HEIGHT}`;
-    style.fontFamily = fontFamily || "sans-serif";
-    span.textContent = text;
+    return entries;
   }
 
   /**
-   * Render pdf.js form field appearances into a PDF, one field per page.
-   *
-   * This is the outermost entry point: it builds the markup for the fields in
-   * a hidden iframe and then hands that iframe off to
-   * `PdfJsPrint.printToPDF` (in the parent process) to be printed.
+   * Validate field appearances and render them in the viewer's process.
    *
    * @param {Array<object>} data - one item per field appearance, each shaped
    *   like `{ data: { width, height, ... } }` where `width` and `height` are
    *   the size of the appearance box in pt, and the remaining properties
-   *   describe either a text appearance (`text`, `color`, `fontSize`,
-   *   `fontFamily` and `verticalAlign`) or an SVG one (`svgUrl`).
+   *   describe a text appearance (`text`, `color`, `fontSize`, `fontFamily`
+   *   and `verticalAlign`).
    * @param {Function} sendResponse - called with the PDF bytes, or with null
    *   if the data is invalid or printing failed.
    */
-  async printToPDF(data, sendResponse) {
+  printToPDF(data, sendResponse) {
     if (!sendResponse) {
       console.warn(
         "PdfStreamConverter: printToPDF called without a response callback."
       );
       return;
     }
-    const printData = this.#validatePrintToPDFData(data);
-    if (!printData) {
+    const entries = this.#validatePrintToPDFData(data);
+    if (!entries) {
       console.warn("PdfStreamConverter: ignored invalid print data.");
       sendResponse(null);
       return;
     }
-    const actor = getActor(this.domWindow);
-    if (!actor) {
-      sendResponse(null);
-      return;
-    }
-    const doc = this.domWindow.document;
-    let iframe;
     try {
-      iframe = doc.createElement("iframe");
-      iframe.style.display = "none";
-      doc.body.appendChild(iframe);
-      const iframeDoc = iframe.contentDocument;
-      const iframeWindow = iframe.contentWindow;
-      const fragment = new iframeWindow.DocumentFragment();
-      const { entries, largestEntryWidth, largestEntryHeight } = printData;
-      // Each PDF page contains one field at its bottom-left corner (see the
-      // padding-top on the page below).
-      const pageWidth = Math.max(
-        MIN_PRINT_TO_PDF_PAGE_SIZE_IN_PT,
-        largestEntryWidth
+      sendResponse(
+        lazy.PdfJsPrint.printToPDF(this.domWindow.document, entries)
       );
-      const pageHeight = Math.max(
-        MIN_PRINT_TO_PDF_PAGE_SIZE_IN_PT,
-        largestEntryHeight
-      );
-      iframeDoc.body.style.margin = "0";
-
-      const images = [];
-      for (const pdfData of entries) {
-        const { width: fieldWidth, height: fieldHeight } = pdfData;
-        const pageDiv = iframeDoc.createElement("div");
-        const pageStyle = pageDiv.style;
-        fragment.append(pageDiv);
-        pageStyle.breakAfter = "page";
-        pageStyle.boxSizing = "border-box";
-        pageStyle.width = `${pageWidth}pt`;
-        pageStyle.height = `${pageHeight}pt`;
-        // Push the field down to the bottom of the page.
-        pageStyle.paddingTop = `${pageHeight - fieldHeight}pt`;
-        const div = iframeDoc.createElement("div");
-        pageDiv.append(div);
-        const { style } = div;
-        style.boxSizing = "border-box";
-        style.width = `${fieldWidth}pt`;
-        style.height = `${fieldHeight}pt`;
-        // A column-oriented flex container, just to align the field contents
-        // along the block axis.
-        style.display = "flex";
-        style.flexDirection = "column";
-        style.justifyContent =
-          pdfData.verticalAlign === "top" ? "flex-start" : "center";
-        // Valid text entries have a non-empty string; other entries are SVGs.
-        if (typeof pdfData.text === "string" && pdfData.text !== "") {
-          this.#makeElementForText(pdfData, div, iframeDoc);
-        } else {
-          images.push(this.#makeElementForSVG(pdfData, div, iframeDoc));
-        }
-      }
-      iframeDoc.body.append(fragment);
-
-      // Prevent printing before SVG images finish decoding.
-      await Promise.all(images.map(img => img.decode()));
-
-      const buffer = await actor.sendQuery("PDFJS:Parent:printToPDF", {
-        id: iframeWindow.browsingContext.id,
-        width: pageWidth / POINTS_PER_INCH,
-        height: pageHeight / POINTS_PER_INCH,
-      });
-      sendResponse(buffer);
     } catch (ex) {
       console.error("PdfStreamConverter: printToPDF failed.", ex);
       sendResponse(null);
-    } finally {
-      iframe?.remove();
     }
   }
 
