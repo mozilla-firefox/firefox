@@ -24,7 +24,7 @@ async function test_hint_asset(testName, asset, variant) {
   let headers = new Headers();
   headers.append("X-Early-Hint-Count-Start", "");
   await fetch(
-    "http://example.com/browser/netwerk/test/browser/early_hint_pixel_count.sjs",
+    "https://example.com/browser/netwerk/test/browser/early_hint_pixel_count.sjs",
     { headers }
   );
 
@@ -91,7 +91,7 @@ async function test_hint_asset(testName, asset, variant) {
   Services.obs.removeObserver(observer, "earlyhints-connectback");
 
   let gotRequestCount = await fetch(
-    "http://example.com/browser/netwerk/test/browser/early_hint_pixel_count.sjs"
+    "https://example.com/browser/netwerk/test/browser/early_hint_pixel_count.sjs"
   ).then(response => response.json());
   if (
     asset === "script" &&
