@@ -482,6 +482,35 @@ nsresult FileSystemDatabaseManagerVersion002::RemoveFileIdsWithoutMainFile() {
         MOZ_TO_RESULT(MergeFileId(EntryId(), fileId, /* aAbort */ true)));
   }
 
+  // Usages rows whose file id is gone were left behind before foreign key
+  // enforcement was enabled; nothing cascades them away now.
+  const nsLiteralCString orphanUsageQuery =
+      "SELECT coalesce(sum(usage), 0) FROM Usages "
+      "WHERE handle NOT IN ( SELECT fileId FROM FileIds ) ;"_ns;
+
+  QM_TRY_UNWRAP(ResultStatement usageStmt,
+                ResultStatement::Create(mConnection, orphanUsageQuery)
+                    .mapErr(toNSResult));
+  QM_TRY_INSPECT(const bool& hasResult,
+                 usageStmt.ExecuteStep().mapErr(toNSResult));
+  if (!hasResult) {
+    return NS_ERROR_DOM_FILE_NOT_READABLE_ERR;
+  }
+
+  QM_TRY_INSPECT(
+      const Usage& orphanUsage,
+      usageStmt.GetUsageByColumn(/* Column */ 0u).mapErr(toNSResult));
+
+  if (orphanUsage > 0) {
+    QM_TRY(QM_TO_RESULT(
+        mConnection->ExecuteSimpleSQL("DELETE FROM Usages WHERE handle NOT IN "
+                                      "( SELECT fileId FROM FileIds ) ;"_ns)));
+
+    DecreaseCachedQuotaUsage(orphanUsage);
+    LOG_VERBOSE(("Removed orphaned Usages rows totalling %" PRId64 " bytes",
+                 orphanUsage));
+  }
+
   return NS_OK;
 }
 
