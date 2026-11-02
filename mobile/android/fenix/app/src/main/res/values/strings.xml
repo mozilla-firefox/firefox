@@ -4118,6 +4118,14 @@
     <string name="wrex_widget_wallpapers">Wallpapers</string>
     <!-- Sports widget menu item to remove the widget from the homepage. -->
     <string name="wrex_widget_remove_widget">Remove Widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+    <string name="wrex_widget_match_full_time_short">FT</string>
+    <!-- Sports widget match status label shown during half-time of a match. -->
+    <string name="wrex_widget_match_half_time">Half-time</string>
+    <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+    <string name="wrex_widget_match_extra_time_short">ET</string>
+    <!-- Sports widget match status label shown during penalties of a match. -->
+    <string name="wrex_widget_match_penalties">Penalties</string>
     <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
     <string name="wrex_widget_more_options_content_description">More options</string>
     <!-- Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.

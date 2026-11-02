@@ -65,6 +65,13 @@ sealed class MatchStatus {
 }
 
 /**
+ * True when this period description denotes extra time — the feed uses both "ET" and "Extra" (case-insensitively), so
+ * match either form.
+ */
+internal val String.isExtraTime: Boolean
+    get() = contains("ET", ignoreCase = true) || contains("Extra", ignoreCase = true)
+
+/**
  * Information related to a given sport event (game/match).
  *
  * @property globalEventId Stable upstream identifier; the natural cache key.
