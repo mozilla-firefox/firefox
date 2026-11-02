@@ -2289,10 +2289,23 @@ sftk_SignCopy(
 
 /* Verify is just a compare for HMAC */
 static SECStatus
-sftk_HMACCmp(void *copyLen, const unsigned char *sig, unsigned int sigLen,
+sftk_HMACCmp(void *ctx, const unsigned char *sig, unsigned int sigLen,
              const unsigned char *hash, unsigned int hashLen)
 {
-    if (NSS_SecureMemcmp(sig, hash, *(CK_ULONG *)copyLen) == 0) {
+    CK_ULONG compareLen = *(CK_ULONG *)ctx;
+    PORT_Assert(compareLen == hashLen);
+    if (compareLen != hashLen) {
+        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+
+    // Handle MAC truncation. NB: should the caller not wish to support
+    // truncation, it is their responsibility to ensure that the MAC has not
+    // been truncated.
+    if (compareLen > sigLen) {
+        compareLen = sigLen;
+    }
+    if (NSS_SecureMemcmp(sig, hash, compareLen) == 0) {
         return SECSuccess;
     }
 
@@ -2318,9 +2331,6 @@ sftk_doMACInit(CK_MECHANISM_TYPE mech, SFTKSessionContext *session,
         return crv;
     }
 
-    session->hashInfo = context;
-    session->multi = PR_TRUE;
-
     /* Required by FIPS 198 Section 4. Delay this check until after the MAC
      * has been initialized to steal the output size of the MAC. */
     if (isFIPS && (mac_size < 4 || mac_size < context->mac_size / 2)) {
@@ -2328,19 +2338,22 @@ sftk_doMACInit(CK_MECHANISM_TYPE mech, SFTKSessionContext *session,
         return CKR_BUFFER_TOO_SMALL;
     }
 
-    /* Configure our helper functions appropriately. Note that these casts
-     * ignore the return values. */
-    session->hashUpdate = SFTKHash_sftk_MAC_Update;
-    session->end = SFTKHash_sftk_MAC_End;
-    session->hashdestroy = SFTKHash_sftk_MAC_DestroyContext;
-
     intpointer = PORT_New(CK_ULONG);
     if (intpointer == NULL) {
         sftk_MAC_DestroyContext(context, PR_TRUE);
         return CKR_HOST_MEMORY;
     }
     *intpointer = mac_size;
+
     session->cipherInfo = intpointer;
+    session->hashInfo = context;
+    session->multi = PR_TRUE;
+
+    /* Configure our helper functions appropriately. Note that these casts
+     * ignore the return values. */
+    session->hashUpdate = SFTKHash_sftk_MAC_Update;
+    session->end = SFTKHash_sftk_MAC_End;
+    session->hashdestroy = SFTKHash_sftk_MAC_DestroyContext;
 
     /* Since we're only "hashing", copy the result from session->end to the
      * caller using sftk_SignCopy. */
@@ -2393,6 +2406,17 @@ sftk_SSLMACSign(void *ctx, unsigned char *sig, unsigned int *sigLen,
     unsigned char tmpBuf[SFTK_MAX_MAC_LENGTH];
     unsigned int out;
 
+    PORT_Assert(info->macSize <= SFTK_MAX_MAC_LENGTH);
+    if (info->macSize > SFTK_MAX_MAC_LENGTH) {
+        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+
+    if (info->macSize > maxLen) {
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return SECFailure;
+    }
+
     info->begin(info->hashContext);
     info->update(info->hashContext, info->key, info->keySize);
     info->update(info->hashContext, ssl_pad_2, info->padSize);
@@ -2413,6 +2437,17 @@ sftk_SSLMACVerify(void *ctx, const unsigned char *sig, unsigned int sigLen,
     unsigned int out;
     int cmp;
 
+    PORT_Assert(info->macSize <= SFTK_MAX_MAC_LENGTH);
+    if (info->macSize > SFTK_MAX_MAC_LENGTH) {
+        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+
+    if (info->macSize > sigLen) {
+        PORT_SetError(SEC_ERROR_BAD_SIGNATURE);
+        return SECFailure;
+    }
+
     info->begin(info->hashContext);
     info->update(info->hashContext, info->key, info->keySize);
     info->update(info->hashContext, ssl_pad_2, info->padSize);
@@ -2420,7 +2455,12 @@ sftk_SSLMACVerify(void *ctx, const unsigned char *sig, unsigned int sigLen,
     info->end(info->hashContext, tmpBuf, &out, SFTK_MAX_MAC_LENGTH);
     cmp = NSS_SecureMemcmp(sig, tmpBuf, info->macSize);
     PORT_Memset(tmpBuf, 0, info->macSize);
-    return (cmp == 0) ? SECSuccess : SECFailure;
+    if (cmp == 0) {
+        return SECSuccess;
+    }
+
+    PORT_SetError(SEC_ERROR_BAD_SIGNATURE);
+    return SECFailure;
 }
 
 /*

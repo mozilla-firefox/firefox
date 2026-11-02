@@ -1081,6 +1081,18 @@ PK11_IVFromParam(CK_MECHANISM_TYPE type, SECItem *param, int *len)
             rc5_cbc_params = (CK_RC5_CBC_PARAMS *)param->data;
             *len = rc5_cbc_params->ulIvLen;
             return rc5_cbc_params->pIv;
+        case CKM_AES_GCM:
+            if (param->len == sizeof(CK_GCM_PARAMS_V3)) {
+                CK_GCM_PARAMS_V3 *gcm_params = (CK_GCM_PARAMS_V3 *)param->data;
+                *len = gcm_params->ulIvLen;
+                return gcm_params->pIv;
+            }
+            if (param->len == sizeof(CK_NSS_GCM_PARAMS)) {
+                CK_NSS_GCM_PARAMS *gcm_params = (CK_NSS_GCM_PARAMS *)param->data;
+                *len = gcm_params->ulIvLen;
+                return gcm_params->pIv;
+            }
+            return NULL;
         case CKM_SEED_CBC:
         case CKM_CAMELLIA_CBC:
         case CKM_AES_CBC:

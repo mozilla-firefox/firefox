@@ -602,7 +602,7 @@ typedef struct DTLSQueuedMessageStr {
     ssl3CipherSpec *cwSpec; /* The cipher spec to use, null for none */
     SSLContentType type;    /* The message type */
     unsigned char *data;    /* The data */
-    PRUint16 len;           /* The data length */
+    PRUint32 len;           /* The data length */
 } DTLSQueuedMessage;
 
 struct TLS13KeyShareEntryStr {

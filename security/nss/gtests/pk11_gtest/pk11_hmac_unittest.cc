@@ -55,6 +55,27 @@ class Pkcs11HmacTest : public ::testing::TestWithParam<
     SECStatus rv = PK11_SignWithSymKey(p11_key.get(), mech, NULL, &out, &msg);
     EXPECT_EQ(SECSuccess, rv) << err;
     EXPECT_EQ(!vec.invalid, 0 == SECITEM_CompareItem(&out, &mac)) << err;
+
+    // Now verify the given mac using PK11_CreateContextBySymKey/PK11_Digest*
+    ScopedPK11SymKey p11_verify_key(PK11_ImportSymKey(
+        slot.get(), mech, PK11_OriginUnwrap, CKA_VERIFY, &key, nullptr));
+    ASSERT_NE(nullptr, p11_verify_key.get()) << err;
+
+    SECItem param = {siBuffer, nullptr, 0};
+    ScopedPK11Context verify_context(PK11_CreateContextBySymKey(
+        mech, CKA_VERIFY, p11_verify_key.get(), &param));
+    ASSERT_NE(nullptr, verify_context.get()) << err;
+
+    rv = PK11_DigestBegin(verify_context.get());
+    EXPECT_EQ(SECSuccess, rv) << err;
+
+    rv = PK11_DigestOp(verify_context.get(), msg.data, msg.len);
+    EXPECT_EQ(SECSuccess, rv) << err;
+
+    unsigned int unusedOutLen = 0;
+    rv = PK11_DigestFinal(verify_context.get(), mac.data, &unusedOutLen,
+                          mac.len);
+    EXPECT_EQ(!vec.invalid, SECSuccess == rv) << err;
   }
 };
 

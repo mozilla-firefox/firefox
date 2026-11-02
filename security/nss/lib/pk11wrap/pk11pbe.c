@@ -1606,6 +1606,23 @@ pk11_GetPBECryptoMechanism(SECAlgorithmID *algid, SECItem **param,
         PORT_SetError(SEC_ERROR_INVALID_ALGORITHM);
         goto loser;
     }
+    if (mech == CKM_AES_GCM) {
+        /* the GCM mechanism parameter is a CK_NSS_GCM_PARAMS structure, not a
+         * raw IV; take the self-contained parameter built from the cipher
+         * algid directly instead of round-tripping it through the IV helpers
+         * below, which only handle parameters that are plain IV bytes */
+        sec_pkcs5V2Parameter *pbeV2_param = sec_pkcs5_v2_get_v2_param(NULL, algid);
+        if (pbeV2_param == NULL) {
+            goto loser;
+        }
+        *param = PK11_ParamFromAlgid(&pbeV2_param->cipherAlgId);
+        sec_pkcs5_v2_destroy_v2_param(pbeV2_param);
+        if (*param == NULL) {
+            goto loser;
+        }
+        returnedMechanism = mech;
+        goto loser;
+    }
     if (PK11_GetIVLength(mech)) {
         iv = SEC_PKCS5GetIV(algid, pbe_pwd, faulty3DES);
         if (iv == NULL) {

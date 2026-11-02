@@ -1145,6 +1145,13 @@ ssl_CacheSessionID(sslSocket *ss)
         return;
     }
 
+    /* A client whose ECH offer was rejected has authenticated the server only
+     * against the ECHConfig public name, so the session must not be reusable
+     * for the real host name. */
+    if (!sec->isServer && ss->ssl3.hs.echHpkeCtx && !ss->ssl3.hs.echAccepted) {
+        return;
+    }
+
     if (!sec->isServer && ss->resumptionTokenCallback) {
         ssl_CacheExternalToken(ss);
         return;

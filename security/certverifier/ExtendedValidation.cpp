@@ -15,7 +15,6 @@
 #include "mozpkix/pkixder.h"
 #include "mozpkix/pkixtypes.h"
 #include "mozpkix/pkixutil.h"
-
 #include "nsDependentString.h"
 #include "nsString.h"
 #include "pk11pub.h"
@@ -46,18 +45,15 @@ struct EVInfo {
 // use plain text representation, we rather use the original encoding
 // as it can be found in the root certificate (in base64 format).
 //
-// We can use the NSS utility named "pp" to extract the encoding.
-//
-// Build standalone NSS including the NSS tools, then run
-//   pp -t certificate-identity -i the-cert-filename
-//
-// You will need the output from sections "Issuer", "Fingerprint (SHA-256)",
-// "Issuer DER Base64" and "Serial DER Base64".
+// The script security/manager/tools/ev_cert_info.py extracts this data from a
+// certificate file and prints an entry ready to paste below. Run
+//   ./ev_cert_info.py [--oid POLICY_OID] the-cert-filename
+// The OID defaults to the CA/Browser Forum EV OID (2.23.140.1.1), and the
+// oidName description is filled in automatically for OIDs already used here.
 //
 // The new section consists of the following components:
 //
-// - a comment that should contain the human readable issuer name
-//   of the certificate, as printed by the pp tool
+// - a comment that contains the human readable issuer name of the certificate
 // - the EV policy OID that is associated to the EV grant
 // - a text description of the EV policy OID. The array can contain
 //   multiple entries with the same OID.
@@ -69,15 +65,26 @@ struct EVInfo {
 //   all the other descriptions (again use the text search feature
 //   to be sure).
 // - the SHA-256 fingerprint
-// - the "Issuer DER Base64" as printed by the pp tool.
-//   Remove all whitespaces. If you use multiple lines, make sure that
-//   only the final line will be followed by a comma.
-// - the "Serial DER Base64" (as printed by pp)
+// - the issuer name in DER, encoded in base64.
+//   If you use multiple lines, make sure that only the final line will be
+//   followed by a comma.
+// - the serial number in DER, encoded in base64
 //
 // After adding an entry, test it locally against the test site that
 // has been provided by the CA. Note that you must use a version of NSS
 // where the root certificate has already been added and marked as trusted
 // for issuing SSL server certificates (at least).
+//
+// Navigate to the CA's test site and check the site identity information
+// (click the padlock, then "Connection secure") to see if the certificate is
+// recognized as EV. Alternatively, evaluate the following in the Browser
+// Console (Ctrl+Shift+J, or Cmd+Shift+J on macOS) to read the EV status of the
+// current tab:
+//   (() => {
+//     let s = gBrowser.securityUI;
+//     return { ev: s.secInfo?.isExtendedValidation,
+//              issuer: s.secInfo?.serverCert?.issuerName };
+//   })()
 //
 // If you are able to connect to the site without certificate errors,
 // but you don't see the EV status indicator, then most likely the CA
@@ -646,40 +653,6 @@ static const struct EVInfo kEVInfos[] = {
     "MfXkYgxsWO3W2A==",
   },
   {
-    // CN=emSign ECC Root CA - G3,O=eMudhra Technologies Limited,OU=emSign PKI,C=IN
-    "2.23.140.1.1",
-    "CA/Browser Forum EV OID",
-    { 0x86, 0xA1, 0xEC, 0xBA, 0x08, 0x9C, 0x4A, 0x8D, 0x3B, 0xBE, 0x27,
-      0x34, 0xC6, 0x12, 0xBA, 0x34, 0x1D, 0x81, 0x3E, 0x04, 0x3C, 0xF9,
-      0xE8, 0xA8, 0x62, 0xCD, 0x5C, 0x57, 0xA3, 0x6B, 0xBE, 0x6B },
-    "MGsxCzAJBgNVBAYTAklOMRMwEQYDVQQLEwplbVNpZ24gUEtJMSUwIwYDVQQKExxl"
-    "TXVkaHJhIFRlY2hub2xvZ2llcyBMaW1pdGVkMSAwHgYDVQQDExdlbVNpZ24gRUND"
-    "IFJvb3QgQ0EgLSBHMw==",
-    "PPYHqWhwDtqLhA==",
-  },
-  {
-    // CN=emSign Root CA - C1,O=eMudhra Inc,OU=emSign PKI,C=US
-    "2.23.140.1.1",
-    "CA/Browser Forum EV OID",
-    { 0x12, 0x56, 0x09, 0xAA, 0x30, 0x1D, 0xA0, 0xA2, 0x49, 0xB9, 0x7A,
-      0x82, 0x39, 0xCB, 0x6A, 0x34, 0x21, 0x6F, 0x44, 0xDC, 0xAC, 0x9F,
-      0x39, 0x54, 0xB1, 0x42, 0x92, 0xF2, 0xE8, 0xC8, 0x60, 0x8F },
-    "MFYxCzAJBgNVBAYTAlVTMRMwEQYDVQQLEwplbVNpZ24gUEtJMRQwEgYDVQQKEwtl"
-    "TXVkaHJhIEluYzEcMBoGA1UEAxMTZW1TaWduIFJvb3QgQ0EgLSBDMQ==",
-    "AK7PALrEzzL4Q7I=",
-    },
-  {
-    // CN=emSign ECC Root CA - C3,O=eMudhra Inc,OU=emSign PKI,C=US
-    "2.23.140.1.1",
-    "CA/Browser Forum EV OID",
-    { 0xBC, 0x4D, 0x80, 0x9B, 0x15, 0x18, 0x9D, 0x78, 0xDB, 0x3E, 0x1D,
-      0x8C, 0xF4, 0xF9, 0x72, 0x6A, 0x79, 0x5D, 0xA1, 0x64, 0x3C, 0xA5,
-      0xF1, 0x35, 0x8E, 0x1D, 0xDB, 0x0E, 0xDC, 0x0D, 0x7E, 0xB3 },
-    "MFoxCzAJBgNVBAYTAlVTMRMwEQYDVQQLEwplbVNpZ24gUEtJMRQwEgYDVQQKEwtl"
-    "TXVkaHJhIEluYzEgMB4GA1UEAxMXZW1TaWduIEVDQyBSb290IENBIC0gQzM=",
-    "e3G2gla4EnycqA==",
-  },
-  {
     // OU=certSIGN ROOT CA G2,O=CERTSIGN SA,C=RO
     "2.23.140.1.1",
     "CA/Browser Forum EV OID",
@@ -1019,6 +992,39 @@ static const struct EVInfo kEVInfos[] = {
     "MEsxCzAJBgNVBAYTAkNIMRkwFwYDVQQKDBBPSVNURSBGb3VuZGF0aW9uMSEwHwYD"
     "VQQDDBhPSVNURSBTZXJ2ZXIgUm9vdCBSU0EgRzE=",
     "VaXZZ5Qoxu0M+ifdWwFNGA==",
+  },
+  {
+    // CN=SECOM TLS RSA Root CA 2024,O="SECOM Trust Systems Co., Ltd.",C=JP
+    "2.23.140.1.1",
+    "CA/Browser Forum EV OID",
+    { 0x14, 0x35, 0xF2, 0x25, 0xC5, 0xD2, 0x52, 0xD7, 0xA2, 0x19, 0x48, 0xCC,
+      0x3C, 0xE6, 0x2A, 0xEC, 0xFA, 0x88, 0x00, 0x1E, 0x3D, 0xD7, 0x2D, 0x1C,
+      0xC3, 0x55, 0x51, 0x00, 0xEB, 0x37, 0x2F, 0x93 },
+    "MFoxCzAJBgNVBAYTAkpQMSYwJAYDVQQKEx1TRUNPTSBUcnVzdCBTeXN0ZW1zIENv"
+    "LiwgTHRkLjEjMCEGA1UEAxMaU0VDT00gVExTIFJTQSBSb290IENBIDIwMjQ=",
+    "AO6JNNDLgOCy",
+  },
+  {
+    // CN=SECOM TLS ECC Root CA 2024,O="SECOM Trust Systems Co., Ltd.",C=JP
+    "2.23.140.1.1",
+    "CA/Browser Forum EV OID",
+    { 0x6A, 0xB2, 0xAB, 0x75, 0xF5, 0x1C, 0xB4, 0xF4, 0xF0, 0x15, 0x62, 0x03,
+      0xFB, 0xF6, 0xF6, 0x46, 0x23, 0x2F, 0x51, 0x4B, 0xE0, 0x59, 0xF6, 0x28,
+      0x33, 0x30, 0x8B, 0x82, 0xB4, 0xD7, 0x2D, 0xB1 },
+    "MFoxCzAJBgNVBAYTAkpQMSYwJAYDVQQKEx1TRUNPTSBUcnVzdCBTeXN0ZW1zIENv"
+    "LiwgTHRkLjEjMCEGA1UEAxMaU0VDT00gVExTIEVDQyBSb290IENBIDIwMjQ=",
+    "AIF6LO+PI3pE",
+  },
+  {
+    // CN=SwissSign RSA TLS Root CA 2022 - 1,O=SwissSign AG,C=CH
+    "2.23.140.1.1",
+    "CA/Browser Forum EV OID",
+    { 0x19, 0x31, 0x44, 0xF4, 0x31, 0xE0, 0xFD, 0xDB, 0x74, 0x07, 0x17,
+      0xD4, 0xDE, 0x92, 0x6A, 0x57, 0x11, 0x33, 0x88, 0x4B, 0x43, 0x60,
+      0xD3, 0x0E, 0x27, 0x29, 0x13, 0xCB, 0xE6, 0x60, 0xCE, 0x41 },
+    "MFExCzAJBgNVBAYTAkNIMRUwEwYDVQQKEwxTd2lzc1NpZ24gQUcxKzApBgNVBAMT"
+    "IlN3aXNzU2lnbiBSU0EgVExTIFJvb3QgQ0EgMjAyMiAtIDE=",
+    "Q/oMX04bgBhE79G0TzUfRPSA7cs=",
   }
     // clang-format on
 };

@@ -294,7 +294,21 @@ ssl3_AppendHandshakeInternal(sslSocket *ss, const void *void_src, unsigned int b
 
     if (!bytes)
         return SECSuccess;
-    if (ss->sec.ci.sendBuf.space < MAX_SEND_BUF_LENGTH && room < bytes) {
+    if (IS_DTLS(ss)) {
+        /* Each flush of sendBuf is queued as a separate DTLSQueuedMessage, and
+         * the fragmentation code assumes every queued message is a complete
+         * handshake message beginning with a handshake header.  A DTLS
+         * handshake message must therefore stay whole in sendBuf and never be
+         * flushed partway through, so grow to hold it rather than capping at
+         * MAX_SEND_BUF_LENGTH. */
+        if (room < bytes) {
+            rv = sslBuffer_Grow(&ss->sec.ci.sendBuf,
+                                ss->sec.ci.sendBuf.len + bytes);
+            if (rv != SECSuccess)
+                return SECFailure; /* sslBuffer_Grow sets a memory error code. */
+            room = ss->sec.ci.sendBuf.space - ss->sec.ci.sendBuf.len;
+        }
+    } else if (ss->sec.ci.sendBuf.space < MAX_SEND_BUF_LENGTH && room < bytes) {
         rv = sslBuffer_Grow(&ss->sec.ci.sendBuf, PR_MAX(MIN_SEND_BUF_LENGTH,
                                                         PR_MIN(MAX_SEND_BUF_LENGTH, ss->sec.ci.sendBuf.len + bytes)));
         if (rv != SECSuccess)
