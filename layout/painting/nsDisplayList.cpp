@@ -5491,7 +5491,7 @@ WebRenderCommandsResult nsDisplayOwnLayer::CreateWebRenderCommands(
     wr::DisplayListBuilder& aBuilder, wr::IpcResourceUpdateQueue& aResources,
     const StackingContextHelper& aSc, RenderRootStateManager* aManager,
     nsDisplayListBuilder* aDisplayListBuilder, bool aForceIsolation) {
-  Maybe<wr::WrAnimationProperty> prop;
+  uint64_t animationId = 0;
   const bool needsProp = aManager->LayerManager()->AsyncPanZoomEnabled() &&
                          (IsScrollThumbLayer() || IsZoomingLayer() ||
                           ShouldGetFixedAnimationId() ||
@@ -5505,14 +5505,10 @@ WebRenderCommandsResult nsDisplayOwnLayer::CreateWebRenderCommands(
         aManager->CommandBuilder()
             .CreateOrRecycleWebRenderUserData<WebRenderAPZAnimationData>(this);
     mWrAnimationId = animationData->GetAnimationId();
-
-    prop.emplace();
-    prop->id = mWrAnimationId;
-    prop->effect_type = wr::WrAnimationType::Transform;
+    animationId = mWrAnimationId;
   }
 
   wr::StackingContextParams params;
-  params.animation = prop.ptrOr(nullptr);
   params.clip =
       wr::WrStackingContextClip::ClipChain(aBuilder.CurrentClipChainId());
   const bool rootScrollbarContainer = IsRootScrollbarContainer();
@@ -5522,14 +5518,23 @@ WebRenderCommandsResult nsDisplayOwnLayer::CreateWebRenderCommands(
   if (aForceIsolation) {
     params.flags |= wr::StackingContextFlags::FORCED_ISOLATION;
   }
-  if (IsZoomingLayer() || ShouldGetFixedAnimationId() ||
-      (rootScrollbarContainer && HasDynamicToolbar())) {
-    params.is_2d_scale_translation = true;
-    params.should_snap = true;
+  const bool shouldSnap = IsZoomingLayer() || ShouldGetFixedAnimationId() ||
+                          (rootScrollbarContainer && HasDynamicToolbar());
+
+  Maybe<wr::WrSpatialId> referenceFrame;
+  if (animationId || shouldSnap) {
+    wr::ReferenceFrameParams rfParams;
+    rfParams.animation_id = animationId;
+    rfParams.is_2d_scale_translation = shouldSnap;
+    rfParams.should_snap = shouldSnap;
+    referenceFrame = Some(aManager->CommandBuilder().DefineReferenceFrame(
+        aBuilder, mFrame,
+        WebRenderCommandBuilder::FrameReferenceFrame::OwnLayer,
+        LayoutDevicePoint(), rfParams));
   }
 
   StackingContextHelper sc(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                           params);
+                           params, referenceFrame);
 
   return nsDisplayWrapList::CreateWebRenderCommands(
       aBuilder, aResources, sc, aManager, aDisplayListBuilder);
@@ -5619,23 +5624,21 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
       wr::WrStackingContextClip::ClipChain(aBuilder.CurrentClipChainId());
 
   // This is for the case if this frame is transformed. In this case, the wr
-  // display list looks like:
+  // display list looks like this, with the reference frame each stacking
+  // context is in:
   //
   // PushStackingContext(...)  // For the root
   //   ...
   //   nsDisplayTransform      // For the captured element if it is transformed
-  //     PushReferenceFrame    // If the transform matrix is not identity
-  //     PushStackingContext(...)
+  //     PushStackingContext   // In a new reference frame if the transform
+  //                           // matrix is not identity
   //     VTCapture             // For the captured element
-  //       PushReferenceFrame
-  //       PushStackingContext
+  //       PushStackingContext // In a new reference frame
   //       ...
   //       Other display items // For the descendants of the captured element
   //       ...
   //       PopStackingContext
-  //       PopReferenceFrame
   //     PopStackingContext
-  //     PopReferenceFrame
   //   ...
   // PopStackingContext
   //
@@ -5646,8 +5649,8 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
   // identity, we don't create a new coordinate system (because we don't push a
   // reference frame in WR), at this moment, the |ref_frame_offset| of the
   // stacking context of this VTCapture becomes the |origin| of the
-  // nsDisplayTransform (see wr_dp_push_stacking_context() and
-  // push_stacking_context() for more details), so this offset may makes the
+  // nsDisplayTransform (see nsDisplayTransform::CreateWebRenderCommands() for
+  // more details), so this offset may makes the
   // position of this VTCapture wrong. (Note that the ToReferenceFrame(mFrame)
   // of this VTCapture is the frame itself, but ToReferenceFrame(mFrame) of the
   // nsDisplayTransform is its containing frame, e.g. viewport frame.)
@@ -5661,15 +5664,16 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
   // not identity, because we generate a new coordinate system already from the
   // nsDisplayTransform (see nsDisplayTransform::CreateWebRenderCommands() for
   // more details).
-  wr::WrTransformInfo info;
+  Maybe<wr::WrSpatialId> referenceFrame;
   if (mFrame->IsTransformed()) {
     // Use an identity matrix to force to push a reference frame to create a new
     // coordinate system for view transition captured frame.
-    params.mTransformPtr = [&]() {
-      info.transform = wr::ToLayoutTransform(gfx::Matrix4x4());
-      return &info;
-    }();
-    params.reference_frame_kind = wr::WrReferenceFrameKind::Transform;
+    wr::ReferenceFrameParams rfParams;
+    rfParams.transform_style = params.transform_style;
+    referenceFrame = Some(aManager->CommandBuilder().DefineReferenceFrame(
+        aBuilder, mFrame,
+        WebRenderCommandBuilder::FrameReferenceFrame::ViewTransitionCapture,
+        LayoutDevicePoint(), rfParams));
   }
 
   if (key) {
@@ -5691,7 +5695,7 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
     params.snapshot = si.ptr();
   }
   StackingContextHelper sc(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                           params);
+                           params, referenceFrame);
   return nsDisplayWrapList::CreateWebRenderCommands(
       aBuilder, aResources, sc, aManager, aDisplayListBuilder);
 }
@@ -6912,7 +6916,6 @@ WebRenderCommandsResult nsDisplayTransform::CreateWebRenderCommands(
           : AddAnimationsForWebRender(
                 this, aManager, aDisplayListBuilder,
                 IsPartialPrerender() ? Some(position) : Nothing());
-  wr::WrAnimationProperty prop{wr::WrAnimationType::Transform, animationsId};
 
   nsDisplayTransform* deferredTransformItem = nullptr;
   if (ShouldDeferTransform()) {
@@ -6930,7 +6933,6 @@ WebRenderCommandsResult nsDisplayTransform::CreateWebRenderCommands(
 
   wr::StackingContextParams params;
   params.mBoundTransform = &newTransformMatrix;
-  params.animation = animationsId ? &prop : nullptr;
 
   if (mWrapsBackdropFilter) {
     params.flags |= wr::StackingContextFlags::WRAPS_BACKDROP_FILTER;
@@ -6939,18 +6941,9 @@ WebRenderCommandsResult nsDisplayTransform::CreateWebRenderCommands(
     params.flags |= wr::StackingContextFlags::FORCED_ISOLATION;
   }
 
-  wr::WrTransformInfo transform_info;
-  if (transformForSC) {
-    transform_info.transform = wr::ToLayoutTransform(newTransformMatrix);
-    params.mTransformPtr = &transform_info;
-  } else {
-    params.mTransformPtr = nullptr;
-  }
-
   params.prim_flags = !BackfaceIsHidden()
                           ? wr::PrimitiveFlags::IS_BACKFACE_VISIBLE
                           : wr::PrimitiveFlags{0};
-  params.paired_with_perspective = mHasAssociatedPerspective;
   params.mDeferredTransformItem = deferredTransformItem;
   params.mAnimated = animated;
   params.SetPreserve3D(mFrame->Extend3DContext() && !mIsTransformSeparator);
@@ -6980,25 +6973,53 @@ WebRenderCommandsResult nsDisplayTransform::CreateWebRenderCommands(
     originParams.mBoundTransform = &identity;
     originParams.clip = params.clip;
     originParams.prim_flags = params.prim_flags;
-    originParams.should_snap = true;
+    wr::ReferenceFrameParams originRfParams;
+    originRfParams.is_2d_scale_translation = true;
+    originRfParams.should_snap = true;
+    wr::WrSpatialId originSpatialId =
+        aManager->CommandBuilder().DefineReferenceFrame(
+            aBuilder, mFrame,
+            WebRenderCommandBuilder::FrameReferenceFrame::SVGOrigin, position,
+            originRfParams);
     originSc.emplace(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                     originParams, LayoutDeviceRect(position, boundsSize));
-    Maybe<wr::WrSpatialId> originSpatialId = originSc->ReferenceFrameId();
-    MOZ_ASSERT(originSpatialId);
+                     originParams, Some(originSpatialId), boundsSize);
     // Items take their spatial node from the clip manager, which maps their
     // ASR to a spatial id. The inner stacking context only overrides that
     // mapping if it creates a reference frame or has a non-zero origin, which
     // is not the case with an identity viewBox transform. Override it here so
     // that the content is always positioned by the snapped origin frame.
     aManager->CommandBuilder().PushOverrideForASR(GetActiveScrolledRoot(),
-                                                  *originSpatialId);
+                                                  originSpatialId);
     position = LayoutDevicePoint();
+  }
+
+  // The transform, or the position alone if it is untransformed, goes into a
+  // reference frame. This has to be defined once originSc is in place, as
+  // that is the space it is in.
+  Maybe<wr::WrSpatialId> referenceFrame;
+  if (transformForSC || animationsId || position != LayoutDevicePoint()) {
+    wr::ReferenceFrameParams rfParams;
+    rfParams.transform_style = params.transform_style;
+    if (transformForSC || animationsId) {
+      rfParams.transform = wr::ToLayoutTransform(
+          transformForSC ? *transformForSC : gfx::Matrix4x4());
+      rfParams.animation_id = animationsId;
+      rfParams.paired_with_perspective = mHasAssociatedPerspective;
+    } else {
+      rfParams.is_2d_scale_translation = true;
+    }
+    referenceFrame = Some(aManager->CommandBuilder().DefineReferenceFrame(
+        aBuilder, mFrame,
+        mIsTransformSeparator
+            ? WebRenderCommandBuilder::FrameReferenceFrame::TransformSeparator
+            : WebRenderCommandBuilder::FrameReferenceFrame::Transform,
+        position, rfParams));
   }
 
   {
     StackingContextHelper sc(originSc ? *originSc : aSc,
                              GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                             params, LayoutDeviceRect(position, boundsSize));
+                             params, referenceFrame, boundsSize);
 
     aManager->CommandBuilder().CreateWebRenderCommandsFromDisplayList(
         GetChildren(), this, aDisplayListBuilder, sc, aBuilder, aResources);
@@ -7720,12 +7741,11 @@ WebRenderCommandsResult nsDisplayPerspective::CreateWebRenderCommands(
       mFrame->Extend3DContext() || perspectiveFrame->Extend3DContext();
 
   wr::StackingContextParams params;
+  wr::ReferenceFrameParams rfParams;
+  rfParams.transform = wr::ToLayoutTransform(perspectiveMatrix);
+  rfParams.kind = wr::WrReferenceFrameKind::Perspective;
+  rfParams.SetPreserve3D(preserve3D);
 
-  wr::WrTransformInfo transform_info;
-  transform_info.transform = wr::ToLayoutTransform(perspectiveMatrix);
-  params.mTransformPtr = &transform_info;
-
-  params.reference_frame_kind = wr::WrReferenceFrameKind::Perspective;
   params.prim_flags = !BackfaceIsHidden()
                           ? wr::PrimitiveFlags::IS_BACKFACE_VISIBLE
                           : wr::PrimitiveFlags{0};
@@ -7753,10 +7773,15 @@ WebRenderCommandsResult nsDisplayPerspective::CreateWebRenderCommands(
   // We need to know how many ancestor scroll-frames are we nested in, in order
   // for the async scrolling code in WebRender to calculate the right
   // transformation for the perspective contents.
-  params.scrolling_relative_to = scrollingRelativeTo.ptrOr(nullptr);
+  rfParams.scrolling_relative_to = scrollingRelativeTo.ptrOr(nullptr);
 
+  wr::WrSpatialId referenceFrame =
+      aManager->CommandBuilder().DefineReferenceFrame(
+          aBuilder, mFrame,
+          WebRenderCommandBuilder::FrameReferenceFrame::Perspective,
+          LayoutDevicePoint(), rfParams);
   StackingContextHelper sc(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                           params);
+                           params, Some(referenceFrame));
 
   aManager->CommandBuilder().CreateWebRenderCommandsFromDisplayList(
       GetChildren(), this, aDisplayListBuilder, sc, aBuilder, aResources);
@@ -8806,7 +8831,7 @@ WebRenderCommandsResult nsDisplayMasksAndClipPaths::CreateWebRenderCommands(
       params.flags |= wr::StackingContextFlags::WRAPS_BACKDROP_FILTER;
     }
     layer.emplace(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder, params,
-                  bounds);
+                  Nothing(), bounds.Size());
     sc = layer.ptr();
   }
 

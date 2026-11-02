@@ -130,7 +130,8 @@ StackingContextHelper::StackingContextHelper(
     const StackingContextHelper& aParentSC, const ActiveScrolledRoot* aAsr,
     nsIFrame* aContainerFrame, nsDisplayItem* aContainerItem,
     wr::DisplayListBuilder& aBuilder, const wr::StackingContextParams& aParams,
-    const LayoutDeviceRect& aBounds)
+    const Maybe<wr::WrSpatialId>& aReferenceFrame,
+    const LayoutDeviceSize& aBoundsSize)
     : mBuilder(&aBuilder),
       mScale(1.0f, 1.0f),
       mRasterScaleIsDegenerate(false),
@@ -143,13 +144,12 @@ StackingContextHelper::StackingContextHelper(
   if (aParams.mBoundTransform) {
     gfx::Matrix transform2d;
     bool canDraw2D = aParams.mBoundTransform->CanDraw2D(&transform2d);
-    if (canDraw2D &&
-        aParams.reference_frame_kind != wr::WrReferenceFrameKind::Perspective &&
-        !aContainerFrame->Combines3DTransformWithAncestors()) {
+    if (canDraw2D && !aContainerFrame->Combines3DTransformWithAncestors()) {
       mInheritedTransform = transform2d * aParentSC.mInheritedTransform;
 
       int32_t apd = aContainerFrame->PresContext()->AppUnitsPerDevPixel();
-      nsRect r = LayoutDevicePixel::ToAppUnits(aBounds, apd);
+      nsRect r = LayoutDevicePixel::ToAppUnits(
+          LayoutDeviceRect(LayoutDevicePoint(), aBoundsSize), apd);
       bool degenerate = false;
       mScale = ChooseScale(aContainerFrame, aContainerItem, r,
                            aParentSC.mScale.xScale, aParentSC.mScale.yScale,
@@ -173,9 +173,7 @@ StackingContextHelper::StackingContextHelper(
           transform2d * aParentSC.mSnappingSurfaceTransform;
     }
 
-  } else if (aParams.reference_frame_kind ==
-                 wr::WrReferenceFrameKind::Transform &&
-             aContainerItem &&
+  } else if (aContainerItem &&
              aContainerItem->GetType() == DisplayItemType::TYPE_ASYNC_ZOOM &&
              aContainerItem->Frame()) {
     float resolution = aContainerItem->Frame()->PresShell()->GetResolution();
@@ -224,15 +222,14 @@ StackingContextHelper::StackingContextHelper(
   auto rasterSpace = wr::RasterSpace::Screen();
 
   MOZ_ASSERT(!aParams.clip.IsNone());
-  mReferenceFrameId = mBuilder->PushStackingContext(
-      aParams, wr::ToLayoutRect(aBounds), rasterSpace);
+  mBuilder->PushStackingContext(aParams, rasterSpace, aReferenceFrame);
+  mReferenceFrameId = aReferenceFrame;
 
   if (mReferenceFrameId) {
     mSpaceAndClipChainHelper.emplace(aBuilder, mReferenceFrameId.ref());
   }
 
-  mAffectsClipPositioning =
-      mReferenceFrameId.isSome() || (aBounds.TopLeft() != LayoutDevicePoint());
+  mAffectsClipPositioning = mReferenceFrameId.isSome();
 
   // If the parent stacking context has a deferred transform item, inherit it
   // into this stacking context, as long as the ASR hasn't changed. Refer to

@@ -467,20 +467,17 @@ void AsyncImagePipelineManager::ApplyAsyncImageForPipeline(
       float(aPipeline->mCurrentTexture->GetSize().width),
       float(aPipeline->mCurrentTexture->GetSize().height)};
   computedTransform.rotation = aPipeline->mRotation;
-  params.computed_transform = &computedTransform;
 
-  Maybe<wr::WrSpatialId> referenceFrameId =
-      aPipeline->mDLBuilder.PushStackingContext(
-          params, wr::ToLayoutRect(aPipeline->mScBounds),
-          // This is fine to do unconditionally because we only push images
-          // here.
-          wr::RasterSpace::Screen());
+  wr::WrSpatialId referenceFrameId = aPipeline->mDLBuilder.DefineComputedFrame(
+      wr::ToLayoutPoint(aPipeline->mScBounds.TopLeft()), computedTransform);
+  aPipeline->mDLBuilder.PushStackingContext(
+      params,
+      // This is fine to do unconditionally because we only push images
+      // here.
+      wr::RasterSpace::Screen(), Some(referenceFrameId));
 
   Maybe<wr::SpaceAndClipChainHelper> spaceAndClipChainHelper;
-  if (referenceFrameId) {
-    spaceAndClipChainHelper.emplace(aPipeline->mDLBuilder,
-                                    referenceFrameId.ref());
-  }
+  spaceAndClipChainHelper.emplace(aPipeline->mDLBuilder, referenceFrameId);
 
   if (aPipeline->mCurrentTexture && !keys.IsEmpty()) {
     LayoutDeviceRect rect(0, 0, aPipeline->mCurrentTexture->GetSize().width,

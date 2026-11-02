@@ -2392,6 +2392,13 @@ void WebRenderCommandBuilder::PopOverrideForASR(
   mClipManager.PopOverrideForASR(aASR);
 }
 
+wr::WrSpatialId WebRenderCommandBuilder::DefineReferenceFrame(
+    wr::DisplayListBuilder& aBuilder, nsIFrame* aFrame,
+    FrameReferenceFrame aKind, const LayoutDevicePoint& aOrigin,
+    const wr::ReferenceFrameParams& aParams) {
+  return aBuilder.DefineReferenceFrame(wr::ToLayoutPoint(aOrigin), aParams);
+}
+
 static wr::WrRotation ToWrRotation(VideoRotation aRotation) {
   switch (aRotation) {
     case VideoRotation::kDegree_0:

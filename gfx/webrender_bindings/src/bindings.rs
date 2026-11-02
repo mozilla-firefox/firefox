@@ -519,11 +519,6 @@ pub struct WrComputedTransformData {
     pub rotation: WrRotation,
 }
 
-#[repr(C)]
-pub struct WrTransformInfo {
-    pub transform: LayoutTransform,
-}
-
 fn get_proc_address(glcontext_ptr: *mut c_void, name: &str) -> *const c_void {
     extern "C" {
         fn get_proc_address_from_glcontext(glcontext_ptr: *mut c_void, procname: *const c_char) -> *const c_void;
@@ -2945,18 +2940,95 @@ pub enum WrRotation {
 /// IMPORTANT: If you add fields to this struct, you need to also add initializers
 /// for those fields in WebRenderAPI.h.
 #[repr(C)]
-pub struct WrStackingContextParams {
-    pub clip: WrStackingContextClip,
-    pub animation: *const WrAnimationProperty,
-    pub opacity: *const f32,
-    pub computed_transform: *const WrComputedTransformData,
-    pub snapshot: *const SnapshotInfo,
+pub struct WrReferenceFrameParams {
+    pub transform: LayoutTransform,
+    /// Non-zero if the transform is animated, in which case `transform` is the
+    /// value used while the animation is not in effect.
+    pub animation_id: u64,
     pub transform_style: TransformStyle,
-    pub reference_frame_kind: WrReferenceFrameKind,
+    pub kind: WrReferenceFrameKind,
     pub is_2d_scale_translation: bool,
     pub should_snap: bool,
     pub paired_with_perspective: bool,
     pub scrolling_relative_to: *const u64,
+}
+
+#[no_mangle]
+pub extern "C" fn wr_dp_define_reference_frame(
+    state: &mut WrState,
+    parent_spatial_id: WrSpatialId,
+    origin: LayoutPoint,
+    params: &WrReferenceFrameParams,
+) -> WrSpatialId {
+    debug_assert!(unsafe { !is_in_render_thread() });
+
+    let transform = if params.animation_id != 0 {
+        PropertyBinding::Binding(PropertyBindingKey::new(params.animation_id), params.transform)
+    } else {
+        PropertyBinding::Value(params.transform)
+    };
+
+    let kind = match params.kind {
+        WrReferenceFrameKind::Transform => {
+            debug_assert!(params.scrolling_relative_to.is_null());
+            ReferenceFrameKind::Transform {
+                is_2d_scale_translation: params.is_2d_scale_translation,
+                should_snap: params.should_snap,
+                paired_with_perspective: params.paired_with_perspective,
+            }
+        },
+        WrReferenceFrameKind::Perspective => ReferenceFrameKind::Perspective {
+            scrolling_relative_to: unsafe { params.scrolling_relative_to.as_ref() }
+                .map(|scroll_id| ExternalScrollId(*scroll_id, state.pipeline_id)),
+        },
+    };
+
+    let spatial_id = state.frame_builder.dl_builder.define_reference_frame(
+        origin,
+        parent_spatial_id.to_webrender(state.pipeline_id),
+        params.transform_style,
+        transform,
+        kind,
+    );
+    WrSpatialId { id: spatial_id.0 }
+}
+
+#[no_mangle]
+pub extern "C" fn wr_dp_define_computed_frame(
+    state: &mut WrState,
+    parent_spatial_id: WrSpatialId,
+    origin: LayoutPoint,
+    data: &WrComputedTransformData,
+) -> WrSpatialId {
+    debug_assert!(unsafe { !is_in_render_thread() });
+
+    let rotation = match data.rotation {
+        WrRotation::Degree0 => Rotation::Degree0,
+        WrRotation::Degree90 => Rotation::Degree90,
+        WrRotation::Degree180 => Rotation::Degree180,
+        WrRotation::Degree270 => Rotation::Degree270,
+    };
+    let spatial_id = state.frame_builder.dl_builder.define_computed_frame(
+        origin,
+        parent_spatial_id.to_webrender(state.pipeline_id),
+        Some(data.scale_from),
+        data.vertical_flip,
+        rotation,
+    );
+    WrSpatialId { id: spatial_id.0 }
+}
+
+/// IMPORTANT: If you add fields to this struct, you need to also add initializers
+/// for those fields in WebRenderAPI.h.
+#[repr(C)]
+pub struct WrStackingContextParams {
+    pub clip: WrStackingContextClip,
+    /// Only opacity animations; transform animations belong to the reference
+    /// frame.
+    pub animation: *const WrAnimationProperty,
+    pub opacity: *const f32,
+    pub snapshot: *const SnapshotInfo,
+    pub transform_style: TransformStyle,
     pub prim_flags: PrimitiveFlags,
     pub mix_blend_mode: MixBlendMode,
     pub flags: StackingContextFlags,
@@ -2965,16 +3037,14 @@ pub struct WrStackingContextParams {
 #[no_mangle]
 pub extern "C" fn wr_dp_push_stacking_context(
     state: &mut WrState,
-    bounds: LayoutRect,
     spatial_id: WrSpatialId,
     params: &WrStackingContextParams,
-    transform: *const WrTransformInfo,
     filters: *const FilterOp,
     filter_count: usize,
     filter_datas: *const WrFilterData,
     filter_datas_count: usize,
     glyph_raster_space: RasterSpace,
-) -> WrSpatialId {
+) {
     debug_assert!(unsafe { !is_in_render_thread() });
 
     let c_filters = unsafe { make_slice(filters, filter_count) };
@@ -2995,10 +3065,6 @@ pub extern "C" fn wr_dp_push_stacking_context(
         })
         .collect();
 
-    let transform_ref = unsafe { transform.as_ref() };
-    let mut transform_binding = transform_ref.map(|info| PropertyBinding::Value(info.transform));
-
-    let computed_ref = unsafe { params.computed_transform.as_ref() };
     let opacity_ref = unsafe { params.opacity.as_ref() };
     let mut has_opacity_animation = false;
     let anim = unsafe { params.animation.as_ref() };
@@ -3019,16 +3085,7 @@ pub extern "C" fn wr_dp_push_stacking_context(
                 ));
                 has_opacity_animation = true;
             },
-            WrAnimationType::Transform => {
-                transform_binding = Some(PropertyBinding::Binding(
-                    PropertyBindingKey::new(anim.id),
-                    // Same as above opacity case.
-                    transform_ref
-                        .map(|info| info.transform)
-                        .unwrap_or_else(LayoutTransform::identity),
-                ));
-            },
-            _ => unreachable!("{:?} should not create a stacking context", anim.effect_type),
+            _ => unreachable!("{:?} should not be a stacking context animation", anim.effect_type),
         }
     }
 
@@ -3038,79 +3095,10 @@ pub extern "C" fn wr_dp_push_stacking_context(
         }
     }
 
-    let mut wr_spatial_id = spatial_id.to_webrender(state.pipeline_id);
     let wr_clip_id = params.clip.to_webrender(state.pipeline_id);
 
-    // Note: 0 has special meaning in WR land, standing for ROOT_REFERENCE_FRAME.
-    // However, it is never returned by `define_reference_frame`, and we need to return
-    // an option here across FFI, so we take that 0 value for the None semantics.
-    // This is resolved into proper `Maybe<WrSpatialId>` inside `WebRenderAPI::PushStackingContext`.
-    let mut result = WrSpatialId { id: 0 };
-    if let Some(transform_binding) = transform_binding {
-        let scrolling_relative_to = match unsafe { params.scrolling_relative_to.as_ref() } {
-            Some(scroll_id) => {
-                debug_assert_eq!(params.reference_frame_kind, WrReferenceFrameKind::Perspective);
-                Some(ExternalScrollId(*scroll_id, state.pipeline_id))
-            },
-            None => None,
-        };
-
-        let reference_frame_kind = match params.reference_frame_kind {
-            WrReferenceFrameKind::Transform => ReferenceFrameKind::Transform {
-                is_2d_scale_translation: params.is_2d_scale_translation,
-                should_snap: params.should_snap,
-                paired_with_perspective: params.paired_with_perspective,
-            },
-            WrReferenceFrameKind::Perspective => ReferenceFrameKind::Perspective { scrolling_relative_to },
-        };
-        wr_spatial_id = state.frame_builder.dl_builder.define_reference_frame(
-            bounds.min,
-            wr_spatial_id,
-            params.transform_style,
-            transform_binding,
-            reference_frame_kind,
-        );
-
-        result.id = wr_spatial_id.0;
-        assert_ne!(wr_spatial_id.0, 0);
-    } else if let Some(data) = computed_ref {
-        let rotation = match data.rotation {
-            WrRotation::Degree0 => Rotation::Degree0,
-            WrRotation::Degree90 => Rotation::Degree90,
-            WrRotation::Degree180 => Rotation::Degree180,
-            WrRotation::Degree270 => Rotation::Degree270,
-        };
-        wr_spatial_id = state.frame_builder.dl_builder.define_computed_frame(
-            bounds.min,
-            wr_spatial_id,
-            Some(data.scale_from),
-            data.vertical_flip,
-            rotation,
-        );
-
-        result.id = wr_spatial_id.0;
-        assert_ne!(wr_spatial_id.0, 0);
-    } else if bounds.min != LayoutPoint::zero() || params.should_snap {
-        // Inherit the stacking context's transform style so this translate-only
-        // reference frame doesn't introduce a 3D flattening boundary for
-        // preserve-3d contexts.
-        wr_spatial_id = state.frame_builder.dl_builder.define_reference_frame(
-            bounds.min,
-            wr_spatial_id,
-            params.transform_style,
-            PropertyBinding::Value(LayoutTransform::identity()),
-            ReferenceFrameKind::Transform {
-                is_2d_scale_translation: true,
-                should_snap: params.should_snap,
-                paired_with_perspective: false,
-            },
-        );
-        result.id = wr_spatial_id.0;
-        assert_ne!(wr_spatial_id.0, 0);
-    }
-
     state.frame_builder.dl_builder.push_stacking_context(
-        wr_spatial_id,
+        spatial_id.to_webrender(state.pipeline_id),
         params.prim_flags,
         wr_clip_id,
         params.transform_style,
@@ -3121,8 +3109,6 @@ pub extern "C" fn wr_dp_push_stacking_context(
         params.flags,
         unsafe { params.snapshot.as_ref() }.cloned(),
     );
-
-    result
 }
 
 #[no_mangle]
@@ -4090,11 +4076,13 @@ pub extern "C" fn wr_dp_push_border_gradient(
     let stops_slice = unsafe { make_slice(stops, stops_count) };
     let stops_vector = stops_slice.to_owned();
 
-    let (gradient, stops_vector) =
-        state
-            .frame_builder
-            .dl_builder
-            .create_gradient(start_point, end_point, stops_vector, extend_mode, AlphaMode::Premultiplied);
+    let (gradient, stops_vector) = state.frame_builder.dl_builder.create_gradient(
+        start_point,
+        end_point,
+        stops_vector,
+        extend_mode,
+        AlphaMode::Premultiplied,
+    );
 
     let border_details = BorderDetails::NinePatch(NinePatchBorder {
         source: NinePatchBorderSource::Gradient(gradient),
@@ -4148,11 +4136,13 @@ pub extern "C" fn wr_dp_push_border_radial_gradient(
         widths.left as i32,
     );
 
-    let (gradient, stops_vector) =
-        state
-            .frame_builder
-            .dl_builder
-            .create_radial_gradient(center, radius, stops_vector, extend_mode, AlphaMode::Premultiplied);
+    let (gradient, stops_vector) = state.frame_builder.dl_builder.create_radial_gradient(
+        center,
+        radius,
+        stops_vector,
+        extend_mode,
+        AlphaMode::Premultiplied,
+    );
 
     let border_details = BorderDetails::NinePatch(NinePatchBorder {
         source: NinePatchBorderSource::RadialGradient(gradient),
@@ -4206,11 +4196,13 @@ pub extern "C" fn wr_dp_push_border_conic_gradient(
         widths.left as i32,
     );
 
-    let (gradient, stops_vector) =
-        state
-            .frame_builder
-            .dl_builder
-            .create_conic_gradient(center, angle, stops_vector, extend_mode, AlphaMode::Premultiplied);
+    let (gradient, stops_vector) = state.frame_builder.dl_builder.create_conic_gradient(
+        center,
+        angle,
+        stops_vector,
+        extend_mode,
+        AlphaMode::Premultiplied,
+    );
 
     let border_details = BorderDetails::NinePatch(NinePatchBorder {
         source: NinePatchBorderSource::ConicGradient(gradient),

@@ -3475,12 +3475,10 @@ WebRenderCommandsResult SVGTextFrame::CreateWebRenderCommands(
       // The text frame is painted at the origin of a reference frame that
       // carries the run transform, so glyph positions reach WebRender
       // untransformed and WebRender applies the scale and rotation.
-      wr::WrTransformInfo transformInfo;
-      transformInfo.transform =
+      wr::ReferenceFrameParams rfParams;
+      rfParams.transform =
           wr::ToLayoutTransform(gfx::Matrix4x4::From2D(ToMatrix(runTransform)));
       wr::StackingContextParams params;
-      params.mTransformPtr = &transformInfo;
-      params.reference_frame_kind = wr::WrReferenceFrameKind::Transform;
       params.clip =
           wr::WrStackingContextClip::ClipChain(aBuilder.CurrentClipChainId());
       params.prim_flags = aItem->BackfaceIsHidden()
@@ -3491,14 +3489,12 @@ WebRenderCommandsResult SVGTextFrame::CreateWebRenderCommands(
           LayoutDeviceRect::FromAppUnits(frame->InkOverflowRect(), auPerDevPx);
       runBounds.Inflate(1);
 
-      Maybe<wr::WrSpatialId> spatialId = aBuilder.PushStackingContext(
-          params, wr::ToLayoutRect(LayoutDeviceRect()),
-          wr::RasterSpace::Screen());
+      wr::WrSpatialId spatialId = aBuilder.DefineReferenceFrame(
+          wr::ToLayoutPoint(LayoutDevicePoint()), rfParams);
+      aBuilder.PushStackingContext(params, wr::RasterSpace::Screen(),
+                                   Some(spatialId));
       {
-        Maybe<wr::SpaceAndClipChainHelper> spaceHelper;
-        if (spatialId) {
-          spaceHelper.emplace(aBuilder, *spatialId);
-        }
+        wr::SpaceAndClipChainHelper spaceHelper(aBuilder, spatialId);
         textDrawer->SetBounds(runBounds);
         context.SetMatrix(gfx::Matrix());
 

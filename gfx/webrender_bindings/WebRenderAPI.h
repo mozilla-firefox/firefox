@@ -548,6 +548,27 @@ class MOZ_RAII AutoTransactionSender {
 };
 
 /**
+ * The parameters of a reference frame. By default an identity, flat,
+ * non-animated transform reference frame.
+ */
+struct MOZ_STACK_CLASS ReferenceFrameParams : public WrReferenceFrameParams {
+  ReferenceFrameParams()
+      : WrReferenceFrameParams{wr::ToLayoutTransform(gfx::Matrix4x4()),
+                               /* animation_id = */ 0,
+                               wr::TransformStyle::Flat,
+                               wr::WrReferenceFrameKind::Transform,
+                               /* is_2d_scale_translation = */ false,
+                               /* should_snap = */ false,
+                               /* paired_with_perspective = */ false,
+                               /* scrolling_relative_to = */ nullptr} {}
+
+  void SetPreserve3D(bool aPreserve) {
+    transform_style =
+        aPreserve ? wr::TransformStyle::Preserve3D : wr::TransformStyle::Flat;
+  }
+};
+
+/**
  * A set of optional parameters for stacking context creation.
  */
 struct MOZ_STACK_CLASS StackingContextParams : public WrStackingContextParams {
@@ -557,13 +578,7 @@ struct MOZ_STACK_CLASS StackingContextParams : public WrStackingContextParams {
             nullptr,
             nullptr,
             nullptr,
-            nullptr,
             wr::TransformStyle::Flat,
-            wr::WrReferenceFrameKind::Transform,
-            false,
-            false,
-            false,
-            nullptr,
             /* prim_flags = */ wr::PrimitiveFlags::IS_BACKFACE_VISIBLE,
             wr::MixBlendMode::Normal,
             wr::StackingContextFlags{0}} {}
@@ -579,7 +594,6 @@ struct MOZ_STACK_CLASS StackingContextParams : public WrStackingContextParams {
   nsTArray<wr::WrFilterData> mFilterDatas;
   wr::LayoutRect mBounds = wr::ToLayoutRect(LayoutDeviceRect());
   const gfx::Matrix4x4* mBoundTransform = nullptr;
-  const wr::WrTransformInfo* mTransformPtr = nullptr;
   nsDisplayTransform* mDeferredTransformItem = nullptr;
   // Whether the stacking context is possibly animated. This alters how
   // coordinates are transformed/snapped to invalidate less when transforms
@@ -618,9 +632,17 @@ class DisplayListBuilder final {
   void End(wr::BuiltDisplayList& aOutDisplayList);
   void End(layers::DisplayListData& aOutTransaction);
 
-  Maybe<wr::WrSpatialId> PushStackingContext(
-      const StackingContextParams& aParams, const wr::LayoutRect& aBounds,
-      const wr::RasterSpace& aRasterSpace);
+  // Reference frames are children of the current space. aOrigin is their
+  // offset in it.
+  wr::WrSpatialId DefineReferenceFrame(const wr::LayoutPoint& aOrigin,
+                                       const ReferenceFrameParams& aParams);
+  wr::WrSpatialId DefineComputedFrame(const wr::LayoutPoint& aOrigin,
+                                      const wr::WrComputedTransformData& aData);
+
+  // The stacking context is in aSpatialId if given, else in the current space.
+  void PushStackingContext(const StackingContextParams& aParams,
+                           const wr::RasterSpace& aRasterSpace,
+                           const Maybe<wr::WrSpatialId>& aSpatialId);
   void PopStackingContext();
 
   wr::WrClipChainId DefineClipChain(Span<const wr::WrClipId> aClips,

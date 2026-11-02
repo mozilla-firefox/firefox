@@ -1308,14 +1308,32 @@ void DisplayListBuilder::End(layers::DisplayListData& aOutTransaction) {
   dlInternerDelta.inner.data = nullptr;
 }
 
-Maybe<wr::WrSpatialId> DisplayListBuilder::PushStackingContext(
-    const wr::StackingContextParams& aParams, const wr::LayoutRect& aBounds,
-    const wr::RasterSpace& aRasterSpace) {
-  WRDL_LOG(
-      "PushStackingContext b=%s t=%s id=0x%" PRIx64 "\n", mWrState,
-      ToString(aBounds).c_str(),
-      aParams.mTransformPtr ? ToString(*aParams.mTransformPtr).c_str() : "none",
-      aParams.animation ? aParams.animation->id : 0);
+wr::WrSpatialId DisplayListBuilder::DefineReferenceFrame(
+    const wr::LayoutPoint& aOrigin, const ReferenceFrameParams& aParams) {
+  auto spatialId = wr_dp_define_reference_frame(
+      mWrState, mCurrentSpaceAndClipChain.space, aOrigin, &aParams);
+  WRDL_LOG("DefineReferenceFrame id=%zu o=%s t=%s anim=%" PRIu64 "\n", mWrState,
+           spatialId.id, ToString(aOrigin).c_str(),
+           ToString(aParams.transform).c_str(), aParams.animation_id);
+  return spatialId;
+}
+
+wr::WrSpatialId DisplayListBuilder::DefineComputedFrame(
+    const wr::LayoutPoint& aOrigin, const wr::WrComputedTransformData& aData) {
+  auto spatialId = wr_dp_define_computed_frame(
+      mWrState, mCurrentSpaceAndClipChain.space, aOrigin, &aData);
+  WRDL_LOG("DefineComputedFrame id=%zu o=%s\n", mWrState, spatialId.id,
+           ToString(aOrigin).c_str());
+  return spatialId;
+}
+
+void DisplayListBuilder::PushStackingContext(
+    const wr::StackingContextParams& aParams,
+    const wr::RasterSpace& aRasterSpace,
+    const Maybe<wr::WrSpatialId>& aSpatialId) {
+  WRDL_LOG("PushStackingContext space=%zu anim=%" PRIu64 "\n", mWrState,
+           aSpatialId.valueOr(mCurrentSpaceAndClipChain.space).id,
+           aParams.animation ? aParams.animation->id : 0);
 
   // Diagnostics for bug 2031107: validate FFI inputs before crossing into
   // Rust to distinguish C++-side invariant violations from corruption that
@@ -1332,13 +1350,11 @@ Maybe<wr::WrSpatialId> DisplayListBuilder::PushStackingContext(
           alignof(wr::WrFilterData) ==
       0);
 
-  auto spatialId = wr_dp_push_stacking_context(
-      mWrState, aBounds, mCurrentSpaceAndClipChain.space, &aParams,
-      aParams.mTransformPtr, aParams.mFilters.Elements(),
-      aParams.mFilters.Length(), aParams.mFilterDatas.Elements(),
-      aParams.mFilterDatas.Length(), aRasterSpace);
-
-  return spatialId.id != 0 ? Some(spatialId) : Nothing();
+  wr_dp_push_stacking_context(
+      mWrState, aSpatialId.valueOr(mCurrentSpaceAndClipChain.space), &aParams,
+      aParams.mFilters.Elements(), aParams.mFilters.Length(),
+      aParams.mFilterDatas.Elements(), aParams.mFilterDatas.Length(),
+      aRasterSpace);
 }
 
 void DisplayListBuilder::PopStackingContext() {
