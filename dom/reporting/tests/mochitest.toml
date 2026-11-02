@@ -49,4 +49,6 @@ skip-if = [
   "http3",
 ]
 
+["test_deprecated_params.html"]
+
 ["test_memoryPressure.html"]

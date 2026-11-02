@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test for parameters in deprecation reports</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+add_task(async function test_mathvariant() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["mathml.legacy_mathvariant_attribute.disabled", false]],
+  });
+  const id = "MathML_DeprecatedMathVariant";
+  const report = await new Promise(resolve => {
+    const observer = new ReportingObserver(reports => {
+      const found = reports.find(r => r.body.id == id);
+      if (found) {
+        observer.disconnect();
+        resolve(found);
+      }
+    }, { types: ["deprecation"] });
+    observer.observe();
+
+    const math = document.createElementNS("http://www.w3.org/1998/Math/MathML", "math");
+    const mi = document.createElementNS("http://www.w3.org/1998/Math/MathML", "mi");
+    mi.setAttribute("mathvariant", "fraktur");
+    mi.textContent = "A";
+    math.appendChild(mi);
+    document.body.appendChild(math);
+    getComputedStyle(mi).fontStyle;
+  });
+
+  ok(report.body.message.includes("fraktur"),
+     `The message includes the parameter: ${report.body.message}`);
+  ok(!report.body.message.includes("%S"),
+     "The message doesn't include an unreplaced placeholder");
+});
+</script>
+</body>
+</html>

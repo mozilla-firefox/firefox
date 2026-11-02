@@ -1420,11 +1420,14 @@ class nsContentUtils {
    *   @param aOperation The deprecated operation being reported.
    *   @param aLocation Source location of the operation. Pass the empty
    *          location to omit line and column information.
+   *   @param aParams Parameters for the warning message, as passed to
+   *          Document::WarnOnceAbout.
    */
-  static void ReportDeprecation(nsIGlobalObject* aGlobal, const Document* aDoc,
-                                nsIURI* aURI,
-                                mozilla::dom::DeprecatedOperations aOperation,
-                                const mozilla::JSCallingLocation& aLocation);
+  static void ReportDeprecation(
+      nsIGlobalObject* aGlobal, const Document* aDoc, nsIURI* aURI,
+      mozilla::dom::DeprecatedOperations aOperation,
+      const mozilla::JSCallingLocation& aLocation,
+      const nsTArray<nsString>& aParams = nsTArray<nsString>());
 
   static void ReportEmptyGetElementByIdArg(const Document* aDoc);
 

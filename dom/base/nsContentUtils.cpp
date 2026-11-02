@@ -5983,7 +5983,8 @@ static const char* kDeprecatedOperations[] = {
 void nsContentUtils::ReportDeprecation(
     nsIGlobalObject* aGlobal, const Document* aDoc, nsIURI* aURI,
     DeprecatedOperations aOperation,
-    const mozilla::JSCallingLocation& aLocation) {
+    const mozilla::JSCallingLocation& aLocation,
+    const nsTArray<nsString>& aParams) {
   MOZ_ASSERT(aGlobal);
   MOZ_ASSERT(aURI);
 
@@ -6001,8 +6002,10 @@ void nsContentUtils::ReportDeprecation(
 
   // XXX do we really want the localized string for deprecation report?
   nsAutoString msg;
-  nsresult rv = nsContentUtils::GetMaybeLocalizedString(
-      PropertiesFile::DOM_PROPERTIES, key.get(), aDoc, msg);
+  nsresult rv = FormatLocalizedString(
+      GetMaybeSpoofedPropertiesFile(PropertiesFile::DOM_PROPERTIES, key.get(),
+                                    aDoc),
+      key.get(), aParams, msg);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return;
   }

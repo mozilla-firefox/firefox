@@ -15032,7 +15032,8 @@ void Document::WarnOnceAndReportAbout(
     return;
   }
 
-  nsContentUtils::ReportDeprecation(global, this, uri, aOperation, aLocation);
+  nsContentUtils::ReportDeprecation(global, this, uri, aOperation, aLocation,
+                                    aParams);
 }
 
 bool Document::HasWarnedAbout(DocumentWarnings aWarning) const {
