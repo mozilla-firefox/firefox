@@ -50,6 +50,8 @@ class PolicyContainer : public nsIPolicyContainer {
   struct Headers {
     nsCString mContentSecurityPolicy;
     nsCString mContentSecurityPolicyReportOnly;
+    nsCString mConnectionAllowlist;
+    nsCString mConnectionAllowlistReportOnly;
   };
 
   // Creates a Policy-Container for non-documents by parsing the provided

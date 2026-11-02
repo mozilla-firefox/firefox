@@ -118,6 +118,18 @@ PolicyContainer::CreateForNonDocument(nsIPrincipal* aPrincipal,
     policyContainer->SetCSP(csp);
   }
 
+  if (!aHeaders.mConnectionAllowlist.IsEmpty() ||
+      !aHeaders.mConnectionAllowlistReportOnly.IsEmpty()) {
+    RefPtr<ConnectionAllowlists> allowlists;
+    MOZ_TRY(ConnectionAllowlists::ParseHeaders(
+        aHeaders.mConnectionAllowlist, aHeaders.mConnectionAllowlistReportOnly,
+        getter_AddRefs(allowlists)));
+    if (allowlists) {
+      allowlists->SetResponseURI(aSelfURI);
+    }
+    policyContainer->SetConnectionAllowlists(allowlists);
+  }
+
   return policyContainer.forget();
 }
 
