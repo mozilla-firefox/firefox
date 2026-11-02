@@ -8,4 +8,5 @@ with Files("**"):
 MOZ_SRC_FILES += [
     "AuthProviderImpl.sys.mjs",
     "FxaAuthProviderImpl.sys.mjs",
+    "GuestAuthProviderImpl.sys.mjs",
 ]

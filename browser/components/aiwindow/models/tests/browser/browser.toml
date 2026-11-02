@@ -17,6 +17,7 @@ prefs = [
 ["browser_aitab_generation.js"]
 ["browser_aitab_schema_override.js"]
 ["browser_aitab_validation.js"]
+["browser_auth_guest.js"]
 ["browser_chat_tool_calls.js"]
 ["browser_conversation.js"]
 ["browser_conversation_starters.js"]

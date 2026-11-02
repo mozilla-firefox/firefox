@@ -10,6 +10,9 @@
  *
  * @fires AuthProviderImpl#"AuthProviderImpl:Logout"
  *  When the user signs out of their account.
+ * @fires AuthProviderImpl#"AuthProviderImpl:FallbackNeeded"
+ *  When this backend can no longer be used and AuthProvider should switch to
+ *  another one.
  */
 export class AuthProviderImpl extends EventTarget {
   /**

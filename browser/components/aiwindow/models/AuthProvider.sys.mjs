@@ -5,9 +5,11 @@
  */
 
 import { FxaAuthProviderImpl } from "moz-src:///browser/components/aiwindow/models/auth/FxaAuthProviderImpl.sys.mjs";
+import { GuestAuthProviderImpl } from "moz-src:///browser/components/aiwindow/models/auth/GuestAuthProviderImpl.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const PREF_TOS_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
+const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 
 const lazy = XPCOMUtils.declareLazy({
   hasAIWindowToSConsent: {
@@ -36,6 +38,38 @@ class AuthProviderSingleton extends EventTarget {
 
   #onLogout = () => this.dispatchEvent(new Event("AuthProvider:Logout"));
 
+  #onFallbackNeeded = () => {
+    if (Services.prefs.getStringPref(PREF_AUTH_IMPL, "") !== "guest") {
+      lazy.log.error(
+        "Fallback requested, but the guest provider is not enabled. Not switching to FxA."
+      );
+      return;
+    }
+    Services.prefs.setStringPref(PREF_AUTH_IMPL, "fxa");
+  };
+
+  #onAuthImplChanged = () => this.setImpl(AuthProviderSingleton.#createImpl());
+
+  constructor() {
+    super();
+    this.setImpl(AuthProviderSingleton.#createImpl());
+    Services.prefs.addObserver(PREF_AUTH_IMPL, this.#onAuthImplChanged);
+  }
+
+  /**
+   * @returns {AuthProviderImpl} The impl selected by the auth impl pref
+   */
+  static #createImpl() {
+    const value = Services.prefs.getStringPref(PREF_AUTH_IMPL, "");
+    if (value === "guest") {
+      return new GuestAuthProviderImpl();
+    }
+    if (value !== "" && value !== "fxa") {
+      lazy.log.warn(`Unknown ${PREF_AUTH_IMPL} value "${value}", using FxA.`);
+    }
+    return new FxaAuthProviderImpl();
+  }
+
   /**
    * Sets the backend used for account-specific operations.
    *
@@ -43,8 +77,16 @@ class AuthProviderSingleton extends EventTarget {
    */
   setImpl(impl) {
     this.#impl?.removeEventListener("AuthProviderImpl:Logout", this.#onLogout);
+    this.#impl?.removeEventListener(
+      "AuthProviderImpl:FallbackNeeded",
+      this.#onFallbackNeeded
+    );
     this.#impl = impl;
     this.#impl.addEventListener("AuthProviderImpl:Logout", this.#onLogout);
+    this.#impl.addEventListener(
+      "AuthProviderImpl:FallbackNeeded",
+      this.#onFallbackNeeded
+    );
   }
 
   get hasToSConsent() {
@@ -189,4 +231,3 @@ class AuthProviderSingleton extends EventTarget {
 }
 
 export const AuthProvider = new AuthProviderSingleton();
-AuthProvider.setImpl(new FxaAuthProviderImpl());
