@@ -4108,6 +4108,8 @@
     <string name="wrex_widget_match_suspended">Suspended</string>
     <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
     <string name="wrex_widget_match_postponed">Postponed</string>
+    <!-- Sports widget action label to refresh match data after an error. -->
+    <string name="wrex_widget_error_refresh">Refresh</string>
     <!-- Sports widget menu item to view the team's match results. -->
     <string name="wrex_widget_results">Results</string>
     <!-- Sports widget menu item to view the league standings table. -->
@@ -4125,6 +4127,16 @@
       %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
       %2$d is the current page number, and %3$d is the total number of pages. -->
     <string name="wrex_widget_page_position_content_description">%1$s, page %2$d of %3$d</string>
+    <!-- Sports widget error card title shown when the user is offline. -->
+    <string name="wrex_widget_error_connection_offline_title">Looks like you’re offline</string>
+    <!-- Sports widget error card description shown when the user is offline. -->
+    <string name="wrex_widget_error_connection_offline_description">Check your internet connection and try again.</string>
+    <!-- Sports widget error card title shown when match data fails to load. -->
+    <string name="wrex_widget_error_load_failed_title">Can’t show match info right now</string>
+    <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+    <string name="wrex_widget_error_try_refreshing">Try refreshing or check back later.</string>
+    <!-- Sports widget error card title shown when the latest match results fail to load. -->
+    <string name="wrex_widget_error_results_load_failed_title">Can’t show results right now</string>
 
     <!-- Privacy notice homepage banner -->
     <!-- A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
