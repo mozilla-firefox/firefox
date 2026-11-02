@@ -49,15 +49,14 @@ from mozbuild.frontend.data import (
     XPCOMComponentManifests,
     XPIDLModule,
 )
+from mozbuild.frontend.jar_manifest import parse_jar_manifest
 from mozbuild.frontend.l10n_manifest import (
     L10nManifestContext,
     build_l10n_manifest_from_substs,
     write_l10n_manifest,
 )
 from mozbuild.frontend.reader import SandboxValidationError
-from mozbuild.jar import DeprecatedJarManifest, JarManifestParser
 from mozbuild.licenses import LicenseCollection, LicenseError
-from mozbuild.preprocessor import Preprocessor
 from mozbuild.rust_commands import CARGO_SPEC_FILES, CargoCommand, cargo_spec
 
 
@@ -722,22 +721,16 @@ class CommonBackend(BuildBackend):
         # - DEFINES from config/config.mk
         # - The equivalent of -e when USE_EXTENSION_MANIFEST is set in
         #   moz.build, but it doesn't matter in dist/bin.
-        pp = Preprocessor()
+        defines = {}
         if obj.defines:
-            pp.context.update(obj.defines.defines)
-        pp.context.update(self.environment.defines)
+            defines.update(obj.defines.defines)
+        defines.update(self.environment.defines)
         ab_cd = obj.config.substs["MOZ_UI_LOCALE"]
-        pp.context.update(AB_CD=ab_cd)
-        pp.out = JarManifestParser()
-        try:
-            pp.do_include(obj.path.full_path)
-        except DeprecatedJarManifest as e:
-            raise DeprecatedJarManifest(
-                "Parsing error while processing %s: %s" % (obj.path.full_path, e)
-            )
-        self.backend_input_files |= pp.includes
 
-        for jarinfo in pp.out:
+        sections, inputs = parse_jar_manifest(obj.path.full_path, defines, ab_cd)
+        self.backend_input_files |= inputs
+
+        for jarinfo in sections:
             jar_context = Context(
                 allowed_variables=VARIABLES, config=obj._context.config
             )
