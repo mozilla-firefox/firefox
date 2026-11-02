@@ -186,6 +186,8 @@ export class TelemetryScheduler {
               record_type: "endOfConversation",
               uniform_sampling_probability:
                 conversationObj.uniformSamplingProbability ?? 0,
+              triggers: conversationObj.triggers ?? [],
+              chat_version: conversation.systemPromptVersion,
             }
           );
           await lazy.ChatStore.markLLMTelemetryProcessed(

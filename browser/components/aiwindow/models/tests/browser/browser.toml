@@ -22,6 +22,7 @@ prefs = [
 ["browser_conversation_starters.js"]
 ["browser_conversation_stream.js"]
 ["browser_getCurrentTabMetadata.js"]
+["browser_llmaj_telemetry.js"]
 ["browser_monitor_agent.js"]
 ["browser_monitor_agent_limits.js"]
 ["browser_monitor_errors.js"]

@@ -1507,13 +1507,15 @@ class ChatStore {
    * @param {object} probabilities - New telemetry probability attributes to merge
    * @param {number} uniform_sampling_probability - Uniform sampling probability if any, or 0
    * @param {number} processed - Processed flag value, 0 for unprocessed and 1 for processed
+   * @param {string[]} triggers - Names of fired triggers to merge
    */
   async updateLLMTelemetryRecord(
     conversationId,
     prompts = {},
     probabilities = {},
     uniform_sampling_probability = 0,
-    processed = 0
+    processed = 0,
+    triggers = []
   ) {
     await this.#ensureDatabase().catch(e => {
       lazy.log.error(
@@ -1532,6 +1534,7 @@ class ChatStore {
         uniform_sampling_probability,
         processed_time: Date.now(),
         processed,
+        triggers: JSON.stringify(triggers ?? []),
       })
       .catch(e => {
         lazy.log.error(
@@ -1591,6 +1594,7 @@ class ChatStore {
       ),
       processedTime: rows[0].getResultByName("processed_time"),
       processed: rows[0].getResultByName("processed"),
+      triggers: JSON.parse(rows[0].getResultByName("triggers") || "[]"),
     };
   }
 
@@ -1652,6 +1656,7 @@ class ChatStore {
       uniformSamplingProbability: row.getResultByName(
         "uniform_sampling_probability"
       ),
+      triggers: JSON.parse(row.getResultByName("triggers") ?? "[]"),
       modelId: row.getResultByName("model_id"),
       turnIndex: row.getResultByName("turn_index"),
     }));

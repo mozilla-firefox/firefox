@@ -41,7 +41,7 @@ async function applyV2(conn, version) {
  */
 async function getColumns(conn, tableName) {
   const columns = await conn.execute(`PRAGMA table_info(${tableName})`);
-  return new Set(columns.map(c => c.name));
+  return new Set(columns.map(c => c.getResultByName("name")));
 }
 
 // Rename insights to memories
@@ -231,6 +231,20 @@ async function applyV12(conn, version) {
   await conn.execute(MESSAGE_ORDINAL_INDEX_DROP);
 }
 
+// Persist the telemetry triggers that fired for a conversation
+async function applyV13(conn, version) {
+  if (version >= 13) {
+    return;
+  }
+
+  const columns = await getColumns(conn, "llm_telemetry");
+  if (columns.has("triggers")) {
+    return;
+  }
+
+  await conn.execute("ALTER TABLE llm_telemetry ADD COLUMN triggers BLOB");
+}
+
 /**
  * Array of migration functions to run in the order they should be run in.
  *
@@ -248,4 +262,5 @@ export const migrations = [
   applyV10,
   applyV11,
   applyV12,
+  applyV13,
 ];

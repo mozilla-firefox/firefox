@@ -516,7 +516,9 @@ export async function runLLMaJTelemetry(conversation) {
         conversation.id,
         prompts,
         probabilities,
-        conversation._telemetryUniformProbability
+        conversation._telemetryUniformProbability,
+        0,
+        triggers.map(t => t.name)
       ).catch(e => console.error("Failed to update telemetry record:", e));
     })
     .catch(e => console.error("Telemetry run failed:", e))
