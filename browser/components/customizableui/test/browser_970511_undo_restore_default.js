@@ -6,16 +6,9 @@
 
 requestLongerTimeout(2);
 
-// Restoring default should reset density and show an "undo" option which undoes
-// the restoring operation.
+// Restoring default should reset density and automatic touch mode and show an
+// "undo" option which undoes the restoring operation.
 add_task(async function () {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.compactmode.show", true],
-      // The density dropdown is only shown when Nova is disabled.
-      ["browser.nova.enabled", false],
-    ],
-  });
   let stopReloadButtonId = "stop-reload-button";
   CustomizableUI.removeWidgetFromArea(stopReloadButtonId);
   await startCustomizing();
@@ -30,51 +23,34 @@ add_task(async function () {
   );
   is(undoResetButton.hidden, true, "The undo button is hidden before reset");
 
-  let densityButton = document.getElementById("customization-uidensity-button");
-  let popup = document.getElementById("customization-uidensity-menu");
-  let popupShownPromise = popupShown(popup);
-  EventUtils.synthesizeMouseAtCenter(densityButton, {});
-  info("Clicked on density button");
-  await popupShownPromise;
-
-  let compactModeItem = document.getElementById(
-    "customization-uidensity-menuitem-compact"
-  );
-  let win = document.getElementById("main-window");
-  let densityChangedPromise = new Promise(resolve => {
-    let observer = new MutationObserver(() => {
-      if (win.getAttribute("uidensity") == "compact") {
-        resolve();
-        observer.disconnect();
-      }
-    });
-    observer.observe(win, {
-      attributes: true,
-      attributeFilter: ["uidensity"],
-    });
-  });
-
-  compactModeItem.doCommand();
-  info("Clicked on compact density");
-  await densityChangedPromise;
+  Services.prefs.setIntPref("browser.uidensity", gUIDensity.MODE_COMPACT);
+  Services.prefs.setBoolPref("browser.touchmode.auto", true);
 
   await gCustomizeMode.reset();
 
   ok(CustomizableUI.inDefaultState, "In default state after reset");
   is(undoResetButton.hidden, false, "The undo button is visible after reset");
-  is(
-    win.hasAttribute("uidensity"),
-    false,
-    "The window has been restored to normal density."
+  ok(
+    !Services.prefs.prefHasUserValue("browser.uidensity"),
+    "Density has been restored to the default."
+  );
+  ok(
+    !Services.prefs.prefHasUserValue("browser.touchmode.auto"),
+    "Automatic touch mode has been restored to the default."
   );
 
   await gCustomizeMode.undoReset();
 
   is(
-    win.getAttribute("uidensity"),
-    "compact",
+    Services.prefs.getIntPref("browser.uidensity"),
+    gUIDensity.MODE_COMPACT,
     "Density has been reset to compact."
   );
+  ok(
+    Services.prefs.getBoolPref("browser.touchmode.auto"),
+    "Automatic touch mode has been restored to on."
+  );
+
   ok(!CustomizableUI.inDefaultState, "Not in default state after undo-reset");
   is(
     undoResetButton.hidden,
@@ -88,7 +64,6 @@ add_task(async function () {
   );
 
   await gCustomizeMode.reset();
-  await SpecialPowers.popPrefEnv();
 });
 
 // Performing an action after a reset will hide the undo button.
