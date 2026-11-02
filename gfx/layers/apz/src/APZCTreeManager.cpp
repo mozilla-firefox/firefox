@@ -354,20 +354,6 @@ void APZCTreeManager::NotifyLayerTreeAdopted(
   // Resetting the focus state avoids this (the state will sync with content
   // on the next focus update).
   mFocusState.Reset();
-
-  UniquePtr<APZTestData> adoptedData;
-  if (aOldApzcTreeManager) {
-    MutexAutoLock lock(aOldApzcTreeManager->mTestDataLock);
-    auto it = aOldApzcTreeManager->mTestData.find(aLayersId);
-    if (it != aOldApzcTreeManager->mTestData.end()) {
-      adoptedData = std::move(it->second);
-      aOldApzcTreeManager->mTestData.erase(it);
-    }
-  }
-  if (adoptedData) {
-    MutexAutoLock lock(mTestDataLock);
-    mTestData[aLayersId] = std::move(adoptedData);
-  }
 }
 
 void APZCTreeManager::NotifyLayerTreeRemoved(LayersId aLayersId) {
