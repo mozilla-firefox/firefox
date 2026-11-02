@@ -662,6 +662,11 @@ void SessionStorageManager::ClearStorages(
 nsresult SessionStorageManager::Observe(
     const char* aTopic, const nsAString& aOriginAttributesPattern,
     const nsACString& aOriginScope) {
+  // StorageObserver only holds a weak pointer to us. Parsing the pattern can
+  // GC, which can finish an in-progress cycle collection and destroy this
+  // manager if its BrowsingContext has been discarded.
+  RefPtr<SessionStorageManager> kungFuDeathGrip = this;
+
   OriginAttributesPattern pattern;
   if (!pattern.Init(aOriginAttributesPattern)) {
     NS_ERROR("Cannot parse origin attributes pattern");
