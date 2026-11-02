@@ -55,6 +55,8 @@ subsuite = "mozbuild"
 
 ["backend/test_visualstudio.py"]
 
+["backend/test_xpi_archive.py"]
+
 ["code_analysis/test_mach_commands.py"]
 
 ["codecoverage/test_lcov_rewrite.py"]
