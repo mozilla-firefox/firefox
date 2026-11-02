@@ -593,13 +593,12 @@ void nsHtml5TreeOperation::SetHTMLElementAttributes(
     aElement->SetParserHadDuplicateAttributeError();
   }
   // Custom element constructors might have set our attributes already.
-  const bool hadAttrs = aElement->HasAttrs();
+  const bool mightHaveAttrs = aElement->HasCustomElementData();
   for (nsHtml5AttributeEntry& entry : *aAttributes) {
     nsHtml5String& val = entry.ValueRef();
     nsAtom* localName = entry.NameHTML();
     if (localName == nsGkAtoms::_class && !aNotify) {
-      nsAtom* klass = val.MaybeAsAtom();
-      if (klass) {
+      if (nsAtom* klass = val.MaybeAsAtom()) {
         aElement->SetClassAttrFromParser(klass);
         continue;
       }
@@ -609,7 +608,7 @@ void nsHtml5TreeOperation::SetHTMLElementAttributes(
     nsAtom* valAtom = val.MaybeAsAtom();
     if (valAtom) {
       aElement->SetAttr(kNameSpaceID_None, localName, nullptr, valAtom, nullptr,
-                        aNotify, IsKnownNewAttr(!hadAttrs));
+                        aNotify, IsKnownNewAttr(!mightHaveAttrs));
     } else {
       nsString value;  // Not Auto, because using it to hold nsStringBuffer*
       // Safety: OK to call, because val is a reference into the attribute
@@ -617,7 +616,7 @@ void nsHtml5TreeOperation::SetHTMLElementAttributes(
       // `nsHtml5String`.
       val.MoveToString(value);
       aElement->SetAttr(kNameSpaceID_None, localName, nullptr, value, aNotify,
-                        IsKnownNewAttr(!hadAttrs));
+                        IsKnownNewAttr(!mightHaveAttrs));
     }
   }
 #ifdef DEBUG
