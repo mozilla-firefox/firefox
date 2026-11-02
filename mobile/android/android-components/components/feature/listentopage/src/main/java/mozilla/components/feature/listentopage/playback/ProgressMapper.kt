@@ -4,11 +4,8 @@
 
 package mozilla.components.feature.listentopage.playback
 
-import kotlin.math.abs
 import kotlin.time.Duration
-import kotlin.time.DurationUnit
 import mozilla.components.feature.listentopage.ArticleProgress
-import mozilla.components.feature.listentopage.synthesis.SpeechRate
 
 /** A place in the article: which chunk holds it, and how far into that chunk it is. */
 internal data class ChunkPosition(val chunkIndex: Int, val offsetMs: Long)
@@ -19,25 +16,19 @@ internal data class ChunkPosition(val chunkIndex: Int, val offsetMs: Long)
  *
  * @param chunkCount How many chunks the article came to, or `0` before it has been split.
  * @param measuredDurationOf How long a chunk's audio lasted, or `null` while it has not been measured.
+ * @param estimatedDurationMsOf How long a chunk that has not been measured is expected to last, or `null` when there is
+ *   nothing to estimate it from.
  * @param charactersIn How many characters a chunk holds.
- * @param speechRate What the opening measured at, or `null` when it could not be measured.
  * @param chunkDurationsBeforePlaylistMs The lengths of the chunks before the playlist, frozen when it started. They are
  *   mostly estimates, and letting them change would move every position after them.
  */
 internal class ProgressMapper(
     private val chunkCount: Int,
     private val measuredDurationOf: (Int) -> Duration?,
+    private val estimatedDurationMsOf: (Int) -> Long?,
     private val charactersIn: (Int) -> Int,
-    private val speechRate: SpeechRate?,
     private val chunkDurationsBeforePlaylistMs: List<Long> = emptyList(),
 ) {
-
-    // How long one character takes to read in each chunk, from the measured chunks nearest it. Parts of a page are read
-    // at different speeds, such as the body, a list or the references, and neighbouring chunks are usually the same
-    // part.
-    private val readingSpeedPerChunk: List<Double?> by lazy {
-        (0 until chunkCount).map(::calculateChunkReadingSpeedFromNearbyChunks)
-    }
 
     /**
      * The progress for a report at [positionMs]: the position, the estimated length, and where the bar is drawn. The
@@ -131,40 +122,12 @@ internal class ProgressMapper(
     private fun durationMsOf(index: Int): Long =
         chunkDurationsBeforePlaylistMs.getOrNull(index)
             ?: measuredDurationOf(index)?.inWholeMilliseconds
-            ?: readingSpeedPerChunk[index]?.let { (charactersIn(index) * it * MS_PER_SECOND).toLong() }
+            ?: estimatedDurationMsOf(index)
             ?: 0
 
     private fun msBefore(index: Int): Long = (0 until index).sumOf(::durationMsOf)
 
     private fun articleMs(): Long = (0 until chunkCount).sumOf(::durationMsOf)
-
-    /**
-     * The reading speed near chunk [index], from the [NEAREST_MEASURED_CHUNKS] measured chunks on each side, weighted
-     * by size and closeness. Falls back to the opening's speed, or `null`, when nothing is measured.
-     */
-    private fun calculateChunkReadingSpeedFromNearbyChunks(index: Int): Double? {
-        var weighted = 0.0
-        var weights = 0.0
-        // Looks both ways from the chunk, so a chunk past the measured ones still takes the speed of the nearest.
-        for (side in listOf(index - 1 downTo 0, index + 1 until chunkCount)) {
-            side
-                .asSequence()
-                .mapNotNull { other -> measuredDurationOf(other)?.let { other to it } }
-                .filter { (other, _) -> charactersIn(other) > 0 }
-                .take(NEAREST_MEASURED_CHUNKS)
-                .forEach { (other, measured) ->
-                    // A bigger chunk is a more reliable measurement, and a nearer one more likely the same part of the
-                    // page, so each counts by its size divided by how far away it is.
-                    val size = charactersIn(other)
-                    val weight = size.toDouble() / abs(index - other)
-                    weighted += weight * measured.toDouble(DurationUnit.SECONDS) / size
-                    weights += weight
-                }
-        }
-
-        // The weighted average of the seconds per character, or the opening's speed while nothing is measured.
-        return if (weights > 0) weighted / weights else speechRate?.let { 1 / it.charsPerSecond }
-    }
 }
 
 /**
@@ -194,11 +157,6 @@ internal fun List<Long>.articlePositionOf(position: ChunkPosition): Long =
 /** Where [position] falls in the article, given the chunk durations last reported. */
 internal fun ArticleProgress.articlePositionOf(position: ChunkPosition): Long =
     chunkDurationsMs.articlePositionOf(position)
-
-/** How many measured chunks on each side an unmeasured chunk's speed is estimated from. */
-private const val NEAREST_MEASURED_CHUNKS = 2
-
-private const val MS_PER_SECOND = 1_000
 
 /**
  * [offsetMs] into a chunk estimated at [estimatedMs], now that it has been measured at [measuredMs]: kept where it was

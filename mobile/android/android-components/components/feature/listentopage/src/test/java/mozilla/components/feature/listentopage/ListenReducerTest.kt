@@ -8,6 +8,7 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.seconds
 import mozilla.components.feature.listentopage.playback.ArticleMeasurements
 import mozilla.components.feature.listentopage.playback.shownDurationMs
+import mozilla.components.feature.listentopage.synthesis.SpeechRate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -586,6 +587,65 @@ class ListenReducerTest {
     }
 
     @Test
+    fun `test that re-splitting the article invalidates estimate cache so new chunks are calculated at the new speech rate`() {
+        val split =
+            ListenState()
+                .reducedBy(
+                    MeasurementAction.Started,
+                    MeasurementAction.ArticleSplit(listOf(100, 200), SpeechRate(charsPerSecond = 10.0)),
+                )
+        assertEquals(listOf(10_000L, 20_000L), split.chunkDurationsMs())
+
+        val resplit =
+            listenReducer(
+                split,
+                MeasurementAction.ArticleSplit(listOf(100, 200, 300), SpeechRate(charsPerSecond = 20.0)),
+            )
+
+        assertEquals(listOf(5_000L, 10_000L, 15_000L), resplit.chunkDurationsMs())
+    }
+
+    @Test
+    fun `test that switching voices invalidates estimate cache so new voice measurements are estimated`() {
+        val oldVoice =
+            ListenState()
+                .reducedBy(
+                    MeasurementAction.Started,
+                    MeasurementAction.ArticleSplit(listOf(100, 200, 300), SpeechRate(charsPerSecond = 10.0)),
+                    MeasurementAction.ChunkMeasured(index = 0, duration = 20.seconds),
+                )
+        assertEquals(listOf(20_000L, 40_000L, 60_000L), oldVoice.chunkDurationsMs())
+
+        // What the middleware dispatches when the voice changes.
+        val newVoice =
+            oldVoice.reducedBy(
+                MeasurementAction.Cleared,
+                MeasurementAction.Started,
+                MeasurementAction.ArticleSplit(listOf(100, 200, 300), SpeechRate(charsPerSecond = 20.0)),
+            )
+        assertEquals(listOf(5_000L, 10_000L, 15_000L), newVoice.chunkDurationsMs())
+
+        val newVoiceMeasured = listenReducer(newVoice, MeasurementAction.ChunkMeasured(index = 0, duration = 4.seconds))
+        assertEquals(listOf(4_000L, 8_000L, 12_000L), newVoiceMeasured.chunkDurationsMs())
+    }
+
+    @Test
+    fun `test that measuring a chunk updates the estimates of the chunks that are not measured`() {
+        val split =
+            ListenState()
+                .reducedBy(
+                    MeasurementAction.Started,
+                    MeasurementAction.ArticleSplit(listOf(100, 200, 300), SpeechRate(charsPerSecond = 10.0)),
+                )
+        assertEquals(listOf(10_000L, 20_000L, 30_000L), split.chunkDurationsMs())
+
+        // The second chunk read twice as fast as the opening, so the chunks around it are estimated at its speed.
+        val measured = listenReducer(split, MeasurementAction.ChunkMeasured(index = 1, duration = 10.seconds))
+
+        assertEquals(listOf(5_000L, 10_000L, 15_000L), measured.chunkDurationsMs())
+    }
+
+    @Test
     fun `test that the playlist records what is handed to the player`() {
         val restarted =
             listenReducer(
@@ -603,4 +663,8 @@ class ListenReducerTest {
     }
 
     private fun playing(positionMs: Long) = PlaybackState(phase = PlaybackPhase.Playing, positionMs = positionMs)
+
+    private fun ListenState.reducedBy(vararg actions: ListenAction) = actions.fold(this, ::listenReducer)
+
+    private fun ListenState.chunkDurationsMs() = articleMeasurements!!.mapper().chunkDurationsMs()
 }
