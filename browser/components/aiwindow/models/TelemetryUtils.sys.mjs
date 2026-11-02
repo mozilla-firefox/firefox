@@ -296,15 +296,14 @@ export class TelemetryEngine {
   }
 
   /**
-   * Runs LLM-based evaluations for all prompt records that match any of the
-   * fired triggers. Prompts that apply to multiple triggers are deduplicated
-   * and run only once.
+   * Selects the prompt records that match any of the fired triggers. Prompts
+   * that apply to multiple triggers are deduplicated and selected only once,
+   * taking the sampling probability of the first matching trigger.
    *
    * @param {Trigger[]} triggers
-   * @param {object} conversation
-   * @returns {Promise<Array<{feature: string, result: object}>>}
+   * @returns {Promise<Array<{record: object, samplingProbability: number}>>}
    */
-  async runTelemetry(triggers, conversation) {
+  async selectPrompts(triggers) {
     if (!triggers.length) {
       return [];
     }
@@ -315,8 +314,7 @@ export class TelemetryEngine {
     const triggerByName = new Map(triggers.map(t => [t.name, t]));
 
     const seen = new Set();
-    const promptsToRun = [];
-    const samplingProbabilities = new Map();
+    const selected = [];
     for (const record of allRecords) {
       const recordTriggers = record.triggers ?? [];
       if (
@@ -331,24 +329,19 @@ export class TelemetryEngine {
         );
         if (matchingTriggerName) {
           seen.add(record.telemetry_name);
-          promptsToRun.push(record);
-          samplingProbabilities.set(
-            record.telemetry_name,
-            triggerByName.get(matchingTriggerName).samplingProbability
-          );
+          selected.push({
+            record,
+            samplingProbability:
+              triggerByName.get(matchingTriggerName).samplingProbability,
+          });
         }
       }
     }
-    const results = await this._runPrompts(promptsToRun, conversation);
-    return results.map(r => ({
-      ...r,
-      samplingProbability: samplingProbabilities.get(r.telemetry_name),
-    }));
+    return selected;
   }
 
   /**
    * Runs LLM-based evaluations for all telemetry prompts passed by name.
-   * Prompt records that have run_terminal flag set to False will not be run
    *
    * @param {string[]} promptNames
    * @param {object} conversation
@@ -371,8 +364,7 @@ export class TelemetryEngine {
           record.version,
           TELEMETRY_MAJOR_VERSIONS[record.telemetry_name]
         )
-      )
-      .filter(record => record.run_terminal);
+      );
 
     return this._runPrompts(promptsToRun, conversation);
   }
@@ -481,7 +473,8 @@ export function submitTelemetryResult(
 
 /**
  * Marks conversations as unprocessed (since new turns have been added) and
- * runs LLM-as-judge-based telemetry.
+ * queues the prompts matched by any fired triggers for the end-of-conversation
+ * run in TelemetryScheduler. No LLM requests are made here.
  *
  * @param {ChatConversation} conversation
  */
@@ -493,40 +486,26 @@ export async function runLLMaJTelemetry(conversation) {
 
   const telemetryEngine = new TelemetryEngine();
   const triggers = await telemetryEngine.getTriggers(conversation);
-  const telemetryStart = ChromeUtils.now();
-  telemetryEngine
-    .runTelemetry(triggers, conversation)
-    .then(results => {
-      if (!results.length) {
-        return;
-      }
-      submitTelemetryResult(results, conversation, conversation.engine?.model, {
-        record_type: "midChat",
-        uniform_sampling_probability: conversation._telemetryUniformProbability,
-        triggers: triggers.map(t => t.name),
-        chat_version: conversation.systemPromptVersion,
-      });
-      const prompts = Object.fromEntries(
-        results.map(r => [r.telemetry_name, turnIndex])
-      );
-      const probabilities = Object.fromEntries(
-        results.map(r => [r.telemetry_name, r.samplingProbability])
-      );
-      lazy.ChatStore.updateLLMTelemetryRecord(
-        conversation.id,
-        prompts,
-        probabilities,
-        conversation._telemetryUniformProbability,
-        0,
-        triggers.map(t => t.name)
-      ).catch(e => console.error("Failed to update telemetry record:", e));
-    })
-    .catch(e => console.error("Telemetry run failed:", e))
-    .finally(() => {
-      ChromeUtils.addProfilerMarker(
-        "SmartWindow",
-        { startTime: telemetryStart },
-        "LLMaJTelemetry"
-      );
-    });
+  const selected = await telemetryEngine.selectPrompts(triggers);
+  if (!selected.length) {
+    return;
+  }
+
+  const prompts = Object.fromEntries(
+    selected.map(({ record }) => [record.telemetry_name, turnIndex])
+  );
+  const probabilities = Object.fromEntries(
+    selected.map(({ record, samplingProbability }) => [
+      record.telemetry_name,
+      samplingProbability,
+    ])
+  );
+  await lazy.ChatStore.updateLLMTelemetryRecord(
+    conversation.id,
+    prompts,
+    probabilities,
+    conversation._telemetryUniformProbability,
+    0,
+    triggers.map(t => t.name)
+  ).catch(e => console.error("Failed to update telemetry record:", e));
 }

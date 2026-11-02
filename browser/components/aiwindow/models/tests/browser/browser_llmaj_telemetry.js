@@ -6,9 +6,10 @@
 const { TelemetryScheduler } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/TelemetryManager.sys.mjs"
 );
-const { TelemetryEngine } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs"
-);
+const { TelemetryEngine, TelemetryPromptEngine, Trigger, runLLMaJTelemetry } =
+  ChromeUtils.importESModule(
+    "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs"
+  );
 const { ChatStore } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
 );
@@ -33,6 +34,51 @@ add_task(async function test_updateLLMTelemetryRecord_merges_triggers() {
     ["min_turns", "uniform_sample"],
     "Triggers are merged without duplicates"
   );
+});
+
+add_task(async function test_runLLMaJTelemetry_queues_without_running() {
+  Services.fog.testResetFOG();
+  const sb = sinon.createSandbox();
+  const conversation = {
+    id: Services.uuid.generateUUID().toString(),
+    currentTurnIndex: () => 2,
+    _telemetryUniformProbability: 0.1,
+  };
+
+  sb.stub(TelemetryEngine.prototype, "getTriggers").resolves([
+    new Trigger("uniform_sample", () => true, 0.1),
+    new Trigger("min_turns", () => true, 0.5),
+  ]);
+  sb.stub(TelemetryEngine.prototype, "_fetchRecords").resolves([
+    {
+      version: "1.0",
+      telemetry_name: "wasSuccessful",
+      triggers: ["min_turns"],
+      output_schema: {},
+      prompt: "...",
+    },
+  ]);
+  const buildSpy = sb.spy(TelemetryPromptEngine, "build");
+
+  try {
+    await runLLMaJTelemetry(conversation);
+
+    const row = await ChatStore.findLLMTelemetryByConversationId(
+      conversation.id
+    );
+    Assert.deepEqual(row.telemetryPrompts, { wasSuccessful: 2 });
+    Assert.deepEqual(row.telemetryProbabilities, { wasSuccessful: 0.5 });
+    Assert.equal(row.uniformSamplingProbability, 0.1);
+    Assert.deepEqual(row.triggers.sort(), ["min_turns", "uniform_sample"]);
+    Assert.equal(row.processed, 0, "Queued for the end-of-conversation run");
+    Assert.ok(buildSpy.notCalled, "No mid-chat LLM engine is built");
+    Assert.ok(
+      !Glean.smartWindow.llmajBasedTelemetry.testGetValue()?.length,
+      "No mid-chat records are submitted"
+    );
+  } finally {
+    sb.restore();
+  }
 });
 
 add_task(async function test_end_of_conversation_record_includes_triggers() {
