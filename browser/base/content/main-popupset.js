@@ -304,7 +304,7 @@ document.addEventListener(
             let popup = event.target.parentElement;
             let tabGroupId = getContextTabGroupId(popup);
             dismissTabGroupPanel(popup);
-            SessionStore.forgetSavedTabGroup(tabGroupId);
+            SessionStore.forgetSavedTabGroup(tabGroupId, "user-deleted");
           }
           break;
         // == editBookmarkPanel ==
