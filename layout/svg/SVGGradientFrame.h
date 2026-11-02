@@ -54,6 +54,8 @@ class SVGGradientFrame : public SVGPaintServerFrame {
       StyleSVGPaint nsStyleSVG::* aFillOrStroke, float aGraphicOpacity,
       imgDrawingParams& aImgParams, const gfxRect* aOverrideBounds) override;
 
+  enum class GradientType : uint8_t { Linear, Radial };
+
   /**
    * The gradient expressed with WebRender's gradient parameters, in the user
    * space of the frame it is applied to. When the gradient degenerates to a
@@ -61,7 +63,7 @@ class SVGGradientFrame : public SVGPaintServerFrame {
    * set and the other fields are unused.
    */
   struct WebRenderGradient {
-    bool mIsLinear = true;
+    GradientType mType;
     CSSPoint mStart;
     CSSPoint mEnd;
     CSSPoint mCenter;
