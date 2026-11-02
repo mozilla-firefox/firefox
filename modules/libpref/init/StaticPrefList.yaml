@@ -8906,7 +8906,14 @@
 
 # Use WebRender for path rendering, for example to render clip-path: path()
 # and shape() with WebRender path clips instead of mask images.
+# Only applies to hardware WebRender, see gfx.webrender.paths.swgl.
 - name: gfx.webrender.paths
+  type: bool
+  value: false
+  mirror: always
+
+# Same as gfx.webrender.paths, for software WebRender (SWGL).
+- name: gfx.webrender.paths.swgl
   type: bool
   value: false
   mirror: always
