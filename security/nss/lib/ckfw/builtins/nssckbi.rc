@@ -21,11 +21,7 @@
 #define MY_FILEFLAGS_2 MY_FILEFLAGS_1
 #endif
 
-#ifdef WINNT
-#define MY_FILEOS VOS_NT_WINDOWS32
-#else
 #define MY_FILEOS VOS__WINDOWS32
-#endif
 
 #define MY_INTERNAL_NAME MY_LIBNAME
 
