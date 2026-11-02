@@ -397,6 +397,7 @@ export class TelemetryEngine {
           telemetry_name: record.telemetry_name,
           result,
           telemetry_version: record.version,
+          judge_model: record.model ?? "",
         });
       } catch (error) {
         if (lazy.openAIEngine.is429Error(error)) {
@@ -456,6 +457,7 @@ export function submitTelemetryResult(
         ...normalized_metadata,
         chat_id: conversation.id,
         model: modelId,
+        judge_model: resultObject?.judge_model ?? "",
         turn_number: conversation.currentTurnIndex(),
         telemetry_name: resultObject?.telemetry_name ?? "",
         attribute_name: attributeName,

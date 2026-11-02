@@ -6,10 +6,15 @@
 const { TelemetryScheduler } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/TelemetryManager.sys.mjs"
 );
-const { TelemetryEngine, TelemetryPromptEngine, Trigger, runLLMaJTelemetry } =
-  ChromeUtils.importESModule(
-    "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs"
-  );
+const {
+  TelemetryEngine,
+  TelemetryPromptEngine,
+  Trigger,
+  runLLMaJTelemetry,
+  submitTelemetryResult,
+} = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs"
+);
 const { ChatStore } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
 );
@@ -222,6 +227,35 @@ add_task(async function test_runPrompts_pauses_before_every_prompt() {
       pause.firstCall.calledBefore(run.firstCall),
       "The first prompt is not sent until after a pause"
     );
+  } finally {
+    sb.restore();
+  }
+});
+
+add_task(async function test_judge_model_is_recorded() {
+  Services.fog.testResetFOG();
+  const engine = new TelemetryEngine();
+  const sb = sinon.createSandbox();
+  sb.stub(TelemetryPromptEngine, "build").resolves({
+    run: async () => ({ wasSuccessful: "yes" }),
+  });
+  sb.stub(engine, "_pause").resolves();
+
+  try {
+    const results = await engine._runPrompts(
+      [{ telemetry_name: "wasSuccessful", version: "1.0", model: "judge" }],
+      {}
+    );
+    submitTelemetryResult(
+      results,
+      { id: "c1", currentTurnIndex: () => 0 },
+      "inference",
+      {}
+    );
+
+    const { extra } = Glean.smartWindow.llmajBasedTelemetry.testGetValue()[0];
+    Assert.equal(extra.judge_model, "judge", "Judge model is recorded");
+    Assert.equal(extra.model, "inference", "Inference model is recorded");
   } finally {
     sb.restore();
   }
