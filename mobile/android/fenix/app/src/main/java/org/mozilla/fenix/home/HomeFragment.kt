@@ -384,6 +384,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         bundleArgs = args.toBundle()
         if (savedInstanceState != null) {
             bundleArgs.putBoolean(FOCUS_ON_ADDRESS_BAR, false)
+            bundleArgs.remove(SESSION_TO_START_SEARCH_FOR)
         }
         bundleArgs.getString(SESSION_TO_DELETE)?.let {
             homeViewModel.sessionToDelete = it
@@ -502,7 +503,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     startSearch =
                         bundleArgs.getBoolean(FOCUS_ON_ADDRESS_BAR) || FxNimbus.features.oneClickSearch.value().enabled,
                     startVoiceSearch = bundleArgs.getBoolean(START_VOICE_SEARCH),
-                    sessionId = args.sessionToStartSearchFor,
+                    sessionId = bundleArgs.getString(SESSION_TO_START_SEARCH_FOR),
                     source = args.searchAccessPoint,
                 ),
             coroutineScope = view.toScope(),
@@ -1428,7 +1429,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 browserStore = requireComponents.core.store,
                 toolbarStore = toolbarStore,
                 navController = findNavController(),
-                tabId = args.sessionToStartSearchFor,
+                tabId = bundleArgs.getString(SESSION_TO_START_SEARCH_FOR),
                 searchAccessPoint = args.searchAccessPoint,
                 isEdgeToEdgeBackgroundEnabled = isEdgeToEdgeBackgroundEnabled(),
             )
@@ -1835,6 +1836,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         const val FOCUS_ON_ADDRESS_BAR = "focusOnAddressBar"
         const val START_VOICE_SEARCH = "startVoiceSearch"
         private const val SESSION_TO_DELETE = "sessionToDelete"
+        private const val SESSION_TO_START_SEARCH_FOR = "sessionToStartSearchFor"
 
         // Distance over which the homepage content fades out where it meets the toolbars.
         private val HOMEPAGE_EDGE_FADE_LENGTH = 24.dp

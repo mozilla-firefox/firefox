@@ -235,11 +235,9 @@ class AwesomeBarComposable(
                         }
                 ) {
                     val currentTabDetailsToShow =
-                        remember(state.query.isBlank()) {
-                            when (state.query.isBlank() && showCurrentTabData) {
-                                true -> state.currentTabData
-                                else -> null
-                            }
+                        when (state.query.isBlank() && showCurrentTabData) {
+                            true -> state.currentTabData
+                            else -> null
                         }
 
                     Box(modifier = Modifier.awesomeBarContentWidth(showCurrentTabData)) {
