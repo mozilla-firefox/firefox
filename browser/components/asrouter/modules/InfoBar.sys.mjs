@@ -665,7 +665,7 @@ export const InfoBar = {
    * Shows the active universal message in a window after it loads, provided
    * that its notification is still the active one.
    *
-   * @param {Window} win - A browser window, possibly still loading.
+   * @param {Window} win - A browser window that is still loading.
    * @param {object} active - The _activeInfobar entry to show.
    */
   _showWhenLoaded(win, { message, dispatch, notification }) {
@@ -686,11 +686,7 @@ export const InfoBar = {
       );
     };
 
-    if (win.document?.readyState === "complete") {
-      onWindowReady();
-    } else {
-      win.addEventListener("load", onWindowReady, { once: true });
-    }
+    win.addEventListener("load", onWindowReady, { once: true });
   },
 
   _maybeReplaceActiveInfoBar(nextMessage) {
