@@ -16,6 +16,7 @@
 #include "ResultStatement.h"
 #include "StartedTransaction.h"
 #include "mozStorageHelper.h"
+#include "mozilla/FunctionRef.h"
 #include "mozilla/dom/FileSystemDataManager.h"
 #include "mozilla/dom/FileSystemHandle.h"
 #include "mozilla/dom/FileSystemLog.h"
@@ -437,80 +438,80 @@ Result<Usage, QMResult> GetKnownUsage(const FileSystemConnection& aConnection,
   QM_TRY_RETURN(stmt.GetUsageByColumn(/* Column */ 0u));
 }
 
+Result<Ok, QMResult> RemoveOrphanedFiles(
+    const FileSystemConnection& aConnection,
+    FileSystemFileManager& aFileManager,
+    FunctionRef<void(Usage)> aOnUsageRemoved) {
+  nsTArray<FileId> orphans;
+  {
+    QM_TRY_UNWRAP(ResultStatement stmt,
+                  ResultStatement::Create(
+                      aConnection,
+                      "SELECT fileId FROM FileIds UNION SELECT handle FROM "
+                      "Usages EXCEPT SELECT fileId FROM MainFiles "
+                      "WHERE fileId IS NOT NULL;"_ns));
+    while (true) {
+      QM_TRY_UNWRAP(bool moreResults, stmt.ExecuteStep());
+      if (!moreResults) {
+        break;
+      }
+      QM_TRY_UNWRAP(FileId fileId, stmt.GetFileIdByColumn(0));
+      orphans.AppendElement(std::move(fileId));
+    }
+  }
+
+  for (const auto& fileId : orphans) {
+    auto removeOrphan = [&]() -> Result<Ok, QMResult> {
+      QM_TRY_UNWRAP(const Usage usage, GetKnownUsage(aConnection, fileId));
+      QM_TRY(aFileManager.RemoveFile(fileId).map([](Usage) { return Ok{}; }));
+      QM_TRY_UNWRAP(auto transaction, StartedTransaction::Create(aConnection));
+
+      QM_TRY_UNWRAP(
+          ResultStatement stmt,
+          ResultStatement::Create(
+              aConnection, "DELETE FROM FileIds WHERE fileId = :fileId;"_ns));
+      QM_TRY(QM_TO_RESULT(stmt.BindFileIdByName("fileId"_ns, fileId)));
+      QM_TRY(QM_TO_RESULT(stmt.Execute()));
+
+      // Also handle old Usages rows that have no FileIds parent to cascade.
+      QM_TRY_UNWRAP(
+          ResultStatement usageStmt,
+          ResultStatement::Create(
+              aConnection, "DELETE FROM Usages WHERE handle = :fileId;"_ns));
+      QM_TRY(QM_TO_RESULT(usageStmt.BindFileIdByName("fileId"_ns, fileId)));
+      QM_TRY(QM_TO_RESULT(usageStmt.Execute()));
+      QM_TRY(QM_TO_RESULT(transaction.Commit()));
+      if (usage > 0) {
+        aOnUsageRemoved(usage);
+      }
+      return Ok{};
+    };
+    QM_WARNONLY_TRY(removeOrphan());
+  }
+
+  return Ok{};
+}
+
 }  // namespace
 
 /* static */
 nsresult FileSystemDatabaseManagerVersion002::RescanTrackedUsages(
     const FileSystemConnection& aConnection,
     const quota::OriginMetadata& aOriginMetadata) {
+  QM_TRY_UNWRAP(
+      auto fileManager,
+      FileSystemFileManager::CreateFileSystemFileManager(aOriginMetadata));
+  QM_TRY(RemoveOrphanedFiles(aConnection, *fileManager, [](Usage) {
+         }).mapErr(toNSResult));
   return FileSystemDatabaseManagerVersion001::RescanTrackedUsages(
       aConnection, aOriginMetadata);
 }
 
 nsresult FileSystemDatabaseManagerVersion002::RemoveFileIdsWithoutMainFile() {
   MOZ_ASSERT(mConnection);
-
-  const nsLiteralCString orphansQuery =
-      "SELECT fileId FROM FileIds WHERE fileId NOT IN "
-      "( SELECT fileId FROM MainFiles WHERE fileId IS NOT NULL ) ;"_ns;
-
-  nsTArray<FileId> orphans;
-  {
-    QM_TRY_UNWRAP(
-        ResultStatement stmt,
-        ResultStatement::Create(mConnection, orphansQuery).mapErr(toNSResult));
-
-    while (true) {
-      QM_TRY_INSPECT(const bool& moreResults,
-                     stmt.ExecuteStep().mapErr(toNSResult));
-      if (!moreResults) {
-        break;
-      }
-
-      QM_TRY_UNWRAP(FileId fileId,
-                    stmt.GetFileIdByColumn(/* Column */ 0u).mapErr(toNSResult));
-      orphans.AppendElement(std::move(fileId));
-    }
-  }
-
-  LOG_VERBOSE(("Found %zu file(s) without a main file", orphans.Length()));
-
-  // Aborting a merge removes the file, its file id and its usage; the entry
-  // id is not consulted on abort.
-  for (const auto& fileId : orphans) {
-    QM_WARNONLY_TRY(
-        MOZ_TO_RESULT(MergeFileId(EntryId(), fileId, /* aAbort */ true)));
-  }
-
-  // Usages rows whose file id is gone were left behind before foreign key
-  // enforcement was enabled; nothing cascades them away now.
-  const nsLiteralCString orphanUsageQuery =
-      "SELECT coalesce(sum(usage), 0) FROM Usages "
-      "WHERE handle NOT IN ( SELECT fileId FROM FileIds ) ;"_ns;
-
-  QM_TRY_UNWRAP(ResultStatement usageStmt,
-                ResultStatement::Create(mConnection, orphanUsageQuery)
-                    .mapErr(toNSResult));
-  QM_TRY_INSPECT(const bool& hasResult,
-                 usageStmt.ExecuteStep().mapErr(toNSResult));
-  if (!hasResult) {
-    return NS_ERROR_DOM_FILE_NOT_READABLE_ERR;
-  }
-
-  QM_TRY_INSPECT(
-      const Usage& orphanUsage,
-      usageStmt.GetUsageByColumn(/* Column */ 0u).mapErr(toNSResult));
-
-  if (orphanUsage > 0) {
-    QM_TRY(QM_TO_RESULT(
-        mConnection->ExecuteSimpleSQL("DELETE FROM Usages WHERE handle NOT IN "
-                                      "( SELECT fileId FROM FileIds ) ;"_ns)));
-
-    DecreaseCachedQuotaUsage(orphanUsage);
-    LOG_VERBOSE(("Removed orphaned Usages rows totalling %" PRId64 " bytes",
-                 orphanUsage));
-  }
-
+  QM_TRY(RemoveOrphanedFiles(mConnection, *mFileManager, [this](Usage aUsage) {
+           DecreaseCachedQuotaUsage(aUsage);
+         }).mapErr(toNSResult));
   return NS_OK;
 }
 

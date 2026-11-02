@@ -21,7 +21,10 @@ requesttimeoutfactor = 2  # Slow on Linux
 ["test_orphanUsageCleanup.js"]
 # The injected rows bypass usage accounting, so the quota manager must recompute
 # usage from the database instead of trusting its cache.
-prefs = ["dom.quotaManager.loadQuotaFromCache=false"]
+prefs = [
+  "dom.quotaManager.loadQuotaFromCache=false",
+  "dom.quotaManager.loadQuotaFromSecondaryCache=false",
+]
 
 ["test_slowDatabaseInitialization.js"]
 
