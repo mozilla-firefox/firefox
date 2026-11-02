@@ -50,7 +50,7 @@ Guides users through the process of migrating their data, such as bookmarks, pas
 ![About Welcome Migration Wizard](./aboutwelcome-migration-wizard.png)
 
 #### Mobile Downloads
-Encourages users to download Firefox on their mobile devices by providing QR codes, marketplace buttons for iOS or Android, and/or a link to a page where users can email themselves a download link.
+Encourages users to download Firefox on their mobile devices by providing QR codes and/or a link to a page where users can email themselves a download link.
 
 ![About Welcome Mobile Downloads](./aboutwelcome-mobile-downloads.png)
 

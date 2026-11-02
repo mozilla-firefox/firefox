@@ -1849,17 +1849,6 @@ html {
           .main-content-inner {
             min-height: 330px;
 
-            .mobile-download-buttons {
-              padding: 0;
-              margin-inline-start: -5px;
-              display: flex;
-
-              button {
-                cursor: pointer;
-                border-radius: 0;
-              }
-            }
-
             .qr-code-image {
               margin: 5px 0 10px;
               display: flex;
@@ -3816,40 +3805,6 @@ html {
 
       &:hover {
         background: none;
-      }
-    }
-
-    .ios button {
-      background-image: url('chrome://app-marketplace-icons/locale/ios.svg');
-    }
-
-    .android button {
-      background-image: url('chrome://app-marketplace-icons/locale/android.png');
-    }
-  }
-
-  .mobile-download-buttons {
-    list-style: none;
-    padding: 10px 0;
-    margin: 0;
-
-    li {
-      display: inline-block;
-
-      button {
-        display: inline-block;
-        height: 45px;
-        width: 152px;
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: center;
-        box-shadow: none;
-        border: 0;
-        border-radius: 0;
-      }
-
-      &:not(:first-child) {
-        margin-inline: 5px 0;
       }
     }
   }

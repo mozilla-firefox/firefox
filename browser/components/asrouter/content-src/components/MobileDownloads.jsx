@@ -6,31 +6,6 @@ import React from "react";
 import { Localized } from "./MSLocalized";
 import { MultiStageUtils } from "../lib/multistage-utils.mjs";
 
-export const MarketplaceButtons = props => {
-  return (
-    <ul className="mobile-download-buttons">
-      {props.buttons.includes("ios") ? (
-        <li className="ios">
-          <button
-            data-l10n-id={"spotlight-ios-marketplace-button"}
-            value="ios"
-            onClick={props.handleAction}
-          ></button>
-        </li>
-      ) : null}
-      {props.buttons.includes("android") ? (
-        <li className="android">
-          <button
-            data-l10n-id={"spotlight-android-marketplace-button"}
-            value="android"
-            onClick={props.handleAction}
-          ></button>
-        </li>
-      ) : null}
-    </ul>
-  );
-};
-
 export const MobileDownloads = props => {
   const { QR_code: QRCode } = props.data;
   const showEmailLink =
@@ -61,12 +36,6 @@ export const MobileDownloads = props => {
             />
           </Localized>
         </div>
-      ) : null}
-      {props.data.marketplace_buttons ? (
-        <MarketplaceButtons
-          buttons={props.data.marketplace_buttons}
-          handleAction={props.handleAction}
-        />
       ) : null}
     </div>
   );

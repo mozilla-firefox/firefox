@@ -6096,7 +6096,6 @@ const CarouselNav = ({
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   MarketplaceButtons: () => (/* binding */ MarketplaceButtons),
 /* harmony export */   MobileDownloads: () => (/* binding */ MobileDownloads)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
@@ -6110,23 +6109,6 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const MarketplaceButtons = props => {
-  return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("ul", {
-    className: "mobile-download-buttons"
-  }, props.buttons.includes("ios") ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("li", {
-    className: "ios"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    "data-l10n-id": "spotlight-ios-marketplace-button",
-    value: "ios",
-    onClick: props.handleAction
-  })) : null, props.buttons.includes("android") ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("li", {
-    className: "android"
-  }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("button", {
-    "data-l10n-id": "spotlight-android-marketplace-button",
-    value: "android",
-    onClick: props.handleAction
-  })) : null);
-};
 const MobileDownloads = props => {
   const {
     QR_code: QRCode
@@ -6146,10 +6128,7 @@ const MobileDownloads = props => {
     className: "email-link",
     value: "email_link",
     onClick: props.handleAction
-  }))) : null, props.data.marketplace_buttons ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(MarketplaceButtons, {
-    buttons: props.data.marketplace_buttons,
-    handleAction: props.handleAction
-  }) : null);
+  }))) : null);
 };
 
 /***/ }),
