@@ -2,14 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import fnmatch
 import logging
 import os
 import sys
 import time
 from pathlib import Path
 
-# Where a directory of a given name has to sit to actually be excluded. The
-# drive root half of USER_HOME_OR_DRIVE_ROOT only applies on Windows.
+# Where a directory of a given name has to sit to actually be excluded.
 ANY_DIRECTORY = "any-directory"
 USER_HOME_OR_DRIVE_ROOT = "user-home-or-drive-root"
 
@@ -17,24 +17,16 @@ WARNING_DELAY_SECONDS = 20
 
 
 def _excluded_dirs(platform):
-    if platform == "win32":
-        return (
-            ("src", USER_HOME_OR_DRIVE_ROOT),
-            ("mozilla-source", ANY_DIRECTORY),
-        )
-
-    if platform == "darwin":
-        return (
-            ("src", USER_HOME_OR_DRIVE_ROOT),
-            ("mozilla-source", ANY_DIRECTORY),
-            ("firefox", USER_HOME_OR_DRIVE_ROOT),
-        )
-
-    return (
-        ("src", USER_HOME_OR_DRIVE_ROOT),
-        ("mozilla-source", ANY_DIRECTORY),
-        ("firefox", ANY_DIRECTORY),
+    dirs = (
+        ("firefox*", USER_HOME_OR_DRIVE_ROOT, True),
+        ("mozilla-source", ANY_DIRECTORY, True),
+        ("mozsrc", ANY_DIRECTORY, True),
+        (".gradle", ANY_DIRECTORY, False),
+        (".mozbuild", ANY_DIRECTORY, False),
     )
+    if platform == "win32":
+        dirs += (("mozilla-build", ANY_DIRECTORY, False),)
+    return dirs
 
 
 def _suggested_dirs_for(path):
@@ -42,24 +34,26 @@ def _suggested_dirs_for(path):
     if sys.platform == "win32":
         roots.append(Path(path.anchor))
 
-    return [root / name for root in roots for name, _ in _excluded_dirs(sys.platform)]
+    return [
+        root / name
+        for root in roots
+        for name, _, suggested in _excluded_dirs(sys.platform)
+        if suggested
+    ]
 
 
 def _is_in_excluded_dir(path):
     home = Path.home().resolve()
-    scopes = {
-        os.path.normcase(name): scope for name, scope in _excluded_dirs(sys.platform)
-    }
 
     for ancestor in (path, *path.parents):
-        scope = scopes.get(os.path.normcase(ancestor.name))
-        if scope == ANY_DIRECTORY:
-            return True
-        if scope == USER_HOME_OR_DRIVE_ROOT and (
-            ancestor.parent == home
-            or (sys.platform == "win32" and ancestor.parent == Path(ancestor.anchor))
-        ):
-            return True
+        for pattern, scope, _ in _excluded_dirs(sys.platform):
+            if not fnmatch.fnmatch(ancestor.name, pattern):
+                continue
+            if scope == ANY_DIRECTORY or ancestor.parent in (
+                home,
+                Path(ancestor.anchor),
+            ):
+                return True
 
     return False
 

@@ -36,31 +36,58 @@ PLATFORMS = {
         [
             "D:\\mozilla-source\\firefox",
             "C:\\work\\mozilla-source\\gecko",
-            "C:\\Users\\kit\\src\\firefox",
-            "D:\\src",
+            "C:\\work\\mozsrc\\gecko",
+            "C:\\Users\\kit\\firefox",
+            "C:\\Users\\kit\\firefox-main",
+            "D:\\firefox2",
+            "C:\\Users\\kit\\.gradle\\gecko",
+            "C:\\Users\\kit\\.mozbuild\\gecko",
+            "C:\\mozilla-build\\gecko",
         ],
         [
             "D:\\work\\firefox",
-            "D:\\work\\src\\firefox",
-            "C:\\Users\\kit\\firefox",
-            "D:\\srcx\\firefox",
+            "C:\\Users\\kit\\work\\firefox",
+            "C:\\Users\\kit\\src\\firefox",
+            "D:\\src",
         ],
     ),
     "darwin": (
         MACOS,
-        ["/Users/kit/firefox", "/Users/kit/src/firefox", "/mozilla-source/firefox"],
-        ["/Users/kit/work/firefox", "/opt/firefox", "/opt/gecko"],
+        [
+            "/Users/kit/firefox",
+            "/Users/kit/firefox-main",
+            "/firefox",
+            "/mozilla-source/firefox",
+            "/opt/mozsrc/gecko",
+            "/Users/kit/.gradle/gecko",
+            "/Users/kit/.mozbuild/gecko",
+        ],
+        [
+            "/Users/kit/work/firefox",
+            "/Users/kit/src/firefox",
+            "/Users/kit/mozilla-build/gecko",
+            "/opt/firefox",
+            "/opt/gecko",
+        ],
     ),
     "linux": (
         LINUX,
         [
             "/home/kit/firefox",
-            "/home/kit/work/firefox",
+            "/home/kit/firefoxes",
             "/firefox",
             "/mozilla-source/gecko",
-            "/home/kit/src/gecko",
+            "/opt/mozsrc/gecko",
+            "/home/kit/.gradle/gecko",
+            "/home/kit/.mozbuild/gecko",
         ],
-        ["/home/kit/work/gecko", "/opt/gecko"],
+        [
+            "/home/kit/work/firefox",
+            "/home/kit/mozilla-build/gecko",
+            "/home/kit/src/gecko",
+            "/home/kit/work/gecko",
+            "/opt/gecko",
+        ],
     ),
 }
 
@@ -111,6 +138,45 @@ def test_warns_only_outside_excluded_dirs(
 
     warned = any("Move your checkout" in record.msg for record in caplog.records)
     assert warned is warns
+
+
+@pytest.mark.parametrize(
+    "platform,path_class,topsrcdir,expected",
+    [
+        (
+            "win32",
+            WINDOWS,
+            "D:\\work\\gecko",
+            [
+                "C:\\Users\\kit\\firefox*",
+                "C:\\Users\\kit\\mozilla-source",
+                "C:\\Users\\kit\\mozsrc",
+                "D:\\firefox*",
+                "D:\\mozilla-source",
+                "D:\\mozsrc",
+            ],
+        ),
+        (
+            "darwin",
+            MACOS,
+            "/opt/gecko",
+            ["/Users/kit/firefox*", "/Users/kit/mozilla-source", "/Users/kit/mozsrc"],
+        ),
+        (
+            "linux",
+            LINUX,
+            "/opt/gecko",
+            ["/home/kit/firefox*", "/home/kit/mozilla-source", "/home/kit/mozsrc"],
+        ),
+    ],
+)
+def test_suggested_dirs(monkeypatch, platform, path_class, topsrcdir, expected):
+    monkeypatch.setattr(sys, "platform", platform)
+    monkeypatch.setattr(path_performance, "Path", path_class)
+
+    assert path_performance._suggested_dirs_for(path_class(topsrcdir)) == [
+        path_class(p) for p in expected
+    ]
 
 
 if __name__ == "__main__":
