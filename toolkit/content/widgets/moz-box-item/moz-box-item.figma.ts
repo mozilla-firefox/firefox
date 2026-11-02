@@ -1,149 +1,72 @@
-import figma, { html } from "@figma/code-connect/html";
-
+// url=https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=479-6030
 // Nova Components
-figma.connect(
-  "https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=479-6030",
-  {
-    props: {
-      labelProps: figma.nestedProps("Label", {
-        label: figma.string("Label"),
-        iconSrc: figma.boolean("Show icon", {
+// Code Connect cannot expose properties of nested components placed in slots;
+// slotted markup in the snippet is fixed and Dev Mode will not update it when
+// nested instance properties change in Figma.
+
+import figma from "figma";
+
+const boxType = figma.selectedInstance.getPropertyValue("Type");
+
+let template;
+if (boxType === "Slot") {
+  const slotContent =
+    figma.selectedInstance.getInstanceSwap("Slot")?.executeTemplate().example ??
+    `<p>
+          You can put whatever you want in here! Use your imagination! (Just
+          don't pass other props as they won't work/get overridden by the slot)
+        </p>`;
+
+  template = {
+    id: "moz-box-item",
+    example: figma.code`<moz-box-item>${slotContent}</moz-box-item>`,
+  };
+} else {
+  const labelInstance = figma.selectedInstance.findInstance("Label");
+  const label =
+    labelInstance.type !== "ERROR"
+      ? labelInstance.getString("Label")
+      : undefined;
+  const iconSrc =
+    labelInstance.type !== "ERROR"
+      ? labelInstance.getBoolean("Show icon", {
           true: "chrome://example.svg",
-        }),
-        description: figma.boolean("Show description", {
-          true: figma.string("Description"),
-        }),
-      }),
-      layout: figma.enum("Type", {
-        "Large icon": "large-icon",
-        "Medium icon": "medium-icon",
-      }),
-      startActions: figma.enum("Type", {
-        "Actions preset": html`<moz-button
-          type="icon ghost"
-          iconsrc="chrome://example.svg"
-          aria-label="start action button"
-          slot="actions-start"
-        ></moz-button>`,
-        "Actions slots": html`<moz-button
-          type="icon ghost"
-          iconsrc="chrome://example.svg"
-          aria-label="start action button"
-          slot="actions-start"
-        ></moz-button>`,
-      }),
-      endActions: figma.enum("Type", {
-        "Actions preset": html`<moz-button
-            type="icon ghost"
-            iconsrc="chrome://example.svg"
-            aria-label="end action button"
-            slot="actions"
-          ></moz-button
-          ><moz-toggle aria-label="end toggle" slot="actions"></moz-toggle>`,
-        "Actions slots": html`<moz-button
-            type="icon ghost"
-            iconsrc="chrome://example.svg"
-            aria-label="end action button"
-            slot="actions"
-          ></moz-button
-          ><moz-toggle aria-label="end toggle" slot="actions"></moz-toggle>`,
-      }),
-    },
-    example: props =>
-      html`<moz-box-item
-        label=${props.labelProps.label}
-        description=${props.labelProps.description}
-        iconsrc=${props.labelProps.iconSrc}
-        layout=${props.layout}
+        })
+      : undefined;
+  const description =
+    labelInstance.type !== "ERROR"
+      ? labelInstance.getBoolean("Show description", {
+          true: labelInstance.getString("Description"),
+        })
+      : undefined;
+  const layout = figma.selectedInstance.getEnum("Type", {
+    "Large icon": "large-icon",
+    "Medium icon": "medium-icon",
+  });
+  const startActions = figma.selectedInstance.getEnum("Type", {
+    "Actions preset":
+      '<moz-button\n          type="icon ghost"\n          iconsrc="chrome://example.svg"\n          aria-label="start action button"\n          slot="actions-start"\n        ></moz-button>',
+    "Actions slots":
+      '<moz-button\n          type="icon ghost"\n          iconsrc="chrome://example.svg"\n          aria-label="start action button"\n          slot="actions-start"\n        ></moz-button>',
+  });
+  const endActions = figma.selectedInstance.getEnum("Type", {
+    "Actions preset":
+      '<moz-button\n            type="icon ghost"\n            iconsrc="chrome://example.svg"\n            aria-label="end action button"\n            slot="actions"\n          ></moz-button\n          ><moz-toggle aria-label="end toggle" slot="actions"></moz-toggle>',
+    "Actions slots":
+      '<moz-button\n            type="icon ghost"\n            iconsrc="chrome://example.svg"\n            aria-label="end action button"\n            slot="actions"\n          ></moz-button\n          ><moz-toggle aria-label="end toggle" slot="actions"></moz-toggle>',
+  });
+
+  template = {
+    id: "moz-box-item",
+    example: figma.code`<moz-box-item
+        ${label ? `label="${label}"` : ""}
+        ${description ? `description="${description}"` : ""}
+        ${iconSrc ? `iconsrc="${iconSrc}"` : ""}
+        ${layout ? `layout="${layout}"` : ""}
       >
-        ${props.startActions}${props.endActions}
+        ${startActions ?? ""}${endActions ?? ""}
       </moz-box-item>`,
-  }
-);
+  };
+}
 
-figma.connect(
-  "https://www.figma.com/design/PqfaOcMGbX5liEXTTUzeYX/Nova-Components--Experimental-?node-id=479-6030",
-  {
-    variant: { Type: "Slot" },
-    example: () =>
-      html`<moz-box-item>
-        <p>
-          You can put whatever you want in here! Use your imagination! (Just
-          don't pass other props as they won't work/get overridden by the slot)
-        </p>
-      </moz-box-item>`,
-  }
-);
-
-// Desktop Components 3
-figma.connect(
-  "https://www.figma.com/design/3WoKOSGtaSjhUHKldHCXbc/Desktop-Components-3?node-id=479-6030&m=dev",
-  {
-    props: {
-      label: figma.string("Label"),
-      iconSrc: figma.boolean("Show icon", {
-        true: "chrome://example.svg",
-      }),
-      description: figma.boolean("Show description", {
-        true: figma.string("Description"),
-      }),
-      layout: figma.enum("Type", {
-        "Large icon": "large-icon",
-        "Medium icon": "medium-icon",
-      }),
-      startActions: figma.enum("Type", {
-        "Actions preset": html`<moz-button
-          type="icon ghost"
-          iconsrc="chrome://example.svg"
-          aria-label="start action button"
-          slot="actions-start"
-        ></moz-button>`,
-        "Actions slots": html`<moz-button
-          type="icon ghost"
-          iconsrc="chrome://example.svg"
-          aria-label="start action button"
-          slot="actions-start"
-        ></moz-button>`,
-      }),
-      endActions: figma.enum("Type", {
-        "Actions preset": html`<moz-button
-            type="icon ghost"
-            iconsrc="chrome://example.svg"
-            aria-label="end action button"
-            slot="actions"
-          ></moz-button
-          ><moz-toggle aria-label="end toggle" slot="actions"></moz-toggle>`,
-        "Actions slots": html`<moz-button
-            type="icon ghost"
-            iconsrc="chrome://example.svg"
-            aria-label="end action button"
-            slot="actions"
-          ></moz-button
-          ><moz-toggle aria-label="end toggle" slot="actions"></moz-toggle>`,
-      }),
-    },
-    example: props =>
-      html`<moz-box-item
-        label=${props.label}
-        description=${props.description}
-        iconsrc=${props.iconSrc}
-        layout=${props.layout}
-      >
-        ${props.startActions}${props.endActions}
-      </moz-box-item>`,
-  }
-);
-
-figma.connect(
-  "https://www.figma.com/design/3WoKOSGtaSjhUHKldHCXbc/Desktop-Components-3?node-id=479-6030&m=dev",
-  {
-    variant: { Type: "Slot" },
-    example: () =>
-      html`<moz-box-item>
-        <p>
-          You can put whatever you want in here! Use your imagination! (Just
-          don't pass other props as they won't work/get overridden by the slot)
-        </p>
-      </moz-box-item>`,
-  }
-);
+export default template;
