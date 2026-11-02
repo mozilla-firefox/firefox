@@ -756,6 +756,11 @@ void ContStack::traceSuspended(JSTracer* trc, JSObject* src) {
     }
     ++iter;
   }
+
+  // Keep the initial function's instance alive, as TraceJitFrames does when
+  // crossing the base frame of a running stack.
+  TraceInstanceEdge(trc, baseFrame()->calleeInstance(),
+                    "cont base frame instance");
 }
 
 void ContStack::updateSuspendedForMovingGC(Nursery& nursery) {
