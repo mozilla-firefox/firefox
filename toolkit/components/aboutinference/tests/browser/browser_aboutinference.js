@@ -88,3 +88,35 @@ add_task(async function test_about_inference_process() {
     },
   });
 });
+
+/**
+ * Lists the inference devices through the devices panel.
+ */
+add_task(async function test_about_inference_devices() {
+  const { cleanup } = await setup({
+    prefs: [["browser.ml.llama.hwInference", true]],
+  });
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:inference",
+    true
+  );
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      const byId = id => content.document.getElementById(id);
+      byId("subtab-devices").click();
+      Assert.ok(byId("inference-pad").hidden, "The pad gives way");
+      await ContentTaskUtils.waitForCondition(
+        () => byId("devices.table").querySelector("td"),
+        "The devices panel lists the inference devices"
+      );
+      const kinds = [...byId("devices.table").querySelectorAll("tbody tr")].map(
+        tr => tr.children[2].textContent
+      );
+      Assert.ok(kinds.includes("cpu"), "The CPU is listed");
+    });
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+    await cleanup();
+  }
+});

@@ -35,3 +35,15 @@ about-inference-benchmark-button =
   .value = Run Benchmark
 about-inference-prompt-title = Confirm
 about-inference-prompt-message = Are you sure you want to delete this model?
+
+about-inference-tab-inference-pad = Inference pad
+about-inference-tab-devices = HWInference devices
+
+## HWInference devices panel
+
+about-inference-devices = HWInference devices
+about-inference-devices-refresh = List devices
+about-inference-devices-col-id = Id
+about-inference-devices-col-description = Description
+about-inference-devices-col-kind = Kind
+about-inference-devices-col-backends = Backends
