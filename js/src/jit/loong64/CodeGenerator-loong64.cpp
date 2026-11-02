@@ -1161,37 +1161,13 @@ void CodeGenerator::visitMulI(LMulI* ins) {
           bailoutCmp32(Assembler::Equal, lhs, Imm32(INT32_MIN),
                        ins->snapshot());
         }
-        masm.ma_mul(dest, lhs, Imm32(constant));
-        return;
+        [[fallthrough]];
       case 0:
       case 1:
         masm.ma_mul(dest, lhs, Imm32(constant));
         return;
-      case 2:
-        if (mul->canOverflow()) {
-          Label mulTwoOverflow;
-          masm.ma_add32TestOverflow(dest, lhs, lhs, &mulTwoOverflow);
-          bailoutFrom(&mulTwoOverflow, ins->snapshot());
-          return;
-        }
-        break;
     }
     if (mul->canOverflow()) {
-      if (constant > 0 &&
-          std::has_single_bit(static_cast<uint32_t>(constant))) {
-        UseScratchRegisterScope temps(masm);
-        Register scratch = temps.Acquire();
-
-        // dest = lhs * pow(2, shift)
-        masm.as_slli_d(dest, lhs, mozilla::FloorLog2(uint32_t(constant)));
-
-        // At runtime, check (dest >> shift == intptr_t(dest) >> shift), if
-        // this does not hold, some bits were lost due to overflow, and the
-        // computation should be resumed as a double.
-        masm.as_slli_w(scratch, dest, 0);
-        bailoutCmp32(Assembler::NotEqual, dest, scratch, ins->snapshot());
-        return;
-      }
       Label mulConstOverflow;
       masm.ma_mul32TestOverflow(dest, lhs, Imm32(constant), &mulConstOverflow);
       bailoutFrom(&mulConstOverflow, ins->snapshot());

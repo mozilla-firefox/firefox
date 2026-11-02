@@ -1805,9 +1805,9 @@ void MacroAssemblerLOONG64::ma_mul32TestOverflow(Register rd, Register rj,
 void MacroAssemblerLOONG64::ma_mul32TestOverflow(Register rd, Register rj,
                                                  Imm32 imm, Label* overflow) {
   UseScratchRegisterScope temps(asMasm());
+  ma_mul_d(rd, rj, imm);
+  // Defer scratch allocation to reduce pressure.
   Register scratch = temps.Acquire();
-  ma_li(scratch, imm);
-  as_mul_d(rd, rj, scratch);
   as_slli_w(scratch, rd, 0);
   ma_b(rd, scratch, overflow, Assembler::NotEqual);
 }
