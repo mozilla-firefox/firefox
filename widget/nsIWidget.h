@@ -2011,6 +2011,17 @@ class nsIWidget : public nsSupportsWeakReference {
   /**
    * This is used for native menu system testing.
    *
+   * Returns the title of the native menu item built from the element with id
+   * aElementId. Fails if no menu item was built from that element.
+   */
+  virtual nsresult GetNativeMenuItemTitle(const nsAString& aElementId,
+                                          nsAString& aResult) {
+    return NS_ERROR_NOT_IMPLEMENTED;
+  }
+
+  /**
+   * This is used for native menu system testing.
+   *
    * Updates a native menu at the position specified by the index string.
    * The index string is a string of positive integers separated by the "|"
    * (pipe) character.

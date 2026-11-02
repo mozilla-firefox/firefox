@@ -23,6 +23,7 @@
 class nsCocoaWindow;
 class nsChildView;
 class nsMenuBarX;
+class nsMenuItemX;
 @class ChildView;
 
 namespace mozilla {
@@ -452,6 +453,8 @@ class nsCocoaWindow final : public nsIWidget {
   nsresult ForceUpdateNativeMenuAt(const nsAString& indexString) override;
   nsresult GetNativeMenuItemKeyEquivalent(const nsAString& aElementId,
                                           nsAString& aResult) override;
+  nsresult GetNativeMenuItemTitle(const nsAString& aElementId,
+                                  nsAString& aResult) override;
   [[nodiscard]] nsresult GetSelectionAsPlaintext(nsAString& aResult) override;
   TextEventDispatcherListener* GetNativeTextEventDispatcherListener() override;
   [[nodiscard]] nsresult AttachNativeKeyEvent(
@@ -712,6 +715,10 @@ class nsCocoaWindow final : public nsIWidget {
       nullptr;
 
  private:
+  // Finds the item in this window's native menu bar that was built from the
+  // element with id aElementId. Only used by native menu test hooks.
+  nsMenuItemX* FindMenuBarItemByElementId(const nsAString& aElementId);
+
   // This is class state for tracking which nsCocoaWindow, if any, is in the
   // middle of a native fullscreen transition.
   static nsCocoaWindow* sWindowInNativeTransition;

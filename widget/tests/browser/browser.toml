@@ -121,6 +121,11 @@ run-if = [
   "os == 'mac'",
 ]
 
+["browser_test_menu_label_truncation.js"]
+run-if = [
+  "os == 'mac'",
+]
+
 ["browser_test_scrollbar_colors.js"]
 support-files = ["helper_scrollbar_colors.html"]
 

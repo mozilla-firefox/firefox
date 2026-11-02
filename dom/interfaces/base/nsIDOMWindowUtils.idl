@@ -719,6 +719,14 @@ interface nsIDOMWindowUtils : nsISupports {
   AString getNativeMenuItemKeyEquivalent(in AString elementId);
 
   /**
+   * Returns the title currently shown by the native menu item that was built
+   * from the element with id elementId, and throws if no native menu item was
+   * built from that element. Tests use this to check that long labels on macOS
+   * are cut to the element's max-width.
+   */
+  AString getNativeMenuItemTitle(in AString elementId);
+
+  /**
    * Returns the current selection as plaintext. Note that the result may be
    * different from the result of sendQueryContentEvent(QUERY_SELECTED_TEXT).
    * This result is computed by native API with transferable data. In other
