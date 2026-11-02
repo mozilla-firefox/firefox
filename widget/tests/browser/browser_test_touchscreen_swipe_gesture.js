@@ -777,3 +777,111 @@ add_task(
     await SpecialPowers.popPrefEnv();
   }
 );
+
+add_task(
+  async function test_touchscreen_swipe_happens_only_with_a_proper_direction() {
+    const firstPage = PLAIN_PAGE_FOR_SWIPE_NAVIGATION + "?first";
+    const secondPage = PLAIN_PAGE_FOR_SWIPE_NAVIGATION + "?second";
+
+    const tab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      firstPage,
+      true /* waitForLoad */
+    );
+    BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, secondPage);
+    await BrowserTestUtils.browserLoaded(
+      tab.linkedBrowser,
+      false /* includeSubFrames */,
+      secondPage
+    );
+
+    ok(gBrowser.webNavigation.canGoBack);
+    ok(!gBrowser.webNavigation.canGoForward);
+
+    const { TOUCH_CONTACT, TOUCH_REMOVE } = SpecialPowers.DOMWindowUtils;
+
+    // When dx <= dy * 3.7, swipe-to-nav isn't triggered. See SwipeTracker::CanTriggerSwipe().
+
+    await synthesizeNativeTouch(tab.linkedBrowser, 100, 100, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 200, 130, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 160, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 160, TOUCH_REMOVE);
+
+    await waitForWhile();
+
+    is(
+      tab.linkedBrowser.currentURI.spec,
+      secondPage,
+      "The gesture does not navigate."
+    );
+
+    // When dx > dy * 3.7, swipe-to-nav is triggered.
+
+    const started = BrowserTestUtils.browserStarted(
+      tab.linkedBrowser,
+      firstPage
+    );
+    const stopped = BrowserTestUtils.browserStopped(
+      tab.linkedBrowser,
+      firstPage
+    );
+
+    await synthesizeNativeTouch(tab.linkedBrowser, 100, 100, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 200, 120, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 140, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 140, TOUCH_REMOVE);
+
+    await Promise.all([started, stopped]);
+    is(
+      tab.linkedBrowser.currentURI.spec,
+      firstPage,
+      "The gesture does navigate."
+    );
+    BrowserTestUtils.removeTab(tab);
+  }
+);
+
+add_task(
+  async function test_touchscreen_swipe_can_be_disabled_by_swipe_tracker_pref() {
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        // Disable pref.
+        ["widget.disable-swipe-tracker", true],
+      ],
+    });
+
+    const firstPage = PLAIN_PAGE_FOR_SWIPE_NAVIGATION + "?first";
+    const secondPage = PLAIN_PAGE_FOR_SWIPE_NAVIGATION + "?second";
+
+    const tab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      firstPage,
+      true /* waitForLoad */
+    );
+    BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, secondPage);
+    await BrowserTestUtils.browserLoaded(
+      tab.linkedBrowser,
+      false /* includeSubFrames */,
+      secondPage
+    );
+
+    ok(gBrowser.webNavigation.canGoBack);
+    ok(!gBrowser.webNavigation.canGoForward);
+
+    const { TOUCH_CONTACT, TOUCH_REMOVE } = SpecialPowers.DOMWindowUtils;
+    await synthesizeNativeTouch(tab.linkedBrowser, 100, 100, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 200, 100, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 100, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 100, TOUCH_REMOVE);
+
+    await waitForWhile();
+
+    is(
+      tab.linkedBrowser.currentURI.spec,
+      secondPage,
+      "The gesture does not navigate because of the disabled pref"
+    );
+    BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+);

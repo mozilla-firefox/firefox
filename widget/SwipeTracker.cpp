@@ -280,7 +280,8 @@ void SwipeTracker::SendSwipeEvent(EventMessage aMsg, uint32_t aDirection,
 }
 
 // static
-bool SwipeTracker::CanTriggerSwipe(const PanGestureInput& aPanInput) {
+bool SwipeTracker::CanTriggerSwipe(const PanGestureInput& aPanInput,
+                                   SwipeInputSource aInputSource) {
   if (StaticPrefs::widget_disable_swipe_tracker()) {
     return false;
   }
@@ -290,13 +291,16 @@ bool SwipeTracker::CanTriggerSwipe(const PanGestureInput& aPanInput) {
   }
 
   // Only initiate horizontal tracking for events whose horizontal element is
-  // at least eight times larger than its vertical element. This minimizes
-  // performance problems with vertical scrolls (by minimizing the possibility
-  // that they'll be misinterpreted as horizontal swipes), while still
-  // tolerating a small vertical element to a true horizontal swipe.  The number
-  // '8' was arrived at by trial and error.
+  // at least |thresholdRatio| times larger than its vertical element. This
+  // minimizes performance problems with vertical scrolls (by minimizing the
+  // possibility that they'll be misinterpreted as horizontal swipes), while
+  // still tolerating a small vertical element to a true horizontal swipe.  The
+  // number '8' was arrived at by trial and error. '3.7' aims to make the
+  // threshold degree roughly 15 degree. ('8' was too tight for touch swipe.)
+  const double thresholdRatio =
+      aInputSource == SwipeInputSource::Touchpad ? 8.0 : 3.7;
   return std::abs(aPanInput.mPanDisplacement.x) >
-         std::abs(aPanInput.mPanDisplacement.y) * 8;
+         std::abs(aPanInput.mPanDisplacement.y) * thresholdRatio;
 }
 
 }  // namespace mozilla

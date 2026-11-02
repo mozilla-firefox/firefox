@@ -1344,8 +1344,13 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
 
   const auto touchDelta =
       mTouchSwipeState.GetDelta(aInput.mTouches[0].mScreenPoint);
-  // Reject swipe navigation when there is no horizontal movement.
-  if (touchDelta.X() == 0) {
+
+  const PanGestureInput swipeStart(
+      PanGestureInput::PANGESTURE_START, aInput.mTimeStamp,
+      *mTouchSwipeState.previousTouchPoint, -touchDelta, MODIFIER_NONE);
+
+  if (!SwipeTracker::CanTriggerSwipe(swipeStart,
+                                     SwipeInputSource::Touchscreen)) {
     rejectSwipe();
     return;
   }
@@ -1357,9 +1362,6 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
     return;
   }
 
-  const PanGestureInput swipeStart(
-      PanGestureInput::PANGESTURE_START, aInput.mTimeStamp,
-      *mTouchSwipeState.previousTouchPoint, -touchDelta, MODIFIER_NONE);
   const SwipeInfo swipeInfo = SendMayStartSwipe(swipeStart);
   const auto navigationDirection =
       touchDelta.X() > 0 ? SimpleGestureEvent_Binding::DIRECTION_LEFT

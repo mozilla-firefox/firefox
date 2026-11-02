@@ -70,7 +70,8 @@ class SwipeTracker final : public nsARefreshObserver {
   // nsARefreshObserver
   void WillRefresh(mozilla::TimeStamp aTime) override;
 
-  static bool CanTriggerSwipe(const PanGestureInput& aPanInput);
+  static bool CanTriggerSwipe(const PanGestureInput& aPanInput,
+                              SwipeInputSource aInputSource);
 
  protected:
   ~SwipeTracker();

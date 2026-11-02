@@ -533,7 +533,8 @@ PanGestureInput::PanGestureInput(PanGestureType aType, TimeStamp aTimeStamp,
       mOverscrollBehaviorAllowsSwipe(false),
       mSimulateMomentum(false),
       mIsNoLineOrPageDelta(true) {
-  mMayTriggerSwipe = SwipeTracker::CanTriggerSwipe(*this);
+  mMayTriggerSwipe =
+      SwipeTracker::CanTriggerSwipe(*this, SwipeInputSource::Touchpad);
 }
 
 PanGestureInput::PanGestureInput(PanGestureType aType, TimeStamp aTimeStamp,
