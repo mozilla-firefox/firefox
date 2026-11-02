@@ -16,3 +16,7 @@ amo-screen-primary-cta = Explore staff-recommended add-ons
 browser-aboutwelcome-button =
     .label = Finish setup
     .tooltiptext = Finish setting up { -brand-short-name }.
+
+## Smart Window Terms of Use Spotlight for signed-out users
+
+smartwindow-guest-tou-title = { -smart-window-brand-name } Terms of Use

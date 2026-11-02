@@ -1183,6 +1183,9 @@ export const SpecialMessageActions = {
       case "SET_TERMS_OF_USE_INTERACTED":
         Services.obs.notifyObservers(null, "termsofuse:interacted");
         break;
+      case "ACCEPT_SMARTWINDOW_TOU":
+        Services.obs.notifyObservers(null, "smartwindow-tou-accepted");
+        break;
       case "CREATE_NEW_SELECTABLE_PROFILE":
         this.createAndOpenProfile();
         break;

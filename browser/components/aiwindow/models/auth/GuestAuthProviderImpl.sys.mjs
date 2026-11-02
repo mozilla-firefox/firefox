@@ -13,8 +13,12 @@ const VERIFY_PATH = "/verify/v1/guest";
 const SUCCESS_PATH = "/verify/v1/guest/success";
 
 const lazy = XPCOMUtils.declareLazy({
+  AuthProvider:
+    "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   openAIEngine:
     "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
+  ToUSpotlight:
+    "moz-src:///browser/components/aiwindow/ui/modules/ToUSpotlight.sys.mjs",
   token: {
     pref: PREF_TOKEN,
     default: "",
@@ -49,6 +53,13 @@ export class GuestAuthProviderImpl extends AuthProviderImpl {
   }
 
   async signIn(browser) {
+    if (
+      !lazy.AuthProvider.hasToSConsent &&
+      !(await lazy.ToUSpotlight.show(browser))
+    ) {
+      return false;
+    }
+
     const origin = new URL(lazy.openAIEngine.endpoint).origin;
     const state = crypto.randomUUID();
     const url = `${origin}${VERIFY_PATH}?state=${encodeURIComponent(state)}`;

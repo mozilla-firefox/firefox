@@ -9,10 +9,18 @@ const { GuestAuthProviderImpl } = ChromeUtils.importESModule(
 const { FxaAuthProviderImpl } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/auth/FxaAuthProviderImpl.sys.mjs"
 );
+const { ToUSpotlight } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ToUSpotlight.sys.mjs"
+);
+const { Spotlight } = ChromeUtils.importESModule(
+  "resource:///modules/asrouter/Spotlight.sys.mjs"
+);
+
 const PREF_TOKEN = "browser.smartwindow.auth.guest.token";
 const PREF_MODE = "browser.smartwindow.auth.guest.mode";
 const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 const PREF_FIRSTRUN_COMPLETED = "browser.smartwindow.firstrun.hasCompleted";
+const PREF_TOS_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
 const SUCCESS_PATH = "/verify/v1/guest/success";
 
 /**
@@ -81,6 +89,12 @@ function waitForSuccessTab(origin) {
     true
   );
 }
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [[PREF_TOS_CONSENT_TIME, 1735689600]],
+  });
+});
 
 add_task(async function test_signIn_fetch_stores_token() {
   await withMockMLPA(
@@ -371,4 +385,134 @@ add_task(async function test_rejected_token_with_guest_disabled() {
     AuthProvider.setImpl(new FxaAuthProviderImpl());
     await SpecialPowers.popPrefEnv();
   }
+});
+
+add_task(async function test_signIn_declined_tou() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF_TOS_CONSENT_TIME, 0]] });
+  const sb = sinon.createSandbox();
+  const show = sb.stub(ToUSpotlight, "show").resolves(false);
+  let verifyRequests = 0;
+
+  try {
+    await withMockMLPA(
+      "fetch",
+      () => {
+        verifyRequests++;
+        return { access_token: "guest-token", token_type: "Bearer" };
+      },
+      async () => {
+        const impl = new GuestAuthProviderImpl();
+        Assert.ok(
+          !(await impl.signIn(gBrowser.selectedBrowser)),
+          "signIn resolves to false"
+        );
+        Assert.ok(show.calledOnce, "The ToU Spotlight is shown");
+        Assert.equal(verifyRequests, 0, "MLPA is not contacted");
+        Assert.equal(await impl.getToken(), null, "No token is cached");
+        Assert.equal(
+          Services.prefs.getIntPref(PREF_TOS_CONSENT_TIME),
+          0,
+          "No consent is recorded"
+        );
+      }
+    );
+  } finally {
+    sb.restore();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_signIn_accepted_tou() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [PREF_TOS_CONSENT_TIME, 0],
+      [PREF_AUTH_IMPL, "guest"],
+    ],
+  });
+  const sb = sinon.createSandbox();
+  const show = sb.stub(ToUSpotlight, "show").resolves(true);
+
+  try {
+    await withMockMLPA(
+      "fetch",
+      () => ({ access_token: "guest-token", token_type: "Bearer" }),
+      async () => {
+        Assert.ok(
+          await AuthProvider.promptSignIn(gBrowser.selectedBrowser),
+          "promptSignIn"
+        );
+        Assert.ok(show.calledOnce, "The ToU Spotlight is shown");
+        Assert.greater(
+          Services.prefs.getIntPref(PREF_TOS_CONSENT_TIME),
+          0,
+          "AuthProvider records the consent"
+        );
+        Assert.equal(await AuthProvider.getToken(), "guest-token", "getToken");
+      }
+    );
+  } finally {
+    sb.restore();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_signIn_skips_tou_with_consent() {
+  const sb = sinon.createSandbox();
+  const show = sb.stub(ToUSpotlight, "show").resolves(false);
+
+  try {
+    await withMockMLPA(
+      "fetch",
+      () => ({ access_token: "guest-token", token_type: "Bearer" }),
+      async () => {
+        const impl = new GuestAuthProviderImpl();
+        Assert.ok(await impl.signIn(gBrowser.selectedBrowser), "signIn");
+        Assert.ok(show.notCalled, "The ToU Spotlight is not shown");
+      }
+    );
+  } finally {
+    sb.restore();
+  }
+});
+
+/**
+ * Runs ToUSpotlight.show with the Spotlight dialog stubbed out.
+ *
+ * @param {boolean} accept Whether the stubbed dialog accepts the ToU.
+ * @returns {Promise<object>} The result of show and the Spotlight stub.
+ */
+async function runToUSpotlight(accept) {
+  const sb = sinon.createSandbox();
+  const showSpotlightDialog = sb
+    .stub(Spotlight, "showSpotlightDialog")
+    .callsFake(async () => {
+      if (accept) {
+        Services.obs.notifyObservers(null, "smartwindow-tou-accepted");
+      }
+      return true;
+    });
+
+  try {
+    const accepted = await ToUSpotlight.show(gBrowser.selectedBrowser);
+    return { accepted, showSpotlightDialog };
+  } finally {
+    sb.restore();
+  }
+}
+
+add_task(async function test_tou_spotlight_accepted() {
+  const { accepted, showSpotlightDialog } = await runToUSpotlight(true);
+  Assert.ok(accepted, "show resolves to true");
+  Assert.ok(showSpotlightDialog.calledOnce, "The Spotlight is shown");
+  Assert.equal(
+    showSpotlightDialog.firstCall.args[1].id,
+    "AI_WINDOW_TOU_GUEST_MODAL",
+    "The guest ToU message is shown"
+  );
+});
+
+add_task(async function test_tou_spotlight_declined() {
+  const { accepted, showSpotlightDialog } = await runToUSpotlight(false);
+  Assert.ok(!accepted, "show resolves to false");
+  Assert.ok(showSpotlightDialog.calledOnce, "The Spotlight is shown");
 });

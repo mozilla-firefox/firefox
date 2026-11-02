@@ -93,10 +93,11 @@ class AuthProviderSingleton extends EventTarget {
     return !!lazy.hasAIWindowToSConsent;
   }
 
-  set hasToSConsent(value) {
-    const nowSeconds = Math.floor(Date.now() / 1000);
-
-    Services.prefs.setIntPref(PREF_TOS_CONSENT_TIME, value ? nowSeconds : 0);
+  recordToSConsent() {
+    Services.prefs.setIntPref(
+      PREF_TOS_CONSENT_TIME,
+      Math.floor(Date.now() / 1000)
+    );
   }
 
   clearToSConsent() {
@@ -225,7 +226,7 @@ class AuthProviderSingleton extends EventTarget {
       lazy.log.error("User did not sign in successfully.");
       return false;
     }
-    this.hasToSConsent = true;
+    this.recordToSConsent();
     return true;
   }
 }

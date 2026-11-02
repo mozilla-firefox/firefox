@@ -350,6 +350,7 @@ export interface Modules {
   "moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillUtils.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillUtils.sys.mjs"),
   "moz-src:///browser/components/aiwindow/ui/modules/SmartWindowTelemetry.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/SmartWindowTelemetry.sys.mjs"),
   "moz-src:///browser/components/aiwindow/ui/modules/TabManagementService.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/TabManagementService.sys.mjs"),
+  "moz-src:///browser/components/aiwindow/ui/modules/ToUSpotlight.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/ToUSpotlight.sys.mjs"),
   "moz-src:///browser/components/aiwindow/ui/modules/ToolActionLog.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/ToolActionLog.sys.mjs"),
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"),
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUITelemetry.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/ui/modules/ToolUITelemetry.sys.mjs"),

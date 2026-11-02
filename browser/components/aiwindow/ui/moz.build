@@ -74,6 +74,7 @@ MOZ_SRC_FILES += [
     "modules/ToolActionLog.sys.mjs",
     "modules/ToolUI.sys.mjs",
     "modules/ToolUITelemetry.sys.mjs",
+    "modules/ToUSpotlight.sys.mjs",
     "modules/UrlTokenizer.sys.mjs",
 ]
 
