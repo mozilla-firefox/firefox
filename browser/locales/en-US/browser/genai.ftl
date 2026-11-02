@@ -116,6 +116,7 @@ genai-selection-callout-text = Search or copy when you select text. Choose which
 
 genai-menu-new-badge = New
 genai-menu-summarize-page = Summarize Page
+genai-menu-summarize-with-ai = Summarize with AI
 
 genai-input-ask-smart-window =
     .placeholder = Ask…

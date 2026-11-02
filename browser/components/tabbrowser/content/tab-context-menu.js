@@ -134,6 +134,10 @@ var TabContextMenu = {
           open: true,
           items: [],
         },
+        {
+          name: "unused",
+          items: ["#context_addTabToGroup"],
+        },
       ],
       /*
        * The "Move tabs to" submenu keeps its authored contents; the two extra
@@ -143,13 +147,14 @@ var TabContextMenu = {
         {
           name: "positions",
           items: [
-            "#context_moveToStart",
-            "#context_moveToEnd",
             "#context_openTabInWindow",
             "#context_openTabInMiniWindow",
+            "#context_moveToStart",
+            "#context_moveToEnd",
             "#moveTabSeparator",
             "#context_moveTabToGroupSeparator",
             "#context_selectAllSeparator",
+            "#context_moveTabPositionsSeparator",
           ],
         },
       ],
@@ -171,6 +176,7 @@ var TabContextMenu = {
             "#context_closeTabsToTheStart",
             "#context_closeTabsToTheEnd",
             "#context_closeOtherTabs",
+            "#context_closeOtherTabsSeparator",
           ],
         },
       ],
@@ -209,11 +215,7 @@ var TabContextMenu = {
         {
           name: "spatial-items",
           items: [
-            [
-              "#context_moveTabToSplitView",
-              "#context_separateSplitView",
-              "#context_reverseSplitView",
-            ],
+            "#context_addTabToGroup",
             /*
              * "Move Tab to" reuses #context_moveTabOptions; the tab-group entries
              * and Select All Tabs are flattened into its submenu (see the
@@ -227,6 +229,11 @@ var TabContextMenu = {
               "#context_moveTabToGroup",
               "#context_ungroupTab",
               "#context_ungroupSplitView",
+            ],
+            [
+              "#context_moveTabToSplitView",
+              "#context_separateSplitView",
+              "#context_reverseSplitView",
             ],
             "#context_reopenInContainer",
             /*
@@ -297,29 +304,21 @@ var TabContextMenu = {
         },
       ],
       /*
-       * "Move Tab to": #context_moveTabOptions with the tab-group entries (from
-       * #context_moveTabToGroupPopupMenu) and Select All Tabs flattened in. Move
-       * to Start/End/New Window are already here; profile items are inserted at
-       * runtime after #moveTabSeparator.
+       * "Move Tab to": #context_moveTabOptions with Select All Tabs flattened
+       * in. Move to Start/End/New Window are already here; profile items are
+       * inserted at runtime after #moveTabSeparator. Tab-group entries live in
+       * the "Add to Group" submenu instead.
        */
       moveTabOptionsMenu: [
         {
-          name: "groups",
-          items: [
-            "#context_moveTabToGroupNewGroup",
-            "#open-tab-groups-separator-upper",
-            "#open-tab-groups-separator-lower",
-            "#context_moveTabToSavedGroup",
-            "#context_moveTabToGroupSeparator",
-          ],
-        },
-        {
           name: "positions",
           items: [
-            "#context_moveToStart",
-            "#context_moveToEnd",
+            "#context_moveTabToGroupSeparator",
             "#context_openTabInWindow",
             "#context_openTabInMiniWindow",
+            "#context_moveTabPositionsSeparator",
+            "#context_moveToStart",
+            "#context_moveToEnd",
             "#moveTabSeparator",
           ],
         },
@@ -328,8 +327,28 @@ var TabContextMenu = {
           items: ["#context_selectAllSeparator", "#context_selectAllTabs"],
         },
       ],
-      /* Emptied here: its entries are flattened into moveTabOptionsMenu above. */
-      context_moveTabToGroupPopupMenu: [],
+      /* Left in place; its parent #context_moveTabToGroup is hidden here. */
+      context_moveTabToGroupPopupMenu: [
+        {
+          name: "groups",
+          items: [
+            "#context_moveTabToGroupNewGroup",
+            "#open-tab-groups-separator-upper",
+            "#open-tab-groups-separator-lower",
+            "#context_moveTabToSavedGroup",
+          ],
+        },
+      ],
+      context_addTabToGroupPopupMenu: [
+        {
+          name: "add-groups",
+          items: [
+            "#context_addTabToGroupNewGroup",
+            "#add-tab-to-group-separator",
+            "#context_addTabToSavedGroup",
+          ],
+        },
+      ],
       /*
        * Close Duplicates joins the other close-multiple options in the "Close
        * Multiple" submenu in this layout (relocated from the top level).
@@ -340,6 +359,7 @@ var TabContextMenu = {
           items: [
             "#context_closeTabsToTheStart",
             "#context_closeTabsToTheEnd",
+            "#context_closeOtherTabsSeparator",
             "#context_closeOtherTabs",
             "#context_closeDuplicateTabs",
           ],
@@ -390,6 +410,7 @@ var TabContextMenu = {
       }).arrange(aPopupMenu);
       this._hideUnusedSectionItems(layout);
       this._updateL10nIds(aPopupMenu, this._altTabContextMenu);
+      this._updateSharePanelClasses(this._altTabContextMenu);
     } catch (ex) {
       console.error(ex);
     }
@@ -415,6 +436,18 @@ var TabContextMenu = {
     }
   },
 
+  _updateSharePanelClasses(altEnabled) {
+    const copyLinkButton = document.getElementById("share-panel-copy-link");
+    const createQRCodeButton = document.getElementById("share-panel-qr-code");
+    const iconClass = "subviewbutton-iconic";
+    if (copyLinkButton) {
+      copyLinkButton.classList.toggle(iconClass, !altEnabled);
+    }
+    if (createQRCodeButton) {
+      createQRCodeButton.classList.toggle(iconClass, !altEnabled);
+    }
+  },
+
   /* Hide every item the active layout parks in its "unused" section; */
   _hideUnusedSectionItems(layout) {
     for (let section of layout.tabContextMenu) {
@@ -434,26 +467,22 @@ var TabContextMenu = {
 
   /*
    * Set the per-show visibility of the nodes shared by the "Move tabs to"
-   * submenu in both layouts. In the alt layout the tab-group entries and Select
-   * All Tabs are flattened into that submenu (see MENU_SECTIONS.altstructure),
-   * so the top-level group wrapper and the simplified new-group items are hidden
-   * and the submenu's own separators are shown as needed. In the classic layout
-   * these nodes are reset to their authored state (the top-level group items are
+   * submenu in both layouts. In the alt layout Select All Tabs is flattened
+   * into that submenu (see MENU_SECTIONS.altstructure) and group actions move
+   * to "Add to Group", so the top-level group items are hidden and the
+   * submenu's own separators are shown as needed. In the classic layout these
+   * nodes are reset to their authored state (the top-level group items are
    * managed by the tab-groups block above). Runs every show so neither layout's
    * visibility leaks across a pref toggle.
    */
-  _updateMoveTabToFlattenedVisibility(
-    groupsEnabled,
-    hasOpenGroups,
-    hasSavedGroups
-  ) {
+  _updateMoveTabToFlattenedVisibility() {
     let byId = id => document.getElementById(id);
     let newGroup = byId("context_moveTabToGroupNewGroup");
     let upperSeparator = byId("open-tab-groups-separator-upper");
-    let lowerSeparator = byId("open-tab-groups-separator-lower");
     let savedGroups = byId("context_moveTabToSavedGroup");
     let groupSeparator = byId("context_moveTabToGroupSeparator");
     let selectAllSeparator = byId("context_selectAllSeparator");
+    let positionsSeparator = byId("context_moveTabPositionsSeparator");
 
     if (!this._altTabContextMenu) {
       /* Classic: restore the shared submenu nodes; hide the alt-only separators. */
@@ -462,27 +491,21 @@ var TabContextMenu = {
       savedGroups.hidden = false;
       groupSeparator.hidden = true;
       selectAllSeparator.hidden = true;
+      positionsSeparator.hidden = true;
       return;
     }
 
     /*
-     * Alt: the group entries are flattened into the submenu, so hide the
-     * top-level wrapper and simplified new-group items (ungroup stays at top
-     * level, managed by the tab-groups block).
+     * Alt: group actions move to "Add to Group", so hide the top-level group
+     * items (ungroup stays at top level, managed by the tab-groups block).
      */
     byId("context_moveTabToGroup").hidden = true;
     byId("context_moveTabToNewGroup").hidden = true;
     byId("context_moveSplitViewToNewGroup").hidden = true;
 
-    newGroup.hidden = !groupsEnabled;
-    upperSeparator.hidden = !(
-      groupsEnabled &&
-      (hasOpenGroups || hasSavedGroups)
-    );
-    lowerSeparator.hidden = true;
-    savedGroups.hidden = !(groupsEnabled && hasSavedGroups);
-    groupSeparator.hidden = !groupsEnabled;
+    groupSeparator.hidden = true;
     selectAllSeparator.hidden = false;
+    positionsSeparator.hidden = false;
   },
 
   _updateToggleMuteMenuItems(aTab, aConditionFn) {
@@ -515,10 +538,13 @@ var TabContextMenu = {
       : [this.contextTab];
 
     let splitViews = new Set();
-    // bug1973996: This call is not guaranteed to complete
-    // before the saved groups menu is populated
+    // Session store can lag behind a recent navigation, so the saved groups
+    // menu is refreshed once these flushes settle (bug 1973996).
+    let sessionStoreFlushes = [];
     for (let tab of this.contextTabs) {
-      TabContextMenu.TabStateFlusher.flush(tab.linkedBrowser);
+      sessionStoreFlushes.push(
+        TabContextMenu.TabStateFlusher.flush(tab.linkedBrowser)
+      );
 
       // Add unique split views for count info below
       if (tab.splitview) {
@@ -582,7 +608,7 @@ var TabContextMenu = {
       .getElementById("History:UndoCloseTab")
       .toggleAttribute("disabled", closedCount == 0);
     document.l10n.setArgs(document.getElementById("context_undoCloseTab"), {
-      tabCount: closedCount,
+      tabCount: Math.max(closedCount, 1),
     });
 
     // Show/hide fullscreen context menu items and set the
@@ -597,6 +623,7 @@ var TabContextMenu = {
     let contextMoveTabToGroup = document.getElementById(
       "context_moveTabToGroup"
     );
+    let contextAddTabToGroup = document.getElementById("context_addTabToGroup");
     let contextUngroupTab = document.getElementById("context_ungroupTab");
     let contextMoveSplitViewToNewGroup = document.getElementById(
       "context_moveSplitViewToNewGroup"
@@ -631,14 +658,26 @@ var TabContextMenu = {
         }
       }
 
-      // Populate the saved groups context menu
-      // Only enable in non-private windows, or if at least one of the tabs is
-      // considered saveable
-      if (
-        !PrivateBrowsingUtils.isWindowPrivate(window) &&
-        SessionStore.shouldSaveTabsToGroup(this.contextTabs)
-      ) {
-        savedGroupsToMoveTo = SessionStore.getSavedTabGroups();
+      savedGroupsToMoveTo = this._getSavedGroupsToMoveTo();
+
+      // Show the Add To Group menuitem for the altmenu
+      contextAddTabToGroup.hidden = !this._altTabContextMenu;
+      if (this._altTabContextMenu) {
+        // Update the top-level string for "Add to Group" depending on if it is for a split view tab.
+        if (isAllSplitViewTabs) {
+          contextAddTabToGroup.setAttribute(
+            "data-l10n-id",
+            "tab-context-add-split-view-to-group"
+          );
+          contextAddTabToGroup.removeAttribute("data-l10n-args");
+        } else {
+          contextAddTabToGroup.setAttribute(
+            "data-l10n-id",
+            "tab-context-add-tab-to-group"
+          );
+          contextAddTabToGroup.setAttribute("data-l10n-args", tabCountInfo);
+        }
+        this._populateAddToGroupMenu(openGroupsToMoveTo, savedGroupsToMoveTo);
       }
 
       if (!openGroupsToMoveTo.length && !savedGroupsToMoveTo.length) {
@@ -680,46 +719,40 @@ var TabContextMenu = {
           contextMoveTabToGroup.setAttribute("data-l10n-args", tabCountInfo);
         }
 
-        // Resolve the group anchors by id rather than relative to the group
-        // submenu, so the open/saved group items land correctly whether these
-        // nodes live in their own popup (classic) or are flattened into the
-        // "Move Tab to" submenu (alt layout).
-        const upperSeparator = document.getElementById(
-          "open-tab-groups-separator-upper"
-        );
-        const lowerSeparator = document.getElementById(
-          "open-tab-groups-separator-lower"
-        );
-        const openGroupsMenu = upperSeparator.parentNode;
-        openGroupsMenu
-          .querySelectorAll("[tab-group-id]")
-          .forEach(el => el.remove());
+        if (!this._altTabContextMenu) {
+          const upperSeparator = document.getElementById(
+            "open-tab-groups-separator-upper"
+          );
+          const lowerSeparator = document.getElementById(
+            "open-tab-groups-separator-lower"
+          );
+          const openGroupsMenu = upperSeparator.parentNode;
+          openGroupsMenu
+            .querySelectorAll("[tab-group-id]")
+            .forEach(el => el.remove());
 
-        lowerSeparator.hidden = !openGroupsToMoveTo.length;
+          lowerSeparator.hidden = !openGroupsToMoveTo.length;
 
-        openGroupsToMoveTo.toReversed().forEach(group => {
-          let item = this._createTabGroupMenuItem(group, false);
-          upperSeparator.after(item);
-        });
-
-        const savedGroupsMenu = document.getElementById(
-          "context_moveTabToSavedGroup"
-        );
-        const savedGroupsMenuPopup = savedGroupsMenu.querySelector("menupopup");
-
-        savedGroupsMenuPopup
-          .querySelectorAll("[tab-group-id]")
-          .forEach(el => el.remove());
-        if (savedGroupsToMoveTo.length) {
-          savedGroupsMenu.disabled = false;
-
-          savedGroupsToMoveTo.forEach(group => {
-            let item = this._createTabGroupMenuItem(group, true);
-            savedGroupsMenuPopup.appendChild(item);
+          openGroupsToMoveTo.toReversed().forEach(group => {
+            let item = this._createTabGroupMenuItem(group, false);
+            upperSeparator.after(item);
           });
-        } else {
-          savedGroupsMenu.disabled = true;
+
+          this._populateSavedGroupsMenu(savedGroupsToMoveTo);
         }
+      }
+
+      if (!savedGroupsToMoveTo.length) {
+        let contextTabs = this.contextTabs;
+        Promise.allSettled(sessionStoreFlushes).then(() => {
+          if (this.contextTabs !== contextTabs) {
+            return;
+          }
+          let savedGroups = this._getSavedGroupsToMoveTo();
+          if (savedGroups.length) {
+            this._populateSavedGroupsMenu(savedGroups);
+          }
+        });
       }
 
       let groupInfo = JSON.stringify({
@@ -735,6 +768,7 @@ var TabContextMenu = {
         contextUngroupTab.setAttribute("data-l10n-args", groupInfo);
       }
     } else {
+      contextAddTabToGroup.hidden = true;
       contextMoveTabToNewGroup.hidden = true;
       contextMoveTabToGroup.hidden = true;
       contextUngroupTab.hidden = true;
@@ -742,11 +776,7 @@ var TabContextMenu = {
       contextUngroupSplitView.hidden = true;
     }
 
-    this._updateMoveTabToFlattenedVisibility(
-      TabContextMenu.Tabbrowser.prefs.tabGroupsEnabled,
-      !!openGroupsToMoveTo.length,
-      !!savedGroupsToMoveTo.length
-    );
+    this._updateMoveTabToFlattenedVisibility();
 
     let contextAddNote = document.getElementById("context_addNote");
     let contextEditNote = document.getElementById("context_editNote");
@@ -914,11 +944,11 @@ var TabContextMenu = {
     let moveTabOptionsL10nId = "tab-context-move-tabs";
     if (this._altTabContextMenu) {
       moveTabOptionsL10nId = this.contextTab.splitview
-        ? "tab-context-move-split-view"
-        : "tab-context-move-tabs2";
+        ? "tab-context-move-split-view-alt"
+        : "tab-context-move-tabs3";
     }
     contextMoveTabOptions.setAttribute("data-l10n-id", moveTabOptionsL10nId);
-    // In the alt layout this submenu also holds New Group and Select All Tabs,
+    // In the alt layout this submenu also holds Select All Tabs,
     // so it stays enabled even when the move-position items aren't actionable.
     contextMoveTabOptions.disabled =
       this.contextTab.hidden ||
@@ -977,25 +1007,37 @@ var TabContextMenu = {
       "context_closeTabsToTheStart"
     );
 
-    // update context menu item strings for vertical tabs
-    document.l10n.setAttributes(
-      closeTabsToTheStartItem,
-      gBrowser.tabContainer?.verticalMode
-        ? "close-tabs-to-the-start-vertical"
-        : "close-tabs-to-the-start"
-    );
+    // update context menu item strings for vertical tabs and alt layout
+    let startTabString;
+    if (this._altTabContextMenu) {
+      startTabString = "close-tabs-to-the-start-alt";
+      if (gBrowser.tabContainer?.verticalMode) {
+        startTabString = "close-tabs-to-the-start-vertical-alt";
+      }
+    } else if (gBrowser.tabContainer?.verticalMode) {
+      startTabString = "close-tabs-to-the-start-vertical";
+    } else {
+      startTabString = "close-tabs-to-the-start";
+    }
+    document.l10n.setAttributes(closeTabsToTheStartItem, startTabString);
 
     let closeTabsToTheEndItem = document.getElementById(
       "context_closeTabsToTheEnd"
     );
 
-    // update context menu item strings for vertical tabs
-    document.l10n.setAttributes(
-      closeTabsToTheEndItem,
-      gBrowser.tabContainer?.verticalMode
-        ? "close-tabs-to-the-end-vertical"
-        : "close-tabs-to-the-end"
-    );
+    // update context menu item strings for vertical tabs and alt layout
+    let endTabString;
+    if (this._altTabContextMenu) {
+      endTabString = "close-tabs-to-the-end-alt";
+      if (gBrowser.tabContainer?.verticalMode) {
+        endTabString = "close-tabs-to-the-end-vertical-alt";
+      }
+    } else if (gBrowser.tabContainer?.verticalMode) {
+      endTabString = "close-tabs-to-the-end-vertical";
+    } else {
+      endTabString = "close-tabs-to-the-end";
+    }
+    document.l10n.setAttributes(closeTabsToTheEndItem, endTabString);
 
     // Disable "Close Tabs to the Left/Right" if there are no tabs
     // preceding/following it.
@@ -1015,7 +1057,15 @@ var TabContextMenu = {
           t => t != this.contextTab && !t.pinned && !t.hidden
         ).length;
     let closeOtherTabsItem = document.getElementById("context_closeOtherTabs");
+    document.l10n.setAttributes(
+      closeOtherTabsItem,
+      this._altTabContextMenu ? "close-other-tabs-alt" : "close-other-tabs"
+    );
     closeOtherTabsItem.disabled = unpinnedTabsToClose < 1;
+
+    // Show separator before "Close Other Tabs" in alt layout only
+    document.getElementById("context_closeOtherTabsSeparator").hidden =
+      !this._altTabContextMenu;
 
     // Update the close item with how many tabs will close.
     document
@@ -1131,6 +1181,41 @@ var TabContextMenu = {
           : "context_moveTabOptions"
       )
     );
+  },
+
+  _populateAddToGroupMenu(openGroups, savedGroups) {
+    let separator = document.getElementById("add-tab-to-group-separator");
+    separator.parentNode
+      .querySelectorAll(":scope > [tab-group-id]")
+      .forEach(el => el.remove());
+    openGroups.toReversed().forEach(group => {
+      separator.after(this._createTabGroupMenuItem(group, false));
+    });
+
+    this._populateSavedGroupsMenu(savedGroups);
+  },
+
+  _getSavedGroupsToMoveTo() {
+    if (
+      PrivateBrowsingUtils.isWindowPrivate(window) ||
+      !SessionStore.shouldSaveTabsToGroup(this.contextTabs)
+    ) {
+      return [];
+    }
+    return SessionStore.getSavedTabGroups();
+  },
+
+  _populateSavedGroupsMenu(savedGroups) {
+    const menuId = this._altTabContextMenu
+      ? "context_addTabToSavedGroup"
+      : "context_moveTabToSavedGroup";
+    let savedGroupsMenu = document.getElementById(menuId);
+    savedGroupsMenu
+      .querySelector("menupopup")
+      .replaceChildren(
+        ...savedGroups.map(group => this._createTabGroupMenuItem(group, true))
+      );
+    savedGroupsMenu.disabled = !savedGroups.length;
   },
 
   _createTabGroupMenuItem(group, isSaved) {

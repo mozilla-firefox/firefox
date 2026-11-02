@@ -306,6 +306,13 @@ tab-context-move-tab-to-new-group =
            *[other] Add Tabs to New Group
         }
     .accesskey = G
+tab-context-add-tab-to-group =
+    .label =
+        { $tabCount ->
+            [1] Add to Group
+           *[other] Add { $tabCount } Tabs to Group
+        }
+    .accesskey = G
 tab-context-move-tab-to-group =
     .label =
         { $tabCount ->
@@ -329,6 +336,12 @@ tab-context-move-split-view-to-group =
     .accesskey = G
 
 ##
+
+# Used for the "Add to Group" submenu when opened on a split view.
+# The split view's two tabs are added to the group together.
+tab-context-add-split-view-to-group =
+    .label = Add Tabs to Group
+    .accesskey = G
 
 tab-splitview-splitter =
     .aria-label = Resize split view tabs
@@ -499,6 +512,10 @@ tab-context-open-in-split-view =
 # Separate the two split view tabs and display the tabs and their contents as normal
 tab-context-separate-split-view =
     .label = Separate Split View
+    .accesskey = t
+# Separate the two split view tabs and display the tabs and their contents as normal
+tab-context-separate-split-view-alt =
+    .label = Separate Tabs
     .accesskey = t
 # Reverse the order of the two tabs in the split view
 tab-context-reverse-split-view =
