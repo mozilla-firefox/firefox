@@ -10,7 +10,7 @@ add_task(async function test() {
   });
 
   await BrowserTestUtils.withNewTab(
-    JS_CACHE_BASE_URL + "file_js_cache_module_csp.sjs?main.html",
+    JS_CACHE_BASE_URL_HTTPS + "file_js_cache_module_csp.sjs?main.html",
     async browser => {
       await SpecialPowers.spawn(browser, [], async () => {
         const netErrorCard = await ContentTaskUtils.waitForCondition(
