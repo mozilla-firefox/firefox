@@ -499,11 +499,7 @@ void MacroAssembler::mul64(const Register64& rhs, const Register64& srcDest) {
 }
 
 void MacroAssembler::mul64(Imm64 imm, const Register64& dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(dest.reg != scratch);
-  mov(ImmWord(imm.value), scratch);
-  as_mul_d(dest.reg, dest.reg, scratch);
+  ma_mul_d(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::mul64(Imm64 imm, const Register64& dest,
@@ -523,11 +519,7 @@ void MacroAssembler::mulPtr(Register rhs, Register srcDest) {
 }
 
 void MacroAssembler::mulPtr(ImmWord rhs, Register srcDest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(srcDest != scratch);
-  mov(rhs, scratch);
-  mulPtr(scratch, srcDest);
+  ma_mul_d(srcDest, srcDest, rhs);
 }
 
 void MacroAssembler::mulBy3(Register src, Register dest) {
@@ -543,10 +535,7 @@ void MacroAssembler::mul32(Register rhs, Register srcDest) {
 }
 
 void MacroAssembler::mul32(Imm32 imm, Register srcDest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  move32(imm, scratch);
-  mul32(scratch, srcDest);
+  ma_mul(srcDest, srcDest, imm);
 }
 
 void MacroAssembler::mulHighUnsigned32(Imm32 imm, Register src, Register dest) {
