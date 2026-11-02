@@ -129,7 +129,7 @@ void ElementDeletionObserver::ParentChainChanged(nsIContent* aContent)
   nsCOMPtr<nsIContent> nativeAnonNode = mNativeAnonNode;
   mNativeAnonNode = nullptr;
   nativeAnonNode->RemoveMutationObserver(self);
-  ManualNACPtr::RemoveContentFromNACArray(nativeAnonNode);
+  ManualNACPtr::RemoveContentFromNACArray(std::move(nativeAnonNode));
   // FYI: The call of RemoveContentFromNACArray() might have caused dispatching
   // a chrome event. So, if you want to refer a member after here, you should
   // grab it before the call.
