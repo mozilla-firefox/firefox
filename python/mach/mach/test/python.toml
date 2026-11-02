@@ -19,6 +19,8 @@ subsuite = "mach"
 
 ["test_error_output.py"]
 
+["test_func_cache.py"]
+
 ["test_logger.py"]
 
 ["test_mach.py"]
