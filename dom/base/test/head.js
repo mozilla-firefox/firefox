@@ -29,15 +29,12 @@ async function newFocusedWindow(trigger, isInitialBlank = false) {
   return win;
 }
 
-const JS_CACHE_BASE_URL_HTTP = "https://example.net/browser/dom/base/test/";
-const JS_CACHE_BASE_URL_HTTPS = "https://example.com/browser/dom/base/test/";
+const JS_CACHE_BASE_URL = "http://mochi.test:8888/browser/dom/base/test/";
 
-function ev(event, file, hasElement = !!file, http = false) {
-  const baseURL = http ? JS_CACHE_BASE_URL_HTTP : JS_CACHE_BASE_URL_HTTPS;
-
+function ev(event, file, hasElement = !!file) {
   return {
     event,
-    url: file ? baseURL + file : undefined,
+    url: file ? JS_CACHE_BASE_URL + file : undefined,
     hasElement,
   };
 }
@@ -198,135 +195,143 @@ async function jsCacheContentScriptTask(test, item) {
   await onLoadPromise;
 }
 
-async function runJSCacheTests(tests, { http } = {}) {
-  const baseURL = http ? JS_CACHE_BASE_URL_HTTP : JS_CACHE_BASE_URL_HTTPS;
+async function runJSCacheTests(tests) {
+  await BrowserTestUtils.withNewTab(
+    JS_CACHE_BASE_URL + "empty.html",
+    async browser => {
+      const tab = gBrowser.getTabForBrowser(browser);
 
-  await BrowserTestUtils.withNewTab(baseURL + "empty.html", async browser => {
-    const tab = gBrowser.getTabForBrowser(browser);
+      for (const test of tests) {
+        ChromeUtils.clearResourceCache();
+        Services.cache2.clear();
 
-    for (const test of tests) {
-      ChromeUtils.clearResourceCache();
-      Services.cache2.clear();
-
-      if (test.useServiceWorker) {
-        await SpecialPowers.spawn(browser, [], async () => {
-          const registration = await content.navigator.serviceWorker.register(
-            "file_js_cache_sw.js",
-            { scope: "./" }
-          );
-
-          const sw = registration.installing || registration.active;
-
-          await new Promise(resolve => {
-            function onStateChange() {
-              if (sw.state === "activated") {
-                sw.removeEventListener("statechange", onStateChange);
-                resolve();
-              }
-            }
-            sw.addEventListener("statechange", onStateChange);
-            onStateChange();
-          });
-        });
-      }
-
-      for (let i = 0; i < test.items.length; i++) {
-        const item = test.items[i];
-        info(`start: ${test.title} (item ${i})`);
-
-        if (!test.skipReload) {
-          // Make sure the test starts in clean document.
-          await BrowserTestUtils.loadURIString({
-            browser: tab.linkedBrowser,
-            uriString: baseURL + "empty.html",
-          });
-        }
-
-        if (item.clearMemory) {
-          info("clear memory cache");
-          ChromeUtils.clearResourceCache();
-        }
-        if (item.invalidateMemory) {
-          info("invalidate memory cache");
-          ChromeUtils.invalidateResourceCache();
-        }
-        if (item.clearDisk) {
-          info("clear disk cache");
-          Services.cache2.clear();
-        }
-        if (item.memoryPressureLowMemory) {
-          info("notifying memory pressure low-memory");
-          await SpecialPowers.spawn(browser, [], () => {
-            Services.obs.notifyObservers(null, "memory-pressure", "low-memory");
-          });
-        }
-        if (item.memoryPressureHeapMinimize) {
-          info("notifying memory pressure heap-minimize");
-          await SpecialPowers.spawn(browser, [], () => {
-            Services.obs.notifyObservers(
-              null,
-              "memory-pressure",
-              "heap-minimize"
+        if (test.useServiceWorker) {
+          await SpecialPowers.spawn(browser, [], async () => {
+            const registration = await content.navigator.serviceWorker.register(
+              "file_js_cache_sw.js",
+              { scope: "./" }
             );
-          });
-        }
-        if (item.memoryPressureStop) {
-          info("notifying memory pressure stop");
-          await SpecialPowers.spawn(browser, [], () => {
-            Services.obs.notifyObservers(null, "memory-pressure-stop");
+
+            const sw = registration.installing || registration.active;
+
+            await new Promise(resolve => {
+              function onStateChange() {
+                if (sw.state === "activated") {
+                  sw.removeEventListener("statechange", onStateChange);
+                  resolve();
+                }
+              }
+              sw.addEventListener("statechange", onStateChange);
+              onStateChange();
+            });
           });
         }
 
-        // The content task can perform the top-level navigation,
-        // which is not compatible with regular SpecialPowers.spawn.
-        const proc = browser.browsingContext.currentWindowGlobal.domProcess;
-        const processBoundSpecialPowers = new SpecialPowersForProcess(
-          scope,
-          proc
-        );
-        const eventsPromise = processBoundSpecialPowers.spawn(
-          [test, item],
-          jsCacheContentProcessTask
-        );
+        for (let i = 0; i < test.items.length; i++) {
+          const item = test.items[i];
+          info(`start: ${test.title} (item ${i})`);
 
-        if (item.page) {
-          await SpecialPowers.spawn(
-            browser,
-            [test, item],
-            jsCacheContentJumpTask
+          if (!test.skipReload) {
+            // Make sure the test starts in clean document.
+            await BrowserTestUtils.loadURIString({
+              browser: tab.linkedBrowser,
+              uriString: JS_CACHE_BASE_URL + "empty.html",
+            });
+          }
+
+          if (item.clearMemory) {
+            info("clear memory cache");
+            ChromeUtils.clearResourceCache();
+          }
+          if (item.invalidateMemory) {
+            info("invalidate memory cache");
+            ChromeUtils.invalidateResourceCache();
+          }
+          if (item.clearDisk) {
+            info("clear disk cache");
+            Services.cache2.clear();
+          }
+          if (item.memoryPressureLowMemory) {
+            info("notifying memory pressure low-memory");
+            await SpecialPowers.spawn(browser, [], () => {
+              Services.obs.notifyObservers(
+                null,
+                "memory-pressure",
+                "low-memory"
+              );
+            });
+          }
+          if (item.memoryPressureHeapMinimize) {
+            info("notifying memory pressure heap-minimize");
+            await SpecialPowers.spawn(browser, [], () => {
+              Services.obs.notifyObservers(
+                null,
+                "memory-pressure",
+                "heap-minimize"
+              );
+            });
+          }
+          if (item.memoryPressureStop) {
+            info("notifying memory pressure stop");
+            await SpecialPowers.spawn(browser, [], () => {
+              Services.obs.notifyObservers(null, "memory-pressure-stop");
+            });
+          }
+
+          // The content task can perform the top-level navigation,
+          // which is not compatible with regular SpecialPowers.spawn.
+          const proc = browser.browsingContext.currentWindowGlobal.domProcess;
+          const processBoundSpecialPowers = new SpecialPowersForProcess(
+            scope,
+            proc
           );
-        } else {
-          await SpecialPowers.spawn(
-            browser,
+          const eventsPromise = processBoundSpecialPowers.spawn(
             [test, item],
-            jsCacheContentScriptTask
+            jsCacheContentProcessTask
           );
+
+          if (item.page) {
+            await SpecialPowers.spawn(
+              browser,
+              [test, item],
+              jsCacheContentJumpTask
+            );
+          } else {
+            await SpecialPowers.spawn(
+              browser,
+              [test, item],
+              jsCacheContentScriptTask
+            );
+          }
+
+          const result = await eventsPromise;
+
+          await processBoundSpecialPowers.destroy();
+
+          ok(result, "Received expected events");
+          if (item.verifyText) {
+            const text = await SpecialPowers.spawn(browser, [], function () {
+              return content.document.body.textContent.replace(
+                /[ \r\n\t]*/g,
+                ""
+              );
+            });
+            is(text, item.verifyText);
+          }
         }
 
-        const result = await eventsPromise;
-
-        await processBoundSpecialPowers.destroy();
-
-        ok(result, "Received expected events");
-        if (item.verifyText) {
-          const text = await SpecialPowers.spawn(browser, [], function () {
-            return content.document.body.textContent.replace(/[ \r\n\t]*/g, "");
+        if (test.useServiceWorker) {
+          await SpecialPowers.spawn(browser, [], async () => {
+            const registration =
+              await content.navigator.serviceWorker.getRegistration();
+            registration.unregister();
           });
-          is(text, item.verifyText);
         }
-      }
 
-      if (test.useServiceWorker) {
-        await SpecialPowers.spawn(browser, [], async () => {
-          const registration =
-            await content.navigator.serviceWorker.getRegistration();
-          registration.unregister();
-        });
+        ok(true, "end: " + test.title);
       }
-
-      ok(true, "end: " + test.title);
     }
-  });
+  );
 
   ok(true, "Finished all tests");
 }
