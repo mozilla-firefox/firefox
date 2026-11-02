@@ -18,6 +18,7 @@
 #include "mozilla/ReflowInput.h"
 #include "mozilla/StaticPrefs_layout.h"
 #include "nsBlockFrame.h"
+#include "nsBlockReflowContext.h"
 #include "nsIFrameInlines.h"
 #include "nsLineLayout.h"
 #include "nsPresContext.h"
@@ -205,6 +206,11 @@ ReflowInput::InitFlags BlockReflowState::ComputeChildMarginTrim(
     flags += ReflowInput::InitFlag::TrimBEndMargin;
   }
   return flags;
+}
+
+bool BlockReflowState::ShouldTrimChildBStartMargins() const {
+  return nsBlockReflowContext::StyleTrimsChildBStartMargins(mBlock) ||
+         (mReflowInput.mFlags.mTrimBStartMargin && !mFlags.mIsBStartMarginRoot);
 }
 
 void BlockReflowState::ComputeFloatAvoidingOffsets(
