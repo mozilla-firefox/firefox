@@ -10,11 +10,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.semantics.CollectionInfo
-import androidx.compose.ui.semantics.collectionInfo
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.theme.AcornTheme
@@ -39,11 +34,7 @@ internal fun ListMenuItemsGroup(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier =
-            modifier.clip(shape = MaterialTheme.shapes.extraLarge).semantics {
-                isTraversalGroup = true
-                collectionInfo = CollectionInfo(rowCount = items.size, columnCount = 1)
-            },
+        modifier = modifier.clip(shape = MaterialTheme.shapes.extraLarge).menuListGroupSemantics(items.size),
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
     ) {
         items.forEachIndexed { index, it ->
@@ -97,31 +88,6 @@ internal fun ListMenuItemsGroup(
                     )
             }
         }
-    }
-}
-
-@Composable
-private fun getListItemShape(
-    itemIndex: Int,
-    totalItems: Int,
-): Shape {
-    if (totalItems == 1) {
-        return MaterialTheme.shapes.extraLarge
-    }
-    return when (itemIndex) {
-        0 ->
-            MaterialTheme.shapes.extraLarge.copy(
-                bottomStart = MaterialTheme.shapes.extraSmall.bottomStart,
-                bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
-            )
-
-        totalItems - 1 ->
-            MaterialTheme.shapes.extraLarge.copy(
-                topStart = MaterialTheme.shapes.extraSmall.topStart,
-                topEnd = MaterialTheme.shapes.extraSmall.topEnd,
-            )
-
-        else -> MaterialTheme.shapes.extraSmall
     }
 }
 

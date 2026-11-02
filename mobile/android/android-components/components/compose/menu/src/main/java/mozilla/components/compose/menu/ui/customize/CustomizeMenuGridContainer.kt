@@ -4,26 +4,19 @@
 
 package mozilla.components.compose.menu.ui.customize
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.semantics.CollectionInfo
-import androidx.compose.ui.semantics.collectionInfo
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -31,93 +24,55 @@ import mozilla.components.compose.menu.data.BannerMenuItem
 import mozilla.components.compose.menu.data.MenuItem
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.ui.MenuGridItem
 import mozilla.components.compose.menu.ui.MenuItemIconRes
 import mozilla.components.compose.menu.ui.MenuItemState
+import mozilla.components.compose.menu.ui.displayedInGrid
+import mozilla.components.compose.menu.ui.getGridItemShape
+import mozilla.components.compose.menu.ui.menuGridGroupSemantics
 import mozilla.components.ui.icons.R as iconsR
 
 /**
- * Display a grid of [MenuItem]s using [CustomizeMenuGridItem].
+ * Display a grid of [MenuItem]s using [MenuGridItem].
  *
  * @param items The list of [MenuItem]s to display. Items without an icon and [BannerMenuItem]s, which need the full
  *   width of the menu, are not shown.
  * @param modifier The modifier to apply to this layout.
- * @param backgroundColor The background color to apply to this group.
- * @param itemContainerColor Color for individual item containers.
  * @param contentAlpha Alpha applied to content.
  */
 @Composable
 internal fun CustomizeMenuGridContainer(
     items: List<MenuItem>,
     modifier: Modifier = Modifier,
-    backgroundColor: Color = Color.Transparent,
-    itemContainerColor: Color = Color.Unspecified,
     contentAlpha: Float = 1f,
 ) {
-    val displayedItems = items.filter { it !is BannerMenuItem && it.icon != null }
+    val displayedItems = remember(items) { items.displayedInGrid() }
     Row(
         modifier =
-            modifier.fillMaxWidth().height(IntrinsicSize.Min).applyGridGroupStyle(backgroundColor).semantics {
-                isTraversalGroup = true
-                collectionInfo = CollectionInfo(rowCount = 1, columnCount = displayedItems.size)
-            },
+            modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .clip(MaterialTheme.shapes.extraLarge)
+                .menuGridGroupSemantics(displayedItems.size),
         horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        GridGroupContent(displayedItems, itemContainerColor, contentAlpha)
-    }
-}
+        displayedItems.forEachIndexed { index, item ->
+            val icon = item.icon ?: return@forEachIndexed
 
-@Composable
-private fun Modifier.applyGridGroupStyle(backgroundColor: Color): Modifier {
-    return this.clip(MaterialTheme.shapes.extraLarge).background(backgroundColor)
-}
-
-@Composable
-private fun RowScope.GridGroupContent(
-    items: List<MenuItem>,
-    itemContainerColor: Color = Color.Unspecified,
-    contentAlpha: Float = 1f,
-) {
-    items.forEachIndexed { index, item ->
-        val icon = item.icon ?: return@forEachIndexed
-        val shape = getGridItemShape(index, items.size)
-
-        CustomizeMenuGridItem(
-            title = item.title.text,
-            contentDescription = item.contentDescription,
-            modifier =
-                Modifier.weight(1f).fillMaxHeight().let { if (contentAlpha != 1f) it.alpha(contentAlpha) else it },
-            index = index,
-            icon = icon,
-            state = item.state,
-            shape = shape,
-            containerColor = itemContainerColor,
-        )
-    }
-}
-
-@Composable
-private fun getGridItemShape(
-    index: Int,
-    total: Int,
-): Shape {
-    if (total == 1) {
-        return MaterialTheme.shapes.extraLarge
-    }
-    return when (index) {
-        0 ->
-            MaterialTheme.shapes.extraLarge.copy(
-                topEnd = MaterialTheme.shapes.extraSmall.topEnd,
-                bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
+            MenuGridItem(
+                title = item.title.text,
+                icon = icon,
+                onClickEvent = null,
+                onInteraction = {},
+                modifier = Modifier.weight(1f).fillMaxHeight().alpha(contentAlpha),
+                contentDescription = item.contentDescription,
+                index = index,
+                state = item.state,
+                showContainer = true,
+                shape = getGridItemShape(index, displayedItems.size),
             )
-
-        total - 1 ->
-            MaterialTheme.shapes.extraLarge.copy(
-                topStart = MaterialTheme.shapes.extraSmall.topStart,
-                bottomStart = MaterialTheme.shapes.extraSmall.bottomStart,
-            )
-
-        else -> MaterialTheme.shapes.extraSmall
+        }
     }
 }
 

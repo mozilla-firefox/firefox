@@ -5,6 +5,7 @@
 package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -28,9 +30,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
-import mozilla.components.compose.base.modifier.dashedBorder
 import mozilla.components.compose.base.text.Text
-import mozilla.components.compose.base.theme.AcornCorners
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemTitle
@@ -69,14 +69,15 @@ fun CustomizeMenuContent(
         Column(modifier = Modifier.widthIn(max = AcornTheme.layout.size.containerMaxWidth).fillMaxWidth()) {
             CustomizeMenuDragBar(onPreviewClick = onPreviewClick)
 
-            val onInteraction: (MenuEvent) -> Unit = remember(store) { { store.dispatch(it) } }
             val menuState by store.observeAsComposableState { it }
-            val (hiddenGroups, shownGroups) = menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
+            val (hiddenGroups, shownGroups) =
+                remember(menuState.menuGroups, menuState.hiddenGroupIds) {
+                    menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
+                }
 
             CustomizeMenu(
                 menuGroups = shownGroups,
                 mandatoryGroupIds = menuState.mandatoryGroupIds,
-                onInteraction = onInteraction,
             )
 
             CustomizeMenuHiddenSections(hasHiddenItems = hiddenGroups.isNotEmpty())
@@ -84,7 +85,6 @@ fun CustomizeMenuContent(
             if (hiddenGroups.isNotEmpty()) {
                 CustomizeMenu(
                     menuGroups = hiddenGroups,
-                    onInteraction = onInteraction,
                     isHidden = true,
                 )
             }
@@ -127,7 +127,7 @@ private fun CustomizeMenuDragBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = 48.dp)
+                .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .padding(
                     start = AcornTheme.layout.space.static200,
@@ -138,9 +138,10 @@ private fun CustomizeMenuDragBar(
     ) {
         Text(
             text = stringResource(R.string.mozac_menu_customize_drag_to_reorder),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).basicMarquee(),
             style = AcornTheme.typography.headline8,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
         )
         TextButton(
             text = stringResource(R.string.mozac_menu_customize_preview),
@@ -152,7 +153,8 @@ private fun CustomizeMenuDragBar(
 @Composable
 private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        Row(
+        Text(
+            text = stringResource(R.string.mozac_menu_customize_hidden_sections),
             modifier =
                 Modifier.fillMaxWidth()
                     .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
@@ -161,29 +163,22 @@ private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modif
                         end = AcornTheme.layout.space.static100,
                         top = AcornTheme.layout.space.static100,
                         bottom = AcornTheme.layout.space.static100,
-                    ),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = stringResource(R.string.mozac_menu_customize_hidden_sections),
-                style = AcornTheme.typography.headline8,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+                    )
+                    .wrapContentHeight(Alignment.CenterVertically),
+            style = AcornTheme.typography.headline8,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
 
         if (!hasHiddenItems) {
             Box(
                 modifier =
                     Modifier.fillMaxWidth()
-                        .padding(horizontal = AcornTheme.layout.space.static200)
-                        .dashedBorder(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            cornerRadius = AcornCorners.extraLarge,
-                            dashHeight = 2.dp,
-                            dashWidth = 6.dp,
-                            dashGap = 6.dp,
+                        .padding(
+                            start = AcornTheme.layout.space.static200,
+                            end = AcornTheme.layout.space.static200,
+                            bottom = AcornTheme.layout.space.static300,
                         )
+                        .hiddenSectionBorder()
                         .defaultMinSize(minHeight = 72.dp),
                 contentAlignment = Alignment.Center,
             ) {
