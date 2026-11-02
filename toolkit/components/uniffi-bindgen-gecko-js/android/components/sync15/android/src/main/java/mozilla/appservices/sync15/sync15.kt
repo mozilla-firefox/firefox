@@ -900,6 +900,29 @@ object NoHandle
 /**
  * @suppress
  */
+public object FfiConverterBoolean: FfiConverter<Boolean, Byte> {
+    override fun lift(value: Byte): Boolean {
+        return value.toInt() != 0
+    }
+
+    override fun read(buf: ByteBuffer): Boolean {
+        return lift(buf.get())
+    }
+
+    override fun lower(value: Boolean): Byte {
+        return if (value) 1.toByte() else 0.toByte()
+    }
+
+    override fun allocationSize(value: Boolean) = 1UL
+
+    override fun write(value: Boolean, buf: ByteBuffer) {
+        buf.put(lower(value))
+    }
+}
+
+/**
+ * @suppress
+ */
 public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
     // Note: we don't inherit from FfiConverterRustBuffer, because we use a
     // special encoding when lowering/lifting.  We can use `RustBuffer.len` to
@@ -1017,4 +1040,133 @@ public object FfiConverterTypeDeviceType: FfiConverterRustBuffer<DeviceType> {
 }
 
 
+
+
+
+/**
+ * How the user's choice of engines to sync is modelled.
+ */
+sealed class EngineChoicesModel {
+    
+    /**
+     * The legacy model: engine choices are shared by every device on the
+     * account, via meta/global's declined engines.
+     */
+    data class Account(
+        /**
+         * Which engine states should be *changed* in the "account global" list (for
+         * example, if the UI was used to change an engine's state since the last
+         * sync).
+         * Normally empty - only used for selection changes, does not reflect current actual choices.
+         */
+        val `enabledChanges`: Map<kotlin.String, kotlin.Boolean>) : EngineChoicesModel()
+        
+    {
+        
+
+        companion object
+    }
+    
+    /**
+     * Engine choices are specific to each device. Not yet ready for use
+     * outside of testing.
+     */
+    object Device : EngineChoicesModel()
+    
+    
+
+    
+
+    
+    
+
+
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeEngineChoicesModel : FfiConverterRustBuffer<EngineChoicesModel>{
+    override fun read(buf: ByteBuffer): EngineChoicesModel {
+        return when(buf.getInt()) {
+            1 -> EngineChoicesModel.Account(
+                FfiConverterMapStringBoolean.read(buf),
+                )
+            2 -> EngineChoicesModel.Device
+            else -> throw RuntimeException("invalid enum value, something is very wrong!!")
+        }
+    }
+
+    override fun allocationSize(value: EngineChoicesModel): ULong = when(value) {
+        is EngineChoicesModel.Account -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+                + FfiConverterMapStringBoolean.allocationSize(value.`enabledChanges`)
+            )
+        }
+        is EngineChoicesModel.Device -> {
+            // Add the size for the Int that specifies the variant plus the size needed for all fields
+            (
+                4UL
+            )
+        }
+    }
+
+    override fun write(value: EngineChoicesModel, buf: ByteBuffer) {
+        when(value) {
+            is EngineChoicesModel.Account -> {
+                buf.putInt(1)
+                FfiConverterMapStringBoolean.write(value.`enabledChanges`, buf)
+                Unit
+            }
+            is EngineChoicesModel.Device -> {
+                buf.putInt(2)
+                Unit
+            }
+        }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterMapStringBoolean: FfiConverterRustBuffer<Map<kotlin.String, kotlin.Boolean>> {
+    override fun read(buf: ByteBuffer): Map<kotlin.String, kotlin.Boolean> {
+        val len = buf.getInt()
+        return buildMap<kotlin.String, kotlin.Boolean>(len) {
+            repeat(len) {
+                val k = FfiConverterString.read(buf)
+                val v = FfiConverterBoolean.read(buf)
+                this[k] = v
+            }
+        }
+    }
+
+    override fun allocationSize(value: Map<kotlin.String, kotlin.Boolean>): ULong {
+        val spaceForMapSize = 4UL
+        val spaceForChildren = value.map { (k, v) ->
+            FfiConverterString.allocationSize(k) +
+            FfiConverterBoolean.allocationSize(v)
+        }.sum()
+        return spaceForMapSize + spaceForChildren
+    }
+
+    override fun write(value: Map<kotlin.String, kotlin.Boolean>, buf: ByteBuffer) {
+        buf.putInt(value.size)
+        // The parens on `(k, v)` here ensure we're calling the right method,
+        // which is important for compatibility with older android devices.
+        // Ref https://blog.danlew.net/2017/03/16/kotlin-puzzler-whose-line-is-it-anyways/
+        value.forEach { (k, v) ->
+            FfiConverterString.write(k, buf)
+            FfiConverterBoolean.write(v, buf)
+        }
+    }
+}
 

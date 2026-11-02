@@ -10,6 +10,8 @@ pub mod bso;
 pub mod client;
 // Type to describe device types
 mod device_type;
+// How the user's engine choices are modelled
+mod engine_choices;
 // Types to describe client records
 mod client_types;
 // Note that `clients_engine` should probably be in `sync_client`, but let's not make
@@ -30,6 +32,7 @@ pub mod telemetry;
 
 pub use crate::client_types::{ClientData, RemoteClient};
 pub use crate::device_type::DeviceType;
+pub use crate::engine_choices::EngineChoicesModel;
 pub use crate::error::{Error, Result};
 #[cfg(feature = "crypto")]
 pub use enc_payload::EncryptedPayload;

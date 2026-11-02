@@ -17,23 +17,17 @@ use sql_support::open_database;
 
 use self::{
     ad_request::{AdPlacementRequest, AdRequest, AdRequestFlags, AdRequestRelevance},
-    ad_response::{AdResponse, AdResponseValue},
+    ad_response::AdResponse,
     error::{
         CallbackRequestError, FetchAdsError, RecordClickError, RecordImpressionError, ReportAdError,
     },
     preflight::PreflightRequest,
     transport::MARSTransport,
 };
-#[cfg(feature = "stateful")]
-use crate::ads::{Ads, PlacementId};
-#[cfg(feature = "stateful")]
-use crate::telemetry;
 use crate::{
     http_cache::{HttpCache, RequestHash},
     CachePolicy,
 };
-#[cfg(feature = "stateful")]
-use std::collections::HashMap;
 use url::Url;
 use viaduct::{Headers, Request};
 
@@ -55,7 +49,7 @@ impl MARSClient {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn fetch_ads<A>(
+    pub fn fetch_ads(
         &self,
         context_id: Option<String>,
         flags: AdRequestFlags,
@@ -64,10 +58,7 @@ impl MARSClient {
         ohttp: bool,
         blocks: Vec<String>,
         relevance: AdRequestRelevance,
-    ) -> Result<(AdResponse<A>, RequestHash), FetchAdsError>
-    where
-        A: AdResponseValue,
-    {
+    ) -> Result<(AdResponse, RequestHash), FetchAdsError> {
         let mut ad_request = AdRequest::try_new(
             blocks,
             context_id,
@@ -86,93 +77,8 @@ impl MARSClient {
         }
 
         let response = self.transport.send(ad_request, &cache_policy, ohttp)?;
-        let ads = AdResponse::<A>::parse(response.json()?)?;
+        let ads: AdResponse = response.json()?;
         Ok((ads, request_hash))
-    }
-
-    #[cfg(feature = "stateful")]
-    pub fn fetch_ads_mixed(
-        &self,
-        context_id: Option<String>,
-        flags: AdRequestFlags,
-        placements: Vec<AdPlacementRequest>,
-        ohttp: bool,
-        blocks: Vec<String>,
-    ) -> Result<HashMap<PlacementId, Ads>, FetchAdsError> {
-        let mut ad_request = AdRequest::try_new(
-            blocks,
-            context_id,
-            self.environment.clone(),
-            flags,
-            ohttp,
-            placements,
-            AdRequestRelevance::default(),
-        )?;
-
-        if ohttp {
-            ad_request
-                .headers
-                .extend(Headers::try_from(self.fetch_preflight()?)?);
-        }
-
-        let response =
-            self.transport
-                .send(ad_request, &CachePolicy::NetworkFirst { ttl: None }, ohttp)?;
-        let raw: HashMap<String, Vec<serde_json::Value>> = response.json()?;
-
-        let mut result = HashMap::new();
-        for (placement_id, items) in raw {
-            if items.is_empty() {
-                continue;
-            }
-            let format = items
-                .first()
-                .and_then(|v| v.get("format"))
-                .and_then(|f| f.as_str())
-                .unwrap_or("")
-                .to_string();
-            let ads = match format.as_str() {
-                "spoc" => Ads::Spocs(
-                    items
-                        .into_iter()
-                        .filter_map(|v| match serde_json::from_value(v) {
-                            Ok(ad) => Some(ad),
-                            Err(e) => {
-                                telemetry::record_invalid_ad_item(&e);
-                                None
-                            }
-                        })
-                        .collect(),
-                ),
-                "tile" => Ads::Tiles(
-                    items
-                        .into_iter()
-                        .filter_map(|v| match serde_json::from_value(v) {
-                            Ok(ad) => Some(ad),
-                            Err(e) => {
-                                telemetry::record_invalid_ad_item(&e);
-                                None
-                            }
-                        })
-                        .collect(),
-                ),
-                _ => Ads::Images(
-                    items
-                        .into_iter()
-                        .filter_map(|v| match serde_json::from_value(v) {
-                            Ok(ad) => Some(ad),
-                            Err(e) => {
-                                telemetry::record_invalid_ad_item(&e);
-                                None
-                            }
-                        })
-                        .collect(),
-                ),
-            };
-            result.insert(placement_id.into(), ads);
-        }
-
-        Ok(result)
     }
 
     // TODO: Remove this allow(dead_code) when cache invalidation is re-enabled behind Nimbus experiment
@@ -241,7 +147,6 @@ impl MARSClient {
 mod tests {
 
     use super::*;
-    use crate::ads::AdImage;
     use crate::test_utils::{
         get_example_happy_image_response, make_happy_placement_requests, TEST_CONTEXT_ID,
     };
@@ -316,7 +221,7 @@ mod tests {
 
         let client = make_test_client(None);
 
-        let result = client.fetch_ads::<AdImage>(
+        let result = client.fetch_ads(
             Some(TEST_CONTEXT_ID.to_string()),
             AdRequestFlags::default(),
             make_happy_placement_requests(),
@@ -351,7 +256,7 @@ mod tests {
 
         // First call should be a miss then warm the cache
         let (response1, _) = client
-            .fetch_ads::<AdImage>(
+            .fetch_ads(
                 Some(TEST_CONTEXT_ID.to_string()),
                 AdRequestFlags::default(),
                 make_happy_placement_requests(),
@@ -365,7 +270,7 @@ mod tests {
 
         // Second call should be a hit
         let (response2, _) = client
-            .fetch_ads::<AdImage>(
+            .fetch_ads(
                 Some(TEST_CONTEXT_ID.to_string()),
                 AdRequestFlags::default(),
                 make_happy_placement_requests(),

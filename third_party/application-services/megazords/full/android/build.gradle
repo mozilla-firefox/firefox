@@ -3,6 +3,9 @@ apply plugin: 'com.android.library'
 if (!gradle.hasProperty("mozconfig")) {
     apply plugin: 'kotlin-android'
     apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
+    kotlin {
+        jvmToolchain(rootProject.config.jvmTargetCompatibility)
+    }
 }
 
 android {
@@ -28,10 +31,6 @@ android {
 
     // Uncomment to include debug symbols in native library builds.
     // packagingOptions { doNotStrip "**/*.so" }
-}
-
-kotlin {
-    jvmToolchain(rootProject.config.jvmTargetCompatibility)
 }
 
 // Configurations are a somewhat mysterious Gradle concept.  For our purposes, we can treat them

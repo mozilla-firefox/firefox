@@ -8,11 +8,11 @@
 use super::state::{EngineChangesNeeded, GlobalState, PersistedGlobalState, SetupStateMachine};
 use super::status::{ServiceStatus, SyncResult};
 use super::storage_client::{BackoffListener, Sync15StorageClient, Sync15StorageClientInit};
-use crate::KeyBundle;
 use crate::clients_engine::{self, CLIENTS_TTL_REFRESH, CommandProcessor};
 use crate::engine::{EngineSyncAssociation, SyncEngine};
 use crate::error::{Error, debug, info, trace, warn};
 use crate::telemetry;
+use crate::{EngineChoicesModel, KeyBundle};
 use interrupt_support::Interruptee;
 use std::collections::HashMap;
 use std::result;
@@ -97,7 +97,7 @@ pub fn sync_multiple(
     storage_init: &Sync15StorageClientInit,
     root_sync_key: &KeyBundle,
     interruptee: &dyn Interruptee,
-    req_info: Option<SyncRequestInfo<'_>>,
+    req_info: Option<SyncRequestInfo>,
 ) -> SyncResult {
     sync_multiple_with_command_processor(
         None,
@@ -123,7 +123,7 @@ pub fn sync_multiple_with_command_processor(
     storage_init: &Sync15StorageClientInit,
     root_sync_key: &KeyBundle,
     interruptee: &dyn Interruptee,
-    req_info: Option<SyncRequestInfo<'_>>,
+    req_info: Option<SyncRequestInfo>,
 ) -> SyncResult {
     info!("Syncing {} engines", engines.len());
     let mut sync_result = SyncResult {
@@ -141,7 +141,7 @@ pub fn sync_multiple_with_command_processor(
         engines,
         storage_init,
         interruptee,
-        engines_to_state_change: req_info.engines_to_state_change,
+        engine_choices_model: req_info.engine_choices_model,
         backoff: backoff.clone(),
         root_sync_key,
         result: &mut sync_result,
@@ -177,8 +177,8 @@ pub fn sync_multiple_with_command_processor(
 /// otherwise we won't. It should probably be rethought if it gains many more
 /// fields.
 #[derive(Debug, Default)]
-pub struct SyncRequestInfo<'a> {
-    pub engines_to_state_change: Option<&'a HashMap<String, bool>>,
+pub struct SyncRequestInfo {
+    pub engine_choices_model: EngineChoicesModel,
     pub is_user_action: bool,
 }
 
@@ -190,7 +190,7 @@ struct SyncMultipleDriver<'info, 'res, 'pgs, 'mcs> {
     root_sync_key: &'info KeyBundle,
     interruptee: &'info dyn Interruptee,
     backoff: BackoffListener,
-    engines_to_state_change: Option<&'info HashMap<String, bool>>,
+    engine_choices_model: EngineChoicesModel,
     result: &'res mut SyncResult,
     persisted_global_state: &'pgs mut Option<String>,
     mem_cached_state: &'mcs mut MemoryCachedState,
@@ -359,7 +359,7 @@ impl SyncMultipleDriver<'_, '_, '_, '_> {
             &client_info.client,
             self.root_sync_key,
             pgs,
-            self.engines_to_state_change,
+            self.engine_choices_model.enabled_changes(),
             self.interruptee,
         );
 

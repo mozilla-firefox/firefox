@@ -11,7 +11,7 @@ use std::collections::{hash_map::RandomState, HashMap};
 use std::sync::Arc;
 use sync15::{
     client::{SetupStorageClient, Sync15StorageClient},
-    DeviceType,
+    DeviceType, EngineChoicesModel,
 };
 use sync_manager::{
     manager::SyncManager, DeviceSettings, SyncEngineSelection, SyncParams, SyncReason,
@@ -102,7 +102,7 @@ impl TestClient {
             engines: SyncEngineSelection::Some {
                 engines: engines.to_vec(),
             },
-            enabled_changes: HashMap::new(),
+            engine_choices_model: EngineChoicesModel::default(),
             local_encryption_keys,
             auth_info: sync_info.auth_info,
             persisted_state: self.persisted_state.take(),
@@ -110,6 +110,7 @@ impl TestClient {
                 fxa_device_id: self.device.id.clone(),
                 name: self.device.display_name.clone(),
                 kind: self.device.device_type,
+                enabled_engines: vec![],
             },
         };
         let result = self.sync_manager.sync(params)?;
@@ -144,7 +145,7 @@ impl TestClient {
             engines: SyncEngineSelection::Some {
                 engines: engines.to_vec(),
             },
-            enabled_changes: HashMap::new(),
+            engine_choices_model: EngineChoicesModel::default(),
             local_encryption_keys,
             auth_info: sync_info.auth_info,
             persisted_state: self.persisted_state.take(),
@@ -152,6 +153,7 @@ impl TestClient {
                 fxa_device_id: self.device.id.clone(),
                 name: self.device.display_name.clone(),
                 kind: self.device.device_type,
+                enabled_engines: vec![],
             },
         };
         let result = self.sync_manager.sync(params)?;

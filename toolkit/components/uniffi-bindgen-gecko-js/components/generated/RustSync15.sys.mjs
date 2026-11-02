@@ -154,3 +154,141 @@ export class FfiConverterTypeDeviceType extends FfiConverterArrayBuffer {
 }
 
 
+
+
+// Export the FFIConverter object to make external types work.
+export class FfiConverterMapStringBoolean extends FfiConverterArrayBuffer {
+    static read(dataStream) {
+        const len = dataStream.readInt32();
+        const map = new Map();
+        for (let i = 0; i < len; i++) {
+            const key = FfiConverterString.read(dataStream);
+            const value = FfiConverterBoolean.read(dataStream);
+            map.set(key, value);
+        }
+
+        return map;
+    }
+
+     static write(dataStream, map) {
+        dataStream.writeInt32(map.size);
+        for (const [key, value] of map) {
+            FfiConverterString.write(dataStream, key);
+            FfiConverterBoolean.write(dataStream, value);
+        }
+    }
+
+    static computeSize(map) {
+        // The size of the length
+        let size = 4;
+        for (const [key, value] of map) {
+            size += FfiConverterString.computeSize(key);
+            size += FfiConverterBoolean.computeSize(value);
+        }
+        return size;
+    }
+
+    static checkType(map) {
+        for (const [key, value] of map) {
+            try {
+                FfiConverterString.checkType(key);
+            } catch (e) {
+                if (e instanceof UniFFITypeError) {
+                    e.addItemDescriptionPart("(key)");
+                }
+                throw e;
+            }
+
+            try {
+                FfiConverterBoolean.checkType(value);
+            } catch (e) {
+                if (e instanceof UniFFITypeError) {
+                    e.addItemDescriptionPart(`[${key}]`);
+                }
+                throw e;
+            }
+        }
+    }
+}
+
+/**
+ * How the user's choice of engines to sync is modelled.
+ */
+export class EngineChoicesModel {}
+/**
+ * The legacy model: engine choices are shared by every device on the
+ * account, via meta/global's declined engines.
+ */
+EngineChoicesModel.Account = class extends EngineChoicesModel{
+   constructor({enabledChanges = undefined } = {}) {
+                super();
+            try {
+                FfiConverterMapStringBoolean.checkType(enabledChanges);
+            } catch (e) {
+                if (e instanceof UniFFITypeError) {
+                    e.addItemDescriptionPart("enabledChanges");
+                }
+                throw e;
+            }
+            this.enabledChanges = enabledChanges;
+    }
+}
+/**
+ * Engine choices are specific to each device. Not yet ready for use
+ * outside of testing.
+ */
+EngineChoicesModel.Device = class extends EngineChoicesModel{
+   constructor() {
+            super();
+    }
+}
+
+// Export the FFIConverter object to make external types work.
+export class FfiConverterTypeEngineChoicesModel extends FfiConverterArrayBuffer {
+    static read(dataStream) {
+        // Use sequential indices (1-based) for the wire format to match the Rust scaffolding
+        switch (dataStream.readInt32()) {
+            case 1:
+                return new EngineChoicesModel.Account({
+                    enabledChanges: FfiConverterMapStringBoolean.read(dataStream)
+                });
+            case 2:
+                return new EngineChoicesModel.Device();
+            default:
+                throw new UniFFITypeError("Unknown EngineChoicesModel variant");
+        }
+    }
+
+    static write(dataStream, value) {
+        // Use sequential indices (1-based) for the wire format to match the Rust scaffolding
+        if (value instanceof EngineChoicesModel.Account) {
+            dataStream.writeInt32(1);
+            FfiConverterMapStringBoolean.write(dataStream, value.enabledChanges);
+            return;
+        }
+        if (value instanceof EngineChoicesModel.Device) {
+            dataStream.writeInt32(2);
+            return;
+        }
+        throw new UniFFITypeError("Unknown EngineChoicesModel variant");
+    }
+
+    static computeSize(value) {
+        // Size of the Int indicating the variant
+        let totalSize = 4;
+        if (value instanceof EngineChoicesModel.Account) {
+            totalSize += FfiConverterMapStringBoolean.computeSize(value.enabledChanges);
+            return totalSize;
+        }
+        if (value instanceof EngineChoicesModel.Device) {
+            return totalSize;
+        }
+        throw new UniFFITypeError("Unknown EngineChoicesModel variant");
+    }
+
+    static checkType(value) {
+      if (!(value instanceof EngineChoicesModel)) {
+        throw new UniFFITypeError(`${value} is not a subclass instance of EngineChoicesModel`);
+      }
+    }
+}

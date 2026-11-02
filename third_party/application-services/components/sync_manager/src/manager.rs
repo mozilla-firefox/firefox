@@ -154,16 +154,11 @@ impl SyncManager {
             access_token: params.auth_info.fxa_access_token.clone(),
             tokenserver_url,
         };
-        let engines_to_change = if params.enabled_changes.is_empty() {
-            None
-        } else {
-            Some(&params.enabled_changes)
-        };
-
         let settings = Settings {
             fxa_device_id: params.device_settings.fxa_device_id,
             device_name: params.device_settings.name,
             device_type: params.device_settings.kind,
+            enabled_engines: params.device_settings.enabled_engines,
         };
         let c = SyncClient::new(settings);
         let result = sync_multiple_with_command_processor(
@@ -175,7 +170,7 @@ impl SyncManager {
             &key_bundle,
             &interruptee,
             Some(SyncRequestInfo {
-                engines_to_state_change: engines_to_change,
+                engine_choices_model: params.engine_choices_model,
                 is_user_action: matches!(params.reason, SyncReason::User),
             }),
         );
@@ -259,7 +254,7 @@ fn backoff_in_effect(next_sync_after: Option<SystemTime>, p: &SyncParams) -> boo
                     p.reason
                 );
                 false
-            } else if !p.enabled_changes.is_empty() {
+            } else if p.engine_choices_model.enabled_changes().is_some() {
                 info!("Still under backoff, but syncing because we have enabled state changes.");
                 false
             } else {
@@ -324,6 +319,7 @@ impl CommandProcessor for SyncClient {
 mod test {
     use super::*;
     use crate::types::{DeviceSettings, SyncAuthInfo};
+    use sync15::EngineChoicesModel;
 
     #[test]
     fn test_engine_id_sanity() {
@@ -336,7 +332,7 @@ mod test {
         SyncParams {
             reason: SyncReason::Scheduled,
             engines: SyncEngineSelection::All,
-            enabled_changes: HashMap::new(),
+            engine_choices_model: EngineChoicesModel::default(),
             local_encryption_keys: HashMap::new(),
             auth_info: SyncAuthInfo {
                 kid: "kid".to_string(),
@@ -349,6 +345,7 @@ mod test {
                 fxa_device_id: "device-id".to_string(),
                 name: "Test Device".to_string(),
                 kind: sync15::DeviceType::Mobile,
+                enabled_engines: vec![],
             },
         }
     }

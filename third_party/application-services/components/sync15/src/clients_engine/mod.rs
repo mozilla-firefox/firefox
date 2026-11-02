@@ -80,6 +80,8 @@ pub struct Settings {
     pub device_name: String,
     /// The type of this client: mobile, tablet, desktop, or other.
     pub device_type: DeviceType,
+    /// The engines this client syncs. Not yet published.
+    pub enabled_engines: Vec<String>,
 }
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]

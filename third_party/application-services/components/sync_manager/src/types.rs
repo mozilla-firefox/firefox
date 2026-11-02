@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 use std::time::SystemTime;
-use sync15::DeviceType;
+use sync15::{DeviceType, EngineChoicesModel};
 
 #[derive(Debug, uniffi::Record)]
 pub struct SyncParams {
@@ -12,10 +12,8 @@ pub struct SyncParams {
     pub reason: SyncReason,
     /// Which engines should we sync?
     pub engines: SyncEngineSelection,
-    /// Which engines should be enabled in the "account global" list (for
-    /// example, if the UI was used to change an engine's state since the last
-    /// sync).
-    pub enabled_changes: HashMap<String, bool>,
+    /// How the user's choice of engines to sync is modelled.
+    pub engine_choices_model: EngineChoicesModel,
     /// Keys to encrypt/decrypt data from local database files.  These are
     /// separate from the key we use to encrypt the sync payload as a whole.
     pub local_encryption_keys: HashMap<String, String>,
@@ -61,6 +59,10 @@ pub struct DeviceSettings {
     pub fxa_device_id: String,
     pub name: String,
     pub kind: DeviceType,
+    /// The engines this device syncs, to be published for other devices on the
+    /// account to see. Not yet published.
+    #[uniffi(default)]
+    pub enabled_engines: Vec<String>,
 }
 
 #[derive(Debug, uniffi::Record)]
