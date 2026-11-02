@@ -118,6 +118,31 @@ def add_preprocess_entry(
     )
 
 
+def pattern_link_parts(source):
+    """Split a wildcard source into the directory to search and the pattern.
+
+    The search root ends at the first component carrying a wildcard, so what
+    the pattern matches is the path below the destination.
+    """
+    parts = mozpath.split(source)
+    for i, part in enumerate(parts):
+        if "*" in part:
+            return "/".join(parts[:i]), "/".join(parts[i:])
+    raise ValueError(f"{source} has no wildcard to split on")
+
+
+def pattern_link_dest(source, install_dir):
+    """Where a wildcard's matches land under an install directory.
+
+    When the destination's basename differs from the pattern's, the destination
+    names the directory the matches go in. Otherwise the matched path already
+    supplies the basename.
+    """
+    if source.target_basename != mozpath.basename(source.full_path):
+        return mozpath.join(install_dir, source.target_basename)
+    return install_dir
+
+
 class XPIDLManager:
     """Helps manage XPCOM IDLs in the context of the build system."""
 

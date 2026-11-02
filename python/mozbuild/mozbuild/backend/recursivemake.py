@@ -18,7 +18,12 @@ from mozpack.manifests import InstallManifest
 from mozshellutil import quote as shell_quote
 
 from mozbuild import frontend
-from mozbuild.backend.common import add_preprocess_entry, configured_defines
+from mozbuild.backend.common import (
+    add_preprocess_entry,
+    configured_defines,
+    pattern_link_dest,
+    pattern_link_parts,
+)
 from mozbuild.frontend.context import (
     AbsolutePath,
     ObjDirPath,
@@ -1828,15 +1833,15 @@ class RecursiveMakeBackend(MakeBackend):
                 if not isinstance(f, ObjDirPath):
                     if "*" in f:
                         if f.startswith("/") or isinstance(f, AbsolutePath):
-                            basepath, wild = os.path.split(f.full_path)
-                            if "*" in basepath:
-                                raise Exception(
-                                    "Wildcards are only supported in the filename part"
-                                    " of srcdir-relative or absolute paths."
-                                )
-
-                            install_manifest.add_pattern_link(basepath, wild, dest_dir)
+                            # A rooted pattern names the directory to search, so
+                            # what it matches is the path below the destination.
+                            prefix, pattern = pattern_link_parts(f.full_path)
+                            install_manifest.add_pattern_link(
+                                prefix, pattern, pattern_link_dest(f, dest_dir)
+                            )
                         else:
+                            # A srcdir-relative pattern keeps the directories it
+                            # matched, so `foo/**` installs under `<dest>/foo`.
                             install_manifest.add_pattern_link(f.srcdir, f, dest_dir)
                     elif isinstance(f, AbsolutePath):
                         if not f.full_path.lower().endswith((
@@ -2036,13 +2041,10 @@ class RecursiveMakeBackend(MakeBackend):
                         mozpath.normpath(mozpath.join(dest_dir, f.target_basename)),
                     )
                 elif "*" in f:
-                    basepath, wild = os.path.split(f.full_path)
-                    if "*" in basepath:
-                        raise Exception(
-                            "Wildcards are only supported in the filename part"
-                            " of a localized path."
-                        )
-                    install_manifest.add_pattern_link(basepath, wild, dest_dir)
+                    prefix, pattern = pattern_link_parts(f.full_path)
+                    install_manifest.add_pattern_link(
+                        prefix, pattern, pattern_link_dest(f, dest_dir)
+                    )
                 else:
                     install_manifest.add_link(
                         f.full_path,

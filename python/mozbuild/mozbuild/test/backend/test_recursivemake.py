@@ -1778,6 +1778,19 @@ class TestRecursiveMakeBackend(BackendTester):
         found = [str for str in lines if "libfoo." in str]
         self.assertEqual(found, expected)
 
+    def test_final_target_files_directory_wildcard(self):
+        _, reg = self._dist_bin_registry("final-target-files-directory-wildcard")
+
+        self.assertEqual(
+            sorted(reg.paths()),
+            ["foo/a/config.json", "foo/a/x.js", "foo/b/config.json", "foo/b/y.js"],
+        )
+
+    def test_final_target_files_renamed_wildcard(self):
+        _, reg = self._dist_bin_registry("final-target-files-renamed-wildcard")
+
+        self.assertEqual(sorted(reg.paths()), ["foo/icons/a.svg", "foo/icons/b.svg"])
+
     def test_pp_files_extra_deps_not_generated(self):
         with self.assertRaisesRegex(Exception, "top level backend file"):
             self._consume("pp-files-extra-deps", RecursiveMakeBackend)

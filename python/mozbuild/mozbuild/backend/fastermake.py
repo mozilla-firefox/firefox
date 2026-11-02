@@ -9,7 +9,12 @@ import mozpack.path as mozpath
 from mozpack.manifests import InstallManifest
 
 from mozbuild.backend.base import PartialBackend
-from mozbuild.backend.common import add_preprocess_entry, configured_defines
+from mozbuild.backend.common import (
+    add_preprocess_entry,
+    configured_defines,
+    pattern_link_dest,
+    pattern_link_parts,
+)
 from mozbuild.backend.make import MakeBackend
 from mozbuild.frontend.context import ObjDirPath, Path
 from mozbuild.frontend.data import (
@@ -96,20 +101,9 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
                     if isinstance(obj, FinalTargetPreprocessedFiles):
                         self._add_preprocess(obj, src, path, f, defines=defines)
                     elif "*" in f:
-
-                        def _prefix(s):
-                            for p in mozpath.split(s):
-                                if "*" not in p:
-                                    yield p + "/"
-
-                        prefix = "".join(_prefix(src))
-
-                        if "*" in f.target_basename:
-                            target = path
-                        else:
-                            target = mozpath.join(path, f.target_basename)
+                        prefix, pattern = pattern_link_parts(src)
                         self._install_manifests[obj.install_target].add_pattern_link(
-                            prefix, src[len(prefix) :], target
+                            prefix, pattern, pattern_link_dest(f, path)
                         )
                     else:
                         self._install_manifests[obj.install_target].add_link(
