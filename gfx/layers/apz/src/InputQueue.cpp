@@ -1166,6 +1166,10 @@ bool InputQueue::ProcessQueue() {
           mTouchCounter.GetActiveTouchCount() > 0) {
         mLastActiveApzc->ResetTouchInputState();
       }
+      if (TouchBlockState* touchBlock = curBlock->AsTouchBlock()) {
+        touchBlock->UpdateTouchCounter(
+            mQueuedInputs[0]->Input()->AsMultiTouchInput());
+      }
       if (curBlock->ShouldDropEvents()) {
         if (curBlock->AsTouchBlock()) {
           target->ResetTouchInputState();

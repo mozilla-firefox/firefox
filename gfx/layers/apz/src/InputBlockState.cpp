@@ -746,10 +746,8 @@ TimeDuration TouchBlockState::GetTimeSinceBlockStart() const {
   return GetTargetApzc()->GetFrameTime().Time() - mStartTime;
 }
 
-void TouchBlockState::DispatchEvent(const InputData& aEvent) const {
-  MOZ_ASSERT(aEvent.mInputType == MULTITOUCH_INPUT);
-  mTouchCounter.Update(aEvent.AsMultiTouchInput());
-  CancelableBlockState::DispatchEvent(aEvent);
+void TouchBlockState::UpdateTouchCounter(const MultiTouchInput& aInput) const {
+  mTouchCounter.Update(aInput);
 }
 
 bool TouchBlockState::TouchActionAllowsPinchZoom() const {
