@@ -23,6 +23,7 @@
 #include "nsIInterfaceRequestor.h"
 #include "nsITLSSocketControl.h"
 #include "nsITimer.h"
+#include "nsIWeakReferenceUtils.h"
 #include "nsIWebTransport.h"
 #include "nsTHashMap.h"
 #include "nsThreadUtils.h"
@@ -620,7 +621,10 @@ class nsHttpTransaction final : public nsAHttpTransaction,
   bool mSubmittedRatePacing{false};
   bool mPassedRatePacing{false};
   bool mSynchronousRatePaceRequest{false};
-  nsCOMPtr<nsICancelable> mTokenBucketCancel;
+  // Weak reference to the token bucket's cancelable for this transaction. The
+  // cancelable keeps a strong reference back to the transaction while queued
+  // (see TokenBucketCancelable::mEvent), so this must be weak to avoid a cycle.
+  nsWeakPtr mTokenBucketCancel;
 
   void CollectTelemetryForUploads();
 

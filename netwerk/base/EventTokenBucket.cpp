@@ -11,6 +11,7 @@
 #include "nsNetUtil.h"
 #include "nsServiceManagerUtils.h"
 #include "nsSocketTransportService2.h"
+#include "nsWeakReference.h"
 
 #ifdef DEBUG
 #  include "MainThreadUtils.h"
@@ -28,7 +29,8 @@ namespace net {
 // EventTokenBucketCancelable
 ////////////////////////////////////////////
 
-class TokenBucketCancelable : public nsICancelable {
+class TokenBucketCancelable : public nsICancelable,
+                              public nsSupportsWeakReference {
  public:
   NS_DECL_THREADSAFE_ISUPPORTS
   NS_DECL_NSICANCELABLE
@@ -40,10 +42,13 @@ class TokenBucketCancelable : public nsICancelable {
   virtual ~TokenBucketCancelable() = default;
 
   friend class EventTokenBucket;
-  ATokenBucketEvent* mEvent;
+  // Strong, so a queued event cannot be destroyed before it is fired or
+  // canceled.
+  RefPtr<ATokenBucketEvent> mEvent;
 };
 
-NS_IMPL_ISUPPORTS(TokenBucketCancelable, nsICancelable)
+NS_IMPL_ISUPPORTS(TokenBucketCancelable, nsICancelable,
+                  nsISupportsWeakReference)
 
 TokenBucketCancelable::TokenBucketCancelable(ATokenBucketEvent* event)
     : mEvent(event) {}
@@ -58,8 +63,7 @@ TokenBucketCancelable::Cancel(nsresult reason) {
 void TokenBucketCancelable::Fire() {
   if (!mEvent) return;
 
-  ATokenBucketEvent* event = mEvent;
-  mEvent = nullptr;
+  RefPtr<ATokenBucketEvent> event = std::move(mEvent);
   event->OnTokenBucketAdmitted();
 }
 

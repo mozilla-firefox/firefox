@@ -57,6 +57,7 @@
 #include "nsITLSSocketControl.h"
 #include "nsIThrottledInputChannel.h"
 #include "nsITransport.h"
+#include "nsIWeakReferenceUtils.h"
 #include "nsMultiplexInputStream.h"
 #include "nsNetCID.h"
 #include "nsNetUtil.h"
@@ -161,16 +162,11 @@ void nsHttpTransaction::SetClassOfService(ClassOfService cos) {
 nsHttpTransaction::~nsHttpTransaction() {
   LOG(("Destroying nsHttpTransaction @%p\n", this));
 
-  if (mTokenBucketCancel) {
-    if (OnSocketThread()) {
-      mTokenBucketCancel->Cancel(NS_ERROR_ABORT);
-    } else {
-      MOZ_DIAGNOSTIC_ASSERT(false,
-                            "Token bucket not canceled before off-thread "
-                            "destruction");
-    }
-    mTokenBucketCancel = nullptr;
-  }
+  // A queued token bucket event keeps a strong reference to this transaction
+  // (TokenBucketCancelable::mEvent), so the transaction cannot be destroyed
+  // while still queued. By the time we get here the event has been admitted or
+  // canceled on the socket thread, which cleared mTokenBucketCancel.
+  MOZ_DIAGNOSTIC_ASSERT(!mTokenBucketCancel);
 
   // Force the callbacks and connection to be released right now
   {
@@ -1504,10 +1500,11 @@ void nsHttpTransaction::Close(nsresult reason) {
 
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
 
-  if (mTokenBucketCancel) {
-    mTokenBucketCancel->Cancel(reason);
-    mTokenBucketCancel = nullptr;
+  if (nsCOMPtr<nsICancelable> tokenBucketCancel =
+          do_QueryReferent(mTokenBucketCancel)) {
+    tokenBucketCancel->Cancel(reason);
   }
+  mTokenBucketCancel = nullptr;
 
   if (reason == NS_BINDING_RETARGETED) {
     LOG(("  close %p skipped due to ERETARGETED\n", this));
@@ -3404,8 +3401,16 @@ bool nsHttpTransaction::TryToRunPacedRequest() {
 
   mSubmittedRatePacing = true;
   mSynchronousRatePaceRequest = true;
-  (void)gHttpHandler->SubmitPacedRequest(this,
-                                         getter_AddRefs(mTokenBucketCancel));
+  nsCOMPtr<nsICancelable> cancelable;
+  (void)gHttpHandler->SubmitPacedRequest(this, getter_AddRefs(cancelable));
+  // If the event was dispatched synchronously, OnTokenBucketAdmitted already
+  // ran and cleared mTokenBucketCancel; there is nothing left to cancel. Only
+  // when the event is queued do we keep a weak reference so we can cancel it
+  // later. It is weak because the token bucket keeps the cancelable (and,
+  // through it, this transaction) alive while the event is queued.
+  if (!mPassedRatePacing) {
+    mTokenBucketCancel = do_GetWeakReference(cancelable);
+  }
   mSynchronousRatePaceRequest = false;
   return mPassedRatePacing;
 }
@@ -3425,10 +3430,11 @@ void nsHttpTransaction::OnTokenBucketAdmitted() {
 }
 
 void nsHttpTransaction::CancelPacing(nsresult reason) {
-  if (mTokenBucketCancel) {
-    mTokenBucketCancel->Cancel(reason);
-    mTokenBucketCancel = nullptr;
+  if (nsCOMPtr<nsICancelable> tokenBucketCancel =
+          do_QueryReferent(mTokenBucketCancel)) {
+    tokenBucketCancel->Cancel(reason);
   }
+  mTokenBucketCancel = nullptr;
 }
 
 //-----------------------------------------------------------------------------
