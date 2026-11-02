@@ -41,13 +41,6 @@ class TestL10nManifestRoundTrip(unittest.TestCase):
                     locale_relsrcdir="browser/locales",
                     install_subdir="",
                     defines={"FOO": "bar"},
-                    locale_pp_defines={
-                        "ANDROID_MARKETPLACE_AB_CD": {
-                            "es*": "es-ES",
-                            "es-MX": "es-MX",
-                            "fr": "fr",
-                        },
-                    },
                     jar_sections=[
                         JarSection(
                             name=LocaleTemplate("browser"),
@@ -122,7 +115,6 @@ class TestBuildL10nManifestFromSubsts(unittest.TestCase):
             locale_relsrcdir="browser/locales",
             install_subdir="",
             defines={},
-            locale_pp_defines={},
         )
         manifest = build_l10n_manifest_from_substs(substs, [ctx])
 
@@ -177,7 +169,6 @@ class TestL10nManifestRoots(unittest.TestCase):
             locale_relsrcdir=relsrcdir,
             install_subdir="",
             defines={},
-            locale_pp_defines={},
         )
 
     def _relsrcdirs(self, roots, relsrcdirs):

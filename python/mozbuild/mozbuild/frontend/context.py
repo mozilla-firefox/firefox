@@ -2447,30 +2447,6 @@ VARIABLES = {
         see {ref}`jar-manifests`.
         """,
     ),
-    "LOCALE_PP_DEFINES": (
-        dict,
-        dict,
-        """Per-locale preprocessor defines applied when localized jar.mn
-        files are processed.
-
-        Each top-level key is the name of a define. Each value is a lookup
-        table that maps an ab_cd code or an fnmatch pattern to the value
-        the define should take for that locale.
-
-        Example:
-            LOCALE_PP_DEFINES = {
-                "ANDROID_MARKETPLACE_AB_CD": {
-                    "es*": "es-ES",
-                    "es-MX": "es-MX",
-                    "fr": "fr",
-                },
-            }
-
-        Exact ab_cd keys win over patterns. A locale that matches neither
-        leaves the define unset, so #ifdef branches in the jar.mn fall
-        through to their #else.
-        """,
-    ),
     # IDL Generation.
     "XPIDL_SOURCES": (
         ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList),

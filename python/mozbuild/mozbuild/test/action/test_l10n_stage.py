@@ -36,7 +36,6 @@ def _necko_manifest():
                 locale_relsrcdir="netwerk/locales",
                 install_subdir="",
                 defines={},
-                locale_pp_defines={},
                 jar_sections=[
                     JarSection(
                         name=LocaleTemplate(f"chrome/{AB_CD_TOKEN}"),
@@ -95,7 +94,6 @@ def _two_section_manifest():
                 locale_relsrcdir="app/locales",
                 install_subdir="",
                 defines={},
-                locale_pp_defines={},
                 jar_sections=[
                     section("zeta", ["zulu", "alpha"], ["zulu.properties"]),
                     section("alpha", ["one"], ["one.properties"]),
@@ -118,7 +116,6 @@ def _comm_manifest():
                 locale_relsrcdir="mail/locales",
                 install_subdir="",
                 defines={},
-                locale_pp_defines={},
                 jar_sections=[
                     JarSection(
                         name=LocaleTemplate(f"chrome/{AB_CD_TOKEN}"),

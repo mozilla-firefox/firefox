@@ -2,9 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-"""What `stage_locale` produces for a jar manifest that selects sources by
-locale, recorded so that a change to the locale model has to keep producing
-the same output.
+"""What `stage_locale` produces for a jar manifest, recorded so that a change
+to the locale model has to keep producing the same output.
 """
 
 import tempfile
@@ -57,31 +56,6 @@ class TestL10nStage(BackendTester):
         manifest = self._read(dest, "chrome/browser.manifest")
 
         self.assertIn("locale testing de", manifest)
-
-    def test_an_exact_marketplace_mapping_selects_its_source(self):
-        dest = self._stage("de")
-
-        self.assertEqual(self._chrome(dest, "de", "android.png"), "android de\n")
-
-    def test_a_wildcard_marketplace_mapping_selects_its_source(self):
-        dest = self._stage("es-MX")
-
-        self.assertEqual(self._chrome(dest, "es-MX", "android.png"), "android es-ES\n")
-
-    def test_an_unmapped_locale_falls_back(self):
-        dest = self._stage("ja")
-
-        self.assertEqual(self._chrome(dest, "ja", "android.png"), "android en-US\n")
-        self.assertEqual(self._chrome(dest, "ja", "ios.svg"), "ios en-US\n")
-
-    def test_android_and_ios_resolve_independently(self):
-        de = self._stage("de")
-        fr = self._stage("fr")
-
-        self.assertEqual(self._chrome(de, "de", "android.png"), "android de\n")
-        self.assertEqual(self._chrome(de, "de", "ios.svg"), "ios en-US\n")
-        self.assertEqual(self._chrome(fr, "fr", "android.png"), "android en-US\n")
-        self.assertEqual(self._chrome(fr, "fr", "ios.svg"), "ios fr\n")
 
     def test_chrome_mode_stages_the_jar_sections(self):
         dest = self._stage("de", mode="chrome")

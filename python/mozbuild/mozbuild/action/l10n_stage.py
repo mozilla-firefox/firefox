@@ -14,7 +14,6 @@ Invoked in make via $(call py_action,l10n_stage,...).
 from __future__ import annotations
 
 import argparse
-import fnmatch
 import importlib.util
 import shutil
 import sys
@@ -34,7 +33,6 @@ from mozbuild.frontend.l10n_manifest import (
     LocalizedFileGroup,
     LocalizedGenScript,
     load_l10n_manifest,
-    locale_pp_placeholder,
 )
 from mozbuild.preprocessor import Preprocessor
 from mozbuild.util import FileAvoidWrite
@@ -213,8 +211,7 @@ def _stage_file_group(
     /path/locales/en-US/... (topsrcdir-rooted, merge tree), !output
     (objdir-relative, typically a LOCALIZED_GENERATED_FILES output),
     or a glob pattern. preprocess=True runs each entry through the
-    preprocessor with LOCALE_PP_DEFINES resolved for the current
-    locale.
+    preprocessor.
     """
     install_target = mozpath.normpath(
         mozpath.join(context.install_subdir, group.subpath)
@@ -333,10 +330,9 @@ def _resolve_locale_defines(
     state: StageState, context: L10nManifestContextData
 ) -> dict[str, object]:
     """Compose the preprocessor define dict for context and the current
-    locale: DEFINES + LOCALE_PP_DEFINES-resolved + AB_CD.
+    locale: DEFINES plus AB_CD.
     """
     out = dict(context.defines or {})
-    out.update(_locale_resolved_defines(context.locale_pp_defines or {}, state.locale))
     out["AB_CD"] = state.locale
     return out
 
@@ -418,27 +414,20 @@ def _stage_jar_section(
     """
     install_target = _resolve_jar_install_target(context, section)
     defines = _resolve_locale_defines(state, context)
-    subs = _build_jar_subs(state, context)
-    unresolved = _unresolved_locale_pp_placeholders(state, context)
     dirs = SrcDirs.for_context(context).override(section.relativesrcdir)
-    section_name = _sub_jar(section.name.resolve(state.locale), subs)
+    section_name = section.name.resolve(state.locale)
 
     is_localization_block = section.base == "localization"
     block_keep_all_entries = is_localization_block or any(
-        _sub_jar(m.resolve(state.locale), subs).lstrip().startswith("locale ")
+        m.resolve(state.locale).lstrip().startswith("locale ")
         for m in section.chrome_manifests
     )
 
     for entry in section.entries:
         if not (entry.is_locale or block_keep_all_entries):
             continue
-        entry_source = _sub_jar(entry.source.resolve(state.locale), subs)
-        entry_output = _sub_jar(entry.output.resolve(state.locale), subs)
-        # Entry came from a #if defined(LOCALE_PP_DEFINES_KEY) branch
-        # that didn't resolve for this locale. The en-US fallback from
-        # the first emit-time pass will cover this output.
-        if any(p in entry_source or p in entry_output for p in unresolved):
-            continue
+        entry_source = entry.source.resolve(state.locale)
+        entry_output = entry.output.resolve(state.locale)
         if _has_wildcard(entry_source):
             for match_src, match_rel in _expand_wildcard_jar_source(
                 state, dirs, entry_source, entry.is_locale
@@ -471,7 +460,7 @@ def _stage_jar_section(
         chromebase = mozpath.basename(section_name) + "/"
         base = mozpath.dirname(section_name)
         for raw in section.chrome_manifests:
-            line = _sub_jar(raw.resolve(state.locale), subs)
+            line = raw.resolve(state.locale)
             entry = parse_manifest_line(base, line.replace("%", chromebase))
             state.manifest_entries.setdefault(manifest_relpath, []).append(str(entry))
         top_manifest = mozpath.join(install_target, "chrome.manifest")
@@ -511,40 +500,6 @@ def _resolve_jar_install_target(
     if not parts:
         return ""
     return mozpath.normpath("/".join(parts))
-
-
-def _build_jar_subs(
-    state: StageState, context: L10nManifestContextData
-) -> dict[str, str]:
-    """Substitution map applied to captured jar.mn strings at stage time:
-    any LOCALE_PP_DEFINES keys that resolve for the current locale.
-    """
-    subs = {}
-    resolved = _locale_resolved_defines(context.locale_pp_defines or {}, state.locale)
-    for k, v in resolved.items():
-        subs[locale_pp_placeholder(k)] = str(v)
-    return subs
-
-
-def _unresolved_locale_pp_placeholders(
-    state: StageState, context: L10nManifestContextData
-) -> set[str]:
-    """Placeholders for LOCALE_PP_DEFINES keys that don't resolve for
-    the current locale. Captured-but-unresolved entries are dropped at
-    stage time so the en-US #else entries from the first emit-time pass
-    take effect.
-    """
-    table = context.locale_pp_defines or {}
-    resolved = _locale_resolved_defines(table, state.locale)
-    return {locale_pp_placeholder(k) for k in table if k not in resolved}
-
-
-def _sub_jar(s: str, subs: dict[str, str]) -> str:
-    if not s:
-        return s
-    for placeholder, value in subs.items():
-        s = s.replace(placeholder, value)
-    return s
 
 
 def _resolve_jar_source(
@@ -713,36 +668,6 @@ def _ab_rcd(locale: str) -> str:
 
 def _has_wildcard(path: str) -> bool:
     return any(c in path for c in "*?[")
-
-
-def _resolve_locale_pp_define(table: dict[str, str], locale: str) -> Optional[str]:
-    """Resolve a single LOCALE_PP_DEFINES inner dict for locale.
-
-    Exact ab_cd keys take precedence over fnmatch-style patterns.
-    Returns the resolved value, or None if neither matches.
-    """
-    if locale in table:
-        return table[locale]
-    for pattern, value in table.items():
-        if _has_wildcard(pattern):
-            if fnmatch.fnmatchcase(locale, pattern):
-                return value
-    return None
-
-
-def _locale_resolved_defines(
-    locale_pp_defines: dict[str, dict[str, str]],
-    locale: str,
-) -> dict[str, str]:
-    """Resolve every LOCALE_PP_DEFINES entry for locale, dropping
-    defines whose inner table has no match.
-    """
-    out = {}
-    for name, table in locale_pp_defines.items():
-        value = _resolve_locale_pp_define(table, locale)
-        if value is not None:
-            out[name] = value
-    return out
 
 
 def main(argv: list[str]) -> int:
