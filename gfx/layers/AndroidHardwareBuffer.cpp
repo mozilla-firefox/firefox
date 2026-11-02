@@ -230,7 +230,9 @@ void AndroidHardwareBuffer::SetReleaseFence(UniqueFileHandle&& aFenceFd) {
 void AndroidHardwareBuffer::SetAcquireFence(UniqueFileHandle&& aFenceFd) {
   MonitorAutoLock lock(mMonitor);
 
-  mAcquireFenceFd = std::move(aFenceFd);
+  // Preserve an unconsumed acquire fence rather than silently dropping it.
+  mAcquireFenceFd =
+      MergeFences(std::move(mAcquireFenceFd), std::move(aFenceFd));
 }
 
 UniqueFileHandle AndroidHardwareBuffer::GetAndResetReleaseFence() {
