@@ -5,6 +5,8 @@ run-if = [
 head = "head.js"
 firefox-appdir = "browser"
 
+["test_AuthImplSelector.js"]
+
 ["test_Chat.js"]
 
 ["test_ChatUtils.js"]
@@ -12,6 +14,8 @@ firefox-appdir = "browser"
 ["test_Conversation.js"]
 
 ["test_ConversationSuggestions.js"]
+
+["test_FxaSignedInWatcher.js"]
 
 ["test_ManageTabs.js"]
 

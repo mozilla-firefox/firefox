@@ -374,17 +374,18 @@ add_task(async function test_invalidateToken() {
   Services.prefs.clearUserPref(PREF_TOKEN);
 });
 
-add_task(async function test_auth_impl_pref_change_switches_impl() {
+add_task(async function test_auth_impl_pref_change_switches_to_fxa() {
   const sb = sinon.createSandbox();
   sb.stub(FxaAuthProviderImpl.prototype, "getToken").resolves("fxa-token");
   Services.prefs.setStringPref(PREF_TOKEN, "guest-token");
+  AuthProvider.setImpl(new GuestAuthProviderImpl());
 
   try {
     await SpecialPowers.pushPrefEnv({ set: [[PREF_AUTH_IMPL, "guest"]] });
     Assert.equal(
       await AuthProvider.getToken(),
       "guest-token",
-      "Setting the pref to guest switches to the guest impl"
+      "Setting the pref to guest keeps the guest impl"
     );
 
     await SpecialPowers.pushPrefEnv({ set: [[PREF_AUTH_IMPL, "fxa"]] });
@@ -404,6 +405,7 @@ add_task(async function test_auth_impl_pref_change_switches_impl() {
 
 add_task(async function test_rejected_token_switches_to_fxa() {
   await SpecialPowers.pushPrefEnv({ set: [[PREF_AUTH_IMPL, "guest"]] });
+  AuthProvider.setImpl(new GuestAuthProviderImpl());
   const sb = sinon.createSandbox();
   const fxaGetToken = sb
     .stub(FxaAuthProviderImpl.prototype, "getToken")
@@ -501,6 +503,7 @@ add_task(async function test_signIn_accepted_tou() {
       [PREF_AUTH_IMPL, "guest"],
     ],
   });
+  AuthProvider.setImpl(new GuestAuthProviderImpl());
   const sb = sinon.createSandbox();
   const show = sb.stub(ToUSpotlight, "show").resolves(true);
 

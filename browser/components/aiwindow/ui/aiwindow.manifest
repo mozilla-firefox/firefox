@@ -1,5 +1,6 @@
 category browser-first-window-ready moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs AIWindow.onFirstWindowReady
 category browser-idle-startup moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs MonitorAgent.init
+category browser-idle-startup moz-src:///browser/components/aiwindow/models/auth/FxaSignedInWatcher.sys.mjs FxaSignedInWatcher.init
 category browser-quit-application-granted moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs AIWindow.uninit
 category browser-quit-application-granted moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs MonitorAgent.uninit
 category browser-window-delayed-startup moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs AIWindow.init

@@ -33,6 +33,10 @@ const lazy = XPCOMUtils.declareLazy({
  * AuthProviderImpl that obtains a guest token from MLPA, without an account.
  */
 export class GuestAuthProviderImpl extends AuthProviderImpl {
+  static cleanup() {
+    Services.prefs.clearUserPref(PREF_TOKEN);
+  }
+
   async getToken() {
     return lazy.token || null;
   }

@@ -4,13 +4,11 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { FxaAuthProviderImpl } from "moz-src:///browser/components/aiwindow/models/auth/FxaAuthProviderImpl.sys.mjs";
-import { GuestAuthProviderImpl } from "moz-src:///browser/components/aiwindow/models/auth/GuestAuthProviderImpl.sys.mjs";
+import { AuthImplSelector } from "moz-src:///browser/components/aiwindow/models/auth/AuthImplSelector.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 // "tos" is legacy naming: the consent is for the Firefox Terms of Use (ToU).
 const PREF_TOU_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
-const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 
 const lazy = XPCOMUtils.declareLazy({
   hasAIWindowToUConsent: {
@@ -34,41 +32,15 @@ const lazy = XPCOMUtils.declareLazy({
  *  When the user signs out of their account.
  */
 class AuthProviderSingleton extends EventTarget {
-  /** @type {AuthProviderImpl} */
-  #impl;
-
-  #onLogout = () => this.dispatchEvent(new Event("AuthProvider:Logout"));
-
-  #onFallbackNeeded = () => {
-    if (Services.prefs.getStringPref(PREF_AUTH_IMPL, "") !== "guest") {
-      lazy.log.error(
-        "Fallback requested, but the guest provider is not enabled. Not switching to FxA."
-      );
-      return;
-    }
-    Services.prefs.setStringPref(PREF_AUTH_IMPL, "fxa");
-  };
-
-  #onAuthImplChanged = () => this.setImpl(AuthProviderSingleton.#createImpl());
+  /** @type {AuthImplSelector} */
+  #selector;
 
   constructor() {
     super();
-    this.setImpl(AuthProviderSingleton.#createImpl());
-    Services.prefs.addObserver(PREF_AUTH_IMPL, this.#onAuthImplChanged);
-  }
-
-  /**
-   * @returns {AuthProviderImpl} The impl selected by the auth impl pref
-   */
-  static #createImpl() {
-    const value = Services.prefs.getStringPref(PREF_AUTH_IMPL, "");
-    if (value === "guest") {
-      return new GuestAuthProviderImpl();
-    }
-    if (value !== "" && value !== "fxa") {
-      lazy.log.warn(`Unknown ${PREF_AUTH_IMPL} value "${value}", using FxA.`);
-    }
-    return new FxaAuthProviderImpl();
+    this.#selector = new AuthImplSelector();
+    this.#selector.addEventListener("AuthImplSelector:Logout", () =>
+      this.dispatchEvent(new Event("AuthProvider:Logout"))
+    );
   }
 
   /**
@@ -77,17 +49,7 @@ class AuthProviderSingleton extends EventTarget {
    * @param {AuthProviderImpl} impl
    */
   setImpl(impl) {
-    this.#impl?.removeEventListener("AuthProviderImpl:Logout", this.#onLogout);
-    this.#impl?.removeEventListener(
-      "AuthProviderImpl:FallbackNeeded",
-      this.#onFallbackNeeded
-    );
-    this.#impl = impl;
-    this.#impl.addEventListener("AuthProviderImpl:Logout", this.#onLogout);
-    this.#impl.addEventListener(
-      "AuthProviderImpl:FallbackNeeded",
-      this.#onFallbackNeeded
-    );
+    this.#selector.setImpl(impl);
   }
 
   get hasToUConsent() {
@@ -110,8 +72,9 @@ class AuthProviderSingleton extends EventTarget {
    *
    * @returns {Promise<string|null>}   The account token (string) or null
    */
-  getToken() {
-    return this.#impl.getToken();
+  async getToken() {
+    const impl = await this.#selector.getImpl();
+    return impl.getToken();
   }
 
   /**
@@ -124,7 +87,8 @@ class AuthProviderSingleton extends EventTarget {
     if (!token) {
       return;
     }
-    await this.#impl.invalidateToken(token);
+    const impl = await this.#selector.getImpl();
+    await impl.invalidateToken(token);
   }
 
   /**
@@ -132,8 +96,9 @@ class AuthProviderSingleton extends EventTarget {
    *
    * @returns {Promise<boolean>}
    */
-  isSignedIn() {
-    return this.#impl.isSignedIn();
+  async isSignedIn() {
+    const impl = await this.#selector.getImpl();
+    return impl.isSignedIn();
   }
 
   /**
@@ -154,12 +119,13 @@ class AuthProviderSingleton extends EventTarget {
       // Checked here as well as inside the sign-in flow so that a blocked
       // flow, where the sign-in page is never shown, is distinguishable from
       // one the user abandoned. Both make signIn return false.
-      if (!(await this.#impl.canSignIn())) {
+      const impl = await this.#selector.getImpl();
+      if (!(await impl.canSignIn())) {
         outcome = "blocked";
         return false;
       }
 
-      const didSignIn = await this.#impl.signIn(browser);
+      const didSignIn = await impl.signIn(browser);
       if (didSignIn) {
         outcome = "completed";
       }
