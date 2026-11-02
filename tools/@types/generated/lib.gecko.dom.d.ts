@@ -2389,6 +2389,17 @@ interface HTMLMediaElementDebugInfo {
     decoder?: MediaDecoderDebugInfo;
 }
 
+interface HWInferenceDevice {
+    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_backends) --> */
+    backends: HWInferenceBackend[];
+    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_description) --> */
+    description: string;
+    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_id) --> */
+    id: string;
+    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_kind) --> */
+    kind: HWInferenceDeviceKind;
+}
+
 interface HasChildrenOptions {
     /** <!-- binding_to(idl, attribute, WEBIDL_HasChildrenOptions_ignoreAbsent) --> */
     ignoreAbsent?: boolean;
@@ -43030,6 +43041,12 @@ declare namespace GPUShaderStage {
 declare namespace GPUTextureUsage {
 }
 
+/** <!-- binding_to(idl, class, WEBIDL_HWInference) --> */
+declare namespace HWInference {
+    /** <!-- binding_to(idl, method, WEBIDL_HWInference_listDevices) --> */
+    function listDevices(): Promise<HWInferenceDevice[]>;
+}
+
 /** <!-- binding_to(idl, class, WEBIDL_IOUtils) --> */
 declare namespace IOUtils {
     /** <!-- binding_to(idl, attribute, WEBIDL_IOUtils_profileBeforeChange) --> */
@@ -45009,6 +45026,8 @@ type GetUserMediaRequestType = "getusermedia" | "recording-device-stopped" | "se
 type GridDeclaration = "explicit" | "implicit";
 type GridTrackState = "removed" | "repeat" | "static";
 type HDCPVersion = "1.0" | "1.1" | "1.2" | "1.3" | "1.4" | "2.0" | "2.1" | "2.2" | "2.3";
+type HWInferenceBackend = "llama.cpp";
+type HWInferenceDeviceKind = "cpu" | "gpu" | "npu";
 type HardwareAcceleration = "no-preference" | "prefer-hardware" | "prefer-software";
 type HashAlgorithm = "sha256" | "sha384" | "sha512";
 type HdrMetadataType = "smpteSt2086" | "smpteSt2094-10" | "smpteSt2094-40";

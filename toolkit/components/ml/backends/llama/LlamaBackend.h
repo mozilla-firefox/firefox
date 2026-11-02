@@ -8,7 +8,9 @@
 #include <functional>
 #include "LlamaRuntimeLinker.h"
 #include "ggml.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "mozilla/dom/HWInferenceBinding.h"
 #include "mozilla/dom/LlamaRunnerBinding.h"
 #include "mozilla/Result.h"
 #include "mozilla/ResultVariant.h"
@@ -32,6 +34,19 @@ using LlamaContextOptions = mozilla::dom::LlamaContextOptions;
 using LlamaSamplerConfig = mozilla::dom::LlamaSamplerConfig;
 
 ggml_type GgmlTypeFromKVCacheDtype(LlamaKVCacheDtype aDtype);
+
+// A ggml device that initialised for real. Its strings belong to llama.cpp,
+// which stays loaded until the process exits.
+struct Device {
+  ggml_backend_dev_t mHandle;
+  // Physical id where the backend reports one, else its name.
+  const char* mId;
+  const char* mDescription;
+  dom::HWInferenceDeviceKind mKind;
+};
+
+// The devices of this process, enumerated and probed once.
+const nsTArray<Device>& Devices(const LlamaLibWrapper* aLib);
 
 // LlamaBackend is a low-level, internal interface to the llama.cpp engine.
 // It encapsulates model loading, prompt formatting, context setup, and

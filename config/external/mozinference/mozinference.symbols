@@ -3,7 +3,11 @@ ggml_threadpool_new
 ggml_threadpool_params_init
 ggml_threadpool_params_match
 ggml_backend_dev_by_type
+ggml_backend_dev_count
+ggml_backend_dev_get
+ggml_backend_dev_get_props
 ggml_backend_dev_init
+ggml_backend_dev_type
 ggml_backend_free
 #ifdef XP_MACOSX
 ggml_backend_metal_disable

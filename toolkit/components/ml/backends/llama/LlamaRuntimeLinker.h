@@ -122,6 +122,12 @@ namespace mozilla::llama {
   X(void, ggml_threadpool_free, (ggml_threadpool_t threadpool))             \
   X(ggml_backend_dev_t, ggml_backend_dev_by_type,                           \
     (enum ggml_backend_dev_type type))                                      \
+  X(enum ggml_backend_dev_type, ggml_backend_dev_type,                      \
+    (ggml_backend_dev_t device))                                            \
+  X(size_t, ggml_backend_dev_count, (void))                                 \
+  X(ggml_backend_dev_t, ggml_backend_dev_get, (size_t index))               \
+  X(void, ggml_backend_dev_get_props,                                       \
+    (ggml_backend_dev_t device, struct ggml_backend_dev_props * props))     \
   X(ggml_backend_t, ggml_backend_dev_init,                                  \
     (ggml_backend_dev_t device, const char* params))                        \
   X(void, ggml_backend_free, (ggml_backend_t backend))                      \

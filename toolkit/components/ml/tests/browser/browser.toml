@@ -56,6 +56,9 @@ support-files = ["ml_engine_initialization_failure.worker.mjs"]
 
 ["browser_ml_engine_rs_hub.js"]
 
+["browser_ml_hwinference_device_discovery.js"]
+skip-if = ["os == 'win' && debug && verify"] # Bug 2082990: utility process launch stalls
+
 ["browser_ml_hwinference_process.js"]
 
 ["browser_ml_inference_session_error.js"]

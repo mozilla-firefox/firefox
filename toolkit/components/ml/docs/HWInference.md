@@ -137,6 +137,19 @@ actor's event target. Cancellation and shutdown cross the boundary through
 atomic flags. Future engines sharing this process must likewise keep engine
 compute and blocking model operations off the utility main thread.
 
+### Devices
+
+`LlamaBackend` enumerates `ggml`'s backend devices once per process,
+initialising each accelerator for real, which is where a registered device
+that cannot be used (Metal on a virtual machine) fails;
+`PHWInference::ListDevices` reports that list. A device is identified by the
+physical id its backend reports, the PCI bus id where there is one, so that a
+future backend serving the same device joins it rather than listing it again;
+Metal reports none and the device goes by its `ggml` name. The browser-side
+`HWInference.listDevices()` chrome namespace exposes that list for the browser
+process, with each device's kind, description and serving backends. The
+content-facing process never enumerates.
+
 ## Process lifetime
 
 Users of an `HWInference` process decide how long it lives.
