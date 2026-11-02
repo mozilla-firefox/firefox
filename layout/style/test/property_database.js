@@ -14636,6 +14636,39 @@ if (IsCSSPropertyPrefEnabled("layout.css.prefixes.transitions")) {
   });
 }
 
+if (IsCSSPropertyPrefEnabled("layout.css.margin-trim.enabled")) {
+  gCSSProperties["margin-trim"] = {
+    domProp: "marginTrim",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    initial_values: ["none"],
+    other_values: [
+      "block",
+      "block-start",
+      "block-end",
+      "block-start block-end",
+      "block-end block-start",
+    ],
+    invalid_values: [
+      "block block",
+      "block block-start block-end",
+      "block-start block-end block",
+      "block-start block-start",
+      "block 10px",
+      "auto",
+      "left",
+      "none block",
+      "none block-start",
+      "inline",
+      "inline-start",
+      "inline-end",
+      "block inline",
+      "inline-start inline-end",
+      "block-start inline-start",
+    ],
+  };
+}
+
 if (IsCSSPropertyPrefEnabled("layout.css.field-sizing.enabled")) {
   Object.assign(gCSSProperties, {
     "field-sizing": {
