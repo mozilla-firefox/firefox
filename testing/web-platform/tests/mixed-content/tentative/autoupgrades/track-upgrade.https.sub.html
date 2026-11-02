@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Autoupgrade mixed content: Track.</title>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/common/get-host-info.sub.js"></script>
+</head>
+<body>
+<script>
+async_test(t => {
+  // Use HTTP scheme with HTTPS port: if autoupgrade incorrectly applies to
+  // <track>, the request would succeed over HTTPS (onload). Since <track>
+  // must not be upgraded, it fails on HTTP (onerror).
+  const url = new URL(
+    "http://{{host}}:{{ports[https][0]}}/mixed-content/tentative/resources/test.vtt"
+  );
+
+  const video = document.createElement('video');
+  video.autoplay = true;
+  video.muted = true;
+  video.src = new URL(
+    "https://{{host}}:{{ports[https][0]}}/mixed-content/tentative/resources/test.webm"
+  );
+
+  const track = document.createElement('track');
+  track.kind = 'subtitles';
+  track.srclang = 'en';
+  track.label = 'English';
+  track.src = url;
+  track.track.mode = 'hidden'; // trigger loading
+
+  track.onload = t.unreached_func(
+    "<track> request was incorrectly autoupgraded to HTTPS"
+  );
+
+  track.onerror = t.step_func_done(() => {
+    assert_true(true, "Track was blocked, autoupgrade does not apply as per specification");
+  });
+
+  video.appendChild(track);
+  document.body.appendChild(video);
+  video.play().catch(() => {});
+}, "Track should not be autoupgraded");
+</script>
+</body>
+</html>
