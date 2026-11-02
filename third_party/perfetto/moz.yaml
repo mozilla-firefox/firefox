@@ -13,12 +13,13 @@ origin:
   url: "https://perfetto.dev"
   license: Apache-2.0
 
-  release: v58.2 (2026-08-21T19:07:36+01:00).
-  revision: v58.2
+  release: v59.1 (2026-10-23T17:35:25+01:00).
+  revision: v59.1
 
 updatebot:
   maintainer-phab: denispal
   maintainer-bz: dpalmeiro@mozilla.com
+  fuzzy-query: "'geckoview-junit !lite !zygote !ccov"
   tasks:
     - type: vendoring
       enabled: true
