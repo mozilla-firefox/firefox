@@ -60,6 +60,64 @@ from mozbuild.licenses import LicenseCollection, LicenseError
 from mozbuild.rust_commands import CARGO_SPEC_FILES, CargoCommand, cargo_spec
 
 
+def configured_defines(environment):
+    """The defines a preprocessed install carries beyond its own declaration.
+
+    Recording them on the entry tells the install what to preprocess with, and
+    makes a changed define rebuild the files it applies to.
+    """
+    return {**environment.defines, "AB_CD": environment.substs["MOZ_UI_LOCALE"]}
+
+
+def _preprocessor_defines(declared, configured):
+    """The defines as the preprocessor receives them from a command line.
+
+    A define set to True becomes 1, one set to False is not present at all, and
+    a digit valued one is a number.
+    """
+    defines = {}
+    # A configured define wins over one that the declaring moz.build sets.
+    for name, value in {**(declared or {}), **configured}.items():
+        if value is False:
+            continue
+        if value is True:
+            defines[name] = 1
+        elif isinstance(value, str) and value.isdigit():
+            defines[name] = int(value)
+        else:
+            defines[name] = value
+    return defines
+
+
+def add_preprocess_entry(
+    manifest,
+    source,
+    install_target,
+    dest,
+    basename,
+    depdir,
+    declared,
+    configured,
+    **kwargs,
+):
+    """Describe a preprocessed install to the manifest installing it.
+
+    Both backends have to agree on the marker and on where the dependency file
+    goes, or the same declaration would preprocess differently depending on who
+    installed it.
+    """
+    if basename.endswith(".css"):
+        kwargs["marker"] = "%"
+    depfile = mozpath.join(depdir, install_target, dest, f"{basename}.pp")
+    manifest.add_preprocess(
+        source,
+        mozpath.join(dest, basename),
+        depfile,
+        defines=_preprocessor_defines(declared, configured),
+        **kwargs,
+    )
+
+
 class XPIDLManager:
     """Helps manage XPCOM IDLs in the context of the build system."""
 

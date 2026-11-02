@@ -9,6 +9,7 @@ import mozpack.path as mozpath
 from mozpack.manifests import InstallManifest
 
 from mozbuild.backend.base import PartialBackend
+from mozbuild.backend.common import add_preprocess_entry, configured_defines
 from mozbuild.backend.make import MakeBackend
 from mozbuild.frontend.context import ObjDirPath, Path
 from mozbuild.frontend.data import (
@@ -31,6 +32,7 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         self._manifest_entries = defaultdict(set)
 
         self._install_manifests = defaultdict(InstallManifest)
+        self._configured_defines = configured_defines(self.environment)
 
         self._dependencies = defaultdict(list)
         self._l10n_dependencies = defaultdict(list)
@@ -40,20 +42,16 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         self._generated_files_map = {}
         self._generated_files = []
 
-    def _add_preprocess(self, obj, src, dest, f, **kwargs):
-        basename = FinalTargetPreprocessedFiles.get_obj_basename(f)
-        if basename.endswith(".css"):
-            kwargs["marker"] = "%"
-        depfile = mozpath.join(
-            self.environment.topobjdir,
-            "faster",
-            ".deps",
-            mozpath.join(obj.install_target, dest, basename).replace("/", "_"),
-        )
-        self._install_manifests[obj.install_target].add_preprocess(
+    def _add_preprocess(self, obj, src, dest, f, defines=None, **kwargs):
+        add_preprocess_entry(
+            self._install_manifests[obj.install_target],
             mozpath.join(obj.srcdir, src),
-            mozpath.join(dest, basename),
-            depfile,
+            obj.install_target,
+            dest,
+            FinalTargetPreprocessedFiles.get_obj_basename(f),
+            mozpath.join(self.environment.topobjdir, "faster", ".deps"),
+            defines,
+            self._configured_defines,
             **kwargs,
         )
 
@@ -170,14 +168,13 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         mk.add_statement("TOUCH ?= touch")
         mk.add_statement("include $(TOPSRCDIR)/config/makefiles/functions.mk")
         mk.add_statement("include $(TOPSRCDIR)/config/AB_rCD.mk")
-        mk.add_statement("AB_CD = en-US")
+        mk.add_statement(f"AB_CD = {self.environment.substs['MOZ_UI_LOCALE']}")
         if not self._has_xpidl:
             mk.add_statement("NO_XPIDL = 1")
 
         # Add a few necessary variables inherited from configure
         for var in (
             "PYTHON3",
-            "ACDEFINES",
             "MOZ_BUILD_APP",
             "MOZ_WIDGET_TOOLKIT",
         ):

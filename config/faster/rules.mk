@@ -25,8 +25,6 @@
 # - TOPSRCDIR/TOPOBJDIR, respectively the top source directory and the top
 #   object directory
 # - PYTHON, the path to the python executable
-# - ACDEFINES, which contains a set of -Dvar=name to be used during
-#   preprocessing
 # - INSTALL_MANIFESTS, which defines the list of base directories handled
 #   by install manifests, see further below
 #
@@ -76,13 +74,7 @@ $(TOPOBJDIR)/%: FORCE
 # slashes replaced with underscores, and prefixed with `install_`. That is,
 # the install manifest for `dist/bin` would be `install_dist_bin`.
 $(addprefix install-,$(INSTALL_MANIFESTS)): install-%: $(addprefix $(TOPOBJDIR)/,buildid.h source-repo.h)
-	@# For now, force preprocessed files to be reprocessed every time.
-	@# The overhead is not that big, and this avoids waiting for proper
-	@# support for defines tracking in process_install_manifest.
-	@touch install_$(subst /,_,$*)
 	$(PYTHON3) -m mozbuild.action.process_install_manifest \
 		--track install_$(subst /,_,$*).track \
 		$(TOPOBJDIR)/$* \
-		-DAB_CD=en-US \
-		$(ACDEFINES) \
 		install_$(subst /,_,$*)

@@ -1648,21 +1648,81 @@ class TestRecursiveMakeBackend(BackendTester):
 
     def test_final_target_pp_files(self):
         """Test that FINAL_TARGET_PP_FILES is written to backend.mk correctly."""
-        env = self._consume("dist-files", RecursiveMakeBackend)
+        env, reg = self._dist_bin_registry("dist-files")
+        entries = dict(reg)
+
+        self.assertIn("install.rdf", entries)
+        self.assertIn("main.js", entries)
+        self.assertEqual(type(entries["install.rdf"]).__name__, "PreprocessedFile")
 
         backend_path = mozpath.join(env.topobjdir, "backend.mk")
         lines = [l.strip() for l in open(backend_path).readlines()[2:]]
 
-        expected = [
-            "DIST_FILES_0 += $(srcdir)/install.rdf",
-            "DIST_FILES_0 += $(srcdir)/main.js",
-            "DIST_FILES_0_PATH := $(DEPTH)/dist/bin/",
-            "DIST_FILES_0_TARGET := misc",
-            "PP_TARGETS += DIST_FILES_0",
+        self.assertEqual([l for l in lines if "DIST_FILES" in l], [])
+
+    def _dist_bin_registry(self, name):
+        env = self._consume(name, RecursiveMakeBackend)
+
+        m = InstallManifest(
+            path=mozpath.join(env.topobjdir, "_build_manifests", "install", "dist_bin")
+        )
+        reg = FileRegistry()
+        m.populate_registry(reg)
+        return env, reg
+
+    def _install_dist_bin_rule(self, name):
+        env = self._consume(name, RecursiveMakeBackend)
+
+        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
+        rule = [
+            l
+            for l in open(root_deps_path).readlines()
+            if l.startswith("install-dist/bin:")
         ]
 
-        found = [str for str in lines if "DIST_FILES" in str]
-        self.assertEqual(found, expected)
+        self.assertEqual(len(rule), 1)
+        return rule[0]
+
+    def test_pp_defines(self):
+        env, reg = self._dist_bin_registry("pp-defines")
+
+        defines = reg["script.js"].defines
+        self.assertEqual(defines["AB_CD"], env.substs["MOZ_UI_LOCALE"])
+        self.assertEqual(defines["FROM_THE_DECLARATION"], "declared")
+        self.assertEqual(defines["A_CONFIGURED_STRING"], "a value")
+
+    def test_pp_defines_digit(self):
+        _, reg = self._dist_bin_registry("pp-defines")
+
+        self.assertEqual(reg["script.js"].defines["A_CONFIGURED_NUMBER"], 1)
+
+    def test_pp_defines_boolean(self):
+        _, reg = self._dist_bin_registry("pp-defines")
+
+        defines = reg["script.js"].defines
+        self.assertEqual(defines["DECLARED_ON"], 1)
+        self.assertNotIn("DECLARED_OFF", defines)
+
+    def test_pp_depfile(self):
+        env, reg = self._dist_bin_registry("pp-defines")
+
+        depfile = mozpath.normsep(reg["script.js"].depfile)
+        self.assertTrue(depfile.endswith("/.deps/dist/bin/script.js.pp"), depfile)
+        self.assertTrue(depfile.startswith(mozpath.normsep(env.topobjdir)), depfile)
+
+    def test_pp_css_marker(self):
+        _, reg = self._dist_bin_registry("pp-defines")
+
+        self.assertEqual(reg["sheet.css"].marker, "%")
+        self.assertEqual(reg["script.js"].marker, "#")
+
+    def test_pp_no_make_rule(self):
+        env = self._consume("pp-defines", RecursiveMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "backend.mk")) as fh:
+            body = fh.read()
+
+        self.assertNotIn("PP_TARGETS", body)
 
     def test_final_target_files_absolute(self):
         """Absolute FINAL_TARGET_FILES are installed, and libraries checked."""
@@ -1691,34 +1751,24 @@ class TestRecursiveMakeBackend(BackendTester):
         found = [str for str in lines if "libfoo." in str]
         self.assertEqual(found, expected)
 
-    def test_pp_files_extra_deps(self):
-        """Ensure PP_FILES_EXTRA_DEPS is written to backend.mk correctly."""
-        env = self._consume("pp-files-extra-deps", RecursiveMakeBackend)
-
-        backend_path = mozpath.join(env.topobjdir, "subdir", "backend.mk")
-        lines = [l.strip() for l in open(backend_path).readlines()[2:]]
-
-        expected = [
-            "DIST_FILES_0 += $(srcdir)/install.rdf",
-            "DIST_FILES_0 += $(srcdir)/main.js",
-            "DIST_FILES_0_PATH := $(DEPTH)/dist/bin/",
-            "DIST_FILES_0_TARGET := misc",
-            "DIST_FILES_0_EXTRA_DEPS := $(DEPTH)/generated-header.h "
-            "$(srcdir)/source-extra",
-            "PP_TARGETS += DIST_FILES_0",
-        ]
-
-        found = [str for str in lines if "DIST_FILES" in str]
-        self.assertEqual(found, expected)
+    def test_pp_files_extra_deps_not_generated(self):
+        with self.assertRaisesRegex(Exception, "top level backend file"):
+            self._consume("pp-files-extra-deps", RecursiveMakeBackend)
 
     def test_pp_files_extra_deps_post_process(self):
         """PP_FILES_EXTRA_DEPS pointing at a generated file in another
         directory adds a cross-directory build-order dependency."""
-        env = self._consume("pp-files-extra-deps-generated", RecursiveMakeBackend)
+        # The install runs from the top level Makefile, so the generated file it
+        # reads is a prerequisite of the install rather than of the directory
+        # that uses it.
+        rule = self._install_dist_bin_rule("pp-files-extra-deps-generated")
 
-        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
-        lines = [l.strip() for l in open(root_deps_path).readlines()]
-        self.assertIn("consumer/misc: export", lines)
+        self.assertIn("$(DEPTH)/generated-header.h", rule)
+
+    def test_pp_files_extra_deps_other_directory(self):
+        rule = self._install_dist_bin_rule("pp-files-extra-deps-other-directory")
+
+        self.assertIn("$(DEPTH)/producer/generated-header.h", rule)
 
     def test_localized_files(self):
         """Test that LOCALIZED_FILES is written to backend.mk correctly."""

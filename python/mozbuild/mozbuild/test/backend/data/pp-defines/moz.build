@@ -1,0 +1,11 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+DEFINES["FROM_THE_DECLARATION"] = "declared"
+DEFINES["DECLARED_ON"] = True
+DEFINES["DECLARED_OFF"] = False
+
+FINAL_TARGET_PP_FILES += [
+    "script.js",
+    "sheet.css",
+]
