@@ -1379,7 +1379,7 @@ void ScriptLoader::TryUseCache(ReferrerPolicy aReferrerPolicy,
     //           different encoding, and thus this cache entry shouldn't be
     //           used.
     if (aRequestType == ScriptLoadRequestType::Preload &&
-        !aRequest->mClassicScriptHintEncoding && mDocument &&
+        !aRequest->mClassicScriptHintEncoding &&
         mDocument->GetDocumentCharacterSetSource() == 0) {
       // This is the (b-1) case above.
       LOG(
