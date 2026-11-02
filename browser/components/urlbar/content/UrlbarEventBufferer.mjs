@@ -262,6 +262,14 @@ export class UrlbarEventBufferer {
       return false;
     }
 
+    // Switching search engines which will start a new query.
+    if (
+      event.keyCode == KeyEvent.DOM_VK_DOWN &&
+      event.getModifierState("Accel")
+    ) {
+      return false;
+    }
+
     if (DEFERRED_KEY_CODES.has(event.keyCode)) {
       // Defer while the user is composing.
       if (this.input.isComposing) {
