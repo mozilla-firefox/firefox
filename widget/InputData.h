@@ -262,6 +262,10 @@ class MultiTouchInput : public InputData {
   // the touch interaction, so we sstore it in the event.
   ExternalPoint mScreenOffset;
   bool mHandledByAPZ;
+  // Whether the caller is still considering this touch block for a browser
+  // swipe. This is false after the caller accepts or rejects the swipe, or
+  // when the caller does not consider it at all on MULTITOUCH_START.
+  bool mMayTriggerSwipe = false;
   // These button fields match to the corresponding fields in
   // WidgetMouseEventBase, except mButton defaults to -1 to follow PointerEvent.
   int16_t mButton = eNotPressed;

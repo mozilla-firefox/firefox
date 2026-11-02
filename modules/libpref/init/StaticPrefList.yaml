@@ -21802,6 +21802,12 @@
   value: false
   mirror: always
 
+# Whether to enable swipe-to-nav on touchscreen.
+- name: widget.swipe.touchscreen.enabled
+  type: bool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # Whether to provide haptic feedback when crossing the swipe navigation threshold.
 - name: widget.swipe.haptic-feedback.enabled
   type: bool

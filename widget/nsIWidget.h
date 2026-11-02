@@ -1354,6 +1354,11 @@ class nsIWidget : public nsSupportsWeakReference {
    */
   void DispatchTouchInput(mozilla::MultiTouchInput& aInput);
 
+  void MayStartSwipeForTouchInput(
+      const mozilla::MultiTouchInput& aInput,
+      const mozilla::layers::APZEventResult& aResult);
+  void HandleTouchInputAsSwipe(const mozilla::MultiTouchInput& aInput);
+
   /**
    * Dispatch the given PanGestureInput through APZ to Gecko (if APZ is enabled)
    * or directly to gecko (if APZ is not enabled). This function must only
@@ -2426,6 +2431,55 @@ class nsIWidget : public nsSupportsWeakReference {
   PopupType mPopupType;
   SizeConstraints mSizeConstraints;
   bool mHasRemoteContent;
+
+  // TouchSwipeState phase transition:
+  // - Initially Idle:      wait for a MULTITOUCH_START.
+  // - Idle -> Pending:     a MULTITOUCH_START records APZ's swipable
+  //                        directions.
+  // - Pending -> Tracking: a MULTITOUCH_MOVE passes navigation-direction
+  //                        checks. In this case, APZ drops the block's events
+  //                        and the subsequent touch events are processed as
+  //                        swipe.
+  // - Pending -> Rejected: a MULTITOUCH_MOVE fails navigation-direction checks.
+  // - ANY -> Idle:         a MULTITOUCH_END or MULTITOUCH_CANCEL resets any
+  //                        phase to the initial Idle state.
+  struct TouchSwipeState {
+    // Nothing until Start() records the first touch point.
+    mozilla::Maybe<ScreenIntPoint> previousTouchPoint;
+    mozilla::SideBits swipableDirections = mozilla::SideBits::eLeftRight;
+    enum class Phase {
+      // Wait for touchstart to determine the swipable directions.
+      Idle,
+      // Swipable directions are known. Wait for movement outside APZ's slop
+      // region, then check whether the movement can start a browser swipe.
+      Pending,
+      // Convert touch movements into pan gesture input for SwipeTracker.
+      Tracking,
+      // Do not reconsider swipe navigation until END or CANCEL resets the
+      // state.
+      Rejected
+    };
+    Phase phase = Phase::Idle;
+
+    void Start(mozilla::SideBits aSwipableDirections,
+               const ScreenIntPoint& aTouchPoint) {
+      MOZ_ASSERT(phase == Phase::Idle &&
+                     swipableDirections == mozilla::SideBits::eLeftRight,
+                 "This is the start point of touch swipe-to-nav. "
+                 "TouchSwipeState should have an initial state");
+      swipableDirections &= aSwipableDirections;
+      phase = Phase::Pending;
+      previousTouchPoint = mozilla::Some(aTouchPoint);
+    }
+
+    void Reset() { *this = TouchSwipeState{}; }
+
+    ScreenIntPoint GetDelta(const ScreenIntPoint& point) {
+      MOZ_ASSERT(previousTouchPoint.isSome());
+      return point - *previousTouchPoint;
+    }
+  };
+  TouchSwipeState mTouchSwipeState;
 
   struct FullscreenSavedState {
     DesktopRect windowRect;
