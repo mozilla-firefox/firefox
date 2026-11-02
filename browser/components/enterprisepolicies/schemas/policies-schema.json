@@ -1248,7 +1248,8 @@
       "x-compatibility": {
         "firefox": { "version_added": "76" },
         "firefox_esr": { "version_added": "68.8.0" },
-        "firefox_enterprise": { "version_added": "149" }
+        "firefox_enterprise": { "version_added": "149" },
+        "notes": "Before Firefox 78 / Firefox ESR 68.11, setting a cipher to `false` also disabled it."
       },
       "x-restart-required": true,
       "description": "Disable specific cryptographic ciphers, listed below.",
@@ -1268,28 +1269,58 @@
           "type": "boolean"
         },
         "TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "97" },
+            "firefox_esr": { "version_added": "91.6.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "97" },
+            "firefox_esr": { "version_added": "91.6.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "97" },
+            "firefox_esr": { "version_added": "91.6.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "97" },
+            "firefox_esr": { "version_added": "91.6.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA": {
           "type": "boolean"
         },
         "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "97" },
+            "firefox_esr": { "version_added": "91.6.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA": {
           "type": "boolean"
         },
         "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "97" },
+            "firefox_esr": { "version_added": "91.6.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_DHE_RSA_WITH_AES_128_CBC_SHA": {
           "type": "boolean"
@@ -1298,10 +1329,20 @@
           "type": "boolean"
         },
         "TLS_RSA_WITH_AES_128_GCM_SHA256": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "78" },
+            "firefox_esr": { "version_added": "78" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_RSA_WITH_AES_256_GCM_SHA384": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "78" },
+            "firefox_esr": { "version_added": "78" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_RSA_WITH_AES_128_CBC_SHA": {
           "type": "boolean"
@@ -1313,13 +1354,28 @@
           "type": "boolean"
         },
         "TLS_CHACHA20_POLY1305_SHA256": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "138" },
+            "firefox_esr": { "version_added": "128.10.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_AES_128_GCM_SHA256": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "138" },
+            "firefox_esr": { "version_added": "128.10.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         },
         "TLS_AES_256_GCM_SHA384": {
-          "type": "boolean"
+          "type": "boolean",
+          "x-compatibility": {
+            "firefox": { "version_added": "138" },
+            "firefox_esr": { "version_added": "128.10.0" },
+            "firefox_enterprise": { "version_added": "149" }
+          }
         }
       }
     },
