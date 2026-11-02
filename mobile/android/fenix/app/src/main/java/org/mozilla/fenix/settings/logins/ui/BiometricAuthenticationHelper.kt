@@ -9,9 +9,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
+import org.mozilla.fenix.settings.biometric.AutomotiveSensitiveDataAuthenticator
+import org.mozilla.fenix.settings.biometric.DefaultAutomotiveSensitiveDataAuthenticator
 
 /**
  * The UI host for displaying the Biometric Authentication dialog
@@ -19,17 +25,29 @@ import androidx.fragment.app.FragmentActivity
  * @param title The title of the authentication prompt.
  * @param onAuthSuccess Callback triggered when biometric authentication succeeds.
  * @param onAuthFailure Callback triggered when biometric authentication fails.
+ * @param automotiveAuthenticator The authentication check used instead of the default flow on Android Automotive OS.
  */
 @Composable
 internal fun BiometricAuthenticationDialog(
     title: String,
     onAuthSuccess: () -> Unit,
     onAuthFailure: () -> Unit,
+    automotiveAuthenticator: AutomotiveSensitiveDataAuthenticator = remember {
+        DefaultAutomotiveSensitiveDataAuthenticator()
+    },
 ) {
     val context = LocalContext.current
     val activity = context as? FragmentActivity ?: return
 
-    if (DefaultBiometricUtils.canUseBiometricAuthentication(activity = activity)) {
+    if (automotiveAuthenticator.isRequired(activity)) {
+        ShowAutomotiveAuthenticationDialog(
+            authenticator = automotiveAuthenticator,
+            title = title,
+            activity = activity,
+            onAuthSuccess = onAuthSuccess,
+            onAuthFailure = onAuthFailure,
+        )
+    } else if (DefaultBiometricUtils.canUseBiometricAuthentication(activity = activity)) {
         ShowBiometricAuthenticationDialog(
             title = title,
             activity = activity,
@@ -47,6 +65,27 @@ internal fun BiometricAuthenticationDialog(
         ShowPinWarningDialog(
             activity = activity,
             onAuthSuccess = onAuthSuccess,
+        )
+    }
+}
+
+@Composable
+private fun ShowAutomotiveAuthenticationDialog(
+    authenticator: AutomotiveSensitiveDataAuthenticator,
+    title: String,
+    activity: FragmentActivity,
+    onAuthSuccess: () -> Unit,
+    onAuthFailure: () -> Unit,
+) {
+    val currentOnAuthSuccess by rememberUpdatedState(onAuthSuccess)
+    val currentOnAuthFailure by rememberUpdatedState(onAuthFailure)
+
+    LaunchedEffect(Unit) {
+        authenticator.authenticate(
+            activity = activity,
+            title = title,
+            onAuthenticated = { currentOnAuthSuccess() },
+            onBlocked = { currentOnAuthFailure() },
         )
     }
 }
