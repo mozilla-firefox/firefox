@@ -125,7 +125,6 @@ task-defaults:
                 by-test-platform:
                     linux.*64/debug: 1
                     default: 2
-            geckoview-isolated-process: 2
             default: default
     mozharness:
         requires-signed-builds:
@@ -921,6 +920,7 @@ tasks:
             - no-fission
             - webrender-sw+no-fission
             - webrender-sw
+            - geckoview-isolated-process
         run-on-projects:
             by-variant:
                 webrender-sw+no-fission:
@@ -942,6 +942,10 @@ tasks:
                         linux.*: ['mozilla-central']  # linux opt/debug/asan
                         android.*: built-projects
                         default: []
+                geckoview-isolated-process:
+                    by-test-platform:
+                        android-em.*/debug: built-projects
+                        default: []
                 default: built-projects
         virtualization: virtual-with-gpu
         tier:
@@ -950,7 +954,6 @@ tasks:
                     by-test-platform:
                         linux.*64.*: 2
                         default: default
-                geckoview-isolated-process: 3
                 default: default
         mozharness:
             mochitest-flavor: plain
@@ -1160,7 +1163,6 @@ tasks:
                     by-test-platform:
                         linux.*64.*: 2
                         default: default
-                geckoview-isolated-process: 2
                 default:
                     by-test-platform:
                         .*-ccov.*: 2
