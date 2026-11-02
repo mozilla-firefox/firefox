@@ -1929,6 +1929,14 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
+    "widgets.wrexhamAFC.enabled",
+    {
+      title: "Enables the Wrexham AFC widget",
+      // Off everywhere. To release organically: add locale-config to firefox.js, switch to marketGate.
+      getValue: () => !marketGateEnabled(),
+    },
+  ],
+  [
     "widgets.pictureOfTheDay.enabled",
     {
       title: "Enables the picture of the day widget",
@@ -1979,6 +1987,14 @@ export const PREFS_CONFIG = new Map([
     "widgets.system.solitaire.enabled",
     {
       title: "Enables the solitaire widget experiment in Nimbus",
+      // Off everywhere. To release organically: add locale-config to firefox.js, switch to marketGate.
+      value: false,
+    },
+  ],
+  [
+    "widgets.system.wrexhamAFC.enabled",
+    {
+      title: "Enables the Wrexham AFC widget experiment in Nimbus",
       // Off everywhere. To release organically: add locale-config to firefox.js, switch to marketGate.
       value: false,
     },
@@ -2128,6 +2144,21 @@ export const PREFS_CONFIG = new Map([
     "widgets.solitaire.size",
     {
       title: "Size of the solitaire widget (medium or large)",
+      value: "",
+    },
+  ],
+  [
+    "widgets.wrexhamAFC.size",
+    {
+      title: "Size of the Wrexham AFC widget (medium or large)",
+      value: "",
+    },
+  ],
+  [
+    "widgets.wrexhamAFC.view",
+    {
+      title:
+        "View shown by the Wrexham AFC widget (matches, table or fixtures)",
       value: "",
     },
   ],
