@@ -4,6 +4,7 @@ support-files = [
   "clipboard_helper.js",
 ]
 tags = "os_integration"
+prefs = ["clipboard.readCrossOriginCustomFormats.enabled=true"]
 
 ["test_alwaysontop_focus.xhtml"]
 

@@ -2442,6 +2442,16 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# When false, web custom format flavors are only exposed to a reader that is
+# same-origin with the data in the clipboard cache. Data written by other
+# applications is treated as cross-origin, so reading web custom formats from
+# it also requires clipboard.readCustomFormatsFromClipboard.enabled. Writing
+# web custom formats is unaffected.
+- name: clipboard.readCrossOriginCustomFormats.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "consoleservice."
 #---------------------------------------------------------------------------

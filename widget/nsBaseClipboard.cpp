@@ -139,9 +139,9 @@ class UserConfirmationRequest final
       MOZ_ASSERT(request);
       MOZ_ASSERT(!request->mFlavorList.IsEmpty());
       MOZ_ASSERT(request->mCallback);
-      mClipboard->GetDataSnapshotInternal(request->mFlavorList, mClipboardType,
-                                          mRequestingWindowContext,
-                                          request->mCallback);
+      mClipboard->GetDataSnapshotInternal(
+          request->mFlavorList, mClipboardType, mRequestingWindowContext,
+          mRequestingPrincipal, request->mCallback);
     }
   }
 
@@ -754,7 +754,8 @@ NS_IMETHODIMP nsBaseClipboard::GetDataIfSmallerThanNative(
 void nsBaseClipboard::MaybeRetryGetAvailableFlavors(
     const nsTArray<nsCString>& aFlavorList, ClipboardType aWhichClipboard,
     nsIClipboardGetDataSnapshotCallback* aCallback, int32_t aRetryCount,
-    mozilla::dom::WindowContext* aRequestingWindowContext) {
+    mozilla::dom::WindowContext* aRequestingWindowContext,
+    nsIPrincipal* aRequestingPrincipal) {
   MOZ_CLIPBOARD_LOG("%s: clipboard=%d", __FUNCTION__, aWhichClipboard);
   if (MOZ_CLIPBOARD_LOG_ENABLED()) {
     MOZ_CLIPBOARD_LOG("    Asking for content:");
@@ -780,8 +781,9 @@ void nsBaseClipboard::MaybeRetryGetAvailableFlavors(
       aFlavorList, aWhichClipboard,
       [self = RefPtr{this}, callback = nsCOMPtr{aCallback}, aWhichClipboard,
        aRetryCount, flavorList = aFlavorList.Clone(), sequenceNumber,
-       requestingWindowContext =
-           RefPtr{aRequestingWindowContext}](auto aFlavorsOrError) {
+       requestingWindowContext = RefPtr{aRequestingWindowContext},
+       requestingPrincipal =
+           nsCOMPtr{aRequestingPrincipal}](auto aFlavorsOrError) {
         if (aFlavorsOrError.isErr()) {
           MOZ_CLIPBOARD_LOG(
               "%s: unable to get available flavors for clipboard %d.",
@@ -802,6 +804,13 @@ void nsBaseClipboard::MaybeRetryGetAvailableFlavors(
 
         if (sequenceNumber == sequenceNumberOrError.unwrap()) {
           auto flavorList = std::move(aFlavorsOrError.unwrap());
+          if (!self->CanReadWebCustomFormats(aWhichClipboard,
+                                             requestingPrincipal)) {
+            flavorList.RemoveElementsBy([](const nsCString& aFlavor) {
+              return StringBeginsWith(aFlavor,
+                                      nsLiteralCString(kWebCustomFormatPrefix));
+            });
+          }
           if (MOZ_CLIPBOARD_LOG_ENABLED()) {
             for (const auto& flavor : flavorList) {
               MOZ_CLIPBOARD_LOG("    has %s", flavor.get());
@@ -821,9 +830,9 @@ void nsBaseClipboard::MaybeRetryGetAvailableFlavors(
               "%s: clipboard=%d, ignore the data due to the sequence number "
               "doesn't match, retry (%d) ..",
               __FUNCTION__, aWhichClipboard, aRetryCount);
-          self->MaybeRetryGetAvailableFlavors(flavorList, aWhichClipboard,
-                                              callback, aRetryCount - 1,
-                                              requestingWindowContext);
+          self->MaybeRetryGetAvailableFlavors(
+              flavorList, aWhichClipboard, callback, aRetryCount - 1,
+              requestingWindowContext, requestingPrincipal);
           return;
         }
 
@@ -856,7 +865,8 @@ NS_IMETHODIMP nsBaseClipboard::GetDataSnapshot(
       nsContentUtils::PrincipalHasPermission(*aRequestingPrincipal,
                                              nsGkAtoms::clipboardRead)) {
     GetDataSnapshotInternal(aFlavorList, aWhichClipboard,
-                            aRequestingWindowContext, aCallback);
+                            aRequestingWindowContext, aRequestingPrincipal,
+                            aCallback);
     return NS_OK;
   }
 
@@ -871,7 +881,8 @@ NS_IMETHODIMP nsBaseClipboard::GetDataSnapshot(
         MOZ_CLIPBOARD_LOG("%s: native clipboard data is from same-origin page.",
                           __FUNCTION__);
         GetDataSnapshotInternal(aFlavorList, aWhichClipboard,
-                                aRequestingWindowContext, aCallback);
+                                aRequestingWindowContext, aRequestingPrincipal,
+                                aCallback);
         return NS_OK;
       }
     }
@@ -886,7 +897,8 @@ NS_IMETHODIMP nsBaseClipboard::GetDataSnapshot(
 already_AddRefed<nsIClipboardDataSnapshot>
 nsBaseClipboard::MaybeCreateGetRequestFromClipboardCache(
     const nsTArray<nsCString>& aFlavorList, ClipboardType aClipboardType,
-    mozilla::dom::WindowContext* aRequestingWindowContext) {
+    mozilla::dom::WindowContext* aRequestingWindowContext,
+    nsIPrincipal* aRequestingPrincipal) {
   MOZ_DIAGNOSTIC_ASSERT(nsIClipboard::IsClipboardTypeSupported(aClipboardType));
 
   if (!mozilla::StaticPrefs::widget_clipboard_use_cached_data_enabled()) {
@@ -910,9 +922,12 @@ nsBaseClipboard::MaybeCreateGetRequestFromClipboardCache(
     return nullptr;
   }
 
+  const bool canReadCustomFormats =
+      CanReadWebCustomFormats(aClipboardType, aRequestingPrincipal);
   nsTArray<nsCString> results;
   for (const auto& flavor : aFlavorList) {
-    bool addCustomFormats = flavor.EqualsLiteral(kWebCustomFormatMapType);
+    bool addCustomFormats =
+        canReadCustomFormats && flavor.EqualsLiteral(kWebCustomFormatMapType);
 
     for (const auto& transferableFlavor : transferableFlavors) {
       // Don't expose invalid flavor.
@@ -954,12 +969,14 @@ nsBaseClipboard::MaybeCreateGetRequestFromClipboardCache(
 void nsBaseClipboard::GetDataSnapshotInternal(
     const nsTArray<nsCString>& aFlavorList, ClipboardType aClipboardType,
     mozilla::dom::WindowContext* aRequestingWindowContext,
+    nsIPrincipal* aRequestingPrincipal,
     nsIClipboardGetDataSnapshotCallback* aCallback) {
   MOZ_ASSERT(nsIClipboard::IsClipboardTypeSupported(aClipboardType));
 
   if (nsCOMPtr<nsIClipboardDataSnapshot> clipboardDataSnapshot =
           MaybeCreateGetRequestFromClipboardCache(aFlavorList, aClipboardType,
-                                                  aRequestingWindowContext)) {
+                                                  aRequestingWindowContext,
+                                                  aRequestingPrincipal)) {
     aCallback->OnSuccess(clipboardDataSnapshot);
     return;
   }
@@ -968,7 +985,7 @@ void nsBaseClipboard::GetDataSnapshotInternal(
   // look for things other people put on the system clipboard.
   MaybeRetryGetAvailableFlavors(aFlavorList, aClipboardType, aCallback,
                                 kGetAvailableFlavorsRetryCount,
-                                aRequestingWindowContext);
+                                aRequestingWindowContext, aRequestingPrincipal);
 }
 
 NS_IMETHODIMP nsBaseClipboard::GetDataSnapshotSync(
@@ -989,9 +1006,14 @@ NS_IMETHODIMP nsBaseClipboard::GetDataSnapshotSync(
     return NS_ERROR_FAILURE;
   }
 
+  nsCOMPtr<nsIPrincipal> requestingPrincipal =
+      aRequestingWindowContext
+          ? aRequestingWindowContext->Canonical()->DocumentPrincipal()
+          : nullptr;
   if (nsCOMPtr<nsIClipboardDataSnapshot> clipboardDataSnapshot =
           MaybeCreateGetRequestFromClipboardCache(aFlavorList, aWhichClipboard,
-                                                  aRequestingWindowContext)) {
+                                                  aRequestingWindowContext,
+                                                  requestingPrincipal)) {
     clipboardDataSnapshot.forget(_retval);
     return NS_OK;
   }
@@ -1007,7 +1029,10 @@ NS_IMETHODIMP nsBaseClipboard::GetDataSnapshotSync(
   nsTArray<nsCString> results;
   for (const auto& flavor : aFlavorList) {
     if (flavor.EqualsLiteral(kWebCustomFormatMapType)) {
-      results.AppendElements(GetWebCustomFormatsFromClipboard(aWhichClipboard));
+      if (CanReadWebCustomFormats(aWhichClipboard, requestingPrincipal)) {
+        results.AppendElements(
+            GetWebCustomFormatsFromClipboard(aWhichClipboard));
+      }
       continue;
     }
     MOZ_CLIPBOARD_LOG("%s: Asking for MIME %s", __FUNCTION__, flavor.get());
@@ -1805,6 +1830,32 @@ nsBaseClipboard::ClipboardCache* nsBaseClipboard::GetClipboardCacheIfValid(
   }
 
   return cache.get();
+}
+
+bool nsBaseClipboard::CanReadWebCustomFormats(
+    ClipboardType aClipboardType, nsIPrincipal* aRequestingPrincipal) {
+  const bool allowCrossOrigin =
+      mozilla::StaticPrefs::clipboard_readCrossOriginCustomFormats_enabled();
+
+  // Data not written by us has no data principal, so it is cross-origin.
+  const auto* clipboardCache = GetClipboardCacheIfValid(aClipboardType);
+  if (!clipboardCache) {
+    return allowCrossOrigin &&
+           mozilla::StaticPrefs::
+               clipboard_readCustomFormatsFromClipboard_enabled();
+  }
+
+  if (allowCrossOrigin) {
+    return true;
+  }
+
+  if (!aRequestingPrincipal) {
+    return false;
+  }
+
+  nsCOMPtr<nsIPrincipal> dataPrincipal =
+      clipboardCache->GetTransferable()->GetDataPrincipal();
+  return dataPrincipal && aRequestingPrincipal->Subsumes(dataPrincipal);
 }
 
 void nsBaseClipboard::ClipboardCache::Clear() {

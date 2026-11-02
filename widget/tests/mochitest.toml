@@ -4,6 +4,7 @@ tags = "os_integration"
 prefs = [
   "dom.clipboard.customFormatSupport.enabled=true",
   "clipboard.readCustomFormatsFromClipboard.enabled=true",
+  "clipboard.readCrossOriginCustomFormats.enabled=true",
 ]
 
 ["test_AltGr_key_events_in_web_content_on_windows.html"]

@@ -84,6 +84,7 @@ class nsBaseClipboard : public nsIClipboard {
       const nsTArray<nsCString>& aFlavorList,
       nsIClipboard::ClipboardType aClipboardType,
       mozilla::dom::WindowContext* aRequestingWindowContext,
+      nsIPrincipal* aRequestingPrincipal,
       nsIClipboardGetDataSnapshotCallback* aCallback);
 
   using SetDataCompletion = mozilla::MoveOnlyFunction<void(nsresult)>;
@@ -343,11 +344,19 @@ class nsBaseClipboard : public nsIClipboard {
       const nsTArray<nsCString>& aFlavorList,
       nsIClipboard::ClipboardType aWhichClipboard,
       nsIClipboardGetDataSnapshotCallback* aCallback, int32_t aRetryCount,
-      mozilla::dom::WindowContext* aRequestingWindowContext);
+      mozilla::dom::WindowContext* aRequestingWindowContext,
+      nsIPrincipal* aRequestingPrincipal);
 
   // Return clipboard cache if the cached data is valid, otherwise clear the
   // cached data and returns null.
   ClipboardCache* GetClipboardCacheIfValid(ClipboardType aClipboardType);
+
+  // Return whether aRequestingPrincipal is allowed to see the web custom
+  // formats currently on the clipboard, see
+  // clipboard.readCrossOriginCustomFormats.enabled and
+  // clipboard.readCustomFormatsFromClipboard.enabled.
+  bool CanReadWebCustomFormats(ClipboardType aClipboardType,
+                               nsIPrincipal* aRequestingPrincipal);
 
   mozilla::Result<nsTArray<nsCString>, nsresult> GetFlavorsFromClipboardCache(
       ClipboardType aClipboardType);
@@ -362,7 +371,8 @@ class nsBaseClipboard : public nsIClipboard {
   already_AddRefed<nsIClipboardDataSnapshot>
   MaybeCreateGetRequestFromClipboardCache(
       const nsTArray<nsCString>& aFlavorList, ClipboardType aClipboardType,
-      mozilla::dom::WindowContext* aRequestingWindowContext);
+      mozilla::dom::WindowContext* aRequestingWindowContext,
+      nsIPrincipal* aRequestingPrincipal);
 
   // Clean up data in transferable for posting to clipboard or dragging.  This
   // guarantees that text data does not include NUL characters.

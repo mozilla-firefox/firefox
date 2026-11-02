@@ -101,6 +101,11 @@ skip-if = [
   "headless", # bug 1989339
 ]
 
+["browser_navigator_clipboard_read_custom_format_origin.js"]
+skip-if = [
+  "headless", # HeadlessClipboard does not support web custom formats
+]
+
 ["browser_navigator_clipboard_read_ext.js"]
 support-files = ["simple_page_ext.html"]
 skip-if = [
