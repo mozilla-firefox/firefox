@@ -46,35 +46,25 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=483573
       // ////////////////////////////////////////////////////////////////////////
       // test actions of audio controls
 
-      todo(false, "Focus test are disabled until bug 494175 is fixed.");
-
       var audioElm = getAccessible("audio");
       var playBtn = audioElm.firstChild;
-      // var scrubber = playBtn.nextSibling.nextSibling.nextSibling;
       var muteBtn = audioElm.lastChild.previousSibling;
 
       await testAction({
         id: muteBtn,
         actionName: "press",
         eventSeq: [
-     //     [EVENT_FOCUS, muteBtn, () => testStates(muteBtn, STATE_FOCUSED)],
+          [EVENT_FOCUS, muteBtn, () => testStates(muteBtn, STATE_FOCUSED)],
           [EVENT_NAME_CHANGE, muteBtn,
            evt => is(evt.accessible.name, "Unmute",
                      "Wrong name of " + prettyName(evt.accessible) + " on focus")],
         ],
       });
-     //   {
-     //     id: scrubber,
-     //     actionName: "activate",
-     //     eventSeq: [
-     //       [EVENT_FOCUS, scrubber, () => testStates(scrubber, STATE_FOCUSED)]
-     //     ]
-     //   },
       await testAction({
         id: playBtn,
         actionName: "press",
         eventSeq: [
-     //     [EVENT_FOCUS, playBtn, () => testStates(playBtn, STATE_FOCUSED)],
+          [EVENT_FOCUS, playBtn, () => testStates(playBtn, STATE_FOCUSED)],
           [EVENT_NAME_CHANGE, playBtn,
            evt => is(evt.accessible.name, "Pause",
                      "Wrong name of " + prettyName(evt.accessible) + " on focus")],
