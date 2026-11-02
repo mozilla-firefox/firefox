@@ -1,11 +1,26 @@
 "use strict";
 
-const server = createHttpServer({ hosts: ["example.com"] });
+let TEST_URL;
+let TEST_URL_PATTERN;
+let ORIGINAL_JS_URL;
+let REDIRECT_JS_URL;
 
-server.registerPathHandler("/", (request, response) => {
-  response.setStatusLine(request.httpVersion, 200, "OK");
-  response.setHeader("Content-Type", "text/html", false);
-  const body = `
+add_setup(async function () {
+  const { NodeHTTPSServer } = ChromeUtils.importESModule(
+    "resource://testing-common/NodeServer.sys.mjs"
+  );
+
+  const server = new NodeHTTPSServer();
+  await server.start();
+
+  registerCleanupFunction(async function () {
+    await server.stop();
+  });
+
+  await server.registerPathHandler("/", (req, res) => {
+    res.setHeader("Content-Type", "text/html");
+    res.writeHead(200);
+    const body = `
 <!DOCTYPE html>
 <html>
   <head>
@@ -18,37 +33,42 @@ server.registerPathHandler("/", (request, response) => {
   </body>
 </html>
 `;
-  response.bodyOutputStream.write(body, body.length);
-});
+    res.end(body);
+  });
 
-server.registerPathHandler("/original.js", (request, response) => {
-  response.setStatusLine(request.httpVersion, 200, "OK");
-  response.setHeader("Content-Type", "text/javascript", false);
-  response.setHeader("Cache-Control", "max-age=10000", false);
-  const body = `
+  await server.registerPathHandler("/original.js", (req, res) => {
+    res.setHeader("Content-Type", "text/javascript");
+    res.setHeader("Cache-Control", "max-age=10000");
+    res.writeHead(200);
+    const body = `
 document.body.append("original.js loaded");
 `;
-  response.bodyOutputStream.write(body, body.length);
-});
+    res.end(body);
+  });
 
-server.registerPathHandler("/redirected.js", (request, response) => {
-  response.setStatusLine(request.httpVersion, 200, "OK");
-  response.setHeader("Content-Type", "text/javascript", false);
-  response.setHeader("Cache-Control", "max-age=10000", false);
-  const body = `
+  await server.registerPathHandler("/redirected.js", (req, res) => {
+    res.setHeader("Content-Type", "text/javascript");
+    res.setHeader("Cache-Control", "max-age=10000");
+    res.writeHead(200);
+    const body = `
 document.body.append("redirected.js loaded");
 `;
-  response.bodyOutputStream.write(body, body.length);
-});
+    res.end(body);
+  });
 
-Services.prefs.setBoolPref("dom.expose_test_interfaces", true);
-registerCleanupFunction(function () {
-  Services.prefs.clearUserPref("dom.expose_test_interfaces");
-});
+  TEST_URL = server.origin() + "/";
 
-const TEST_URL = "http://example.com/";
-const ORIGINAL_JS_URL = "http://example.com/original.js";
-const REDIRECT_JS_URL = "http://example.com/redirected.js";
+  // Replace port to work around bug 1468162.
+  TEST_URL_PATTERN = TEST_URL.replace(/:[0-9]+\//, "/") + "*";
+
+  ORIGINAL_JS_URL = TEST_URL + "original.js";
+  REDIRECT_JS_URL = TEST_URL + "redirected.js";
+
+  Services.prefs.setBoolPref("dom.expose_test_interfaces", true);
+  registerCleanupFunction(function () {
+    Services.prefs.clearUserPref("dom.expose_test_interfaces");
+  });
+});
 
 add_task(
   {
@@ -172,7 +192,7 @@ async function testStaticRuleset(expectInvalidation) {
     manifest: {
       manifest_version: 3,
       permissions: ["declarativeNetRequest"],
-      host_permissions: ["http://example.com/*"],
+      host_permissions: [TEST_URL_PATTERN],
       declarative_net_request: {
         rule_resources: [
           {
@@ -251,7 +271,7 @@ async function testStaticRule(expectInvalidation) {
     manifest: {
       manifest_version: 3,
       permissions: ["declarativeNetRequest"],
-      host_permissions: ["http://example.com/*"],
+      host_permissions: [TEST_URL_PATTERN],
       declarative_net_request: {
         rule_resources: [
           {
@@ -334,11 +354,14 @@ async function testDynamicRule(expectInvalidation) {
     manifest: {
       manifest_version: 3,
       permissions: ["declarativeNetRequest"],
-      host_permissions: ["http://example.com/*"],
+      host_permissions: [TEST_URL_PATTERN],
+      description: TEST_URL,
     },
     background() {
-      const ORIGINAL_JS_URL = "http://example.com/original.js";
-      const REDIRECT_JS_URL = "http://example.com/redirected.js";
+      const TEST_URL = browser.runtime.getManifest().description;
+      const ORIGINAL_JS_URL = TEST_URL + "original.js";
+      const REDIRECT_JS_URL = TEST_URL + "redirected.js";
+
       browser.test.onMessage.addListener(async msg => {
         if (msg === "test:wait-ready") {
           browser.test.sendMessage("test:wait-ready:done");
@@ -414,11 +437,14 @@ async function testSessionRule(expectInvalidation) {
     manifest: {
       manifest_version: 3,
       permissions: ["declarativeNetRequest"],
-      host_permissions: ["http://example.com/*"],
+      host_permissions: [TEST_URL_PATTERN],
+      description: TEST_URL,
     },
     background() {
-      const ORIGINAL_JS_URL = "http://example.com/original.js";
-      const REDIRECT_JS_URL = "http://example.com/redirected.js";
+      const TEST_URL = browser.runtime.getManifest().description;
+      const ORIGINAL_JS_URL = TEST_URL + "original.js";
+      const REDIRECT_JS_URL = TEST_URL + "redirected.js";
+
       browser.test.onMessage.addListener(async msg => {
         if (msg === "test:wait-ready") {
           browser.test.sendMessage("test:wait-ready:done");
@@ -494,7 +520,7 @@ async function testNoRule(expectInvalidation) {
     manifest: {
       manifest_version: 3,
       permissions: ["declarativeNetRequest"],
-      host_permissions: ["http://example.com/*"],
+      host_permissions: [TEST_URL_PATTERN],
     },
     background() {
       browser.test.onMessage.addListener(async msg => {
