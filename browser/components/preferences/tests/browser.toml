@@ -70,6 +70,14 @@ run-if = ["os == 'mac'"]
 
 ["browser_privacy_trustPanelBreachAlerts.js"]
 
+["browser_reorderable_list_accessible_names_containers.js"]
+
+["browser_reorderable_list_accessible_names_homepage.js"]
+
+["browser_reorderable_list_accessible_names_languages.js"]
+
+["browser_reorderable_list_accessible_names_search.js"]
+
 ["browser_sessionRestoreNewTab.js"]
 
 ["browser_setting_pane_focus_restoration.js"]

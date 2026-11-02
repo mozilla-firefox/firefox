@@ -114,6 +114,40 @@ async function assertBoxGroupHasListboxAccessibleName(boxGroup) {
   await assertAccessibleRoleAndName(listbox, Ci.nsIAccessibleRole.ROLE_LISTBOX);
 }
 
+async function assertReorderableListAccessibleName(boxGroup) {
+  Assert.ok(boxGroup, "Production box group exists");
+  Assert.ok(
+    BrowserTestUtils.isVisible(boxGroup),
+    "Production box group is visible"
+  );
+
+  await boxGroup.updateComplete;
+  Assert.equal(boxGroup.type, "reorderable-list", "Group is reorderable");
+  await boxGroup.reorderableList.updateComplete;
+
+  let list = boxGroup.shadowRoot.querySelector("ol");
+  Assert.ok(list, "Production group renders an inner ordered list");
+  Assert.ok(BrowserTestUtils.isVisible(list), "Inner list is visible");
+
+  let accService = Cc["@mozilla.org/accessibilityService;1"].getService(
+    Ci.nsIAccessibilityService
+  );
+  let accessible;
+  await TestUtils.waitForCondition(() => {
+    accessible = accService.getAccessibleFor(list);
+    return !!accessible;
+  }, `${boxGroup.id}: list accessible exists`);
+
+  Assert.ok(
+    list.getAttribute("aria-label")?.trim(),
+    `${boxGroup.id}: inner list has a nonempty aria-label`
+  );
+  Assert.ok(
+    accessible.name?.trim(),
+    `${boxGroup.id}: accessible has a nonempty name`
+  );
+}
+
 /**
  * Opens a fresh preferences tab at the given pane and waits for it to
  * fully initialize before returning. Pre-registers the "Initialized" listener
