@@ -1513,6 +1513,11 @@ void ContentClassifierService::ProcessListChanges(
       uint64_t& v = mFeatureVersions.LookupOrInsert(feature->mName);
       featureVersions.AppendElement(++v);
     }
+
+    // Let the engines that are already built follow the new prefs right away,
+    // as url-classifier applies a pref change to the next classification. The
+    // rebuild below refreshes the lists again once its fetches settle.
+    PopulateAllActiveEnginesFromPreferenceSnapshot(snapshot);
   }
 
   UpdateFeatures(std::move(toUpdate), std::move(featureVersions), generation,
