@@ -63,10 +63,9 @@ StorageAccessPermissionRequest::Allow(JS::Handle<JS::Value> aChoices) {
   return NS_OK;
 }
 
-NS_IMETHODIMP
-StorageAccessPermissionRequest::GetTypes(nsIArray** aTypes) {
-  return nsContentPermissionUtils::CreatePermissionArray(mType, mOptions,
-                                                         aTypes);
+void StorageAccessPermissionRequest::GetPermissionOptions(
+    nsTArray<nsString>& aOptions) const {
+  aOptions.AppendElements(mOptions);
 }
 
 RefPtr<StorageAccessPermissionRequest::AutoGrantDelayPromise>

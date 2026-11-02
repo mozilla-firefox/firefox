@@ -48,19 +48,14 @@ MIDIPermissionRequest::MIDIPermissionRequest(nsPIDOMWindowInner* aWindow,
   MOZ_ASSERT(mPrincipal);
 }
 
-NS_IMETHODIMP
-MIDIPermissionRequest::GetTypes(nsIArray** aTypes) {
-  NS_ENSURE_ARG_POINTER(aTypes);
-  nsTArray<nsString> options;
-
+void MIDIPermissionRequest::GetPermissionOptions(
+    nsTArray<nsString>& options) const {
   // The previous implementation made no differences between midi and
   // midi-sysex. The check on the SitePermsAddonProvider pref should be removed
   // at the same time as the old implementation.
   if (mNeedsSysex || !StaticPrefs::dom_sitepermsaddon_provider_enabled()) {
     options.AppendElement(u"sysex"_ns);
   }
-  return nsContentPermissionUtils::CreatePermissionArray(mType, options,
-                                                         aTypes);
 }
 
 NS_IMETHODIMP

@@ -74,7 +74,7 @@ class nsGeolocationRequest final : public ContentPermissionRequestBase,
   // nsIContentPermissionRequest
   MOZ_CAN_RUN_SCRIPT NS_IMETHOD Cancel(void) override;
   MOZ_CAN_RUN_SCRIPT NS_IMETHOD Allow(JS::Handle<JS::Value> choices) override;
-  NS_IMETHOD GetTypes(nsIArray** aTypes) override;
+  void GetPermissionOptions(nsTArray<nsString>& aOptions) const override;
 
   void Shutdown();
 
@@ -90,8 +90,6 @@ class nsGeolocationRequest final : public ContentPermissionRequestBase,
   void StopTimeoutTimer();
   MOZ_CAN_RUN_SCRIPT
   void NotifyErrorAndShutdown(uint16_t);
-  using ContentPermissionRequestBase::GetPrincipal;
-  nsIPrincipal* GetPrincipal();
 
   bool IsWatch() { return mIsWatchPositionRequest; }
   int32_t WatchId() { return mWatchId; }
@@ -618,13 +616,6 @@ void nsGeolocationRequest::SendLocation(nsIDOMGeoPosition* aPosition) {
              "non-shutdown getCurrentPosition request after callback!");
 }
 
-nsIPrincipal* nsGeolocationRequest::GetPrincipal() {
-  if (!mLocator) {
-    return nullptr;
-  }
-  return mLocator->GetPrincipal();
-}
-
 NS_IMETHODIMP
 nsGeolocationRequest::Update(nsIDOMGeoPosition* aPosition) {
   if (!mSeenAnySignal) {
@@ -688,22 +679,18 @@ void nsGeolocationRequest::Shutdown() {
   }
 }
 
-NS_IMETHODIMP
-nsGeolocationRequest::GetTypes(nsIArray** aTypes) {
-  AutoTArray<nsString, 2> options;
-
+void nsGeolocationRequest::GetPermissionOptions(
+    nsTArray<nsString>& aOptions) const {
   switch (mBehavior) {
     case SystemGeolocationPermissionBehavior::SystemWillPromptUser:
-      options.AppendElement(u"sysdlg"_ns);
+      aOptions.AppendElement(u"sysdlg"_ns);
       break;
     case SystemGeolocationPermissionBehavior::GeckoWillPromptUser:
-      options.AppendElement(u"syssetting"_ns);
+      aOptions.AppendElement(u"syssetting"_ns);
       break;
     default:
       break;
   }
-  return nsContentPermissionUtils::CreatePermissionArray(mType, options,
-                                                         aTypes);
 }
 
 ////////////////////////////////////////////////////

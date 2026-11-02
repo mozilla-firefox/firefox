@@ -32,15 +32,24 @@ NS_IMPL_ISUPPORTS(SerialPermissionRequest, nsIContentPermissionRequest)
 SerialPermissionRequest::SerialPermissionRequest(
     WindowGlobalParent* aWindowGlobalParent, bool aAutoselect,
     nsTArray<IPCSerialPortInfo>&& aPorts)
-    : mWindowGlobalParent(aWindowGlobalParent),
+    : ContentPermissionRequestBaseNoWindow(
+          aWindowGlobalParent->DocumentPrincipal(),
+          aWindowGlobalParent->TopWindowContext()->DocumentPrincipal(),
+          "serial"_ns,
+          // The content process already rejects requestPort() without transient
+          // user activation (Serial::RequestPort step 3), so the parent-side
+          // request can report true without re-querying WindowContext (whose
+          // transient- activation state is only tracked in-process and would
+          // assert here).
+          true,
+          // The parent process does not have a permission delegate handler
+          // available (that lives on the document) so we conservatively report
+          // false.
+          false),
+      mWindowGlobalParent(aWindowGlobalParent),
       mAutoselect(aAutoselect),
       mPorts(std::move(aPorts)) {
-  MOZ_ASSERT(mWindowGlobalParent);
   MOZ_ASSERT(mWindowGlobalParent->DocumentPrincipal());
-}
-
-nsIPrincipal* SerialPermissionRequest::Principal() const {
-  return mWindowGlobalParent->DocumentPrincipal();
 }
 
 SerialPermissionRequest::~SerialPermissionRequest() {
@@ -146,20 +155,17 @@ void SerialPermissionRequest::ResolveCancelled(RequestPortReason aReason) {
   mPromiseHolder.RejectIfExists(aReason, __func__);
 }
 
-NS_IMETHODIMP
-SerialPermissionRequest::GetTypes(nsIArray** aTypes) {
-  NS_ENSURE_ARG_POINTER(aTypes);
-
-  MOZ_LOG(gWebSerialLog, LogLevel::Info,
-          ("SerialPermissionRequest::GetTypes called with %zu ports",
-           mPorts.Length()));
-
-  nsTArray<nsString> options;
+void SerialPermissionRequest::GetPermissionOptions(
+    nsTArray<nsString>& aOptions) const {
+  MOZ_LOG(
+      gWebSerialLog, LogLevel::Info,
+      ("SerialPermissionRequest::GetPermissionOptions called with %zu ports",
+       mPorts.Length()));
 
   // Pass the autoselect flag to the JS UI so that it can auto-confirm the
   // chooser when testing+gated is in use.
   if (mAutoselect && StaticPrefs::dom_webserial_testing_enabled()) {
-    options.AppendElement(u"{\"__autoselect__\":true}"_ns);
+    aOptions.AppendElement(u"{\"__autoselect__\":true}"_ns);
   }
 
   size_t index = 0;
@@ -186,38 +192,9 @@ SerialPermissionRequest::GetTypes(nsIArray** aTypes) {
 
     nsString utf16Json;
     CopyUTF8toUTF16(utf8Json, utf16Json);
-    options.AppendElement(std::move(utf16Json));
+    aOptions.AppendElement(std::move(utf16Json));
     ++index;
   }
-
-  return nsContentPermissionUtils::CreatePermissionArray("serial"_ns, options,
-                                                         aTypes);
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetPrincipal(nsIPrincipal** aPrincipal) {
-  NS_IF_ADDREF(*aPrincipal = Principal());
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetTopLevelPrincipal(nsIPrincipal** aPrincipal) {
-  NS_IF_ADDREF(*aPrincipal = mWindowGlobalParent->TopWindowContext()
-                                 ->DocumentPrincipal());
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetDelegatePrincipal(const nsACString& aType,
-                                              nsIPrincipal** aPrincipal) {
-  return PermissionDelegateHandler::GetDelegatePrincipal(aType, this,
-                                                         aPrincipal);
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetWindow(mozIDOMWindow** aWindow) {
-  *aWindow = nullptr;
-  return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -227,33 +204,6 @@ SerialPermissionRequest::GetElement(Element** aElement) {
   element.forget(aElement);
   return NS_OK;
 }
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetHasValidTransientUserGestureActivation(bool* aOut) {
-  // The content process already rejects requestPort() without transient
-  // user activation (Serial::RequestPort step 3), so the parent-side request
-  // can report true without re-querying WindowContext (whose transient-
-  // activation state is only tracked in-process and would assert here).
-  *aOut = true;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetIsRequestDelegatedToUnsafeThirdParty(bool* aOut) {
-  // The parent process does not have a permission delegate handler available
-  // (that lives on the document) so we conservatively report false.
-  *aOut = false;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::GetIgnoreAllowSitePermission(bool* aOut) {
-  *aOut = false;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-SerialPermissionRequest::NotifyShown() { return NS_OK; }
 
 NS_IMETHODIMP
 SerialPermissionRequest::Cancel() {

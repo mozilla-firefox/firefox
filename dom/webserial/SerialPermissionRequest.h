@@ -9,7 +9,7 @@
 #include "mozilla/dom/SerialPortIPCTypes.h"
 #include "mozilla/dom/SerialTypes.h"
 #include "nsCOMPtr.h"
-#include "nsIContentPermissionPrompt.h"
+#include "nsContentPermissionHelper.h"
 #include "nsITimer.h"
 
 class nsIPrincipal;
@@ -32,14 +32,18 @@ using SerialChooserPromise =
 //
 // On user grant the request resolves its chooser promise with the picked
 // port; on cancel/error it rejects with a RequestPortReason.
-class SerialPermissionRequest final : public nsIContentPermissionRequest {
+class SerialPermissionRequest final
+    : public ContentPermissionRequestBaseNoWindow {
  public:
   SerialPermissionRequest(WindowGlobalParent* aWindowGlobalParent,
                           bool aAutoselect,
                           nsTArray<IPCSerialPortInfo>&& aPorts);
 
   NS_DECL_ISUPPORTS
-  NS_DECL_NSICONTENTPERMISSIONREQUEST
+  NS_IMETHOD GetElement(mozilla::dom::Element** aElement) override;
+  void GetPermissionOptions(nsTArray<nsString>& aOptions) const override;
+  MOZ_CAN_RUN_SCRIPT NS_IMETHOD Cancel() override;
+  MOZ_CAN_RUN_SCRIPT NS_IMETHOD Allow(JS::Handle<JS::Value> choices) override;
 
   // Begin the request: runs sitepermsaddon checks, then either auto-resolves
   // or invokes nsContentPermissionUtils::AskPermission to show the chooser.
@@ -49,7 +53,6 @@ class SerialPermissionRequest final : public nsIContentPermissionRequest {
  private:
   ~SerialPermissionRequest();
 
-  nsIPrincipal* Principal() const;
   bool IsSitePermAllow() const;
   bool IsSitePermDeny() const;
   bool ShouldShowAddonGate() const;

@@ -13,6 +13,7 @@
 #include "nsIContentPermissionPrompt.h"
 #include "nsIPrincipal.h"
 #include "nsPIDOMWindow.h"
+#include "nsStringFwd.h"
 #include "nsTArray.h"
 
 // Microsoft's API Name hackery sucks
@@ -93,26 +94,70 @@ nsresult TranslateChoices(
     const nsTArray<PermissionRequest>& aPermissionRequests,
     nsTArray<PermissionChoice>& aTranslatedChoices);
 
-class ContentPermissionRequestBase : public nsIContentPermissionRequest {
+class ContentPermissionRequestBaseNoWindow
+    : public nsIContentPermissionRequest {
+ public:
+  ContentPermissionRequestBaseNoWindow(
+      nsIPrincipal* aPrincipal, nsIPrincipal* aTopLevelPrincipal,
+      const nsACString& aType, bool aHasValidTransientUserGestureActivation,
+      bool aIsRequestDelegatedToUnsafeThirdParty)
+      : mPrincipal(aPrincipal),
+        mTopLevelPrincipal(aTopLevelPrincipal),
+        mType(aType),
+        mHasValidTransientUserGestureActivation(
+            aHasValidTransientUserGestureActivation),
+        mIsRequestDelegatedToUnsafeThirdParty(
+            aIsRequestDelegatedToUnsafeThirdParty) {}
+
+  NS_IMETHOD GetTypes(nsIArray** aTypes) final;
+  virtual void GetPermissionOptions(nsTArray<nsString>& aOptions) const {}
+
+  NS_IMETHOD GetPrincipal(nsIPrincipal** aPrincipal) final;
+  nsIPrincipal* Principal() const { return mPrincipal; }
+  NS_IMETHOD GetDelegatePrincipal(const nsACString& aType,
+                                  nsIPrincipal** aPrincipal) final;
+  NS_IMETHOD GetTopLevelPrincipal(nsIPrincipal** aTopLevelPrincipal) final;
+  NS_IMETHOD GetWindow(mozIDOMWindow** aWindow) override {
+    *aWindow = nullptr;
+    return NS_OK;
+  }
+  NS_IMETHOD GetElement(mozilla::dom::Element** aElement) override {
+    *aElement = nullptr;
+    return NS_OK;
+  }
+  NS_IMETHOD GetHasValidTransientUserGestureActivation(
+      bool* aHasValidTransientUserGestureActivation) final;
+  NS_IMETHOD GetIsRequestDelegatedToUnsafeThirdParty(
+      bool* aIsRequestDelegatedToUnsafeThirdParty) final;
+  NS_IMETHOD GetIgnoreAllowSitePermission(
+      bool* aIgnoreAllowSitePermission) override;
+  NS_IMETHOD NotifyShown(void) override { return NS_OK; }
+  // Overrides for Allow() and Cancel() aren't provided by this class.
+  // That is the responsibility of the subclasses.
+
+ protected:
+  virtual ~ContentPermissionRequestBaseNoWindow() = default;
+
+  nsCOMPtr<nsIPrincipal> mPrincipal;
+
+  nsCOMPtr<nsIPrincipal> mTopLevelPrincipal;
+
+  // The type of the request, such as "autoplay-media-audible".
+  const nsCString mType;
+
+  bool mHasValidTransientUserGestureActivation;
+
+  // See nsIPermissionDelegateHandler.maybeUnsafePermissionDelegate`.
+  bool mIsRequestDelegatedToUnsafeThirdParty;
+};
+
+class ContentPermissionRequestBase
+    : public ContentPermissionRequestBaseNoWindow {
  public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_CLASS(ContentPermissionRequestBase)
 
-  NS_IMETHOD GetTypes(nsIArray** aTypes) override;
-  NS_IMETHOD GetPrincipal(nsIPrincipal** aPrincipal) override;
-  NS_IMETHOD GetDelegatePrincipal(const nsACString& aType,
-                                  nsIPrincipal** aPrincipal) override;
-  NS_IMETHOD GetTopLevelPrincipal(nsIPrincipal** aTopLevelPrincipal) override;
   NS_IMETHOD GetWindow(mozIDOMWindow** aWindow) override;
-  NS_IMETHOD GetElement(mozilla::dom::Element** aElement) override;
-  NS_IMETHOD GetHasValidTransientUserGestureActivation(
-      bool* aHasValidTransientUserGestureActivation) override;
-  NS_IMETHOD GetIsRequestDelegatedToUnsafeThirdParty(
-      bool* aIsRequestDelegatedToUnsafeThirdParty) override;
-  NS_IMETHOD GetIgnoreAllowSitePermission(
-      bool* aIgnoreAllowSitePermission) override;
-
-  NS_IMETHOD NotifyShown(void) override;
   // Overrides for Allow() and Cancel() aren't provided by this class.
   // That is the responsibility of the subclasses.
 
@@ -144,8 +189,6 @@ class ContentPermissionRequestBase : public nsIContentPermissionRequest {
                                const nsACString& aType);
   virtual ~ContentPermissionRequestBase() = default;
 
-  nsCOMPtr<nsIPrincipal> mPrincipal;
-  nsCOMPtr<nsIPrincipal> mTopLevelPrincipal;
   nsCOMPtr<nsPIDOMWindowInner> mWindow;
   RefPtr<PermissionDelegateHandler> mPermissionHandler;
 
@@ -156,14 +199,6 @@ class ContentPermissionRequestBase : public nsIContentPermissionRequest {
   // to either true or false. If no such testing is required, mPrefName may be
   // empty.
   const nsCString mPrefName;
-
-  // The type of the request, such as "autoplay-media-audible".
-  const nsCString mType;
-
-  bool mHasValidTransientUserGestureActivation;
-
-  // See nsIPermissionDelegateHandler.maybeUnsafePermissionDelegate`.
-  bool mIsRequestDelegatedToUnsafeThirdParty;
 };
 
 class ContentPermissionRequestParent final

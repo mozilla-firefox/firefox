@@ -326,6 +326,63 @@ void nsContentPermissionUtils::NotifyRemoveContentPermissionRequestChild(
   MOZ_ALWAYS_TRUE(ContentPermissionRequestChildMap().Remove(aChild));
 }
 
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetPrincipal(
+    nsIPrincipal** aRequestingPrincipal) {
+  NS_IF_ADDREF(*aRequestingPrincipal = mPrincipal);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetDelegatePrincipal(
+    const nsACString& aType, nsIPrincipal** aRequestingPrincipal) {
+  return PermissionDelegateHandler::GetDelegatePrincipal(aType, this,
+                                                         aRequestingPrincipal);
+}
+
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetIsRequestDelegatedToUnsafeThirdParty(
+    bool* aIsRequestDelegatedToUnsafeThirdParty) {
+  *aIsRequestDelegatedToUnsafeThirdParty =
+      mIsRequestDelegatedToUnsafeThirdParty;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetIgnoreAllowSitePermission(
+    bool* aIgnoreAllowSitePermission) {
+  *aIgnoreAllowSitePermission = false;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetTopLevelPrincipal(
+    nsIPrincipal** aRequestingPrincipal) {
+  if (!mTopLevelPrincipal) {
+    *aRequestingPrincipal = nullptr;
+    return NS_OK;
+  }
+
+  NS_IF_ADDREF(*aRequestingPrincipal = mTopLevelPrincipal);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetHasValidTransientUserGestureActivation(
+    bool* aHasValidTransientUserGestureActivation) {
+  *aHasValidTransientUserGestureActivation =
+      mHasValidTransientUserGestureActivation;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+ContentPermissionRequestBaseNoWindow::GetTypes(nsIArray** aTypes) {
+  nsTArray<nsString> options;
+  GetPermissionOptions(options);
+  return nsContentPermissionUtils::CreatePermissionArray(mType, options,
+                                                         aTypes);
+}
+
 static nsIPrincipal* GetTopLevelPrincipal(nsPIDOMWindowInner* aWindow) {
   MOZ_ASSERT(aWindow);
 
@@ -359,13 +416,11 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(ContentPermissionRequestBase)
 ContentPermissionRequestBase::ContentPermissionRequestBase(
     nsIPrincipal* aPrincipal, nsPIDOMWindowInner* aWindow,
     const nsACString& aPrefName, const nsACString& aType)
-    : mPrincipal(aPrincipal),
-      mTopLevelPrincipal(aWindow ? ::GetTopLevelPrincipal(aWindow) : nullptr),
+    : ContentPermissionRequestBaseNoWindow(
+          aPrincipal, aWindow ? ::GetTopLevelPrincipal(aWindow) : nullptr,
+          aType, false, false),
       mWindow(aWindow),
-      mPrefName(aPrefName),
-      mType(aType),
-      mHasValidTransientUserGestureActivation(false),
-      mIsRequestDelegatedToUnsafeThirdParty(false) {
+      mPrefName(aPrefName) {
   if (!aWindow) {
     return;
   }
@@ -388,79 +443,9 @@ ContentPermissionRequestBase::ContentPermissionRequestBase(
 }
 
 NS_IMETHODIMP
-ContentPermissionRequestBase::GetPrincipal(
-    nsIPrincipal** aRequestingPrincipal) {
-  NS_IF_ADDREF(*aRequestingPrincipal = mPrincipal);
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetDelegatePrincipal(
-    const nsACString& aType, nsIPrincipal** aRequestingPrincipal) {
-  return PermissionDelegateHandler::GetDelegatePrincipal(aType, this,
-                                                         aRequestingPrincipal);
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetIsRequestDelegatedToUnsafeThirdParty(
-    bool* aIsRequestDelegatedToUnsafeThirdParty) {
-  *aIsRequestDelegatedToUnsafeThirdParty =
-      mIsRequestDelegatedToUnsafeThirdParty;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetIgnoreAllowSitePermission(
-    bool* aIgnoreAllowSitePermission) {
-  *aIgnoreAllowSitePermission = false;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetTopLevelPrincipal(
-    nsIPrincipal** aRequestingPrincipal) {
-  if (!mTopLevelPrincipal) {
-    *aRequestingPrincipal = nullptr;
-    return NS_OK;
-  }
-
-  NS_IF_ADDREF(*aRequestingPrincipal = mTopLevelPrincipal);
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 ContentPermissionRequestBase::GetWindow(mozIDOMWindow** aRequestingWindow) {
   NS_IF_ADDREF(*aRequestingWindow = mWindow);
   return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetElement(Element** aElement) {
-  NS_ENSURE_ARG_POINTER(aElement);
-  *aElement = nullptr;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::NotifyShown() {
-  // Default implementation does nothing.
-  // Subclasses can override to perform actions when prompt is shown.
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetHasValidTransientUserGestureActivation(
-    bool* aHasValidTransientUserGestureActivation) {
-  *aHasValidTransientUserGestureActivation =
-      mHasValidTransientUserGestureActivation;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-ContentPermissionRequestBase::GetTypes(nsIArray** aTypes) {
-  nsTArray<nsString> emptyOptions;
-  return nsContentPermissionUtils::CreatePermissionArray(mType, emptyOptions,
-                                                         aTypes);
 }
 
 ContentPermissionRequestBase::PromptResult

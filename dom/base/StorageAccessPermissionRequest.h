@@ -22,7 +22,7 @@ class StorageAccessPermissionRequest final
   // nsIContentPermissionRequest
   NS_IMETHOD Cancel(void) override;
   NS_IMETHOD Allow(JS::Handle<JS::Value> choices) override;
-  NS_IMETHOD GetTypes(nsIArray** aTypes) override;
+  void GetPermissionOptions(nsTArray<nsString>& aOptions) const override;
 
   using AllowCallback = std::function<void()>;
   using CancelCallback = std::function<void()>;
