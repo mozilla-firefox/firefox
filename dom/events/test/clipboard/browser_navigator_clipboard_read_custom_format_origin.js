@@ -116,3 +116,46 @@ add_task(async function test_cross_origin_pref_enabled() {
 
   await SpecialPowers.popPrefEnv();
 });
+
+async function readClipboardTypesFromExtension(aPermissions) {
+  const extension = ExtensionTestUtils.loadExtension({
+    manifest: { permissions: aPermissions },
+    background() {
+      navigator.clipboard
+        .read()
+        .then(items => (items.length ? Array.from(items[0].types) : []))
+        .then(types => browser.test.sendMessage("types", types))
+        .catch(e => browser.test.sendMessage("types", [e.name]));
+    },
+  });
+  await extension.startup();
+  const types = await extension.awaitMessage("types");
+  await extension.unload();
+  return types;
+}
+
+add_task(async function test_extension_with_clipboard_read_permission() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["clipboard.readCrossOriginCustomFormats.enabled", false]],
+  });
+
+  await writeCustomFormat(kSameOriginUrl, "extension " + Math.random());
+
+  let types = await readClipboardTypesFromExtension(["clipboardRead"]);
+  ok(
+    types.includes(kCustomFormat),
+    "Extension with clipboardRead sees cross-origin custom format"
+  );
+
+  types = await readClipboardTypesFromExtension([]);
+  ok(
+    !types.includes(kCustomFormat),
+    "Extension without clipboardRead does not see cross-origin custom format"
+  );
+  ok(
+    types.includes("text/plain"),
+    "Extension without clipboardRead still sees text/plain"
+  );
+
+  await SpecialPowers.popPrefEnv();
+});
