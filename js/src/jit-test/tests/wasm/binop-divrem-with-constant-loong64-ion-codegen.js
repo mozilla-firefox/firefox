@@ -616,9 +616,9 @@ const i64_rem_s = [
                srai\\.d      \\$a0, \\$a0, 0x1f
                srai\\.d      \\$t6, \\$a1, 0x3f
                sub\\.d       \\$a0, \\$a0, \\$t6
-               lu12i\\.w     \\$t6, 0
-               lu32i\\.d     \\$t6, 3
-               mul\\.d       \\$a0, \\$a0, \\$t6
+               slli\\.d      \\$t6, \\$a0, 0x1
+               add\\.d       \\$a0, \\$t6, \\$a0
+               slli\\.d      \\$a0, \\$a0, 0x20
                sub\\.d       \\$a0, \\$a1, \\$a0`,
     negative: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
@@ -707,9 +707,9 @@ const i64_rem_u = [
                ori           \\$t6, \\$t6, 0xaab
                mulh\\.du     \\$a0, \\$a1, \\$t6
                srli\\.d      \\$a0, \\$a0, 0x21
-               lu12i\\.w     \\$t6, 0
-               lu32i\\.d     \\$t6, 3
-               mul\\.d       \\$a0, \\$a0, \\$t6
+               slli\\.d      \\$t6, \\$a0, 0x1
+               add\\.d       \\$a0, \\$t6, \\$a0
+               slli\\.d      \\$a0, \\$a0, 0x20
                sub\\.d       \\$a0, \\$a1, \\$a0`,
   },
 ];
