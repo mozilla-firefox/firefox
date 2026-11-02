@@ -147,6 +147,48 @@ add_task(async function testLocalMode() {
     }
   );
 
+  // Only run the following test on linux as '<' and '>' characters
+  // are invalid on windows.
+  if (AppConstants.platform === "linux") {
+    info("Write a file to the local folder path");
+    const fileWithEntitiesInName = PathUtils.join(
+      folder.path,
+      "folder",
+      "<img>"
+    );
+    await IOUtils.writeUTF8(fileWithEntitiesInName, "");
+
+    await loadURL(gBrowser.selectedBrowser, TEST_FOLDER_URL);
+
+    const linkLoaded = BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
+    info(
+      "Assert that the correct local file content is displayed for the mapping's folder"
+    );
+    await SpecialPowers.spawn(gBrowser.selectedBrowser, [], () => {
+      is(
+        content.document.contentType,
+        "text/html",
+        "the html file is served with the right mime type"
+      );
+      const [linkWithHtmlString, linkToHtmlFile] =
+        content.document.querySelectorAll("a");
+      is(
+        linkToHtmlFile.textContent,
+        "test.html",
+        "The link is for the folder unique file"
+      );
+      is(
+        linkWithHtmlString.textContent,
+        "<img>",
+        "The link is for the file whose name includes html entity"
+      );
+      info("Navigate via a <a> link");
+      linkToHtmlFile.click();
+    });
+    info("Wait for click on the link to navigate to the new test page");
+    await linkLoaded;
+  }
+
   await loadURL(gBrowser.selectedBrowser, TEST_404_URL);
   info(
     "Assert that the 404 page shows when there is no local file found for the mapping"
