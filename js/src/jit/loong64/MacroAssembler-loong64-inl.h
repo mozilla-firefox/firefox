@@ -341,10 +341,7 @@ void MacroAssembler::addPtr(Imm32 imm, Register dest) {
 }
 
 void MacroAssembler::addPtr(ImmWord imm, Register dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  movePtr(imm, scratch);
-  addPtr(scratch, dest);
+  ma_add_d(dest, dest, imm);
 }
 
 void MacroAssembler::add64(Register64 src, Register64 dest) {
@@ -356,11 +353,7 @@ void MacroAssembler::add64(Imm32 imm, Register64 dest) {
 }
 
 void MacroAssembler::add64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(dest.reg != scratch);
-  mov(ImmWord(imm.value), scratch);
-  as_add_d(dest.reg, dest.reg, scratch);
+  ma_add_d(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::add32(Register src, Register dest) {
