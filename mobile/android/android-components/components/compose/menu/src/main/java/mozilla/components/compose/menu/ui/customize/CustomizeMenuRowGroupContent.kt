@@ -35,12 +35,14 @@ internal fun CustomizeMenuRowGroupContent(
     group: MenuItemsGroup.Row,
     onInteraction: (MenuEvent) -> Unit,
     modifier: Modifier = Modifier,
+    isMandatory: Boolean = false,
+    isHidden: Boolean = false,
     backgroundColor: Color = Color.Transparent,
 ) {
-    val isInactive = group.isDisabled || group.isHidden
+    val isInactive = isMandatory || isHidden
     val rowBackgroundColor = if (isInactive) Color.Transparent else backgroundColor
     val containerColor = if (isInactive) Color.Transparent else MaterialTheme.colorScheme.surfaceBright
-    val contentAlpha = if (group.isHidden) DISABLED_ALPHA else 1f
+    val contentAlpha = if (isHidden) DISABLED_ALPHA else 1f
 
     Row(
         modifier = modifier,
@@ -49,6 +51,8 @@ internal fun CustomizeMenuRowGroupContent(
         val rowModifier =
             Modifier.weight(1f)
                 .customizeRowGroupStyle(
+                    isMandatory = isMandatory,
+                    isHidden = isHidden,
                     group = group,
                     backgroundColor = rowBackgroundColor,
                 )
@@ -98,12 +102,14 @@ private fun Modifier.fadeBottomGradient(): Modifier {
 @Composable
 private fun Modifier.customizeRowGroupStyle(
     group: MenuItemsGroup.Row,
+    isMandatory: Boolean,
+    isHidden: Boolean,
     backgroundColor: Color = Color.Transparent,
 ): Modifier {
     return this.let { if (group.items.size > 2) it.height(148.dp) else it }
         .clip(shape = MaterialTheme.shapes.extraLarge)
         .background(backgroundColor)
-        .customizeGroupBorder(group)
+        .customizeGroupBorder(isMandatory = isMandatory, isHidden = isHidden)
 }
 
 @PreviewLightDark

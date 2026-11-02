@@ -285,7 +285,7 @@ class MenuFragment : BottomSheetDialogFragment() {
                         showCustomizeMenuPopup = false
                         nav(
                             id = R.id.menuFragment,
-                            directions = MenuFragmentDirections.actionMenuFragmentToFenixCustomizeMenuFragment(),
+                            directions = MenuFragmentDirections.actionMenuFragmentToCustomizeMenuFragment(),
                             options = NavOptions.Builder().setPopUpTo(R.id.menuFragment, true).build(),
                         )
                     },

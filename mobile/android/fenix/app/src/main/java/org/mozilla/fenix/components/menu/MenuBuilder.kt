@@ -74,16 +74,12 @@ class MenuBuilder(private val registry: MenuItemsRegistry) {
                     id = id,
                     items = shownItems,
                     isSticky = isSticky,
-                    isDisabled = isDisabled,
-                    isHidden = isHidden,
                 )
             Grid ->
                 MenuItemsGroup.Grid(
                     id = id,
                     items = shownItems,
                     isSticky = isSticky,
-                    isDisabled = isDisabled,
-                    isHidden = isHidden,
                 )
         }
 }

@@ -27,12 +27,16 @@ import mozilla.components.ui.icons.R as iconsR
  * @param menuGroups The groups of menu items to display.
  * @param onInteraction Callback for menu interactions.
  * @param modifier [Modifier] to be applied to the menu container.
+ * @param mandatoryGroupIds Ids of the [menuGroups] which cannot be removed from the menu.
+ * @param isHidden Whether these groups were removed from the menu.
  */
 @Composable
 fun CustomizeMenu(
     menuGroups: List<MenuItemsGroup>,
     onInteraction: (MenuEvent) -> Unit,
     modifier: Modifier = Modifier,
+    mandatoryGroupIds: Set<String> = emptySet(),
+    isHidden: Boolean = false,
 ) {
     Column(
         modifier =
@@ -50,6 +54,8 @@ fun CustomizeMenu(
             CustomizeMenuGroupContent(
                 group = group,
                 onInteraction = onInteraction,
+                isMandatory = group.id in mandatoryGroupIds,
+                isHidden = isHidden,
             )
         }
     }

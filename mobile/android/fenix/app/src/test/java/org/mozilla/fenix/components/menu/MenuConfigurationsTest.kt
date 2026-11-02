@@ -96,8 +96,8 @@ class MenuConfigurationsTest {
                 section(CUSTOMIZE_MENU_GROUP_2_ID, Row, IPProtection),
                 section(CUSTOMIZE_MENU_GROUP_3_ID, Row, Bookmark, FindInPage, DesktopSite, Translate, SummarizePage),
                 section(CUSTOMIZE_MENU_GROUP_4_ID, Grid, History, Bookmarks, Downloads, Passwords),
-                section(CUSTOMIZE_MENU_GROUP_5_ID, Row, MozillaAccount, Settings, isDisabled = true),
-                section(CUSTOMIZE_MENU_GROUP_6_ID, Row, AddToHomeScreen, SaveToCollection, isHidden = true),
+                section(CUSTOMIZE_MENU_GROUP_5_ID, Row, MozillaAccount, Settings),
+                section(CUSTOMIZE_MENU_GROUP_6_ID, Row, AddToHomeScreen, SaveToCollection),
             ),
             MenuConfigurations.customizeMenu(),
         )
@@ -144,14 +144,10 @@ class MenuConfigurationsTest {
         id: String,
         presentationMode: MenuPresentationMode,
         vararg items: FenixMenuItem,
-        isDisabled: Boolean = false,
-        isHidden: Boolean = false,
     ) =
         MenuSectionConfiguration(
             id = id,
             presentationMode = presentationMode,
             items = items.toList(),
-            isDisabled = isDisabled,
-            isHidden = isHidden,
         )
 }

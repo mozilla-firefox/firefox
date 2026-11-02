@@ -1,0 +1,43 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package org.mozilla.fenix.components.menu.compose.customize
+
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.fragment.compose.content
+import mozilla.components.compose.menu.store.CustomizableMenuState
+import mozilla.components.compose.menu.store.CustomizableMenuStore
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuContent
+import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
+import org.mozilla.fenix.R
+import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
+import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.theme.FirefoxTheme
+
+/** Screen allowing the user to customize the order of and what menu items or menu sections are to be shown. */
+class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
+    private val menuStore: CustomizableMenuStore by
+        fragmentStore(CustomizableMenuState(emptyList())) {
+            CustomizableMenuStore(it)
+        }
+
+    override fun onResume() {
+        super.onResume()
+        showToolbar(getString(R.string.customize_menu))
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View = content {
+        FirefoxTheme {
+            CustomizeMenuContent(store = menuStore)
+        }
+    }
+}

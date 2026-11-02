@@ -36,9 +36,9 @@ import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.store.CustomizableMenuState
+import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.store.MenuEvent
-import mozilla.components.compose.menu.store.MenuState
-import mozilla.components.compose.menu.store.MenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
 import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.ui.icons.R as iconsR
@@ -46,14 +46,14 @@ import mozilla.components.ui.icons.R as iconsR
 /**
  * Content composable for the customize menu screen.
  *
- * @param menuStore The [MenuStore] managing the state and dispatching events for menu customization.
+ * @param store The [CustomizableMenuStore] managing the state and dispatching events for menu customization.
  * @param modifier The [Modifier] to be applied to the layout.
  * @param onResetToDefault Callback invoked when the "Reset to default" button is clicked.
  * @param onPreviewClick Callback invoked when the "Preview" button is clicked.
  */
 @Composable
 fun CustomizeMenuContent(
-    menuStore: MenuStore,
+    store: CustomizableMenuStore,
     modifier: Modifier = Modifier,
     onResetToDefault: () -> Unit = {},
     onPreviewClick: () -> Unit = {},
@@ -69,12 +69,15 @@ fun CustomizeMenuContent(
         Column(modifier = Modifier.widthIn(max = AcornTheme.layout.size.containerMaxWidth).fillMaxWidth()) {
             CustomizeMenuDragBar(onPreviewClick = onPreviewClick)
 
-            val onInteraction: (MenuEvent) -> Unit = remember(menuStore) { { menuStore.dispatch(it) } }
-            val menuState by menuStore.observeAsComposableState { it }
-            val visibleGroups = menuState.menuGroups.filterNot { it.isHidden }
-            val hiddenGroups = menuState.menuGroups.filter { it.isHidden }
+            val onInteraction: (MenuEvent) -> Unit = remember(store) { { store.dispatch(it) } }
+            val menuState by store.observeAsComposableState { it }
+            val (hiddenGroups, shownGroups) = menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
 
-            CustomizeMenu(menuGroups = visibleGroups, onInteraction = onInteraction)
+            CustomizeMenu(
+                menuGroups = shownGroups,
+                mandatoryGroupIds = menuState.mandatoryGroupIds,
+                onInteraction = onInteraction,
+            )
 
             CustomizeMenuHiddenSections(hasHiddenItems = hiddenGroups.isNotEmpty())
 
@@ -82,6 +85,7 @@ fun CustomizeMenuContent(
                 CustomizeMenu(
                     menuGroups = hiddenGroups,
                     onInteraction = onInteraction,
+                    isHidden = true,
                 )
             }
 
@@ -195,10 +199,10 @@ private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modif
 @Composable
 private fun CustomizeMenuScreenPreview() {
     AcornTheme {
-        val dummyStore =
-            MenuStore(
+        CustomizeMenuContent(
+            CustomizableMenuStore(
                 initialState =
-                    MenuState(
+                    CustomizableMenuState(
                         menuGroups =
                             listOf(
                                 MenuItemsGroup.Grid(
@@ -243,6 +247,6 @@ private fun CustomizeMenuScreenPreview() {
                             )
                     )
             )
-        CustomizeMenuContent(menuStore = dummyStore)
+        )
     }
 }

@@ -22,21 +22,23 @@ import mozilla.components.compose.menu.ui.DISABLED_ALPHA
 internal fun CustomizeMenuGridGroupContent(
     group: MenuItemsGroup.Grid,
     modifier: Modifier = Modifier,
+    isMandatory: Boolean = false,
+    isHidden: Boolean = false,
     backgroundColor: Color = Color.Transparent,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val gridModifier = Modifier.weight(1f).customizeGroupBorder(group)
+        val gridModifier = Modifier.weight(1f).customizeGroupBorder(isMandatory = isMandatory, isHidden = isHidden)
 
         CustomizeMenuGridContainer(
             items = group.items,
             modifier = gridModifier,
-            backgroundColor = if (group.isDisabled || group.isHidden) Color.Transparent else backgroundColor,
+            backgroundColor = if (isMandatory || isHidden) Color.Transparent else backgroundColor,
             itemContainerColor =
-                if (group.isDisabled || group.isHidden) Color.Transparent else MaterialTheme.colorScheme.surfaceBright,
-            contentAlpha = if (group.isHidden) DISABLED_ALPHA else 1f,
+                if (isMandatory || isHidden) Color.Transparent else MaterialTheme.colorScheme.surfaceBright,
+            contentAlpha = if (isHidden) DISABLED_ALPHA else 1f,
         )
 
         CustomizeMenuDragIndicator()

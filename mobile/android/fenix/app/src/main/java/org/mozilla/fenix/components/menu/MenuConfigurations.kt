@@ -168,13 +168,11 @@ object MenuConfigurations {
                 id = CUSTOMIZE_MENU_GROUP_5_ID,
                 presentationMode = Row,
                 items = listOf(MozillaAccount, Settings),
-                isDisabled = true,
             ),
             MenuSectionConfiguration(
                 id = CUSTOMIZE_MENU_GROUP_6_ID,
                 presentationMode = Row,
                 items = listOf(AddToHomeScreen, SaveToCollection),
-                isHidden = true,
             ),
         )
 

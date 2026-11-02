@@ -21,8 +21,6 @@ dependencies {
     implementation project(':components:lib-state')
     implementation project(':components:ui-icons')
 
-    implementation libs.androidx.fragment
-
     implementation platform(libs.androidx.compose.bom)
     implementation libs.accompanist.drawablepainter
     implementation libs.androidx.compose.foundation

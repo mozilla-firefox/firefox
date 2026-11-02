@@ -441,8 +441,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
             resources.getString(R.string.pref_key_customize_menu) -> {
                 nav(
                     id = R.id.customizationFragment,
-                    directions =
-                        CustomizationFragmentDirections.actionCustomizationFragmentToFenixCustomizeMenuFragment(),
+                    directions = CustomizationFragmentDirections.actionCustomizationFragmentToCustomizeMenuFragment(),
                 )
             }
         }
