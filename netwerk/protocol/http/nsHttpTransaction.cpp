@@ -2932,10 +2932,17 @@ nsresult nsHttpTransaction::ProcessData(char* buf, uint32_t count,
     }
 
     if (!mContentDecodingCheck) {
-      // The main thread may take mResponseHead once the data is in the pipe.
-      MutexAutoLock lock(mLock);
-      if (mResponseHead) {
-        mContentDecoding = mResponseHead->HasHeader(nsHttp::Content_Encoding);
+      Maybe<bool> contentDecoding;
+      {
+        // The main thread may take mResponseHead once the data is in the pipe.
+        MutexAutoLock lock(mLock);
+        if (mResponseHead) {
+          contentDecoding =
+              Some(mResponseHead->HasHeader(nsHttp::Content_Encoding));
+        }
+      }
+      if (contentDecoding) {
+        mContentDecoding = *contentDecoding;
         mContentDecodingCheck = true;
       }
     }
