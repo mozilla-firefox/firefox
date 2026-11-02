@@ -11077,7 +11077,7 @@
 # https://drafts.csswg.org/css-box-4/#margin-trim
 - name: layout.css.margin-trim.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
   rust: true
 
