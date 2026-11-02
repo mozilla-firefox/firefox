@@ -98,29 +98,29 @@ class PfxEntry : public AffEntry {
                   const TraceCtx* t) const;
 
   struct hentry* checkword(const std::string& word,
-                           int start,
-                           int len,
+                           size_t start,
+                           size_t len,
                            char in_compound,
                            const FLAG needflag,
                            AffixScratch& scratch);
 
   struct hentry* check_twosfx(const std::string& word,
-                              int start,
-                              int len,
+                              size_t start,
+                              size_t len,
                               char in_compound,
                               const FLAG needflag,
                               AffixScratch& scratch);
 
   std::string check_morph(const std::string& word,
-                          int start,
-                          int len,
+                          size_t start,
+                          size_t len,
                           char in_compound,
                           const FLAG needflag,
                           AffixScratch& scratch);
 
   std::string check_twosfx_morph(const std::string& word,
-                                 int start,
-                                 int len,
+                                 size_t start,
+                                 size_t len,
                                  char in_compound,
                                  const FLAG needflag,
                                  AffixScratch& scratch);
@@ -129,7 +129,7 @@ class PfxEntry : public AffEntry {
   const char* getKey() { return appnd.c_str(); }
   std::string add(const char* word, size_t len);
 
-  inline int getKeyLen() { return appnd.size(); }
+  inline size_t getKeyLen() { return appnd.size(); }
 
   inline const char* getMorph() { return morphcode; }
 
@@ -186,8 +186,8 @@ class SfxEntry : public AffEntry {
                   const TraceCtx* t) const;
 
   struct hentry* checkword(const std::string& word,
-                           int start,
-                           int len,
+                           size_t start,
+                           size_t len,
                            int optflags,
                            PfxEntry* ppfx,
                            const FLAG cclass,
@@ -196,16 +196,16 @@ class SfxEntry : public AffEntry {
                            AffixScratch& scratch);
 
   struct hentry* check_twosfx(const std::string& word,
-                              int start,
-                              int len,
+                              size_t start,
+                              size_t len,
                               int optflags,
                               PfxEntry* ppfx,
                               const FLAG needflag,
                               AffixScratch& scratch);
 
   std::string check_twosfx_morph(const std::string& word,
-                                 int start,
-                                 int len,
+                                 size_t start,
+                                 size_t len,
                                  int optflags,
                                  PfxEntry* ppfx,
                                  const FLAG needflag,
@@ -227,7 +227,7 @@ class SfxEntry : public AffEntry {
   inline unsigned short getContLen() { return contclasslen; }
   inline const char* getAffix() { return appnd.c_str(); }
 
-  inline int getKeyLen() { return appnd.size(); }
+  inline size_t getKeyLen() { return appnd.size(); }
 
   inline SfxEntry* getNext() { return next; }
   inline SfxEntry* getNextNE() { return nextne; }

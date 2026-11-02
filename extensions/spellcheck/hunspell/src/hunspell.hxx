@@ -203,7 +203,10 @@ class LIBHUNSPELL_DLL_EXPORTED Hunspell {
   std::vector<std::string> generate(const std::string& word, const std::vector<std::string>& pl);
   H_DEPRECATED int generate(char*** slst, const char* word, char** desc, int n);
 
-  /* functions for run-time modification of the dictionary */
+  /* functions for run-time modification of the dictionary.
+   * Word arguments (including the affix example) undergo ICONV once,
+   * as in spell(). Flags and morphological descriptions are not converted.
+   */
 
   /* add word to the run-time dictionary */
 

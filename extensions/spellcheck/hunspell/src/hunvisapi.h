@@ -1,7 +1,7 @@
 #ifndef HUNSPELL_VISIBILITY_H_
 #define HUNSPELL_VISIBILITY_H_
 
-#if defined(HUNSPELL_STATIC)
+#if defined(HUNSPELL_STATIC) || 0
 #  define LIBHUNSPELL_DLL_EXPORTED
 #elif defined(_WIN32)
 #  if defined(BUILDING_LIBHUNSPELL)

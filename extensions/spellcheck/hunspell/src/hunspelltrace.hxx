@@ -109,8 +109,10 @@ class TraceCtx {
 
   bool on() const { return m_callback && m_suppressed == 0; }
 
+  // the callback can clear itself while a check is still emitting records
   void emit(const std::string& line) const {
-    m_callback(m_userdata, m_depth, line.c_str());
+    if (m_callback)
+      m_callback(m_userdata, m_depth, line.c_str());
   }
 
  private:

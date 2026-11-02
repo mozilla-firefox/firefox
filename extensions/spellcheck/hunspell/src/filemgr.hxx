@@ -72,6 +72,29 @@
 #ifndef FILEMGR_HXX_
 #define FILEMGR_HXX_
 
+#ifdef MOZILLA_CLIENT
 #include "mozHunspellRLBoxSandbox.h"
+#else
+#include "hunzip.hxx"
+#include <cstdio>
+#include <string>
+#include <fstream>
 
+class FileMgr {
+ protected:
+  std::ifstream fin;
+  Hunzip* hin;
+  char in[BUFSIZE + 50];  // input buffer
+  int fail(const char* err, const char* par);
+  int linenum;
+
+ public:
+  FileMgr(const char* filename, const char* key = nullptr);
+  FileMgr(const FileMgr&) = delete;
+  FileMgr& operator=(const FileMgr&) = delete;
+  ~FileMgr();
+  bool getline(std::string&);
+  int getlinenum();
+};
+#endif
 #endif

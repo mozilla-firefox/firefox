@@ -102,7 +102,7 @@ class HashMgr {
   std::string ignorechars;
   std::vector<w_char> ignorechars_utf16;
   std::vector<unsigned short*> aliasf; // flag vector `compression' with aliases
-  std::vector<unsigned short> aliasflen;
+  std::vector<size_t> aliasflen;
   std::vector<char*> aliasm; // morphological desciption `compression' with aliases
   // reptable created from REP table of aff file and from "ph:" fields
   // of the dic file. It contains phonetic and other common misspellings
@@ -114,31 +114,31 @@ class HashMgr {
   ~HashMgr();
 
   struct hentry* lookup(const char* word, size_t len) const;
-  int hash(const char* word, size_t len) const;
+  size_t hash(const char* word, size_t len) const;
   struct hentry* walk_hashtable(int& col, struct hentry* hp) const;
 
   int add(const std::string& word);
   int add_with_flags(const std::string& word, const std::string& flags, const std::string& desc = "");
   int add_with_affix(const std::string& word, const std::string& pattern);
   int remove(const std::string& word);
-  int decode_flags(unsigned short** result, const std::string& flags, FileMgr* af) const;
+  size_t decode_flags(unsigned short** result, const std::string& flags, FileMgr* af) const;
   bool decode_flags(std::vector<unsigned short>& result, const std::string& flags, FileMgr* af) const;
   unsigned short decode_flag(const std::string& flag) const;
   std::string encode_flag(unsigned short flag) const;
   int is_aliasf() const;
-  int get_aliasf(int index, unsigned short** fvec, FileMgr* af) const;
+  size_t get_aliasf(int index, unsigned short** fvec, FileMgr* af) const;
   int is_aliasm() const;
   char* get_aliasm(int index) const;
   const std::vector<replentry>& get_reptable() const;
 
  private:
-  int get_clen_and_captype(const std::string& word, int* captype);
-  int get_clen_and_captype(const std::string& word, int* captype, std::vector<w_char> &workbuf);
+  size_t get_clen_and_captype(const std::string& word, int* captype);
+  size_t get_clen_and_captype(const std::string& word, int* captype, std::vector<w_char> &workbuf);
   int load_tables(const char* tpath, const char* key);
   int add_word(const std::string& word,
-               int wcl,
+               size_t wcl,
                unsigned short* ap,
-               int al,
+               size_t al,
                const std::string* desc,
                bool onlyupcase,
                int captype,
@@ -146,9 +146,9 @@ class HashMgr {
   int load_config(const char* affpath, const char* key);
   bool parse_aliasf(const std::string& line, FileMgr* af);
   int add_hidden_capitalized_word(const std::string& word,
-                                  int wcl,
+                                  size_t wcl,
                                   unsigned short* flags,
-                                  int al,
+                                  size_t al,
                                   const std::string* dp,
                                   int captype);
   bool parse_aliasm(const std::string& line, FileMgr* af);
@@ -158,7 +158,7 @@ class HashMgr {
   void release_flags(unsigned short* astr, bool owned);
 
   // Only internal consumers are allowed to arena-allocate.
-  int decode_flags(unsigned short** result, const std::string& flags, FileMgr* af, bool use_arena) const;
+  size_t decode_flags(unsigned short** result, const std::string& flags, FileMgr* af, bool use_arena) const;
 
   // Bump-pointer arena for load-time hentry/flag/aliasm allocations. Freed in
   // bulk at destruction. arena_free is a no-op that tracks outstanding allocs

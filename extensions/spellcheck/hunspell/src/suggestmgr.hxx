@@ -142,38 +142,38 @@ class SuggestMgr {
   int check_forbidden(const std::string&);
 
   void capchars(std::vector<std::string>&, const std::string&, int, int&);
-  int replchars(std::vector<std::string>&, const std::string&, int, int&);
-  int doubletwochars(std::vector<std::string>&, const std::string&, int, int&);
-  int forgotchar(std::vector<std::string>&, const std::string&, int, int&);
-  int swapchar(std::vector<std::string>&, const std::string&, int, int&);
-  int longswapchar(std::vector<std::string>&, const std::string&, int, int&);
-  int movechar(std::vector<std::string>&, const std::string&, int, int&);
-  int extrachar(std::vector<std::string>&, const std::string&, int, int&);
-  int badcharkey(std::vector<std::string>&, const std::string&, int, int&);
-  int badchar(std::vector<std::string>&, const std::string&, int, int&);
+  size_t replchars(std::vector<std::string>&, const std::string&, int, int&);
+  size_t doubletwochars(std::vector<std::string>&, const std::string&, int, int&);
+  size_t forgotchar(std::vector<std::string>&, const std::string&, int, int&);
+  size_t swapchar(std::vector<std::string>&, const std::string&, int, int&);
+  size_t longswapchar(std::vector<std::string>&, const std::string&, int, int&);
+  size_t movechar(std::vector<std::string>&, const std::string&, int, int&);
+  size_t extrachar(std::vector<std::string>&, const std::string&, int, int&);
+  size_t badcharkey(std::vector<std::string>&, const std::string&, int, int&);
+  size_t badchar(std::vector<std::string>&, const std::string&, int, int&);
   bool twowords(std::vector<std::string>&, const std::string&, int, bool, int&);
 
   void capchars_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int doubletwochars_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int forgotchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int extrachar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int badcharkey_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int badchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int swapchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int longswapchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
-  int movechar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t doubletwochars_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t forgotchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t extrachar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t badcharkey_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t badchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t swapchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t longswapchar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
+  size_t movechar_utf(std::vector<std::string>&, const std::vector<w_char>&, int, int&);
 
-  int mapchars(std::vector<std::string>&, const std::string&, int, int&);
-  int map_related(const std::string&,
-                  std::string&,
-                  size_t,
-                  std::vector<std::string>& wlst,
-                  int,
-                  const std::vector<mapentry>&,
-                  int*,
-                  std::chrono::steady_clock::time_point*,
-                  int depth,
-                  int& info);
+  size_t mapchars(std::vector<std::string>&, const std::string&, int, int&);
+  size_t map_related(const std::string&,
+                     std::string&,
+                     size_t,
+                     std::vector<std::string>& wlst,
+                     int,
+                     const std::vector<mapentry>&,
+                     int*,
+                     std::chrono::steady_clock::time_point*,
+                     int depth,
+                     int& info);
   int ngram(int n, const std::vector<w_char>& su1,
             const std::vector<w_char>& su2, int opt);
   int ngram(int n, const std::string& s1, const std::string& s2, int opt);

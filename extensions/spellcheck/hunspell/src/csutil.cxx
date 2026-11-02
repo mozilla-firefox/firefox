@@ -375,11 +375,13 @@ size_t append_compound_parts(const std::string& desc, std::string& result) {
   size_t part = desc.find(MORPH_PART);
   if (part == std::string::npos)
     return 0;
+  static const char separators[] = {' ', '\t', '\n', '\0'};
   size_t nextpart = desc.find(MORPH_PART, part + 1);
   while (nextpart != std::string::npos) {
-    const char* field = desc.c_str() + part + MORPH_TAG_LEN;
-    size_t len = std::min<size_t>(fieldlen(field), nextpart - part - MORPH_TAG_LEN);
-    result.append(field, len);
+    const auto field = desc.begin() + part + MORPH_TAG_LEN;
+    const auto end = desc.begin() + nextpart;
+    result.append(field, std::find_first_of(field, end, std::begin(separators),
+                                            std::end(separators)));
     part = nextpart;
     nextpart = desc.find(MORPH_PART, part + 1);
   }

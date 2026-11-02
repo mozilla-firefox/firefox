@@ -3,8 +3,8 @@
 
 #define HUNSPELL_VERSION_MAJOR 1
 #define HUNSPELL_VERSION_MINOR 7
-#define HUNSPELL_VERSION_PATCH 5
-#define HUNSPELL_VERSION_STRING "1.7.5"
+#define HUNSPELL_VERSION_PATCH 6
+#define HUNSPELL_VERSION_STRING "1.7.6"
 
 /* Major, minor and patch packed one byte each so versions compare in order:
  *   #if HUNSPELL_VERSION >= HUNSPELL_VERSION_CHECK(1, 4, 1) */
