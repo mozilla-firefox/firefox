@@ -63,3 +63,66 @@ add_task(async function testPreferenceRetrievedWhenInstallingExtension() {
 
   await removeTab(tab);
 });
+
+// Check that the directory containing the XPI, not the XPI itself, is saved in the
+// preference when installing a temporary extension from an XPI file.
+add_task(async function testPreferenceUpdatedAfterInstallingXPI() {
+  registerCleanupFunction(() => {
+    Services.prefs.clearUserPref(LAST_DIR_PREF);
+  });
+  const { document, tab, window } = await openAboutDebugging();
+  await selectThisFirefoxPage(document, window.AboutDebugging.store);
+
+  const XPI_EXTENSION_NAME = "test-temporary-xpi-extension";
+  const { xpiFile } = await installTemporaryExtensionFromXPI(
+    {
+      id: "test-temporary-xpi-extension@mozilla.org",
+      name: XPI_EXTENSION_NAME,
+    },
+    document
+  );
+
+  info("Check whether the parent dir of the XPI sets into the pref");
+  const lastDirPath = Services.prefs.getCharPref(LAST_DIR_PREF, "");
+  is(
+    lastDirPath,
+    xpiFile.parent.path,
+    "The parent dir of the selected XPI should set into the pref"
+  );
+
+  await removeTemporaryExtension(XPI_EXTENSION_NAME, document);
+  await removeTab(tab);
+});
+
+// Check that a preference pointing to a file, as saved by older versions, results in
+// the parent directory of that file being shown.
+add_task(async function testPreferencePointingToFile() {
+  const selectedDir = getTestFilePath("resources/packaged-extension");
+  const selectedFile = getTestFilePath(
+    "resources/packaged-extension/packaged-extension.xpi"
+  );
+
+  await pushPref(LAST_DIR_PREF, selectedFile);
+
+  const { document, tab, window } = await openAboutDebugging();
+  await selectThisFirefoxPage(document, window.AboutDebugging.store);
+
+  const MockFilePicker = SpecialPowers.MockFilePicker;
+  MockFilePicker.init();
+  const onFilePickerShown = new Promise(resolve => {
+    MockFilePicker.showCallback = fp => {
+      resolve(fp);
+    };
+  });
+  document.querySelector(".qa-temporary-extension-install-button").click();
+
+  info("Check whether the shown dir is the parent dir of the file in the pref");
+  const fp = await onFilePickerShown;
+  is(
+    fp.displayDirectory.path,
+    selectedDir,
+    "Shown directory is the parent dir of the file in the pref"
+  );
+
+  await removeTab(tab);
+});
