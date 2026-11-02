@@ -2113,35 +2113,18 @@ void CodeGenerator::visitValueToString(LValueToString* lir) {
   }
 
   // Objects/symbols are only possible when |mir->mightHaveSideEffects()|.
-  if (lir->mir()->mightHaveSideEffects()) {
-    // Object
-    if (lir->mir()->supportSideEffects()) {
-      masm.branchTestObject(Assembler::Equal, tag, ool->entry());
-    } else {
-      // Bail.
-      MOZ_ASSERT(lir->mir()->needsSnapshot());
-      Label bail;
-      masm.branchTestObject(Assembler::Equal, tag, &bail);
-      bailoutFrom(&bail, lir->snapshot());
-    }
-
-    // Symbol
-    if (lir->mir()->supportSideEffects()) {
-      masm.branchTestSymbol(Assembler::Equal, tag, ool->entry());
-    } else {
-      // Bail.
-      MOZ_ASSERT(lir->mir()->needsSnapshot());
-      Label bail;
-      masm.branchTestSymbol(Assembler::Equal, tag, &bail);
-      bailoutFrom(&bail, lir->snapshot());
-    }
+  if (lir->mir()->mightHaveSideEffects() && !lir->mir()->supportSideEffects()) {
+    // Bail.
+    MOZ_ASSERT(lir->mir()->needsSnapshot());
+    Label bail;
+    masm.branchTestObject(Assembler::Equal, tag, &bail);
+    masm.branchTestSymbol(Assembler::Equal, tag, &bail);
+    bailoutFrom(&bail, lir->snapshot());
   }
 
-  // BigInt
-  {
-    // No fastpath currently implemented.
-    masm.branchTestBigInt(Assembler::Equal, tag, ool->entry());
-  }
+  // Any other GC thing is a BigInt, object or symbol, none of which have a
+  // fastpath.
+  masm.branchTestGCThing(Assembler::Equal, tag, ool->entry());
 
   masm.assumeUnreachable("Unexpected type for LValueToString.");
 

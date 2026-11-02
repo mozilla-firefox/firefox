@@ -1249,6 +1249,13 @@ void MacroAssembler::branchTestObject(Condition cond, const BaseIndex& address,
   branchTestObject(cond, tag, label);
 }
 
+void MacroAssembler::branchTestGCThing(Condition cond, Register tag,
+                                       Label* label) {
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  ma_b(tag, ImmTag(JS::detail::ValueLowerInclGCThingTag), label,
+       (cond == Equal) ? AboveOrEqual : Below);
+}
+
 void MacroAssembler::branchTestGCThing(Condition cond, const Address& address,
                                        Label* label) {
   branchTestGCThingImpl(cond, address, label);
