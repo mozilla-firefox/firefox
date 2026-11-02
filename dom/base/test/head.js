@@ -29,7 +29,7 @@ async function newFocusedWindow(trigger, isInitialBlank = false) {
   return win;
 }
 
-const JS_CACHE_BASE_URL = "http://mochi.test:8888/browser/dom/base/test/";
+const JS_CACHE_BASE_URL = "https://example.com/browser/dom/base/test/";
 
 function ev(event, file, hasElement = !!file) {
   return {
