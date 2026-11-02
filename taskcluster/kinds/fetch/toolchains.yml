@@ -805,6 +805,17 @@ mozilla-pdf.js:
         repo: https://github.com/mozilla/pdf.js
         revision: 81cf42df470f85eb60150bdffca380e3eee79c08
 
+mozilla-pdf.js.pdfs:
+    description: Mozilla pdf.js PDF corpus (private Github repo)
+    artifact-prefix: project/gecko/pdf.js.pdfs
+    fetch:
+        type: git
+        repo: git@github.com:mozilla/pdf.js.pdfs.git
+        revision: 1b7840e9d7ce0b9019c9b3e24f364c186a1bf0cf
+        path-prefix: pdf.js.pdfs
+        artifact-name: pdf.js.pdfs.tar.zst
+        ssh-key: project/perftest/gecko/level-{level}/pdfjs-pdfs-github-deploy-key
+
 xmlstarlet-1.6.1:
     description: xmlstarlet for Android Performance Tests
     fetch:
