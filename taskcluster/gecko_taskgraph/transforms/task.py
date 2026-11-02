@@ -676,9 +676,10 @@ def build_docker_worker_payload(config, task, task_def):
         cache_version = "v3"
 
         if run_task:
-            suffix = (
-                f"{cache_version}-{_run_task_suffix(config.params['repository_type'])}"
+            repo_type = task["attributes"].get(
+                "clone_with", config.params["repository_type"]
             )
+            suffix = f"{cache_version}-{_run_task_suffix(repo_type)}"
 
             if out_of_tree_image:
                 name_hash = hashlib.sha256(
@@ -2689,11 +2690,13 @@ def check_run_task_caches(config, tasks):
         level=config.params["level"],
     )
 
-    suffix = _run_task_suffix(config.params["repository_type"])
-
     for task in tasks:
         payload = task["task"].get("payload", {})
         command = payload.get("command") or [""]
+        repo_type = task["attributes"].get(
+            "clone_with", config.params["repository_type"]
+        )
+        suffix = _run_task_suffix(repo_type)
 
         main_command = command[0] if isinstance(command[0], str) else ""
         run_task = is_run_task(main_command)
