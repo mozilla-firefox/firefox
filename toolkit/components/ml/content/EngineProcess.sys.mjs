@@ -262,6 +262,9 @@ export const FEATURES = {
   aitab: {
     engineId: "aitab-engine",
   },
+  "widget-generation": {
+    engineId: "smart-openai",
+  },
   // see dom/media/webspeech/recognition/SpeechRecognition.cpp
   "speech-recognition": {
     engineId: "parakeet-gguf",
