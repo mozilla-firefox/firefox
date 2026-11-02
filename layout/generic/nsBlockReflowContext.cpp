@@ -174,12 +174,18 @@ bool nsBlockReflowContext::ComputeCollapsedBStartMargin(
             LogicalSize availSpace =
                 outerReflowInput->ComputedSize(kid->GetWritingMode());
 
-            ReflowInput::InitFlags marginTrimFlags;
-            if (!block->GetPrevInFlow() &&
+            const bool trimChildBStartMargins =
+                !block->GetPrevInFlow() &&
                 (StyleTrimsChildBStartMargins(block) ||
-                 outerReflowInput->mFlags.mTrimBStartMargin)) {
-              marginTrimFlags += ReflowInput::InitFlag::TrimBStartMargin;
-            }
+                 outerReflowInput->mFlags.mTrimBStartMargin);
+
+            const ReflowInput::InitFlags marginTrimFlags =
+                BlockReflowState::ComputeChildMarginTrim(
+                    block, trimChildBStartMargins,
+                    !overflowLines &&
+                        StyleTrimsChildBEndMargins(block),
+                    line, true);
+
             ReflowInput innerReflowInput(prescontext, *outerReflowInput, kid,
                                          availSpace, Nothing(),
                                          marginTrimFlags);
