@@ -9,7 +9,11 @@ import unittest
 import mozpack.path as mozpath
 import mozunit
 
-from mozbuild.frontend.jar_manifest import parse_jar_manifest
+from mozbuild.frontend.jar_manifest import (
+    AB_CD_TOKEN,
+    JarManifestError,
+    parse_jar_manifest,
+)
 
 MANIFEST = """\
 #filter substitution
@@ -39,32 +43,34 @@ class TestParseJarManifest(unittest.TestCase):
             _write(mozpath.join(self.tmpdir, name), included)
         path = mozpath.join(self.tmpdir, "jar.mn")
         _write(path, body)
-        return parse_jar_manifest(path, defines or {}, "en-US")
+        return parse_jar_manifest(path, defines or {})
 
     def test_one_section_is_named_and_based(self):
         sections, _ = self._parse()
 
         self.assertEqual(len(sections), 1)
-        self.assertEqual(sections[0].name, "chrome/browser")
+        self.assertEqual(sections[0].name.text, "chrome/browser")
         self.assertEqual(sections[0].base, "")
 
     def test_entries_carry_source_and_destination(self):
         sections, _ = self._parse()
-        entries = {e.output: e for e in sections[0].entries}
+        entries = {e.output.text: e for e in sections[0].entries}
 
-        self.assertEqual(entries["content/browser/main.xhtml"].source, "main.xhtml")
-        self.assertEqual(entries["content/browser/wild/"].source, "wild/*")
+        self.assertEqual(
+            entries["content/browser/main.xhtml"].source.text, "main.xhtml"
+        )
+        self.assertEqual(entries["content/browser/wild/"].source.text, "wild/*")
 
     def test_a_star_marks_an_entry_for_preprocessing(self):
         sections, _ = self._parse()
-        entries = {e.output: e for e in sections[0].entries}
+        entries = {e.output.text: e for e in sections[0].entries}
 
         self.assertTrue(entries["content/browser/built.js"].preprocess)
         self.assertFalse(entries["content/browser/main.xhtml"].preprocess)
 
     def test_a_percent_marks_an_entry_as_localized(self):
         sections, _ = self._parse()
-        entries = {e.output: e for e in sections[0].entries}
+        entries = {e.output.text: e for e in sections[0].entries}
 
         self.assertTrue(entries["locale/browser/thing.dtd"].is_locale)
         self.assertFalse(entries["content/browser/main.xhtml"].is_locale)
@@ -73,7 +79,8 @@ class TestParseJarManifest(unittest.TestCase):
         sections, _ = self._parse()
 
         self.assertEqual(
-            sections[0].chrome_manifests, ("content browser %content/browser/",)
+            [m.text for m in sections[0].chrome_manifests],
+            ["content browser %content/browser/"],
         )
 
     def test_the_manifest_is_reported_as_a_read_input(self):
@@ -105,16 +112,99 @@ class TestParseJarManifest(unittest.TestCase):
         sections, _ = self._parse(
             body, includes={"included.inc": "#define FROM_INCLUDE included\n"}
         )
-        outputs = [e.output for e in sections[0].entries]
+        outputs = [e.output.text for e in sections[0].entries]
 
         self.assertIn("content/browser/included.js", outputs)
+
+    def test_an_unresolved_locale_token_survives_parsing(self):
+        """Parsing is locale independent, so @AB_CD@ must not be resolved."""
+        body = MANIFEST.replace(
+            "  content/browser/main.xhtml     (main.xhtml)",
+            "  content/browser/@AB_CD@/main.xhtml  (main.xhtml)",
+            1,
+        )
+        sections, _ = self._parse(body)
+        outputs = [e.output.text for e in sections[0].entries]
+
+        self.assertIn("content/browser/@AB_CD@/main.xhtml", outputs)
+
+    def test_a_template_resolves_for_a_locale(self):
+        body = MANIFEST.replace(
+            "  content/browser/main.xhtml     (main.xhtml)",
+            "  content/browser/@AB_CD@/main.xhtml  (main.xhtml)",
+            1,
+        )
+        sections, _ = self._parse(body)
+        entry = next(e for e in sections[0].entries if AB_CD_TOKEN in e.output.text)
+
+        self.assertEqual(entry.output.resolve("de"), "content/browser/de/main.xhtml")
 
     def test_defines_reach_the_preprocessor(self):
         body = MANIFEST + "  content/browser/@THING@.js  (named.js)\n"
         sections, _ = self._parse(body, defines={"THING": "resolved"})
-        outputs = [e.output for e in sections[0].entries]
+        outputs = [e.output.text for e in sections[0].entries]
 
         self.assertIn("content/browser/resolved.js", outputs)
+
+    def test_a_locale_resolves_every_place_a_template_appears(self):
+        body = (
+            "#filter substitution\n"
+            "[localization] @AB_CD@.jar:\n"
+            "%  locale testing @AB_CD@ %locale/@AB_CD@/testing/\n"
+            "  locale/@AB_CD@/testing/out.txt   (@AB_CD@/in.txt)\n"
+        )
+        sections, _ = self._parse(body)
+        section = sections[0]
+        entry = section.entries[0]
+
+        self.assertEqual(section.name.resolve("de"), "de")
+        self.assertEqual(entry.output.resolve("de"), "locale/de/testing/out.txt")
+        self.assertEqual(entry.source.resolve("de"), "de/in.txt")
+        self.assertEqual(
+            section.chrome_manifests[0].resolve("de"),
+            "locale testing de %locale/de/testing/",
+        )
+
+    def test_a_base_cannot_hold_the_locale_placeholder(self):
+        body = "#filter substitution\n[@AB_CD@] browser.jar:\n  a  (a)\n"
+
+        with self.assertRaisesRegex(
+            JarManifestError, "base @AB_CD@ names @AB_CD@, which is only resolved"
+        ):
+            self._parse(body)
+
+    def test_a_relativesrcdir_cannot_hold_the_locale_placeholder(self):
+        body = (
+            "#filter substitution\n"
+            "browser.jar:\n"
+            "relativesrcdir toolkit/@AB_CD@:\n"
+            "  a  (%a)\n"
+        )
+
+        with self.assertRaisesRegex(
+            JarManifestError,
+            "relativesrcdir toolkit/@AB_CD@ names @AB_CD@, which is only resolved",
+        ):
+            self._parse(body)
+
+    def test_a_preprocessor_condition_cannot_name_the_locale(self):
+        body = "#filter substitution\nbrowser.jar:\n#if AB_CD == de\n  a  (a)\n#endif\n"
+
+        with self.assertRaisesRegex(JarManifestError, "jar.mn:3"):
+            self._parse(body)
+
+    def test_an_elifdef_or_elifndef_on_the_locale_is_refused_too(self):
+        for directive in ("elifdef", "elifndef"):
+            body = f"browser.jar:\n#ifdef FOO\n#{directive} AB_CD\n  a  (a)\n#endif\n"
+
+            with self.assertRaisesRegex(JarManifestError, "jar.mn:3"):
+                self._parse(body)
+
+    def test_an_included_condition_on_the_locale_is_refused_too(self):
+        body = "#filter substitution\n#include included.inc\nbrowser.jar:\n  a  (a)\n"
+
+        with self.assertRaisesRegex(JarManifestError, "included.inc:1"):
+            self._parse(body, includes={"included.inc": "#ifdef AB_CD\n#endif\n"})
 
 
 class _Context(dict):

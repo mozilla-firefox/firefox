@@ -28,7 +28,6 @@ from mach.filelock import FileLock, Timeout
 from mozpack.chrome.manifest import parse_manifest_line
 
 from mozbuild.frontend.l10n_manifest import (
-    MOZ_L10N_AB_CD_PLACEHOLDER,
     JarSection,
     L10nManifest,
     L10nManifestContextData,
@@ -413,28 +412,28 @@ def _stage_jar_section(
     Otherwise only entries explicitly marked % (is_locale=True) are
     staged.
 
-    All locale-templated strings in the captured section (section name,
-    entry source, entry output, chrome.manifest lines) are substituted
-    from MOZ_L10N_AB_CD_PLACEHOLDER to state.locale here.
+    Every string in the section holding the locale placeholder (section name,
+    entry source, entry output, chrome.manifest lines) is resolved for
+    state.locale here.
     """
     install_target = _resolve_jar_install_target(context, section)
     defines = _resolve_locale_defines(state, context)
     subs = _build_jar_subs(state, context)
     unresolved = _unresolved_locale_pp_placeholders(state, context)
     dirs = SrcDirs.for_context(context).override(section.relativesrcdir)
-    section_name = _sub_jar(section.name, subs)
+    section_name = _sub_jar(section.name.resolve(state.locale), subs)
 
     is_localization_block = section.base == "localization"
     block_keep_all_entries = is_localization_block or any(
-        _sub_jar(m, subs).lstrip().startswith("locale ")
+        _sub_jar(m.resolve(state.locale), subs).lstrip().startswith("locale ")
         for m in section.chrome_manifests
     )
 
     for entry in section.entries:
         if not (entry.is_locale or block_keep_all_entries):
             continue
-        entry_source = _sub_jar(entry.source, subs)
-        entry_output = _sub_jar(entry.output, subs)
+        entry_source = _sub_jar(entry.source.resolve(state.locale), subs)
+        entry_output = _sub_jar(entry.output.resolve(state.locale), subs)
         # Entry came from a #if defined(LOCALE_PP_DEFINES_KEY) branch
         # that didn't resolve for this locale. The en-US fallback from
         # the first emit-time pass will cover this output.
@@ -472,7 +471,7 @@ def _stage_jar_section(
         chromebase = mozpath.basename(section_name) + "/"
         base = mozpath.dirname(section_name)
         for raw in section.chrome_manifests:
-            line = _sub_jar(raw, subs)
+            line = _sub_jar(raw.resolve(state.locale), subs)
             entry = parse_manifest_line(base, line.replace("%", chromebase))
             state.manifest_entries.setdefault(manifest_relpath, []).append(str(entry))
         top_manifest = mozpath.join(install_target, "chrome.manifest")
@@ -518,10 +517,9 @@ def _build_jar_subs(
     state: StageState, context: L10nManifestContextData
 ) -> dict[str, str]:
     """Substitution map applied to captured jar.mn strings at stage time:
-    AB_CD plus any LOCALE_PP_DEFINES keys that resolve for the current
-    locale.
+    any LOCALE_PP_DEFINES keys that resolve for the current locale.
     """
-    subs = {MOZ_L10N_AB_CD_PLACEHOLDER: state.locale}
+    subs = {}
     resolved = _locale_resolved_defines(context.locale_pp_defines or {}, state.locale)
     for k, v in resolved.items():
         subs[locale_pp_placeholder(k)] = str(v)

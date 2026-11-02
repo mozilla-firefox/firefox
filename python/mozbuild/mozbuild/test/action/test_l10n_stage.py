@@ -9,10 +9,14 @@ from pathlib import Path
 from mozunit import main
 
 from mozbuild.action.l10n_stage import MissingJarSource, stage_locale
-from mozbuild.frontend.jar_manifest import JarEntry, JarSection
+from mozbuild.frontend.jar_manifest import (
+    AB_CD_TOKEN,
+    JarEntry,
+    JarSection,
+    LocaleTemplate,
+)
 from mozbuild.frontend.l10n_manifest import (
     MANIFEST_VERSION,
-    MOZ_L10N_AB_CD_PLACEHOLDER,
     L10nManifest,
     L10nManifestContextData,
     write_l10n_manifest,
@@ -35,16 +39,15 @@ def _necko_manifest():
                 locale_pp_defines={},
                 jar_sections=[
                     JarSection(
-                        name=f"chrome/{MOZ_L10N_AB_CD_PLACEHOLDER}",
+                        name=LocaleTemplate(f"chrome/{AB_CD_TOKEN}"),
                         base="",
                         relativesrcdir="dom/locales",
                         chrome_manifests=(),
                         entries=(
                             JarEntry(
-                                source="necko.properties",
-                                output=(
-                                    f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}"
-                                    "/necko/necko.properties"
+                                source=LocaleTemplate("necko.properties"),
+                                output=LocaleTemplate(
+                                    f"locale/{AB_CD_TOKEN}/necko/necko.properties"
                                 ),
                                 is_locale=True,
                                 preprocess=False,
@@ -60,18 +63,19 @@ def _necko_manifest():
 def _two_section_manifest():
     def section(name, chrome_packages, sources):
         return JarSection(
-            name=name,
+            name=LocaleTemplate(name),
             base="",
             relativesrcdir="",
             chrome_manifests=tuple(
-                f"locale {package} {MOZ_L10N_AB_CD_PLACEHOLDER} "
-                f"%locale/{MOZ_L10N_AB_CD_PLACEHOLDER}/{package}/"
+                LocaleTemplate(
+                    f"locale {package} {AB_CD_TOKEN} %locale/{AB_CD_TOKEN}/{package}/"
+                )
                 for package in chrome_packages
             ),
             entries=tuple(
                 JarEntry(
-                    source=source,
-                    output=f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}/{name}/{source}",
+                    source=LocaleTemplate(source),
+                    output=LocaleTemplate(f"locale/{AB_CD_TOKEN}/{name}/{source}"),
                     is_locale=True,
                     preprocess=False,
                 )
@@ -117,16 +121,15 @@ def _comm_manifest():
                 locale_pp_defines={},
                 jar_sections=[
                     JarSection(
-                        name=f"chrome/{MOZ_L10N_AB_CD_PLACEHOLDER}",
+                        name=LocaleTemplate(f"chrome/{AB_CD_TOKEN}"),
                         base="",
                         relativesrcdir="",
                         chrome_manifests=(),
                         entries=(
                             JarEntry(
-                                source="chrome/messenger/messenger.dtd",
-                                output=(
-                                    f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}"
-                                    "/messenger/messenger.dtd"
+                                source=LocaleTemplate("chrome/messenger/messenger.dtd"),
+                                output=LocaleTemplate(
+                                    f"locale/{AB_CD_TOKEN}/messenger/messenger.dtd"
                                 ),
                                 is_locale=True,
                                 preprocess=False,

@@ -98,7 +98,7 @@ class JarManifestParser:
         r"""
         (?:
             (?:\[(?P<base>[\w\d.\-_\/{}@]+)\]\s*)? # optional [base/path]
-            (?P<jarfile>[\w\d.\-_\/{}]+)\.jar:     # filename.jar:
+            (?P<jarfile>[\w\d.\-_\/{}@]+)\.jar:    # filename.jar:
         |
             (?:\s*(\#.*)?)                         # comment
         )\s*$                                      # whitespaces

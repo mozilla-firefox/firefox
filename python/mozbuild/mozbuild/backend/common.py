@@ -724,11 +724,12 @@ class CommonBackend(BuildBackend):
         ab_cd = obj.config.substs["MOZ_UI_LOCALE"]
 
         sections, inputs = parse_jar_manifest(
-            obj.path.full_path, jar_manifest_defines(obj._context), ab_cd
+            obj.path.full_path, jar_manifest_defines(obj._context)
         )
         self.backend_input_files |= inputs
 
         for jarinfo in sections:
+            section_name = jarinfo.name.resolve(ab_cd)
             jar_context = Context(
                 allowed_variables=VARIABLES, config=obj._context.config
             )
@@ -749,39 +750,41 @@ class CommonBackend(BuildBackend):
             localized_files_pp = jar_context["LOCALIZED_PP_FILES"]
 
             for e in jarinfo.entries:
+                entry_source = e.source.resolve(ab_cd)
+                entry_output = e.output.resolve(ab_cd)
                 if e.is_locale:
                     if jarinfo.relativesrcdir:
                         src = "/%s" % jarinfo.relativesrcdir
                     else:
                         src = ""
-                    src = mozpath.join(src, "en-US", e.source)
+                    src = mozpath.join(src, "en-US", entry_source)
                 else:
-                    src = e.source
+                    src = entry_source
 
                 src = Path(jar_context, src)
 
-                if "*" not in e.source and not os.path.exists(src.full_path):
+                if "*" not in entry_source and not os.path.exists(src.full_path):
                     if e.is_locale:
                         raise Exception(
-                            "%s: Cannot find %s (tried %s)"
-                            % (obj.path, e.source, src.full_path)
+                            f"{obj.path}: Cannot find {entry_source} "
+                            f"(tried {src.full_path})"
                         )
-                    if e.source.startswith("/"):
-                        src = Path(jar_context, "!" + e.source)
+                    if entry_source.startswith("/"):
+                        src = Path(jar_context, "!" + entry_source)
                     else:
                         # This actually gets awkward if the jar.mn is not
                         # in the same directory as the moz.build declaring
                         # it, but it's how it works in the recursive make,
                         # not that anything relies on that, but it's simpler.
-                        src = Path(obj._context, "!" + e.source)
+                        src = Path(obj._context, "!" + entry_source)
 
-                output_basename = mozpath.basename(e.output)
+                output_basename = mozpath.basename(entry_output)
                 if output_basename != src.target_basename:
                     src = RenamedSourcePath(jar_context, (src, output_basename))
-                path = mozpath.dirname(mozpath.join(jarinfo.name, e.output))
+                path = mozpath.dirname(mozpath.join(section_name, entry_output))
 
                 if e.preprocess:
-                    if "*" in e.source:
+                    if "*" in entry_source:
                         raise Exception(
                             "%s: Wildcards are not supported with "
                             "preprocessing" % obj.path
@@ -808,13 +811,11 @@ class CommonBackend(BuildBackend):
 
             for m in jarinfo.chrome_manifests:
                 entry = parse_manifest_line(
-                    mozpath.dirname(jarinfo.name),
-                    m.replace("%", mozpath.basename(jarinfo.name) + "/"),
+                    mozpath.dirname(section_name),
+                    m.resolve(ab_cd).replace("%", mozpath.basename(section_name) + "/"),
                 )
                 self.consume_object(
-                    ChromeManifestEntry(
-                        jar_context, "%s.manifest" % jarinfo.name, entry
-                    )
+                    ChromeManifestEntry(jar_context, f"{section_name}.manifest", entry)
                 )
 
     def _write_rust_xpidl_summary(self, manager):

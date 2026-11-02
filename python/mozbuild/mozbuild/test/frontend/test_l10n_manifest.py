@@ -9,7 +9,7 @@ from pathlib import Path
 import mozpack.path as mozpath
 from mozunit import main
 
-from mozbuild.frontend.jar_manifest import JarEntry, JarSection
+from mozbuild.frontend.jar_manifest import JarEntry, JarSection, LocaleTemplate
 from mozbuild.frontend.l10n_manifest import (
     MANIFEST_VERSION,
     L10nManifest,
@@ -50,14 +50,16 @@ class TestL10nManifestRoundTrip(unittest.TestCase):
                     },
                     jar_sections=[
                         JarSection(
-                            name="browser",
+                            name=LocaleTemplate("browser"),
                             base="",
                             relativesrcdir="browser/locales",
-                            chrome_manifests=("locale browser %en-US %",),
+                            chrome_manifests=(
+                                LocaleTemplate("locale browser %en-US %"),
+                            ),
                             entries=(
                                 JarEntry(
-                                    source="en-US/foo.ftl",
-                                    output="foo.ftl",
+                                    source=LocaleTemplate("en-US/foo.ftl"),
+                                    output=LocaleTemplate("foo.ftl"),
                                     is_locale=True,
                                     preprocess=False,
                                 ),
@@ -227,14 +229,14 @@ class TestL10nManifestRoots(unittest.TestCase):
 
     def _jar_section(self):
         return JarSection(
-            name="chrome",
+            name=LocaleTemplate("chrome"),
             base="",
             relativesrcdir="",
             chrome_manifests=(),
             entries=(
                 JarEntry(
-                    source="en-US/necko.properties",
-                    output="locale/necko.properties",
+                    source=LocaleTemplate("en-US/necko.properties"),
+                    output=LocaleTemplate("locale/necko.properties"),
                     is_locale=True,
                     preprocess=False,
                 ),
@@ -277,7 +279,7 @@ class TestL10nManifestRoots(unittest.TestCase):
 
     def _localization_section(self, *entries, chrome_manifests=()):
         return JarSection(
-            name="MOZ_L10N_AB_CD_PLACEHOLDER",
+            name=LocaleTemplate("@AB_CD@"),
             base="localization",
             relativesrcdir=None,
             chrome_manifests=chrome_manifests,
@@ -286,14 +288,14 @@ class TestL10nManifestRoots(unittest.TestCase):
 
     def test_out_of_root_context_keeps_its_localized_fluent_files(self):
         localized = JarEntry(
-            source="toolkit/**/*.ftl",
-            output="toolkit",
+            source=LocaleTemplate("toolkit/**/*.ftl"),
+            output=LocaleTemplate("toolkit"),
             is_locale=True,
             preprocess=False,
         )
         fallback = JarEntry(
-            source="../locales-preview/aboutRestricted.ftl",
-            output="locales-preview/aboutRestricted.ftl",
+            source=LocaleTemplate("../locales-preview/aboutRestricted.ftl"),
+            output=LocaleTemplate("locales-preview/aboutRestricted.ftl"),
             is_locale=False,
             preprocess=False,
         )
@@ -319,8 +321,8 @@ class TestL10nManifestRoots(unittest.TestCase):
         context.jar_sections = [
             self._localization_section(
                 JarEntry(
-                    source="../locales-preview/remote-agent.ftl",
-                    output="locales-preview/remote-agent.ftl",
+                    source=LocaleTemplate("../locales-preview/remote-agent.ftl"),
+                    output=LocaleTemplate("locales-preview/remote-agent.ftl"),
                     is_locale=False,
                     preprocess=False,
                 )
