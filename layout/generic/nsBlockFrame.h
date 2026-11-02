@@ -339,7 +339,7 @@ class nsBlockFrame : public nsContainerFrame {
   /**
    * Determine if this block is a margin root at the top/bottom edges.
    */
-  void IsMarginRoot(bool* aBStartMarginRoot, bool* aBEndMarginRoot);
+  void IsMarginRoot(bool* aBStartMarginRoot, bool* aBEndMarginRoot) const;
 
   static bool BlockNeedsFloatManager(nsIFrame* aBlock);
 
@@ -383,6 +383,17 @@ class nsBlockFrame : public nsContainerFrame {
    * block frame that it encounters.
    */
   static nsBlockFrame* GetNearestAncestorBlock(nsIFrame* aCandidate);
+
+  /**
+   * Returns whether `margin-trim` on the block container aFrame discards the
+   * block-start / block-end margins of the children that adjoin the
+   * corresponding content edge, along with any margin collapsed with those.
+   * https://drafts.csswg.org/css-box-4/#margin-trim-block
+   *
+   * Note that this only reports what aFrame's own style asks for.
+   */
+  static bool StyleTrimsChildBStartMargins(const nsIFrame* aFrame);
+  static bool StyleTrimsChildBEndMargins(const nsIFrame* aFrame);
 
   struct FrameLines {
     nsLineList mLines;
@@ -995,6 +1006,16 @@ class nsBlockFrame : public nsContainerFrame {
   // Determines if the given line is the last formatted line of the block.
   // Used for text-box-trim.
   bool IsLastFormattedLine(LineIterator aLine);
+
+  /**
+   * Determines whether a block-level child's margin adjoins our block-start
+   * or block-end content edge. For block-start, the current line is being
+   * reflowed and for block-end, aLine is the candidate line.
+   *
+   * These are used to decide which children `margin-trim` applies to.
+   */
+  bool IsLineAdjacentToBStart(BlockReflowState& aState);
+  bool IsLineAdjacentToBEnd(LineIterator aLine);
 
   void DeleteLine(BlockReflowState& aState, nsLineList::iterator aLine,
                   nsLineList::iterator aLineEnd);
