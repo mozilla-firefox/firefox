@@ -635,6 +635,29 @@ void FinalizationObservers::traceWeakWeakRefList(JSTracer* trc,
   }
 }
 
+JS_PUBLIC_API void JS::NoteWeakRefTargets(
+    JSRuntime* runtime, JS::NoteWeakRefTargetCallback callback, void* data) {
+  MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime));
+  runtime->gc.noteWeakRefTargets(callback, data);
+}
+
+void GCRuntime::noteWeakRefTargets(JS::NoteWeakRefTargetCallback callback,
+                                   void* data) {
+  for (AllZonesIter zone(this); !zone.done(); zone.next()) {
+    FinalizationObservers* observers = zone->finalizationObservers();
+    if (observers) {
+      observers->noteWeakRefTargets(callback, data);
+    }
+  }
+}
+
+void FinalizationObservers::noteWeakRefTargets(
+    JS::NoteWeakRefTargetCallback callback, void* data) {
+  for (auto iter = weakRefMap.iter(); !iter.done(); iter.next()) {
+    callback(iter.get().key().toGCCellPtr(), data);
+  }
+}
+
 JS_PUBLIC_API void JS::MaybeClearWeakRefTargets(
     JSRuntime* runtime, JS::ShouldClearWeakRefTargetCallback callback,
     void* data) {

@@ -1766,6 +1766,23 @@ nsresult CycleCollectedJSRuntime::TraverseRoots(
   NoteWeakMapsTracer trc(mJSRuntime, aCb);
   js::TraceWeakMaps(&trc);
 
+  // Ensure WeakRef targets are represented in the graph so that we can check
+  // whether they are garbage with IsGCThingWhiteInCCGraph in
+  // ClearWhiteJSWeakRefTargets.
+  //
+  // Only objects are added. Symbols can be gray, but the only way they can
+  // reach anything else the CC cares about is by being a weak map key, in which
+  // case NoteWeakMapping has already added them to the graph.
+  JS::NoteWeakRefTargets(
+      mJSRuntime,
+      [](JS::GCCellPtr aTarget, void* aData) {
+        auto& cb = *static_cast<nsCycleCollectionNoteRootCallback*>(aData);
+        if (aTarget.is<JSObject>() && JS::GCThingIsMarkedGrayInCC(aTarget)) {
+          cb.NoteJSRoot(&aTarget.as<JSObject>());
+        }
+      },
+      &aCb);
+
   return NS_OK;
 }
 
