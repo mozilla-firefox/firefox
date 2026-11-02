@@ -18472,6 +18472,15 @@
   value: false
   mirror: always
 
+# Test-only. When true, the content classifier uses the test_block and
+# test_annotate engines wherever the engines prefs list the trackers engine,
+# for blocking and annotation respectively. test_block then follows the
+# trackers scoped pref.
+- name: privacy.trackingprotection.content.testing.use_test_trackers_engines
+  type: bool
+  value: false
+  mirror: never
+
 # Log level for the content classifier remote settings client.
 # Set to "Debug" for verbose output, or one of "Info", "Warn", "Error", "Off".
 - name: privacy.trackingprotection.content.remote_settings.loglevel
