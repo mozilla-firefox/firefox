@@ -133,22 +133,13 @@ already_AddRefed<dom::Promise> Instance::RequestAdapter(
     }
   };
 
-  rejectIf(!gfx::gfxVars::AllowWebGPU(), "WebGPU is disabled by blocklist.");
+  rejectIf(
+      !gfx::gfxVars::AllowWebGPU(),
+      "WebGPU is disabled. Search for `WEBGPU` in `about:support` for details");
 
   // Check the basic `dom.webgpu.enabled` prefs.
   auto explanation = DisabledByPrefWithExplanation();
   rejectIf(explanation, explanation);
-#ifndef HAVE_64BIT_BUILD
-  rejectIf(true, "WebGPU is only available on 64-bit architectures.");
-#endif
-
-#ifdef WIN32
-#  ifndef MOZ_DXCOMPILER
-  rejectIf(true,
-           "WebGPU is disabled because dxcompiler is unavailable with this "
-           "build configuration");
-#  endif
-#endif
 
   // Check if WebGPU is blocked for this global's domain.
   //
