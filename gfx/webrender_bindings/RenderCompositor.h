@@ -212,8 +212,9 @@ class RenderCompositor {
   virtual void GetWindowProperties(WindowProperties* aProperties);
 
   // Interface for partial present
-  // The maximum number of dirty rects WebRender may pass when presenting the
-  // window's own swapchain. Zero disables partial present.
+  // The maximum number of dirty rects WebRender may pass when presenting a
+  // swapchain, whether it is the window or an OS layer. Zero disables partial
+  // present.
   virtual uint32_t GetMaxPartialPresentRects() { return 0; }
   // Whether the window's own swapchain is partially presented.
   virtual bool UseWindowPartialPresent() { return false; }

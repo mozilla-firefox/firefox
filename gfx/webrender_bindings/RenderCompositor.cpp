@@ -180,11 +180,7 @@ void wr_compositor_get_swapchain_mode(void* aCompositor, bool* aUsesOsLayers,
                                       bool* aUsesBufferAge) {
   RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
   *aUsesOsLayers = compositor->UseLayerCompositor();
-  // GetMaxPartialPresentRects() describes the window's own swapchain. OS layer
-  // swapchains take a single dirty rect (DCSwapChain::Present,
-  // RenderCompositorLayerNative::BindSwapChain).
-  *aMaxPartialPresentRects =
-      *aUsesOsLayers ? 1 : compositor->GetMaxPartialPresentRects();
+  *aMaxPartialPresentRects = compositor->GetMaxPartialPresentRects();
   *aUsesBufferAge = compositor->ShouldUseBufferAge();
 }
 

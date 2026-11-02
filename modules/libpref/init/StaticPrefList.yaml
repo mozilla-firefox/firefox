@@ -8778,14 +8778,11 @@
   mirror: once
 
 # Number of damage rects we can give to the compositor for a new frame with
-# partial present. This controls whether partial present is used or not.
+# partial present, for the window and for OS layer swapchains. This controls
+# whether partial present is used or not.
 - name: gfx.webrender.max-partial-present-rects
   type: uint32_t
-#if defined(XP_WIN) || defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GTK)
   value: 1
-#else
-  value: 0
-#endif
   mirror: once
 
 # Whether or not we can reuse the buffer contents using the GL buffer age

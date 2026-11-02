@@ -135,6 +135,10 @@ void RenderCompositorLayerNative::GetCompositorCapabilities(
   RenderCompositor::GetCompositorCapabilities(aCaps);
 }
 
+uint32_t RenderCompositorLayerNative::GetMaxPartialPresentRects() {
+  return gfx::gfxVars::WebRenderMaxPartialPresentRects();
+}
+
 void RenderCompositorLayerNative::GetWindowProperties(
     WindowProperties* aProperties) {
   // XXX

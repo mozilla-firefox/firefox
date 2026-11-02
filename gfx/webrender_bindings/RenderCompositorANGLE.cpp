@@ -957,7 +957,7 @@ bool RenderCompositorANGLE::UseWindowPartialPresent() {
 bool RenderCompositorANGLE::RequestFullRender() { return mFullRender; }
 
 uint32_t RenderCompositorANGLE::GetMaxPartialPresentRects() {
-  if (!mUseWindowPartialPresent) {
+  if (!UseLayerCompositor() && !mUseWindowPartialPresent) {
     return 0;
   }
   return gfx::gfxVars::WebRenderMaxPartialPresentRects();

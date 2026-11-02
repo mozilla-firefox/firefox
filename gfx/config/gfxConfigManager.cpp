@@ -283,7 +283,8 @@ void gfxConfigManager::ConfigureWebRender() {
   }
 
   // Initialize WebRender partial present config.
-  // Partial present is used only when WebRender compositor is not used.
+  // Partial present applies to the window and to OS layer swapchains, but not
+  // to the tiles of the native compositor.
   mFeatureWrPartial->SetDefault(mWrPartialPresent, FeatureStatus::Disabled,
                                 "User disabled via pref");
   if (mWrForcePartialPresent) {
