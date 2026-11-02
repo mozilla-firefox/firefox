@@ -4,6 +4,7 @@
 
 #include "jit/loong64/MacroAssembler-loong64.h"
 
+#include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 
 #include <bit>
