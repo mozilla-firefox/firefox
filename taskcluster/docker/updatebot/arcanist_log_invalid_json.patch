@@ -1,0 +1,29 @@
+diff --git a/src/conduit/ConduitFuture.php b/src/conduit/ConduitFuture.php
+index 5966f42e..09b5016b 100644
+--- a/src/conduit/ConduitFuture.php
++++ b/src/conduit/ConduitFuture.php
+@@ -54,10 +54,22 @@ final class ConduitFuture extends FutureProxy {
+     try {
+       $data = phutil_json_decode($raw);
+     } catch (PhutilJSONParserException $ex) {
++      // Include what the host actually returned, so a proxy or filter that
++      // answers in place of Phabricator can be identified from the logs.
++      $header_lines = array();
++      foreach ($headers as $header) {
++        list($name, $value) = $header;
++        $header_lines[] = $name.': '.$value;
++      }
+       throw new PhutilProxyException(
+         pht(
+-          'Host returned HTTP/200, but invalid JSON data in response to '.
+-          'a Conduit method call.'),
++          "Host returned HTTP/200, but invalid JSON data in response to ".
++          "a Conduit method call (%s).\nResponse headers:\n%s\n".
++          "Response body (%s bytes, up to 4096 shown):\n%s",
++          $this->conduitMethod,
++          implode("\n", $header_lines),
++          new PhutilNumber(strlen($body)),
++          substr($body, 0, 4096)),
+         $ex);
+     }
+ 

@@ -45,6 +45,9 @@ pushd /builds/worker/.mozbuild/
 git clone https://github.com/phacility/arcanist.git
 cd arcanist
 git checkout e50d1bc4eabac9c37e3220e9f3fb8e37ae20b957
+# Show the response when Phabricator (or something in front of it) answers a
+# Conduit call with something other than JSON.
+git apply /setup/arcanist_log_invalid_json.patch
 ln -s /builds/worker/.mozbuild/arcanist/bin/arc /usr/local/bin/arc
 popd
 

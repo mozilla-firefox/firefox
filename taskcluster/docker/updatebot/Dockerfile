@@ -5,6 +5,7 @@ VOLUME /builds/worker/checkouts
 
 COPY 	install-node-for-pdfjs.sh 	/setup/install-node-for-pdfjs.sh
 COPY    privileged-setup.sh     /setup/privileged-setup.sh
+COPY    arcanist_log_invalid_json.patch /setup/arcanist_log_invalid_json.patch
 COPY    updatebot-version.sh    /setup/updatebot-version.sh
 COPY    evolve-requirements.txt /setup/evolve-requirements.txt
 COPY    claude-code             /setup/claude-code
