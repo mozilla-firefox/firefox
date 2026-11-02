@@ -55,7 +55,7 @@ const { PlacesTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/PlacesTestUtils.sys.mjs"
 );
 
-const RESUME_ACTIVITY_TEST_TIME = Date.UTC(2026, 0, 1);
+const JOURNEY_TEST_TIME = Date.UTC(2026, 0, 1);
 
 function makePage(title, overrides = {}) {
   return {
@@ -69,7 +69,7 @@ function makeChat(title, overrides = {}) {
   return {
     id: title.toLowerCase().replaceAll(" ", "-"),
     title,
-    updatedDate: RESUME_ACTIVITY_TEST_TIME,
+    updatedDate: JOURNEY_TEST_TIME,
     messages: [
       { role: MESSAGE_ROLE.USER, body: `${title} user` },
       { role: MESSAGE_ROLE.ASSISTANT, body: `${title} assistant` },
@@ -84,13 +84,132 @@ function makeMemory(summary, overrides = {}) {
     sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
     sources: [HISTORY],
     frecency: 1,
-    updated_at: RESUME_ACTIVITY_TEST_TIME,
+    updated_at: JOURNEY_TEST_TIME,
     pages: [makePage(summary)],
     ...overrides,
   };
 }
 
-add_setup(async function setupResumeActivityConversationStarterTests() {
+/**
+ * Rewrites moz_places.url_hash for pages carrying a `urlHash` override, since
+ * Places always computes the hash from the URL on insert.
+ *
+ * @param {Array<object>} pages - Pages from makePage
+ */
+async function applyUrlHashOverrides(pages) {
+  const overridden = pages.filter(page => page.urlHash !== undefined);
+  if (!overridden.length) {
+    return;
+  }
+  await PlacesUtils.withConnectionWrapper(
+    "test-journey-override-url-hash",
+    async db => {
+      for (const { url, urlHash } of overridden) {
+        await db.execute(
+          `UPDATE moz_places
+           SET url_hash = :urlHash
+           WHERE url = :url`,
+          { url, urlHash }
+        );
+      }
+    }
+  );
+}
+
+async function addJourneyTestMemories(memories) {
+  const pages = memories.flatMap(memory => memory.pages).filter(Boolean);
+  if (pages.length) {
+    await PlacesTestUtils.addVisits(
+      pages.map((page, index) => ({
+        url: page.url,
+        title: page.title,
+        visitDate: new Date(
+          page.lastVisitDate ?? JOURNEY_TEST_TIME - index * 60_000
+        ),
+        transition: PlacesUtils.history.TRANSITIONS.LINK,
+      }))
+    );
+    await applyUrlHashOverrides(pages);
+    await waitForEmbeddings(
+      pages.map(
+        ({ url, urlHash }) => urlHash ?? PlacesUtils.history.hashURL(url)
+      )
+    );
+  }
+
+  const addedMemories = [];
+  const overallAddedConversationIds = [];
+  try {
+    for (const { pages: memoryPages, chats, ...memory } of memories) {
+      const conversationIdsPerMemory = [];
+      for (const chat of chats ?? []) {
+        const conversation = new ChatConversation({
+          id: chat.id ?? crypto.randomUUID(),
+          title: chat.title,
+          updatedDate: chat.updatedDate,
+          messages: chat.messages.map(
+            (message, ordinal) =>
+              new ChatMessage({
+                ordinal,
+                role: message.role,
+                content: { type: "text", body: message.body },
+              })
+          ),
+        });
+        await ChatStore.updateConversation(conversation);
+        conversationIdsPerMemory.push(conversation.id);
+        overallAddedConversationIds.push(conversation.id);
+      }
+      addedMemories.push(
+        await MemoryStore.addMemory({
+          ...memory,
+          source_ids: {
+            history_source_ids: memoryPages?.map(
+              ({ url, urlHash }) => urlHash ?? PlacesUtils.history.hashURL(url)
+            ),
+            conversation_source_ids: conversationIdsPerMemory,
+          },
+        })
+      );
+    }
+  } catch (error) {
+    for (const memory of addedMemories) {
+      await MemoryStore.hardDeleteMemory(memory.id);
+    }
+    for (const conversationId of overallAddedConversationIds) {
+      await ChatStore.deleteConversationById(conversationId);
+    }
+    throw error;
+  }
+
+  return addedMemories;
+}
+
+async function cleanupJourneyTestMemories(addedMemories) {
+  try {
+    for (const memory of addedMemories) {
+      for (const conversationId of memory.source_ids?.conversation_source_ids ??
+        []) {
+        await ChatStore.deleteConversationById(conversationId);
+      }
+      await MemoryStore.hardDeleteMemory(memory.id);
+    }
+  } finally {
+    // Undo any url_hash overrides so history.clear() sees a consistent table.
+    await PlacesUtils.withConnectionWrapper(
+      "test-journey-restore-url-hash",
+      db =>
+        db.execute(
+          `UPDATE moz_places
+           SET url_hash = hash(url)
+           WHERE url_hash <> hash(url)`
+        )
+    );
+    await PlacesUtils.history.clear();
+  }
+}
+
+add_setup(async function setupJourneyTests() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["places.history.enabled", true],
@@ -112,7 +231,7 @@ add_setup(async function setupResumeActivityConversationStarterTests() {
 });
 
 add_task(async function test_generateAndPersistJourneys() {
-  const minutesAgo = minutes => RESUME_ACTIVITY_TEST_TIME - minutes * 60_000;
+  const minutesAgo = minutes => JOURNEY_TEST_TIME - minutes * 60_000;
 
   // Fixtures: eligible memories with history and conversation context.
   // Page A4 and its twin share a url_hash, so neither should resolve to a URL.
@@ -203,7 +322,7 @@ add_task(async function test_generateAndPersistJourneys() {
 
   let memories = [];
   try {
-    memories = await addResumeActivityTestMemories(memoryFixtures);
+    memories = await addJourneyTestMemories(memoryFixtures);
     await PlacesUtils.history.remove(
       "https://example.com/unresolvable-generation"
     );
@@ -330,7 +449,7 @@ add_task(async function test_generateAndPersistJourneys() {
     }
   } finally {
     await JourneyStore.clear();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
@@ -339,9 +458,7 @@ add_task(async function test_generateAndPersistJourneys_securityProperties() {
   const mockEngineManager = new MockEngineManager();
   const runSpy = sinon.spy(Conversation.prototype, "run");
   try {
-    memories = await addResumeActivityTestMemories([
-      makeMemory("Security memory"),
-    ]);
+    memories = await addJourneyTestMemories([makeMemory("Security memory")]);
     const journeyMetadataPromise =
       JourneyManager.generateAndPersistJourneys(memories);
     const { request, respond } = await mockEngineManager.captureRequest({
@@ -385,7 +502,7 @@ add_task(async function test_generateAndPersistJourneys_securityProperties() {
     runSpy.restore();
     mockEngineManager.cleanupMocks();
     await JourneyStore.clear();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
@@ -394,13 +511,13 @@ add_task(async function test_generateAndPersistJourneys_longInputs() {
   const pageLine = index => `  - "Page A${index}" (Untrusted webpage data)`;
   let memories = [];
   try {
-    memories = await addResumeActivityTestMemories([
+    memories = await addJourneyTestMemories([
       makeMemory("Memory A", {
         reasoning: "Reason A",
         pages: Array.from({ length: pageCount }, (_, i) =>
           makePage(`Page A${i}`, {
             url: `https://example.com/a${i}`,
-            lastVisitDate: RESUME_ACTIVITY_TEST_TIME + i * 60_000,
+            lastVisitDate: JOURNEY_TEST_TIME + i * 60_000,
           })
         ),
         chats: [
@@ -467,7 +584,7 @@ add_task(async function test_generateAndPersistJourneys_longInputs() {
     }
   } finally {
     await JourneyStore.clear();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
@@ -475,7 +592,7 @@ add_task(
   async function test_generateAndPersistJourneys_inferenceFailureSkipsBatch() {
     let memories = [];
     try {
-      memories = await addResumeActivityTestMemories([
+      memories = await addJourneyTestMemories([
         makeMemory("Failed batch memory"),
         makeMemory("Successful batch memory"),
       ]);
@@ -522,7 +639,7 @@ add_task(
       }
     } finally {
       await JourneyStore.clear();
-      await cleanupResumeActivityTestMemories(memories);
+      await cleanupJourneyTestMemories(memories);
     }
   }
 );
@@ -534,7 +651,7 @@ add_task(async function test_generateAndPersistJourneys_unsupportedLocale() {
   let mockEngineManager;
 
   try {
-    memories = await addResumeActivityTestMemories([
+    memories = await addJourneyTestMemories([
       makeMemory("Locale gated memory", {
         frecency: 10,
         pages: [makePage("Locale gated page")],
@@ -564,7 +681,7 @@ add_task(async function test_generateAndPersistJourneys_unsupportedLocale() {
     Services.locale.requestedLocales = originalRequested;
     Services.locale.availableLocales = originalAvailable;
     mockEngineManager?.cleanupMocks();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
@@ -763,9 +880,7 @@ add_task(async function test_generateAndPersistJourneys_contextFailure() {
   const sandbox = sinon.createSandbox();
   let memories = [];
   try {
-    memories = await addResumeActivityTestMemories([
-      makeMemory("Context failure"),
-    ]);
+    memories = await addJourneyTestMemories([makeMemory("Context failure")]);
     const malformed = {
       ...memories[0],
       source_ids: {
@@ -786,7 +901,7 @@ add_task(async function test_generateAndPersistJourneys_contextFailure() {
     Assert.ok(generate.notCalled, "Inference is not attempted");
   } finally {
     sandbox.restore();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
@@ -827,125 +942,6 @@ add_task(async function test_runJourneyMaintenance() {
     await JourneyStore.clear();
   }
 });
-
-/**
- * Rewrites moz_places.url_hash for pages carrying a `urlHash` override, since
- * Places always computes the hash from the URL on insert.
- *
- * @param {Array<object>} pages - Pages from makePage
- */
-async function applyUrlHashOverrides(pages) {
-  const overridden = pages.filter(page => page.urlHash !== undefined);
-  if (!overridden.length) {
-    return;
-  }
-  await PlacesUtils.withConnectionWrapper(
-    "test-resume-activity-override-url-hash",
-    async db => {
-      for (const { url, urlHash } of overridden) {
-        await db.execute(
-          `UPDATE moz_places
-           SET url_hash = :urlHash
-           WHERE url = :url`,
-          { url, urlHash }
-        );
-      }
-    }
-  );
-}
-
-async function addResumeActivityTestMemories(memories) {
-  const pages = memories.flatMap(memory => memory.pages).filter(Boolean);
-  if (pages.length) {
-    await PlacesTestUtils.addVisits(
-      pages.map((page, index) => ({
-        url: page.url,
-        title: page.title,
-        visitDate: new Date(
-          page.lastVisitDate ?? RESUME_ACTIVITY_TEST_TIME - index * 60_000
-        ),
-        transition: PlacesUtils.history.TRANSITIONS.LINK,
-      }))
-    );
-    await applyUrlHashOverrides(pages);
-    await waitForEmbeddings(
-      pages.map(
-        ({ url, urlHash }) => urlHash ?? PlacesUtils.history.hashURL(url)
-      )
-    );
-  }
-
-  const addedMemories = [];
-  const overallAddedConversationIds = [];
-  try {
-    for (const { pages: memoryPages, chats, ...memory } of memories) {
-      const conversationIdsPerMemory = [];
-      for (const chat of chats ?? []) {
-        const conversation = new ChatConversation({
-          id: chat.id ?? crypto.randomUUID(),
-          title: chat.title,
-          updatedDate: chat.updatedDate,
-          messages: chat.messages.map(
-            (message, ordinal) =>
-              new ChatMessage({
-                ordinal,
-                role: message.role,
-                content: { type: "text", body: message.body },
-              })
-          ),
-        });
-        await ChatStore.updateConversation(conversation);
-        conversationIdsPerMemory.push(conversation.id);
-        overallAddedConversationIds.push(conversation.id);
-      }
-      addedMemories.push(
-        await MemoryStore.addMemory({
-          ...memory,
-          source_ids: {
-            history_source_ids: memoryPages?.map(
-              ({ url, urlHash }) => urlHash ?? PlacesUtils.history.hashURL(url)
-            ),
-            conversation_source_ids: conversationIdsPerMemory,
-          },
-        })
-      );
-    }
-  } catch (error) {
-    for (const memory of addedMemories) {
-      await MemoryStore.hardDeleteMemory(memory.id);
-    }
-    for (const conversationId of overallAddedConversationIds) {
-      await ChatStore.deleteConversationById(conversationId);
-    }
-    throw error;
-  }
-
-  return addedMemories;
-}
-
-async function cleanupResumeActivityTestMemories(addedMemories) {
-  try {
-    for (const memory of addedMemories) {
-      for (const conversationId of memory.source_ids?.conversation_source_ids ??
-        []) {
-        await ChatStore.deleteConversationById(conversationId);
-      }
-      await MemoryStore.hardDeleteMemory(memory.id);
-    }
-  } finally {
-    // Undo any url_hash overrides so history.clear() sees a consistent table.
-    await PlacesUtils.withConnectionWrapper(
-      "test-resume-activity-restore-url-hash",
-      db =>
-        db.execute(
-          `UPDATE moz_places
-           SET url_hash = hash(url)
-           WHERE url_hash <> hash(url)`
-        )
-    );
-    await PlacesUtils.history.clear();
-  }
-}
 
 /**
  * Mock engine embedding text as a bag of words, giving each distinct word its
@@ -1160,15 +1156,13 @@ add_task(async function test_suggestJourneysToResume() {
   const mockEngineManager = new MockEngineManager();
   let memories = [];
   try {
-    memories = await addResumeActivityTestMemories([
-      makeMemory("Older journey", {
-        created_at: RESUME_ACTIVITY_TEST_TIME - 60_000,
-      }),
+    memories = await addJourneyTestMemories([
+      makeMemory("Older journey", { created_at: JOURNEY_TEST_TIME - 60_000 }),
       makeMemory("Newer journey", {
-        created_at: RESUME_ACTIVITY_TEST_TIME,
+        created_at: JOURNEY_TEST_TIME,
         pages: Array.from({ length: MAX_NUM_URLS_PER_MEMORY + 1 }, (_, i) =>
           makePage(`Newer page ${i}`, {
-            lastVisitDate: RESUME_ACTIVITY_TEST_TIME + i * 60_000,
+            lastVisitDate: JOURNEY_TEST_TIME + i * 60_000,
           })
         ),
       }),
@@ -1183,7 +1177,7 @@ add_task(async function test_suggestJourneysToResume() {
         pages: [makePage("Unresolvable page", { url: unresolvableUrl })],
       }),
       makeMemory("Stale unresolvable journey", {
-        created_at: RESUME_ACTIVITY_TEST_TIME - 30_000,
+        created_at: JOURNEY_TEST_TIME - 30_000,
         pages: [
           makePage("Stale unresolvable page", { url: staleUnresolvableUrl }),
         ],
@@ -1287,7 +1281,7 @@ add_task(async function test_suggestJourneysToResume() {
   } finally {
     mockEngineManager.cleanupMocks();
     await JourneyStore.clear();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
@@ -1332,8 +1326,8 @@ add_task(async function test_constructConversationToResumeJourney() {
   let addedMemories = [];
 
   try {
-    addedMemories = await addResumeActivityTestMemories(testMemories);
-    const resumeActivitySuggestion = {
+    addedMemories = await addJourneyTestMemories(testMemories);
+    const journeySuggestion = {
       memory: addedMemories[0],
       content: {
         headline: "Test headline",
@@ -1346,7 +1340,7 @@ add_task(async function test_constructConversationToResumeJourney() {
     try {
       const conversation =
         await JourneyManager.constructConversationToResumeJourney(
-          resumeActivitySuggestion
+          journeySuggestion
         );
       Assert.ok(
         conversation instanceof ChatConversation,
@@ -1354,8 +1348,8 @@ add_task(async function test_constructConversationToResumeJourney() {
       );
       Assert.equal(
         conversation.title,
-        resumeActivitySuggestion.content.headline,
-        "Should use the conversation starter headline as the title"
+        journeySuggestion.content.headline,
+        "Should use the journey headline as the title"
       );
 
       // Seen Urls should be empty
@@ -1377,20 +1371,20 @@ add_task(async function test_constructConversationToResumeJourney() {
         userMessage instanceof ChatMessage,
         "Messages should be ChatMessage instances"
       );
-      const { prompt: resumeActivitySystemPrompt } = await loadPrompt(
+      const { prompt: journeySystemPrompt } = await loadPrompt(
         MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION,
         { module: "system-instructions" }
       );
       Assert.greater(
-        systemMessage.content.body.indexOf(`\n${resumeActivitySystemPrompt}`),
+        systemMessage.content.body.indexOf(`\n${journeySystemPrompt}`),
         0,
-        "The system message should append the resume activity instructions to the chat system prompt"
+        "The system message should append the journey instructions to the chat system prompt"
       );
 
       Assert.equal(
         userMessage.content.body,
-        resumeActivitySuggestion.content.headline,
-        "The user message should contain the conversation starter headline"
+        journeySuggestion.content.headline,
+        "The user message should contain the journey headline"
       );
       const { resumeActivityContext } = userMessage.content.userContext;
       for (const expectedContent of [
@@ -1403,7 +1397,7 @@ add_task(async function test_constructConversationToResumeJourney() {
       ]) {
         Assert.ok(
           resumeActivityContext.includes(expectedContent),
-          `The resume activity context should include: ${expectedContent}`
+          `The journey context should include: ${expectedContent}`
         );
       }
 
@@ -1427,7 +1421,7 @@ add_task(async function test_constructConversationToResumeJourney() {
       const originatingId = "originating-conversation-id";
       const conversationWithId =
         await JourneyManager.constructConversationToResumeJourney(
-          resumeActivitySuggestion,
+          journeySuggestion,
           originatingId
         );
       Assert.equal(
@@ -1444,12 +1438,12 @@ add_task(async function test_constructConversationToResumeJourney() {
       mockEngineManager.cleanupMocks();
     }
   } finally {
-    await cleanupResumeActivityTestMemories(addedMemories);
+    await cleanupJourneyTestMemories(addedMemories);
   }
 });
 
 add_task(
-  async function test_constructConversationToResumeActivity_invalidInput() {
+  async function test_constructConversationToResumeJourney_invalidInput() {
     const memory = makeMemory("Test memory");
     const validContent = () => ({
       headline: "Test headline",
@@ -1786,7 +1780,7 @@ add_task(async function has_eligible_journeys() {
   const originalRequested = Services.locale.requestedLocales;
   let memories = [];
   try {
-    memories = await addResumeActivityTestMemories([
+    memories = await addJourneyTestMemories([
       makeMemory("Compare hotels"),
       makeMemory("Book flights"),
       makeMemory("Deleted memory"),
@@ -1853,7 +1847,7 @@ add_task(async function has_eligible_journeys() {
     Services.locale.requestedLocales = originalRequested;
     Services.locale.availableLocales = originalAvailable;
     await JourneyStore.clear();
-    await cleanupResumeActivityTestMemories(memories);
+    await cleanupJourneyTestMemories(memories);
   }
 });
 
