@@ -1519,6 +1519,31 @@ void MacroAssemblerLOONG64::ma_and(Register rd, Register rj, Imm32 imm) {
   }
 }
 
+void MacroAssemblerLOONG64::ma_and(Register rd, Register rj, ImmWord imm) {
+  const bool isStackOp = rd == StackPointer;
+  const auto maybeRange =
+      GetContiguousMaskRange(mozilla::BitwiseCast<uint64_t>(imm.value));
+
+  if (is_uintN(imm.value, 12)) {
+    as_andi(rd, rj, static_cast<int32_t>(imm.value));
+  } else if (!isStackOp && maybeRange) {
+    const auto [msb, lsb] = *maybeRange;
+    as_bstrpick_d(rd, rj, msb, lsb);
+    if (lsb != 0) {
+      as_slli_d(rd, rd, lsb);
+    }
+  } else if (!isStackOp && rd != rj) {
+    ma_li(rd, imm);
+    as_and(rd, rj, rd);
+  } else {
+    UseScratchRegisterScope temps(asMasm());
+    Register scratch = temps.Acquire();
+    MOZ_ASSERT(rj != scratch);
+    ma_li(scratch, imm);
+    as_and(rd, rj, scratch);
+  }
+}
+
 void MacroAssemblerLOONG64::ma_or(Register rd, Register rj, Imm32 imm) {
   if (imm.value == 0) {
     ma_move(rd, rj);
@@ -1533,9 +1558,35 @@ void MacroAssemblerLOONG64::ma_or(Register rd, Register rj, Imm32 imm) {
   }
 }
 
+void MacroAssemblerLOONG64::ma_or(Register rd, Register rj, ImmWord imm) {
+  if (imm.value == 0) {
+    ma_move(rd, rj);
+  } else if (is_uintN(imm.value, 12)) {
+    as_ori(rd, rj, static_cast<int32_t>(imm.value));
+  } else {
+    UseScratchRegisterScope temps(asMasm());
+    Register scratch = temps.Acquire();
+    MOZ_ASSERT(rj != scratch);
+    ma_li(scratch, imm);
+    as_or(rd, rj, scratch);
+  }
+}
+
 void MacroAssemblerLOONG64::ma_xor(Register rd, Register rj, Imm32 imm) {
   if (is_uintN(imm.value, 12)) {
     as_xori(rd, rj, imm.value);
+  } else {
+    UseScratchRegisterScope temps(asMasm());
+    Register scratch = temps.Acquire();
+    MOZ_ASSERT(rj != scratch);
+    ma_li(scratch, imm);
+    as_xor(rd, rj, scratch);
+  }
+}
+
+void MacroAssemblerLOONG64::ma_xor(Register rd, Register rj, ImmWord imm) {
+  if (is_uintN(imm.value, 12)) {
+    as_xori(rd, rj, static_cast<int32_t>(imm.value));
   } else {
     UseScratchRegisterScope temps(asMasm());
     Register scratch = temps.Acquire();

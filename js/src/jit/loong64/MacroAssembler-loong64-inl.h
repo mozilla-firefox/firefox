@@ -177,10 +177,7 @@ void MacroAssembler::andPtr(Imm32 imm, const Address& dest) {
 }
 
 void MacroAssembler::and64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-  as_and(dest.reg, dest.reg, scratch);
+  ma_and(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::and64(Register64 src, Register64 dest) {
@@ -215,10 +212,7 @@ void MacroAssembler::and32(const Address& src, Register dest) {
 }
 
 void MacroAssembler::or64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-  as_or(dest.reg, dest.reg, scratch);
+  ma_or(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::or32(Register src, Register dest) {
@@ -240,10 +234,7 @@ void MacroAssembler::or32(Imm32 imm, const Address& dest) {
 }
 
 void MacroAssembler::xor64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-  as_xor(dest.reg, dest.reg, scratch);
+  ma_xor(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::orPtr(Register src, Register dest) {

@@ -280,10 +280,13 @@ class MacroAssemblerLOONG64 : public Assembler {
                 Register rk);
 
   void ma_and(Register rd, Register rj, Imm32 imm);
+  void ma_and(Register rd, Register rj, ImmWord imm);
 
   void ma_or(Register rd, Register rj, Imm32 imm);
+  void ma_or(Register rd, Register rj, ImmWord imm);
 
   void ma_xor(Register rd, Register rj, Imm32 imm);
+  void ma_xor(Register rd, Register rj, ImmWord imm);
 
   void ma_nor(Register rd, Register rj, Imm32 imm);
 
