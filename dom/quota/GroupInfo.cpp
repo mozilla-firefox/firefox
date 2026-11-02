@@ -38,10 +38,14 @@ void GroupInfo::LockedAddOriginInfo(NotNull<RefPtr<OriginInfo>>&& aOriginInfo) {
   const int64_t usage = aOriginInfo->LockedUsage();
   const bool persisted = aOriginInfo->LockedPersisted();
 
-  auto foundIndex = mOriginInfos.IndexOf(aOriginInfo);
+  const auto foundIt =
+      std::find_if(mOriginInfos.begin(), mOriginInfos.end(),
+                   [&aOriginInfo](const auto& originInfo) {
+                     return originInfo->mOrigin == aOriginInfo->mOrigin;
+                   });
 
-  if (decltype(mOriginInfos)::NoIndex != foundIndex) {
-    const auto& oldOriginInfo = mOriginInfos[foundIndex];
+  if (foundIt != mOriginInfos.end()) {
+    const auto& oldOriginInfo = *foundIt;
     const int64_t oldUsage = oldOriginInfo->LockedUsage();
 
     // The persisted flag may differ between old and new, so subtract and
@@ -55,7 +59,9 @@ void GroupInfo::LockedAddOriginInfo(NotNull<RefPtr<OriginInfo>>&& aOriginInfo) {
     QM_ASSERT_NOT_NEGATIVE(quotaManager->mTemporaryStorageUsage);
     quotaManager->LockedMaybeRecordTemporaryStorageUsageUnderflow(__func__);
 
-    mOriginInfos[foundIndex] = std::move(aOriginInfo);
+    oldOriginInfo->mGroupInfo = nullptr;
+
+    *foundIt = std::move(aOriginInfo);
   } else {
     mOriginInfos.AppendElement(std::move(aOriginInfo));
   }
