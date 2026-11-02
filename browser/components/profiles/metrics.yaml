@@ -522,7 +522,7 @@ profiles:
       - jhirsch@mozilla.com
       - nbaumgardner@mozilla.com
     expires: never
-    send_in_pings: ['events', 'profile']
+    send_in_pings: ['events', 'profiles']
   profile_count:
     type: quantity
     unit: profiles
