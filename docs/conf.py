@@ -115,6 +115,7 @@ jsdoc_config_path = "jsdoc.json"
 
 templates_path = ["_templates"]
 source_suffix = [".md"]
+autodoc_preserve_defaults = True
 master_doc = "index"
 project = "Firefox Source Docs"
 
