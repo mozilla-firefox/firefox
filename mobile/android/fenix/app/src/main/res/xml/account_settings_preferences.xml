@@ -31,10 +31,16 @@
         android:layout="@layout/preference_category_padding_top_no_icon_style"
         android:title="@string/preferences_category_sync_controls">
 
-        <Preference
-            android:key="@string/pref_key_sync_now"
-            android:title="@string/preferences_sync_now"
-            app:iconSpaceReserved="false" />
+      <org.mozilla.fenix.settings.account.AccountSettingsSwitchPreference
+        android:defaultValue="true"
+        android:key="@string/pref_key_sync_enable_sync"
+        android:title="@string/preferences_enable_sync_title"
+        app:iconSpaceReserved="false" />
+
+      <Preference
+        android:key="@string/pref_key_sync_now"
+        android:title="@string/preferences_sync_now"
+        app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
 

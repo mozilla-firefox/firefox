@@ -242,6 +242,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         setupSignInOutPreferenceListeners()
         setupDeviceNamePreferenceListeners()
         setupSyncCategoriesPreferenceListeners()
+        setupDeviceSyncPreferenceListener()
 
         // NB: ObserverRegistry will take care of cleaning up internal references to 'observer' and
         // 'owner' when appropriate.
@@ -294,6 +295,30 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             owner = this,
             autoPause = true,
         )
+    }
+
+    private fun setupDeviceSyncPreferenceListener() {
+        if (isNewUiEnabled) {
+            requirePreference<TwoStatePreference>(R.string.pref_key_sync_enable_sync).apply {
+                setDeviceSyncSummary(isChecked)
+
+                setOnPreferenceChangeListener { _, checked ->
+                    setDeviceSyncSummary(checked as Boolean)
+                    true
+                }
+            }
+        }
+    }
+
+    private fun setDeviceSyncSummary(checked: Boolean) {
+        requirePreference<TwoStatePreference>(R.string.pref_key_sync_enable_sync).apply {
+            summary =
+                if (checked) {
+                    getString(R.string.preferences_enable_sync_summary_sync_enabled)
+                } else {
+                    getString(R.string.preferences_enable_sync_summary_sync_disabled, getString(R.string.firefox))
+                }
+        }
     }
 
     /**

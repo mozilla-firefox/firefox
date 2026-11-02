@@ -150,6 +150,7 @@
     <string name="pref_key_account_category" translatable="false">pref_key_account_category</string>
     <string name="pref_key_sync_manage_account" translatable="false">pref_key_sync_manage_account</string>
     <string name="pref_key_sync_device_name" translatable="false">pref_key_sync_device_name</string>
+    <string name="pref_key_sync_enable_sync" translatable="false">pref_key_sync_enable_sync</string>
     <string name="pref_key_sync_now" translatable="false">pref_key_sync_now</string>
     <string name="pref_key_sync_history" translatable="false">pref_key_sync_history</string>
     <string name="pref_key_sync_bookmarks" translatable="false">pref_key_sync_bookmarks</string>
