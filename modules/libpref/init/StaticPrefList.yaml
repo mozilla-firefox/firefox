@@ -18463,7 +18463,11 @@
 # Unrecognized values behave as 0.
 - name: privacy.trackingprotection.content.mirror.mode
   type: uint32_t
+#if defined(NIGHTLY_BUILD) && !defined(ANDROID)
+  value: 1
+#else
   value: 0
+#endif
   mirror: never
 
 # When true, fire an observer notification when filter lists finish loading.
@@ -18492,7 +18496,11 @@
 # classifier) engine is active.
 - name: privacy.trackingprotection.urlclassifier.disable_for_channel_classifier
   type: bool
+#if defined(NIGHTLY_BUILD) && !defined(ANDROID)
+  value: true
+#else
   value: false
+#endif
   mirror: always
 
 # Enable the "baseline" allow-list for fixing severe site breakage (e.g. blank
