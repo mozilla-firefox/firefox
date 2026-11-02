@@ -6,4 +6,6 @@ ignore = [
   "RUSTSEC-2026-0367",
   "RUSTSEC-2026-0368",
   "RUSTSEC-2026-0369",
+  # zip <https://bugzilla.mozilla.org/show_bug.cgi?id=2088053>
+  "RUSTSEC-2026-0429",
 ]
