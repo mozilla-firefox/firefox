@@ -259,8 +259,6 @@ void RenderCompositorLayerNative::CompositorEndFrame() {
   DoFlush();
 #endif
 
-  mAddedLayers.Reverse();
-
   mNativeLayerRoot->SetLayers(mAddedLayers);
   mNativeLayerRoot->CommitToScreen();
   mSurfacePoolHandle->OnEndFrame();

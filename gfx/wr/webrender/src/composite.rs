@@ -1660,6 +1660,8 @@ pub struct CompositorInputLayer {
 #[derive(Debug)]
 pub struct CompositorInputConfig<'a> {
     pub enable_screenshot: bool,
+    /// Layers are indexed front to back; surfaces are added to the visual tree
+    /// back to front.
     pub layers: &'a [CompositorInputLayer],
 }
 

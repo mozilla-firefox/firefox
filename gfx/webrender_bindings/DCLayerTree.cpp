@@ -667,8 +667,8 @@ void DCLayerTree::CompositorEndFrame() {
     MOZ_RELEASE_ASSERT(surface_it != mDCSurfaces.end());
     const auto surface = surface_it->second.get();
     if (!same) {
-      // Layer compositor expects front to back.
-      mRootVisual->AddVisual(surface->GetRootVisual(), true, nullptr);
+      // WebRender adds surfaces back to front.
+      mRootVisual->AddVisual(surface->GetRootVisual(), false, nullptr);
     }
   }
 

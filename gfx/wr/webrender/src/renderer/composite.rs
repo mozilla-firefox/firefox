@@ -1330,7 +1330,7 @@ impl Renderer {
         }
 
         // End frame notify for experimental compositor
-        for (layer_index, layer) in input_layers.iter().enumerate() {
+        for (layer_index, layer) in input_layers.iter().enumerate().rev() {
             // External surfaces need transform applied, but content
             // surfaces are always at identity
             let transform = match layer.usage {
