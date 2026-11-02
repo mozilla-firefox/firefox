@@ -17,6 +17,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   CONVERSATION:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
   openAIEngine: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  JourneyManager:
+    "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyManager.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
@@ -297,12 +299,19 @@ export class MemoriesSchedulers {
       // Maintenance is on its own clock, so it runs regardless of the cooldown
       // and evidence accumulation checks that gate generation and merging.
       if (now - this.#lastMaintenanceMs >= MEMORIES_MAINTENANCE_INTERVAL_MS) {
-        lazy.console.debug("Running memories maintenance...");
         try {
+          lazy.console.debug("Running memories maintenance...");
           await lazy.MemoriesManager.runMemoryMaintenance();
           lazy.console.debug("Memories maintenance complete.");
         } catch (error) {
           lazy.console.error("Failed to run memories maintenance", error);
+        }
+        try {
+          lazy.console.debug("Running journey maintenance...");
+          await lazy.JourneyManager.runJourneyMaintenance();
+          lazy.console.debug("Journey maintenance complete.");
+        } catch (error) {
+          lazy.console.error("Failed to run journey maintenance", error);
         } finally {
           this.#lastMaintenanceMs = now;
         }
@@ -374,6 +383,20 @@ export class MemoriesSchedulers {
       } else {
         lazy.console.debug("No new memories generated; skipping merge step.");
       }
+
+      // Generate novel journey metadata.
+      const postMergeMemories = await lazy.MemoriesManager.getAllMemories({
+        includeSoftDeleted: false,
+      });
+      if (postMergeMemories.length) {
+        lazy.console.debug("Generating novel journey metadata...");
+        await lazy.JourneyManager.generateAndPersistJourneys(postMergeMemories);
+        lazy.console.debug("Journey metadata generation complete.");
+      } else {
+        lazy.console.debug(
+          "No eligible memories; skipping journey metadata generation."
+        );
+      }
     } catch (error) {
       if (lazy.openAIEngine.is429Error(error)) {
         this.#backoffUntilMs = Date.now() + MEMORIES_SCHEDULER_COOLDOWN_MS;
@@ -392,7 +415,7 @@ export class MemoriesSchedulers {
           error
         );
       } else {
-        lazy.console.error("Failed to generate memories", error);
+        lazy.console.error("Memories pipeline failed", error);
       }
     } finally {
       this.#running = false;

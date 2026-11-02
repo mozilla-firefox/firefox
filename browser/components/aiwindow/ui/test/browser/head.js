@@ -24,6 +24,8 @@ ChromeUtils.defineESModuleGetters(this, {
     "moz-src:///browser/components/aiwindow/models/IntentClassifier.sys.mjs",
   MemoriesManager:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesManager.sys.mjs",
+  MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE:
+    "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
   MENTION_TYPE:
     "moz-src:///browser/components/urlbar/SmartbarMentionsPanelSearch.sys.mjs",
   openAIEngine: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
@@ -618,6 +620,7 @@ async function stubResumeActivityGeneration(sb, { token } = {}) {
     {
       id: "memory-1",
       memory_summary: "Research project",
+      sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
       lifetime_accessed_count: 0,
       recent_accessed_counts: {},
       source_ids: {
@@ -629,6 +632,7 @@ async function stubResumeActivityGeneration(sb, { token } = {}) {
     {
       id: "memory-2",
       memory_summary: "Trip planning",
+      sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
       lifetime_accessed_count: 0,
       recent_accessed_counts: {},
       source_ids: {
@@ -661,6 +665,7 @@ async function stubResumeActivityGenerationPool(sb, memoryCount) {
   const memories = urls.map((page, i) => ({
     id: `pool-memory-${i}`,
     memory_summary: `Research topic ${i}`,
+    sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
     source_ids: {
       history_source_ids: [PlacesUtils.history.hashURL(page.url)],
     },

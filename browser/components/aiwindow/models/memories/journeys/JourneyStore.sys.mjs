@@ -100,8 +100,8 @@ function ensureInitialized() {
 
 /**
  * Stores journey metadata independently of memories. Suppressing a journey does
- * not delete its related memory. MemoriesManager is responsible for removing
- * journey metadata when the related memory is deleted. The store returns
+ * not delete its related memory. JourneyManager is responsible for removing
+ * journey metadata when the related memory is no longer present. The store returns
  * suppressed records; callers are responsible for filtering them.
  *
  * Data loads on first use. Mutations schedule a save and return without awaiting

@@ -8,6 +8,12 @@ const RESUME_ACTIVITY_SUPPORTED_LOCALES = ["en"];
 
 // Generate extra candidates so dismissals can reveal replacements.
 const MAX_NUM_MEMORIES_FOR_RESUME_ACTIVITY = 6;
+// Max number of memories sent in a single journey metadata generation request.
+const JOURNEY_GENERATION_BATCH_SIZE = 6;
+const JOURNEY_GENERATION_MAX_BATCH_ATTEMPTS = 3;
+const JOURNEY_GENERATION_RETRY_DELAY_MS = 12_000;
+// Max number of memories eligible for journey metadata generation per run.
+const MAX_NUM_MEMORIES_FOR_JOURNEY_GENERATION = 6;
 // Max number of URLs to include per memory in the "Pick up where you left off" prompt.
 export const MAX_NUM_URLS_PER_MEMORY = 10;
 
@@ -26,6 +32,9 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
+  openAIEngine:
+    "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
   MESSAGE_ROLE:
     "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs",
   MemoriesManager:
@@ -40,8 +49,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesConstants.sys.mjs",
-  MEMORY_FILTER_COMPARATOR:
-    "moz-src:///browser/components/aiwindow/services/MemoryStoreConstants.sys.mjs",
   buildConversation:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
   loadPrompt:
@@ -79,6 +86,9 @@ export const JourneyManager = {
    * @returns {Promise<boolean>} Whether any stored journeys are not suppressed.
    */
   async hasEligibleJourneys() {
+    if (!this._isResumeActivityLocaleSupported()) {
+      return false;
+    }
     const journeys = await lazy.JourneyStore.getAll();
     return journeys.some(journey => !this.isJourneySuppressed(journey));
   },
@@ -97,6 +107,113 @@ export const JourneyManager = {
       metadata.dismissed ||
       (metadata.dismissed_until !== null && metadata.dismissed_until > now)
     );
+  },
+
+  /**
+   * Generates and persists journey metadata for each eligible memory.
+   * Input memories with corresponding journey metadata in the store are skipped.
+   * At most maxMemories of the most recent eligible memories are processed per run.
+   * Only supported for English app locales; returns an empty list otherwise.
+   *
+   * @param {Array<object>} memories - Candidate memory objects.
+   * @param {object} [options]
+   * @param {number} [options.maxMemories] - Maximum memories processed per run.
+   * @param {number} [options.batchSize] - Positive integer maximum memories per batch.
+   * @param {number} [options.maxBatchAttempts] - Maximum inference attempts per batch.
+   * @param {number} [options.retryDelayMs] - Delay between retryable inference attempts.
+   * @returns {Promise<Array<{memoryId: string, headline: string, status: string}>>}
+   *   Generated journeys that were persisted.
+   */
+  async generateAndPersistJourneys(
+    memories,
+    {
+      maxMemories = MAX_NUM_MEMORIES_FOR_JOURNEY_GENERATION,
+      batchSize = JOURNEY_GENERATION_BATCH_SIZE,
+      maxBatchAttempts = JOURNEY_GENERATION_MAX_BATCH_ATTEMPTS,
+      retryDelayMs = JOURNEY_GENERATION_RETRY_DELAY_MS,
+    } = {}
+  ) {
+    if (!Number.isSafeInteger(batchSize) || batchSize <= 0) {
+      throw new RangeError("batchSize must be a positive safe integer");
+    }
+    if (!this._isResumeActivityLocaleSupported()) {
+      return [];
+    }
+    const storedJourneyMemoryIds = new Set(
+      (await lazy.JourneyStore.getAll()).map(journey => journey.memory_id)
+    );
+
+    const newMemories = this._selectTopJourneyMemories(
+      this._getJourneyTypeMemories(
+        memories.filter(memory => !memory.is_deleted),
+        storedJourneyMemoryIds
+      ),
+      maxMemories
+    );
+
+    const persisted = [];
+    for (const batch of this._batchMemories(newMemories, batchSize)) {
+      const inputs = await this._resolveJourneyContext(batch);
+
+      let metadata = [];
+      for (let attempt = 0; attempt < maxBatchAttempts; attempt++) {
+        try {
+          metadata = await this._generateJourneyMetadata(inputs);
+          break;
+        } catch (error) {
+          if (!lazy.openAIEngine.isRetryableError(error)) {
+            lazy.console.error(
+              "Journey metadata generation failed; skipping batch",
+              error
+            );
+            break;
+          }
+          if (attempt === maxBatchAttempts - 1) {
+            throw error;
+          }
+          await new Promise(resolve => lazy.setTimeout(resolve, retryDelayMs));
+        }
+      }
+
+      for (const journey of metadata) {
+        if (await this._tryPersistJourney(journey)) {
+          persisted.push(journey);
+        }
+      }
+    }
+    return persisted;
+  },
+
+  /**
+   * Persists a generated journey, logging and swallowing validation errors.
+   *
+   * @param {{memoryId: string, headline: string, status: string}} journey
+   * @returns {Promise<boolean>} Whether the journey was persisted.
+   */
+  async _tryPersistJourney(journey) {
+    try {
+      return await lazy.JourneyStore.addOrUpdateJourney(journey);
+    } catch (error) {
+      lazy.console.warn("Rejected generated journey metadata", error);
+      return false;
+    }
+  },
+
+  /**
+   * Removes journey metadata whose corresponding memory is no longer live.
+   *
+   * @returns {Promise<void>}
+   */
+  async runJourneyMaintenance() {
+    const memories = await lazy.MemoriesManager.getAllMemories({
+      includeSoftDeleted: false,
+    });
+    const memoryIds = new Set(memories.map(memory => memory.id));
+    for (const journey of await lazy.JourneyStore.getAll()) {
+      if (!memoryIds.has(journey.memory_id)) {
+        await lazy.JourneyStore.deleteJourney(journey.memory_id);
+      }
+    }
   },
 
   /**
@@ -194,16 +311,13 @@ export const JourneyManager = {
       body: [chatSystemPrompt, resumeActivitySystemPrompt].join("\n"),
     });
 
-    const memoryInput = this._buildMemoryInputBlock(
+    const [input] = await this._attachChatsToMemories([
       {
         memory: resumeActivitySuggestion.memory,
         urls: resumeActivitySuggestion.content.previewTabs,
       },
-      undefined,
-      await this._formatChatsForResumeActivityPrompt(
-        Array.of(resumeActivitySuggestion.memory)
-      )
-    );
+    ]);
+    const memoryInput = this._buildMemoryInputBlock(input);
 
     const resumeActivityData = lazy.renderPrompt(resumeActivityUserPrompt, {
       memoryInput,
@@ -273,9 +387,44 @@ export const JourneyManager = {
   },
 
   /**
+   * Selects eligible journey memories, omitting excluded IDs and preserving order.
+   *
+   * @param {Array<object>} memories - Memories to filter.
+   * @param {Set<string>} [excludedIds] - Currently excluded memory IDs.
+   * @returns {Array<object>} Non-sensitive memories with history source IDs.
+   */
+  _getJourneyTypeMemories(memories, excludedIds = new Set()) {
+    return memories.filter(memory => {
+      const historyIds = memory.source_ids?.history_source_ids;
+      return (
+        memory.sensitivity_category ===
+          lazy.MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE &&
+        Array.isArray(historyIds) &&
+        !!historyIds.length &&
+        !excludedIds.has(memory.id)
+      );
+    });
+  },
+
+  /**
+   * Splits memories into consecutive batches, preserving order.
+   *
+   * @param {Array<object>} memories - Memories to batch.
+   * @param {number} [batchSize] - Max memories per batch.
+   * @returns {Array<Array<object>>} Batches of at most batchSize memories.
+   */
+  _batchMemories(memories, batchSize = JOURNEY_GENERATION_BATCH_SIZE) {
+    const batches = [];
+    for (let i = 0; i < memories.length; i += batchSize) {
+      batches.push(memories.slice(i, i + batchSize));
+    }
+    return batches;
+  },
+
+  /**
    * Gets memories suitable for Resume Activity suggestions.
    * Selects memories that are not sensitive and have associated browsing history.
-   * Sorted by frecency and updated_at, returning the most frecent/recently updated memories.
+   * Sorted by creation time, then last merge time, newest first.
    *
    * @param {number} count - Maximum number of memories to return
    * @returns {Promise<Array<object>>}
@@ -283,69 +432,92 @@ export const JourneyManager = {
   async _getMemoriesForResumeActivityConversationStarter(
     count = MAX_NUM_MEMORIES_FOR_RESUME_ACTIVITY
   ) {
-    let attributeFilters = [
-      {
-        field: "sensitivity_category",
-        comparator: lazy.MEMORY_FILTER_COMPARATOR.EQUAL_TO,
-        value: lazy.MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
-      },
-    ];
-    let memories =
-      await lazy.MemoriesManager.getMemoriesByAttribute(attributeFilters);
+    let memories = await lazy.MemoriesManager.getAllMemories({
+      includeSoftDeleted: false,
+    });
 
     // Filter out memories that don't have any associated history.
     // The case of HISTORY as a source, but no history_source_ids,
     // come from v1 memories, before lineage was tracked.
-    memories = memories.filter(memory => {
-      const sourceIds = memory?.source_ids ?? {};
-      const hasHistory =
-        Array.isArray(sourceIds.history_source_ids) &&
-        !!sourceIds.history_source_ids.length;
-      return hasHistory;
-    });
+    memories = this._getJourneyTypeMemories(memories);
 
-    // Re-sort by created_at (most recent first)
-    memories.sort(
-      (a, b) =>
-        (b.created_at ?? 0) - (a.created_at ?? 0) ||
-        (b.last_merged ?? 0) - (a.last_merged ?? 0)
-    );
-
-    // Slice to requested count
-    return memories.slice(0, count);
+    return this._selectTopJourneyMemories(memories, count);
   },
 
   /**
-   * Attaches resolved Places URLs/titles to a single memory, dropping unresolved
-   * URLs and keeping the most recently visited up to maxUrlsPerMemory.
+   * Returns the most recent memories, sorted by creation time, then last merge
+   * time, newest first.
    *
-   * @param {object} memory - Memory carrying history place hashes
-   * @param {Map<number, object>} urlsByHash - Places data keyed by URL hash
-   * @param {number} maxUrlsPerMemory - Max URLs to keep per memory
-   * @returns {{memory: object, urls: Array<object>}}
+   * @param {Array<object>} memories - Memories to rank.
+   * @param {number} count - Maximum number of memories to return.
+   * @returns {Array<object>}
    */
-  _attachUrlsToMemory(memory, urlsByHash, maxUrlsPerMemory) {
-    return {
+  _selectTopJourneyMemories(memories, count) {
+    return memories
+      .toSorted(
+        (a, b) =>
+          (b.created_at ?? 0) - (a.created_at ?? 0) ||
+          (b.last_merged ?? 0) - (a.last_merged ?? 0)
+      )
+      .slice(0, count);
+  },
+
+  /**
+   * Prepares URL and chat context for journey generation.
+   * URLs and Chats that have been deleted from history and the chat store are excluded.
+   * Will only include memories that have at least one valid URL after filtering.
+   * A subset of fields and messages from the associated chats are included.
+   *
+   * @param {Array<object>} memories - Journey candidate memories.
+   * @returns {Promise<Array<{memory: object, urls: Array<object>, chats: Array<object>}>>}
+   */
+  async _resolveJourneyContext(memories) {
+    const entries = await this._attachUrlsToMemories(memories);
+    const hasUrlsEntries = entries.filter(({ urls }) => !!urls.length);
+    if (!hasUrlsEntries.length) {
+      return [];
+    }
+
+    return this._attachChatsToMemories(hasUrlsEntries);
+  },
+
+  /**
+   * Attaches resolved Places URLs/titles to each memory, dropping unresolved
+   * URLs and keeping the most recently visited up to MAX_NUM_URLS_PER_MEMORY,
+   * in visit order.
+   *
+   * @param {Array<object>} memories - Memories carrying history place hashes.
+   * @returns {Promise<Array<{memory: object, urls: Array<object>}>>}
+   */
+  async _attachUrlsToMemories(memories) {
+    if (!memories.length) {
+      return [];
+    }
+
+    const urlsByHash = await lazy.resolveUrlsForMemories(memories, {
+      filterBySummary: true,
+    });
+    return memories.map(memory => ({
       memory,
       urls: lazy
         .getHistorySourceIdsFromMemory(memory)
         .map(urlHash => urlsByHash.get(urlHash))
         .filter(Boolean)
         .sort((a, b) => a.lastVisitDate - b.lastVisitDate)
-        .slice(-maxUrlsPerMemory),
-    };
+        .slice(-MAX_NUM_URLS_PER_MEMORY),
+    }));
   },
 
   /**
-   * Format chats for resume activity prompt
+   * Attaches resolved chats with formatted messages to each memory entry.
    *
-   * @param {Array<object>} memories Array of memory objects
-   * @returns {Promise<Map<string, object>>} Map of conversationId to formatted conversation object
+   * @param {Array<{memory: object, urls: Array<object>}>} entries - Memories and URLs.
+   * @returns {Promise<Array<{memory: object, urls: Array<object>, chats: Array<object>}>>}
    */
-  async _formatChatsForResumeActivityPrompt(memories) {
+  async _attachChatsToMemories(entries) {
     const conversationIds = [
       ...new Set(
-        memories.flatMap(memory =>
+        entries.flatMap(({ memory }) =>
           lazy.getConversationSourceIdsFromMemory(memory)
         )
       ),
@@ -380,29 +552,31 @@ export const JourneyManager = {
           .join("\n"),
       });
     }
-    return chatsById;
+    return entries.map(entry => ({
+      ...entry,
+      chats: lazy
+        .getConversationSourceIdsFromMemory(entry.memory)
+        .map(conversationId => chatsById.get(conversationId))
+        .filter(Boolean)
+        .sort((a, b) => a.updatedDate - b.updatedDate),
+    }));
   },
 
   /**
    * Builds the prompt text block describing a single memory and its associated
    * pages and chats. When provided, `index` doubles as the id echoed back by the model.
    *
-   * @param {{memory: object, urls: Array<object>}} entry - Memory and its URLs
+   * @param {{memory: object, urls: Array<object>, chats: Array<object>}} entry - Memory and its resolved URLs and chats
    * @param {number|undefined} index - Optional position of the memory, used as its stable id
-   * @param {Map<string, object>} chatsById - Formatted chats keyed by conversation id
    * @returns {string} Prompt block for the memory
    */
-  _buildMemoryInputBlock({ memory, urls }, index, chatsById) {
+  _buildMemoryInputBlock({ memory, urls, chats }, index) {
     const pages = urls
       .map(url => `  - ${lazy.sanitizeUntrustedContent(url.title)}`)
       .join("\n");
 
-    const chats = lazy
-      .getConversationSourceIdsFromMemory(memory)
-      .map(conversationId => chatsById.get(conversationId))
-      .filter(Boolean)
-      .sort((a, b) => a.updatedDate - b.updatedDate)
-      .map(({ title, formattedMessagesForResumeActivity }) =>
+    const formattedChats = chats.map(
+      ({ title, formattedMessagesForResumeActivity }) =>
         [
           ` - title: ${title}`,
           "            messages:",
@@ -411,7 +585,7 @@ export const JourneyManager = {
             .map(line => `     ${line}`)
             .join("\n")}`,
         ].join("\n")
-      );
+    );
 
     const header = Number.isInteger(index)
       ? `-------------------------\nid: ${index}\n`
@@ -424,8 +598,8 @@ export const JourneyManager = {
       `pages:\n${pages}`,
     ].join("\n");
 
-    if (chats.length) {
-      block += `\nchats:\n${chats.join("\n")}`;
+    if (formattedChats.length) {
+      block += `\nchats:\n${formattedChats.join("\n")}`;
     }
     return block;
   },
@@ -473,96 +647,110 @@ export const JourneyManager = {
         await this._getMemoriesForResumeActivityConversationStarter(
           MAX_NUM_MEMORIES_FOR_RESUME_ACTIVITY
         );
-      if (!memoriesWithPlaceHashes.length) {
+      const inputs = await this._resolveJourneyContext(memoriesWithPlaceHashes);
+      if (!inputs.length) {
         return [];
       }
 
-      const urlsByHash = await lazy.resolveUrlsForMemories(
-        memoriesWithPlaceHashes,
-        { filterBySummary: true }
-      );
-      const memoriesWithUrlsAndTitles = memoriesWithPlaceHashes
-        .map(memory =>
-          this._attachUrlsToMemory(memory, urlsByHash, MAX_NUM_URLS_PER_MEMORY)
-        )
-        .filter(s => !!s.urls.length);
-      if (!memoriesWithUrlsAndTitles.length) {
-        return [];
-      }
-
-      // Load prompts and build the conversation for inference
-      const conversation = await lazy.buildConversation(
-        lazy.MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
-        { flowId: null }
-      );
-      const [
-        { prompt: resumeActivitySystemPrompt },
-        { prompt: resumeActivityUserPrompt },
-      ] = await Promise.all([
-        lazy.loadPrompt(
-          lazy.MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
-          {
-            module: "system-instructions",
-          }
-        ),
-        lazy.loadPrompt(
-          lazy.MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
-          {
-            module: "user-data",
-          }
-        ),
-      ]);
-      conversation.setSystemMessage(resumeActivitySystemPrompt);
-
-      const chatsById = await this._formatChatsForResumeActivityPrompt(
-        memoriesWithUrlsAndTitles.map(m => m.memory)
-      );
-      const memoryInput = memoriesWithUrlsAndTitles.map((entry, index) =>
-        this._buildMemoryInputBlock(entry, index, chatsById)
+      const journeyMetadata = await this._generateJourneyMetadata(inputs);
+      const journeyMetadataByMemoryId = new Map(
+        journeyMetadata.map(metadata => [metadata.memoryId, metadata])
       );
 
-      const userDataMessage = lazy.renderPrompt(resumeActivityUserPrompt, {
-        memoryCount: memoryInput.length,
-        memoryInput: memoryInput.join("\n\n"),
-      });
-      conversation.addUserMessage(userDataMessage);
-
-      // SECURITY: the prompt mixes private user data (memory summaries, browsing
-      // history, past chats) with untrusted webpage titles. The conversation is
-      // single-shot and exposes no tools, so nothing can act on either, but the
-      // flags must be accurate in case of later reuse of this conversation.
-      conversation.securityProperties.setPrivateData();
-      conversation.securityProperties.setUntrustedInput();
-      conversation.securityProperties.commit();
-
-      const runResult = await conversation.run({
-        token: await lazy.AuthProvider.getToken(),
-      });
-      const cardsById = lazy.indexInferenceResultsById(
-        this._unpackJsonArrayOutput(runResult)
-      );
-
-      const result = memoriesWithUrlsAndTitles.map(
-        ({ memory, urls }, index) => {
-          const card = cardsById.get(index);
-          if (!card) {
-            return null;
-          }
-          return {
-            memory,
-            content: {
-              headline: (card?.headline || "").replace(/[.!?;:,]+$/, ""),
-              status: (card?.status || "").replace(/[.!?;:,]+$/, ""),
-              previewTabs: urls.map(({ url, title }) => ({ url, title })),
-            },
-          };
+      const result = inputs.map(({ memory, urls }) => {
+        const metadata = journeyMetadataByMemoryId.get(memory.id);
+        if (!metadata) {
+          return null;
         }
-      );
+        return {
+          memory,
+          content: {
+            headline: metadata.headline,
+            status: metadata.status,
+            previewTabs: urls.map(({ url, title }) => ({ url, title })),
+          },
+        };
+      });
       return result.filter(Boolean);
     } catch (e) {
       lazy.console.warn("[resume-activity] Conversation starters failed:", e);
       return [];
     }
+  },
+
+  /**
+   * Formats input context (memory summaries, browsing history, and past chats) and makes request for journey metadata inference.
+   *
+   * @param {Array<{memory: object, urls: Array<object>, chats: Array<object>}>} entries - Resolved journey inputs.
+   * @returns {Promise<Array<{memoryId: string, headline: string, status: string}>>}
+   * @throws {Error} If prompt preparation or inference fails.
+   */
+  async _generateJourneyMetadata(entries) {
+    if (!entries.length) {
+      return [];
+    }
+
+    // Load prompts and build the conversation for inference
+    const conversation = await lazy.buildConversation(
+      lazy.MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
+      { flowId: null }
+    );
+    const [
+      { prompt: resumeActivitySystemPrompt },
+      { prompt: resumeActivityUserPrompt },
+    ] = await Promise.all([
+      lazy.loadPrompt(
+        lazy.MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
+        {
+          module: "system-instructions",
+        }
+      ),
+      lazy.loadPrompt(
+        lazy.MODEL_FEATURES.RESUME_ACTIVITY_CONVERSATION_STARTER,
+        {
+          module: "user-data",
+        }
+      ),
+    ]);
+    conversation.setSystemMessage(resumeActivitySystemPrompt);
+
+    const memoryInput = entries.map((entry, index) =>
+      this._buildMemoryInputBlock(entry, index)
+    );
+
+    const userDataMessage = lazy.renderPrompt(resumeActivityUserPrompt, {
+      memoryCount: memoryInput.length,
+      memoryInput: memoryInput.join("\n\n"),
+    });
+    conversation.addUserMessage(userDataMessage);
+
+    // SECURITY: the prompt mixes private user data (memory summaries, browsing
+    // history, past chats) with untrusted webpage titles. The conversation is
+    // single-shot and exposes no tools, so nothing can act on either, but the
+    // flags must be accurate in case of later reuse of this conversation.
+    conversation.securityProperties.setPrivateData();
+    conversation.securityProperties.setUntrustedInput();
+    conversation.securityProperties.commit();
+
+    const runResult = await conversation.run({
+      token: await lazy.AuthProvider.getToken(),
+    });
+    const cardsById = lazy.indexInferenceResultsById(
+      this._unpackJsonArrayOutput(runResult)
+    );
+
+    const descriptions = entries.map(({ memory }, index) => {
+      const card = cardsById.get(index);
+      if (!card) {
+        return null;
+      }
+      return {
+        memoryId: memory.id,
+        headline: (card?.headline || "").replace(/[.!?;:,]+$/, ""),
+        status: (card?.status || "").replace(/[.!?;:,]+$/, ""),
+      };
+    });
+    return descriptions.filter(Boolean);
   },
 
   /**

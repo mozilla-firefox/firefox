@@ -13,6 +13,9 @@ const { JourneyStore } = ChromeUtils.importESModule(
 const { buildConversation, loadPrompt } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs"
 );
+const { Conversation } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/Conversation.sys.mjs"
+);
 const { MemoryStore } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/services/MemoryStore.sys.mjs"
 );
@@ -135,6 +138,723 @@ add_setup(async function setupResumeActivityConversationStarterTests() {
       }
     }
   });
+});
+
+add_task(async function test_generateAndPersistJourneys() {
+  const minutesAgo = minutes => RESUME_ACTIVITY_TEST_TIME - minutes * 60_000;
+
+  // Fixtures: eligible memories with history and conversation context.
+  // Page A4 and its twin share a url_hash, so neither should resolve to a URL.
+  const collidingUrl = "https://example.com/a4";
+  const memoryFixtures = [
+    makeMemory("Memory A", {
+      reasoning: "Reason A",
+      created_at: minutesAgo(0),
+      pages: [
+        makePage("Page A4 hash twin", {
+          url: `${collidingUrl}-hash-twin`,
+          urlHash: PlacesUtils.history.hashURL(collidingUrl),
+          lastVisitDate: minutesAgo(-2),
+        }),
+        makePage("Page A4", {
+          url: collidingUrl,
+          lastVisitDate: minutesAgo(-1),
+        }),
+        makePage("Page A3", {
+          url: "https://example.com/a3",
+          lastVisitDate: minutesAgo(0),
+        }),
+        makePage('Page "A2"', {
+          url: "https://example.com/a2",
+          lastVisitDate: minutesAgo(1),
+        }),
+        makePage("Page A1", {
+          url: "https://example.com/a1",
+          lastVisitDate: minutesAgo(2),
+        }),
+      ],
+    }),
+    makeMemory("Memory B", {
+      reasoning: "Reason B",
+      sources: [HISTORY, CONVERSATION],
+      created_at: minutesAgo(10),
+      pages: [
+        makePage("Page B2", { url: "https://example.com/b2" }),
+        makePage("Page B1", { url: "https://example.com/b1" }),
+      ],
+      chats: [
+        makeChat("Chat B1 older", {
+          id: "chat1",
+          updatedDate: minutesAgo(45),
+        }),
+        makeChat("Chat B2 newer", {
+          id: "chat2",
+          updatedDate: minutesAgo(20),
+          messages: [
+            {
+              role: MESSAGE_ROLE.SYSTEM,
+              body: "B2 system dropped",
+            },
+            {
+              role: MESSAGE_ROLE.USER,
+              body: "B2 oldest dropped",
+            },
+            {
+              role: MESSAGE_ROLE.ASSISTANT,
+              body: "B2 keep 1",
+            },
+            {
+              role: MESSAGE_ROLE.TOOL,
+              body: "B2 tool dropped",
+            },
+            {
+              role: MESSAGE_ROLE.USER,
+              body: "B2 keep 2",
+            },
+            {
+              role: MESSAGE_ROLE.ASSISTANT,
+              body: "B2 keep 3",
+            },
+          ],
+        }),
+      ],
+    }),
+    makeMemory("Memory C", { created_at: minutesAgo(11) }),
+    makeMemory("Unresolvable", {
+      created_at: minutesAgo(12),
+      pages: [
+        makePage("Unresolvable", {
+          url: "https://example.com/unresolvable-generation",
+        }),
+      ],
+    }),
+  ];
+
+  let memories = [];
+  try {
+    memories = await addResumeActivityTestMemories(memoryFixtures);
+    await PlacesUtils.history.remove(
+      "https://example.com/unresolvable-generation"
+    );
+
+    const mockEngineManager = new MockEngineManager();
+
+    try {
+      const journeyMetadataPromise =
+        JourneyManager.generateAndPersistJourneys(memories);
+      const { request, respond } = await mockEngineManager.captureRequest({
+        purpose: PURPOSES.CHAT,
+      });
+
+      // Tests to ensure request includes correctly curated context
+      Assert.deepEqual(
+        request.args.map(message => message.role),
+        ["system", "user"],
+        "The request should contain system and user messages"
+      );
+      const userPrompt = request.args[1].content;
+      for (const expectedContent of [
+        "memory_summary: Memory A",
+        "reasoning: Reason A",
+        '  - "Page A1" (Untrusted webpage data)',
+        '  - "Page \\"A2\\"" (Untrusted webpage data)',
+        '  - "Page A3" (Untrusted webpage data)',
+        "memory_summary: Memory B",
+        "reasoning: Reason B",
+        "B2 keep 1",
+        "B2 keep 2",
+        "B2 keep 3",
+      ]) {
+        Assert.ok(
+          userPrompt.includes(expectedContent),
+          `The prompt should include: ${expectedContent}`
+        );
+      }
+      for (const excludedContent of [
+        "B2 system dropped",
+        "B2 tool dropped",
+        "B2 oldest dropped",
+        "Page A4",
+      ]) {
+        Assert.ok(
+          !userPrompt.includes(excludedContent),
+          `The prompt should exclude: ${excludedContent}`
+        );
+      }
+      const pageA1Index = userPrompt.indexOf(
+        '  - "Page A1" (Untrusted webpage data)'
+      );
+      const pageA2Index = userPrompt.indexOf(
+        '  - "Page \\"A2\\"" (Untrusted webpage data)'
+      );
+      const pageA3Index = userPrompt.indexOf(
+        '  - "Page A3" (Untrusted webpage data)'
+      );
+      Assert.ok(
+        pageA1Index < pageA2Index && pageA2Index < pageA3Index,
+        "The prompt should order pages from oldest to newest"
+      );
+
+      const newerChatIndex = userPrompt.indexOf("Chat B2 newer");
+      const olderChatIndex = userPrompt.indexOf("Chat B1 older");
+      Assert.ok(
+        newerChatIndex > -1 && olderChatIndex > -1,
+        "The prompt should include both newer and older chat"
+      );
+      Assert.less(
+        olderChatIndex,
+        newerChatIndex,
+        "The prompt should order chats from oldest to newest"
+      );
+
+      Assert.deepEqual(
+        [...userPrompt.matchAll(/memory_summary: ([^\n]+)/g)].map(
+          match => match[1]
+        ),
+        ["Memory A", "Memory B", "Memory C"],
+        "The request excludes memories without resolvable URLs"
+      );
+
+      // Test that LLM responses are correctly handled, including maintaining correct order, rejecting invalid metadata and omitted, unknown IDs.
+      respond(
+        JSON.stringify([
+          { id: 1, headline: "Headline B!", status: "Status B;" },
+          { id: 0, headline: "Headline A.", status: "Status A:" },
+          { id: 2, headline: "", status: "Invalid headline" },
+          { id: 99, headline: "Unknown", status: "Unknown" },
+        ])
+      );
+
+      // Persistence: exact successful results.
+      const expectedJourneyMetadata = [0, 1].map(index => ({
+        memoryId: memories[index].id,
+        headline: `Headline ${"AB"[index]}`,
+        status: `Status ${"AB"[index]}`,
+      }));
+      Assert.deepEqual(
+        await journeyMetadataPromise,
+        expectedJourneyMetadata,
+        "Returns only persisted results, mapped by batch-local ID and normalized"
+      );
+      Assert.equal(
+        (await JourneyStore.getAll()).length,
+        expectedJourneyMetadata.length,
+        "Only successfully generated journeys are stored"
+      );
+      for (const { memoryId, headline, status } of expectedJourneyMetadata) {
+        Assert.deepEqual(
+          await JourneyStore.get(memoryId),
+          {
+            memory_id: memoryId,
+            headline,
+            status,
+            dismissed: false,
+            dismissed_until: null,
+          },
+          `Stored metadata matches the generated journey for ${headline}`
+        );
+      }
+    } finally {
+      mockEngineManager.cleanupMocks();
+    }
+  } finally {
+    await JourneyStore.clear();
+    await cleanupResumeActivityTestMemories(memories);
+  }
+});
+
+add_task(async function test_generateAndPersistJourneys_securityProperties() {
+  let memories = [];
+  const mockEngineManager = new MockEngineManager();
+  const runSpy = sinon.spy(Conversation.prototype, "run");
+  try {
+    memories = await addResumeActivityTestMemories([
+      makeMemory("Security memory"),
+    ]);
+    const journeyMetadataPromise =
+      JourneyManager.generateAndPersistJourneys(memories);
+    const { request, respond } = await mockEngineManager.captureRequest({
+      purpose: PURPOSES.CHAT,
+    });
+    Assert.ok(
+      !("tools" in request),
+      "The request should not offer any tools to the model"
+    );
+    Assert.ok(
+      !("tool_choice" in request),
+      "The request should not set tool_choice"
+    );
+    respond(
+      JSON.stringify([{ id: 0, headline: "Security", status: "Started" }])
+    );
+    Assert.equal(
+      (await journeyMetadataPromise).length,
+      1,
+      "The generated journey should be persisted"
+    );
+
+    Assert.ok(runSpy.calledOnce, "Generation should run one conversation");
+    const [conversation] = runSpy.thisValues;
+    Assert.equal(
+      conversation.securityProperties.privateData,
+      true,
+      "privateData should be set: the prompt carries memories and browsing history"
+    );
+    Assert.equal(
+      conversation.securityProperties.untrustedInput,
+      true,
+      "untrustedInput should be set: the prompt carries webpage titles"
+    );
+    Assert.deepEqual(
+      [...conversation.seenUrls],
+      [],
+      "The generation conversation should not track any URLs"
+    );
+  } finally {
+    runSpy.restore();
+    mockEngineManager.cleanupMocks();
+    await JourneyStore.clear();
+    await cleanupResumeActivityTestMemories(memories);
+  }
+});
+
+add_task(async function test_generateAndPersistJourneys_longInputs() {
+  const pageCount = MAX_NUM_URLS_PER_MEMORY + 1;
+  const pageLine = index => `  - "Page A${index}" (Untrusted webpage data)`;
+  let memories = [];
+  try {
+    memories = await addResumeActivityTestMemories([
+      makeMemory("Memory A", {
+        reasoning: "Reason A",
+        pages: Array.from({ length: pageCount }, (_, i) =>
+          makePage(`Page A${i}`, {
+            url: `https://example.com/a${i}`,
+            lastVisitDate: RESUME_ACTIVITY_TEST_TIME + i * 60_000,
+          })
+        ),
+        chats: [
+          makeChat("Chat A1", {
+            id: "chat1",
+            messages: [
+              {
+                role: MESSAGE_ROLE.USER,
+                body: "A".repeat(MESSAGE_LENGTH_THRESHOLD + 1),
+              },
+            ],
+          }),
+        ],
+      }),
+    ]);
+    const mockEngineManager = new MockEngineManager();
+
+    try {
+      const journeyMetadataPromise =
+        JourneyManager.generateAndPersistJourneys(memories);
+      const { request, respond } = await mockEngineManager.captureRequest({
+        purpose: PURPOSES.CHAT,
+      });
+      const userPrompt = request.args[1].content;
+      Assert.ok(
+        !userPrompt.includes(pageLine(0)),
+        "The prompt should exclude the oldest page beyond the URL cap"
+      );
+      Assert.ok(
+        userPrompt.includes(pageLine(pageCount - 1)),
+        "The prompt should include the newest page"
+      );
+      Assert.equal(
+        userPrompt.match(/^ {2}- ".*" \(Untrusted webpage data\)$/gm).length,
+        MAX_NUM_URLS_PER_MEMORY,
+        `The prompt should include exactly ${MAX_NUM_URLS_PER_MEMORY} pages`
+      );
+      Assert.ok(
+        !userPrompt.includes("A".repeat(MESSAGE_LENGTH_THRESHOLD + 1)),
+        "The prompt should exclude the full chat message that exceeds the threshold"
+      );
+      Assert.ok(
+        userPrompt.includes("A".repeat(MESSAGE_LENGTH_THRESHOLD)),
+        `The prompt should include the first ${MESSAGE_LENGTH_THRESHOLD} characters of the chat message`
+      );
+
+      respond(
+        JSON.stringify([{ id: 0, headline: "Headline A", status: "Status A" }])
+      );
+      await journeyMetadataPromise;
+      Assert.deepEqual(
+        await JourneyStore.get(memories[0].id),
+        {
+          memory_id: memories[0].id,
+          headline: "Headline A",
+          status: "Status A",
+          dismissed: false,
+          dismissed_until: null,
+        },
+        "The journey generated from truncated inputs should be stored"
+      );
+    } finally {
+      mockEngineManager.cleanupMocks();
+    }
+  } finally {
+    await JourneyStore.clear();
+    await cleanupResumeActivityTestMemories(memories);
+  }
+});
+
+add_task(
+  async function test_generateAndPersistJourneys_inferenceFailureSkipsBatch() {
+    let memories = [];
+    try {
+      memories = await addResumeActivityTestMemories([
+        makeMemory("Failed batch memory"),
+        makeMemory("Successful batch memory"),
+      ]);
+      const successful = memories[1];
+      const mockEngineManager = new MockEngineManager();
+
+      try {
+        const journeyMetadataPromise =
+          JourneyManager.generateAndPersistJourneys(memories, {
+            batchSize: 1,
+          });
+        for (let i = 0; i < memories.length; i++) {
+          const { request, respond, reject } =
+            await mockEngineManager.captureRequest({ purpose: PURPOSES.CHAT });
+          if (request.args[1].content.includes("Failed batch memory")) {
+            reject(new Error("Non-retryable failure"));
+          } else {
+            respond(
+              JSON.stringify([
+                { id: 0, headline: "Successful", status: "Started" },
+              ])
+            );
+          }
+        }
+
+        Assert.deepEqual(
+          await journeyMetadataPromise,
+          [
+            {
+              memoryId: successful.id,
+              headline: "Successful",
+              status: "Started",
+            },
+          ],
+          "A non-retryable inference failure should skip only its batch"
+        );
+        Assert.deepEqual(
+          (await JourneyStore.getAll()).map(journey => journey.memory_id),
+          [successful.id],
+          "Only the journey from the successful batch should be stored"
+        );
+      } finally {
+        mockEngineManager.cleanupMocks();
+      }
+    } finally {
+      await JourneyStore.clear();
+      await cleanupResumeActivityTestMemories(memories);
+    }
+  }
+);
+
+add_task(async function test_generateAndPersistJourneys_unsupportedLocale() {
+  const originalAvailable = Services.locale.availableLocales;
+  const originalRequested = Services.locale.requestedLocales;
+  let memories = [];
+  let mockEngineManager;
+
+  try {
+    memories = await addResumeActivityTestMemories([
+      makeMemory("Locale gated memory", {
+        frecency: 10,
+        pages: [makePage("Locale gated page")],
+      }),
+    ]);
+    mockEngineManager = new MockEngineManager();
+
+    Services.locale.availableLocales = ["en-US", "de"];
+    Services.locale.requestedLocales = ["de"];
+
+    Assert.deepEqual(
+      await JourneyManager.generateAndPersistJourneys(memories),
+      [],
+      "A non-English locale should produce no journeys"
+    );
+    Assert.equal(
+      mockEngineManager.engines.size,
+      0,
+      "A non-English locale should not run inference"
+    );
+    Assert.deepEqual(
+      await JourneyStore.getAll(),
+      [],
+      "A non-English locale should store no journey metadata"
+    );
+  } finally {
+    Services.locale.requestedLocales = originalRequested;
+    Services.locale.availableLocales = originalAvailable;
+    mockEngineManager?.cleanupMocks();
+    await cleanupResumeActivityTestMemories(memories);
+  }
+});
+
+add_task(async function test_generateAndPersistJourneys_invalidBatchSize() {
+  for (const batchSize of [0, 1.5]) {
+    await Assert.rejects(
+      JourneyManager.generateAndPersistJourneys([], { batchSize }),
+      /batchSize must be a positive safe integer/,
+      `Rejects invalid batch size: ${batchSize}`
+    );
+  }
+});
+
+// MockEngineManager only rejects with non-retryable errors, so retries are
+// driven by stubbing inference directly.
+add_task(async function test_generateAndPersistJourneys_retryableFailures() {
+  const batchSize = 2;
+  const memories = Array.from({ length: batchSize + 1 }, (_, index) => ({
+    id: `retry-memory-${index}`,
+    sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
+    source_ids: { history_source_ids: [123] },
+  }));
+  const transientError = Object.assign(new Error("Service unavailable"), {
+    status: 503,
+  });
+
+  function stubInference(sandbox, failures) {
+    const resolve = sandbox
+      .stub(JourneyManager, "_resolveJourneyContext")
+      .callsFake(async batch =>
+        batch.map(memory => ({ memory, urls: [], chats: [] }))
+      );
+    let calls = 0;
+    const generate = sandbox
+      .stub(JourneyManager, "_generateJourneyMetadata")
+      .callsFake(async entries => {
+        const error = failures[calls++];
+        if (error) {
+          throw error;
+        }
+        return entries.map(({ memory }) => ({
+          memoryId: memory.id,
+          headline: "Journey",
+          status: "Started",
+        }));
+      });
+    return { resolve, generate };
+  }
+
+  async function storedMemoryIds() {
+    return (await JourneyStore.getAll())
+      .map(journey => journey.memory_id)
+      .sort();
+  }
+
+  let sandbox = sinon.createSandbox();
+  try {
+    const { resolve, generate } = stubInference(sandbox, [
+      transientError,
+      transientError,
+    ]);
+    Assert.equal(
+      (
+        await JourneyManager.generateAndPersistJourneys(memories, {
+          batchSize,
+          retryDelayMs: 0,
+        })
+      ).length,
+      memories.length,
+      "Transient failures should recover on the third attempt"
+    );
+    Assert.equal(
+      generate.callCount,
+      4,
+      "The first batch should take three attempts and the second one"
+    );
+    Assert.equal(
+      resolve.callCount,
+      2,
+      "Each batch should resolve context once, not once per attempt"
+    );
+    Assert.deepEqual(
+      await storedMemoryIds(),
+      memories.map(memory => memory.id),
+      "Every journey should be stored after recovery"
+    );
+  } finally {
+    sandbox.restore();
+    await JourneyStore.clear();
+  }
+
+  sandbox = sinon.createSandbox();
+  try {
+    stubInference(sandbox, [
+      null,
+      transientError,
+      transientError,
+      transientError,
+    ]);
+    await Assert.rejects(
+      JourneyManager.generateAndPersistJourneys(memories, {
+        batchSize,
+        retryDelayMs: 0,
+      }),
+      error => error === transientError,
+      "Exhausted retries should propagate the final error"
+    );
+    Assert.deepEqual(
+      await storedMemoryIds(),
+      [memories[0].id, memories[1].id],
+      "Journeys from earlier batches should remain stored"
+    );
+  } finally {
+    sandbox.restore();
+    await JourneyStore.clear();
+  }
+});
+
+add_task(async function test_generateAndPersistJourneys_selectionAndBatching() {
+  const withHistory = { source_ids: { history_source_ids: [123] } };
+  const memories = [
+    // Ineligible memories are the most recent, so they would displace eligible
+    // ones if they were not filtered out before the cap is applied.
+    makeMemory("Soft deleted", {
+      ...withHistory,
+      is_deleted: true,
+      created_at: 2000,
+    }),
+    makeMemory("Sensitive", {
+      ...withHistory,
+      sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_SENSITIVE,
+      created_at: 2001,
+    }),
+    makeMemory("No history", {
+      source_ids: { history_source_ids: [] },
+      created_at: 2002,
+    }),
+    makeMemory("Stored", { ...withHistory, id: "stored", created_at: 2003 }),
+    // Eligible memories in shuffled order.
+    makeMemory("Rank 4", { ...withHistory, created_at: 997 }),
+    makeMemory("Rank 1", { ...withHistory, created_at: 1000 }),
+    makeMemory("Over cap", { ...withHistory, created_at: 996 }),
+    makeMemory("Rank 3, older merge", {
+      ...withHistory,
+      created_at: 999,
+      last_merged: 1,
+    }),
+    makeMemory("Rank 2, newer merge", {
+      ...withHistory,
+      created_at: 999,
+      last_merged: 2,
+    }),
+  ];
+
+  const sandbox = sinon.createSandbox();
+  try {
+    await JourneyStore.addOrUpdateJourney({
+      memoryId: "stored",
+      headline: "Stored",
+      status: "Started",
+    });
+    const resolve = sandbox
+      .stub(JourneyManager, "_resolveJourneyContext")
+      .callsFake(async batch =>
+        batch.map(memory => ({ memory, urls: [], chats: [] }))
+      );
+    const generate = sandbox
+      .stub(JourneyManager, "_generateJourneyMetadata")
+      .resolves([]);
+    await JourneyManager.generateAndPersistJourneys(memories, {
+      maxMemories: 4,
+      batchSize: 2,
+    });
+    Assert.deepEqual(
+      resolve.args.map(([batch]) => batch.map(memory => memory.memory_summary)),
+      [
+        ["Rank 1", "Rank 2, newer merge"],
+        ["Rank 3, older merge", "Rank 4"],
+      ],
+      "Only the most recent eligible memories are selected, in ranked order and batches"
+    );
+    Assert.deepEqual(
+      generate.args.flatMap(([entries]) =>
+        entries.map(({ memory }) => memory.memory_summary)
+      ),
+      ["Rank 1", "Rank 2, newer merge", "Rank 3, older merge", "Rank 4"],
+      "Exactly the selected memories reach journey metadata inference"
+    );
+  } finally {
+    sandbox.restore();
+    await JourneyStore.clear();
+  }
+});
+
+add_task(async function test_generateAndPersistJourneys_contextFailure() {
+  const sandbox = sinon.createSandbox();
+  let memories = [];
+  try {
+    memories = await addResumeActivityTestMemories([
+      makeMemory("Context failure"),
+    ]);
+    const malformed = {
+      ...memories[0],
+      source_ids: {
+        ...memories[0].source_ids,
+        conversation_source_ids: "not-an-array",
+      },
+    };
+    const resolve = sandbox.spy(JourneyManager, "_resolveJourneyContext");
+    const generate = sandbox.spy(JourneyManager, "_generateJourneyMetadata");
+    await Assert.rejects(
+      JourneyManager.generateAndPersistJourneys([malformed], {
+        retryDelayMs: 0,
+      }),
+      () => true,
+      "Context failures propagate without entering inference retries"
+    );
+    Assert.ok(resolve.calledOnce, "Context is resolved once");
+    Assert.ok(generate.notCalled, "Inference is not attempted");
+  } finally {
+    sandbox.restore();
+    await cleanupResumeActivityTestMemories(memories);
+  }
+});
+
+add_task(async function test_runJourneyMaintenance() {
+  const memories = [];
+  try {
+    for (const id of ["live", "dismissed", "softDeleted"]) {
+      memories.push(
+        await MemoryStore.addMemory({
+          id,
+          memory_summary: id,
+          is_deleted: id === "softDeleted",
+        })
+      );
+    }
+    for (const memoryId of ["live", "dismissed", "softDeleted", "absent"]) {
+      await JourneyStore.addOrUpdateJourney({
+        memoryId,
+        headline: memoryId,
+        status: "Started",
+        dismissed: memoryId === "dismissed",
+      });
+    }
+    await JourneyManager.runJourneyMaintenance();
+    Assert.deepEqual(
+      (await JourneyStore.getAll()).map(record => record.memory_id).sort(),
+      ["dismissed", "live"],
+      "Maintenance removes orphaned and soft-deleted journeys"
+    );
+    Assert.ok(
+      (await JourneyStore.get("dismissed")).dismissed,
+      "Maintenance preserves dismissal state"
+    );
+  } finally {
+    for (const memory of memories) {
+      await MemoryStore.hardDeleteMemory(memory.id);
+    }
+    await JourneyStore.clear();
+  }
 });
 
 /**
@@ -408,6 +1128,58 @@ add_setup(async function setupSemanticUrlResolutionTests() {
   await semanticManager.getConnection();
   semanticManager.embedder.setEngine(
     new MockMLEngine(semanticManager.embedder.embeddingSize)
+  );
+});
+
+add_task(function test_getJourneyTypeMemories() {
+  const eligible = {
+    id: "eligible",
+    sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_NOT_SENSITIVE,
+    source_ids: { history_source_ids: [123] },
+  };
+  const cases = [
+    ["Eligible memory", {}, true],
+    [
+      "Sensitive memory",
+      { sensitivity_category: MEMORY_SENSITIVITY_CATEGORY_SENSITIVE },
+      false,
+    ],
+    ["Missing sources", { source_ids: undefined }, false],
+    ["Empty history IDs", { source_ids: { history_source_ids: [] } }, false],
+    [
+      "Conversation-only memory",
+      { source_ids: { conversation_source_ids: ["chat"] } },
+      false,
+    ],
+    [
+      "History and conversation memory",
+      {
+        source_ids: {
+          history_source_ids: [123],
+          conversation_source_ids: ["chat"],
+        },
+      },
+      true,
+    ],
+  ];
+  for (const [name, overrides, included] of cases) {
+    const memory = { ...eligible, ...overrides };
+    Assert.deepEqual(
+      JourneyManager._getJourneyTypeMemories([memory]),
+      included ? [memory] : [],
+      name
+    );
+  }
+
+  const memories = [
+    { ...eligible, id: "older", created_at: 1 },
+    { ...eligible, id: "excluded", created_at: 3 },
+    { ...eligible, id: "newer", created_at: 2 },
+  ];
+  Assert.deepEqual(
+    JourneyManager._getJourneyTypeMemories(memories, new Set(["excluded"])),
+    [memories[0], memories[2]],
+    "Excluded memories are omitted without sorting the remaining memories"
   );
 });
 
@@ -1200,7 +1972,7 @@ add_task(async function test_resumeActivity_emptyResultIsCached() {
     await MemoriesManager.setLastSessionMemoryTimestamp(
       RESUME_ACTIVITY_TEST_TIME + 10
     );
-    getMemoriesSpy = sinon.spy(MemoriesManager, "getMemoriesByAttribute");
+    getMemoriesSpy = sinon.spy(MemoriesManager, "getAllMemories");
 
     const firstResult = await JourneyManager.suggestJourneysToResume();
     const secondResult = await JourneyManager.suggestJourneysToResume();
@@ -1213,8 +1985,8 @@ add_task(async function test_resumeActivity_emptyResultIsCached() {
     );
     Assert.equal(
       getMemoriesSpy.callCount,
-      1,
-      "A cached empty result should not query the memory store again"
+      2,
+      "Each call reads live memories for initial selection or cached-result deletion filtering"
     );
   } finally {
     getMemoriesSpy?.restore();
@@ -1236,7 +2008,7 @@ add_task(async function test_resumeActivity_nonEnglishLocaleReturnsNoCards() {
         pages: [makePage("Locale gated page")],
       }),
     ]);
-    getMemoriesSpy = sinon.spy(MemoriesManager, "getMemoriesByAttribute");
+    getMemoriesSpy = sinon.spy(MemoriesManager, "getAllMemories");
     mockEngineManager = new MockEngineManager();
 
     Services.locale.availableLocales = ["en-US", "de"];
@@ -1747,6 +2519,8 @@ add_setup(async function setupJourneyStore() {
 });
 
 add_task(async function has_eligible_journeys() {
+  const originalAvailable = Services.locale.availableLocales;
+  const originalRequested = Services.locale.requestedLocales;
   try {
     Assert.strictEqual(
       await JourneyManager.hasEligibleJourneys(),
@@ -1777,7 +2551,22 @@ add_task(async function has_eligible_journeys() {
       true,
       "Non-dismissed journeys are eligible"
     );
+
+    Services.locale.availableLocales = ["en-US", "de"];
+    Services.locale.requestedLocales = ["de"];
+    Assert.equal(
+      Services.locale.appLocaleAsBCP47,
+      "de",
+      "The app locale should be German for this check"
+    );
+    Assert.strictEqual(
+      await JourneyManager.hasEligibleJourneys(),
+      false,
+      "A non-English locale has no eligible journeys"
+    );
   } finally {
+    Services.locale.requestedLocales = originalRequested;
+    Services.locale.availableLocales = originalAvailable;
     await JourneyStore.clear();
   }
 });
