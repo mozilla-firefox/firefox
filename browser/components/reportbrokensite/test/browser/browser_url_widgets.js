@@ -11,6 +11,8 @@ const { getMozRemoteImageURL } = ChromeUtils.importESModule(
   "moz-src:///toolkit/modules/FaviconUtils.sys.mjs"
 );
 
+add_setup(setupBuiltInTestTrackers);
+
 async function checkURLWidget(rbs, blurringClick, expectedFavicon) {
   const { url, win, urlComponent } = rbs;
   const { emphasizedUrl, faviconImg, input, reset, wrapper } = urlComponent;

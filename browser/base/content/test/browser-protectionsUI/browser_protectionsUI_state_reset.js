@@ -10,6 +10,13 @@ const BENIGN_PAGE =
   "http://tracking.example.org/browser/browser/base/content/test/browser-protectionsUI/benignPage.html";
 const ABOUT_PAGE = "about:preferences";
 
+add_setup(async function () {
+  await UrlClassifierTestUtils.addBuiltInTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
+  });
+});
+
 /* This asserts that the content blocking event state is correctly reset
  * when navigating to a new location, and that the user is correctly
  * reset when switching between tabs. */

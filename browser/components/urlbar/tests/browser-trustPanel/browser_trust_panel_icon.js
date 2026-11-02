@@ -13,6 +13,8 @@ ChromeUtils.defineESModuleGetters(this, {
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   NimbusTestUtils: "resource://testing-common/NimbusTestUtils.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
+  UrlClassifierTestUtils:
+    "resource://testing-common/UrlClassifierTestUtils.sys.mjs",
 });
 
 const TRACKING_PAGE =
@@ -76,6 +78,7 @@ add_setup(async function setup() {
       ["ui.prefersReducedMotion", 0],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
 
   // Wait a tick to ensure any initial about:blank background fetches
   // complete BEFORE we reset the cache.
@@ -91,6 +94,7 @@ add_setup(async function setup() {
         .getAnimations({ subtree: true })
         .map(anim => anim.finished.catch(() => {}))
     );
+    await UrlClassifierTestUtils.cleanupTestTrackers();
     await PlacesUtils.history.clear();
     Services.prefs.clearUserPref("browser.urlbar.trackerCountShown");
   });
@@ -400,6 +404,7 @@ add_task(async function test_multiple_blockers_count() {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
   await PlacesUtils.history.clear();
 
   const tab = await BrowserTestUtils.openNewForegroundTab({
@@ -1364,6 +1369,7 @@ add_task(async function test_trackers_blocked_after_load_are_counted() {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
   const tab = await openTabWithBlockedCryptominer();
 
   try {

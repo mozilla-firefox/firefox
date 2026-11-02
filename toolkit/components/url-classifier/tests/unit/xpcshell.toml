@@ -1,5 +1,12 @@
 [DEFAULT]
 head = "head_urlclassifier.js"
+# These tests exercise url-classifier's own tracking protection features, so
+# keep it as the channel classifier even where the content classifier is the
+# default engine.
+prefs = [
+  "privacy.trackingprotection.content.mirror.mode=0",
+  "privacy.trackingprotection.urlclassifier.disable_for_channel_classifier=false",
+]
 tags = "condprof"
 skip-if = [
   "os == 'android'",

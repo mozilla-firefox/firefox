@@ -255,6 +255,8 @@ add_task(async function test_update() {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addBuiltInTestTrackers();
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
 
   const tab = await BrowserTestUtils.openNewForegroundTab({
     gBrowser,
@@ -314,6 +316,8 @@ add_task(async function test_update() {
   );
 
   BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 });
 
 add_task(async function test_blocked_list_is_cumulative_across_same_site_nav() {
@@ -329,6 +333,7 @@ add_task(async function test_blocked_list_is_cumulative_across_same_site_nav() {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
 
   const tab = await BrowserTestUtils.openNewForegroundTab({
     gBrowser,
@@ -427,6 +432,7 @@ add_task(async function test_blocked_list_is_cumulative_across_same_site_nav() {
 
   BrowserTestUtils.removeTab(tab);
   await SpecialPowers.popPrefEnv();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 });
 
 add_task(async function test_blocked_list_not_cumulative_when_disabled() {
@@ -443,6 +449,7 @@ add_task(async function test_blocked_list_not_cumulative_when_disabled() {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
 
   const tab = await BrowserTestUtils.openNewForegroundTab({
     gBrowser,
@@ -506,6 +513,7 @@ add_task(async function test_blocked_list_not_cumulative_when_disabled() {
 
   BrowserTestUtils.removeTab(tab);
   await SpecialPowers.popPrefEnv();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 });
 
 add_task(async function test_etld() {
@@ -1018,6 +1026,20 @@ add_task(async function test_opened_glean_event_no_trackers_blocked() {
 });
 
 add_task(async function test_opened_glean_event_trackers_blocked() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "urlclassifier.features.cryptomining.blacklistHosts",
+        "cryptomining.example.com",
+      ],
+      [
+        "urlclassifier.features.cryptomining.annotate.blacklistHosts",
+        "cryptomining.example.com",
+      ],
+    ],
+  });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
+
   const tab = await BrowserTestUtils.openNewForegroundTab({
     gBrowser,
     opening: TRACKING_PAGE,
@@ -1071,6 +1093,8 @@ add_task(async function test_opened_glean_event_trackers_blocked() {
     await UrlbarTestUtils.closeTrustPanel(window);
   } finally {
     await BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   }
 });
 
@@ -1577,7 +1601,7 @@ add_task(async function test_cookie_details_title() {
     "Cross-site tracking cookies are not titled as third-party cookies"
   );
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
   BrowserTestUtils.removeTab(tab);
   await SpecialPowers.popPrefEnv();
 });

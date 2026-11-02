@@ -1132,10 +1132,17 @@ function filterFrameworkDetectorFails(ping, expected) {
   }
 }
 
+async function setupBuiltInTestTrackers() {
+  await UrlClassifierTestUtils.addBuiltInTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
+  });
+}
+
 async function setupStrictETP() {
   await UrlClassifierTestUtils.addTestTrackers();
-  registerCleanupFunction(() => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 
   await SpecialPowers.pushPrefEnv({

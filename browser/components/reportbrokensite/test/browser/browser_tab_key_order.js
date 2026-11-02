@@ -7,6 +7,8 @@
 
 add_common_setup();
 
+add_setup(setupBuiltInTestTrackers);
+
 async function ensureTabOrder(rbs, order, expectBackButton = true) {
   let foundBackAlready = false;
   for (let matches of order) {

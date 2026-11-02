@@ -14,6 +14,8 @@ ChromeUtils.defineESModuleGetters(this, {
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
   SiteDataTestUtils: "resource://testing-common/SiteDataTestUtils.sys.mjs",
+  UrlClassifierTestUtils:
+    "resource://testing-common/UrlClassifierTestUtils.sys.mjs",
 });
 
 const TEST_ORIGIN = "https://example.com";
@@ -438,6 +440,8 @@ add_task(async function test_tracker_subviews_telemetry() {
       ],
     ],
   });
+  await UrlClassifierTestUtils.addBuiltInTestTrackers();
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
   Services.fog.testResetFOG();
 
   const tab = await BrowserTestUtils.openNewForegroundTab({
@@ -511,6 +515,7 @@ add_task(async function test_tracker_subviews_telemetry() {
 
   await UrlbarTestUtils.closeTrustPanel(window);
   await BrowserTestUtils.removeTab(tab);
+  await UrlClassifierTestUtils.cleanupTestTrackers();
   await SpecialPowers.popPrefEnv();
 });
 

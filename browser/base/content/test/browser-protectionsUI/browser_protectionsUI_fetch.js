@@ -1,6 +1,13 @@
 const URL =
   "http://mochi.test:8888/browser/browser/base/content/test/browser-protectionsUI/file_protectionsUI_fetch.html";
 
+add_setup(async function () {
+  await UrlClassifierTestUtils.addBuiltInTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
+  });
+});
+
 add_task(async function test_fetch() {
   await SpecialPowers.pushPrefEnv({
     set: [["privacy.trackingprotection.enabled", true]],

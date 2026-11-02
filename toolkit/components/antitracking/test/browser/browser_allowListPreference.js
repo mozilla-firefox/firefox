@@ -54,6 +54,14 @@ async function loadTracker({ trackerUrl }) {
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [
+      // The url-classifier-exceptions allow list is url-classifier only, so
+      // keep it as the channel classifier where the content classifier is
+      // the default engine.
+      ["privacy.trackingprotection.content.mirror.mode", 0],
+      [
+        "privacy.trackingprotection.urlclassifier.disable_for_channel_classifier",
+        false,
+      ],
       // Add test tracker.
       [
         "urlclassifier.trackingTable.testEntries",

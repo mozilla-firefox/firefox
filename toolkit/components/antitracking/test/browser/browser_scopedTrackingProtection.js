@@ -4,14 +4,16 @@
 "use strict";
 
 const SCOPED_PREF = Ci.nsIScopedPrefs.PRIVACY_TRACKINGPROTECTION_ENABLED;
+const SCOPED_CONTENT_PREF =
+  Ci.nsIScopedPrefs.PRIVACY_TRACKINGPROTECTION_CONTENT_ENABLED;
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [["privacy.trackingprotection.enabled", true]],
   });
   await UrlClassifierTestUtils.addTestTrackers();
-  registerCleanupFunction(() => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 });
 
@@ -45,7 +47,12 @@ add_task(async function test_scoped_pref_disable() {
   is(result, "blocked", "Tracker is blocked when TP is enabled");
 
   let bc = tab.linkedBrowser.browsingContext;
+  // Cover both engines, as ReducedProtectionNotification does.
   bc.scopedPrefs.setBoolPrefScoped(SCOPED_PREF, bc, false);
+  bc.scopedPrefs.setBoolPrefScoped(SCOPED_CONTENT_PREF, bc, false);
+  // Start a new document so the first load's blocking event can't resolve the
+  // next check.
+  await BrowserTestUtils.reloadTab(tab);
 
   result = await loadTrackerInTab(browser);
   is(

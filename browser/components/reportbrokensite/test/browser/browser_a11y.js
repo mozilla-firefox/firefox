@@ -7,6 +7,8 @@
 
 add_common_setup();
 
+add_setup(setupBuiltInTestTrackers);
+
 async function checkMainPanel(menu) {
   let rbs = await menu.openReportBrokenSite();
 

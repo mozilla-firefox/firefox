@@ -33,12 +33,14 @@ add_setup(async function () {
       ["browser.urlbar.scotchBonnet.enableOverride", true],
     ],
   });
+  await UrlClassifierTestUtils.addBuiltInTestTrackers();
 
   let oldCanRecord = Services.telemetry.canRecordExtended;
   Services.telemetry.canRecordExtended = true;
   Services.telemetry.clearEvents();
 
-  registerCleanupFunction(() => {
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
     Services.telemetry.canRecordExtended = oldCanRecord;
     Services.telemetry.clearEvents();
   });

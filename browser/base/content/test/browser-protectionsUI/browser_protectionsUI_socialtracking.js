@@ -29,6 +29,10 @@ add_setup(async function () {
       ["privacy.trackingprotection.annotate_channels", true],
     ],
   });
+  await UrlClassifierTestUtils.addTestHostsFromPrefs();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
+  });
 });
 
 async function testIdentityState(hasException) {

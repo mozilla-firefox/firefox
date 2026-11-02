@@ -1,4 +1,7 @@
 [DEFAULT]
+# These tests drive the content classifier prefs directly; the two that cover
+# the ETP pref mirror turn it on themselves.
+prefs = ["privacy.trackingprotection.content.mirror.mode=0"]
 support-files = [
   "head.js",
   "page.html",
