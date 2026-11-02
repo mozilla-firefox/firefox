@@ -1,0 +1,250 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test for HTMLCanvasElement.printToPDF</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css"/>
+  <script>
+  const { Cc, Ci } = SpecialPowers;
+  const { NetUtil } = ChromeUtils.importESModule(
+    "resource://gre/modules/NetUtil.sys.mjs"
+  );
+  let pdfjsLib;
+
+  add_setup(async function () {
+    // Use PDF.js's main-thread worker.
+    [pdfjsLib, window.pdfjsWorker] = await Promise.all([
+      import("resource://pdf.js/build/pdf.mjs"),
+      import("resource://pdf.js/build/pdf.worker.mjs"),
+    ]);
+  });
+
+  function printToPDF(canvases) {
+    const storage = Cc["@mozilla.org/storagestream;1"].createInstance(
+      Ci.nsIStorageStream
+    );
+    storage.init(4096, 64 * 1024 * 1024);
+    const output = storage.getOutputStream(0);
+    try {
+      HTMLCanvasElement.printToPDF(canvases, output);
+    } finally {
+      // Also close the stream if printing throws.
+      try {
+        output.close();
+      } catch (ex) {}
+    }
+    return new Uint8Array(NetUtil.readInputStream(storage.newInputStream(0)));
+  }
+
+  // Return page sizes, text and pixels at one pixel per PDF point.
+  async function printAndParse(canvases) {
+    const data = printToPDF(canvases);
+    const loadingTask = pdfjsLib.getDocument({ data });
+    try {
+      const pdf = await loadingTask.promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 1 });
+        const { items } = await page.getTextContent();
+        const canvas = document.createElement("canvas");
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const canvasContext = canvas.getContext("2d");
+        await page.render({ canvasContext, viewport }).promise;
+        pages.push({
+          size: [viewport.width, viewport.height],
+          text: items.map(item => item.str).join(""),
+          pixel: (x, y) => [...canvasContext.getImageData(x, y, 1, 1).data],
+        });
+      }
+      return pages;
+    } finally {
+      await loadingTask.destroy();
+    }
+  }
+
+  // printToPDF requires detached canvases.
+  function makeCanvas(width, height, printCallback = () => {}) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.mozPrintCallback = printCallback;
+    return canvas;
+  }
+
+  add_task(async function test_one_page_per_canvas() {
+    const calls = [];
+    const first = makeCanvas(200, 100, state => {
+      calls.push({ canvas: first, context: state.context });
+      const ctx = state.context;
+      ctx.fillStyle = "#ff0000";
+      ctx.fillRect(10, 10, 50, 50);
+      ctx.font = "20px sans-serif";
+      ctx.fillText("Hello", 20, 90);
+    });
+    const second = makeCanvas(300, 150, state => {
+      calls.push({ canvas: second, context: state.context });
+      const ctx = state.context;
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(300, 150);
+      ctx.stroke();
+    });
+    const firstContext = first.getContext("2d");
+    // Printing must discard this bitmap.
+    firstContext.fillStyle = "#00ff00";
+    firstContext.fillRect(0, 0, 200, 100);
+
+    const pages = await printAndParse([first, second]);
+
+    is(calls.length, 2, "Each canvas' callback runs once");
+    is(calls[0].canvas, first, "The first canvas is printed first");
+    is(calls[1].canvas, second, "The second canvas is printed second");
+    ok(
+      calls.every(({ canvas, context }) => context === canvas.getContext("2d")),
+      "The callbacks draw through their canvas' own 2D context"
+    );
+
+    is(pages.length, 2, "The PDF has one page per canvas");
+    isDeeply(
+      pages.map(page => page.size),
+      [[200, 100], [300, 150]],
+      "Each page has its canvas' size, one point per canvas pixel"
+    );
+    ok(pages[0].text.includes("Hello"), "The text is embedded as text");
+    isDeeply(
+      pages[0].pixel(35, 35),
+      [255, 0, 0, 255],
+      "The first page shows the red rectangle"
+    );
+    isDeeply(
+      pages[0].pixel(5, 5),
+      [255, 255, 255, 255],
+      "The first page does not show the canvas bitmap"
+    );
+    isDeeply(
+      pages[1].pixel(150, 75),
+      [0, 0, 0, 255],
+      "The second page shows the line"
+    );
+    isDeeply(
+      pages[1].pixel(290, 10),
+      [255, 255, 255, 255],
+      "The second page is blank away from the line"
+    );
+
+    is(
+      JSON.stringify([...firstContext.getImageData(20, 20, 1, 1).data]),
+      "[0,0,0,0]",
+      "Printing discards the canvas bitmap"
+    );
+  });
+
+  add_task(async function test_single_canvas() {
+    let calls = 0;
+    const canvas = makeCanvas(50, 50, () => {
+      calls++;
+    });
+    const pages = await printAndParse([canvas]);
+    is(calls, 1, "The callback runs once");
+    is(pages.length, 1, "The PDF has one page");
+    isDeeply(pages[0].size, [50, 50], "The page has the canvas' size");
+  });
+
+  add_task(function test_context_after_printing() {
+    let saved;
+    const canvas = makeCanvas(50, 50, state => {
+      saved = state.context;
+    });
+    printToPDF([canvas]);
+    is(saved, canvas.getContext("2d"), "The context stays the canvas' one");
+    // Subsequent drawing must use a new canvas bitmap.
+    saved.fillStyle = "#ff0000";
+    saved.fillRect(0, 0, 10, 10);
+    saved.fillText("x", 0, 10);
+    is(
+      JSON.stringify([...saved.getImageData(5, 5, 1, 1).data]),
+      "[255,0,0,255]",
+      "Drawing after printing reaches the canvas bitmap"
+    );
+  });
+
+  function expectError(name, fn, message) {
+    let error = null;
+    try {
+      fn();
+    } catch (ex) {
+      error = ex;
+    }
+    is(error?.name, name, message);
+  }
+
+  add_task(function test_errors() {
+    expectError("RangeError", () => printToPDF([]), "No canvas is rejected");
+
+    const connected = makeCanvas(100, 100);
+    document.body.append(connected);
+    expectError(
+      "InvalidStateError",
+      () => printToPDF([connected]),
+      "A canvas in the document is rejected"
+    );
+    connected.remove();
+
+    const noCallback = makeCanvas(100, 100);
+    noCallback.mozPrintCallback = null;
+    expectError(
+      "InvalidStateError",
+      () => printToPDF([noCallback]),
+      "A canvas without mozPrintCallback is rejected"
+    );
+
+    // Use a callback with a content principal.
+    const sandbox = SpecialPowers.Cu.Sandbox("https://example.com");
+    const contentCallback = SpecialPowers.unwrap(
+      SpecialPowers.Cu.evalInSandbox("(() => {})", sandbox)
+    );
+    const contentCanvas = makeCanvas(100, 100, contentCallback);
+    expectError(
+      "SecurityError",
+      () => printToPDF([contentCanvas]),
+      "A content-authored mozPrintCallback is rejected"
+    );
+
+    const webglCanvas = makeCanvas(100, 100);
+    if (webglCanvas.getContext("webgl")) {
+      expectError(
+        "InvalidStateError",
+        () => printToPDF([webglCanvas]),
+        "A non-2D canvas is rejected"
+      );
+    } else {
+      info("No WebGL here, skipping the non-2D canvas case");
+    }
+
+    let calls = 0;
+    const failing = makeCanvas(100, 100, () => {
+      calls++;
+      throw new Error("drawing failed");
+    });
+    const next = makeCanvas(100, 100, () => {
+      calls++;
+    });
+    let error = null;
+    try {
+      printToPDF([failing, next]);
+    } catch (ex) {
+      error = ex;
+    }
+    is(error?.message, "drawing failed", "A callback exception propagates");
+    is(calls, 1, "A failing callback stops the remaining canvases");
+  });
+  </script>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2076793">Mozilla Bug 2076793</a>
+</body>
+</html>

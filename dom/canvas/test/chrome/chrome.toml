@@ -12,5 +12,7 @@ skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 1693807, Bug 1705410
 ]
 
+["test_printToPDF.html"]
+
 ["test_webgl_debug_renderer_info.html"]
 subsuite = "gpu"

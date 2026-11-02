@@ -11,6 +11,7 @@
 #include "MediaTrackGraph.h"
 #include "VRManagerChild.h"
 #include "WindowRenderer.h"
+#include "js/Wrapper.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "mozilla/Assertions.h"
@@ -38,6 +39,7 @@
 #include "mozilla/dom/OffscreenCanvas.h"
 #include "mozilla/dom/OffscreenCanvasDisplayHelper.h"
 #include "mozilla/dom/VideoStreamTrack.h"
+#include "mozilla/gfx/PrintTargetSkPDF.h"
 #include "mozilla/gfx/Rect.h"
 #include "mozilla/layers/CanvasRenderer.h"
 #include "mozilla/layers/WebRenderCanvasRenderer.h"
@@ -47,6 +49,7 @@
 #include "nsContentUtils.h"
 #include "nsDOMJSUtils.h"
 #include "nsDisplayList.h"
+#include "nsIOutputStream.h"
 #include "nsITimer.h"
 #include "nsJSUtils.h"
 #include "nsLayoutUtils.h"
@@ -847,6 +850,108 @@ PrintCallback* HTMLCanvasElement::GetMozPrintCallback() const {
     return mOriginalCanvas->GetMozPrintCallback();
   }
   return mPrintCallback;
+}
+
+/* static */
+void HTMLCanvasElement::PrintToPDF(
+    const GlobalObject& aGlobal,
+    const Sequence<OwningNonNull<HTMLCanvasElement>>& aCanvases,
+    nsIOutputStream* aStream, ErrorResult& aRv) {
+  MOZ_ASSERT(aStream);
+  if (aCanvases.IsEmpty()) {
+    aRv.ThrowRangeError("A PDF needs at least one page."_ns);
+    return;
+  }
+
+  RefPtr<gfx::PrintTargetSkPDF> target =
+      gfx::PrintTargetSkPDF::CreateOrNull(aStream);
+  if (!target) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+  // Omit the document title and structure tree.
+  nsresult rv = target->BeginPrinting(u""_ns, u""_ns, 0, 0, 0);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(rv);
+    return;
+  }
+
+  for (const OwningNonNull<HTMLCanvasElement>& entry : aCanvases) {
+    RefPtr<HTMLCanvasElement> canvas = entry;
+    canvas->PrintPageToPDF(*target, aRv);
+    if (aRv.Failed()) {
+      target->AbortPrinting();
+      return;
+    }
+  }
+
+  aRv = target->EndPrinting();
+  target->Finish();
+}
+
+void HTMLCanvasElement::PrintPageToPDF(gfx::PrintTarget& aTarget,
+                                       ErrorResult& aRv) {
+  // Replacing the bitmap must not affect display or an existing print job.
+  if (IsInComposedDoc() || mPrintState) {
+    aRv.ThrowInvalidStateError("The canvas must not be in a document."_ns);
+    return;
+  }
+  RefPtr<PrintCallback> callback = GetMozPrintCallback();
+  if (!callback) {
+    aRv.ThrowInvalidStateError("The canvas has no mozPrintCallback."_ns);
+    return;
+  }
+  // PDF output bypasses canvas readback taint checks, so require chrome code.
+  JSObject* callable = callback->CallbackOrNull();
+  if (!callable ||
+      !nsContentUtils::ObjectPrincipal(js::UncheckedUnwrap(callable))
+           ->IsSystemPrincipal()) {
+    aRv.ThrowSecurityError("The mozPrintCallback must be chrome code."_ns);
+    return;
+  }
+  // One CSS pixel maps to one PDF point.
+  const gfx::IntSize pageSize = GetWidthHeight().ToUnknownSize();
+  if (!mCurrentContext) {
+    nsCOMPtr<nsISupports> ignored;
+    nsresult rv = GetContext(u"2d"_ns, getter_AddRefs(ignored));
+    if (NS_FAILED(rv)) {
+      aRv.Throw(rv);
+      return;
+    }
+  }
+  if (GetCurrentContextType() != CanvasContextType::Canvas2D) {
+    aRv.ThrowInvalidStateError("The canvas has no 2D context."_ns);
+    return;
+  }
+  nsCOMPtr<nsICanvasRenderingContextInternal> context = mCurrentContext;
+
+  nsresult rv = aTarget.BeginPage(pageSize);
+  if (NS_FAILED(rv)) {
+    aRv.Throw(rv);
+    return;
+  }
+  RefPtr<gfx::DrawTarget> pageTarget = aTarget.MakeDrawTarget(pageSize);
+  if (!pageTarget) {
+    aRv.Throw(NS_ERROR_FAILURE);
+    return;
+  }
+  rv = context->InitializeWithDrawTarget(nullptr, WrapNotNull(pageTarget));
+  if (NS_FAILED(rv)) {
+    aRv.Throw(rv);
+    return;
+  }
+
+  RefPtr<HTMLCanvasPrintState> state =
+      new HTMLCanvasPrintState(this, context, nullptr);
+  callback->Call(*state, aRv, "HTMLCanvasElement.printToPDF",
+                 CallbackObject::eRethrowExceptions);
+  // Detach the PDF draw target before closing the page.
+  context->ResetBitmap();
+  if (aRv.Failed()) {
+    return;
+  }
+
+  aRv = aTarget.EndPage();
 }
 
 static uint32_t sCaptureSourceId = 0;
