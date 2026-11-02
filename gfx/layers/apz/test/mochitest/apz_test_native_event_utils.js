@@ -2051,8 +2051,9 @@ async function synthesizeNativeTouchForFastFling(aTarget, aX, aY, aType) {
   // On Android if subsequent touch event don't happen within 40ms, any fast
   // fling animation is never triggered.
   // [1] https://searchfox.org/firefox-main/rev/6301b01791f9c98637ae8d5b7a81dd004d48d468/gfx/layers/apz/src/AndroidVelocityTracker.cpp#44-46
-  if (getPlatform() != "android") {
-    // Wait 50ms.
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
+  // But Android touch event timestamps have millisecond resolution and the
+  // velocity tracker merges samples less than 1ms apart, so the events still
+  // need to be spaced out a bit to produce distinct samples.
+  const delayMs = getPlatform() == "android" ? 5 : 50;
+  await new Promise(resolve => setTimeout(resolve, delayMs));
 }
