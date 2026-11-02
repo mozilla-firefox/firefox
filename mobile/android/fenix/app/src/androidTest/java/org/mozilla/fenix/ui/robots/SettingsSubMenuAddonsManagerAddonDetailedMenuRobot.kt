@@ -8,6 +8,8 @@ package org.mozilla.fenix.ui.robots
 import android.util.Log
 import android.view.View
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers
@@ -18,6 +20,7 @@ import androidx.test.rule.ActivityTestRule
 import org.hamcrest.CoreMatchers.allOf
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
+import org.mozilla.fenix.addons.AddonsTestTag
 import org.mozilla.fenix.helpers.AppAndSystemHelper.registerAndCleanupIdlingResources
 import org.mozilla.fenix.helpers.Constants.TAG
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectIsGone
@@ -70,6 +73,8 @@ class SettingsSubMenuAddonsManagerAddonDetailedMenuRobot {
                 Log.i(TAG, "removeAddon: Trying to click the remove add-on button")
                 removeAddonButton().click()
                 Log.i(TAG, "removeAddon: Clicked the remove add-on button")
+                composeTestRule.onNodeWithTag(AddonsTestTag.REMOVE_ADDON_DIALOG_CONFIRM_BUTTON).performClick()
+                Log.i(TAG, "removeAddon: Clicked the confirm button")
             }
 
             Log.i(TAG, "removeAddon: Waiting for the add-on detail screen to be dismissed")

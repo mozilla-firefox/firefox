@@ -11,7 +11,12 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.annotation.StringRes
 import androidx.annotation.VisibleForTesting
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -37,12 +42,14 @@ import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.android.content.appName
 import mozilla.components.support.ktx.android.content.appVersionName
 import org.mozilla.fenix.BuildConfig
+import org.mozilla.fenix.addons.ui.RemoveAddonDialog
 import org.mozilla.fenix.databinding.FragmentInstalledAddOnDetailsBinding
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.runIfFragmentIsAttached
 import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.theme.FirefoxTheme
 
 /** An activity to show the details of a installed add-on. */
 @Suppress("LargeClass", "TooManyFunctions")
@@ -57,6 +64,8 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     @Suppress("VariableNaming")
     internal var _binding: FragmentInstalledAddOnDetailsBinding? = null
+
+    @VisibleForTesting internal var showRemoveDialog by mutableStateOf(false)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -166,6 +175,7 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
         bindRemoveButton()
         bindReportButton()
         bindMessageBars()
+        bindRemoveDialog()
     }
 
     @VisibleForTesting
@@ -454,39 +464,68 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
     }
 
     @VisibleForTesting
+    internal fun onRemoveDialogConfirmed() {
+        showRemoveDialog = false
+        uninstallAddon()
+    }
+
+    @VisibleForTesting
+    internal fun onRemoveDialogCanceled() {
+        showRemoveDialog = false
+    }
+
+    private fun bindRemoveDialog() {
+        binding.removeAddonDialogHost.apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                FirefoxTheme {
+                    if (showRemoveDialog) {
+                        RemoveAddonDialog(
+                            addonName = addon.translateName(LocalContext.current),
+                            onConfirm = ::onRemoveDialogConfirmed,
+                            onDismiss = ::onRemoveDialogCanceled,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @VisibleForTesting
     internal fun bindRemoveButton() {
         binding.removeAddOn.setOnClickListener {
-            fun uninstall() {
-                setAllInteractiveViewsClickable(binding, false)
-                provideAddonManager()
-                    .uninstallAddon(
-                        addon,
-                        onSuccess = {
-                            runIfFragmentIsAttached {
-                                setAllInteractiveViewsClickable(binding, true)
-                                binding.root.findNavController().popBackStack()
-                            }
-                        },
-                        onError = { _, _ ->
-                            runIfFragmentIsAttached {
-                                setAllInteractiveViewsClickable(binding, true)
-                                context?.let { ctx ->
-                                    showAddonFailureSnackbar(
-                                        getString(
-                                            addonsR.string.mozac_feature_addons_failed_to_uninstall,
-                                            addon.translateName(ctx),
-                                        )
-                                    ) {
-                                        uninstall()
-                                    }
-                                }
-                            }
-                        },
-                    )
-            }
-
-            uninstall()
+            showRemoveDialog = true
         }
+    }
+
+    @VisibleForTesting
+    internal fun uninstallAddon() {
+        setAllInteractiveViewsClickable(binding, false)
+        provideAddonManager()
+            .uninstallAddon(
+                addon,
+                onSuccess = {
+                    runIfFragmentIsAttached {
+                        setAllInteractiveViewsClickable(binding, true)
+                        binding.root.findNavController().popBackStack()
+                    }
+                },
+                onError = { _, _ ->
+                    runIfFragmentIsAttached {
+                        setAllInteractiveViewsClickable(binding, true)
+                        context?.let { ctx ->
+                            showAddonFailureSnackbar(
+                                getString(
+                                    addonsR.string.mozac_feature_addons_failed_to_uninstall,
+                                    addon.translateName(ctx),
+                                )
+                            ) {
+                                uninstallAddon()
+                            }
+                        }
+                    }
+                },
+            )
     }
 
     private fun setAllInteractiveViewsClickable(

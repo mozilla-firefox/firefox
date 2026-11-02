@@ -919,6 +919,16 @@
     <!-- Toast shown after confirming the custom extension collection configuration -->
     <string name="toast_customize_extension_collection_done">Extension collection modified. Quitting the application to apply changes…</string>
 
+    <!-- Add-on removal confirmation dialog -->
+    <!-- Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay). -->
+    <string name="addon_remove_dialog_title">Remove %1$s?</string>
+    <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+    <string name="addon_remove_dialog_body">This removes the extension and its settings from this device.</string>
+    <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+    <string name="addon_remove_dialog_confirm">Remove</string>
+    <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+    <string name="addon_remove_dialog_cancel">Cancel</string>
+
     <!-- Customize Home -->
     <!-- Title for the customize home screen section with privacy report. -->
     <string name="customize_toggle_privacy_report">Privacy report</string>

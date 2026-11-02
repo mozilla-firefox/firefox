@@ -293,9 +293,7 @@ class InstalledAddonDetailsFragmentTest {
             addonManager.uninstallAddon(addon, any(), any())
         } answers { lastArg<(String, Throwable) -> Unit>().invoke("some-addon-id", RuntimeException("boom")) }
         val onRetry = captureSnackbarRetry()
-        fragment.bindRemoveButton()
-
-        fragment.binding.removeAddOn.performClick()
+        fragment.uninstallAddon()
 
         verify(exactly = 1) { addonManager.uninstallAddon(addon, any(), any()) }
         verify { fragment.showAddonFailureSnackbar(any(), any()) }
@@ -696,6 +694,40 @@ class InstalledAddonDetailsFragmentTest {
 
         fragment.bindMessageBars()
         assertFalse(updateBanner.isVisible)
+    }
+
+    @Test
+    fun `GIVEN an add-on WHEN clicking the remove button THEN confirmation dialog is shown and the add-on is not uninstalled`() {
+        val addon = mockAddon()
+        setUpFragmentForAddon(addon)
+        fragment.bindRemoveButton()
+
+        fragment.binding.removeAddOn.performClick()
+
+        assertTrue(fragment.showRemoveDialog)
+        verify(exactly = 0) { addonManager.uninstallAddon(any(), any(), any()) }
+    }
+
+    @Test
+    fun `GIVEN the remove dialog is shown WHEN the removal is confirmed THEN the dialog is hidden and the add-on is uninstalled`() {
+        every { fragment.uninstallAddon() } just Runs
+        fragment.showRemoveDialog = true
+
+        fragment.onRemoveDialogConfirmed()
+
+        assertFalse(fragment.showRemoveDialog)
+        verify(exactly = 1) { fragment.uninstallAddon() }
+    }
+
+    @Test
+    fun `GIVEN the remove dialog is shown WHEN the removal is cancelled THEN the dialog is hidden and the add-on is not uninstalled`() {
+        every { fragment.uninstallAddon() } just Runs
+        fragment.showRemoveDialog = true
+
+        fragment.onRemoveDialogCanceled()
+
+        assertFalse(fragment.showRemoveDialog)
+        verify(exactly = 0) { fragment.uninstallAddon() }
     }
 
     private fun setUpFragmentWithPendingUpdate(enabled: Boolean, pendingUpdateIds: List<String>): BrowserStore {

@@ -6,6 +6,7 @@ package org.mozilla.fenix.ui.efficiency.selectors
 
 import mozilla.components.feature.addons.R as addonsR
 import org.mozilla.fenix.R
+import org.mozilla.fenix.addons.AddonsTestTag
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.ui.efficiency.helpers.PageReadinessProfiles
 import org.mozilla.fenix.ui.efficiency.helpers.Selector
@@ -149,5 +150,13 @@ object SettingsAddonsManagerSelectors : SelectorContainer {
             strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
             value = getStringResource(addonsR.string.mozac_feature_addons_enabled),
             description = "Add-ons manager Enabled section title",
+        )
+
+    // The confirm button of the dialog shown when the user taps the button to remove an extension.
+    val REMOVE_ADDON_DIALOG_CONFIRM_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = AddonsTestTag.REMOVE_ADDON_DIALOG_CONFIRM_BUTTON,
+            description = "Remove add-on confirm button",
         )
 }
