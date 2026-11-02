@@ -261,7 +261,8 @@ void MacroAssemblerCompat::mov(CodeLabel* label, Register dest) {
   label->setLinkMode(CodeLabel::MoveImmediate);
 }
 
-BufferOffset MacroAssemblerCompat::movePatchablePtr(ImmPtr ptr, Register dest) {
+BufferOffset MacroAssemblerCompat::movePatchableGCPtr(ImmPtr ptr,
+                                                      Register dest) {
   const size_t numInst = 1;           // Inserting one load instruction.
   const unsigned numPoolEntries = 2;  // Every pool entry is 4 bytes.
   uint8_t* literalAddr = (uint8_t*)(&ptr.value);  // TODO: Should be const.
@@ -281,9 +282,12 @@ BufferOffset MacroAssemblerCompat::movePatchablePtr(ImmPtr ptr, Register dest) {
                        0);
 
   // Add the entry to the pool, fix up the LDR imm19 offset,
-  // and add the completed instruction to the buffer.
+  // and add the completed instruction to the buffer. The pointer is a GC thing
+  // or boxed Value that TraceDataRelocations updates in place, so equal
+  // pointers can share one entry.
   return allocLiteralLoadEntry(numInst, numPoolEntries,
-                               (uint8_t*)&instructionScratch, literalAddr);
+                               (uint8_t*)&instructionScratch, literalAddr,
+                               PoolEntryKind::GCThing);
 }
 
 BufferOffset MacroAssemblerCompat::movePatchablePtr(ImmWord ptr,
@@ -307,9 +311,12 @@ BufferOffset MacroAssemblerCompat::movePatchablePtr(ImmWord ptr,
                        0);
 
   // Add the entry to the pool, fix up the LDR imm19 offset,
-  // and add the completed instruction to the buffer.
+  // and add the completed instruction to the buffer. The ImmWord is a
+  // placeholder patched later (CodeLabel, wasm::SymbolicAddress), so it must
+  // not share an entry.
   return allocLiteralLoadEntry(numInst, numPoolEntries,
-                               (uint8_t*)&instructionScratch, literalAddr);
+                               (uint8_t*)&instructionScratch, literalAddr,
+                               PoolEntryKind::Unshared);
 }
 
 void MacroAssemblerCompat::loadPrivate(const Address& src, Register dest) {
@@ -1762,7 +1769,8 @@ void MacroAssembler::call(JitCode* c) {
   // This sync has been observed (and is expected) to be necessary.
   // eg testcase: arrays/new-array-undefined-undefined-more-args-2.js
   syncStackPtr();
-  BufferOffset off = immPool64(scratch64, uint64_t(c->raw()));
+  BufferOffset off =
+      immPool64(scratch64, uint64_t(c->raw()), PoolEntryKind::Constant);
   addPendingJump(off, ImmPtr(c->raw()), RelocationKind::JITCODE);
   blr(scratch64);
 }
@@ -2077,7 +2085,7 @@ void MacroAssembler::moveValue(const Value& src, const ValueOperand& dest) {
   }
 
   BufferOffset load =
-      movePatchablePtr(ImmPtr(src.bitsAsPunboxPointer()), dest.valueReg());
+      movePatchableGCPtr(ImmPtr(src.bitsAsPunboxPointer()), dest.valueReg());
   writeDataRelocation(src, load);
 }
 

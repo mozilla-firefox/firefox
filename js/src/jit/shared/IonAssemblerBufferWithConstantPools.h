@@ -7,6 +7,7 @@
 
 #include "mozilla/Attributes.h"
 #include "mozilla/CheckedInt.h"
+#include "mozilla/HashFunctions.h"
 
 #include <algorithm>
 #include <bit>
@@ -15,6 +16,7 @@
 
 #include "jit/JitSpewer.h"
 #include "jit/shared/IonAssemblerBuffer.h"
+#include "js/HashTable.h"
 #include "util/PolicyAllocator.h"
 
 // [SMDOC] JIT AssemblerBuffer constant pooling (ARM/ARM64/RISCV64)
@@ -57,6 +59,13 @@
 // possible to iterate through the code instructions skipping or examining the
 // pools. E.g. it might be necessary to skip pools when search for, or patching,
 // an instruction sequence.
+//
+// Loads of equal values can share one pool entry. The caller of allocEntry()
+// says whether an entry may be shared by passing a PoolEntryKind other than
+// Unshared; only entries of the same kind and size with equal bytes share.
+// Entries that are patched in place after emission must stay Unshared, and
+// entries that the GC rewrites (traced pointers) must not share with entries
+// that it does not, which is what the kinds are for.
 //
 // The code supports no-pool regions, and for these the size of the region, in
 // instructions, must be supplied. This size is used to determine if inserting
@@ -381,7 +390,43 @@ using PoolAllocUnit = int32_t;
 // creation of many tiny constant pools for branch veneers.
 const size_t ShortRangeBranchHysteresis = 128;
 
+// Which pool entries may share a slot with an equal entry; see the [SMDOC].
+enum class PoolEntryKind : uint8_t {
+  Unshared,
+  // A pointer or boxed Value that TraceDataRelocations rewrites in place.
+  GCThing,
+  // A bit pattern that is never written after emission.
+  Constant,
+};
+
 struct Pool {
+  // The identity of a shareable pool entry: its kind, size and bytes.
+  struct SharedEntryKey {
+    static const unsigned MaxUnits = 4;
+    PoolAllocUnit units[MaxUnits];
+    unsigned num;
+    PoolEntryKind kind;
+
+    SharedEntryKey(unsigned num, const uint8_t* data, PoolEntryKind kind)
+        : units{}, num(num), kind(kind) {
+      MOZ_ASSERT(num <= MaxUnits);
+      memcpy(units, data, num * sizeof(PoolAllocUnit));
+    }
+
+    using Lookup = SharedEntryKey;
+    static HashNumber hash(const Lookup& l) {
+      HashNumber h = mozilla::HashGeneric(l.num, unsigned(l.kind));
+      for (unsigned i = 0; i < l.num; i++) {
+        h = mozilla::AddToHash(h, l.units[i]);
+      }
+      return h;
+    }
+    static bool match(const SharedEntryKey& k, const Lookup& l) {
+      return k.num == l.num && k.kind == l.kind &&
+             memcmp(k.units, l.units, l.num * sizeof(PoolAllocUnit)) == 0;
+    }
+  };
+
  private:
   // The maximum pc relative offset encoded in instructions that reference
   // pool entries. This is generally set to the maximum offset that can be
@@ -417,6 +462,10 @@ struct Pool {
   // The content of the pool entries.
   Vector<PoolAllocUnit, 8, LifoAllocPolicy<Fallible>> poolData_;
 
+  // Index of the entry holding each shareable value inserted so far.
+  HashMap<SharedEntryKey, unsigned, SharedEntryKey, LifoAllocPolicy<Fallible>>
+      sharedEntries_;
+
  public:
   // A record of the code offset of instructions that reference pool
   // entries. These instructions need to be patched when the actual position
@@ -430,6 +479,7 @@ struct Pool {
       : maxOffset_(maxOffset),
         bias_(bias),
         poolData_(lifoAlloc),
+        sharedEntries_(lifoAlloc),
         loadOffsets(lifoAlloc) {}
 
   // If poolData() returns nullptr then oom_ will also be true.
@@ -475,14 +525,34 @@ struct Pool {
 
   static const unsigned OOM_FAIL = unsigned(-1);
 
+  // Add a load at `off` of the `num` units at `data`, returning the index of
+  // the entry it loads. A shareable entry equal to an earlier one of the same
+  // kind reuses that entry's index.
   unsigned insertEntry(unsigned num, uint8_t* data, BufferOffset off,
-                       LifoAlloc& lifoAlloc) {
+                       PoolEntryKind kind) {
     if (oom_) {
       return OOM_FAIL;
     }
+    if (!loadOffsets.append(off)) {
+      oom_ = true;
+      return OOM_FAIL;
+    }
+    if (kind == PoolEntryKind::Unshared) {
+      unsigned ret = numEntries();
+      if (!poolData_.append((PoolAllocUnit*)data, num)) {
+        oom_ = true;
+        return OOM_FAIL;
+      }
+      return ret;
+    }
+    SharedEntryKey key(num, data, kind);
+    auto p = sharedEntries_.lookupForAdd(key);
+    if (p) {
+      return p->value();
+    }
     unsigned ret = numEntries();
     if (!poolData_.append((PoolAllocUnit*)data, num) ||
-        !loadOffsets.append(off)) {
+        !sharedEntries_.add(p, key, ret)) {
       oom_ = true;
       return OOM_FAIL;
     }
@@ -491,6 +561,7 @@ struct Pool {
 
   void reset() {
     poolData_.clear();
+    sharedEntries_.clear();
     loadOffsets.clear();
 
     limitingUser = BufferOffset();
@@ -773,10 +844,11 @@ struct AssemblerBufferWithConstantPools : public AssemblerBuffer<Inst> {
   }
 
   unsigned insertEntryForwards(unsigned numInst, unsigned numPoolEntries,
-                               uint8_t* data) {
+                               uint8_t* data, PoolEntryKind kind) {
     if constexpr (UseConstantPools) {
       // If inserting pool entries then find a new limiter before we do the
-      // range check.
+      // range check. A shared entry sits at a lower index than assumed here,
+      // so the limiter is conservative for it.
       if (numPoolEntries) {
         pool_.updateLimiter(BufferOffset(sizeExcludingCurrentPool()));
       }
@@ -796,13 +868,13 @@ struct AssemblerBufferWithConstantPools : public AssemblerBuffer<Inst> {
       if (this->oom()) {
         return OOM_FAIL;
       }
-      return insertEntryForwards(numInst, numPoolEntries, data);
+      return insertEntryForwards(numInst, numPoolEntries, data, kind);
     }
 
     if constexpr (UseConstantPools) {
       if (numPoolEntries) {
-        unsigned result = pool_.insertEntry(
-            numPoolEntries, data, this->nextOffset(), this->lifoAlloc_);
+        unsigned result =
+            pool_.insertEntry(numPoolEntries, data, this->nextOffset(), kind);
         if (result == Pool::OOM_FAIL) {
           this->fail_oom();
           return OOM_FAIL;
@@ -835,7 +907,8 @@ struct AssemblerBufferWithConstantPools : public AssemblerBuffer<Inst> {
 
   MOZ_NEVER_INLINE
   BufferOffset allocEntry(size_t numInst, unsigned numPoolEntries,
-                          uint8_t* inst, uint8_t* data) {
+                          uint8_t* inst, uint8_t* data,
+                          PoolEntryKind kind = PoolEntryKind::Unshared) {
     // The allocation of pool entries is not supported in a no-pool region,
     // check.
     MOZ_ASSERT_IF(numPoolEntries > 0, inhibitPools_ == 0);
@@ -861,7 +934,7 @@ struct AssemblerBufferWithConstantPools : public AssemblerBuffer<Inst> {
 #endif
 
     // Insert the pool value.
-    unsigned index = insertEntryForwards(numInst, numPoolEntries, data);
+    unsigned index = insertEntryForwards(numInst, numPoolEntries, data, kind);
     if (this->oom()) {
       return BufferOffset();
     }
