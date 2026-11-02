@@ -1,7 +1,10 @@
 ---
 android-test:
     description: Android test
-    include: ['mobile/android']
+    include:
+        - 'dom/media/systemservices/android_video_capture/java/src'
+        - 'mobile/android/geckoview/src/main/java'
+        - 'mobile/android/geckoview/src/test/java'
     exclude: []
     extensions: ['java', 'kt']
     support-files:

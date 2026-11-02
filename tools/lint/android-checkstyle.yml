@@ -1,7 +1,7 @@
 ---
 android-checkstyle:
     description: Android checkstyle
-    include: ['mobile/android']
+    include: ['mobile/android/geckoview/src/main/java']
     exclude: []
     extensions: ['java', 'kt']
     support-files:

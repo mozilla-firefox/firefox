@@ -1,7 +1,13 @@
 ---
 android-format:
     description: Android formatting lint
-    include: ['mobile/android']
+    include:
+        - 'mobile/android/annotations'
+        - 'mobile/android/examples/messaging_example/app'
+        - 'mobile/android/examples/port_messaging_example/app'
+        - 'mobile/android/geckoview'
+        - 'mobile/android/geckoview_example'
+        - 'mobile/android/test_runner'
     exclude: []
     extensions: ['java', 'kt']
     support-files:

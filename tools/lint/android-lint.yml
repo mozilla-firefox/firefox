@@ -1,7 +1,13 @@
 ---
 android-lint:
     description: Android lint
-    include: ['mobile/android']
+    include:
+        - 'dom/media/systemservices/android_video_capture/java/src'
+        - 'mobile/android/android-components/plugins/dependencies'
+        - 'mobile/android/android-components/plugins/publicsuffixlist'
+        - 'mobile/android/fenix/plugins/apksize'
+        - 'mobile/android/geckoview'
+        - 'mobile/android/gradle/plugins/conventions'
     exclude: []
     extensions: ['java', 'kt']
     support-files:

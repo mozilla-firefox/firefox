@@ -1,7 +1,7 @@
 ---
 android-javadoc:
     description: Android javadoc
-    include: ['mobile/android/geckoview']
+    include: ['mobile/android/geckoview/src/main/java']
     exclude: []
     extensions: ['java', 'kt']
     support-files:
