@@ -341,6 +341,7 @@ def _stage_entry(
     src: str, dest: str, preprocess: bool, defines: Optional[dict[str, object]]
 ) -> None:
     Path(dest).parent.mkdir(parents=True, exist_ok=True)
+    Path(dest).unlink(missing_ok=True)
     if preprocess:
         _preprocess_to(src, dest, defines)
     else:

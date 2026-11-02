@@ -652,21 +652,54 @@ class TestRecursiveMakeBackend(BackendTester):
             "MISC_TARGETS += $(MDDEPDIR)/foo.xyz.stub",
             "foo.xyz: $(MDDEPDIR)/foo.xyz.stub ;",
             "EXTRA_MDDEPEND_FILES += $(MDDEPDIR)/foo.xyz.pp",
-            "$(MDDEPDIR)/foo.xyz.stub: %s/generate-foo.py $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input $(if $(IS_LANGUAGE_REPACK),FORCE)"  # noqa
-            % env.topsrcdir,
+            f"$(MDDEPDIR)/foo.xyz.stub: {env.topsrcdir}/generate-foo.py $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input $(if $(IS_LANGUAGE_REPACK),FORCE)",  # noqa
             "$(REPORT_BUILD)",
-            "$(call py_action,file_generate foo.xyz,--locale=$(AB_CD) %s/generate-foo.py main foo.xyz $(MDDEPDIR)/foo.xyz.pp $(MDDEPDIR)/foo.xyz.stub $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input)"  # noqa
-            % env.topsrcdir,
+            f"$(call py_action,file_generate foo.xyz,--locale=$(AB_CD) {env.topsrcdir}/generate-foo.py main foo.xyz $(MDDEPDIR)/foo.xyz.pp $(MDDEPDIR)/foo.xyz.stub $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input)",  # noqa
             "@$(TOUCH) $@",
             "",
-            "LOCALIZED_FILES_0_FILES += foo.xyz",
-            "LOCALIZED_FILES_0_DEST = $(FINAL_TARGET)/",
-            "LOCALIZED_FILES_0_TARGET := misc",
-            "INSTALL_TARGETS += LOCALIZED_FILES_0",
         ]
 
         self.maxDiff = None
         self.assertEqual(lines, expected)
+
+        # The output is generated where it was declared and installed from the
+        # top level Makefile, so the install depends on it.
+        m = InstallManifest(
+            path=mozpath.join(env.topobjdir, "_build_manifests", "install", "dist_bin")
+        )
+        reg = FileRegistry()
+        m.populate_registry(reg)
+        self.assertIn("foo.xyz", reg.paths())
+
+        root_deps = mozpath.join(env.topobjdir, "root-deps.mk")
+        rule = [
+            l for l in open(root_deps).readlines() if l.startswith("install-dist/bin:")
+        ]
+        self.assertEqual(len(rule), 1)
+        self.assertIn("$(DEPTH)/foo.xyz", rule[0])
+
+    def test_a_localized_generated_output_is_reachable_from_the_top_level_makefile(
+        self,
+    ):
+        """A localized install runs from the top level Makefile, so the rule
+        producing what it installs cannot live only in the declaring directory.
+        """
+        env = self._consume("localized-generated-root", RecursiveMakeBackend)
+
+        root = open(mozpath.join(env.topobjdir, "backend.mk")).read()
+        self.assertIn("made.txt", root)
+
+        directory = open(mozpath.join(env.topobjdir, "sub", "backend.mk")).read()
+        self.assertNotIn("made.txt", directory)
+
+        root_deps = mozpath.join(env.topobjdir, "root-deps.mk")
+        rule = [
+            l for l in open(root_deps).readlines() if l.startswith("install-dist/bin:")
+        ]
+        self.assertEqual(len(rule), 1)
+        self.assertIn("$(DEPTH)/sub/made.txt", rule[0])
+
+        self.assertIn("$(call MERGE_RELATIVE_FILE,input.txt,sub)", root)
 
     def test_localized_generated_files_force(self):
         """Ensure LOCALIZED_GENERATED_FILES with .force is handled properly."""
@@ -680,21 +713,17 @@ class TestRecursiveMakeBackend(BackendTester):
             "MISC_TARGETS += $(MDDEPDIR)/foo.xyz.stub",
             "foo.xyz: $(MDDEPDIR)/foo.xyz.stub ;",
             "EXTRA_MDDEPEND_FILES += $(MDDEPDIR)/foo.xyz.pp",
-            "$(MDDEPDIR)/foo.xyz.stub: %s/generate-foo.py $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input $(if $(IS_LANGUAGE_REPACK),FORCE)"  # noqa
-            % env.topsrcdir,
+            f"$(MDDEPDIR)/foo.xyz.stub: {env.topsrcdir}/generate-foo.py $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input $(if $(IS_LANGUAGE_REPACK),FORCE)",  # noqa
             "$(REPORT_BUILD)",
-            "$(call py_action,file_generate foo.xyz,--locale=$(AB_CD) %s/generate-foo.py main foo.xyz $(MDDEPDIR)/foo.xyz.pp $(MDDEPDIR)/foo.xyz.stub $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input)"  # noqa
-            % env.topsrcdir,
+            f"$(call py_action,file_generate foo.xyz,--locale=$(AB_CD) {env.topsrcdir}/generate-foo.py main foo.xyz $(MDDEPDIR)/foo.xyz.pp $(MDDEPDIR)/foo.xyz.stub $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input)",  # noqa
             "@$(TOUCH) $@",
             "",
             "MISC_TARGETS += $(MDDEPDIR)/abc.xyz.stub",
             "abc.xyz: $(MDDEPDIR)/abc.xyz.stub ;",
             "EXTRA_MDDEPEND_FILES += $(MDDEPDIR)/abc.xyz.pp",
-            "$(MDDEPDIR)/abc.xyz.stub: %s/generate-foo.py $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input FORCE"  # noqa
-            % env.topsrcdir,
+            f"$(MDDEPDIR)/abc.xyz.stub: {env.topsrcdir}/generate-foo.py $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input FORCE",  # noqa
             "$(REPORT_BUILD)",
-            "$(call py_action,file_generate abc.xyz,--locale=$(AB_CD) %s/generate-foo.py main abc.xyz $(MDDEPDIR)/abc.xyz.pp $(MDDEPDIR)/abc.xyz.stub $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input)"  # noqa
-            % env.topsrcdir,
+            f"$(call py_action,file_generate abc.xyz,--locale=$(AB_CD) {env.topsrcdir}/generate-foo.py main abc.xyz $(MDDEPDIR)/abc.xyz.pp $(MDDEPDIR)/abc.xyz.stub $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input)",  # noqa
             "@$(TOUCH) $@",
             "",
         ]
@@ -715,11 +744,9 @@ class TestRecursiveMakeBackend(BackendTester):
             "MISC_TARGETS += $(MDDEPDIR)/foo$(AB_CD).xyz.stub",
             "foo$(AB_CD).xyz: $(MDDEPDIR)/foo$(AB_CD).xyz.stub ;",
             "EXTRA_MDDEPEND_FILES += $(MDDEPDIR)/foo$(AB_CD).xyz.pp",
-            "$(MDDEPDIR)/foo$(AB_CD).xyz.stub: %s/generate-foo.py $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input $(if $(IS_LANGUAGE_REPACK),FORCE)"  # noqa
-            % env.topsrcdir,
+            f"$(MDDEPDIR)/foo$(AB_CD).xyz.stub: {env.topsrcdir}/generate-foo.py $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input $(if $(IS_LANGUAGE_REPACK),FORCE)",  # noqa
             "$(REPORT_BUILD)",
-            "$(call py_action,file_generate foo$(AB_CD).xyz,--locale=$(AB_CD) %s/generate-foo.py main foo$(AB_CD).xyz $(MDDEPDIR)/foo$(AB_CD).xyz.pp $(MDDEPDIR)/foo$(AB_CD).xyz.stub $(call MERGE_FILE,localized-input) $(srcdir)/non-localized-input)"  # noqa
-            % env.topsrcdir,
+            f"$(call py_action,file_generate foo$(AB_CD).xyz,--locale=$(AB_CD) {env.topsrcdir}/generate-foo.py main foo$(AB_CD).xyz $(MDDEPDIR)/foo$(AB_CD).xyz.pp $(MDDEPDIR)/foo$(AB_CD).xyz.stub $(call MERGE_RELATIVE_FILE,localized-input,) $(srcdir)/non-localized-input)",  # noqa
             "@$(TOUCH) $@",
             "",
             "bar$(AB_rCD).xyz: $(MDDEPDIR)/bar$(AB_rCD).xyz.stub ;",
@@ -1770,43 +1797,67 @@ class TestRecursiveMakeBackend(BackendTester):
 
         self.assertIn("$(DEPTH)/producer/generated-header.h", rule)
 
+    def _dist_bin_manifest(self, srcdir):
+        env = self._consume(srcdir, RecursiveMakeBackend)
+
+        return env, InstallManifest(
+            path=mozpath.join(env.topobjdir, "_build_manifests", "install", "dist_bin")
+        )
+
     def test_localized_files(self):
-        """Test that LOCALIZED_FILES is written to backend.mk correctly."""
-        env = self._consume("localized-files", RecursiveMakeBackend)
+        """A localized install is described the same way as any other, so its
+        destinations are part of what the install recorded.
+        """
+        env, m = self._dist_bin_manifest("localized-files")
+
+        reg = FileRegistry()
+        m.populate_registry(reg)
+        self.assertEqual(sorted(reg.paths()), ["bar.ini", "foo.js"])
+
+        # A pattern is expanded by the install, so it is recorded as one
+        # rather than as the files it happens to match now.
+        patterns = [e for e in m._dests.values() if e[0] == m.PATTERN_LINK]
+        self.assertEqual(len(patterns), 1)
+        self.assertEqual(patterns[0][2], "*.abc")
 
         backend_path = mozpath.join(env.topobjdir, "backend.mk")
-        lines = [l.strip() for l in open(backend_path).readlines()[2:]]
+        body = open(backend_path).read()
+        self.assertNotIn("LOCALIZED_FILES", body)
 
-        expected = [
-            "LOCALIZED_FILES_0_FILES += $(wildcard $(LOCALE_SRCDIR)/abc/*.abc)",
-            "LOCALIZED_FILES_0_FILES += $(call MERGE_FILE,bar.ini)",
-            "LOCALIZED_FILES_0_FILES += $(call MERGE_FILE,foo.js)",
-            "LOCALIZED_FILES_0_DEST = $(FINAL_TARGET)/",
-            "LOCALIZED_FILES_0_TARGET := misc",
-            "INSTALL_TARGETS += LOCALIZED_FILES_0",
-        ]
+    def test_a_localized_install_reads_the_source_locale(self):
+        """A build installs the source locale, en-US, whatever locale it is
+        configured for. Any other locale is staged from the merge tree by the
+        locale staging action.
+        """
+        env = self._get_environment("localized-files", substs={"MOZ_UI_LOCALE": "fr"})
+        self._consume("localized-files", RecursiveMakeBackend, env=env)
+        m = InstallManifest(
+            path=mozpath.join(env.topobjdir, "_build_manifests", "install", "dist_bin")
+        )
+        reg = FileRegistry()
+        m.populate_registry(reg)
 
-        found = [str for str in lines if "LOCALIZED_FILES" in str]
-        self.assertEqual(found, expected)
+        for dest in ("bar.ini", "foo.js"):
+            path = mozpath.normsep(reg[dest].path)
+            self.assertTrue(path.endswith(f"/en-US/{dest}"), path)
 
     def test_localized_pp_files(self):
-        """Test that LOCALIZED_PP_FILES is written to backend.mk correctly."""
-        env = self._consume("localized-pp-files", RecursiveMakeBackend)
+        """A localized preprocessed install carries what it is preprocessed
+        with, and a localization is allowed to hold no directive at all.
+        """
+        env, m = self._dist_bin_manifest("localized-pp-files")
 
-        backend_path = mozpath.join(env.topobjdir, "backend.mk")
-        lines = [l.strip() for l in open(backend_path).readlines()[2:]]
+        reg = FileRegistry()
+        m.populate_registry(reg)
+        self.assertEqual(sorted(reg.paths()), ["bar.ini", "foo.js"])
+        for dest in ("bar.ini", "foo.js"):
+            entry = reg[dest]
+            self.assertEqual(type(entry).__name__, "PreprocessedFile")
+            self.assertTrue(entry.silence_missing_directive_warnings)
+            self.assertEqual(entry.defines["AB_CD"], env.substs["MOZ_UI_LOCALE"])
 
-        expected = [
-            "LOCALIZED_PP_FILES_0 += $(call MERGE_FILE,bar.ini)",
-            "LOCALIZED_PP_FILES_0 += $(call MERGE_FILE,foo.js)",
-            "LOCALIZED_PP_FILES_0_PATH = $(FINAL_TARGET)/",
-            "LOCALIZED_PP_FILES_0_TARGET := misc",
-            "LOCALIZED_PP_FILES_0_FLAGS := --silence-missing-directive-warnings",
-            "PP_TARGETS += LOCALIZED_PP_FILES_0",
-        ]
-
-        found = [str for str in lines if "LOCALIZED_PP_FILES" in str]
-        self.assertEqual(found, expected)
+        body = open(mozpath.join(env.topobjdir, "backend.mk")).read()
+        self.assertNotIn("LOCALIZED_PP_FILES", body)
 
     def test_config(self):
         """Test that CONFIGURE_SUBST_FILES are properly handled."""

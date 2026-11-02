@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -252,6 +253,23 @@ class TestChromeManifestOrdering(unittest.TestCase):
                     "locale zulu de zeta/locale/de/zulu/",
                     "locale zulu fr zeta/locale/fr/zulu/",
                 ],
+            )
+
+    def test_chrome_mode_replaces_a_linked_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            installed = Path(tmp) / "src" / "zulu.properties"
+            installed.parent.mkdir(parents=True)
+            installed.write_text("# en-US\n", encoding="utf-8")
+            dest = Path(tmp) / "stage" / "zeta" / "locale" / "de" / "zeta"
+            dest.mkdir(parents=True)
+            os.link(installed, dest / "zulu.properties")
+
+            self._stage(tmp, mode="chrome")
+
+            self.assertEqual(installed.read_text(encoding="utf-8"), "# en-US\n")
+            self.assertEqual(
+                (dest / "zulu.properties").read_text(encoding="utf-8"),
+                "# zulu.properties\n",
             )
 
 

@@ -1,0 +1,9 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+LOCALIZED_GENERATED_FILES += ["made.txt"]
+made = LOCALIZED_GENERATED_FILES["made.txt"]
+made.script = "make-it.py"
+made.inputs = ["en-US/input.txt"]
+
+LOCALIZED_FILES += ["!made.txt"]

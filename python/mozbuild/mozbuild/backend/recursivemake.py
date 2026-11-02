@@ -424,14 +424,10 @@ class RecursiveMakeBackend(MakeBackend):
         return summary
 
     def _get_backend_file_for(self, obj):
-        # For generated files that we put in the export or misc tiers, we use the
-        # top-level backend file, except for localized files, which we need to keep
-        # in each directory for dependencies from jar manifests for l10n repacks.
-        if (
-            isinstance(obj, GeneratedFile)
-            and not obj.required_during_compile
-            and not obj.localized
-        ):
+        # For generated files that we put in the export or misc tiers, we use
+        # the top-level backend file, so that what reads one can depend on it
+        # from the top level Makefile.
+        if isinstance(obj, GeneratedFile) and not obj.required_during_compile:
             objdir = self.environment.topobjdir
         else:
             objdir = obj.objdir
@@ -724,10 +720,10 @@ class RecursiveMakeBackend(MakeBackend):
             self._process_objdir_pp_files(obj, obj.files, backend_file)
 
         elif isinstance(obj, LocalizedFiles):
-            self._process_localized_files(obj, obj.files, backend_file)
+            self._process_localized_files(obj, obj.files)
 
         elif isinstance(obj, LocalizedPreprocessedFiles):
-            self._process_localized_pp_files(obj, obj.files, backend_file)
+            self._process_localized_pp_files(obj, obj.files)
 
         elif isinstance(obj, FinalTargetFiles):
             self._process_final_target_files(obj, obj.files, backend_file)
@@ -2007,75 +2003,70 @@ class RecursiveMakeBackend(MakeBackend):
                 backend_file.write(f"{var}_EXTRA_DEPS := {deps}\n")
             backend_file.write("PP_TARGETS += %s\n" % var)
 
-    def _write_localized_files_files(self, files, name, backend_file):
-        for f in files:
-            if not isinstance(f, ObjDirPath):
-                # The emitter asserts that all srcdir files start with `en-US/`
-                e, f = f.split("en-US/")
-                assert not e
-                if "*" in f:
-                    # We can't use MERGE_FILE for wildcards because it takes
-                    # only the first match internally. This is only used
-                    # in one place in the tree currently so we'll hardcode
-                    # that specific behavior for now.
-                    backend_file.write(
-                        "%s += $(wildcard $(LOCALE_SRCDIR)/%s)\n" % (name, f)
+    def _localized_install_manifest(self, obj):
+        """The manifest a localized install belongs to, its base, and where
+        under it the install lands.
+
+        A locale other than the source one is staged from the merge tree by the
+        locale staging action, so what is installed here reads from the source
+        tree and is described the same way as any other install.
+        """
+        target = obj.install_target
+        base = mozpath.basedir(target, ("dist/bin",))
+        if not base:
+            raise Exception("Cannot install localized files to " + target)
+        return (
+            self._install_manifests[base.replace("/", "_")],
+            base,
+            mozpath.relpath(target, base),
+        )
+
+    def _process_localized_files(self, obj, files):
+        install_manifest, base, reltarget = self._localized_install_manifest(obj)
+
+        for walk_path, walk_files in files.walk():
+            dest_dir = mozpath.join(reltarget, walk_path)
+            for f in walk_files:
+                if isinstance(f, ObjDirPath):
+                    # An output of LOCALIZED_GENERATED_FILES, generated where it
+                    # was declared and installed from the top level Makefile.
+                    self._add_install_manifest_dep(base, f)
+                    install_manifest.add_link(
+                        f.full_path,
+                        mozpath.normpath(mozpath.join(dest_dir, f.target_basename)),
                     )
+                elif "*" in f:
+                    basepath, wild = os.path.split(f.full_path)
+                    if "*" in basepath:
+                        raise Exception(
+                            "Wildcards are only supported in the filename part"
+                            " of a localized path."
+                        )
+                    install_manifest.add_pattern_link(basepath, wild, dest_dir)
                 else:
-                    backend_file.write("%s += $(call MERGE_FILE,%s)\n" % (name, f))
-            else:
-                # Objdir files are allowed from LOCALIZED_GENERATED_FILES
-                backend_file.write(
-                    "%s += %s\n" % (name, self._pretty_path(f, backend_file))
-                )
+                    install_manifest.add_link(
+                        f.full_path,
+                        mozpath.normpath(mozpath.join(dest_dir, f.target_basename)),
+                    )
 
-    def _process_localized_files(self, obj, files, backend_file):
-        target = obj.install_target
-        path = mozpath.basedir(target, ("dist/bin",))
-        if not path:
-            raise Exception("Cannot install localized files to " + target)
-        for i, (walk_path, walk_files) in enumerate(files.walk()):
-            name = "LOCALIZED_FILES_%d" % i
-            self._no_skip["misc"].add(backend_file.relobjdir)
-            self._write_localized_files_files(walk_files, name + "_FILES", backend_file)
-            # Use FINAL_TARGET here because some l10n repack rules set
-            # XPI_NAME to generate langpacks.
-            backend_file.write("%s_DEST = $(FINAL_TARGET)/%s\n" % (name, walk_path))
-            backend_file.write("%s_TARGET := misc\n" % name)
-            backend_file.write("INSTALL_TARGETS += %s\n" % name)
-
-    def _process_localized_pp_files(self, obj, files, backend_file):
-        target = obj.install_target
-        path = mozpath.basedir(target, ("dist/bin",))
-        if not path:
-            raise Exception("Cannot install localized files to " + target)
+    def _process_localized_pp_files(self, obj, files):
+        install_manifest, base, reltarget = self._localized_install_manifest(obj)
         for dep in obj.extra_deps:
-            if isinstance(dep, ObjDirPath):
-                self._post_process_dependencies.append((
-                    backend_file.relobjdir,
-                    "misc",
-                    dep,
-                ))
-        for i, (path, file_list) in enumerate(files.walk()):
-            name = "LOCALIZED_PP_FILES_%d" % i
-            self._no_skip["misc"].add(backend_file.relobjdir)
-            self._write_localized_files_files(file_list, name, backend_file)
-            # Use FINAL_TARGET here because some l10n repack rules set
-            # XPI_NAME to generate langpacks.
-            backend_file.write("%s_PATH = $(FINAL_TARGET)/%s\n" % (name, path))
-            backend_file.write("%s_TARGET := misc\n" % name)
-            # Localized files will have different content in different
-            # localizations, and some preprocessed files may not have
-            # any preprocessor directives.
-            backend_file.write(
-                "%s_FLAGS := --silence-missing-directive-warnings\n" % name
-            )
-            if obj.extra_deps:
-                deps = " ".join(
-                    self._pretty_path(d, backend_file) for d in obj.extra_deps
+            self._add_install_manifest_dep(base, dep)
+
+        for path, file_list in files.walk():
+            dest_dir = mozpath.join(reltarget, path)
+            for f in file_list:
+                # A localized file may contain no preprocessor directive at all,
+                # so the missing directive warning is silenced.
+                self._add_preprocess_entry(
+                    install_manifest,
+                    obj,
+                    f.full_path,
+                    dest_dir,
+                    FinalTargetPreprocessedFiles.get_obj_basename(f),
+                    silence_missing_directive_warnings=True,
                 )
-                backend_file.write(f"{name}_EXTRA_DEPS := {deps}\n")
-            backend_file.write("PP_TARGETS += %s\n" % name)
 
     def _process_objdir_files(self, obj, files, backend_file):
         for path, file_list in files.walk():
@@ -2399,7 +2390,7 @@ class RecursiveMakeBackend(MakeBackend):
             elif path.startswith("en-US/"):
                 e, f = path.split("en-US/", 1)
                 assert not e
-                return "$(call MERGE_FILE,%s)" % f
+                return f"$(call MERGE_RELATIVE_FILE,{f},{obj.relsrcdir})"
             return self._pretty_path(path, self._get_backend_file_for(obj))
         else:
             return self._pretty_path(path, self._get_backend_file_for(obj))
