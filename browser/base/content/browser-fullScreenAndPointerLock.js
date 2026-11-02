@@ -553,6 +553,9 @@ var FullScreen = {
       case "MacFullscreenMenubarRevealUpdate":
         this.shiftMacToolbarDown(event.detail);
         break;
+      case "mouseout":
+        this._onWindowMouseOut(event);
+        break;
     }
   },
 
@@ -703,6 +706,7 @@ var FullScreen = {
       this._collapsedToolboxObserver?.disconnect();
       MousePosTracker.removeListener(this);
       MousePosTracker.removeListener(this._launcherEdgeListener);
+      window.removeEventListener("mouseout", this);
       document.removeEventListener("keypress", this._keyToggleCallback);
       document.removeEventListener("popupshown", this._setPopupOpen);
       document.removeEventListener("popuphidden", this._setPopupOpen);
@@ -983,6 +987,15 @@ var FullScreen = {
     this.hideNavToolbox();
   },
 
+  // The pointer can leave the window from the toolbox without crossing the
+  // content area, e.g. onto a monitor above it. On macOS that is also how it
+  // reaches the revealed menubar, which should keep the toolbox up.
+  _onWindowMouseOut(aEvent) {
+    if (!aEvent.relatedTarget && !this._menubarShift) {
+      this.hideNavToolbox(true);
+    }
+  },
+
   _keyToggleCallback(aEvent) {
     // if we can use the keyboard (eg Ctrl+L or Ctrl+E) to open the toolbars, we
     // should provide a way to collapse them too.
@@ -1125,6 +1138,7 @@ var FullScreen = {
       // transitions, so leaving it be would keep the chrome up for good
       // (bug 2064638).
       this._hover = false;
+      window.addEventListener("mouseout", this);
     }
 
     this._isChromeCollapsed = false;
@@ -1225,6 +1239,7 @@ var FullScreen = {
 
     this._mouseTargetRectObserver?.disconnect();
     MousePosTracker.removeListener(this);
+    window.removeEventListener("mouseout", this);
     this._watchLauncherEdge();
 
     // The toolbox can still change height after it has been collapsed, which

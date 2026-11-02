@@ -25,6 +25,9 @@ support-files = [
   "FullscreenFrame.sys.mjs",
 ]
 
+["browser_fullscreen_autohide_leave_window.js"]
+tags = "vertical-tabs"
+
 ["browser_fullscreen_autohide_toolbox_height.js"]
 
 ["browser_fullscreen_context_menu.js"]
