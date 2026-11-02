@@ -182,9 +182,8 @@ bool nsBlockReflowContext::ComputeCollapsedBStartMargin(
             const ReflowInput::InitFlags marginTrimFlags =
                 BlockReflowState::ComputeChildMarginTrim(
                     block, trimChildBStartMargins,
-                    !overflowLines &&
-                        StyleTrimsChildBEndMargins(block),
-                    line, true);
+                    !overflowLines && StyleTrimsChildBEndMargins(block), line,
+                    true);
 
             ReflowInput innerReflowInput(prescontext, *outerReflowInput, kid,
                                          availSpace, Nothing(),

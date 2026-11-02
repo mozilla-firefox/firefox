@@ -219,6 +219,11 @@ bool BlockReflowState::ShouldTrimChildBStartMargins() const {
          (mReflowInput.mFlags.mTrimBStartMargin && !mFlags.mIsBStartMarginRoot);
 }
 
+bool BlockReflowState::ShouldTrimChildBEndMargins() const {
+  return nsBlockReflowContext::StyleTrimsChildBEndMargins(mBlock) ||
+         mFlags.mShouldTrimInheritedBEndMargins;
+}
+
 void BlockReflowState::ComputeFloatAvoidingOffsets(
     nsIFrame* aFloatAvoidingBlock, const LogicalRect& aFloatAvailableSpace,
     nscoord& aIStartResult, nscoord& aIEndResult) const {

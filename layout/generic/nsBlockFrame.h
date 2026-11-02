@@ -493,6 +493,7 @@ class nsBlockFrame : public nsContainerFrame {
                     nscoord aBEndEdgeOfChildren);
   // Stash the effective align-content shift value between reflows
   NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(AlignContentShift, nscoord)
+  NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(InheritedBEndMarginTrim, bool)
 
   /**
    * Helper method for Reflow(). Computes the overflow areas created by our
@@ -590,6 +591,10 @@ class nsBlockFrame : public nsContainerFrame {
    * we perform a single retry in order to correctly apply trim-end at a
    * fragment boundary.
    *
+   * For inherited margin-trim, a completed untrimmed reflow determines whether
+   * descendant block-end margins collapse out of the block. If they do, we
+   * retry with trimming enabled for those margins.
+   *
    * This record is used to manage the state of these "trial reflows", and
    * return results from the final trial.
    */
@@ -605,6 +610,7 @@ class nsBlockFrame : public nsContainerFrame {
     // Set when we are auto line clamping, driven by
     // ReflowInput::mFlags::mDimensionsReadyForLineClampAuto
     bool mLineClamping = false;
+    bool mShouldTrimInheritedBEndMargins = false;
     nscoord mInset = 0;
     // Results computed during the trial reflow. Values from the final trial
     // will be used by the remainder of Reflow().
