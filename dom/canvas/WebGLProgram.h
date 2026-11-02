@@ -86,6 +86,12 @@ struct LocationInfo final {
   const uint32_t indexIntoUniform;
   SamplerUniformInfo* const samplerInfo;
 
+  bool HasSampleUniformInformation() const { return samplerInfo != nullptr; }
+
+  SamplerUniformInfo* GetSamplerUnformInformation() const {
+    return samplerInfo;
+  }
+
   auto PrettyName() const {
     auto ret = info.info.name;
     if (info.isArray) {
