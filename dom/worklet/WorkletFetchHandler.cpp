@@ -157,7 +157,7 @@ StartFetchRunnable::Run() {
   JSContext* cx = jsapi.cx();
   nsresult rv = mHandlerRef->StartFetch(cx, mURI, mReferrer, mModuleType);
   if (NS_FAILED(rv)) {
-    mHandlerRef->HandleFetchFailed(mURI);
+    mHandlerRef->HandleFetchFailed(mURI, mModuleType);
     return NS_ERROR_FAILURE;
   }
 
@@ -168,7 +168,7 @@ StartFetchRunnable::Run() {
 class FetchCompleteRunnable final : public Runnable {
  public:
   FetchCompleteRunnable(WorkletImpl* aWorkletImpl, nsIURI* aURI,
-                        nsresult aResult,
+                        JS::ModuleType aModuleType, nsresult aResult,
 #ifdef NIGHTLY_BUILD
                         bool aHasWasmMimeTypeEssence,
 #endif
@@ -177,6 +177,7 @@ class FetchCompleteRunnable final : public Runnable {
       : Runnable("Worklet::FetchCompleteRunnable"),
         mWorkletImpl(aWorkletImpl),
         mURI(aURI),
+        mModuleType(aModuleType),
         mResult(aResult),
 #ifdef NIGHTLY_BUILD
         mHasWasmMimeTypeEssence(aHasWasmMimeTypeEssence),
@@ -195,6 +196,7 @@ class FetchCompleteRunnable final : public Runnable {
 
   RefPtr<WorkletImpl> mWorkletImpl;
   nsCOMPtr<nsIURI> mURI;
+  JS::ModuleType mModuleType;
   nsresult mResult;
 #ifdef NIGHTLY_BUILD
   bool mHasWasmMimeTypeEssence;
@@ -219,7 +221,7 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
       static_cast<WorkletModuleLoader*>(globalScope->GetModuleLoader());
   MOZ_ASSERT(moduleLoader);
   MOZ_ASSERT(mURI);
-  ModuleLoadRequest* request = moduleLoader->GetRequest(mURI);
+  ModuleLoadRequest* request = moduleLoader->GetRequest(mURI, mModuleType);
   MOZ_ASSERT(request);
 
 #ifdef NIGHTLY_BUILD
@@ -235,7 +237,7 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
     }
     request->SetBaseURL(mURI);
     request->OnFetchComplete(mResult);
-    moduleLoader->RemoveRequest(mURI);
+    moduleLoader->RemoveRequest(mURI, mModuleType);
     return NS_OK;
   }
 #endif
@@ -254,7 +256,7 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
 
   request->SetBaseURL(mURI);
   request->OnFetchComplete(mResult);
-  moduleLoader->RemoveRequest(mURI);
+  moduleLoader->RemoveRequest(mURI, mModuleType);
   return NS_OK;
 }
 
@@ -531,13 +533,14 @@ nsresult WorkletFetchHandler::StartFetch(JSContext* aCx, nsIURI* aURI,
   return NS_OK;
 }
 
-void WorkletFetchHandler::HandleFetchFailed(nsIURI* aURI) {
-  nsCOMPtr<nsIRunnable> runnable =
-      new FetchCompleteRunnable(mWorklet->mImpl, aURI, NS_ERROR_FAILURE,
+void WorkletFetchHandler::HandleFetchFailed(nsIURI* aURI,
+                                            JS::ModuleType aModuleType) {
+  nsCOMPtr<nsIRunnable> runnable = new FetchCompleteRunnable(
+      mWorklet->mImpl, aURI, aModuleType, NS_ERROR_FAILURE,
 #ifdef NIGHTLY_BUILD
-                                false,
+      false,
 #endif
-                                nullptr, 0);
+      nullptr, 0);
 
   if (NS_WARN_IF(
           NS_FAILED(mWorklet->mImpl->SendControlMessage(runnable.forget())))) {
@@ -693,7 +696,7 @@ NS_IMETHODIMP WorkletScriptHandler::OnStreamComplete(nsIStreamLoader* aLoader,
   memcpy(scriptTextBuf.get(), aString, aStringLen);
 
   nsCOMPtr<nsIRunnable> runnable =
-      new FetchCompleteRunnable(mWorklet->mImpl, mURI, NS_OK,
+      new FetchCompleteRunnable(mWorklet->mImpl, mURI, mModuleType, NS_OK,
 #ifdef NIGHTLY_BUILD
                                 mHasWasmMimeTypeEssence,
 #endif
@@ -723,7 +726,7 @@ void WorkletScriptHandler::HandleFailure(nsresult aResult) {
 
 void WorkletScriptHandler::DispatchFetchCompleteToWorklet(nsresult aRv) {
   nsCOMPtr<nsIRunnable> runnable =
-      new FetchCompleteRunnable(mWorklet->mImpl, mURI, aRv,
+      new FetchCompleteRunnable(mWorklet->mImpl, mURI, mModuleType, aRv,
 #ifdef NIGHTLY_BUILD
                                 mHasWasmMimeTypeEssence,
 #endif

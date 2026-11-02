@@ -40,7 +40,7 @@ class WorkletFetchHandler final : public nsISupports {
 
   void ExecutionSucceeded();
 
-  void HandleFetchFailed(nsIURI* aURI);
+  void HandleFetchFailed(nsIURI* aURI, JS::ModuleType aModuleType);
 
  private:
   WorkletFetchHandler(Worklet* aWorklet, Promise* aPromise,
