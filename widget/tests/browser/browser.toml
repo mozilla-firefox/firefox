@@ -159,6 +159,16 @@ skip-if = [
   "os == 'linux'", # TODO: Support Linux.
 ]
 
+["browser_test_touchscreen_swipe_gesture_with_multitouch.js"]
+support-files = [
+  "helper_swipe_gesture.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "os == 'linux'", # TODO: Support Linux.
+]
+
 ["browser_test_touchscreen_swipe_gesture_with_pan_gesture.js"]
 support-files = [
   "helper_swipe_gesture.html",

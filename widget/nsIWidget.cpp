@@ -1270,10 +1270,27 @@ class DispatchInputOnControllerThread : public Runnable {
 // transition.
 void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
                                            const APZEventResult& aResult) {
+  const auto rejectSwipe = [&] {
+    MOZ_ASSERT(mTouchSwipeState.phase != TouchSwipeState::Phase::Rejected);
+    mTouchSwipeState.phase = TouchSwipeState::Phase::Rejected;
+    mAPZC->Bridge()->SetBrowserGestureResponse(
+        aResult.mInputBlockId, BrowserGestureResponse::NotConsumed);
+  };
+
   switch (aInput.mType) {
     case MultiTouchInput::MULTITOUCH_START:
-      // TODO: Simultaneous touch by multiple fingers produces
-      // MULTITOUCH_START subsequently and reaches the assertion in Start().
+      MOZ_ASSERT(mTouchSwipeState.phase == TouchSwipeState::Phase::Idle ||
+                 mTouchSwipeState.phase == TouchSwipeState::Phase::Pending ||
+                 mTouchSwipeState.phase == TouchSwipeState::Phase::Rejected);
+      // Reject multi-finger gesture.
+      if (mTouchSwipeState.touchCounter.GetActiveTouchCount() > 1) {
+        // The case in which Fingers are added during Phase::Rejected.
+        if (mTouchSwipeState.phase == TouchSwipeState::Phase::Rejected) {
+          return;
+        }
+        rejectSwipe();
+        return;
+      }
       mTouchSwipeState.Start(aResult.mSwipableDirectionsForTouch,
                              aInput.mTouches[0].mScreenPoint);
       return;
@@ -1285,7 +1302,13 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
       // HandleTouchInputAsSwipe, not by this function.
       MOZ_ASSERT(mTouchSwipeState.phase == TouchSwipeState::Phase::Pending ||
                  mTouchSwipeState.phase == TouchSwipeState::Phase::Rejected);
-      mTouchSwipeState.Reset();
+      if (mTouchSwipeState.touchCounter.GetActiveTouchCount() == 0) {
+        mTouchSwipeState.Reset();
+        return;
+      }
+      MOZ_ASSERT(mTouchSwipeState.phase == TouchSwipeState::Phase::Rejected,
+                 "The additional finger has already changed the phase into "
+                 "Rejected when it triggered MULTITOUCH_START");
       return;
     case MultiTouchInput::MULTITOUCH_MOVE:
       // MULTITOUCH_START must have already arrived, so the phase must not
@@ -1304,11 +1327,7 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
     return;
   }
 
-  const auto rejectSwipe = [&] {
-    mTouchSwipeState.phase = TouchSwipeState::Phase::Rejected;
-    mAPZC->Bridge()->SetBrowserGestureResponse(
-        aResult.mInputBlockId, BrowserGestureResponse::NotConsumed);
-  };
+  MOZ_ASSERT(mTouchSwipeState.touchCounter.GetActiveTouchCount() == 1);
 
   if (mSwipeTracker && mSwipeTracker->EventsAreControllingSwipe()) {
     // A touchpad swipe is ongoing. Reject the touchscreen swipe so that it
@@ -1364,14 +1383,28 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
 void nsIWidget::HandleTouchInputAsSwipe(const MultiTouchInput& aInput) {
   MOZ_ASSERT(mTouchSwipeState.phase == TouchSwipeState::Phase::Tracking);
 
+  // When the phase changes from Tracking to another one, if swipe is not
+  // completed, we have to clean up the ongoing swipe.
+  const auto cancelSwipe = [&] {
+    mSwipeTracker->CancelSwipe(aInput.mTimeStamp);
+    // Touchpad input also uses mSwipeTracker independently of
+    // mTouchSwipeState. CancelSwipe only sends the end event, so also clear
+    // the tracker to prevent it from consuming subsequent touchpad gestures.
+    // See browser_test_touchscreen_swipe_gesture_with_pan_gesture.js.
+    mSwipeTracker->Destroy();
+    mSwipeTracker = nullptr;
+  };
+
   switch (aInput.mType) {
     case mozilla::MultiTouchInput::MULTITOUCH_START:
-      // TODO: Adding another finger during an active swipe produces
-      // MULTITOUCH_START and reaches this assertion.
-      MOZ_ASSERT_UNREACHABLE("MULTITOUCH_START should not come here");
+      MOZ_ASSERT(mTouchSwipeState.touchCounter.GetActiveTouchCount() > 1);
+      mTouchSwipeState.phase = TouchSwipeState::Phase::Rejected;
+      cancelSwipe();
       return;
     case MultiTouchInput::MULTITOUCH_MOVE:
     case MultiTouchInput::MULTITOUCH_END: {
+      MOZ_ASSERT_IF(aInput.mType == mozilla::MultiTouchInput::MULTITOUCH_END,
+                    mTouchSwipeState.touchCounter.GetActiveTouchCount() == 0);
       const auto delta =
           mTouchSwipeState.GetDelta(aInput.mTouches[0].mScreenPoint);
       PanGestureInput convertedPan(
@@ -1394,18 +1427,24 @@ void nsIWidget::HandleTouchInputAsSwipe(const MultiTouchInput& aInput) {
       return;
     }
     case MultiTouchInput::MULTITOUCH_CANCEL: {
+      MOZ_ASSERT(mTouchSwipeState.touchCounter.GetActiveTouchCount() == 0);
       mTouchSwipeState.Reset();
-      mSwipeTracker->CancelSwipe(aInput.mTimeStamp);
-      // Touchpad input also uses mSwipeTracker independently of
-      // mTouchSwipeState. CancelSwipe only sends the end event, so also clear
-      // the tracker using SwipeFinished() to prevent it from consuming
-      // subsequent touchpad gestures. See
-      // browser_test_touchscreen_swipe_gesture_with_pan_gesture.js.
-      SwipeFinished();
+      cancelSwipe();
       return;
     }
     default:
       MOZ_ASSERT_UNREACHABLE("Unexpected type.");
+  }
+}
+
+bool nsIWidget::MayTriggerSwipe(const MultiTouchInput& aInput) {
+  switch (aInput.mType) {
+    case MultiTouchInput::MULTITOUCH_START:
+      return mTouchSwipeState.phase == TouchSwipeState::Phase::Idle;
+    case MultiTouchInput::MULTITOUCH_MOVE:
+      return mTouchSwipeState.phase == TouchSwipeState::Phase::Pending;
+    default:
+      return false;
   }
 }
 
@@ -1420,17 +1459,35 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
 
     switch (aInput.mInputSource) {
       case mozilla::dom::MouseEvent_Binding::MOZ_SOURCE_TOUCH: {
+        mTouchSwipeState.AssertCountConsistency();
+
         const bool touchSwipeEnabled =
             StaticPrefs::widget_swipe_touchscreen_enabled();
-        const auto swipeCandidatePhase =
-            aInput.mType == MultiTouchInput::MULTITOUCH_START
-                ? TouchSwipeState::Phase::Idle
-                : TouchSwipeState::Phase::Pending;
-        aInput.mMayTriggerSwipe =
-            touchSwipeEnabled && mTouchSwipeState.phase == swipeCandidatePhase;
+        if (touchSwipeEnabled) {
+          // Count touches before passing the input to APZ because APZ may
+          // consume some events of a gesture.
+          mTouchSwipeState.touchCounter.Update(aInput);
+          aInput.mMayTriggerSwipe = MayTriggerSwipe(aInput);
+        }
 
         APZEventResult result = mAPZC->Bridge()->ReceiveInputEvent(aInput);
         if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
+          if (touchSwipeEnabled) {
+            const bool wasTracking =
+                mTouchSwipeState.phase == TouchSwipeState::Phase::Tracking;
+            mTouchSwipeState.ChangePhaseForConsumedTouchInput();
+            // When the phase changes from Tracking, clean up the ongoing swipe.
+            // See also HandleTouchInputAsSwipe().
+            if (wasTracking &&
+                mTouchSwipeState.phase != TouchSwipeState::Phase::Tracking) {
+              MOZ_ASSERT(
+                  mSwipeTracker,
+                  "mSwipeTracker must exist when the phase is Tracking.");
+              mSwipeTracker->CancelSwipe(aInput.mTimeStamp);
+              mSwipeTracker->Destroy();
+              mSwipeTracker = nullptr;
+            }
+          }
           return;
         }
 
