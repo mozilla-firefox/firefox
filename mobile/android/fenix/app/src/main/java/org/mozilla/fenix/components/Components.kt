@@ -94,6 +94,7 @@ import org.mozilla.fenix.home.setup.store.DefaultSetupChecklistRepository
 import org.mozilla.fenix.home.setup.store.SetupChecklistPreferencesMiddleware
 import org.mozilla.fenix.home.setup.store.SetupChecklistTelemetryMiddleware
 import org.mozilla.fenix.ipprotection.store.DefaultIPProtectionPromptRepository
+import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
 import org.mozilla.fenix.messaging.state.MessagingMiddleware
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.onboarding.FenixOnboarding
@@ -539,6 +540,7 @@ class Components(
             context = context,
             scope = applicationScope,
             profiler = core.engine.profiler,
+            isAvailable = settings.listenToPageFeatureFlagEnabled,
         )
     }
 
@@ -546,6 +548,9 @@ class Components(
         AIFeatureRegistry.default(scope = applicationScope, context = context).also {
             if (settings.shakeToSummarizeFeatureFlagEnabled) {
                 it.register(PageSummaryFeature(summarizationSettings))
+            }
+            if (listenToPage.settings.available) {
+                it.register(ListenToPageAIControlFeature(listenToPage.settings))
             }
             it.register(
                 VoiceSearchAIControlFeature(

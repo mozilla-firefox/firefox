@@ -71,6 +71,8 @@ import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
+import mozilla.components.feature.listentopage.settings.ListenSettings
+import mozilla.components.feature.listentopage.settings.shouldShow
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.session.TrackingProtectionUseCases
 import mozilla.components.feature.summarize.R as summariesR
@@ -251,6 +253,7 @@ internal object BrowserToolbarTestTags {
  * @param settings [Settings] for accessing user preferences.
  * @param summarizationFeatureSettings Web content summarization settings.
  * @param translationsFeatureSettings Web content translations availability status.
+ * @param listenSettings Listen to Page availability status.
  * @param navController [NavController] to use for navigating to other in-app destinations.
  * @param summarizationNavigator [SummarizationNavigator] used to navigate to the summarization screen.
  * @param browsingModeManager [BrowsingModeManager] for querying the current browsing mode.
@@ -280,6 +283,7 @@ class BrowserToolbarMiddleware(
     private val settings: Settings,
     private val summarizationFeatureSettings: SummarizationFeatureDiscoveryConfiguration,
     private val translationsFeatureSettings: TranslationsEnabledSettings,
+    private val listenSettings: ListenSettings,
     private val navController: NavController,
     private val summarizationNavigator: SummarizationNavigator,
     private val browsingModeManager: BrowsingModeManager,
@@ -329,6 +333,7 @@ class BrowserToolbarMiddleware(
                 observePermissionHighlightsUpdates(store)
                 observeIPProtectionUpdates(store)
                 observeTabReloadCoverUpdates(store)
+                observeListenToPageUpdates(store)
             }
 
             is StartPageActions.SiteInfoClicked -> {
@@ -1100,6 +1105,16 @@ class BrowserToolbarMiddleware(
         }
     }
 
+    private fun observeListenToPageUpdates(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
+        if (!listenSettings.available) return
+        scope.launch {
+            listenSettings.enabled.collect {
+                updateStartPageActions(store)
+                updateEndPageActions(store)
+            }
+        }
+    }
+
     private fun observeTabReloadCoverUpdates(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
         browserScreenStore.observeWhileActive {
             distinctUntilChangedBy { it.isShowingTabReloadCover }
@@ -1298,13 +1313,13 @@ class BrowserToolbarMiddleware(
                 ActionButtonRes(
                     drawableResId =
                         if (browserScreenStore.state.readerModeStatus.isActive) {
-                            if (settings.listenToPageFeatureFlagEnabled) {
+                            if (listenSettings.shouldShow()) {
                                 iconsR.drawable.mozac_ic_reader_view_headphones_fill_24
                             } else {
                                 iconsR.drawable.mozac_ic_reader_view_fill_24
                             }
                         } else {
-                            if (settings.listenToPageFeatureFlagEnabled) {
+                            if (listenSettings.shouldShow()) {
                                 iconsR.drawable.mozac_ic_reader_view_headphones_24
                             } else {
                                 iconsR.drawable.mozac_ic_reader_view_24
@@ -1314,7 +1329,7 @@ class BrowserToolbarMiddleware(
                         if (browserScreenStore.state.readerModeStatus.isActive) {
                             R.string.browser_menu_read_close
                         } else {
-                            if (settings.listenToPageFeatureFlagEnabled) {
+                            if (listenSettings.shouldShow()) {
                                 R.string.browser_menu_read_or_listen
                             } else {
                                 R.string.browser_menu_read

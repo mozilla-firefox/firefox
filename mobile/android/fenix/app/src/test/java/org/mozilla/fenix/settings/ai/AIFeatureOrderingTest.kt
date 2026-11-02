@@ -9,6 +9,7 @@ import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.feature.summarize.PageSummaryFeature
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
 import org.mozilla.fenix.search.VoiceSearchAIControlFeature
 import org.mozilla.fenix.translations.TranslationsAIControllableFeature
 
@@ -19,6 +20,7 @@ class AIFeatureOrderingTest {
         val features =
             listOf(
                 AIControllableFeature.inMemory(id = VoiceSearchAIControlFeature.id),
+                AIControllableFeature.inMemory(id = ListenToPageAIControlFeature.id),
                 AIControllableFeature.inMemory(id = PageSummaryFeature.id),
                 AIControllableFeature.inMemory(id = TranslationsAIControllableFeature.id),
             )
@@ -28,6 +30,7 @@ class AIFeatureOrderingTest {
                 TranslationsAIControllableFeature.id,
                 PageSummaryFeature.id,
                 VoiceSearchAIControlFeature.id,
+                ListenToPageAIControlFeature.id,
             ),
             features.sortedForDisplay().map { it.id },
         )

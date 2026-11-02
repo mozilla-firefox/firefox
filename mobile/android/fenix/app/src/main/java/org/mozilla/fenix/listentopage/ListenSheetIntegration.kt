@@ -26,11 +26,14 @@ import androidx.compose.ui.semantics.semantics
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isVisible
 import kotlin.math.abs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineView
@@ -39,6 +42,7 @@ import mozilla.components.feature.listentopage.ListenAction
 import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
 import mozilla.components.feature.listentopage.PlayerMode
+import mozilla.components.feature.listentopage.settings.ListenEnabledState
 import mozilla.components.feature.listentopage.ui.ListenSheet
 import mozilla.components.feature.listentopage.ui.ListenSheetUiState
 import mozilla.components.feature.listentopage.ui.toListenSheetUiState
@@ -59,6 +63,9 @@ private val ListenState.isArticleReady: Boolean
  * @param listenStore Used to tell whether there is an article to play.
  * @param engineView Used to tell how far the article is scrolled.
  * @param isAddressBarAtBottom Whether the address bar is at the bottom of the screen.
+ * @param isEnabled Whether the user has the feature turned on. Nothing is shown unless it is
+ *   [ListenEnabledState.Enabled].
+ * @param scope Observes [isEnabled] between [start] and [stop].
  * @param onListenClicked Invoked when the user asks to listen to the article.
  * @param onCustomizeReaderViewClicked Invoked when the user asks for the reader view appearance controls.
  */
@@ -68,15 +75,33 @@ class ListenSheetIntegration(
     private val listenStore: ListenStore,
     private val engineView: EngineView,
     private val isAddressBarAtBottom: Boolean,
+    private val isEnabled: Flow<ListenEnabledState>,
+    private val scope: CoroutineScope,
     private val onListenClicked: () -> Unit,
     private val onCustomizeReaderViewClicked: () -> Unit,
 ) : LifecycleAwareFeature {
 
     private var listenFeature: ComposeView? = null
+    private var isEnabledJob: Job? = null
 
     override fun start() {
+        isEnabledJob?.cancel()
+        isEnabledJob = scope.launch {
+            isEnabled.collect { enabled ->
+                if (enabled == ListenEnabledState.Enabled) show() else hide()
+            }
+        }
+    }
+
+    override fun stop() {
+        isEnabledJob?.cancel()
+        isEnabledJob = null
+        hide()
+    }
+
+    private fun show() {
         listenFeature?.let {
-            // Set again because stop() disposes the composition while the view keeps its place in the container.
+            // Set again because hide() disposes the composition while the view keeps its place in the container.
             it.setContent { ListenFeatureHost() }
             it.isVisible = true
             return
@@ -105,11 +130,10 @@ class ListenSheetIntegration(
         }
     }
 
-    override fun stop() {
+    private fun hide() {
         listenFeature?.apply {
             isVisible = false
-            // The view stays so that a snackbar anchored to it still resolves. The composition does not, so nothing
-            // it holds outlives the stop.
+            // The view stays so that a snackbar anchored to it still resolves.
             disposeComposition()
         }
     }

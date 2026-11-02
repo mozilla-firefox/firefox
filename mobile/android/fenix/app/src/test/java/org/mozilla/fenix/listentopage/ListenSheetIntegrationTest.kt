@@ -10,12 +10,21 @@ import androidx.activity.ComponentActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isVisible
 import io.mockk.mockk
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
 import mozilla.components.feature.listentopage.listenReducer
+import mozilla.components.feature.listentopage.settings.ListenEnabledState
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -25,6 +34,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class ListenSheetIntegrationTest {
 
@@ -32,19 +42,28 @@ class ListenSheetIntegrationTest {
 
     private val container = CoordinatorLayout(activity)
 
-    private fun integration() =
+    private val testScope = TestScope(UnconfinedTestDispatcher())
+
+    private fun integration(isEnabled: Flow<ListenEnabledState> = MutableStateFlow(ListenEnabledState.Enabled)) =
         ListenSheetIntegration(
             container = container,
             browserStore = BrowserStore(),
             listenStore = ListenStore(ListenState(), ::listenReducer),
             engineView = mockk(relaxed = true),
             isAddressBarAtBottom = true,
+            isEnabled = isEnabled,
+            scope = testScope,
             onListenClicked = {},
             onCustomizeReaderViewClicked = {},
         )
 
     private val sheet: View
         get() = requireNotNull(container.findViewById(R.id.listenSheet))
+
+    @After
+    fun tearDown() {
+        testScope.cancel()
+    }
 
     @Before
     fun setUp() {
@@ -79,5 +98,51 @@ class ListenSheetIntegrationTest {
 
         assertEquals(1, container.childCount)
         assertTrue(sheet.isVisible)
+    }
+
+    @Test
+    fun `GIVEN enabled is not yet known WHEN the feature is started THEN no sheet is added`() {
+        integration(isEnabled = MutableStateFlow(ListenEnabledState.Loading)).start()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertNull(container.findViewById(R.id.listenSheet))
+    }
+
+    @Test
+    fun `GIVEN the feature is disabled WHEN the feature is started THEN no sheet is added`() {
+        integration(isEnabled = MutableStateFlow(ListenEnabledState.Disabled)).start()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertNull(container.findViewById(R.id.listenSheet))
+    }
+
+    @Test
+    fun `GIVEN the feature is started WHEN enabled changes THEN the sheet follows it`() {
+        val isEnabled = MutableStateFlow(ListenEnabledState.Loading)
+        integration(isEnabled = isEnabled).start()
+
+        isEnabled.value = ListenEnabledState.Enabled
+        shadowOf(Looper.getMainLooper()).idle()
+        assertTrue(sheet.isVisible)
+
+        isEnabled.value = ListenEnabledState.Disabled
+        assertFalse(sheet.isVisible)
+
+        isEnabled.value = ListenEnabledState.Enabled
+        assertTrue(sheet.isVisible)
+    }
+
+    @Test
+    fun `GIVEN the feature is stopped WHEN enabled changes THEN the sheet stays hidden`() {
+        val isEnabled = MutableStateFlow(ListenEnabledState.Enabled)
+        val integration = integration(isEnabled = isEnabled)
+        integration.start()
+        shadowOf(Looper.getMainLooper()).idle()
+        integration.stop()
+
+        isEnabled.value = ListenEnabledState.Disabled
+        isEnabled.value = ListenEnabledState.Enabled
+
+        assertFalse(sheet.isVisible)
     }
 }
