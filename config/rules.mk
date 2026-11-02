@@ -786,35 +786,6 @@ endif
 
 endif
 
-# Usage:
-# xpi_package_rule(package-name,directory-to-package,relative-target-directory,parent-rule)
-# where:
-#     - package-name is the name of the xpi package, without suffix
-#     - directory-to-package is the path to the directory to package
-#     - relative-target-directory is the path to the directory where
-#       the archive is generated, relative to directory-to-package
-#     - parent-rule is the name(s) of the rule(s) this rule should be added to
-define xpi_package_rule
-$$(abspath $(3))/$(1).xpi: $$(call mkdir_deps,$(3) $$(MDDEPDIR))
-	@echo 'Packaging $(1).xpi...'
-	$$(call py_action,zip $(1).xpi,-C $(2) $$@ '*' --dep-target $$@ --dep-file $$(MDDEPDIR)/$(1).d)
-
-$(4):: $$(abspath $(3))/$(1).xpi
-
--include $$(MDDEPDIR)/$(1).d
-
-endef
-
-ifdef XPI_TESTDIR
-$(eval $(call xpi_package_rule,$(XPI_PKGNAME),$(srcdir),$(XPI_TESTDIR),misc))
-else
-# When you move this out of the tools tier, please remove the corresponding
-# hacks in recursivemake.py that check if Makefile.in sets the variable.
-ifdef XPI_PKGNAME
-$(eval $(call xpi_package_rule,$(XPI_PKGNAME),$(FINAL_TARGET),$(FINAL_TARGET)/..,tools realchrome))
-endif
-endif
-
 #############################################################################
 # MDDEPDIR is the subdirectory where all the dependency files are placed.
 #   This uses a make rule (instead of a macro) to support parallel

@@ -1,0 +1,9 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+XPI_NAME = "shared-beside"
+XPI_PKGNAME = "shared"
+
+FINAL_TARGET_FILES += [
+    "manifest.json",
+]

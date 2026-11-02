@@ -84,6 +84,7 @@ from .data import (
     WasmSources,
     WebIDLCollection,
     XPCOMComponentManifests,
+    XPIArchive,
     XPIDLModule,
 )
 from .jar_manifest import jar_manifest_defines, parse_jar_manifest
@@ -1364,8 +1365,6 @@ class TreeMetadataEmitter(LoggingMixin):
             "WIN32_EXE_LDFLAGS",
             "USE_EXTENSION_MANIFEST",
             "WASM_LIBS",
-            "XPI_PKGNAME",
-            "XPI_TESTDIR",
         ]
         for v in varlist:
             if v in context and context[v]:
@@ -1777,6 +1776,8 @@ class TreeMetadataEmitter(LoggingMixin):
 
         yield from jar_manifest_objects
 
+        yield from self._process_xpi_archive(context)
+
         computed_as_flags.resolve_flags("MOZBUILD", context.get("ASFLAGS"))
 
         if context.get("USE_NASM") is True:
@@ -2126,6 +2127,21 @@ class TreeMetadataEmitter(LoggingMixin):
         obj.tests = list(sorted(manifest.tests, key=lambda t: t["path"]))
 
         yield obj
+
+    def _process_xpi_archive(self, context):
+        name = context.get("XPI_PKGNAME")
+        if not name:
+            return
+        if not context.get("XPI_NAME"):
+            raise SandboxValidationError(
+                "XPI_PKGNAME set but XPI_NAME not set. An archive packages what "
+                "was staged for it, and only XPI_NAME stages anything.",
+                context,
+            )
+        destdir = None
+        if testdir := context.get("XPI_TESTDIR"):
+            destdir = mozpath.relpath(testdir.full_path, context.config.topobjdir)
+        yield XPIArchive(context, name, destdir)
 
     def _process_jar_manifests(self, context):
         jar_manifests = context.get("JAR_MANIFESTS", [])

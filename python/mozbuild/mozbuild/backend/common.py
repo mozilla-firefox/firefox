@@ -36,6 +36,7 @@ from mozbuild.frontend.data import (
     UnifiedSources,
     WebIDLCollection,
     XPCOMComponentManifests,
+    XPIArchive,
     XPIDLModule,
 )
 from mozbuild.frontend.l10n_manifest import (
@@ -215,6 +216,7 @@ class CommonBackend(BuildBackend):
         self._generated_sources = set()
         self._l10n_manifest_data = []
         self._licenses = LicenseCollection()
+        self._xpi_archives = []
         self._computed_flags = defaultdict(list)
         # Collect Rust edges until all per directory flags are available.
         self._rust_libraries_for_spec = []
@@ -403,6 +405,9 @@ class CommonBackend(BuildBackend):
         elif isinstance(obj, ComputedFlags):
             self._computed_flags[obj.relobjdir].append(obj)
             return False
+
+        elif isinstance(obj, XPIArchive):
+            self._xpi_archives.append(obj)
 
         elif isinstance(obj, BaseRustLibrary):
             self._rust_libraries_for_spec.append(obj)

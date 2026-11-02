@@ -559,13 +559,6 @@ class RecursiveMakeBackend(MakeBackend):
                 else:
                     backend_file.write("%s := %s\n" % (k, v))
 
-            # Directories with a Makefile containing XPI_PKGNAME can't be
-            # skipped and must run during the 'tools' tier.
-            if "XPI_PKGNAME" in obj.variables:
-                self._no_skip["tools"].add(backend_file.relobjdir)
-            if "XPI_TESTDIR" in obj.variables:
-                self._no_skip["misc"].add(backend_file.relobjdir)
-
         elif isinstance(obj, HostDefines):
             self._process_defines(obj, backend_file, which="HOST_DEFINES")
         elif isinstance(obj, Defines):
@@ -1033,7 +1026,14 @@ class RecursiveMakeBackend(MakeBackend):
             )
             rule.add_commands(commands)
 
+            # The track says what the install put where. Giving it a rule lets
+            # another rule depend on it before the install has run.
+            root_deps_mk.add_statement(
+                f"$(DEPTH)/install_{underscored}.track: {target} ;"
+            )
+
         self._add_staged_objdir_rules(root_deps_mk)
+        self._add_xpi_archive_rules(root_deps_mk)
 
         # Wrapper rules for the faster backend's underscored targets.
         for manifest in install_manifests:
@@ -1080,6 +1080,45 @@ class RecursiveMakeBackend(MakeBackend):
 
         if tracks:
             root_deps_mk.create_rule(["recurse_misc"]).add_dependencies(tracks)
+
+    def _add_xpi_archive_rules(self, root_deps_mk):
+        """Declare each archive as an output of what was installed for it.
+
+        The archive is a target of the install track, so it is rebuilt when the
+        install that fills it changes and not otherwise. It is declared beside
+        the install it reads, because that is where the rule producing the
+        track it depends on is.
+        """
+        archives = []
+        test_archives = []
+        for obj in sorted(self._xpi_archives, key=lambda o: o.archive):
+            base = mozpath.basedir(obj.install_target, self.INSTALL_MANIFEST_BASES)
+            track = f"install_{base.replace('/', '_')}.track"
+            archive = mozpath.join("$(DEPTH)", obj.archive)
+            depfile = mozpath.join("$(MDDEPDIR)", "xpi", obj.archive + ".pp")
+            (test_archives if obj.destdir else archives).append(archive)
+
+            rule = root_deps_mk.create_rule([archive])
+            rule.add_dependencies([mozpath.join("$(DEPTH)", track)])
+            if obj.install_target in self._staged_objdir_installs:
+                rule.add_dependencies([self._built_install_track(obj.install_target)])
+            rule.add_commands([
+                f"$(call py_action,xpi_archive {obj.name},"
+                f"--track $(DEPTH)/{track} "
+                f"--stage-dir $(DEPTH)/{obj.install_target} "
+                f"--prefix {mozpath.relpath(obj.install_target, base)} "
+                f"--dep-target {archive} "
+                f"--dep-file {depfile} "
+                f"{archive})"
+            ])
+            # rules.mk has already read its dependency files by the time this
+            # fragment is included, so the archive includes its own.
+            root_deps_mk.add_statement(f"-include {depfile}")
+
+        if archives:
+            root_deps_mk.create_rule(["recurse_tools"]).add_dependencies(archives)
+        if test_archives:
+            root_deps_mk.create_rule(["recurse_misc"]).add_dependencies(test_archives)
 
     def _add_unified_build_rules(
         self,

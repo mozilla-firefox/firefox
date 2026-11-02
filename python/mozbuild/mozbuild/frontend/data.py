@@ -1115,6 +1115,27 @@ class PerSourceFlag(ContextDerived):
         self.object_deps = object_deps
 
 
+class XPIArchive(ContextDerived):
+    """An extension archive built from what was staged for it.
+
+    The file list is what the install step recorded, so the archive describes
+    the declared installs rather than whatever the staging area holds.
+    """
+
+    __slots__ = ("name", "destdir")
+
+    def __init__(self, context, name, destdir=None):
+        ContextDerived.__init__(self, context)
+        self.name = name
+        self.destdir = destdir
+
+    @property
+    def archive(self):
+        """Path of the archive, beside what it packages unless told otherwise."""
+        destdir = self.destdir or mozpath.dirname(self.install_target)
+        return mozpath.join(destdir, self.name + ".xpi")
+
+
 class JARManifest(ContextDerived):
     """Describes an individual JAR manifest file and how to process it.
 

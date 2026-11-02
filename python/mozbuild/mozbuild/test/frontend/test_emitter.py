@@ -1728,6 +1728,14 @@ class TestEmitterBasic(unittest.TestCase):
         ):
             self.read_topsrcdir(reader)
 
+    def test_xpi_pkgname_without_xpi_name(self):
+        """An archive packages a staging area, and only XPI_NAME makes one."""
+        reader = self.reader("xpi-pkgname-without-xpi-name")
+        with self.assertRaisesRegex(
+            SandboxValidationError, "XPI_PKGNAME set but XPI_NAME not set"
+        ):
+            self.read_topsrcdir(reader)
+
     def test_final_target_pp_files(self):
         """Test that FINAL_TARGET_PP_FILES works properly."""
         reader = self.reader("dist-files")

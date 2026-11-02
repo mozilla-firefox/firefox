@@ -2625,10 +2625,11 @@ VARIABLES = {
     "XPI_NAME": (
         str,
         str,
-        """The name of an extension XPI to generate.
+        """The name of the staging area an extension is installed into.
 
-        When this variable is present, the results of this directory will end up
-        being packaged into an extension instead of the main dist/bin results.
+        When this variable is present, the results of this directory are
+        installed under that name instead of into the main dist/bin results.
+        XPI_PKGNAME asks for an archive of what was staged.
         """,
     ),
     "XPI_PKGNAME": (
@@ -2637,6 +2638,9 @@ VARIABLES = {
         """The name of the package associated to an extension XPI to generate.
 
         Override the name of the package generated for an XPI extension.
+
+        XPI_NAME must be set as well, because the archive packages the staging
+        area that XPI_NAME creates.
         """,
     ),
     "XPI_TESTDIR": (
