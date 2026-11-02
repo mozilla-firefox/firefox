@@ -12745,13 +12745,15 @@ nsHttpChannel::SetEarlyHintObserver(nsIEarlyHintObserver* aObserver) {
 NS_IMETHODIMP
 nsHttpChannel::EarlyHint(const nsACString& aLinkHeader,
                          const nsACString& aReferrerPolicy,
-                         const nsACString& aCspHeader) {
+                         const nsACString& aCspHeader,
+                         const nsACString& aConnectionAllowlistHeader) {
   LOG(("nsHttpChannel::EarlyHint.\n"));
 
   if (nsCOMPtr<nsIEarlyHintObserver> obs = mEarlyHintObserver) {
     if (nsContentUtils::ComputeIsSecureContext(this)) {
       LOG(("nsHttpChannel::EarlyHint propagated.\n"));
-      obs->EarlyHint(aLinkHeader, aReferrerPolicy, aCspHeader);
+      obs->EarlyHint(aLinkHeader, aReferrerPolicy, aCspHeader,
+                     aConnectionAllowlistHeader);
     }
   }
   return NS_OK;

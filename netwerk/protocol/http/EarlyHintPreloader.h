@@ -94,7 +94,7 @@ class EarlyHintPreloader final : public nsIStreamListener,
       nsIURI* aBaseURI, nsIPrincipal* aPrincipal,
       nsICookieJarSettings* aCookieJarSettings,
       const nsACString& aReferrerPolicy, const nsACString& aCSPHeader,
-      uint64_t aBrowsingContextID,
+      const nsACString& aConnectionAllowlistHeader, uint64_t aBrowsingContextID,
       dom::CanonicalBrowsingContext* aLoadingBrowsingContext,
       bool aIsModulepreload);
 

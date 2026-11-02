@@ -30,6 +30,7 @@ EarlyHintsService::~EarlyHintsService() = default;
 void EarlyHintsService::EarlyHint(
     const nsACString& aLinkHeader, nsIURI* aBaseURI, nsIChannel* aChannel,
     const nsACString& aReferrerPolicy, const nsACString& aCSPHeader,
+    const nsACString& aConnectionAllowlistHeader,
     dom::CanonicalBrowsingContext* aLoadingBrowsingContext) {
   mEarlyHintsCount++;
   if (mFirstEarlyHint.isNothing()) {
@@ -96,20 +97,23 @@ void EarlyHintsService::EarlyHint(
       EarlyHintPreloader::MaybeCreateAndInsertPreload(
           mOngoingEarlyHints, linkHeader, aBaseURI, principal,
           cookieJarSettings, aReferrerPolicy, aCSPHeader,
-          loadInfo->GetBrowsingContextID(), aLoadingBrowsingContext, false);
+          aConnectionAllowlistHeader, loadInfo->GetBrowsingContextID(),
+          aLoadingBrowsingContext, false);
     } else if (linkHeader.mRel.LowerCaseEqualsLiteral("modulepreload")) {
       mLinkType |= dom::LinkStyle::eMODULE_PRELOAD;
       EarlyHintPreloader::MaybeCreateAndInsertPreload(
           mOngoingEarlyHints, linkHeader, aBaseURI, principal,
           cookieJarSettings, aReferrerPolicy, aCSPHeader,
-          loadInfo->GetBrowsingContextID(), aLoadingBrowsingContext, true);
+          aConnectionAllowlistHeader, loadInfo->GetBrowsingContextID(),
+          aLoadingBrowsingContext, true);
     } else if (linkHeader.mRel.LowerCaseEqualsLiteral(
                    "compression-dictionary")) {
       mLinkType |= dom::LinkStyle::eCOMPRESSION_DICTIONARY;
       EarlyHintPreloader::MaybeCreateAndInsertPreload(
           mOngoingEarlyHints, linkHeader, aBaseURI, principal,
           cookieJarSettings, aReferrerPolicy, aCSPHeader,
-          loadInfo->GetBrowsingContextID(), aLoadingBrowsingContext, true);
+          aConnectionAllowlistHeader, loadInfo->GetBrowsingContextID(),
+          aLoadingBrowsingContext, true);
     }
   }
 }

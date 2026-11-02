@@ -195,7 +195,7 @@ void EarlyHintPreloader::MaybeCreateAndInsertPreload(
     nsIURI* aBaseURI, nsIPrincipal* aPrincipal,
     nsICookieJarSettings* aCookieJarSettings,
     const nsACString& aResponseReferrerPolicy, const nsACString& aCSPHeader,
-    uint64_t aBrowsingContextID,
+    const nsACString& aConnectionAllowlistHeader, uint64_t aBrowsingContextID,
     dom::CanonicalBrowsingContext* aLoadingBrowsingContext,
     bool aIsModulepreload) {
   nsAttrValue as;
@@ -332,10 +332,11 @@ void EarlyHintPreloader::MaybeCreateAndInsertPreload(
   }
   nsCOMPtr<nsILoadInfo> secCheckLoadInfo = maybeLoadInfo.unwrap();
 
-  if (!aCSPHeader.IsEmpty()) {
+  if (!aCSPHeader.IsEmpty() || !aConnectionAllowlistHeader.IsEmpty()) {
     auto policyContainerOrErr = PolicyContainer::CreateForNonDocument(
         aPrincipal, aBaseURI,
-        {.mContentSecurityPolicy = nsCString(aCSPHeader)});
+        {.mContentSecurityPolicy = nsCString(aCSPHeader),
+         .mConnectionAllowlist = nsCString(aConnectionAllowlistHeader)});
     if (NS_WARN_IF(policyContainerOrErr.isErr())) {
       return;
     }
