@@ -5,3 +5,7 @@
 # Use this file for New Tab features that ship to English locales only (e.g. en-US, en-CA, en-GB).
 # These strings are not translated. The English file is packaged for every locale, both in
 # omni.ja and in the New Tab train hop XPI, so localized builds show these strings in English.
+
+# Shown in a widget card in place of the widget, until there is a widget to
+# show.
+newtab-widget-placeholder = Watch this space
