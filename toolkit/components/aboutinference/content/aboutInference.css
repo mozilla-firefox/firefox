@@ -219,6 +219,12 @@ legend {
   margin-top: 1px;
 }
 
+#textGeneration textarea {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: 6em;
+}
+
 .subtabs {
   display: flex;
   gap: var(--space-small);

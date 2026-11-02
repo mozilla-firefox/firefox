@@ -120,3 +120,79 @@ add_task(async function test_about_inference_devices() {
     await cleanup();
   }
 });
+
+/**
+ * Runs a generation through the text generation panel.
+ */
+add_task(async function test_about_inference_text_generation() {
+  const { cleanup } = await setup({
+    prefs: [
+      ["browser.ml.llama.hwInference", true],
+      [
+        "browser.ml.modelHubRootUrl",
+        "chrome://mochitests/content/browser/toolkit/components/ml/tests/browser/data",
+      ],
+    ],
+  });
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:inference",
+    true
+  );
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      const byId = id => content.document.getElementById(id);
+      byId("subtab-devices").click();
+      await ContentTaskUtils.waitForCondition(
+        () => byId("devices.table").querySelector("td"),
+        "The devices panel lists the inference devices"
+      );
+      const kinds = [...byId("devices.table").querySelectorAll("tbody tr")].map(
+        tr => tr.children[2].textContent
+      );
+      Assert.equal(
+        byId("tg.device").options.length,
+        2 + kinds.filter(kind => kind !== "cpu").length,
+        "Every accelerator joins the text generation device select"
+      );
+      byId("subtab-text-generation").click();
+      byId("tg.hub").value = "";
+      byId("tg.model").value = "Mozilla/test-llama/TinyStories-656K.Q8_0.gguf";
+      byId("tg.prompt").value = "Once upon a time";
+      byId("tg.maxTokens").value = "8";
+      byId("tg.threads").value = "1";
+      byId("tg.engines").value = "2";
+      byId("tg.runs").value = "2";
+      Assert.ok(
+        byId("tg.kvCacheDtype").querySelector("option[value=q8_0]").disabled,
+        "A quantized KV cache needs flash attention"
+      );
+      byId("tg.flashAttn").click();
+      Assert.ok(
+        !byId("tg.kvCacheDtype").querySelector("option[value=q8_0]").disabled,
+        "Flash attention allows a quantized KV cache"
+      );
+      byId("tg.run").click();
+      await ContentTaskUtils.waitForCondition(
+        () => byId("tg.summary").querySelector("td"),
+        "The summary appears after every run",
+        500,
+        120
+      );
+      Assert.greater(byId("tg.output").value.length, 0, "Text was generated");
+      const rows = [...byId("tg.results").querySelectorAll("tbody tr")].map(
+        tr => [...tr.children].map(td => td.textContent)
+      );
+      Assert.equal(rows.length, 4, "Two engines ran twice each");
+      Assert.notEqual(rows[0][2], "-", "An engine's first run reports init");
+      Assert.equal(rows[1][2], "-", "Its second run does not");
+      Assert.notEqual(rows[0][7], "-", "Output tokens are reported");
+      Assert.notEqual(rows[0][9], "-", "Throughput is reported");
+      const summary = byId("tg.summary").querySelectorAll("tbody tr");
+      Assert.equal(summary.length, 6, "Every timing is summarised");
+    });
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+    await cleanup();
+  }
+});
