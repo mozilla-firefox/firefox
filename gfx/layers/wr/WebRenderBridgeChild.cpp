@@ -121,8 +121,11 @@ bool WebRenderBridgeChild::EndTransaction(
 
   TimeStamp fwdTime = TimeStamp::Now();
 
+  // Destroyed actors stay queued with the destroy commands that reference them.
+  nsTArray<OpDestroy> destroyedActors;
   if (!aRenderOffscreen) {
     MergeWebRenderParentCommands();
+    destroyedActors = std::move(mDestroyedActors);
   }
   aDisplayListData.mCommands = std::move(mParentCommands);
   aDisplayListData.mIdNamespace = mIdNamespace;
@@ -134,7 +137,7 @@ bool WebRenderBridgeChild::EndTransaction(
 
   mSentDisplayList = true;
   bool ret = this->SendSetDisplayList(
-      std::move(aDisplayListData), mDestroyedActors, GetFwdTransactionId(),
+      std::move(aDisplayListData), destroyedActors, GetFwdTransactionId(),
       aTransactionId, aContainsSVGGroup, aVsyncId, aVsyncStartTime,
       aRefreshStartTime, aTxnStartTime, aTxnURL, fwdTime, payloads,
       aRenderOffscreen);
@@ -146,7 +149,6 @@ bool WebRenderBridgeChild::EndTransaction(
   if (!aRenderOffscreen) {
     ProcessWebRenderParentCommands();
   }
-  mDestroyedActors.Clear();
   mIsInTransaction = false;
 
   return ret;
