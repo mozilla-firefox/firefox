@@ -26,7 +26,7 @@ addAccessibleTask(
 <div id="root" role="group"><div id="scrollable" role="presentation" style="height: 1px;"><button id="button">test</button></div></div>
   `,
   async function (browser, docAcc) {
-    let button = findAccessibleChildByID(docAcc, "button");
+    const button = findAccessibleChildByID(docAcc, "button");
     assertBoundsNonZero(button);
 
     const root = findAccessibleChildByID(docAcc, "root");
@@ -40,9 +40,6 @@ addAccessibleTask(
 
     const scrollable = findAccessibleChildByID(docAcc, "scrollable");
     assertBoundsNonZero(scrollable);
-    // XXX button's RemoteAccessible was recreated, so we have to fetch it
-    // again. This shouldn't be necessary once bug 1739050 is fixed.
-    button = findAccessibleChildByID(docAcc, "button");
     assertBoundsNonZero(button);
   },
   { topLevel: true, iframe: true, remoteIframe: true }
