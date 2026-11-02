@@ -99,10 +99,9 @@ class SaveOriginAccessTimeOp;
 class UniversalDirectoryLock;
 
 namespace test {
-class GTEST_CLASS(TestGroupInfo, ReplacementNullsMGroupInfo);
 class GTEST_CLASS(TestQuotaManagerAndShutdownFixture,
                   ThumbnailPrivateIdentityTemporaryOriginCount);
-}  // namespace test
+}
 
 class QuotaManager final : public BackgroundThreadObject {
   friend class CanonicalQuotaObject;
@@ -125,7 +124,6 @@ class QuotaManager final : public BackgroundThreadObject {
   friend class PersistOp;
   friend class SaveOriginAccessTimeOp;
   friend class ShutdownStorageOp;
-  friend class test::GTEST_CLASS(TestGroupInfo, ReplacementNullsMGroupInfo);
   friend class test::GTEST_CLASS(TestQuotaManagerAndShutdownFixture,
                                  ThumbnailPrivateIdentityTemporaryOriginCount);
   friend class UniversalDirectoryLock;
