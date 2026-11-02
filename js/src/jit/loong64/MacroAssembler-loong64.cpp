@@ -6,6 +6,7 @@
 
 #include "mozilla/FloatingPoint.h"
 
+#include <bit>
 #include <cstdint>
 #include <optional>
 #include <utility>
@@ -663,15 +664,72 @@ void MacroAssemblerLOONG64::ma_subPtrTestOverflow(Register rd, Register rj,
 }
 
 void MacroAssemblerLOONG64::ma_mul_d(Register rd, Register rj, Imm32 imm) {
-  // li handles the relocation.
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(rj != scratch);
-  ma_li(scratch, imm);
-  as_mul_d(rd, rj, scratch);
+  ma_mul_d(rd, rj,
+           ImmWord(mozilla::BitwiseCast<uintptr_t>(
+               static_cast<int64_t>(imm.value))));
 }
 
 void MacroAssemblerLOONG64::ma_mul_d(Register rd, Register rj, ImmWord imm) {
+  const int64_t value = imm.value;
+
+  switch (value) {
+    case -1:
+      as_sub_d(rd, zero, rj);
+      return;
+    case 0:
+      ma_move(rd, zero);
+      return;
+    case 1:
+      ma_move(rd, rj);
+      return;
+    case 2:
+      as_add_d(rd, rj, rj);
+      return;
+    default:
+      break;
+  }
+
+  if (value > 0) {
+    const uint64_t uvalue = static_cast<uint64_t>(value);
+
+    if (std::has_single_bit(uvalue + 1)) {
+      const int32_t shift = mozilla::FloorLog2(uvalue + 1);
+
+      UseScratchRegisterScope temps(asMasm());
+      Register savedLhs = rj;
+      if (rd == rj) {
+        savedLhs = temps.Acquire();
+        ma_move(savedLhs, rj);
+      }
+      as_slli_d(rd, rj, shift);
+      as_sub_d(rd, rd, savedLhs);
+      return;
+    }
+
+    if (std::has_single_bit(uvalue - 1)) {
+      const int32_t shift = mozilla::FloorLog2(uvalue - 1);
+      if (shift < 5) {
+        as_alsl_d(rd, rj, rj, shift - 1);
+      } else {
+        UseScratchRegisterScope temps(asMasm());
+        Register savedLhs = rj;
+        if (rd == rj) {
+          savedLhs = temps.Acquire();
+          ma_move(savedLhs, rj);
+        }
+        as_slli_d(rd, rj, shift);
+        as_add_d(rd, rd, savedLhs);
+      }
+      return;
+    }
+
+    // Use shift if constant is power of 2.
+    if (std::has_single_bit(uvalue)) {
+      as_slli_d(rd, rj, mozilla::FloorLog2(uvalue));
+      return;
+    }
+  }
+
   // li handles the relocation.
   UseScratchRegisterScope temps(asMasm());
   Register scratch = temps.Acquire();
@@ -1685,6 +1743,49 @@ void MacroAssemblerLOONG64::ma_sub32TestOverflow(Register rd, Register rj,
 }
 
 void MacroAssemblerLOONG64::ma_mul(Register rd, Register rj, Imm32 imm) {
+  const int32_t value = imm.value;
+
+  switch (value) {
+    case -1:
+      as_sub_w(rd, zero, rj);
+      return;
+    case 0:
+      as_slli_w(rd, zero, 0);
+      return;
+    case 1:
+      as_slli_w(rd, rj, 0);
+      return;
+    case 2:
+      as_add_w(rd, rj, rj);
+      return;
+    default:
+      break;
+  }
+
+  if (value > 0) {
+    const uint32_t uvalue = static_cast<uint32_t>(value);
+
+    if (std::has_single_bit(uvalue)) {
+      as_slli_w(rd, rj, mozilla::FloorLog2(uvalue));
+      return;
+    }
+
+    const uint32_t shift = mozilla::FloorLog2(uvalue);
+    const uint32_t rest = uvalue - (UINT32_C(1) << shift);
+    if (std::has_single_bit(rest)) {
+      const uint32_t restShift = mozilla::FloorLog2(rest);
+
+      UseScratchRegisterScope temps(asMasm());
+      const Register scratch = temps.Acquire();
+      as_slli_w(scratch, rj, shift - restShift);
+      as_add_w(rd, scratch, rj);
+      if (restShift != 0) {
+        as_slli_w(rd, rd, restShift);
+      }
+      return;
+    }
+  }
+
   UseScratchRegisterScope temps(asMasm());
   Register scratch = temps.Acquire();
   MOZ_ASSERT(rj != scratch);

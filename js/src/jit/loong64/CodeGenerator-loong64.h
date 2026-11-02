@@ -99,8 +99,6 @@ class CodeGeneratorLOONG64 : public CodeGeneratorShared {
   void emitBigIntPtrMod(LBigIntPtrMod* ins, Register dividend, Register divisor,
                         Register output);
 
-  void emitMulI64(Register lhs, int64_t rhs, Register dest);
-
   template <typename T>
   void emitWasmLoadI64(T* ins);
   template <typename T>
