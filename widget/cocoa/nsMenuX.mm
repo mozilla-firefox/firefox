@@ -135,7 +135,8 @@ nsMenuX::nsMenuX(nsMenuParentX* aParent, nsMenuGroupOwnerX* aMenuGroupOwner,
 
   mVisible = !nsMenuUtilsX::NodeIsHiddenOrCollapsed(mContent);
 
-  NSString* newCocoaLabelString = nsMenuUtilsX::GetTruncatedCocoaLabel(mLabel);
+  NSString* newCocoaLabelString =
+      nsMenuUtilsX::GetTruncatedCocoaLabel(mLabel, mContent);
   mNativeMenuItem = [[GeckoNSMenuItem alloc] initWithTitle:newCocoaLabelString
                                                     action:nil
                                              keyEquivalent:@""];
@@ -931,7 +932,8 @@ void nsMenuX::SetTitle() {
   NS_OBJC_BEGIN_TRY_ABORT_BLOCK;
 
   mContent->AsElement()->GetAttr(nsGkAtoms::label, mLabel);
-  NSString* newCocoaLabelString = nsMenuUtilsX::GetTruncatedCocoaLabel(mLabel);
+  NSString* newCocoaLabelString =
+      nsMenuUtilsX::GetTruncatedCocoaLabel(mLabel, mContent);
   mNativeMenu.title = newCocoaLabelString;
   mNativeMenuItem.title = newCocoaLabelString;
 
