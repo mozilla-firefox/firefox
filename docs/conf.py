@@ -72,26 +72,34 @@ myst_enable_extensions = [
 mermaid_width = "fit-content"
 mermaid_height = "auto"
 
+mermaid_version = "12.2.0"
+
 # startOnLoad must stay off: the extension renders via mermaid.run() itself.
 # Only theme-neutral values belong here, as this config is shared by the light
 # and dark themes.
 mermaid_init_config = {
     "startOnLoad": False,
+    # Mermaid defaults to the ELK layout and its "neo" look, and gives
+    # flowchart and state nodes a 120px minimum width and wrapping width. The
+    # docs use dagre, the classic look, and nodes sized to their labels.
+    "layout": "dagre",
+    "look": "classic",
     "themeVariables": {
         "fontSize": "18px",
     },
     # useMaxWidth is configured per diagram type; these are the types the tree
     # uses.
-    "flowchart": {"useMaxWidth": False},
+    "flowchart": {"useMaxWidth": False, "wrappingWidth": 200, "minNodeWidth": 0},
     "sequence": {"useMaxWidth": False},
     "class": {"useMaxWidth": False},
-    "state": {"useMaxWidth": False},
+    "state": {"useMaxWidth": False, "wrappingWidth": 200, "minNodeWidth": 0},
     "gantt": {"useMaxWidth": False},
     "er": {"useMaxWidth": False},
 }
 
 # ZenUML sequence diagrams. The plugin is fetched only on a page that has one.
 mermaid_include_zenuml = True
+mermaid_zenuml_version = "1.0.1"
 
 # The paths are loaded from config.yml so they can be shared with a CI
 # optimization strategy that ensures the doc task runs when these files change.

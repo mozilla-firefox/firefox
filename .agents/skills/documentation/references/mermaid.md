@@ -29,8 +29,8 @@ Every failure below is invisible until the built page is open in a browser:
     including what the unstyled default fill means for prose that points at a
     node by color.
 -   **A ZenUML diagram is inverted in the dark scheme**, because its plugin
-    ignores the theme and draws black on transparent. Avoid colors a
-    light-to-dark inversion would misrepresent.
+    ignores the theme and draws black on white. Avoid colors a light-to-dark
+    inversion would misrepresent.
 -   **Do not distinguish two kinds of node by fill color alone**: it fails for
     readers with a color vision deficiency and on poor displays. Vary the shape as
     well -- a stadium `(["text"])` reads clearly against a plain `["text"]`,

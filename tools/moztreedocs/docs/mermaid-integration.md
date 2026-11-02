@@ -99,8 +99,8 @@ sequenceDiagram
 [ZenUML](https://zenuml.com/) sequence diagrams are also supported. The
 plugin that draws them is fetched only by a page that contains one. Start the
 block with `zenuml`. The plugin ignores the diagram theme and draws in black on
-a transparent background, so in the dark color scheme the diagram is inverted;
-avoid colors that a light-to-dark inversion would misrepresent:
+white, so in the dark color scheme the diagram is inverted; avoid colors that a
+light-to-dark inversion would misrepresent:
 
 ````md
 ```{mermaid}
