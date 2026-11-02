@@ -431,8 +431,6 @@ class nsRefreshDriver final : public mozilla::layers::TransactionIdAllocator,
   void EnsureTimerStarted(EnsureTimerStartedFlags aFlags = eNone);
   void StopTimer();
 
-  void UpdateThrottledState();
-
   bool HasObservers() const;
   void AppendObserverDescriptionsToString(nsACString& aStr) const;
   // Note: This should only be called in the dtor of nsRefreshDriver.
