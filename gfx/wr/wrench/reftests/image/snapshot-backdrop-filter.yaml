@@ -1,0 +1,47 @@
+# A backdrop-filter inside a snapshotted stacking context must be rendered
+# into the snapshot. In the first row the snapshot is rendered as an image to
+# the right of the stacking context, and should look identical to it. The
+# second row is the same with a detached snapshot, so only the image shows.
+---
+root:
+  items:
+  - type: stacking-context
+    bounds: [10, 10, 100, 100]
+    snapshot:
+      name: "snap"
+      area: [0, 0, 100, 100]
+    items:
+    - type: stacking-context
+      backdrop-root: true
+      bounds: [0, 0, 100, 100]
+      items:
+      - type: rect
+        bounds: [0, 0, 100, 100]
+        color: red
+      - type: backdrop-filter
+        bounds: [20, 20, 60, 60]
+        filters: invert(1)
+
+  - image: snapshot(snap)
+    bounds: [120, 10, 100, 100]
+
+  - type: stacking-context
+    bounds: [10, 120, 100, 100]
+    snapshot:
+      name: "snap-detached"
+      area: [0, 0, 100, 100]
+      detached: true
+    items:
+    - type: stacking-context
+      backdrop-root: true
+      bounds: [0, 0, 100, 100]
+      items:
+      - type: rect
+        bounds: [0, 0, 100, 100]
+        color: red
+      - type: backdrop-filter
+        bounds: [20, 20, 60, 60]
+        filters: invert(1)
+
+  - image: snapshot(snap-detached)
+    bounds: [120, 120, 100, 100]

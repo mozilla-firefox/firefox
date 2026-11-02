@@ -31,6 +31,7 @@ scale(*) == snapshot-multiframe.yaml snapshot-multiframe-ref.yaml
 scale(*) == snapshot-empty.yaml empty.yaml
 scale(*) fuzzy(130,1800) == snapshot-perspective-01.yaml snapshot-perspective-01-ref.yaml
 scale(*) == snapshot-complex-clip.yaml snapshot-complex-clip-ref.yaml
+== snapshot-backdrop-filter.yaml snapshot-backdrop-filter-ref.yaml
 scale(*) == stretch-size-01.yaml stretch-size-01-ref.yaml
 == one-to-one-fractional-extent.yaml one-to-one-fractional-extent-ref.yaml
 scale(*) == sub-rect-clamp.yaml sub-rect-clamp-ref.yaml

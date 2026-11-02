@@ -929,6 +929,13 @@ pub fn update_prim_visibility(
                     )
                 }
                 None => {
+                    // Without a tile cache, e.g. in a snapshot, nothing else
+                    // marks the backdrop-filter chain this draws as needed.
+                    if let PrimitiveKind::BackdropRender { pic_index, .. } = prim_instance.kind {
+                        if !clip_chain.pic_coverage_rect.is_empty() {
+                            frame_state.scratch.primitive.frame.required_backdrop_chains.insert(pic_index);
+                        }
+                    }
                     DrawState::Visible {
                         vis_flags: PrimitiveVisibilityFlags::empty(),
                         sub_slice_index: SubSliceIndex::DEFAULT,
