@@ -43,6 +43,7 @@ import mozilla.components.feature.listentopage.playback.articlePositionOf
 import mozilla.components.feature.listentopage.playback.chunkPositionAt
 import mozilla.components.feature.listentopage.playback.offsetInMeasuredChunk
 import mozilla.components.feature.listentopage.playback.shownDurationMs
+import mozilla.components.feature.listentopage.settings.ListenEnabledState
 import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.NothingToReadException
@@ -63,7 +64,8 @@ import mozilla.components.support.ktx.kotlin.stripCommonSubdomains
  * @property audioCache Holds the audio files. It is emptied when the session stops.
  * @property playbackController Plays the audio file. It is used instead of the player directly, because only playback
  *   commanded through the media session keeps the audio alive in the background and shows the notification.
- * @property settings The module's own preferences, holding the voice the user picked for each article language.
+ * @property settings The module's own preferences, holding the voice the user picked for each article language and
+ *   whether the feature is turned on. The session stops when the feature is turned off.
  * @property scope The [CoroutineScope] the extraction, the synthesis and the playback commands run in. It has to
  *   dispatch on one thread: the session fields below are read from `invoke`, which the store runs on whichever thread
  *   dispatched, and written from this scope.
@@ -206,6 +208,10 @@ class ListenMiddleware(
                 store.dispatch(
                     ListenAction.Session.StopRequested(ListenAction.Session.StopSource.MediaSessionEndedOutsideApp)
                 )
+            }
+            launch {
+                settings.enabled.first { it == ListenEnabledState.Disabled }
+                store.dispatch(ListenAction.Session.StopRequested(ListenAction.Session.StopSource.FeatureDisabled))
             }
             playbackController.status.collect { store.reportPlayback(it) }
         }
