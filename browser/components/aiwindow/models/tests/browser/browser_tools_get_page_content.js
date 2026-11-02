@@ -78,3 +78,65 @@ add_task(async function test_get_page_content_basic() {
 
   await cleanup();
 });
+
+/**
+ * Test that get_page_content keeps the URL of an anchor that wraps block
+ * content, such as a card on a listing page.
+ */
+add_task(async function test_get_page_content_block_anchor_links() {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Hotels</title>
+    </head>
+    <body>
+      <h1>Hotels in Lisbon</h1>
+      <a href="https://example.com/hotel-a">
+        <div>
+          <h2>Hotel A</h2>
+          <p>Scored 8.9</p>
+        </div>
+      </a>
+      <a href="https://example.com/hotel-b">
+        <div>
+          <h2>Hotel B</h2>
+          <p>Scored 9.1</p>
+        </div>
+      </a>
+    </body>
+    </html>
+  `;
+
+  const { ChatConversation } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/aiwindow/ui/modules/ChatConversation.sys.mjs"
+  );
+
+  const { url_list, GetPageContent, cleanup } =
+    await setupGetPageContentTests(html);
+
+  const conversation = new ChatConversation({
+    title: "",
+    description: "",
+    pageUrl: new URL("https://example.com"),
+    pageMeta: {},
+  });
+
+  const [result] = await GetPageContent.getPageContent(
+    { url_list },
+    conversation
+  );
+
+  ok(result.ok, "The read succeeded");
+  ok(
+    result.content.includes("[Hotel A](https://example.com/hotel-a)"),
+    `The first card keeps its URL: ${result.content}`
+  );
+  ok(
+    result.content.includes("[Hotel B](https://example.com/hotel-b)"),
+    `The second card keeps its URL: ${result.content}`
+  );
+
+  await cleanup();
+});

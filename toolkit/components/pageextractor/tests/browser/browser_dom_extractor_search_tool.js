@@ -85,7 +85,7 @@ add_task(async function test_extraction_without_page_url() {
   const result = await actor.getText({});
 
   const expected = [
-    "Choose which Firefox Browser to download in your language",
+    "[Choose which Firefox Browser to download in your language](https://www.firefox.com/en-US/download/all/)",
     "Firefox",
     "https://www.firefox.com › en-US › download › all",
     "Firefox",
@@ -96,7 +96,7 @@ add_task(async function test_extraction_without_page_url() {
   is(
     result.text,
     expected,
-    "Without a sourceUrl, the default strategy should preserve cite breadcrumbs and should not format block anchors as markdown"
+    "Without a sourceUrl, the default strategy should preserve cite breadcrumbs and format block anchors as markdown"
   );
 
   return cleanup();
@@ -139,8 +139,9 @@ add_task(async function test_google_search_domain_matching() {
 });
 
 /**
- * Test that non-Google URLs do not trigger the google search extraction strategy
- * should preserve cite elements and not format block anchors as markdown links.
+ * Test that non-Google URLs do not trigger the google search extraction strategy:
+ * they keep cite elements, and block anchors are still formatted as markdown
+ * links, as they are on every page.
  */
 add_task(async function test_non_google_sites_preserve_default_strategy() {
   const { html } = await MLTestUtils.serveHTMLInTab({ browser: gBrowser });
@@ -182,7 +183,7 @@ add_task(async function test_non_google_sites_preserve_default_strategy() {
   ];
 
   const expected = [
-    "Choose which Firefox Browser to download in your language",
+    "[Choose which Firefox Browser to download in your language](https://www.firefox.com/en-US/download/all/)",
     "Firefox",
     "https://www.firefox.com › en-US › download › all",
     "Firefox",
@@ -195,7 +196,7 @@ add_task(async function test_non_google_sites_preserve_default_strategy() {
     is(
       result.text,
       expected,
-      `Default strategy should be applied (cite included, block anchor not formatted as markdown) for ${url}`
+      `Default strategy should be applied (cite included, block anchor formatted as markdown) for ${url}`
     );
   }
 
