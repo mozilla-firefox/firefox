@@ -8,12 +8,14 @@ import android.app.Notification
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.UUID
+import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.MediaSessionState
@@ -29,6 +31,7 @@ import mozilla.components.support.test.whenever
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -78,7 +81,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("https://www.mozilla.org", notification.text)
         assertEquals("Mozilla", notification.title)
@@ -102,7 +106,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("https://www.mozilla.org", notification.text)
         assertEquals("Mozilla", notification.title)
@@ -126,7 +131,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("", notification.text)
         assertEquals("", notification.title)
@@ -150,7 +156,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("", notification.text)
         assertEquals("A site is playing media", notification.title)
@@ -175,7 +182,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("", notification.text)
         assertEquals("A site is playing media", notification.title)
@@ -206,11 +214,27 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("https://www.mozilla.org", notification.text)
         assertEquals("test title", notification.title)
         assertEquals(R.drawable.mozac_feature_media_paused, notification.iconResource)
+    }
+
+    @Test
+    fun `GIVEN artwork WHEN creating the notification THEN the artwork is the large icon`() {
+        val tab =
+            createTab(
+                "https://www.mozilla.org",
+                mediaSessionState = MediaSessionState(mock(), playbackState = MozMediaSession.PlaybackState.PLAYING),
+            )
+        val helper = MediaNotification(context, AbstractMediaSessionService::class.java)
+
+        assertNull(helper.create(tab, mediaSession, null).getLargeIcon())
+        assertNotNull(
+            helper.create(tab, mediaSession, Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)).getLargeIcon()
+        )
     }
 
     @Test
@@ -234,7 +258,8 @@ class MediaNotificationTest {
                 )
 
             val notification =
-                MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+                MediaNotification(context, AbstractMediaSessionService::class.java)
+                    .create(state.tabs[0], mediaSession, null)
 
             assertEquals(1, notification.actions.size)
             assertEquals(
@@ -265,7 +290,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals(2, notification.actions.size)
         assertEquals(
@@ -301,7 +327,8 @@ class MediaNotificationTest {
                 )
 
             val notification =
-                MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+                MediaNotification(context, AbstractMediaSessionService::class.java)
+                    .create(state.tabs[0], mediaSession, null)
 
             assertEquals(2, notification.actions.size)
             assertEquals(
@@ -341,7 +368,8 @@ class MediaNotificationTest {
                 )
 
             val notification =
-                MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+                MediaNotification(context, AbstractMediaSessionService::class.java)
+                    .create(state.tabs[0], mediaSession, null)
 
             assertEquals(3, notification.actions.size)
             assertEquals(
@@ -383,7 +411,8 @@ class MediaNotificationTest {
             )
 
         val notification =
-            MediaNotification(context, AbstractMediaSessionService::class.java).create(state.tabs[0], mediaSession)
+            MediaNotification(context, AbstractMediaSessionService::class.java)
+                .create(state.tabs[0], mediaSession, null)
 
         assertEquals("", notification.text)
         assertEquals("A site is playing media", notification.title)

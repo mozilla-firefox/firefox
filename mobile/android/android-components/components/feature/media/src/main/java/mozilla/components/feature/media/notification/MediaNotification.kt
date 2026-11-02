@@ -23,7 +23,6 @@ import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.engine.mediasession.MediaSession as MozMediaSession
 import mozilla.components.feature.media.R
 import mozilla.components.feature.media.ext.getArtistOrUrl
-import mozilla.components.feature.media.ext.getNonPrivateIcon
 import mozilla.components.feature.media.ext.getTitleOrUrl
 import mozilla.components.feature.media.service.AbstractMediaSessionService
 import mozilla.components.support.base.ids.SharedIdsHelper
@@ -34,9 +33,9 @@ internal class MediaNotification(
     private val context: Context,
     private val cls: Class<*>,
 ) {
-    /** Creates a new [Notification] for the given [sessionState]. */
-    suspend fun create(sessionState: SessionState?, mediaSession: MediaSession): Notification {
-        val data = sessionState?.toNotificationData(context, cls) ?: NotificationData()
+    /** Creates a new [Notification] for the given [sessionState], showing [artwork] as its large icon. */
+    fun create(sessionState: SessionState?, mediaSession: MediaSession, artwork: Bitmap?): Notification {
+        val data = sessionState?.toNotificationData(context, cls, artwork) ?: NotificationData()
 
         return buildNotification(data, mediaSession, sessionState !is CustomTabSessionState)
     }
@@ -73,9 +72,10 @@ internal class MediaNotification(
     }
 }
 
-private suspend fun SessionState.toNotificationData(
+private fun SessionState.toNotificationData(
     context: Context,
     cls: Class<*>,
+    artwork: Bitmap?,
 ): NotificationData {
     val intent =
         context.packageManager.getLaunchIntentForPackage(context.packageName)?.also {
@@ -112,7 +112,7 @@ private suspend fun SessionState.toNotificationData(
         title = getTitleOrUrl(context, mediaState.metadata?.title),
         description = getArtistOrUrl(mediaState.metadata?.artist),
         icon = icon,
-        largeIcon = getNonPrivateIcon(mediaState.metadata?.getArtwork),
+        largeIcon = artwork,
         actions = mediaState.buildActions(context, cls, playPauseAction),
         contentIntent =
             PendingIntent.getActivity(
