@@ -6,11 +6,48 @@ For information about the specific data that the agent sends, see the [default-a
 
 ## Scheduled Task
 
+The agent itself is the `defaultagent` background task (`firefox --backgroundtask defaultagent do-task`). How that background task gets scheduled depends on how Firefox was installed:
+
+- Installs made with the Windows (NSIS) installer use a classic Windows Task Scheduler entry, described in this section.
+- Packaged (MSIX) installs use a WinRT background task, described under "MSIX Installs" below.
+
+### NSIS/MSI Installs
+
 The agent runs as a [Windows scheduled task](https://docs.microsoft.com/en-us/windows/win32/taskschd/about-the-task-scheduler). The scheduled task proxy executable invokes the Firefox `BackgroundTask_defaultagent` which executes all of the agent's primary functions; all of its other functions relate to managing the task. The Windows installer is responsible for creating (and the uninstaller for removing) the agent's task entry, but the code for actually doing this resides in the agent itself, and the installers simply call it using dedicated command line parameters (`register-task` and `uninstall`). The {doc}`PostUpdate </browser/installer/windows/installer/Helper>` code also calls the agent to update any properties of an existing task registration that need to be updated, or to create one during an application update if none exists.
 
 The tasks are normal entries in the Windows Task Scheduler, managed using [its Win32 API](https://docs.microsoft.com/en-us/windows/win32/api/_taskschd/). They're created in a tasks folder called "Mozilla" (or whatever the application's vendor name is), and there's one for each installation of Firefox (or other Mozilla application). The task is set to run automatically every 24 hours starting at the time it's registered (with the first run being 24 hours after that), or the nearest time after that the computer is awake. The task is configured with one action, which is to run the agent binary with the command line parameter `do-task`, the command that invokes the actual agent functionality.
 
 The default browser agent needs to run as some OS-level user, as opposed to, say, `LOCAL SERVICE`, in order to read the user's default browser setting. Therefore, the default browser agent runs as the user that ran the Firefox installer (although always without elevation, whether the installer had it or not).
+
+### MSIX Installs
+
+MSIX packages have no install-time or uninstall-time hook that could run `register-task` or `uninstall`, and Task Scheduler entries created through the Win32 API live outside the package, so Windows would not remove them when the package is uninstalled. Packaged installs instead register a [WinRT background task](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/migrate-to-windows-app-sdk/guides/background-task-migration-strategy). The package owns that registration, so Windows removes it on uninstall, and users can see and turn off background activity in Windows Settings.
+
+#### Registration
+
+`DefaultAgentScheduler.sys.mjs` runs at browser idle startup. Because registration happens from Firefox itself, no task exists until Firefox has been launched at least once after install.
+
+It registers, or deletes, the task through `TaskScheduler.sys.mjs`. On packaged installs, that module uses `TaskSchedulerWinMSIXImpl.sys.mjs`, which in turn calls the Rust `nsIWinBackgroundTaskRegistrar` component (`toolkit/components/taskscheduler/rust`). That component uses `BackgroundTaskBuilder` to register a recurring `TimeTrigger` task:
+
+- The task name is `defaultagent:do-task`.
+- The interval is 24 hours.
+- The entry point is the activatable class ID `MOZ_BACKGROUNDTASK_ACTIVATABLE_CLASS_ID`.
+
+`DefaultAgentScheduler` keeps the registration in sync with the agent's enabled state:
+
+- If the agent is disabled by policy or by the `default-browser-agent.enabled` pref, it deletes the task. It also watches that pref, so flipping it registers or deletes the task right away.
+- Otherwise, it only re-registers when the task is missing, or when the task name, interval or entry point recorded in the `default-browser-agent.msix.registered-params` pref differ from the current ones. This keeps ordinary restarts from resetting the task's schedule.
+- If a previous version registered the task under a different name, the old registration is unregistered explicitly. Windows keeps a registration until it is explicitly unregistered, so otherwise both would keep firing.
+
+#### Activation
+
+When the trigger fires, Windows loads `msixcomserver.dll` into `backgroundtaskhost.exe` and activates the background task class:
+
+1. `msixcomserver.dll` is a WinRT in-process server. Its logic, including the exported `DllGetActivationFactory` and `DllCanUnloadNow`, lives in the Rust static library `toolkit/mozapps/msixcomserver-rust`.
+2. The DLL's `IBackgroundTask::Run` reads the task name and turns its colon-separated segments into a command line. `defaultagent:do-task` becomes `--backgroundtask defaultagent do-task`. The task name is the only data a WinRT background task registration can carry, so the name encodes the command.
+3. `backgroundtaskhost.exe` runs in an AppContainer at low integrity, which does not have the access the agent needs, such as writing to the registry. So the DLL does not start Firefox directly. Instead it calls `FullTrustProcessLauncher::LaunchFullTrustProcessForCurrentAppWithArgumentsAsync`, which asks the shell to start the package's full trust process, Firefox, with those arguments. This requires the `windows.fullTrustProcess` extension in the manifest.
+
+From there, `BackgroundTask_defaultagent.sys.mjs` runs `do-task` exactly as it does for non-MSIX installs. The same COM server and activatable class can serve other background tasks: each one is a separate registration whose name encodes its own command line.
 
 ### Remote Disablement
 
