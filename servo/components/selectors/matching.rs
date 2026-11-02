@@ -1183,7 +1183,7 @@ pub(crate) fn compound_matches_featureless_host<Impl: SelectorImpl>(
 
 /// Determines whether the given element matches the given compound selector.
 #[inline]
-fn matches_compound_selector<E>(
+pub fn matches_compound_selector<E>(
     selector_iter: &mut SelectorIter<E::Impl>,
     element: E,
     context: &mut MatchingContext<E::Impl>,
