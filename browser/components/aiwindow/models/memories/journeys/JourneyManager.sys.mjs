@@ -20,12 +20,7 @@ export const MAX_NUM_URLS_PER_MEMORY = 10;
 // Max number of messages to include per conversation in the "Pick up where you left off" prompt.
 export const MAX_MESSAGES_PER_CONVERSATION_FOR_RESUME_ACTIVITY_PROMPT = 3;
 
-// Single-slot cache for resume activity suggestion.
-// This avoids re-querying additional LLM, places/chat DB calls for each suggestion request between memory generation runs.
-const _resumeActivityCache = new Map();
-
 let _savedLoadPromptDescriptor = null;
-let _savedBuildConversationDescriptor = null;
 let _savedGetConversationsByIdDescriptor = null;
 
 const lazy = {};
@@ -83,14 +78,22 @@ ChromeUtils.defineLazyGetter(lazy, "console", () =>
 /** Provides suggestions and conversations for resuming journeys. */
 export const JourneyManager = {
   /**
-   * @returns {Promise<boolean>} Whether any stored journeys are not suppressed.
+   * @returns {Promise<boolean>} Whether any stored journeys are not suppressed
+   *   and belong to a live memory.
    */
   async hasEligibleJourneys() {
     if (!this._isResumeActivityLocaleSupported()) {
       return false;
     }
-    const journeys = await lazy.JourneyStore.getAll();
-    return journeys.some(journey => !this.isJourneySuppressed(journey));
+    const memoryIds = new Set(
+      (
+        await lazy.MemoriesManager.getAllMemories({ includeSoftDeleted: false })
+      ).map(memory => memory.id)
+    );
+    return (await lazy.JourneyStore.getAll()).some(
+      journey =>
+        !this.isJourneySuppressed(journey) && memoryIds.has(journey.memory_id)
+    );
   },
 
   /**
@@ -217,24 +220,63 @@ export const JourneyManager = {
   },
 
   /**
-   * Generates conversation starter prompts for suggestions to resume journeys
-   * based on user memories and associated browsing history.
+   * Suggests stored, unsuppressed journeys to resume, for the most recent live
+   * memories whose browsing history still resolves to at least one URL.
    *
    * Only supported for English app locales; returns an empty list otherwise.
-   * Exclusion and limiting are not supported by the current implementation.
    *
-   * @param {Array<string>} excludeIds - Journey IDs to exclude. Currently unsupported.
-   * @param {number} limit - Maximum suggestions to return. Currently unsupported.
+   * @param {object} [options]
+   * @param {Set<string>} [options.excludeIds] - Journey (memory) IDs to exclude.
+   * @param {number} [options.limit] - Maximum suggestions to return.
    * @returns {Promise<Array<object>>} Array of objects containing memory and
    *   content with headline, status, and previewTabs
-   * @throws {Error} If excludeIds or limit is not undefined.
    */
-  async suggestJourneysToResume(excludeIds, limit) {
-    if (excludeIds !== undefined || limit !== undefined) {
-      throw new Error("excludeIds and limit are not yet supported");
+  async suggestJourneysToResume({
+    excludeIds = new Set(),
+    limit = MAX_NUM_MEMORIES_FOR_RESUME_ACTIVITY,
+  } = {}) {
+    if (!this._isResumeActivityLocaleSupported()) {
+      return [];
     }
 
-    return this._generateResumeActivityConversationStarters();
+    try {
+      const journeysByMemoryId = new Map(
+        (await lazy.JourneyStore.getAll())
+          .filter(journey => !this.isJourneySuppressed(journey))
+          .map(journey => [journey.memory_id, journey])
+      );
+      if (!journeysByMemoryId.size) {
+        return [];
+      }
+
+      const memories = this._selectTopJourneyMemories(
+        this._getJourneyTypeMemories(
+          await lazy.MemoriesManager.getAllMemories({
+            includeSoftDeleted: false,
+          }),
+          excludeIds
+        ).filter(memory => journeysByMemoryId.has(memory.id)),
+        limit * 2
+      );
+
+      return (await this._attachUrlsToMemories(memories))
+        .filter(({ urls }) => !!urls.length)
+        .map(({ memory, urls }) => {
+          const { headline, status } = journeysByMemoryId.get(memory.id);
+          return {
+            memory,
+            content: {
+              headline,
+              status,
+              previewTabs: urls.map(({ url, title }) => ({ url, title })),
+            },
+          };
+        })
+        .slice(0, limit);
+    } catch (e) {
+      lazy.console.warn("[resume-activity] Journey suggestions failed:", e);
+      return [];
+    }
   },
 
   /**
@@ -422,29 +464,6 @@ export const JourneyManager = {
   },
 
   /**
-   * Gets memories suitable for Resume Activity suggestions.
-   * Selects memories that are not sensitive and have associated browsing history.
-   * Sorted by creation time, then last merge time, newest first.
-   *
-   * @param {number} count - Maximum number of memories to return
-   * @returns {Promise<Array<object>>}
-   */
-  async _getMemoriesForResumeActivityConversationStarter(
-    count = MAX_NUM_MEMORIES_FOR_RESUME_ACTIVITY
-  ) {
-    let memories = await lazy.MemoriesManager.getAllMemories({
-      includeSoftDeleted: false,
-    });
-
-    // Filter out memories that don't have any associated history.
-    // The case of HISTORY as a source, but no history_source_ids,
-    // come from v1 memories, before lineage was tracked.
-    memories = this._getJourneyTypeMemories(memories);
-
-    return this._selectTopJourneyMemories(memories, count);
-  },
-
-  /**
    * Returns the most recent memories, sorted by creation time, then last merge
    * time, newest first.
    *
@@ -605,80 +624,6 @@ export const JourneyManager = {
   },
 
   /**
-   * Returns cached resume activity for the input watermark.
-   *
-   * @param {number} watermark
-   * @returns {Array<object>|Promise<Array<object>>|undefined} Cached result,
-   *   in-flight request, or undefined if not available
-   */
-  _getCachedResumeActivity(watermark) {
-    const entry = _resumeActivityCache.get(watermark);
-    if (!entry) {
-      return undefined;
-    }
-    return "result" in entry ? entry.result : entry.inFlight;
-  },
-
-  /**
-   * Removes cached suggestions for memories that have since been deleted.
-   *
-   * @param {Array<object>} result Cached resume activity suggestions
-   * @returns {Promise<Array<object>>} Suggestions for current memories
-   */
-  async _filterDeletedMemoriesFromResumeActivity(result) {
-    const currentMemoryIds = new Set(
-      (
-        await lazy.MemoriesManager.getAllMemories({ includeSoftDeleted: false })
-      ).map(memory => memory.id)
-    );
-    const filteredResult = result.filter(({ memory }) =>
-      currentMemoryIds.has(memory.id)
-    );
-    return filteredResult.length === result.length ? result : filteredResult;
-  },
-
-  /**
-   * @returns {Promise<Array<object>>} Generated resume activity suggestions
-   */
-  async _generateUncachedResumeActivityConversationStarters() {
-    try {
-      // Query for memories that would be suitable for resume activity suggestions
-      const memoriesWithPlaceHashes =
-        await this._getMemoriesForResumeActivityConversationStarter(
-          MAX_NUM_MEMORIES_FOR_RESUME_ACTIVITY
-        );
-      const inputs = await this._resolveJourneyContext(memoriesWithPlaceHashes);
-      if (!inputs.length) {
-        return [];
-      }
-
-      const journeyMetadata = await this._generateJourneyMetadata(inputs);
-      const journeyMetadataByMemoryId = new Map(
-        journeyMetadata.map(metadata => [metadata.memoryId, metadata])
-      );
-
-      const result = inputs.map(({ memory, urls }) => {
-        const metadata = journeyMetadataByMemoryId.get(memory.id);
-        if (!metadata) {
-          return null;
-        }
-        return {
-          memory,
-          content: {
-            headline: metadata.headline,
-            status: metadata.status,
-            previewTabs: urls.map(({ url, title }) => ({ url, title })),
-          },
-        };
-      });
-      return result.filter(Boolean);
-    } catch (e) {
-      lazy.console.warn("[resume-activity] Conversation starters failed:", e);
-      return [];
-    }
-  },
-
-  /**
    * Formats input context (memory summaries, browsing history, and past chats) and makes request for journey metadata inference.
    *
    * @param {Array<{memory: object, urls: Array<object>, chats: Array<object>}>} entries - Resolved journey inputs.
@@ -753,40 +698,6 @@ export const JourneyManager = {
     return descriptions.filter(Boolean);
   },
 
-  /**
-   * Generates conversation starter prompts for suggestions to resume activity based
-   * on user memories and associated browsing history.
-   *
-   * Only supported for English app locales; returns an empty list otherwise.
-   *
-   * @returns {Promise<Array<object>>} Array of objects containing memory and
-   *   content with headline, status, and previewTabs
-   */
-  async _generateResumeActivityConversationStarters() {
-    // Return an empty array for unsupported locales
-    if (!this._isResumeActivityLocaleSupported()) {
-      return [];
-    }
-
-    const watermark =
-      await lazy.MemoriesManager.getLastSessionMemoryTimestamp();
-    const cached = this._getCachedResumeActivity(watermark);
-    if (cached !== undefined) {
-      return this._filterDeletedMemoriesFromResumeActivity(await cached);
-    }
-
-    const inFlight = this._generateUncachedResumeActivityConversationStarters();
-    const entry = { inFlight };
-    _resumeActivityCache.clear();
-    _resumeActivityCache.set(watermark, entry);
-
-    const result = await inFlight;
-    if (_resumeActivityCache.get(watermark) === entry) {
-      _resumeActivityCache.set(watermark, { result });
-    }
-    return result;
-  },
-
   _isResumeActivityLocaleSupported() {
     const appLocale = Services.locale.appLocaleAsBCP47.toLowerCase();
     return RESUME_ACTIVITY_SUPPORTED_LOCALES.some(
@@ -808,24 +719,6 @@ export const JourneyManager = {
     }
   },
 
-  _setBuildConversationForTesting(fn) {
-    if (fn !== null) {
-      _savedBuildConversationDescriptor = Object.getOwnPropertyDescriptor(
-        lazy,
-        "buildConversation"
-      );
-      lazy.buildConversation = fn;
-    } else if (_savedBuildConversationDescriptor) {
-      // eslint-disable-next-line mozilla/valid-lazy
-      Object.defineProperty(
-        lazy,
-        "buildConversation",
-        _savedBuildConversationDescriptor
-      );
-      _savedBuildConversationDescriptor = null;
-    }
-  },
-
   _setGetConversationsByIdForTesting(fn) {
     if (fn !== null) {
       _savedGetConversationsByIdDescriptor = Object.getOwnPropertyDescriptor(
@@ -842,9 +735,5 @@ export const JourneyManager = {
       );
       _savedGetConversationsByIdDescriptor = null;
     }
-  },
-
-  _clearResumeActivityCacheForTesting() {
-    _resumeActivityCache.clear();
   },
 };

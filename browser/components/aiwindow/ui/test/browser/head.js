@@ -56,6 +56,9 @@ const { _setRemoteClientForTesting, _clearRemoteClientForTesting } =
 const { JourneyManager } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyManager.sys.mjs"
 );
+const { JourneyStore } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyStore.sys.mjs"
+);
 
 const {
   ResumeActivity,
@@ -531,19 +534,20 @@ async function getConversationId(browser) {
 }
 
 /**
- * Stubs resume generation for the supplied memories, cards, and URLs.
+ * Stores journeys for the supplied memories and URLs so they are suggested.
  *
  * @param {object} sb - Sinon sandbox, owned and restored by the caller
  * @param {object} options
  * @param {Array<object>} options.memories
- * @param {Array<object>} options.cards - Mocked headline-generation output
+ * @param {Array<{memoryId: string, headline: string, status: string}>} options.journeys
+ *   - Journey metadata stored for a subset of memories, cleared on cleanup
  * @param {Array<{url: string, title: string}>} options.urls - Inserted into
  *   Places and removed again on cleanup
  * @param {?string} [options.token]
  */
 async function _stubResumeActivityGenerationCore(
   sb,
-  { memories, cards, urls, token = null }
+  { memories, journeys, urls, token = null }
 ) {
   for (const [index, page] of urls.entries()) {
     await PlacesUtils.history.insert({
@@ -557,27 +561,17 @@ async function _stubResumeActivityGenerationCore(
     });
   }
 
-  const getMemoriesStub = sb
-    .stub(MemoriesManager, "getMemoriesByAttribute")
-    .resolves(memories);
-  // Keep cached results from being filtered as deleted.
   sb.stub(MemoriesManager, "getAllMemories").resolves(memories);
-  // Prevent cached results and dismissals from leaking between tests.
-  JourneyManager._clearResumeActivityCacheForTesting();
+  await JourneyStore.clear();
+  for (const journey of journeys) {
+    await JourneyStore.addOrUpdateJourney(journey);
+  }
+  const suggestSpy = sb.spy(JourneyManager, "suggestJourneysToResume");
+  // Prevent dismissals from leaking between tests.
   _clearDismissedResumeMemoriesForTesting();
   JourneyManager._setGetConversationsByIdForTesting(async () => []);
   JourneyManager._setLoadPromptForTesting(async () => ({
     prompt: "Test prompt",
-  }));
-  JourneyManager._setBuildConversationForTesting(async () => ({
-    setSystemMessage() {},
-    addUserMessage() {},
-    securityProperties: {
-      setPrivateData() {},
-      setUntrustedInput() {},
-      commit() {},
-    },
-    run: sb.stub().resolves({ finalOutput: JSON.stringify(cards) }),
   }));
   sb.stub(AuthProvider, "getToken").resolves(token);
 
@@ -587,13 +581,12 @@ async function _stubResumeActivityGenerationCore(
   Services.locale.requestedLocales = ["en-US"];
 
   return {
-    getMemoriesStub,
+    suggestSpy,
     memories,
     async cleanup() {
       JourneyManager._setGetConversationsByIdForTesting(null);
       JourneyManager._setLoadPromptForTesting(null);
-      JourneyManager._setBuildConversationForTesting(null);
-      JourneyManager._clearResumeActivityCacheForTesting();
+      await JourneyStore.clear();
       _clearDismissedResumeMemoriesForTesting();
       for (const { url } of urls) {
         await PlacesUtils.history.remove(url);
@@ -605,7 +598,7 @@ async function _stubResumeActivityGenerationCore(
 }
 
 /**
- * Stubs two candidates with one valid resume pill.
+ * Stubs two memories, only one of which has a stored journey.
  *
  * @param {object} sb - Sinon sandbox, owned and restored by the caller
  * @param {object} [options]
@@ -640,19 +633,23 @@ async function stubResumeActivityGeneration(sb, { token } = {}) {
       },
     },
   ];
-  const cards = [
-    { id: 0, headline: "Pick up your research", status: "Continue reading" },
+  const journeys = [
+    {
+      memoryId: "memory-1",
+      headline: "Pick up your research",
+      status: "Continue reading",
+    },
   ];
   return _stubResumeActivityGenerationCore(sb, {
     memories,
-    cards,
+    journeys,
     urls,
     token,
   });
 }
 
 /**
- * Stubs `memoryCount` ranked candidates with valid headlines.
+ * Stubs `memoryCount` memories, each with a stored journey.
  *
  * @param {object} sb - Sinon sandbox, owned and restored by the caller
  * @param {number} memoryCount
@@ -670,17 +667,17 @@ async function stubResumeActivityGenerationPool(sb, memoryCount) {
       history_source_ids: [PlacesUtils.history.hashURL(page.url)],
     },
   }));
-  const cards = memories.map((memory, i) => ({
-    id: i,
+  const journeys = memories.map(memory => ({
+    memoryId: memory.id,
     headline: `Pick up ${memory.memory_summary}`,
     status: "Continue",
   }));
-  return _stubResumeActivityGenerationCore(sb, { memories, cards, urls });
+  return _stubResumeActivityGenerationCore(sb, { memories, journeys, urls });
 }
 
 /**
  * Shared setup/teardown for tests that click a resume pill: enables the
- * memories prefs, stubs resume-activity generation so a real pill renders,
+ * memories prefs, stores a journey so a real pill renders,
  * opens the AI Window, and hands the caller its buttons to click. `run`
  * supplies whatever additional stubs it needs (engine build, fetchWithHistory,
  * etc.) via its own sandbox before calling this.

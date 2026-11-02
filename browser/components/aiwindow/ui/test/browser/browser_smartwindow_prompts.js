@@ -527,7 +527,7 @@ add_task(
         "Resume pill should show on the tab's initial load"
       );
 
-      resumeActivityStubs.getMemoriesStub.resetHistory();
+      resumeActivityStubs.suggestSpy.resetHistory();
       aiWindow.onCreateNewChatClick();
 
       await TestUtils.waitForCondition(() => {
@@ -541,7 +541,7 @@ add_task(
       }, "Starters should reload without a resume pill after New Chat");
 
       Assert.ok(
-        resumeActivityStubs.getMemoriesStub.notCalled,
+        resumeActivityStubs.suggestSpy.notCalled,
         "New Chat should not re-trigger resume-activity generation"
       );
     } finally {
@@ -1056,10 +1056,8 @@ add_task(
     try {
       // Existing memories should not override disabled generation prefs.
       const existingMemories = [{ id: "memory-1", memory_summary: "Test" }];
-      const getMemoriesStub = sb
-        .stub(MemoriesManager, "getMemoriesByAttribute")
-        .resolves(existingMemories);
       sb.stub(MemoriesManager, "getAllMemories").resolves(existingMemories);
+      const suggestSpy = sb.spy(JourneyManager, "suggestJourneysToResume");
       win = await openAIWindow();
       const browser = win.gBrowser.selectedBrowser;
       await getPromptButtons(browser);
@@ -1073,7 +1071,7 @@ add_task(
         "Resume pills should not render with both memories prefs off"
       );
       Assert.ok(
-        getMemoriesStub.notCalled,
+        suggestSpy.notCalled,
         "Resume starter generation should not run with both memories prefs off"
       );
     } finally {
@@ -1116,7 +1114,7 @@ add_task(
       );
 
       Assert.ok(
-        resumeActivityStubs.getMemoriesStub.notCalled,
+        resumeActivityStubs.suggestSpy.notCalled,
         "Resume generation should not run when the feature is disabled"
       );
       Assert.deepEqual(
@@ -1162,10 +1160,8 @@ add_task(
     });
 
     try {
-      const getMemoriesStub = sb
-        .stub(MemoriesManager, "getMemoriesByAttribute")
-        .resolves([]);
       sb.stub(MemoriesManager, "getAllMemories").resolves([]);
+      const suggestSpy = sb.spy(JourneyManager, "suggestJourneysToResume");
       win = await openAIWindow();
       const browser = win.gBrowser.selectedBrowser;
       await getPromptButtons(browser);
@@ -1179,7 +1175,7 @@ add_task(
         "Resume pills should not render with no existing memories, even with prefs on"
       );
       Assert.ok(
-        getMemoriesStub.notCalled,
+        suggestSpy.notCalled,
         "Resume starter generation should not run with no existing memories"
       );
     } finally {
