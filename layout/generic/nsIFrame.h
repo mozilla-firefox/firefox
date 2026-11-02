@@ -4491,6 +4491,21 @@ class nsIFrame : public nsQueryFrame {
   }
 
   /**
+   * Return a generated content root frame, i.e., a frame for a generated child
+   * of the first non-generated content ancestor.
+   */
+  const nsIFrame* GetGeneratedRootFrame() const;
+
+  /**
+   * Return a generated content root frame, i.e., a frame for a generated child
+   * of the first non-generated content ancestor.
+   */
+  nsIFrame* GetGeneratedRootFrame() {
+    return const_cast<nsIFrame*>(
+        const_cast<const nsIFrame*>(this)->GetGeneratedRootFrame());
+  }
+
+  /**
    * IsPseudoFrame returns whether a frame is a pseudo frame (eg an
    * anonymous table-row frame created for a CSS table-cell without an
    * enclosing table-row.
