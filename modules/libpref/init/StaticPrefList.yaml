@@ -8909,7 +8909,7 @@
 # Only applies to hardware WebRender, see gfx.webrender.paths.swgl.
 - name: gfx.webrender.paths
   type: bool
-  value: false
+  value: true
   mirror: always
 
 # Same as gfx.webrender.paths, for software WebRender (SWGL).
