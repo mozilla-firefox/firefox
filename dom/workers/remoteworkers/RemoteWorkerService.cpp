@@ -380,8 +380,8 @@ RemoteWorkerService::Observe(nsISupports* aSubject, const char* aTopic,
   NS_ENSURE_TRUE(parentActor, NS_ERROR_FAILURE);
 
   Endpoint<PRemoteWorkerDebuggerManagerChild> debuggerChildEp;
-  mDebuggerManagerParent =
-      RemoteWorkerDebuggerManagerParent::CreateForProcess(&debuggerChildEp);
+  mDebuggerManagerParent = RemoteWorkerDebuggerManagerParent::CreateForProcess(
+      nullptr, &debuggerChildEp);
   NS_ENSURE_TRUE(mDebuggerManagerParent, NS_ERROR_FAILURE);
 
   return InitializeOnMainThread(std::move(childEp), std::move(debuggerChildEp));

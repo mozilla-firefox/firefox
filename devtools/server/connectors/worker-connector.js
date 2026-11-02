@@ -58,6 +58,11 @@ function connectToWorker(connection, dbg, forwardingPrefix, options) {
 
           Promise.resolve()
             .then(() => {
+              // The worker runs in a less privileged process, so never perform
+              // privileged operations on its behalf.
+              if (dbg.isOutOfProcess) {
+                throw Error("rpc is not supported for out-of-process workers");
+              }
               const method = {
                 fetch: DevToolsUtils.fetch,
               }[message.method];
@@ -83,7 +88,8 @@ function connectToWorker(connection, dbg, forwardingPrefix, options) {
                   JSON.stringify({
                     type: "rpc",
                     result: null,
-                    error: reason,
+                    // Error objects serialize to "{}", so send the message.
+                    error: String(reason?.message || reason),
                     id: message.id,
                   })
                 );

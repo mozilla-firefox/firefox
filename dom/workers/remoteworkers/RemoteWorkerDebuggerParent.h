@@ -13,6 +13,8 @@
 
 namespace mozilla::dom {
 
+class ThreadsafeContentParentHandle;
+
 class RemoteWorkerDebuggerParent final : public PRemoteWorkerDebuggerParent,
                                          public nsIWorkerDebugger {
   friend class PRemoteWorkerDebuggerParent;
@@ -23,7 +25,11 @@ class RemoteWorkerDebuggerParent final : public PRemoteWorkerDebuggerParent,
  public:
   RemoteWorkerDebuggerParent(
       const RemoteWorkerDebuggerInfo& aWorkerDebuggerInfo,
-      Endpoint<PRemoteWorkerDebuggerParent>&& aParentEp);
+      Endpoint<PRemoteWorkerDebuggerParent>&& aParentEp,
+      ThreadsafeContentParentHandle* aProcess);
+
+  // The content process the worker runs in, or null for the parent process.
+  ThreadsafeContentParentHandle* Process() const { return mProcess; }
 
   mozilla::ipc::IPCResult RecvUnregister();
 
@@ -44,6 +50,7 @@ class RemoteWorkerDebuggerParent final : public PRemoteWorkerDebuggerParent,
   bool mIsInitialized{false};
   bool mIsClosed{false};
   RemoteWorkerDebuggerInfo mWorkerDebuggerInfo;
+  const RefPtr<ThreadsafeContentParentHandle> mProcess;
 
   nsTArray<uint64_t> mWindowIDs;
 

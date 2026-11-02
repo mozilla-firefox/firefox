@@ -4,6 +4,7 @@
 
 #include "RemoteWorkerDebuggerParent.h"
 
+#include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/WorkerDebuggerManager.h"
 #include "mozilla/dom/WorkerPrivate.h"
 
@@ -11,8 +12,9 @@ namespace mozilla::dom {
 
 RemoteWorkerDebuggerParent::RemoteWorkerDebuggerParent(
     const RemoteWorkerDebuggerInfo& aWorkerDebuggerInfo,
-    Endpoint<PRemoteWorkerDebuggerParent>&& aParentEp)
-    : mWorkerDebuggerInfo(std::move(aWorkerDebuggerInfo)) {
+    Endpoint<PRemoteWorkerDebuggerParent>&& aParentEp,
+    ThreadsafeContentParentHandle* aProcess)
+    : mWorkerDebuggerInfo(std::move(aWorkerDebuggerInfo)), mProcess(aProcess) {
   MOZ_ASSERT_DEBUG_OR_FUZZING(XRE_IsParentProcess() && NS_IsMainThread());
   MOZ_ASSERT_DEBUG_OR_FUZZING(aParentEp.IsValid());
   aParentEp.Bind(this);
@@ -83,6 +85,9 @@ mozilla::ipc::IPCResult RemoteWorkerDebuggerParent::RecvSetAsClosed() {
 mozilla::ipc::IPCResult RemoteWorkerDebuggerParent::RecvAddWindowID(
     const uint64_t& aWindowID) {
   MOZ_ASSERT_DEBUG_OR_FUZZING(XRE_IsParentProcess() && NS_IsMainThread());
+  if (mProcess && mWorkerDebuggerInfo.type() != WorkerKindShared) {
+    return IPC_FAIL(this, "Only SharedWorkers update their window IDs");
+  }
   mWindowIDs.AppendElement(aWindowID);
   return IPC_OK();
 }
@@ -90,6 +95,9 @@ mozilla::ipc::IPCResult RemoteWorkerDebuggerParent::RecvAddWindowID(
 mozilla::ipc::IPCResult RemoteWorkerDebuggerParent::RecvRemoveWindowID(
     const uint64_t& aWindowID) {
   MOZ_ASSERT_DEBUG_OR_FUZZING(XRE_IsParentProcess() && NS_IsMainThread());
+  if (mProcess && mWorkerDebuggerInfo.type() != WorkerKindShared) {
+    return IPC_FAIL(this, "Only SharedWorkers update their window IDs");
+  }
   mWindowIDs.RemoveElement(aWindowID);
   return IPC_OK();
 }
@@ -125,6 +133,15 @@ RemoteWorkerDebuggerParent::GetIsRemote(bool* aResult) {
   MOZ_ASSERT_DEBUG_OR_FUZZING(aResult);
 
   *aResult = true;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+RemoteWorkerDebuggerParent::GetIsOutOfProcess(bool* aResult) {
+  AssertIsOnMainThread();
+  MOZ_ASSERT_DEBUG_OR_FUZZING(aResult);
+
+  *aResult = !!mProcess;
   return NS_OK;
 }
 

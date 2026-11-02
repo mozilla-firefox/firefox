@@ -8026,7 +8026,7 @@ void ContentParent::StartRemoteWorkerService() {
   Endpoint<PRemoteWorkerDebuggerManagerChild> remoteDebuggerChildEp;
   mRemoteWorkerDebuggerManagerActor =
       RemoteWorkerDebuggerManagerParent::CreateForProcess(
-          &remoteDebuggerChildEp);
+          this, &remoteDebuggerChildEp);
   if (mRemoteWorkerServiceActor) {
     (void)SendInitRemoteWorkerService(std::move(childEp),
                                       std::move(remoteDebuggerChildEp));
