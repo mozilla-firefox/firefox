@@ -5,7 +5,6 @@ exports[`WorkersPage filters out workers from diferent domains 1`] = `
   className="app-page js-service-workers-page "
 >
   <RegistrationList
-    canDebugWorkers={true}
     registrations={
       Array [
         Object {
@@ -55,7 +54,6 @@ exports[`WorkersPage it renders a list with a single element if there's just 1 w
   className="app-page js-service-workers-page "
 >
   <RegistrationList
-    canDebugWorkers={true}
     registrations={
       Array [
         Object {
@@ -83,7 +81,6 @@ exports[`WorkersPage renders a list with multiple elements when there are multip
   className="app-page js-service-workers-page "
 >
   <RegistrationList
-    canDebugWorkers={true}
     registrations={
       Array [
         Object {

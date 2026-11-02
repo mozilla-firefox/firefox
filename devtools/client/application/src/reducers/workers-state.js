@@ -7,7 +7,6 @@
 const {
   START_WORKER,
   UNREGISTER_WORKER,
-  UPDATE_CAN_DEBUG_WORKERS,
   UPDATE_WORKERS,
 } = require("resource://devtools/client/application/src/constants.js");
 
@@ -15,7 +14,6 @@ function WorkersState() {
   return {
     // Array of all service worker registrations
     list: [],
-    canDebugWorkers: false,
   };
 }
 
@@ -38,11 +36,6 @@ function buildWorkerDataFromFronts({ registration, workers }) {
 
 function workersReducer(state = WorkersState(), action) {
   switch (action.type) {
-    case UPDATE_CAN_DEBUG_WORKERS: {
-      return Object.assign({}, state, {
-        canDebugWorkers: action.canDebugWorkers,
-      });
-    }
     case UPDATE_WORKERS: {
       const { workers } = action;
       return Object.assign({}, state, {
