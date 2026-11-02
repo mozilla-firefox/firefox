@@ -1202,10 +1202,20 @@ nsresult nsHttpChannel::ContinueOnBeforeConnect(bool aShouldUpgrade,
     } else {
       mCaps |= NS_HTTP_DISALLOW_SPDY;
     }
-    // Upgrades cannot use HTTP/3.
-    // TODO: When mUpgradeProtocolCallback is not null, we should allow HTTP/3
-    // for connect-udp.
-    mCaps |= NS_HTTP_DISALLOW_HTTP3;
+    // Upgrades cannot use HTTP/3 -- extended CONNECT can't be issued before the
+    // peer's SETTINGS are known. A MASQUE proxy is the exception: its outer hop
+    // *is* HTTP/3 (CONNECT-UDP) and the upgrade rides the inner tunnel, so
+    // disallowing h3 leaves only a TCP attempt against a QUIC-only port, which
+    // can never connect. Only Happy Eyeballs dispatches the upgrade onto that
+    // tunnel, so the exception is tied to the same pref. Keep Http3Allowed() in
+    // sync.
+    bool masqueProxy =
+        mProxyInfo &&
+        static_cast<nsProxyInfo*>(mProxyInfo.get())->IsHttp3Proxy() &&
+        StaticPrefs::network_http_happy_eyeballs_proxy_enabled();
+    if (!masqueProxy) {
+      mCaps |= NS_HTTP_DISALLOW_HTTP3;
+    }
     // NS_HTTP_STICKY_CONNECTION breaks the (non-Happy-Eyeballs) HTTPS RR
     // fallback mechanism, which restarts the transaction to fall back. Happy
     // Eyeballs instead races endpoints (honoring the HTTPS RR port, hints and
@@ -8295,7 +8305,24 @@ nsresult nsHttpChannel::BeginConnect() {
     }
 
     if (mProxyInfo) {
-      return false;
+      if (!StaticPrefs::network_http_happy_eyeballs_proxy_enabled()) {
+        return false;
+      }
+      // A SOCKS proxy resolves the origin proxy-side. Happy Eyeballs resolves
+      // and connects to mHost itself, and HappyEyeballsConnectionAttempt only
+      // rewrites mHost to the proxy host for non-SOCKS proxies -- so routing
+      // SOCKS through it resolves the origin locally and leaks DNS. Caught by
+      // test_dns_proxy_bypass.js, test_proxyDNS_leak.js and
+      // test_altsvc_proxy_dns_leak.js.
+      if (static_cast<nsProxyInfo*>(mProxyInfo.get())->IsSOCKS()) {
+        return false;
+      }
+      // Everything else goes through Happy Eyeballs: CONNECT tunnels (MASQUE,
+      // HTTPS proxy, plain-HTTP proxy issuing CONNECT for an https origin) and
+      // plain forwarding. Forwarding is safe because the connection info handed
+      // to the attempt is already proxy-based -- Origin()/OriginPort() name the
+      // proxy, not the request's origin -- so the attempt targets the proxy.
+      // test_proxy_forwarding_peer_port.js pins the connected peer port.
     }
 
     // WebSocket and WebTransport upgrades share the same rollout pref.

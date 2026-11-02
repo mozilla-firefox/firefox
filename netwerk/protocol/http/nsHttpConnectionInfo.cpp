@@ -542,6 +542,10 @@ nsresult nsHttpConnectionInfo::CreateWildCard(nsHttpConnectionInfo** outParam) {
   clone->SetAnonymous(GetAnonymous());
   clone->SetPrivate(GetPrivate());
   clone->SetFallbackConnection(GetFallbackConnection());
+  // Preserve the Happy Eyeballs flag so the wildcard conn info hashes
+  // consistently with the outer conn info (BuildHashKey encodes the NPN token
+  // otherwise), else the outer connection can't reconcile as the wildcard.
+  clone->SetHappyEyeballsEnabled(GetHappyEyeballsEnabled());
   clone.forget(outParam);
   return NS_OK;
 }
