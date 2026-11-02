@@ -503,11 +503,10 @@ void MacroAssembler::mulPtr(ImmWord rhs, Register srcDest) {
 }
 
 void MacroAssembler::mulBy3(Register src, Register dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(src != scratch);
-  as_add_d(scratch, src, src);
-  as_add_d(dest, scratch, src);
+  // tmp = (GR[rj][63:0]<<(sa2+1)) + GR[rk][63:0]
+  // GR[rd] = tmp[63:0]
+  // <https://loongson.github.io/LoongArch-Documentation/LoongArch-Vol1-EN.html#_alsl_wud>
+  as_alsl_d(dest, src, src, 0);
 }
 
 void MacroAssembler::mul32(Register rhs, Register srcDest) {
