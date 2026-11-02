@@ -10,7 +10,13 @@ import ipdl.ast
 import ipdl.builtin
 from ipdl.cxx.ast import *
 from ipdl.cxx.code import *
-from ipdl.type import ActorType, TypeVisitor, UnionType, builtinHeaderIncludes
+from ipdl.type import (
+    ActorType,
+    TypeVisitor,
+    UnionType,
+    builtinHeaderIncludes,
+    hasTaintedBaseType,
+)
 from ipdl.util import hash_str
 
 # -----------------------------------------------------------------------------
@@ -1120,21 +1126,38 @@ class MessageDecl(ipdl.ast.MessageDecl):
     def actorDecl(self):
         return self.params[0]
 
+    def isParamTainted(self, d, side):
+        """Whether the in-param |d| received by |side| should be wrapped in
+        Tainted<>: either the whole message is [Tainted], or |d|'s type is a
+        [Tainted] imported type (possibly wrapped) and |side| may receive it
+        from a less trusted process."""
+        if "NoTaint" in d.attributes:
+            return False
+        if self.decl.type.tainted:
+            return True
+        return hasTaintedBaseType(
+            d.ipdltype
+        ) and self.protocolType.mayReceiveFromLessTrusted(side)
+
     def makeCxxParams(
         self, paramsems="in", returnsems="out", side=None, implicit=True, direction=None
     ):
         """Return a list of C++ decls per the spec'd configuration.
         |params| and |returns| is the C++ semantics of those: 'in', 'out', or None."""
 
-        def makeDecl(d, sems):
-            if (
-                self.decl.type.tainted
-                and "NoTaint" not in d.attributes
-                and direction == "recv"
-            ):
-                # Tainted types are passed by-value, allowing the receiver to move them if desired.
+        def makeDecl(d, sems, tainted=False):
+            if tainted:
+                # Tainted types are passed by rvalue reference to recv methods,
+                # allowing the receiver to move them if desired. Alloc methods
+                # get an lvalue reference, as the value is later moved into the
+                # constructor's recv method.
                 assert sems != "out"
-                return Decl(Type("Tainted", T=d.bareType(side)), d.name)
+                t = Type("Tainted", T=d.bareType(side))
+                if sems == "move":
+                    t.rvalref = True
+                else:
+                    t.ref = True
+                return Decl(t, d.name)
 
             if sems == "in":
                 t = d.inType(side, direction)
@@ -1178,7 +1201,14 @@ class MessageDecl(ipdl.ast.MessageDecl):
 
         cxxparams = []
         if paramsems is not None:
-            cxxparams.extend([makeDecl(d, paramsems) for d in self.params])
+            cxxparams.extend([
+                makeDecl(
+                    d,
+                    paramsems,
+                    tainted=direction == "recv" and self.isParamTainted(d, side),
+                )
+                for d in self.params
+            ])
 
         if returnsems == "promise" and self.returns:
             pass
@@ -1198,7 +1228,12 @@ class MessageDecl(ipdl.ast.MessageDecl):
         return cxxparams
 
     def makeCxxArgs(
-        self, paramsems="in", retsems="out", retcallsems="out", implicit=True
+        self,
+        paramsems="in",
+        retsems="out",
+        retcallsems="out",
+        implicit=True,
+        side=None,
     ):
         assert not retcallsems or retsems  # retcallsems => returnsems
         cxxargs = []
@@ -1208,11 +1243,16 @@ class MessageDecl(ipdl.ast.MessageDecl):
             # implementors take these parameters as T*, and
             # std::move(RefPtr<T>) doesn't coerce to T*.
             # We also don't move NotNull, as it has no move constructor.
+            # Tainted<> params are taken by rvalue reference, so they are always
+            # moved.
             cxxargs.extend([
                 (
                     p.var()
-                    if p.ipdltype.isRefcounted()
-                    or (p.ipdltype.isIPDL() and p.ipdltype.isNotNull())
+                    if not (side and self.isParamTainted(p, side))
+                    and (
+                        p.ipdltype.isRefcounted()
+                        or (p.ipdltype.isIPDL() and p.ipdltype.isNotNull())
+                    )
                     else ExprMove(p.var())
                 )
                 for p in self.params
@@ -1409,6 +1449,7 @@ class _DecorateWithCxxStuff(ipdl.ast.Visitor):
     def __init__(self):
         self.visitedTus = set()
         self.protocolName = None
+        self.protocolType = None
 
     def visitTranslationUnit(self, tu):
         if tu not in self.visitedTus:
@@ -1423,6 +1464,7 @@ class _DecorateWithCxxStuff(ipdl.ast.Visitor):
 
     def visitProtocol(self, pro):
         self.protocolName = pro.name
+        self.protocolType = pro.decl.type
         Protocol.upgrade(pro)
         return ipdl.ast.Visitor.visitProtocol(self, pro)
 
@@ -1454,6 +1496,7 @@ class _DecorateWithCxxStuff(ipdl.ast.Visitor):
 
     def visitMessageDecl(self, md):
         md.namespace = self.protocolName
+        md.protocolType = self.protocolType
         md.params = [param.accept(self) for param in md.inParams]
         md.returns = [ret.accept(self) for ret in md.outParams]
         MessageDecl.upgrade(md)
@@ -4927,7 +4970,7 @@ class _GenerateProtocolActorCode(ipdl.ast.Visitor):
             start = 1
 
         def maybeTainted(p, side):
-            if md.decl.type.tainted and "NoTaint" not in p.attributes:
+            if md.isParamTainted(p, side):
                 return Type("Tainted", T=p.bareType(side))
             return p.bareType(side)
 
@@ -5229,6 +5272,7 @@ class _GenerateProtocolActorCode(ipdl.ast.Visitor):
                     paramsems="move",
                     retsems=retsems,
                     retcallsems="out",
+                    side=self.side,
                 ),
             ),
         )

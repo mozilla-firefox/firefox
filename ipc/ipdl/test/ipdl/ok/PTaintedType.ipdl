@@ -1,0 +1,11 @@
+[Tainted] using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
+[RefCounted, Tainted] using class nsITaintedRef from "nsITaintedRef.h";
+
+[ChildProc=any]
+protocol PTaintedType {
+parent:
+    async Foo(TaintedThing a, nullable nsITaintedRef b, nsITaintedRef? c,
+              TaintedThing[] d, [NoTaint=passback] TaintedThing e, int f);
+child:
+    async Bar(TaintedThing a);
+};

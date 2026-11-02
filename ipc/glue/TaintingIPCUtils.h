@@ -21,8 +21,12 @@ struct ParamTraits<mozilla::Tainted<T>> {
     WriteParam(aWriter, std::move(aParam.mValue));
   }
 
-  static bool Read(MessageReader* aReader, mozilla::Tainted<T>* aResult) {
-    return ReadParam(aReader, &(aResult->mValue));
+  static ReadResult<mozilla::Tainted<T>> Read(MessageReader* aReader) {
+    auto value = ReadParam<T>(aReader);
+    if (!value) {
+      return {};
+    }
+    return mozilla::Tainted<T>(std::move(*value));
   }
 };
 

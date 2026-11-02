@@ -1,0 +1,9 @@
+[Tainted] using class mozilla::TaintedThing from "mozilla/TaintedThing.h";
+
+[ParentProc=GPU, ChildProc=Parent]
+protocol PTaintedTypeReversed {
+parent:
+    async Foo(TaintedThing a);
+child:
+    async Bar(TaintedThing a);
+};

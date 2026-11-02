@@ -273,8 +273,16 @@ understood by IPDL:
 ``[MoveOnly]``   The type ``T`` is treated as uncopyable.  When used as a
                  parameter in a message or an IPDL struct/union, it is as an
                  r-value ``T&&``.
+``[Tainted]``    Message parameters of type ``T`` (including ``T?``, ``T[]``
+                 and ``nullable T``) received by the parent process from
+                 another process are wrapped in ``Tainted<>`` and must be
+                 validated before use.  See
+                 [Declaring IPDL Messages](#declaring-ipdl-messages).
 ================ ==============================================================
 ```
+
+Attributes on a type must be the same in every `using` statement that
+imports it.
 
 Finally, note that `using`, `using class` and `using struct` are all
 valid syntax. The `class` and `struct` keywords are optional.
@@ -513,6 +521,30 @@ adjacent in the message queue.
 parameter security. The values of tainted parameters cannot be used until you
 vouch for their safety. They are discussed in [Actors and Messages in C++](#actors-and-messages-in-c).
 
+Tainting can also be applied to individual types instead of whole messages,
+by importing them with `[Tainted] using ...`. Any parameter of such a type,
+in any message, is then tainted on each actor side that may run in the parent
+process while the other side may run in a different process. This is
+determined from the `[ParentProc]` and `[ChildProc]` attributes of the
+protocol's toplevel protocols, so for `[ParentProc=GPU, ChildProc=Parent]`
+the child side is tainted instead of the parent side.
+
+Individual parameters can opt out of tainting with `[NoTaint=passback]` or
+`[NoTaint=allvalid]`, where the value documents why validation is not needed:
+`passback` means the value is only passed on to some other code that does its
+own validation, and `allvalid` means every possible value is valid. `NoTaint`
+is only allowed when the message is `[Tainted]` or the parameter's type is.
+
+```cpp
+[Tainted, RefCounted] using class nsIFoo from "nsIFoo.h";
+
+protocol PMyProtocol {
+parent:
+    // aFoo is received as Tainted<RefPtr<nsIFoo>>, aOther as RefPtr<nsIFoo>.
+    async Msg(nullable nsIFoo aFoo, [NoTaint=passback] nullable nsIFoo aOther);
+};
+```
+
 The `Nested` annotations are deeply related to the message's blocking policy
 that follows it and which was briefly discussed in [Defining Actors](#defining-actors). See
 [Nested messages](#nested-messages) for details.
@@ -693,7 +725,12 @@ for use in IPDL files:
 ``[Tainted]``                 Used to indicate that a message's handler should
                               receive parameters that it is required to
                               manually validate.  Parameters of type ``T``
-                              become ``Tainted<T>`` in C++.
+                              become ``Tainted<T>`` in C++.  When applied to
+                              an imported C++ type, parameters of that type
+                              received by the parent process from another
+                              process are tainted.
+``[NoTaint=...]``             Excludes a message parameter from tainting.
+                              The value is ``passback`` or ``allvalid``.
 ``[Compress]``                Indicates repeated messages of this type will
                               consolidate.  When two messages of this type are
                               sent and end up side-by-side in the message queue
