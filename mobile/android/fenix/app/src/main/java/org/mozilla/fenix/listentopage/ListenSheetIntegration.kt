@@ -25,15 +25,14 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.isVisible
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.abs
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.EngineView
@@ -63,9 +62,8 @@ private val ListenState.isArticleReady: Boolean
  * @param listenStore Used to tell whether there is an article to play.
  * @param engineView Used to tell how far the article is scrolled.
  * @param isAddressBarAtBottom Whether the address bar is at the bottom of the screen.
- * @param isEnabled Whether the user has the feature turned on. Nothing is shown unless it is
+ * @param isEnabled Whether the user has the feature turned on. The listen button is only shown when it is
  *   [ListenEnabledState.Enabled].
- * @param scope Observes [isEnabled] between [start] and [stop].
  * @param onListenClicked Invoked when the user asks to listen to the article.
  * @param onCustomizeReaderViewClicked Invoked when the user asks for the reader view appearance controls.
  */
@@ -75,33 +73,16 @@ class ListenSheetIntegration(
     private val listenStore: ListenStore,
     private val engineView: EngineView,
     private val isAddressBarAtBottom: Boolean,
-    private val isEnabled: Flow<ListenEnabledState>,
-    private val scope: CoroutineScope,
+    private val isEnabled: StateFlow<ListenEnabledState>,
     private val onListenClicked: () -> Unit,
     private val onCustomizeReaderViewClicked: () -> Unit,
 ) : LifecycleAwareFeature {
 
     private var listenFeature: ComposeView? = null
-    private var isEnabledJob: Job? = null
 
     override fun start() {
-        isEnabledJob?.cancel()
-        isEnabledJob = scope.launch {
-            isEnabled.collect { enabled ->
-                if (enabled == ListenEnabledState.Enabled) show() else hide()
-            }
-        }
-    }
-
-    override fun stop() {
-        isEnabledJob?.cancel()
-        isEnabledJob = null
-        hide()
-    }
-
-    private fun show() {
         listenFeature?.let {
-            // Set again because hide() disposes the composition while the view keeps its place in the container.
+            // Set again because stop() disposes the composition while the view keeps its place in the container.
             it.setContent { ListenFeatureHost() }
             it.isVisible = true
             return
@@ -130,7 +111,7 @@ class ListenSheetIntegration(
         }
     }
 
-    private fun hide() {
+    override fun stop() {
         listenFeature?.apply {
             isVisible = false
             // The view stays so that a snackbar anchored to it still resolves.
@@ -149,6 +130,7 @@ class ListenSheetIntegration(
         val selectedTabIdState = browserStore.observeAsComposableState { it.selectedTabId }
         val readyTabIdState = listenStore.observeAsComposableState { if (it.isArticleReady) it.tabId else null }
         val listenSheetUiState by listenStore.observeAsComposableState { it.toListenSheetUiState() }
+        val isListeningEnabled by isEnabled.collectAsStateWithLifecycle()
         val articleProgressState = listenStore.observeAsComposableState { it.articleProgress }
         val shouldDisplayPlayer by remember {
             derivedStateOf {
@@ -159,6 +141,7 @@ class ListenSheetIntegration(
         FirefoxTheme {
             ListenFeatureContent(
                 shouldDisplayPlayer = shouldDisplayPlayer,
+                isListeningEnabled = isListeningEnabled == ListenEnabledState.Enabled,
                 uiState = listenSheetUiState,
                 articleProgressState = articleProgressState,
                 scrollPosition = engineView.verticalScrollPosition,
@@ -175,6 +158,7 @@ class ListenSheetIntegration(
  * the article audio is ready for playback.
  *
  * @param shouldDisplayPlayer Whether the audio of the article in the selected tab is ready for playback.
+ * @param isListeningEnabled Whether the reader mode panel shows the button that reads the article out loud.
  * @param uiState Contains title, site and playback state needed for media player
  * @param articleProgressState Contains position and duration needed to show elapsed time, total time and progress in
  *   player.
@@ -183,9 +167,11 @@ class ListenSheetIntegration(
  * @param onListenClicked Invoked when the user asks to listen to the article.
  * @param onCustomizeReaderViewClicked Invoked when the user asks for the reader view appearance controls.
  */
+@Suppress("LongParameterList")
 @Composable
 fun ListenFeatureContent(
     shouldDisplayPlayer: Boolean,
+    isListeningEnabled: Boolean,
     uiState: ListenSheetUiState,
     articleProgressState: State<ArticleProgress>,
     scrollPosition: Flow<Float>,
@@ -210,6 +196,7 @@ fun ListenFeatureContent(
             ListenSheetContent(uiState, articleProgressState, scrollPosition, onAction)
         } else {
             ReaderModePanel(
+                isListeningEnabled = isListeningEnabled,
                 onListenClicked = onListenClicked,
                 onCustomizeReaderViewClicked = onCustomizeReaderViewClicked,
             )

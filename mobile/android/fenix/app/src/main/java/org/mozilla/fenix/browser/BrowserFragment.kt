@@ -360,7 +360,6 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                     engineView = binding.engineView,
                     isAddressBarAtBottom = settings.toolbarPosition == ToolbarPosition.BOTTOM,
                     isEnabled = listenSettings.enabled,
-                    scope = viewLifecycleOwner.lifecycleScope,
                     onListenClicked = {
                         context.components.core.store.state.selectedTab?.let { tab ->
                             context.components.listenToPage.store.dispatch(
