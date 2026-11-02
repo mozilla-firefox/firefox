@@ -42,6 +42,29 @@ export function EngineSynchronizer(service) {
 }
 
 EngineSynchronizer.prototype = {
+  /**
+   * A meta/global we create must list engines that didn't run this sync.
+   */
+  async _publishUnsyncedEngines(meta) {
+    if (
+      !meta.isNew ||
+      !Weave.perDeviceEngineChoices ||
+      this.service.lastAccountChoices()
+    ) {
+      return;
+    }
+    let { clientsEngine, engineManager } = this.service;
+    for (let engine of [clientsEngine, ...engineManager.getEnabled()]) {
+      if (!meta.payload.engines?.[engine.name]) {
+        try {
+          await engine._resolveEngineMetaPerDevice(meta);
+        } catch (ex) {
+          this._log.warn(`Unable to publish ${engine.name}`, ex);
+        }
+      }
+    }
+  },
+
   async sync(engineNamesToSync, why) {
     let fastSync = why && why == "sleep";
     let startTime = Date.now();
@@ -197,14 +220,24 @@ EngineSynchronizer.prototype = {
       if (meta.isNew || meta.changed) {
         this._log.info("meta/global changed locally: reuploading.");
         try {
+          await this._publishUnsyncedEngines(meta);
           await this.service.uploadMetaGlobal(meta);
           delete meta.isNew;
           delete meta.changed;
         } catch (error) {
           this._log.error(
-            "Unable to upload meta/global. Leaving marked as new."
+            "Unable to upload meta/global. Leaving marked as new.",
+            error
           );
         }
+      }
+
+      // Upload after meta/global, which wins when both have an entry.
+      try {
+        await this.service.engineSyncIDs.maybeUpload();
+      } catch (error) {
+        // Missing entries are retried with local sync IDs on the next sync.
+        this._log.warn("Unable to upload the sync ID registry.", error);
       }
 
       if (!fastSync) {
@@ -272,6 +305,7 @@ EngineSynchronizer.prototype = {
 
     if (Weave.perDeviceEngineChoices) {
       this.service.maybeUpdateEngineState(meta);
+      this.service.rememberAccountChoices(meta);
       this._log.debug(
         "Per-device sync enabled; not updating enabled state from meta/global."
       );

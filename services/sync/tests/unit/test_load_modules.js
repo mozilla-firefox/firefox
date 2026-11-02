@@ -23,6 +23,7 @@ const modules = [
   "service.sys.mjs",
   "stages/declined.sys.mjs",
   "stages/enginesync.sys.mjs",
+  "stages/syncids.sys.mjs",
   "status.sys.mjs",
   "sync_auth.sys.mjs",
   "util.sys.mjs",
