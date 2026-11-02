@@ -50,6 +50,18 @@ interface nsIURIFixupInfo : nsISupports
   attribute AString keywordAsSent;
 
   /**
+   * The partner code used in the keyword search submission;
+   * empty string if no keyword search was done or there is no partner code.
+   */
+  attribute AString keywordPartnerCode;
+
+  /**
+   * The telemetry id of the keyword search submission;
+   * empty string if no keyword search was done.
+   */
+  attribute AString keywordTelemetryId;
+
+  /**
    * Whether there was no protocol at all and we had to add one in the first place.
    */
   attribute nsILoadInfo_SchemelessInputType schemelessInput;

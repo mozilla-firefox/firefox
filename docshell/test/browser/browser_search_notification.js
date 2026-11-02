@@ -43,7 +43,7 @@ add_task(async function () {
 
   let [subject, data] = await TestUtils.topicObserved("keyword-search");
 
-  let engineId = subject.QueryInterface(Ci.nsISupportsString).data;
+  let engineId = subject.QueryInterface(Ci.nsIURIFixupInfo).keywordProviderId;
 
   Assert.equal(engineId, defaultEngine.id, "Should be the search engine id");
   Assert.equal(data, "firefox", "Notification data is search term.");

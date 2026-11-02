@@ -518,7 +518,7 @@ URIFixup.prototype = {
     if (engine.supportsResponseType("application/x-moz-keywordsearch")) {
       responseType = "application/x-moz-keywordsearch";
     }
-    let submission = engine.getSubmission(keyword, responseType);
+    let submission = engine.getSubmission(keyword, responseType, "urlbar");
     if (
       !submission ||
       // For security reasons (avoid redirecting to file, data, or other unsafe
@@ -537,6 +537,8 @@ URIFixup.prototype = {
 
     info.keywordProviderId = engine.id;
     info.keywordAsSent = keyword;
+    info.keywordPartnerCode = submission.partnerCode;
+    info.keywordTelemetryId = submission.telemetryId;
     info.preferredURI = submission.uri;
     return info;
   },
@@ -688,6 +690,20 @@ URIFixupInfo.prototype = {
   },
   get keywordAsSent() {
     return this._keywordAsSent || "";
+  },
+
+  set keywordPartnerCode(code) {
+    this._keywordPartnerCode = code;
+  },
+  get keywordPartnerCode() {
+    return this._keywordPartnerCode || "";
+  },
+
+  set keywordTelemetryId(id) {
+    this._keywordTelemetryId = id;
+  },
+  get keywordTelemetryId() {
+    return this._keywordTelemetryId || "";
   },
 
   set schemelessInput(changed) {
@@ -866,6 +882,8 @@ function tryKeywordFixupForURIInfo(uriString, fixupInfo, isPrivateContext) {
     );
     fixupInfo.keywordProviderId = keywordInfo.keywordProviderId;
     fixupInfo.keywordAsSent = keywordInfo.keywordAsSent;
+    fixupInfo.keywordPartnerCode = keywordInfo.keywordPartnerCode;
+    fixupInfo.keywordTelemetryId = keywordInfo.keywordTelemetryId;
     fixupInfo.preferredURI = keywordInfo.preferredURI;
     return true;
   } catch (ex) {}

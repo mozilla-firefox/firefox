@@ -186,6 +186,9 @@ support-files = [
   "slow_loading_page_with_ads.sjs",
 ]
 
+["browser_search_telemetry_keyword_fixup.js"]
+support-files = ["searchTelemetry.html"]
+
 ["browser_search_telemetry_post_engine.js"]
 support-files = ["searchTelemetryAd_post_result.sjs"]
 
