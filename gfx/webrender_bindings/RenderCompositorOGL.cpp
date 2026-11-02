@@ -69,7 +69,7 @@ bool RenderCompositorOGL::BeginFrame() {
 RenderedFrameId RenderCompositorOGL::EndFrame(
     const nsTArray<DeviceIntRect>& aDirtyRects) {
   RenderedFrameId frameId = GetNextRenderFrameId();
-  if (UsePartialPresent() && aDirtyRects.Length() > 0) {
+  if (UseWindowPartialPresent() && aDirtyRects.Length() > 0) {
     gfx::IntRegion bufferInvalid;
     const auto bufferSize = GetBufferSize();
     for (const DeviceIntRect& rect : aDirtyRects) {
@@ -105,13 +105,11 @@ uint32_t RenderCompositorOGL::GetMaxPartialPresentRects() {
 
 bool RenderCompositorOGL::RequestFullRender() { return false; }
 
-bool RenderCompositorOGL::UsePartialPresent() {
+bool RenderCompositorOGL::UseWindowPartialPresent() {
   return gfx::gfxVars::WebRenderMaxPartialPresentRects() > 0;
 }
 
-bool RenderCompositorOGL::ShouldDrawPreviousPartialPresentRegions() {
-  return true;
-}
+bool RenderCompositorOGL::ShouldUseBufferAge() { return true; }
 
 size_t RenderCompositorOGL::GetBufferAge() const {
   if (!StaticPrefs::

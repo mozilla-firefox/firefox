@@ -175,9 +175,9 @@ void wr_compositor_get_window_properties(void* aCompositor,
   compositor->GetWindowProperties(aProperties);
 }
 
-void wr_compositor_get_swapchain_mode(
-    void* aCompositor, bool* aUsesOsLayers, size_t* aMaxPartialPresentRects,
-    bool* aDrawPreviousPartialPresentRegions) {
+void wr_compositor_get_swapchain_mode(void* aCompositor, bool* aUsesOsLayers,
+                                      size_t* aMaxPartialPresentRects,
+                                      bool* aUsesBufferAge) {
   RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
   *aUsesOsLayers = compositor->UseLayerCompositor();
   // GetMaxPartialPresentRects() describes the window's own swapchain. OS layer
@@ -185,8 +185,7 @@ void wr_compositor_get_swapchain_mode(
   // RenderCompositorLayerNative::BindSwapChain).
   *aMaxPartialPresentRects =
       *aUsesOsLayers ? 1 : compositor->GetMaxPartialPresentRects();
-  *aDrawPreviousPartialPresentRegions =
-      compositor->ShouldDrawPreviousPartialPresentRegions();
+  *aUsesBufferAge = compositor->ShouldUseBufferAge();
 }
 
 void wr_compositor_unbind(void* aCompositor) {

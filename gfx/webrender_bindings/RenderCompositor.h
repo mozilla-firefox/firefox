@@ -212,12 +212,17 @@ class RenderCompositor {
   virtual void GetWindowProperties(WindowProperties* aProperties);
 
   // Interface for partial present
-  virtual bool UsePartialPresent() { return false; }
-  virtual bool RequestFullRender() { return false; }
+  // The maximum number of dirty rects WebRender may pass when presenting the
+  // window's own swapchain. Zero disables partial present.
   virtual uint32_t GetMaxPartialPresentRects() { return 0; }
-  virtual bool ShouldDrawPreviousPartialPresentRegions() { return false; }
+  // Whether the window's own swapchain is partially presented.
+  virtual bool UseWindowPartialPresent() { return false; }
+  virtual bool RequestFullRender() { return false; }
+  // Whether WebRender must also redraw the regions presented since the window's
+  // back buffer was last used, using GetBufferAge().
+  virtual bool ShouldUseBufferAge() { return false; }
   // Returns the age of the current backbuffer., This should be used, if
-  // ShouldDrawPreviousPartialPresentRegions() returns true, to determine the
+  // ShouldUseBufferAge() returns true, to determine the
   // region which must be rendered in addition to the current frame's dirty
   // rect.
   virtual size_t GetBufferAge() const { return 0; }

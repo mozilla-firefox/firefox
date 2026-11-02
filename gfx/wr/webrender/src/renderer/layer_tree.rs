@@ -336,14 +336,14 @@ impl LayerTree {
     pub fn bind_layer(&mut self, config: &mut CompositorConfig, index: usize, dirty_rects: &[DeviceIntRect]) {
         match config {
             CompositorConfig::Layer { ref mut compositor } => self.bind_swapchain(&mut **compositor, index, dirty_rects),
-            CompositorConfig::Draw { partial_present: Some(ref mut partial_present), .. } => {
+            CompositorConfig::Draw { buffer_damage: Some(ref mut buffer_damage), .. } => {
                 // eglSetDamageRegion must be called exactly once per frame, immediately
                 // before rendering to the main framebuffer (bug 1685276).
                 if !dirty_rects.is_empty() {
-                    partial_present.set_buffer_damage_region(dirty_rects);
+                    buffer_damage.set_buffer_damage_region(dirty_rects);
                 }
             }
-            CompositorConfig::Draw { partial_present: None, .. } | CompositorConfig::Native { .. } => {}
+            CompositorConfig::Draw { buffer_damage: None, .. } | CompositorConfig::Native { .. } => {}
         }
     }
 

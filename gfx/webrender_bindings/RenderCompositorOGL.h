@@ -30,10 +30,10 @@ class RenderCompositorOGL : public RenderCompositor {
   LayoutDeviceIntSize GetBufferSize() override;
 
   // Interface for partial present
-  bool UsePartialPresent() override;
+  bool UseWindowPartialPresent() override;
   bool RequestFullRender() override;
   uint32_t GetMaxPartialPresentRects() override;
-  bool ShouldDrawPreviousPartialPresentRegions() override;
+  bool ShouldUseBufferAge() override;
   size_t GetBufferAge() const override;
 
  protected:

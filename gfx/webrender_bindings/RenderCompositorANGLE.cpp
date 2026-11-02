@@ -171,7 +171,7 @@ bool RenderCompositorANGLE::Initialize(nsACString& aError) {
     return false;
   }
 
-  InitializeUsePartialPresent();
+  InitializeUseWindowPartialPresent();
 
   return true;
 }
@@ -468,7 +468,7 @@ RenderedFrameId RenderCompositorANGLE::EndFrame(
     const UINT flags = 0;
 
     const LayoutDeviceIntSize& bufferSize = mBufferSize.ref();
-    if (mUsePartialPresent && mSwapChain1) {
+    if (mUseWindowPartialPresent && mSwapChain1) {
       // Clear full render flag.
       mFullRender = false;
       // If there is no diry rect, we skip SwapChain present.
@@ -597,7 +597,7 @@ bool RenderCompositorANGLE::ResizeBufferIfNeeded() {
     return false;
   }
 
-  if (mUsePartialPresent) {
+  if (mUseWindowPartialPresent) {
     mFullRender = true;
   }
   return true;
@@ -941,21 +941,23 @@ bool RenderCompositorANGLE::RecreateNonNativeCompositorSwapChain() {
   return ResizeBufferIfNeeded();
 }
 
-void RenderCompositorANGLE::InitializeUsePartialPresent() {
+void RenderCompositorANGLE::InitializeUseWindowPartialPresent() {
   // Even when mSwapChain1 is null, we could enable WR partial present, since
   // when mSwapChain1 is null, SwapChain is blit model swap chain with one
   // buffer.
-  mUsePartialPresent = !UseLayerCompositor() &&
-                       !mWidget->AsWindows()->HasFxrOutputHandler() &&
-                       gfx::gfxVars::WebRenderMaxPartialPresentRects() > 0;
+  mUseWindowPartialPresent =
+      !UseLayerCompositor() && !mWidget->AsWindows()->HasFxrOutputHandler() &&
+      gfx::gfxVars::WebRenderMaxPartialPresentRects() > 0;
 }
 
-bool RenderCompositorANGLE::UsePartialPresent() { return mUsePartialPresent; }
+bool RenderCompositorANGLE::UseWindowPartialPresent() {
+  return mUseWindowPartialPresent;
+}
 
 bool RenderCompositorANGLE::RequestFullRender() { return mFullRender; }
 
 uint32_t RenderCompositorANGLE::GetMaxPartialPresentRects() {
-  if (!mUsePartialPresent) {
+  if (!mUseWindowPartialPresent) {
     return 0;
   }
   return gfx::gfxVars::WebRenderMaxPartialPresentRects();

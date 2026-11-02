@@ -1533,7 +1533,7 @@ extern "C" {
         compositor: *mut c_void,
         uses_os_layers: &mut bool,
         max_partial_present_rects: &mut usize,
-        draw_previous_partial_present_regions: &mut bool,
+        uses_buffer_age: &mut bool,
     );
 }
 
@@ -1723,13 +1723,13 @@ impl Compositor for WrCompositor {
     fn get_swapchain_mode(&self) -> SwapchainMode {
         let mut uses_os_layers = false;
         let mut max_partial_present_rects = 0;
-        let mut draw_previous_partial_present_regions = false;
+        let mut uses_buffer_age = false;
         unsafe {
             wr_compositor_get_swapchain_mode(
                 self.0,
                 &mut uses_os_layers,
                 &mut max_partial_present_rects,
-                &mut draw_previous_partial_present_regions,
+                &mut uses_buffer_age,
             );
         }
         if uses_os_layers {
@@ -1739,7 +1739,7 @@ impl Compositor for WrCompositor {
         } else {
             SwapchainMode::WindowFramebuffer {
                 max_partial_present_rects,
-                draw_previous_partial_present_regions,
+                uses_buffer_age,
             }
         }
     }

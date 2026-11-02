@@ -316,7 +316,7 @@ LayoutDeviceIntSize RenderCompositorEGL::GetBufferSize() {
   return mWidget->GetClientSize();
 }
 
-bool RenderCompositorEGL::UsePartialPresent() {
+bool RenderCompositorEGL::UseWindowPartialPresent() {
   return gfx::gfxVars::WebRenderMaxPartialPresentRects() > 0;
 }
 
@@ -326,9 +326,7 @@ uint32_t RenderCompositorEGL::GetMaxPartialPresentRects() {
   return gfx::gfxVars::WebRenderMaxPartialPresentRects();
 }
 
-bool RenderCompositorEGL::ShouldDrawPreviousPartialPresentRegions() {
-  return true;
-}
+bool RenderCompositorEGL::ShouldUseBufferAge() { return true; }
 
 size_t RenderCompositorEGL::GetBufferAge() const {
   if (!StaticPrefs::

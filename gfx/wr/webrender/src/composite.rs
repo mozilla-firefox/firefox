@@ -326,13 +326,14 @@ pub enum CompositorConfig {
         /// then the operating system supports a form of 'partial present' where
         /// only dirty regions of the framebuffer need to be updated.
         max_partial_present_rects: usize,
-        /// If this is true, WR must draw the previous frames' dirty regions when
-        /// doing a partial present. This is used for EGL which requires the front
-        /// buffer to always be fully consistent.
-        draw_previous_partial_present_regions: bool,
-        /// A client provided interface to a compositor handling partial present.
+        /// If this is true, the back buffer can be several frames old, and WR must
+        /// also draw the previous frames' dirty regions when doing a partial present,
+        /// using the buffer age passed to `Renderer::render`. This is used for EGL
+        /// which requires the front buffer to always be fully consistent.
+        uses_buffer_age: bool,
+        /// A client provided interface that receives the region WR renders to.
         /// Required if webrender must query the backbuffer's age.
-        partial_present: Option<Box<dyn PartialPresentCompositor>>,
+        buffer_damage: Option<Box<dyn BufferDamageCompositor>>,
     },
     Layer {
         /// Composite the frame into swapchain surfaces owned by the embedder.
@@ -361,13 +362,13 @@ impl CompositorConfig {
         }
     }
 
-    pub fn partial_present(&mut self) -> Option<&mut Box<dyn PartialPresentCompositor>> {
+    pub fn buffer_damage(&mut self) -> Option<&mut Box<dyn BufferDamageCompositor>> {
         match self {
             CompositorConfig::Native { .. } => {
                 None
             }
-            CompositorConfig::Draw { ref mut partial_present, .. } => {
-                partial_present.as_mut()
+            CompositorConfig::Draw { ref mut buffer_damage, .. } => {
+                buffer_damage.as_mut()
             }
             CompositorConfig::Layer { .. } => {
                 None
@@ -381,8 +382,8 @@ impl Default for CompositorConfig {
     fn default() -> Self {
         CompositorConfig::Draw {
             max_partial_present_rects: 0,
-            draw_previous_partial_present_regions: false,
-            partial_present: None,
+            uses_buffer_age: false,
+            buffer_damage: None,
         }
     }
 }
@@ -398,8 +399,8 @@ pub enum CompositorKind {
     Draw {
         /// Partial present support.
         max_partial_present_rects: usize,
-        /// Draw previous regions when doing partial present.
-        draw_previous_partial_present_regions: bool,
+        /// See CompositorConfig::Draw.
+        uses_buffer_age: bool,
     },
     /// WR composites picture cache tiles into the swapchains of a Layer compositor.
     Layer {
@@ -417,7 +418,7 @@ impl Default for CompositorKind {
     fn default() -> Self {
         CompositorKind::Draw {
             max_partial_present_rects: 0,
-            draw_previous_partial_present_regions: false,
+            uses_buffer_age: false,
         }
     }
 }
@@ -435,9 +436,8 @@ pub enum SwapchainMode {
     WindowFramebuffer {
         /// See CompositorConfig::Draw.
         max_partial_present_rects: usize,
-        /// See CompositorConfig::Draw. The buffer age is the one passed to
-        /// `Renderer::render`.
-        draw_previous_partial_present_regions: bool,
+        /// See CompositorConfig::Draw.
+        uses_buffer_age: bool,
     },
     /// Each layer gets its own OS swapchain, and external surfaces can be
     /// given their own OS surface. The swapchains keep their content between
@@ -1792,11 +1792,12 @@ pub trait MappableCompositor: Compositor {
     fn unlock_composite_surface(&mut self, ctx: *mut c_void, external_image_id: ExternalImageId);
 }
 
-/// Defines an interface to a non-native (application-level) Compositor which handles
-/// partial present. This is required if webrender must query the backbuffer's age.
+/// Defines an interface to a non-native (application-level) Compositor which receives
+/// the buffer damage region of the window. This is required if webrender must query the
+/// backbuffer's age.
 /// TODO: Use the Compositor trait for native and non-native compositors, and integrate
 /// this functionality there.
-pub trait PartialPresentCompositor {
+pub trait BufferDamageCompositor {
     /// Allows webrender to specify the total region that will be rendered to this frame,
     /// ie the frame's dirty region and some previous frames' dirty regions, if applicable
     /// (calculated using the buffer age). Must be called before anything has been rendered

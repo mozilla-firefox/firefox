@@ -1452,7 +1452,7 @@ impl Renderer {
     ) -> Option<PartialPresentMode> {
         let mut partial_present_mode = None;
 
-        let (max_partial_present_rects, draw_previous_partial_present_regions, uses_buffer_age) =
+        let (max_partial_present_rects, uses_buffer_age, buffer_age_is_available) =
             match self.current_compositor_kind {
                 CompositorKind::Native { .. } => {
                     // Assume that we can return a single dirty rect for native
@@ -1462,21 +1462,21 @@ impl Renderer {
                     (1, false, false)
                 }
                 CompositorKind::Draw {
-                    draw_previous_partial_present_regions,
+                    uses_buffer_age,
                     max_partial_present_rects,
                 } => (
                     max_partial_present_rects,
-                    draw_previous_partial_present_regions,
-                    self.compositor_config.partial_present().is_some(),
+                    uses_buffer_age,
+                    self.compositor_config.buffer_damage().is_some(),
                 ),
                 CompositorKind::Layer {
                     mode: SwapchainMode::WindowFramebuffer {
-                        draw_previous_partial_present_regions,
+                        uses_buffer_age,
                         max_partial_present_rects,
                     },
                 } => (
                     max_partial_present_rects,
-                    draw_previous_partial_present_regions,
+                    uses_buffer_age,
                     true,
                 ),
                 CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } } => {
@@ -1486,7 +1486,7 @@ impl Renderer {
             };
 
         if max_partial_present_rects > 0 {
-            let prev_frames_damage_rect = if uses_buffer_age {
+            let prev_frames_damage_rect = if buffer_age_is_available {
                 self.buffer_damage_tracker
                     .get_damage_rect(buffer_age)
                     .or_else(|| Some(DeviceRect::from_size(draw_target_dimensions.to_f32())))
@@ -1496,7 +1496,7 @@ impl Renderer {
 
             let can_use_partial_present = composite_state.dirty_rects_are_valid
                 && !self.force_redraw
-                && !(prev_frames_damage_rect.is_none() && draw_previous_partial_present_regions)
+                && !(prev_frames_damage_rect.is_none() && uses_buffer_age)
                 && !self.debug_overlay_state.is_enabled;
 
             if can_use_partial_present {
@@ -1527,7 +1527,7 @@ impl Renderer {
                 }
 
                 // Track this frame's dirty region, for calculating subsequent frames' damage.
-                if draw_previous_partial_present_regions {
+                if uses_buffer_age {
                     self.buffer_damage_tracker
                         .push_dirty_rect(&combined_dirty_rect);
                 }
@@ -1537,7 +1537,7 @@ impl Renderer {
                 // to determine the total_dirty_rect. The is used to determine what region we
                 // render to, and is what we send to the compositor as the buffer damage region
                 // (eg for KHR_partial_update).
-                let total_dirty_rect = if draw_previous_partial_present_regions {
+                let total_dirty_rect = if uses_buffer_age {
                     combined_dirty_rect.union(&prev_frames_damage_rect.unwrap())
                 } else {
                     combined_dirty_rect
@@ -1552,7 +1552,7 @@ impl Renderer {
                 let fb_rect = DeviceIntRect::from_size(draw_target_dimensions);
                 results.dirty_rects.push(fb_rect);
 
-                if draw_previous_partial_present_regions {
+                if uses_buffer_age {
                     self.buffer_damage_tracker
                         .push_dirty_rect(&fb_rect.to_f32());
                 }

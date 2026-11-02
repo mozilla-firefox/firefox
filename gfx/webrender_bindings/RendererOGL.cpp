@@ -207,7 +207,7 @@ RenderedFrameId RendererOGL::UpdateAndRender(
 
     fullRender = mCompositor->RequestFullRender();
     // When we're rendering to an external target, we want to render everything.
-    if (mCompositor->UsePartialPresent() &&
+    if (mCompositor->UseWindowPartialPresent() &&
         (aReadbackBuffer.isSome() ||
          layers::ProfilerScreenshots::IsEnabled())) {
       fullRender = true;

@@ -554,8 +554,8 @@ pub fn create_webrender_instance(
     };
 
     let compositor_kind = match options.compositor_config {
-        CompositorConfig::Draw { max_partial_present_rects, draw_previous_partial_present_regions, .. } => {
-            CompositorKind::Draw { max_partial_present_rects, draw_previous_partial_present_regions }
+        CompositorConfig::Draw { max_partial_present_rects, uses_buffer_age, .. } => {
+            CompositorKind::Draw { max_partial_present_rects, uses_buffer_age }
         }
         CompositorConfig::Native { ref compositor } => {
             let capabilities = compositor.get_capabilities();
