@@ -30,29 +30,3 @@ relativesrcdir toolkit/locales:
 relativesrcdir dom/locales:
   locale/@AB_CD@/browser/overrides/AccessFu.properties         (%chrome/accessibility/AccessFu.properties)
   locale/@AB_CD@/browser/overrides/dom/dom.properties          (%chrome/dom/dom.properties)
-
-# Only run this if we're not en-US, as en-US is already built
-# by toolkit/locales/jar.mn.
-#define EN_US en-US
-#if AB_CD != EN_US
-[localization] @AB_CD@.jar:
-relativesrcdir toolkit/locales:
-#about:about
-  toolkit/about                                    (%toolkit/about/*About.ftl)
-#about:mozilla
-  toolkit/about                                    (%toolkit/about/*Mozilla.ftl)
-#about:support
-  toolkit/about                                    (%toolkit/about/*Support.ftl)
-#about:compat
-  toolkit/about                                    (%toolkit/about/*Compat.ftl)
-#about:webrtc
-  toolkit/about                                    (%toolkit/about/*Webrtc.ftl)
-#about:logging
-  toolkit/about                                    (%toolkit/about/*Logging.ftl)
-# additional files referenced by others
-  toolkit/branding                                 (%toolkit/branding/*brandings.ftl)
-  toolkit/global                                   (%toolkit/global/*processTypes.ftl)
-  toolkit/global                                   (%toolkit/global/*resetProfile.ftl)
-#endif
-# Do not add files below the endif. Reviewers, expand more context above
-# for comments.

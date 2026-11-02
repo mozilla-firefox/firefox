@@ -163,21 +163,32 @@ def _scoped_contexts(
     """Drop the chrome content of contexts outside the app's roots.
 
     The roots say which directories supply the app's chrome, so a
-    directory outside them contributes no jar.mn entries. Its localized
-    files and generated files keep their existing behavior, which is how
-    a repack still gets toolkit/locales' default.locale.
+    directory outside them contributes only the localized entries of its
+    `[localization]` sections. Its localized files and generated files keep
+    their existing behavior, which is how a repack still gets
+    toolkit/locales' default.locale.
     """
     for data in context_data_list:
         if _in_manifest_roots(data.relsrcdir, roots):
             yield data
             continue
-        scoped = replace(data, jar_sections=[])
+        scoped = replace(data, jar_sections=list(_localization_sections(data)))
         if (
-            scoped.localized_files
+            scoped.jar_sections
+            or scoped.localized_files
             or scoped.localized_pp_files
             or scoped.localized_generated_files
         ):
             yield scoped
+
+
+def _localization_sections(data: L10nManifestContextData) -> Iterator[JarSection]:
+    for section in data.jar_sections:
+        if section.base != "localization":
+            continue
+        entries = tuple(e for e in section.entries if e.is_locale)
+        if entries:
+            yield replace(section, entries=entries, chrome_manifests=())
 
 
 def build_l10n_manifest_from_substs(

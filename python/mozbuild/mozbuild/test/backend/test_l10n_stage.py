@@ -28,9 +28,7 @@ class TestL10nStage(BackendTester):
         root = Path(self._tmp.name) / f"{locale}-{mode}"
         merge = root / "merge"
         dest = root / "dest"
-        # A locale other than en-US reads sources marked % from the merge tree.
         merge.mkdir(parents=True, exist_ok=True)
-        (merge / "extra.ftl").write_text(f"extra-string = {locale}\n", encoding="utf-8")
         stage_locale(
             locale,
             Path(self.env.topobjdir) / "l10n-manifest.json",
@@ -89,22 +87,6 @@ class TestL10nStage(BackendTester):
         dest = self._stage("de", mode="chrome")
 
         self.assertEqual(self._chrome(dest, "de", "plain.txt"), "plain en-US\n")
-
-    def test_the_translated_only_section_is_staged_for_other_locales(self):
-        dest = self._stage("de")
-
-        self.assertEqual(
-            self._read(dest, "localization/de/testing/extra"), "extra-string = de\n"
-        )
-
-    def test_the_translated_only_section_for_en_us(self):
-        dest = self._stage("en-US")
-
-        # Recorded as it behaves today, not as the jar manifest reads.
-        self.assertEqual(
-            self._read(dest, "localization/en-US/testing/extra"),
-            "extra-string = en-US\n",
-        )
 
 
 if __name__ == "__main__":

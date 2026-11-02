@@ -275,6 +275,60 @@ class TestL10nManifestRoots(unittest.TestCase):
 
         self.assertEqual(self._scoped(["mobile/android/locales"], context), [])
 
+    def _localization_section(self, *entries, chrome_manifests=()):
+        return JarSection(
+            name="MOZ_L10N_AB_CD_PLACEHOLDER",
+            base="localization",
+            relativesrcdir=None,
+            chrome_manifests=chrome_manifests,
+            entries=entries,
+        )
+
+    def test_out_of_root_context_keeps_its_localized_fluent_files(self):
+        localized = JarEntry(
+            source="toolkit/**/*.ftl",
+            output="toolkit",
+            is_locale=True,
+            preprocess=False,
+        )
+        fallback = JarEntry(
+            source="../locales-preview/aboutRestricted.ftl",
+            output="locales-preview/aboutRestricted.ftl",
+            is_locale=False,
+            preprocess=False,
+        )
+        context = self._context("toolkit/locales")
+        context.jar_sections = [
+            self._jar_section(),
+            self._localization_section(
+                localized,
+                fallback,
+                chrome_manifests=("locale toolkit MOZ_L10N_AB_CD_PLACEHOLDER %",),
+            ),
+        ]
+
+        contexts = self._scoped(["mobile/android/locales"], context)
+
+        self.assertEqual(len(contexts), 1)
+        self.assertEqual(
+            contexts[0].jar_sections, [self._localization_section(localized)]
+        )
+
+    def test_out_of_root_context_with_only_unlocalized_fluent_is_dropped(self):
+        context = self._context("remote/locales")
+        context.jar_sections = [
+            self._localization_section(
+                JarEntry(
+                    source="../locales-preview/remote-agent.ftl",
+                    output="locales-preview/remote-agent.ftl",
+                    is_locale=False,
+                    preprocess=False,
+                )
+            )
+        ]
+
+        self.assertEqual(self._scoped(["mobile/android/locales"], context), [])
+
     def test_in_root_context_keeps_its_chrome(self):
         context = self._context("mobile/android/locales")
         context.jar_sections = [self._jar_section()]
