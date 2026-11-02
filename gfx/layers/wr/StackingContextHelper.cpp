@@ -256,7 +256,7 @@ StackingContextHelper::StackingContextHelper(
 StackingContextHelper::~StackingContextHelper() {
   if (mBuilder) {
     mSpaceAndClipChainHelper.reset();
-    mBuilder->PopStackingContext(mReferenceFrameId.isSome());
+    mBuilder->PopStackingContext();
   }
 }
 

@@ -1341,9 +1341,9 @@ Maybe<wr::WrSpatialId> DisplayListBuilder::PushStackingContext(
   return spatialId.id != 0 ? Some(spatialId) : Nothing();
 }
 
-void DisplayListBuilder::PopStackingContext(bool aIsReferenceFrame) {
+void DisplayListBuilder::PopStackingContext() {
   WRDL_LOG("PopStackingContext\n", mWrState);
-  wr_dp_pop_stacking_context(mWrState, aIsReferenceFrame);
+  wr_dp_pop_stacking_context(mWrState);
 }
 
 wr::WrClipChainId DisplayListBuilder::DefineClipChain(

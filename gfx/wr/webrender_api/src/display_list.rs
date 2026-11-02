@@ -334,9 +334,6 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                 Debug::Iframe(v) => {
                     Real::Iframe(v)
                 }
-                Debug::PushReferenceFrame(v) => {
-                    Real::PushReferenceFrame(v)
-                }
                 Debug::SetFilterOps(filters) => {
                     DisplayListBuilder::push_iter_impl(&mut temp, filters);
                     Real::SetFilterOps
@@ -380,7 +377,6 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                 Debug::BackdropFilter(v) => Real::BackdropFilter(v),
 
                 Debug::PopStackingContext => Real::PopStackingContext,
-                Debug::PopReferenceFrame => Real::PopReferenceFrame,
                 Debug::DebugMarker(val) => Real::DebugMarker(val),
             };
             poke_into_vec(&item, &mut items_data);
@@ -721,11 +717,9 @@ impl BuiltDisplayList {
                 Real::RadialGradient(v) => Debug::RadialGradient(v),
                 Real::ConicGradient(v) => Debug::ConicGradient(v),
                 Real::Iframe(v) => Debug::Iframe(v),
-                Real::PushReferenceFrame(v) => Debug::PushReferenceFrame(v),
                 Real::PushStackingContext(v) => Debug::PushStackingContext(v),
                 Real::BackdropFilter(v) => Debug::BackdropFilter(v),
 
-                Real::PopReferenceFrame => Debug::PopReferenceFrame,
                 Real::PopStackingContext => Debug::PopStackingContext,
                 Real::DebugMarker(val) => Debug::DebugMarker(val),
             };
@@ -2467,7 +2461,7 @@ impl DisplayListBuilder {
         self.push_item(&item);
     }
 
-    pub fn push_reference_frame(
+    pub fn define_reference_frame(
         &mut self,
         origin: LayoutPoint,
         parent_spatial_id: di::SpatialId,
@@ -2494,14 +2488,10 @@ impl DisplayListBuilder {
         // External scroll offset does not propagate across reference frames.
         self.record_scroll_offset(id, AuOffset::ZERO);
 
-        let item = di::DisplayItem::PushReferenceFrame(di::ReferenceFrameDisplayListItem {
-        });
-        self.push_item(&item);
-
         id
     }
 
-    pub fn push_computed_frame(
+    pub fn define_computed_frame(
         &mut self,
         origin: LayoutPoint,
         parent_spatial_id: di::SpatialId,
@@ -2534,15 +2524,7 @@ impl DisplayListBuilder {
         // External scroll offset does not propagate across reference frames.
         self.record_scroll_offset(id, AuOffset::ZERO);
 
-        let item = di::DisplayItem::PushReferenceFrame(di::ReferenceFrameDisplayListItem {
-        });
-        self.push_item(&item);
-
         id
-    }
-
-    pub fn pop_reference_frame(&mut self) {
-        self.push_item(&di::DisplayItem::PopReferenceFrame);
     }
 
     pub fn push_stacking_context(

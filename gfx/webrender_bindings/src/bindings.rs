@@ -3042,7 +3042,7 @@ pub extern "C" fn wr_dp_push_stacking_context(
     let wr_clip_id = params.clip.to_webrender(state.pipeline_id);
 
     // Note: 0 has special meaning in WR land, standing for ROOT_REFERENCE_FRAME.
-    // However, it is never returned by `push_reference_frame`, and we need to return
+    // However, it is never returned by `define_reference_frame`, and we need to return
     // an option here across FFI, so we take that 0 value for the None semantics.
     // This is resolved into proper `Maybe<WrSpatialId>` inside `WebRenderAPI::PushStackingContext`.
     let mut result = WrSpatialId { id: 0 };
@@ -3063,7 +3063,7 @@ pub extern "C" fn wr_dp_push_stacking_context(
             },
             WrReferenceFrameKind::Perspective => ReferenceFrameKind::Perspective { scrolling_relative_to },
         };
-        wr_spatial_id = state.frame_builder.dl_builder.push_reference_frame(
+        wr_spatial_id = state.frame_builder.dl_builder.define_reference_frame(
             bounds.min,
             wr_spatial_id,
             params.transform_style,
@@ -3080,7 +3080,7 @@ pub extern "C" fn wr_dp_push_stacking_context(
             WrRotation::Degree180 => Rotation::Degree180,
             WrRotation::Degree270 => Rotation::Degree270,
         };
-        wr_spatial_id = state.frame_builder.dl_builder.push_computed_frame(
+        wr_spatial_id = state.frame_builder.dl_builder.define_computed_frame(
             bounds.min,
             wr_spatial_id,
             Some(data.scale_from),
@@ -3094,7 +3094,7 @@ pub extern "C" fn wr_dp_push_stacking_context(
         // Inherit the stacking context's transform style so this translate-only
         // reference frame doesn't introduce a 3D flattening boundary for
         // preserve-3d contexts.
-        wr_spatial_id = state.frame_builder.dl_builder.push_reference_frame(
+        wr_spatial_id = state.frame_builder.dl_builder.define_reference_frame(
             bounds.min,
             wr_spatial_id,
             params.transform_style,
@@ -3131,12 +3131,9 @@ pub extern "C" fn wr_dp_push_debug(state: &mut WrState, val: u32) {
 }
 
 #[no_mangle]
-pub extern "C" fn wr_dp_pop_stacking_context(state: &mut WrState, is_reference_frame: bool) {
+pub extern "C" fn wr_dp_pop_stacking_context(state: &mut WrState) {
     debug_assert!(unsafe { !is_in_render_thread() });
     state.frame_builder.dl_builder.pop_stacking_context();
-    if is_reference_frame {
-        state.frame_builder.dl_builder.pop_reference_frame();
-    }
 }
 
 #[no_mangle]

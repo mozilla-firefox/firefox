@@ -3512,7 +3512,7 @@ WebRenderCommandsResult SVGTextFrame::CreateWebRenderCommands(
                          inheritedOpacity);
         textDrawer->TerminateShadows();
       }
-      aBuilder.PopStackingContext(spatialId.isSome());
+      aBuilder.PopStackingContext();
     }
 
     ok = !textDrawer->CheckHasUnsupportedFeatures();

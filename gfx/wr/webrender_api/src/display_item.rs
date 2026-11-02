@@ -169,7 +169,6 @@ pub enum DisplayItem {
 
     // Spaces and Frames that content can be scoped under.
     Iframe(IframeDisplayItem),
-    PushReferenceFrame(ReferenceFrameDisplayListItem),
     PushStackingContext(PushStackingContextDisplayItem),
 
     // These marker items indicate an array of data follows, to be used for the
@@ -180,7 +179,6 @@ pub enum DisplayItem {
     SetPoints,
 
     // These marker items terminate a scope introduced by a previous item.
-    PopReferenceFrame,
     PopStackingContext,
 
     // For debugging purposes.
@@ -213,7 +211,6 @@ pub enum DebugDisplayItem {
     ClipChain(ClipChainItem, Vec<ClipId>),
 
     Iframe(IframeDisplayItem),
-    PushReferenceFrame(ReferenceFrameDisplayListItem),
     PushStackingContext(PushStackingContextDisplayItem),
 
     SetGradientStops(Vec<GradientStop>),
@@ -221,7 +218,6 @@ pub enum DebugDisplayItem {
     SetFilterData(FilterData),
     SetPoints(Vec<LayoutPoint>),
 
-    PopReferenceFrame,
     PopStackingContext,
 
     DebugMarker(u32)
@@ -836,10 +832,6 @@ pub struct BackdropFilterDisplayItem {
     pub common: CommonItemProperties,
 }
 // IMPLICIT: filters: Vec<FilterOp>, filter_datas: Vec<FilterData>, filter_primitives: Vec<FilterPrimitive>
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
-pub struct ReferenceFrameDisplayListItem {
-}
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct ReferenceFrameDescriptor {
@@ -2447,9 +2439,7 @@ impl DisplayItem {
             DisplayItem::Iframe(..) => "iframe",
             DisplayItem::Image(..) => "image",
             DisplayItem::Line(..) => "line",
-            DisplayItem::PopReferenceFrame => "pop_reference_frame",
             DisplayItem::PopStackingContext => "pop_stacking_context",
-            DisplayItem::PushReferenceFrame(..) => "push_reference_frame",
             DisplayItem::PushStackingContext(..) => "push_stacking_context",
             DisplayItem::SetFilterOps => "set_filter_ops",
             DisplayItem::SetFilterData => "set_filter_data",

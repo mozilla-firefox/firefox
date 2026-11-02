@@ -895,7 +895,6 @@ impl<'a> SceneBuilder<'a> {
             StackingContext {
                 sc_info: StackingContextInfo,
             },
-            ReferenceFrame,
             Iframe {
                 parent_traversal: BuiltDisplayListIter<'a>,
                 /// The enclosing pipeline's namespace, to restore on the way
@@ -991,23 +990,6 @@ impl<'a> SceneBuilder<'a> {
                         traversal = subtraversal;
                         continue 'outer;
                     }
-                    DisplayItem::PushReferenceFrame(..) => {
-                        tracy_rs::profile_scope!("build_reference_frame");
-                        let mut subtraversal = item.sub_iter();
-
-                        let new_context = BuildContext {
-                            pipeline_id: bc.pipeline_id,
-                            namespace: bc.namespace,
-                            kind: ContextKind::ReferenceFrame,
-                        };
-                        stack.push(bc);
-                        stack.push(new_context);
-
-                        subtraversal.merge_debug_stats_from(&mut traversal);
-                        traversal = subtraversal;
-                        continue 'outer;
-                    }
-                    DisplayItem::PopReferenceFrame |
                     DisplayItem::PopStackingContext => break,
                     DisplayItem::Iframe(ref info) => {
                         tracy_rs::profile_scope!("iframe");
@@ -1056,8 +1038,6 @@ impl<'a> SceneBuilder<'a> {
                 ContextKind::Root => {}
                 ContextKind::StackingContext { sc_info } => {
                     self.pop_stacking_context(sc_info);
-                }
-                ContextKind::ReferenceFrame => {
                 }
                 ContextKind::Iframe { parent_traversal, parent_dl_namespace } => {
                     self.dl_namespace = parent_dl_namespace;
@@ -1747,8 +1727,6 @@ impl<'a> SceneBuilder<'a> {
 
             // Special items that are handled in the parent method
             DisplayItem::PushStackingContext(..) |
-            DisplayItem::PushReferenceFrame(..) |
-            DisplayItem::PopReferenceFrame |
             DisplayItem::PopStackingContext |
             DisplayItem::Iframe(_) => {
                 unreachable!("Handled in `build_all`")

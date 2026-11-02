@@ -58,7 +58,7 @@ impl App {
             }
         };
 
-        let spatial_id = builder.push_reference_frame(
+        let spatial_id = builder.define_reference_frame(
             bounds.min,
             SpatialId::root_scroll_node(pipeline_id),
             TransformStyle::Flat,
@@ -108,7 +108,6 @@ impl App {
         );
 
         builder.pop_stacking_context();
-        builder.pop_reference_frame();
     }
 }
 

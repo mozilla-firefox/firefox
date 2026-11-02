@@ -61,7 +61,7 @@ impl Example for App {
         );
         api.send_transaction(document_id, txn);
 
-        space_and_clip.spatial_id = builder.push_reference_frame(
+        space_and_clip.spatial_id = builder.define_reference_frame(
             sub_bounds.min,
             space_and_clip.spatial_id,
             TransformStyle::Flat,
@@ -87,7 +87,6 @@ impl Example for App {
         );
         builder.push_iframe(sub_bounds, sub_bounds, &space_and_clip, sub_pipeline_id, false);
         builder.pop_stacking_context();
-        builder.pop_reference_frame();
     }
 }
 

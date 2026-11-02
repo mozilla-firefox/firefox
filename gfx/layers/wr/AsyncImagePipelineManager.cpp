@@ -514,7 +514,7 @@ void AsyncImagePipelineManager::ApplyAsyncImageForPipeline(
   }
 
   spaceAndClipChainHelper.reset();
-  aPipeline->mDLBuilder.PopStackingContext(referenceFrameId.isSome());
+  aPipeline->mDLBuilder.PopStackingContext();
 
   wr::BuiltDisplayList dl;
   aPipeline->mDLBuilder.End(dl);

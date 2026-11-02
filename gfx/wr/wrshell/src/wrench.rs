@@ -620,8 +620,6 @@ impl YamlWriter {
                     DisplayItem::ConicGradient(..) => {}
                     DisplayItem::Line(..) => {}
                     DisplayItem::HitTest(..) => {}
-                    DisplayItem::PushReferenceFrame(..) => {}
-                    DisplayItem::PopReferenceFrame => {}
                     DisplayItem::DebugMarker(..) => {}
                     DisplayItem::BoxShadow(..) => {}
                 };
