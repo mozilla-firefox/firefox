@@ -1304,30 +1304,32 @@ describe("DiscoveryStreamFeed", () => {
       });
 
       const ADS_CLIENT = {
-        requestSpocAds: jest.fn().mockResolvedValue(
+        requestSpocOrImageAds: jest.fn().mockResolvedValue(
           new Map([
             [
               "newtab_stories_1",
               [
                 {
-                  format: "spoc",
-                  url: "https://spoc.example/",
-                  imageUrl: "https://spoc.example/img.png",
-                  callbacks: { click: "https://spoc.example/click" },
-                  title: "Spoc 1",
-                  domain: "spoc.example",
-                  excerpt: "Excerpt",
-                  sponsor: "Sponsor",
-                  sponsoredByOverride: null,
-                  blockKey: "spocblock1",
-                  caps: { capKey: "cap1", day: 5 },
-                  ranking: {
-                    itemScore: 0.5,
-                    personalizationModels: new Map([
-                      ["arts_and_entertainment", 1],
-                      ["travel", 1],
-                    ]),
-                    priority: 2,
+                  v0: {
+                    format: "spoc",
+                    url: "https://spoc.example/",
+                    imageUrl: "https://spoc.example/img.png",
+                    callbacks: { click: "https://spoc.example/click" },
+                    title: "Spoc 1",
+                    domain: "spoc.example",
+                    excerpt: "Excerpt",
+                    sponsor: "Sponsor",
+                    sponsoredByOverride: null,
+                    blockKey: "spocblock1",
+                    caps: { capKey: "cap1", day: 5 },
+                    ranking: {
+                      itemScore: 0.5,
+                      personalizationModels: new Map([
+                        ["arts_and_entertainment", 1],
+                        ["travel", 1],
+                      ]),
+                      priority: 2,
+                    },
                   },
                 },
               ],
@@ -1361,8 +1363,8 @@ describe("DiscoveryStreamFeed", () => {
       expect(AdsClient.requestOptions).toHaveBeenCalledWith(
         feed.store.getState().Prefs.values
       );
-      expect(ADS_CLIENT.requestSpocAds).toHaveBeenCalledTimes(1);
-      expect(ADS_CLIENT.requestSpocAds).toHaveBeenCalledWith(
+      expect(ADS_CLIENT.requestSpocOrImageAds).toHaveBeenCalledTimes(1);
+      expect(ADS_CLIENT.requestSpocOrImageAds).toHaveBeenCalledWith(
         [expect.anything()],
         REQUEST_OPTIONS
       );
@@ -1387,7 +1389,7 @@ describe("DiscoveryStreamFeed", () => {
       });
 
       const ADS_CLIENT = {
-        requestSpocAds: jest
+        requestSpocOrImageAds: jest
           .fn()
           .mockResolvedValue(
             new Map([["newtab_stories_1", [{ blockKey: "b1" }]]])
@@ -1406,9 +1408,9 @@ describe("DiscoveryStreamFeed", () => {
 
       // A later, unrelated read happens while processing the results, so it is
       // the ordering that shows the guarded read was skipped.
-      expect(ADS_CLIENT.requestSpocAds).toHaveBeenCalledTimes(1);
+      expect(ADS_CLIENT.requestSpocOrImageAds).toHaveBeenCalledTimes(1);
       expect(
-        ADS_CLIENT.requestSpocAds.mock.invocationCallOrder[0]
+        ADS_CLIENT.requestSpocOrImageAds.mock.invocationCallOrder[0]
       ).toBeLessThan(feed.cache.get.mock.invocationCallOrder[0]);
       expect(feed.cache.set.mock.calls.some(([key]) => key === "spocs")).toBe(
         false
@@ -1425,7 +1427,7 @@ describe("DiscoveryStreamFeed", () => {
 
     it("should seed placements the ads client omitted with empty arrays", async () => {
       feed.adsClient = {
-        requestSpocAds: jest
+        requestSpocOrImageAds: jest
           .fn()
           .mockResolvedValue(new Map([["newtab_stories_1", []]])),
       };

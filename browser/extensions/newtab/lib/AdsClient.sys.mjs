@@ -146,7 +146,7 @@ export class _AdsClient {
   }
 
   /**
-   * Options for requestTileAds/requestSpocAds, with the OHTTP channel
+   * Options for requestTileAds/requestSpocAds/requestSpocOrImageAds, with the OHTTP channel
    * configured from prefs, and flags from passed in prefValues.
    *
    * @param {object} prefValues The New Tab store's Prefs.values.
