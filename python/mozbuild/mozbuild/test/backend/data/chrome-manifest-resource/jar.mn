@@ -1,0 +1,4 @@
+browser.jar:
+%  resource testres %testres/  contentaccessible=yes
+%  content testcontent %testcontent/
+  testres/thing.txt   (thing.txt)

@@ -4144,6 +4144,15 @@ def package_l10n(command_context, locales, verbose=False, package_tests=False):
             ensure_exit_code=True,
         )
 
+    command_context.log(
+        logging.WARNING,
+        "package-multi-locale",
+        {"locales": locales},
+        "A later `./mach build` rewrites the chrome manifests in dist/bin "
+        "without the registrations for {locales}. After a build, run "
+        "`./mach package-multi-locale` again before packaging.",
+    )
+
     return 0
 
 

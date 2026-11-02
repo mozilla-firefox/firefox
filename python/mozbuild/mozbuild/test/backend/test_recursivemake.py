@@ -1687,11 +1687,11 @@ class TestRecursiveMakeBackend(BackendTester):
 
         self.assertEqual([l for l in lines if "DIST_FILES" in l], [])
 
-    def _dist_bin_registry(self, name):
+    def _dist_bin_registry(self, name, manifest="dist_bin"):
         env = self._consume(name, RecursiveMakeBackend)
 
         m = InstallManifest(
-            path=mozpath.join(env.topobjdir, "_build_manifests", "install", "dist_bin")
+            path=mozpath.join(env.topobjdir, "_build_manifests", "install", manifest)
         )
         reg = FileRegistry()
         m.populate_registry(reg)
@@ -1790,6 +1790,29 @@ class TestRecursiveMakeBackend(BackendTester):
         _, reg = self._dist_bin_registry("final-target-files-renamed-wildcard")
 
         self.assertEqual(sorted(reg.paths()), ["foo/icons/a.svg", "foo/icons/b.svg"])
+
+    def test_chrome_manifest_resource(self):
+        _, reg = self._dist_bin_registry("chrome-manifest-resource")
+        body = reg["chrome/browser.manifest"].open().read().decode("utf-8")
+
+        self.assertEqual(
+            body.splitlines(),
+            [
+                "content testcontent browser/testcontent/",
+                "resource testres browser/testres/ contentaccessible=yes",
+            ],
+        )
+
+    def test_chrome_manifest_installed(self):
+        env, reg = self._dist_bin_registry("chrome-manifest-resource")
+
+        self.assertIn("chrome/browser.manifest", reg.paths())
+        self.assertIn("chrome.manifest", reg.paths())
+        top = reg["chrome.manifest"].open().read().decode("utf-8")
+        self.assertEqual(top.splitlines(), ["manifest chrome/browser.manifest"])
+
+        with open(mozpath.join(env.topobjdir, "backend.mk")) as fh:
+            self.assertNotIn("buildlist", fh.read())
 
     def test_pp_files_extra_deps_not_generated(self):
         with self.assertRaisesRegex(Exception, "top level backend file"):
@@ -2040,15 +2063,62 @@ class TestRecursiveMakeBackend(BackendTester):
         # after cargo has already looked for the archive in dist/lib.
         self.assertIn("STATIC_LIB_TARGET := target", backend)
 
+    def _backend_mk(self, env):
+        with open(os.path.join(env.topobjdir, "backend.mk")) as fh:
+            return [line.rstrip() for line in fh.readlines()]
+
     def test_jar_manifests(self):
+        """An application tree jar manifest is expanded before any backend."""
         env = self._consume("jar-manifests", RecursiveMakeBackend)
 
-        with open(os.path.join(env.topobjdir, "backend.mk")) as fh:
-            lines = fh.readlines()
+        self.assertNotIn(
+            f"JAR_MANIFEST := {env.topsrcdir}/jar.mn", self._backend_mk(env)
+        )
 
-        lines = [line.rstrip() for line in lines]
+    def test_jar_manifests_non_application(self):
+        env, reg = self._dist_bin_registry(
+            "jar-manifests-non-application", manifest="_tests"
+        )
 
-        self.assertIn("JAR_MANIFEST := %s/jar.mn" % env.topsrcdir, lines)
+        self.assertNotIn(
+            f"JAR_MANIFEST := {env.topsrcdir}/jar.mn", self._backend_mk(env)
+        )
+        self.assertIn(
+            "jar-manifests/chrome/test/content/test/thing.js",
+            [dest for dest, _ in reg],
+        )
+
+    def test_jar_manifests_renamed_wildcard(self):
+        _, reg = self._dist_bin_registry("jar-manifest-renamed-wildcard")
+
+        self.assertEqual(
+            sorted(reg.paths()),
+            [
+                "chrome/browser/content/browser/icons/a.svg",
+                "chrome/browser/content/browser/icons/b.svg",
+            ],
+        )
+
+    def test_jar_manifests_generated_pp(self):
+        env, reg = self._dist_bin_registry("jar-manifests-generated-pp")
+        self.assertIn("chrome/test/content/test/made.js", reg.paths())
+
+        rule = self._install_dist_bin_rule("jar-manifests-generated-pp")
+        self.assertIn("$(DEPTH)/made.js", rule)
+
+        m = InstallManifest(
+            path=mozpath.join(env.topobjdir, "_build_manifests", "built", "misc")
+        )
+        built = FileRegistry()
+        m.populate_registry(built)
+        self.assertEqual(
+            {dest: f.path for dest, f in built},
+            {
+                "dist/bin/chrome/test/content/test/renamed.js": mozpath.join(
+                    env.topobjdir, "made.js"
+                )
+            },
+        )
 
     def test_test_manifests_duplicate_support_files(self):
         """Ensure duplicate support-files in test manifests work."""

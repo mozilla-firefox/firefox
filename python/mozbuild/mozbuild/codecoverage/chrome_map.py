@@ -19,7 +19,6 @@ from mozbuild.frontend.data import (
     ChromeManifestEntry,
     FinalTargetFiles,
     FinalTargetPreprocessedFiles,
-    JARManifest,
 )
 
 from .manifest_handler import ChromeManifestHandler
@@ -84,8 +83,6 @@ class ChromeMapBackend(CommonBackend):
         self.manifest_handler = ChromeManifestHandler()
 
     def consume_object(self, obj):
-        if isinstance(obj, JARManifest):
-            self._consume_jar_manifest(obj)
         if isinstance(obj, ChromeManifestEntry):
             self.manifest_handler.handle_manifest_entry(obj.entry)
         if isinstance(obj, (FinalTargetFiles, FinalTargetPreprocessedFiles)):

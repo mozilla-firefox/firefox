@@ -980,23 +980,6 @@ class SourcePath(Path):
         return ObjDirPath(self.context, "!%s" % self).full_path
 
 
-class RenamedSourcePath(SourcePath):
-    """Like SourcePath, but with a different base name when installed.
-
-    The constructor takes a tuple of (source, target_basename). In moz.build
-    files the same effect is achieved by appending a (source, target_basename)
-    tuple to a ``*_FILES`` variable; this class is kept for direct internal
-    construction (e.g. from jar manifests).
-    """
-
-    def __new__(cls, context, value):
-        assert isinstance(value, tuple)
-        source, target_basename = value
-        self = super().__new__(cls, context, source)
-        self._target_basename = target_basename
-        return self
-
-
 class ObjDirPath(Path):
     """Like Path, but limited to paths in the object directory."""
 

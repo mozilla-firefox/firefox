@@ -1,0 +1,3 @@
+test.jar:
+* content/test/made.js   (made.js)
+  content/test/renamed.js   (made.js)

@@ -20,9 +20,11 @@ from mozshellutil import quote as shell_quote
 from mozbuild import frontend
 from mozbuild.backend.common import (
     add_preprocess_entry,
+    chrome_manifest_contents,
     configured_defines,
     pattern_link_dest,
     pattern_link_parts,
+    record_chrome_manifest_entry,
 )
 from mozbuild.frontend.context import (
     AbsolutePath,
@@ -376,6 +378,8 @@ class RecursiveMakeBackend(MakeBackend):
             mozpath.join(self.environment.topobjdir, "config", "autoconf.mk")
         )
 
+        # Chrome registrations, keyed by the manifest they are written to.
+        self._manifest_entries = defaultdict(set)
         self._install_manifests = defaultdict(InstallManifest)
         self._built_install_manifests = defaultdict(InstallManifest)
         # Generated files that preprocessed installs read, keyed by the
@@ -737,7 +741,7 @@ class RecursiveMakeBackend(MakeBackend):
             self._process_installed_pp_files(obj, obj.files)
 
         elif isinstance(obj, ChromeManifestEntry):
-            self._process_chrome_manifest_entry(obj, backend_file)
+            record_chrome_manifest_entry(self._manifest_entries, obj)
 
         elif isinstance(obj, TestManifest):
             self._process_test_manifest(obj, backend_file)
@@ -1194,6 +1198,8 @@ class RecursiveMakeBackend(MakeBackend):
                 self._install_manifests["_tests"].add_optional_exists(manifest_stem)
             except ValueError:
                 pass
+
+        self._add_chrome_manifest_content()
 
         self._write_manifests("install", self._install_manifests)
         self._write_manifests("built", self._built_install_manifests)
@@ -1934,6 +1940,8 @@ class RecursiveMakeBackend(MakeBackend):
         for path, walk_files in files.walk():
             dest_dir = mozpath.join(reltarget, path)
             for f in walk_files:
+                if isinstance(f, ObjDirPath):
+                    self._add_install_manifest_dep(base, f)
                 self._add_preprocess_entry(
                     install_manifest,
                     obj,
@@ -2076,30 +2084,15 @@ class RecursiveMakeBackend(MakeBackend):
                 dest = mozpath.join(path, f.target_basename)
                 self._add_objdir_install_target(backend_file, "misc", f, dest)
 
-    def _process_chrome_manifest_entry(self, obj, backend_file):
-        fragment = Makefile()
-        rule = fragment.create_rule(targets=["misc:"])
-
-        top_level = mozpath.join(obj.install_target, "chrome.manifest")
-        if obj.path != top_level:
-            path = mozpath.relpath(obj.path, obj.install_target)
-            args = [
-                mozpath.join("$(DEPTH)", top_level),
-                make_quote(shell_quote("manifest %s" % path)),
-            ]
-            rule.add_commands([
-                "$(call py_action,buildlist %s,%s)" % (path, " ".join(args))
-            ])
-        args = [
-            mozpath.join("$(DEPTH)", obj.path),
-            make_quote(shell_quote(str(obj.entry))),
-        ]
-        rule.add_commands([
-            "$(call py_action,buildlist %s,%s)" % (obj.entry.path, " ".join(args))
-        ])
-        fragment.dump(backend_file.fh, removal_guard=False)
-
-        self._no_skip["misc"].add(obj.relsrcdir)
+    def _add_chrome_manifest_content(self):
+        """Install every chrome manifest from the registrations it holds."""
+        for target, content in chrome_manifest_contents(self._manifest_entries):
+            base = mozpath.basedir(target, self.INSTALL_MANIFEST_BASES)
+            if not base:
+                raise Exception("Cannot install to " + target)
+            self._install_manifests[base.replace("/", "_")].add_content(
+                content, mozpath.relpath(target, base)
+            )
 
     def _process_macos_bundle(self, obj, backend_file):
         context = obj._context

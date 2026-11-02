@@ -10,26 +10,17 @@ from collections import defaultdict
 from operator import itemgetter
 
 import mozpack.path as mozpath
-from mozpack.chrome.manifest import parse_manifest_line
 
 from mozbuild.backend.base import BuildBackend
 from mozbuild.dirutils import mkdir
-from mozbuild.frontend.context import (
-    VARIABLES,
-    Context,
-    ObjDirPath,
-    Path,
-    RenamedSourcePath,
-)
+from mozbuild.frontend.context import ObjDirPath
 from mozbuild.frontend.data import (
     BaseProgram,
     BaseRustLibrary,
     BaseRustProgram,
-    ChromeManifestEntry,
     ComputedFlags,
     ConfigFileSubstitution,
     Exports,
-    FinalTargetFiles,
     FinalTargetPreprocessedFiles,
     GeneratedFile,
     HostLibrary,
@@ -37,8 +28,6 @@ from mozbuild.frontend.data import (
     HostSources,
     IPDLCollection,
     JsShellArchive,
-    LocalizedFiles,
-    LocalizedPreprocessedFiles,
     RustTests,
     SandboxedWasmLibrary,
     SharedLibrary,
@@ -49,7 +38,6 @@ from mozbuild.frontend.data import (
     XPCOMComponentManifests,
     XPIDLModule,
 )
-from mozbuild.frontend.jar_manifest import jar_manifest_defines, parse_jar_manifest
 from mozbuild.frontend.l10n_manifest import (
     L10nManifestContext,
     build_l10n_manifest_from_substs,
@@ -141,6 +129,26 @@ def pattern_link_dest(source, install_dir):
     if source.target_basename != mozpath.basename(source.full_path):
         return mozpath.join(install_dir, source.target_basename)
     return install_dir
+
+
+def record_chrome_manifest_entry(entries, obj):
+    """Collect a registration under the manifest it is written to.
+
+    A manifest other than the install target's own chrome.manifest is reached
+    through a `manifest` line in that file, so that line is recorded as well.
+    """
+    top_level = mozpath.join(obj.install_target, "chrome.manifest")
+    if obj.path != top_level:
+        entries[top_level].add(
+            f"manifest {mozpath.relpath(obj.path, obj.install_target)}"
+        )
+    entries[obj.path].add(str(obj.entry))
+
+
+def chrome_manifest_contents(entries):
+    """Each chrome manifest with the content its registrations make."""
+    for target, lines in sorted(entries.items()):
+        yield target, "".join(f"{line}\n" for line in sorted(lines))
 
 
 class XPIDLManager:
@@ -794,112 +802,6 @@ class CommonBackend(BuildBackend):
         else:
             l10nrelsrcdir = relativesrcdir
         return mozpath.join(l10nbase, l10nrelsrcdir, filename)
-
-    def _consume_jar_manifest(self, obj):
-        # Ideally, this would all be handled somehow in the emitter, but
-        # this would require all the magic surrounding l10n and addons in
-        # the recursive make backend to die, which is not going to happen
-        # any time soon enough.
-        # Notably missing:
-        # - DEFINES from config/config.mk
-        # - The equivalent of -e when USE_EXTENSION_MANIFEST is set in
-        #   moz.build, but it doesn't matter in dist/bin.
-        ab_cd = obj.config.substs["MOZ_UI_LOCALE"]
-
-        sections, inputs = parse_jar_manifest(
-            obj.path.full_path, jar_manifest_defines(obj._context)
-        )
-        self.backend_input_files |= inputs
-
-        for jarinfo in sections:
-            section_name = jarinfo.name.resolve(ab_cd)
-            jar_context = Context(
-                allowed_variables=VARIABLES, config=obj._context.config
-            )
-            jar_context.push_source(obj._context.main_path)
-            jar_context.push_source(obj.path.full_path)
-
-            install_target = obj.install_target
-            if jarinfo.base:
-                install_target = mozpath.normpath(
-                    mozpath.join(install_target, jarinfo.base)
-                )
-            jar_context["FINAL_TARGET"] = install_target
-            if obj.defines:
-                jar_context["DEFINES"] = obj.defines.defines
-            files = jar_context["FINAL_TARGET_FILES"]
-            files_pp = jar_context["FINAL_TARGET_PP_FILES"]
-            localized_files = jar_context["LOCALIZED_FILES"]
-            localized_files_pp = jar_context["LOCALIZED_PP_FILES"]
-
-            for e in jarinfo.entries:
-                entry_source = e.source.resolve(ab_cd)
-                entry_output = e.output.resolve(ab_cd)
-                if e.is_locale:
-                    if jarinfo.relativesrcdir:
-                        src = "/%s" % jarinfo.relativesrcdir
-                    else:
-                        src = ""
-                    src = mozpath.join(src, "en-US", entry_source)
-                else:
-                    src = entry_source
-
-                src = Path(jar_context, src)
-
-                if "*" not in entry_source and not os.path.exists(src.full_path):
-                    if e.is_locale:
-                        raise Exception(
-                            f"{obj.path}: Cannot find {entry_source} "
-                            f"(tried {src.full_path})"
-                        )
-                    if entry_source.startswith("/"):
-                        src = Path(jar_context, "!" + entry_source)
-                    else:
-                        # This actually gets awkward if the jar.mn is not
-                        # in the same directory as the moz.build declaring
-                        # it, but it's how it works in the recursive make,
-                        # not that anything relies on that, but it's simpler.
-                        src = Path(obj._context, "!" + entry_source)
-
-                output_basename = mozpath.basename(entry_output)
-                if output_basename != src.target_basename:
-                    src = RenamedSourcePath(jar_context, (src, output_basename))
-                path = mozpath.dirname(mozpath.join(section_name, entry_output))
-
-                if e.preprocess:
-                    if "*" in entry_source:
-                        raise Exception(
-                            "%s: Wildcards are not supported with "
-                            "preprocessing" % obj.path
-                        )
-                    if e.is_locale:
-                        localized_files_pp[path] += [src]
-                    else:
-                        files_pp[path] += [src]
-                elif e.is_locale:
-                    localized_files[path] += [src]
-                else:
-                    files[path] += [src]
-
-            if files:
-                self.consume_object(FinalTargetFiles(jar_context, files))
-            if files_pp:
-                self.consume_object(FinalTargetPreprocessedFiles(jar_context, files_pp))
-            if localized_files:
-                self.consume_object(LocalizedFiles(jar_context, localized_files))
-            if localized_files_pp:
-                self.consume_object(
-                    LocalizedPreprocessedFiles(jar_context, localized_files_pp)
-                )
-
-            for m in jarinfo.chrome_manifests:
-                entry = parse_manifest_line(
-                    mozpath.dirname(section_name),
-                    m.resolve(ab_cd).replace("%", mozpath.basename(section_name) + "/"),
-                )
-                self.consume_object(
-                    ChromeManifestEntry(jar_context, f"{section_name}.manifest", entry)
-                )
 
     def _write_rust_xpidl_summary(self, manager):
         """Write out a rust file which includes the generated xpcom rust modules"""
