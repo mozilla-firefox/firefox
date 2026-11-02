@@ -1026,8 +1026,14 @@ impl Renderer {
                 }
             }
 
+            let supports_partial_present = match self.current_compositor_kind {
+                CompositorKind::Layer {
+                    mode: SwapchainMode::OsLayers { max_partial_present_rects },
+                } => max_partial_present_rects > 0,
+                _ => unreachable!(),
+            };
             let can_use_partial_present =
-                !self.force_redraw && !full_render &&
+                supports_partial_present && !self.force_redraw && !full_render &&
                 self.layer_compositor_frame_state_in_prev_frame.is_some();
 
             if can_use_partial_present {
@@ -1473,7 +1479,7 @@ impl Renderer {
                     draw_previous_partial_present_regions,
                     true,
                 ),
-                CompositorKind::Layer { mode: SwapchainMode::OsLayers } => {
+                CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } } => {
                     // Calculate dirty rects of layer compositor in composite_simple()
                     return None;
                 }

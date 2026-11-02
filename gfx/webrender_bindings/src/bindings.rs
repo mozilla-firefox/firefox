@@ -1733,7 +1733,9 @@ impl Compositor for WrCompositor {
             );
         }
         if uses_os_layers {
-            SwapchainMode::OsLayers
+            SwapchainMode::OsLayers {
+                max_partial_present_rects,
+            }
         } else {
             SwapchainMode::WindowFramebuffer {
                 max_partial_present_rects,

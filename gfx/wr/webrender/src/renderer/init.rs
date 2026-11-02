@@ -355,7 +355,7 @@ pub fn create_webrender_instance(
     match options.compositor_config {
         CompositorConfig::Draw { .. } | CompositorConfig::Native { .. } => {}
         CompositorConfig::Layer { ref compositor } => {
-            if compositor.get_swapchain_mode() == SwapchainMode::OsLayers {
+            if let SwapchainMode::OsLayers { .. } = compositor.get_swapchain_mode() {
                 options.surface_origin_is_top_left = true;
             }
         }

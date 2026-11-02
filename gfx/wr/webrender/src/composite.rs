@@ -442,7 +442,13 @@ pub enum SwapchainMode {
     /// Each layer gets its own OS swapchain, and external surfaces can be
     /// given their own OS surface. The swapchains keep their content between
     /// frames. Swapchain surfaces have a top-left origin.
-    OsLayers,
+    OsLayers {
+        /// If this is zero, swapchains are fully redrawn and presented each
+        /// frame. Otherwise WR passes the dirty region of each swapchain to
+        /// bind_swapchain and present_swapchain. WR currently produces at most
+        /// one dirty rect per swapchain.
+        max_partial_present_rects: usize,
+    },
 }
 
 impl CompositorKind {
@@ -455,14 +461,14 @@ impl CompositorKind {
                 // When partial present is enabled, we need to force redraw.
                 *max_partial_present_rects > 0
             }
-            CompositorKind::Layer { mode: SwapchainMode::OsLayers } => false,    // TODO(gwc): Is this correct?
+            CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } } => false,    // TODO(gwc): Is this correct?
             CompositorKind::Native { capabilities, .. } => capabilities.redraw_on_invalidation,
         }
     }
 
     /// WR composites into OS swapchains, one per layer.
     pub fn uses_os_layers(&self) -> bool {
-        matches!(self, CompositorKind::Layer { mode: SwapchainMode::OsLayers })
+        matches!(self, CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } })
     }
 
     /// External surfaces may be given their own OS layer.
@@ -1704,7 +1710,9 @@ pub trait Compositor {
     /// The kind of swapchains this compositor provides when used with
     /// CompositorConfig::Layer.
     fn get_swapchain_mode(&self) -> SwapchainMode {
-        SwapchainMode::OsLayers
+        SwapchainMode::OsLayers {
+            max_partial_present_rects: 1,
+        }
     }
 }
 
