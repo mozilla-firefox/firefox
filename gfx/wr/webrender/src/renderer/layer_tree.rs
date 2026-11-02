@@ -15,29 +15,30 @@ const MAX_UNUSED_FRAMES_IN_POOL: usize = 3;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LayerMode {
-    /// WebRender composites into the default framebuffer: CompositorConfig::Draw, or
-    /// CompositorConfig::Native while native compositing is disabled.
+    /// WebRender composites into the window's default framebuffer: CompositorConfig::Draw,
+    /// or CompositorConfig::Layer with SwapchainMode::WindowFramebuffer.
     Framebuffer,
-    /// WebRender composites into swapchains owned by the embedder: CompositorConfig::Layer.
+    /// WebRender composites into OS swapchains owned by the embedder:
+    /// CompositorConfig::Layer with SwapchainMode::OsLayers.
     Swapchains,
 }
 
-pub fn layer_mode(config: &CompositorConfig) -> LayerMode {
-    match config {
-        CompositorConfig::Layer { .. } => LayerMode::Swapchains,
-        CompositorConfig::Draw { .. } | CompositorConfig::Native { .. } => LayerMode::Framebuffer,
+pub fn layer_mode(kind: CompositorKind) -> LayerMode {
+    if kind.uses_os_layers() {
+        LayerMode::Swapchains
+    } else {
+        LayerMode::Framebuffer
     }
 }
 
-/// Whether external surfaces may be given their own OS layer this frame.
-pub fn allows_external_layers(config: &CompositorConfig, kind: CompositorKind) -> bool {
-    layer_mode(config) == LayerMode::Swapchains && matches!(kind, CompositorKind::Layer { .. })
-}
-
-pub fn window_properties(config: &CompositorConfig) -> WindowProperties {
+/// Only OS layer compositors are asked for their window properties. The window
+/// framebuffer is treated as opaque.
+pub fn window_properties(config: &CompositorConfig, kind: CompositorKind) -> WindowProperties {
     match config {
-        CompositorConfig::Layer { ref compositor } => compositor.get_window_properties(),
-        CompositorConfig::Draw { .. } | CompositorConfig::Native { .. } => WindowProperties::default(),
+        CompositorConfig::Layer { ref compositor } if kind.uses_os_layers() => compositor.get_window_properties(),
+        CompositorConfig::Layer { .. } | CompositorConfig::Draw { .. } | CompositorConfig::Native { .. } => {
+            WindowProperties::default()
+        }
     }
 }
 

@@ -401,8 +401,9 @@ pub enum CompositorKind {
         /// Draw previous regions when doing partial present.
         draw_previous_partial_present_regions: bool,
     },
+    /// WR composites picture cache tiles into the swapchains of a Layer compositor.
     Layer {
-
+        mode: SwapchainMode,
     },
     /// Native OS compositor.
     Native {
@@ -421,16 +422,52 @@ impl Default for CompositorKind {
     }
 }
 
+/// The kind of swapchains a Layer compositor provides.
+#[cfg_attr(feature = "capture", derive(Serialize))]
+#[cfg_attr(feature = "replay", derive(Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum SwapchainMode {
+    /// The only swapchain is the window's default framebuffer. WR composites
+    /// into it the same way as with CompositorConfig::Draw, including external
+    /// surfaces and the debug overlay, and may keep drawing into it after
+    /// present_swapchain until end_frame. The swapchain surface ids all refer
+    /// to the window, so creating, resizing and destroying them can be ignored.
+    WindowFramebuffer {
+        /// See CompositorConfig::Draw.
+        max_partial_present_rects: usize,
+        /// See CompositorConfig::Draw. The buffer age is the one passed to
+        /// `Renderer::render`.
+        draw_previous_partial_present_regions: bool,
+    },
+    /// Each layer gets its own OS swapchain, and external surfaces can be
+    /// given their own OS surface. The swapchains keep their content between
+    /// frames. Swapchain surfaces have a top-left origin.
+    OsLayers,
+}
+
 impl CompositorKind {
     pub fn should_redraw_on_invalidation(&self) -> bool {
         match self {
-            CompositorKind::Draw { max_partial_present_rects, .. } => {
+            CompositorKind::Draw { max_partial_present_rects, .. } |
+            CompositorKind::Layer {
+                mode: SwapchainMode::WindowFramebuffer { max_partial_present_rects, .. },
+            } => {
                 // When partial present is enabled, we need to force redraw.
                 *max_partial_present_rects > 0
             }
-            CompositorKind::Layer {  } => false,    // TODO(gwc): Is this correct?
+            CompositorKind::Layer { mode: SwapchainMode::OsLayers } => false,    // TODO(gwc): Is this correct?
             CompositorKind::Native { capabilities, .. } => capabilities.redraw_on_invalidation,
         }
+    }
+
+    /// WR composites into OS swapchains, one per layer.
+    pub fn uses_os_layers(&self) -> bool {
+        matches!(self, CompositorKind::Layer { mode: SwapchainMode::OsLayers })
+    }
+
+    /// External surfaces may be given their own OS layer.
+    pub fn allows_external_layers(&self) -> bool {
+        self.uses_os_layers()
     }
 
     /// Picture-cache tiles are rendered into OS surfaces.
@@ -440,12 +477,12 @@ impl CompositorKind {
 
     /// Occlusion culling applies to every tile, not only fixed-position ones.
     pub fn culls_all_tiles(&self) -> bool {
-        matches!(self, CompositorKind::Layer { .. })
+        self.uses_os_layers()
     }
 
     /// A compositor surface may carry a single rounded-rect clip.
     pub fn supports_rounded_clip_promotion(&self) -> bool {
-        matches!(self, CompositorKind::Layer { .. })
+        self.uses_os_layers()
     }
 
     pub fn supports_backdrop_surface(&self) -> bool {
@@ -1647,7 +1684,11 @@ pub trait Compositor {
     }
 
     /// Bind a swapchain surface so that WebRender draws into the default framebuffer
-    /// handle (NativeSurfaceHandle::DEFAULT).
+    /// handle (NativeSurfaceHandle::DEFAULT). With SwapchainMode::WindowFramebuffer,
+    /// non-empty dirty rects are the total region WebRender is about to render to this
+    /// frame, ie the frame's dirty region and some previous frames' dirty regions, if
+    /// applicable (calculated using the buffer age), and bind_swapchain is called once
+    /// per frame before anything is rendered to the framebuffer.
     fn bind_swapchain(&mut self, _id: NativeSurfaceId, _dirty_rects: &[DeviceIntRect]) {
         unimplemented!("bind_swapchain");
     }
@@ -1658,6 +1699,12 @@ pub trait Compositor {
 
     fn get_window_properties(&self) -> WindowProperties {
         WindowProperties::default()
+    }
+
+    /// The kind of swapchains this compositor provides when used with
+    /// CompositorConfig::Layer.
+    fn get_swapchain_mode(&self) -> SwapchainMode {
+        SwapchainMode::OsLayers
     }
 }
 

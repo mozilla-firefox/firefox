@@ -13,7 +13,7 @@ use crate::bump_allocator::ChunkPool;
 use crate::render_api::{ApiMsg, RenderApiSender, FrameMsg, ResourceCacheInit, WindowRegistration};
 use crate::render_backend_pool::{PoolMemberSetup, RenderBackendPool};
 use crate::scene_builder_thread::SceneBuilderRequest;
-use crate::composite::{CompositorKind, CompositorConfig};
+use crate::composite::{CompositorKind, CompositorConfig, SwapchainMode};
 use super::layer_tree::LayerTree;
 use crate::device::{
     DeviceOptions, GpuBackendConfig, UploadMethod, UploadBufferPool, VertexUsageHint, Device, ProgramCache, TextureFilter
@@ -354,8 +354,10 @@ pub fn create_webrender_instance(
     // turn out to be the case, we can add a query method on the `Compositor` trait.
     match options.compositor_config {
         CompositorConfig::Draw { .. } | CompositorConfig::Native { .. } => {}
-        CompositorConfig::Layer { .. } => {
-            options.surface_origin_is_top_left = true;
+        CompositorConfig::Layer { ref compositor } => {
+            if compositor.get_swapchain_mode() == SwapchainMode::OsLayers {
+                options.surface_origin_is_top_left = true;
+            }
         }
     }
 
@@ -562,8 +564,9 @@ pub fn create_webrender_instance(
                 capabilities,
             }
         }
-        CompositorConfig::Layer { .. } => {
+        CompositorConfig::Layer { ref compositor } => {
             CompositorKind::Layer {
+                mode: compositor.get_swapchain_mode(),
             }
         }
     };
