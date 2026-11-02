@@ -217,8 +217,8 @@ add_task(async function test_get_open_tabs_returns_sanitized_data() {
   for (const tab of tabs) {
     Assert.deepEqual(
       Object.keys(tab).sort(),
-      ["lastAccessed", "title", "url", "windowId"],
-      "Tab info exposes exactly url, title, lastAccessed, windowId and no other fields."
+      ["lastAccessed", "pinned", "title", "url", "windowId"],
+      "Tab info exposes exactly url, title, lastAccessed, windowId, pinned and no other fields."
     );
   }
 
