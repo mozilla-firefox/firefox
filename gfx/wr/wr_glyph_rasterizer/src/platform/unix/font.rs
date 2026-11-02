@@ -264,7 +264,13 @@ impl FontCache {
     }
 
     fn delete_font(&mut self, cached: Arc<Mutex<CachedFont>>) {
-        self.fonts.remove(&cached.lock().unwrap().template);
+        // Check for other users while FONT_CACHE is locked so that add_font cannot
+        // hand out another reference before we remove the cache entry. If the only
+        // references are the cache and this argument, the face is also destroyed
+        // under the lock, as required by the shared FreeType library.
+        if Arc::strong_count(&cached) <= 2 {
+            self.fonts.remove(&cached.lock().unwrap().template);
+        }
     }
 }
 
@@ -426,11 +432,7 @@ impl FontContext {
 
     pub fn delete_font(&mut self, font_key: &FontKey) {
         if let Some(cached) = self.fonts.remove(font_key) {
-            // If the only references to this font are the FontCache and this FontContext,
-            // then delete the font as there are no other existing users.
-            if Arc::strong_count(&cached) <= 2 {
-                FONT_CACHE.lock().unwrap().delete_font(cached);
-            }
+            FONT_CACHE.lock().unwrap().delete_font(cached);
         }
     }
 
