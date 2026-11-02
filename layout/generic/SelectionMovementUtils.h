@@ -38,6 +38,16 @@ struct MOZ_STACK_CLASS FrameAndOffset {
     return mFrame;
   }
 
+  /**
+   * If mFrame is for a generated content, return the primary frame and offset
+   * at before or after the generated content root. I.e., return a frame for the
+   * generated content host. Otherwise, returns a copy of `this`.
+   *
+   * NOTE: This returns primary frame of the generated content host rather than
+   * a continuation frame for mOffsetInFrameContent.
+   */
+  FrameAndOffset GetNonGeneratedFrameAndOffset() const;
+
   nsIFrame* mFrame = nullptr;
   // The offset in mFrame->GetContent().
   uint32_t mOffsetInFrameContent = 0;
