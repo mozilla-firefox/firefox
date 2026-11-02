@@ -70,8 +70,8 @@ already_AddRefed<TextGenerationParent> TextGenerationParent::Create(
 }
 
 RefPtr<TextGenerationParent::ReadyPromise> TextGenerationParent::WhenReady() {
-  if (mLoadMs) {
-    return ReadyPromise::CreateAndResolve(*mLoadMs, __func__);
+  if (mLoaded) {
+    return ReadyPromise::CreateAndResolve(*mLoaded, __func__);
   }
   if (mLoadFailure) {
     return ReadyPromise::CreateAndReject(*mLoadFailure, __func__);
@@ -82,8 +82,10 @@ RefPtr<TextGenerationParent::ReadyPromise> TextGenerationParent::WhenReady() {
 ipc::IPCResult TextGenerationParent::RecvReady(const LoadResult& aResult) {
   LOGD("[{} - {}]", fmt::ptr(this), __func__);
   if (aResult.type() == LoadResult::TLoadSuccess) {
-    mLoadMs = Some(aResult.get_LoadSuccess().loadMs());
-    mReadyPromise.ResolveIfExists(*mLoadMs, __func__);
+    LOGD("[{} - {}] loaded on {}", fmt::ptr(this), __func__,
+         aResult.get_LoadSuccess().device());
+    mLoaded = Some(aResult.get_LoadSuccess());
+    mReadyPromise.ResolveIfExists(*mLoaded, __func__);
   } else {
     mLoadFailure = Some(LoadFailure{LoadFailure::Cause::Backend,
                                     aResult.get_LoadError().message()});
@@ -140,7 +142,7 @@ static void ReleaseAfterIdleGrace(
 
 void TextGenerationParent::ActorDestroy(ActorDestroyReason aReason) {
   LOGD("[{} - {}]", fmt::ptr(this), __func__);
-  if (mLoadMs.isNothing() && mLoadFailure.isNothing()) {
+  if (mLoaded.isNothing() && mLoadFailure.isNothing()) {
     mLoadFailure = Some(LoadFailure{LoadFailure::Cause::ActorGone,
                                     "TextGenerator: actor destroyed"_ns});
     mReadyPromise.RejectIfExists(*mLoadFailure, __func__);

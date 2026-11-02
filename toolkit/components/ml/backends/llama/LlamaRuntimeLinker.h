@@ -120,8 +120,6 @@ namespace mozilla::llama {
   X(ggml_threadpool_t, ggml_threadpool_new,                                 \
     (struct ggml_threadpool_params * params))                               \
   X(void, ggml_threadpool_free, (ggml_threadpool_t threadpool))             \
-  X(ggml_backend_dev_t, ggml_backend_dev_by_type,                           \
-    (enum ggml_backend_dev_type type))                                      \
   X(enum ggml_backend_dev_type, ggml_backend_dev_type,                      \
     (ggml_backend_dev_t device))                                            \
   X(size_t, ggml_backend_dev_count, (void))                                 \

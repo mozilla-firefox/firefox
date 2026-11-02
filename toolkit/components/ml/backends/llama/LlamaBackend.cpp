@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstdio>
 
 #include <functional>
 #include "mozilla/HashTable.h"
@@ -157,35 +158,98 @@ const nsTArray<Device>& Devices(const LlamaLibWrapper* aLib) {
   return sDevices;
 }
 
-// Whether GPU offload can actually be used on this machine. Some configurations
-// register a GPU device that then fails during real backend initialization
-// (e.g. Metal on CI VMs or older Intel Macs, where the device exists but the
-// command queue / shader library can't be created). The vendored library is
-// built without exceptions (see third_party/llama.cpp/moz-overrides.h), so
-// letting llama_context hit that failure would abort instead of falling back.
-// Probe the GPU backend once, up front, and treat it as unusable if there is no
-// GPU device or if a real init attempt fails; callers then load on CPU.
-static bool GpuOffloadUsable(const LlamaLibWrapper* aLib) {
-  static const bool sUsable = [aLib]() {
-    ggml_backend_dev_t dev =
-        aLib->ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
-    if (!dev) {
-      dev = aLib->ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_IGPU);
+// The CPU device, found without probing the accelerators.
+static const Device* CpuDevice(const LlamaLibWrapper* aLib) {
+  static const Maybe<Device> sCpu = [aLib]() -> Maybe<Device> {
+    for (size_t i = 0; i < aLib->ggml_backend_dev_count(); ++i) {
+      ggml_backend_dev_t dev = aLib->ggml_backend_dev_get(i);
+      ggml_backend_dev_props props;
+      aLib->ggml_backend_dev_get_props(dev, &props);
+      if (props.type == GGML_BACKEND_DEVICE_TYPE_CPU) {
+        return Some(Device{dev, DeviceId(props), NonNull(props.description),
+                           dom::HWInferenceDeviceKind::Cpu});
+      }
     }
-    if (!dev) {
-      return false;
-    }
-    // A real init: this is what llama_context does internally, and it is where
-    // Metal actually fails on affected machines. ggml_backend_dev_init returns
-    // null (it does not abort) on failure, so this is safe to probe.
-    ggml_backend_t backend = aLib->ggml_backend_dev_init(dev, nullptr);
-    if (!backend) {
-      return false;
-    }
-    aLib->ggml_backend_free(backend);
-    return true;
+    return Nothing();
   }();
-  return sUsable;
+  return sCpu.ptrOr(nullptr);
+}
+
+// Devices in placement order: by id, or every device of each kind. An empty
+// placement resolves to the CPU alone.
+static nsTArray<const Device*> ResolvePlacement(
+    const LlamaLibWrapper* aLib, const dom::HWInferencePlacement& aPlacement) {
+  nsTArray<const Device*> candidates;
+  if (aPlacement.mDevices.IsEmpty() && aPlacement.mKinds.IsEmpty()) {
+    if (const Device* cpu = CpuDevice(aLib)) {
+      candidates.AppendElement(cpu);
+    }
+    return candidates;
+  }
+  auto appendIf = [&](auto&& aMatches) {
+    for (const Device& device : Devices(aLib)) {
+      if (aMatches(device)) {
+        candidates.AppendElement(&device);
+      }
+    }
+  };
+  if (!aPlacement.mDevices.IsEmpty()) {
+    for (const nsCString& id : aPlacement.mDevices) {
+      appendIf([&](const Device& aDevice) { return id.Equals(aDevice.mId); });
+    }
+  } else {
+    for (dom::HWInferenceDeviceKind kind : aPlacement.mKinds) {
+      appendIf([&](const Device& aDevice) { return aDevice.mKind == kind; });
+    }
+  }
+  return candidates;
+}
+
+ResultStatus LlamaBackend::LoadOnFirstDevice(const LlamaModelOptions& aOptions,
+                                             FILE* aFp,
+                                             llama_model_params aParams) {
+  constexpr int32_t kNoGpuLayers = 0;
+  constexpr int32_t kAllGpuLayers = -1;
+  if (!aOptions.mPlacement.mDevices.IsEmpty() &&
+      !aOptions.mPlacement.mKinds.IsEmpty()) {
+    auto msg = nsFmtCString("{}: a placement takes devices or kinds, not both",
+                            __PRETTY_FUNCTION__);
+    LOGE("{}", msg);
+    return mozilla::Err(Error{std::move(msg)});
+  }
+  nsTArray<const Device*> candidates =
+      ResolvePlacement(mLib, aOptions.mPlacement);
+  if (candidates.IsEmpty()) {
+    auto msg = nsFmtCString("{}: no device matches the requested placement",
+                            __PRETTY_FUNCTION__);
+    LOGE("{}", msg);
+    return mozilla::Err(Error{std::move(msg)});
+  }
+  for (const Device* device : candidates) {
+    const bool cpu = device->mKind == dom::HWInferenceDeviceKind::Cpu;
+    // An empty list keeps llama.cpp off every accelerator.
+    ggml_backend_dev_t devices[2] = {cpu ? nullptr : device->mHandle, nullptr};
+    aParams.devices = devices;
+    aParams.n_gpu_layers = cpu ? kNoGpuLayers : kAllGpuLayers;
+    rewind(aFp);
+    const TimeStamp loadStart = TimeStamp::Now();
+    mModel.reset(mLib->llama_model_load_from_file_handle(aFp, aParams));
+    PROFILER_MARKER(
+        ML_TEXT_GENERATION_TRACK, ML_SETUP,
+        MarkerTiming::IntervalUntilNowFrom(loadStart), MLDeviceLoadMarker,
+        ProfilerString8View::WrapNullTerminatedString(device->mId), !!mModel);
+    if (mModel) {
+      mDevice = device->mId;
+      mDeviceKind = device->mKind;
+      return Ok();
+    }
+    LOGW("{}: {} could not load the model", __PRETTY_FUNCTION__,
+         device->mDescription);
+  }
+  auto msg = nsFmtCString("{}: no device of the placement could load the model",
+                          __PRETTY_FUNCTION__);
+  LOGE("{}", msg);
+  return mozilla::Err(Error{std::move(msg)});
 }
 
 LlamaBackend::~LlamaBackend() {
@@ -215,26 +279,15 @@ ResultStatus LlamaBackend::Reinitialize(const LlamaModelOptions& aOptions,
 
   // initialize the model
   llama_model_params modelParams = mLib->llama_model_default_params();
-  modelParams.n_gpu_layers = aOptions.mNGpuLayers;
-  if (modelParams.n_gpu_layers > 0 && !GpuOffloadUsable(mLib)) {
-    LOGW(
-        "GPU offload was requested but no usable GPU backend is available "
-        "(none "
-        "present, or it failed to initialize); falling back to CPU.");
-    modelParams.n_gpu_layers = 0;
-  }
   modelParams.use_mmap = aOptions.mUseMmap;
   modelParams.use_mlock = aOptions.mUseMlock;
   modelParams.check_tensors = aOptions.mCheckTensors;
+  mDevice.Truncate();
+  mDeviceKind = dom::HWInferenceDeviceKind::Cpu;
 
-  mModel.reset(mLib->llama_model_load_from_file_handle(aFp, modelParams));
-
-  if (!mModel) {
-    auto msg =
-        nsFmtCString("{}: Unable to load the model during initialization",
-                     __PRETTY_FUNCTION__);
-    LOGE("{}", msg);
-    return mozilla::Err(Error{std::move(msg)});
+  auto loaded = LoadOnFirstDevice(aOptions, aFp, modelParams);
+  if (loaded.isErr()) {
+    return loaded;
   }
 
   // Preallocate buffer based on rough estimate of the size of the name
@@ -278,12 +331,15 @@ ResultStatus LlamaBackend::ReinitializeContext(
 
   ctxParams.type_k = GgmlTypeFromKVCacheDtype(aOptions.mKCacheDtype);
   ctxParams.type_v = GgmlTypeFromKVCacheDtype(aOptions.mVCacheDtype);
-  ctxParams.offload_kqv = aOptions.mOffloadKqv;
+  // The KV cache and host-side ops follow the model onto an accelerator.
+  const bool onAccelerator = mDeviceKind != dom::HWInferenceDeviceKind::Cpu;
+  ctxParams.offload_kqv = onAccelerator;
   ctxParams.flash_attn_type = aOptions.mFlashAttn
                                   ? LLAMA_FLASH_ATTN_TYPE_ENABLED
                                   : LLAMA_FLASH_ATTN_TYPE_DISABLED;
   ctxParams.no_perf = aOptions.mNoPerf;
-  ctxParams.op_offload = aOptions.mOpOffload;
+  // On the CPU, op_offload would still route big matmuls to a registered GPU.
+  ctxParams.op_offload = onAccelerator;
   ctxParams.swa_full = aOptions.mSwaFull;
 
   // llama_init_from_model does not take ownership of the model or context

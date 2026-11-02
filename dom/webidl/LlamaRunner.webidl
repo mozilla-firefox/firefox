@@ -103,12 +103,6 @@ dictionary LlamaContextOptions {
   LlamaKVCacheDtype vCacheDtype = "f16";
 
   /**
-   * If true, offload K, Q, V ops (including KV cache) to the GPU.
-   * Only active if GPU is used with NGpULayers != 0 in LlamaModelOptions
-   */
-  boolean offloadKqv = true;
-
-  /**
    * If true, use FlashAttention (experimental).
    */
   boolean flashAttn = false;
@@ -117,12 +111,6 @@ dictionary LlamaContextOptions {
    * If true, disable performance measurement (no timing output).
    */
   boolean noPerf = false;
-
-  /**
-   * If true, offload host-side tensor operations to the device.
-   * Only active if GPU is used with NGpULayers != 0 in LlamaModelOptions
-   */
-  boolean opOffload = true;
 
   /**
    * If true, use a full-size SWA (sliding window attention) cache.
@@ -152,10 +140,10 @@ dictionary LlamaModelOptions {
   boolean checkTensors = false;
 
   /**
-   * Number of model layers to offload to GPU.
-   * A value of 0 disables GPU offloading.
+   * Where to load: the first device matching it that takes the model serves
+   * it, an accelerator with every layer. Empty loads on the CPU.
    */
-  long nGpuLayers = 0;
+  HWInferencePlacement placement = {};
 
   /**
    * Context configuration (e.g. nCtx, threads).

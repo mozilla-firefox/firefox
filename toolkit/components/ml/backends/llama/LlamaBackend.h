@@ -96,6 +96,10 @@ class LlamaBackend {
       std::function<ResultStatus(const LlamaChatResponse&)> aTokenCallback,
       std::function<bool()> aCancelCallback);
 
+  // Id of the device that loaded the model.
+  const nsCString& DeviceId() const { return mDevice; }
+  dom::HWInferenceDeviceKind DeviceKind() const { return mDeviceKind; }
+
   // Reinitializes the context only (same model).
   // Use this to change generation parameters like context size, temperature,
   // etc.
@@ -140,6 +144,11 @@ class LlamaBackend {
       const mozilla::dom::Sequence<LlamaSamplerConfig>& aSamplers,
       const llama_vocab* vocab);
 
+  // Loads on the first device matching aOptions.mPlacement that takes the
+  // model.
+  ResultStatus LoadOnFirstDevice(const LlamaModelOptions& aOptions, FILE* aFp,
+                                 llama_model_params aParams);
+
   // Pointer to the dynamically loaded llama library
   LlamaLibWrapper* mLib = nullptr;
 
@@ -161,6 +170,9 @@ class LlamaBackend {
   GgmlThreadpoolUPtr mThreadpoolBatch;
 
   LlamaModelOptions mModelOptions;
+
+  nsCString mDevice;
+  dom::HWInferenceDeviceKind mDeviceKind = dom::HWInferenceDeviceKind::Cpu;
 
   // Cached model name/info string for logging (e.g. "Smollm2 360M 8k ...")
   nsCString mModelGeneralName;
