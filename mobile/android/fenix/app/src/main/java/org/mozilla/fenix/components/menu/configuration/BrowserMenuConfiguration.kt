@@ -81,7 +81,7 @@ object BrowserMenuConfiguration {
 
     /** The sections of the browser menu the user removed, in their stored order. */
     fun hiddenSections(customization: CustomizedMenuInfo): List<MenuSectionConfiguration> {
-        val sections = allSections(shouldShowNavigationItemsAtTheTop = true).associateBy { it.id }
+        val sections = allSections().associateBy { it.id }
         return customization.hiddenSectionIds.mapNotNull { sections[it] }
     }
 
@@ -98,6 +98,9 @@ object BrowserMenuConfiguration {
                 .partition { it in HIDDEN_BY_DEFAULT_SECTION_IDS }
         return CustomizedMenuInfo(visibleSectionIds = shownIds, hiddenSectionIds = hiddenIds)
     }
+
+    /** All the sections of the browser menu, including the ones hidden by default. */
+    fun allSections(): List<MenuSectionConfiguration> = allSections(shouldShowNavigationItemsAtTheTop = true)
 
     private fun shouldShowNavigationItemsAtTheTop(isToolbarAtBottom: Boolean, isExpandedToolbarEnabled: Boolean) =
         !isToolbarAtBottom && !isExpandedToolbarEnabled

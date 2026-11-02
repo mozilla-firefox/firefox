@@ -89,7 +89,9 @@ fun CustomizeMenuContent(
                 )
             }
 
-            CustomizeMenuResetButton(onClick = onResetToDefault)
+            if (menuState.isCustomized) {
+                CustomizeMenuResetButton(onClick = onResetToDefault)
+            }
         }
     }
 }

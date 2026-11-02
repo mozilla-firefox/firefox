@@ -9,9 +9,11 @@ import kotlin.test.assertTrue
 import org.junit.Test
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_1_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_2_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_3_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_4_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_5_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_6_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.NAVIGATION_ID
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
@@ -180,6 +182,14 @@ class BrowserMenuConfigurationTest {
         val hiddenSections = BrowserMenuConfiguration.hiddenSections(customization)
 
         assertEquals(listOf(GROUP_4_ID, NAVIGATION_ID), hiddenSections.map { it.id })
+    }
+
+    @Test
+    fun `WHEN getting all the browser menu sections THEN return every section with the navigation block first`() {
+        assertEquals(
+            listOf(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+            BrowserMenuConfiguration.allSections().map { it.id },
+        )
     }
 
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =

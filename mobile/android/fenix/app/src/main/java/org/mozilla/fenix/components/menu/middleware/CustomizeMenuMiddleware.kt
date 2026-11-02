@@ -19,21 +19,23 @@ import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
-import org.mozilla.fenix.components.menu.configuration.asMenuItemsGroup
 
 /**
  * [CustomizableMenuStore] middleware responsible with handling the user interactions for customizing the menu
  * structure.
  *
  * @param repository [MenuCustomizationRepository] persisting the user's customization of the browser menu.
+ * @param menuBuilder [MenuBuilder] providing the items of all the sections of the browser menu.
  * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
  * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
  * @param scope [CoroutineScope] tied to the lifetime of the screen, on which to read the current structure.
  */
 class CustomizeMenuMiddleware(
     private val repository: MenuCustomizationRepository,
+    private val menuBuilder: MenuBuilder,
     private val isToolbarAtBottom: Boolean,
     private val isExpandedToolbarEnabled: Boolean,
     private val scope: CoroutineScope,
@@ -70,14 +72,15 @@ class CustomizeMenuMiddleware(
 
     private fun showInitialMenuStructure(store: Store<CustomizableMenuState, CustomizableMenuAction>) = scope.launch {
         val customization = repository.customizedMenuInfo.filterNotNull().first()
-        val visibleSections =
+        val groups = menuBuilder.menuStructure.first().associateBy { it.id }
+        val shownSections =
             BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
         val hiddenSections = BrowserMenuConfiguration.hiddenSections(customization)
 
         store.dispatch(
             Update(
-                items = (visibleSections + hiddenSections).map { it.asMenuItemsGroup(shownItems = emptyList()) },
-                mandatoryGroupIds = emptySet(),
+                items = (shownSections + hiddenSections).mapNotNull { groups[it.id] },
+                mandatoryGroupIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
                 hiddenGroupIds = hiddenSections.map { it.id }.toSet(),
                 isCustomized = isCustomized(customization),
             )

@@ -13,6 +13,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -26,6 +27,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.Test
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_1_ID
@@ -39,12 +41,13 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomizeMenuMiddlewareTest {
     private val repository: MenuCustomizationRepository = mockk(relaxed = true)
+    private val menuBuilder: MenuBuilder = mockk()
     private val captureActions = CaptureActionsMiddleware<CustomizableMenuState, CustomizableMenuAction>()
     private val defaultMenuInfo =
         BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
 
     @Test
-    fun `GIVEN the menu was customized WHEN the screen is shown THEN show the sections in the saved order and the removed ones`() =
+    fun `GIVEN the menu was customized WHEN the screen is shown THEN show the sections in the saved order, the ones that cannot be moved and the removed ones`() =
         runTest {
             val customization =
                 CustomizedMenuInfo(
@@ -56,7 +59,11 @@ class CustomizeMenuMiddlewareTest {
             runCurrent()
 
             captureActions.assertLastAction(Update::class) {
-                assertEquals(customization.visibleSectionIds + GROUP_6_ID, it.items.map { group -> group.id })
+                assertEquals(
+                    groups(NAVIGATION_ID, GROUP_3_ID, GROUP_1_ID, GROUP_2_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                    it.items,
+                )
+                assertEquals(setOf(GROUP_5_ID), it.mandatoryGroupIds)
                 assertEquals(setOf(GROUP_6_ID), it.hiddenGroupIds)
                 assertTrue(it.isCustomized)
             }
@@ -70,6 +77,22 @@ class CustomizeMenuMiddlewareTest {
         captureActions.assertLastAction(Update::class) {
             assertEquals(defaultMenuInfo.visibleSectionIds, it.items.map { group -> group.id })
             assertFalse(it.isCustomized)
+        }
+    }
+
+    @Test
+    fun `GIVEN a section has nothing to show WHEN the screen is shown THEN don't show it`() = runTest {
+        createStore(
+            customization = MutableStateFlow(defaultMenuInfo),
+            menuGroups = groups(NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+        )
+        runCurrent()
+
+        captureActions.assertLastAction(Update::class) {
+            assertEquals(
+                listOf(NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                it.items.map { group -> group.id },
+            )
         }
     }
 
@@ -154,8 +177,10 @@ class CustomizeMenuMiddlewareTest {
     private fun TestScope.createStore(
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
         customization: StateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
+        menuGroups: List<MenuItemsGroup> = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
     ): CustomizableMenuStore {
         every { repository.customizedMenuInfo } returns customization
+        every { menuBuilder.menuStructure } returns flowOf(menuGroups)
 
         return CustomizableMenuStore(
             initialState = initialState,
@@ -164,6 +189,7 @@ class CustomizeMenuMiddlewareTest {
                     captureActions,
                     CustomizeMenuMiddleware(
                         repository = repository,
+                        menuBuilder = menuBuilder,
                         isToolbarAtBottom = false,
                         isExpandedToolbarEnabled = false,
                         scope = backgroundScope,
