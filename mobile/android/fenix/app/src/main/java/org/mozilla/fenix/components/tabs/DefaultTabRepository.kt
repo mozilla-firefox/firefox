@@ -49,6 +49,10 @@ class DefaultTabRepository(
     override fun removeTabs(tabIds: List<String>, excludedFallbackTabIds: Set<String>) {
         tabsUseCases.removeTabs.invoke(ids = tabIds, excludedFallbackTabIds = excludedFallbackTabIds)
     }
+
+    override fun selectTab(tabId: String) {
+        tabsUseCases.selectTab.invoke(tabId)
+    }
 }
 
 private fun TabSessionState.toTab(): Tab =

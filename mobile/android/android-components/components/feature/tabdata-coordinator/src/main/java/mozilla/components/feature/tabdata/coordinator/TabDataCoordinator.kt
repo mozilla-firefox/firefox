@@ -65,6 +65,13 @@ interface TabDataCoordinator {
     fun initialize()
 
     /**
+     * Selects or makes active the tab with [tabId].
+     *
+     * @param tabId The ID of the tab to select.
+     */
+    fun selectTab(tabId: String)
+
+    /**
      * Creates a new tab group containing [tabIds] and returns its ID.
      *
      * The tabs are sequenced next to [anchorTabId] so the group's tabs are adjacent in the tab list.
@@ -224,6 +231,10 @@ class DefaultTabDataCoordinator(
                 }
             }
         }
+    }
+
+    override fun selectTab(tabId: String) {
+        tabRepository.selectTab(tabId)
     }
 
     override suspend fun createTabGroup(

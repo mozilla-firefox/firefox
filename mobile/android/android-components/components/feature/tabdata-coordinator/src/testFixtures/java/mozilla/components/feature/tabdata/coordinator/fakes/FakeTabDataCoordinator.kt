@@ -14,12 +14,19 @@ import mozilla.components.feature.tabdata.coordinator.data.TabsSnapshot
  *
  * @param initialTabsSnapshot The [TabsSnapshot] emitted by [tabsSnapshot]. Null by default, mirroring a coordinator
  *   which is not yet fully initialized.
+ * @property selectedTabIds The IDs passed to [selectTab], in call order.
  */
 class FakeTabDataCoordinator(initialTabsSnapshot: TabsSnapshot? = null) : TabDataCoordinator {
 
     override val tabsSnapshot: MutableStateFlow<TabsSnapshot?> = MutableStateFlow(initialTabsSnapshot)
 
+    val selectedTabIds = mutableListOf<String>()
+
     override fun initialize() = Unit
+
+    override fun selectTab(tabId: String) {
+        selectedTabIds.add(tabId)
+    }
 
     override suspend fun createTabGroup(
         title: String,

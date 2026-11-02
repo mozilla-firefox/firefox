@@ -10,6 +10,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -101,23 +102,14 @@ internal fun TabGroupsStripContent(
         }
 
         if (tabsOverflowing) {
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-                contentPadding =
-                    PaddingValues(
-                        start = edgePadding,
-                        end = gradientWidth + itemSize + expandButtonWidth + edgePadding,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-                content = tabItems,
-            )
-
-            OverflowTrailingButtons(
+            OverflowingTabsStrip(
+                tabItems = tabItems,
                 onAddTabClick = onAddTabClick,
                 onExpandGroupClick = onExpandGroupClick,
-                endPadding = edgePadding,
-                modifier = Modifier.align(Alignment.CenterEnd),
+                itemSpacing = itemSpacing,
+                itemSize = itemSize,
+                edgePadding = edgePadding,
+                expandButtonWidth = expandButtonWidth,
             )
         } else {
             Row(
@@ -174,6 +166,36 @@ internal fun areTabsOverflowing(
 }
 
 @Composable
+private fun BoxScope.OverflowingTabsStrip(
+    tabItems: LazyListScope.() -> Unit,
+    onAddTabClick: () -> Unit,
+    onExpandGroupClick: () -> Unit,
+    itemSpacing: Dp,
+    itemSize: Dp,
+    edgePadding: Dp,
+    expandButtonWidth: Dp,
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+        contentPadding =
+            PaddingValues(
+                start = edgePadding,
+                end = gradientWidth + itemSize + expandButtonWidth + edgePadding,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        content = tabItems,
+    )
+
+    OverflowTrailingButtons(
+        onAddTabClick = onAddTabClick,
+        onExpandGroupClick = onExpandGroupClick,
+        endPadding = edgePadding,
+        modifier = Modifier.align(Alignment.CenterEnd),
+    )
+}
+
+@Composable
 private fun OverflowTrailingButtons(
     onAddTabClick: () -> Unit,
     onExpandGroupClick: () -> Unit,
@@ -227,7 +249,7 @@ private fun TabFaviconCircle(
     tab: TabGroupsStripState.Tab,
     onClick: () -> Unit,
 ) {
-    val selectionBorder =
+    val focusedBorder =
         if (tab.isFocused) {
             Modifier.border(FirefoxTheme.layout.border.heavy, MaterialTheme.colorScheme.primary, CircleShape)
         } else {
@@ -247,7 +269,7 @@ private fun TabFaviconCircle(
                 Modifier.size(FirefoxTheme.layout.size.static400)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                    .then(selectionBorder),
+                    .then(focusedBorder),
             contentAlignment = Alignment.Center,
         ) {
             Favicon(url = tab.url, size = FirefoxTheme.layout.size.static300, shape = CircleShape)

@@ -5,10 +5,10 @@
 package org.mozilla.fenix.tabgroups.strip.redux
 
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import mozilla.components.feature.tabdata.coordinator.TabDataCoordinator
 import mozilla.components.feature.tabdata.coordinator.data.Tab as CoordinatorTab
 import mozilla.components.feature.tabdata.coordinator.data.TabGroup
 import mozilla.components.feature.tabdata.coordinator.data.TabsSnapshot
@@ -105,7 +105,7 @@ class TabGroupsStripMiddlewareTest {
     fun `WHEN a later snapshot emits THEN the strip keeps updating`() =
         runTest(testDispatcher) {
             val coordinator = FakeTabDataCoordinator()
-            val store = buildStore(coordinator = coordinator)
+            val store = buildStore(coordinator)
             testDispatcher.scheduler.advanceUntilIdle()
             assertEquals(expected = TabGroupsStripState.TabGroupStripHidden, actual = store.state)
 
@@ -163,9 +163,76 @@ class TabGroupsStripMiddlewareTest {
             )
         }
 
+    @Test
+    fun `WHEN a tab other than the focused one is clicked THEN it is selected`() =
+        runTest(testDispatcher) {
+            val tab1 = createTab(id = "1", tabGroupId = "group")
+            val tab2 = createTab(id = "2", tabGroupId = "group")
+            val coordinator =
+                FakeTabDataCoordinator(
+                    TabsSnapshot(
+                        selectedTab = tab1,
+                        normalTabs = listOf(tab1, tab2),
+                        openTabGroups = listOf(createGroup("group", "Group", tabIds = listOf("1", "2"))),
+                    )
+                )
+            val store = buildStore(coordinator)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            store.dispatch(TabGroupsStripAction.TabClicked("2"))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(expected = listOf("2"), actual = coordinator.selectedTabIds)
+        }
+
+    @Test
+    fun `WHEN the already focused tab is clicked THEN it is not re-selected`() =
+        runTest(testDispatcher) {
+            val tab1 = createTab(id = "1", tabGroupId = "group")
+            val tab2 = createTab(id = "2", tabGroupId = "group")
+            val coordinator =
+                FakeTabDataCoordinator(
+                    TabsSnapshot(
+                        selectedTab = tab1,
+                        normalTabs = listOf(tab1, tab2),
+                        openTabGroups = listOf(createGroup("group", "Group", tabIds = listOf("1", "2"))),
+                    )
+                )
+            val store = buildStore(coordinator)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            store.dispatch(TabGroupsStripAction.TabClicked("1"))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(coordinator.selectedTabIds.isEmpty())
+        }
+
+    @Test
+    fun `WHEN AddTabClicked or ExpandGroupClicked is dispatched THEN no tab is selected`() =
+        runTest(testDispatcher) {
+            val tab1 = createTab(id = "1", tabGroupId = "group")
+            val tab2 = createTab(id = "2", tabGroupId = "group")
+            val coordinator =
+                FakeTabDataCoordinator(
+                    TabsSnapshot(
+                        selectedTab = tab1,
+                        normalTabs = listOf(tab1, tab2),
+                        openTabGroups = listOf(createGroup("group", "Group", tabIds = listOf("1", "2"))),
+                    )
+                )
+            val store = buildStore(coordinator)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            store.dispatch(TabGroupsStripAction.AddTabClicked)
+            store.dispatch(TabGroupsStripAction.ExpandGroupClicked)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(coordinator.selectedTabIds.isEmpty())
+        }
+
     private fun buildStore(snapshot: TabsSnapshot?): TabGroupsStripStore = buildStore(FakeTabDataCoordinator(snapshot))
 
-    private fun buildStore(coordinator: TabDataCoordinator): TabGroupsStripStore =
+    private fun buildStore(coordinator: FakeTabDataCoordinator): TabGroupsStripStore =
         TabGroupsStripStore(middleware = listOf(TabGroupsStripMiddleware(coordinator, testScope, testDispatcher)))
             .also { it.dispatch(TabGroupsStripAction.InitializeDataObservation) }
 

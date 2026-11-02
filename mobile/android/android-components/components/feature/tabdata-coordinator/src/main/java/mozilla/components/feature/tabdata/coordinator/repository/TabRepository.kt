@@ -40,6 +40,13 @@ interface TabRepository {
     fun removeTabs(tabIds: List<String>, excludedFallbackTabIds: Set<String> = emptySet())
 
     /**
+     * Selects or makes active the tab with [tabId].
+     *
+     * @param tabId The ID of the tab to select.
+     */
+    fun selectTab(tabId: String)
+
+    /**
      * Value class representing the data observed from the browser tab data source.
      *
      * @property selectedTabId The ID of the currently selected tab.

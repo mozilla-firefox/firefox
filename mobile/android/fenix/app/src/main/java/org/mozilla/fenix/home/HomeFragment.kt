@@ -58,8 +58,12 @@ import androidx.navigation.fragment.navArgs
 import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.base.modifier.thenConditional
@@ -76,6 +80,7 @@ import mozilla.components.feature.ipprotection.IPProtectionWarningBinding
 import mozilla.components.feature.tab.collections.TabCollection
 import mozilla.components.feature.top.sites.presenter.DefaultTopSitesPresenter
 import mozilla.components.lib.state.ext.flow
+import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
@@ -603,6 +608,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
         if (requireComponents.settings.shouldShowTabGroupsStrip) {
             tabGroupsStripStore.dispatch(TabGroupsStripAction.InitializeDataObservation)
+            observeSelectedTabForNavigation()
         }
 
         privacyNoticeBannerStore =
@@ -1146,6 +1152,22 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 },
                 onTabCounterClick = { openTabsTray() },
             )
+        }
+    }
+
+    // Navigates from the homepage to the browser when the tab group strip selects a non-homepage tab.
+    private fun observeSelectedTabForNavigation() {
+        requireComponents.core.store.flowScoped(viewLifecycleOwner, Main) { flow ->
+            flow
+                .map { it.selectedTabId }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    val url = requireComponents.core.store.state.selectedTab?.content?.url
+                    if (url != null && url != ABOUT_HOME_URL) {
+                        findNavController().nav(R.id.homeFragment, HomeFragmentDirections.actionGlobalBrowser(null))
+                    }
+                }
         }
     }
 
