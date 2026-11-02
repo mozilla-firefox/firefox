@@ -442,11 +442,7 @@ void MacroAssembler::sub64(Register64 src, Register64 dest) {
 }
 
 void MacroAssembler::sub64(Imm64 imm, Register64 dest) {
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(dest.reg != scratch);
-  mov(ImmWord(imm.value), scratch);
-  as_sub_d(dest.reg, dest.reg, scratch);
+  ma_sub_d(dest.reg, dest.reg, ImmWord(imm.value));
 }
 
 void MacroAssembler::sub32(Register src, Register dest) {
