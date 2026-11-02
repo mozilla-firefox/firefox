@@ -50,7 +50,6 @@ legacy.telemetry:
       - 'baseline'
       - 'nimbus-targeting-context'
       - 'third-party-modules'
-      - 'temp-fog-initial-state'
       - 'captcha-detection'
       - 'health'
       - 'addons'
