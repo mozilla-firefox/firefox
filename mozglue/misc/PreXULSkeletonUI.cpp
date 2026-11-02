@@ -141,19 +141,8 @@ class ToolboxBackground {
                      mColor);
   }
 
-  // The color of every pixel before LeadingEndAt(y) in row y.
-  uint32_t LeadingColor() const {
-    return Composite(RGBToUint(mLeading), 0.5, mColor);
-  }
-
-  // The first x in row y past the leading gradient stop.
-  int LeadingEndAt(int y) const {
-    double lastLeadingX =
-        mCenterX - 0.5 +
-        ((kLeadingStop - 0.5) * mLength - (y + 0.5 - mCenterY) * mDirectionY) /
-            mDirectionX;
-    return static_cast<int>(floor(lastLeadingX)) + 1;
-  }
+  // How far the gradient's colors move to the right from one row to the next.
+  double ShiftPerRow() const { return mDirectionY / mDirectionX; }
 
  private:
   // 96deg, in radians.
@@ -685,17 +674,22 @@ void RasterizeColorRect(const ColorRect& colorRect) {
 }
 
 // Paints full-width rows of the toolbox background, with a translucent color
-// on top of it.
+// on top of it. Each row of the gradient is the first row shifted by a
+// fraction of a pixel per row, so the rows copy one computed row at the
+// nearest whole-pixel offset.
 void RasterizeToolboxRows(const ToolboxBackground& background, int y,
                           int height, uint32_t color, double alpha) {
-  for (int row = y; row < y + height; ++row) {
-    uint32_t* lineStart = &sPixelBuffer[row * sWindowWidth];
-    int leadingEnd = std::clamp(background.LeadingEndAt(row), 0, sWindowWidth);
-    std::fill(lineStart, lineStart + leadingEnd,
-              Composite(color, alpha, background.LeadingColor()));
-    for (int x = leadingEnd; x < sWindowWidth; ++x) {
-      lineStart[x] = Composite(color, alpha, background.ColorAt(x, row));
-    }
+  const double shiftPerRow = background.ShiftPerRow();
+  const int rowWidth =
+      sWindowWidth + static_cast<int>(lround(height * shiftPerRow));
+  const auto firstRow = std::make_unique<uint32_t[]>(rowWidth);
+  for (int x = 0; x < rowWidth; ++x) {
+    firstRow[x] = Composite(color, alpha, background.ColorAt(x, y));
+  }
+  for (int i = 0; i < height; ++i) {
+    const uint32_t* rowStart = firstRow.get() + lround(i * shiftPerRow);
+    std::copy(rowStart, rowStart + sWindowWidth,
+              &sPixelBuffer[(y + i) * sWindowWidth]);
   }
 }
 
