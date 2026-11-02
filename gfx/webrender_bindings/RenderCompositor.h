@@ -160,9 +160,15 @@ class RenderCompositor {
                                       bool aNeedsSyncDcompCommit) {}
   virtual void ResizeSwapChainSurface(wr::NativeSurfaceId aId,
                                       wr::DeviceIntSize aSize) {}
+  // Without OS layers, the only swapchain is the window and the dirty rects
+  // are the region WebRender is about to render to.
   virtual void BindSwapChain(wr::NativeSurfaceId aId,
                              const wr::DeviceIntRect* aDirtyRects,
-                             size_t aNumDirtyRects) {}
+                             size_t aNumDirtyRects) {
+    if (aNumDirtyRects > 0) {
+      SetBufferDamageRegion(aDirtyRects, aNumDirtyRects);
+    }
+  }
   virtual void PresentSwapChain(wr::NativeSurfaceId aId,
                                 const wr::DeviceIntRect* aDirtyRects,
                                 size_t aNumDirtyRects) {}

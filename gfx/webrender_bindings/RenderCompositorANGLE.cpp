@@ -813,22 +813,41 @@ bool RenderCompositorANGLE::ShouldUseLayerCompositor() const {
   return UseLayerCompositor();
 }
 
+// Without the layer compositor, WebRender's only swapchain is mSwapChain,
+// which is presented in EndFrame, so the base class implementations apply.
+
 void RenderCompositorANGLE::CompositorBeginFrame() {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::CompositorBeginFrame();
+    return;
+  }
   mDCLayerTree->CompositorBeginFrame();
 }
 
 void RenderCompositorANGLE::CompositorEndFrame() {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::CompositorEndFrame();
+    return;
+  }
   mDCLayerTree->CompositorEndFrame();
 }
 
 void RenderCompositorANGLE::BindSwapChain(wr::NativeSurfaceId aId,
                                           const wr::DeviceIntRect* aDirtyRects,
                                           size_t aNumDirtyRects) {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::BindSwapChain(aId, aDirtyRects, aNumDirtyRects);
+    return;
+  }
   mDCLayerTree->BindSwapChain(aId, aDirtyRects, aNumDirtyRects);
 }
 void RenderCompositorANGLE::PresentSwapChain(
     wr::NativeSurfaceId aId, const wr::DeviceIntRect* aDirtyRects,
     size_t aNumDirtyRects) {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::PresentSwapChain(aId, aDirtyRects, aNumDirtyRects);
+    return;
+  }
   mDCLayerTree->PresentSwapChain(aId, aDirtyRects, aNumDirtyRects);
 }
 
@@ -836,26 +855,41 @@ void RenderCompositorANGLE::CreateSwapChainSurface(wr::NativeSurfaceId aId,
                                                    wr::DeviceIntSize aSize,
                                                    bool aIsOpaque,
                                                    bool aNeedsSyncDcompCommit) {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::CreateSwapChainSurface(aId, aSize, aIsOpaque,
+                                             aNeedsSyncDcompCommit);
+    return;
+  }
   mDCLayerTree->CreateSwapChainSurface(aId, aSize, aIsOpaque,
                                        aNeedsSyncDcompCommit);
 }
 
 void RenderCompositorANGLE::ResizeSwapChainSurface(wr::NativeSurfaceId aId,
                                                    wr::DeviceIntSize aSize) {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::ResizeSwapChainSurface(aId, aSize);
+    return;
+  }
   mDCLayerTree->ResizeSwapChainSurface(aId, aSize);
 }
 
 void RenderCompositorANGLE::CreateExternalSurface(wr::NativeSurfaceId aId,
                                                   bool aIsOpaque) {
+  MOZ_RELEASE_ASSERT(UseLayerCompositor());
   mDCLayerTree->CreateExternalSurface(aId, aIsOpaque);
 }
 
 void RenderCompositorANGLE::DestroySurface(NativeSurfaceId aId) {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::DestroySurface(aId);
+    return;
+  }
   mDCLayerTree->DestroySurface(aId);
 }
 
 void RenderCompositorANGLE::AttachExternalImage(
     wr::NativeSurfaceId aId, wr::ExternalImageId aExternalImage) {
+  MOZ_RELEASE_ASSERT(UseLayerCompositor());
   mDCLayerTree->AttachExternalImage(aId, aExternalImage);
 }
 
@@ -863,6 +897,11 @@ void RenderCompositorANGLE::AddSurface(
     wr::NativeSurfaceId aId, const wr::CompositorSurfaceTransform& aTransform,
     wr::DeviceIntRect aClipRect, wr::ImageRendering aImageRendering,
     wr::DeviceIntRect aRoundedClipRect, wr::ClipRadius aClipRadius) {
+  if (!UseLayerCompositor()) {
+    RenderCompositor::AddSurface(aId, aTransform, aClipRect, aImageRendering,
+                                 aRoundedClipRect, aClipRadius);
+    return;
+  }
   mDCLayerTree->AddSurface(aId, aTransform, aClipRect, aImageRendering,
                            aRoundedClipRect, aClipRadius);
 }
