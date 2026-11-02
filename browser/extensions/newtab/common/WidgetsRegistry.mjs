@@ -210,6 +210,7 @@ export const PREF_WIDGETS_SYSTEM_SOLITAIRE_ENABLED =
  * @property {string|null} [trainhopNamespace] - When set, the widget ships its whole config in one dedicated object at trainhopConfig.<namespace>. Its `enabled` overrides the default value of enabledPref on the default branch (user toggle still wins, like widgetsSettings.*Enabled); `visible` reveals the widget (isWidgetAddable) without writing a pref; `size` is read by resolveWidgetSize. All widgets define this today.
  * @property {string} [src] - URL of the widget's document; a trainhop namespace `src` overrides it.
  * @property {string} [extensionID] - ID of an extension that provides the widget's document. getWidgets keeps the entry only while the ExtensionWidgets state has this extension.
+ * @property {string} [icon] - URL of a 16px image drawn before the widget's name in its MozWidgetCard header.
  * @property {string} [l10nId] - Fluent id of the widget's name. The message carries .title, .label and .menu-label attributes.
  */
 

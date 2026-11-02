@@ -280,6 +280,16 @@
   }
 }
 
+// The header spaces its items by --space-small; the icon sits 6px from the name.
+.nova-enabled moz-widget-header:has(> .moz-widget-card-icon) {
+  gap: calc(var(--space-xsmall) + var(--space-xxsmall));
+}
+
+.nova-enabled .moz-widget-card-icon {
+  inline-size: var(--icon-size-small);
+  block-size: var(--icon-size-small);
+}
+
 .widgets-feedback-link {
   display: inline-block;
   margin-block-start: var(--space-medium);
