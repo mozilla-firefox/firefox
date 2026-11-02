@@ -264,6 +264,9 @@ class nsAHttpTransaction : public nsSupportsWeakReference {
 
   virtual void InvokeCallback() {}
   virtual bool IsForFallback() { return false; }
+  // The transaction validating an alt-svc mapping, which must reach the
+  // alternate rather than fall back to the origin.
+  virtual bool IsAltSvcValidation() { return false; }
 };
 
 #define NS_DECL_NSAHTTPTRANSACTION                                             \

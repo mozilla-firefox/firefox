@@ -193,9 +193,12 @@ NS_IMPL_ISUPPORTS(ConnectionEstablisher, nsITransportEventSink,
                   nsIInterfaceRequestor)
 
 ConnectionEstablisher::ConnectionEstablisher(nsHttpConnectionInfo* aConnInfo,
-                                             const NetAddr& aAddr,
+                                             const EndpointTarget& aTarget,
                                              uint32_t aCaps, bool aAllow1918)
-    : mConnInfo(aConnInfo), mAddr(aAddr), mCaps(aCaps), mAllow1918(aAllow1918) {
+    : mConnInfo(aConnInfo),
+      mTarget(aTarget),
+      mCaps(aCaps),
+      mAllow1918(aAllow1918) {
   LOG(("ConnectionEstablisher ctor:%p", this));
 }
 
@@ -346,13 +349,6 @@ void ConnectionEstablisher::FinishInternal(nsresult aResult) {
       cb(Err(NS_FAILED(aResult) ? aResult : NS_ERROR_ABORT));
     }
   }
-
-  mAddrRecord = nullptr;
-}
-
-already_AddRefed<nsIDNSAddrRecord> ConnectionEstablisher::AddrRecord() const {
-  nsCOMPtr<nsIDNSAddrRecord> record = mAddrRecord;
-  return record.forget();
 }
 
 NS_IMETHODIMP
@@ -390,9 +386,9 @@ NS_IMPL_ISUPPORTS_INHERITED(TCPConnectionEstablisher, ConnectionEstablisher,
                             nsIOutputStreamCallback)
 
 TCPConnectionEstablisher::TCPConnectionEstablisher(
-    nsHttpConnectionInfo* aConnInfo, NetAddr aAddr, uint32_t aCaps,
-    bool aSpeculative, bool aAllow1918)
-    : ConnectionEstablisher(aConnInfo, aAddr, aCaps, aAllow1918),
+    nsHttpConnectionInfo* aConnInfo, const EndpointTarget& aTarget,
+    uint32_t aCaps, bool aSpeculative, bool aAllow1918)
+    : ConnectionEstablisher(aConnInfo, aTarget, aCaps, aAllow1918),
       mSpeculative(aSpeculative) {}
 
 TCPConnectionEstablisher::~TCPConnectionEstablisher() {
@@ -409,13 +405,19 @@ TCPConnectionEstablisher::~TCPConnectionEstablisher() {
 }
 
 bool ConnectionEstablisher::RefuseIfLocalAddress() {
-  if (mAllow1918 || !mAddr.IsIPAddrLocal()) {
+  // A by-name target has no client-side address to judge: the proxy picks the
+  // peer, so there is nothing to refuse here.
+  if (!mTarget.is<NetAddr>()) {
+    return false;
+  }
+  const NetAddr& addr = mTarget.as<NetAddr>();
+  if (mAllow1918 || !addr.IsIPAddrLocal()) {
     return false;
   }
   LOG(
       ("ConnectionEstablisher::RefuseIfLocalAddress %p refusing speculative "
        "connection to local address [%s]",
-       this, mAddr.ToString().get()));
+       this, addr.ToString().get()));
   mRefusedForLocalAddress = true;
   return true;
 }
@@ -425,8 +427,6 @@ bool TCPConnectionEstablisher::Start(DoneCallback&& aCallback) {
   if (RefuseIfLocalAddress()) {
     return false;
   }
-  mAddrRecord = new SingleDNSAddrRecord(mAddr, mDnsMetadata);
-
   nsresult rv = CreateAndConfigureSocketTransport();
   if (NS_FAILED(rv)) {
     return false;
@@ -493,9 +493,6 @@ void TCPConnectionEstablisher::Close(nsresult aReason) {
     mStreamIn = nullptr;
   }
 
-  // Release the DNS address record to avoid leaking SingleDNSAddrRecord
-  mAddrRecord = nullptr;
-
   mConnectedOK = false;
   Finish(aReason);
 }
@@ -527,14 +524,34 @@ nsresult TCPConnectionEstablisher::CreateAndConfigureSocketTransport() {
        mConnInfo->OriginPort(), mConnInfo->RoutedHost(),
        mConnInfo->RoutedPort()));
 
+  // A by-name target connects to the endpoint's host and passes no DNS record,
+  // so nsSocketTransport leaves resolution to the SOCKS layer. A by-IP target
+  // hands over the single raced address.
+  nsCOMPtr<nsIDNSAddrRecord> addrRecord;
+  if (mTarget.is<NetAddr>()) {
+    addrRecord = new SingleDNSAddrRecord(mTarget.as<NetAddr>(), mDnsMetadata);
+  }
+
+  // The origin pair drives SNI and certificate validation, so it stays the
+  // conn info's. The route is what this attempt dials, and only the target
+  // names it: one conn info yields several attempts.
+  const nsCString& routedHost = mTarget.is<ByNameTarget>()
+                                    ? mTarget.as<ByNameTarget>().mHost
+                                    : mConnInfo->GetRoutedHost();
+  // CloneAndAdoptPortAndAlpn drops the route when the attempt is on the
+  // origin's port, so pair a by-name host with the origin port.
+  const int32_t routedPort = mConnInfo->GetRoutedHost().IsEmpty()
+                                 ? mConnInfo->OriginPort()
+                                 : mConnInfo->RoutedPort();
+
   nsCOMPtr<nsIRoutedSocketTransportService> routedSTS(do_QueryInterface(sts));
   if (routedSTS) {
     rv = routedSTS->CreateRoutedTransport(
         socketTypes, mConnInfo->GetOrigin(), mConnInfo->OriginPort(),
-        mConnInfo->GetRoutedHost(), mConnInfo->RoutedPort(),
-        mConnInfo->ProxyInfo(), mAddrRecord, getter_AddRefs(socketTransport));
+        routedHost, routedPort, mConnInfo->ProxyInfo(), addrRecord,
+        getter_AddRefs(socketTransport));
   } else {
-    if (!mConnInfo->GetRoutedHost().IsEmpty()) {
+    if (!routedHost.IsEmpty()) {
       // There is a route requested, but the legacy nsISocketTransportService
       // can't handle it.
       // Origin should be reachable on origin host name, so this should
@@ -542,12 +559,12 @@ nsresult TCPConnectionEstablisher::CreateAndConfigureSocketTransport() {
       LOG(
           ("%p using legacy nsISocketTransportService "
            "means explicit route %s:%d will be ignored.\n",
-           this, mConnInfo->RoutedHost(), mConnInfo->RoutedPort()));
+           this, routedHost.get(), routedPort));
     }
 
     rv = sts->CreateTransport(socketTypes, mConnInfo->GetOrigin(),
                               mConnInfo->OriginPort(), mConnInfo->ProxyInfo(),
-                              mAddrRecord, getter_AddRefs(socketTransport));
+                              addrRecord, getter_AddRefs(socketTransport));
   }
 
   if (NS_FAILED(rv)) {
@@ -670,7 +687,9 @@ TCPConnectionEstablisher::OnOutputStreamReady(nsIAsyncOutputStream* aOut) {
   }
 
   // Early LNA check: reject the connection before TLS handshake can send SNI.
-  if (mLnaCheckCallback && mSocketTransport) {
+  // Skipped for a by-name target: the peer address is chosen by the proxy, so
+  // there is nothing to check here.
+  if (mTarget.is<NetAddr>() && mLnaCheckCallback && mSocketTransport) {
     nsresult rv = mLnaCheckCallback(mSocketTransport);
     if (NS_FAILED(rv)) {
       mSocketTransport->Close(rv);
@@ -738,9 +757,9 @@ TCPConnectionEstablisher::OnOutputStreamReady(nsIAsyncOutputStream* aOut) {
 // -------------------- UDPConnectionEstablisher --------------------
 
 UDPConnectionEstablisher::UDPConnectionEstablisher(
-    nsHttpConnectionInfo* aConnInfo, NetAddr aAddr, uint32_t aCaps,
-    bool /* aSpeculative */, bool aAllow1918)
-    : ConnectionEstablisher(aConnInfo, aAddr, aCaps, aAllow1918) {
+    nsHttpConnectionInfo* aConnInfo, const EndpointTarget& aTarget,
+    uint32_t aCaps, bool /* aSpeculative */, bool aAllow1918)
+    : ConnectionEstablisher(aConnInfo, aTarget, aCaps, aAllow1918) {
   LOG(("UDPConnectionEstablisher ctor:%p", this));
 }
 
@@ -754,8 +773,6 @@ bool UDPConnectionEstablisher::Start(DoneCallback&& aCallback) {
   if (RefuseIfLocalAddress()) {
     return false;
   }
-  mAddrRecord = new SingleDNSAddrRecord(mAddr, mDnsMetadata);
-
   nsresult rv = CreateAndConfigureUDPConn();
   if (NS_FAILED(rv)) {
     return false;
@@ -790,7 +807,6 @@ void UDPConnectionEstablisher::Close(nsresult aReason) {
   }
 
   // Release the DNS address record to avoid leaking SingleDNSAddrRecord
-  mAddrRecord = nullptr;
 
   Finish(aReason);
 }
@@ -801,10 +817,17 @@ nsresult UDPConnectionEstablisher::CreateAndConfigureUDPConn() {
        "info=%s]",
        this, mConnInfo->HashKey().get()));
 
+  MOZ_ASSERT(mTarget.is<NetAddr>(), "by-name target on the UDP path");
+  if (!mTarget.is<NetAddr>()) {
+    return NS_ERROR_NOT_IMPLEMENTED;
+  }
+  nsCOMPtr<nsIDNSAddrRecord> addrRecord =
+      new SingleDNSAddrRecord(mTarget.as<NetAddr>(), mDnsMetadata);
+
   RefPtr<HttpConnectionUDP> connUDP = new HttpConnectionUDP();
   connUDP->SetTransactionCaps(mCaps);
 
-  nsresult rv = connUDP->Init(mConnInfo, mAddrRecord, NS_OK, this, mCaps);
+  nsresult rv = connUDP->Init(mConnInfo, addrRecord, NS_OK, this, mCaps);
   if (NS_FAILED(rv)) {
     return rv;
   }

@@ -55,7 +55,8 @@ TEST(HappyEyeballsNetAddrArray, MultiAddressARecordIsNotCollapsed)
   HappyEyeballs* raw = nullptr;
   ASSERT_EQ(happy_eyeballs::happy_eyeballs_create(
                 (const HappyEyeballs**)&raw, &origin, 443, &altSvc,
-                happy_eyeballs::IpPreference::Ipv4Only, versions),
+                happy_eyeballs::IpPreference::Ipv4Only, versions,
+                happy_eyeballs::ResolutionMode::ByIp),
             NS_OK);
   ASSERT_NE(raw, nullptr);
   // create() hands back an addrefed pointer, and the ASSERTs below return

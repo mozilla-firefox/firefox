@@ -897,11 +897,10 @@ void AltSvcCache::UpdateAltServiceMapping(
   caps |= ci->GetAnonymous() ? NS_HTTP_LOAD_ANONYMOUS : 0;
   caps |= NS_HTTP_ERROR_SOFTLY;
 
-  // Only enable Happy Eyeballs when there is no proxy (!pi), matching
-  // AltSvcMapping::GetConnectionInfo and Http3FirstAltSvcMapping. Otherwise
-  // validation would resolve the host client-side and leak it outside a SOCKS
-  // remote-DNS proxy. TODO: handle this in the Happy Eyeballs code once it
-  // supports establishing proxy connections.
+  // Only when there is no proxy (!pi), matching
+  // AltSvcMapping::GetConnectionInfo and Http3FirstAltSvcMapping: Happy
+  // Eyeballs cannot reach an h3 alternate through a CONNECT proxy yet, so
+  // validating one would hang (bug 2071358).
   if (StaticPrefs::network_http_happy_eyeballs_enabled() && !pi) {
     // Validating an h3 alternate must establish an h3 connection; don't let
     // Happy Eyeballs race h1/h2 and settle on a non-h3 connection.

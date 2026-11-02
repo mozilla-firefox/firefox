@@ -230,6 +230,8 @@ class AltSvcTransaction final : public SpeculativeTransaction {
   // to fetch HTTPS RR for this.
   virtual nsresult FetchHTTPSRR() override { return NS_ERROR_NOT_IMPLEMENTED; }
 
+  bool IsAltSvcValidation() override { return true; }
+
  private:
   // check on alternate route.
   // also evaluate 'reasonable assurances' for opportunistic security
