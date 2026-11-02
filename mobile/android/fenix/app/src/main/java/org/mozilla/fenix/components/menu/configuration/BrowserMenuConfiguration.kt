@@ -47,6 +47,9 @@ object BrowserMenuConfiguration {
     @VisibleForTesting internal val GROUP_5_ID = "browser_group_5"
     @VisibleForTesting internal val GROUP_6_ID = "browser_group_6"
 
+    /** Ids of the sections of the browser menu which the user cannot remove. */
+    val REQUIRED_SECTION_IDS = setOf(GROUP_5_ID)
+
     /** Ids of browser menu sections that start as initially hidden. */
     val HIDDEN_BY_DEFAULT_SECTION_IDS = emptySet<String>()
 

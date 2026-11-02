@@ -500,6 +500,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
         // We init these items in the visual completeness queue to avoid them initing in the critical
         // startup path, before the UI finishes drawing (i.e. visual completeness).
         queueInitStorageAndServices(queue)
+        queueMenuCustomizationWarmUp(queue)
         queueMetrics(queue)
         queueEngineWarmup(queue)
         queueIncrementNumberOfAppLaunches(queue)
@@ -696,6 +697,13 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
                 applicationScope.launch(ioDispatcher) {
                     ApplicationExitInfoMetrics.recordProcessExits(applicationContext)
                 }
+            }
+        }
+
+    private fun queueMenuCustomizationWarmUp(queue: RunWhenReadyQueue) =
+        runOnVisualCompleteness(queue) {
+            if (components.settings.isMenuCustomizationScreenEnabled) {
+                components.menuCustomizationRepository.warmUp()
             }
         }
 

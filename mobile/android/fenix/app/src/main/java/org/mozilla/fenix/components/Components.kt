@@ -66,10 +66,13 @@ import org.mozilla.fenix.components.lens.LensImageSearch
 import org.mozilla.fenix.components.listentopage.ListenToPage
 import org.mozilla.fenix.components.llm.Llm
 import org.mozilla.fenix.components.llm.ext.accessTokenProvider
+import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.metrics.MetricsMiddleware
 import org.mozilla.fenix.components.tabs.DefaultTabRepository
 import org.mozilla.fenix.crashes.CrashReportingAppMiddleware
 import org.mozilla.fenix.crashes.SettingsCrashReportCache
+import org.mozilla.fenix.datastore.customizedBrowserMenuInfoDataStore
 import org.mozilla.fenix.datastore.pocketStoriesSelectedCategoriesDataStore
 import org.mozilla.fenix.distributions.DefaultDistributionBrowserStoreProvider
 import org.mozilla.fenix.distributions.DefaultDistributionProviderChecker
@@ -78,6 +81,7 @@ import org.mozilla.fenix.distributions.DistributionIdManager
 import org.mozilla.fenix.ext.asRecentTabs
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.filterState
+import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.ext.sort
 import org.mozilla.fenix.home.PocketMiddleware
 import org.mozilla.fenix.home.SettingsBackedPocketSettings
@@ -413,6 +417,20 @@ class Components(
         }
 
     val fxSuggest by lazyMonitored { FxSuggest(context, remoteSettingsService.value, analytics.crashReporter) }
+
+    val menuCustomizationRepository by lazyMonitored {
+        MenuCustomizationRepository(
+            dataStore = context.customizedBrowserMenuInfoDataStore,
+            defaultMenuInfo = {
+                BrowserMenuConfiguration.defaultMenuInfo(
+                    isToolbarAtBottom = context.isToolbarAtBottom(),
+                    isExpandedToolbarEnabled = settings.shouldUseExpandedToolbar,
+                )
+            },
+            requiredSectionIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
+            scope = applicationScope,
+        )
+    }
 
     val distributionIdManager by lazyMonitored {
         DistributionIdManager(

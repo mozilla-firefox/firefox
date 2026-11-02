@@ -423,6 +423,7 @@ class MenuFragment : BottomSheetDialogFragment() {
                 BrowserMenuConfiguration.sections(
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                     isExpandedToolbarEnabled = requireComponents.settings.shouldUseExpandedToolbar,
+                    customizationInfo = requireComponents.menuCustomizationRepository.customizedMenuInfo.value,
                 )
             MenuAccessPoint.Home -> HomeMenuConfiguration.sections()
             MenuAccessPoint.External ->
