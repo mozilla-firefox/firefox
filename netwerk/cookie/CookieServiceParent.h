@@ -5,6 +5,7 @@
 #ifndef mozilla_net_CookieServiceParent_h
 #define mozilla_net_CookieServiceParent_h
 
+#include "mozilla/Maybe.h"
 #include "mozilla/net/CookieKey.h"
 #include "mozilla/net/PCookieServiceParent.h"
 
@@ -71,9 +72,9 @@ class CookieServiceParent : public PCookieServiceParent {
 
   void RemoveAll();
 
-  void RemoveCookie(const Cookie& aCookie, const nsID* aOperationID);
+  void RemoveCookie(const Cookie& aCookie, const Maybe<nsID>& aOperationID);
 
-  void AddCookie(const Cookie& aCookie, const nsID* aOperationID);
+  void AddCookie(const Cookie& aCookie, const Maybe<nsID>& aOperationID);
 
   // This will return true if the CookieServiceParent is currently processing
   // an update from the content process. This is used in ContentParent to make

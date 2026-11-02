@@ -85,7 +85,6 @@
 #include "mozilla/Telemetry.h"
 #include "mozilla/TelemetryComms.h"
 #include "mozilla/TelemetryIPC.h"
-#include "mozilla/UniquePtrExtensions.h"
 #include "mozilla/WebBrowserPersistDocumentParent.h"
 #include "mozilla/XREAppData.h"
 #include "mozilla/devtools/HeapSnapshotTempFileHelperParent.h"
@@ -4036,17 +4035,13 @@ ContentParent::Observe(nsISupports* aSubject, const char* aTopic,
       return NS_OK;
     }
 
-    UniqueFreePtr<nsID> operationID;
-    rv = notification->GetOperationID(TempPtrToSetter(&operationID));
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return NS_OK;
-    }
+    Maybe<nsID> operationID = notification->OperationID();
 
     if (action == nsICookieNotification::COOKIE_DELETED) {
-      cs->RemoveCookie(cookie, operationID.get());
+      cs->RemoveCookie(cookie, operationID);
     } else if (action == nsICookieNotification::COOKIE_ADDED ||
                action == nsICookieNotification::COOKIE_CHANGED) {
-      cs->AddCookie(cookie, operationID.get());
+      cs->AddCookie(cookie, operationID);
     }
 
   } else if (!strcmp(aTopic, NS_NETWORK_LINK_TYPE_TOPIC)) {

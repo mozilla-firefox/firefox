@@ -78,7 +78,7 @@ void CookieServiceParent::RemoveBatchDeletedCookies(nsIArray* aCookieList) {
 void CookieServiceParent::RemoveAll() { (void)SendRemoveAll(); }
 
 void CookieServiceParent::RemoveCookie(const Cookie& cookie,
-                                       const nsID* aOperationID) {
+                                       const Maybe<nsID>& aOperationID) {
   const OriginAttributes& attrs = cookie.OriginAttributesRef();
   CookieStruct cookieStruct = cookie.ToIPC();
 
@@ -87,12 +87,11 @@ void CookieServiceParent::RemoveCookie(const Cookie& cookie,
   if (cookie.IsHttpOnly() || !InsecureCookieOrSecureOrigin(cookie)) {
     cookieStruct.value() = "";
   }
-  (void)SendRemoveCookie(cookieStruct, attrs,
-                         aOperationID ? Some(*aOperationID) : Nothing());
+  (void)SendRemoveCookie(cookieStruct, attrs, aOperationID);
 }
 
 void CookieServiceParent::AddCookie(const Cookie& cookie,
-                                    const nsID* aOperationID) {
+                                    const Maybe<nsID>& aOperationID) {
   const OriginAttributes& attrs = cookie.OriginAttributesRef();
   CookieStruct cookieStruct = cookie.ToIPC();
 
@@ -101,8 +100,7 @@ void CookieServiceParent::AddCookie(const Cookie& cookie,
   if (cookie.IsHttpOnly() || !InsecureCookieOrSecureOrigin(cookie)) {
     cookieStruct.value() = "";
   }
-  (void)SendAddCookie(cookieStruct, attrs,
-                      aOperationID ? Some(*aOperationID) : Nothing());
+  (void)SendAddCookie(cookieStruct, attrs, aOperationID);
 }
 
 bool CookieServiceParent::ContentProcessHasCookie(const Cookie& cookie) {
