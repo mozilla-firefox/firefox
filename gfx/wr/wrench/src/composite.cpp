@@ -139,7 +139,7 @@ class Compositor {
   ComPtr<IDXGIFactory2> pIDXGIFactory;
 };
 
-// Bindings called by wrench rust impl of the LayerCompositor trait
+// Bindings called by wrench rust impl of the swapchain part of the Compositor trait
 extern "C" {
 Compositor* wrc_new(void* d3d11_device, void* hwnd) {
   return new Compositor(static_cast<ID3D11Device*>(d3d11_device),

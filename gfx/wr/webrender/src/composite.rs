@@ -432,6 +432,28 @@ impl CompositorKind {
             CompositorKind::Native { capabilities, .. } => capabilities.redraw_on_invalidation,
         }
     }
+
+    /// Picture-cache tiles are rendered into OS surfaces.
+    pub fn uses_native_tiles(&self) -> bool {
+        matches!(self, CompositorKind::Native { .. })
+    }
+
+    /// Occlusion culling applies to every tile, not only fixed-position ones.
+    pub fn culls_all_tiles(&self) -> bool {
+        matches!(self, CompositorKind::Layer { .. })
+    }
+
+    /// A compositor surface may carry a single rounded-rect clip.
+    pub fn supports_rounded_clip_promotion(&self) -> bool {
+        matches!(self, CompositorKind::Layer { .. })
+    }
+
+    pub fn supports_backdrop_surface(&self) -> bool {
+        match self {
+            CompositorKind::Native { capabilities } => capabilities.supports_surface_for_backdrop,
+            CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => false,
+        }
+    }
 }
 
 /// The backing surface kind for a tile. Same as `TileSurface`, minus
@@ -1355,7 +1377,7 @@ pub struct NativeSurfaceHandle(pub u64);
 
 impl NativeSurfaceHandle {
     /// Refers to whatever the embedder has already bound as the default
-    /// draw target, for example after `LayerCompositor::bind_layer`, or a
+    /// draw target, for example after `Compositor::bind_swapchain`, or a
     /// DirectComposition surface bound as the default framebuffer.
     pub const DEFAULT: Self = NativeSurfaceHandle(0);
 }

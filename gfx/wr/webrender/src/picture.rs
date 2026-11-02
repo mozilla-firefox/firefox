@@ -107,7 +107,7 @@ use crate::segment::EdgeMask;
 use api::ImageBufferKind;
 use crate::clip::{ClipChainInstance, ClipDataStore, ClipNodeId, ClipNodeFlags};
 use crate::spatial_tree::{SpatialTree, CoordinateSpaceMapping, SpatialNodeIndex, VisibleFace};
-use crate::composite::{tile_kind, CompositeTileSurface, CompositorKind, NativeTileId};
+use crate::composite::{tile_kind, CompositeTileSurface, NativeTileId};
 use crate::composite::{CompositeTileDescriptor, CompositeTile};
 use crate::debug_colors;
 use euclid::{vec3, Scale, Vector2D};
@@ -2126,14 +2126,8 @@ fn prepare_tiled_picture_surface(
 
     let mut backdrop_in_use_and_visible = false;
     if let Some(backdrop_rect) = backdrop_rect {
-        let supports_surface_for_backdrop = match frame_state.composite_state.compositor_kind {
-            CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => {
-                false
-            }
-            CompositorKind::Native { capabilities, .. } => {
-                capabilities.supports_surface_for_backdrop
-            }
-        };
+        let supports_surface_for_backdrop =
+            frame_state.composite_state.compositor_kind.supports_backdrop_surface();
         if supports_surface_for_backdrop && !tile_cache.found_prims_after_backdrop && at_least_one_tile_visible {
             if let Some(BackdropKind::Color { color }) = tile_cache.backdrop.kind {
                 backdrop_in_use_and_visible = true;

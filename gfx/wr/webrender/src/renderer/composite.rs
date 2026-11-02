@@ -461,8 +461,8 @@ impl Renderer {
         }
     }
 
-    // Composite tiles in a swapchain. When using LayerCompositor, we may
-    // split the compositing in to multiple swapchains.
+    // Composite tiles in a swapchain. When compositing into embedder
+    // swapchains, we may split the compositing in to multiple swapchains.
     fn composite_pass(
         &mut self,
         composite_state: &CompositeState,
@@ -777,7 +777,7 @@ impl Renderer {
                         // Switch of layer type, or video -> video, need new swapchain
                         (CompositorSurfaceUsage::Content, CompositorSurfaceUsage::External { .. }) |
                         (CompositorSurfaceUsage::External { .. }, CompositorSurfaceUsage::External { .. }) => {
-                            // Only create a new layer if we're using LayerCompositor
+                            // Only create a new layer when external layers are allowed
                             debug_assert!(allows_external_layers);
                             Some(usage)
                         }

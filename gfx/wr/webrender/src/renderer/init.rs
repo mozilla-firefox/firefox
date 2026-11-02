@@ -351,7 +351,7 @@ pub fn create_webrender_instance(
     HAS_BEEN_INITIALIZED.store(true, Ordering::SeqCst);
 
     // For now, we assume that native OS compositors are top-left origin. If that doesn't
-    // turn out to be the case, we can add a query method on `LayerCompositor`.
+    // turn out to be the case, we can add a query method on the `Compositor` trait.
     match options.compositor_config {
         CompositorConfig::Draw { .. } | CompositorConfig::Native { .. } => {}
         CompositorConfig::Layer { .. } => {
