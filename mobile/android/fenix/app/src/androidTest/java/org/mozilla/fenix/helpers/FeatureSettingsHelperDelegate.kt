@@ -47,7 +47,6 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
             tabManagerOpeningAnimationEnabled = settings.tabManagerOpeningAnimationEnabled,
             hasSeenShakeToSummarizeToolbarCfr = settings.shakeToSummarizeToolbarCfrShown,
             shakeToSummarizeFeatureFlagEnabled = settings.shakeToSummarizeFeatureFlagEnabled,
-            isPrivateModeAndStoriesEntryPointEnabled = settings.privateModeAndStoriesEntryPointEnabled,
             shouldUseExpandedToolbar = settings.shouldUseExpandedToolbar,
             isTabStripEnabled = settings.isTabStripEnabled,
             nativeShareSheetEnabled = settings.nativeShareSheetEnabled,
@@ -83,8 +82,6 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
     override var tabManagerOpeningAnimationEnabled: Boolean by updatedFeatureFlags::tabManagerOpeningAnimationEnabled
     override var hasSeenShakeToSummarizeToolbarCfr: Boolean by updatedFeatureFlags::hasSeenShakeToSummarizeToolbarCfr
     override var shakeToSummarizeFeatureFlagEnabled: Boolean by updatedFeatureFlags::shakeToSummarizeFeatureFlagEnabled
-    override var isPrivateModeAndStoriesEntryPointEnabled: Boolean by
-        updatedFeatureFlags::isPrivateModeAndStoriesEntryPointEnabled
     override var shouldUseExpandedToolbar: Boolean by updatedFeatureFlags::shouldUseExpandedToolbar
     override var isTabStripEnabled: Boolean by updatedFeatureFlags::isTabStripEnabled
     override var nativeShareSheetEnabled: Boolean by updatedFeatureFlags::nativeShareSheetEnabled
@@ -132,7 +129,6 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
         settings.tabManagerOpeningAnimationEnabled = featureFlags.tabManagerOpeningAnimationEnabled
         settings.shakeToSummarizeToolbarCfrShown = featureFlags.hasSeenShakeToSummarizeToolbarCfr
         settings.shakeToSummarizeFeatureFlagEnabled = featureFlags.shakeToSummarizeFeatureFlagEnabled
-        settings.privateModeAndStoriesEntryPointEnabled = featureFlags.isPrivateModeAndStoriesEntryPointEnabled
         settings.shouldUseExpandedToolbar = featureFlags.shouldUseExpandedToolbar
         settings.isTabStripEnabled = featureFlags.isTabStripEnabled
         settings.nativeShareSheetEnabled = featureFlags.nativeShareSheetEnabled
@@ -167,7 +163,6 @@ private data class FeatureFlags(
     var tabManagerOpeningAnimationEnabled: Boolean,
     var hasSeenShakeToSummarizeToolbarCfr: Boolean,
     var shakeToSummarizeFeatureFlagEnabled: Boolean,
-    var isPrivateModeAndStoriesEntryPointEnabled: Boolean,
     var shouldUseExpandedToolbar: Boolean,
     var isTabStripEnabled: Boolean,
     var nativeShareSheetEnabled: Boolean,

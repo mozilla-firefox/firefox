@@ -12,8 +12,6 @@
     <string name="content_description_menu">More options</string>
     <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
     <string name="content_description_private_browsing">Private browsing</string>
-    <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-    <string name="content_description_normal_browsing">Normal browsing</string>
     <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
     <string name="search_hint">Search or enter address</string>
     <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->

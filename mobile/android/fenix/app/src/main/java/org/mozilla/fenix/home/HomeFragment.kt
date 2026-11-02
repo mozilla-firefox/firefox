@@ -1220,11 +1220,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     override fun onStart() {
         super.onStart()
 
-        val settings = requireComponents.settings
-        if (settings.privateModeAndStoriesEntryPointEnabled) {
-            settings.incrementNewsButtonForegroundCount()
-        }
-
         findNavController().addOnDestinationChangedListener(destinationChangedListener)
 
         subscribeToTabCollections()
@@ -1276,8 +1271,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         lifecycleScope.launch(IO) {
             val settings = components.settings
 
-            val showStories =
-                settings.showPocketRecommendationsFeature || settings.privateModeAndStoriesEntryPointEnabled
+            val showStories = settings.showPocketRecommendationsFeature
 
             val showSponsoredStories = showStories && settings.showPocketSponsoredStories
 

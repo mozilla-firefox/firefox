@@ -166,9 +166,6 @@
     <string name="preferences_debug_settings_enable_search_optimization_flight" translatable="false">Show Search Optimization Flight cards</string>
     <string name="preferences_debug_settings_search_optimization_card_summary" translatable="false">This needs the Search Optimization Feature enabled</string>
 
-    <!-- Label for enabling Private Mode and Stories Entry Point -->
-    <string name="preferences_debug_settings_private_mode_and_stories_entry_point" translatable="false">Enable Private Mode and Stories Entry Point</string>
-
     <!-- longfox secret setting -->
     <string name="preferences_debug_settings_enable_longfox" translatable="false">Enable Longfox</string>
 

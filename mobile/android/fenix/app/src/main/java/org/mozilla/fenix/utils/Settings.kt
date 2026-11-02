@@ -79,7 +79,6 @@ import org.mozilla.fenix.utils.Settings.Companion.LONGFOX_PEEK_ANIMATION_MAX_SHO
 import org.mozilla.fenix.wallpapers.Wallpaper
 
 private const val AUTOPLAY_USER_SETTING = "AUTOPLAY_USER_SETTING"
-private const val MAX_ANIMATION_FOREGROUND = 5
 
 /**
  * A simple wrapper for SharedPreferences that makes reading preference a little bit easier.
@@ -3280,54 +3279,6 @@ class Settings(
             key = appContext.getPreferenceKey(R.string.pref_key_tab_manager_opening_animation),
             default = { DefaultTabManagementFeatureHelper.openingAnimationEnabled },
         )
-
-    /** Whether the private mode and stories entry point experiment is enabled. */
-    var privateModeAndStoriesEntryPointEnabled by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_private_mode_and_stories_entry_point),
-            default = { FxNimbus.features.privateModeAndStoriesEntryPoint.value().enabled },
-        )
-
-    /**
-     * The number of times the app has been brought to the foreground since the news button animation was last shown.
-     */
-    var newsButtonForegroundCount by
-        intPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_news_button_foreground_count),
-            default = 0,
-        )
-
-    /** The timestamp in milliseconds when the news button animation was last shown. */
-    var newsButtonAnimationLastShownMillis by
-        longPreference(
-            appContext.getPreferenceKey(R.string.pref_key_news_button_animation_last_shown),
-            default = 0L,
-        )
-
-    /** Increments [newsButtonForegroundCount] up to a maximum of 5. */
-    fun incrementNewsButtonForegroundCount() {
-        if (newsButtonForegroundCount < MAX_ANIMATION_FOREGROUND) {
-            newsButtonForegroundCount++
-        }
-    }
-
-    /**
-     * Returns whether the news button animation should be shown. The animation is shown every 5 foreground visits and
-     * at most once per week.
-     */
-    fun shouldShowNewsButtonAnimation(): Boolean {
-        return (newsButtonForegroundCount % MAX_ANIMATION_FOREGROUND == 0) &&
-            (currentTimeMillis() - newsButtonAnimationLastShownMillis >= ONE_WEEK_MS)
-    }
-
-    /**
-     * Records that the news button animation has been shown by updating the last shown timestamp and resetting
-     * [newsButtonForegroundCount].
-     */
-    fun recordNewsButtonAnimationShown() {
-        newsButtonAnimationLastShownMillis = currentTimeMillis()
-        newsButtonForegroundCount = 0
-    }
 
     /** Whether the Tab Groups feature is enabled. */
     var tabGroupsEnabled by

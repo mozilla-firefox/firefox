@@ -175,7 +175,7 @@ private fun MiddleSearchHomepagePreview() {
                 longfoxEnabled = true,
                 showLongfoxAnimation = true,
                 trackersBlockedCount = 754,
-                headerState = HeaderState.Normal(showStoriesButton = true),
+                headerState = HeaderState(showStoriesButton = true),
                 middleSearchState = MiddleSearchState(searchBarVisible = true, searchBarEnabled = true),
                 firstFrameDrawn = true,
                 setupChecklistState = null,

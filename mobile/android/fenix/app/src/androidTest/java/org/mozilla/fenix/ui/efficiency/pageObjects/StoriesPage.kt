@@ -18,19 +18,19 @@ class StoriesPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
     override val pageName = "StoriesPage"
 
     internal override fun registerNavigation(builder: NavigationGraph.Builder) {
-        // The stories entry point only renders when the experimental homepage header and Pocket are both on,
-        // so the reachability suite must launch HomePage with both flags for STORIES_BUTTON to exist.
+        // The stories entry point only renders when Pocket is on, so the reachability suite must launch HomePage
+        // with it for STORIES_BUTTON to exist.
         builder.register(
             from = "HomePage",
             to = pageName,
             steps = listOf(NavigationStep.Click(HomeSelectors.STORIES_BUTTON)),
-            launch = LaunchConfig(isPocketEnabled = true, isPrivateModeAndStoriesEntryPointEnabled = true),
+            launch = LaunchConfig(isPocketEnabled = true),
         )
 
         builder.register(
             from = pageName,
             to = "HomePage",
-            steps = listOf(NavigationStep.Click(StoriesSelectors.HOME_BUTTON)),
+            steps = listOf(NavigationStep.Click(StoriesSelectors.BACK_BUTTON)),
         )
     }
 
