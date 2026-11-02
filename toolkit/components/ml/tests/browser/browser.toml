@@ -139,6 +139,7 @@ skip-if = ["os == 'win' && debug && verify"] # Bug 2082990: utility process laun
 ["browser_ml_textgeneration_markers.js"]
 
 ["browser_ml_textgeneration_telemetry.js"]
+skip-if = ["os == 'win' && debug && verify"] # Bug 2082990: utility process launch stalls
 
 ["browser_ml_textgenerator.js"]
 

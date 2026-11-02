@@ -79,6 +79,11 @@ add_task(async function test_creation_records_success_and_download() {
     const created = only("engineCreationSuccessFlow");
     Assert.equal(created.engineId, "hwi-tel-create");
     Assert.equal(created.host_process, "hwinference");
+    Assert.equal(
+      created.device_kind,
+      "cpu",
+      "The creation records the device kind"
+    );
     Assert.greaterOrEqual(Number(created.duration), 0);
     Assert.equal(
       labeledCount("engineCreationSuccess", "hwi-tel-create"),
@@ -227,6 +232,11 @@ add_task(async function test_stream_records_the_chunk_metrics() {
       Number(run.extra.character_count),
       text.length,
       "character_count is the streamed text length"
+    );
+    Assert.equal(
+      run.extra.device_kind,
+      "cpu",
+      "The run records the device kind"
     );
     Assert.greaterOrEqual(Number(run.extra.time_to_first_chunk), 0);
     Assert.notEqual(run.extra.average_chunk_time, null);
