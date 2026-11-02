@@ -934,6 +934,18 @@ FaultingCodeRange MacroAssemblerLOONG64::ma_store(
   return fcr;
 }
 
+FaultingCodeRange MacroAssemblerLOONG64::ma_store(
+    Imm32 imm, Address address, LoadStoreSize size,
+    LoadStoreExtension extension) {
+  if (imm.value == 0) {
+    return ma_store(zero, address, size, extension);
+  }
+  UseScratchRegisterScope temps(asMasm());
+  Register scratch = temps.Acquire();
+  ma_li(scratch, imm);
+  return ma_store(scratch, address, size, extension);
+}
+
 void MacroAssemblerLOONG64Compat::computeScaledAddress(const BaseIndex& address,
                                                        Register dest) {
   Register base = address.base;
@@ -1787,20 +1799,12 @@ FaultingCodeRange MacroAssemblerLOONG64::ma_store(
   return asMasm().ma_store(data, address, size, extension);
 }
 
-void MacroAssemblerLOONG64::ma_store(Imm32 imm, const BaseIndex& dest,
-                                     LoadStoreSize size,
-                                     LoadStoreExtension extension) {
-  if (imm.value == 0) {
-    ma_store(zero, dest, size, extension);
-    return;
-  }
-
+FaultingCodeRange MacroAssemblerLOONG64::ma_store(
+    Imm32 imm, const BaseIndex& dest, LoadStoreSize size,
+    LoadStoreExtension extension) {
   UseScratchRegisterScope temps(asMasm());
   Address address = asMasm().computeScaledAddress(dest, temps);
-
-  Register scratch = temps.Acquire();
-  ma_li(scratch, imm);
-  asMasm().ma_store(scratch, address, size, extension);
+  return ma_store(imm, address, size, extension);
 }
 
 // Branches when done from within loongarch-specific code.
@@ -5900,14 +5904,7 @@ void MacroAssemblerLOONG64Compat::loadPrivate(const Address& address,
 
 FaultingCodeRange MacroAssemblerLOONG64Compat::store8(Imm32 imm,
                                                       const Address& address) {
-  if (imm.value == 0) {
-    return ma_store(zero, address, SizeByte);
-  }
-
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, imm);
-  return ma_store(scratch, address, SizeByte);
+  return ma_store(imm, address, SizeByte);
 }
 
 FaultingCodeRange MacroAssemblerLOONG64Compat::store8(Register src,
@@ -5926,14 +5923,7 @@ FaultingCodeRange MacroAssemblerLOONG64Compat::store8(Register src,
 
 FaultingCodeRange MacroAssemblerLOONG64Compat::store16(Imm32 imm,
                                                        const Address& address) {
-  if (imm.value == 0) {
-    return ma_store(zero, address, SizeHalfWord);
-  }
-
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  ma_li(scratch, imm);
-  return ma_store(scratch, address, SizeHalfWord);
+  return ma_store(imm, address, SizeHalfWord);
 }
 
 FaultingCodeRange MacroAssemblerLOONG64Compat::store16(Register src,
@@ -5965,14 +5955,7 @@ FaultingCodeRange MacroAssemblerLOONG64Compat::store32(Register src,
 
 FaultingCodeRange MacroAssemblerLOONG64Compat::store32(Imm32 src,
                                                        const Address& address) {
-  if (src.value == 0) {
-    return ma_store(zero, address, SizeWord);
-  }
-
-  UseScratchRegisterScope temps(asMasm());
-  Register scratch = temps.Acquire();
-  move32(src, scratch);
-  return ma_store(scratch, address, SizeWord);
+  return ma_store(src, address, SizeWord);
 }
 
 void MacroAssemblerLOONG64Compat::store32(Imm32 imm, const BaseIndex& dest) {
