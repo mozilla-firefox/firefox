@@ -975,6 +975,14 @@ export const GenAI = {
         0
       );
     };
+    const openBelowBar = popup => {
+      if (lazy.highlightToSearchFeatureGate) {
+        const content = panel.shadowRoot?.querySelector("[part=content]");
+        popup.openPopup(content ?? panel, "after_start", 0, 2);
+      } else {
+        popup.openPopup(panel, "after_start", 0, 10);
+      }
+    };
     panel.hideDropdowns = () => {
       chatShortcutsOptionsPanel.hidePopup();
       moreActionsPanel.hidePopup();
@@ -1122,6 +1130,12 @@ export const GenAI = {
       lazy.highlightToSearchCopyEnabled;
 
     for (const { toggle, action, pref } of moreActionToggles) {
+      toggle.addEventListener("click", event => {
+        const target = event.composedTarget;
+        if (target != toggle.buttonEl && !toggle.labelEl?.contains(target)) {
+          toggle.buttonEl.click();
+        }
+      });
       toggle.addEventListener("toggle", () => {
         panel.editingActions = true;
         try {
@@ -1196,7 +1210,7 @@ export const GenAI = {
         return;
       }
       moreActionsButton.setAttribute("type", buttonActiveState);
-      moreActionsPanel.openPopup(panel, "after_start", 0, 10);
+      openBelowBar(moreActionsPanel);
       const state = toggle => {
         if (toggle.hidden) {
           return "absent";
@@ -1305,7 +1319,9 @@ export const GenAI = {
         } else if (chatProvider?.name) {
           textAreaL10nId = "genai-input-ask-provider";
         } else {
-          textAreaL10nId = "genai-input-ask-generic";
+          textAreaL10nId = lazy.highlightToSearchFeatureGate
+            ? "genai-input-ask-ai"
+            : "genai-input-ask-generic";
         }
         document.l10n.setAttributes(textAreaEl, textAreaL10nId, {
           provider: chatProvider?.name,
@@ -1358,7 +1374,7 @@ export const GenAI = {
         });
       }
 
-      chatShortcutsOptionsPanel.openPopup(panel, "after_start", 0, 10);
+      openBelowBar(chatShortcutsOptionsPanel);
       Glean.genaiChatbot.shortcutsExpanded.record({
         selection: panel.selectionData.selection.length,
         provider: this.getProviderId(),

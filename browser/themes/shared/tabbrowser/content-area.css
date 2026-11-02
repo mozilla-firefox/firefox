@@ -908,23 +908,80 @@ split-view-footer {
     display: block;
   }
 
-  &[copied] {
-    #more-actions-button,
-    #more-actions-separator {
-      display: none;
+  &[copied] #more-actions-button {
+    display: none;
+  }
+}
+
+@media -moz-pref("browser.highlightToSearch.featureGate") {
+  #selection-shortcut-action-panel {
+    --selection-button-size: 36px;
+    --selection-ai-button-extra-width: 15px;
+    --panel-subview-body-padding: 1px;
+
+    moz-button {
+      --button-min-height: var(--selection-button-size);
+      --button-size-icon: var(--selection-button-size);
+    }
+
+    #ai-action-button::part(button) {
+      width: calc(var(--selection-button-size) + var(--selection-ai-button-extra-width));
+    }
+
+    .copy-action-confirmation {
+      block-size: var(--selection-button-size);
+      margin-block: 1px;
+    }
+
+    .copy-action-confirmation-icon {
+      inline-size: var(--selection-button-size);
+      block-size: var(--selection-button-size);
+    }
+  }
+
+  #selection-more-actions-panel > .panel-subview-body {
+    font: menu;
+  }
+}
+
+#selection-more-actions-panel {
+  &::part(content) {
+    padding: var(--space-small);
+  }
+
+  > .panel-subview-body {
+    gap: 0;
+    padding-block: 0;
+  }
+
+  moz-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: var(--size-item-large);
+    padding-inline: var(--space-small);
+    border-radius: var(--button-border-radius);
+
+    &:hover {
+      background-color: var(--button-background-color-ghost-hover);
+      color: var(--button-text-color-ghost-hover);
     }
   }
 }
 
-#selection-more-actions-panel > .panel-subview-body {
-  gap: var(--space-medium);
+#more-actions-manage-settings {
+  --button-padding: var(--space-xsmall) var(--space-small);
 }
 
 .more-actions-notice {
-  /* Wrap the notice instead of letting it stretch the panel to one long line. */
-  max-width: 260px;
-  margin: 0;
-  color: var(--text-color-deemphasized);
+  /* Take the width of the rows instead of stretching the panel. */
+  width: 0;
+  min-width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 var(--space-xsmall);
+  padding: var(--space-small) var(--space-medium);
+  border-radius: var(--border-radius-large);
+  background-color: var(--background-color-warning);
 }
 
 .more-actions-notice-chevron {
@@ -1115,6 +1172,18 @@ split-view-footer {
 #ask-chat-shortcuts {
   font: menu;
   max-width: 345px;
+}
+
+@media -moz-pref("browser.highlightToSearch.featureGate") {
+  #ask-chat-shortcuts {
+    min-width: 240px;
+    max-width: 320px;
+
+    toolbarbutton.subviewbutton {
+      min-height: var(--size-item-large);
+      padding-block: 0;
+    }
+  }
 }
 
 .ask-chat-shortcut-warning {
