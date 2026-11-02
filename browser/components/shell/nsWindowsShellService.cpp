@@ -1630,7 +1630,8 @@ nsWindowsShellService::PinShortcutToTaskbar(
                   auto shortcut_path = location.shortcutFile->NativePath();
                   if (NS_SUCCEEDED(rv)) {
                     shell_windows_taskbar_pin_app_to_taskbar(
-                        &aumid, &shortcut_path, false, promise);
+                        &aumid, &shortcut_path, /* fire_and_forget */ false,
+                        /* prompt_only */ false, promise);
                   } else {
                     promise->MaybeReject(rv);
                   }
@@ -1786,7 +1787,8 @@ static Result<nsString, nsresult> EnsurePinnableShortcutExists(
 static nsresult PinCurrentAppToTaskbarImpl(bool aPrivateBrowsing,
                                            JSContext* aCx,
                                            dom::Promise** aPromise,
-                                           const bool aFireAndForget = false) {
+                                           const bool aFireAndForget = false,
+                                           const bool aPromptOnly = false) {
   if (!NS_IsMainThread()) {
     return NS_ERROR_NOT_SAME_THREAD;
   }
@@ -1852,7 +1854,7 @@ static nsresult PinCurrentAppToTaskbarImpl(bool aPrivateBrowsing,
   NS_DispatchBackgroundTask(
       NS_NewRunnableFunction(
           "PinCurrentAppToTaskbarImpl",
-          [aPrivateBrowsing, aFireAndForget, shortcutName,
+          [aPrivateBrowsing, aFireAndForget, aPromptOnly, shortcutName,
            aumid = nsString{aumid}, greDir, location = std::move(location),
            promiseHolder = std::move(promiseHolder)] {
             nsAutoString shortcutSubstring;
@@ -1863,13 +1865,14 @@ static nsresult PinCurrentAppToTaskbarImpl(bool aPrivateBrowsing,
 
             NS_DispatchToMainThread(NS_NewRunnableFunction(
                 "PinCurrentAppToTaskbarImpl callback",
-                [aFireAndForget, aumid, rv = std::move(rv),
+                [aFireAndForget, aPromptOnly, aumid, rv = std::move(rv),
                  promiseHolder = std::move(promiseHolder)] {
                   dom::Promise* promise = promiseHolder.get()->get();
 
                   if (rv.isOk()) {
                     shell_windows_taskbar_pin_app_to_taskbar(
-                        &aumid, &rv.inspect(), aFireAndForget, promise);
+                        &aumid, &rv.inspect(), aFireAndForget, aPromptOnly,
+                        promise);
                   } else {
                     promise->MaybeReject(rv.inspectErr());
                   }
@@ -1884,10 +1887,10 @@ static nsresult PinCurrentAppToTaskbarImpl(bool aPrivateBrowsing,
 NS_IMETHODIMP
 nsWindowsShellService::PinCurrentAppToTaskbar(bool aPrivateBrowsing,
                                               bool aFireAndForget,
-                                              JSContext* aCx,
+                                              bool aPromptOnly, JSContext* aCx,
                                               dom::Promise** aPromise) {
   return PinCurrentAppToTaskbarImpl(aPrivateBrowsing, aCx, aPromise,
-                                    aFireAndForget);
+                                    aFireAndForget, aPromptOnly);
 }
 
 NS_IMETHODIMP

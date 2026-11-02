@@ -80,10 +80,14 @@ fn can_pin(main_guard: MainThreadGuard) -> bool {
 }
 
 /// Pins the shortcut with matching AUMID to the taskbar.
+///
+/// When `prompt_only` is set, pinning is only attempted through the WinRT API,
+/// which asks the user for consent with a system prompt.
 async fn pin_app(
     aumid: &nsAString,
     shortcut_path: &nsAString,
     fire_and_forget: bool,
+    prompt_only: bool,
     main_guard: MainThreadGuard,
 ) -> Result<PinResult, nsresult> {
     if Package::Current().is_ok() && !matches_default_aumid(&aumid)? {
@@ -98,13 +102,19 @@ async fn pin_app(
     // Attempt to use the documented WinRT pinning API.
     let winrt_pin = winrt::pin_to_taskbar(aumid, fire_and_forget, main_guard).await;
 
-    record_winrt_pin_telemetry(&winrt_pin);
+    let com_fallback = winrt_pin.is_err() && !prompt_only;
+    record_winrt_pin_telemetry(&winrt_pin, com_fallback);
 
     winrt_pin.or_else(|e| {
         use winrt::WinRtPinError::GetTaskbarManager;
         match e {
             GetTaskbarManager(_) => log::debug!("Error pinning with WinRT API: {e:?}"),
             _ => log::error!("Error pinning with WinRT API: {e:?}"),
+        }
+
+        if !com_fallback {
+            log::info!("Prompt-only pin requested, skipping COM fallback.");
+            return Err(e.into());
         }
 
         // Fallback to undocumented COM API.
@@ -168,7 +178,10 @@ fn matches_default_aumid(aumid: &nsAString) -> Result<bool, nsresult> {
 }
 
 /// Records Glean telemetry for the attempted pin to taskbar using WinRT.
-fn record_winrt_pin_telemetry(pin_result: &Result<PinResult, winrt::WinRtPinError>) {
+fn record_winrt_pin_telemetry(
+    pin_result: &Result<PinResult, winrt::WinRtPinError>,
+    com_fallback: bool,
+) {
     use firefox_on_glean::metrics::taskbar::{self, PinWinrtExtra};
 
     use PinResult::*;
@@ -179,8 +192,15 @@ fn record_winrt_pin_telemetry(pin_result: &Result<PinResult, winrt::WinRtPinErro
         Err(e) => e.to_metric_taskbar_pin_winrt(),
     };
 
+    let hresult = pin_result
+        .as_ref()
+        .err()
+        .map(|e| format!("{:#010x}", e.hresult().0));
+
     taskbar::pin_winrt.record(PinWinrtExtra {
         result: Some(metric_extra.into()),
+        hresult,
+        com_fallback: Some(com_fallback),
     });
 }
 

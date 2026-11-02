@@ -935,10 +935,16 @@ let ShellServiceInternal = {
    * @param {bool} privateBrowsing - Pin a private browser window.
    * @param {bool} fireAndForget - Return after pin attempt is tried, but before
    * result is known if user input is necessary.
+   * @param {bool} promptOnly - On Windows, only pin through the OS prompt that
+   * asks for the user's consent.
    * @returns {Promise} - Resolves either when pin attempt resolves, or when pin
    * request has been sent if fireAndForget is true.
    */
-  async pinToTaskbar(privateBrowsing = false, fireAndForget = false) {
+  async pinToTaskbar(
+    privateBrowsing = false,
+    fireAndForget = false,
+    promptOnly = false
+  ) {
     let needsPin = await this.doesAppNeedPin(privateBrowsing);
     if (!needsPin) {
       return;
@@ -948,7 +954,8 @@ let ShellServiceInternal = {
       if (AppConstants.platform == "win") {
         await this.shellService.pinCurrentAppToTaskbar(
           privateBrowsing,
-          fireAndForget
+          fireAndForget,
+          promptOnly
         );
       } else if (AppConstants.platform == "macosx") {
         this.macDockSupport.ensureAppIsPinnedToDock();

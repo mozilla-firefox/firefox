@@ -13,11 +13,8 @@
 //!
 //! ## Pinning
 //!
-//! Starting with Windows 10 RS5 and early versions of Windows 11 this API pins
-//! without prompting the user.
-//!
-//! Later versions of Windows 10 and Windows 11 prior to Windows 11 24H2 instead
-//! prompt the user if they wish to pin with a toast notification.
+//! On Windows 10 and early Windows 11 builds this API pins without prompting
+//! the user.
 //!
 //! For Windows 11 24H2 and later this API reports success even though pinning
 //! is not successful.

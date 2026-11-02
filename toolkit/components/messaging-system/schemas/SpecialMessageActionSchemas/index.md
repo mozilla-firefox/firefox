@@ -277,6 +277,7 @@ Action for pinning Firefox to the user's taskbar.
 {
   privatePin?: boolean; // Pin private browsing mode
   fireAndForget?: boolean; // Don't wait for user confirmation before resolving the action
+  promptOnly?: boolean; // Only pin via the OS consent prompt and never fall back to silent pinning. Set automatically for action_only messages
 }
 ```
 
@@ -295,6 +296,7 @@ Action for pinning Firefox to the user's taskbar and setting it as the default b
 {
   privatePin?: boolean; // Pin private browsing mode
   fireAndForget?: boolean; // Don't wait for user confirmation before resolving the action
+  promptOnly?: boolean; // Only pin via the OS consent prompt and never fall back to silent pinning. Set automatically for action_only messages
 }
 ```
 

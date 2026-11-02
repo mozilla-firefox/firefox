@@ -58,8 +58,8 @@ add_task(async function test_PIN_FIREFOX_TO_TASKBAR() {
     );
     if (isWin) {
       Assert.ok(
-        shell.pinCurrentAppToTaskbar.calledWithExactly(false, false),
-        "pinCurrentAppToTaskbar called with privateBrowsing=false and fireAndForget=false"
+        shell.pinCurrentAppToTaskbar.calledWithExactly(false, false, false),
+        "pinCurrentAppToTaskbar called with privateBrowsing=false, fireAndForget=false and promptOnly=false"
       );
     }
     Assert.equal(
@@ -109,8 +109,8 @@ add_task(async function test_FIRE_AND_FORGET() {
     );
     if (isWin) {
       Assert.ok(
-        shell.pinCurrentAppToTaskbar.calledWithExactly(false, true),
-        "pinCurrentAppToTaskbar called with privateBrowsing=false and fireAndForget=true"
+        shell.pinCurrentAppToTaskbar.calledWithExactly(false, true, false),
+        "pinCurrentAppToTaskbar called with privateBrowsing=false, fireAndForget=true and promptOnly=false"
       );
     }
     Assert.equal(
@@ -122,4 +122,34 @@ add_task(async function test_FIRE_AND_FORGET() {
   check(1, "called");
 
   sandbox.restore();
+});
+
+add_task(async function test_PROMPT_ONLY() {
+  for (const type of ["PIN_FIREFOX_TO_TASKBAR", "PIN_AND_DEFAULT"]) {
+    const { sandbox, shell } = getShell();
+    sandbox.stub(SpecialMessageActions, "setDefaultBrowser");
+
+    await SMATestUtils.executeAndValidateAction(
+      { type, data: { promptOnly: true } },
+      {
+        documentGlobal: {
+          getShellService: () => shell,
+        },
+      }
+    );
+
+    Assert.equal(
+      shell.pinCurrentAppToTaskbar.callCount,
+      isWin ? 1 : 0,
+      `pinCurrentAppToTaskbar was called by ${type} for windows`
+    );
+    if (isWin) {
+      Assert.ok(
+        shell.pinCurrentAppToTaskbar.calledWithExactly(false, false, true),
+        `${type} called pinCurrentAppToTaskbar with promptOnly=true`
+      );
+    }
+
+    sandbox.restore();
+  }
 });

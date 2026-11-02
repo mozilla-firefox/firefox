@@ -1653,6 +1653,34 @@ export class _ASRouter {
     return allowed.has(action.type);
   }
 
+  /**
+   * Returns a copy of an "action_only" message action with `promptOnly: true`
+   * set on every pinning action, including those nested in a MULTI_ACTION.
+   * With no message UI, the OS prompt is the only place the user can consent
+   * to pinning, so pinning must not fall back to APIs that pin silently.
+   *
+   * @param {object} action - The special message action.
+   * @returns {object}
+   */
+  _withPromptOnlyPinActions(action) {
+    const PIN_ACTIONS = ["PIN_FIREFOX_TO_TASKBAR", "PIN_AND_DEFAULT"];
+    if (PIN_ACTIONS.includes(action.type)) {
+      return { ...action, data: { ...action.data, promptOnly: true } };
+    }
+    if (action.type === "MULTI_ACTION") {
+      return {
+        ...action,
+        data: {
+          ...action.data,
+          actions: action.data.actions.map(nested =>
+            this._withPromptOnlyPinActions(nested)
+          ),
+        },
+      };
+    }
+    return action;
+  }
+
   routeCFRMessage(originalMessage, browser, trigger, force = false) {
     if (!originalMessage) {
       return { message: {} };
@@ -1698,7 +1726,10 @@ export class _ASRouter {
         });
         // Add local impression record, used for enforcing frequency caps.
         this.dispatchCFRAction({ type: "IMPRESSION", data: message });
-        lazy.SpecialMessageActions.handleAction(action, browser);
+        lazy.SpecialMessageActions.handleAction(
+          this._withPromptOnlyPinActions(action),
+          browser
+        );
         break;
       }
       case "infobar":

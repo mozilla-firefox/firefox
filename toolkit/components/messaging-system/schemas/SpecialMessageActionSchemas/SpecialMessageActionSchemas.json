@@ -452,6 +452,10 @@
                 "fireAndForget": {
                   "type": "boolean",
                   "description": "Whether or not to wait for user confirmation before resolving the action"
+                },
+                "promptOnly": {
+                  "type": "boolean",
+                  "description": "Only pin through the OS prompt that asks for the user's consent, never through an API that may pin silently. Set automatically for action_only messages."
                 }
               },
               "additionalProperties": false
@@ -490,6 +494,10 @@
                 "fireAndForget": {
                   "type": "boolean",
                   "description": "Whether or not to wait for user confirmation before resolving the action"
+                },
+                "promptOnly": {
+                  "type": "boolean",
+                  "description": "Only pin through the OS prompt that asks for the user's consent, never through an API that may pin silently. Set automatically for action_only messages."
                 }
               },
               "additionalProperties": false

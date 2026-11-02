@@ -133,7 +133,7 @@ interface nsIWindowsShellService extends nsIShellService, Enums<typeof nsIWindow
   enableLaunchOnLoginMSIX(aTaskId: string): Promise<any>;
   disableLaunchOnLoginMSIX(aTaskId: string): Promise<any>;
   getLaunchOnLoginEnabledMSIX(aTaskId: string): Promise<any>;
-  pinCurrentAppToTaskbar(aPrivateBrowsing: boolean, aFireAndForget?: boolean): Promise<any>;
+  pinCurrentAppToTaskbar(aPrivateBrowsing: boolean, aFireAndForget?: boolean, aPromptOnly?: boolean): Promise<any>;
   canPinToTaskbar(): void;
   isCurrentAppPinnedToTaskbar(aumid: string): Promise<any>;
   pinShortcutToTaskbar(aAppUserModelId: string, aShortcutFolder: string, aShortcutRelativePath: string): Promise<any>;
