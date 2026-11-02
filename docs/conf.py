@@ -252,6 +252,14 @@ def make_sphinx_js_skip_missing_objects():
 make_sphinx_js_skip_missing_objects()
 
 
+def freeze_gc(app, *args):
+    # Sphinx forks a worker per chunk of documents. Collect before that and
+    # freeze the survivors so that later collections don't touch them, which
+    # keeps their pages shared between the main process and the workers.
+    gc.collect()
+    gc.freeze()
+
+
 def reattach_nested_rst_nodes(app, doctree):
     """Point nodes parsed from eval-rst blocks back at their own doctree.
 
@@ -285,6 +293,8 @@ def enable_gc(app, exception):
 
 
 def setup(app):
+    app.connect("env-before-read-docs", freeze_gc)
+    app.connect("write-started", freeze_gc)
     # sphinx-js does not declare it, but it only reads the jsdoc analysis that
     # runs once before the sources are read.
     app.extensions["sphinx_js"].parallel_read_safe = True
