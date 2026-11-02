@@ -10,7 +10,8 @@ add_task(async function test_set_tab_offline() {
 
     await SpecialPowers.spawn(browser, [], async () => {
       try {
-        await content.fetch("https://example.com/empty.html");
+        // Use a unique URL to avoid a cached response from a previous run.
+        await content.fetch(`https://example.com/empty.html?${Math.random()}`);
         ok(false, "Should not load since tab is offline");
       } catch (err) {
         is(err.name, "TypeError", "Should fail since tab is offline");
@@ -26,7 +27,7 @@ add_task(async function test_set_tab_online() {
 
     await SpecialPowers.spawn(browser, [], async () => {
       try {
-        await content.fetch("https://example.com/empty.html");
+        await content.fetch(`https://example.com/empty.html?${Math.random()}`);
         ok(true, "Should load since tab is online");
       } catch (err) {
         ok(false, "Should not fail since tab is online");
