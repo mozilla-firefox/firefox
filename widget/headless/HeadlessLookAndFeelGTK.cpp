@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "HeadlessLookAndFeel.h"
+#include "mozilla/ServoTypes.h"
 #include "nsStyleConsts.h"
 
 namespace mozilla::widget {
@@ -153,10 +154,10 @@ nsresult HeadlessLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
       aResult = 0;
       break;
     case IntID::PrimaryPointerCapabilities:
-      aResult = 0;
-      break;
     case IntID::AllPointerCapabilities:
-      aResult = 0;
+      // Mimic desktop defaults from in nsMediaFeatures.cpp.
+      aResult = static_cast<int32_t>(PointerCapabilities::Fine |
+                                     PointerCapabilities::Hover);
       break;
     default:
       aResult = 0;
