@@ -1044,7 +1044,7 @@ browser_calculate_frecency_speed.js
  --manifest perftest.toml
  --manifest-flavor browser-chrome
  --perfherder
- --perfherder-metrics name:PlacesCalculateFrecencyHighFrequency,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyLowFrequency,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyChunked,unit:ms,shouldAlert:False
+ --perfherder-metrics name:PlacesCalculateFrecencyHighFrequency,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyLowFrequency,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyChunked,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyBookmarkOnly,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyRedirectChain,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyInteractions,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyManyVisits,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyVeryManyVisits,unit:ms,shouldAlert:False, name:PlacesCalculateFrecencyWorstCase,unit:ms,shouldAlert:False
  --try-platform linux, mac
  --verbose
 
