@@ -13,10 +13,14 @@
   <string name="mozac_menu_banner_dismiss_description">Ignorer marknadsføring</string>
   <!-- Title for the Customize Menu screen toolbar -->
   <string name="mozac_menu_customize_toolbar_title">Tilpass meny</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">Dra seksjonar for å endre rekkjefølgja</string>
   <!-- Button text to preview the changes made to the menu -->
   <string name="mozac_menu_customize_preview">Førehandsvising</string>
   <!-- Header text for the section containing hidden menu items -->
   <string name="mozac_menu_customize_hidden_sections">Skjulte seksjonar</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">Dra seksjonar hit for å skjule dei</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Still tilbake til standard</string>
   <!-- Content description for the back button in the Customize Menu top app bar -->

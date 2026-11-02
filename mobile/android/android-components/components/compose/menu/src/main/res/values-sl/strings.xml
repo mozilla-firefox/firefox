@@ -9,4 +9,14 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">Novo</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
+  <string name="mozac_menu_banner_dismiss_description">Skrij promocijo</string>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">Prilagodi meni</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">Predogled</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Ponastavi privzeto</string>
+  <!-- Content description for the back button in the Customize Menu top app bar -->
+  <string name="mozac_menu_customize_back_button_content_description">Pojdi nazaj</string>
 </resources>

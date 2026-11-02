@@ -35,6 +35,10 @@
   <string name="tab_search_hint">ٹیب اتے پٹبو</string>
   <!-- The header text displayed on the private tabs page when no private tabs are open -->
   <string name="tab_manager_empty_private_tabs_page_header">ڈکوئ ویبگشت</string>
+  <!-- The supplementary text displayed on the private tabs page when no private tabs are open. %1$s is the name of the app (for example "Firefox") -->
+  <string name="tab_manager_empty_private_tabs_page_description">%1$s نما ہچو تاریخچہ و کوکیز یات تخپک، ولہپوسکنا تشانیک خوندی مریرہ.</string>
+  <!-- The header text displayed on the normal tabs page when no normal tabs are open -->
+  <string name="tab_manager_empty_normal_tabs_page_header">پٹنگ شروع کننگ کن پوسکنو ٹیب اس ملبو</string>
   <!-- Tab tray multi select title in app bar. %1$d is the number of tabs selected -->
   <string name="tab_tray_multi_select_title">%1$d گچین مروک</string>
   <!-- Tab tray multi select title in app bar when no tabs are selected -->
@@ -77,6 +81,11 @@
     Title for info card on private homescreen in True Private Browsing Mode.
   -->
   <string name="felt_privacy_desc_card_title">دا ڈیوائس ٹی ہچ او رند الپہ بو</string>
+  <!--
+    Description of private browsing mode displayed to users on the homepage when they enable private mode.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="felt_privacy_info_card_subtitle_3">ارا وخت نم تینا کل ڈکوئ ٹیباتے بند کیرے %1$s نما کل کوکیزاتے، تاریخچہ، و ویب ڈس ڈیٹا اے مٹائفک.</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">سیٹنگ اتے ان</string>
   <!-- Text for the negative action button -->
@@ -144,6 +153,8 @@
   <string name="browser_menu_stop">سلیف</string>
   <!-- Browser menu button that opens the extensions manager -->
   <string name="browser_menu_extensions">ودنگاک</string>
+  <!-- Browser menu button that opens the extensions manager -->
+  <string name="browser_menu_manage_extensions">ودنگاتے نظم کبو</string>
   <!-- Browser menu group that contains additional settings in collapsed state -->
   <string name="browser_menu_more_settings">پین</string>
   <!--
@@ -186,6 +197,8 @@
   <string name="browser_menu_open_app_link">ایپ ٹی مل</string>
   <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
   <string name="browser_menu_sign_in">سائن ان</string>
+  <!-- Browser menu label that creates a private tab -->
+  <string name="browser_menu_new_private_tab">پوسکنا ڈکوئ ٹیب</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">کلیت لوزاک</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -198,6 +211,8 @@
   <string name="browser_menu_save_as_pdf_2">بطور PDF خوندی کر</string>
   <!-- Browser menu label for navigating to the translation feature, which provides language translation options the current visited page -->
   <string name="browser_menu_translate_page_2">صفحہ اے مٹ کبو</string>
+  <!-- Browser menu label for navigating to the summarization feature, which provides site summarization for the current visited page -->
+  <string name="browser_menu_summarize_page">صفحہ اے گونڈ کبو</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">پوسکن</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
@@ -209,6 +224,8 @@
     %1$s is the name of the app (for example "Firefox").
   -->
   <string name="browser_menu_delete_browsing_data_on_quit">%1$s اے بند کبو</string>
+  <!-- Label text within the set as default banner -->
+  <string name="browser_menu_default_banner_subtitle_2">تیز، خاص و نم کن جوڑ اے.</string>
   <!-- Content description (not visible, for screen readers etc.) for recommended extensions in main menu -->
   <string name="browser_menu_recommended_extensions_content_description">پین معلومات</string>
   <!--
@@ -217,6 +234,8 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">صفحہ اے مٹ کبو</string>
+  <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
+  <string name="browser_toolbar_summarize_cfr_description">دا صفحہ اے سیکنڈ اتے ٹی گونڈ کننگ کن ڈیوائس اے سرفبو. ⚡️</string>
   <!--
     Translation Toolbar
 
@@ -225,6 +244,12 @@
     %2$s is the name of the language which the page was translated to. (For example: French)
   -->
   <string name="translation_toolbar_translated_from_and_to" tools:ignore="UnusedResources">%1$s ان %2$s ٹی مٹ مس</string>
+  <!--
+    Page summaries
+
+    Toolbar title for the Page summaries settings fragment
+  -->
+  <string name="preferences_page_summaries">پنہ غاتا گونڈیک</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">پین ہیل کبو</string>
   <!-- Title for the voice search AI feature toggle -->
@@ -682,7 +707,7 @@
   <!-- Content Description (for screenreaders etc) read for the button to hide a password in logins -->
   <string name="saved_login_hide_password">کلیت لوز اے ڈک</string>
   <!-- Title for recent search suggestions. -->
-  <string name="recent_searches_header">زاتیاٹ پٹنگاک</string>
+  <string name="recent_searches_header">زوتیاٹ پٹنگاک</string>
   <!-- Default dropdown option when initially selecting a language from the translations dialog language selection dropdown. -->
   <string name="translations_bottom_sheet_default_dropdown_selection">دووی اس گچین کر</string>
   <!-- Button text for the button that will take the user to a website to learn more about how translations works in the given app. %1$s is the name of the app (for example "Firefox"). -->
@@ -701,4 +726,6 @@
     Title for a prompt asking the user about their experience using the app. %1$s is the name of the app (for example "Firefox").
   -->
   <string name="review_prompt_pre_prompt_header">%1$s نا باروٹ انت پارے؟</string>
+  <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">توار تون خواننگ</string>
 </resources>

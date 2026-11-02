@@ -9,4 +9,10 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">ថ្មី</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
+  <string name="mozac_menu_banner_dismiss_description">ច្រានចោលការផ្សព្វផ្សាយ</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">មើលមុន</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">កំណត់ឡើងវិញជាបុរេជម្រើស</string>
 </resources>
