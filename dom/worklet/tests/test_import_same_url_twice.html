@@ -1,0 +1,49 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test importing one URL as two module types in a Worklet</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+  <script type="application/javascript" src="common.js"></script>
+</head>
+<body>
+
+<script type="application/javascript">
+// This function is called into an iframe.
+async function runTestInIframe() {
+  const target = new URL("import_same_url_twice_target.mjs", location.href);
+  const source = `
+    import { value } from "${target}";
+    import text from "${target}" with { type: "text" };
+    registerProcessor("same-url-twice", class extends AudioWorkletProcessor {
+      constructor() {
+        super();
+        this.port.postMessage({ value, text });
+      }
+      process() {
+        return false;
+      }
+    });
+  `;
+  const url = URL.createObjectURL(
+    new Blob([source], { type: "text/javascript" })
+  );
+  const expectedText = await (await fetch(target)).text();
+  const audioContext = new AudioContext();
+  try {
+    await audioContext.audioWorklet.addModule(url);
+    ok(true, "addModule() should resolve");
+    const node = new AudioWorkletNode(audioContext, "same-url-twice");
+    const { value, text } = await new Promise(resolve => {
+      node.port.onmessage = e => resolve(e.data);
+    });
+    is(value, "imported as JavaScript", "JavaScript import evaluated the module");
+    is(text, expectedText, "text import returned the file contents");
+  } catch (e) {
+    ok(false, "addModule() should resolve: " + e);
+  }
+  SimpleTest.finish();
+}
+</script>
+</body>
+</html>

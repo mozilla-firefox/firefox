@@ -54,6 +54,9 @@ support-files = [
 ["test_fetch_failed.html"]
 support-files = ["specifier_with_user.mjs"]
 
+["test_import_same_url_twice.html"]
+support-files = ["import_same_url_twice_target.mjs"]
+
 ["test_import_with_cache.html"]
 support-files = ["server_import_with_cache.sjs"]
 skip-if = [
