@@ -15,7 +15,7 @@ import pytest
 
 from mozlint.errors import LintersNotConfigured, NoValidLinter
 from mozlint.result import Issue, ResultSummary
-from mozlint.roller import LintRoller
+from mozlint.roller import LintRoller, _group_jobs
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -426,6 +426,27 @@ def test_support_files(lint, linters, filedir, monkeypatch, files):
         "`--fix` with `--rev` on a `support-files` change should "
         "avoid linting the entire root."
     )
+
+
+def test_group_jobs(filedir):
+    a = {"name": "a"}
+    b = {"name": "b"}
+    foobar = os.path.join(filedir, "foobar.js")
+    no_foobar = os.path.join(filedir, "no_foobar.js")
+    irrelevant = os.path.join(filedir, "irrelevant")
+    jobs = [
+        (a, [foobar]),
+        (a, [no_foobar]),
+        (b, [filedir]),
+        (b, [foobar]),
+        (b, [irrelevant]),
+        (a, [f"{filedir}_other"]),
+    ]
+    assert _group_jobs(jobs) == [
+        [jobs[0], jobs[1], jobs[4], jobs[5]],
+        [jobs[2]],
+        [jobs[3]],
+    ]
 
 
 def test_setup(lint, linters, filedir, capfd):

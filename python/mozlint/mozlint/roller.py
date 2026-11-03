@@ -115,6 +115,34 @@ def _run_worker(config, paths, **lintargs):
     return result
 
 
+def _ancestors(path):
+    parent = os.path.dirname(path)
+    while parent != path:
+        yield parent
+        path, parent = parent, os.path.dirname(parent)
+
+
+def _group_jobs(jobs):
+    groups = []  # list of (job_list, path_set, ancestor_set) triples
+    for job in jobs:
+        paths = set(job[1])
+        ancestors = {a for p in paths for a in _ancestors(p)}
+        for group_jobs, group_paths, group_ancestors in groups:
+            if (
+                paths.isdisjoint(group_paths)
+                and paths.isdisjoint(group_ancestors)
+                and ancestors.isdisjoint(group_paths)
+            ):
+                break
+        else:
+            group_jobs, group_paths, group_ancestors = [], set(), set()
+            groups.append((group_jobs, group_paths, group_ancestors))
+        group_jobs.append(job)
+        group_paths |= paths
+        group_ancestors |= ancestors
+    return [group_jobs for group_jobs, _, _ in groups]
+
+
 class InterruptableQueue(Queue):
     """A multiprocessing.Queue that catches KeyboardInterrupt when a worker is
     blocking on it and returns None.
@@ -482,8 +510,9 @@ class LintRoller:
         # called when a job is finished. We store the futures so that they can
         # be canceled in the event of a KeyboardInterrupt.
         #
-        # When fixing, partition jobs into groups where no two jobs in the same
-        # group share a path. Jobs within a group run in parallel safely; a
+        # When fixing, partition jobs into groups where no job in a group
+        # shares a path with, or lies inside a directory of, another job in
+        # that group. Jobs within a group run in parallel safely; a
         # barrier between groups prevents concurrent writes to the same file by
         # different linters.
         futures = []
@@ -504,18 +533,7 @@ class LintRoller:
         signal.signal(signal.SIGINT, _parent_sigint_handler)
 
         if self.lintargs.get("fix"):
-            groups = []  # list of (job_list, path_set) pairs
-            for job in jobs:
-                job_paths = set(job[1])
-                for group_jobs, group_paths in groups:
-                    if not job_paths.intersection(group_paths):
-                        group_jobs.append(job)
-                        group_paths.update(job_paths)
-                        break
-                else:
-                    groups.append(([job], job_paths))
-
-            for group_jobs, _ in groups:
+            for group_jobs in _group_jobs(jobs):
                 group_futures = []
                 for job in group_jobs:
                     future = executor.submit(_run_worker, *job, **self.lintargs)
