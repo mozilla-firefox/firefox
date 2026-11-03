@@ -141,10 +141,12 @@ compute and blocking model operations off the utility main thread.
 
 A model loads on one device of the process, chosen from the
 `HWInferencePlacement` the consumer passes at creation: a list of device ids,
-or a list of device kinds, each ordered by preference. The placement travels
-unchanged to `LlamaModelOptions`, where `LlamaBackend` resolves it against the
-probed devices and tries each match in turn; the id that loaded the model is
-reported back in `LoadSuccess`. An empty placement loads on the CPU.
+or a list of device kinds, each ordered by preference. A feature passes it as
+the `device` pipeline option, which travels unchanged through
+`TextGenerationEngine` to `LlamaModelOptions`, where `LlamaBackend` resolves
+it against the probed devices and tries each match in turn; the id that loaded
+the model is reported back in `LoadSuccess`. An empty placement loads on the
+CPU.
 
 `LlamaBackend` enumerates `ggml`'s backend devices once per process,
 initialising each accelerator for real, which is where a registered device

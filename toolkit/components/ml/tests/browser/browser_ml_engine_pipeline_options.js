@@ -505,7 +505,6 @@ function getValidOptions(overrides = {}) {
       processorRevision: "v1",
       logLevel: null,
       runtimeFilename: "runtime.wasm",
-      device: InferenceDevice.GPU,
       numThreads: 4,
       executionPriority: ExecutionPriority.NORMAL,
     },
@@ -604,11 +603,6 @@ const pipelineOptionsCases = [
     expectedError: /Invalid value/,
   },
   {
-    description: "Invalid device",
-    options: { device: "invalid_device" },
-    expectedError: /Invalid value/,
-  },
-  {
     description: "Invalid executionPriority",
     options: { executionPriority: "invalid_priority" },
     expectedError: /Invalid value/,
@@ -645,11 +639,6 @@ const pipelineOptionsCases = [
     description: "Valid dtype",
     options: { dtype: QuantizationLevel.FP16 },
     expected: { dtype: QuantizationLevel.FP16 },
-  },
-  {
-    description: "Valid device",
-    options: { device: InferenceDevice.WASM },
-    expected: { device: InferenceDevice.WASM },
   },
   {
     description: "Valid executionPriority",

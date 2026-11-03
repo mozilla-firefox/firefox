@@ -402,18 +402,6 @@ export const KVCacheQuantizationLevel = {
 };
 
 /**
- * Enum for the device used for inference.
- *
- * @readonly
- * @enum {string}
- */
-export const InferenceDevice = {
-  GPU: "gpu",
-  WASM: "wasm",
-  CPU: "cpu",
-};
-
-/**
  * Enum for log levels.
  *
  * @readonly
@@ -579,9 +567,9 @@ export class PipelineOptions {
   runtimeFilename = null;
 
   /**
-   * Device used for inference
+   * Where a llama.cpp model loads, by device id or kind, @see HWInferencePlacement.
    *
-   * @type {InferenceDevice | null}
+   * @type {?HWInferencePlacement}
    */
   device = null;
 
@@ -757,7 +745,7 @@ export class PipelineOptions {
   /**
    * Private method to validate enum fields.
    *
-   * @param {string} field - The field being validated (e.g., 'dtype', 'device', 'executionPriority').
+   * @param {string} field - The field being validated (e.g., 'dtype', 'executionPriority').
    * @param {*} value - The value being checked against the enum.
    * @throws {Error} Throws an error if the value is not valid.
    * @private
@@ -765,7 +753,6 @@ export class PipelineOptions {
   #validateEnum(field, value) {
     const enums = {
       dtype: QuantizationLevel,
-      device: InferenceDevice,
       executionPriority: ExecutionPriority,
       logLevel: LogLevel,
       modelHub: ModelHub,
@@ -1000,7 +987,6 @@ export class PipelineOptions {
         [
           "modelHub",
           "dtype",
-          "device",
           "executionPriority",
           "logLevel",
           "kvCacheDtype",
