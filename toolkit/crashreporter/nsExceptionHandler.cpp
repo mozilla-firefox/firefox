@@ -240,9 +240,6 @@ static MOZ_GLIBCXX_CONSTINIT xpstring eventsDirectory;
 // If this is false, we don't launch the crash reporter
 static bool doReport = true;
 
-// if this is true, we pass the exception on to the OS crash reporter
-static bool showOSCrashReporter = false;
-
 // The time of the last recorded crash, as a time_t value.
 static time_t lastCrashTime = 0;
 // The pathname of a file to store the crash time in
@@ -1580,8 +1577,6 @@ bool MinidumpCallback(
     EXCEPTION_POINTERS* exinfo, MDRawAssertionInfo* assertion,
 #endif
     const phc::AddrInfo* addrInfo, bool succeeded) {
-  bool returnValue = showOSCrashReporter ? false : succeeded;
-
   static XP_CHAR minidumpPath[XP_PATH_MAX];
   size_t size = XP_PATH_MAX;
   XP_CHAR* p;
@@ -1645,6 +1640,7 @@ bool MinidumpCallback(
 
   SetUpMemtestEnv();
 
+  bool returnValue = succeeded;
   bool isBackgroundTaskMode = false;
 #ifdef MOZ_BACKGROUNDTASKS
   isBackgroundTaskMode = BackgroundTasks::IsBackgroundTaskMode();
@@ -2140,17 +2136,6 @@ nsresult SetExceptionHandler(nsIFile* aXREDirectory, bool force /*=false*/) {
   // store application start time
   RecordAnnotationU64(Annotation::StartupTime,
                       static_cast<uint64_t>(time(nullptr)));
-
-#if defined(XP_MACOSX)
-  // On OS X, many testers like to see the OS crash reporting dialog
-  // since it offers immediate stack traces.  We allow them to set
-  // a default to pass exceptions to the OS handler.
-  Boolean keyExistsAndHasValidFormat = false;
-  Boolean prefValue = ::CFPreferencesGetAppBooleanValue(
-      CFSTR("OSCrashReporter"), kCFPreferencesCurrentApplication,
-      &keyExistsAndHasValidFormat);
-  if (keyExistsAndHasValidFormat) showOSCrashReporter = prefValue;
-#endif
 
   oldTerminateHandler = std::set_terminate(&TerminateHandler);
 
