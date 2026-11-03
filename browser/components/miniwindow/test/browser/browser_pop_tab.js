@@ -224,7 +224,7 @@ add_task(async function test_popRegion_breaks_a_split_view() {
     "only the cropped tab moves to a mini window"
   );
   ok(!tabs[1].splitview, "the other half is no longer in a split view");
-  is(tabs[1].documentGlobal, window, "the other half stays in the window");
+  is(tabs[1].ownerGlobal, window, "the other half stays in the window");
   let ended = Glean.splitview.end.testGetValue() ?? [];
   ok(
     ended.some(event => event.extra.trigger === "mini_window"),
@@ -245,7 +245,7 @@ add_task(async function test_menu_label_counts_tabs() {
       )
     );
   }
-  gBrowser.addToMultiSelectedTabs(tabs[0]);
+  gBrowser.addToMultiSelectedTabs(tabs[1]);
 
   let menu = document.getElementById("tabContextMenu");
   let shown = BrowserTestUtils.waitForPopupEvent(menu, "shown");
