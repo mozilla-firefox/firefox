@@ -403,14 +403,14 @@ wheels = [
 
 [[package]]
 name = "diskarzhan"
-version = "0.1.8"
+version = "0.1.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9c/03/7b9b530cd3dd5b34ba87d3730ca02d0645146416eea7d4b18b9fa852f066/diskarzhan-0.1.8.tar.gz", hash = "sha256:23349cadd0a5b3ace16b45263104a77db78f791e037c5624d2ed5e53816608fd", size = 27472, upload-time = "2026-10-27T08:15:35.042Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1e/66/2f4851ae03c57f820bd9a220fce70c150c6a009916c3d777541f14dd3a08/diskarzhan-0.1.9.tar.gz", hash = "sha256:d2c92606a04369c84c04c8a2787f2616ff40405275f37ce846b908bb70aa810c", size = 28627, upload-time = "2026-11-03T22:45:27.007Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/05/1d/82232bdbaf69e335bf188da31c743dbf59500217561023ba599259dc139d/diskarzhan-0.1.8-py3-none-any.whl", hash = "sha256:9a6c4b2ba02c1f86edbbf4d629a941614cc2faac1ff6df9114238877f82db748", size = 25418, upload-time = "2026-10-27T08:15:33.322Z" },
+    { url = "https://files.pythonhosted.org/packages/02/e2/8e83ed653474f65f43ebeb5f79d686f25b603920d22ba3a7e64e9cb30661/diskarzhan-0.1.9-py3-none-any.whl", hash = "sha256:c72aa7dd71eac7720f90d28fabdb7f0c3652740a2631c4b7a344da49b68e917f", size = 25735, upload-time = "2026-11-03T22:45:25.596Z" },
 ]
 
 [[package]]
@@ -913,7 +913,7 @@ requires-dist = [
     { name = "compare-locales", specifier = "~=9.0" },
     { name = "cookies", specifier = "==2.2.1" },
     { name = "cyclonedx-python-lib", specifier = "==11.11.0" },
-    { name = "diskarzhan", specifier = "==0.1.8" },
+    { name = "diskarzhan", specifier = "==0.1.9" },
     { name = "distro", specifier = "~=1.8" },
     { name = "ecdsa", specifier = "==0.19.1" },
     { name = "esprima", specifier = "==4.0.1" },

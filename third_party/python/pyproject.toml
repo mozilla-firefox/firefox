@@ -73,5 +73,5 @@ dependencies = [
     # Mozharness needs since it bootstraps a virtualenv from these wheels alone.
     "wheel==0.45.1",
     "yamllint~=1.23",
-    "diskarzhan==0.1.8",
+    "diskarzhan==0.1.9",
 ]
