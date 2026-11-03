@@ -2435,12 +2435,8 @@ already_AddRefed<gfxFontEntry> gfxFcPlatformFontList::MakePlatformFont(
   // Make a copy of the font data with shaping tables stripped, and use this
   // to instantiate the FreeType face; we only need this face to support
   // rasterization, not shaping behaviors.
-  // We disable validation because the resource was already sanitized when
-  // initially downloaded; we're re-running OTS here purely to filter out the
-  // shaping-related tables.
   gfxOTSExpandingMemoryStream<> output(aFontData->Length());
-  gfxOTSContext otsContext(/* aDropShapingTables = */ true,
-                           /* aDisableValidation = */ true);
+  gfxOTSContext otsContext(/* aDropShapingTables = */ true);
   if (!otsContext.Process(&output, aFontData->Data(), aFontData->Length())) {
     return nullptr;
   }

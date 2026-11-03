@@ -92,10 +92,8 @@ class gfxOTSExpandingMemoryStream : public ots::OTSStream {
 
 class MOZ_STACK_CLASS gfxOTSContext : public ots::OTSContext {
  public:
-  explicit gfxOTSContext(bool aDropShapingTables = false,
-                         bool aDisableValidation = false)
-      : mDropShapingTables(aDropShapingTables),
-        mDisableValidation(aDisableValidation) {
+  explicit gfxOTSContext(bool aDropShapingTables = false)
+      : mDropShapingTables(aDropShapingTables) {
     using namespace mozilla;
 
     // Whether to apply OTS validation to OpenType Layout tables
@@ -140,9 +138,6 @@ class MOZ_STACK_CLASS gfxOTSContext : public ots::OTSContext {
     };
     if (mDropShapingTables && isShapingTable(aTag)) {
       return ots::TABLE_ACTION_DROP;
-    }
-    if (mDisableValidation) {
-      return ots::TABLE_ACTION_PASSTHRU;
     }
     // Pass through or validate OTL and Variation tables, depending on prefs.
     if (aTag == TRUETYPE_TAG('G', 'D', 'E', 'F') ||
@@ -224,9 +219,6 @@ class MOZ_STACK_CLASS gfxOTSContext : public ots::OTSContext {
   // Whether to discard shaping tables (OT/AAT/Graphite), leaving a resource
   // only suitable for rasterizing already-shaped text.
   const bool mDropShapingTables;
-  // Whether non-shaping tables should pass through without validation
-  // (because we're re-filtering an already-sanitized resource).
-  const bool mDisableValidation;
 };
 
 #endif /* GFX_OTS_UTILS_H */
