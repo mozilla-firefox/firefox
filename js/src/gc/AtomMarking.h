@@ -102,9 +102,9 @@ class AtomRefRuntime {
   template <typename T>
   bool hasRef(Zone* zone, T* thing);
 
-  // For testing purposes, check whether there is a reference at |bitIndex| in
-  // the atom reference bitmap for |zone|.
-  bool hasRefForIndex(Zone* zone, size_t bitIndex);
+  // For testing purposes, check whether the bit at |bitIndex| in the atom
+  // reference bitmap is set for |zone|.
+  bool getBitByIndex(Zone* zone, size_t bitIndex);
 };
 
 }  // namespace gc

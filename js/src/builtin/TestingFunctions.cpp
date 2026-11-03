@@ -3404,11 +3404,11 @@ static bool GetAtomMarkColor(JSContext* cx, unsigned argc, Value* vp) {
                           "Expected a positive integer as the second argument");
     return false;
   }
-  size_t index = args[1].toInt32();
 
+  size_t index = args[1].toInt32();
   gc::GCRuntime* gc = &cx->runtime()->gc;
-  bool hasRef = gc->atomReferences.hasRefForIndex(zone, index);
-  RootedString name(cx, JS_NewStringCopyZ(cx, hasRef ? "black" : "white"));
+  bool bit = gc->atomReferences.getBitByIndex(zone, index);
+  RootedString name(cx, JS_NewStringCopyZ(cx, bit ? "black" : "white"));
   if (!name) {
     return false;
   }

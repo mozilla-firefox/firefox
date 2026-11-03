@@ -376,17 +376,11 @@ bool AtomRefRuntime::hasRef(Zone* zone, T* thing) {
 template bool AtomRefRuntime::hasRef(Zone* zone, JSAtom* thing);
 template bool AtomRefRuntime::hasRef(Zone* zone, JS::Symbol* thing);
 
-bool AtomRefRuntime::hasRefForIndex(Zone* zone, size_t bitIndex) {
+bool AtomRefRuntime::getBitByIndex(Zone* zone, size_t bitIndex) {
   MOZ_ASSERT(zone->runtimeFromAnyThread()->permanentAtomsPopulated());
 
-  size_t blackBit = bitIndex + size_t(ColorBit::BlackBit);
-#ifdef DEBUG
-  size_t grayOrBlackBit = bitIndex + size_t(ColorBit::GrayOrBlackBit);
-#endif
-
   SparseBitmap& bitmap = zone->referencedAtoms();
-  MOZ_ASSERT(!bitmap.readonlyThreadsafeGetBit(grayOrBlackBit));
-  return bitmap.readonlyThreadsafeGetBit(blackBit);
+  return bitmap.readonlyThreadsafeGetBit(bitIndex);
 }
 
 #ifdef DEBUG
