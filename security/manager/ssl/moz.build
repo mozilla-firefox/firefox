@@ -46,7 +46,7 @@ XPCOM_MANIFESTS += [
     "components.conf",
 ]
 
-EXTRA_JS_MODULES.psm += [
+MOZ_SRC_FILES += [
     "ClientAuthDialogService.sys.mjs",
     "DER.sys.mjs",
     "QWACs.sys.mjs",

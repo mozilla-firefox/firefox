@@ -532,7 +532,7 @@ For example, they leverage advanced customization options (bucket, content-signa
 
 ```js
 const {RemoteSecuritySettings} =
-  ChromeUtils.importESModule("resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs");
+  ChromeUtils.importESModule("moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs");
 
 RemoteSecuritySettings.init();
 

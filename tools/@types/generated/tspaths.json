@@ -6700,21 +6700,6 @@
       "resource://gre/modules/policies/macOSPoliciesParser.sys.mjs": [
         "../../../toolkit/components/enterprisepolicies/macOSPoliciesParser.sys.mjs"
       ],
-      "resource://gre/modules/psm/DER.sys.mjs": [
-        "../../../security/manager/ssl/DER.sys.mjs"
-      ],
-      "resource://gre/modules/psm/QWACs.sys.mjs": [
-        "../../../security/manager/ssl/QWACs.sys.mjs"
-      ],
-      "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs": [
-        "../../../security/manager/ssl/RemoteSecuritySettings.sys.mjs"
-      ],
-      "resource://gre/modules/psm/X509.sys.mjs": [
-        "../../../security/manager/ssl/X509.sys.mjs"
-      ],
-      "resource://gre/modules/psm/pippki.sys.mjs": [
-        "../../../security/manager/pki/pippki.sys.mjs"
-      ],
       "resource://gre/modules/services-automation/ServicesAutomation.sys.mjs": [
         "../../../services/automation/ServicesAutomation.sys.mjs"
       ],

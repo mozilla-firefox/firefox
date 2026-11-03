@@ -4,7 +4,7 @@
 "use strict";
 
 const { getCertViewerUrl } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/pippki.sys.mjs"
+  "moz-src:///security/manager/pki/pippki.sys.mjs"
 );
 
 // Repeatedly opens the certificate viewer dialog with various certificates and

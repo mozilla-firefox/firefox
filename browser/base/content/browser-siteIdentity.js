@@ -4,7 +4,7 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   ExtensionUtils: "resource://gre/modules/ExtensionUtils.sys.mjs",
-  QWACs: "resource://gre/modules/psm/QWACs.sys.mjs",
+  QWACs: "moz-src:///security/manager/ssl/QWACs.sys.mjs",
 });
 
 /**

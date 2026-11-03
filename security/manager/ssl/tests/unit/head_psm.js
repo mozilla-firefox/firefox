@@ -27,7 +27,7 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
 );
 
 const { X509 } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/X509.sys.mjs"
+  "moz-src:///security/manager/ssl/X509.sys.mjs"
 );
 
 const gIsDebugBuild = Cc["@mozilla.org/xpcom/debug;1"].getService(

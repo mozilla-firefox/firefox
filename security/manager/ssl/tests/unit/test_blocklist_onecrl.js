@@ -9,7 +9,7 @@ const { RemoteSettings } = ChromeUtils.importESModule(
   "resource://services-settings/remote-settings.sys.mjs"
 );
 const { RemoteSecuritySettings } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs"
+  "moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs"
 );
 const { OneCRLBlocklistClient } = RemoteSecuritySettings.init();
 

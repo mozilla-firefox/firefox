@@ -20,7 +20,7 @@ ChromeUtils.defineESModuleGetters(this, {
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   privacyMetricsStatsCategories:
     "moz-src:///browser/components/protections/PrivacyMetricsService.sys.mjs",
-  QWACs: "resource://gre/modules/psm/QWACs.sys.mjs",
+  QWACs: "moz-src:///security/manager/ssl/QWACs.sys.mjs",
   SiteDataManager: "resource:///modules/SiteDataManager.sys.mjs",
   TrustPanelTrackerLogs:
     "moz-src:///browser/components/controlcenter/TrustPanelTrackerLogs.sys.mjs",

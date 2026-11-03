@@ -5,7 +5,7 @@
 "use strict";
 
 const { setText, viewCertHelper, checkCertHelper } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/pippki.sys.mjs"
+  "moz-src:///security/manager/pki/pippki.sys.mjs"
 );
 
 var gDialog;

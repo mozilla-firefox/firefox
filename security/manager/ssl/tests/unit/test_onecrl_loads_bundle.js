@@ -13,7 +13,7 @@ const { TestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/TestUtils.sys.mjs"
 );
 const { RemoteSecuritySettings } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs"
+  "moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs"
 );
 
 // DER encoding of the issuer name (CN=emSign Root TLS CA - G3), base64.

@@ -21,7 +21,7 @@ ChromeUtils.defineESModuleGetters(this, {
   GeckoViewUtils: "resource://gre/modules/GeckoViewUtils.sys.mjs",
   InitializationTracker: "resource://gre/modules/GeckoViewTelemetry.sys.mjs",
   RemoteSecuritySettings:
-    "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs",
+    "moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs",
   SafeBrowsing: "resource://gre/modules/SafeBrowsing.sys.mjs",
   CaptchaDetectionPingUtils:
     "moz-src:///toolkit/components/captchadetection/CaptchaDetectionPingUtils.sys.mjs",

@@ -12,7 +12,7 @@
 //   unmodified
 
 const { RemoteSecuritySettings } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs"
+  "moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs"
 );
 
 // First, we need to setup appInfo for the blocklist service to work

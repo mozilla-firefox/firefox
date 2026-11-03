@@ -24,7 +24,7 @@ XPCOMUtils.defineLazyServiceGetter(
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserTelemetryUtils: "resource://gre/modules/BrowserTelemetryUtils.sys.mjs",
   GleanStopwatch: "resource://gre/modules/GeckoViewTelemetry.sys.mjs",
-  QWACs: "resource://gre/modules/psm/QWACs.sys.mjs",
+  QWACs: "moz-src:///security/manager/ssl/QWACs.sys.mjs",
 });
 
 var IdentityHandler = {

@@ -5,7 +5,7 @@
 "use strict";
 
 const { alertPromptService } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/pippki.sys.mjs"
+  "moz-src:///security/manager/pki/pippki.sys.mjs"
 );
 
 document.addEventListener("dialogaccept", onDialogAccept);

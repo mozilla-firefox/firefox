@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { DER } from "resource://gre/modules/psm/DER.sys.mjs";
+import { DER } from "moz-src:///security/manager/ssl/DER.sys.mjs";
 
 const ERROR_UNSUPPORTED_ASN1 = "unsupported asn.1";
 const ERROR_TIME_NOT_VALID = "Time not valid";

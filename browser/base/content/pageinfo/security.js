@@ -9,7 +9,7 @@ const { DownloadUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/DownloadUtils.sys.mjs"
 );
 const { QWACs } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/QWACs.sys.mjs"
+  "moz-src:///security/manager/ssl/QWACs.sys.mjs"
 );
 
 /* import-globals-from pageInfo.js */

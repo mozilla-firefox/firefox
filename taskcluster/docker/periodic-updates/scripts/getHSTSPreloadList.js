@@ -19,7 +19,7 @@ const { FileUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/FileUtils.sys.mjs"
 );
 const { RemoteSecuritySettings } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/RemoteSecuritySettings.sys.mjs"
+  "moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs"
 );
 
 const logger = console.createInstance({ prefix: "HSTSPreloadList" });

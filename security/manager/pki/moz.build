@@ -13,7 +13,7 @@ XPCOM_MANIFESTS += [
     "components.conf",
 ]
 
-EXTRA_JS_MODULES.psm += [
+MOZ_SRC_FILES += [
     "pippki.sys.mjs",
 ]
 

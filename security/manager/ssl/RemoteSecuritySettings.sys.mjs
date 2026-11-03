@@ -4,7 +4,7 @@
 
 import { RemoteSettings } from "resource://services-settings/remote-settings.sys.mjs";
 
-import { X509 } from "resource://gre/modules/psm/X509.sys.mjs";
+import { X509 } from "moz-src:///security/manager/ssl/X509.sys.mjs";
 
 const SECURITY_STATE_BUCKET = "security-state";
 const SECURITY_STATE_SIGNER = "onecrl.content-signature.mozilla.org";

@@ -10,7 +10,7 @@ const certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
 );
 
 const { QWACs } = ChromeUtils.importESModule(
-  "resource://gre/modules/psm/QWACs.sys.mjs"
+  "moz-src:///security/manager/ssl/QWACs.sys.mjs"
 );
 
 async function verify_1_qwacs(filename, expectSuccess, extraCertNames = []) {
