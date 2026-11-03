@@ -3,13 +3,13 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "AntiTrackingLog.h"
+#include "AntiTrackingUtils.h"
 #include "DynamicFpiRedirectHeuristic.h"
 #include "ContentBlockingAllowList.h"
 #include "ContentBlockingUserInteraction.h"
 #include "StorageAccessAPIHelper.h"
 
 #include "mozilla/net/HttpBaseChannel.h"
-#include "mozilla/net/ChannelClassifierUtils.h"
 #include "mozilla/glean/AntitrackingMetrics.h"
 #include "nsContentUtils.h"
 #include "nsIChannel.h"
@@ -160,23 +160,9 @@ bool ShouldRedirectHeuristicApplyTrackingResource(nsIChannel* aOldChannel,
                                                   nsIURI* aOldURI,
                                                   nsIChannel* aNewChannel,
                                                   nsIURI* aNewURI) {
-  nsCOMPtr<nsIClassifiedChannel> classifiedOldChannel =
-      do_QueryInterface(aOldChannel);
-  if (!classifiedOldChannel) {
-    LOG_SPEC2(("Ignoring redirect for %s to %s because there is not "
-               "nsIClassifiedChannel interface",
-               _spec1, _spec2),
-              aOldURI, aNewURI);
-    return false;
-  }
-
   // We're looking at the first-party classification flags because we're
   // interested in first-party redirects.
-  uint32_t oldClassificationFlags =
-      classifiedOldChannel->GetFirstPartyClassificationFlags();
-
-  if (net::ChannelClassifierUtils::IsTrackingClassificationFlag(
-          oldClassificationFlags, NS_UsePrivateBrowsing(aOldChannel))) {
+  if (AntiTrackingUtils::IsFirstPartyTrackingChannel(aOldChannel)) {
     // This is a redirect from tracking.
     LOG_SPEC2(("Ignoring redirect for %s to %s because it's from tracking ",
                _spec1, _spec2),

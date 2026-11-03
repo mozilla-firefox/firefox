@@ -3,6 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "AntiTrackingLog.h"
+#include "AntiTrackingUtils.h"
 #include "AntiTrackingRedirectHeuristic.h"
 #include "ContentBlockingAllowList.h"
 #include "ContentBlockingUserInteraction.h"
@@ -11,12 +12,10 @@
 #include "mozilla/dom/BrowsingContext.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/net/CookieJarSettings.h"
-#include "mozilla/net/ChannelClassifierUtils.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/glean/AntitrackingMetrics.h"
 #include "nsContentUtils.h"
 #include "nsIChannel.h"
-#include "nsIClassifiedChannel.h"
 #include "nsICookieService.h"
 #include "nsIHttpChannel.h"
 #include "nsIRedirectHistoryEntry.h"
@@ -37,30 +36,15 @@ namespace {
 // function.
 bool ShouldCheckRedirectHeuristicETP(nsIChannel* aOldChannel, nsIURI* aOldURI,
                                      nsIPrincipal* aOldPrincipal) {
-  nsCOMPtr<nsIClassifiedChannel> oldClassifiedChannel =
-      do_QueryInterface(aOldChannel);
-
-  if (!oldClassifiedChannel) {
-    LOG_SPEC(("Ignoring the redirect from %s because there is no "
-              "nsIClassifiedChannel interface",
-              _spec),
-             aOldURI);
-    return false;
-  }
-
   nsCOMPtr<nsILoadInfo> oldLoadInfo = aOldChannel->LoadInfo();
   MOZ_ASSERT(oldLoadInfo);
 
   bool allowedByPreviousRedirect =
       oldLoadInfo->GetAllowListFutureDocumentsCreatedFromThisRedirectChain();
 
-  uint32_t oldClassificationFlags =
-      oldClassifiedChannel->GetFirstPartyClassificationFlags();
-
   // We will skip this check if we have granted storage access before so that we
   // can grant the storage access to the rest of the chain.
-  if (!net::ChannelClassifierUtils::IsTrackingClassificationFlag(
-          oldClassificationFlags, NS_UsePrivateBrowsing(aOldChannel)) &&
+  if (!AntiTrackingUtils::IsFirstPartyTrackingChannel(aOldChannel) &&
       !allowedByPreviousRedirect) {
     // This is not a tracking -> non-tracking redirect.
     LOG_SPEC(("Ignoring the redirect from %s because it's not tracking to "
@@ -84,24 +68,9 @@ bool ShouldCheckRedirectHeuristicETP(nsIChannel* aOldChannel, nsIURI* aOldURI,
 // The helper function to decide and set the storage access after we know the
 // classification flags of the new channel.
 bool ShouldRedirectHeuristicApplyETP(nsIChannel* aNewChannel, nsIURI* aNewURI) {
-  nsCOMPtr<nsIClassifiedChannel> newClassifiedChannel =
-      do_QueryInterface(aNewChannel);
-
-  if (!aNewChannel) {
-    LOG_SPEC(("Ignoring the redirect to %s because there is no "
-              "nsIClassifiedChannel interface",
-              _spec),
-             aNewURI);
-    return false;
-  }
-
   // We're looking at the first-party classification flags because we're
   // interested in first-party redirects.
-  uint32_t newClassificationFlags =
-      newClassifiedChannel->GetFirstPartyClassificationFlags();
-
-  if (net::ChannelClassifierUtils::IsTrackingClassificationFlag(
-          newClassificationFlags, NS_UsePrivateBrowsing(aNewChannel))) {
+  if (AntiTrackingUtils::IsFirstPartyTrackingChannel(aNewChannel)) {
     // This is not a tracking -> non-tracking redirect.
     LOG_SPEC(("Ignoring the redirect to %s because it's not tracking to "
               "non-tracking.",

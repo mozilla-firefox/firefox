@@ -245,7 +245,6 @@
 #include "mozilla/dom/ContentList.h"
 #include "mozilla/intl/LocaleService.h"
 #include "mozilla/ipc/ProtocolUtils.h"
-#include "mozilla/net/ChannelClassifierUtils.h"
 #include "mozilla/widget/IMEData.h"
 #include "nsAboutProtocolUtils.h"
 #include "nsArrayUtils.h"
@@ -301,7 +300,6 @@
 #include "nsICategoryManager.h"
 #include "nsIChannel.h"
 #include "nsIChannelEventSink.h"
-#include "nsIClassifiedChannel.h"
 #include "nsIConsoleService.h"
 #include "nsIContent.h"
 #include "nsIContentInlines.h"
@@ -10942,17 +10940,7 @@ bool nsContentUtils::IsFirstPartyTrackingResourceWindow(
     return false;
   }
 
-  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-      do_QueryInterface(document->GetChannel());
-  if (!classifiedChannel) {
-    return false;
-  }
-
-  uint32_t classificationFlags =
-      classifiedChannel->GetFirstPartyClassificationFlags();
-
-  return mozilla::net::ChannelClassifierUtils::IsTrackingClassificationFlag(
-      classificationFlags, NS_UsePrivateBrowsing(document->GetChannel()));
+  return AntiTrackingUtils::IsFirstPartyTrackingChannel(document->GetChannel());
 }
 
 namespace {

@@ -151,6 +151,11 @@ class AntiTrackingUtils final {
   // null or non-classified channels.
   static bool IsThirdPartyTrackingChannel(nsIChannel* aChannel);
 
+  // Returns true if the channel is annotated as a first-party tracker. This
+  // takes the channel annotation preferences into account. Returns false for
+  // null or non-classified channels.
+  static bool IsFirstPartyTrackingChannel(nsIChannel* aChannel);
+
   // Returns true if the channel is annotated as a third-party social tracker.
   // Returns false for null or non-classified channels.
   static bool IsThirdPartySocialTrackingChannel(nsIChannel* aChannel);

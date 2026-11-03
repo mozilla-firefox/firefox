@@ -11,6 +11,7 @@
 #include "mozilla/Components.h"
 #include "mozilla/dom/BrowsingContext.h"
 #include "mozilla/dom/CanonicalBrowsingContext.h"
+#include "mozilla/net/ChannelClassifierUtils.h"
 #include "mozilla/net/CookieJarSettings.h"
 #include "mozilla/LoadInfo.h"
 #include "mozilla/dom/Document.h"
@@ -1103,6 +1104,16 @@ bool AntiTrackingUtils::IsThirdPartyTrackingChannel(nsIChannel* aChannel) {
   nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
       do_QueryInterface(aChannel);
   return classifiedChannel && classifiedChannel->IsThirdPartyTrackingResource();
+}
+
+/* static */
+bool AntiTrackingUtils::IsFirstPartyTrackingChannel(nsIChannel* aChannel) {
+  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
+      do_QueryInterface(aChannel);
+  return classifiedChannel &&
+         net::ChannelClassifierUtils::IsTrackingClassificationFlag(
+             classifiedChannel->GetFirstPartyClassificationFlags(),
+             NS_UsePrivateBrowsing(aChannel));
 }
 
 /* static */
