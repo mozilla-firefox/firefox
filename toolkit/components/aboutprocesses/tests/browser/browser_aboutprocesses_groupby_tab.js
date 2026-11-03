@@ -45,10 +45,11 @@ add_task(async function testGroupByTabRendersOneRowPerTab() {
       () => cpuCell.textContent,
       "Waiting for Fluent to resolve the CPU cell's text"
     );
-    // A freshly opened test tab may legitimately show as idle rather than a
-    // real percent, depending on incidental CPU noise during the test run.
+    // A freshly opened test tab may legitimately show as idle, depending on
+    // incidental CPU noise, or as measuring if its process started after the
+    // first sample.
     Assert.ok(
-      /^([0-9.]+%|idle|< 0.1%)$/.test(cpuCell.textContent),
+      /^([0-9.]+%|idle|…|< 0.1%)$/.test(cpuCell.textContent),
       `CPU cell "${cpuCell.textContent}" is formatted as a percent or idle`
     );
   }
@@ -93,6 +94,35 @@ add_task(async function testInitialSortIsVisible() {
     memoryHeader.classList.contains("arrow-down"),
     "The initial sort shows a caret on the Memory column"
   );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+});
+
+add_task(async function testCpuIsMeasuringBeforeSecondSample() {
+  let { tabAboutProcesses, doc } = await openTabView();
+  let win = doc.defaultView;
+
+  // Every process's state right after its first sample.
+  let counters = win.State.getCounters().map(process => ({
+    ...process,
+    slopeCpu: null,
+  }));
+  let tabCounters = win.TabControl._tabAttribution
+    .getTabCounters(counters)
+    .filter(tabData => tabData.hasUsageData);
+  Assert.ok(tabCounters.length, "Some tab has usage data");
+  Assert.ok(
+    tabCounters.every(tabData => tabData.slopeCpuOfTotal === null),
+    "A tab's CPU is unknown until its processes have two samples"
+  );
+  Assert.strictEqual(
+    win.sumTabCounters(tabCounters).slopeCpuOfTotal,
+    null,
+    "...and so is any total including it"
+  );
+  let cell = doc.createElement("td");
+  win.fillTabCpuCell(cell, null);
+  Assert.equal(cell.textContent, "…", "Unknown CPU shows as measuring");
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
 });
@@ -502,7 +532,7 @@ add_task(async function testTotalsBarShowsTabCountAndSums() {
   );
   let cpuCell = totalsRow.querySelector(".cpu");
   Assert.ok(
-    /^([0-9.]+%|idle|< 0\.1%)$/.test(cpuCell.textContent),
+    /^([0-9.]+%|idle|…|< 0\.1%)$/.test(cpuCell.textContent),
     `Totals CPU "${cpuCell.textContent}" is formatted as a percent or idle, same as row cells`
   );
   Assert.equal(

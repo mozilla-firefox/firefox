@@ -169,7 +169,7 @@ add_task(async function testBulkActionBarShowsSelectionSummary() {
   );
   let cpuCell = summaryRow.querySelector(".cpu");
   Assert.ok(
-    /^([0-9.]+%|idle|< 0.1%)$/.test(cpuCell.textContent),
+    /^([0-9.]+%|idle|…|< 0.1%)$/.test(cpuCell.textContent),
     `Bulk-action CPU "${cpuCell.textContent}" is formatted as a percent or idle, same as the totals row`
   );
   Assert.equal(

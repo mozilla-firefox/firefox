@@ -255,7 +255,8 @@ class TabAttribution {
   }
 
   // `slopeCpuOfTotal` is a fraction of total CPU capacity, not one core, so
-  // entries across tabs are summable.
+  // entries across tabs are summable. It's null until each of the tab's
+  // processes has two samples.
   getTabCounters(counters) {
     let tabs = this._getTopLevelTabs();
     let { tabWeights, weightsByPid } = this._computeFrameWeights(tabs);
@@ -264,7 +265,7 @@ class TabAttribution {
     let cpuByPid = new Map();
     for (let process of counters) {
       ramByPid.set(process.pid, process.totalRamSize);
-      cpuByPid.set(process.pid, process.slopeCpu ?? 0);
+      cpuByPid.set(process.pid, process.slopeCpu);
     }
 
     return tabs.map(tab => {
@@ -281,7 +282,11 @@ class TabAttribution {
           hasUsageData = true;
           let share = weight / totalWeight;
           totalRamSize += (ramByPid.get(pid) ?? 0) * share;
-          slopeCpuOneCore += (cpuByPid.get(pid) ?? 0) * share;
+          let slopeCpu = cpuByPid.get(pid);
+          slopeCpuOneCore =
+            slopeCpu == null || slopeCpuOneCore == null
+              ? null
+              : slopeCpuOneCore + slopeCpu * share;
         }
       }
       return {
@@ -294,7 +299,8 @@ class TabAttribution {
         // isn't in `counters` at all -- shown as "—", not a misleading 0.
         hasUsageData,
         totalRamSize,
-        slopeCpuOfTotal: slopeCpuOneCore / this._cpuCount,
+        slopeCpuOfTotal:
+          slopeCpuOneCore == null ? null : slopeCpuOneCore / this._cpuCount,
       };
     });
   }
@@ -1871,24 +1877,29 @@ class ProcessesController {
 // would round to "0%" and look identical to genuinely idle.
 const TAB_CPU_NEGLIGIBLE_THRESHOLD = 0.001;
 
-// slopeCpuOfTotal is summable across tabs (see TabAttribution.getTabCounters).
+// slopeCpuOfTotal is summable across tabs (see TabAttribution.getTabCounters),
+// and null if any tab's is still null.
 function sumTabCounters(tabCounters) {
   let totalRamSize = 0;
   let slopeCpuOfTotal = 0;
   for (let tabData of tabCounters) {
     totalRamSize += tabData.totalRamSize;
-    slopeCpuOfTotal += tabData.slopeCpuOfTotal;
+    slopeCpuOfTotal =
+      tabData.slopeCpuOfTotal == null || slopeCpuOfTotal == null
+        ? null
+        : slopeCpuOfTotal + tabData.slopeCpuOfTotal;
   }
   return { totalRamSize, slopeCpuOfTotal };
 }
 
-// For tabs with no process to attribute usage from. Clears the l10n
-// attributes so a locale-change re-translation can't overwrite the dash.
-function fillNoDataCell(cell, className) {
+// "—" for tabs with no process to attribute usage from, "…" for CPU not yet
+// measured. Clears the l10n attributes so a locale-change re-translation
+// can't overwrite the text.
+function fillNoDataCell(cell, className, text = "—") {
   cell.className = className;
   cell.removeAttribute("data-l10n-id");
   cell.removeAttribute("data-l10n-args");
-  cell.textContent = "—";
+  cell.textContent = text;
 }
 
 function fillTabMemoryCell(cell, totalRamSize, hasUsageData = true) {
@@ -1910,6 +1921,10 @@ function fillTabMemoryCell(cell, totalRamSize, hasUsageData = true) {
 function fillTabCpuCell(cell, slopeCpuOfTotal, hasUsageData = true) {
   if (!hasUsageData) {
     fillNoDataCell(cell, "cpu");
+    return;
+  }
+  if (slopeCpuOfTotal == null) {
+    fillNoDataCell(cell, "cpu", "…");
     return;
   }
   let fluentName = "about-processes-tab-cpu";
