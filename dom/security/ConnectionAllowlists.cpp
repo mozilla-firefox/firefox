@@ -274,21 +274,9 @@ bool ConnectionAllowlists::ShouldBlockURL(nsIURI* aURI,
       continue;
     }
 
-    // Report violations to the web console, except for preloads.
-    Resource resource{aURI};
-    if (!nsContentUtils::IsPreloadType(
-            aLoadInfo->InternalContentPolicyType())) {
-      ReportToConsole(resource, aLoadInfo->GetInnerWindowID(), *allowlist);
-    }
-
     // 1.2. Report a violation given url, environment, and connection
     // allowlist.
-    // TODO: This will fail when blocking in the parent process for e.g.
-    // navigation.
-    nsCOMPtr<nsPIDOMWindowInner> window =
-        nsGlobalWindowInner::GetInnerWindowWithId(
-            aLoadInfo->GetInnerWindowID());
-    ReportViolation(resource, window, *allowlist);
+    ReportBlockedRequest(aURI, aLoadInfo, *allowlist, /* aIsRedirect */ false);
 
     // 1.3. If connection allowlist's disposition is enforce, return blocked.
     if (allowlist->mDisposition == Disposition::Enforce) {
@@ -317,6 +305,11 @@ bool ConnectionAllowlists::ShouldBlockRedirect(nsIURI* aOriginalURI,
     if (allowlist->mRedirects == Redirects::Allow) {
       continue;
     }
+
+    // 2.1.2. Report a violation given request’s url, request’s client, and
+    // allowlist.
+    ReportBlockedRequest(aOriginalURI, aLoadInfo, *allowlist,
+                         /* aIsRedirect */ true);
 
     // 2.1.3. If allowlist’s disposition is enforce, return blocked.
     if (allowlist->mDisposition == Disposition::Enforce) {
@@ -363,6 +356,25 @@ bool ConnectionAllowlists::ShouldBlockWebRTC(
 
   // 3. Return allowed.
   return false;
+}
+
+/* static */
+void ConnectionAllowlists::ReportBlockedRequest(nsIURI* aURI,
+                                                nsILoadInfo* aLoadInfo,
+                                                const Allowlist& aAllowlist,
+                                                bool aIsRedirect) {
+  // Report violations to the web console, except for preloads.
+  Resource resource{aURI};
+  if (!nsContentUtils::IsPreloadType(aLoadInfo->InternalContentPolicyType())) {
+    ReportToConsole(resource, aLoadInfo->GetInnerWindowID(), aAllowlist,
+                    aIsRedirect);
+  }
+
+  // TODO: This will fail when blocking in the parent process for e.g.
+  // navigation.
+  nsCOMPtr<nsPIDOMWindowInner> window =
+      nsGlobalWindowInner::GetInnerWindowWithId(aLoadInfo->GetInnerWindowID());
+  ReportViolation(resource, window, aAllowlist);
 }
 
 // https://wicg.github.io/connection-allowlists/#abstract-opdef-report-a-violation
@@ -429,10 +441,17 @@ void ConnectionAllowlists::ReportViolation(const Resource& aResource,
 /* static */
 void ConnectionAllowlists::ReportToConsole(const Resource& aResource,
                                            uint64_t aInnerWindowID,
-                                           const Allowlist& aAllowlist) {
+                                           const Allowlist& aAllowlist,
+                                           bool aIsRedirect) {
   const bool enforce = aAllowlist.mDisposition == Disposition::Enforce;
-  const char* messageKey = enforce ? "ConnectionAllowlistBlocked"
-                                   : "ConnectionAllowlistReportOnlyBlocked";
+  const char* messageKey;
+  if (aIsRedirect) {
+    messageKey = enforce ? "ConnectionAllowlistRedirectBlocked"
+                         : "ConnectionAllowlistReportOnlyRedirectBlocked";
+  } else {
+    messageKey = enforce ? "ConnectionAllowlistBlocked"
+                         : "ConnectionAllowlistReportOnlyBlocked";
+  }
   AutoTArray<nsString, 1> params;
   nsString* param = params.AppendElement();
   if (aResource.is<nsIURI*>()) {

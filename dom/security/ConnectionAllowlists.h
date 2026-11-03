@@ -111,13 +111,21 @@ class ConnectionAllowlists final {
 
   using Resource = Variant<nsIURI*, nsCString>;
 
+  // Reports a violation of |aAllowlist| by the request for |aURI| to the
+  // console and the reporting endpoint. |aIsRedirect| is whether the request
+  // violated the allowlist by being redirected.
+  static void ReportBlockedRequest(nsIURI* aURI, nsILoadInfo* aLoadInfo,
+                                   const Allowlist& aAllowlist,
+                                   bool aIsRedirect);
+
   static void ReportViolation(const Resource& aResource,
                               nsPIDOMWindowInner* aWindow,
                               const Allowlist& aAllowlist);
 
   static void ReportToConsole(const Resource& aResource,
                               uint64_t aInnerWindowID,
-                              const Allowlist& aAllowlist);
+                              const Allowlist& aAllowlist,
+                              bool aIsRedirect = false);
 
   static Maybe<Allowlist> ParseConnectionAllowlistHeader(
       const nsACString& aHeader, Disposition aDisposition);
