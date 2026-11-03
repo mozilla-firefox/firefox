@@ -92,10 +92,17 @@ class nsZipArchive final {
    *
    * @param   aZipHandle  The nsZipHandle used to access the zip
    * @param   aFd         Optional PRFileDesc for Windows readahead optimization
+   * @param   aAllowOptimizedLayout
+   *                      Whether to trust the Central Directory found at
+   *                      offset 4 (the omni.jar layout from bug 559961)
+   *                      instead of the one found via the normal End Of
+   *                      Central Directory scan. Only pass true for our
+   *                      own build-generated omni.jar.
    * @return  status code
    */
-  static already_AddRefed<nsZipArchive> OpenArchive(nsZipHandle* aZipHandle,
-                                                    PRFileDesc* aFd = nullptr);
+  static already_AddRefed<nsZipArchive> OpenArchive(
+      nsZipHandle* aZipHandle, PRFileDesc* aFd = nullptr,
+      bool aAllowOptimizedLayout = false);
 
   /**
    * OpenArchive
@@ -103,9 +110,11 @@ class nsZipArchive final {
    * Convenience function that generates nsZipHandle
    *
    * @param   aFile         The file used to access the zip
+   * @param   aAllowOptimizedLayout See the other OpenArchive overload.
    * @return  status code
    */
-  static already_AddRefed<nsZipArchive> OpenArchive(nsIFile* aFile);
+  static already_AddRefed<nsZipArchive> OpenArchive(
+      nsIFile* aFile, bool aAllowOptimizedLayout = false);
 
   /**
    * Test the integrity of items in this archive by running
@@ -183,7 +192,8 @@ class nsZipArchive final {
   NS_METHOD_(MozExternalRefCountType) Release(void);
 
  private:
-  nsZipArchive(nsZipHandle* aZipHandle, PRFileDesc* aFd, nsresult& aRv);
+  nsZipArchive(nsZipHandle* aZipHandle, PRFileDesc* aFd,
+               bool aAllowOptimizedLayout, nsresult& aRv);
 
   //--- private members ---
   mozilla::ThreadSafeAutoRefCnt mRefCnt; /* ref count */
@@ -209,7 +219,7 @@ class nsZipArchive final {
  private:
   //--- private methods ---
   nsZipItem* CreateZipItem() MOZ_REQUIRES(mLock);
-  nsresult BuildFileList(PRFileDesc* aFd = nullptr);
+  nsresult BuildFileList(PRFileDesc* aFd, bool aAllowOptimizedLayout);
   nsresult BuildSynthetics();
 };
 
