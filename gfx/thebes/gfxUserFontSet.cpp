@@ -454,7 +454,7 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aForceAsync) {
         // local fonts are just available all the time.
         StoreUserFontData(fe, mCurrentSrcIndex, false, nsCString(), nullptr, 0,
                           gfxUserFontData::kUnknownCompression);
-        mPlatformFontEntry = fe;
+        SetPlatformFontEntry(std::move(fe));
         SetLoadState(STATUS_LOADED);
         Telemetry::Accumulate(Telemetry::WEBFONT_SRCTYPE,
                               currSrc.mSourceType + 1);
@@ -484,10 +484,10 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aForceAsync) {
         }
 
         // see if we have an existing entry for this source
-        gfxFontEntry* fe =
+        RefPtr<gfxFontEntry> fe =
             gfxUserFontSet::UserFontCache::GetFont(currSrc, *this);
         if (fe) {
-          mPlatformFontEntry = fe;
+          SetPlatformFontEntry(std::move(fe));
           SetLoadState(STATUS_LOADED);
           if (LOG_ENABLED()) {
             LOG(
@@ -695,7 +695,7 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
   // it can be reported via the InspectorUtils API.
   nsAutoCString originalFullName;
 
-  gfxFontEntry* fe = nullptr;
+  RefPtr<gfxFontEntry> fe;
   uint32_t fontCompressionRatio = 0;
   size_t computedSize = 0;
 
@@ -736,6 +736,7 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
     }
   }
 
+  bool ok = true;
   if (fe) {
     fe->mComputedSizeOfUserFont = computedSize;
 
@@ -776,9 +777,9 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
           mSrcList[aSrcIndex].mURI->GetSpecOrDefault().get(), FamilyName().get(),
           this, uint32_t(fontSet->mGeneration), fontCompressionRatio));
     }
-    mPlatformFontEntry = fe;
-    SetLoadState(STATUS_LOADED);
     gfxUserFontSet::UserFontCache::CacheFont(fe);
+    SetPlatformFontEntry(std::move(fe));
+    SetLoadState(STATUS_LOADED);
   } else {
     if (LOG_ENABLED()) {
       LOG(
@@ -788,13 +789,14 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
            mSrcList[aSrcIndex].mURI->GetSpecOrDefault().get(),
            FamilyName().get()));
     }
+    ok = false;
   }
 
   // The downloaded data can now be discarded; the font entry is using the
   // sanitized copy
   free((void*)aOriginalFontData);
 
-  return fe != nullptr;
+  return ok;
 }
 
 void gfxUserFontEntry::Load() {
@@ -1094,19 +1096,18 @@ void gfxUserFontSet::ForgetLocalFace(gfxUserFontFamily* aFontFamily) {
     auto ufe = static_cast<gfxUserFontEntry*>(f.get());
     // If the user font entry has loaded an entry using src:local(),
     // discard it as no longer valid.
-    if (ufe->GetPlatformFontEntry() &&
-        ufe->GetPlatformFontEntry()->IsLocalUserFont()) {
+    RefPtr pfe = ufe->GetPlatformFontEntry();
+    if (pfe && pfe->IsLocalUserFont()) {
       // Clear shmem pointers on the local-user-font entry: it is not tracked
       // in gfxPlatformFontList::mFontEntries, so InitFontList()'s cleanup loop
       // misses it.
-      gfxFontEntry* pfe = ufe->GetPlatformFontEntry();
       {
         AutoWriteLock lock(pfe->mLock);
         pfe->mShmemCharacterMap = nullptr;
         pfe->mShmemFace = nullptr;
         pfe->mShmemFamily = nullptr;
       }
-      ufe->mPlatformFontEntry = nullptr;
+      ufe->SetPlatformFontEntry(nullptr);
     }
     // We need to re-evaluate the source list in the context of the new
     // platform fontlist, whether or not the entry actually used a local()
