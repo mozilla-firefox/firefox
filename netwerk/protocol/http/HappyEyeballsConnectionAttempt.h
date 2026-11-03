@@ -278,7 +278,11 @@ class HappyEyeballsConnectionAttempt final : public ConnectionAttempt,
   void OnClientAuthCertificateRequested(uint64_t aEstablisherId);
   void OnClientAuthCertificateSelected(uint64_t aEstablisherId);
 
-  nsresult EstablishTCPConnection(NetAddr aAddr, uint16_t aPort,
+  nsresult FixupProxyDnsError(nsresult aStatus) const;
+
+  // aTarget is either a raced address or a name the proxy resolves; see
+  // EndpointTarget.
+  nsresult EstablishTCPConnection(const EndpointTarget& aTarget, uint16_t aPort,
                                   nsTArray<uint8_t>&& aEchConfig, uint64_t aId,
                                   bool aIsEchRetry);
   // Handles both TCP and UDP results; IsUDP() distinguishes where it matters.
@@ -357,8 +361,9 @@ class HappyEyeballsConnectionAttempt final : public ConnectionAttempt,
 
   // Shared 0-RTT coordinator. Created lazily (first time we hand out a
   // per-attempt HappyEyeballsTransaction) and passed to every racer.
-  // The outer connection targets the proxy host rather than the origin
-  // (a non-SOCKS proxy); mHost is the proxy's.
+  // The outer connection targets the proxy host rather than the origin (a
+  // non-SOCKS proxy), so mHost is the proxy's and a failure to resolve it is
+  // reported as NS_ERROR_UNKNOWN_PROXY_HOST.
   bool mProxyNotTransparent = false;
   RefPtr<ZeroRttHandle> mZeroRttHandle;
 

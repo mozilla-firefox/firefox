@@ -8304,25 +8304,9 @@ nsresult nsHttpChannel::BeginConnect() {
       return false;
     }
 
-    if (mProxyInfo) {
-      if (!StaticPrefs::network_http_happy_eyeballs_proxy_enabled()) {
-        return false;
-      }
-      // A SOCKS proxy resolves the origin proxy-side. Happy Eyeballs resolves
-      // and connects to mHost itself, and HappyEyeballsConnectionAttempt only
-      // rewrites mHost to the proxy host for non-SOCKS proxies -- so routing
-      // SOCKS through it resolves the origin locally and leaks DNS. Caught by
-      // test_dns_proxy_bypass.js, test_proxyDNS_leak.js and
-      // test_altsvc_proxy_dns_leak.js.
-      if (static_cast<nsProxyInfo*>(mProxyInfo.get())->IsSOCKS()) {
-        return false;
-      }
-      // Everything else goes through Happy Eyeballs: CONNECT tunnels (MASQUE,
-      // HTTPS proxy, plain-HTTP proxy issuing CONNECT for an https origin) and
-      // plain forwarding. Forwarding is safe because the connection info handed
-      // to the attempt is already proxy-based -- Origin()/OriginPort() name the
-      // proxy, not the request's origin -- so the attempt targets the proxy.
-      // test_proxy_forwarding_peer_port.js pins the connected peer port.
+    if (mProxyInfo &&
+        !StaticPrefs::network_http_happy_eyeballs_proxy_enabled()) {
+      return false;
     }
 
     // WebSocket and WebTransport upgrades share the same rollout pref.
@@ -8331,10 +8315,8 @@ nsresult nsHttpChannel::BeginConnect() {
       return false;
     }
 
-    // Connect-only requests need the extended-CONNECT tunnel path, which is
-    // untested with Happy Eyeballs. These only reach us via a proxy today
-    // (already excluded above), but guard explicitly against a future
-    // non-proxied consumer.
+    // Connect-only needs the extended-CONNECT tunnel path, which Happy
+    // Eyeballs does not establish yet.
     if (mCaps & NS_HTTP_CONNECT_ONLY) {
       return false;
     }

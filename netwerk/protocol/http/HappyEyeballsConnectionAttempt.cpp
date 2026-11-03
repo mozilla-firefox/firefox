@@ -157,8 +157,11 @@ HappyEyeballsConnectionAttempt::HappyEyeballsConnectionAttempt(
   // still falls back to, the origin.
   mHost = mConnInfo->GetOrigin();
 
-  // Non-SOCKS proxy: the outer connection is to the proxy, so resolve/connect
-  // to the proxy host. (SOCKS resolves the origin proxy-side; not handled yet.)
+  // Non-SOCKS ("not transparent") proxy: the outer connection is to the proxy,
+  // so resolve/connect to the proxy host. A SOCKS proxy is left alone: it
+  // resolves the origin itself when socks_remote_dns is set (handled by
+  // ResolutionMode::ByName in CreateHappyEyeballs), and otherwise the socket
+  // transport resolves the origin for it.
   if (nsCOMPtr<nsProxyInfo> proxyInfo = mConnInfo->ProxyInfo()) {
     if (!proxyInfo->IsSOCKS() && !proxyInfo->Host().IsEmpty()) {
       mHost = proxyInfo->Host();
@@ -270,8 +273,35 @@ nsresult HappyEyeballsConnectionAttempt::CreateHappyEyeballs(
     altSvcArray.AppendElement(std::move(altsvc));
   }
 
+  happy_eyeballs::ResolutionMode resolution =
+      happy_eyeballs::ResolutionMode::ByIp;
+  if (nsCOMPtr<nsProxyInfo> proxyInfo = mConnInfo->ProxyInfo()) {
+    if (proxyInfo->IsSOCKS() &&
+        (proxyInfo->Flags() & nsIProxyInfo::TRANSPARENT_PROXY_RESOLVES_HOST)) {
+      LOG(
+          ("HappyEyeballsConnectionAttempt connecting by name (SOCKS resolves "
+           "the origin)"));
+      resolution = happy_eyeballs::ResolutionMode::ByName;
+    }
+  }
+
+  // Validation must reach the alternate, but as an alt-svc entry an h2
+  // alternate sorts after the origin fallback (H2OrH1 < H2 in
+  // interleave_endpoints), so a reachable origin wins and it is never
+  // attempted. Aim the engine at the alternate instead. H3 sorts first, so an
+  // h3 alternate does not need this.
+  if (!isHttp3 && !routedHost.IsEmpty() && mTransaction &&
+      mTransaction->IsAltSvcValidation()) {
+    LOG(("CreateHappyEyeballs validating alt-svc route %s:%d", routedHost.get(),
+         mConnInfo->RoutedPort()));
+    nsTArray<happy_eyeballs::AltSvc> noAltSvc;
+    return HappyEyeballs::Init(getter_AddRefs(mHappyEyeballs), routedHost,
+                               static_cast<uint16_t>(mConnInfo->RoutedPort()),
+                               &noAltSvc, ipPref, httpVersions, resolution);
+  }
+
   return HappyEyeballs::Init(getter_AddRefs(mHappyEyeballs), mHost, originPort,
-                             &altSvcArray, ipPref, httpVersions);
+                             &altSvcArray, ipPref, httpVersions, resolution);
 }
 
 nsresult HappyEyeballsConnectionAttempt::Init(ConnectionEntry* ent) {
@@ -660,10 +690,33 @@ nsresult HappyEyeballsConnectionAttempt::ProcessHappyEyeballsOutput() {
                                  std::move(echConfig),
                                  event.attempt_connection.id, isEchRetry);
         } else {
-          EstablishTCPConnection(res.unwrap(), event.attempt_connection.port,
-                                 std::move(echConfig),
-                                 event.attempt_connection.id, isEchRetry);
+          EstablishTCPConnection(
+              AsVariant(res.unwrap()), event.attempt_connection.port,
+              std::move(echConfig), event.attempt_connection.id, isEchRetry);
         }
+        break;
+      }
+
+      case happy_eyeballs::Output::Tag::AttemptConnectionByName: {
+        LOG(("HappyEyeballsEvent::Tag::AttemptConnectionByName id=%" PRIu64
+             " protocol=%d host=%s port=%d",
+             event.attempt_connection_by_name.id,
+             static_cast<uint32_t>(
+                 event.attempt_connection_by_name.http_version),
+             dnsHostname.get(), event.attempt_connection_by_name.port));
+
+        if (mFirstConnectionStart.IsNull()) {
+          mFirstConnectionStart = TimeStamp::Now();
+          if (mDnsResolutionEnd.IsNull()) {
+            mDnsResolutionEnd = mFirstConnectionStart;
+          }
+        }
+
+        EstablishTCPConnection(AsVariant(ByNameTarget{dnsHostname}),
+                               event.attempt_connection_by_name.port,
+                               std::move(echConfig),
+                               event.attempt_connection_by_name.id,
+                               event.attempt_connection_by_name.is_ech_retry);
         break;
       }
 
@@ -1174,8 +1227,8 @@ bool HappyEyeballsConnectionAttempt::MaybeDispatchOuterProxyConn(
 }
 
 nsresult HappyEyeballsConnectionAttempt::EstablishTCPConnection(
-    NetAddr aAddr, uint16_t aPort, nsTArray<uint8_t>&& aEchConfig, uint64_t aId,
-    bool aIsEchRetry) {
+    const EndpointTarget& aTarget, uint16_t aPort,
+    nsTArray<uint8_t>&& aEchConfig, uint64_t aId, bool aIsEchRetry) {
   // TODO: we always use happy_eyeballs::ConnectionAttemptHttpVersions::H2OrH1
   // for now. Do we really want to race H2 and H1?
   RefPtr<nsHttpConnectionInfo> info = mConnInfo->CloneAndAdoptPortAndAlpn(
@@ -1190,7 +1243,7 @@ nsresult HappyEyeballsConnectionAttempt::EstablishTCPConnection(
   NotifyConnectionActivity(info, NS_HTTP_ACTIVITY_SUBTYPE_CONNECTION_CREATED);
   uint32_t caps = mCaps | (aIsEchRetry ? NS_HTTP_IS_RETRY : 0);
   RefPtr<ConnectionEstablisher> establisher =
-      mEstablisherFactory->Create(ConnectionEstablisherType::TCP, info, aAddr,
+      mEstablisherFactory->Create(ConnectionEstablisherType::TCP, info, aTarget,
                                   caps, mSpeculative, mAllow1918);
   establisher->SetDnsMetadata(mDnsMetadata);
   nsCOMPtr<nsIInterfaceRequestor> callbacks;
@@ -1201,10 +1254,14 @@ nsresult HappyEyeballsConnectionAttempt::EstablishTCPConnection(
                             int64_t progress) {
         self->MaybeSendTransportStatus(status, trans, progress);
       });
-  establisher->SetLnaCheckCallback(
-      [self = RefPtr{this}](nsISocketTransport* aTransport) -> nsresult {
-        return self->CheckLNA(aTransport);
-      });
+  // A by-name target has no client-side peer address, so there is nothing for
+  // the LNA check to inspect (the proxy chooses the peer).
+  if (aTarget.is<NetAddr>()) {
+    establisher->SetLnaCheckCallback(
+        [self = RefPtr{this}](nsISocketTransport* aTransport) -> nsresult {
+          return self->CheckLNA(aTransport);
+        });
+  }
 
   RefPtr<HappyEyeballsTransaction> attempt =
       CreateAttemptTransaction(info, aId);
@@ -1228,7 +1285,8 @@ nsresult HappyEyeballsConnectionAttempt::EstablishTCPConnection(
     } else {
       mAllAttemptsRefusedLocal = false;
     }
-    ProcessConnectionResult(aAddr, reason, aId);
+    ProcessConnectionResult(
+        aTarget.is<NetAddr>() ? aTarget.as<NetAddr>() : NetAddr{}, reason, aId);
   }
 
   return NS_OK;
@@ -1248,9 +1306,9 @@ nsresult HappyEyeballsConnectionAttempt::EstablishUDPConnection(
   }
   NotifyConnectionActivity(info, NS_HTTP_ACTIVITY_SUBTYPE_CONNECTION_CREATED);
   uint32_t caps = mCaps | (aIsEchRetry ? NS_HTTP_IS_RETRY : 0);
-  RefPtr<ConnectionEstablisher> establisher =
-      mEstablisherFactory->Create(ConnectionEstablisherType::UDP, info, aAddr,
-                                  caps, mSpeculative, mAllow1918);
+  RefPtr<ConnectionEstablisher> establisher = mEstablisherFactory->Create(
+      ConnectionEstablisherType::UDP, info, AsVariant(aAddr), caps,
+      mSpeculative, mAllow1918);
   establisher->SetDnsMetadata(mDnsMetadata);
   establisher->SetTransportStatusCallback(
       [self = RefPtr{this}](nsITransport* trans, nsresult status,
@@ -1339,7 +1397,9 @@ void HappyEyeballsConnectionAttempt::CloseHttpTransaction(
   nsresult reason = NS_ERROR_ABORT;
   switch (aReason) {
     case happy_eyeballs::FailureReason::DnsResolution:
-      reason = NS_FAILED(mLastDnsError) ? mLastDnsError : NS_ERROR_UNKNOWN_HOST;
+      reason = NS_FAILED(mLastDnsError)
+                   ? mLastDnsError
+                   : FixupProxyDnsError(NS_ERROR_UNKNOWN_HOST);
       break;
     case happy_eyeballs::FailureReason::Connection:
       // The hop to a proxy is a single endpoint, and the legacy path handed its
@@ -2124,6 +2184,19 @@ HappyEyeballsConnectionAttempt::OnLookupComplete(nsICancelable* request,
   return NS_OK;
 }
 
+nsresult HappyEyeballsConnectionAttempt::FixupProxyDnsError(
+    nsresult aStatus) const {
+  // With a non-transparent (HTTP/HTTPS) proxy the name we resolve is the
+  // *proxy* host, so a lookup failure means the proxy could not be found.
+  // SOCKS is deliberately excluded: there the socket transport resolves the
+  // real host, so the error belongs to the origin (bug 226943). Mirrors
+  // DnsAndConnectSocket::OnLookupComplete.
+  if (mProxyNotTransparent && aStatus == NS_ERROR_UNKNOWN_HOST) {
+    return NS_ERROR_UNKNOWN_PROXY_HOST;
+  }
+  return aStatus;
+}
+
 nsresult HappyEyeballsConnectionAttempt::OnARecord(nsIDNSRecord* aRecord,
                                                    nsresult status,
                                                    uint64_t aId) {
@@ -2133,10 +2206,8 @@ nsresult HappyEyeballsConnectionAttempt::OnARecord(nsIDNSRecord* aRecord,
   if (NS_SUCCEEDED(status)) {
     MaybeSendTransportStatus(NS_NET_STATUS_RESOLVED_HOST);
   } else if (NS_FAILED(status)) {
-    mLastDnsError = status;
+    mLastDnsError = FixupProxyDnsError(status);
   }
-
-  // TODO: use NS_ERROR_UNKNOWN_PROXY_HOST if stasus is failed and proxy is used
 
   nsCOMPtr<nsIDNSAddrRecord> addrRecord = do_QueryInterface(aRecord);
   if (addrRecord) {
@@ -2211,10 +2282,8 @@ nsresult HappyEyeballsConnectionAttempt::OnAAAARecord(nsIDNSRecord* aRecord,
   if (NS_SUCCEEDED(status)) {
     MaybeSendTransportStatus(NS_NET_STATUS_RESOLVED_HOST);
   } else if (NS_FAILED(status)) {
-    mLastDnsError = status;
+    mLastDnsError = FixupProxyDnsError(status);
   }
-
-  // TODO: use NS_ERROR_UNKNOWN_PROXY_HOST if stasus is failed and proxy is used
 
   nsCOMPtr<nsIDNSAddrRecord> addrRecord = do_QueryInterface(aRecord);
 

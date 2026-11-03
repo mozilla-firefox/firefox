@@ -104,6 +104,8 @@ skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix",
 ]
 
+["test_altsvc_proxy_cert_origin.js"]
+
 ["test_altsvc_proxy_dns_leak.js"]
 
 ["test_android_content_uri.js"]
@@ -1706,6 +1708,9 @@ run-if = [
 ]
 
 ["test_sockettransportsvc_available.js"]
+
+["test_socks_proxy_fetch.js"]
+run-sequentially = ["true"] # node server exceptions dont replay well
 
 ["test_socks.js"]
 # Bug 675039: test fails consistently on Android
