@@ -1,0 +1,21 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+using mozilla::dom::HWInferenceDeviceKind from "mozilla/hwinference/HWInferenceTypes.h";
+using mozilla::dom::HWInferenceBackend from "mozilla/hwinference/HWInferenceTypes.h";
+
+namespace mozilla {
+namespace hwinference {
+
+// One inference device of the HWInference process, see HWInference.webidl.
+struct DeviceDescriptor {
+  nsCString id;
+  nsCString description;
+  HWInferenceDeviceKind kind;
+  HWInferenceBackend[] backends;
+};
+
+}  // namespace hwinference
+}  // namespace mozilla

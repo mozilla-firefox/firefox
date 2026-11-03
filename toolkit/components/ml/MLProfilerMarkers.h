@@ -183,6 +183,21 @@ struct MLBackendInitMarker : public BaseMarkerType<MLBackendInitMarker> {
   static constexpr const char* AllLabels = "backend init";
 };
 
+struct MLDeviceProbeMarker : public BaseMarkerType<MLDeviceProbeMarker> {
+  static constexpr const char* Name = "MLDeviceProbe";
+  static constexpr const char* Description =
+      "Initialising an accelerator once to list it as a device.";
+
+  using MS = MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {
+      {"device", MS::InputType::CString, "Device", MS::Format::String},
+      {"usable", MS::InputType::Boolean, "Usable", MS::Format::Integer},
+  };
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* AllLabels = "probe: {marker.data.device}";
+};
+
 struct MLModelPrefillMarker : public BaseMarkerType<MLModelPrefillMarker> {
   static constexpr const char* Name = "MLModelPrefill";
   static constexpr const char* Description =

@@ -9,6 +9,9 @@
 #ifdef MOZ_WEBSPEECH
 #  include "mozilla/hwinference/SpeechRecognitionParent.h"
 #endif
+#include "mozilla/llama/LlamaBackend.h"
+#include "mozilla/llama/LlamaRuntimeLinker.h"
+#include "nsThreadUtils.h"
 
 namespace mozilla::hwinference {
 
@@ -51,6 +54,41 @@ ipc::IPCResult HWInferenceChild::RecvNewTextGeneration(
     return IPC_FAIL(this, "Failed to bind TextGenerationChild");
   }
   actor->Initialize();
+  return IPC_OK();
+}
+
+static nsTArray<DeviceDescriptor> ListDevices() {
+  nsTArray<DeviceDescriptor> devices;
+  llama::LlamaLibWrapper* lib = llama::LlamaRuntimeLinker::Get();
+  if (!lib) {
+    LOGE("ListDevices - llama.cpp is not available");
+    return devices;
+  }
+  for (const llama::Device& device : llama::Devices(lib)) {
+    DeviceDescriptor* descriptor = devices.AppendElement();
+    descriptor->id() = device.mId;
+    descriptor->description() = device.mDescription;
+    descriptor->kind() = device.mKind;
+    descriptor->backends().AppendElement(dom::HWInferenceBackend::Llama_cpp);
+  }
+  return devices;
+}
+
+ipc::IPCResult HWInferenceChild::RecvListDevices(
+    ListDevicesResolver&& aResolver) {
+  LOGD("[{} - {}]", fmt::ptr(this), __func__);
+  // The first call enumerates, which initialises every backend: keep that
+  // off the thread the actors live on.
+  nsCOMPtr<nsISerialEventTarget> actorThread = GetCurrentSerialEventTarget();
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchBackgroundTask(NS_NewRunnableFunction(
+      "HWInferenceChild::ListDevices",
+      [actorThread, resolve = std::move(aResolver)]() mutable {
+        nsTArray<DeviceDescriptor> devices = ListDevices();
+        MOZ_ALWAYS_SUCCEEDS(actorThread->Dispatch(NS_NewRunnableFunction(
+            "HWInferenceChild::ListDevicesReply",
+            [resolve = std::move(resolve),
+             devices = std::move(devices)]() mutable { resolve(devices); })));
+      })));
   return IPC_OK();
 }
 

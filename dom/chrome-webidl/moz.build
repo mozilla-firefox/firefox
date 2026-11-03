@@ -136,6 +136,7 @@ if CONFIG["MOZ_BUILD_APP"] != "mobile/android":
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] != "android":
     WEBIDL_FILES += [
+        "HWInference.webidl",
         "TextGenerator.webidl",
     ]
 
