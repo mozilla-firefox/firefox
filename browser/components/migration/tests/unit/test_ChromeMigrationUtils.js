@@ -202,3 +202,46 @@ add_task(function test_mergeBookmarkChildren_keeps_duplicate_urls() {
     "URL items are concatenated without de-duplication."
   );
 });
+
+add_task(function test_chromeTransitionToPlaces() {
+  const { TRANSITIONS } = PlacesUtils.history;
+  // Chrome transition qualifiers
+  const PAGE_TRANSITION_CHAIN_START = 0x10000000;
+  const PAGE_TRANSITION_CHAIN_END = 0x20000000;
+  const intCases = [
+    [0, 10, TRANSITIONS.LINK],
+    [1, 9, TRANSITIONS.TYPED],
+    [2, 8, TRANSITIONS.BOOKMARK],
+    [3, 7, TRANSITIONS.EMBED],
+    [4, 6, TRANSITIONS.FRAMED_LINK],
+    [5, 5, TRANSITIONS.TYPED],
+    [6, 4, TRANSITIONS.LINK],
+    [7, 3, TRANSITIONS.LINK],
+    [8, 2, TRANSITIONS.RELOAD],
+    [9, 1, TRANSITIONS.TYPED],
+    [10, 0, TRANSITIONS.TYPED],
+  ];
+  const nullCases = [
+    [null, 0, TRANSITIONS.LINK],
+    [null, 3, TRANSITIONS.TYPED],
+  ];
+  const qualifierCases = intCases.map(([chromeTransition, ...rest]) => [
+    chromeTransition | PAGE_TRANSITION_CHAIN_START | PAGE_TRANSITION_CHAIN_END,
+    ...rest,
+  ]);
+
+  for (let [chromeTransition, typedCount, expected] of [
+    ...intCases,
+    ...nullCases,
+    ...qualifierCases,
+  ]) {
+    Assert.equal(
+      ChromeMigrationUtils.chromeTransitionToPlaces(
+        chromeTransition,
+        typedCount
+      ),
+      expected,
+      `Chrome transition ${chromeTransition} with typed_count ${typedCount}`
+    );
+  }
+});

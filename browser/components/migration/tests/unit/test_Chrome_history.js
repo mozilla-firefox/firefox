@@ -7,12 +7,14 @@ const { ChromeMigrationUtils } = ChromeUtils.importESModule(
   "moz-src:///browser/components/migration/ChromeMigrationUtils.sys.mjs"
 );
 
-const SOURCE_PROFILE_SUBDIRS = [
-  "Application Support",
-  "Google",
-  "Chrome",
-  "Default",
-];
+const DAY_MS = 24 * 60 * 60 * 1000;
+const NOW = Date.now();
+const PAGE_TRANSITION_CHAIN_START = 0x10000000;
+const PAGE_TRANSITION_CHAIN_END = 0x20000000;
+
+function chromeTimeDaysAgo(daysAgo) {
+  return ChromeMigrationUtils.dateToChromeTime(NOW - daysAgo * DAY_MS);
+}
 
 let gSourceProfilePath;
 
@@ -41,12 +43,13 @@ const TEST_URLS = [
         url: 1,
         visit_time: 13193151310368000,
         from_visit: 0,
-        transition: 805306370,
+        transition: 805306370, // Chrome PAGE_TRANSITION_AUTO_BOOKMARK = 2
         segment_id: 0,
         visit_duration: 10745006,
         incremented_omnibox_typed_score: 0,
       },
     ],
+    expectedTransition: PlacesUtils.history.TRANSITIONS.BOOKMARK,
   },
   {
     id: 2,
@@ -62,12 +65,13 @@ const TEST_URLS = [
         url: 2,
         visit_time: 13193154948901000,
         from_visit: 0,
-        transition: 805306376,
+        transition: 805306376, // Chrome PAGE_TRANSITION_RELOAD = 8
         segment_id: 0,
         visit_duration: 6568270,
         incremented_omnibox_typed_score: 0,
       },
     ],
+    expectedTransition: PlacesUtils.history.TRANSITIONS.RELOAD,
   },
 ];
 
@@ -84,6 +88,63 @@ async function setVisitTimes(time) {
   });
 
   await dbConn.close();
+}
+
+/**
+ * Replaces the contents of the History database with the given pages.
+ *
+ * @param {object[]} pages
+ *   Each page has a url, optional typedCount, hidden and lastVisitDaysAgo, and
+ *   visits: an array of { daysAgo, transition } where transition is a Chrome
+ *   core transition type.
+ */
+async function populateHistoryDB(pages) {
+  let db = await Sqlite.openConnection({
+    path: PathUtils.join(gSourceProfilePath, "History"),
+  });
+
+  try {
+    await db.executeTransaction(async () => {
+      await db.execute("DELETE FROM visits");
+      await db.execute("DELETE FROM urls");
+      let visitId = 1;
+      for (let [index, page] of pages.entries()) {
+        let urlId = index + 1;
+        let lastVisitDaysAgo =
+          page.lastVisitDaysAgo ?? Math.min(...page.visits.map(v => v.daysAgo));
+        await db.execute(
+          `INSERT INTO urls (id, url, title, visit_count, typed_count, last_visit_time, hidden)
+           VALUES (:urlId, :url, :title, :visitCount, :typedCount, :lastVisitTime, :hidden)`,
+          {
+            urlId,
+            url: page.url,
+            title: page.url,
+            visitCount: page.visits.length,
+            typedCount: page.typedCount ?? 0,
+            lastVisitTime: chromeTimeDaysAgo(lastVisitDaysAgo),
+            hidden: page.hidden ?? 0,
+          }
+        );
+        for (let { daysAgo, transition } of page.visits) {
+          await db.execute(
+            `INSERT INTO visits (id, url, visit_time, from_visit, transition, segment_id, visit_duration)
+             VALUES (:visitId, :urlId, :visitTime, 0, :transition, 0, 0)`,
+            {
+              visitId: visitId++,
+              urlId,
+              visitTime: chromeTimeDaysAgo(daysAgo),
+              transition:
+                transition |
+                PAGE_TRANSITION_CHAIN_START |
+                PAGE_TRANSITION_CHAIN_END,
+            }
+          );
+        }
+      }
+    });
+  } finally {
+    await db.close();
+  }
 }
 
 function setExpectedVisitTimes(time) {
@@ -108,8 +169,8 @@ function assertEntryMatches(entry, urlInfo, dateWasInFuture = false) {
   for (let index in urlInfo.visits) {
     Assert.equal(
       entry.visits[index].transition,
-      PlacesUtils.history.TRANSITIONS.LINK,
-      "Should have Link type transition"
+      urlInfo.expectedTransition,
+      "Should have the expected transition"
     );
 
     if (dateWasInFuture) {
@@ -138,10 +199,32 @@ async function setupHistoryFile() {
   );
 }
 
-add_task(async function setup() {
-  let libDir = await copyFixtureDir("Library/");
-  registerFakePath("ULibDir", libDir);
-  gSourceProfilePath = PathUtils.join(libDir.path, ...SOURCE_PROFILE_SUBDIRS);
+add_setup(async function setup() {
+  let rootDir = do_get_tempdir();
+  let pathId;
+  let dataSubDirs;
+  if (AppConstants.platform === "macosx") {
+    pathId = "ULibDir";
+    dataSubDirs = ["Application Support", "Google", "Chrome"];
+  } else if (AppConstants.platform === "win") {
+    pathId = "LocalAppData";
+    dataSubDirs = ["Google", "Chrome", "User Data"];
+  } else {
+    pathId = "Home";
+    dataSubDirs = [".config", "google-chrome"];
+  }
+  registerFakePath(pathId, rootDir);
+
+  let dataPath = PathUtils.join(rootDir.path, ...dataSubDirs);
+  gSourceProfilePath = PathUtils.join(dataPath, PROFILE.id);
+  await IOUtils.makeDirectory(gSourceProfilePath, { createAncestors: true });
+  await IOUtils.writeJSON(PathUtils.join(dataPath, "Local State"), []);
+  await IOUtils.copy(
+    do_get_file(
+      "Library/Application Support/Google/Chrome/Default/HistoryMaster"
+    ).path,
+    PathUtils.join(gSourceProfilePath, "HistoryMaster")
+  );
 
   registerCleanupFunction(async () => {
     await PlacesUtils.history.clear();
@@ -210,5 +293,216 @@ add_task(async function test_import_future_date() {
       includeVisits: true,
     });
     assertEntryMatches(entry, urlInfo, true);
+  }
+});
+
+async function assertVisits(url, expectedVisits) {
+  let entry = await PlacesUtils.history.fetch(url, { includeVisits: true });
+  Assert.ok(entry, `${url} should be imported`);
+  let actual = entry.visits
+    .sort((a, b) => b.date - a.date)
+    .map(v => ({ date: v.date.getTime(), transition: v.transition }));
+  let expected = expectedVisits.map(({ daysAgo, transition }) => ({
+    date: ChromeMigrationUtils.chromeTimeToDate(
+      chromeTimeDaysAgo(daysAgo),
+      new Date()
+    ).getTime(),
+    transition,
+  }));
+  Assert.deepEqual(actual, expected, `Visits for ${url}`);
+}
+
+add_task(async function test_import_visits() {
+  await setupHistoryFile();
+  await PlacesUtils.history.clear();
+  await populateHistoryDB([
+    {
+      url: "https://many-visits.example/",
+      visits: [1, 2, 3, 4, 5, 6, 7, 8].map(daysAgo => ({
+        daysAgo,
+        transition: 0, // LINK
+      })),
+    },
+    {
+      url: "https://transitions_1_to_5.example/",
+      visits: [1, 2, 3, 4, 5].map(num => ({
+        daysAgo: num,
+        transition: num,
+      })),
+    },
+    {
+      url: "https://transitions_6_to_10.example/",
+      visits: [6, 7, 8, 9, 10].map(num => ({
+        daysAgo: num,
+        transition: num,
+      })),
+    },
+    {
+      url: "https://subframe-and-reload.example/",
+      visits: [
+        { daysAgo: 1, transition: 0 }, // LINK
+        { daysAgo: 2, transition: 3 }, // AUTO_SUBFRAME
+        { daysAgo: 3, transition: 4 }, // MANUAL_SUBFRAME
+        { daysAgo: 4, transition: 8 }, // RELOAD
+      ],
+    },
+    {
+      url: "https://only-reload.example/",
+      typedCount: 1,
+      visits: [{ daysAgo: 1, transition: 8 }], // RELOAD
+    },
+    {
+      url: "https://reloads-first.example/",
+      visits: [
+        ...[1, 2, 3, 4, 5, 6].map(daysAgo => ({ daysAgo, transition: 8 })), // RELOAD
+        { daysAgo: 7, transition: 0 }, // LINK
+        { daysAgo: 8, transition: 0 }, // LINK
+      ],
+    },
+    {
+      url: "https://links-fill-limit.example/",
+      visits: [
+        { daysAgo: 1, transition: 8 }, // RELOAD
+        ...[2, 3, 4, 5, 6, 7].map(daysAgo => ({ daysAgo, transition: 0 })), // LINK
+      ],
+    },
+    {
+      url: "https://old-visit.example/",
+      visits: [
+        { daysAgo: 10, transition: 0 }, // LINK
+        { daysAgo: 200, transition: 0 }, // LINK
+      ],
+    },
+    {
+      url: "https://too-old.example/",
+      visits: [{ daysAgo: 200, transition: 0 }], // LINK
+    },
+    {
+      url: "https://hidden.example/",
+      hidden: 1,
+      visits: [{ daysAgo: 1, transition: 0 }], // LINK
+    },
+  ]);
+
+  let migrator = await MigrationUtils.getMigrator("chrome");
+  await promiseMigration(
+    migrator,
+    MigrationUtils.resourceTypes.HISTORY,
+    PROFILE
+  );
+
+  const { LINK, TYPED, BOOKMARK, FRAMED_LINK, RELOAD } =
+    PlacesUtils.history.TRANSITIONS;
+  // The visit limit defaults to 5
+  await assertVisits("https://many-visits.example/", [
+    { transition: LINK, daysAgo: 1 },
+    { transition: LINK, daysAgo: 2 },
+    { transition: LINK, daysAgo: 3 },
+    { transition: LINK, daysAgo: 4 },
+    { transition: LINK, daysAgo: 5 },
+  ]);
+  await assertVisits("https://transitions_1_to_5.example/", [
+    { transition: TYPED, daysAgo: 1 },
+    { transition: BOOKMARK, daysAgo: 2 },
+    // AUTO_SUBFRAME is skipped.
+    { transition: FRAMED_LINK, daysAgo: 4 },
+    { transition: TYPED, daysAgo: 5 },
+  ]);
+  await assertVisits("https://transitions_6_to_10.example/", [
+    { transition: LINK, daysAgo: 6 },
+    { transition: LINK, daysAgo: 7 },
+    { transition: RELOAD, daysAgo: 8 },
+    { transition: TYPED, daysAgo: 9 },
+    { transition: TYPED, daysAgo: 10 },
+  ]);
+  await assertVisits("https://subframe-and-reload.example/", [
+    { transition: LINK, daysAgo: 1 },
+    { transition: FRAMED_LINK, daysAgo: 3 },
+    { transition: RELOAD, daysAgo: 4 },
+  ]);
+  await assertVisits("https://only-reload.example/", [
+    { transition: RELOAD, daysAgo: 1 },
+  ]);
+  // Links are ranked before reloads, so the newest reloads only fill the
+  // slots left over.
+  await assertVisits("https://reloads-first.example/", [
+    { transition: RELOAD, daysAgo: 1 },
+    { transition: RELOAD, daysAgo: 2 },
+    { transition: RELOAD, daysAgo: 3 },
+    { transition: LINK, daysAgo: 7 },
+    { transition: LINK, daysAgo: 8 },
+  ]);
+  // With enough links to reach the limit, no reloads are kept.
+  await assertVisits("https://links-fill-limit.example/", [
+    { transition: LINK, daysAgo: 2 },
+    { transition: LINK, daysAgo: 3 },
+    { transition: LINK, daysAgo: 4 },
+    { transition: LINK, daysAgo: 5 },
+    { transition: LINK, daysAgo: 6 },
+  ]);
+  await assertVisits("https://old-visit.example/", [
+    { transition: LINK, daysAgo: 10 },
+  ]);
+  Assert.equal(
+    await PlacesUtils.history.fetch("https://too-old.example/"),
+    null
+  );
+  Assert.equal(
+    await PlacesUtils.history.fetch("https://hidden.example/"),
+    null
+  );
+});
+
+add_task(async function test_import_visits_limit() {
+  await setupHistoryFile();
+  registerCleanupFunction(() => {
+    Services.prefs.clearUserPref("browser.migrate.chrome.history.visit.limit");
+  });
+
+  const visitLimits = [
+    [-1, 1],
+    [0, 1],
+    [null, 5],
+    [9, 9],
+    [100000, 10], // places.frecency.pages.numSampledVisits default is 10
+  ];
+  for (let [visitLimit, expected] of visitLimits) {
+    if (visitLimit == null) {
+      Services.prefs.clearUserPref(
+        "browser.migrate.chrome.history.visit.limit"
+      );
+    } else {
+      Services.prefs.setIntPref(
+        "browser.migrate.chrome.history.visit.limit",
+        visitLimit
+      );
+    }
+
+    await PlacesUtils.history.clear();
+    await populateHistoryDB([
+      {
+        url: "https://visits.example/",
+        visits: Array.from({ length: 15 }, (_, index) => ({
+          daysAgo: index + 1,
+          transition: 0, // LINK
+        })),
+      },
+    ]);
+
+    let migrator = await MigrationUtils.getMigrator("chrome");
+    await promiseMigration(
+      migrator,
+      MigrationUtils.resourceTypes.HISTORY,
+      PROFILE
+    );
+
+    const { LINK } = PlacesUtils.history.TRANSITIONS;
+    await assertVisits(
+      "https://visits.example/",
+      Array.from({ length: expected }, (_, i) => ({
+        daysAgo: i + 1,
+        transition: LINK,
+      }))
+    );
   }
 });

@@ -912,20 +912,48 @@ async function GetHistoryResource(aProfileFolder) {
 
     migrate(aCallback) {
       (async function () {
-        const LIMIT = Services.prefs.getIntPref(
+        const TOTAL_LIMIT = Services.prefs.getIntPref(
           "browser.migrate.chrome.history.limit"
         );
+        // Places only samples the most recent places.frecency.pages.numSampledVisits
+        // visits for frecency, so importing more wouldn't change it.
+        const VISIT_LIMIT = Math.max(
+          1,
+          Math.min(
+            Services.prefs.getIntPref(
+              "browser.migrate.chrome.history.visit.limit"
+            ),
+            Services.prefs.getIntPref("places.frecency.pages.numSampledVisits")
+          )
+        );
 
-        let query =
-          "SELECT url, title, last_visit_time, typed_count FROM urls WHERE hidden = 0";
-        let maxAge = lazy.ChromeMigrationUtils.dateToChromeTime(
+        const maxAge = lazy.ChromeMigrationUtils.dateToChromeTime(
           Date.now() - MigrationUtils.HISTORY_MAX_AGE_IN_MILLISECONDS
         );
-        query += " AND last_visit_time > " + maxAge;
-
-        if (LIMIT) {
-          query += " ORDER BY last_visit_time DESC LIMIT " + LIMIT;
-        }
+        const limitClause = TOTAL_LIMIT ? `LIMIT ${TOTAL_LIMIT}` : "";
+        // AUTO_SUBFRAME (3) visits are skipped: they map to EMBED, which Places
+        // doesn't write to the database. MANUAL_SUBFRAME (4) and RELOAD (8)
+        // visits are ranked last so they only fill slots not taken by visits
+        // that count towards frecency.
+        let query = `WITH pages AS (
+  SELECT id, url, title, last_visit_time, typed_count
+  FROM urls
+  WHERE hidden = 0 AND last_visit_time > ${maxAge}
+  ORDER BY last_visit_time DESC
+  ${limitClause}
+)
+SELECT p.id, p.url, p.title, p.last_visit_time, p.typed_count,
+       v.visit_time, v.transition
+FROM pages p
+LEFT JOIN visits v ON v.id IN (
+  SELECT id FROM visits
+  WHERE url = p.id
+  AND visit_time > ${maxAge}
+  AND (transition & 0xFF) != 3
+  ORDER BY (transition & 0xFF) IN (4, 8), visit_time DESC
+  LIMIT ${VISIT_LIMIT}
+)
+ORDER BY p.last_visit_time DESC`;
 
         let rows;
         try {
@@ -940,34 +968,37 @@ async function GetHistoryResource(aProfileFolder) {
           }
         }
 
-        let pageInfos = [];
+        let pageInfosById = new Map();
         let fallbackVisitDate = new Date();
         for (let row of rows) {
           try {
-            // if having typed_count, we changes transition type to typed.
-            let transition = lazy.PlacesUtils.history.TRANSITIONS.LINK;
-            if (row.getResultByName("typed_count") > 0) {
-              transition = lazy.PlacesUtils.history.TRANSITIONS.TYPED;
+            let id = row.getResultByName("id");
+            let pageInfo = pageInfosById.get(id);
+            if (!pageInfo) {
+              pageInfo = {
+                title: row.getResultByName("title"),
+                url: new URL(row.getResultByName("url")),
+                visits: [],
+              };
+              pageInfosById.set(id, pageInfo);
             }
-
-            pageInfos.push({
-              title: row.getResultByName("title"),
-              url: new URL(row.getResultByName("url")),
-              visits: [
-                {
-                  transition,
-                  date: lazy.ChromeMigrationUtils.chromeTimeToDate(
-                    row.getResultByName("last_visit_time"),
-                    fallbackVisitDate
-                  ),
-                },
-              ],
+            let visitTime = row.getResultByName("visit_time");
+            pageInfo.visits.push({
+              transition: lazy.ChromeMigrationUtils.chromeTransitionToPlaces(
+                row.getResultByName("transition"),
+                row.getResultByName("typed_count")
+              ),
+              date: lazy.ChromeMigrationUtils.chromeTimeToDate(
+                visitTime ?? row.getResultByName("last_visit_time"),
+                fallbackVisitDate
+              ),
             });
           } catch (e) {
             console.error(e);
           }
         }
 
+        let pageInfos = [...pageInfosById.values()];
         if (pageInfos.length) {
           await MigrationUtils.insertVisitsWrapper(pageInfos);
         }

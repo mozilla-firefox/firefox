@@ -10,10 +10,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   MigrationUtils:
     "moz-src:///browser/components/migration/MigrationUtils.sys.mjs",
+  PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
 });
 
 const S100NS_FROM1601TO1970 = 0x19db1ded53e8000;
 const S100NS_PER_MS = 10;
+const CHROME_PAGE_TRANSITION_CORE_MASK = 0xff;
 
 export var ChromeMigrationUtils = {
   // Supported browsers with importable logins.
@@ -423,6 +425,44 @@ export var ChromeMigrationUtils = {
    */
   dateToChromeTime(aDate) {
     return (aDate * 10000 + S100NS_FROM1601TO1970) / S100NS_PER_MS;
+  },
+
+  /**
+   * Convert a Chrome visit transition to the closest Places transition type.
+   * Only the core transition (the low byte) is considered; qualifier bits are
+   * ignored. The Chrome core transition values are defined in:
+   * https://source.chromium.org/chromium/chromium/src/+/main:ui/base/page_transition_types.h;l=29-113;drc=23246e7a66e250e1221b9488c0ff3a44d83af097
+   *
+   * @param {number|null} chromeTransition
+   *   The `transition` column of the Chrome `visits` table, or null if
+   *   unavailable.
+   * @param {number} typedCount
+   *   The `typed_count` of the URL, used as a fallback when
+   *   `chromeTransition` is null.
+   * @returns {number} One of `PlacesUtils.history.TRANSITIONS`.
+   */
+  chromeTransitionToPlaces(chromeTransition, typedCount) {
+    const { TRANSITIONS } = lazy.PlacesUtils.history;
+    if (chromeTransition == null) {
+      return typedCount > 0 ? TRANSITIONS.TYPED : TRANSITIONS.LINK;
+    }
+    switch (chromeTransition & CHROME_PAGE_TRANSITION_CORE_MASK) {
+      case 1: // TYPED
+      case 5: // GENERATED
+      case 9: // KEYWORD
+      case 10: // KEYWORD_GENERATED
+        return TRANSITIONS.TYPED;
+      case 2: // AUTO_BOOKMARK
+        return TRANSITIONS.BOOKMARK;
+      case 3: // AUTO_SUBFRAME
+        return TRANSITIONS.EMBED;
+      case 4: // MANUAL_SUBFRAME
+        return TRANSITIONS.FRAMED_LINK;
+      case 8: // RELOAD
+        return TRANSITIONS.RELOAD;
+      default:
+        return TRANSITIONS.LINK;
+    }
   },
 
   /**
