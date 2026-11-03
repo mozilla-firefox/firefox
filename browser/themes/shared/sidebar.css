@@ -283,15 +283,6 @@ menuseparator + #sidebar-extensions-separator {
 /* Sidebar animation */
 :root {
   view-transition-name: none;
-
-  /* Nova motion tokens, see https://nova-motion-spec.netlify.app/. The easing
-   * curves these pair with are global: --motion-easing-emphasized and
-   * --motion-easing-standard in the design system. */
-  --motion-dur-sidebar-enter: 0.2s;
-  --motion-dur-sidebar-exit: 0.16s;
-  --motion-dur-sidebar-panel-enter: 0.23s;
-  --motion-dur-sidebar-panel-exit: 0.19s;
-  --motion-dur-sidebar-panel-content-fade: 0.13s;
 }
 
 /* Let clicks reach the live chrome underneath, instead of the root element. */
@@ -300,33 +291,40 @@ menuseparator + #sidebar-extensions-separator {
 }
 
 :root:active-view-transition-type(launcher-enter, launcher-exit, panel-open, panel-close)::view-transition-group(*) {
-  animation-timing-function: var(--motion-easing-emphasized);
+  animation-timing-function: var(--sidebar-motion-easing);
 }
 
 :root:active-view-transition-type(launcher-enter)::view-transition-group(*) {
-  animation-duration: var(--motion-dur-sidebar-enter);
+  animation-duration: var(--sidebar-motion-duration-enter);
 }
 
 :root:active-view-transition-type(launcher-exit)::view-transition-group(*) {
-  animation-duration: var(--motion-dur-sidebar-exit);
+  animation-duration: var(--sidebar-motion-duration-exit);
 }
 
 /* When the launcher and panel change together, the panel covers the most
  * distance, so its timing wins. */
 :root:active-view-transition-type(panel-open)::view-transition-group(*) {
-  animation-duration: var(--motion-dur-sidebar-panel-enter);
+  animation-duration: var(--sidebar-panel-motion-duration-enter);
 }
 
 :root:active-view-transition-type(panel-close)::view-transition-group(*) {
-  animation-duration: var(--motion-dur-sidebar-panel-exit);
+  animation-duration: var(--sidebar-panel-motion-duration-exit);
 }
 
 /* The panel's old and new snapshots inherit this timing for their default
  * cross-fade, whose plus-lighter blending keeps the shared panel chrome solid
  * while only the content fades. */
 :root:active-view-transition-type(panel-switch)::view-transition-group(*) {
-  animation-duration: var(--motion-dur-sidebar-panel-content-fade);
-  animation-timing-function: var(--motion-easing-standard);
+  animation-duration: var(--sidebar-panel-content-motion-duration-fade);
+  animation-timing-function: var(--sidebar-panel-content-motion-easing-fade);
+}
+
+/* Expand on hover takes its duration from the
+ * sidebar.animation.expand-on-hover.duration-ms pref, which defaults to
+ * --sidebar-motion-duration-enter. */
+:root[sidebar-expand-on-hover]:active-view-transition-type(launcher-enter, launcher-exit)::view-transition-group(*) {
+  animation-duration: var(--sidebar-expand-on-hover-duration);
 }
 
 #sidebar-container {

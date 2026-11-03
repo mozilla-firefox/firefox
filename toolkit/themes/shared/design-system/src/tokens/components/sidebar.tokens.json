@@ -31,5 +31,44 @@
         }
       }
     }
+  },
+  "motion": {
+    "duration": {
+      "enter": {
+        "value": "200ms"
+      },
+      "exit": {
+        "value": "160ms"
+      }
+    },
+    "easing": {
+      "value": "{motion.easing.emphasized}"
+    }
+  },
+  "panel": {
+    "motion": {
+      "duration": {
+        "enter": {
+          "value": "230ms"
+        },
+        "exit": {
+          "value": "190ms"
+        }
+      }
+    },
+    "content": {
+      "motion": {
+        "duration": {
+          "fade": {
+            "value": "130ms"
+          }
+        },
+        "easing": {
+          "fade": {
+            "value": "{motion.easing.standard}"
+          }
+        }
+      }
+    }
   }
 }

@@ -479,6 +479,13 @@
     /** sidebar **/
     --sidebar-background-color: light-dark(white, rgb(28, 27, 34));
     --sidebar-border-color: var(--card-border-color);
+    --sidebar-motion-duration-enter: 200ms;
+    --sidebar-motion-duration-exit: 160ms;
+    --sidebar-motion-easing: var(--motion-easing-emphasized);
+    --sidebar-panel-content-motion-duration-fade: 130ms;
+    --sidebar-panel-content-motion-easing-fade: var(--motion-easing-standard);
+    --sidebar-panel-motion-duration-enter: 230ms;
+    --sidebar-panel-motion-duration-exit: 190ms;
     --sidebar-text-color: light-dark(rgb(21, 20, 26), rgb(249, 249, 250));
 
     /** size **/
