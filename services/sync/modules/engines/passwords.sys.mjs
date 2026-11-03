@@ -104,10 +104,6 @@ PasswordEngine.prototype = {
     await Services.logins.initializationPromise;
   },
 
-  async getSyncID() {
-    return Services.logins.getSyncID();
-  },
-
   async ensureCurrentSyncID(newSyncID) {
     return Services.logins.ensureCurrentSyncID(newSyncID);
   },

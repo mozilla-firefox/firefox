@@ -26,7 +26,6 @@ import {
   WBORecord,
 } from "resource://services-sync/record.sys.mjs";
 import { Resource } from "resource://services-sync/resource.sys.mjs";
-import { Weave } from "resource://services-sync/main.sys.mjs";
 import {
   SerializableSet,
   Svc,
@@ -958,11 +957,6 @@ SyncEngine.prototype = {
       data == `services.sync.engine.${this.prefName}`
     ) {
       await this._tracker.onEngineEnabledChanged(this._enabled);
-      // Changes made while disabled may not have been tracked, and disabling
-      // an engine with per-device choices doesn't reset it.
-      if (this._enabled && Weave.perDeviceEngineChoices) {
-        await this.resetLastSync();
-      }
     }
   },
 
@@ -1176,7 +1170,10 @@ SyncEngine.prototype = {
     return null;
   },
 
-  async _resolveEngineMetaLegacy(metaGlobal) {
+  // Any setup that needs to happen at the beginning of each sync.
+  async _syncStartup() {
+    // Determine if we need to wipe on outdated versions
+    let metaGlobal = await this.service.recordManager.get(this.metaURL);
     let engines = metaGlobal.payload.engines || {};
     let engineData = engines[this.name] || {};
     // Adopting a per-device client's generation avoids resetting it. A
@@ -1192,99 +1189,35 @@ SyncEngine.prototype = {
       }
     }
 
-    // Clear the server and reupload everything on bad version or missing
-    // meta. Note that we don't regenerate per-collection keys here.
-    if (await this._reconcileEngineData(engineData, () => this.resetSyncID())) {
+    // Assume missing versions are 0 and wipe the server
+    if ((engineData.version || 0) < this.version) {
+      this._log.debug("Old engine data: " + [engineData.version, this.version]);
+
+      // Clear the server and reupload everything on bad version or missing
+      // meta. Note that we don't regenerate per-collection keys here.
+      let newSyncID = await this.resetSyncID();
+
+      // Set the newer version and newly generated syncID
+      engineData.version = this.version;
+      engineData.syncID = newSyncID;
+
       // Put the new data back into meta/global and mark for upload
       engines[this.name] = engineData;
       metaGlobal.payload.engines = engines;
       metaGlobal.changed = true;
-    }
-  },
-
-  /**
-   * Updates `engineData` and this engine's sync ID to agree, calling `reset`
-   * for a new sync ID if the data is older than this engine.
-   *
-   * @returns {boolean} whether `engineData` changed.
-   */
-  async _reconcileEngineData(engineData, reset) {
-    // Assume missing versions are 0
-    if ((engineData.version || 0) < this.version) {
-      this._log.debug("Old engine data: " + [engineData.version, this.version]);
-      engineData.version = this.version;
-      engineData.syncID = await reset();
-      return true;
-    }
-    if (engineData.version > this.version) {
+    } else if (engineData.version > this.version) {
       // Don't sync this engine if the server has newer data
+
       let error = new Error("New data: " + [engineData.version, this.version]);
       error.failureCode = VERSION_OUT_OF_DATE;
       throw error;
-    }
-    // Changes to syncID mean we'll need to upload everything
-    let assignedSyncID = await this.ensureCurrentSyncID(engineData.syncID);
-    if (assignedSyncID == engineData.syncID) {
-      return false;
-    }
-    engineData.syncID = assignedSyncID;
-    return true;
-  },
-
-  /**
-   * Creating or removing meta/global entries changes legacy clients' choices.
-   * Only update existing entries, unless we created meta/global this sync;
-   * keep other generations in the registry.
-   */
-  async _resolveEngineMetaPerDevice(metaGlobal) {
-    // Prefer meta/global to agree with legacy clients.
-    let published = metaGlobal.payload.engines?.[this.name];
-    let registry = this.service.engineSyncIDs;
-    try {
-      await registry.load(metaGlobal.isNew);
-    } catch (ex) {
-      if (!published) {
-        throw ex;
-      }
-      this._log.warn("Using meta/global without the sync ID registry", ex);
-      registry = null;
-    }
-    let engineData = { ...(published || registry.get(this.name) || {}) };
-
-    if (!engineData.syncID) {
-      // Reuse the local ID to avoid repeated resets after failed publication.
-      engineData.syncID = await this.getSyncID();
-      if (engineData.syncID) {
-        engineData.version = this.version;
-      }
-    }
-
-    let changed = await this._reconcileEngineData(engineData, () =>
-      this.resetLocalSyncID()
-    );
-
-    // Without entries, a legacy client joining later disables every engine.
-    if (
-      (metaGlobal.isNew && !this.service.lastAccountChoices()) ||
-      (published && changed)
-    ) {
-      metaGlobal.payload.engines ??= {};
-      metaGlobal.payload.engines[this.name] = engineData;
-      metaGlobal.changed = true;
-    }
-
-    // Keeps the generation if a legacy client removes its meta/global entry.
-    registry?.set(this.name, engineData.version, engineData.syncID);
-  },
-
-  // Any setup that needs to happen at the beginning of each sync.
-  async _syncStartup() {
-    // Determine if we need to wipe on outdated versions
-    let metaGlobal = await this.service.recordManager.get(this.metaURL);
-    if (Weave.perDeviceEngineChoices) {
-      await this._resolveEngineMetaPerDevice(metaGlobal);
     } else {
-      await this._resolveEngineMetaLegacy(metaGlobal);
+      // Changes to syncID mean we'll need to upload everything
+      let assignedSyncID = await this.ensureCurrentSyncID(engineData.syncID);
+      if (assignedSyncID != engineData.syncID) {
+        engineData.syncID = assignedSyncID;
+        metaGlobal.changed = true;
+      }
     }
 
     // Save objects that need to be uploaded in this._modified. As we

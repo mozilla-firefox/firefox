@@ -22,7 +22,6 @@ export default [
         Prefs: false,
         STATE_DISABLED: false,
         STATE_ENABLED: false,
-        Server: false,
         Sync: false,
         Tabs: false,
         Windows: false,

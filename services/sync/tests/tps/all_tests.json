@@ -26,10 +26,6 @@
     "test_existing_bookmarks.js": {},
     "test_addresses.js": {},
     "test_creditcards.js": {},
-    "test_extstorage.js": {},
-    "pds/test_pds_join_legacy_account.js": {},
-    "pds/test_pds_local_decline.js": {},
-    "pds/test_pds_legacy_decline.js": {},
-    "pds/test_pds_creates_account.js": {}
+    "test_extstorage.js": {}
   }
 }

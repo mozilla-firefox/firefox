@@ -1,8 +1,0 @@
-{
-  "tests": {
-    "test_pds_join_legacy_account.js": {},
-    "test_pds_local_decline.js": {},
-    "test_pds_legacy_decline.js": {},
-    "test_pds_creates_account.js": {}
-  }
-}
