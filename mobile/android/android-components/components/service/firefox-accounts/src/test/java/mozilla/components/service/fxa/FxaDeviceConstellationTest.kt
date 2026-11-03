@@ -24,6 +24,7 @@ import mozilla.appservices.sync15.DeviceType as RustDeviceType
 import mozilla.appservices.syncmanager.DeviceSettings
 import mozilla.components.concept.sync.AccountEvent
 import mozilla.components.concept.sync.AccountEventsObserver
+import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.ConstellationState
 import mozilla.components.concept.sync.DeviceCapability
 import mozilla.components.concept.sync.DeviceCommandIncoming
@@ -51,8 +52,10 @@ import org.mockito.Mockito.anyBoolean
 import org.mockito.Mockito.atLeast
 import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.never
+import org.mockito.Mockito.reset
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 
 @RunWith(AndroidJUnit4::class)
@@ -69,43 +72,56 @@ class FxaDeviceConstellationTest {
     }
 
     @Test
-    fun `initialize device calls initialize on the account`() =
+    fun `finalize device`() =
         runTest(testDispatcher) {
-            val config =
-                DeviceConfig(
-                    "test name",
-                    DeviceType.TABLET,
-                    setOf(DeviceCapability.SEND_TAB, DeviceCapability.CLOSE_TABS),
-                )
-            constellation.initializeDevice(config)
-            verify(account)
-                .initializeDevice(
-                    "test name",
-                    RustDeviceType.TABLET,
-                    setOf(
-                        mozilla.appservices.fxaclient.DeviceCapability.SEND_TAB,
-                        mozilla.appservices.fxaclient.DeviceCapability.CLOSE_TABS,
-                    ),
-                )
-        }
-
-    @Test
-    fun `finalize device calls ensure capabilities with the capabilities in the device`() =
-        runTest(testDispatcher) {
-            val config =
-                DeviceConfig(
-                    "test name",
-                    DeviceType.TABLET,
-                    setOf(DeviceCapability.SEND_TAB, DeviceCapability.CLOSE_TABS),
-                )
-            constellation.finalizeDevice(config)
-            verify(account)
-                .ensureCapabilities(
-                    setOf(
-                        mozilla.appservices.fxaclient.DeviceCapability.SEND_TAB,
-                        mozilla.appservices.fxaclient.DeviceCapability.CLOSE_TABS,
-                    )
-                )
+            fun expectedFinalizeAction(authType: AuthType): FxaDeviceConstellation.DeviceFinalizeAction =
+                when (authType) {
+                    AuthType.Existing -> FxaDeviceConstellation.DeviceFinalizeAction.EnsureCapabilities
+                    AuthType.Signin -> FxaDeviceConstellation.DeviceFinalizeAction.Initialize
+                    AuthType.Signup -> FxaDeviceConstellation.DeviceFinalizeAction.Initialize
+                    AuthType.Pairing -> FxaDeviceConstellation.DeviceFinalizeAction.Initialize
+                    is AuthType.OtherExternal -> FxaDeviceConstellation.DeviceFinalizeAction.Initialize
+                    AuthType.MigratedCopy -> FxaDeviceConstellation.DeviceFinalizeAction.Initialize
+                    AuthType.MigratedReuse -> FxaDeviceConstellation.DeviceFinalizeAction.EnsureCapabilities
+                    AuthType.Recovered -> FxaDeviceConstellation.DeviceFinalizeAction.None
+                }
+            fun initAuthType(simpleClassName: String): AuthType =
+                when (simpleClassName) {
+                    "Existing" -> AuthType.Existing
+                    "Signin" -> AuthType.Signin
+                    "Signup" -> AuthType.Signup
+                    "Pairing" -> AuthType.Pairing
+                    "OtherExternal" -> AuthType.OtherExternal("test")
+                    "MigratedCopy" -> AuthType.MigratedCopy
+                    "MigratedReuse" -> AuthType.MigratedReuse
+                    "Recovered" -> AuthType.Recovered
+                    else -> throw AssertionError("Unknown AuthType: $simpleClassName")
+                }
+            val config = DeviceConfig("test name", DeviceType.TABLET, setOf(DeviceCapability.SEND_TAB))
+            AuthType::class
+                .sealedSubclasses
+                .map { initAuthType(it.simpleName!!) }
+                .forEach {
+                    constellation.finalizeDevice(it, config)
+                    when (expectedFinalizeAction(it)) {
+                        FxaDeviceConstellation.DeviceFinalizeAction.Initialize -> {
+                            verify(account)
+                                .initializeDevice(
+                                    "test name",
+                                    RustDeviceType.TABLET,
+                                    setOf(mozilla.appservices.fxaclient.DeviceCapability.SEND_TAB),
+                                )
+                        }
+                        FxaDeviceConstellation.DeviceFinalizeAction.EnsureCapabilities -> {
+                            verify(account)
+                                .ensureCapabilities(setOf(mozilla.appservices.fxaclient.DeviceCapability.SEND_TAB))
+                        }
+                        FxaDeviceConstellation.DeviceFinalizeAction.None -> {
+                            verifyNoInteractions(account)
+                        }
+                    }
+                    reset(account)
+                }
         }
 
     @Test
