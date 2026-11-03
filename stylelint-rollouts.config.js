@@ -160,7 +160,6 @@ module.exports = [
       "browser/themes/shared/contextmenu.css",
       "browser/themes/shared/customizableui/customizeMode.css",
       "browser/themes/shared/formautofill-notification.css",
-      "browser/themes/shared/identity-block/identity-block.css",
       "browser/themes/shared/identity-credential-notification.css",
       "browser/themes/shared/migration/migration-dialog-window.css",
       "browser/themes/shared/migration/migration-wizard.css",
