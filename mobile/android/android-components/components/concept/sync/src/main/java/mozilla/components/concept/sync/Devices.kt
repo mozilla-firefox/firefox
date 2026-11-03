@@ -24,22 +24,13 @@ sealed class ServiceResult {
 /** Describes available interactions with the current device and other devices associated with an [OAuthAccount]. */
 interface DeviceConstellation : Observable<AccountEventsObserver> {
     /**
-     * Perform actions necessary to finalize device initialization following an authentication that may have caused a
-     * change in device keys.
+     * Perform actions necessary to finalize device initialization based on [authType].
      *
+     * @param authType Type of an authentication event we're experiencing.
      * @param config A [DeviceConfig] that describes current device.
-     * @return [ServiceResult] that tells if the operation was successful.
+     * @return A boolean success flag.
      */
-    suspend fun finalizeDevice(config: DeviceConfig): ServiceResult
-
-    /**
-     * Initializing the device with the given [config].
-     *
-     * This is expected to be called only once per session.
-     *
-     * @return [ServiceResult] that tells if the operation was successful.
-     */
-    suspend fun initializeDevice(config: DeviceConfig): ServiceResult
+    suspend fun finalizeDevice(authType: AuthType, config: DeviceConfig): ServiceResult
 
     /**
      * Current state of the constellation. May be missing if state was never queried.
@@ -139,8 +130,7 @@ data class DevicePushSubscription(
  *   changed later via [DeviceConstellation.setDeviceName].
  * @property type Type of a device - mobile, desktop - used for displaying identifying icons on other devices. This
  *   cannot be changed once device record is created.
- * @property capabilities A set of device capabilities, such as SEND_TAB. These capabilities require the sync scope, so
- *   it is important to verify the declared capabilities are usable before using it.
+ * @property capabilities A set of device capabilities, such as SEND_TAB.
  * @property secureStateAtRest A flag indicating whether or not to use encrypted storage for the persisted account
  *   state.
  */
