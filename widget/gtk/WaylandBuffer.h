@@ -22,8 +22,6 @@
 namespace mozilla::widget {
 
 class WaylandBufferDMABUF;
-class SHMBufSurface;
-
 class BufferTransaction;
 
 class WaylandBuffer {
