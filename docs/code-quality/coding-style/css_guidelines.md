@@ -372,7 +372,10 @@ the same in both, and most of the differences are invisible in the source.
   three different lengths across chrome, New Tab and the web. `em` is affected
   the same way in most cases, since the font size it resolves against is
   system-dependent too. Hardcoded `px` font sizes are a lint error in any case:
-  the `use-design-tokens` rule covers `font-size`.
+  the `use-design-tokens` rule covers `font-size`. Menus and many popups reset
+  `font` to `menu`, `message-box` or `-moz-pull-down-menu` (`menu.css`,
+  `xul.css`), so a change to the root font size does not reach their text,
+  while their `rem` lengths still follow the root.
 - **Chrome-only conditions never match in a page.**
   `:root[uidensity="compact"]`, the `:root[lwt-*]` theme selectors, anything
   relying on `xul.css` defaults such as `user-select` or `-moz-user-focus`, and
@@ -380,6 +383,23 @@ the same in both, and most of the differences are invisible in the source.
   sheet's chrome branches are dead code, so check which realm a rule can reach
   before fixing it, and do not assume a compact-density rule protects the in-page
   case.
+
+### UI density
+
+`browser.uidensity` is 0 for normal, 1 for compact and 2 for touch density
+(`gUIDensity` in `browser.js`). Compact and touch set `uidensity="compact"` or
+`uidensity="touch"` on the window's root, and normal density removes the
+attribute. The pref is not the only input:
+
+- With Nova enabled and no user value for `browser.uidensity`, a window
+  compacts itself when it is small: when 36px is more than
+  `browser.compactmode.auto.threshold` (0.05) of its height, i.e. under 720px,
+  or, while the sidebar launcher is shown collapsed, when 56px is more than that
+  share of its width, i.e. under 1120px. Popups and windows sized for
+  fingerprinting resistance skip this.
+- In Windows tablet mode, touch density takes over when the density is
+  automatic in that same sense, or when it is normal and
+  `browser.touchmode.auto` is set.
 
 ### Colors
 
