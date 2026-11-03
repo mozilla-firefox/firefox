@@ -157,28 +157,10 @@ void nsDBusRemoteServer::OnBusAcquired(GDBusConnection* aConnection) {
         error->message);
     return;
   }
-}
 
-void nsDBusRemoteServer::OnNameAcquired(GDBusConnection* aConnection) {
+  // The object can receive calls from now on, whether or not we get the bus
+  // name, so keep the connection until Shutdown() unregisters it.
   mConnection = aConnection;
-}
-
-void nsDBusRemoteServer::OnNameLost(GDBusConnection* aConnection) {
-  mConnection = nullptr;
-  if (!mRegistrationId) {
-    return;
-  }
-
-  if (g_dbus_connection_unregister_object(aConnection, mRegistrationId)) {
-    mRegistrationId = 0;
-  } else {
-    // Note: Most code examples in the internet probably dont't even check the
-    // result here, but
-    // according to the spec it _can_ return false.
-    g_warning(
-        "nsDBusRemoteServer: Unable to unregister root object from within "
-        "onNameLost!");
-  }
 }
 
 nsresult nsDBusRemoteServer::Startup(const char* /*aAppName*/,
@@ -222,15 +204,8 @@ nsresult nsDBusRemoteServer::Startup(const char* /*aAppName*/,
          gpointer aUserData) -> void {
         static_cast<nsDBusRemoteServer*>(aUserData)->OnBusAcquired(aConnection);
       },
-      [](GDBusConnection* aConnection, const gchar*,
-         gpointer aUserData) -> void {
-        static_cast<nsDBusRemoteServer*>(aUserData)->OnNameAcquired(
-            aConnection);
-      },
-      [](GDBusConnection* aConnection, const gchar*,
-         gpointer aUserData) -> void {
-        static_cast<nsDBusRemoteServer*>(aUserData)->OnNameLost(aConnection);
-      },
+      nullptr, /* name_acquired_handler */
+      nullptr, /* name_lost_handler */
       this, nullptr);
   if (!mDBusID) {
     g_warning("nsDBusRemoteServer: g_bus_own_name() failed!");
@@ -241,7 +216,16 @@ nsresult nsDBusRemoteServer::Startup(const char* /*aAppName*/,
 }
 
 void nsDBusRemoteServer::Shutdown() {
-  OnNameLost(mConnection);
+  if (mRegistrationId) {
+    if (g_dbus_connection_unregister_object(mConnection, mRegistrationId)) {
+      mRegistrationId = 0;
+    } else {
+      // Note: Most code examples in the internet probably don't even check
+      // the result here, but according to the spec it _can_ return false.
+      g_warning("nsDBusRemoteServer: Unable to unregister root object!");
+    }
+  }
+  mConnection = nullptr;
   if (mDBusID) {
     g_bus_unown_name(mDBusID);
   }

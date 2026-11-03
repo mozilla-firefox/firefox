@@ -22,8 +22,6 @@ class nsDBusRemoteServer final : public nsRemoteServer,
   void Shutdown() override;
 
   void OnBusAcquired(GDBusConnection* aConnection);
-  void OnNameAcquired(GDBusConnection* aConnection);
-  void OnNameLost(GDBusConnection* aConnection);
 
   bool HandleOpenURL(const gchar* aInterfaceName, const gchar* aMethodName,
                      mozilla::Span<const gchar> aParam);
@@ -31,7 +29,7 @@ class nsDBusRemoteServer final : public nsRemoteServer,
  private:
   uint mDBusID = 0;
   uint mRegistrationId = 0;
-  GDBusConnection* mConnection = nullptr;
+  RefPtr<GDBusConnection> mConnection;
   RefPtr<GDBusNodeInfo> mIntrospectionData;
 
   nsCString mAppName;
