@@ -133,7 +133,6 @@ skip-if = [
 
 ["browser_aiwindow_firstrun.js"]
 skip-if = [
-  "debug && standalone", # Bug 2025711
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2012723
 ]
 

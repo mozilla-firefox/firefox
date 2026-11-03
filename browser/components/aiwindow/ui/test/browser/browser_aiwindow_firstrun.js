@@ -133,10 +133,6 @@ add_task(async function test_firstrun_non_europe_no_promotion() {
 });
 
 add_task(async function test_firstrun_welcome_screen_renders() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.smartwindow.firstrun.autoAdvanceMS", 0]],
-  });
-
   const tab = await openFirstrunPage();
 
   await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
@@ -164,7 +160,6 @@ add_task(async function test_firstrun_welcome_screen_renders() {
   });
 
   BrowserTestUtils.removeTab(tab);
-  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_launchWindow_shows_firstrun_when_not_completed() {
@@ -358,12 +353,6 @@ add_task(async function test_firstrun_explainer_page_opens() {
 
     await ContentTaskUtils.waitForMutationCondition(
       root,
-      { childList: true, subtree: true },
-      () => content.document.querySelector(".screen.AI_WINDOW_INTRO")
-    );
-
-    await ContentTaskUtils.waitForMutationCondition(
-      root,
       { childList: true, subtree: true, attributes: true },
       () => content.document.querySelector(".screen.AI_WINDOW_CHOOSE_MODEL")
     );
@@ -452,12 +441,6 @@ add_task(async function test_firstrun_telemetry() {
 
   await SpecialPowers.spawn(browser, [], async () => {
     const root = content.document.documentElement;
-
-    await ContentTaskUtils.waitForMutationCondition(
-      root,
-      { childList: true, subtree: true },
-      () => content.document.querySelector(".screen.AI_WINDOW_INTRO")
-    );
 
     await ContentTaskUtils.waitForMutationCondition(
       root,
@@ -795,12 +778,6 @@ add_task(async function test_firstrun_telemetry_unchecked() {
 
   await SpecialPowers.spawn(browser, [], async () => {
     const root = content.document.documentElement;
-
-    await ContentTaskUtils.waitForMutationCondition(
-      root,
-      { childList: true, subtree: true },
-      () => content.document.querySelector(".screen.AI_WINDOW_INTRO")
-    );
 
     await ContentTaskUtils.waitForMutationCondition(
       root,
