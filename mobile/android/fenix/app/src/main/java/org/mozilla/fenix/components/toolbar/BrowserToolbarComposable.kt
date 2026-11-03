@@ -111,10 +111,8 @@ class BrowserToolbarComposable(
                 val shouldShowTabGroupsStrip: Boolean = remember {
                     customTabSession == null && settings.shouldShowTabGroupsStrip
                 }
-                val hasBottomStrip = remember {
-                    customTabSession == null &&
-                        (settings.shouldShowTabStripAtBottom || settings.shouldShowTabGroupsStrip)
-                }
+                val isSearchActive = appStore.observeAsComposableState { it.searchState.isSearchActive }.value
+                val hasBottomStrip = (shouldShowTabStripAtBottom && !isSearchActive) || shouldShowTabGroupsStrip
                 val customColors = browserScreenStore.observeAsComposableState { it.customTabColors }
                 val shouldUseBottomToolbar = remember { settings.shouldUseBottomToolbar }
 

@@ -835,9 +835,11 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         captureToolbarBounds: Boolean,
         colors: ColorScheme,
     ) {
+        val isSearchActive = requireComponents.appStore.observeAsComposableState { it.searchState.isSearchActive }.value
         ToolbarSlot(captureToolbarBounds, { navbarBoundsInRoot = it }) {
             TopDividerColumn(
-                showDivider = settings.shouldShowTabStripAtBottom || settings.shouldShowTabGroupsStrip,
+                showDivider =
+                    (settings.shouldShowTabStripAtBottom && !isSearchActive) || settings.shouldShowTabGroupsStrip,
                 modifier = Modifier.fillMaxWidth(),
                 dividerColor = colors.outlineVariant,
             ) {
@@ -1055,6 +1057,9 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
     @Composable
     private fun TabStrip() {
+        val isSearchActive = requireComponents.appStore.observeAsComposableState { it.searchState.isSearchActive }.value
+        if (isSearchActive) return
+
         // Tabs will not be shown as selected on the homepage when Homepage as a New Tab is not
         // enabled.
         val isSelectDisabled = !requireComponents.settings.enableHomepageAsNewTab

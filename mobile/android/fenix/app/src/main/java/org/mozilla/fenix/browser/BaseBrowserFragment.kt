@@ -1613,6 +1613,17 @@ abstract class BaseBrowserFragment :
         appStore: AppStore,
         settings: org.mozilla.fenix.utils.Settings,
     ): @Composable () -> Unit = {
+        val isSearchActive = appStore.observeAsComposableState { it.searchState.isSearchActive }.value
+        if (!isSearchActive) {
+            BrowserTabStripContent(appStore, settings)
+        }
+    }
+
+    @Composable
+    private fun BrowserTabStripContent(
+        appStore: AppStore,
+        settings: org.mozilla.fenix.utils.Settings,
+    ) {
         FirefoxTheme {
             TabStrip(
                 showTabCounterButton = false,
