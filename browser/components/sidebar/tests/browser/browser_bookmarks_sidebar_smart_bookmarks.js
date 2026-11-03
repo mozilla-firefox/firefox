@@ -278,6 +278,45 @@ add_task(async function test_bookmarks_folder_shortcut_uses_folder_icon() {
   SidebarTestUtils.closePanel(window);
 });
 
+add_task(async function test_bookmarks_search_skips_smart_bookmark_results() {
+  const url = "https://example.com/recent-smart-search";
+  const tag = "regression-tag-search";
+  const smartBookmarks = await createSmartBookmarks(url, tag);
+  const { recentBookmark } = smartBookmarks;
+  const folder = await addFolder("Search Shortcut Target");
+  const innerBookmark = await addBookmark({
+    title: "Recent Page Shortcut Child",
+    url: "https://example.com/recent-smart-search-inner",
+    parentGuid: folder.guid,
+  });
+  const shortcut = await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.toolbarGuid,
+    title: "Search Folder Shortcut",
+    url: `place:parent=${folder.guid}`,
+  });
+
+  const { component, contentWindow } = await showBookmarksSidebar(window);
+  EventUtils.synthesizeMouseAtCenter(component.searchInput, {}, contentWindow);
+  EventUtils.sendString("Recent Page", contentWindow);
+  await BrowserTestUtils.waitForMutationCondition(
+    component.shadowRoot,
+    { childList: true, subtree: true },
+    () => component.searchResults?.length > 0
+  );
+
+  Assert.deepEqual(
+    component.searchResults.map(result => result.guid).sort(),
+    [recentBookmark.guid, innerBookmark.guid].sort(),
+    "Each bookmark appears once, without copies from smart bookmarks."
+  );
+
+  await PlacesUtils.bookmarks.remove(shortcut.guid);
+  await PlacesUtils.bookmarks.remove(innerBookmark.guid);
+  await PlacesUtils.bookmarks.remove(folder.guid);
+  await removeSmartBookmarks(smartBookmarks, url, tag);
+  SidebarTestUtils.closePanel(window);
+});
+
 add_task(async function test_bookmarks_smart_bookmark_drag_disabled() {
   const url = "https://example.com/recent-smart-drag";
   const tag = "regression-tag-drag";
