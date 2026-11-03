@@ -360,24 +360,6 @@ the tests which use them won't run.
 :local: true
 ```
 
-### File IO
-
-File IO is tested using the tp5 test set in the [xperf]
-test.
-
-#### Possible regression causes
-
-- **nonmain_startup_fileio opt (with or without e10s) windows7-32** –
-  [bug
-  1274018](https://bugzilla.mozilla.org/show_bug.cgi?id=1274018)
-  This test seems to consistently report a higher result for
-  mozilla-central compared to Try even for an identical revision due to
-  extension signing checks. In other words, if you are comparing Try
-  and Mozilla-Central you may see a false-positive regression on
-  perfherder. Graphs:
-  [non-e10s](https://treeherder.mozilla.org/perf.html#/graphs?timerange=604800&series=%5Bmozilla-central,e5f5eaa174ef22fdd6b6e150e8c450aa827c2ff6,1,1%5D&series=%5Btry,e5f5eaa174ef22fdd6b6e150e8c450aa827c2ff6,1,1%5D)
-  [e10s](https://treeherder.mozilla.org/perf.html#/graphs?series=%5B%22mozilla-central%22,%222f3af3833d55ff371ecf01c41aeee1939ef3a782%22,1,1%5D&series=%5B%22try%22,%222f3af3833d55ff371ecf01c41aeee1939ef3a782%22,1,1%5D&timerange=604800)
-
 ### Xres (X Resource Monitoring)
 
 A memory metric tracked during tp5 test runs. This metric is sampled
@@ -504,6 +486,19 @@ Notes:
   large variability. At least 30 runs are likely to be needed to get
   stable statistics (xref [bug
   1616236](https://bugzilla.mozilla.org/show_bug.cgi?id=1616236))
+
+#### Possible regression causes
+
+- **nonmain_startup_fileio opt (with or without e10s) windows7-32** –
+  [bug
+  1274018](https://bugzilla.mozilla.org/show_bug.cgi?id=1274018)
+  This test seems to consistently report a higher result for
+  mozilla-central compared to Try even for an identical revision due to
+  extension signing checks. In other words, if you are comparing Try
+  and Mozilla-Central you may see a false-positive regression on
+  perfherder. Graphs:
+  [non-e10s](https://treeherder.mozilla.org/perf.html#/graphs?timerange=604800&series=%5Bmozilla-central,e5f5eaa174ef22fdd6b6e150e8c450aa827c2ff6,1,1%5D&series=%5Btry,e5f5eaa174ef22fdd6b6e150e8c450aa827c2ff6,1,1%5D)
+  [e10s](https://treeherder.mozilla.org/perf.html#/graphs?series=%5B%22mozilla-central%22,%222f3af3833d55ff371ecf01c41aeee1939ef3a782%22,1,1%5D&series=%5B%22try%22,%222f3af3833d55ff371ecf01c41aeee1939ef3a782%22,1,1%5D&timerange=604800)
 
 ## Build metrics
 
