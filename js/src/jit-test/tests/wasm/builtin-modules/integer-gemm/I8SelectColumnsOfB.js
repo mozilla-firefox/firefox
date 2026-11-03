@@ -47,6 +47,11 @@ function testInvalidAlignment() {
   // the output with aligned SIMD stores, so an unaligned output must be
   // rejected rather than faulting on the store (bug 2075984).
   assertErrorMessage(() => int8_select_columns_of_b(VALID.input, VALID.rows, VALID.cols, VALID.colIndexList, VALID.sizeColIndexList, VALID.output + 1), WebAssembly.RuntimeError, /index out of bounds/);
+
+  // colIndexList: Not aligned for its uint32_t elements.
+  for (let offset of [1, 2, 3]) {
+    assertErrorMessage(() => int8_select_columns_of_b(VALID.input, VALID.rows, VALID.cols, VALID.colIndexList + offset, VALID.sizeColIndexList, VALID.output), WebAssembly.RuntimeError, /index out of bounds/);
+  }
 }
 
 function testOutOfBounds() {
@@ -101,6 +106,8 @@ function testOverlapCheck() {
 function testSuccessfulCall() {
   // We just test that with valid arguments the intrinsic executes without any error
   int8_select_columns_of_b(VALID.input, VALID.rows, VALID.cols, VALID.colIndexList, VALID.sizeColIndexList, VALID.output);
+  // colIndexList only needs uint32_t alignment.
+  int8_select_columns_of_b(VALID.input, VALID.rows, VALID.cols, VALID.colIndexList + 4, VALID.sizeColIndexList, VALID.output);
 }
 
 testInvalidSize();
