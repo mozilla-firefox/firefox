@@ -8,6 +8,7 @@
 #include "mozilla/intl/Calendar.h"
 #include "mozilla/intl/DateIntervalFormat.h"
 #include "mozilla/intl/DateTimeFormat.h"
+#include "mozilla/intl/TimeZone.h"
 
 #if !MOZ_SYSTEM_ICU
 #  include "unicode/calendar.h"
@@ -61,6 +62,7 @@ Result<UniquePtr<DateIntervalFormat>, ICUError> DateIntervalFormat::TryCreate(
     Span<const char> aLocale, Span<const char16_t> aSkeleton,
     Span<const char16_t> aTimeZone) {
   UErrorCode status = U_ZERO_ERROR;
+  aTimeZone = TimeZone::ResolveLegacyPOSIXTimeZone(aTimeZone);
   UDateIntervalFormat* dif =
       udtitvfmt_open(IcuLocale(aLocale), aSkeleton.data(),
                      AssertedCast<int32_t>(aSkeleton.size()), aTimeZone.data(),

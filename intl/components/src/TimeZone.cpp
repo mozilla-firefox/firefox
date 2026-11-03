@@ -16,8 +16,76 @@
 
 namespace mozilla::intl {
 
+static constexpr std::string_view LegacyPOSIXTimeZones[] = {
+    "CST6CDT",
+    "EST5EDT",
+    "MST7MDT",
+    "PST8PDT",
+};
+
+static constexpr const char* LegacyPOSIXTimeZoneCities[] = {
+    "America/Chicago",
+    "America/New_York",
+    "America/Denver",
+    "America/Los_Angeles",
+};
+
+static constexpr const char16_t* LegacyPOSIXTimeZoneCitiesUTF16[] = {
+    u"America/Chicago",
+    u"America/New_York",
+    u"America/Denver",
+    u"America/Los_Angeles",
+};
+
+template <typename C>
+static Maybe<size_t> LegacyPOSIXTimeZoneIndex(Span<const C> aTimeZone) {
+  for (size_t i = 0; i < std::size(LegacyPOSIXTimeZones); i++) {
+    const auto& legacy = LegacyPOSIXTimeZones[i];
+    if (std::equal(aTimeZone.begin(), aTimeZone.end(), legacy.begin(),
+                   legacy.end())) {
+      return Some(i);
+    }
+  }
+  return Nothing();
+}
+
 /* static */
-Result<UniquePtr<TimeZone>, ICUError> TimeZone::TryCreate(
+Span<const char> TimeZone::ResolveLegacyPOSIXTimeZone(
+    Span<const char> aTimeZone) {
+  if (auto index = LegacyPOSIXTimeZoneIndex(aTimeZone)) {
+    return MakeStringSpan(LegacyPOSIXTimeZoneCities[*index]);
+  }
+  return aTimeZone;
+}
+
+/* static */
+Span<const char16_t> TimeZone::ResolveLegacyPOSIXTimeZone(
+    Span<const char16_t> aTimeZone) {
+  if (auto index = LegacyPOSIXTimeZoneIndex(aTimeZone)) {
+    return MakeStringSpan(LegacyPOSIXTimeZoneCitiesUTF16[*index]);
+  }
+  return aTimeZone;
+}
+
+/* static */
+Result<Maybe<Span<const char16_t>>, ICUError>
+TimeZone::ResolveLegacyPOSIXTimeZone(
+    Maybe<Span<const char16_t>> aTimeZoneOverride) {
+  if (aTimeZoneOverride) {
+    return Some(ResolveLegacyPOSIXTimeZone(*aTimeZoneOverride));
+  }
+
+  Vector<char16_t, TimeZoneIdentifierLength> id;
+  VectorToBufferAdaptor buffer(id);
+  MOZ_TRY(GetDefaultTimeZone(buffer));
+  if (auto index = LegacyPOSIXTimeZoneIndex(
+          Span<const char16_t>(id.begin(), id.length()))) {
+    return Some(MakeStringSpan(LegacyPOSIXTimeZoneCitiesUTF16[*index]));
+  }
+  return Maybe<Span<const char16_t>>{};
+}
+
+static Result<UniquePtr<TimeZone>, ICUError> TryCreateTimeZone(
     Maybe<Span<const char>> aTimeZoneOverride) {
   const char* zoneID = nullptr;
   int32_t zoneIDLen = 0;
@@ -43,7 +111,7 @@ Result<UniquePtr<TimeZone>, ICUError> TimeZone::TryCreate(
   return MakeUnique<TimeZone>(std::move(tz));
 #else
   const char16_t* zoneIDChar16 = nullptr;
-  Vector<char16_t, TimeZoneIdentifierLength> zoneIDChars;
+  Vector<char16_t, TimeZone::TimeZoneIdentifierLength> zoneIDChars;
   if (zoneID) {
     if (!zoneIDChars.append(zoneID, zoneIDLen)) {
       return Err(ICUError::OutOfMemory);
@@ -79,6 +147,32 @@ Result<UniquePtr<TimeZone>, ICUError> TimeZone::TryCreate(
 
   return MakeUnique<TimeZone>(calendar);
 #endif
+}
+
+/* static */
+Result<UniquePtr<TimeZone>, ICUError> TimeZone::TryCreate(
+    Maybe<Span<const char>> aTimeZoneOverride) {
+  if (aTimeZoneOverride) {
+    return TryCreateTimeZone(
+        Some(ResolveLegacyPOSIXTimeZone(*aTimeZoneOverride)));
+  }
+
+  auto result = TryCreateTimeZone(Nothing());
+  if (result.isErr()) {
+    return result.propagateErr();
+  }
+  UniquePtr<TimeZone> timeZone = result.unwrap();
+
+  // The default time zone can also be one of the legacy POSIX time zones.
+  Vector<char16_t, TimeZoneIdentifierLength> id;
+  VectorToBufferAdaptor buffer(id);
+  MOZ_TRY(timeZone->GetId(buffer));
+  if (auto index = LegacyPOSIXTimeZoneIndex(
+          Span<const char16_t>(id.begin(), id.length()))) {
+    return TryCreateTimeZone(
+        Some(MakeStringSpan(LegacyPOSIXTimeZoneCities[*index])));
+  }
+  return timeZone;
 }
 
 Result<int32_t, ICUError> TimeZone::GetRawOffsetMs() {

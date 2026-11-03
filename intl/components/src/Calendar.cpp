@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <string_view>
 
+#include "mozilla/intl/TimeZone.h"
 #include "unicode/ucal.h"
 #include "unicode/uloc.h"
 #include "unicode/utypes.h"
@@ -39,6 +40,12 @@ Result<UniquePtr<Calendar>, ICUError> Calendar::TryCreate(
   UErrorCode status = U_ZERO_ERROR;
   const UChar* zoneID = nullptr;
   int32_t zoneIDLen = 0;
+  auto resolvedTimeZone =
+      TimeZone::ResolveLegacyPOSIXTimeZone(aTimeZoneOverride);
+  if (resolvedTimeZone.isErr()) {
+    return resolvedTimeZone.propagateErr();
+  }
+  aTimeZoneOverride = resolvedTimeZone.unwrap();
   if (aTimeZoneOverride) {
     zoneIDLen = static_cast<int32_t>(aTimeZoneOverride->Length());
     zoneID = aTimeZoneOverride->Elements();

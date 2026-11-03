@@ -10,6 +10,7 @@ UNIFIED_SOURCES += [
     "TestDateIntervalFormat.cpp",
     "TestDateTimeFormat.cpp",
     "TestDisplayNames.cpp",
+    "TestLegacyPOSIXTimeZone.cpp",
     "TestListFormat.cpp",
     "TestLocale.cpp",
     "TestLocaleCanonicalizer.cpp",

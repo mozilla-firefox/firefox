@@ -43,6 +43,51 @@ for (let [legacy, city] of Object.entries(legacyZones)) {
         }
     }
 
+    // Date and time styles.
+    for (let style of ["full", "long", "medium", "short"]) {
+        let options = {dateStyle: style, timeStyle: style};
+        let legacyDTF = new Intl.DateTimeFormat("en-US", {...options, timeZone: legacy});
+        let cityDTF = new Intl.DateTimeFormat("en-US", {...options, timeZone: city});
+        for (let date of dates) {
+            assertEq(legacyDTF.format(date), cityDTF.format(date));
+        }
+    }
+
+    // formatToParts, formatRange, and formatRangeToParts.
+    {
+        let options = {dateStyle: "full", timeStyle: "full"};
+        let legacyDTF = new Intl.DateTimeFormat("en-US", {...options, timeZone: legacy});
+        let cityDTF = new Intl.DateTimeFormat("en-US", {...options, timeZone: city});
+        for (let i = 0; i < dates.length; i++) {
+            let start = dates[i];
+            let end = dates[Math.min(i + 1, dates.length - 1)];
+            assertDeepEq(legacyDTF.formatToParts(start), cityDTF.formatToParts(start));
+            assertEq(legacyDTF.formatRange(start, end), cityDTF.formatRange(start, end));
+            assertDeepEq(legacyDTF.formatRangeToParts(start, end),
+                         cityDTF.formatRangeToParts(start, end));
+        }
+    }
+
+    // Date.prototype.toLocale{,Date,Time}String.
+    for (let date of dates) {
+        for (let method of ["toLocaleString", "toLocaleDateString", "toLocaleTimeString"]) {
+            assertEq(date[method]("en-US", {timeZone: legacy, timeZoneName: "long"}),
+                     date[method]("en-US", {timeZone: city, timeZoneName: "long"}));
+        }
+    }
+
+    // Mozilla-only pattern option.
+    if (typeof addIntlExtras === "function") {
+        let mozIntl = {};
+        addIntlExtras(mozIntl);
+        let pattern = "yyyy-MM-dd HH:mm:ss zzzz";
+        let legacyDTF = new mozIntl.DateTimeFormat("en-US", {pattern, timeZone: legacy});
+        let cityDTF = new mozIntl.DateTimeFormat("en-US", {pattern, timeZone: city});
+        for (let date of dates) {
+            assertEq(legacyDTF.format(date), cityDTF.format(date));
+        }
+    }
+
     if (typeof Temporal !== "undefined") {
         for (let date of dates) {
             let iso = date.toISOString().slice(0, 19);
@@ -51,6 +96,34 @@ for (let [legacy, city] of Object.entries(legacyZones)) {
             assertEq(legacyZDT.offset, cityZDT.offset);
             assertEq(legacyZDT.epochNanoseconds, cityZDT.epochNanoseconds);
             assertEq(legacyZDT.equals(cityZDT), true);
+            for (let timeZoneName of ["long", "short", "longGeneric"]) {
+                assertEq(legacyZDT.toLocaleString("en-US", {timeZoneName}),
+                         cityZDT.toLocaleString("en-US", {timeZoneName}));
+            }
+            for (let style of ["full", "long", "medium", "short"]) {
+                let options = {dateStyle: style, timeStyle: style};
+                assertEq(legacyZDT.toLocaleString("en-US", options),
+                         cityZDT.toLocaleString("en-US", options));
+            }
+
+            // Operations which depend on the time zone rules.
+            assertEq(legacyZDT.hoursInDay, cityZDT.hoursInDay);
+            assertEq(legacyZDT.startOfDay().epochNanoseconds,
+                     cityZDT.startOfDay().epochNanoseconds);
+            for (let direction of ["next", "previous"]) {
+                let legacyTransition = legacyZDT.getTimeZoneTransition(direction);
+                let cityTransition = cityZDT.getTimeZoneTransition(direction);
+                assertEq(legacyTransition?.epochNanoseconds,
+                         cityTransition?.epochNanoseconds);
+            }
+            let plain = cityZDT.toPlainDateTime();
+            assertEq(plain.toZonedDateTime(legacy).epochNanoseconds,
+                     plain.toZonedDateTime(city).epochNanoseconds);
+            assertEq(cityZDT.withTimeZone(legacy).toPlainDateTime().toString(),
+                     cityZDT.toPlainDateTime().toString());
+
+            // The identifier itself is preserved.
+            assertEq(legacyZDT.timeZoneId, legacy);
         }
     }
 }

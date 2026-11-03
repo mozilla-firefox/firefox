@@ -27,12 +27,20 @@ for (let [legacy, city] of Object.entries(legacyZones)) {
     let cityGlobal = newGlobal({timeZone: city});
 
     assertEq(legacyGlobal.Intl.DateTimeFormat().resolvedOptions().timeZone, city);
+    if (typeof legacyGlobal.Temporal !== "undefined") {
+        assertEq(legacyGlobal.Temporal.Now.timeZoneId(), city);
+    }
 
     for (let date of dates) {
         let legacyDate = new legacyGlobal.Date(date.getTime());
         let cityDate = new cityGlobal.Date(date.getTime());
         assertEq(legacyDate.toString(), cityDate.toString());
         assertEq(legacyDate.getTimezoneOffset(), cityDate.getTimezoneOffset());
+        assertEq(legacyDate.toLocaleString("en-US", {timeZoneName: "long"}),
+                 cityDate.toLocaleString("en-US", {timeZoneName: "long"}));
+        let options = {dateStyle: "full", timeStyle: "full"};
+        assertEq(new legacyGlobal.Intl.DateTimeFormat("en-US", options).format(legacyDate),
+                 new cityGlobal.Intl.DateTimeFormat("en-US", options).format(cityDate));
     }
 }
 
