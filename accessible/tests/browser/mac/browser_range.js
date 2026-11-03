@@ -26,17 +26,17 @@ addAccessibleTask(
     ok(actions.includes("AXDecrement"), "Has decrement action");
     ok(actions.includes("AXIncrement"), "Has increment action");
 
-    let evt = waitForMacEvent("AXValueChanged");
+    let evt = waitForMacEvent("AXValueChanged", "range");
     range.performAction("AXIncrement");
     await evt;
     is(range.getAttributeValue("AXValue"), 11, "Correct increment value");
 
-    evt = waitForMacEvent("AXValueChanged");
+    evt = waitForMacEvent("AXValueChanged", "range");
     range.performAction("AXDecrement");
     await evt;
     is(range.getAttributeValue("AXValue"), 1, "Correct decrement value");
 
-    evt = waitForMacEvent("AXValueChanged");
+    evt = waitForMacEvent("AXValueChanged", "range");
     // Adjust value via script in content
     await SpecialPowers.spawn(browser, [], () => {
       content.document.getElementById("range").value = 41;
@@ -64,7 +64,7 @@ addAccessibleTask(
 
     ok(range.isAttributeSettable("AXValue"), "Range AXValue is settable.");
 
-    let evt = waitForMacEvent("AXValueChanged");
+    let evt = waitForMacEvent("AXValueChanged", "range");
     range.setAttributeValue("AXValue", nextValue);
     await evt;
     is(range.getAttributeValue("AXValue"), nextValue, "Correct updated value");
@@ -90,17 +90,17 @@ addAccessibleTask(
     ok(actions.includes("AXDecrement"), "Has decrement action");
     ok(actions.includes("AXIncrement"), "Has increment action");
 
-    let evt = waitForMacEvent("AXValueChanged");
+    let evt = waitForMacEvent("AXValueChanged", "number");
     number.performAction("AXIncrement");
     await evt;
     is(number.getAttributeValue("AXValue"), 11.05, "Correct increment value");
 
-    evt = waitForMacEvent("AXValueChanged");
+    evt = waitForMacEvent("AXValueChanged", "number");
     number.performAction("AXDecrement");
     await evt;
     is(number.getAttributeValue("AXValue"), 11, "Correct decrement value");
 
-    evt = waitForMacEvent("AXValueChanged");
+    evt = waitForMacEvent("AXValueChanged", "number");
     // Adjust value via script in content
     await SpecialPowers.spawn(browser, [], () => {
       content.document.getElementById("number").value = 42;
@@ -131,7 +131,7 @@ addAccessibleTask(
 
     ok(number.isAttributeSettable("AXValue"), "Range AXValue is settable.");
 
-    let evt = waitForMacEvent("AXValueChanged");
+    let evt = waitForMacEvent("AXValueChanged", "number");
     number.setAttributeValue("AXValue", nextValue);
     await evt;
     is(number.getAttributeValue("AXValue"), nextValue, "Correct updated value");
@@ -159,7 +159,7 @@ addAccessibleTask(
     is(slider.getAttributeValue("AXMinValue"), 0, "Correct min value");
     is(slider.getAttributeValue("AXMaxValue"), 3, "Correct max value");
 
-    let evt = waitForMacEvent("AXValueChanged");
+    let evt = waitForMacEvent("AXValueChanged", "slider");
     await invokeContentTask(browser, [], () => {
       const s = content.document.getElementById("slider");
       s.setAttribute("aria-valuetext", "Low");
@@ -232,7 +232,7 @@ addAccessibleTask(
     is(progress.getAttributeValue("AXMaxValue"), 100, "Correct max value");
     is(progress.getAttributeValue("AXMinValue"), 0, "Correct min value");
 
-    const evt = waitForMacEvent("AXValueChanged");
+    const evt = waitForMacEvent("AXValueChanged", "progress");
     await invokeContentTask(browser, [], () => {
       const p = content.document.getElementById("progress");
       p.setAttribute("value", "90");
@@ -258,7 +258,7 @@ addAccessibleTask(
       "Value description contains appropriate value region"
     );
 
-    let evt = waitForMacEvent("AXValueChanged");
+    let evt = waitForMacEvent("AXValueChanged", "fuel");
     await invokeContentTask(browser, [], () => {
       const f = content.document.getElementById("fuel");
       f.setAttribute("value", "90");
