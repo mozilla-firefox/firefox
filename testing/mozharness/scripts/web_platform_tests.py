@@ -40,6 +40,10 @@ def _is_harness_or_mozilla_entry(name):
     return parts[1] != "tests" or parts[2] in ("tools", "resources", "common")
 
 
+def _outside_test262(name):
+    return not name.startswith("web-platform/tests/third_party/test262/")
+
+
 class WebPlatformTest(TestingMixin, MercurialScript, CodeCoverageMixin, AndroidMixin):
     python_constraints = "requirements-marionette.txt"
 
@@ -601,11 +605,13 @@ class WebPlatformTest(TestingMixin, MercurialScript, CodeCoverageMixin, AndroidM
     def download_unpack(
         self, url, extract_to=".", extract_dirs="*", verbose=False, member_filter=None
     ):
-        if (
-            self.config.get("skip_upstream_tests_extraction")
-            and "web-platform" in (url.split("/")[-1])
-        ):
-            member_filter = _is_harness_or_mozilla_entry
+        test_types = self.config.get("test_type")
+        if "web-platform" in (url.split("/")[-1]):
+            if self.config.get("skip_upstream_tests_extraction"):
+                member_filter = _is_harness_or_mozilla_entry
+            elif test_types and "test262" not in test_types:
+                # test262 is about a quarter of the archive's files.
+                member_filter = _outside_test262
         super().download_unpack(url, extract_to, extract_dirs, verbose, member_filter)
 
     def download_and_extract(self):
