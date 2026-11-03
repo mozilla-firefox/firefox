@@ -3813,14 +3813,7 @@ nsresult Document::StartDocumentLoad(const char* aCommand, nsIChannel* aChannel,
     WarnIfSandboxIneffective(docShell, mSandboxFlags, GetChannel());
   }
 
-  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-      do_QueryInterface(aChannel);
-
-  if (classifiedChannel) {
-    mClassificationFlags = {
-        classifiedChannel->GetFirstPartyClassificationFlags(),
-        classifiedChannel->GetThirdPartyClassificationFlags()};
-  }
+  mClassificationFlags = AntiTrackingUtils::GetClassificationFlags(aChannel);
 
   // Set the opener policy for the top level content document.
   nsCOMPtr<nsIHttpChannelInternal> httpChan = do_QueryInterface(mChannel);

@@ -26,6 +26,7 @@
 #include "js/loader/ModuleLoadRequest.h"
 #include "js/loader/ModuleLoaderBase.h"
 #include "js/loader/ScriptLoadRequest.h"
+#include "mozilla/AntiTrackingUtils.h"
 #include "mozilla/AppShutdown.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/AsyncEventDispatcher.h"
@@ -5542,15 +5543,9 @@ nsresult ScriptLoader::PrepareLoadedRequest(ScriptLoadRequest* aRequest,
       aRequest->SetSourceMapURL(NS_ConvertUTF8toUTF16(sourceMapURL));
     }
 
-    nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-        do_QueryInterface(aChannel);
-    MOZ_ASSERT(classifiedChannel);
-    if (classifiedChannel &&
-        classifiedChannel->IsThirdPartyTrackingResource()) {
-      net::ClassificationFlags flags{
-          classifiedChannel->GetFirstPartyClassificationFlags(),
-          classifiedChannel->GetThirdPartyClassificationFlags()};
-      aRequest->GetScriptLoadContext()->SetClassificationFlags(flags);
+    if (AntiTrackingUtils::IsThirdPartyTrackingChannel(aChannel)) {
+      aRequest->GetScriptLoadContext()->SetClassificationFlags(
+          AntiTrackingUtils::GetClassificationFlags(aChannel));
     }
   }
 

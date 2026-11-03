@@ -10,6 +10,7 @@
 #include "nsStringFwd.h"
 #include "ContentBlockingNotifier.h"
 
+#include "nsIClassifiedChannel.h"
 #include "nsILoadInfo.h"
 
 class nsPIDOMWindowInner;
@@ -155,6 +156,10 @@ class AntiTrackingUtils final {
   // takes the channel annotation preferences into account. Returns false for
   // null or non-classified channels.
   static bool IsFirstPartyTrackingChannel(nsIChannel* aChannel);
+
+  // Returns the first- and third-party classification flags of the channel, or
+  // zero flags for null or non-classified channels.
+  static net::ClassificationFlags GetClassificationFlags(nsIChannel* aChannel);
 
   // Returns true if the channel is annotated as a third-party social tracker.
   // Returns false for null or non-classified channels.

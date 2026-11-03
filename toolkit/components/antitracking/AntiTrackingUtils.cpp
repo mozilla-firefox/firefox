@@ -1117,6 +1117,18 @@ bool AntiTrackingUtils::IsFirstPartyTrackingChannel(nsIChannel* aChannel) {
 }
 
 /* static */
+net::ClassificationFlags AntiTrackingUtils::GetClassificationFlags(
+    nsIChannel* aChannel) {
+  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
+      do_QueryInterface(aChannel);
+  if (!classifiedChannel) {
+    return {0, 0};
+  }
+  return {classifiedChannel->GetFirstPartyClassificationFlags(),
+          classifiedChannel->GetThirdPartyClassificationFlags()};
+}
+
+/* static */
 bool AntiTrackingUtils::IsThirdPartySocialTrackingChannel(
     nsIChannel* aChannel) {
   nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
