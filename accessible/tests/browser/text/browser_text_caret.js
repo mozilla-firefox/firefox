@@ -595,25 +595,35 @@ addAccessibleTask(
     ]);
     info("textarea: Set caret offset to 0");
     let focused = waitForEvent(EVENT_FOCUS, textarea);
-    let caretMoved = waitForEvent(EVENT_TEXT_CARET_MOVED, textarea);
+    let caretMoved = waitForEvent(
+      EVENT_TEXT_CARET_MOVED,
+      evt =>
+        evt.accessible == textarea &&
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent).caretOffset == 0
+    );
     textarea.caretOffset = 0;
     await focused;
     await caretMoved;
     is(textarea.caretOffset, 0, "textarea caret correct");
-    // May get two caret moved events (one from focusing textarea and one
-    // from setting selection), so wait a bit for the second event to be fired.
-    await new Promise(r =>
-      requestAnimationFrame(() => requestAnimationFrame(r))
-    );
     // Test setting caret to another line.
     info("textarea: Set caret offset to 3");
-    caretMoved = waitForEvent(EVENT_TEXT_CARET_MOVED, textarea);
+    caretMoved = waitForEvent(
+      EVENT_TEXT_CARET_MOVED,
+      evt =>
+        evt.accessible == textarea &&
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent).caretOffset == 3
+    );
     textarea.caretOffset = 3;
     await caretMoved;
     is(textarea.caretOffset, 3, "textarea caret correct");
     // Test setting caret to the end.
     info("textarea: Set caret offset to 4 (end)");
-    caretMoved = waitForEvent(EVENT_TEXT_CARET_MOVED, textarea);
+    caretMoved = waitForEvent(
+      EVENT_TEXT_CARET_MOVED,
+      evt =>
+        evt.accessible == textarea &&
+        evt.QueryInterface(nsIAccessibleCaretMoveEvent).caretOffset == 4
+    );
     textarea.caretOffset = 4;
     await caretMoved;
     is(textarea.caretOffset, 4, "textarea caret correct");
