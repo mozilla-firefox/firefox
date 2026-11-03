@@ -393,6 +393,9 @@ class EngineDispatcher {
   /** @type {Promise<InferenceEngine>} */
   #engine;
 
+  /** @type {Set<number>} */
+  #pendingRuns = new Set();
+
   /** @type {?string} */
   #taskName;
 
@@ -631,9 +634,11 @@ class EngineDispatcher {
           };
 
           const { requestId, request, engineRunOptions } = data;
+          this.#pendingRuns.add(requestId);
           try {
             await this.isReady();
           } catch (error) {
+            this.#pendingRuns.delete(requestId);
             port.postMessage({
               type: "EnginePort:RunResponse",
               requestId,
@@ -656,6 +661,13 @@ class EngineDispatcher {
           const engine = await this.#engine;
 
           try {
+            if (!this.#pendingRuns.has(requestId)) {
+              throw new DOMException(
+                "Inference run was canceled before starting",
+                "AbortError"
+              );
+            }
+            this.#pendingRuns.delete(requestId);
             const response = await engine.run(
               request,
               requestId,
@@ -688,6 +700,10 @@ class EngineDispatcher {
           break;
         }
         case "EnginePort:Cancel": {
+          if (this.#pendingRuns.has(data.requestId)) {
+            this.#pendingRuns.delete(data.requestId);
+            break;
+          }
           try {
             const engine = await this.#engine;
             await engine.cancel(data.requestId);

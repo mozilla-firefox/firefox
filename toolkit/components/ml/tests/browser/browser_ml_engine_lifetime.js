@@ -3,10 +3,169 @@
 
 "use strict";
 
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
+
 const MOZ_ECHO_OPTIONS_RAW = { taskName: "moz-echo", timeoutMS: -1 };
 const MOZ_ECHO_OPTIONS = new PipelineOptions({
   taskName: "moz-echo",
   timeoutMS: -1,
+});
+
+function getRunResponse(responseSpy) {
+  const responseCall = responseSpy
+    .getCalls()
+    .find(call => call.args[0].data.type === "EnginePort:RunResponse");
+  return responseCall?.args[0].data;
+}
+
+async function waitForRunResponse(responseSpy) {
+  await TestUtils.waitForCondition(
+    () => getRunResponse(responseSpy),
+    "The child sends the canceled request's response",
+    100,
+    100
+  );
+  return getRunResponse(responseSpy);
+}
+
+async function checkCanceledRunWithLateResponse(request) {
+  const { cleanup, remoteClients } = await setup();
+  let responseSpy;
+
+  try {
+    const engine = await createEngine(MOZ_ECHO_OPTIONS_RAW);
+    const warmup = engine.run({ data: "Initialize the engine" });
+    await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+    await warmup;
+
+    responseSpy = sinon.spy(engine, "handlePortMessage");
+    const successCount =
+      Glean.firefoxAiRuntime.runInferenceSuccessFlow.testGetValue()?.length ??
+      0;
+    const failureCount =
+      Glean.firefoxAiRuntime.runInferenceFailure.testGetValue()?.length ?? 0;
+    const controller = new AbortController();
+    const reason = new DOMException("Canceled by the caller", "AbortError");
+    const pending = engine.run(request, { signal: controller.signal });
+
+    controller.abort(reason);
+
+    await Assert.rejects(
+      pending,
+      error => error === reason,
+      "The caller receives the original cancellation reason without waiting for the backend"
+    );
+    Assert.ok(
+      !getRunResponse(responseSpy),
+      "The caller is released before the initialized backend sends its response"
+    );
+    const lateResponse = await waitForRunResponse(responseSpy);
+    Assert.equal(
+      Glean.firefoxAiRuntime.runInferenceSuccessFlow.testGetValue()?.length ??
+        0,
+      successCount,
+      "The canceled request does not record a success event"
+    );
+    Assert.equal(
+      Glean.firefoxAiRuntime.runInferenceFailure.testGetValue()?.length ?? 0,
+      failureCount,
+      "The canceled request does not record a backend failure event"
+    );
+
+    const next = await engine.run({ data: "Next request" });
+    Assert.equal(
+      next.output.echo,
+      "Next request",
+      "A new request receives its own response after cancellation"
+    );
+    Assert.equal(
+      Glean.firefoxAiRuntime.runInferenceSuccessFlow.testGetValue()?.length ??
+        0,
+      successCount + 1,
+      "Only the new request records a success event"
+    );
+    return lateResponse;
+  } finally {
+    await EngineProcess.destroyMLEngine()
+      .then(() => cleanup())
+      .finally(() => responseSpy?.restore());
+  }
+}
+
+add_task(
+  async function test_canceled_run_does_not_start_after_initialization() {
+    const { cleanup, remoteClients } = await setup();
+    let responseSpy;
+
+    try {
+      const engine = await createEngine(MOZ_ECHO_OPTIONS_RAW);
+      responseSpy = sinon.spy(engine, "handlePortMessage");
+      const controller = new AbortController();
+      const reason = new DOMException(
+        "Canceled during initialization",
+        "AbortError"
+      );
+      const pending = engine.run("throw", { signal: controller.signal });
+
+      controller.abort(reason);
+
+      await Assert.rejects(
+        pending,
+        error => error === reason,
+        "The caller receives cancellation while initialization is pending"
+      );
+      Assert.ok(
+        !getRunResponse(responseSpy),
+        "The runtime download is still pending"
+      );
+
+      await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+      const canceledResponse = await waitForRunResponse(responseSpy);
+      Assert.equal(
+        canceledResponse.error?.name,
+        "AbortError",
+        "The child cancels the request before the worker can throw its execution error"
+      );
+      Assert.equal(
+        canceledResponse.response,
+        null,
+        "The canceled request does not produce an inference result"
+      );
+
+      const next = await engine.run({ data: "Next request" });
+      Assert.equal(
+        next.output.echo,
+        "Next request",
+        "The initialized engine can execute another request after cancellation"
+      );
+    } finally {
+      await EngineProcess.destroyMLEngine()
+        .then(() => cleanup())
+        .finally(() => responseSpy?.restore());
+    }
+  }
+);
+
+add_task(async function test_canceled_run_ignores_late_success() {
+  const { response, error } = await checkCanceledRunWithLateResponse({
+    data: "Canceled request",
+  });
+  Assert.ok(!error, "The backend completes the request despite cancellation");
+  Assert.equal(
+    response.output.echo,
+    "Canceled request",
+    "The late response belongs to the canceled request"
+  );
+});
+
+add_task(async function test_canceled_run_ignores_late_backend_error() {
+  const { error } = await checkCanceledRunWithLateResponse("throw");
+  Assert.ok(
+    error?.message.includes('Received the message "throw"'),
+    "The backend error arrives after the caller has already received cancellation"
+  );
 });
 
 /**

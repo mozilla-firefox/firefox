@@ -1074,6 +1074,9 @@ export class MLEngine {
    */
   #requests = new Map();
 
+  /** @type {Set<number>} */
+  #canceledRequests = new Set();
+
   /**
    * @type {"uninitialized" | "ready" | "error" | "closed" | "crashed"}
    */
@@ -1444,6 +1447,9 @@ export class MLEngine {
           resourcesBefore,
           resourcesAfter,
         } = data;
+        if (this.#canceledRequests.delete(requestId)) {
+          break;
+        }
         const request = this.#requests.get(requestId);
         if (request) {
           if (error) {
@@ -1520,6 +1526,7 @@ export class MLEngine {
    * Discards the current port and closes the connection.
    */
   discardPort() {
+    this.#canceledRequests.clear();
     if (this.#port !== null) {
       this.#port.postMessage({ type: "EnginePort:Discard" });
       this.#port.close();
@@ -1587,9 +1594,12 @@ export class MLEngine {
    * Run the inference request
    *
    * @param {EngineRequests[FeatureID]} request
+   * @param {object} [options]
+   * @param {AbortSignal} [options.signal]
    * @returns {Promise<EngineResponses[FeatureID]>}
    */
-  async run(request) {
+  async run(request, { signal } = {}) {
+    signal?.throwIfAborted();
     /** @type {PromiseWithResolvers<EngineResponses[FeatureID]>} */
     const resolvers = Promise.withResolvers();
     const requestId = this.#nextRequestId++;
@@ -1621,7 +1631,23 @@ export class MLEngine {
       transferables
     );
 
-    const result = await resolvers.promise;
+    const onAbort = () => {
+      if (this.#requests.get(requestId) !== resolvers) {
+        return;
+      }
+      this.#canceledRequests.add(requestId);
+      this.#requests.delete(requestId);
+      resolvers.reject(signal.reason);
+      this.#port?.postMessage({ type: "EnginePort:Cancel", requestId });
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    let result;
+    try {
+      result = await resolvers.promise;
+    } finally {
+      signal?.removeEventListener("abort", onAbort);
+    }
 
     this.telemetry.recordEngineRun({
       beforeRun,

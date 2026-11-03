@@ -54,6 +54,7 @@ const TOOL_CALL_DRAIN_TIMEOUT_MS = 2000;
 export class OpenAIPipeline {
   #errorFactory = null;
   #options = null;
+  #abortControllers = new Map();
   OpenAILib = null;
 
   constructor(options, errorFactory) {
@@ -222,10 +223,13 @@ export class OpenAIPipeline {
       requestId,
       inferenceProgressCallback,
       port,
+      signal,
     } = args;
 
     const createStartTime = ChromeUtils.now();
-    const stream = await client.chat.completions.create(completionParams);
+    const stream = await client.chat.completions.create(completionParams, {
+      signal,
+    });
     let lastChunkTime = ChromeUtils.now();
     ChromeUtils.addProfilerMarker(
       "MLEngine:OpenAI",
@@ -356,10 +360,13 @@ export class OpenAIPipeline {
       requestId,
       inferenceProgressCallback,
       port,
+      signal,
     } = args;
 
     const createStartTime = ChromeUtils.now();
-    const completion = await client.chat.completions.create(completionParams);
+    const completion = await client.chat.completions.create(completionParams, {
+      signal,
+    });
     ChromeUtils.addProfilerMarker(
       "MLEngine:OpenAI",
       createStartTime,
@@ -409,6 +416,8 @@ export class OpenAIPipeline {
     port = null
   ) {
     lazy.console.debug("Running OpenAI pipeline");
+    const controller = new AbortController();
+    this.#abortControllers.set(requestId, controller);
     try {
       const {
         baseURL,
@@ -462,6 +471,7 @@ export class OpenAIPipeline {
         requestId,
         inferenceProgressCallback,
         port,
+        signal: controller.signal,
       };
 
       return stream
@@ -484,6 +494,12 @@ export class OpenAIPipeline {
       });
 
       throw backendError;
+    } finally {
+      this.#abortControllers.delete(requestId);
     }
+  }
+
+  async cancel(requestId) {
+    this.#abortControllers.get(requestId)?.abort();
   }
 }

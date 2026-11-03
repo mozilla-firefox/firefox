@@ -435,9 +435,12 @@ export class MockLLMEngine {
    * into a chunks only in the runWithGenerator method.
    *
    * @param {EngineRequests[FeatureID]} request
+   * @param {object} [options]
+   * @param {AbortSignal} [options.signal]
    * @returns {Promise<EngineResponses["chat"]>}
    */
-  async run(request) {
+  async run(request, { signal } = {}) {
+    signal?.throwIfAborted();
     const requestId = this.#nextRequestId++;
 
     /**
@@ -448,8 +451,18 @@ export class MockLLMEngine {
      */
     const { promise, resolve, reject } = Promise.withResolvers();
     this.#runRequests.set(requestId, { request, resolve, reject });
+    const onAbort = () => {
+      this.#runRequests.delete(requestId);
+      reject(signal.reason);
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
     this.#notifyRunRequestWaiters();
-    const response = await promise;
+    let response;
+    try {
+      response = await promise;
+    } finally {
+      signal?.removeEventListener("abort", onAbort);
+    }
 
     if (typeof response === "string") {
       return { finalOutput: response, ...EXTRA_RESPONSE_ARGS };

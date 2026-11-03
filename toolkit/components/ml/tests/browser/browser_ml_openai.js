@@ -10,6 +10,8 @@ const BASE_ENGINE_OPTIONS = {
   modelRevision: "main",
 };
 
+const TEST_INFERENCE_OPTIONS_RECORD_ID = "74a71cfd-1734-44e6-85c0-69cf3e874138";
+
 /**
  * How long a streaming turn is allowed to take before the test fails it.
  * Far below the 120s engine timeout, far above the pipeline's own drain bound,
@@ -34,6 +36,197 @@ const SHARED_TOOLS = [
   },
 ];
 
+async function setupOpenAICancellationTest(onRequest) {
+  const { cleanup: cleanupEnvironment } = await setup({
+    records: [
+      {
+        ...BASE_ENGINE_OPTIONS,
+        id: TEST_INFERENCE_OPTIONS_RECORD_ID,
+      },
+    ],
+  });
+  const { server, port, releaseHeldStreams, resumeResponses } = startMockOpenAI(
+    {
+      holdResponses: true,
+      onRequest,
+    }
+  );
+  const baseURL = `http://localhost:${port}/v1`;
+  const httpRequestStopped = Promise.withResolvers();
+  const onRequestStopped = subject => {
+    const channel = subject.QueryInterface(Ci.nsIHttpChannel);
+    if (
+      channel.URI.spec === `${baseURL}/chat/completions` &&
+      channel.requestMethod === "POST"
+    ) {
+      httpRequestStopped.resolve(channel.status);
+    }
+  };
+  Services.obs.addObserver(onRequestStopped, "http-on-stop-request");
+
+  const cleanup = async () => {
+    try {
+      releaseHeldStreams();
+      await EngineProcess.destroyMLEngine();
+      await cleanupEnvironment();
+      await stopMockOpenAI(server);
+    } finally {
+      Services.obs.removeObserver(onRequestStopped, "http-on-stop-request");
+    }
+  };
+
+  try {
+    const engine = await createEngine({
+      ...BASE_ENGINE_OPTIONS,
+      backend: "openai",
+      apiKey: "test",
+      baseURL,
+    });
+    return {
+      engine,
+      httpRequestStopped: httpRequestStopped.promise,
+      resumeResponses,
+      cleanup,
+    };
+  } catch (error) {
+    await cleanup();
+    throw error;
+  }
+}
+
+add_task(async function test_openai_aborted_signal_prevents_http_request() {
+  let requestCount = 0;
+  const { engine, cleanup } = await setupOpenAICancellationTest(() => {
+    requestCount++;
+  });
+  try {
+    const request = { args: [{ role: "user", content: "Generate a page" }] };
+
+    await Assert.rejects(
+      engine.run(request, { signal: AbortSignal.abort() }),
+      /AbortError/,
+      "An already aborted signal rejects the model call with AbortError"
+    );
+
+    Assert.equal(requestCount, 0, "No HTTP request is sent");
+  } finally {
+    await cleanup();
+  }
+});
+
+add_task(
+  async function test_openai_signal_aborts_pending_non_streaming_request() {
+    const requestStarted = Promise.withResolvers();
+    let requestCount = 0;
+    const { engine, httpRequestStopped, cleanup } =
+      await setupOpenAICancellationTest(() => {
+        requestCount++;
+        requestStarted.resolve();
+      });
+    try {
+      const controller = new AbortController();
+      const request = { args: [{ role: "user", content: "Generate a page" }] };
+      const abortAfterRequestStarts = requestStarted.promise.then(() =>
+        controller.abort()
+      );
+
+      await Assert.rejects(
+        engine.run(request, { signal: controller.signal }),
+        /AbortError/,
+        "Aborting the signal rejects the pending non-streaming request with AbortError"
+      );
+      await abortAfterRequestStarts;
+      Assert.equal(
+        await httpRequestStopped,
+        Cr.NS_BINDING_ABORTED,
+        "The HTTP request is aborted while the server keeps its response pending"
+      );
+      Assert.equal(requestCount, 1, "Cancellation does not retry the request");
+    } finally {
+      await cleanup();
+    }
+  }
+);
+
+add_task(async function test_openai_signal_aborts_pending_streaming_request() {
+  const requestStarted = Promise.withResolvers();
+  let requestCount = 0;
+  const { engine, httpRequestStopped, cleanup } =
+    await setupOpenAICancellationTest(() => {
+      requestCount++;
+      requestStarted.resolve();
+    });
+  try {
+    const controller = new AbortController();
+    const request = {
+      args: [{ role: "user", content: "Generate a page" }],
+      streamOptions: { enabled: true },
+    };
+    const abortAfterRequestStarts = requestStarted.promise.then(() =>
+      controller.abort()
+    );
+
+    await Assert.rejects(
+      engine.run(request, { signal: controller.signal }),
+      /AbortError/,
+      "Aborting the signal rejects the pending streaming request with AbortError"
+    );
+    await abortAfterRequestStarts;
+    Assert.equal(
+      await httpRequestStopped,
+      Cr.NS_BINDING_ABORTED,
+      "The HTTP request is aborted while the server keeps its response pending"
+    );
+    Assert.equal(requestCount, 1, "Cancellation does not retry the request");
+  } finally {
+    await cleanup();
+  }
+});
+
+add_task(async function test_openai_request_succeeds_after_cancellation() {
+  const requestStarted = Promise.withResolvers();
+  let requestCount = 0;
+  const { engine, httpRequestStopped, resumeResponses, cleanup } =
+    await setupOpenAICancellationTest(() => {
+      requestCount++;
+      requestStarted.resolve();
+    });
+  try {
+    const controller = new AbortController();
+    const request = { args: [{ role: "user", content: "Generate a page" }] };
+    const abortAfterRequestStarts = requestStarted.promise.then(() =>
+      controller.abort()
+    );
+    await Assert.rejects(
+      engine.run(request, { signal: controller.signal }),
+      /AbortError/,
+      "Aborting the signal rejects the first request with AbortError"
+    );
+    await abortAfterRequestStarts;
+    Assert.equal(
+      await httpRequestStopped,
+      Cr.NS_BINDING_ABORTED,
+      "The HTTP request is aborted while the server keeps its response pending"
+    );
+    resumeResponses();
+
+    const result = await engine.run(request);
+
+    Assert.equal(
+      result.finalOutput,
+      "This is a mock summary for testing end-to-end flow.",
+      "The engine completes a new request after the previous request is canceled"
+    );
+    Assert.equal(
+      requestCount,
+      2,
+      "Only the canceled request and the subsequent request are sent"
+    );
+  } finally {
+    await cleanup();
+  }
+});
+
 /**
  * Test that createEngine successfully talks to the OpenAI client.
  */
@@ -44,7 +237,7 @@ add_task(async function test_openai_client() {
       taskName: "text-generation",
       modelId: "qwen3:0.6b",
       modelRevision: "main",
-      id: "74a71cfd-1734-44e6-85c0-69cf3e874138",
+      id: TEST_INFERENCE_OPTIONS_RECORD_ID,
     },
   ];
   const { cleanup } = await setup({ records });
@@ -97,7 +290,7 @@ add_task(async function test_openai_client_tools_non_streaming() {
   const records = [
     {
       ...BASE_ENGINE_OPTIONS,
-      id: "74a71cfd-1734-44e6-85c0-69cf3e874138",
+      id: TEST_INFERENCE_OPTIONS_RECORD_ID,
     },
   ];
   const { cleanup } = await setup({ records });
@@ -507,7 +700,7 @@ add_task(async function test_openai_fxaccount_token() {
   const records = [
     {
       ...BASE_ENGINE_OPTIONS,
-      id: "74a71cfd-1734-44e6-85c0-69cf3e874138",
+      id: TEST_INFERENCE_OPTIONS_RECORD_ID,
     },
   ];
   const { cleanup } = await setup({ records });

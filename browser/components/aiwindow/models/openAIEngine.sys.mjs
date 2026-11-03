@@ -303,8 +303,9 @@ export class openAIEngine {
    * @returns {object}                  LLM response
    */
   async _runWithAuth(content) {
+    const { signal, ...engineContent } = content;
     try {
-      return await this.engineInstance.run(content);
+      return await this.engineInstance.run(engineContent, { signal });
     } catch (ex) {
       // Skip the token retry flow when using a custom endpoint,
       // as the retry logic only applies to AuthProvider tokens.
@@ -321,12 +322,12 @@ export class openAIEngine {
       await this._recreateEngine();
 
       const newToken = await AuthProvider.getToken();
-      const updatedContent = { ...content, token: newToken };
+      const updatedContent = { ...engineContent, token: newToken };
 
       try {
-        return await this.engineInstance.run(updatedContent);
+        return await this.engineInstance.run(updatedContent, { signal });
       } catch (retryEx) {
-        if (!this._is401Error(retryEx)) {
+        if (signal?.aborted || !this._is401Error(retryEx)) {
           throw retryEx;
         }
 

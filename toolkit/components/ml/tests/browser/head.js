@@ -979,16 +979,19 @@ function readRequestBody(request) {
  * @param {{status: number, body: object}|null} [options.errorResponse] - When
  *   set, every request is answered with this HTTP status and JSON body instead
  *   of a completion.
+ * @param {boolean} [options.holdResponses] - Holds requests without sending
+ *   a response until resumeResponses() is called.
  */
 function startMockOpenAI({
   echo = "This gets echoed.",
   onRequest = null,
   holdStreamOpenAfterFinish = false,
   errorResponse = null,
+  holdResponses = false,
 } = {}) {
   const server = new HttpServer();
 
-  // Tracked so a test using holdStreamOpenAfterFinish can still stop the server.
+  // Tracked so tests that hold responses can still stop the server.
   const heldResponses = [];
 
   server.registerPathHandler("/v1/chat/completions", (request, response) => {
@@ -1018,6 +1021,12 @@ function startMockOpenAI({
       } catch (_) {}
     }
     info("[openai] bodyText: " + bodyText);
+
+    if (holdResponses) {
+      response.processAsync();
+      heldResponses.push(response);
+      return;
+    }
 
     let body;
     try {
@@ -1376,10 +1385,15 @@ function startMockOpenAI({
     }
   }
 
+  function resumeResponses() {
+    holdResponses = false;
+    releaseHeldStreams();
+  }
+
   // -1 tells it to pick an ephemeral port
   server.start(-1);
   const port = server.identity.primaryPort;
-  return { server, port, releaseHeldStreams };
+  return { server, port, releaseHeldStreams, resumeResponses };
 }
 
 function stopMockOpenAI(server) {
