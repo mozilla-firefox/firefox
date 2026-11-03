@@ -10,6 +10,7 @@
 #include "nsNSSDialogs.h"
 
 #include "mozIDOMWindow.h"
+#include "mozilla/intl/Localization.h"
 #include "nsArray.h"
 #include "nsComponentManagerUtils.h"
 #include "nsEmbedCID.h"
@@ -27,25 +28,11 @@
 #include "nsString.h"
 #include "nsVariant.h"
 
-#define PIPSTRING_BUNDLE_URL "chrome://pippki/locale/pippki.properties"
-
 nsNSSDialogs::nsNSSDialogs() = default;
 
 nsNSSDialogs::~nsNSSDialogs() = default;
 
 NS_IMPL_ISUPPORTS(nsNSSDialogs, nsICertificateDialogs)
-
-nsresult nsNSSDialogs::Init() {
-  nsresult rv;
-
-  nsCOMPtr<nsIStringBundleService> service =
-      do_GetService(NS_STRINGBUNDLE_CONTRACTID, &rv);
-  if (NS_FAILED(rv)) return rv;
-
-  rv = service->CreateBundle(PIPSTRING_BUNDLE_URL,
-                             getter_AddRefs(mPIPStringBundle));
-  return rv;
-}
 
 NS_IMETHODIMP
 nsNSSDialogs::ConfirmDownloadCACert(nsIInterfaceRequestor* ctx,
@@ -147,17 +134,22 @@ nsNSSDialogs::GetPKCS12FilePassword(nsIInterfaceRequestor* ctx,
     return NS_ERROR_FAILURE;
   }
 
-  nsAutoString msg;
-  nsresult rv =
-      mPIPStringBundle->GetStringFromName("getPKCS12FilePasswordMessage", msg);
-  if (NS_FAILED(rv)) {
-    return rv;
+  nsTArray<nsCString> resIds = {"security/pippki/pippki.ftl"_ns};
+  RefPtr<mozilla::intl::Localization> l10n =
+      mozilla::intl::Localization::Create(resIds, true);
+  nsAutoCString msg;
+  mozilla::ErrorResult error;
+  l10n->FormatValueSync("pippki-get-pkcs12-password-message"_ns, {}, msg,
+                        error);
+  if (error.Failed()) {
+    return error.StealNSResult();
   }
 
   // Get the parent window for the dialog
   nsCOMPtr<mozIDOMWindowProxy> parent = do_GetInterface(ctx);
   char16_t* pwTemp = nullptr;
-  rv = promptSvc->PromptPassword(parent, nullptr, msg.get(), &pwTemp, _retval);
+  nsresult rv = promptSvc->PromptPassword(
+      parent, nullptr, NS_ConvertUTF8toUTF16(msg).get(), &pwTemp, _retval);
   if (NS_FAILED(rv)) {
     return rv;
   }

@@ -50,14 +50,13 @@ function onLoad() {
 }
 
 function process() {
-  let bundle = document.getElementById("pippki_bundle");
   let oldpwbox = document.getElementById("oldpw");
   let msgBox = document.getElementById("message");
   // If the token doesn't have a password, don't use the old password box.
   // Otherwise, do.
   if (!token.hasPassword) {
     oldpwbox.hidden = true;
-    msgBox.setAttribute("value", bundle.getString("password_not_set"));
+    document.l10n.setAttributes(msgBox, "change-password-not-set");
     msgBox.hidden = false;
     // Select first password field
     document.getElementById("pw1").focus();

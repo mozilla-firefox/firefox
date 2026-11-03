@@ -4,7 +4,7 @@
 
 "use strict";
 
-const { setText, viewCertHelper } = ChromeUtils.importESModule(
+const { viewCertHelper } = ChromeUtils.importESModule(
   "resource://gre/modules/psm/pippki.sys.mjs"
 );
 
@@ -43,27 +43,26 @@ var gCert;
 /**
  * onload() handler.
  */
-function onLoad() {
+async function onLoad() {
   gCert = window.arguments[0].QueryInterface(Ci.nsIX509Cert);
 
   document.addEventListener("dialogaccept", onDialogAccept);
   document.addEventListener("dialogcancel", onDialogCancel);
 
-  let bundle = document.getElementById("pippki_bundle");
-  let caName = gCert.commonName;
-  if (!caName.length) {
-    caName = bundle.getString("unnamedCA");
-  }
-
-  setText(
-    document,
-    "trustHeader",
-    bundle.getFormattedString("newCAMessage1", [caName])
-  );
-
   document.getElementById("viewC-button").addEventListener("command", () => {
     viewCertHelper(window, gCert, "window");
   });
+
+  let caName = gCert.commonName;
+  if (!caName.length) {
+    caName = await document.l10n.formatValue("download-cert-unnamed-ca");
+  }
+
+  let trustHeader = document.getElementById("trustHeader");
+  document.l10n.setAttributes(trustHeader, "download-cert-trust-header", {
+    caName,
+  });
+  await document.l10n.translateElements([trustHeader]);
 }
 
 /**
@@ -87,4 +86,8 @@ function onDialogCancel() {
   retVals.setPropertyAsBool("importConfirmed", false);
 }
 
-window.addEventListener("load", () => onLoad());
+window.addEventListener("load", () => {
+  onLoad().then(() => {
+    Services.obs.notifyObservers(window, "psm:download-cert-loaded");
+  });
+});

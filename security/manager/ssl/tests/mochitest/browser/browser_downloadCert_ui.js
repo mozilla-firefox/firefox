@@ -41,7 +41,7 @@ const TEST_CASES = [
  *            1. The window of the opened dialog.
  *            2. The return value nsIWritablePropertyBag2 passed to the dialog.
  */
-function openCertDownloadDialog(cert) {
+async function openCertDownloadDialog(cert) {
   let returnVals = Cc["@mozilla.org/hash-property-bag;1"].createInstance(
     Ci.nsIWritablePropertyBag2
   );
@@ -52,15 +52,11 @@ function openCertDownloadDialog(cert) {
     cert,
     returnVals
   );
-  return new Promise(resolve => {
-    win.addEventListener(
-      "load",
-      function () {
-        executeSoon(() => resolve([win, returnVals]));
-      },
-      { once: true }
-    );
-  });
+  await TestUtils.topicObserved(
+    "psm:download-cert-loaded",
+    subject => subject == win
+  );
+  return [win, returnVals];
 }
 
 add_setup(async function () {
@@ -79,13 +75,15 @@ add_setup(async function () {
 add_task(async function testTrustHeaderAndViewCertButton() {
   for (let testCase of TEST_CASES) {
     let [win] = await openCertDownloadDialog(testCase.cert);
-    let expectedTrustHeaderString =
-      `Do you want to trust \u201C${testCase.expectedDisplayString}\u201D ` +
-      "for the following purposes?";
-    Assert.equal(
-      win.document.getElementById("trustHeader").textContent,
-      expectedTrustHeaderString,
-      "Actual and expected trust header text should match for " +
+    Assert.deepEqual(
+      win.document.l10n.getAttributes(
+        win.document.getElementById("trustHeader")
+      ),
+      {
+        id: "download-cert-trust-header",
+        args: { caName: testCase.expectedDisplayString },
+      },
+      "Actual and expected trust header l10n attributes should match for " +
         `${testCase.certFilename}`
     );
 

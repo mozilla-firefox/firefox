@@ -340,54 +340,71 @@ async function securityOnLoad(uri, windowInfo, browsingContext) {
   );
 
   /* Set the Technical Detail section messages */
-  const pkiBundle = document.getElementById("pkiBundle");
-  var hdr;
-  var msg1;
-  var msg2;
+  const header = document.getElementById("security-technical-shortform");
+  const message1 = document.getElementById("security-technical-longform1");
+  const message2 = document.getElementById("security-technical-longform2");
+  const encryptionArgs = {
+    algorithm: info.encryptionAlgorithm,
+    keySize: info.encryptionStrength,
+    protocol: info.version,
+  };
 
   if (info.isBroken) {
     if (info.isMixed) {
-      hdr = pkiBundle.getString("pageInfo_MixedContent");
-      msg1 = pkiBundle.getString("pageInfo_MixedContent2");
+      document.l10n.setAttributes(header, "security-technical-mixed-content");
+      document.l10n.setAttributes(
+        message1,
+        "security-technical-mixed-content-description"
+      );
     } else {
-      hdr = pkiBundle.getFormattedString("pageInfo_BrokenEncryption", [
-        info.encryptionAlgorithm,
-        info.encryptionStrength + "",
-        info.version,
-      ]);
-      msg1 = pkiBundle.getString("pageInfo_WeakCipher");
+      document.l10n.setAttributes(
+        header,
+        "security-technical-broken-encryption",
+        encryptionArgs
+      );
+      document.l10n.setAttributes(message1, "security-technical-weak-cipher");
     }
-    msg2 = pkiBundle.getString("pageInfo_Privacy_None2");
-  } else if (info.encryptionStrength > 0) {
-    hdr = pkiBundle.getFormattedString(
-      "pageInfo_EncryptionWithBitsAndProtocol",
-      [info.encryptionAlgorithm, info.encryptionStrength + "", info.version]
+    document.l10n.setAttributes(
+      message2,
+      "security-technical-no-encryption-transit"
     );
-    msg1 = pkiBundle.getString("pageInfo_Privacy_Encrypted1");
-    msg2 = pkiBundle.getString("pageInfo_Privacy_Encrypted2");
+  } else if (info.encryptionStrength > 0) {
+    document.l10n.setAttributes(
+      header,
+      "security-technical-encrypted",
+      encryptionArgs
+    );
+    document.l10n.setAttributes(message1, "security-technical-encrypted-page");
+    document.l10n.setAttributes(
+      message2,
+      "security-technical-encrypted-description"
+    );
   } else {
-    hdr = pkiBundle.getString("pageInfo_NoEncryption");
+    document.l10n.setAttributes(header, "security-technical-no-encryption");
     if (windowInfo.hostName != null) {
-      msg1 = pkiBundle.getFormattedString("pageInfo_Privacy_None1", [
-        windowInfo.hostName,
-      ]);
+      document.l10n.setAttributes(
+        message1,
+        "security-technical-no-encryption-website",
+        { website: windowInfo.hostName }
+      );
     } else {
-      msg1 = pkiBundle.getString("pageInfo_Privacy_None4");
+      document.l10n.setAttributes(
+        message1,
+        "security-technical-no-encryption-page"
+      );
     }
-    msg2 = pkiBundle.getString("pageInfo_Privacy_None2");
+    document.l10n.setAttributes(
+      message2,
+      "security-technical-no-encryption-transit"
+    );
   }
-  setText("security-technical-shortform", hdr);
-  setText("security-technical-longform1", msg1);
-  setText("security-technical-longform2", msg2);
 
   const ctStatus = document.getElementById(
     "security-technical-certificate-transparency"
   );
-  if (info.certificateTransparency) {
+  if (info.certificateTransparency == "Compliant") {
     ctStatus.hidden = false;
-    ctStatus.value = pkiBundle.getString(
-      "pageInfo_CertificateTransparency_" + info.certificateTransparency
-    );
+    document.l10n.setAttributes(ctStatus, "security-technical-ct-compliant");
   } else {
     ctStatus.hidden = true;
   }

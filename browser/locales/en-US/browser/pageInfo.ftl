@@ -135,6 +135,36 @@ security-site-data-only = Yes, { $value } { $unit } of site data
 security-site-data-cookies-only = Yes, cookies
 security-site-data-no = No
 
+## These strings are used in the Technical Details section of the security tab
+
+security-technical-no-encryption =
+    .value = Connection Not Encrypted
+security-technical-mixed-content =
+    .value = Connection Partially Encrypted
+
+## Variables:
+##   $algorithm (string) - The encryption algorithm (e.g. "TLS_AES_128_GCM_SHA256")
+##   $keySize (number) - The size of the encryption key in bits
+##   $protocol (string) - The protocol version (e.g. "TLS 1.3")
+
+security-technical-encrypted =
+    .value = Connection Encrypted ({ $algorithm }, { $keySize } bit keys, { $protocol })
+security-technical-broken-encryption =
+    .value = Broken Encryption ({ $algorithm }, { $keySize } bit keys, { $protocol })
+
+##
+
+# Variables:
+#   $website (string) - The hostname of the website
+security-technical-no-encryption-website = The website { $website } does not support encryption for the page you are viewing.
+security-technical-no-encryption-transit = Information sent over the Internet without encryption can be seen by other people while it is in transit.
+security-technical-no-encryption-page = The page you are viewing was not encrypted before being transmitted over the Internet.
+security-technical-encrypted-page = The page you are viewing was encrypted before being transmitted over the Internet.
+security-technical-encrypted-description = Encryption makes it difficult for unauthorized people to view information traveling between computers. It is therefore unlikely that anyone read this page as it traveled across the network.
+security-technical-mixed-content-description = Parts of the page you are viewing were not encrypted before being transmitted over the Internet.
+security-technical-weak-cipher = Your connection to this website uses weak encryption and is not private. Other people can view your information or modify the website’s behavior.
+security-technical-ct-compliant = This website complies with the Certificate Transparency policy.
+
 ##
 
 image-size-unknown = Unknown
