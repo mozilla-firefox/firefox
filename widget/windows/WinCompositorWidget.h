@@ -90,7 +90,6 @@ class WinCompositorWidget : public CompositorWidget {
   mozilla::Atomic<uint32_t, MemoryOrdering::Relaxed> mTransparencyMode;
   WinCompositorWnds mCompositorWnds;
   LayoutDeviceIntSize mLastCompositorWndSize;
-
 };
 
 }  // namespace mozilla::widget

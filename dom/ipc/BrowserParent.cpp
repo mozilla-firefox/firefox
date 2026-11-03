@@ -4283,8 +4283,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvScrollForKeyboard(
 }
 
 mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingProtectedMedia(
-    const uint64_t&,
-    IsWindowSupportingProtectedMediaResolver&& aResolve) {
+    const uint64_t&, IsWindowSupportingProtectedMediaResolver&& aResolve) {
 #ifdef XP_WIN
   aResolve(true);
 #else
@@ -4298,8 +4297,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingProtectedMedia(
 }
 
 mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingWebVR(
-    const uint64_t&,
-    IsWindowSupportingWebVRResolver&& aResolve) {
+    const uint64_t&, IsWindowSupportingWebVRResolver&& aResolve) {
   aResolve(true);
 
   return IPC_OK();
