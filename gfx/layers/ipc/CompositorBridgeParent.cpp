@@ -909,7 +909,15 @@ void CompositorBridgeParent::ScheduleForcedComposition(
   auto layersId = wr::AsLayersId(aWrBridge->PipelineId());
 
   if (!aWrBridge->IsRootWebRenderBridgeParent()) {
-    EraseLayerState(layersId);
+    bool ownedByOtherBridge = WithIndirectLayerTreesLock(
+        [&](const StaticMonitorAutoLock& aProofOfLock) {
+          LayerTreeState* state =
+              GetLayerTreeStateUnderLock(layersId, aProofOfLock);
+          return state && state->mWrBridge && state->mWrBridge != aWrBridge;
+        });
+    if (!ownedByOtherBridge) {
+      EraseLayerState(layersId);
+    }
     return;
   }
 
