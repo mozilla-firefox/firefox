@@ -17,6 +17,7 @@
 #    include "mozilla/a11y/nsWinUtils.h"
 #  endif
 #endif
+#include "mozilla/AntiTrackingUtils.h"
 #include "mozilla/AppShutdown.h"
 #include "mozilla/dom/CanonicalBrowsingContext.h"
 #include "mozilla/dom/BindingIPCUtils.h"
@@ -2027,9 +2028,7 @@ NS_IMETHODIMP BrowsingContext::GetUseTrackingProtection(
   *aUseTrackingProtection = false;
 
   if (GetForceEnableTrackingProtection() ||
-      StaticPrefs::privacy_trackingprotection_enabled() ||
-      (UsePrivateBrowsing() &&
-       StaticPrefs::privacy_trackingprotection_pbmode_enabled())) {
+      AntiTrackingUtils::IsTrackingProtectionEnabled(UsePrivateBrowsing())) {
     *aUseTrackingProtection = true;
     return NS_OK;
   }

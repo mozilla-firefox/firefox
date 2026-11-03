@@ -19,6 +19,7 @@
 #include "mozilla/dom/WindowContext.h"
 #include "mozilla/net/NeckoChannelParams.h"
 #include "mozilla/PermissionManager.h"
+#include "mozilla/StaticPrefs_privacy.h"
 #include "mozIThirdPartyUtil.h"
 #include "nsGlobalWindowInner.h"
 #include "nsHttpChannel.h"
@@ -1135,6 +1136,13 @@ bool AntiTrackingUtils::IsThirdPartySocialTrackingChannel(
       do_QueryInterface(aChannel);
   return classifiedChannel &&
          classifiedChannel->IsThirdPartySocialTrackingResource();
+}
+
+/* static */
+bool AntiTrackingUtils::IsTrackingProtectionEnabled(bool aIsPrivate) {
+  return StaticPrefs::privacy_trackingprotection_enabled() ||
+         (aIsPrivate &&
+          StaticPrefs::privacy_trackingprotection_pbmode_enabled());
 }
 
 /* static */

@@ -6,6 +6,7 @@
 
 #include "nsIURI.h"
 #include "nsIEffectiveTLDService.h"
+#include "mozilla/AntiTrackingUtils.h"
 #include "mozilla/Components.h"
 #include "mozilla/ContentClassifierService.h"
 #include "mozilla/Logging.h"
@@ -78,9 +79,7 @@ nsresult ScopedPrefs::GetBoolPrefFallback(const nsIScopedPrefs::Pref aPref,
       // In general the `ScopedPrefs` implementation should stay generic.
       // However, we are inheriting the behavior of the tracking-protection pref
       // differentiate between private and non-private mode.
-      *aValue = StaticPrefs::privacy_trackingprotection_enabled() ||
-                (aIsPrivate &&
-                 StaticPrefs::privacy_trackingprotection_pbmode_enabled());
+      *aValue = AntiTrackingUtils::IsTrackingProtectionEnabled(aIsPrivate);
       break;
     case nsIScopedPrefs::PRIVACY_TRACKINGPROTECTION_CRYPTOMINING_ENABLED:
       *aValue = StaticPrefs::privacy_trackingprotection_cryptomining_enabled();

@@ -165,6 +165,10 @@ class AntiTrackingUtils final {
   // Returns false for null or non-classified channels.
   static bool IsThirdPartySocialTrackingChannel(nsIChannel* aChannel);
 
+  // Returns true if the tracking protection preferences enable blocking of
+  // tracking resources, either globally or for private browsing only.
+  static bool IsTrackingProtectionEnabled(bool aIsPrivate);
+
   // Given a window and a URI, this function first determines if the window is
   // third-party with respect to the URI. The function returns if it's true.
   // Otherwise, it will continue to check if the window is third-party.

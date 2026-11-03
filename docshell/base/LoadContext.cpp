@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "mozilla/AntiTrackingUtils.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/dom/ToJSValue.h"
@@ -43,9 +44,7 @@ LoadContext::LoadContext(OriginAttributes& aAttrs)
   // This constructor does not have a base load context, so we need to decide
   // the mUseTrackingProtection based on prefs.
   mUseTrackingProtection =
-      StaticPrefs::privacy_trackingprotection_enabled() ||
-      (UsePrivateBrowsing() &&
-       StaticPrefs::privacy_trackingprotection_pbmode_enabled());
+      AntiTrackingUtils::IsTrackingProtectionEnabled(UsePrivateBrowsing());
 }
 
 LoadContext::LoadContext(nsIPrincipal* aPrincipal,
@@ -62,9 +61,7 @@ LoadContext::LoadContext(nsIPrincipal* aPrincipal,
   if (!aOptionalBase) {
     // Fallback to prefs to determine if tracking protection is enabled.
     mUseTrackingProtection =
-        StaticPrefs::privacy_trackingprotection_enabled() ||
-        (UsePrivateBrowsing() &&
-         StaticPrefs::privacy_trackingprotection_pbmode_enabled());
+        AntiTrackingUtils::IsTrackingProtectionEnabled(UsePrivateBrowsing());
 
     return;
   }
