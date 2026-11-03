@@ -421,17 +421,9 @@ class AudioStream final {
 
   // Audio thread only
   nsresult EnsureTimeStretcherInitialized();
-  // Feed the time stretcher enough silence to fill its processing window, so
-  // that the first stretched callback consumes less extra source.
-  void PrimeTimeStretcher();
-  // Both return the number of frames written from the time stretcher.
-  uint32_t GetUnprocessed(AudioBufferWriter& aWriter);
-  uint32_t GetTimeStretched(AudioBufferWriter& aWriter);
+  void GetUnprocessed(AudioBufferWriter& aWriter);
+  void GetTimeStretched(AudioBufferWriter& aWriter);
   void UpdatePlaybackRateIfNeeded();
-  // Record a callback in the clock. |aFromStretcher| of the |aServiced| frames
-  // came out of the time stretcher.
-  void UpdateClock(uint32_t aServiced, uint32_t aUnderrun,
-                   uint32_t aFromStretcher);
 
   // Return true if audio frames are valid (correct sampling rate and valid
   // channel count) otherwise false.
@@ -491,11 +483,6 @@ class AudioStream final {
   std::atomic<bool> mPreservesPitch;
   // Audio thread only
   bool mAudioThreadChanged = false;
-  // Audio thread only. The source frames put into the time stretcher, and the
-  // media frames the clock has counted for its output, since it was created.
-  // The difference is the source it holds that the clock has not counted yet.
-  uint64_t mStretcherSourceFrames = 0;
-  double mStretcherMediaFrames = 0;
   Atomic<bool> mCallbacksStarted;
 
   // The keep-running mode. When on, a pause across a seek leaves the cubeb
