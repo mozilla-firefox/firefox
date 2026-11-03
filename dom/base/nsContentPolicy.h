@@ -7,16 +7,21 @@
 
 #include "nsCOMPtr.h"
 #include "nsCategoryCache.h"
+#include "nsIChannelEventSink.h"
 #include "nsIContentPolicy.h"
 
 /*
  * Implementation of the "@mozilla.org/layout/content-policy;1" contract.
+ *
+ * Redirects don't go through nsIContentPolicy, so this also checks them, as an
+ * nsIChannelEventSink, against the policies that apply to redirects.
  */
 
-class nsContentPolicy : public nsIContentPolicy {
+class nsContentPolicy : public nsIContentPolicy, public nsIChannelEventSink {
  public:
   NS_DECL_ISUPPORTS
   NS_DECL_NSICONTENTPOLICY
+  NS_DECL_NSICHANNELEVENTSINK
 
   nsContentPolicy();
 
