@@ -14,10 +14,31 @@ use crate::std::{
     io::ErrorKind,
     path::{Path, PathBuf},
 };
+use once_cell::sync::Lazy;
+use parser::PrefPattern;
 
-const LOCALE_PREF_KEY: &str = "intl.locale.requested";
-const TELEMETRY_ENABLED_PREF_KEY: &str = "datareporting.healthreport.uploadEnabled";
-const TELEMETRY_SERVER_PREF_KEY: &str = "toolkit.telemetry.server";
+/// Create static `PrefPattern` values (accessed through Deref).
+///
+/// This expects zero or more statements of the form
+/// ```ignore
+/// static NAME_OF_STATIC = "pref.key.string";
+/// ```
+/// This produces a `static NAME_OF_STATIC: Lazy<PrefPattern>` which searches for prefs with the key
+/// `"pref.key.string"`.
+macro_rules! pref_patterns {
+    () => {};
+    ( static $name:ident = $key:literal; $($rest:tt)* ) => {
+        static $name: Lazy<PrefPattern> =
+            Lazy::new(|| PrefPattern::new($key).unwrap());
+        pref_patterns!($($rest)*);
+    }
+}
+
+pref_patterns! {
+    static LOCALE_PREF = "intl.locale.requested";
+    static TELEMETRY_ENABLED_PREF = "datareporting.healthreport.uploadEnabled";
+    static TELEMETRY_SERVER_PREF = "toolkit.telemetry.server";
+}
 
 /// Loaded prefs values.
 #[derive(Default, Debug)]
@@ -98,15 +119,21 @@ impl Prefs {
 
         self.paths.push(prefs_file.to_owned());
 
-        if let Some(new_value) = parser::find_string_pref(&content, TELEMETRY_SERVER_PREF_KEY) {
+        if let Some(new_value) = TELEMETRY_SERVER_PREF
+            .find(&content)
+            .and_then(|v| v.into_str())
+        {
             self.telemetry_server = Some(new_value.into());
         }
 
-        if let Some(new_value) = parser::find_bool_pref(&content, TELEMETRY_ENABLED_PREF_KEY) {
+        if let Some(new_value) = TELEMETRY_ENABLED_PREF
+            .find(&content)
+            .and_then(|v| v.into_bool())
+        {
             self.telemetry_enabled = Some(new_value);
         }
 
-        if let Some(new_value) = parser::find_string_pref(&content, LOCALE_PREF_KEY) {
+        if let Some(new_value) = LOCALE_PREF.find(&content).and_then(|v| v.into_str()) {
             self.requested_locales = Some(
                 new_value
                     .split(",")
