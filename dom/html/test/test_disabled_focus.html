@@ -1,0 +1,188 @@
+<!doctype html>
+<title>Focus retention when form controls become disabled</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="/tests/SimpleTest/EventUtils.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+<body>
+<script>
+customElements.define("focusable-control", class extends HTMLElement {
+  static formAssociated = true;
+  constructor() {
+    super();
+    this.attachInternals();
+  }
+});
+
+async function updateRendering() {
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
+}
+
+add_task(async function test_disabled_focus() {
+  await SimpleTest.promiseFocus(window);
+  const controls = [
+    "button", "select", "textarea", "focusable-control",
+    "text", "password", "checkbox", "radio", "number", "range",
+  ];
+  for (const retainFocus of [false, true]) {
+    await SpecialPowers.pushPrefEnv({set: [
+      ["dom.forms.retain_focus_on_disabled.enabled", retainFocus],
+    ]});
+    for (const control of controls) {
+      for (const inherited of [false, true]) {
+        const container = document.createElement("form");
+        container.innerHTML = '<button type="button">Before</button><fieldset><legend><input></legend></fieldset><button type="button">After</button>';
+        document.body.append(container);
+        const before = container.firstElementChild;
+        const after = container.lastElementChild;
+        const fieldset = container.querySelector("fieldset");
+        const legendInput = container.querySelector("input");
+        const target = document.createElement(
+          ["button", "select", "textarea", "focusable-control"].includes(control)
+            ? control : "input"
+        );
+        if (target instanceof HTMLInputElement) {
+          target.type = control;
+        }
+        target.tabIndex = 0;
+        fieldset.append(target);
+        const disabledTarget = document.createElement("button");
+        disabledTarget.disabled = true;
+        fieldset.append(disabledTarget);
+        const disabler = inherited ? fieldset : target;
+        const description = `${control}, ${inherited ? "fieldset" : "attribute"}, pref=${retainFocus}`;
+        const events = [];
+        for (const name of ["blur", "focusout"]) {
+          target.addEventListener(name, () => events.push(name));
+        }
+        target.focus();
+        is(document.activeElement, target, `${description}: initial focus`);
+        disabler.setAttribute("disabled", "");
+        await updateRendering();
+        is(document.activeElement, retainFocus ? target : document.body,
+           `${description}: disabling ${retainFocus ? "retains" : "clears"} focus`);
+        is(events.join(","), retainFocus ? "" : "blur,focusout",
+           `${description}: disabling focus events`);
+        ok(target.matches(":disabled"), `${description}: still disabled`);
+        is(target.matches(":focus"), retainFocus, `${description}: focus state`);
+        is(fieldset.matches(":focus-within"), retainFocus,
+           `${description}: ancestor focus state`);
+        disabledTarget.focus();
+        is(document.activeElement, retainFocus ? target : document.body,
+           `${description}: cannot focus another disabled control`);
+        disabler.removeAttribute("disabled");
+        await updateRendering();
+        is(document.activeElement, retainFocus ? target : document.body,
+           `${description}: enabling does not change focus`);
+        is(events.join(","), retainFocus ? "" : "blur,focusout",
+           `${description}: enabling focus events`);
+        target.focus();
+        disabler.setAttribute("disabled", "");
+        await updateRendering();
+        synthesizeKey("KEY_Tab");
+        is(document.activeElement, after, `${description}: Tab moves past disabled controls`);
+        synthesizeKey("KEY_Tab", {shiftKey: true});
+        is(document.activeElement, legendInput,
+           `${description}: reverse Tab skips disabled controls`);
+        before.focus();
+        target.focus();
+        is(document.activeElement, before, `${description}: disabled control cannot regain focus`);
+        container.remove();
+      }
+    }
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_disabled_focus_other_invalidation() {
+  await SpecialPowers.pushPrefEnv({set: [
+    ["dom.forms.retain_focus_on_disabled.enabled", true],
+  ]});
+  for (const invalidate of [
+    target => { target.hidden = true; },
+    target => { target.style.visibility = "hidden"; },
+    target => { target.inert = true; },
+    target => { target.type = "hidden"; },
+    target => { target.remove(); },
+  ]) {
+    const target = document.createElement("input");
+    document.body.append(target);
+    target.focus();
+    target.disabled = true;
+    await updateRendering();
+    is(document.activeElement, target, "Disabled control initially retains focus");
+    invalidate(target);
+    await updateRendering();
+    is(document.activeElement, document.body, "Independent invalidation still clears disabled focus");
+    target.remove();
+  }
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_first_legend_exemption() {
+  for (const retainFocus of [false, true]) {
+    await SpecialPowers.pushPrefEnv({set: [
+      ["dom.forms.retain_focus_on_disabled.enabled", retainFocus],
+    ]});
+    const fieldset = document.createElement("fieldset");
+    fieldset.disabled = true;
+    fieldset.innerHTML = "<legend><button>Focus</button></legend>";
+    document.body.append(fieldset);
+    const target = fieldset.querySelector("button");
+    target.focus();
+    is(document.activeElement, target, "First legend control can receive focus");
+    fieldset.prepend(document.createElement("legend"));
+    await updateRendering();
+    ok(target.matches(":disabled"), "Losing first-legend exemption disables the control");
+    is(document.activeElement, retainFocus ? target : document.body,
+       `Losing first-legend exemption respects pref=${retainFocus}`);
+    fieldset.remove();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_disabled_focus_tabindex_order() {
+  await SpecialPowers.pushPrefEnv({set: [
+    ["dom.forms.retain_focus_on_disabled.enabled", true],
+  ]});
+  const container = document.createElement("div");
+  container.innerHTML =
+    '<button tabindex="1">A</button><button tabindex="3">C</button><button tabindex="2">B</button>';
+  document.body.append(container);
+  const [a, c, b] = container.children;
+  a.focus();
+  a.disabled = true;
+  await updateRendering();
+  is(document.activeElement, a, "Disabled control retains focus");
+  synthesizeKey("KEY_Tab");
+  is(document.activeElement, b, "Tab follows tabindex order from the disabled control");
+  synthesizeKey("KEY_Tab");
+  is(document.activeElement, c, "Tab continues in tabindex order");
+  container.remove();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_disabled_change_on_blur() {
+  await SpecialPowers.pushPrefEnv({set: [
+    ["dom.forms.retain_focus_on_disabled.enabled", true],
+  ]});
+  for (const tag of ["input", "textarea"]) {
+    const target = document.createElement(tag);
+    const other = document.createElement("button");
+    document.body.append(target, other);
+    let changes = 0;
+    target.addEventListener("change", () => changes++);
+    target.focus();
+    sendString("abc");
+    target.disabled = true;
+    await updateRendering();
+    is(changes, 0, `${tag}: disabling does not commit the pending edit`);
+    other.focus();
+    is(changes, 1, `${tag}: losing focus while disabled commits the edit`);
+    is(target.value, "abc", `${tag}: value kept`);
+    target.remove();
+    other.remove();
+  }
+  await SpecialPowers.popPrefEnv();
+});
+</script>

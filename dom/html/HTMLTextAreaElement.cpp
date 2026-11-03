@@ -7,6 +7,7 @@
 #include "mozAutoDocUpdate.h"
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/EventDispatcher.h"
+#include "mozilla/FocusModel.h"
 #include "mozilla/MappedDeclarationsBuilder.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/PresState.h"
@@ -148,7 +149,7 @@ bool HTMLTextAreaElement::IsHTMLFocusable(IsFocusableFlags aFlags,
   }
 
   // disabled textareas are not focusable
-  *aIsFocusable = !IsDisabled();
+  *aIsFocusable = (aFlags & IsFocusableFlags::IgnoreDisabled) || !IsDisabled();
   return false;
 }
 

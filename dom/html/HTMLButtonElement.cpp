@@ -168,7 +168,9 @@ bool HTMLButtonElement::IsHTMLFocusable(IsFocusableFlags aFlags,
           aFlags, aIsFocusable, aTabIndex)) {
     return true;
   }
-  *aIsFocusable = IsFormControlDefaultFocusable(aFlags) && !IsDisabled();
+  *aIsFocusable =
+      IsFormControlDefaultFocusable(aFlags) &&
+      ((aFlags & IsFocusableFlags::IgnoreDisabled) || !IsDisabled());
   return false;
 }
 

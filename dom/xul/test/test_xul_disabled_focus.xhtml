@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/css" href="chrome://global/skin"?>
+<?xml-stylesheet href="chrome://mochikit/content/tests/SimpleTest/test.css" type="text/css"?>
+<window title="XUL focus retention when disabled"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+<script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+<body>
+<button id="target" label="Target" tabindex="0"/>
+<button id="other" label="Other" tabindex="0" disabled="true"/>
+<script type="application/javascript">
+<![CDATA[
+
+async function updateRendering() {
+  await new Promise(requestAnimationFrame);
+  await new Promise(requestAnimationFrame);
+}
+
+add_task(async function test_xul_disabled_focus() {
+  await SimpleTest.promiseFocus(window);
+  const target = document.getElementById("target");
+  const other = document.getElementById("other");
+  for (const retainFocus of [false, true]) {
+    await SpecialPowers.pushPrefEnv({set: [
+      ["dom.forms.retain_focus_on_disabled.enabled", retainFocus],
+    ]});
+    target.disabled = false;
+    target.focus();
+    is(document.activeElement, target, `pref=${retainFocus}: initial focus`);
+    target.disabled = true;
+    await updateRendering();
+    is(document.activeElement == target, retainFocus,
+       `pref=${retainFocus}: disabling ${retainFocus ? "retains" : "clears"} focus`);
+    other.focus();
+    isnot(document.activeElement, other,
+          `pref=${retainFocus}: disabled element can't gain focus`);
+    target.blur();
+    target.focus();
+    isnot(document.activeElement, target,
+          `pref=${retainFocus}: disabled element can't regain focus`);
+    await SpecialPowers.popPrefEnv();
+  }
+  target.disabled = false;
+});
+
+]]>
+</script>
+</body>
+</window>

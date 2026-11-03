@@ -39,4 +39,6 @@ support-files = ["window_bug1686822.xhtml"]
 
 ["test_import_xul_to_content.xhtml"]
 
+["test_xul_disabled_focus.xhtml"]
+
 ["test_xul_tabindex_focus.xhtml"]

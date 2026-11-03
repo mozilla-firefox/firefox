@@ -12,6 +12,7 @@
 #include "mozilla/CycleCollectedJSContext.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventStateManager.h"
+#include "mozilla/FocusModel.h"
 #include "mozilla/MappedDeclarationsBuilder.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/PresShell.h"
@@ -1025,7 +1026,7 @@ bool HTMLSelectElement::IsHTMLFocusable(IsFocusableFlags aFlags,
     return true;
   }
 
-  *aIsFocusable = !IsDisabled();
+  *aIsFocusable = (aFlags & IsFocusableFlags::IgnoreDisabled) || !IsDisabled();
 
   return false;
 }

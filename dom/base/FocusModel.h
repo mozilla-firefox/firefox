@@ -15,6 +15,7 @@ enum class IsFocusableFlags : uint8_t {
   WithMouse = 1 << 0,
   // Whether to treat an invisible frame as not focusable
   IgnoreVisibility = 1 << 1,
+  IgnoreDisabled = 1 << 2,
 };
 
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(IsFocusableFlags);

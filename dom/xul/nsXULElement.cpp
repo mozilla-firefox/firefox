@@ -350,7 +350,7 @@ nsXULElement::XULFocusability nsXULElement::GetXULFocusability(
     // A disabled element cannot be focused and is not part of the tab order
     bool disabled;
     xulControl->GetDisabled(&disabled);
-    if (disabled) {
+    if (disabled && !(aFlags & IsFocusableFlags::IgnoreDisabled)) {
       return XULFocusability::NeverFocusable();
     }
     result.mDefaultFocusable = true;

@@ -40,6 +40,7 @@
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventForwards.h"
 #include "mozilla/EventStateManager.h"
+#include "mozilla/FocusModel.h"
 #include "mozilla/GeckoMVMContext.h"
 #include "mozilla/GlobalStyleSheetCache.h"
 #include "mozilla/IMEStateManager.h"
@@ -1398,8 +1399,15 @@ bool PresShell::NeedsFocusFixUp() const {
     }
   }
 
+  // Becoming disabled doesn't invalidate existing focus, though disabled
+  // elements still can't gain focus.
+  // https://github.com/whatwg/html/issues/13159
+  auto flags = IsFocusableFlags(0);
+  if (StaticPrefs::dom_forms_retain_focus_on_disabled_enabled()) {
+    flags |= IsFocusableFlags::IgnoreDisabled;
+  }
   nsIFrame* f = currentFocus->GetPrimaryFrame();
-  if (f && f->IsFocusable()) {
+  if (f && f->IsFocusable(flags)) {
     return false;
   }
 

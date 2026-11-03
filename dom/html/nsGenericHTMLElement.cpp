@@ -2452,7 +2452,9 @@ bool nsGenericHTMLElement::IsHTMLFocusable(IsFocusableFlags aFlags,
     disallowOverridingFocusability = false;
 
     // Just check for disabled attribute on form controls
-    disabled = IsDisabled();
+    if (!(aFlags & IsFocusableFlags::IgnoreDisabled)) {
+      disabled = IsDisabled();
+    }
     if (disabled) {
       *aTabIndex = -1;
     }

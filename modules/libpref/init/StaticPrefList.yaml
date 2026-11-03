@@ -3893,6 +3893,13 @@
   value: true
   mirror: always
 
+# Retain existing focus when an element becomes disabled.
+# https://github.com/whatwg/html/issues/13159
+- name: dom.forms.retain_focus_on_disabled.enabled
+  type: bool
+  value: false
+  mirror: always
+
 # Whether to disable only the descendants or the parent fieldset element too
 # Note that this still allows it to be selected by `:disable`.
 - name: dom.forms.fieldset_disable_only_descendants.enabled

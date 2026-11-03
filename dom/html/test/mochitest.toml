@@ -206,6 +206,8 @@ skip-if = [
 
 ["test_dir_attributes_reflection.html"]
 
+["test_disabled_focus.html"]
+
 ["test_dl_attributes_reflection.html"]
 
 ["test_document-element-inserted.html"]

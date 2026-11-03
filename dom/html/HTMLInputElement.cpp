@@ -17,6 +17,7 @@
 #include "mozilla/DebugOnly.h"
 #include "mozilla/EventDispatcher.h"
 #include "mozilla/EventStateManager.h"
+#include "mozilla/FocusModel.h"
 #include "mozilla/MappedDeclarationsBuilder.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/MouseEvents.h"
@@ -6649,7 +6650,7 @@ bool HTMLInputElement::IsHTMLFocusable(IsFocusableFlags aFlags,
     return true;
   }
 
-  if (IsDisabled()) {
+  if (!(aFlags & IsFocusableFlags::IgnoreDisabled) && IsDisabled()) {
     *aIsFocusable = false;
     return true;
   }
