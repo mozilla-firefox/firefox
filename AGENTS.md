@@ -57,9 +57,6 @@ You can find the review identifier by inspecting the commit log with:
 - **Reference a name, not a position.** This text outlives the code it describes, so cite a selector, function, class, pref or flag name; name a file without a line, and avoid positional phrasing ("the rule above X").
 - **Where a location genuinely helps, use a Searchfox permalink.** Get it from `searchfox-cli -q <term> -p <path> --permalink`, which pins the revision Searchfox has indexed. Indexing lags landing by up to a day and an unindexed revision still answers HTTP 200, so a URL built by hand from `git log` has to be verified by grepping the page for content you expect. The form is `https://searchfox.org/firefox-main/rev/<sha>/<path>#<line>`, and the anchor also takes `#169-176` or `#9,12`. The `/source/<path>` form follows tip and rots like a bare line number, so where Searchfox cannot cite the code yet, name the file and quote the lines instead.
 
-## Code Style
-- Our style guide forbids the use of emoji.
-
 ## Workflow
 - This repository moves fast. If the local checkout looks old compared to `origin/main`, suggest pulling the latest changes before going further.
 - You can run tests by using `./mach test --auto`. Once you are satisfied with the tests you run locally, ask the user if they would like you to use `mach try auto` to run tests in CI
