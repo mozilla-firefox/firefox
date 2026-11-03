@@ -116,7 +116,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         flank-config: focus/arm64-v8a.yml
         treeherder:
             symbol: focus-debug(ui-test-arm)
@@ -139,7 +139,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [autoland-only]
         flank-config: focus/arm-start-test.yml
         treeherder:
@@ -163,7 +163,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [release]
         flank-config: focus/arm-beta.yml
         treeherder:
@@ -237,7 +237,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         flank-config: fenix/arm64-v8a.yml
         treeherder:
             symbol: fenix-debug(ui-test-arm)
@@ -260,7 +260,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [release]
         flank-config: fenix/arm-beta.yml
         treeherder:
@@ -338,7 +338,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [mozilla-central-only]
         flank-config: fenix/arm-nightly-full.yml
         mapping: true
@@ -364,7 +364,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         flank-config: fenix/arm-legacy-api-tests.yml
         treeherder:
             symbol: fenix-debug(legacy-arm)
@@ -383,7 +383,7 @@ tasks:
                 - artifact: target.arm64-v8a.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         flank-config: fenix/arm-robo-test.yml
         no-test-apk: true
         treeherder:
@@ -407,7 +407,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [trunk, mozilla-beta, mozilla-release]
         flank-config: fenix/arm-tae-tests.yml
         artifact-type: memory_leaks
@@ -432,7 +432,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [trunk]
         flank-config: fenix/arm-tae-behavior-tests.yml
         treeherder:
@@ -456,7 +456,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [trunk]
         flank-config: fenix/arm-tae-interaction-tests.yml
         treeherder:
@@ -480,7 +480,7 @@ tasks:
                 - artifact: target.noarch.apk
                   extract: false
         optimization:
-            skip-unless-backstop: null
+            test-backstop: null
         run-on-projects: [trunk]
         flank-config: fenix/arm-tae-reachability-tests.yml
         treeherder:

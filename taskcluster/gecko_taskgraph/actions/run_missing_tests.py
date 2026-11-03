@@ -13,6 +13,9 @@ from .util import create_tasks, fetch_graph_and_labels
 
 logger = logging.getLogger(__name__)
 
+# Kinds outside TEST_KINDS that are skipped on mozilla-beta pushes.
+EXTRA_TEST_KINDS = ["ui-test-apk"]
+
 
 @register_callback_action(
     name="run-missing-tests",
@@ -45,7 +48,7 @@ def run_missing_tests(parameters, graph_config, input, task_group_id, task_id):
     already_run = 0
     for label in target_tasks:
         task = full_task_graph.tasks[label]
-        if task.kind not in TEST_KINDS:
+        if task.kind not in TEST_KINDS and task.kind not in EXTRA_TEST_KINDS:
             continue  # not a test
         if label in label_to_taskid:
             already_run += 1
