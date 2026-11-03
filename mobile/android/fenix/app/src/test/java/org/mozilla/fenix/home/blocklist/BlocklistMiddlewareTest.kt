@@ -479,7 +479,7 @@ class BlocklistMiddlewareTest {
     @Test
     fun `WHEN a top site is removed and should not be blocked THEN its url is not added to the blocklist`() {
         val url = "https://www.firefox.com/"
-        val topSite = TopSite.Default(id = null, title = "Firefox", url = url, createdAt = null)
+        val topSite = TopSite.DefaultPinned(id = null, title = "Firefox", url = url, createdAt = null)
 
         val updateSlot = slot<Set<String>>()
         every { mockSettings.homescreenBlocklist } returns setOf()

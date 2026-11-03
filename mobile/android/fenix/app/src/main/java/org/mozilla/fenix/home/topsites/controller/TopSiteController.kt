@@ -254,7 +254,9 @@ class DefaultTopSiteController(
 
     override fun handleSelectTopSite(topSite: TopSite, position: Int) {
         when (topSite) {
-            is TopSite.Default -> TopSites.openDefault.record(TopSites.OpenDefaultExtra(source = source.sourceName))
+            is TopSite.Default,
+            is TopSite.DefaultPinned ->
+                TopSites.openDefault.record(TopSites.OpenDefaultExtra(source = source.sourceName))
             is TopSite.Frecent -> TopSites.openFrecency.record(TopSites.OpenFrecencyExtra(source = source.sourceName))
             is TopSite.Pinned -> TopSites.openPinned.record(TopSites.OpenPinnedExtra(source = source.sourceName))
             is TopSite.Provided -> {

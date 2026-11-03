@@ -30,6 +30,23 @@ sealed class TopSite {
     ) : TopSite()
 
     /**
+     * This top site was added as a default by the application and is pinned.
+     *
+     * @property id Unique ID of this top site.
+     * @property title The title of the top site.
+     * @property url The URL of the top site.
+     * @property createdAt The optional date the top site was added.
+     * @property type The type name of the top site.
+     */
+    data class DefaultPinned(
+        override val id: Long?,
+        override val title: String?,
+        override val url: String,
+        override val createdAt: Long?,
+        override val type: String = "DEFAULT_PINNED",
+    ) : TopSite()
+
+    /**
      * This top site was pinned by an user.
      *
      * @property id Unique ID of this top site.

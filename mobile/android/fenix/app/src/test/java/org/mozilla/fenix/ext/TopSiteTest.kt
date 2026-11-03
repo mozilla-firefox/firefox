@@ -12,7 +12,7 @@ import org.mozilla.fenix.settings.SupportUtils
 class TopSiteTest {
 
     val defaultGoogleTopSite =
-        TopSite.Default(
+        TopSite.DefaultPinned(
             id = 1L,
             title = "Google",
             url = SupportUtils.GOOGLE_URL,

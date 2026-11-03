@@ -20,7 +20,7 @@ internal data class PinnedSiteEntity(
 ) {
     internal fun toTopSite(): TopSite =
         if (isDefault) {
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = id,
                 title = title,
                 url = url,
@@ -41,7 +41,7 @@ internal fun TopSite.toPinnedSite(): PinnedSiteEntity {
         id = id,
         title = title ?: "",
         url = url,
-        isDefault = this is TopSite.Default,
+        isDefault = this is TopSite.DefaultPinned,
         createdAt = createdAt ?: 0,
     )
 }

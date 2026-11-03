@@ -29,7 +29,7 @@ class TopSitesUseCasesTest {
     fun `RemoveTopSiteUseCase`() = runTest {
         val topSitesStorage: TopSitesStorage = mock()
         val topSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",
@@ -47,7 +47,7 @@ class TopSitesUseCasesTest {
     fun `UpdateTopSiteUseCase`() = runTest {
         val topSitesStorage: TopSitesStorage = mock()
         val topSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",

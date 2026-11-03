@@ -11,7 +11,7 @@ import org.mozilla.fenix.settings.SupportUtils
 fun List<TopSite>.sort(): List<TopSite> {
     val defaultGoogleTopSiteIndex =
         this.indexOfFirst {
-            it is TopSite.Default && it.url == SupportUtils.GOOGLE_URL
+            it is TopSite.DefaultPinned && it.url == SupportUtils.GOOGLE_URL
         }
 
     return if (defaultGoogleTopSiteIndex == -1) {

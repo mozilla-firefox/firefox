@@ -10346,12 +10346,13 @@ top_sites:
       type:
         type: string
         description: |
-          The type of top site. Options are: "FRECENCY", "DEFAULT",
-          "PINNED", or "PROVIDED"
+          The type of top site. Options are: "FRECENT", "DEFAULT",
+          "DEFAULT_PINNED", "PINNED", or "PROVIDED"
       source: *top_sites_source
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/14565
       - https://github.com/mozilla-mobile/fenix/issues/23526
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075027
     data_reviews:
       - https://github.com/mozilla-mobile/fenix/pull/15136
       - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
@@ -10359,6 +10360,7 @@ top_sites:
       - https://github.com/mozilla-mobile/fenix/pull/20517#pullrequestreview-718069041
       - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
       - https://github.com/mozilla-mobile/fenix/pull/23541
+      - https://phabricator.services.mozilla.com/D328679
     data_sensitivity:
       - interaction
     notification_emails:

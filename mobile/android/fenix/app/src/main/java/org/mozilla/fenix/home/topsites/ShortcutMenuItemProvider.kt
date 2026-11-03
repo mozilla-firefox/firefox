@@ -154,7 +154,7 @@ class ShortcutMenuItemProvider(
     }
 
     /** Only the shortcuts the user can add themselves count towards the limit of how many they can have. */
-    private fun TopSite.isPinned() = this is TopSite.Default || this is TopSite.Pinned
+    private fun TopSite.isPinned() = this is TopSite.DefaultPinned || this is TopSite.Pinned
 
     companion object {
         private val DEFAULT_MENU_ITEM =

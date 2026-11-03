@@ -75,16 +75,16 @@ class OnDevicePinnedSitesStorageTest {
 
         assertEquals("Mozilla", topSites[0].title)
         assertEquals("https://www.mozilla.org", topSites[0].url)
-        assertIs<TopSite.Default>(topSites[0])
+        assertIs<TopSite.DefaultPinned>(topSites[0])
         assertEquals("Firefox", topSites[1].title)
         assertEquals("https://www.firefox.com", topSites[1].url)
-        assertIs<TopSite.Default>(topSites[1])
+        assertIs<TopSite.DefaultPinned>(topSites[1])
         assertEquals("Wikipedia", topSites[2].title)
         assertEquals("https://www.wikipedia.com", topSites[2].url)
-        assertIs<TopSite.Default>(topSites[2])
+        assertIs<TopSite.DefaultPinned>(topSites[2])
         assertEquals("Pocket", topSites[3].title)
         assertEquals("https://www.getpocket.com", topSites[3].url)
-        assertIs<TopSite.Default>(topSites[3])
+        assertIs<TopSite.DefaultPinned>(topSites[3])
     }
 
     @Test
@@ -102,7 +102,7 @@ class OnDevicePinnedSitesStorageTest {
         assertIs<TopSite.Pinned>(topSites[0])
         assertEquals("Firefox", topSites[1].title)
         assertEquals("https://www.firefox.com", topSites[1].url)
-        assertIs<TopSite.Default>(topSites[1])
+        assertIs<TopSite.DefaultPinned>(topSites[1])
     }
 
     @Test
@@ -146,7 +146,7 @@ class OnDevicePinnedSitesStorageTest {
         with(topSites[1]) {
             assertEquals("Firefox", title)
             assertEquals("https://www.firefox.com", url)
-            assertIs<TopSite.Default>(this)
+            assertIs<TopSite.DefaultPinned>(this)
         }
     }
 

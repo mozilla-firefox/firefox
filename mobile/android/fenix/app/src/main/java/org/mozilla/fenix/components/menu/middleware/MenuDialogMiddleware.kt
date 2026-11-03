@@ -253,7 +253,7 @@ class MenuDialogMiddleware(
         }
 
         val numPinnedSites =
-            pinnedSiteStorage.getPinnedSites().filter { it is TopSite.Default || it is TopSite.Pinned }.size
+            pinnedSiteStorage.getPinnedSites().filter { it is TopSite.DefaultPinned || it is TopSite.Pinned }.size
 
         if (numPinnedSites >= topSitesMaxLimit) {
             materialAlertDialogBuilder

@@ -374,7 +374,7 @@ fun TopSiteItem(
                     faviconSize = itemLayout.faviconSize,
                 )
 
-                if (topSite is TopSite.Pinned || topSite is TopSite.Default) {
+                if (topSite is TopSite.Pinned || topSite is TopSite.DefaultPinned) {
                     Box(
                         modifier = Modifier.size(16.dp),
                         contentAlignment = Alignment.Center,
@@ -540,7 +540,8 @@ internal fun getMenuItems(
     onSettingsClicked: () -> Unit,
     onSponsorPrivacyClicked: () -> Unit,
 ): List<MenuItem> {
-    val isPinnedSite = topSite is TopSite.Pinned || topSite is TopSite.Default
+    val isPinnedOrDefaultSite =
+        topSite is TopSite.Pinned || topSite is TopSite.DefaultPinned || topSite is TopSite.Default
     val isProvidedSite = topSite is TopSite.Provided
     val isFrecentSite = topSite is TopSite.Frecent
     val result = mutableListOf<MenuItem>()
@@ -553,7 +554,7 @@ internal fun getMenuItems(
         )
     )
 
-    if (isPinnedSite || isFrecentSite) {
+    if (isPinnedOrDefaultSite || isFrecentSite) {
         result.add(
             MenuItem(
                 title = stringResource(id = R.string.top_sites_edit_top_site),
@@ -569,7 +570,7 @@ internal fun getMenuItems(
                 title =
                     stringResource(
                         id =
-                            if (isPinnedSite) {
+                            if (isPinnedOrDefaultSite) {
                                 R.string.remove_top_site
                             } else {
                                 R.string.delete_from_history

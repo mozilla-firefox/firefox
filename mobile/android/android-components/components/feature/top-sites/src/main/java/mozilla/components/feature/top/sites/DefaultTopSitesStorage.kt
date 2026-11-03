@@ -104,7 +104,7 @@ private constructor(
     }
 
     override suspend fun removeTopSite(topSite: TopSite) {
-        if (topSite is TopSite.Default || topSite is TopSite.Pinned) {
+        if (topSite is TopSite.DefaultPinned || topSite is TopSite.Pinned) {
             pinnedSitesStorage.removePinnedSite(topSite)
         }
 
@@ -118,7 +118,7 @@ private constructor(
     }
 
     override suspend fun updateTopSite(topSite: TopSite, title: String, url: String) {
-        if (topSite is TopSite.Default || topSite is TopSite.Pinned) {
+        if (topSite is TopSite.DefaultPinned || topSite is TopSite.Pinned) {
             pinnedSitesStorage.updatePinnedSite(topSite, title, url)
         }
 

@@ -436,7 +436,7 @@ class DefaultTopSiteControllerTest {
     @Test
     fun handleSelectGoogleDefaultTopSiteUS() = runTest {
         val topSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1L,
                 title = "Google",
                 url = SupportUtils.GOOGLE_URL,
@@ -478,7 +478,7 @@ class DefaultTopSiteControllerTest {
     @Test
     fun handleSelectGoogleDefaultTopSiteXX() = runTest {
         val topSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1L,
                 title = "Google",
                 url = SupportUtils.GOOGLE_URL,
@@ -522,7 +522,7 @@ class DefaultTopSiteControllerTest {
         assertNull(Events.performedSearch.testGetValue())
 
         val topSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1L,
                 title = "Google",
                 url = SupportUtils.GOOGLE_URL,
@@ -1014,7 +1014,7 @@ class DefaultTopSiteControllerTest {
     fun `WHEN the default Google top site is removed THEN the correct metric is recorded`() = runTest {
         val controller = spyk(createController(this))
         val topSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1L,
                 title = "Google",
                 url = SupportUtils.GOOGLE_URL,
@@ -1054,7 +1054,7 @@ class DefaultTopSiteControllerTest {
 
     @Test
     fun `WHEN the default Google top site is removed THEN it is not dispatched to be blocked`() = runTest {
-        val topSite = TopSite.Default(id = 1L, title = "Google", url = SupportUtils.GOOGLE_URL, createdAt = 0)
+        val topSite = TopSite.DefaultPinned(id = 1L, title = "Google", url = SupportUtils.GOOGLE_URL, createdAt = 0)
         coEvery { defaultTopSitesProvider.getDefaultTopSites() } returns
             listOf(
                 TopSite.Default(id = null, title = "Wikipedia", url = "https://www.wikipedia.org/", createdAt = null)

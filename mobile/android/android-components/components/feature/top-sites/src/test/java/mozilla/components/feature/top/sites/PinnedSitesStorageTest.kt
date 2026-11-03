@@ -104,7 +104,7 @@ class PinnedSitesStorageTest {
         val dao = mockDao(storage)
 
         storage.removePinnedSite(TopSite.Pinned(1, "Mozilla", "https://www.mozilla.org", 1))
-        storage.removePinnedSite(TopSite.Default(2, "Firefox", "https://www.firefox.com", 1))
+        storage.removePinnedSite(TopSite.DefaultPinned(2, "Firefox", "https://www.firefox.com", 1))
 
         verify(dao).deletePinnedSite(PinnedSiteEntity(1, "Mozilla", "https://www.mozilla.org", false, 1))
         verify(dao).deletePinnedSite(PinnedSiteEntity(2, "Firefox", "https://www.firefox.com", true, 1))

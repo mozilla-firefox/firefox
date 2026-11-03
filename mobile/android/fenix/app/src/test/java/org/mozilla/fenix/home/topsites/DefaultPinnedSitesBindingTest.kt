@@ -53,7 +53,7 @@ class DefaultPinnedSitesBindingTest {
 
     // The pinned sites storage entry of [stillPinnedLegacyDefaultPinnedSite].
     private val pinnedLegacyDefaultPinnedSite =
-        TopSite.Default(id = 1, title = "tenki.jp", url = "https://tenki.jp/", createdAt = 1)
+        TopSite.DefaultPinned(id = 1, title = "tenki.jp", url = "https://tenki.jp/", createdAt = 1)
 
     // A default top site that was never seeded as a default pinned site.
     private val newDefaultSite =

@@ -130,7 +130,7 @@ class DefaultTopSitesStorageTest {
         verify(historyStorage).deleteVisitsFor(pinnedSite.url)
 
         val defaultSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 3,
                 title = "Wikipedia",
                 url = "https://wikipedia.com",
@@ -152,7 +152,7 @@ class DefaultTopSitesStorageTest {
             )
 
         val defaultSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",
@@ -198,7 +198,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSite =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
@@ -258,7 +258,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSite =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
@@ -383,7 +383,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSite =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
@@ -539,7 +539,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSite =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
@@ -694,7 +694,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSite =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
@@ -799,7 +799,7 @@ class DefaultTopSitesStorageTest {
             )
 
         val defaultSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",
@@ -926,7 +926,7 @@ class DefaultTopSitesStorageTest {
             )
 
         val defaultSiteFirefox =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",
@@ -1008,7 +1008,7 @@ class DefaultTopSitesStorageTest {
             )
 
         val defaultSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",
@@ -1093,7 +1093,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSiteFirefox =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
@@ -1199,7 +1199,7 @@ class DefaultTopSitesStorageTest {
             )
 
         val defaultSite =
-            TopSite.Default(
+            TopSite.DefaultPinned(
                 id = 1,
                 title = "Firefox",
                 url = "https://firefox.com",
@@ -1286,7 +1286,7 @@ class DefaultTopSitesStorageTest {
                 )
 
             val defaultSiteFirefox =
-                TopSite.Default(
+                TopSite.DefaultPinned(
                     id = 1,
                     title = "Firefox",
                     url = "https://firefox.com",
