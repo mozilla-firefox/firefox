@@ -365,7 +365,7 @@ Calculated try_task_config.json:
 
 ## Adding a New Category
 
-It's very easy to add a new category if needed, and you can do so by modifying the {searchfox}`PerfParser categories attribute here <tools/tryselect/selectors/perf.py#179>`. The following is an example of a complex category that gives a good idea of what you have available:
+It's very easy to add a new category if needed, and you can do so by modifying the `categories` property of `ClassificationProvider` in {searchfox}`tools/tryselect/selectors/perfselector/classification.py`. The following is an example of a complex category that gives a good idea of what you have available:
 
 ```
 "Resource Usage": {
