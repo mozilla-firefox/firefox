@@ -303,6 +303,7 @@ def setup(app):
         sphinx_js.parallel_write_safe = True
     app.add_css_file("custom_theme.css")
     app.add_js_file("scrollable_regions.js")
+    app.add_js_file("mermaid_fixups.js")
     app.connect("html-page-context", install_sphinx_design)
     app.connect("html-page-context", add_github_source_link)
     app.connect("doctree-read", reattach_nested_rst_nodes)
