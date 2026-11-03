@@ -1,0 +1,117 @@
+diff --git a/mod_pywebsocket/request_handler.py b/mod_pywebsocket/request_handler.py
+--- a/mod_pywebsocket/request_handler.py
++++ b/mod_pywebsocket/request_handler.py
+@@ -29,9 +29,8 @@
+ """Request Handler and Request/Connection classes for standalone server.
+ """
+ 
+-import os
++import http.server
+ 
+-from six.moves import CGIHTTPServer
+ from six.moves import http_client
+ 
+ from mod_pywebsocket import common
+@@ -146,8 +145,8 @@ class _StandaloneRequest(object):
+         return self._use_tls
+ 
+ 
+-class WebSocketRequestHandler(CGIHTTPServer.CGIHTTPRequestHandler):
+-    """CGIHTTPRequestHandler specialized for WebSocket."""
++class WebSocketRequestHandler(http.server.SimpleHTTPRequestHandler):
++    """SimpleHTTPRequestHandler specialized for WebSocket."""
+ 
+     # Use httplib.HTTPMessage instead of mimetools.Message.
+     MessageClass = http_client.HTTPMessage
+@@ -166,7 +165,7 @@ class WebSocketRequestHandler(CGIHTTPSer
+         # Call superclass's setup to prepare rfile, wfile, etc. See setup
+         # definition on the root class SocketServer.StreamRequestHandler to
+         # understand what this does.
+-        CGIHTTPServer.CGIHTTPRequestHandler.setup(self)
++        http.server.SimpleHTTPRequestHandler.setup(self)
+ 
+         self.rfile = memorizingfile.MemorizingFile(
+             self.rfile, max_memorized_lines=_MAX_MEMORIZED_LINES)
+@@ -183,8 +182,8 @@ class WebSocketRequestHandler(CGIHTTPSer
+             self.is_executable = self._options.is_executable_method
+ 
+         # This actually calls BaseRequestHandler.__init__.
+-        CGIHTTPServer.CGIHTTPRequestHandler.__init__(self, request,
+-                                                     client_address, server)
++        http.server.SimpleHTTPRequestHandler.__init__(self, request,
++                                                      client_address, server)
+ 
+     def parse_request(self):
+         """Override BaseHTTPServer.BaseHTTPRequestHandler.parse_request.
+@@ -204,7 +203,7 @@ class WebSocketRequestHandler(CGIHTTPSer
+         # handling (self.path, self.command, self.requestline, etc. See also
+         # how _StandaloneRequest's members are implemented using these
+         # attributes).
+-        if not CGIHTTPServer.CGIHTTPRequestHandler.parse_request(self):
++        if not http.server.SimpleHTTPRequestHandler.parse_request(self):
+             return False
+ 
+         if self._options.use_basic_auth:
+@@ -292,28 +291,5 @@ class WebSocketRequestHandler(CGIHTTPSer
+         self._logger.warning('%s - %s', self.address_string(),
+                              args[0] % args[1:])
+ 
+-    def is_cgi(self):
+-        """Test whether self.path corresponds to a CGI script.
+-
+-        Add extra check that self.path doesn't contains ..
+-        Also check if the file is a executable file or not.
+-        If the file is not executable, it is handled as static file or dir
+-        rather than a CGI script.
+-        """
+-
+-        if CGIHTTPServer.CGIHTTPRequestHandler.is_cgi(self):
+-            if '..' in self.path:
+-                return False
+-            # strip query parameter from request path
+-            resource_name = self.path.split('?', 2)[0]
+-            # convert resource_name into real path name in filesystem.
+-            scriptfile = self.translate_path(resource_name)
+-            if not os.path.isfile(scriptfile):
+-                return False
+-            if not self.is_executable(scriptfile):
+-                return False
+-            return True
+-        return False
+-
+ 
+ # vi:sts=4 sw=4 et
+diff --git a/mod_pywebsocket/standalone.py b/mod_pywebsocket/standalone.py
+--- a/mod_pywebsocket/standalone.py
++++ b/mod_pywebsocket/standalone.py
+@@ -164,7 +164,6 @@ import sys
+ import traceback
+ 
+ from mod_pywebsocket import common
+-from mod_pywebsocket import util
+ from mod_pywebsocket import server_util
+ from mod_pywebsocket.websocket_server import WebSocketServer
+ 
+@@ -427,20 +426,8 @@ def _main(args=None):
+     options.cgi_directories = []
+     options.is_executable_method = None
+     if options.cgi_paths:
+-        options.cgi_directories = options.cgi_paths.split(',')
+-        if sys.platform in ('cygwin', 'win32'):
+-            cygwin_path = None
+-            # For Win32 Python, it is expected that CYGWIN_PATH
+-            # is set to a directory of cygwin binaries.
+-            # For example, websocket_server.py in Chromium sets CYGWIN_PATH to
+-            # full path of third_party/cygwin/bin.
+-            if 'CYGWIN_PATH' in os.environ:
+-                cygwin_path = os.environ['CYGWIN_PATH']
+-
+-            def __check_script(scriptpath):
+-                return util.get_script_interp(scriptpath, cygwin_path)
+-
+-            options.is_executable_method = __check_script
++        logging.critical('CGI is not supported')
++        sys.exit(1)
+ 
+     if options.use_tls:
+         logging.debug('Using ssl module')
