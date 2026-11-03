@@ -431,16 +431,6 @@ features:
         value:
           enabled: true
 
-  homescreen-edge-to-edge-background:
-    description: >
-      Feature that sets an edge to edge background on the Home Screen if the user hasn't selected
-      a custom wallpaper
-    variables:
-      enabled:
-        description: Enables the feature
-        type: Boolean
-        default: true
-
   remote-tab-management:
     description: >
       Features that let users manage tabs on other devices that are

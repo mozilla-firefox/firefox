@@ -150,15 +150,9 @@ data class Wallpaper(
             val textColor = settings.currentWallpaperTextColor
             val cardColorLight = settings.currentWallpaperCardColorLight
             val cardColorDark = settings.currentWallpaperCardColorDark
-            return if (name == EDGE_TO_EDGE && settings.enableHomepageEdgeToEdgeBackgroundFeature) {
+            return if (name == EDGE_TO_EDGE) {
                 EdgeToEdge
-            } else if (
-                name.isNotEmpty() &&
-                    name != EDGE_TO_EDGE &&
-                    textColor != 0L &&
-                    cardColorLight != 0L &&
-                    cardColorDark != 0L
-            ) {
+            } else if (name.isNotEmpty() && textColor != 0L && cardColorLight != 0L && cardColorDark != 0L) {
                 Wallpaper(
                     name = name,
                     textColor = textColor,

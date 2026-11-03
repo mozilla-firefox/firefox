@@ -160,12 +160,7 @@ class WallpapersUseCases(
             appStore.dispatch(AppAction.WallpaperAction.UpdateAvailableWallpapers(defaultIncluded))
         }
 
-        private val defaultWallpapers: List<Wallpaper> =
-            if (settings.enableHomepageEdgeToEdgeBackgroundFeature) {
-                listOf(Wallpaper.EdgeToEdge, Wallpaper.Default)
-            } else {
-                listOf(Wallpaper.Default)
-            }
+        private val defaultWallpapers: List<Wallpaper> = listOf(Wallpaper.EdgeToEdge, Wallpaper.Default)
 
         private fun Wallpaper.isExpired(): Boolean =
             when (this) {

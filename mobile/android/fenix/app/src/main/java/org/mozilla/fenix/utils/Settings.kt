@@ -322,10 +322,6 @@ class Settings(
     private val homescreenSections: Map<HomeScreenSection, Boolean>
         get() = FxNimbus.features.homescreen.value().sectionsEnabled
 
-    /** Indicates whether or not the homepage should use edge to edge background */
-    val enableHomepageEdgeToEdgeBackgroundFeature: Boolean
-        get() = FxNimbus.features.homescreenEdgeToEdgeBackground.value().enabled
-
     var numberOfAppLaunches by
         intPreference(
             appContext.getPreferenceKey(R.string.pref_key_times_app_opened),
@@ -572,12 +568,7 @@ class Settings(
     var currentWallpaperName by
         stringPreference(
             appContext.getPreferenceKey(R.string.pref_key_current_wallpaper),
-            default =
-                if (enableHomepageEdgeToEdgeBackgroundFeature) {
-                    Wallpaper.EdgeToEdge.name
-                } else {
-                    Wallpaper.Default.name
-                },
+            default = Wallpaper.EdgeToEdge.name,
         )
 
     /**
