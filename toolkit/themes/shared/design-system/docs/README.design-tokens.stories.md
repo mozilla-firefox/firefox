@@ -107,6 +107,19 @@ You can run the tests locally using the following command:
 $ ./mach npm test --prefix=toolkit/themes/shared/design-system
 ```
 
+The same tests run in CI as `node(design-tokens)`. They compare every CSS file
+the build writes against the checked-in copy, including the component
+`*.tokens.css` files next to their `*.tokens.json`. They don't run the
+`build-figma-nova` step, so they can't catch a stale or pruned
+`*.nova.tokens.json`; only the `./mach buildtokens && git status --short` check
+described under "Overriding tokens" does. For the same reason, build with
+`./mach buildtokens` rather than `npm run build`, which skips the
+`build-figma-nova` step that `./mach buildtokens` runs first.
+
+The CI task only runs when a file under `toolkit/themes/shared/design-system/`
+changes, so a patch that edits only component token files elsewhere has to run
+the tests locally.
+
 ## JSON format deep dive
 
 Style Dictionary works by ingesting JSON files with tokens data and performing various platform-specific transformations to output token files formatted for different languages. The library has certain quirks and limitations that we had to take into consideration when coming up with a JSON format for representing our tokens. The following is a bit of a "how to" guide for reading and adding to [`src/tokens`](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/src/tokens) for anyone who needs to consume our tokens or add new tokens.
