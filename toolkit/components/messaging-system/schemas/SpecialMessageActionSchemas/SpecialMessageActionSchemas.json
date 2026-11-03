@@ -224,6 +224,33 @@
           "properties": {
             "type": {
               "type": "string",
+              "enum": ["SUBMIT_SMARTWINDOW_PROMPT"]
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "prompt": {
+                  "type": "string",
+                  "description": "Request sent to the Smart Window sidebar chat."
+                },
+                "source": {
+                  "type": "string",
+                  "description": "Identifies the surface that sent the prompt, recorded as submit_type on chat telemetry and how_initiated on AI Tab telemetry. Defaults to \"fxms\"."
+                }
+              },
+              "required": ["prompt"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["type", "data"],
+          "additionalProperties": false,
+          "description": "Sends a prompt to the Smart Window sidebar chat, opening the sidebar if needed"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "enum": ["OPEN_PROTECTION_REPORT"]
             }
           },

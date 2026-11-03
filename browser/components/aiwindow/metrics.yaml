@@ -60,8 +60,9 @@ smart_window:
       submit_type: &submit_type
         type: string
         description: >
-          How the request was submitted: button, enter, follow-up, menu, resume,
-          retry, shortcuts, starter, or suggestion
+          How the request was submitted: button, enter, follow-up, fxms,
+          menu, resume, retry, shortcuts, starter, or suggestion. Messaging
+          surfaces may supply their own value instead of fxms
       tabs:
         type: quantity
         unit: count
@@ -3557,8 +3558,8 @@ smart_window:
       how_initiated:
         type: string
         description: >
-          How the generation was requested: tab_list, tab_group, chat, or
-          chat_followup
+          How the generation was requested: tab_list, tab_group, fxms,
+          chat, or chat_followup
       raw_content_len: &aitab_raw_content_len
         type: quantity
         unit: characters

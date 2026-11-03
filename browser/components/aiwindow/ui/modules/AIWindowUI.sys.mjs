@@ -730,6 +730,32 @@ export const AIWindowUI = {
   },
 
   /**
+   * Sends a request to the sidebar chat, opening the sidebar on the selected
+   * tab's conversation first if it is closed.
+   *
+   * @param {Window} win
+   * @param {string} text
+   * @param {object} options
+   * @param {string} options.submitType - How the request was made, for
+   *   telemetry.
+   * @param {string} [options.aitabSource] - Where an AI Tab page was requested
+   *   from, for telemetry.
+   */
+  async submitToSidebar(win, text, { submitType, aitabSource }) {
+    if (!this.isSidebarOpen(win)) {
+      await this.openSidebar(
+        win,
+        AIWindow.getActiveConversation(win) ?? undefined
+      );
+    }
+    this._getSidebarAiWindow(win)?.submitChatMessage({
+      text,
+      submitType,
+      aitabSource,
+    });
+  },
+
+  /**
    * Resolves the ai-window instance relevant to a dispatched event,
    * routed by mode. Sidebar and fullpage are mutually exclusive for
    * a given tab — an AIWINDOW_URL tab always closes the sidebar.

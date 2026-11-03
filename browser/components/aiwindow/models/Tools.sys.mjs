@@ -1595,7 +1595,7 @@ async function persistAITabPage(
  * @param {ChatConversation} conversation
  * @param {boolean} isEdit - Whether the call modifies an existing page, which
  *   the tab menus never ask for.
- * @returns {"tab_list"|"tab_group"|"chat"|"chat_followup"}
+ * @returns {"tab_list"|"tab_group"|"fxms"|"chat"|"chat_followup"}
  */
 function getAITabInitiator(conversation, isEdit) {
   if (!isEdit && conversation.aitabSource) {

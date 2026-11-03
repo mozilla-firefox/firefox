@@ -118,4 +118,6 @@ run-if = [
 
 ["browser_sma_submit_onboarding_opt_out_ping.js"]
 
+["browser_sma_submit_smartwindow_prompt.js"]
+
 ["browser_sma_summarize_page.js"]

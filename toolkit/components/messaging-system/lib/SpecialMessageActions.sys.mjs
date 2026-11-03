@@ -1109,6 +1109,14 @@ export const SpecialMessageActions = {
       case "OPEN_SMARTWINDOW_MONITOR_CREATE":
         lazy.AIWindowUI.showMonitorCreateForm(window);
         break;
+      case "SUBMIT_SMARTWINDOW_PROMPT": {
+        const { prompt, source = "fxms" } = action.data;
+        await lazy.AIWindowUI.submitToSidebar(window, prompt, {
+          submitType: source,
+          aitabSource: source,
+        });
+        break;
+      }
       case "OPEN_PROTECTION_PANEL": {
         let { gProtectionsHandler } = window;
         gProtectionsHandler.showProtectionsPopup({});

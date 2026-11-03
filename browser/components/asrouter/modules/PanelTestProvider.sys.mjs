@@ -3777,6 +3777,163 @@ const MESSAGES = () => [
       lifetime: 3,
     },
   },
+  {
+    id: "SMARTWINDOW_AITAB_SPLITVIEW_TEST",
+    template: "feature_callout",
+    groups: ["cfr", "smart-window-message"],
+    content: {
+      id: "SMARTWINDOW_AITAB_SPLITVIEW_TEST",
+      template: "multistage",
+      backdrop: "transparent",
+      transitions: false,
+      disableHistoryUpdates: true,
+      screens: [
+        {
+          id: "SMARTWINDOW_AITAB_SPLITVIEW_TEST_SCREEN",
+          force_hide_steps_indicator: true,
+          anchors: [
+            {
+              selector:
+                "#ai-window-box:not([collapsed]) #ai-window-browser::%document%ai-window::%shadow%#smartbar-wrapper",
+              panel_position: {
+                anchor_attachment: "topcenter",
+                callout_attachment: "bottomcenter",
+              },
+            },
+            {
+              selector: "#smartwindow-ask-button",
+              panel_position: {
+                anchor_attachment: "bottomcenter",
+                callout_attachment: "topright",
+              },
+            },
+          ],
+          content: {
+            position: "callout",
+            title: { raw: "Compare pages side by side" },
+            subtitle: {
+              raw: "Firefox can turn the pages you're looking into one page with a side-by-side table you can come back to. Use @ and find the pages you'd like to include.",
+            },
+            primary_button: {
+              label: { raw: "Try Now" },
+              action: {
+                type: "SUBMIT_SMARTWINDOW_PROMPT",
+                data: {
+                  prompt:
+                    "Compare the pages in my split view side by side in a table and put it in a page",
+                },
+                dismiss: true,
+              },
+            },
+            secondary_button: {
+              label: { raw: "Later" },
+              action: { dismiss: true },
+            },
+            dismiss_button: {
+              action: {
+                type: "BLOCK_MESSAGE",
+                data: { id: "SMARTWINDOW_AITAB_SPLITVIEW_TEST" },
+                dismiss: true,
+              },
+            },
+          },
+        },
+      ],
+    },
+    trigger: {
+      id: "splitViewUsed",
+    },
+    targeting: "isAIWindow && !activeNotifications",
+    frequency: {
+      lifetime: 3,
+      custom: [{ period: 604800000, cap: 1 }],
+    },
+  },
+  {
+    id: "SMARTWINDOW_AITAB_RECIPES_TEST",
+    template: "feature_callout",
+    groups: ["cfr", "smart-window-message"],
+    content: {
+      id: "SMARTWINDOW_AITAB_RECIPES_TEST",
+      template: "multistage",
+      backdrop: "transparent",
+      transitions: false,
+      disableHistoryUpdates: true,
+      screens: [
+        {
+          id: "SMARTWINDOW_AITAB_RECIPES_TEST_SCREEN",
+          force_hide_steps_indicator: true,
+          anchors: [
+            {
+              selector:
+                "#ai-window-box:not([collapsed]) #ai-window-browser::%document%ai-window::%shadow%#smartbar-wrapper",
+              panel_position: {
+                anchor_attachment: "topcenter",
+                callout_attachment: "bottomcenter",
+              },
+            },
+            {
+              selector: "#smartwindow-ask-button",
+              panel_position: {
+                anchor_attachment: "bottomcenter",
+                callout_attachment: "topright",
+              },
+            },
+          ],
+          content: {
+            position: "callout",
+            title: { raw: "Turn recipes into one shopping list" },
+            subtitle: {
+              raw: "Firefox can pull the ingredients from your recipe tabs into one page for easy access.",
+            },
+            primary_button: {
+              label: { raw: "Try Now" },
+              action: {
+                type: "SUBMIT_SMARTWINDOW_PROMPT",
+                data: {
+                  prompt:
+                    "Collect ingredients from recipes in my open tabs and put them in a page",
+                },
+                dismiss: true,
+              },
+            },
+            secondary_button: {
+              label: { raw: "Later" },
+              action: { dismiss: true },
+            },
+            dismiss_button: {
+              action: {
+                type: "BLOCK_MESSAGE",
+                data: { id: "SMARTWINDOW_AITAB_RECIPES_TEST" },
+                dismiss: true,
+              },
+            },
+          },
+        },
+      ],
+    },
+    trigger: {
+      id: "openURL",
+      patterns: [
+        "*://www.allrecipes.com/recipe/*",
+        "*://www.foodnetwork.com/recipes/*",
+        "*://cooking.nytimes.com/recipes/*",
+        "*://www.seriouseats.com/*-recipe-*",
+        "*://www.simplyrecipes.com/*-recipe-*",
+        "*://www.bonappetit.com/recipe/*",
+        "*://www.epicurious.com/recipes/food/views/*",
+        "*://www.budgetbytes.com/*",
+        "*://www.ricardocuisine.com/en/recipes/*",
+        "*://chatelaine.com/recipe/*",
+      ],
+      regexPatterns: ["^https?://[^?#]*recipe"],
+    },
+    targeting: "isAIWindow && !activeNotifications",
+    frequency: {
+      lifetime: 3,
+      custom: [{ period: 604800000, cap: 1 }],
+    },
+  },
 ];
 
 export const PanelTestProvider = {

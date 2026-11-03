@@ -874,7 +874,8 @@ export class AITab {
    * @param {string} [options.modifyInstructions] - What to change about it.
    *   Cut to MAX_INSTRUCTION_CHARS.
    * @param {string} [options.howInitiated] - How the generation was requested,
-   *   for telemetry: tab_list, tab_group, chat, chat_followup or refresh.
+   *   for telemetry: tab_list, tab_group, fxms, chat, chat_followup or
+   *   refresh.
    * @param {AbortSignal} [options.signal] - Cancels the generation. Checked at
    *   every await boundary here and in #generateStructuredSurface, and passed to
    *   the page extractions so they can be torn down early.

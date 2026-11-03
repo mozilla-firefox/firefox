@@ -130,8 +130,8 @@ export class ChatConversation extends Conversation {
 
   /**
    * Transient (not persisted): where the most recent user submission asked
-   * for an AI Tab page from (tab_list or tab_group), or null when it was typed
-   * in the chat. Reported by AI Tab telemetry.
+   * for an AI Tab page from (tab_list, tab_group or fxms), or null when it
+   * was typed in the chat. Reported by AI Tab telemetry.
    *
    * @type {?string}
    */

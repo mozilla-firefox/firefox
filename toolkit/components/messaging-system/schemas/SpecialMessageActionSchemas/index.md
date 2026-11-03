@@ -219,6 +219,24 @@ Opens the Smart Window Monitor toolbar panel straight to the create form.
 
 * args: (none)
 
+### `SUBMIT_SMARTWINDOW_PROMPT`
+
+Sends a prompt to the Smart Window sidebar chat, as if the user had typed it
+there. If the sidebar is closed, it is opened on the selected tab's
+conversation first.
+
+* args:
+```ts
+{
+  // Prompt to send, e.g. "Collect ingredients from recipes in my open tabs
+  // and put them in a page".
+  prompt: string;
+  // Recorded as submit_type on chat telemetry and how_initiated on AI Tab
+  // telemetry. Defaults to "fxms".
+  source?: string;
+}
+```
+
 ### `DISABLE_STP_DOORHANGERS`
 
 Disables all Social Tracking Protection messages

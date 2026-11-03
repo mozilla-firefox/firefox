@@ -2240,7 +2240,7 @@ export class AIWindow extends MozLitElement {
    * @param {object} [options.assistantToolUIData] - Tool UI attached to the
    *   assistant message so it renders alongside the streamed response.
    * @param {string} [options.aitabSource] - Where an AI Tab page was requested
-   *   from (tab_list or tab_group), for telemetry.
+   *   from (tab_list, tab_group or fxms), for telemetry.
    */
   submitChatMessage({
     text,
