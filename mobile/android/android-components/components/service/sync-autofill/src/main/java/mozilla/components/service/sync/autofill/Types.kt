@@ -33,6 +33,7 @@ internal fun UpdatableCreditCardFields.into(): mozilla.appservices.autofill.Upda
     return mozilla.appservices.autofill.UpdatableCreditCardFields(
         ccName = this.billingName,
         ccNumber = this.cardNumber,
+        ccCvv = this.cardCvv,
         ccExpMonth = this.expiryMonth,
         ccExpYear = this.expiryYear,
         ccType = this.cardType,
@@ -74,5 +75,6 @@ internal fun mozilla.appservices.autofill.CreditCard.into(): CreditCard {
         timeLastUsed = this.timeLastUsed,
         timeLastModified = this.timeLastModified,
         timesUsed = this.timesUsed,
+        cardCvv = this.ccCvv,
     )
 }

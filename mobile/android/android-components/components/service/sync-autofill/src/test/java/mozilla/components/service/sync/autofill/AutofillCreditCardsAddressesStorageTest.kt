@@ -199,6 +199,74 @@ class AutofillCreditCardsAddressesStorageTest {
     }
 
     @Test
+    fun `GIVEN a credit card added without a security code WHEN it is read THEN the security code is null`() = runTest {
+        val creditCard = storage.addCreditCard(newCreditCardFields())
+
+        assertNull(creditCard.cardCvv)
+        assertNull(storage.getCreditCard(creditCard.guid)!!.cardCvv)
+    }
+
+    @Test
+    fun `GIVEN a credit card added with a security code WHEN it is read THEN the security code is returned`() =
+        runTest {
+            val creditCard = storage.addCreditCard(newCreditCardFields(cardCvv = "123"))
+
+            assertEquals("123", creditCard.cardCvv)
+            assertEquals("123", storage.getCreditCard(creditCard.guid)!!.cardCvv)
+            assertEquals("123", storage.getAllCreditCards().single().cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a stored security code WHEN the credit card is updated without one THEN the security code is kept`() =
+        runTest {
+            val creditCard = storage.addCreditCard(newCreditCardFields(cardCvv = "123"))
+
+            storage.updateCreditCard(creditCard.guid, updatableCreditCardFields(billingName = "Bob Jones"))
+
+            val updatedCreditCard = storage.getCreditCard(creditCard.guid)!!
+            assertEquals("Bob Jones", updatedCreditCard.billingName)
+            assertEquals("123", updatedCreditCard.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a stored security code WHEN the credit card is updated with a new one THEN the security code is replaced`() =
+        runTest {
+            val creditCard = storage.addCreditCard(newCreditCardFields(cardCvv = "123"))
+
+            storage.updateCreditCard(creditCard.guid, updatableCreditCardFields(cardCvv = "456"))
+
+            assertEquals("456", storage.getCreditCard(creditCard.guid)!!.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a stored security code WHEN the credit card is updated with an empty one THEN the security code is removed`() =
+        runTest {
+            val creditCard = storage.addCreditCard(newCreditCardFields(cardCvv = "123"))
+
+            storage.updateCreditCard(creditCard.guid, updatableCreditCardFields(cardCvv = ""))
+
+            assertNull(storage.getCreditCard(creditCard.guid)!!.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN no stored security code WHEN the credit card is updated with one THEN the security code is stored`() =
+        runTest {
+            val creditCard = storage.addCreditCard(newCreditCardFields())
+
+            storage.updateCreditCard(creditCard.guid, updatableCreditCardFields(cardCvv = "123"))
+
+            assertEquals("123", storage.getCreditCard(creditCard.guid)!!.cardCvv)
+        }
+
+    @Test
+    fun `GIVEN a non-existent credit card guid WHEN updateCreditCard is called THEN nothing is stored`() = runTest {
+        storage.updateCreditCard("guid", updatableCreditCardFields())
+
+        assertNull(storage.getCreditCard("guid"))
+        assertEquals(0, storage.countAllCreditCards())
+    }
+
+    @Test
     fun `delete credit card`() = runTest {
         val creditCardFields =
             NewCreditCardFields(
@@ -412,4 +480,24 @@ class AutofillCreditCardsAddressesStorageTest {
 
         verify(storageSpy).conn
     }
+
+    private fun newCreditCardFields(cardCvv: String? = null) =
+        NewCreditCardFields(
+            billingName = "Jon Doe",
+            cardNumber = "4111111111111111",
+            expiryMonth = 12,
+            expiryYear = 2028,
+            cardType = "visa",
+            cardCvv = cardCvv,
+        )
+
+    private fun updatableCreditCardFields(billingName: String = "Jon Doe", cardCvv: String? = null) =
+        UpdatableCreditCardFields(
+            billingName = billingName,
+            cardNumber = "4111111111111111",
+            expiryMonth = 12,
+            expiryYear = 2028,
+            cardType = "visa",
+            cardCvv = cardCvv,
+        )
 }

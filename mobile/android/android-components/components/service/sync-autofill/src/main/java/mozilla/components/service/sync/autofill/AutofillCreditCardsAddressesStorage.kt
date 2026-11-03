@@ -89,6 +89,7 @@ class AutofillCreditCardsAddressesStorage(
                     expiryMonth = creditCardFields.expiryMonth,
                     expiryYear = creditCardFields.expiryYear,
                     cardType = creditCardFields.cardType,
+                    cardCvv = creditCardFields.cardCvv,
                 )
 
             getStorage().addCreditCard(updatableCreditCardFields.into()).into()

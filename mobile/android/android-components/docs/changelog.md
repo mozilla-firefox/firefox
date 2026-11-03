@@ -22,6 +22,10 @@ permalink: /changelog/
 * **feature-top-sites**
     * **Breaking change**: Renamed `totalSites` to `targetSitesCount` in `TopSitesConfig` and `TopSitesStorage.getTopSites`, since it is the number of top sites to fill up to rather than a limit. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
     * **Behavior change**: `DefaultTopSitesStorage.getTopSites` now returns all the pinned sites, even beyond `targetSitesCount`. The provided, frecent and default top sites still only fill the slots left within `targetSitesCount`, so the returned list can be longer than `targetSitesCount`. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
+* **concept-storage**
+    * Added `cardCvv`, the credit card security code, to `CreditCard`, `NewCreditCardFields` and `UpdatableCreditCardFields`. When `UpdatableCreditCardFields.cardCvv` is null, `CreditCardsAddressesStorage.updateCreditCard` keeps the stored security code, and an empty string removes it. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
+* **service-sync-autofill**
+    * `AutofillCreditCardsAddressesStorage` stores and returns the credit card security code. `updateCreditCard` no longer removes a stored security code that the caller did not set. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
 
 # 160.0
 * **concept-engine**
