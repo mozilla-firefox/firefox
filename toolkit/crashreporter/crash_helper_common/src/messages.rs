@@ -94,6 +94,7 @@ pub enum Kind {
 trait BytesMutExtensions {
     fn put_usize_ne(&mut self, n: usize);
     fn put_pid_ne(&mut self, pid: Pid);
+    fn put_vec(&mut self, vec: &[u8]);
     #[cfg(target_os = "windows")]
     fn put_context(&mut self, contextref: &CONTEXT);
     #[cfg(target_os = "windows")]
@@ -113,6 +114,11 @@ impl BytesMutExtensions for BytesMut {
         self.put_u32_ne(pid);
         #[cfg(not(target_os = "windows"))]
         self.put_i32_ne(pid);
+    }
+
+    fn put_vec(&mut self, vec: &[u8]) {
+        self.put_usize_ne(vec.len());
+        self.put_slice(vec);
     }
 
     #[cfg(target_os = "windows")]
@@ -140,7 +146,7 @@ impl BytesMutExtensions for BytesMut {
 trait BytesExtensions {
     fn try_get_usize_ne(&mut self) -> Result<usize, TryGetError>;
     fn try_get_pid_ne(&mut self) -> Result<Pid, TryGetError>;
-    fn try_get_vec(&mut self, len: usize) -> Result<Vec<u8>, TryGetError>;
+    fn try_get_vec(&mut self) -> Result<Vec<u8>, TryGetError>;
     #[cfg(target_os = "windows")]
     fn try_get_context(&mut self) -> Result<CONTEXT, TryGetError>;
     #[cfg(target_os = "windows")]
@@ -162,15 +168,17 @@ impl BytesExtensions for Bytes {
         return self.try_get_i32_ne();
     }
 
-    fn try_get_vec(&mut self, len: usize) -> Result<Vec<u8>, TryGetError> {
-        let mut buffer = vec![0u8; len];
-        self.try_copy_to_slice(&mut buffer)?;
-        Ok(buffer)
+    fn try_get_vec(&mut self) -> Result<Vec<u8>, TryGetError> {
+        let len = self.try_get_usize_ne()?;
+        let mut vec = vec![0u8; len];
+        self.try_copy_to_slice(vec.as_mut_slice())?;
+        Ok(vec)
     }
 
     #[cfg(target_os = "windows")]
     fn try_get_context(&mut self) -> Result<CONTEXT, TryGetError> {
-        let buffer = self.try_get_vec(size_of::<CONTEXT>())?;
+        let mut buffer = vec![0u8; size_of::<CONTEXT>()];
+        self.try_copy_to_slice(buffer.as_mut_slice())?;
         // SAFETY: The `CONTEXT` structure has no padding, so it can be
         // populated by copying over its contents from a slice of bytes.
         // Unrwapping the result of the slice `try_into()` will also never
@@ -266,7 +274,7 @@ impl Message for SetCrashReportPath {
     }
 
     fn payload_size(&self) -> usize {
-        let path_len = self.path.clone().serialize().len();
+        let path_len = self.path.bytes_len();
         size_of::<usize>().checked_add(path_len).unwrap()
     }
 
@@ -278,8 +286,7 @@ impl Message for SetCrashReportPath {
         let header = Header::encode(Self::kind(), self.payload_size());
         let mut payload = BytesMut::with_capacity(self.payload_size());
         let path = self.path.serialize();
-        payload.put_usize_ne(path.len());
-        payload.put(path);
+        payload.put_vec(&path);
 
         (header, payload.freeze(), vec![])
     }
@@ -291,12 +298,11 @@ impl Message for SetCrashReportPath {
 
         let mut data = Bytes::from(data);
 
-        let path_len = data.try_get_usize_ne()?;
-        let path = data.try_get_vec(path_len)?;
+        let path = data.try_get_vec()?;
         let path = <OsString as BreakpadString>::deserialize(path)
             .map_err(|_| MessageError::InvalidData)?;
 
-        Ok(SetCrashReportPath { path })
+        Ok(Self { path })
     }
 }
 
@@ -448,7 +454,7 @@ impl Message for MinidumpReply {
     }
 
     fn payload_size(&self) -> usize {
-        let path_len = self.path.clone().serialize().len();
+        let path_len = self.path.bytes_len();
         (size_of::<usize>() * 2)
             .checked_add(path_len)
             .and_then(|l| {
@@ -475,10 +481,8 @@ impl Message for MinidumpReply {
             .as_ref()
             .map_or(Vec::new(), |error| Vec::from(error.as_bytes()));
 
-        payload.put_usize_ne(path_bytes.len());
-        payload.put_usize_ne(error_bytes.len());
-        payload.put(path_bytes);
-        payload.put(error_bytes.as_slice());
+        payload.put_vec(&path_bytes);
+        payload.put_vec(&error_bytes);
 
         (header, payload.freeze(), vec![])
     }
@@ -489,17 +493,16 @@ impl Message for MinidumpReply {
         }
 
         let mut data = Bytes::from(data);
-        let path_len = data.try_get_usize_ne()?;
-        let error_len = data.try_get_usize_ne()?;
 
-        let path = data.try_get_vec(path_len)?;
+        let path = data.try_get_vec()?;
         let path = <OsString as BreakpadString>::deserialize(path)
             .map_err(|_| MessageError::InvalidData)?;
 
-        let error = if error_len > 0 {
-            Some(CString::new(data.try_get_vec(error_len)?)?)
-        } else {
+        let error = data.try_get_vec()?;
+        let error = if error.is_empty() {
             None
+        } else {
+            Some(CString::new(error)?)
         };
 
         Ok(Self::new(path, error))

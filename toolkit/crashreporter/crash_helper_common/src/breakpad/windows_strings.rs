@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-use bytes::Bytes;
 use std::{
     alloc::{alloc, dealloc, Layout},
     ffi::OsString,
@@ -14,9 +13,8 @@ use crate::{messages::MessageError, BreakpadChar, BreakpadString};
 
 // BreakpadString trait implementation for Windows native UTF-16 strings
 impl BreakpadString for OsString {
-    fn serialize(self) -> Bytes {
-        let bytes: Bytes = self.encode_wide().flat_map(|c| c.to_ne_bytes()).collect();
-        bytes
+    fn serialize(self) -> Vec<u8> {
+        self.encode_wide().flat_map(|c| c.to_ne_bytes()).collect()
     }
 
     fn deserialize(bytes: Vec<u8>) -> Result<OsString, MessageError> {
@@ -32,6 +30,10 @@ impl BreakpadString for OsString {
             .collect();
 
         Ok(OsString::from_wide(&wchars))
+    }
+
+    fn bytes_len(&self) -> usize {
+        self.len() * size_of::<u16>()
     }
 
     fn len(&self) -> usize {
