@@ -59,7 +59,10 @@ def main(args=sys.argv[1:]):
 
     # ensure we have at least one valid test to run
     if len(raptor_test_list) == 0:
-        LOG.critical(f"test '{args.test}' could not be found for {args.app}")
+        LOG.critical(
+            f"test '{args.test}' could not be found for {args.app}. "
+            "For a list of tests run: ./mach raptor --print-tests"
+        )
         sys.exit(1)
 
     LOG.info("raptor tests scheduled to run:")
