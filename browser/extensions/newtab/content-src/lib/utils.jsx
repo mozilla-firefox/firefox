@@ -342,7 +342,7 @@ function useConfetti(count = 80, spread = Math.PI / 3) {
  * moz-panel-list moves the submenu into shadow DOM, so React synthetic events
  * don't reach the inner <panel-item> elements; we listen on the submenu element
  * directly and resolve the clicked item across the shadow boundary via
- * composedPath() and its data-size attribute (or the one datasetKey names).
+ * composedPath() and its data-size attribute.
  *
  * A ref callback is required because several widgets gate their whole render on
  * async data and only mount the submenu once that data loads. The ref callback
@@ -352,10 +352,9 @@ function useConfetti(count = 80, spread = Math.PI / 3) {
  * @function useSizeSubmenu
  * @param {function} onChangeSize - Called with the selected size string when a
  *   submenu item is clicked.
- * @param {string} [datasetKey] - The dataset key holding each item's value.
  * @returns {function} A ref callback for the submenu <panel-list> element.
  */
-function useSizeSubmenu(onChangeSize, datasetKey = "size") {
+function useSizeSubmenu(onChangeSize) {
   const onChangeSizeRef = useRef(onChangeSize);
   const cleanupRef = useRef(null);
 
@@ -363,24 +362,21 @@ function useSizeSubmenu(onChangeSize, datasetKey = "size") {
     onChangeSizeRef.current = onChangeSize;
   }, [onChangeSize]);
 
-  return useCallback(
-    el => {
-      cleanupRef.current?.();
-      cleanupRef.current = null;
-      if (!el) {
-        return;
+  return useCallback(el => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    if (!el) {
+      return;
+    }
+    const listener = e => {
+      const item = e.composedPath().find(node => node.dataset?.size);
+      if (item) {
+        onChangeSizeRef.current(item.dataset.size);
       }
-      const listener = e => {
-        const item = e.composedPath().find(node => node.dataset?.[datasetKey]);
-        if (item) {
-          onChangeSizeRef.current(item.dataset[datasetKey]);
-        }
-      };
-      el.addEventListener("click", listener);
-      cleanupRef.current = () => el.removeEventListener("click", listener);
-    },
-    [datasetKey]
-  );
+    };
+    el.addEventListener("click", listener);
+    cleanupRef.current = () => el.removeEventListener("click", listener);
+  }, []);
 }
 
 // Biggest units first, so the loop returns the coarsest one that fits.

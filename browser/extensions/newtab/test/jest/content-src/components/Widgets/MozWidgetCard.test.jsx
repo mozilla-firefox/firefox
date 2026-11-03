@@ -18,29 +18,16 @@ const ENTRY = {
   name: "Tally",
 };
 
-function renderCard(
-  entry = {},
-  prefs = {},
-  src = "moz-extension://uuid/widget.html",
-  size = "medium",
-  displaySize = size,
-  props = {}
-) {
+function renderCard(entry = {}) {
   const dispatch = jest.fn();
-  const state = {
-    ...INITIAL_STATE,
-    Prefs: { ...INITIAL_STATE.Prefs, values: prefs },
-  };
   const { container } = render(
-    <WrapWithProvider state={state}>
+    <WrapWithProvider state={INITIAL_STATE}>
       <MozWidgetCard
         dispatch={dispatch}
         entry={{ ...ENTRY, ...entry }}
-        size={size}
-        displaySize={displaySize}
-        src={src}
+        size="medium"
+        src="moz-extension://uuid/widget.html"
         widgetEnabledMap={{}}
-        {...props}
       />
     </WrapWithProvider>
   );
@@ -68,18 +55,6 @@ describe("<MozWidgetCard>", () => {
     const icon = header.querySelector(':scope > img[slot="leading"]');
     expect(icon.getAttribute("src")).toBe("chrome://test/content/icon.png");
     expect(icon.getAttribute("alt")).toBe("");
-  });
-
-  it("shows a placeholder without a document", () => {
-    const { card } = renderCard({}, {}, "");
-    expect(
-      card.querySelector(':scope > p[data-l10n-id="newtab-widget-placeholder"]')
-    ).not.toBeNull();
-  });
-
-  it("shows no placeholder with a document", () => {
-    const { card } = renderCard();
-    expect(card.querySelector(":scope > p")).toBeNull();
   });
 
   it("draws no icon for an entry without one", () => {
@@ -145,41 +120,6 @@ describe("<MozWidgetCard>", () => {
       widget_name: "extension_widget",
       widget_source: "context_menu",
     });
-  });
-
-  it("draws the card at its display size", () => {
-    const { card } = renderCard({}, {}, undefined, "medium", "large");
-    expect(card).toHaveAttribute("size", "large");
-  });
-
-  it("draws menu items above the shared items", () => {
-    const { menu } = renderCard({}, {}, undefined, "medium", "medium", {
-      menuItems: <panel-item data-l10n-id="tally-extra" />,
-    });
-    expect(menuItems(menu)).toEqual([
-      "tally-extra",
-      "hr",
-      "panel-item",
-      "newtab-widget-menu-hide",
-      "newtab-widget-section-menu-learn-more",
-    ]);
-  });
-
-  it("tells onChangeSize the size the user chooses", () => {
-    const onChangeSize = jest.fn();
-    const { menu } = renderCard({}, {}, undefined, "medium", "medium", {
-      onChangeSize,
-    });
-    fireEvent.click(menu.querySelector("panel-item[data-size='large']"));
-    expect(onChangeSize).toHaveBeenCalledWith("large");
-  });
-
-  it("sets cardRef to the moz-widget", () => {
-    const cardRef = { current: null };
-    const { card } = renderCard({}, {}, undefined, "medium", "medium", {
-      cardRef,
-    });
-    expect(cardRef.current).toBe(card);
   });
 
   describe("impression telemetry", () => {

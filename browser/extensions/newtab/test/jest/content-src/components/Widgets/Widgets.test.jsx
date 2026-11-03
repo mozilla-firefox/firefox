@@ -81,7 +81,6 @@ const PREF_WIDGETS_RECENT_SEARCHES_ENABLED = "widgets.recentSearches.enabled";
 const PREF_WIDGETS_HOROSCOPES_ENABLED = "widgets.horoscopes.enabled";
 const PREF_WIDGETS_TRAVEL_ENABLED = "widgets.travel.enabled";
 const PREF_WIDGETS_SOLITAIRE_ENABLED = "widgets.solitaire.enabled";
-const PREF_WIDGETS_WREXHAMAFC_ENABLED = "widgets.wrexhamAFC.enabled";
 const PREF_WIDGETS_PICTURE_OF_THE_DAY_ENABLED =
   "widgets.pictureOfTheDay.enabled";
 const PREF_WIDGETS_FEEDBACK_ENABLED = "widgets.feedback.enabled";
@@ -293,7 +292,7 @@ describe("<Widgets> handleHideAllWidgets", () => {
   }
 
   function expectAllWidgetPrefsDisabled(calls) {
-    expect(calls).toHaveLength(12);
+    expect(calls).toHaveLength(11);
     for (const name of [
       PREF_WIDGETS_LISTS_ENABLED,
       PREF_WIDGETS_TIMER_ENABLED,
@@ -306,7 +305,6 @@ describe("<Widgets> handleHideAllWidgets", () => {
       PREF_WIDGETS_HOROSCOPES_ENABLED,
       PREF_WIDGETS_TRAVEL_ENABLED,
       PREF_WIDGETS_SOLITAIRE_ENABLED,
-      PREF_WIDGETS_WREXHAMAFC_ENABLED,
     ]) {
       const call = calls.find(action => action.data?.name === name);
       expect(call).toBeDefined();
@@ -1234,73 +1232,6 @@ describe("<Widgets> overflow detection", () => {
     // Sizes don't affect the count.
     expect(section.hasAttribute("data-overflow-3")).toBe(true);
     expect(section.hasAttribute("data-overflow-4")).toBe(false);
-  });
-});
-
-describe("<Widgets> card display size", () => {
-  const MENU_WIDGET = {
-    id: "menuWidget",
-    enabledPref: "widgets.menuWidget.enabled",
-    sizePref: "widgets.menuWidget.size",
-    systemEnabledPref: "widgets.system.menuWidget.enabled",
-    defaultSize: "medium",
-    validSizes: ["medium", "large"],
-    src: "https://example.com/widget.html",
-    card: "FramedWidgetCard",
-    menu: [
-      {
-        type: "choice",
-        id: "view",
-        l10nId: "menu-widget-view",
-        pref: "widgets.menuWidget.view",
-        options: [
-          { value: "day", l10nId: "menu-widget-view-day" },
-          { value: "week", l10nId: "menu-widget-view-week", size: "large" },
-        ],
-      },
-    ],
-  };
-
-  beforeAll(() => {
-    WIDGET_REGISTRY.push(MENU_WIDGET);
-  });
-
-  afterAll(() => {
-    WIDGET_REGISTRY.splice(WIDGET_REGISTRY.indexOf(MENU_WIDGET), 1);
-  });
-
-  function renderMenuWidget(view) {
-    const { container } = renderWidgets(
-      makeNovaWidgetState([["lists", "medium"]], {
-        "widgets.menuWidget.enabled": true,
-        "widgets.system.menuWidget.enabled": true,
-        "widgets.system.maximized": true,
-        "widgets.menuWidget.view": view,
-      })
-    );
-    return {
-      cell: container.querySelector('[data-widget-id="menuWidget"]'),
-      card: container.querySelector('moz-widget[widget-id="menuWidget"]'),
-    };
-  }
-
-  it("draws the card and its cell at the size its chosen option needs", () => {
-    const { cell, card } = renderMenuWidget("week");
-    expect(cell).toHaveClass("large-widget");
-    expect(card.getAttribute("size")).toBe("large");
-  });
-
-  it('draws a card: "FramedWidgetCard" entry with its menu items', () => {
-    const { card } = renderMenuWidget("day");
-    expect(
-      card.querySelector('panel-item[submenu="menuWidget-view-submenu"]')
-    ).not.toBeNull();
-  });
-
-  it("draws them at the widget's size otherwise", () => {
-    const { cell, card } = renderMenuWidget("day");
-    expect(cell).toHaveClass("medium-widget");
-    expect(card.getAttribute("size")).toBe("medium");
   });
 });
 

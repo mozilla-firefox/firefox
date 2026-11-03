@@ -109,14 +109,6 @@ const WIDGETS = [
     preference: "widgets.solitaire.enabled",
     widgetSize: "medium",
   },
-  {
-    id: "wrexhamAFC",
-    l10nId: "newtab-custom-widget-wrexhamafc",
-    source: "WIDGET_WREXHAMAFC",
-    widget_name: "wrexhamafc",
-    preference: "widgets.wrexhamAFC.enabled",
-    widgetSize: "medium",
-  },
 ];
 
 // The minimum entry the panel renders from; the registry helpers tolerate the
@@ -146,15 +138,13 @@ const PANEL_LABELS = {
   "newtab-custom-widget-timer-toggle": "Timer",
   "newtab-custom-widget-travel-toggle": "Travel",
   "newtab-custom-widget-weather-toggle": "Weather",
-  "newtab-custom-widget-wrexhamafc": "Wrexham AFC",
   "newtab-custom-widget-fixture-toggle": "Fixture widget",
 };
 
 // The German, Greek and Japanese labels are Firefox's own translations, apart
 // from the fixture widget's, the Japanese Search label, and the Horoscopes,
 // Travel and Solitaire labels, which have no translations yet. The Finance fixtures reuse the Stocks
-// translations as stand-ins until the renamed message is translated. Wrexham AFC
-// is a preview string, so it is English in every locale.
+// translations as stand-ins until the renamed message is translated.
 // Übersicht sorts before Uhr only under locale-aware collation; a code point
 // comparison would put it after Wetter.
 const GERMAN_PANEL_LABELS = {
@@ -171,11 +161,9 @@ const GERMAN_PANEL_LABELS = {
   "newtab-custom-widget-fixture-toggle": "Übersicht",
   "newtab-custom-widget-clock-toggle": "Uhr",
   "newtab-custom-widget-weather-toggle": "Wetter",
-  "newtab-custom-widget-wrexhamafc": "Wrexham AFC",
 };
 
 const GREEK_PANEL_LABELS = {
-  "newtab-custom-widget-wrexhamafc": "Wrexham AFC",
   "newtab-custom-widget-search-toggle": "Αναζήτηση",
   "newtab-custom-widget-timer-toggle": "Αντίστροφη μέτρηση",
   "newtab-custom-widget-privacy-toggle": "Απόρρητο",
@@ -194,7 +182,6 @@ const GREEK_PANEL_LABELS = {
 // collation; the kanji follow radical and stroke order.
 const JAPANESE_PANEL_LABELS = {
   "newtab-custom-widget-lists-toggle": "ToDo リスト",
-  "newtab-custom-widget-wrexhamafc": "Wrexham AFC",
   "newtab-custom-widget-crossword-toggle": "クロスワードパズル",
   "newtab-custom-widget-solitaire-toggle": "ソリティア",
   "newtab-custom-widget-timer-toggle": "タイマー",
@@ -222,7 +209,6 @@ const EN_US_ORDER = [
   "focusTimer",
   "travel",
   "weather",
-  "wrexhamAFC",
 ];
 
 // "Finance" sorts before "Fixture widget".
@@ -240,7 +226,6 @@ const EN_US_ORDER_WITH_FIXTURE = [
   "focusTimer",
   "travel",
   "weather",
-  "wrexhamAFC",
 ];
 
 const GERMAN_ORDER = [
@@ -257,11 +242,9 @@ const GERMAN_ORDER = [
   "fixtureWidget",
   "clocks",
   "weather",
-  "wrexhamAFC",
 ];
 
 const GREEK_ORDER = [
-  "wrexhamAFC",
   "recentSearches",
   "focusTimer",
   "privacy",
@@ -278,7 +261,6 @@ const GREEK_ORDER = [
 
 const JAPANESE_ORDER = [
   "lists",
-  "wrexhamAFC",
   "crossword",
   "solitaire",
   "focusTimer",
@@ -307,7 +289,6 @@ const TIMER_ID_SORT_ORDER = [
   "solitaire",
   "travel",
   "weather",
-  "wrexhamAFC",
 ];
 
 // The order when every widget sorts under its own id.
@@ -324,7 +305,6 @@ const ID_ORDER = [
   "stocks",
   "travel",
   "weather",
-  "wrexhamAFC",
 ];
 
 describe("<WidgetsManagementPanel>", () => {
@@ -723,7 +703,7 @@ describe("<WidgetsManagementPanel>", () => {
       expect(toggleIds(container)).toEqual(
         GREEK_ORDER.map(id => `${id}-toggle`)
       );
-      expect(toggleIds(container).indexOf("weather-toggle")).toBe(5);
+      expect(toggleIds(container).indexOf("weather-toggle")).toBe(4);
     });
 
     it("orders the toggles by Japanese label, Latin before kana before kanji", async () => {
@@ -752,7 +732,6 @@ describe("<WidgetsManagementPanel>", () => {
         "focusTimer-toggle",
         "travel-toggle",
         "weather-toggle",
-        "wrexhamAFC-toggle",
       ]);
     });
 

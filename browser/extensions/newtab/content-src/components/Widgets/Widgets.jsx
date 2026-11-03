@@ -30,7 +30,6 @@ import {
   isWidgetAddable,
   isWidgetEnabled,
   resolveWidgetSize,
-  resolveWidgetDisplaySize,
   resolveWidgetOrder,
   resolveWidgetHasSidebar,
   resolveWidgetSrc,
@@ -49,10 +48,7 @@ import {
   SPACE_IDS,
   WIDGET_PLACEMENTS,
 } from "common/PageLayoutVariants.mjs";
-import {
-  WIDGET_CARD_COMPONENTS,
-  WIDGET_ROW_COMPONENTS,
-} from "./WidgetsComponentRegistry.jsx";
+import { WIDGET_ROW_COMPONENTS } from "./WidgetsComponentRegistry.jsx";
 import { WidgetWrapper } from "./WidgetWrapper";
 import { MozWidgetCard } from "./MozWidgetCard";
 // @experiment(remove) { bug 2069496 }
@@ -896,19 +892,10 @@ function Widgets({ widgetIds, placement }) {
                 if (novaEnabled) {
                   const Component = WIDGET_ROW_COMPONENTS[id];
                   const entry = widgets.find(w => w.id === id);
-                  const Card =
-                    WIDGET_CARD_COMPONENTS[entry?.card] ?? MozWidgetCard;
                   if (!widgetEnabledMap[id]) {
                     return null;
                   }
                   const size = entry ? resolveWidgetSize(entry, prefs) : null;
-                  const displaySize = entry
-                    ? resolveWidgetDisplaySize(
-                        entry,
-                        prefs,
-                        widgetsMayBeMaximized
-                      )
-                    : null;
                   const renderIdx = enabledWidgetIds.indexOf(id);
                   const hiddenAttrs = {
                     "data-hidden-1": hiddenAtCols[1].has(renderIdx)
@@ -928,7 +915,7 @@ function Widgets({ widgetIds, placement }) {
                       : undefined,
                   };
                   const wrapperClassName = [
-                    displaySize && `${displaySize}-widget`,
+                    size && `${size}-widget`,
                     "widget-draggable",
                   ]
                     .filter(Boolean)
@@ -953,11 +940,10 @@ function Widgets({ widgetIds, placement }) {
                             widgetEnabledMap={widgetEnabledMap}
                           />
                         ) : (
-                          <Card
+                          <MozWidgetCard
                             dispatch={dispatch}
                             entry={entry}
                             size={size}
-                            displaySize={displaySize}
                             src={resolveWidgetSrc(entry, prefs)}
                             widgetEnabledMap={widgetEnabledMap}
                           />
