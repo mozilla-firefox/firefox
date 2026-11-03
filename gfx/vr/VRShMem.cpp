@@ -72,9 +72,9 @@ VRShMem::VRShMem(volatile VRExternalShmem* aShmem, bool aRequiresMutex)
 // VRShMem instance.
 volatile VRExternalShmem* VRShMem::GetExternalShmem() const {
 #if defined(XP_MACOSX)
-  MOZ_ASSERT(mShmemFD == 0);
+  MOZ_RELEASE_ASSERT(mShmemFD == 0);
 #elif defined(XP_WIN)
-  MOZ_ASSERT(mShmemFile == nullptr);
+  MOZ_RELEASE_ASSERT(mShmemFile == nullptr);
 #endif
   return mExternalShmem;
 }
@@ -106,7 +106,7 @@ bool VRShMem::IsCreatedOnSharedMemory() const {
 // Callers/Processes to CreateShMem should followup with CloseShMem
 void VRShMem::CreateShMem(bool aCreateOnSharedMemory) {
   if (HasExternalShmem()) {
-    MOZ_ASSERT(mIsSharedExternalShmem && !IsCreatedOnSharedMemory());
+    MOZ_RELEASE_ASSERT(mIsSharedExternalShmem && !IsCreatedOnSharedMemory());
     return;
   }
 #if defined(XP_WIN)
@@ -137,7 +137,7 @@ void VRShMem::CreateShMem(bool aCreateOnSharedMemory) {
   // and replaces the other VRManager when enabled.
   // If the VR process is not enabled, create an in-process VRService.
   if (!aCreateOnSharedMemory) {
-    MOZ_ASSERT(mExternalShmem == nullptr);
+    MOZ_RELEASE_ASSERT(mExternalShmem == nullptr);
     // If the VR process is disabled, attempt to create a
     // VR service within the current process on the heap
     mExternalShmem = new VRExternalShmem();
@@ -146,7 +146,7 @@ void VRShMem::CreateShMem(bool aCreateOnSharedMemory) {
   }
 #endif
 
-  MOZ_ASSERT(aCreateOnSharedMemory);
+  MOZ_RELEASE_ASSERT(aCreateOnSharedMemory);
 
 #if defined(XP_MACOSX)
   if (mShmemFD == 0) {
@@ -182,7 +182,7 @@ void VRShMem::CreateShMem(bool aCreateOnSharedMemory) {
         CreateFileMappingA(INVALID_HANDLE_VALUE, nullptr, PAGE_READWRITE, 0,
                            sizeof(VRExternalShmem), kShmemName);
     MOZ_ASSERT(GetLastError() == 0 || GetLastError() == ERROR_ALREADY_EXISTS);
-    MOZ_ASSERT(mShmemFile);
+    MOZ_RELEASE_ASSERT(mShmemFile);
     if (mShmemFile == nullptr) {
       // TODO - Implement logging (Bug 1558912)
       CloseShMem();
@@ -258,7 +258,7 @@ void VRShMem::ClearShMem() {
 void VRShMem::CloseShMem() {
 #if !defined(MOZ_WIDGET_ANDROID)
   if (!IsCreatedOnSharedMemory()) {
-    MOZ_ASSERT(!mIsSharedExternalShmem);
+    MOZ_RELEASE_ASSERT(!mIsSharedExternalShmem);
     if (mExternalShmem) {
       delete mExternalShmem;
       mExternalShmem = nullptr;
@@ -347,7 +347,7 @@ bool VRShMem::JoinShMem() {
   // TODO - Implement logging (Bug 1558912)
   mShmemFile = targetHandle;
   if (!mExternalShmem) {
-    MOZ_ASSERT(mExternalShmem);
+    MOZ_RELEASE_ASSERT(mExternalShmem);
     return false;
   }
 #else
@@ -568,7 +568,7 @@ void VRShMem::PullSystemState(
         aControllerState,
     bool& aEnumerationCompleted,
     const std::function<bool()>& aWaitCondition /* = nullptr */) {
-  MOZ_ASSERT(mExternalShmem);
+  MOZ_RELEASE_ASSERT(mExternalShmem);
   if (!mExternalShmem) {
     return;
   }

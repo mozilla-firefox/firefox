@@ -26,7 +26,7 @@ VRThread::~VRThread() { Shutdown(); }
 void VRThread::Start() {
   if (!mThread) {
     nsresult rv = NS_NewNamedThread(mName, getter_AddRefs(mThread));
-    MOZ_ASSERT(mThread);
+    MOZ_RELEASE_ASSERT(mThread);
 
     if (NS_FAILED(rv)) {
       MOZ_ASSERT(false, "Failed to create a vr thread.");
@@ -70,8 +70,8 @@ void VRThread::PostTask(already_AddRefed<Runnable> aTask) {
 
 void VRThread::PostDelayedTask(already_AddRefed<Runnable> aTask,
                                uint32_t aTime) {
-  MOZ_ASSERT(mStarted, "Must call Start() before posting tasks.");
-  MOZ_ASSERT(mThread);
+  MOZ_RELEASE_ASSERT(mStarted, "Must call Start() before posting tasks.");
+  MOZ_RELEASE_ASSERT(mThread);
   mLastActiveTime = TimeStamp::Now();
 
   if (!aTime) {

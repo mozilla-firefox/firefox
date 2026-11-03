@@ -16,7 +16,7 @@ namespace gfx {
 class WaitForMutex {
  public:
   explicit WaitForMutex(HANDLE handle) : mHandle(handle), mStatus(false) {
-    MOZ_ASSERT(mHandle);
+    MOZ_RELEASE_ASSERT(mHandle);
 
     DWORD dwWaitResult;
     dwWaitResult = WaitForSingleObject(mHandle,    // handle to mutex
