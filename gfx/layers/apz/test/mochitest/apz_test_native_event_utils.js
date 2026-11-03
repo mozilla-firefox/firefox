@@ -1817,9 +1817,10 @@ function getPanHandler() {
 }
 
 // Lazily get `NativePanHandler` to avoid an exception where we don't support
-// native pan events (e.g. Android).
-if (!window.hasOwnProperty("NativePanHandler")) {
-  Object.defineProperty(window, "NativePanHandler", {
+// native pan events (e.g. Android). Define it on `this`, not `window`, so that
+// browser-chrome tests get a getter bound to their own test-scope.
+if (!this.hasOwnProperty("NativePanHandler")) {
+  Object.defineProperty(this, "NativePanHandler", {
     get() {
       return getPanHandler();
     },
