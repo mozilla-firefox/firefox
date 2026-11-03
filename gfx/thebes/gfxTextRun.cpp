@@ -2116,8 +2116,7 @@ bool gfxFontGroup::FamilyFace::EqualsUserFont(
   gfxFontEntry* fe = FontEntry();
   // if there's a font, the entry is the underlying platform font
   if (mFontCreated) {
-    gfxFontEntry* pfe = aUserFont->GetPlatformFontEntry();
-    if (pfe == fe) {
+    if (aUserFont->PlatformFontEntryEquals(fe)) {
       return true;
     }
   } else if (fe == aUserFont) {

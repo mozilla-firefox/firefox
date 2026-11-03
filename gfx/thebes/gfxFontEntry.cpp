@@ -1653,7 +1653,7 @@ bool gfxFontFamily::ContainsFace(gfxFontEntry* aFontEntry) {
     if (mAvailableFonts[i] && mAvailableFonts[i]->mIsUserFontContainer) {
       gfxUserFontEntry* ufe =
           static_cast<gfxUserFontEntry*>(mAvailableFonts[i].get());
-      if (ufe->GetPlatformFontEntry() == aFontEntry) {
+      if (ufe->PlatformFontEntryEquals(aFontEntry)) {
         return true;
       }
     }
