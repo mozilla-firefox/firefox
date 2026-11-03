@@ -160,6 +160,7 @@ add_setup(async () => {
         "browser.newtabpage.activity-stream.discoverystream.endpoints",
         "https://example.com",
       ],
+      [WIDGETS_PREF, false],
     ],
   });
 
