@@ -3604,6 +3604,8 @@
     <string name="protection_panel_privacy_and_security_settings_2">Privacy Settings</string>
     <!-- Title text for the protection panel permissions section. -->
     <string name="protection_panel_permissions_title">Permissions</string>
+    <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+    <string name="certificate_details_panel_secure_connection_title">Secure connection</string>
     <!-- Text for displaying the total number of trackers blocked in the trackers blocked panel.
         %1$d is a placeholder for the number of trackers blocked. -->
     <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">

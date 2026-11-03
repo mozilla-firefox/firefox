@@ -87,7 +87,7 @@ internal fun ProtectionPanelHeader(
 }
 
 @Composable
-private fun ProtectionPanelIcon(
+internal fun ProtectionPanelIcon(
     url: String,
     icon: Bitmap?,
 ) {
