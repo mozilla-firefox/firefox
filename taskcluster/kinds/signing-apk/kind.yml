@@ -15,9 +15,6 @@ transforms:
 kind-dependencies:
     - build-apk
 
-task-defaults:
-    run-on-repo-type: [hg]
-
 tasks:
     sign-apk:
         description: Sign Android APKs
