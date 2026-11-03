@@ -998,12 +998,7 @@ export const PREFS_CONFIG = new Map([
     {
       title:
         "Group pinned Top Sites into a contiguous block with restricted drag-and-drop reordering",
-      // Channel-derived (resolves on the host), so it's on in Nightly and Beta
-      // but stays dark after the XPI train-hops to Release. A literal true would
-      // ride inside the XPI and wrongly activate.
-      value:
-        AppConstants.NIGHTLY_BUILD ||
-        AppConstants.MOZ_UPDATE_CHANNEL === "beta",
+      value: true,
     },
   ],
   [
