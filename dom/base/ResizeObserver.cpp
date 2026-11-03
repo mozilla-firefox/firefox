@@ -10,6 +10,7 @@
 #include "mozilla/ScrollContainerFrame.h"
 #include "mozilla/dom/DOMRect.h"
 #include "mozilla/dom/Document.h"
+#include "nsCCUncollectableMarker.h"
 #include "nsIContent.h"
 #include "nsIContentInlines.h"
 #include "nsLayoutUtils.h"
@@ -237,6 +238,22 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(ResizeObserver)
   }
   NS_IMPL_CYCLE_COLLECTION_UNLINK_PRESERVED_WRAPPER
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
+
+bool ResizeObserver::HasOwnerInCCGenerationDocument() const {
+  for (const Element* target : mObservationMap.Keys()) {
+    if (nsCCUncollectableMarker::IsInCCGenerationDocument(*target)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void ResizeObserver::MarkForCC() {
+  if (ResizeObserverCallback* callback =
+          mCallback.as<RefPtr<ResizeObserverCallback>>()) {
+    callback->MarkForCC();
+  }
+}
 
 NS_IMPL_CYCLE_COLLECTING_ADDREF(ResizeObserver)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(ResizeObserver)

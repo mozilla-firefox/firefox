@@ -15,6 +15,7 @@
 #include "mozilla/dom/ContentList.h"
 #include "mozilla/dom/DocGroup.h"
 #include "mozilla/dom/KeyframeEffect.h"
+#include "nsCCUncollectableMarker.h"
 #include "nsContentUtils.h"
 #include "nsError.h"
 #include "nsIScriptGlobalObject.h"
@@ -913,8 +914,25 @@ nsDOMMutationRecord* nsDOMMutationObserver::CurrentRecord(nsAtom* aType) {
 }
 
 nsDOMMutationObserver::~nsDOMMutationObserver() {
+  NodeOwnedObjectList<nsDOMMutationObserver>::Remove(this);
   for (int32_t i = 0; i < mReceivers.Count(); ++i) {
     mReceivers[i]->RemoveClones();
+  }
+}
+
+bool nsDOMMutationObserver::HasOwnerInCCGenerationDocument() const {
+  for (int32_t i = 0; i < mReceivers.Count(); ++i) {
+    const nsINode* target = mReceivers[i]->Target();
+    if (target && nsCCUncollectableMarker::IsInCCGenerationDocument(*target)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void nsDOMMutationObserver::MarkForCC() {
+  if (mCallback) {
+    mCallback->MarkForCC();
   }
 }
 

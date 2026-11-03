@@ -15,14 +15,17 @@
 #include "mozilla/dom/ContentFrameMessageManager.h"
 #include "mozilla/dom/ContentProcessMessageManager.h"
 #include "mozilla/dom/CustomElementRegistry.h"
+#include "mozilla/dom/DOMIntersectionObserver.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/NodeOwnedObjectList.h"
 #include "mozilla/dom/ParentProcessMessageManager.h"
+#include "mozilla/dom/ResizeObserver.h"
 #include "mozilla/dom/SessionHistoryEntry.h"
 #include "mozilla/dom/TimeoutManager.h"
 #include "nsAppShellCID.h"
 #include "nsContentUtils.h"
+#include "nsDOMMutationObserver.h"
 #include "nsFocusManager.h"
 #include "nsFrameLoader.h"
 #include "nsGlobalWindowInner.h"
@@ -385,6 +388,11 @@ nsresult nsCCUncollectableMarker::Cleanup(bool aPrepareForCC) {
     case eUnmarkJSEventListeners: {
       NodeOwnedObjectList<
           EventListenerManager>::UnmarkGrayInCCGenerationDocuments();
+      NodeOwnedObjectList<
+          nsDOMMutationObserver>::UnmarkGrayInCCGenerationDocuments();
+      NodeOwnedObjectList<ResizeObserver>::UnmarkGrayInCCGenerationDocuments();
+      NodeOwnedObjectList<
+          DOMIntersectionObserver>::UnmarkGrayInCCGenerationDocuments();
       break;
     }
     case eUnmarkMessageManagers: {

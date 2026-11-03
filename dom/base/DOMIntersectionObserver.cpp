@@ -19,6 +19,7 @@
 #include "mozilla/dom/HTMLIFrameElement.h"
 #include "mozilla/dom/HTMLImageElement.h"
 #include "mozilla/dom/HTMLMediaElement.h"
+#include "nsCCUncollectableMarker.h"
 #include "nsContainerFrame.h"
 #include "nsContentUtils.h"
 #include "nsIFrame.h"
@@ -83,7 +84,25 @@ DOMIntersectionObserver::DOMIntersectionObserver(
     already_AddRefed<nsPIDOMWindowInner> aOwner, dom::IntersectionCallback& aCb)
     : mOwner(aOwner),
       mDocument(mOwner->GetExtantDoc()),
-      mCallback(RefPtr<dom::IntersectionCallback>(&aCb)) {}
+      mCallback(RefPtr<dom::IntersectionCallback>(&aCb)) {
+  NodeOwnedObjectList<DOMIntersectionObserver>::Add(this);
+}
+
+bool DOMIntersectionObserver::HasOwnerInCCGenerationDocument() const {
+  for (const Element* target : mObservationTargets) {
+    if (nsCCUncollectableMarker::IsInCCGenerationDocument(*target)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void DOMIntersectionObserver::MarkForCC() {
+  if (dom::IntersectionCallback* callback =
+          mCallback.as<RefPtr<dom::IntersectionCallback>>()) {
+    callback->MarkForCC();
+  }
+}
 
 already_AddRefed<DOMIntersectionObserver> DOMIntersectionObserver::Constructor(
     const GlobalObject& aGlobal, dom::IntersectionCallback& aCb,

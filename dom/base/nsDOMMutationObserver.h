@@ -8,8 +8,10 @@
 #include <utility>
 
 #include "mozilla/Attributes.h"
+#include "mozilla/DoublyLinkedList.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/MutationObserverBinding.h"
+#include "mozilla/dom/NodeOwnedObjectList.h"
 #include "mozilla/dom/Nullable.h"
 #include "nsCOMArray.h"
 #include "nsClassHashtable.h"
@@ -391,7 +393,10 @@ class nsAnimationReceiver : public nsMutationReceiver {
 #define NS_DOM_MUTATION_OBSERVER_IID \
   {0x0c3b91f8, 0xcc3b, 0x4b08, {0x9e, 0xab, 0x07, 0x47, 0xa9, 0xe4, 0x65, 0xb4}}
 
-class nsDOMMutationObserver final : public nsISupports, public nsWrapperCache {
+class nsDOMMutationObserver final
+    : public nsISupports,
+      public nsWrapperCache,
+      public mozilla::DoublyLinkedListElement<nsDOMMutationObserver> {
  public:
   nsDOMMutationObserver(nsCOMPtr<nsPIDOMWindowInner>&& aOwner,
                         mozilla::dom::MutationCallback& aCb)
@@ -401,7 +406,9 @@ class nsDOMMutationObserver final : public nsISupports, public nsWrapperCache {
         mCallback(&aCb),
         mWaitingForRun(false),
         mMergeAttributeRecords(false),
-        mId(++sCount) {}
+        mId(++sCount) {
+    mozilla::dom::NodeOwnedObjectList<nsDOMMutationObserver>::Add(this);
+  }
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS_FINAL
   NS_DECL_CYCLE_COLLECTION_SCRIPT_HOLDER_CLASS(nsDOMMutationObserver)
   NS_INLINE_DECL_STATIC_IID(NS_DOM_MUTATION_OBSERVER_IID)
@@ -432,6 +439,9 @@ class nsDOMMutationObserver final : public nsISupports, public nsWrapperCache {
       mozilla::ErrorResult& aRv);
 
   mozilla::dom::MutationCallback* MutationCallback() { return mCallback; }
+
+  bool HasOwnerInCCGenerationDocument() const;
+  void MarkForCC();
 
   bool MergeAttributeRecords() { return mMergeAttributeRecords; }
 

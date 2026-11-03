@@ -9,11 +9,13 @@
 #include "js/TypeDecls.h"
 #include "mozilla/AppUnits.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/DoublyLinkedList.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/WritingModes.h"
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/DOMRect.h"
 #include "mozilla/dom/Document.h"
+#include "mozilla/dom/NodeOwnedObjectList.h"
 #include "mozilla/dom/ResizeObserverBinding.h"
 #include "nsCoord.h"
 #include "nsCycleCollectionParticipant.h"
@@ -121,7 +123,8 @@ class ResizeObservation final : public LinkedListElement<ResizeObservation> {
  */
 class ResizeObserver final : public nsISupports,
                              public nsWrapperCache,
-                             public LinkedListElement<ResizeObserver> {
+                             public LinkedListElement<ResizeObserver>,
+                             public DoublyLinkedListElement<ResizeObserver> {
  public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS_FINAL
   NS_DECL_CYCLE_COLLECTION_WRAPPERCACHE_CLASS(ResizeObserver)
@@ -134,6 +137,7 @@ class ResizeObserver final : public nsISupports,
     MOZ_ASSERT(mOwner, "Need a non-null owner window");
     MOZ_ASSERT(mDocument, "Need a non-null doc");
     MOZ_ASSERT(mDocument == mOwner->GetExtantDoc());
+    NodeOwnedObjectList<ResizeObserver>::Add(this);
   }
 
   using NativeCallback =
@@ -216,8 +220,14 @@ class ResizeObserver final : public nsISupports,
     return mObservationMap.Contains(&aElement);
   }
 
+  bool HasOwnerInCCGenerationDocument() const;
+  void MarkForCC();
+
  protected:
-  ~ResizeObserver() { Disconnect(); }
+  ~ResizeObserver() {
+    NodeOwnedObjectList<ResizeObserver>::Remove(this);
+    Disconnect();
+  }
 
   nsCOMPtr<nsPIDOMWindowInner> mOwner;
   // The window's document at the time of ResizeObserver creation.
