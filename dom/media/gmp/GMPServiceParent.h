@@ -217,7 +217,8 @@ class GeckoMediaPluginServiceParent final
 
   nsTArray<nsString> mPluginsWaitingForDeletion;
 
-  nsCOMPtr<nsIFile> mStorageBaseDir;
+  // Set by InitStorage() on the main thread, readable from any thread.
+  nsCOMPtr<nsIFile> mStorageBaseDir MOZ_GUARDED_BY(mMutex);
 
   // Hashes of (origin,topLevelOrigin) to the node id for
   // non-persistent sessions.
