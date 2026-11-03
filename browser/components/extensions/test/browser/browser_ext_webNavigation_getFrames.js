@@ -188,9 +188,7 @@ add_task(async function testWebNavigationFrames() {
       "parentFrameId"
     );
     is(getAllFramesDetail.tabId, collected.tabId, "tabId");
-
-    // This can be uncommented once Bug 1246125 has been fixed
-    // is(getAllFramesDetail.url, collected.url, "url");
+    is(getAllFramesDetail.url, collected.url, "url");
   }
 
   info("frame details content checked");
