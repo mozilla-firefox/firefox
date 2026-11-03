@@ -46,6 +46,20 @@ static GtkWindow* get_gtk_window_for_nsiwidget(nsIWidget* widget) {
   return GTK_WINDOW(widget->GetNativeData(NS_NATIVE_SHELLWIDGET));
 }
 
+// Runs aDialog like gtk_dialog_run(), but returns GTK_RESPONSE_NONE if the
+// dialog was destroyed (e.g. with its parent window) while it ran.
+static gint RunDialog(GtkWidget* aDialog) {
+  bool destroyed = false;
+  g_signal_connect(aDialog, "destroy",
+                   G_CALLBACK(+[](GtkWidget*, gpointer aDestroyed) {
+                     *static_cast<bool*>(aDestroyed) = true;
+                   }),
+                   &destroyed);
+  const gint response = gtk_dialog_run(GTK_DIALOG(aDialog));
+  g_signal_handlers_disconnect_by_data(aDialog, &destroyed);
+  return destroyed ? GTK_RESPONSE_NONE : response;
+}
+
 static void ShowCustomDialog(GtkComboBox* changed_box, gpointer user_data) {
   if (gtk_combo_box_get_active(changed_box) != CUSTOM_VALUE_INDEX) {
     g_object_set_data(G_OBJECT(changed_box), "previous-active",
@@ -103,7 +117,7 @@ static void ShowCustomDialog(GtkComboBox* changed_box, gpointer user_data) {
   gtk_box_pack_start(
       GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(prompt_dialog.get()))),
       custom_hbox, FALSE, FALSE, 0);
-  gint diag_response = gtk_dialog_run(GTK_DIALOG(prompt_dialog.get()));
+  gint diag_response = RunDialog(prompt_dialog);
 
   if (diag_response == GTK_RESPONSE_ACCEPT) {
     const gchar* response_text = gtk_entry_get_text(GTK_ENTRY(custom_entry));
@@ -341,7 +355,7 @@ const char* nsPrintDialogWidgetGTK::OptionWidgetToString(GtkWidget* dropdown) {
 }
 
 gint nsPrintDialogWidgetGTK::Run() {
-  const gint response = gtk_dialog_run(GTK_DIALOG(dialog.get()));
+  const gint response = RunDialog(dialog);
   gtk_widget_hide(dialog);
   return response;
 }
