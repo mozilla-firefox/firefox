@@ -23,7 +23,7 @@ def setup_awsy_argument_parser():
     return parser
 
 
-from awsy import ITERATIONS, MAX_TABS, PER_TAB_PAUSE, SETTLE_WAIT_TIME
+from awsy import MAX_TABS
 
 
 def run_awsy(command_context, tests, binary=None, **kwargs):
@@ -85,10 +85,11 @@ def run_awsy(command_context, tests, binary=None, **kwargs):
         os.makedirs(runtime_testvars["resultsDir"])
 
     runtime_testvars_path = os.path.join(awsy_tests_dir, "runtime-testvars.json")
-    if kwargs["testvars"]:
-        kwargs["testvars"].append(runtime_testvars_path)
-    else:
-        kwargs["testvars"] = [runtime_testvars_path]
+    # If '--testvars' was not specified use the same defaults as CI.
+    if not kwargs["testvars"]:
+        testvars_file = "base-testvars.json" if kwargs["base"] else "tp6-testvars.json"
+        kwargs["testvars"] = [os.path.join(awsy_source_dir, "conf", testvars_file)]
+    kwargs["testvars"].append(runtime_testvars_path)
 
     runtime_testvars_file = open(runtime_testvars_path, "w")
     runtime_testvars_file.write(json.dumps(runtime_testvars, indent=2))
@@ -206,7 +207,8 @@ def run_awsy(command_context, tests, binary=None, **kwargs):
     action="store",
     type=int,
     dest="iterations",
-    help=f"Number of times to run through the test suite. Defaults to {ITERATIONS}.",
+    help="Number of times to run through the test suite. Defaults to the "
+    "value in conf/tp6-testvars.json (or conf/base-testvars.json with --base).",
 )
 @CommandArgument(
     "--per-tab-pause",
@@ -214,7 +216,8 @@ def run_awsy(command_context, tests, binary=None, **kwargs):
     action="store",
     type=int,
     dest="perTabPause",
-    help=f"Seconds to wait in between opening tabs. Defaults to {PER_TAB_PAUSE}.",
+    help="Seconds to wait in between opening tabs. Defaults to the value in "
+    "conf/tp6-testvars.json (or conf/base-testvars.json with --base).",
 )
 @CommandArgument(
     "--settle-wait-time",
@@ -222,7 +225,8 @@ def run_awsy(command_context, tests, binary=None, **kwargs):
     action="store",
     type=int,
     dest="settleWaitTime",
-    help=f"Seconds to wait for things to settled down. Defaults to {SETTLE_WAIT_TIME}.",
+    help="Seconds to wait for things to settled down. Defaults to the value "
+    "in conf/tp6-testvars.json (or conf/base-testvars.json with --base).",
 )
 @CommandArgument(
     "--dmd",
