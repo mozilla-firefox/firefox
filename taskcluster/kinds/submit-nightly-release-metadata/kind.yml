@@ -10,7 +10,6 @@ transforms:
     - gecko_taskgraph.transforms.task:transforms
 
 task-defaults:
-    run-on-repo-type: [hg]
     description: Submit nightly release metadata to ship it
     attributes:
         shippable: true

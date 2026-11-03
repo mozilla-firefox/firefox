@@ -12,7 +12,6 @@ transforms:
     - gecko_taskgraph.transforms.task:transforms
 
 task-defaults:
-    run-on-repo-type: [hg]
     run-on-projects: []
     worker-type: b-linux-xlarge
     worker:

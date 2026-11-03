@@ -10,9 +10,7 @@ transforms:
     - gecko_taskgraph.transforms.job:transforms
     - gecko_taskgraph.transforms.task:transforms
 
-
 task-defaults:
-    run-on-repo-type: [hg]
     run-on-projects: []  # Only run via cron
     worker-type: b-linux-medium
     run:
@@ -42,7 +40,6 @@ task-defaults:
         tier: 1
     scopes:
         - secrets:get:project/releng/gecko/build/level-{level}/arc-phabricator-token
-
 
 tasks:
     pinning-update:

@@ -44,7 +44,6 @@ task-defaults:
 
     shipping-phase: promote
     shipping-product: firefox
-    run-on-repo-type: [hg]
     run-on-releases: [nightly]
     scopes:
         - secrets:get:project/desktop-test-ops/gha-pat
