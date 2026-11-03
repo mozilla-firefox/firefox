@@ -16,8 +16,6 @@ export MOZCONFIG=$GECKO_PATH/mozconfig
 cat <<EOT >> $MOZCONFIG
 # Enable debug mode
 ac_add_options --enable-debug
-# Enable clang-plugin in order to have all defines activated for static-analysis
-ac_add_options --enable-clang-plugin
 # Enable GC zeal, a testing and debugging feature that helps find GC-related bugs in JSAPI applications.
 ac_add_options --enable-gczeal
 # Do not treat warnings as errors
