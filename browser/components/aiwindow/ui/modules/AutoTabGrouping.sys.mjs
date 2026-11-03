@@ -246,23 +246,23 @@ export const AutoTabGrouping = {
     const groupsObserver = { observe: () => this._onGroupsChanged(win, panel) };
     let observingGroups = false;
 
-    panel.addEventListener(
-      "popupshown",
-      () => {
-        button.setAttribute("aria-expanded", "true");
-        panel._card.focus();
-        win.addEventListener("mousedown", onMouseDown, true);
-        win.addEventListener("keydown", onKeyDown, true);
-        win.addEventListener("deactivate", onDeactivate);
-        observingGroups = true;
-        for (const topic of GROUPS_CHANGED_TOPICS) {
-          Services.obs.addObserver(groupsObserver, topic);
-        }
-      },
-      { once: true }
-    );
+    const onPopupShown = () => {
+      button.setAttribute("aria-expanded", "true");
+      panel._card.focus();
+      win.addEventListener("mousedown", onMouseDown, true);
+      win.addEventListener("keydown", onKeyDown, true);
+      win.addEventListener("deactivate", onDeactivate);
+      observingGroups = true;
+      for (const topic of GROUPS_CHANGED_TOPICS) {
+        Services.obs.addObserver(groupsObserver, topic);
+      }
+    };
+    panel.addEventListener("popupshown", onPopupShown, { once: true });
     const teardown = () => {
       win.removeEventListener("unload", teardown);
+      // A window closed while the panel is still opening can get its
+      // popupshown after unload, which would add observers nothing removes.
+      panel.removeEventListener("popupshown", onPopupShown);
       button.setAttribute("aria-expanded", "false");
       win.removeEventListener("mousedown", onMouseDown, true);
       win.removeEventListener("keydown", onKeyDown, true);
