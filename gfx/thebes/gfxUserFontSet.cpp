@@ -818,13 +818,13 @@ bool gfxUserFontEntry::LoadPlatformFont(uint32_t aSrcIndex,
          fontSet.get(), aSrcIndex,
          mSrcList[aSrcIndex].mURI->GetSpecOrDefault().get(), FamilyName().get(),
          this, uint32_t(fontSet->GetGeneration()), fontCompressionRatio));
-    SetPlatformFontEntry(std::move(fe));
-    SetLoadState(STATUS_LOADED);
     if (NS_IsMainThread()) {
       // UserFontCache::CacheFont is not currently safe to call off-main-thread,
       // so we only cache the font if this is a main-thread load.
       gfxUserFontSet::UserFontCache::CacheFont(fe);
     }
+    SetPlatformFontEntry(std::move(fe));
+    SetLoadState(STATUS_LOADED);
   } else {
     LOG(
         ("userfonts (%p) [src %d] failed uri: (%s) for (%s)"
