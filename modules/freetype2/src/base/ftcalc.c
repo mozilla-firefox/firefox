@@ -163,9 +163,8 @@
              FT_Long  b_,
              FT_Long  c_ )
   {
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt64  a, b, c, d;
-    FT_Long    d_;
 
 
     FT_MOVE_SIGN( FT_UInt64, a_, a, s );
@@ -175,9 +174,7 @@
     d = c > 0 ? ( a * b + ( c >> 1 ) ) / c
               : 0x7FFFFFFFUL;
 
-    d_ = (FT_Long)d;
-
-    return s < 0 ? NEG_LONG( d_ ) : d_;
+    return MUL_LONG( s, d );
   }
 
 
@@ -188,9 +185,8 @@
                       FT_Long  b_,
                       FT_Long  c_ )
   {
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt64  a, b, c, d;
-    FT_Long    d_;
 
 
     FT_MOVE_SIGN( FT_UInt64, a_, a, s );
@@ -200,9 +196,7 @@
     d = c > 0 ? a * b / c
               : 0x7FFFFFFFUL;
 
-    d_ = (FT_Long)d;
-
-    return s < 0 ? NEG_LONG( d_ ) : d_;
+    return MUL_LONG( s, d );
   }
 
 
@@ -233,9 +227,8 @@
   FT_DivFix( FT_Long  a_,
              FT_Long  b_ )
   {
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt64  a, b, q;
-    FT_Long    q_;
 
 
     FT_MOVE_SIGN( FT_UInt64, a_, a, s );
@@ -244,9 +237,7 @@
     q = b > 0 ? ( ( a << 16 ) + ( b >> 1 ) ) / b
               : 0x7FFFFFFFUL;
 
-    q_ = (FT_Long)q;
-
-    return s < 0 ? NEG_LONG( q_ ) : q_;
+    return MUL_LONG( s, q );
   }
 
 
@@ -394,7 +385,7 @@
              FT_Long  b_,
              FT_Long  c_ )
   {
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt32  a, b, c;
 
 
@@ -427,9 +418,7 @@
                            : ft_div64by32( temp.hi, temp.lo, c );
     }
 
-    a_ = (FT_Long)a;
-
-    return s < 0 ? NEG_LONG( a_ ) : a_;
+    return MUL_LONG( s, a );
   }
 
 
@@ -438,7 +427,7 @@
                       FT_Long  b_,
                       FT_Long  c_ )
   {
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt32  a, b, c;
 
 
@@ -466,9 +455,7 @@
                            : ft_div64by32( temp.hi, temp.lo, c );
     }
 
-    a_ = (FT_Long)a;
-
-    return s < 0 ? NEG_LONG( a_ ) : a_;
+    return MUL_LONG( s, a );
   }
 
 
@@ -539,7 +526,7 @@
 
 #else /* 0 */
 
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt32  a, b;
 
 
@@ -559,9 +546,7 @@
           ( ( al * ( b & 0xFFFFUL ) + 0x8000UL ) >> 16 );
     }
 
-    a_ = (FT_Long)a;
-
-    return s < 0 ? NEG_LONG( a_ ) : a_;
+    return MUL_LONG( s, a );
 
 #endif /* 0 */
 
@@ -574,9 +559,8 @@
   FT_DivFix( FT_Long  a_,
              FT_Long  b_ )
   {
-    FT_Int     s = 1;
+    FT_Long    s = 1;
     FT_UInt32  a, b, q;
-    FT_Long    q_;
 
 
     /* XXX: this function does not allow 64-bit arguments */
@@ -609,9 +593,7 @@
       q = ft_div64by32( temp.hi, temp.lo, b );
     }
 
-    q_ = (FT_Long)q;
-
-    return s < 0 ? NEG_LONG( q_ ) : q_;
+    return MUL_LONG( s, q );
   }
 
 
@@ -783,15 +765,14 @@
   FT_BASE_DEF( FT_UInt32 )
   FT_Vector_NormLen( FT_Vector*  vector )
   {
-    FT_Int32   x_ = vector->x;
-    FT_Int32   y_ = vector->y;
-    FT_Int32   b, z;
+    FT_Pos     sx = 1, sy = 1;
+    FT_Int     shift;
+    FT_Int32   z;
     FT_UInt32  x, y, u, v, l;
-    FT_Int     sx = 1, sy = 1, shift;
 
 
-    FT_MOVE_SIGN( FT_UInt32, x_, x, sx );
-    FT_MOVE_SIGN( FT_UInt32, y_, y, sy );
+    FT_MOVE_SIGN( FT_UInt32, (FT_Int32)vector->x, x, sx );
+    FT_MOVE_SIGN( FT_UInt32, (FT_Int32)vector->y, y, sy );
 
     /* trivial cases */
     if ( x == 0 )
@@ -834,29 +815,24 @@
     }
 
     /* lower linear approximation for reciprocal length minus one */
-    b = 0x10000 - (FT_Int32)l;
+    z = 0x10000 - (FT_Int32)l;
 
-    x_ = (FT_Int32)x;
-    y_ = (FT_Int32)y;
+    u = x + ( ( (FT_Int32)x * z + 0x8000 ) >> 16 );
+    v = y + ( ( (FT_Int32)y * z + 0x8000 ) >> 16 );
 
     /* Newton's iterations */
     do
     {
-      u = (FT_UInt32)( x_ + ( x_ * b >> 16 ) );
-      v = (FT_UInt32)( y_ + ( y_ * b >> 16 ) );
-
       /* Normalized squared length in the parentheses approaches 2^32. */
       /* On two's complement systems, converting to signed gives the   */
       /* difference with 2^32 even if the expression wraps around.     */
-      z = -(FT_Int32)( u * u + v * v ) / 0x200;
-      z = z * ( ( 0x10000 + b ) >> 8 ) / 0x10000;
+      z = ( -(FT_Int32)( u * u + v * v ) + 0x10000 ) >> 17;
+      u += ( (FT_Int32)u * z + 0x8000 ) >> 16;
+      v += ( (FT_Int32)v * z + 0x8000 ) >> 16;
+    } while ( z > 1 );
 
-      b += z;
-
-    } while ( z > 0 );
-
-    vector->x = sx < 0 ? -(FT_Pos)u : (FT_Pos)u;
-    vector->y = sy < 0 ? -(FT_Pos)v : (FT_Pos)v;
+    vector->x = sx * (FT_Pos)u;
+    vector->y = sy * (FT_Pos)v;
 
     /* Conversion to signed helps to recover from likely wrap around */
     /* in calculating the prenormalized length, because it gives the */
