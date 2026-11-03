@@ -602,6 +602,13 @@ class Core(
             resources = context.resources,
             crashReporter = context.components.analytics.crashReporter,
             blocklistHandler = context.components.blocklistHandler,
+            experiments = {
+                buildSet {
+                    if (context.components.settings.enableRegionalDefaultShortcuts) {
+                        add(FenixDefaultTopSitesProvider.REGIONAL_DEFAULT_SHORTCUTS_EXPERIMENT)
+                    }
+                }
+            },
         )
     }
 

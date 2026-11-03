@@ -12,63 +12,801 @@
       ],
       "include_locales": [],
       "include_regions": [],
-      "exclude_experiments": [],
+      "exclude_experiments": [
+        "regional-default-shortcuts"
+      ],
       "include_experiments": [],
       "id": "",
       "last_modified": 1
     },
     {
-      "url": "https://tenki.jp/",
+      "url": "https://www.wikipedia.org/",
       "order": 1,
-      "title": "tenki.jp",
+      "title": "Wikipedia",
       "schema": 1,
       "exclude_locales": [],
-      "exclude_regions": [],
-      "include_locales": [],
-      "include_regions": [
-        "JP"
+      "exclude_regions": [
+        "CN",
+        "JP",
+        "DE",
+        "US",
+        "IN",
+        "FR",
+        "BR",
+        "GB",
+        "PL",
+        "IT",
+        "ES"
       ],
+      "include_locales": [],
+      "include_regions": [],
       "exclude_experiments": [],
-      "include_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
       "id": "",
       "last_modified": 1
     },
     {
-      "url": "https://m.yahoo.co.jp/",
+      "url": "https://www.tagesschau.de/",
       "order": 2,
-      "title": "Yahoo! JAPAN",
+      "title": "Tagesschau",
       "schema": 1,
       "exclude_locales": [],
       "exclude_regions": [],
       "include_locales": [],
       "include_regions": [
-        "JP"
+        "DE"
       ],
       "exclude_experiments": [],
-      "include_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
       "id": "",
       "last_modified": 1
     },
     {
-      "url": "https://ameblo.jp/",
+      "url": "https://www.dwd.de/",
       "order": 3,
-      "title": "Amebaブログ",
+      "title": "DWD",
       "schema": 1,
       "exclude_locales": [],
       "exclude_regions": [],
       "include_locales": [],
       "include_regions": [
-        "JP"
+        "DE"
       ],
       "exclude_experiments": [],
-      "include_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
       "id": "",
       "last_modified": 1
     },
     {
-      "url": "https://ja.wikipedia.org/wiki/%E3%83%A1%E3%82%A4%E3%83%B3%E3%83%9A%E3%83%BC%E3%82%B8",
+      "url": "https://www.bahn.de/",
       "order": 4,
-      "title": "ウィキペディア",
+      "title": "Deutsche Bahn",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "DE"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.kicker.de/",
+      "order": 5,
+      "title": "Kicker",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "DE"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.chefkoch.de/",
+      "order": 6,
+      "title": "Chefkoch",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "DE"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://apnews.com/",
+      "order": 7,
+      "title": "AP News",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "US"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.weather.gov/",
+      "order": 8,
+      "title": "National Weather Service",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "US"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.nfl.com/",
+      "order": 9,
+      "title": "NFL",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "US"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.allrecipes.com/",
+      "order": 10,
+      "title": "AllRecipes",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "US"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.ptinews.com/",
+      "order": 11,
+      "title": "PTI",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IN"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://mausam.imd.gov.in/index_en.php",
+      "order": 12,
+      "title": "IMD",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IN"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.irctc.co.in/",
+      "order": 13,
+      "title": "IRCTC",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IN"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.cricbuzz.com/",
+      "order": 14,
+      "title": "Cricbuzz",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IN"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.vegrecipesofindia.com/",
+      "order": 15,
+      "title": "Veg Recipes of India",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IN"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.francetvinfo.fr/",
+      "order": 16,
+      "title": "France Info",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "FR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://meteofrance.com/",
+      "order": 17,
+      "title": "Météo-France",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "FR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.sncf-connect.com/",
+      "order": 18,
+      "title": "SNCF Connect",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "FR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.lequipe.fr/",
+      "order": 19,
+      "title": "L'Équipe",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "FR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.750g.com/",
+      "order": 20,
+      "title": "750g",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "FR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://agenciabrasil.ebc.com.br/",
+      "order": 21,
+      "title": "Agência Brasil",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "BR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://portal.inmet.gov.br/",
+      "order": 22,
+      "title": "INMET",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "BR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.tudogostoso.com.br/",
+      "order": 23,
+      "title": "TudoGostoso",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "BR"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.bbc.co.uk/news",
+      "order": 24,
+      "title": "BBC News",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "GB"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.metoffice.gov.uk/",
+      "order": 25,
+      "title": "Met Office",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "GB"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.nationalrail.co.uk/",
+      "order": 26,
+      "title": "National Rail Enquiries",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "GB"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.bbc.co.uk/sport",
+      "order": 27,
+      "title": "BBC Sport",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "GB"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.deliciousmagazine.co.uk/",
+      "order": 28,
+      "title": "Delicious",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "GB"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.pap.pl/",
+      "order": 29,
+      "title": "PAP",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "PL"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.imgw.pl/",
+      "order": 30,
+      "title": "IMGW",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "PL"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://rozklad-pkp.pl/",
+      "order": 31,
+      "title": "Rozkład PKP",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "PL"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://przegladsportowy.onet.pl/",
+      "order": 32,
+      "title": "Przegląd Sportowy",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "PL"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://aniagotuje.pl/",
+      "order": 33,
+      "title": "Ania Gotuje",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "PL"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.rainews.it/",
+      "order": 34,
+      "title": "RAI News",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IT"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.meteoam.it/",
+      "order": 35,
+      "title": "Meteo Aeronautica Militare",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IT"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.trenitalia.com/",
+      "order": 36,
+      "title": "Trenitalia",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IT"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.gazzetta.it/",
+      "order": 37,
+      "title": "Gazzetta dello Sport",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IT"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.giallozafferano.it/",
+      "order": 38,
+      "title": "GialloZafferano",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "IT"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.efe.com/",
+      "order": 39,
+      "title": "EFE",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "ES"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.aemet.es/",
+      "order": 40,
+      "title": "AEMET",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "ES"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.renfe.com/",
+      "order": 41,
+      "title": "RENFE",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "ES"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.marca.com/",
+      "order": 42,
+      "title": "Marca",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "ES"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.recetasgratis.net/",
+      "order": 43,
+      "title": "RecetasGratis",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "ES"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www3.nhk.or.jp/news",
+      "order": 44,
+      "title": "NHKニュース",
       "schema": 1,
       "exclude_locales": [],
       "exclude_regions": [],
@@ -77,7 +815,81 @@
         "JP"
       ],
       "exclude_experiments": [],
-      "include_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.jma.go.jp/",
+      "order": 45,
+      "title": "気象庁",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "JP"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.jorudan.co.jp/",
+      "order": 46,
+      "title": "ジョルダン",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "JP"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.jleague.jp/",
+      "order": 47,
+      "title": "Jリーグ",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "JP"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
+      "id": "",
+      "last_modified": 1
+    },
+    {
+      "url": "https://www.kurashiru.com/",
+      "order": 48,
+      "title": "クラシル",
+      "schema": 1,
+      "exclude_locales": [],
+      "exclude_regions": [],
+      "include_locales": [],
+      "include_regions": [
+        "JP"
+      ],
+      "exclude_experiments": [],
+      "include_experiments": [
+        "regional-default-shortcuts"
+      ],
       "id": "",
       "last_modified": 1
     }

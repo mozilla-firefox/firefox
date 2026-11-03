@@ -53,6 +53,14 @@
       "url": "https://www.example7.com/",
       "order": 6,
       "schema": 1,
+      "exclude_experiments": ["test"],
+      "last_modified": 1
+    },
+    {
+      "id": "8",
+      "url": "https://www.example8.com/",
+      "order": 7,
+      "schema": 1,
       "include_experiments": ["test"],
       "last_modified": 1
     }

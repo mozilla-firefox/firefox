@@ -40,6 +40,9 @@ class FenixDefaultTopSitesProviderTest {
     private val example5 = defaultTopSite(id = 5, title = "www.example5.com", url = "https://www.example5.com/")
     private val example6 = defaultTopSite(id = 6, title = "www.example6.com", url = "https://www.example6.com/")
     private val example7 = defaultTopSite(id = 7, title = "www.example7.com", url = "https://www.example7.com/")
+    private val example8 = defaultTopSite(id = 8, title = "www.example8.com", url = "https://www.example8.com/")
+
+    private var experiments = emptySet<String>()
 
     @Before
     fun setUp() {
@@ -117,6 +120,20 @@ class FenixDefaultTopSitesProviderTest {
         }
 
     @Test
+    fun `GIVEN an enrolled experiment WHEN the default top sites are requested THEN the sites are filtered by that experiment`() =
+        runTest(dispatcher) {
+            setRegion("US")
+            experiments = setOf("test")
+
+            val topSites = createProvider().getDefaultTopSites()
+
+            assertEquals(
+                listOf(usRegionSite, caExcludedRegionSite, allRegionSite, example4, example5, example6, example8),
+                topSites,
+            )
+        }
+
+    @Test
     fun `GIVEN the region changed WHEN the default top sites are requested THEN the sites for the new region are returned`() =
         runTest(dispatcher) {
             setRegion("US")
@@ -145,6 +162,7 @@ class FenixDefaultTopSitesProviderTest {
             resources = resources,
             crashReporter = crashReporter,
             blocklistHandler = BlocklistHandler(settings),
+            experiments = { experiments },
             ioDispatcher = dispatcher,
         )
 

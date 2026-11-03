@@ -23,12 +23,14 @@ private val logger = Logger("fetchDefaultTopSites")
  * @param rawResId The raw resource ID holding the default top sites JSON.
  * @param crashReporter [CrashReporter] used for recording caught exceptions.
  * @param region The current region of the user.
+ * @param experiments The experiments the user is enrolled in.
  */
 internal fun fetchDefaultTopSites(
     resources: Resources,
     @RawRes rawResId: Int,
     crashReporter: CrashReporter,
     region: String,
+    experiments: Set<String> = emptySet(),
 ): List<DefaultTopSiteItem> {
     val items =
         try {
@@ -51,7 +53,11 @@ internal fun fetchDefaultTopSites(
             val includedInRegions = item.includeRegions.isEmpty() || region in item.includeRegions
             val notExcludedInRegions = item.excludeRegions.isEmpty() || region !in item.excludeRegions
 
-            includedInRegions && notExcludedInRegions
+            val includedInExperiments =
+                item.includeExperiments.isEmpty() || item.includeExperiments.any { it in experiments }
+            val notExcludedInExperiments = item.excludeExperiments.none { it in experiments }
+
+            includedInRegions && notExcludedInRegions && includedInExperiments && notExcludedInExperiments
         }
         .sortedBy { it.order }
 }

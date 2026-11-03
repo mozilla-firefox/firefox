@@ -1172,6 +1172,14 @@ features:
         type: Boolean
         default: true
 
+  regional-default-shortcuts:
+    description: Feature to enable the regional default shortcuts on the homepage for users on Firefox on Android.
+    variables:
+      enabled:
+        description: If true, the regional default shortcuts are shown in their regions.
+        type: Boolean
+        default: true
+
   ads-client-for-stories:
     description: Feature to enable the Mozilla Ads Client support for Sponsored Stories for users on Firefox on Android.
     variables:

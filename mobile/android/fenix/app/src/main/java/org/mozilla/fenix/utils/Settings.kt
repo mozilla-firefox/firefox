@@ -2697,6 +2697,10 @@ class Settings(
             default = { FxNimbus.features.showMoreShortcuts.value().enabled },
         )
 
+    /** Indicates if the regional default shortcuts are enabled. */
+    val enableRegionalDefaultShortcuts: Boolean
+        get() = FxNimbus.features.regionalDefaultShortcuts.value().enabled
+
     /** Indicates if the Homepage Weather Widget is enabled. */
     var enableHomepageWeatherWidget by
         booleanPreference(
