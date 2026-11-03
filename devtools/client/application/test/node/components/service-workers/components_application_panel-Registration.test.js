@@ -26,6 +26,7 @@ describe("Registration", () => {
 
     const wrapper = shallow(
       Registration({
+        isDebugEnabled: true,
         registration: REGISTRATION_SINGLE_WORKER,
         store,
       })
@@ -41,6 +42,7 @@ describe("Registration", () => {
 
     const wrapper = shallow(
       Registration({
+        isDebugEnabled: true,
         registration: REGISTRATION_MULTIPLE_WORKERS,
         store,
       })
@@ -49,6 +51,20 @@ describe("Registration", () => {
     expect(wrapper).toMatchSnapshot();
     // ensure that we do have the proper amount of workers
     expect(wrapper.find("Connect(Worker)")).toHaveLength(2);
+  });
+
+  it("Renders the expected snapshot when sw debugging is disabled", () => {
+    const store = setupStore({});
+
+    const wrapper = shallow(
+      Registration({
+        isDebugEnabled: false,
+        registration: REGISTRATION_SINGLE_WORKER,
+        store,
+      })
+    ).dive();
+
+    expect(wrapper).toMatchSnapshot();
   });
 
   it("Removes the ending forward slash from the scope, when present", () => {
@@ -60,6 +76,7 @@ describe("Registration", () => {
 
     const wrapper = shallow(
       Registration({
+        isDebugEnabled: false,
         registration,
         store,
       })

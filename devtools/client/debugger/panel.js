@@ -364,6 +364,13 @@ class DebuggerPanel {
       .getThreads(this._getState())
       .find(x => x.actor === threadActorID);
 
+    if (!this.lazyModules.features.windowlessServiceWorkers) {
+      console.error(
+        "Selecting a worker needs the pref debugger.features.windowless-service-workers set to true"
+      );
+      return;
+    }
+
     if (!isThreadAvailable) {
       console.error(`Worker ${threadActorID} is not available for debugging`);
       return;
