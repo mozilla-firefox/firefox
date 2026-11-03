@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.VisibleForTesting
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -705,9 +707,15 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 var topBarHeight by remember { mutableIntStateOf(0) }
                 var bottomBarHeight by remember { mutableIntStateOf(0) }
                 val fadeContentEdges = isOverUniversalEdgeToEdgeWallpaper(appState.value)
+                val searchBackgroundColor = toolbarView.searchBackgroundColor()
 
-                LaunchedEffect(currentWallpaper.name, isPrivateMode) {
-                    applyWallpaperSystemBarsTheme(activity as HomeActivity, settings, isPrivateMode)
+                LaunchedEffect(currentWallpaper.name, isPrivateMode, searchBackgroundColor) {
+                    applyWallpaperSystemBarsTheme(
+                        activity = activity as HomeActivity,
+                        settings = settings,
+                        isPrivateMode = isPrivateMode,
+                        searchBackgroundColor = searchBackgroundColor,
+                    )
                 }
 
                 CompositionLocalProvider(LocalWallpaperState provides appState.value.wallpaperState) {
@@ -715,6 +723,12 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     Box(modifier = Modifier.fillMaxSize()) {
                         if (!isPrivateMode) {
                             WallpaperBackground(currentWallpaper)
+                        }
+
+                        if (searchBackgroundColor != null && searchBackgroundColor.alpha > 0f) {
+                            // The search screen is laid out inside the system bars and display cutout, which can be
+                            // on any edge, so cover the whole wallpaper with its background.
+                            Box(modifier = Modifier.fillMaxSize().background(searchBackgroundColor))
                         }
 
                         if (showToolbarScrim) {
@@ -906,22 +920,31 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     /**
      * Matches the status bar and navigation bar icon appearance to the current wallpaper's text color so they stay
      * legible over the edge-to-edge wallpaper. Falls back to the theme's system bar appearance when there is no
-     * wallpaper text color or while in private browsing mode.
+     * wallpaper text color or while in private browsing mode. While searching, the system bar icons instead contrast
+     * with [searchBackgroundColor], unless it is transparent and the wallpaper shows through.
      */
     private fun applyWallpaperSystemBarsTheme(
         activity: HomeActivity,
         settings: Settings,
         isPrivateMode: Boolean,
+        searchBackgroundColor: Color?,
     ) {
         val wallpaperTextColor = settings.currentWallpaperTextColor
+        val windowInsetsController = activity.window.createWindowInsetsController()
         if (isPrivateMode || wallpaperTextColor == 0L) {
             activity.themeManager.applyStatusBarTheme(activity)
         } else {
             val isLightAppearance = isDark(wallpaperTextColor.toInt())
-            activity.window.createWindowInsetsController().apply {
+            windowInsetsController.apply {
                 isAppearanceLightStatusBars = isLightAppearance
                 isAppearanceLightNavigationBars = isLightAppearance
             }
+        }
+
+        if (searchBackgroundColor != null && searchBackgroundColor.alpha > 0f) {
+            val isLightAppearance = !isDark(searchBackgroundColor.toArgb())
+            windowInsetsController.isAppearanceLightStatusBars = isLightAppearance
+            windowInsetsController.isAppearanceLightNavigationBars = isLightAppearance
         }
     }
 
