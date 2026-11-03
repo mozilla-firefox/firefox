@@ -420,3 +420,11 @@ $ ./mach buildtokens && git status --short
 ```
 
 Empty output means the committed tree is a fixed point of the generator. Any output means the patch and the generator disagree, and the generator wins. Run it after a rebase too, since an upstream change to the token config can stale generated files your patch owns without touching a line of it.
+
+#### Importing from Figma
+
+Figma's values reach the `*.nova.tokens.json` files through two committed exports in `src/`. `figma-variables-all.json` mirrors the Figma file's variable collections, and `./mach buildtokens --import-figma --remote` rewrites it from the Figma API. `nova-export-clean-variables.json` is the subset the build reads: a plain `./mach buildtokens` maps it onto the override files and never reads the mirror.
+
+`./mach buildtokens --import-figma` updates the subset from the mirror before building. It takes every token whose Nova value the mirror would change, so a difference already sitting between the two files comes along with whatever just changed in Figma; read the subset's diff before committing an import. `--match=<path substring>` narrows the import to matching tokens and `--all` takes every change. With neither, it asks in an editor which tokens to take, and when stdin is not a terminal it takes them all.
+
+The import does not override a token whose base `*.tokens.json` holds a `nova` key, so a Figma change to that token reaches the tree only once the key is removed.
