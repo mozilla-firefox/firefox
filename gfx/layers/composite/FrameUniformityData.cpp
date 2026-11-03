@@ -16,18 +16,15 @@ using namespace gfx;
 
 bool FrameUniformityData::ToJS(JS::MutableHandle<JS::Value> aOutValue,
                                JSContext* aContext) {
-  dom::FrameUniformityResults results;
-  dom::Sequence<dom::FrameUniformity>& layers =
-      results.mLayerUniformities.Construct();
-
+  nsTArray<dom::FrameUniformity> layers(mUniformities.size());
   for (const auto& [layerAddr, uniformity] : mUniformities) {
-    // FIXME: Make this infallible after bug 968520 is done.
-    MOZ_ALWAYS_TRUE(layers.AppendElement(fallible));
-    dom::FrameUniformity& entry = layers.LastElement();
-
+    dom::FrameUniformity& entry = *layers.AppendElement();
     entry.mLayerAddress.Construct() = layerAddr;
     entry.mFrameUniformity.Construct() = uniformity;
   }
+
+  dom::FrameUniformityResults results;
+  results.mLayerUniformities.Construct(std::move(layers));
 
   return dom::ToJSValue(aContext, results, aOutValue);
 }
