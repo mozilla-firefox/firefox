@@ -7,7 +7,6 @@ task-defaults:
     worker:
         max-run-time: 5400
     run:
-        clone-with: hg
         resources:
             - 'build/unix/build-gcc/build-gcc.sh'
         toolchain-artifact: public/build/gcc.tar.zst

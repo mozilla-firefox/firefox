@@ -8,7 +8,6 @@ task-defaults:
         local-toolchain: true
     worker-type: b-linux-docker-amd
     run:
-        clone-with: hg
         using: toolchain-script
         script: build-dist-toolchains.sh
 

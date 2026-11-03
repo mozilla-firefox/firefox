@@ -7,7 +7,6 @@ task-defaults:
     worker:
         max-run-time: 1800
     run:
-        clone-with: hg
         using: toolchain-script
         script: build-compiler-rt.sh
 

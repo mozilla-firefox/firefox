@@ -7,7 +7,6 @@ task-defaults:
     worker:
         max-run-time: 7200
     run:
-        clone-with: hg
         resources:
             - 'build/build-clang/build-clang.py'
 
