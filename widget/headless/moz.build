@@ -41,6 +41,11 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] != "uikit":
         "HeadlessCompositorWidgetParent.cpp",
     ]
 
+if widget_dir == "gtk":
+    UNIFIED_SOURCES += [
+        "HeadlessLookAndFeelGTK.cpp",
+    ]
+
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
     UNIFIED_SOURCES += [
         "HeadlessKeyBindingsCocoa.mm",
@@ -60,6 +65,7 @@ FINAL_LIBRARY = "xul"
 SOURCE_HEADERS += [
     "HeadlessClipboard.h",
     "HeadlessClipboardData.h",
+    "HeadlessLookAndFeel.h",
     "HeadlessScreenHelper.h",
     "HeadlessSound.h",
 ]

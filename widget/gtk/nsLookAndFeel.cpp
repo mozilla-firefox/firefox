@@ -637,10 +637,6 @@ void nsLookAndFeel::NativeInit() { EnsureInit(); }
 nsresult nsLookAndFeel::NativeGetColor(ColorID aID, ColorScheme aScheme,
                                        nscolor& aColor) {
   EnsureInit();
-  if (mIsHeadless) {
-    aColor = GetStandinForNativeColor(aID, aScheme);
-    return NS_OK;
-  }
 
   const auto& theme =
       aScheme == ColorScheme::Light ? LightTheme() : DarkTheme();
@@ -1007,7 +1003,7 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
     } break;
     case IntID::SubmenuDelay: {
       GtkSettings* settings = gtk_settings_get_default();
-      gint delay = 200;
+      gint delay = 0;
       if (MOZ_LIKELY(settings)) {
         g_object_get(settings, "gtk-menu-popup-delay", &delay, nullptr);
       }
@@ -1022,7 +1018,7 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
       break;
     case IntID::DragThresholdX:
     case IntID::DragThresholdY: {
-      gint threshold = 4;
+      gint threshold = 0;
       GtkSettings* settings = gtk_settings_get_default();
       if (MOZ_LIKELY(settings)) {
         g_object_get(settings, "gtk-dnd-drag-threshold", &threshold, nullptr);
@@ -1760,7 +1756,6 @@ void nsLookAndFeel::Initialize() {
     NS_WARNING("EnsureInit: No settings");
     return;
   }
-  mIsHeadless = false;
 
   AutoRestore<bool> restoreIgnoreSettings(sIgnoreChangedSettings);
   sIgnoreChangedSettings = true;
