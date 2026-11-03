@@ -12,7 +12,6 @@ task-defaults:
         env:
             FETCH: samply/samply
     run:
-        clone-with: hg
         script: build-rust-based-toolchain.sh
         toolchain-artifact: public/build/samply.tar.zst
     fetches:

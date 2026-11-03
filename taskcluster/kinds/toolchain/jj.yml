@@ -13,7 +13,6 @@ task-defaults:
             FETCH: jj/cli
             PKG_CONFIG_LIBDIR: ""
     run:
-        clone-with: hg
         script: build-rust-based-toolchain.sh
         toolchain-artifact: public/build/jj.tar.zst
     fetches:

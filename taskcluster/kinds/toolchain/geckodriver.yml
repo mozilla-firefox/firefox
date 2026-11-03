@@ -14,7 +14,6 @@ task-defaults:
         shippable: true
         rebuild-on-release: true
     run:
-        clone-with: hg
         script: build-geckodriver.sh
         toolchain-artifact: public/build/geckodriver.tar.gz
         sparse-profile: null

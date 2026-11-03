@@ -12,7 +12,6 @@ task-defaults:
         env:
             FETCH: rust-minidump/minidump-stackwalk
     run:
-        clone-with: hg
         script: build-rust-based-toolchain.sh
         toolchain-artifact: public/build/minidump-stackwalk.tar.zst
     fetches:

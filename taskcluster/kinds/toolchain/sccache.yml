@@ -12,7 +12,6 @@ task-defaults:
     worker:
         max-run-time: 1800
     run:
-        clone-with: hg
         using: toolchain-script
         script: build-rust-based-toolchain.sh
         toolchain-artifact: public/build/sccache.tar.zst

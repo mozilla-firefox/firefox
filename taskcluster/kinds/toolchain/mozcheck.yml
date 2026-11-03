@@ -12,7 +12,6 @@ task-defaults:
     attributes:
         local-toolchain: true
     run:
-        clone-with: hg
         script: build-rust-based-toolchain.sh
         toolchain-artifact: public/build/mozcheck.tar.zst
         sparse-profile: null

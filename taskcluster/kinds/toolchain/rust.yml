@@ -8,7 +8,6 @@ task-defaults:
     worker:
         max-run-time: 7200
     run:
-        clone-with: hg
         script: repack_rust.py
         toolchain-artifact: public/build/rustc.tar.zst
 

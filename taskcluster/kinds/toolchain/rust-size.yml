@@ -8,7 +8,6 @@ task-defaults:
     worker:
         max-run-time: 1800
     run:
-        clone-with: hg
         script: build-rust-based-toolchain.sh
     fetches:
         fetch:
