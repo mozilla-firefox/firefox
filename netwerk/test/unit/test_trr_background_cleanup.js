@@ -11,6 +11,9 @@ add_setup(async function setup() {
 
   trrServer = new TRRServer();
   registerCleanupFunction(async () => {
+    Services.prefs.clearUserPref(
+      "network.http.close_connections_on_background"
+    );
     await trrServer.stop();
   });
   await trrServer.start();
@@ -34,13 +37,20 @@ add_setup(async function setup() {
 
 // Verify that TRR connections survive the application-background cleanup that
 // Android uses to conserve power when Firefox goes to the background.
-add_task(async function test_trr_connection_survives_background() {
+async function checkTrrConnectionSurvivesBackground(closeOnBackground) {
+  Services.prefs.setBoolPref(
+    "network.http.close_connections_on_background",
+    closeOnBackground
+  );
+  Services.dns.clearCache(true);
+  await trrServer.execute("global.gDoHPortsLog = []");
+
   // Warm up the TRR connection.
   await new TRRDNSListener("before.example.com", "1.2.3.4");
 
   // Simulate the Android application-background event. This posts a cleanup
-  // message to the socket thread that closes persistent connections for all
-  // non-TRR entries.
+  // message to the socket thread that closes persistent connections (only idle
+  // ones if closeOnBackground is false) for all non-TRR entries.
   Services.obs.notifyObservers(null, "application-background");
 
   // This lookup must reuse the same TRR connection (same TCP port).
@@ -66,4 +76,12 @@ add_task(async function test_trr_connection_survives_background() {
     reused,
     `TRR connection reused after application-background (before=${[...beforePorts]}, after=${[...afterPorts]})`
   );
+}
+
+add_task(async function test_trr_connection_survives_background() {
+  await checkTrrConnectionSurvivesBackground(true);
+});
+
+add_task(async function test_trr_connection_survives_idle_cleanup() {
+  await checkTrrConnectionSurvivesBackground(false);
 });

@@ -75,6 +75,9 @@ class HttpConnectionMgrShell : public nsISupports {
   [[nodiscard]] virtual nsresult DoShiftReloadConnectionCleanupWithConnInfo(
       nsHttpConnectionInfo*) = 0;
 
+  // Close all idle persistent connections and keep active ones.
+  [[nodiscard]] virtual nsresult CloseAllIdleConnections() = 0;
+
   // called to force the connection manager to prune its list of idle
   // connections.
   [[nodiscard]] virtual nsresult PruneDeadConnections() = 0;
@@ -179,6 +182,7 @@ class HttpConnectionMgrShell : public nsISupports {
   virtual nsresult DoShiftReloadConnectionCleanup() override;                  \
   virtual nsresult DoShiftReloadConnectionCleanupWithConnInfo(                 \
       nsHttpConnectionInfo*) override;                                         \
+  virtual nsresult CloseAllIdleConnections() override;                         \
   virtual nsresult PruneDeadConnections() override;                            \
   virtual void AbortAndCloseAllConnections(int32_t, ARefBase*) override;       \
   virtual nsresult UpdateParam(nsParamName name, uint16_t value) override;     \

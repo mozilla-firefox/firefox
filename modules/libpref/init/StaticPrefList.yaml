@@ -16981,6 +16981,13 @@
   value: true
   mirror: always
 
+# When false, application-background only closes idle HTTP/1.x connections.
+# When true, it also marks active connections DontReuse and clears coalescing.
+- name: network.http.close_connections_on_background
+  type: bool
+  value: false
+  mirror: always
+
 # Enable HTTP/3
 - name: network.http.http3.enable
   type: RelaxedAtomicBool

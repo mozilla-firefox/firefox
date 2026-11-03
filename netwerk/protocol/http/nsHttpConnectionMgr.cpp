@@ -499,6 +499,11 @@ nsresult nsHttpConnectionMgr::DoShiftReloadConnectionCleanupWithConnInfo(
                    ci);
 }
 
+nsresult nsHttpConnectionMgr::CloseAllIdleConnections() {
+  return PostEvent(&nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup, 1,
+                   nullptr);
+}
+
 nsresult nsHttpConnectionMgr::DoSingleConnectionCleanup(
     nsHttpConnectionInfo* aCI, uint32_t aPriority) {
   if (!aCI) {
@@ -2718,9 +2723,12 @@ void nsHttpConnectionMgr::OnMsgVerifyTraffic(int32_t, ARefBase*) {
   ActivateTimeoutTick();
 }
 
-void nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup(int32_t,
+void nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup(int32_t aIdleOnly,
                                                               ARefBase* param) {
-  LOG(("nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup\n"));
+  LOG(
+      ("nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup "
+       "[idleOnly=%d]\n",
+       aIdleOnly));
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
 
   nsHttpConnectionInfo* ci = static_cast<nsHttpConnectionInfo*>(param);
@@ -2736,7 +2744,7 @@ void nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup(int32_t,
         iter.Remove();
       }
     }
-  } else {
+  } else if (!aIdleOnly) {
     mCoalescingHash.Clear();
   }
 
@@ -2749,7 +2757,11 @@ void nsHttpConnectionMgr::OnMsgDoShiftReloadConnectionCleanup(int32_t,
         entry->mConnInfo->GetOriginAttributes() != ci->GetOriginAttributes()) {
       continue;
     }
-    entry->ClosePersistentConnections();
+    if (aIdleOnly) {
+      entry->CloseIdleConnections();
+    } else {
+      entry->ClosePersistentConnections();
+    }
   }
 
   if (ci) ResetIPFamilyPreference(ci);

@@ -2389,9 +2389,11 @@ nsHttpHandler::Observe(nsISupports* subject, const char* topic,
     // going to the background on android means we should close
     // down idle connections for power conservation
     if (mConnMgr) {
-      rv = mConnMgr->DoShiftReloadConnectionCleanup();
+      rv = StaticPrefs::network_http_close_connections_on_background()
+               ? mConnMgr->DoShiftReloadConnectionCleanup()
+               : mConnMgr->CloseAllIdleConnections();
       if (NS_FAILED(rv)) {
-        LOG(("    DoShiftReloadConnectionCleanup failed (%08x)\n",
+        LOG(("    background connection cleanup failed (%08x)\n",
              static_cast<uint32_t>(rv)));
       }
     }

@@ -123,6 +123,8 @@ run-if = [
 
 ["test_authpromptwrapper.js"]
 
+["test_background_connection_cleanup.js"]
+
 ["test_backgroundfilesaver.js"]
 requesttimeoutfactor = 2  # Slow on macOS debug and Android debug
 
