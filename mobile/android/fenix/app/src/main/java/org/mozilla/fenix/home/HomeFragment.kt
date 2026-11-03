@@ -69,7 +69,6 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.snackbar.Snackbar
 import mozilla.components.compose.base.snackbar.displaySnackbar
-import mozilla.components.compose.browser.toolbar.store.BrowserToolbarState
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.concept.sync.AccountObserver
@@ -312,7 +311,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     private val ipProtectionWarningBinding = ViewBoundFeatureWrapper<IPProtectionWarningBinding>()
     private val continuousOnboardingFeature = ViewBoundFeatureWrapper<ContinuousOnboardingFeature>()
 
-    private val homepageEdgeToEdgeFeature = ViewBoundFeatureWrapper<HomepageEdgeToEdgeFeature>()
     private var qrScanFenixFeature: ViewBoundFeatureWrapper<QrScanFenixFeature>? = ViewBoundFeatureWrapper()
     private val qrScanLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -471,21 +469,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     private fun buildToolbar(activity: HomeActivity, view: View): FenixHomeToolbar {
         val toolbarStore by buildToolbarStore(activity)
 
-        if (homepageEdgeToEdgeFeature.get() == null) {
-            homepageEdgeToEdgeFeature.set(
-                feature =
-                    HomepageEdgeToEdgeFeature(
-                        appStore = requireComponents.appStore,
-                        activity = activity,
-                        settings = activity.components.settings,
-                        browsingModeManager = browsingModeManager,
-                        toolbarStore = toolbarStore,
-                    ),
-                owner = viewLifecycleOwner,
-                view = view,
-            )
-        }
-
         homeNavigationBar =
             HomeNavigationBar(
                 toolbarStore = toolbarStore,
@@ -511,7 +494,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     source = args.searchAccessPoint,
                 ),
             coroutineScope = view.toScope(),
-            tabStripContent = { TabStrip(toolbarStore) },
+            tabStripContent = { TabStrip() },
             searchSuggestionsContent = { modifier ->
                 (awesomeBarComposable ?: initializeAwesomeBarComposable(toolbarStore, modifier))?.SearchSuggestions()
             },
@@ -835,11 +818,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         captureToolbarBounds: Boolean,
         modifier: Modifier = Modifier,
     ) {
-        val bottomChromeColors =
-            homepageToolbarColors(
-                isPrivateMode = isPrivateMode,
-                shouldUseEdgeToEdgeColors = isEdgeToEdgeBackgroundEnabled(),
-            )
+        val bottomChromeColors = homepageToolbarColors(isPrivateMode = isPrivateMode, shouldUseEdgeToEdgeColors = true)
         Box(modifier = modifier) {
             if (isToolbarAtTop) {
                 HomeNavigationBottomBar(settings, captureToolbarBounds, bottomChromeColors)
@@ -1075,11 +1054,10 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
             !Wallpaper.isLocalWallpaper(appState.wallpaperState.currentWallpaper.name)
 
     @Composable
-    private fun TabStrip(toolbarStore: BrowserToolbarStore? = null) {
+    private fun TabStrip() {
         // Tabs will not be shown as selected on the homepage when Homepage as a New Tab is not
         // enabled.
         val isSelectDisabled = !requireComponents.settings.enableHomepageAsNewTab
-        val toolbarState: BrowserToolbarState? = toolbarStore?.observeAsComposableState { it }?.value
         // Tab strip doesn't show the gradient when displayed over edge to edge wallpaper.
         val isOverEdgeToEdgeWallpaper =
             requireComponents.appStore.observeAsComposableState { isOverUniversalEdgeToEdgeWallpaper(it) }.value
@@ -1088,13 +1066,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
             TabStrip(
                 isSelectDisabled = isSelectDisabled,
                 showTabCounterButton = false,
-                tabStripColors =
-                    TabStripColors.build(
-                        toolbarState = toolbarState,
-                        browsingModeManager = (requireActivity() as HomeActivity).browsingModeManager,
-                        settings = requireComponents.settings,
-                        isOverEdgeToEdgeWallpaper = isOverEdgeToEdgeWallpaper,
-                    ),
+                tabStripColors = TabStripColors.build(isOverEdgeToEdgeWallpaper = isOverEdgeToEdgeWallpaper),
                 hideWhenKeyboardShown = requireComponents.settings.shouldUseBottomTabStrip,
                 onAddTabClick = {
                     if (requireComponents.settings.enableHomepageAsNewTab) {
@@ -1406,12 +1378,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         }
     }
 
-    internal fun isEdgeToEdgeBackgroundEnabled(): Boolean {
-        val settings = requireComponents.settings
-        return settings.enableHomepageEdgeToEdgeBackgroundFeature &&
-            settings.currentWallpaperName == Wallpaper.EDGE_TO_EDGE
-    }
-
     private fun initializeAwesomeBarComposable(
         toolbarStore: BrowserToolbarStore,
         modifier: Modifier,
@@ -1427,7 +1393,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 navController = findNavController(),
                 tabId = bundleArgs.getString(SESSION_TO_START_SEARCH_FOR),
                 searchAccessPoint = args.searchAccessPoint,
-                isEdgeToEdgeBackgroundEnabled = isEdgeToEdgeBackgroundEnabled(),
             )
             .also {
                 awesomeBarComposable = it

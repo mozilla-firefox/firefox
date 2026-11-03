@@ -79,6 +79,7 @@ import org.mozilla.fenix.helpers.TestHelper.packageName
 import org.mozilla.fenix.home.topsites.TopSitesTestTag
 import org.mozilla.fenix.home.topsites.TopSitesTestTag.TOP_SITE_CARD_FAVICON
 import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE
+import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE_EDGE_TO_EDGE_GRADIENT
 import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE_PRIVATE_BROWSING_LEARN_MORE_LINK
 import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE_STORY
 import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE_WORDMARK_LOGO
@@ -159,11 +160,12 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
+    @OptIn(ExperimentalTestApi::class)
     fun <A : androidx.activity.ComponentActivity, R : org.junit.rules.TestRule> verifyEdgeToEdgeWallpaperApplied(
         composeTestRule: AndroidComposeTestRule<R, A>
     ) {
         Log.i(TAG, "verifyEdgeToEdgeWallpaperApplied: Verifying edge-to-edge wallpaper background")
-        verifyWindowBackgroundDrawable(composeTestRule, R.drawable.home_background_gradient)
+        composeTestRule.waitUntilAtLeastOneExists(hasTestTag(HOMEPAGE_EDGE_TO_EDGE_GRADIENT), timeoutMillis = 5_000)
         Log.i(TAG, "verifyEdgeToEdgeWallpaperApplied: Verified edge-to-edge wallpaper background")
     }
 

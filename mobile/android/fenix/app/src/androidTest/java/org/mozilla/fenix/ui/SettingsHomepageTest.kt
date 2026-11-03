@@ -7,7 +7,6 @@ package org.mozilla.fenix.ui
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
 import org.junit.Rule
 import org.junit.Test
-import org.mozilla.fenix.R
 import org.mozilla.fenix.customannotations.Converted
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.isDefaultPinnedShortcutsOnHomepage
@@ -292,7 +291,7 @@ class SettingsHomepageTest {
             .goBack {}
             .goBack(retryableComposeTestRule.current) {
                 exitMenu()
-                verifyWindowBackgroundDrawable(retryableComposeTestRule.current, R.drawable.home_background_gradient)
+                verifyEdgeToEdgeWallpaperApplied(retryableComposeTestRule.current)
             }
 
         homeScreen(retryableComposeTestRule.current) {}
@@ -303,7 +302,7 @@ class SettingsHomepageTest {
             }
             .goBack {}
             .goBack(retryableComposeTestRule.current) {
-                verifyWindowBackgroundDrawable(retryableComposeTestRule.current, R.drawable.home_background_gradient)
+                verifyEdgeToEdgeWallpaperApplied(retryableComposeTestRule.current)
             }
             .togglePrivateBrowsingMode()
 

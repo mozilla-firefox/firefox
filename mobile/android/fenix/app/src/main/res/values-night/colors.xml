@@ -108,8 +108,6 @@
     <!-- Colors for Edge to Edge background  -->
     <color name="homepage_edge_to_edge_gradient_start">#FF0A1A3B</color>
     <color name="homepage_edge_to_edge_gradient_end">#FF293564</color>
-    <color name="homepage_tab_edge_to_edge_tab_strip_item_background_active">#213B6F</color>
-    <color name="homepage_tab_edge_to_edge_tab_strip_item_background_inactive">#0E1A40</color>
     <color name="homepage_tab_edge_to_edge_toolbar_background">#00000000</color>
     <color name="homepage_tab_edge_to_edge_toolbar_outline">#00000000</color>
 

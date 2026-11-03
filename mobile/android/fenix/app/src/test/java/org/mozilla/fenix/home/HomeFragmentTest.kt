@@ -11,9 +11,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import kotlin.test.assertNotNull
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.FenixApplication
@@ -21,7 +19,6 @@ import org.mozilla.fenix.components.Core
 import org.mozilla.fenix.ext.application
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.utils.Settings
-import org.mozilla.fenix.wallpapers.Wallpaper
 
 class HomeFragmentTest {
 
@@ -72,32 +69,5 @@ class HomeFragmentTest {
 
         assertNull(homeFragment.messagingFeatureMicrosurvey.get())
         verify(exactly = 0) { lifecycle.addObserver(any()) }
-    }
-
-    @Test
-    fun `GIVEN default wallpaper is set WHEN isEdgeToEdgeBackgroundEnabled is called THEN return false`() {
-        every { settings.currentWallpaperName } returns Wallpaper.DEFAULT
-        assertFalse(homeFragment.isEdgeToEdgeBackgroundEnabled())
-    }
-
-    @Test
-    fun `GIVEN edgeToEdge is enabled by nimbus and wallpaper is EdgeToEdge WHEN isEdgeToEdgeBackgroundEnabled is called THEN return true`() {
-        every { settings.enableHomepageEdgeToEdgeBackgroundFeature } returns true
-        every { settings.currentWallpaperName } returns Wallpaper.EDGE_TO_EDGE
-        assertTrue(homeFragment.isEdgeToEdgeBackgroundEnabled())
-    }
-
-    @Test
-    fun `GIVEN edgeToEdge is disabled by nimbus wallpaper is Default WHEN isEdgeToEdgeBackgroundEnabled is called THEN return true`() {
-        every { settings.enableHomepageEdgeToEdgeBackgroundFeature } returns false
-        every { settings.currentWallpaperName } returns Wallpaper.DEFAULT
-        assertFalse(homeFragment.isEdgeToEdgeBackgroundEnabled())
-    }
-
-    @Test
-    fun `GIVEN edgeToEdge is disabled by nimbus wallpaper is EdgeToEdge WHEN isEdgeToEdgeBackgroundEnabled is called THEN return true`() {
-        every { settings.enableHomepageEdgeToEdgeBackgroundFeature } returns false
-        every { settings.currentWallpaperName } returns Wallpaper.EDGE_TO_EDGE
-        assertFalse(homeFragment.isEdgeToEdgeBackgroundEnabled())
     }
 }

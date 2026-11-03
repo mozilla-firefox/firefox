@@ -13,4 +13,5 @@ internal object HomepageTestTag {
     const val HOMEPAGE_STORY = "homepage.story"
     const val HOMEPAGE_SPONSORED_STORY = "homepage.sponsored.story"
     const val HOMEPAGE_PRIVATE_BROWSING_LEARN_MORE_LINK = "homepage.private.browsing.learn.more.link"
+    const val HOMEPAGE_EDGE_TO_EDGE_GRADIENT = "homepage.edge.to.edge.gradient"
 }
