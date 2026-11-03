@@ -456,17 +456,12 @@ onboarding-checklist-remove-2 = Remove checklist
 tab-groups-onboarding-feature-callout-title = Try tab groups for less clutter, more focus
 tab-groups-onboarding-feature-callout-subtitle = Get organized by dragging one tab on top of another to create your first group.
 
-# The text "Search and Manage Tabs" refers to the string tabs-toolbar-list-all-tabs-2
-tab-groups-onboarding-create-group-title-4 = Find your tab groups in the “Search and manage tabs” menu anytime.
 tab-groups-onboarding-create-group-no-alltabs-button-title = Find your groups by searching for them in the address bar.
-
-# The text "Search and manage tabs" refers to the string tabs-toolbar-list-all-tabs-2
-tab-groups-onboarding-saved-groups-title-4 = When you close a tab group, reopen it from the “Search and manage tabs” menu anytime.
 tab-groups-onboarding-saved-groups-no-alltabs-button-title-2 = Find your closed groups by searching for them in the address bar.
-
-# The text "Search and manage tabs" refers to the string tabs-toolbar-list-all-tabs-2
-tab-groups-onboarding-session-restore-title-3 = Reopen your tab groups from the “Search and manage tabs” menu anytime.
 tab-groups-onboarding-dismiss = OK
+
+# "here" refers to the application menu button
+tab-groups-onboarding-auto-saved-title = Tab groups are auto-saved. Find them here.
 
 ## Multi Profiles feature onboarding messages
 

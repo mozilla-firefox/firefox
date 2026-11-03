@@ -357,134 +357,9 @@ const MESSAGES = () => {
       },
       skip_in_tests: "it's not tested in automation",
     },
-    // Appears the first time a user uses the "save and close" action on a tab group,
-    // anchored to the alltabs-button. Will only show if at least an hour has passed
-    // since the CREATE_TAB_GROUP callout showed.
-    {
-      id: "SAVE_TAB_GROUP_ONBOARDING_CALLOUT",
-      template: "feature_callout",
-      groups: [],
-      content: {
-        id: "SAVE_TAB_GROUP_ONBOARDING_CALLOUT",
-        template: "multistage",
-        backdrop: "transparent",
-        transitions: false,
-        screens: [
-          {
-            id: "SAVE_TAB_GROUP_ONBOARDING_CALLOUT_ALLTABS_BUTTON",
-            anchors: [
-              {
-                selector: "#alltabs-button",
-                panel_position: {
-                  anchor_attachment: "bottomcenter",
-                  callout_attachment: "topright",
-                },
-              },
-            ],
-            content: {
-              position: "callout",
-              padding: 16,
-              width: "330px",
-              title_logo: {
-                imageURL:
-                  "chrome://browser/content/asrouter/assets/smiling-fox-icon.svg",
-                width: "24px",
-                height: "24px",
-                marginInline: "0 16px",
-                alignment: "top",
-              },
-              title: {
-                string_id: "tab-groups-onboarding-saved-groups-title-4",
-              },
-              primary_button: {
-                label: {
-                  string_id: "tab-groups-onboarding-dismiss",
-                },
-                action: {
-                  dismiss: true,
-                },
-              },
-            },
-          },
-        ],
-      },
-      targeting:
-        "('browser.tabs.groups.enabled' | preferenceValue) && ('browser.tabs.groups.onboardingCallouts.enabled' | preferenceValue) && userPrefs.cfrFeatures && (!messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] || messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] < currentDate|date - 3600000) && alltabsButtonAreaType != null",
-      trigger: {
-        id: "tabGroupSaved",
-      },
-      frequency: {
-        lifetime: 1,
-      },
-      skip_in_tests: "it's not tested in automation",
-    },
-    // Appears the first time a user uses the "save and close" action on a tab group,
-    // if the alltabs-button has been removed. Anchored to the urlbar. Will only show
-    // if CREATE_TAB_GROUP callout has not shown, or at least an hour has passed since
-    // the CREATE_TAB_GROUP callout showed.
-    {
-      id: "SAVE_TAB_GROUP_ONBOARDING_CALLOUT",
-      template: "feature_callout",
-      groups: [],
-      content: {
-        id: "SAVE_TAB_GROUP_ONBOARDING_CALLOUT",
-        template: "multistage",
-        backdrop: "transparent",
-        transitions: false,
-        screens: [
-          {
-            id: "SAVE_TAB_GROUP_ONBOARDING_CALLOUT_URLBAR",
-            anchors: [
-              {
-                selector: ".urlbar-input-box",
-                panel_position: {
-                  anchor_attachment: "bottomcenter",
-                  callout_attachment: "topcenter",
-                },
-              },
-            ],
-            content: {
-              position: "callout",
-              padding: 16,
-              width: "330px",
-              title_logo: {
-                imageURL:
-                  "chrome://browser/content/asrouter/assets/smiling-fox-icon.svg",
-                width: "24px",
-                height: "24px",
-                marginInline: "0 16px",
-                alignment: "top",
-              },
-              title: {
-                string_id:
-                  "tab-groups-onboarding-saved-groups-no-alltabs-button-title-2",
-              },
-              primary_button: {
-                label: {
-                  string_id: "tab-groups-onboarding-dismiss",
-                },
-                action: {
-                  dismiss: true,
-                },
-              },
-            },
-          },
-        ],
-      },
-      targeting:
-        "('browser.tabs.groups.enabled' | preferenceValue) && ('browser.tabs.groups.onboardingCallouts.enabled' | preferenceValue) && userPrefs.cfrFeatures && (!messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] || messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] < currentDate|date - 3600000) && alltabsButtonAreaType == null",
-      trigger: {
-        id: "tabGroupSaved",
-      },
-      frequency: {
-        lifetime: 1,
-      },
-      skip_in_tests: "it's not tested in automation",
-    },
     // Appears the first time a user creates a tab group, after clicking the "Done"
-    // button. Anchored to the alltabs-button. Will only show if the SAVE_TAB_GROUP
-    // callout has not shown, or if at least an hour has passed
-    // since the SAVE_TAB_GROUP callout showed.
+    // button if the alternateMenu pref is enabled. Anchored to the app menu button.
+    // Will not show if the SESSION_RESTORE_TAB_GROUP callout has already shown.
     {
       id: "CREATE_TAB_GROUP_ONBOARDING_CALLOUT",
       template: "feature_callout",
@@ -496,10 +371,10 @@ const MESSAGES = () => {
         transitions: false,
         screens: [
           {
-            id: "CREATE_TAB_GROUP_ONBOARDING_CALLOUT_ALLTABS_BUTTON",
+            id: "CREATE_TAB_GROUP_ONBOARDING_CALLOUT_APP_MENU",
             anchors: [
               {
-                selector: "#alltabs-button",
+                selector: "#PanelUI-menu-button",
                 panel_position: {
                   anchor_attachment: "bottomcenter",
                   callout_attachment: "topright",
@@ -512,14 +387,14 @@ const MESSAGES = () => {
               width: "330px",
               title_logo: {
                 imageURL:
-                  "chrome://browser/content/asrouter/assets/smiling-fox-icon.svg",
-                width: "24px",
-                height: "24px",
+                  "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/ms-images/20260827211103--b43f674d-b404-4bd4-b4ae-50ae1f75563d--7073e1ab-9b89-4787-96b2-20ab2302437a.svg",
+                width: "30px",
+                height: "30px",
                 marginInline: "0 16px",
                 alignment: "top",
               },
               title: {
-                string_id: "tab-groups-onboarding-create-group-title-4",
+                string_id: "tab-groups-onboarding-auto-saved-title",
               },
               primary_button: {
                 label: {
@@ -534,7 +409,7 @@ const MESSAGES = () => {
         ],
       },
       targeting:
-        "('browser.tabs.groups.enabled' | preferenceValue) && ('browser.tabs.groups.onboardingCallouts.enabled' | preferenceValue) && userPrefs.cfrFeatures && (!messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] || messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] < currentDate|date - 3600000) && alltabsButtonAreaType != null",
+        "('browser.tabs.groups.enabled' | preferenceValue) && userPrefs.cfrFeatures && ('browser.tabs.groups.alternateMenu' | preferenceValue) && !(messageImpressions.SESSION_RESTORE_TAB_GROUP_CALLOUT | length)",
       trigger: {
         id: "tabGroupCreated",
       },
@@ -544,9 +419,8 @@ const MESSAGES = () => {
       skip_in_tests: "it's not tested in automation",
     },
     // Appears the first time a user creates a tab group, after clicking the "Done"
-    // button, if the alltabs-button has been removed. Anchored to the urlbar. Will
-    // only show if the SAVE_TAB_GROUP callout has not shown, or if at least an hour
-    // has passed since the SAVE_TAB_GROUP callout showed.
+    // button if the alternateMenu pref is disabled. Anchored to the urlbar.
+    // Will not show if the SESSION_RESTORE_TAB_GROUP callout has already shown.
     {
       id: "CREATE_TAB_GROUP_ONBOARDING_CALLOUT",
       template: "feature_callout",
@@ -574,9 +448,9 @@ const MESSAGES = () => {
               width: "330px",
               title_logo: {
                 imageURL:
-                  "chrome://browser/content/asrouter/assets/smiling-fox-icon.svg",
-                width: "24px",
-                height: "24px",
+                  "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/ms-images/20260827211103--b43f674d-b404-4bd4-b4ae-50ae1f75563d--7073e1ab-9b89-4787-96b2-20ab2302437a.svg",
+                width: "30px",
+                height: "30px",
                 marginInline: "0 16px",
                 alignment: "top",
               },
@@ -597,7 +471,7 @@ const MESSAGES = () => {
         ],
       },
       targeting:
-        "('browser.tabs.groups.enabled' | preferenceValue) && ('browser.tabs.groups.onboardingCallouts.enabled' | preferenceValue) && userPrefs.cfrFeatures && (!messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] || messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT[messageImpressions.SAVE_TAB_GROUP_ONBOARDING_CALLOUT | length - 1] < currentDate|date - 3600000) && alltabsButtonAreaType == null",
+        "('browser.tabs.groups.enabled' | preferenceValue) && userPrefs.cfrFeatures && !('browser.tabs.groups.alternateMenu' | preferenceValue) && !(messageImpressions.SESSION_RESTORE_TAB_GROUP_CALLOUT | length)",
       trigger: {
         id: "tabGroupCreated",
       },
@@ -607,7 +481,9 @@ const MESSAGES = () => {
       skip_in_tests: "it's not tested in automation",
     },
     // Appears after a browser restart if Session Restore is disabled, to direct
-    // users to tab groups that were saved automatically. Anchored to the alltabs-button.
+    // users to tab groups that were saved automatically, if the alternateMenu pref
+    // is enabled. Anchored to the app menu button. Will not show if the
+    // CREATE_TAB_GROUP callout has already shown.
     {
       id: "SESSION_RESTORE_TAB_GROUP_CALLOUT",
       template: "feature_callout",
@@ -619,10 +495,10 @@ const MESSAGES = () => {
         transitions: false,
         screens: [
           {
-            id: "SESSION_RESTORE_TAB_GROUP_CALLOUT_ALLTABS_BUTTON",
+            id: "SESSION_RESTORE_TAB_GROUP_CALLOUT_APP_MENU",
             anchors: [
               {
-                selector: "#alltabs-button",
+                selector: "#PanelUI-menu-button",
                 panel_position: {
                   anchor_attachment: "bottomcenter",
                   callout_attachment: "topright",
@@ -635,14 +511,14 @@ const MESSAGES = () => {
               width: "330px",
               title_logo: {
                 imageURL:
-                  "chrome://browser/content/asrouter/assets/smiling-fox-icon.svg",
-                width: "24px",
-                height: "24px",
+                  "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/ms-images/20260827211103--b43f674d-b404-4bd4-b4ae-50ae1f75563d--7073e1ab-9b89-4787-96b2-20ab2302437a.svg",
+                width: "30px",
+                height: "30px",
                 marginInline: "0 16px",
                 alignment: "top",
               },
               title: {
-                string_id: "tab-groups-onboarding-session-restore-title-3",
+                string_id: "tab-groups-onboarding-auto-saved-title",
               },
               primary_button: {
                 label: {
@@ -657,7 +533,7 @@ const MESSAGES = () => {
         ],
       },
       targeting:
-        "('browser.tabs.groups.enabled' | preferenceValue) && ('browser.tabs.groups.onboardingCallouts.enabled' | preferenceValue) && userPrefs.cfrFeatures && previousSessionEnd && ('browser.startup.page' | preferenceValue != 3) && savedTabGroups >= 1 && alltabsButtonAreaType != null",
+        "('browser.tabs.groups.enabled' | preferenceValue) && userPrefs.cfrFeatures && previousSessionEnd && ('browser.startup.page' | preferenceValue != 3) && savedTabGroups >= 1 && ('browser.tabs.groups.alternateMenu' | preferenceValue) && !(messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT | length)",
       trigger: {
         id: "defaultBrowserCheck",
       },
@@ -668,8 +544,9 @@ const MESSAGES = () => {
       skip_in_tests: "not tested in automation",
     },
     // Appears after a browser restart if Session Restore is disabled, to direct
-    // users to tab groups that were saved automatically, for users who have
-    // removed the alltabs button. Anchored to the urlbar.
+    // users to tab groups that were saved automatically, if the alternateMenu pref
+    // is disabled. Anchored to the urlbar. Will not show if the CREATE_TAB_GROUP
+    // callout has already shown.
     {
       id: "SESSION_RESTORE_TAB_GROUP_CALLOUT",
       template: "feature_callout",
@@ -697,9 +574,9 @@ const MESSAGES = () => {
               width: "330px",
               title_logo: {
                 imageURL:
-                  "chrome://browser/content/asrouter/assets/smiling-fox-icon.svg",
-                width: "24px",
-                height: "24px",
+                  "https://firefox-settings-attachments.cdn.mozilla.net/main-workspace/ms-images/20260827211103--b43f674d-b404-4bd4-b4ae-50ae1f75563d--7073e1ab-9b89-4787-96b2-20ab2302437a.svg",
+                width: "30px",
+                height: "30px",
                 marginInline: "0 16px",
                 alignment: "top",
               },
@@ -720,7 +597,7 @@ const MESSAGES = () => {
         ],
       },
       targeting:
-        "('browser.tabs.groups.enabled' | preferenceValue) && ('browser.tabs.groups.onboardingCallouts.enabled' | preferenceValue) && userPrefs.cfrFeatures && previousSessionEnd && ('browser.startup.page' | preferenceValue != 3) && savedTabGroups >= 1 && alltabsButtonAreaType == null",
+        "('browser.tabs.groups.enabled' | preferenceValue) && userPrefs.cfrFeatures && previousSessionEnd && ('browser.startup.page' | preferenceValue != 3) && savedTabGroups >= 1 && !('browser.tabs.groups.alternateMenu' | preferenceValue) && !(messageImpressions.CREATE_TAB_GROUP_ONBOARDING_CALLOUT | length)",
       trigger: {
         id: "defaultBrowserCheck",
       },
