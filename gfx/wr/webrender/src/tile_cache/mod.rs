@@ -2851,8 +2851,8 @@ impl TileCacheInstance {
                     );
                 }
             }
-            PrimitiveKind::ImageBorder { data_handle, .. } => {
-                let border_data = &data_stores.image_border[data_handle].kind;
+            PrimitiveKind::ImageBorder { handle } => {
+                let border_data = &dl_stores.image_borders[handle].kind;
                 prim_info.images.push(ImageDependency {
                     key: border_data.request.key,
                     generation: resource_cache.get_image_generation(border_data.request.key),

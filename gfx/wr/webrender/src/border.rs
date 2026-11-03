@@ -6,17 +6,12 @@ use euclid::vec2;
 use api::{BorderSide, BorderStyle, ColorF};
 use api::{NormalBorder as ApiNormalBorder, RepeatMode};
 use api::units::*;
-use crate::clip::ClipNodeId;
 use crate::ellipse::Ellipse;
 use crate::renderer::GpuBufferBuilderF;
 use crate::render_task::{RenderTask, RenderTaskKind};
-use crate::scene_building::SceneBuilder;
-use crate::spatial_tree::SpatialNodeIndex;
 use crate::gpu_types::{BorderInstance, BorderInstanceGpuData, BorderSegment};
 use crate::prim_store::NinePatchDescriptor;
-use crate::prim_store::borders::NormalBorderPrim;
 use crate::util::{lerp, RectHelpers};
-use crate::internal_types::LayoutPrimitiveInfo;
 use crate::segment::EdgeMask;
 
 // Using 2048 as the maximum radius in device space before which we
@@ -76,27 +71,6 @@ pub struct BorderSegmentCacheKey {
 // builder-side interning can build a stable normal-border key. Re-exported to
 // keep existing references working.
 pub use api::key_types::ensure_no_corner_overlap;
-
-impl<'a> SceneBuilder<'a> {
-    pub fn add_normal_border(
-        &mut self,
-        info: &LayoutPrimitiveInfo,
-        border: &ApiNormalBorder,
-        widths: LayoutSideOffsets,
-        spatial_node_index: SpatialNodeIndex,
-        clip_node_id: ClipNodeId,
-    ) {
-        self.add_primitive(
-            spatial_node_index,
-            clip_node_id,
-            info,
-            NormalBorderPrim {
-                border: (*border).into(),
-                widths: widths.to_au(),
-            },
-        );
-    }
-}
 
 pub trait BorderSideHelpers {
     fn border_color(&self, is_inner_border: bool) -> ColorF;

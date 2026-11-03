@@ -444,12 +444,10 @@ macro_rules! enumerate_interners {
     ($macro_name: ident) => {
         $macro_name! {
             clip: ClipIntern,
-            // Rectangles, box shadows, line decorations, both image kinds and
-            // the three gradients are interned by the content display list
-            // builder, so they have no slot here. See
+            // Rectangles, box shadows, line decorations, both image kinds, the
+            // three gradients and both border kinds are interned by the content
+            // display list builder, so they have no slot here. See
             // doc/dl-builder-interning.md.
-            normal_border: NormalBorderPrim,
-            image_border: ImageBorder,
             picture: Picture,
             text_run: TextRun,
             filter_data: FilterDataIntern,

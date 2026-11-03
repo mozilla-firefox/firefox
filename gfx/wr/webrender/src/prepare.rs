@@ -557,9 +557,9 @@ fn prepare_prim_for_render(
             scratch.frame.draw_mut(draw_index).kind_scratch =
                 KindScratchHandle::TextRun(text_run_handle);
         }
-        PrimitiveKind::NormalBorder { data_handle } => {
+        PrimitiveKind::NormalBorder { handle } => {
             tracy_rs::profile_scope!("NormalBorder");
-            let prim_data = &data_stores.normal_border[*data_handle];
+            let prim_data = &dl_stores.normal_borders[*handle];
             let aligned_aa_edges = prim_data.common.aligned_aa_edges;
             let transformed_aa_edges = prim_data.common.transformed_aa_edges;
             let border_data = &prim_data.kind;
@@ -582,9 +582,9 @@ fn prepare_prim_for_render(
 
             return;
         }
-        PrimitiveKind::ImageBorder { data_handle, .. } => {
+        PrimitiveKind::ImageBorder { handle } => {
             tracy_rs::profile_scope!("ImageBorder");
-            let prim_data = &data_stores.image_border[*data_handle];
+            let prim_data = &dl_stores.image_borders[*handle];
             let aligned_aa_edges = prim_data.common.aligned_aa_edges;
             let transformed_aa_edges = prim_data.common.transformed_aa_edges;
             let border_data = &prim_data.kind;

@@ -46,6 +46,8 @@ macro_rules! enumerate_dl_stores {
             linear_gradients: api::interned_prims::LinearGradientKey => crate::prim_store::gradient::LinearGradientTemplate, INTERNED_LINEAR_GRADIENTS, linear_grad,
             radial_gradients: api::interned_prims::RadialGradientKey => crate::prim_store::gradient::RadialGradientTemplate, INTERNED_RADIAL_GRADIENTS, radial_grad,
             conic_gradients: api::interned_prims::ConicGradientKey => crate::prim_store::gradient::ConicGradientTemplate, INTERNED_CONIC_GRADIENTS, conic_grad,
+            normal_borders: api::interned_prims::NormalBorderKey => crate::prim_store::borders::NormalBorderTemplate, INTERNED_NORMAL_BORDERS, normal_border,
+            image_borders: api::interned_prims::ImageBorderKey => crate::prim_store::borders::ImageBorderTemplate, INTERNED_IMAGE_BORDERS, image_border,
         }
     }
 }
@@ -68,6 +70,8 @@ macro_rules! enumerate_scene_dl_stores {
             linear_gradients: api::interned_prims::LinearGradientKey => crate::prim_store::PrimPlacement, linear_grad,
             radial_gradients: api::interned_prims::RadialGradientKey => crate::prim_store::PrimPlacement, radial_grad,
             conic_gradients: api::interned_prims::ConicGradientKey => crate::prim_store::PrimPlacement, conic_grad,
+            normal_borders: api::interned_prims::NormalBorderKey => crate::prim_store::PrimPlacement, normal_border,
+            image_borders: api::interned_prims::ImageBorderKey => crate::prim_store::PrimPlacement, image_border,
         }
     }
 }

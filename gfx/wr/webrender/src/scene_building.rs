@@ -35,12 +35,12 @@
 //!  - backdrop filters (see add_backdrop_filter)
 //!
 
-use api::{BorderDisplayItem, BorderKind, BuiltDisplayList, BuiltDisplayListIter, PrimitiveFlags, SnapshotInfo};
+use api::{BorderKind, BuiltDisplayList, BuiltDisplayListIter, PrimitiveFlags, SnapshotInfo};
 use api::{ClipId, ColorF, CommonItemProperties, ComplexClipRegion, ComponentTransferFuncType, RasterSpace};
 use api::{DebugFlags, DisplayItem, DisplayItemRef, DlParseContext, ExternalScrollId, FilterData};
 use api::{FilterOp, FontInstanceKey, FontSize, GlyphInstance, GlyphOptions, GlyphShadowMode};
 use api::{IdNamespace, IframeDisplayItem, ImageKey, ItemRange, QualitySettings};
-use api::{NinePatchBorderSource, PipelineId, MixBlendMode, StackingContextFlags};
+use api::{PipelineId, MixBlendMode, StackingContextFlags};
 use api::{PropertyBinding, ReferenceFrameKind, ScrollFrameDescriptor};
 use api::{APZScrollGeneration, HasScrollLinkedEffect, SpatialId, StickyFrameDescriptor, ImageMask, ItemTag};
 use api::{ClipMode, TransformStyle, TempFilterData};
@@ -68,11 +68,10 @@ use crate::picture::{BlitReason, OrderedPictureChild, PrimitiveList, PictureFlag
 use crate::surface::SurfaceInfo;
 use crate::picture_graph::PictureGraph;
 use crate::prim_store::{PrimitiveInstance, PrimitiveInstanceIndex, PrimitiveStoreStats};
-use crate::prim_store::{PrimitiveKind, NinePatchDescriptor, PrimitiveStore};
+use crate::prim_store::{PrimitiveKind, PrimitiveStore};
 use crate::prim_store::{InternablePrimitive, PictureIndex, PrimPlacement};
 use crate::prim_store::PolygonKey;
 use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
-use crate::prim_store::borders::ImageBorder;
 use crate::prim_store::picture::{Picture, PictureKey};
 use crate::picture_composite_mode::{PictureCompositeKey, PictureCompositeMode};
 use crate::prim_store::text_run::TextRun;
@@ -1544,19 +1543,31 @@ impl<'a> SceneBuilder<'a> {
             DisplayItem::Border(ref info) => {
                 tracy_rs::profile_scope!("border");
 
-                if let BorderKind::NinePatchImage(ref border) = info.details {
-                    if let NinePatchBorderSource::Image(key, _) = border.source {
-                        if !validate_image_key(key, namespace) {
-                            return;
-                        }
-                    }
-                }
-
-                // A gradient-sourced nine-patch is the gradient it is, with the
-                // descriptor and the border's rect in its key.
+                // Every kind is a handle; a nine-patch's descriptor, widths
+                // included, is in its key, and an image source's key namespace
+                // is checked where the entry is resolved. A gradient-sourced
+                // nine-patch is the gradient it is.
                 let stores = self.scene_stores;
-                let (spatial_id, clip_chain_id) = (info.common.spatial_id, info.common.clip_chain_id);
+                let (spatial_id, clip_chain_id) = (info.spatial_id, info.clip_chain_id);
                 match info.details {
+                    BorderKind::Normal(border) => {
+                        self.add_dl_prim(
+                            spatial_id,
+                            clip_chain_id,
+                            &stores.normal_borders,
+                            border,
+                            |handle| PrimitiveKind::NormalBorder { handle },
+                        );
+                    }
+                    BorderKind::NinePatchImage(border) => {
+                        self.add_dl_prim(
+                            spatial_id,
+                            clip_chain_id,
+                            &stores.image_borders,
+                            border,
+                            |handle| PrimitiveKind::ImageBorder { handle },
+                        );
+                    }
                     BorderKind::NinePatchLinearGradient(gradient) => {
                         self.add_dl_prim(
                             spatial_id,
@@ -1565,7 +1576,6 @@ impl<'a> SceneBuilder<'a> {
                             gradient,
                             |handle| PrimitiveKind::LinearGradient { handle },
                         );
-                        return;
                     }
                     BorderKind::NinePatchRadialGradient(gradient) => {
                         self.add_dl_prim(
@@ -1575,7 +1585,6 @@ impl<'a> SceneBuilder<'a> {
                             gradient,
                             |handle| PrimitiveKind::RadialGradient { handle },
                         );
-                        return;
                     }
                     BorderKind::NinePatchConicGradient(gradient) => {
                         self.add_dl_prim(
@@ -1585,22 +1594,8 @@ impl<'a> SceneBuilder<'a> {
                             gradient,
                             |handle| PrimitiveKind::ConicGradient { handle },
                         );
-                        return;
                     }
-                    BorderKind::Normal(..) | BorderKind::NinePatchImage(..) => {}
                 }
-
-                let (layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
-                    &info.common,
-                    info.bounds,
-                );
-
-                self.add_border(
-                    spatial_node_index,
-                    clip_node_id,
-                    &layout,
-                    info,
-                );
             }
             DisplayItem::ImageMaskClip(ref info) => {
                 tracy_rs::profile_scope!("image_clip");
@@ -2765,62 +2760,6 @@ impl<'a> SceneBuilder<'a> {
         );
         self.id_to_index_mapper_stack.last_mut().unwrap().add_spatial_node(new_node_id, node_index);
         node_index
-    }
-
-    pub fn add_border(
-        &mut self,
-        spatial_node_index: SpatialNodeIndex,
-        clip_node_id: ClipNodeId,
-        info: &LayoutPrimitiveInfo,
-        border_item: &BorderDisplayItem,
-    ) {
-        match border_item.details {
-            BorderKind::NinePatchImage(ref border) => {
-                let nine_patch = NinePatchDescriptor {
-                    width: border.width,
-                    height: border.height,
-                    slice: border.slice,
-                    fill: border.fill,
-                    repeat_horizontal: border.repeat_horizontal,
-                    repeat_vertical: border.repeat_vertical,
-                    widths: border_item.widths.into(),
-                };
-
-                let (key, rendering) = match border.source {
-                    NinePatchBorderSource::Image(key, rendering) => (key, rendering),
-                    // The builder interns every gradient source and records it
-                    // as one of the handle variants below.
-                    _ => unreachable!("nine-patch image border with a gradient source"),
-                };
-                let prim = ImageBorder {
-                    key,
-                    rendering,
-                    tile: None,
-                    nine_patch,
-                };
-
-                self.add_primitive(
-                    spatial_node_index,
-                    clip_node_id,
-                    info,
-                    prim,
-                );
-            }
-            BorderKind::NinePatchLinearGradient(..)
-            | BorderKind::NinePatchRadialGradient(..)
-            | BorderKind::NinePatchConicGradient(..) => {
-                unreachable!("gradient-sourced nine-patch placed by build_item")
-            }
-            BorderKind::Normal(ref border) => {
-                self.add_normal_border(
-                    info,
-                    border,
-                    border_item.widths,
-                    spatial_node_index,
-                    clip_node_id,
-                );
-            }
-        }
     }
 
     pub fn add_text(

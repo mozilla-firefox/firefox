@@ -586,14 +586,15 @@ pub enum BorderDetails {
     NinePatch(NinePatchBorder),
 }
 
-/// What a border item carries. A gradient-sourced nine-patch is interned as
-/// the gradient it is, with the nine-patch descriptor (widths included) folded
-/// into its key, so the item holds a bare handle for it. An image source is
-/// not interned, so it keeps its description; the item's `widths` complete it.
+/// What a border item carries: a bare handle whichever kind it is. A
+/// gradient-sourced nine-patch is interned as the gradient it is, and an image
+/// one as an image border; both keys hold the nine-patch descriptor, widths
+/// included. A normal border's key holds its four sides, radii (already
+/// clamped to the border box), inset, AA flag and widths.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub enum BorderKind {
-    Normal(NormalBorder),
-    NinePatchImage(NinePatchBorder),
+    Normal(crate::interning::Handle<crate::interned_prims::NormalBorderKey>),
+    NinePatchImage(crate::interning::Handle<crate::interned_prims::ImageBorderKey>),
     NinePatchLinearGradient(crate::interning::Handle<crate::interned_prims::LinearGradientKey>),
     NinePatchRadialGradient(crate::interning::Handle<crate::interned_prims::RadialGradientKey>),
     NinePatchConicGradient(crate::interning::Handle<crate::interned_prims::ConicGradientKey>),
@@ -601,9 +602,9 @@ pub enum BorderKind {
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct BorderDisplayItem {
-    pub common: CommonItemProperties,
-    pub bounds: LayoutRect,
-    pub widths: LayoutSideOffsets,
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The bounds and widths are in the key, whichever kind it is.
     pub details: BorderKind,
 }
 
@@ -2489,7 +2490,7 @@ impl_default_for_enums! {
     RepeatMode => Stretch,
     NinePatchBorderSource => Image(ImageKey::default(), ImageRendering::Auto),
     BorderDetails => Normal(NormalBorder::default()),
-    BorderKind => Normal(NormalBorder::default()),
+    BorderKind => Normal(crate::interning::Handle::INVALID),
     BorderRadiusKind => Uniform,
     BorderStyle => None,
     BoxShadowClipMode => Outset,

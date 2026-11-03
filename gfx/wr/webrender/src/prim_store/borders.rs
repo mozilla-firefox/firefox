@@ -12,27 +12,24 @@ use crate::quad::{self, QuadDescriptor, QuadTransformState};
 use crate::quad_clip::QuadClipStack;
 use crate::render_task_cache::{RenderTaskCacheKey, RenderTaskCacheKeyKind, RenderTaskParent, to_cache_size};
 use crate::frame_builder::{FrameBuildingContext, FrameBuildingState};
-use crate::intern;
-use crate::internal_types::LayoutPrimitiveInfo;
+use crate::dl_interner::{DlResolve, DlResolveContext};
 use crate::prim_store::{
-    InternablePrimitive, NinePatchDescriptor, PrimTemplate, PrimTemplateCommonData, PrimitiveKind, PrimitiveScratchBuffer, PrimitiveStore
+    NinePatchDescriptor, PrimTemplate, PrimTemplateCommonData, PrimitiveScratchBuffer
 };
+use crate::scene_building::validate_image_key;
 use crate::resource_cache::ImageRequest;
 use crate::spatial_tree::SpatialTree;
 use crate::render_task::RenderTask;
 use crate::render_task_graph::RenderTaskId;
 use crate::util::clamp_to_scale_factor;
 
-// `NormalBorderPrim` and its key live in `webrender_api::interned_prims` so
-// content-process interning can hold them. Re-exported to keep existing
-// references working.
-pub use api::interned_prims::{NormalBorderKey, NormalBorderPrim};
-
-impl intern::InternDebug for NormalBorderKey {}
+// `NormalBorderPrim` and its key live in `webrender_api::interned_prims`,
+// since the content display list builder interns them.
+pub use api::interned_prims::NormalBorderKey;
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(MallocSizeOf)]
+#[derive(MallocSizeOf, Clone)]
 pub struct NormalBorderData {
     pub border: NormalBorder,
     pub widths: LayoutSideOffsets,
@@ -286,11 +283,12 @@ impl NormalBorderData {
 
 pub type NormalBorderTemplate = PrimTemplate<NormalBorderData>;
 
-impl From<NormalBorderKey> for NormalBorderTemplate {
-    fn from(key: NormalBorderKey) -> Self {
+/// Nothing to validate: a normal border names no resource.
+impl DlResolve<NormalBorderKey> for NormalBorderTemplate {
+    fn resolve(key: &NormalBorderKey, _ctx: &DlResolveContext) -> Self {
         let common = PrimTemplateCommonData::with_key_common(key.common);
 
-        let mut border: NormalBorder = key.kind.border.into();
+        let mut border: NormalBorder = key.kind.border.clone().into();
         let widths = LayoutSideOffsets::from_au(key.kind.widths);
 
         // FIXME(emilio): Is this the best place to do this?
@@ -306,49 +304,17 @@ impl From<NormalBorderKey> for NormalBorderTemplate {
     }
 }
 
-pub type NormalBorderDataHandle = intern::Handle<NormalBorderPrim>;
-
-impl intern::Internable for NormalBorderPrim {
-    type Key = NormalBorderKey;
-    type StoreData = NormalBorderTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_NORMAL_BORDERS;
-}
-
-impl InternablePrimitive for NormalBorderPrim {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> NormalBorderKey {
-        NormalBorderKey::new(
-            info.into(),
-            self,
-        )
-    }
-
-    fn make_instance_kind(
-        _key: NormalBorderKey,
-        data_handle: NormalBorderDataHandle,
-        _: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::NormalBorder {
-            data_handle,
-        }
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
-// `ImageBorder` now lives in `webrender_api::interned_prims` (with the image
-// request inlined as key/rendering/tile so the value is api-resident). The
-// frame-time `ImageBorderData` below rebuilds the `ImageRequest`.
-pub use api::interned_prims::{ImageBorder, ImageBorderKey};
-
-impl intern::InternDebug for ImageBorderKey {}
+// `ImageBorder` and its key live in `webrender_api::interned_prims` (with the
+// image request inlined as key/rendering/tile so the value is api-resident),
+// since the content display list builder interns them. The frame-time
+// `ImageBorderData` below rebuilds the `ImageRequest`.
+pub use api::interned_prims::ImageBorderKey;
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(MallocSizeOf)]
+#[derive(MallocSizeOf, Clone)]
 pub struct ImageBorderData {
     #[ignore_malloc_size_of = "Arc"]
     pub request: ImageRequest,
@@ -381,51 +347,27 @@ impl ImageBorderData {
 
 pub type ImageBorderTemplate = PrimTemplate<ImageBorderData>;
 
-impl From<ImageBorderKey> for ImageBorderTemplate {
-    fn from(key: ImageBorderKey) -> Self {
-        let common = PrimTemplateCommonData::with_key_common(key.common);
+/// As for `ImageTemplate`, an image key from any namespace other than the one
+/// the display list was submitted with becomes `ImageKey::DUMMY`, which names
+/// no resource, so the entry exists and draws nothing (bug 2054652).
+impl DlResolve<ImageBorderKey> for ImageBorderTemplate {
+    fn resolve(key: &ImageBorderKey, ctx: &DlResolveContext) -> Self {
+        let image_key = if validate_image_key(key.kind.key, ctx.id_namespace) {
+            key.kind.key
+        } else {
+            api::ImageKey::DUMMY
+        };
 
         ImageBorderTemplate {
-            common,
+            common: PrimTemplateCommonData::with_key_common(key.common),
             kind: ImageBorderData {
                 request: ImageRequest {
-                    key: key.kind.key,
+                    key: image_key,
                     rendering: key.kind.rendering,
                     tile: key.kind.tile,
                 },
-                nine_patch: key.kind.nine_patch,
+                nine_patch: key.kind.nine_patch.clone(),
             }
-        }
-    }
-}
-
-pub type ImageBorderDataHandle = intern::Handle<ImageBorder>;
-
-impl intern::Internable for ImageBorder {
-    type Key = ImageBorderKey;
-    type StoreData = ImageBorderTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_IMAGE_BORDERS;
-}
-
-impl InternablePrimitive for ImageBorder {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> ImageBorderKey {
-        ImageBorderKey::new(
-            info.into(),
-            self,
-        )
-    }
-
-    fn make_instance_kind(
-        _key: ImageBorderKey,
-        data_handle: ImageBorderDataHandle,
-        _: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::ImageBorder {
-            data_handle
         }
     }
 }
@@ -440,10 +382,10 @@ fn test_struct_sizes() {
     //     test expectations and move on.
     // (b) You made a structure larger. This is not necessarily a problem, but should only
     //     be done with care, and after checking if talos performance regresses badly.
-    assert_eq!(mem::size_of::<NormalBorderPrim>(), 116, "NormalBorderPrim size changed");
+    assert_eq!(mem::size_of::<api::interned_prims::NormalBorderPrim>(), 116, "NormalBorderPrim size changed");
     assert_eq!(mem::size_of::<NormalBorderTemplate>(), 200, "NormalBorderTemplate size changed");
     assert_eq!(mem::size_of::<NormalBorderKey>(), 152, "NormalBorderKey size changed");
-    assert_eq!(mem::size_of::<ImageBorder>(), 68, "ImageBorder size changed");
+    assert_eq!(mem::size_of::<api::interned_prims::ImageBorder>(), 68, "ImageBorder size changed");
     assert_eq!(mem::size_of::<ImageBorderTemplate>(), 104, "ImageBorderTemplate size changed");
     assert_eq!(mem::size_of::<ImageBorderKey>(), 104, "ImageBorderKey size changed");
 }

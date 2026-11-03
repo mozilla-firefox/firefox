@@ -37,7 +37,7 @@ pub mod interned;
 pub mod storage;
 
 use backdrop::{BackdropCaptureDataHandle, BackdropRenderDataHandle};
-use borders::{ImageBorderDataHandle, NormalBorderDataHandle};
+use borders::{ImageBorderKey, NormalBorderKey};
 use gradient::{ConicGradientKey, LinearGradientKey, RadialGradientKey};
 use image::{ImagePrimKey, YuvImagePrimKey};
 use line_dec::LineDecorationKey;
@@ -258,12 +258,14 @@ pub enum PrimitiveKind {
         handle: DlHandle<LineDecorationKey>,
     },
     NormalBorder {
-        /// Handle to the common interned data for this primitive.
-        data_handle: NormalBorderDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<NormalBorderKey>,
     },
     ImageBorder {
-        /// Handle to the common interned data for this primitive.
-        data_handle: ImageBorderDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<ImageBorderKey>,
     },
     Rectangle {
         /// Handle into the follower store fed by the content display list
@@ -437,8 +439,8 @@ impl PrimitiveInstance {
                 horizontal: dl_stores.line_decorations[handle].kind.orientation
                     == LineOrientation::Horizontal,
             },
-            PrimitiveKind::NormalBorder { data_handle, .. } => SnapRounding::BorderInner {
-                widths: data_stores.normal_border[data_handle].kind.widths,
+            PrimitiveKind::NormalBorder { handle } => SnapRounding::BorderInner {
+                widths: dl_stores.normal_borders[handle].kind.widths,
             },
             _ => SnapRounding::Nearest,
         };
@@ -453,8 +455,8 @@ impl PrimitiveInstance {
             PrimitiveKind::Image { handle } => {
                 dl_stores.images.uid(*handle)
             }
-            PrimitiveKind::ImageBorder { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::ImageBorder { handle } => {
+                dl_stores.image_borders.uid(*handle)
             }
             PrimitiveKind::LineDecoration { handle } => {
                 dl_stores.line_decorations.uid(*handle)
@@ -462,8 +464,8 @@ impl PrimitiveInstance {
             PrimitiveKind::LinearGradient { handle } => {
                 dl_stores.linear_gradients.uid(*handle)
             }
-            PrimitiveKind::NormalBorder { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::NormalBorder { handle } => {
+                dl_stores.normal_borders.uid(*handle)
             }
             PrimitiveKind::Picture { data_handle, .. } => {
                 data_handle.uid()

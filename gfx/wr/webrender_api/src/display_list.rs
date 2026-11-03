@@ -24,9 +24,9 @@ use crate::color::{ColorF, ColorU};
 use crate::font::{FontInstanceKey, GlyphInstance, GlyphOptions};
 use crate::image::{ColorDepth, ImageKey};
 use crate::interned_prims::{
-    BoxShadow, BoxShadowKey, ConicGradientKey, Image, ImagePrimKey, LineDecoration,
-    LineDecorationKey, LinearGradientKey, RadialGradientKey, RectangleKey, RectanglePrim,
-    YuvImage, YuvImagePrimKey,
+    BoxShadow, BoxShadowKey, ConicGradientKey, Image, ImageBorder, ImageBorderKey, ImagePrimKey,
+    LineDecoration, LineDecorationKey, LinearGradientKey, NormalBorderKey, NormalBorderPrim,
+    RadialGradientKey, RectangleKey, RectanglePrim, YuvImage, YuvImagePrimKey,
 };
 use crate::interning::{self, DlDelta};
 use crate::path::Path;
@@ -1246,6 +1246,8 @@ enum CapturedKey {
     Rectangle { transformed_aa_edges: EdgeMask },
     Line(LineDecoration),
     Image(Image),
+    /// Radii already clamped to the border box.
+    NormalBorder { border: di::NormalBorder, widths: LayoutSideOffsets },
 }
 
 #[repr(C)]
@@ -1998,7 +2000,7 @@ impl DisplayListBuilder {
         common: &di::CommonItemProperties,
         bounds: LayoutRect,
         widths: LayoutSideOffsets,
-        mut details: di::BorderDetails,
+        details: di::BorderDetails,
         // Stops for a `NinePatchBorderSource` gradient; empty otherwise.
         gradient_stops: &[di::GradientStop],
     ) {
@@ -2006,26 +2008,25 @@ impl DisplayListBuilder {
         let bounds = self.shift_rect(bounds, offset);
 
         let details = match details {
-            di::BorderDetails::Normal(ref mut border) => {
-                // Shrink radii that would make adjacent corners overlap.
-                crate::key_types::ensure_no_corner_overlap(&mut border.radius, bounds.size());
-                di::BorderKind::Normal(*border)
+            di::BorderDetails::Normal(border) => {
+                let (border, handle) = self.intern_normal_border(border, widths, bounds, &common);
+                self.capture_prim(&common, bounds, CapturedKey::NormalBorder { border, widths });
+                di::BorderKind::Normal(handle)
             }
-            // A gradient source is interned as the gradient it is, with the
-            // nine-patch descriptor folded into its key; an image source is not
-            // interned, so it keeps carrying its description.
+            // A gradient source is interned as the gradient it is, and an image
+            // source as an image border; both keys hold the nine-patch
+            // descriptor.
             di::BorderDetails::NinePatch(border) => {
-                let descriptor = || {
-                    Some(Box::new(NinePatchDescriptor {
-                        width: border.width,
-                        height: border.height,
-                        slice: border.slice,
-                        fill: border.fill,
-                        repeat_horizontal: border.repeat_horizontal,
-                        repeat_vertical: border.repeat_vertical,
-                        widths: widths.into(),
-                    }))
+                let nine_patch = NinePatchDescriptor {
+                    width: border.width,
+                    height: border.height,
+                    slice: border.slice,
+                    fill: border.fill,
+                    repeat_horizontal: border.repeat_horizontal,
+                    repeat_vertical: border.repeat_vertical,
+                    widths: widths.into(),
                 };
+                let descriptor = || Some(Box::new(nine_patch.clone()));
                 // The nine-patch stretches one gradient over the border box, so
                 // the tile is the whole nine-patch and there is no spacing. A
                 // border gradient skips the standalone optimisation pass, as it
@@ -2033,7 +2034,18 @@ impl DisplayListBuilder {
                 let stretch = LayoutSize::new(border.height as f32, border.width as f32);
                 let key_common = prim_key_common(&common, bounds, EdgeMask::all());
                 match border.source {
-                    di::NinePatchBorderSource::Image(..) => di::BorderKind::NinePatchImage(border),
+                    di::NinePatchBorderSource::Image(key, rendering) => {
+                        let key = ImageBorderKey::new(
+                            key_common,
+                            ImageBorder {
+                                key,
+                                rendering,
+                                tile: None,
+                                nine_patch: nine_patch.clone(),
+                            },
+                        );
+                        di::BorderKind::NinePatchImage(self.interners.intern(&key))
+                    }
                     di::NinePatchBorderSource::Gradient(gradient) => {
                         let Some(prim) = linear_gradient_prim(
                             bounds,
@@ -2090,11 +2102,34 @@ impl DisplayListBuilder {
         };
 
         self.push_item(&di::DisplayItem::Border(di::BorderDisplayItem {
-            common,
-            bounds,
+            spatial_id: common.spatial_id,
+            clip_chain_id: common.clip_chain_id,
             details,
-            widths,
         }));
+    }
+
+    /// Intern one normal border and return it as interned, with the handle to
+    /// record on its item. Shared by `push_border` and the shadow desugar,
+    /// which interns a recoloured copy.
+    fn intern_normal_border(
+        &mut self,
+        mut border: di::NormalBorder,
+        widths: LayoutSideOffsets,
+        bounds: LayoutRect,
+        common: &di::CommonItemProperties,
+    ) -> (di::NormalBorder, interning::Handle<NormalBorderKey>) {
+        // css-backgrounds-3 5.5: radii that do not fit the border box are
+        // scaled back by a uniform ratio. Applied before the key is built, so
+        // two borders that render identically after clamping share an entry.
+        crate::key_types::ensure_no_corner_overlap(&mut border.radius, bounds.size());
+        let key = NormalBorderKey::new(
+            prim_key_common(common, bounds, EdgeMask::all()),
+            NormalBorderPrim {
+                border: border.into(),
+                widths: widths.to_au(),
+            },
+        );
+        (border, self.interners.intern(&key))
     }
 
     pub fn push_box_shadow(
@@ -3360,6 +3395,11 @@ impl DisplayListBuilder {
                             | di::DisplayItem::Image(..) => Some(
                                 captured_keys.next().expect("primitive item without its captured key"),
                             ),
+                            di::DisplayItem::Border(info)
+                                if matches!(info.details, di::BorderKind::Normal(..)) =>
+                            {
+                                Some(captured_keys.next().expect("normal border item without its captured key"))
+                            }
                             _ => None,
                         },
                     }),
@@ -3528,6 +3568,19 @@ impl DisplayListBuilder {
                     image,
                 })
             }
+            CapturedKey::NormalBorder { border, widths } => {
+                let (_, handle) = self.intern_normal_border(
+                    border.with_color(color),
+                    widths,
+                    bounds,
+                    &common,
+                );
+                di::DisplayItem::Border(di::BorderDisplayItem {
+                    spatial_id: common.spatial_id,
+                    clip_chain_id: common.clip_chain_id,
+                    details: di::BorderKind::Normal(handle),
+                })
+            }
             CapturedKey::Line(ref decoration) => {
                 let line = self.intern_line(
                     &LineDecoration { color: color.into(), ..decoration.clone() },
@@ -3576,20 +3629,10 @@ impl DisplayListBuilder {
                 shadow: shadow_mode,
                 ..*info
             }),
-            Border(info) => {
-                // Only normal borders cast a shadow via this path.
-                let details = match info.details {
-                    di::BorderKind::Normal(border) => {
-                        di::BorderKind::Normal(border.with_color(color))
-                    }
-                    _ => return None,
-                };
-                Border(di::BorderDisplayItem {
-                    common: shift(info.common),
-                    bounds: info.bounds.translate(offset),
-                    details,
-                    ..*info
-                })
+            // Only a normal border casts a shadow, interned from its captured
+            // key like the kinds above.
+            Border(info) if matches!(info.details, di::BorderKind::Normal(..)) => {
+                unreachable!("shadow copy of a primitive with a captured key")
             }
             _ => return None,
         })
@@ -4686,6 +4729,192 @@ mod gradient_interning_tests {
             "the margins were not interned as rectangles",
         );
         assert!(count(&dl, |item| matches!(item, di::DisplayItem::Rectangle(..))) >= 2);
+    }
+}
+
+#[cfg(test)]
+mod border_interning_tests {
+    use super::*;
+    use crate::IdNamespace;
+
+    const BOX: LayoutRect = LayoutRect {
+        min: LayoutPoint::new(0.0, 0.0),
+        max: LayoutPoint::new(100.0, 100.0),
+    };
+
+    fn common() -> di::CommonItemProperties {
+        let pipeline_id = PipelineId::dummy();
+        di::CommonItemProperties {
+            clip_rect: LayoutRect::from_size(LayoutSize::new(1000.0, 1000.0)),
+            clip_chain_id: di::ClipChainId::INVALID,
+            spatial_id: di::SpatialId::root_scroll_node(pipeline_id),
+            flags: di::PrimitiveFlags::default(),
+        }
+    }
+
+    fn border(color: ColorF, radius: f32) -> di::NormalBorder {
+        let side = di::BorderSide { color, style: di::BorderStyle::Solid };
+        di::NormalBorder {
+            left: side,
+            right: side,
+            top: side,
+            bottom: side,
+            radius: di::BorderRadius::uniform(radius),
+            inset: LayoutSideOffsets::zero(),
+            do_aa: true,
+        }
+    }
+
+    fn push(builder: &mut DisplayListBuilder, bounds: LayoutRect, border: di::NormalBorder) {
+        builder.push_border(
+            &common(),
+            bounds,
+            LayoutSideOffsets::new_all_same(2.0),
+            di::BorderDetails::Normal(border),
+            &[],
+        );
+    }
+
+    fn push_image_border(builder: &mut DisplayListBuilder, widths: f32) {
+        let border = di::NinePatchBorder {
+            source: di::NinePatchBorderSource::Image(
+                ImageKey::new(IdNamespace(1), 3),
+                di::ImageRendering::Auto,
+            ),
+            width: 30,
+            height: 30,
+            slice: DeviceIntSideOffsets::new_all_same(10),
+            fill: false,
+            repeat_horizontal: di::RepeatMode::Stretch,
+            repeat_vertical: di::RepeatMode::Stretch,
+        };
+        builder.push_border(
+            &common(),
+            BOX,
+            LayoutSideOffsets::new_all_same(widths),
+            di::BorderDetails::NinePatch(border),
+            &[],
+        );
+    }
+
+    fn border_kinds(dl: &BuiltDisplayList) -> Vec<di::BorderKind> {
+        let mut kinds = Vec::new();
+        let mut iter = dl.iter();
+        while let Some(item) = iter.next() {
+            if let di::DisplayItem::Border(info) = item.item() {
+                kinds.push(info.details);
+            }
+        }
+        kinds
+    }
+
+    #[test]
+    fn identical_borders_in_one_list_intern_once() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // Every cell of a table, every input on a form: the same border on the
+        // same box is the case this is for.
+        push(&mut builder, BOX, border(ColorF::BLACK, 0.0));
+        push(&mut builder, BOX, border(ColorF::BLACK, 0.0));
+        push(&mut builder, BOX, border(ColorF::WHITE, 0.0));
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().normal_borders.adds.len(), 2, "colour is part of the key");
+        let kinds = border_kinds(&dl);
+        assert_eq!(kinds.len(), 3);
+        assert_eq!(kinds[0], kinds[1]);
+        assert_ne!(kinds[0], kinds[2]);
+    }
+
+    #[test]
+    fn the_radius_clamp_is_applied_before_the_key() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // Both radii exceed half the box, so both clamp to the same 50px and
+        // render identically. Clamping before the key is what lets them share.
+        push(&mut builder, BOX, border(ColorF::BLACK, 200.0));
+        push(&mut builder, BOX, border(ColorF::BLACK, 400.0));
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().normal_borders.adds.len(), 1);
+    }
+
+    #[test]
+    fn widths_are_part_of_the_key() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        for width in [2.0, 6.0] {
+            builder.push_border(
+                &common(),
+                BOX,
+                LayoutSideOffsets::new_all_same(width),
+                di::BorderDetails::Normal(border(ColorF::BLACK, 0.0)),
+                &[],
+            );
+        }
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().normal_borders.adds.len(), 2);
+    }
+
+    #[test]
+    fn a_shadowed_border_interns_its_copy_separately() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let red = ColorF::new(1.0, 0.0, 0.0, 1.0);
+        builder.push_shadow(
+            &di::SpaceAndClipInfo {
+                spatial_id: di::SpatialId::root_scroll_node(PipelineId::dummy()),
+                clip_chain_id: di::ClipChainId::INVALID,
+            },
+            di::Shadow {
+                offset: LayoutVector2D::new(4.0, 4.0),
+                color: red,
+                blur_radius: 0.0,
+            },
+            true,
+        );
+        push(&mut builder, BOX, border(ColorF::BLACK, 300.0));
+        builder.pop_all_shadows();
+
+        // The copy is the original recoloured, radii clamped the same way, so
+        // it is a distinct entry and both items carry a handle.
+        let (_, dl) = builder.end();
+        let adds = &dl.delta().normal_borders.adds;
+        assert_eq!(adds.len(), 2);
+        let colors: Vec<ColorU> = adds.iter().map(|add| add.key.kind.border.top.color).collect();
+        assert!(colors.contains(&red.into()));
+        assert!(colors.contains(&ColorF::BLACK.into()));
+        assert!(adds.iter().all(|add| add.key.kind.border.radius.top_left.width.to_f32_px() <= 50.0));
+        let kinds = border_kinds(&dl);
+        assert_eq!(kinds.len(), 2);
+        assert!(kinds.iter().all(|kind| {
+            matches!(kind, di::BorderKind::Normal(handle) if *handle != interning::Handle::INVALID)
+        }));
+    }
+
+    #[test]
+    fn identical_image_borders_intern_once() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push_image_border(&mut builder, 10.0);
+        push_image_border(&mut builder, 10.0);
+        // The widths are part of the descriptor, and so of the key.
+        push_image_border(&mut builder, 12.0);
+
+        let (_, dl) = builder.end();
+        let adds = &dl.delta().image_borders.adds;
+        assert_eq!(adds.len(), 2);
+        assert_eq!(adds[0].key.kind.nine_patch.width, 30);
+        assert!(dl.delta().normal_borders.is_empty());
+        let kinds = border_kinds(&dl);
+        assert_eq!(kinds.len(), 3);
+        assert!(matches!(kinds[0], di::BorderKind::NinePatchImage(handle) if handle.slot() == adds[0].slot));
     }
 }
 
