@@ -580,6 +580,44 @@ pdfjs-alttext-perf:
             --output $MOZ_FETCHES_DIR/../artifacts
             toolkit/components/pdfjs/test/browser_pdfjs_alttext_perf.js
 
+pdfjs-ui-interaction-perf:
+    description: Run the PDF.js viewer scroll, zoom and go to page performance test, with empty pages
+    treeherder:
+        symbol: perftest(pdfjs-ui-interaction)
+        tier: 2
+    attributes:
+        batch: false
+        cron: false
+    run-on-projects: [autoland, mozilla-central]
+    run:
+        command: >-
+            mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
+            cd $MOZ_FETCHES_DIR &&
+            python3 python/mozperftest/mozperftest/runner.py
+            --mochitest-binary ${MOZ_FETCHES_DIR}/firefox/firefox-bin
+            --flavor mochitest
+            --output $MOZ_FETCHES_DIR/../artifacts
+            toolkit/components/pdfjs/test/perf/browser_pdfjs_ui_interaction_perf.js
+
+pdfjs-ui-open-perf:
+    description: Run the PDF.js viewer opening performance test, with empty pages
+    treeherder:
+        symbol: perftest(pdfjs-ui-open)
+        tier: 2
+    attributes:
+        batch: false
+        cron: false
+    run-on-projects: [autoland, mozilla-central]
+    run:
+        command: >-
+            mkdir -p $MOZ_FETCHES_DIR/../artifacts &&
+            cd $MOZ_FETCHES_DIR &&
+            python3 python/mozperftest/mozperftest/runner.py
+            --mochitest-binary ${MOZ_FETCHES_DIR}/firefox/firefox-bin
+            --flavor mochitest
+            --output $MOZ_FETCHES_DIR/../artifacts
+            toolkit/components/pdfjs/test/perf/browser_pdfjs_ui_open_perf.js
+
 semantichistory-perf:
     description: Run the semantic history search end-to-end performance test
     treeherder:

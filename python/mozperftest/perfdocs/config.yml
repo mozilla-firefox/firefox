@@ -52,6 +52,12 @@ suites:
         tests:
             "browser_pdfjs_alttext_perf.js": ""
 
+    toolkit/components/pdfjs/test/perf:
+        description: "Performance tests for the PDF.js viewer UI on Firefox Desktop, using PDFs with empty pages"
+        tests:
+            "browser_pdfjs_ui_interaction_perf.js": ""
+            "browser_pdfjs_ui_open_perf.js": ""
+
     browser/components/urlbar/tests/browser-ml:
         description: "Performance tests for urlbar features on Firefox Desktop"
         tests:
