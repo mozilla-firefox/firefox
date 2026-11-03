@@ -403,13 +403,30 @@ opacities of the platform color.
 Two more axes resolve differently in chrome than in the content area, with no
 preference that looks wrong on either side:
 
-- **The color scheme.** Chrome's comes from `browser.theme.toolbar-theme` and
-  content's from `browser.theme.content-theme`
-  (`PreferenceSheet::ColorSchemeSettingForChrome` and
-  `ThemeDerivedColorSchemeForContent`), each 0 for dark, 1 for light and
-  anything else for system. They can disagree, so one `light-dark()` value
-  resolves to different sides in the two realms. Under Windows high contrast
-  mode the light set is additionally forced
+- **The color scheme.** Chrome's comes from `browser.theme.toolbar-theme`
+  (`PreferenceSheet::ColorSchemeSettingForChrome`): 0 for dark, 1 for light and
+  anything else for system. Content's comes from
+  `layout.css.prefers-color-scheme.content-override`, with the same 0 and 1,
+  and for any other value from `browser.theme.content-theme`
+  (`ThemeDerivedColorSchemeForContent`), read the same way. While a page's
+  colors are replaced by the user's preferred colors, content instead takes the
+  scheme from how dark that background color is (`PreferenceSheet::Prefs::Load`).
+  `LightweightThemeConsumer` writes both `browser.theme.*` prefs when
+  `updateGlobalThemeData` is true, so these updates can replace values set at
+  launch. AI windows and the private-window theme skip these writes, and so
+  does darkening a private window while the system scheme is light. For
+  `toolbar-theme`, a theme with a dark variant, Alpenglow for one, gets 0 or 1
+  for the variant in use. The default theme counts as having one only under a
+  dark system scheme, where it gets 0. Otherwise `color_scheme` selects dark
+  (0), light (1) or system (2); the built-in Light and Dark themes declare one.
+  Without a declared scheme, the default and in-app themes get 2 and any other
+  theme gets how dark its toolbar is. `ui.systemUsesDarkTheme` overrides the
+  system scheme. With `browser.theme.unified-color-scheme` false,
+  `content-theme` takes `content_color_scheme` or `color_scheme`, and 2 when
+  neither declares a scheme; when that pref is true, `content-theme` follows the
+  toolbar scheme. The two realms can disagree, so one `light-dark()` value
+  resolves to different sides in them.
+  Under Windows high contrast mode the light set is additionally forced
   (`mMustUseLightSystemColors`): always in chrome, and in content only once
   colors are being forced there.
 - **Stand-ins for native colors.** With `privacy.resistFingerprinting` or
@@ -555,7 +572,8 @@ exempt: rules from the UA and User origins, anything under
 `forced-color-adjust: none`, and CSS-wide keywords. Everything else is filtered,
 and the filter is not the same for every property:
 
-- A bare system color and `currentcolor` are honored everywhere.
+- A bare system color and `currentcolor` are honored in every color property
+  except the ones listed below as reverting whatever they are set to.
 - A *derived* color is not honored uniformly. `color-mix(in srgb, currentcolor
   25%, transparent)` survives as a `background-color` and is replaced as a
   `border-color`, so one variable reads as a subtle wash behind a box and a
@@ -648,9 +666,11 @@ Not this:
 
 Whether chrome-only features are available is a parse-time property of the
 stylesheet's URL (`chrome_rules_enabled()`), not of the document the sheet ends
-up in. So `-moz-native-theme`, `-moz-pref()` and the rest still evaluate inside
-a `chrome://` stylesheet loaded into an `about:` page. Meanwhile
-`matchMedia("(-moz-native-theme)")` called from that page's own script parses at
+up in. Chrome rules parse in `chrome://` and `resource://` sheets, in `about:`
+sheets that are not content-accessible (`URLExtraData::ChromeRulesEnabled`),
+and in UA and user sheets. So `-moz-native-theme`, `-moz-pref()` and the rest
+still evaluate inside a `chrome://` stylesheet loaded into an `about:` page.
+Meanwhile `matchMedia("(-moz-native-theme)")` called from that page's own script parses at
 content origin, does not know the feature, and always reports false.
 
 Reading the page's `matchMedia` and concluding the sheet took the other branch is
@@ -659,12 +679,32 @@ that only that branch sets.
 
 ## Theme support
 
-Firefox comes built-in with 3 themes: default, light and dark. The
-built-in light/dark themes are a bit special as they load the
-`compacttheme.css` stylesheet. In addition to this, Firefox supports a
-variety of WebExtension themes that can be installed from AMO. For
+Besides the default theme, Firefox comes with three built-in themes
+(`BuiltInThemeConfig.sys.mjs`): Light and Dark, which are in-app themes, and
+Alpenglow, which behaves like a WebExtension theme. In addition to this, Firefox
+supports a variety of WebExtension themes that can be installed from AMO. For
 testing purposes, [here is an example of a WebExtension
 theme.](https://addons.mozilla.org/en-US/firefox/addon/arc-dark-theme-we/)
+
+`LightweightThemeConsumer.sys.mjs` applies the theme to a window. In ordinary
+windows, `theme-in-app` on the root marks a selected default or in-app theme,
+`lwtheme` marks an effective WebExtension theme, and `theme-effective-id` names
+the effective theme. AI windows with cached theme data always set
+`theme-in-app`. It sets `forceNonNativeTheme` on the document for every
+effective theme but the default.
+While `(forced-colors)` matches, it applies the default theme in place of any
+other, unless `browser.theme.forced-colors-override.enabled` is false. With a
+WebExtension theme selected, this substitution can leave both `theme-in-app`
+and `lwtheme` absent in an ordinary window.
+
+For a WebExtension theme, Alpenglow included, the theme's colors are written
+inline on the root element as custom properties, through `ThemeVariableMap.sys.mjs`
+and the toolkit map in `LightweightThemeConsumer.sys.mjs`. The default and in-app
+themes write none, so their colors come from the app's own CSS. A themed surface
+follows a WebExtension theme only where its stylesheet reads the custom property
+the map writes. A rule that redefines that property on a descendant replaces the
+theme color there, as `#DateTimePickerPanel` does in `content-area.css`. So check
+the stylesheet that styles a wrong-looking surface before the theme's manifest.
 
 ### Writing theme-friendly CSS
 
@@ -676,8 +716,8 @@ theme.](https://addons.mozilla.org/en-US/firefox/addon/arc-dark-theme-we/)
   the theme colors, so `currentcolor`/inheritance is again a good
   idea for theme support.
 
-- Never write CSS specially for the built-in light/dark theme in
-  `compacttheme.css` unless that CSS isn't supposed to affect
+- Never write CSS specially for the built-in Light and Dark themes, for
+  example under `:root[theme-in-app]`, unless that CSS isn't supposed to affect
   WebExtension themes.
 
 - These selectors can be used to target themed areas, though in general it's
@@ -758,10 +798,12 @@ does it, with a `max(env(hairline), ...)` guard against rounding to zero;
 as the syntax for this, which nothing implements yet. Keeping the original height
 and adding `box-sizing: border-box` is the other way to hold a box exactly.
 
-`env(hairline)` is one device pixel. Like the chrome-only media features, it
-depends on the stylesheet's URL rather than the document's. It resolves in a
-`chrome://` or `resource://` sheet in either realm and in `about:newtab`'s own
-CSS. In any other sheet it has no value, and the declaration behaves as `unset`:
+`env(hairline)` is one device pixel. Unlike the chrome-only media features that
+also go by origin, it uses the stylesheet's URL alone. It resolves in a sheet
+with a `chrome://`, `resource://` or eligible `about:` URL, in either realm,
+`about:newtab`'s own CSS included. UA or user origin alone does not enable it,
+so a `file:` sheet such as `userChrome.css` gets no value. Where it has no
+value, the declaration behaves as `unset`:
 a `padding` or a `margin` computes to 0, a `border` shorthand loses its style
 and reads 0px, and a `border-width` longhand with its style declared separately
 falls back to `medium` (3px).
