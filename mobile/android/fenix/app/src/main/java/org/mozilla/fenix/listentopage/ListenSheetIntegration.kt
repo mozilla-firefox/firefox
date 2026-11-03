@@ -50,8 +50,9 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
 import org.mozilla.fenix.R
 import org.mozilla.fenix.theme.FirefoxTheme
 
-private val ListenState.isArticleReady: Boolean
-    get() = tabId != null && languageTag != null
+/** Whether the player has something to show. This could be either a ready to play state or an error state. */
+internal val ListenState.hasPlayerContent: Boolean
+    get() = tabId != null && (languageTag != null || error != null)
 
 /**
  * This integration is responsible for showing or hiding the reader mode panel and the Listen to page media player, and
@@ -128,7 +129,7 @@ class ListenSheetIntegration(
         }
 
         val selectedTabIdState = browserStore.observeAsComposableState { it.selectedTabId }
-        val readyTabIdState = listenStore.observeAsComposableState { if (it.isArticleReady) it.tabId else null }
+        val readyTabIdState = listenStore.observeAsComposableState { if (it.hasPlayerContent) it.tabId else null }
         val listenSheetUiState by listenStore.observeAsComposableState { it.toListenSheetUiState() }
         val isListeningEnabled by isEnabled.collectAsStateWithLifecycle()
         val articleProgressState = listenStore.observeAsComposableState { it.articleProgress }

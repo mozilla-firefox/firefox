@@ -13,6 +13,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.feature.listentopage.ListenError
 import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
 import mozilla.components.feature.listentopage.listenReducer
@@ -99,5 +100,25 @@ class ListenSheetIntegrationTest {
         shadowOf(Looper.getMainLooper()).idle()
 
         assertTrue(sheet.isVisible)
+    }
+
+    @Test
+    fun `GIVEN a session still extracting its article THEN the player has nothing to show`() {
+        assertFalse(ListenState(tabId = "tab-1").hasPlayerContent)
+    }
+
+    @Test
+    fun `GIVEN a session whose article is ready THEN the player has it to show`() {
+        assertTrue(ListenState(tabId = "tab-1", languageTag = "en-US").hasPlayerContent)
+    }
+
+    @Test
+    fun `GIVEN a session whose extraction failed THEN the player shows the error`() {
+        assertTrue(ListenState(tabId = "tab-1", error = ListenError.ContentUnavailable).hasPlayerContent)
+    }
+
+    @Test
+    fun `GIVEN no session THEN the player has nothing to show`() {
+        assertFalse(ListenState().hasPlayerContent)
     }
 }
