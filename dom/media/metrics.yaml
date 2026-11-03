@@ -648,12 +648,12 @@ media:
       This metric does not determine whether the MKV file is valid; it is simply
       a count based on the sniffed MIME type.
     bugs:
-      - https://bugzil.la/2057069
+      - https://bugzil.la/2082232
     data_reviews:
-      - https://bugzil.la/2057069
+      - https://bugzil.la/2082232
     notification_emails:
       - media-alerts@mozilla.com
-    expires: 162
+    expires: 168
 
   mkv_codec_type:
     type: labeled_counter
@@ -673,12 +673,12 @@ media:
       - AudioPcm
       - NoCodecSpecified
     bugs:
-      - https://bugzil.la/2057069
+      - https://bugzil.la/2082232
     data_reviews:
-      - https://bugzil.la/2057069
+      - https://bugzil.la/2082232
     notification_emails:
       - media-alerts@mozilla.com
-    expires: 162
+    expires: 168
 
   muted_by_content_attribute_runtime:
     type: counter
