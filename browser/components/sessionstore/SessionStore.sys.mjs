@@ -4425,7 +4425,7 @@ class _SessionStore {
           ...this.#getClonedDataForWindow(win, w => w.closedGroups ?? [])
         );
       }
-    } else if (sourceOptions.sourceWindow.closedGroups) {
+    } else {
       closedTabGroups.push(
         ...this.#getClonedDataForWindow(
           sourceOptions.sourceWindow,
