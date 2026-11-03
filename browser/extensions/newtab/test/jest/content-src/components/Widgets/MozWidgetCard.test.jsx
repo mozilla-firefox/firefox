@@ -70,6 +70,18 @@ describe("<MozWidgetCard>", () => {
     expect(icon.getAttribute("alt")).toBe("");
   });
 
+  it("shows a placeholder without a document", () => {
+    const { card } = renderCard({}, {}, "");
+    expect(
+      card.querySelector(':scope > p[data-l10n-id="newtab-widget-placeholder"]')
+    ).not.toBeNull();
+  });
+
+  it("shows no placeholder with a document", () => {
+    const { card } = renderCard();
+    expect(card.querySelector(":scope > p")).toBeNull();
+  });
+
   it("draws no icon for an entry without one", () => {
     const { header } = renderCard();
     expect(header.querySelector("img")).toBeNull();

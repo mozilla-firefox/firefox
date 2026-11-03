@@ -16,7 +16,8 @@ const USER_ACTION_TYPES = {
 
 /**
  * The moz-widget card of a WIDGET_REGISTRY entry drawn by a widget document.
- * Its menu holds the shared widget items, below any menuItems.
+ * Its menu holds the shared widget items, below any menuItems. Without a
+ * document, the card shows a placeholder.
  *
  * @param {object} props
  * @param {Function} props.dispatch - Redux dispatch.
@@ -25,7 +26,7 @@ const USER_ACTION_TYPES = {
  * @param {string} props.size - the widget's size
  * @param {string} [props.displaySize] - the size the widget is drawn at, which
  *   can be larger than its size
- * @param {string} props.src - URL of the widget's document
+ * @param {string} props.src - URL of the widget's document, or "" for none
  * @param {object} props.widgetEnabledMap - Map of widget id to whether it is
  *   currently active, used by the Move submenu.
  * @param {React.ReactNode} [props.menuItems] - menu items drawn above the
@@ -109,6 +110,7 @@ export function MozWidgetCard({
           />
         )}
       </moz-widget-header>
+      {!src && <p data-l10n-id="newtab-widget-placeholder" />}
       <panel-list slot="menu" className="panel-list-no-icons">
         {menuItems}
         <WidgetMenuFooter
