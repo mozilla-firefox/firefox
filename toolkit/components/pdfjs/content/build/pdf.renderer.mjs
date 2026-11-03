@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.422
- * pdfjsBuild = 22f5df126
+ * pdfjsVersion = 6.5.447
+ * pdfjsBuild = c7ca8a32e
  */
 
 ;// ./src/shared/util.js
@@ -1825,6 +1825,7 @@ function createCanvasTrackers(canvas, operationsCount, {
 /* unused harmony import specifier */ var image_utils_ImageKind;
 /* unused harmony import specifier */ var image_utils_FeatureTest;
 
+
 function convertToRGBA(params) {
   switch (params.kind) {
     case image_utils_ImageKind.GRAYSCALE_1BPP:
@@ -1887,7 +1888,7 @@ function convertRGBToRGBA({
   let i = 0;
   const len = width * height * 3;
   const byteOffset = src.byteOffset + srcPos;
-  const len32 = byteOffset % 4 === 0 ? Math.floor(len / 4) : 0;
+  const len32 = byteOffset % 4 === 0 ? Math.floor(math_clamp_MathClamp(src.length - srcPos, 0, len) / 4) : 0;
   const src32 = len32 > 0 ? new Uint32Array(src.buffer, byteOffset, len32) : null;
   const alphaMask = FeatureTest.isLittleEndian ? 0xff000000 : 0xff;
   if (FeatureTest.isLittleEndian) {
@@ -7568,7 +7569,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "6.5.422";
+    const workerVersion = "6.5.447";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,
