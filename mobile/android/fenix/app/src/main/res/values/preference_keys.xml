@@ -28,6 +28,7 @@
     <string name="pref_key_has_used_ip_protection" translatable="false">pref_key_has_used_vpn</string>
     <string name="pref_key_has_shown_ip_protection_prompt" translatable="false">pref_key_has_shown_ip_protection_prompt</string>
     <string name="pref_key_ip_protection_settings" translatable="false">pref_key_ip_protection_settings</string>
+    <string name="pref_key_ip_protection_last_data_limit_notice_cycle_reset_time" translatable="false">pref_key_ip_protection_last_data_limit_notice_cycle_reset_time</string>
     <string name="pref_key_enable_ip_protection_locations" translatable="false">pref_key_enable_ip_protection_locations</string>
     <string name="pref_key_data_choices" translatable="false">pref_key_data_choices</string>
     <string name="pref_key_delete_browsing_data" translatable="false">pref_key_delete_browsing_data</string>

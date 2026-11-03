@@ -11,6 +11,8 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -76,6 +78,30 @@ class MenuListItemTest {
         composeTestRule.onNodeWithText(TITLE).assertHasNoClickAction().performClick()
 
         assertTrue(events.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN an enabled item WHEN reading it THEN announce it as enabled`() {
+        setItem(onClickEvent = Clicked)
+
+        composeTestRule.onNodeWithText(TITLE).assertIsEnabled()
+    }
+
+    @Test
+    fun `GIVEN a disabled item WHEN reading it THEN announce it as disabled`() {
+        setItem(onClickEvent = Clicked, state = MenuItemState.DISABLED)
+
+        composeTestRule.onNodeWithText(TITLE).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `GIVEN a disabled switch WHEN reading it THEN announce it as a disabled switch`() {
+        setItem(onClickEvent = Clicked, role = Role.Switch, state = MenuItemState.DISABLED)
+
+        composeTestRule
+            .onNodeWithText(TITLE)
+            .assertIsNotEnabled()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
     }
 
     @Test

@@ -9,7 +9,11 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -183,6 +187,47 @@ class IPProtectionMenuItemTest {
         composeTestRule
             .onNodeWithText(testContext.getString(R.string.ip_protection_menu_limit_reached, 0))
             .assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN the data limit is reached WHEN reading the row THEN it is exposed as disabled`() {
+        setContent(status = IPProtectionStatus.DataLimitReached, quotaLimit = DataVolume(50L * 1024 * 1024 * 1024))
+
+        composeTestRule
+            .onNode(
+                hasText(toggleLabel) and hasText(testContext.getString(R.string.ip_protection_menu_limit_reached, 50))
+            )
+            .assertIsNotEnabled()
+            .assert(hasStateDescription(testContext.getString(R.string.ip_protection_menu_paused)))
+    }
+
+    @Test
+    fun `GIVEN IP protection can be toggled WHEN reading the row THEN it is exposed as enabled`() {
+        setContent(IPProtectionStatus.Enabled)
+
+        composeTestRule
+            .onNodeWithText(toggleLabel)
+            .assertIsEnabled()
+            .assert(hasStateDescription(testContext.getString(R.string.preferences_ip_protection_on)))
+    }
+
+    @Test
+    fun `GIVEN the data limit is reached WHEN the label row is clicked THEN the toggle callback is not invoked`() {
+        setContent(status = IPProtectionStatus.DataLimitReached, quotaLimit = DataVolume(50L * 1024 * 1024 * 1024))
+
+        composeTestRule.onNodeWithText(toggleLabel).assertHasNoClickAction().performClick()
+
+        assertEquals(0, toggleCount)
+    }
+
+    @Test
+    fun `GIVEN the data limit is reached WHEN the chevron is clicked THEN the navigate callback is invoked`() {
+        setContent(status = IPProtectionStatus.DataLimitReached, quotaLimit = DataVolume(50L * 1024 * 1024 * 1024))
+
+        composeTestRule.onNodeWithContentDescription(navigateLabel).performClick()
+
+        assertEquals(1, navigateCount)
+        assertEquals(0, toggleCount)
     }
 
     private fun hasStateDescription(value: String) =

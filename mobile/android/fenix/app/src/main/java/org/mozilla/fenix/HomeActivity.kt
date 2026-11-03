@@ -275,6 +275,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
                             FxNimbus.features.ipProtection.value().dataLimitGigabyte,
                         )
                 ),
+            repository = components.ipProtection.ipProtectionRepository,
         )
     }
 

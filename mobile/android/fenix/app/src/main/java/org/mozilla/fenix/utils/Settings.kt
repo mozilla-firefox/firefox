@@ -2975,6 +2975,17 @@ class Settings(
             default = false,
         )
 
+    /**
+     * The reset time of the most recent VPN allowance cycle for which the data limit notice was shown, or `null` if
+     * none has been shown yet. The notice occurs at most one time per cycle.
+     */
+    var ipProtectionLastDataLimitNoticeCycleResetTime: String?
+        get() = preferences.getString(lastDataLimitNoticeCycleResetTimeKey, null)
+        set(value) = preferences.edit { putString(lastDataLimitNoticeCycleResetTimeKey, value) }
+
+    private val lastDataLimitNoticeCycleResetTimeKey =
+        appContext.getPreferenceKey(R.string.pref_key_ip_protection_last_data_limit_notice_cycle_reset_time)
+
     /** Indicates if the IPProtection onboarding bottom sheet feature variable is enabled via Nimbus. */
     val shouldShowIPProtectionOnboardingBottomSheet: Boolean
         get() = FxNimbus.features.ipProtection.value().showOnboardingBottomSheet

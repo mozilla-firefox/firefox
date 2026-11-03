@@ -107,9 +107,9 @@ class VpnMenuItemProvider(
             IPProtectionStatus.AwaitingService -> menu.navigate(settingsDirections())
 
             IPProtectionStatus.Activating,
-            IPProtectionStatus.DataLimitReached,
             IPProtectionStatus.ConnectionError -> ipProtectionStore.dispatch(IPProtectionAction.ActivationAction.Toggle)
 
+            IPProtectionStatus.DataLimitReached,
             IPProtectionStatus.Unavailable,
             IPProtectionStatus.Uninitialized -> Unit
         }
@@ -144,6 +144,11 @@ class VpnMenuItemProvider(
                     onClickEvent = MenuAction.Navigate.IPProtectionSettings,
                     showDivider = true,
                 ),
+            state =
+                when (status) {
+                    IPProtectionStatus.DataLimitReached -> MenuItemState.DISABLED
+                    else -> MenuItemState.DEFAULT
+                },
         )
 
     companion object {

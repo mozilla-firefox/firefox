@@ -28,6 +28,7 @@ class IPProtectionSnackbarMiddlewareTest {
     private lateinit var captureMiddleware: CaptureActionsMiddleware<AppState, AppAction>
     private lateinit var appStore: AppStore
     private lateinit var ipProtectionStore: IPProtectionStore
+    private lateinit var repository: FakeIPProtectionRepository
 
     @Before
     fun setup() {
@@ -47,6 +48,7 @@ class IPProtectionSnackbarMiddlewareTest {
                         )
                     )
             )
+        repository = FakeIPProtectionRepository()
     }
 
     @Test
@@ -92,6 +94,7 @@ class IPProtectionSnackbarMiddlewareTest {
                     store = ipProtectionStore,
                     appStore = appStore,
                     errorMessages = ErrorMessages(dataLimitReached = "Data limit reached"),
+                    repository = repository,
                     mainDispatcher = StandardTestDispatcher(testScheduler),
                 )
             newPrompter.start()

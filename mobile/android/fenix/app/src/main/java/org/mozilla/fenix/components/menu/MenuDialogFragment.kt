@@ -1068,11 +1068,11 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
             IPProtectionStatus.AwaitingService -> store.dispatch(MenuAction.Navigate.IPProtectionSettings)
 
             IPProtectionStatus.Activating,
-            IPProtectionStatus.DataLimitReached,
             IPProtectionStatus.ConnectionError -> {
                 components.ipProtection.store.dispatch(IPProtectionAction.ActivationAction.Toggle)
             }
 
+            IPProtectionStatus.DataLimitReached,
             IPProtectionStatus.Unavailable,
             IPProtectionStatus.Uninitialized -> Unit
         }

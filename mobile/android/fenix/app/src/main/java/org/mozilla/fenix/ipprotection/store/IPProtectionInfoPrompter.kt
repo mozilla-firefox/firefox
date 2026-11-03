@@ -31,18 +31,23 @@ data class ErrorMessages(val dataLimitReached: String)
  * @param store The IP protection store to observe for state changes.
  * @param appStore The app store used to dispatch snackbar actions.
  * @param errorMessages Localized error messages to display in snackbars.
+ * @param repository [IPProtectionRepository] providing access to IP Protection related
+ *   [android.content.SharedPreferences].
  * @param mainDispatcher the dispatcher to run asynchronous work on.
  */
 class IPProtectionInfoPrompter(
     store: IPProtectionStore,
     private val appStore: AppStore,
     private val errorMessages: ErrorMessages,
+    private val repository: IPProtectionRepository,
     mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : AbstractBinding<IPProtectionState>(store, mainDispatcher) {
     override suspend fun onState(flow: Flow<IPProtectionState>) {
         flow
             .distinctUntilChanged { old, new ->
-                old.proxyStatus == new.proxyStatus && old.eligibilityStatus == new.eligibilityStatus
+                old.proxyStatus == new.proxyStatus &&
+                    old.eligibilityStatus == new.eligibilityStatus &&
+                    old.usageQuota?.resetTime == new.usageQuota?.resetTime
             }
             .collect { state ->
                 processStateForSnackbar(state)
@@ -51,13 +56,19 @@ class IPProtectionInfoPrompter(
 
     private fun processStateForSnackbar(state: IPProtectionState) {
         if (state.eligibilityStatus == EligibilityStatus.Eligible && state.proxyStatus == Authorized.DataLimitReached) {
-            Vpn.bandwidthLimitError.record()
-            appStore.dispatch(
-                action =
-                    AppAction.IPProtectionSnackbarAction.ShowActionSettingsSnackbar(
-                        title = errorMessages.dataLimitReached
-                    )
-            )
+            val resetTime = state.usageQuota?.resetTime
+
+            if (resetTime != null && repository.lastDataLimitNoticeCycleResetTime != resetTime) {
+                repository.lastDataLimitNoticeCycleResetTime = resetTime
+
+                Vpn.bandwidthLimitError.record()
+                appStore.dispatch(
+                    action =
+                        AppAction.IPProtectionSnackbarAction.ShowActionSettingsSnackbar(
+                            title = errorMessages.dataLimitReached
+                        )
+                )
+            }
         }
     }
 }

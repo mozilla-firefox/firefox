@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.collectionInfo
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
@@ -198,7 +199,12 @@ internal fun Modifier.menuItemClickableBehavior(
             role = role,
         )
     } else if (state == DISABLED) {
-        this.semantics { disabled() }
+        this.semantics {
+            disabled()
+            if (onClickEvent != null) {
+                this.role = role
+            }
+        }
     } else {
         this
     }

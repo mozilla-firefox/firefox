@@ -75,8 +75,4 @@ class IPProtectionRepositoryMiddlewareTest {
         assertTrue(nextCalled)
         assertTrue(fakeRepository.hasAlreadyUsedVpn)
     }
-
-    private class FakeIPProtectionRepository : IPProtectionRepository {
-        override var hasAlreadyUsedVpn: Boolean = false
-    }
 }

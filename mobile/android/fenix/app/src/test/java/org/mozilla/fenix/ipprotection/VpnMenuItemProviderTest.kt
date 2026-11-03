@@ -263,6 +263,31 @@ class VpnMenuItemProviderTest {
         }
     }
 
+    @Test
+    fun `GIVEN the data limit was reached WHEN building the menu item THEN the item is disabled`() = runTest {
+        val provider = provider(eligibleStore(Authorized.DataLimitReached))
+
+        assertEquals(
+            expectedItem(
+                badgeTextRes = R.string.ip_protection_menu_paused,
+                badgeState = MenuItemState.DISABLED,
+                state = MenuItemState.DISABLED,
+            ),
+            provider.itemsFlow.value.single(),
+        )
+    }
+
+    @Test
+    fun `GIVEN the data limit was reached WHEN the menu item is toggled THEN do nothing`() = runTest {
+        val store = spyk(eligibleStore(Authorized.DataLimitReached))
+
+        provider(store).onEvent(MenuAction.IPProtectionToggle, menu)
+
+        verify(exactly = 0) { store.dispatch(IPProtectionAction.ActivationAction.Toggle) }
+        assertNull(Vpn.menuTurnedOn.testGetValue())
+        assertNull(Vpn.menuTurnedOff.testGetValue())
+    }
+
     private val settingsDirections =
         NavGraphDirections.actionGlobalIpProtectionFragment(entrypoint = FenixFxAEntryPoint.IPProtectionMainMenu)
 
@@ -285,11 +310,13 @@ class VpnMenuItemProviderTest {
         badgeTextRes: Int = R.string.preferences_ip_protection_off,
         badgeState: MenuItemState = MenuItemState.DEFAULT,
         role: Role = Switch,
+        state: MenuItemState = MenuItemState.DEFAULT,
     ) =
         StandardMenuItem(
             title = MenuItemTitle(Text.Resource(R.string.ip_protection_toggle_label)),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
             role = role,
+            state = state,
             onClickEvent = MenuAction.IPProtectionToggle,
             badge = MenuItemBadge(text = Text.Resource(badgeTextRes), state = badgeState),
             actionButton =

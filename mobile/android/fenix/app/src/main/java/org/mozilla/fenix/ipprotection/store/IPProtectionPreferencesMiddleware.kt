@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.ipprotection.store
 
+import kotlin.time.Instant
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
@@ -14,6 +15,7 @@ import org.mozilla.fenix.utils.Settings
 /** Interface providing access to IP Protection related [android.content.SharedPreferences]. */
 interface IPProtectionRepository {
     var hasAlreadyUsedVpn: Boolean
+    var lastDataLimitNoticeCycleResetTime: Instant?
 }
 
 /** The default implementation of [IPProtectionRepository] proxying calls to global Fenix [Settings]. */
@@ -22,6 +24,12 @@ class DefaultIPProtectionRepository(private val settings: Settings) : IPProtecti
         get() = settings.hasAlreadyUsedVpn
         set(value) {
             settings.hasAlreadyUsedVpn = value
+        }
+
+    override var lastDataLimitNoticeCycleResetTime: Instant?
+        get() = settings.ipProtectionLastDataLimitNoticeCycleResetTime?.let(Instant::parseOrNull)
+        set(value) {
+            settings.ipProtectionLastDataLimitNoticeCycleResetTime = value?.toString()
         }
 }
 
