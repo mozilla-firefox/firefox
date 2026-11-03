@@ -5,6 +5,7 @@
 package org.mozilla.fenix.home.topsites
 
 import android.content.res.Resources
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -16,28 +17,54 @@ import kotlinx.serialization.SerializationException
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.search.RegionState
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.feature.top.sites.DefaultTopSitesProvider
 import mozilla.components.feature.top.sites.DefaultTopSitesStorage
+import mozilla.components.feature.top.sites.PinnedSiteStorage
+import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.lib.crash.CrashReporter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.home.blocklist.BlocklistHandler
 import org.mozilla.fenix.utils.Settings
 
 class DefaultPinnedSitesBindingTest {
 
     private lateinit var browserStore: BrowserStore
     private lateinit var topSitesStorage: DefaultTopSitesStorage
+    private lateinit var pinnedSitesStorage: PinnedSiteStorage
+    private lateinit var defaultTopSitesProvider: DefaultTopSitesProvider
+    private lateinit var blocklistHandler: BlocklistHandler
     private lateinit var settings: Settings
     private lateinit var resources: Resources
     private lateinit var crashReporter: CrashReporter
 
     private val dispatcher = StandardTestDispatcher()
 
+    // A legacy default pinned top site that the user had removed from the pinned sites storage.
+    private val removedLegacyDefaultPinnedSite =
+        TopSite.Default(id = null, title = "Wikipedia", url = "https://www.wikipedia.org/", createdAt = null)
+
+    // A legacy default pinned top site that is still in the pinned sites storage, as served by the provider.
+    private val stillPinnedLegacyDefaultPinnedSite =
+        TopSite.Default(id = null, title = "tenki.jp", url = "https://tenki.jp/", createdAt = null)
+
+    // The pinned sites storage entry of [stillPinnedLegacyDefaultPinnedSite].
+    private val pinnedLegacyDefaultPinnedSite =
+        TopSite.Default(id = 1, title = "tenki.jp", url = "https://tenki.jp/", createdAt = 1)
+
+    // A default top site that was never seeded as a default pinned site.
+    private val newDefaultSite =
+        TopSite.Default(id = null, title = "Mozilla", url = "https://mozilla.org/", createdAt = null)
+
     @Before
     fun setUp() {
         topSitesStorage = mockk(relaxed = true)
+        pinnedSitesStorage = mockk(relaxed = true)
+        defaultTopSitesProvider = mockk(relaxed = true)
+        blocklistHandler = mockk(relaxed = true)
         settings = mockk(relaxed = true)
         resources = mockk(relaxed = true)
         crashReporter = mockk(relaxed = true)
@@ -53,7 +80,7 @@ class DefaultPinnedSitesBindingTest {
     @Test
     fun `GIVEN build is in the release channel WHEN region is set to the default THEN do nothing`() =
         runTest(dispatcher) {
-            every { settings.defaultTopSitesAdded } returns false
+            every { settings.defaultPinnedTopSitesAdded } returns false
 
             val binding = createBinding()
             binding.start()
@@ -62,14 +89,14 @@ class DefaultPinnedSitesBindingTest {
 
             coVerify(exactly = 0) {
                 topSitesStorage.addTopSites(topSites = any(), isDefault = any())
-                settings.defaultTopSitesAdded = any()
+                settings.defaultPinnedTopSitesAdded = any()
             }
         }
 
     @Test
     fun `GIVEN debug build WHEN region is set to the default THEN add the default sites to storage`() =
         runTest(dispatcher) {
-            every { settings.defaultTopSitesAdded } returns false
+            every { settings.defaultPinnedTopSitesAdded } returns false
 
             val binding = createBinding(isReleased = false)
             binding.start()
@@ -81,14 +108,14 @@ class DefaultPinnedSitesBindingTest {
 
             coVerify {
                 topSitesStorage.addTopSites(topSites = pinnedSites.map { it.title to it.url }, isDefault = true)
-                settings.defaultTopSitesAdded = true
+                settings.defaultPinnedTopSitesAdded = true
             }
         }
 
     @Test
     fun `WHEN region is set to a non-default value THEN add the sites for that region to storage`() =
         runTest(dispatcher) {
-            every { settings.defaultTopSitesAdded } returns false
+            every { settings.defaultPinnedTopSitesAdded } returns false
 
             val region = "CA"
             val binding = createBinding()
@@ -101,25 +128,86 @@ class DefaultPinnedSitesBindingTest {
 
             coVerify {
                 topSitesStorage.addTopSites(topSites = pinnedSites.map { it.title to it.url }, isDefault = true)
-                settings.defaultTopSitesAdded = true
+                settings.defaultPinnedTopSitesAdded = true
             }
+            coVerify(exactly = 0) { defaultTopSitesProvider.getDefaultTopSites() }
+            verify(exactly = 0) { blocklistHandler.addUrlToBlocklist(any()) }
+            verify { settings.removedDefaultPinnedTopSitesMigrated = true }
         }
 
     @Test
-    fun `GIVEN default top sites have already been added WHEN region is set to a non-default value THEN do nothing`() =
+    fun `GIVEN default pinned top sites have already been added and their removal have been migrated WHEN region is set to a non-default value THEN do nothing`() =
         runTest(dispatcher) {
-            every { settings.defaultTopSitesAdded } returns true
+            every { settings.defaultPinnedTopSitesAdded } returns true
+            every { settings.removedDefaultPinnedTopSitesMigrated } returns true
 
             val region = "CA"
             val binding = createBinding()
             binding.start()
 
             browserStore.dispatch(SearchAction.SetRegionAction(RegionState(home = region, current = region)))
+            dispatcher.scheduler.advanceUntilIdle()
 
             coVerify(exactly = 0) {
                 topSitesStorage.addTopSites(topSites = any(), isDefault = any())
-                settings.defaultTopSitesAdded = any()
+                settings.defaultPinnedTopSitesAdded = any()
+                defaultTopSitesProvider.getDefaultTopSites()
             }
+        }
+
+    @Test
+    fun `GIVEN a legacy default pinned top site is no longer pinned WHEN the removed default top sites are migrated THEN it is added to the blocklist`() =
+        runTest(dispatcher) {
+            every { settings.defaultPinnedTopSitesAdded } returns true
+            every { settings.removedDefaultPinnedTopSitesMigrated } returns false
+            coEvery { pinnedSitesStorage.getPinnedSites() } returns listOf(pinnedLegacyDefaultPinnedSite)
+            coEvery { defaultTopSitesProvider.getDefaultTopSites() } returns
+                listOf(removedLegacyDefaultPinnedSite, stillPinnedLegacyDefaultPinnedSite)
+
+            createBinding().start()
+
+            browserStore.dispatch(SearchAction.SetRegionAction(RegionState(home = "CA", current = "CA")))
+            dispatcher.scheduler.advanceUntilIdle()
+
+            verify { blocklistHandler.addUrlToBlocklist(removedLegacyDefaultPinnedSite.url) }
+            verify(exactly = 0) { blocklistHandler.addUrlToBlocklist(stillPinnedLegacyDefaultPinnedSite.url) }
+            verify { settings.removedDefaultPinnedTopSitesMigrated = true }
+        }
+
+    @Test
+    fun `GIVEN a default top site that was never a default pinned site WHEN the removed default top sites are migrated THEN it is not added to the blocklist`() =
+        runTest(dispatcher) {
+            every { settings.defaultPinnedTopSitesAdded } returns true
+            every { settings.removedDefaultPinnedTopSitesMigrated } returns false
+            coEvery { pinnedSitesStorage.getPinnedSites() } returns emptyList()
+            coEvery { defaultTopSitesProvider.getDefaultTopSites() } returns
+                listOf(removedLegacyDefaultPinnedSite, newDefaultSite)
+
+            createBinding().start()
+
+            browserStore.dispatch(SearchAction.SetRegionAction(RegionState(home = "CA", current = "CA")))
+            dispatcher.scheduler.advanceUntilIdle()
+
+            verify { blocklistHandler.addUrlToBlocklist(removedLegacyDefaultPinnedSite.url) }
+            verify(exactly = 0) { blocklistHandler.addUrlToBlocklist(newDefaultSite.url) }
+            verify { settings.removedDefaultPinnedTopSitesMigrated = true }
+        }
+
+    @Test
+    fun `GIVEN the legacy default pinned top sites are all still pinned WHEN the removed default top sites are migrated THEN nothing is added to the blocklist`() =
+        runTest(dispatcher) {
+            every { settings.defaultPinnedTopSitesAdded } returns true
+            every { settings.removedDefaultPinnedTopSitesMigrated } returns false
+            coEvery { pinnedSitesStorage.getPinnedSites() } returns listOf(pinnedLegacyDefaultPinnedSite)
+            coEvery { defaultTopSitesProvider.getDefaultTopSites() } returns listOf(stillPinnedLegacyDefaultPinnedSite)
+
+            createBinding().start()
+
+            browserStore.dispatch(SearchAction.SetRegionAction(RegionState(home = "CA", current = "CA")))
+            dispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 0) { blocklistHandler.addUrlToBlocklist(any()) }
+            verify { settings.removedDefaultPinnedTopSitesMigrated = true }
         }
 
     @Test
@@ -200,7 +288,7 @@ class DefaultPinnedSitesBindingTest {
             }
             coVerify(exactly = 0) {
                 topSitesStorage.addTopSites(topSites = any(), isDefault = any())
-                settings.defaultTopSitesAdded = any()
+                settings.defaultPinnedTopSitesAdded = any()
             }
         }
 
@@ -222,7 +310,7 @@ class DefaultPinnedSitesBindingTest {
             }
             coVerify(exactly = 0) {
                 topSitesStorage.addTopSites(topSites = any(), isDefault = any())
-                settings.defaultTopSitesAdded = any()
+                settings.defaultPinnedTopSitesAdded = any()
             }
         }
 
@@ -243,7 +331,7 @@ class DefaultPinnedSitesBindingTest {
             }
             coVerify(exactly = 0) {
                 topSitesStorage.addTopSites(topSites = any(), isDefault = any())
-                settings.defaultTopSitesAdded = any()
+                settings.defaultPinnedTopSitesAdded = any()
             }
         }
 
@@ -251,6 +339,9 @@ class DefaultPinnedSitesBindingTest {
         DefaultPinnedSitesBinding(
             browserStore = browserStore,
             topSitesStorage = topSitesStorage,
+            pinnedSitesStorage = pinnedSitesStorage,
+            defaultTopSitesProvider = defaultTopSitesProvider,
+            blocklistHandler = blocklistHandler,
             settings = settings,
             resources = resources,
             crashReporter = crashReporter,

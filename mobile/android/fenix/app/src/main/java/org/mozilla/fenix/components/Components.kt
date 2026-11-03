@@ -317,9 +317,9 @@ class Components(
 
     val appLinkIntentLaunchTypeProvider by lazyMonitored { AppLinkIntentLaunchTypeProvider(appStartReasonProvider) }
 
-    val appStore by lazyMonitored {
-        val blocklistHandler = BlocklistHandler(settings)
+    val blocklistHandler by lazyMonitored { BlocklistHandler(settings) }
 
+    val appStore by lazyMonitored {
         AppStore(
                 initialState =
                     AppState(

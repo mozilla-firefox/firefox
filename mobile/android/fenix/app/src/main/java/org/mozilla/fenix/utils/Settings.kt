@@ -62,6 +62,7 @@ import org.mozilla.fenix.ext.WIDE_SCREEN_WIDTH_DP
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getPreferenceKey
 import org.mozilla.fenix.home.pocket.ContentRecommendationsFeatureHelper
+import org.mozilla.fenix.home.topsites.FenixDefaultTopSitesProvider
 import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_MAX_COUNT
 import org.mozilla.fenix.nimbus.DefaultBrowserPrompt
 import org.mozilla.fenix.nimbus.FxNimbus
@@ -75,7 +76,6 @@ import org.mozilla.fenix.settings.sitepermissions.AUTOPLAY_BLOCK_ALL
 import org.mozilla.fenix.settings.sitepermissions.AUTOPLAY_BLOCK_AUDIBLE
 import org.mozilla.fenix.tabstray.DefaultTabManagementFeatureHelper
 import org.mozilla.fenix.termsofuse.TOU_VERSION
-import org.mozilla.fenix.utils.Settings.Companion.LONGFOX_PEEK_ANIMATION_MAX_SHOWS
 import org.mozilla.fenix.wallpapers.Wallpaper
 
 private const val AUTOPLAY_USER_SETTING = "AUTOPLAY_USER_SETTING"
@@ -1785,9 +1785,24 @@ class Settings(
             default = true,
         )
 
-    var defaultTopSitesAdded by
+    /**
+     * Whether default pinned top sites that are included in the application on the first run of the application have
+     * been added.
+     */
+    var defaultPinnedTopSitesAdded by
         booleanPreference(
             appContext.getPreferenceKey(R.string.default_top_sites_added),
+            default = false,
+        )
+
+    /**
+     * Whether the default top sites that the user had already removed have been migrated over to the homescreen
+     * blocklist. This applies to existing users that had their default top sites added to the user-pinned sites storage
+     * before they were served as backfills from [FenixDefaultTopSitesProvider].
+     */
+    var removedDefaultPinnedTopSitesMigrated by
+        booleanPreference(
+            appContext.getPreferenceKey(R.string.pref_key_removed_default_pinned_top_sites_migrated),
             default = false,
         )
 

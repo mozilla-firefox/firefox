@@ -406,6 +406,7 @@
 
     <!-- Top Sites -->
     <string name="default_top_sites_added" translatable="false">pref_key_pocket_top_site_added</string>
+    <string name="pref_key_removed_default_pinned_top_sites_migrated" translatable="false">pref_key_removed_default_pinned_top_sites_migrated</string>
     <string name="pref_key_top_sites_size" translatable="false">pref_key_top_sites_size</string>
     <!-- Maximum number of top sites to display -->
     <string name="pref_key_top_sites_max_limit" translatable="false">pref_key_top_sites_max_limit</string>

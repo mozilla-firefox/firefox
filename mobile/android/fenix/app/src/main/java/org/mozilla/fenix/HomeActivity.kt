@@ -293,6 +293,9 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
         DefaultPinnedSitesBinding(
             browserStore = components.core.store,
             topSitesStorage = components.core.topSitesStorage,
+            pinnedSitesStorage = components.core.pinnedSiteStorage,
+            defaultTopSitesProvider = components.core.defaultTopSitesProvider,
+            blocklistHandler = components.blocklistHandler,
             settings = components.settings,
             resources = resources,
             crashReporter = components.analytics.crashReporter,
