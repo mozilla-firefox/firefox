@@ -4911,11 +4911,18 @@ export class UrlbarView {
 
   on_hidden(event) {
     if (event.target != event.currentTarget) {
+      // Ignore submenus.
       return;
     }
-    event.currentTarget.lastAnchorNode
-      ?.closest(".urlbarView-row")
-      ?.toggleAttribute("menu-trigger", false);
+
+    let row = event.detail.anchorNode?.closest(".urlbarView-row");
+    // If the row isn't still the menu trigger, remove the attribute.
+    if (
+      !this.resultMenu.open ||
+      row != this.resultMenu.lastAnchorNode?.closest(".urlbarView-row")
+    ) {
+      row?.toggleAttribute("menu-trigger", false);
+    }
   }
 
   on_contextmenu(event) {

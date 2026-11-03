@@ -880,7 +880,7 @@ export class PanelList extends HTMLElement {
     // animation frame.
     let lastAnchorNode = this.lastAnchorNode;
     requestAnimationFrame(() => {
-      this.sendEvent("hidden");
+      this.sendEvent("hidden", { anchorNode: lastAnchorNode });
       lastAnchorNode?.setAttribute("aria-expanded", "false");
     });
     this.removeHideListeners();

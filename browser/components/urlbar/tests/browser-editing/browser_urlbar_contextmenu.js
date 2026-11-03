@@ -438,6 +438,70 @@ add_task(async function on_switch_to_tab() {
   await PlacesUtils.history.clear();
 });
 
+add_task(async function menu_trigger_on_reopen() {
+  await PlacesTestUtils.addVisits([
+    "https://example.com/1",
+    "https://example.com/2",
+    "https://example.com/3",
+    "https://example.com/4",
+  ]);
+  await PlacesFrecencyRecalculator.recalculateAnyOutdatedFrecencies();
+
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "example.com/",
+    window,
+    fireInputEvent: true,
+  });
+  Assert.greaterOrEqual(
+    UrlbarTestUtils.getResultCount(window),
+    4,
+    "There are enough results"
+  );
+  // Row B is above row A so that the menu opened on row A doesn't cover it.
+  let rowA = (await UrlbarTestUtils.getDetailsOfResultAt(window, 3)).element
+    .row;
+  let rowB = (await UrlbarTestUtils.getDetailsOfResultAt(window, 1)).element
+    .row;
+
+  info("Open the context menu on A");
+  await openContextMenu(rowA);
+  Assert.ok(rowA.hasAttribute("menu-trigger"), "Row A has menu-trigger");
+  info("Then, open the context menu on B");
+  await openContextMenu(rowB);
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  Assert.ok(rowB.hasAttribute("menu-trigger"), "Row B has menu-trigger");
+  Assert.ok(
+    !rowA.hasAttribute("menu-trigger"),
+    "Row A no longer has menu-trigger"
+  );
+
+  info("Reopen on the same row, away from where the menu was opened");
+  await openContextMenu(rowB);
+  await new Promise(resolve => requestAnimationFrame(resolve));
+  Assert.ok(
+    rowB.hasAttribute("menu-trigger"),
+    "Row B keeps menu-trigger after the menu is reopened on it"
+  );
+  Assert.ok(
+    !rowA.hasAttribute("menu-trigger"),
+    "Row A does not have menu-trigger"
+  );
+
+  let onHidden = BrowserTestUtils.waitForEvent(
+    gURLBar.view.resultMenu,
+    "hidden"
+  );
+  gURLBar.view.resultMenu.hide(undefined, { force: true });
+  await onHidden;
+  Assert.ok(
+    !rowB.hasAttribute("menu-trigger"),
+    "Row B no longer has menu-trigger after the menu is hidden"
+  );
+
+  gURLBar.view.close();
+  await PlacesUtils.history.clear();
+});
+
 // No container item carries an accesskey, so the initial of a name the user
 // chose selects it, cycling among every container that shares the letter.
 add_task(async function container_first_letter_selection() {
@@ -515,22 +579,15 @@ async function promiseResultWithMenuButton() {
   throw new Error("No result with a menu button");
 }
 
+// Right-clicks the row at its center.
 async function openContextMenu(row) {
   info("Open the context menu");
   let menu = gURLBar.view.resultMenu;
+
   let onShown = BrowserTestUtils.waitForEvent(menu, "shown");
-  EventUtils.synthesizeMouseAtCenter(row, {
-    button: 2,
-    type: "mousedown",
-  });
-  EventUtils.synthesizeMouseAtCenter(row, {
-    button: 2,
-    type: "contextmenu",
-  });
-  EventUtils.synthesizeMouseAtCenter(row, {
-    button: 2,
-    type: "mouseup",
-  });
+  for (let type of ["mousedown", "contextmenu", "mouseup"]) {
+    EventUtils.synthesizeMouseAtCenter(row, { button: 2, type });
+  }
   await onShown;
 
   return menu;
