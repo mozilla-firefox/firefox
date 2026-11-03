@@ -835,18 +835,29 @@ However, if only 1x and 2x PNG assets are available, you can use this
 
 #### Some properties are rounded to device pixels, but not others
 
-A used `border-width` is rounded down to whole device pixels. `padding`,
-`margin`, `gap` and `height` are not. Trading a border for padding of the same
-length, or a 1px-tall background box for a 1px border, is therefore not
-geometry-neutral unless the length lands on whole device pixels, and what has to
-be integral is the length in *device* pixels rather than in CSS pixels. A whole
-number of CSS pixels is not exempt: at a device pixel ratio of 1.25 a `1px`
-border is used as 0.8px while `1px` of padding stays 1px, so the box changes
-size and everything after it moves.
+A declared `border-*-width`, `outline-width` or `column-rule-width` is rounded
+down to whole device pixels when it is computed, with a floor of one device
+pixel for a width that is not zero (`snap_as_border_width`). A width left at its
+initial `medium` value is not rounded and stays 3 CSS pixels. `outline-offset`
+is rounded the same way where `layout.css.outline-offset.snapping` asks for it:
+1 rounds it everywhere and is the Nightly default, and 2 rounds it only in
+chrome documents and is the default elsewhere. `padding`, `margin`, `gap` and
+`height` are not rounded. Trading a border for padding of the same length, or a
+1px-tall background box for a 1px border, is therefore not geometry-neutral
+unless the length lands on whole device pixels, and what has to be integral is
+the length in *device* pixels rather than in CSS pixels. A whole number of CSS
+pixels is not exempt: at a device pixel ratio of 1.25 a `1px` border is used as
+0.8px while `1px` of padding stays 1px, so the box changes size and everything
+after it moves.
 
 The consequences are easy to miss because the default ratio hides them, so set
 `layout.css.devPixelsPerPx` (a string pref; `"-1.0"` restores automatic) and
 check the fractional ratios 1.25, 1.5 and 1.75 before calling such a swap neutral.
+A device pixel is a whole number of app units, of which a CSS pixel has 60.
+`ComputeAppUnitsPerDevPixelForWidgetScale` rounds 60 divided by the scale to the
+nearest integer, at least 1, and the ratio you get is 60 divided by that
+integer, which is not always the representable ratio nearest the one you asked
+for: `devPixelsPerPx` set to 1.75 runs at 60/34, about 1.7647.
 Where padding has to reproduce the snapping, `round(down, X, env(hairline))`
 does it, with a `max(env(hairline), ...)` guard against rounding to zero;
 `browser/themes/shared/urlbar.css` uses that form. The CSSWG has
