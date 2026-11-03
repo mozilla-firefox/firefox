@@ -19,14 +19,14 @@ hls:
       tags:
         - 'Core :: Audio/Video: Playback'
     bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2057069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082232
     data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2057069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082232
     data_sensitivity:
       - technical
     notification_emails:
       - media-alerts@mozilla.com
-    expires: 162
+    expires: 168
 
   canplay_supported:
     type: counter
@@ -36,14 +36,14 @@ hls:
       tags:
         - 'Core :: Audio/Video: Playback'
     bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2057069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082232
     data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2057069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082232
     data_sensitivity:
       - technical
     notification_emails:
       - media-alerts@mozilla.com
-    expires: 162
+    expires: 168
 
   media_load:
     type: event
@@ -54,9 +54,9 @@ hls:
       tags:
         - 'Core :: Audio/Video: Playback'
     bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2057069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082232
     data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2057069
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2082232
     data_sensitivity:
       - technical
     notification_emails:
@@ -67,4 +67,4 @@ hls:
           The content type of the media, could be 'video/mp2t' (for MPEG-TS),
           'video/mp4', 'audio/aac', 'audio/mpeg', ...
         type: string
-    expires: 162
+    expires: 168
