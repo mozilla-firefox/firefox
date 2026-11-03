@@ -296,9 +296,11 @@ def setup(app):
     app.connect("env-before-read-docs", freeze_gc)
     app.connect("write-started", freeze_gc)
     # sphinx-js does not declare it, but it only reads the jsdoc analysis that
-    # runs once before the sources are read.
-    app.extensions["sphinx_js"].parallel_read_safe = True
-    app.extensions["sphinx_js"].parallel_write_safe = True
+    # runs once before the sources are read. `mach doc --no-autodoc` doesn't
+    # load it.
+    if sphinx_js := app.extensions.get("sphinx_js"):
+        sphinx_js.parallel_read_safe = True
+        sphinx_js.parallel_write_safe = True
     app.add_css_file("custom_theme.css")
     app.add_js_file("scrollable_regions.js")
     app.connect("html-page-context", install_sphinx_design)
