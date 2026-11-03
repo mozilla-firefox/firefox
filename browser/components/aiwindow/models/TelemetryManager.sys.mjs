@@ -127,10 +127,6 @@ export class TelemetryScheduler {
       return;
     }
 
-    if (Services.startup.shuttingDown) {
-      return;
-    }
-
     if (this.#running) {
       lazy.console.debug(
         "Skipping run because a previous run is still in progress."
@@ -225,11 +221,9 @@ export class TelemetryScheduler {
         { startTime: intervalStart },
         "LLMaJTelemetryManager"
       );
-      if (!Services.startup.shuttingDown) {
-        Services.prefs.setIntPref(LAST_RUN_PREF, Math.floor(Date.now() / 1000));
-        if (!this.#destroyed) {
-          this.#startInterval();
-        }
+      Services.prefs.setIntPref(LAST_RUN_PREF, Math.floor(Date.now() / 1000));
+      if (!this.#destroyed) {
+        this.#startInterval();
       }
       this.#running = false;
     }
