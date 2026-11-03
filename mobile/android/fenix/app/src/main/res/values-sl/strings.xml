@@ -182,6 +182,12 @@
   <string name="recently_visited_menu_item_remove">Odstrani</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">Prikaži vsa pretekla odkritja</string>
+  <!--
+    Browser Fragment
+
+    Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
+  -->
+  <string name="customize_menu">Prilagodi meni</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Nazaj</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -910,6 +916,10 @@
   <string name="preferences_open_links_in_apps_ask">Vprašaj pred odpiranjem</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Nikoli</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Predstavnost</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Odpiraj povezave v aplikaciji YouTube</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Shramba datotek</string>
   <!-- Preference title for downloads default location. -->

@@ -27,6 +27,8 @@
     <item quantity="few">Naprej za %1$d sekunde</item>
     <item quantity="other">Naprej za %1$d sekund</item>
   </plurals>
+  <!-- Listen to Page media player: screen reader value of the playback position slider, such as "3:34 of 6:00". %1$s is the elapsed time and %2$s is the total duration. -->
+  <string name="mozac_feature_listentopage_seek_state">%1$s od %2$s</string>
   <!-- Content description of the playback control notification, when the playback is set to normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_1">Običajna hitrost predvajanja</string>
   <!-- Content description of the playback control notification, when the playback is set to 2 times (double) the normal reading speed. -->
@@ -37,6 +39,8 @@
   <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">Predvajanja zvoka ni bilo mogoče dokončati. Poskusite znova.</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">Zapri</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
+  <string name="mozac_feature_listentopage_playback_speed">Hitrost predvajanja</string>
   <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
   <string name="mozac_feature_listentopage_audio">Zvok</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->

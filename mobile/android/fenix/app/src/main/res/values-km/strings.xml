@@ -961,6 +961,12 @@
   <string name="preference_simple_toolbar">សាមញ្ញ</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">បានពង្រីក</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">ទីតាំងស្វែងរកនៅលើទំព័រដើម</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">កណ្ដាល</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">ឯលើ</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">បើកផ្ទាំងថ្មីមួយ</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1748,6 +1754,12 @@
   <string name="credit_cards_cancel_button">បោះបង់</string>
   <!-- Message of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_message_3">កំណត់លំនាំចាក់សោឧបករណ៍ PIN ឬពាក្យសម្ងាត់ ដើម្បីការពារវិធីបង់ប្រាក់ ដែលអ្នកបានរក្សាទុកពីការចូលប្រើ ប្រសិនបើមាននរណាម្នាក់ មានឧបករណ៍របស់អ្នកក្នុងដៃ។</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">ធានាសន្តិសុខទិន្នន័យរសើបរបស់អ្នក</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">រៀបចំឥឡូវ</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">បោះបង់</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting an address -->
   <string name="addresses_cancel_button">បោះបង់</string>
   <!-- The title for the "Delete address" confirmation dialog -->

@@ -1306,6 +1306,8 @@
   <string name="preference_simple_toolbar">Enkel</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Utvida</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Plassering av søkjefeltet på startsida</string>
   <!-- Preference for showing the homepage search bar in the middle of the homepage -->
   <string name="preference_homepage_search_location_middle">Midten</string>
   <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
@@ -3280,6 +3282,10 @@
   <string name="credit_cards_warning_dialog_set_up_now">Konfigurer no</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Seinare</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Sikre dei sensitive dataa dine</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Konfigurer eit opplåsingsmønster, ein PIN-kode eller eit passord på eininga for å hindre at andre får tilgang til lagra sensitive data om dei køyrer bilen din.</string>
   <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
   <string name="automotive_authentication_setup_dialog_set_up_now">Konfigurer no</string>
   <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
