@@ -113,6 +113,10 @@ Style Dictionary works by ingesting JSON files with tokens data and performing v
 
 Every `*.tokens.css` file in the tree is generated, and the `*.tokens.json` beside it is the source. They are not confined to `dist/`: around eighteen component sheets sit next to the code they style, under `browser/themes/shared/` (`urlbar.tokens.css`, `tab.tokens.css`) and `toolkit/content/widgets/` (`moz-badge.tokens.css`, `panel-list.tokens.css`). Each one opens with a header saying so. The trap is that looking up what a token resolves to lands you in exactly the file you must not edit, so check the filename suffix and the header before changing a token declaration. A hand-written theme file in the same directory, such as `urlbar.css`, is fair game; its `.tokens.css` sibling is not.
 
+The generator reads `src/tokens/base/` and the directories listed in `COMPONENT_TOKEN_PATHS` in [`token-paths.mjs`](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/config/helpers/general/token-paths.mjs). Tokens from `src/tokens/components/` go into the global sheets in `dist/`, while each base `*.tokens.json` under `toolkit/content/widgets/` and `browser/themes/shared/` is built into a `*.tokens.css` beside it. An override file such as `moz-badge.nova.tokens.json` gets no sheet of its own; its values go into the base file's sheet, under `@media -moz-pref("browser.nova.enabled")` for Nova.
+
+A `comment` next to a token's `value` is written as a CSS comment above every declaration of that token, in every layer it is declared in, forced colors and Nova included. A comment about one side's value, such as how a light-mode literal was derived, then sits above the other layers' declarations too, so put such a derivation in the commit message instead. A `comment` inside a `nova` block stays in the JSON and isn't written to the CSS.
+
 Adding one token legitimately dirties four generated files: the component sheet, plus `dist/semantic-categories.mjs`, `dist/tokens-table.mjs` and `dist/tokens-figma-primitives.json`. That is propagation rather than drift - confirm it by checking that each hunk names your token.
 
 ### Naming
