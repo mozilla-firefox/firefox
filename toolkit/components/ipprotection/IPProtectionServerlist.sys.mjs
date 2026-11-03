@@ -37,6 +37,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
  */
 export const RECOMMENDED_COUNTRY_CODE = "REC";
 
+const EGRESS_LOCATION_PREF = "browser.ipProtection.egressLocation";
+
 /**
  * Event dispatched by `IPProtectionServerlistBase` instances whenever the
  * underlying list has been replaced (RS sync, pref change, initial fetch).
@@ -314,6 +316,31 @@ export class IPProtectionServerlistBase extends EventTarget {
    */
   getRecommendedLocation() {
     return this.getLocation(RECOMMENDED_COUNTRY_CODE) ?? this.getLocation("US");
+  }
+
+  /**
+   * Resolves the egress location the user picked to the country to route
+   * through. Locked countries are refused unless the user is premium.
+   *
+   * @param {(() => Promise<boolean>) | null} [isPremium]
+   *   Whether the user may use locked countries. When omitted, they may not.
+   * @returns {Promise<string|undefined>} - The country code, or undefined for
+   *   the recommended location.
+   */
+  async resolveEgressCountry(isPremium) {
+    const country =
+      Services.prefs.getStringPref(EGRESS_LOCATION_PREF, "") || undefined;
+    if (!country || !this.getLocation(country)?.country.locked) {
+      return country;
+    }
+    try {
+      if (await isPremium?.()) {
+        return country;
+      }
+    } catch (e) {
+      lazy.logConsole.error("Premium check failed:", e);
+    }
+    return undefined;
   }
 
   /**

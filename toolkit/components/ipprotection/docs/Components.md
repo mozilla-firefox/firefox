@@ -165,6 +165,9 @@ IPPAutoActivation
 : Brings the proxy up on its own on desktop: auto-start at startup,
   auto-restore of a session the user left the VPN on for, and a connection in
   inclusion mode while at least one site is marked as always using the VPN.
+  It routes through the egress location the user picked, resolved by
+  `IPProtectionServerlist.resolveEgressCountry()`; the browser sets its
+  `isPremium` callback so locked locations are only used by premium users.
   `IPProtectionActivator` picks the activation helper per build: this one on
   desktop, `IPPAlwaysOn` on enterprise, and none on Android, where the embedder
   decides through `IPProtectionController`.

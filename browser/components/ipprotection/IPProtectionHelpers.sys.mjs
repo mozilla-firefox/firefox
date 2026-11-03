@@ -13,8 +13,12 @@ import { IPProtectionActivator } from "moz-src:///toolkit/components/ipprotectio
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  IPPAutoActivation:
+    "moz-src:///toolkit/components/ipprotection/IPPAutoActivation.sys.mjs",
   IPProtection:
     "moz-src:///browser/components/ipprotection/IPProtection.sys.mjs",
+  IPProtectionPanel:
+    "moz-src:///browser/components/ipprotection/IPProtectionPanel.sys.mjs",
   IPProtectionService:
     "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
   IPProtectionStates:
@@ -103,5 +107,9 @@ IPProtectionActivator.addHelpers([
 ]);
 
 IPProtectionActivator.setAuthProvider(authProvider);
+
+if (!AppConstants.MOZ_ENTERPRISE) {
+  lazy.IPPAutoActivation.isPremium = () => lazy.IPProtectionPanel.isPremium();
+}
 
 export { IPProtectionActivator };

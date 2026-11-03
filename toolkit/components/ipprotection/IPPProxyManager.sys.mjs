@@ -493,9 +493,9 @@ class IPPProxyManagerSingleton extends EventTarget {
    * True if started by user action, false if system action
    * @param {boolean} inPrivateBrowsing
    * True if started from a private browsing window
-   * @param {string} [country]
-   * Optional ISO 3166-1 alpha-2 country code to route through. When
-   * omitted, the recommended (anycast) location is used.
+   * @param {string|Promise<string|undefined>} [country]
+   * Optional ISO 3166-1 alpha-2 country code to route through, or a promise
+   * for one. When omitted, the recommended (anycast) location is used.
    * @param {import("./IPPChannelFilter.sys.mjs").IPPProxyMode} [mode]
    * Mode for this connection. When omitted, browser.ipProtection.mode decides.
    * @returns {Promise<{started: boolean, error?: string}>}
@@ -658,6 +658,7 @@ class IPPProxyManagerSingleton extends EventTarget {
     }
     this.#schedulePassRotation(this.#pass);
 
+    country = await country;
     const location = country
       ? lazy.IPProtectionServerlist.getLocation(country)
       : lazy.IPProtectionServerlist.getRecommendedLocation();

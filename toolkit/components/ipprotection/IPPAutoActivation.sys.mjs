@@ -19,6 +19,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
   IPPProxyStates:
     "moz-src:///toolkit/components/ipprotection/IPPProxyManager.sys.mjs",
+  IPProtectionServerlist:
+    "moz-src:///toolkit/components/ipprotection/IPProtectionServerlist.sys.mjs",
   IPProtectionService:
     "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
   IPProtectionStates:
@@ -52,6 +54,14 @@ export class IPPAutoActivationSingleton {
   #willRestore = false;
   /** @type {{ mode: import("./IPPChannelFilter.sys.mjs").IPPProxyMode, promise: Promise } | null} */
   #activation = null;
+
+  /**
+   * Set by the embedder to decide whether locked egress locations may be
+   * used. Without it, auto-activation never routes through a locked one.
+   *
+   * @type {(() => Promise<boolean>) | null}
+   */
+  isPremium = null;
 
   constructor() {
     this.handleEvent = this.#handleEvent.bind(this);
@@ -272,7 +282,7 @@ export class IPPAutoActivationSingleton {
     const promise = lazy.IPPProxyManager.start(
       false,
       PrivateBrowsingUtils.permanentPrivateBrowsing,
-      undefined,
+      lazy.IPProtectionServerlist.resolveEgressCountry(this.isPremium),
       mode
     );
     this.#activation = { mode, promise };

@@ -522,8 +522,11 @@ add_task(
  */
 add_task(async function test_user_set_to_premium() {
   let sandbox = sinon.createSandbox();
+  const { ShellService } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/shell/ShellService.sys.mjs"
+  );
   let isDefaultBrowserStub = sandbox
-    .stub(IPProtectionPanel.prototype, "isDefaultBrowser")
+    .stub(ShellService, "isDefaultBrowserAsync")
     .resolves(false);
 
   setupService({ isReady: true, hasUpgraded: true });

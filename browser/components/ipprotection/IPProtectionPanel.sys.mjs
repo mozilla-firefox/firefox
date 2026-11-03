@@ -386,15 +386,21 @@ export class IPProtectionPanel {
     );
   }
 
-  async isDefaultBrowser() {
-    return lazy.ShellService.isDefaultBrowserAsync();
+  /**
+   * Whether the user may use locked egress locations. Doesn't depend on any
+   * window, so it is shared with IPPAutoActivation.
+   *
+   * @returns {Promise<boolean>}
+   */
+  static async isPremium() {
+    let isPremium =
+      lazy.IPProtectionService.authProvider.hasUpgraded ||
+      (await lazy.ShellService.isDefaultBrowserAsync());
+    return isPremium;
   }
 
   async isPremium() {
-    let isPremium =
-      lazy.IPProtectionService.authProvider.hasUpgraded ||
-      (await this.isDefaultBrowser());
-    return isPremium;
+    return IPProtectionPanel.isPremium();
   }
 
   /**
@@ -534,13 +540,9 @@ export class IPProtectionPanel {
     const inPrivateBrowsing =
       !!win && lazy.PrivateBrowsingUtils.isWindowPrivate(win);
 
-    let country = this.state.location;
-    if (!(await this.isPremium()) && country) {
-      const location = lazy.IPProtectionServerlist.getLocation(country);
-      if (location?.country.locked) {
-        country = undefined;
-      }
-    }
+    const country = await lazy.IPProtectionServerlist.resolveEgressCountry(() =>
+      this.isPremium()
+    );
 
     // A connection kept up for the always-on sites is widened, not restarted.
     if (lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE) {

@@ -16,6 +16,7 @@ const AUTOSTART_PREF = "browser.ipProtection.autoStartEnabled";
 const AUTO_RESTORE_PREF = "browser.ipProtection.autoRestoreEnabled";
 const USER_ENABLED_PREF = "browser.ipProtection.userEnabled";
 const MATCH_PATTERNS_PREF = "browser.ipProtection.inclusion.match_patterns";
+const EGRESS_LOCATION_PREF = "browser.ipProtection.egressLocation";
 const REASON_PREFS = [FEATURE_PREF, AUTOSTART_PREF, USER_ENABLED_PREF];
 const PERM_NAME = "ipp-vpn";
 const SITE = "https://always-on.example.com";
@@ -298,6 +299,41 @@ add_task(async function test_inclusion_asks_for_a_narrow_connection() {
       "The proxy should only route the included sites"
     );
   });
+});
+
+/**
+ * Tests that auto-activation routes through the location the user picked
+ * rather than the recommended one.
+ */
+add_task(async function test_autoactivation_uses_selected_location() {
+  const sandbox = sinon.createSandbox();
+  Services.prefs.setStringPref(EGRESS_LOCATION_PREF, "US");
+  try {
+    await withAutoActivation(async autoActivation => {
+      const getLocationSpy = sandbox.spy(IPProtectionServerlist, "getLocation");
+      const getRecommendedSpy = sandbox.spy(
+        IPProtectionServerlist,
+        "getRecommendedLocation"
+      );
+      setSiteRule(IPPPrincipalRules.INCLUDED);
+
+      const activated = waitForProxyState(IPPProxyStates.ACTIVE);
+      autoActivation.init();
+      await activated;
+
+      Assert.ok(
+        getLocationSpy.calledWith("US"),
+        "The selected location should be looked up"
+      );
+      Assert.ok(
+        getRecommendedSpy.notCalled,
+        "The recommended location should not be used"
+      );
+    });
+  } finally {
+    sandbox.restore();
+    Services.prefs.clearUserPref(EGRESS_LOCATION_PREF);
+  }
 });
 
 /**
