@@ -93,7 +93,7 @@ allprojects {
         }
     }
 
-    // Use the semanticdb-javac and semanticdb-kotlinc plugins to generate semanticdb files for Searchfox
+    // Use the scip-javac and scip-kotlinc plugins to generate SCIP files for Searchfox
     if (mozconfig.substs.ENABLE_MOZSEARCH_PLUGIN || mozconfig.substs.DOWNLOAD_ALL_GRADLE_DEPENDENCIES) {
         def targetRoot = new File(topobjdir, "mozsearch_java_index")
 
@@ -105,22 +105,22 @@ allprojects {
                 }
             }
 
-            addDependencyToConfigurationIfExists("compileOnly", libs.semanticdb.java)
-            addDependencyToConfigurationIfExists("testCompileOnly", libs.semanticdb.java)
-            addDependencyToConfigurationIfExists("androidTestCompileOnly", libs.semanticdb.java)
-            addDependencyToConfigurationIfExists("kotlinCompilerPluginClasspath", libs.semanticdb.kotlin)
+            addDependencyToConfigurationIfExists("compileOnly", libs.scip.java)
+            addDependencyToConfigurationIfExists("testCompileOnly", libs.scip.java)
+            addDependencyToConfigurationIfExists("androidTestCompileOnly", libs.scip.java)
+            addDependencyToConfigurationIfExists("kotlinCompilerPluginClasspath", libs.scip.kotlin)
         }
 
         tasks.withType(JavaCompile) {
             options.compilerArgs += [
-                "-Xplugin:semanticdb -sourceroot:${topsrcdir} -targetroot:${targetRoot}",
+                "-Xplugin:scip -sourceroot:${topsrcdir} -targetroot:${targetRoot}",
             ]
         }
 
         tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
             compilerOptions.freeCompilerArgs.addAll([
-                "-P", "plugin:semanticdb-kotlinc:sourceroot=${topsrcdir}".toString(),
-                "-P", "plugin:semanticdb-kotlinc:targetroot=${targetRoot}".toString(),
+                "-P", "plugin:scip-kotlinc:sourceroot=${topsrcdir}".toString(),
+                "-P", "plugin:scip-kotlinc:targetroot=${targetRoot}".toString(),
             ])
         }
     }

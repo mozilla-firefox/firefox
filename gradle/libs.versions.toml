@@ -74,8 +74,8 @@ jacoco = "0.8.16"
 kaml = "0.104.0"
 protobuf-plugin = "0.10.0"
 python-envs-plugin = "0.0.31"
-semanticdb-javac = "0.12.0"
-semanticdb-kotlinc = "0.11.0"
+scip-javac = "0.13.2"
+scip-kotlinc = "0.13.2"
 tomlj = "2.2.0"
 
 # Linters
@@ -255,8 +255,8 @@ protobuf-javalite = { module = "com.google.protobuf:protobuf-javalite", version.
 
 # Gradle plugins
 kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
-semanticdb-java = { module = "com.sourcegraph:semanticdb-javac", version.ref = "semanticdb-javac" }
-semanticdb-kotlin = { module = "com.github.mozsearch.semanticdb-kotlinc:semanticdb-kotlinc", version.ref = "semanticdb-kotlinc" }
+scip-java = { module = "org.scip-code:scip-javac", version.ref = "scip-javac" }
+scip-kotlin = { module = "org.scip-code:scip-kotlinc", version.ref = "scip-kotlinc" }
 tomlj = { module = "org.tomlj:tomlj", version.ref = "tomlj" }
 
 # Linters

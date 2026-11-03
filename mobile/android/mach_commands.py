@@ -298,7 +298,7 @@ def android_build_geckoview_example(command_context, args):
 def android_compile_all(command_context, args):
     tasks = command_context.substs["GRADLE_ANDROID_COMPILE_ALL_TASKS"]
 
-    # Serialize the indexing build: the semanticdb-javac plugin races when concurrent
+    # Serialize the indexing build: the scip-javac plugin races when concurrent
     # compile tasks write its shared output. --no-parallel is insufficient (it only
     # disables cross-project parallelism), so cap the worker pool to one. See bug 2036411.
     if command_context.substs.get("ENABLE_MOZSEARCH_PLUGIN"):

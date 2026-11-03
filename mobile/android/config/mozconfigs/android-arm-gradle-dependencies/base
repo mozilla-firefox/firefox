@@ -15,7 +15,7 @@ ac_add_options --with-gradle
 export GRADLE_MAVEN_REPOSITORIES="http://localhost:8081/nexus/content/repositories/mozilla/","http://localhost:8081/nexus/content/repositories/google/","http://localhost:8081/nexus/content/repositories/central/","http://localhost:8081/nexus/content/repositories/gradle-plugins"
 # Nexus runs on HTTP
 ac_add_options --allow-insecure-gradle-repositories
-# Some dependencies may be conditionally-loaded (eg. semanticdb compiler plugins)
+# Some dependencies may be conditionally-loaded (eg. SCIP compiler plugins)
 ac_add_options --download-all-gradle-dependencies
 
 # `android-gradle-dependencies` runs with `--dry-run`, so we don't

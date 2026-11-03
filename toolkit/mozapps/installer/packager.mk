@@ -97,7 +97,7 @@ ifdef ENABLE_MOZSEARCH_PLUGIN
           index.scip
 	rm $(topsrcdir)/rust-analyzer.json
 ifeq ($(MOZ_BUILD_APP),mobile/android)
-	@echo 'Generating mozsearch java/kotlin semanticdb tarball...'
+	@echo 'Generating mozsearch java/kotlin SCIP tarball...'
 	$(RM) $(MOZSEARCH_JAVA_INDEX_BASENAME).zip
 	cd $(topsrcdir)/ && \
           $(PYTHON3) $(topsrcdir)/mach android compile-all && \
