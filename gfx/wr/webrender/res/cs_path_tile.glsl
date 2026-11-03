@@ -45,4 +45,22 @@ void main(void) {
     oFragColor = vec4(vec3(1.0 - mask), mask);
 }
 
+#ifdef SWGL_DRAW_SPAN
+#if defined(WR_FEATURE_PATH_SSAA8)
+#define PATH_SAMPLES 8
+#elif defined(WR_FEATURE_PATH_SSAA4)
+#define PATH_SAMPLES 4
+#endif
+
+#ifdef PATH_SAMPLES
+void swgl_drawSpanRGBA8() {
+    swgl_commitPathTileRGBA8(sPathEdges, vUv, vTileData, PATH_SAMPLES);
+}
+
+void swgl_drawSpanR8() {
+    swgl_commitPathTileR8(sPathEdges, vUv, vTileData, PATH_SAMPLES);
+}
+#endif
+#endif
+
 #endif

@@ -17,8 +17,8 @@ bitflags! {
         const TEXTURE_EXTERNAL_ESSL1 = 1 << 12;
         const TEXTURE_EXTERNAL_BT709 = 1 << 13;
         const DEBUG = 1 << 14;
-        /// Build the ssaa8 and analytical variants of cs_path_tile in addition
-        /// to the ssaa4 one.
+        /// Build the analytical variant of cs_path_tile in addition to the
+        /// ssaa4 and ssaa8 ones.
         const PATH_AA_ALL_MODES = 1 << 15;
     }
 }
@@ -79,9 +79,8 @@ pub fn get_shader_features(flags: ShaderFeatureFlags) -> ShaderFeatures {
         shaders.insert(name, vec![String::new()]);
     }
 
-    let mut path_tile_features = vec!["PATH_SSAA4".to_string()];
+    let mut path_tile_features = vec!["PATH_SSAA4".to_string(), "PATH_SSAA8".to_string()];
     if flags.contains(ShaderFeatureFlags::PATH_AA_ALL_MODES) {
-        path_tile_features.push("PATH_SSAA8".to_string());
         path_tile_features.push(String::new());
     }
     shaders.insert("cs_path_tile", path_tile_features);

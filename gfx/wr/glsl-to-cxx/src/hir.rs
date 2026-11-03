@@ -4168,6 +4168,20 @@ pub fn ast_to_hir(state: &mut State, tu: &syntax::TranslationUnit) -> Translatio
         );
         declare_function(
             state,
+            "swgl_commitPathTileRGBA8",
+            None,
+            Type::new(Void),
+            vec![Type::new(*s), Type::new(Vec2), Type::new(IVec4), Type::new(Int)],
+        );
+        declare_function(
+            state,
+            "swgl_commitPathTileR8",
+            None,
+            Type::new(Void),
+            vec![Type::new(*s), Type::new(Vec2), Type::new(IVec4), Type::new(Int)],
+        );
+        declare_function(
+            state,
             "swgl_commitTextureLinearYUV",
             None,
             Type::new(Void),
