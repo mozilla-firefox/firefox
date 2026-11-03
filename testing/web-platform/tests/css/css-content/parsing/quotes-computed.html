@@ -14,6 +14,9 @@
 test_computed_value("quotes", "none");
 test_computed_value("quotes", "auto");
 test_computed_value("quotes", "match-parent");
+test_computed_value("quotes", "NONE", "none");
+test_computed_value("quotes", "Auto", "auto");
+test_computed_value("quotes", "Match-Parent", "match-parent");
 test_computed_value("quotes", `"“" "”" "‘" "’"`);
 test_computed_value("quotes", `"\u00AB\u2005" "\u2005\u00BB" "\u2039\u2005" "\u2005\u203A"`);
 test_computed_value("quotes", `"\u00BB" ""`);

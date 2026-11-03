@@ -7,7 +7,7 @@
 use crate::counter_style::{CounterStyle, CounterStyleParsingFlags};
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use cssparser::{Parser, Token};
+use cssparser::{match_ignore_ascii_case, Parser, Token};
 use style_traits::{ParseError, StyleParseErrorKind};
 
 /// Specified and computed `list-style-type` property.
@@ -180,7 +180,7 @@ impl Parse for Quotes {
 
 impl Quotes {
     fn from_ident(id: &str) -> Result<Self, ParseError> {
-        match id {
+        match_ignore_ascii_case! { id,
             "auto" => Ok(Self::Auto),
             "none" => Ok(Self::QuoteList(QuoteList::default())),
             "match-parent" if crate::pref!("layout.css.quotes.match-parent.enabled") => {
