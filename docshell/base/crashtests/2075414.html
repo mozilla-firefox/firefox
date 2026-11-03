@@ -1,16 +1,9 @@
 <!DOCTYPE html>
 <html class="reftest-wait">
-<iframe id="a"></iframe>
 <script>
-window.onload = () => {
-  a.srcdoc = "x";
-  setTimeout(() => {
-    if (performance.getEntriesByType("navigation")[0].type != "reload") {
-      location.reload(true);
-    } else {
-      document.documentElement.classList.remove("reftest-wait");
-    }
-  }, 0);
+window.onmessage = () => {
+  document.documentElement.classList.remove("reftest-wait");
 };
 </script>
+<iframe src="2075414-frame.html"></iframe>
 </html>

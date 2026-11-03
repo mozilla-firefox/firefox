@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<iframe id="a"></iframe>
+<script>
+window.onload = () => {
+  a.srcdoc = "x";
+  setTimeout(() => {
+    if (performance.getEntriesByType("navigation")[0].type != "reload") {
+      location.reload(true);
+    } else {
+      parent.postMessage("done", "*");
+    }
+  }, 0);
+};
+</script>
+</html>
