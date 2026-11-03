@@ -23,6 +23,8 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   CREDIT_CARD_SCHEMA_VERSION:
     "resource://autofill/FormAutofillStorageBase.sys.mjs",
+  AutofillApiError:
+    "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAutofill.sys.mjs",
   AutofillDataTypes: "resource://gre/modules/shared/AutofillDataTypes.sys.mjs",
   CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
   CreditCardBulkResultEntry:
@@ -39,6 +41,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAutofill.sys.mjs",
   FormAutofill: "resource://autofill/FormAutofill.sys.mjs",
   FormAutofillUtils: "resource://gre/modules/shared/FormAutofillUtils.sys.mjs",
+  NoSuchRecord:
+    "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAutofill.sys.mjs",
   UpdatableCreditCardFields:
     "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAutofill.sys.mjs",
 });
@@ -323,11 +327,11 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   }
 
   _get(store, guid) {
-    return this.#read(() => store.getCreditCard(guid));
+    return this.#read(store, () => store.getCreditCard(guid), guid);
   }
 
   _getAll(store) {
-    return this.#read(() => store.getAllCreditCards());
+    return this.#read(store, () => store.getAllCreditCards());
   }
 
   _delete(store, guid) {
@@ -343,14 +347,24 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   }
 
   // Writing needs the key as much as reading does, so a save can be declined.
-  _add(store, record) {
+  async _add(store, record) {
     const fields = jsRecordToUpdatableCreditCardFields(record);
-    return this.#withKey(() => store.addCreditCard(fields));
+    try {
+      return await this.#withKey(() => store.addCreditCard(fields));
+    } catch (e) {
+      this.#recordStoreError("add", e, [record]);
+      throw e;
+    }
   }
 
-  _update(store, guid, record) {
+  async _update(store, guid, record, stored) {
     const fields = jsRecordToUpdatableCreditCardFields(record);
-    return this.#withKey(() => store.updateCreditCard(guid, fields));
+    try {
+      return await this.#withKey(() => store.updateCreditCard(guid, fields));
+    } catch (e) {
+      this.#recordStoreError("update", e, [record, stored]);
+      throw e;
+    }
   }
 
   _addManyWithMeta(store, entries) {
@@ -527,20 +541,75 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
    * passed on. The stored numbers are left as they are, as passwordmgr leaves
    * logins it cannot decrypt.
    *
+   * @param {Store} store
    * @param {Function} operation An async function making the store call.
+   * @param {string} [guid] The card read, or none for every card.
    * @returns {Promise<*>} What `operation` resolves to.
    * @throws NS_ERROR_ABORT if the token is locked, or the store's CryptoError
    *   if a number cannot be decrypted with it unlocked.
    */
-  async #read(operation) {
+  async #read(store, operation, guid) {
     try {
       return await operation();
     } catch (e) {
-      if (e instanceof lazy.CryptoError && this._primaryPasswordLocked()) {
-        throw primaryPasswordLockedError();
+      const error =
+        e instanceof lazy.CryptoError && this._primaryPasswordLocked()
+          ? primaryPasswordLockedError()
+          : e;
+      if (!(error instanceof lazy.NoSuchRecord)) {
+        this.#recordStoreError(
+          "read",
+          error,
+          await this.#candidates(store, guid)
+        );
       }
-      throw e;
+      throw error;
     }
+  }
+
+  /**
+   * The cards a read covered, listed without the key, so this works when
+   * decrypting failed.
+   *
+   * @param {Store} store
+   * @param {string} [guid] The card read, or none for every card.
+   * @returns {Promise<?Array<CreditCardCandidate>>} Null if the listing fails.
+   */
+  async #candidates(store, guid) {
+    try {
+      const cards = await store.listCreditCardCandidates();
+      return cards.filter(card => !guid || card.guid === guid);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Record a failed store call. Only the error category is recorded, never a
+   * card value.
+   *
+   * @param {string} operation "add", "update" or "read".
+   * @param {Error} e
+   * @param {?Array<object>} records The records involved: for an update, the
+   *   record written, then the stored one. Null if unknown.
+   */
+  #recordStoreError(operation, e, records) {
+    // A candidate from the listing has hasCvv instead of the code.
+    const hasCode = record => Boolean(record?.["cc-csc"] || record?.hasCvv);
+    if (operation === "update" && !hasCode(records[0]) && hasCode(records[1])) {
+      operation = "clear";
+    }
+    let errorType = "Unknown";
+    if (e instanceof lazy.AutofillApiError) {
+      errorType = e.constructor.name;
+    } else if (e?.result === Cr.NS_ERROR_ABORT) {
+      errorType = "PrimaryPasswordLocked";
+    }
+    Glean.formautofillCreditcards.storeError.record({
+      operation,
+      error_type: errorType,
+      ...(records ? { has_cvv: records.some(hasCode) } : {}),
+    });
   }
 
   /**

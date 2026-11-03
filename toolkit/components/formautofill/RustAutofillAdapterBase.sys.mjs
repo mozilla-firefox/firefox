@@ -337,7 +337,7 @@ export class RustAutofillAdapterBase {
     // refreshes time_last_modified and increments the change counter, which is
     // what an edit means; the with-meta call would replace that counter with a
     // value this side cannot read.
-    await this._update(await this._store(), guid, merged);
+    await this._update(await this._store(), guid, merged, stored);
     await this.#notifyAndRecordCount(guid, sourceSync, action, {
       countChanged: false,
     });

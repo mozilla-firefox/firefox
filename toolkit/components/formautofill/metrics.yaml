@@ -383,6 +383,43 @@ formautofill.creditcards:
         type: boolean
       flow_id: *cvv_prompt_flow_id
 
+  store_error:
+    type: event
+    description: >
+      Recorded when adding, updating or reading (decrypting) a card, or
+      clearing its security code (CVV), fails in the credit card store. Not
+      recorded when the card does not exist. Only the error category is
+      recorded, never the code or any other card value.
+    data_sensitivity:
+      - technical
+    bugs:
+      - https://bugzil.la/2086894
+    data_reviews:
+      - https://bugzil.la/2086894
+    notification_emails:
+      - autofill@lists.mozilla.org
+    expires: never
+    extra_keys:
+      operation:
+        description: >
+          "add": a new card was being saved. "update": a stored card was being
+          changed. "clear": a stored card's security code was being removed.
+          "read": one or all stored cards were being read.
+        type: string
+      error_type:
+        description: >
+          The UniFFI error variant the store threw, e.g. "CryptoError" or
+          "SqlError". "PrimaryPasswordLocked" when the user declined or has not
+          entered the primary password; filter it out to count real failures.
+          "Unknown" for any other error.
+        type: string
+      has_cvv:
+        description: >
+          Whether a security code was involved: the card being written carried
+          one, the code being cleared, or a card being read has one. Absent
+          when a failed read could not tell.
+        type: boolean
+
 
 formautofill:
   form_submission_heuristic:

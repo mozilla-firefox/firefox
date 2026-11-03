@@ -55,6 +55,11 @@ registerCleanupFunction(() => {
   Services.prefs.clearUserPref(RUST_ACTIVE_PREF);
 });
 
+// Started up front: events recorded before it would replay on testResetFOG().
+add_setup(() => {
+  Services.fog.initializeFOG();
+});
+
 // The adapter is driven directly here, so nothing switches the profile to it:
 // claim it is the store serving, which CVV support requires.
 function enableSecurityCode() {
@@ -1235,5 +1240,204 @@ add_task(async function test_a_declined_os_prompt_reports_abort() {
     adapter.decryptField(stored, "cc-name"),
     /not stored encrypted/,
     "and a field this store does not keep encrypted is a programming error"
+  );
+});
+
+function storeErrors() {
+  return (Glean.formautofillCreditcards.storeError.testGetValue() ?? []).map(
+    e => e.extra
+  );
+}
+
+// Fails writes, and reads unless `reads` is false, with an unlocked token.
+function failStore(store, error, { reads = true } = {}) {
+  const fail = async () => {
+    throw error;
+  };
+  store.addCreditCard = store.updateCreditCard = fail;
+  if (reads) {
+    store.getCreditCard = store.getAllCreditCards = fail;
+  }
+  return {
+    restore() {
+      delete store.addCreditCard;
+      delete store.updateCreditCard;
+      delete store.getCreditCard;
+      delete store.getAllCreditCards;
+    },
+  };
+}
+
+add_task(async function test_store_error_on_write() {
+  enableSecurityCode();
+  const { store, token, adapter } = await newAdapter(
+    "autofill-cc-adapter-store-error-write.sqlite"
+  );
+  const withCode = await adapter.add({ ...TEST_RECORD, "cc-csc": "123" });
+  const withoutCode = await adapter.add({
+    ...TEST_RECORD,
+    "cc-number": TEST_NUMBER_AMEX,
+  });
+  const attempt = promise => promise.catch(() => {});
+  const crypto = (operation, has_cvv) => ({
+    operation,
+    error_type: "CryptoError",
+    has_cvv: String(has_cvv),
+  });
+
+  Services.fog.testResetFOG();
+  let broken = failStore(store, new CryptoError("encryption failed"), {
+    reads: false,
+  });
+  try {
+    await attempt(adapter.add({ ...TEST_RECORD, "cc-csc": "456" }));
+    await attempt(adapter.add(TEST_RECORD));
+    await attempt(adapter.update(withoutCode, { "cc-csc": "789" }, true));
+    await attempt(adapter.update(withoutCode, { "cc-name": "Jo Doe" }, true));
+    await attempt(adapter.update(withCode, { "cc-name": "Jo Doe" }, true));
+    await attempt(adapter.update(withCode, { "cc-csc": "" }, true));
+  } finally {
+    broken.restore();
+  }
+  Assert.deepEqual(
+    storeErrors(),
+    [
+      crypto("add", true),
+      crypto("add", false),
+      crypto("update", true),
+      crypto("update", false),
+      crypto("update", true),
+      crypto("clear", true),
+    ],
+    "every failed write is recorded, with whether it involved a code"
+  );
+
+  Services.fog.testResetFOG();
+  broken = failStore(store, new Error("bad"), { reads: false });
+  try {
+    await attempt(adapter.add(TEST_RECORD));
+  } finally {
+    broken.restore();
+  }
+  Assert.deepEqual(
+    storeErrors(),
+    [{ operation: "add", error_type: "Unknown", has_cvv: "false" }],
+    "an error the store did not raise is Unknown"
+  );
+
+  Services.fog.testResetFOG();
+  broken = breakEncryption(store, token, { canceled: true });
+  try {
+    await attempt(adapter.add({ ...TEST_RECORD, "cc-csc": "456" }));
+  } finally {
+    broken.restore();
+  }
+  Assert.deepEqual(
+    storeErrors(),
+    [
+      {
+        operation: "add",
+        error_type: "PrimaryPasswordLocked",
+        has_cvv: "true",
+      },
+    ],
+    "a declined primary password is recorded as its own category"
+  );
+});
+
+add_task(async function test_store_error_on_read() {
+  enableSecurityCode();
+  const { store, token, adapter } = await newAdapter(
+    "autofill-cc-adapter-store-error-read.sqlite"
+  );
+  const withCode = await adapter.add({ ...TEST_RECORD, "cc-csc": "123" });
+  const withoutCode = await adapter.add({
+    ...TEST_RECORD,
+    "cc-number": TEST_NUMBER_AMEX,
+  });
+  const attempt = promise => promise.catch(() => {});
+  const read = has_cvv => ({
+    operation: "read",
+    error_type: "CryptoError",
+    has_cvv: String(has_cvv),
+  });
+
+  Services.fog.testResetFOG();
+  let broken = failStore(store, new CryptoError("decryption failed"));
+  try {
+    await attempt(adapter.get(withCode));
+    await attempt(adapter.get(withoutCode));
+    await attempt(adapter.getAll());
+  } finally {
+    broken.restore();
+  }
+  Assert.deepEqual(
+    storeErrors(),
+    [read(true), read(false), read(true)],
+    "every failed read is recorded, with whether a card it covered has a code"
+  );
+
+  Services.fog.testResetFOG();
+  broken = failStore(store, new CryptoError("decryption failed"));
+  store.listCreditCardCandidates = async () => {
+    throw new Error("cannot list");
+  };
+  try {
+    await attempt(adapter.get(withCode));
+  } finally {
+    broken.restore();
+    delete store.listCreditCardCandidates;
+  }
+  Assert.deepEqual(
+    storeErrors(),
+    [{ operation: "read", error_type: "CryptoError" }],
+    "has_cvv is left out when the read cannot tell"
+  );
+
+  Services.fog.testResetFOG();
+  broken = breakDecryption(store, token, { canceled: true });
+  try {
+    await attempt(adapter.get(withCode));
+  } finally {
+    broken.restore();
+  }
+  Assert.deepEqual(
+    storeErrors(),
+    [
+      {
+        operation: "read",
+        error_type: "PrimaryPasswordLocked",
+        has_cvv: "true",
+      },
+    ],
+    "a locked primary password is recorded as its own category"
+  );
+
+  Services.fog.testResetFOG();
+  Assert.equal(await adapter.get("NoSuchGuid01"), null);
+  Assert.deepEqual(storeErrors(), [], "nor a missing card");
+});
+
+add_task(async function test_store_error_for_a_card_another_key_wrote() {
+  enableSecurityCode();
+  const path = FileTestUtils.getTempFile(
+    "autofill-cc-adapter-store-error-key.sqlite"
+  ).path;
+  await initRustComponents(PathUtils.profileDir);
+  const writer = new RustAutofillCreditCardsAdapter(
+    await createAutofillStoreWithStaticKeyManager(path, createAutofillKey())
+  );
+  const guid = await writer.add({ ...TEST_RECORD, "cc-csc": "123" });
+  const reader = new RustAutofillCreditCardsAdapter(
+    await createAutofillStoreWithStaticKeyManager(path, createAutofillKey())
+  );
+  reader._primaryPasswordLocked = () => false;
+
+  Services.fog.testResetFOG();
+  await Assert.rejects(reader.get(guid), e => e instanceof CryptoError);
+  Assert.deepEqual(
+    storeErrors(),
+    [{ operation: "read", error_type: "CryptoError", has_cvv: "true" }],
+    "a card the store cannot decrypt is recorded"
   );
 });
