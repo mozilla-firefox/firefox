@@ -322,10 +322,19 @@ add_task(async function test_tabGroupOverflowCounterScrollable() {
   // collapse and expand once to place grouped tab at end of tabstrip
   await TabGroupTestUtils.toggleCollapsed(group);
   await TabGroupTestUtils.toggleCollapsed(group);
-  // collapsing again here causes the overflow counter to be placed off screen
+  // collapsing again shows the overflow counter after the selected tab
   await TabGroupTestUtils.toggleCollapsed(group);
-  Assert.ok(
-    !win.gBrowser.tabContainer.arrowScrollbox.hasAttribute("scrolledtoend"),
+  // Align the selected tab with the end of the scrollport so that the
+  // overflow counter is off screen.
+  let { arrowScrollbox } = win.gBrowser.tabContainer;
+  let end = arrowScrollbox.startEndProps[1];
+  arrowScrollbox.scrollByPixels(
+    win.gBrowser.selectedTab.getBoundingClientRect()[end] -
+      arrowScrollbox.scrollbox.getBoundingClientRect()[end],
+    true
+  );
+  await TestUtils.waitForCondition(
+    () => !arrowScrollbox.hasAttribute("scrolledtoend"),
     "Scrollbox correctly overflows at end"
   );
   await TabGroupTestUtils.removeTabGroup(group);

@@ -582,6 +582,8 @@ skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && a11y_checks", # Bug 2010318
 ]
 
+["browser_tab_scroll_into_view_vertical.js"]
+
 ["browser_tab_splitview.js"]
 
 ["browser_tab_splitview_about_opentabs.js"]

@@ -2652,6 +2652,8 @@ tab-group {
       mask-size:
         auto,
         var(--tab-overflow-scrollbar-strip) 100%;
+      /* Keep tabs scrolled into view clear of the fade. */
+      scroll-padding-block: min(var(--tab-height-with-margin-padding), 25%);
     }
 
     &:-moz-locale-dir(rtl)[overflowing]::part(scrollbox) {
