@@ -407,6 +407,7 @@ dependencies = [
  "core-foundation 0.10.0",
  "devd-rs",
  "env_logger",
+ "icu_segmenter",
  "libc",
  "libudev",
  "log",
