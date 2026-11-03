@@ -136,6 +136,7 @@ class TRRService : public TRRServiceBase,
   bool MaybeSetPrivateURI(const nsACString& aURI) override;
   void ClearEntireCache();
   void MaybeSpeculativeConnectToTRR();
+  void SetDefaultTRRConnectionInfo(nsHttpConnectionInfo* aConnInfo) override;
 
   virtual void ReadEtcHostsFile() override;
   void AddEtcHosts(const nsTArray<nsCString>&);
@@ -150,6 +151,7 @@ class TRRService : public TRRServiceBase,
       false};  // set when captive portal check is passed
   Atomic<bool, Relaxed> mShutdown{false};
   Atomic<bool, Relaxed> mDontUseTRRThread{false};
+  Atomic<bool, Relaxed> mPreconnectPending{false};
 
   // TRR Blocklist storage
   // mTRRBLStorage is only modified on the main thread, but we query whether it

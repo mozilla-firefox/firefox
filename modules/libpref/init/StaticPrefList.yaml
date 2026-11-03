@@ -16744,13 +16744,19 @@
   value: true
   mirror: always
 
-# Speculatively pre-connect to the TRR server when the app returns to the
-# foreground (application-foreground), so the connection is ready before the
-# first DNS query arrives. Effective on Android; application-foreground is not
-# fired on desktop.
+# Speculatively pre-connect to the TRR server when the app comes to the
+# foreground (application-foreground, geckoview-initial-foreground), so the
+# connection is ready before the first DNS query arrives. Effective on Android;
+# neither topic is fired on desktop.
 - name: network.trr.preconnect_on_foreground
   type: RelaxedAtomicBool
   value: true
+  mirror: always
+
+# Allow the TRR pre-connect to RFC1918 and other local addresses.
+- name: network.trr.preconnect_allow_rfc1918
+  type: RelaxedAtomicBool
+  value: false
   mirror: always
 
 # Allow the network changed event to get sent when a network topology or setup
