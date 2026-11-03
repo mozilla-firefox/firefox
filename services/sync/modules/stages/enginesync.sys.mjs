@@ -7,6 +7,7 @@
  */
 
 import { Log } from "resource://gre/modules/Log.sys.mjs";
+import { Weave } from "resource://services-sync/main.sys.mjs";
 
 import {
   ABORT_SYNC_COMMAND,
@@ -268,6 +269,14 @@ EngineSynchronizer.prototype = {
     engineManager = this.service.engineManager
   ) {
     this._log.info("Updating enabled engines: " + numClients + " clients.");
+
+    if (Weave.perDeviceEngineChoices) {
+      this.service.maybeUpdateEngineState(meta);
+      this._log.debug(
+        "Per-device sync enabled; not updating enabled state from meta/global."
+      );
+      return;
+    }
 
     if (meta.isNew || !meta.payload.engines) {
       this._log.debug(
