@@ -132,11 +132,13 @@ if CONFIG["MOZ_WAYLAND"]:
     ]
     SOURCES += [
         "nsWindowWayland.cpp",  # conflicts with X11 headers
+        "nsWindowWaylandGtk.cpp",  # conflicts with X11 headers
         "WaylandVsyncSource.cpp",  # conflicts with X11 headers
     ]
     SOURCE_HEADERS += [
         "nsDragServiceWayland.h",
         "nsWindowWayland.h",
+        "nsWindowWaylandGtk.h",
         "RetrievalContextGtk.h",
         "RetrievalContextWayland.h",
         "WaylandVsyncSource.h",
