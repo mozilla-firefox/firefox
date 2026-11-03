@@ -1155,6 +1155,9 @@ bool DMABufSurfaceRGBA::ImportSurfaceDescriptor(
   mUID = desc.uid();
   mPID = desc.pid();
   mHDRMetadata = mozilla::gfx::HDRMetadata();
+  mColorRange = desc.colorRange();
+  mColorPrimaries = desc.colorPrimaries();
+  mTransferFunction = desc.transferFunction();
 
   LOGDMABUF(
       "DMABufSurfaceRGBA::ImportSurfaceDescriptor() UID %d size %d x %d\n",
@@ -1227,8 +1230,7 @@ bool DMABufSurfaceRGBA::Serialize(
   aOutDescriptor = SurfaceDescriptorDMABuf(
       GetSurfaceType(), mFOURCCFormat, modifiers, mGbmBufferFlags, fds, width,
       height, width, height, tmp, strides, offsets, GetYUVColorSpace(),
-      mColorRange, mozilla::gfx::ColorSpace2::UNKNOWN,
-      mozilla::gfx::TransferFunction::Default, 0, fenceFDs, mUID,
+      mColorRange, mColorPrimaries, mTransferFunction, 0, fenceFDs, mUID,
       mCanRecycle ? getpid() : 0, refCountFDs,
       /* semaphoreFd */ nullptr, /* semaphoreFdIsSyncFd */ false, mHDRMetadata);
   return true;

@@ -52,6 +52,8 @@ class SurfaceFactory_DMABUF : public SurfaceFactory {
 
   explicit SurfaceFactory_DMABUF(GLContext&);
 
+  bool SupportsCspaces() const override { return true; }
+
  public:
   virtual UniquePtr<SharedSurface> CreateSharedImpl(
       const SharedSurfaceDesc& desc) override {
