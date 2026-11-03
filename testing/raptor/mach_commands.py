@@ -228,15 +228,6 @@ class RaptorRunner(MozbuildObject):
                         "Run `./mach browsertime --setup --clobber` to set it up."
                     )
 
-                # Bug 1766112 - For the time being, we need to trigger a
-                # clean build to upgrade browsertime. This should be disabled
-                # after some time.
-                print(
-                    "Setting --clean to True to rebuild Python "
-                    "environment for Browsertime upgrade..."
-                )
-                self.config["clean"] = True
-
             version, src = _get_browsertime_version()
             print(f"Using browsertime version {version} from {src}")
 
