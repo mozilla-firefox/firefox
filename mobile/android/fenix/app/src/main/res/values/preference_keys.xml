@@ -161,6 +161,8 @@
     <string name="pref_key_sync_sign_in" translatable="false">pref_key_sync_sign_in</string>
     <string name="pref_key_push_project_id" translatable="false">project_id</string>
     <string name="pref_key_search_widget_installed_2" translatable="false">pref_key_search_widget_installed_2</string>
+    <!-- Key for the IDs of the search widgets known to be on the home screen -->
+    <string name="pref_key_search_widget_ids" translatable="false">pref_key_search_widget_ids</string>
     <!-- Key for the app version code that last published the search bar widget previews -->
     <string name="pref_key_search_bar_widget_previews_version" translatable="false">pref_key_search_bar_widget_previews_version</string>
     <!-- Key for credit cards sync preference in the account settings fragment -->

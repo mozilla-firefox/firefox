@@ -13,7 +13,6 @@ import android.os.Bundle
 import android.os.Looper
 import androidx.activity.result.ActivityResult
 import androidx.appcompat.app.AlertDialog
-import kotlin.test.assertNotNull
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -46,7 +45,11 @@ class LensSearchActivityTest {
 
     @Before
     fun setup() {
-        controller = Robolectric.buildActivity(LensSearchActivity::class.java, Intent())
+        controller =
+            Robolectric.buildActivity(
+                LensSearchActivity::class.java,
+                Intent().putExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE, "search_bar_actions"),
+            )
         activity = controller.get()
         shadow = shadowOf(activity)
     }
@@ -60,7 +63,10 @@ class LensSearchActivityTest {
             ComponentName(activity, LensCameraActivity::class.java),
             cameraIntent.intent.component,
         )
-        assertNotNull(SearchWidget.lensButton.testGetValue())
+        assertEquals(
+            mapOf("widget_type" to "search_bar_actions"),
+            SearchWidget.lensButton.testGetValue()!!.single().extra,
+        )
     }
 
     @Test

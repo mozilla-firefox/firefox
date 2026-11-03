@@ -24,12 +24,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.FenixApplication
+import org.mozilla.fenix.GleanMetrics.SearchWidget
 import org.mozilla.fenix.HomeActivity.Companion.OPEN_TO_BROWSER_AND_LOAD
 import org.mozilla.fenix.IntentReceiverActivity
 import org.mozilla.fenix.ext.components
+import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.perf.TestStrictModeManager
 import org.mozilla.fenix.widget.VoiceSearchActivity.Companion.PREVIOUS_INTENT
 import org.mozilla.fenix.widget.VoiceSearchActivity.Companion.SPEECH_PROCESSING
@@ -41,6 +44,7 @@ import org.robolectric.shadows.ShadowActivity
 
 @RunWith(RobolectricTestRunner::class)
 class VoiceSearchActivityTest {
+    @get:Rule val gleanTestRule = FenixGleanTestRule(testContext)
 
     private lateinit var controller: ActivityController<VoiceSearchActivity>
     private lateinit var activity: VoiceSearchActivity
@@ -50,6 +54,7 @@ class VoiceSearchActivityTest {
     fun setup() {
         val intent = Intent()
         intent.putExtra(SPEECH_PROCESSING, true)
+        intent.putExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE, "legacy")
 
         controller = Robolectric.buildActivity(VoiceSearchActivity::class.java, intent)
         activity = controller.get()
@@ -80,6 +85,7 @@ class VoiceSearchActivityTest {
             LANGUAGE_MODEL_FREE_FORM,
             intentForResult.intent.getStringExtra(EXTRA_LANGUAGE_MODEL),
         )
+        assertEquals(mapOf("widget_type" to "legacy"), SearchWidget.voiceButton.testGetValue()!!.single().extra)
     }
 
     @Test

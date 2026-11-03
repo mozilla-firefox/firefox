@@ -33,6 +33,7 @@ import org.mozilla.fenix.components.metrics.MetricsUtils
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.utils.Settings
+import org.mozilla.fenix.widget.SearchWidgetIntents
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -75,6 +76,7 @@ class StartSearchIntentProcessorTest {
     private fun searchWidgetIntent() =
         Intent().apply {
             putExtra(HomeActivity.OPEN_TO_SEARCH, StartSearchIntentProcessor.SEARCH_WIDGET)
+            putExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE, "search_bar")
         }
 
     @Test
@@ -117,7 +119,7 @@ class StartSearchIntentProcessorTest {
         assertNotNull(SearchWidget.newTabButton.testGetValue())
         val recordedEvents = SearchWidget.newTabButton.testGetValue()!!
         assertEquals(1, recordedEvents.size)
-        assertEquals(null, recordedEvents.single().extra)
+        assertEquals(mapOf("widget_type" to "search_bar"), recordedEvents.single().extra)
 
         assertEquals(0, browserStore.state.tabs.size)
         assertFalse(browsingModeManager.hasModeUpdated)

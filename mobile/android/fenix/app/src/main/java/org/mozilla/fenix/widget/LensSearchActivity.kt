@@ -15,7 +15,6 @@ import androidx.core.net.toUri
 import mozilla.components.feature.intent.ext.sanitize
 import mozilla.components.support.ktx.android.net.isHttpOrHttps
 import mozilla.components.support.ktx.kotlin.toNormalizedUrl
-import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.SearchWidget
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.IntentReceiverActivity
@@ -44,7 +43,9 @@ class LensSearchActivity : AppCompatActivity() {
         // Only launch the camera on the initial creation; on recreation the in-flight result is
         // still delivered to the re-registered launcher above.
         if (savedInstanceState == null) {
-            SearchWidget.lensButton.record(NoExtras())
+            SearchWidget.lensButton.record(
+                SearchWidget.LensButtonExtra(widgetType = intent?.getStringExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE))
+            )
             cameraLauncher.launch(LensCameraActivity.newIntent(this, isPrivate = false, initialMode = CameraMode.LENS))
         }
     }

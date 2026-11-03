@@ -2025,6 +2025,13 @@ class Settings(
             default = false,
         )
 
+    /** The IDs of the search widgets on the home screen at the last check, used to detect newly added widgets. */
+    var searchWidgetIds by
+        stringSetPreference(
+            appContext.getPreferenceKey(R.string.pref_key_search_widget_ids),
+            default = setOf(),
+        )
+
     /** The app version code that last published the generated search bar widget previews. */
     var searchBarWidgetPreviewsVersion by
         intPreference(

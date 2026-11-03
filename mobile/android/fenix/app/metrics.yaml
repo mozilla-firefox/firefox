@@ -8348,13 +8348,42 @@ collections_migration:
         - Collections
 
 search_widget:
+  widget_added:
+    type: event
+    description: |
+      A user added one of the search widget variants to their home screen.
+    extra_keys:
+      widget_type:
+        description: |
+          The search widget variant the user added. Possible values are:
+          `search_bar`, `search_bar_actions`, `bar_compact` or `legacy`.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2080937
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D333901
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Search
   new_tab_button:
     type: event
     description: |
       A user pressed anywhere from the Firefox logo until the start of the
       microphone icon, opening a new tab search screen.
+    extra_keys:
+      widget_type:
+        description: |
+          The search widget variant the user tapped. Possible values are:
+          `search_bar`, `search_bar_actions`, `bar_compact` or `legacy`.
+        type: string
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/4457
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2080937
     data_reviews:
       - https://github.com/mozilla-mobile/fenix/pull/4714
       - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
@@ -8363,6 +8392,7 @@ search_widget:
       - https://github.com/mozilla-mobile/fenix/pull/23453#issuecomment-1024694220
       - https://github.com/mozilla-mobile/fenix/pull/28502
       - https://github.com/mozilla-mobile/firefox-android/pull/4039
+      - https://phabricator.services.mozilla.com/D333901
     data_sensitivity:
       - interaction
     notification_emails:
@@ -8375,8 +8405,15 @@ search_widget:
     type: event
     description: |
       A user pressed the microphone icon, opening a new voice search screen.
+    extra_keys:
+      widget_type:
+        description: |
+          The search widget variant the user tapped. Possible values are:
+          `search_bar`, `search_bar_actions`, `bar_compact` or `legacy`.
+        type: string
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/4457
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2080937
     data_reviews:
       - https://github.com/mozilla-mobile/fenix/pull/4714
       - https://github.com/mozilla-mobile/fenix/pull/15713#issuecomment-703972068
@@ -8385,6 +8422,7 @@ search_widget:
       - https://github.com/mozilla-mobile/fenix/pull/23453#issuecomment-1024694220
       - https://github.com/mozilla-mobile/fenix/pull/28502
       - https://github.com/mozilla-mobile/firefox-android/pull/4039
+      - https://phabricator.services.mozilla.com/D333901
     data_sensitivity:
       - interaction
     notification_emails:
@@ -8397,10 +8435,18 @@ search_widget:
     type: event
     description: |
       A user pressed the Google Lens icon, opening the Google Lens image search flow.
+    extra_keys:
+      widget_type:
+        description: |
+          The search widget variant the user tapped. Possible values are:
+          `search_bar`, `search_bar_actions`, `bar_compact` or `legacy`.
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2048722
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2080937
     data_reviews:
       - https://phabricator.services.mozilla.com/D308320
+      - https://phabricator.services.mozilla.com/D333901
     data_sensitivity:
       - interaction
     notification_emails:

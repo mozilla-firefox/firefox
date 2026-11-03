@@ -29,19 +29,20 @@ class SearchWidgetIntentsTest {
 
     @Test
     fun `WHEN a normal text search intent is built THEN it opens to search without private mode`() {
-        val intent = SearchWidgetIntents.textSearch(testContext)
+        val intent = SearchWidgetIntents.textSearch(testContext, WIDGET_TYPE)
 
         assertEquals(IntentReceiverActivity::class.java.name, intent.component!!.className)
         assertEquals(
             StartSearchIntentProcessor.SEARCH_WIDGET,
             intent.getStringExtra(HomeActivity.OPEN_TO_SEARCH),
         )
+        assertEquals(WIDGET_TYPE, intent.getStringExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE))
         assertFalse(intent.hasExtra(HomeActivity.PRIVATE_BROWSING_MODE))
     }
 
     @Test
     fun `WHEN a private text search intent is built THEN it opens to search in private mode`() {
-        val intent = SearchWidgetIntents.textSearch(testContext, isPrivateBrowsingMode = true)
+        val intent = SearchWidgetIntents.textSearch(testContext, WIDGET_TYPE, isPrivateBrowsingMode = true)
 
         assertEquals(
             StartSearchIntentProcessor.SEARCH_WIDGET,
@@ -54,22 +55,23 @@ class SearchWidgetIntentsTest {
     fun `GIVEN voice search is disabled WHEN a voice search intent is built THEN it is null`() {
         stubSpeechRecognizer()
 
-        assertNull(SearchWidgetIntents.maybeVoiceSearch(testContext, isVoiceSearchEnabled = false))
+        assertNull(SearchWidgetIntents.maybeVoiceSearch(testContext, WIDGET_TYPE, isVoiceSearchEnabled = false))
     }
 
     @Test
     fun `GIVEN no speech recognizer is installed WHEN a voice search intent is built THEN it is null`() {
-        assertNull(SearchWidgetIntents.maybeVoiceSearch(testContext, isVoiceSearchEnabled = true))
+        assertNull(SearchWidgetIntents.maybeVoiceSearch(testContext, WIDGET_TYPE, isVoiceSearchEnabled = true))
     }
 
     @Test
     fun `GIVEN voice search is enabled and a speech recognizer is installed WHEN a voice search intent is built THEN it starts a voice search`() {
         stubSpeechRecognizer()
 
-        val intent = SearchWidgetIntents.maybeVoiceSearch(testContext, isVoiceSearchEnabled = true)!!
+        val intent = SearchWidgetIntents.maybeVoiceSearch(testContext, WIDGET_TYPE, isVoiceSearchEnabled = true)!!
 
         assertEquals(VoiceSearchActivity::class.java.name, intent.component!!.className)
         assertTrue(intent.getBooleanExtra(SPEECH_PROCESSING, false))
+        assertEquals(WIDGET_TYPE, intent.getStringExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE))
         assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK, intent.flags)
     }
 
@@ -78,6 +80,7 @@ class SearchWidgetIntentsTest {
         assertNull(
             SearchWidgetIntents.maybeLensSearch(
                 testContext,
+                WIDGET_TYPE,
                 isLensEnabled = false,
                 selectedSearchEngine = searchEngine("google-b-1-m"),
             )
@@ -89,6 +92,7 @@ class SearchWidgetIntentsTest {
         assertNull(
             SearchWidgetIntents.maybeLensSearch(
                 testContext,
+                WIDGET_TYPE,
                 isLensEnabled = true,
                 selectedSearchEngine = searchEngine("bing"),
             )
@@ -97,7 +101,14 @@ class SearchWidgetIntentsTest {
 
     @Test
     fun `GIVEN no search engine WHEN a lens search intent is built THEN it is null`() {
-        assertNull(SearchWidgetIntents.maybeLensSearch(testContext, isLensEnabled = true, selectedSearchEngine = null))
+        assertNull(
+            SearchWidgetIntents.maybeLensSearch(
+                testContext,
+                WIDGET_TYPE,
+                isLensEnabled = true,
+                selectedSearchEngine = null,
+            )
+        )
     }
 
     @Test
@@ -105,11 +116,13 @@ class SearchWidgetIntentsTest {
         val intent =
             SearchWidgetIntents.maybeLensSearch(
                 testContext,
+                WIDGET_TYPE,
                 isLensEnabled = true,
                 selectedSearchEngine = searchEngine("google-b-1-m"),
             )!!
 
         assertEquals(LensSearchActivity::class.java.name, intent.component!!.className)
+        assertEquals(WIDGET_TYPE, intent.getStringExtra(SearchWidgetIntents.EXTRA_WIDGET_TYPE))
         assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK, intent.flags)
     }
 
@@ -134,4 +147,8 @@ class SearchWidgetIntentsTest {
             icon = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888),
             type = SearchEngine.Type.BUNDLED,
         )
+
+    private companion object {
+        const val WIDGET_TYPE = "bar_compact"
+    }
 }

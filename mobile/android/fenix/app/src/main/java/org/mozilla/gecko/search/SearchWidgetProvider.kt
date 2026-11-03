@@ -101,14 +101,14 @@ class SearchWidgetProvider : AppWidgetProvider() {
         PendingIntent.getActivity(
             context,
             REQUEST_CODE_NEW_TAB,
-            SearchWidgetIntents.textSearch(context),
+            SearchWidgetIntents.textSearch(context, SearchWidgets.LEGACY_WIDGET_TYPE),
             IntentUtils.DEFAULT_PENDING_INTENT_FLAGS or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
     /** Builds pending intent that starts a new voice search. */
     @VisibleForTesting
     internal fun createVoiceSearchIntent(context: Context): PendingIntent? =
-        SearchWidgetIntents.maybeVoiceSearch(context)?.let { intent ->
+        SearchWidgetIntents.maybeVoiceSearch(context, SearchWidgets.LEGACY_WIDGET_TYPE)?.let { intent ->
             PendingIntent.getActivity(
                 context,
                 REQUEST_CODE_VOICE,
@@ -123,7 +123,7 @@ class SearchWidgetProvider : AppWidgetProvider() {
      */
     @VisibleForTesting
     internal fun createLensSearchIntent(context: Context): PendingIntent? =
-        SearchWidgetIntents.maybeLensSearch(context)?.let { intent ->
+        SearchWidgetIntents.maybeLensSearch(context, SearchWidgets.LEGACY_WIDGET_TYPE)?.let { intent ->
             PendingIntent.getActivity(
                 context,
                 REQUEST_CODE_LENS,
@@ -226,7 +226,7 @@ class SearchWidgetProvider : AppWidgetProvider() {
         fun updateAllWidgets(context: Context, appWidgetManager: AppWidgetManager) {
             SearchBarWidget.refresh()
 
-            SearchWidgets.providers.forEach { provider ->
+            SearchWidgets.providers.keys.forEach { provider ->
                 val widgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, provider))
 
                 if (widgetIds.isNotEmpty()) {
