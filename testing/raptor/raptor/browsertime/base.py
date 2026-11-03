@@ -194,46 +194,6 @@ class Browsertime(Perftest, metaclass=ABCMeta):
                 else:
                     chromedriver_version = DEFAULT_CHROMEVERSION
 
-                # Bug 1844578 - Remove this, and change the cd_extracted_names during task
-                # setup once all chrome versions use the new artifact setup.
-                cd_extracted_names_115 = {
-                    "windows": str(
-                        pathlib.Path("{}cft-chromedriver-win64", "chromedriver.exe")
-                    ),
-                    "mac-x86_64": str(
-                        pathlib.Path("{}cft-chromedriver-mac", "chromedriver")
-                    ),
-                    "mac-aarch64": str(
-                        pathlib.Path("{}cft-chromedriver-mac", "chromedriver")
-                    ),
-                    "default": str(
-                        pathlib.Path("{}cft-chromedriver-linux", "chromedriver")
-                    ),
-                }
-
-                if int(chromedriver_version) >= 115:
-                    if "mac" in self.config["platform"]:
-                        self.browsertime_chromedriver = (
-                            self.browsertime_chromedriver.replace(
-                                "{}chromedriver",
-                                cd_extracted_names_115[
-                                    f"mac-{self.config['processor']}"
-                                ],
-                            )
-                        )
-                    elif "win" in self.config["platform"]:
-                        self.browsertime_chromedriver = (
-                            self.browsertime_chromedriver.replace(
-                                "{}chromedriver.exe",
-                                cd_extracted_names_115["windows"],
-                            )
-                        )
-                    else:
-                        self.browsertime_chromedriver = (
-                            self.browsertime_chromedriver.replace(
-                                "{}chromedriver", cd_extracted_names_115["default"]
-                            )
-                        )
                 self.browsertime_chromedriver = self.browsertime_chromedriver.format(
                     chromedriver_version
                 )
