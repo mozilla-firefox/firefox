@@ -158,4 +158,27 @@ class SettingsCustomizeSimpleToolbarTest : BaseTest() {
             .mozClick(ToolbarSelectors.SIMPLE_TOOLBAR_SUMMARIZE_PAGES_BUTTON)
             .mozVerifyElementsByGroup(BrowserPageSelectors.Group.SIGN_IN_TO_SUMMARIZE_BOTTOM_SHEET)
     }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/4270857
+    @Critical
+    @Test
+    fun verifyLongTapShortcutDisplaysEditShortcutTest() {
+        val firstPage = mockWebServer.getGenericAsset(1)
+
+        on.browserPage
+            .navigateToPage(firstPage.url.toString())
+            .mozLongClick(ToolbarSelectors.SIMPLE_TOOLBAR_NEW_TAB_BUTTON)
+            .mozVerify(ToolbarSelectors.EDIT_SHORTCUT_BUTTON)
+            .mozClick(ToolbarSelectors.EDIT_SHORTCUT_BUTTON)
+        on.settingsCustomize
+            .mozVerify(SettingsCustomizeSelectors.SETTINGS_CUSTOMIZE_TITLE)
+            .mozClick(SettingsCustomizeSelectors.SHORTCUT_SHARE)
+            .mozPressBack()
+        on.browserPage
+            .mozVerify(ToolbarSelectors.SIMPLE_TOOLBAR_SHARE_BUTTON)
+            .mozLongClick(ToolbarSelectors.SIMPLE_TOOLBAR_SHARE_BUTTON)
+            .mozVerify(ToolbarSelectors.EDIT_SHORTCUT_BUTTON)
+            .mozClick(ToolbarSelectors.EDIT_SHORTCUT_BUTTON)
+        on.settingsCustomize.mozVerify(SettingsCustomizeSelectors.SETTINGS_CUSTOMIZE_TITLE)
+    }
 }

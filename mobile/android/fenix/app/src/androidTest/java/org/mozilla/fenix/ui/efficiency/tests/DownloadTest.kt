@@ -210,4 +210,19 @@ class DownloadTest : BaseTest() {
             .mozVerifyElementsByGroup(DownloadsSelectors.Group.EMPTY_DOWNLOADS)
         on.downloads.verifyDownloadedFileStillExistsOnStorage(downloadFile)
     }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2298617
+    @Critical
+    @Test
+    fun cancelTheDownloadFromPromptTest() {
+        val downloadTestPage = mockWebServer.downloadPageAsset.url.toString()
+        val downloadFile = "zip_small.zip"
+
+        on.browserPage
+            .navigateToPage(downloadTestPage)
+            .clickDownloadLink(downloadFile, downloadTestPage)
+            .verifyDownloadPrompt()
+            .mozClick(DownloadsSelectors.DOWNLOAD_DIALOG_CANCEL_BUTTON)
+        on.downloads.navigateToPage().mozVerifyElementsByGroup(DownloadsSelectors.Group.EMPTY_DOWNLOADS)
+    }
 }
