@@ -129,23 +129,23 @@ export const MonitorPanel = {
     const onMonitorsChanged = () => this._syncContents(panel);
     let observingMonitors = false;
 
-    panel.addEventListener(
-      "popupshown",
-      () => {
-        button.setAttribute("aria-expanded", "true");
-        observingMonitors = true;
-        Services.obs.addObserver(
-          onMonitorsChanged,
-          lazy.MONITOR_AGENTS_CHANGED_TOPIC
-        );
-        if (create) {
-          this._openCreateView(panel, win);
-        }
-      },
-      { once: true }
-    );
+    const onPopupShown = () => {
+      button.setAttribute("aria-expanded", "true");
+      observingMonitors = true;
+      Services.obs.addObserver(
+        onMonitorsChanged,
+        lazy.MONITOR_AGENTS_CHANGED_TOPIC
+      );
+      if (create) {
+        this._openCreateView(panel, win);
+      }
+    };
+    panel.addEventListener("popupshown", onPopupShown, { once: true });
     const teardown = () => {
       win.removeEventListener("unload", teardown);
+      // A window closed while the panel is still opening can get its
+      // popupshown after unload, which would add an observer nothing removes.
+      panel.removeEventListener("popupshown", onPopupShown);
       button.setAttribute("aria-expanded", "false");
       // A click landing while the panel is still opening hides it without it
       // ever having been shown, so the observer may never have been added.
