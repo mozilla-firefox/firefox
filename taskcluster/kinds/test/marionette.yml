@@ -61,7 +61,7 @@ marionette-unittest:
     max-run-time:
         by-test-platform:
             .*-asan.*: 3600
-            .*-tsan.*: 4500
+            .*-tsan.*: 5400
             .*/debug: 3600
             default: 1800
     instance-size: default
@@ -110,7 +110,7 @@ marionette-integration:
     max-run-time:
         by-test-platform:
             .*-asan.*: 3600
-            .*-tsan.*: 3600
+            .*-tsan.*: 5400
             .*-ccov.*: 3600
             .*/debug: 3600
             default: 2700
