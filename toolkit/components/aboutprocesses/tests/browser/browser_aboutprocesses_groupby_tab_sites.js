@@ -367,6 +367,11 @@ add_task(async function testSiteRowTogglesToReloadWhenAllTabsDiscarded() {
     headerRow.classList.contains("killed"),
     "The site row dims once every child tab is unloaded"
   );
+  Assert.equal(
+    headerRow.querySelector(".memory").textContent,
+    "—",
+    "A fully-discarded group's memory reads as no-data, not a literal 0B sum"
+  );
   await promiseRowActionDone(headerRow);
 
   headerRow.querySelector(".reload-icon").click();

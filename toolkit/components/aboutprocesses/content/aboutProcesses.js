@@ -1939,9 +1939,9 @@ class ProcessesController {
   }
 }
 
-// A tab's CPU share below this reads as "< 0.1%" rather than a percent that
-// would round to "0%" and look identical to genuinely idle.
-const TAB_CPU_NEGLIGIBLE_THRESHOLD = 0.001;
+// Below this share of total capacity (0.005%) the value would display as
+// "0.00%", indistinguishable from idle.
+const TAB_CPU_ROUNDS_TO_ZERO_THRESHOLD = 0.00005;
 
 // slopeCpuOfTotal is summable across tabs (see TabAttribution.getTabCounters),
 // and null if any tab's is still null.
@@ -1976,7 +1976,10 @@ function fillTabMemoryCell(cell, totalRamSize, hasUsageData = true) {
   let formatted = formatMemory(totalRamSize);
   fillCell(cell, {
     classes: ["memory"],
-    fluentName: "about-processes-total-memory-size-no-change",
+    fluentName:
+      formatted.unit == "GB"
+        ? "about-processes-tab-memory-gb"
+        : "about-processes-total-memory-size-no-change",
     fluentArgs: {
       total: formatted.amount,
       totalUnit: gLocalizedUnits.memory[formatted.unit],
@@ -1993,13 +1996,13 @@ function fillTabCpuCell(cell, slopeCpuOfTotal, hasUsageData = true) {
     fillNoDataCell(cell, "cpu", "…");
     return;
   }
-  let fluentName = "about-processes-tab-cpu";
+  let fluentName = "about-processes-tab-cpu2";
   let fluentArgs = { percent: slopeCpuOfTotal };
   if (slopeCpuOfTotal == 0) {
     fluentName = "about-processes-tab-cpu-fully-idle";
     fluentArgs = undefined;
-  } else if (slopeCpuOfTotal < TAB_CPU_NEGLIGIBLE_THRESHOLD) {
-    fluentName = "about-processes-tab-cpu-almost-idle";
+  } else if (slopeCpuOfTotal < TAB_CPU_ROUNDS_TO_ZERO_THRESHOLD) {
+    fluentName = "about-processes-tab-cpu-almost-idle2";
     fluentArgs = undefined;
   }
   fillCell(cell, { classes: ["cpu"], fluentName, fluentArgs });
@@ -2197,9 +2200,11 @@ class ProcessesTabView extends RowSet {
       "about-processes-site-tab-count",
       { count: tabs.length }
     );
+    // A fully-discarded group has nothing to sum, which reads as "—", not "0B".
+    let hasUsageData = tabs.some(tabData => tabData.hasUsageData);
     let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(tabs);
-    fillTabMemoryCell(memoryCell, totalRamSize);
-    fillTabCpuCell(cpuCell, slopeCpuOfTotal);
+    fillTabMemoryCell(memoryCell, totalRamSize, hasUsageData);
+    fillTabCpuCell(cpuCell, slopeCpuOfTotal, hasUsageData);
   }
 
   _updateTotals(tabCounters) {
@@ -2210,8 +2215,9 @@ class ProcessesTabView extends RowSet {
       count: tabCounters.length,
     });
     let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(tabCounters);
-    fillTabMemoryCell(memoryCell, totalRamSize);
-    fillTabCpuCell(cpuCell, slopeCpuOfTotal);
+    let hasUsageData = tabCounters.some(tabData => tabData.hasUsageData);
+    fillTabMemoryCell(memoryCell, totalRamSize, hasUsageData);
+    fillTabCpuCell(cpuCell, slopeCpuOfTotal, hasUsageData);
   }
 
   // Unlike ProcessesView.discardUpdate(), appends new rows immediately (no
@@ -2571,8 +2577,9 @@ class ProcessesTabController {
       { count: selectedCount }
     );
     let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(selectedTabData);
-    fillTabMemoryCell(memoryCell, totalRamSize);
-    fillTabCpuCell(cpuCell, slopeCpuOfTotal);
+    let hasUsageData = selectedTabData.some(tabData => tabData.hasUsageData);
+    fillTabMemoryCell(memoryCell, totalRamSize, hasUsageData);
+    fillTabCpuCell(cpuCell, slopeCpuOfTotal, hasUsageData);
   }
 
   // Tab actions are per-tabbrowser, so cross-window selections must be grouped.

@@ -31,6 +31,8 @@ https_first_disabled = true
 
 ["browser_aboutprocesses_tab_search.js"]
 
+["browser_aboutprocesses_tab_totals.js"]
+
 ["browser_aboutprocesses_table_headers.js"]
 
 ["browser_aboutprocesses_twisty.js"]

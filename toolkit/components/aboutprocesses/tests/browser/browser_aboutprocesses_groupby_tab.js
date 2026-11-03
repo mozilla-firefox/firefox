@@ -49,7 +49,7 @@ add_task(async function testGroupByTabRendersOneRowPerTab() {
     // incidental CPU noise, or as measuring if its process started after the
     // first sample.
     Assert.ok(
-      /^([0-9.]+%|idle|…|< 0.1%)$/.test(cpuCell.textContent),
+      /^([0-9.]+%|idle|…|< 0\.01%)$/.test(cpuCell.textContent),
       `CPU cell "${cpuCell.textContent}" is formatted as a percent or idle`
     );
   }
@@ -57,6 +57,83 @@ add_task(async function testGroupByTabRendersOneRowPerTab() {
   BrowserTestUtils.removeTab(tabAboutProcesses);
   BrowserTestUtils.removeTab(tabOne);
   BrowserTestUtils.removeTab(tabTwo);
+});
+
+add_task(async function testTabCpuPrecisionAndIdleThreshold() {
+  let tab = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "CPU formatting"
+  );
+  let { tabAboutProcesses, doc } = await openTabView();
+  // So no poll repaints the row between the fake render and the read.
+  pauseTabViewPolling(doc);
+
+  async function formatCell(selector, overrides) {
+    return SpecialPowers.spawn(
+      tabAboutProcesses.linkedBrowser,
+      [selector, overrides],
+      async (cellSelector, data) => {
+        let row = content.document.querySelector("tr.tab-row");
+        let cell = row.querySelector(cellSelector);
+        content.TabView._updateRow(row, { ...row.tabData, ...data });
+        await content.document.l10n.translateElements([cell]);
+        return {
+          l10nId: cell.getAttribute("data-l10n-id"),
+          text: cell.textContent,
+        };
+      }
+    );
+  }
+  let formatCpu = slopeCpuOfTotal => formatCell(".cpu", { slopeCpuOfTotal });
+  let formatMemory = async totalRamSize =>
+    (await formatCell(".memory", { totalRamSize })).text;
+
+  let idle = await formatCpu(0);
+  Assert.equal(
+    idle.l10nId,
+    "about-processes-tab-cpu-fully-idle",
+    "Exactly zero CPU usage remains idle"
+  );
+
+  let roundsToZero = await formatCpu(0.000025);
+  Assert.equal(
+    roundsToZero.text,
+    "< 0.01%",
+    "A positive value below the 0.01% display precision has its own label"
+  );
+
+  let visibleValue = await formatCpu(0.00029);
+  Assert.equal(
+    visibleValue.text,
+    "0.03%",
+    "A value above the display threshold is rounded to two decimal places"
+  );
+
+  let wholeValue = await formatCpu(0.02);
+  Assert.equal(
+    wholeValue.text,
+    "2.00%",
+    "Whole percentages keep both decimal places"
+  );
+
+  Assert.equal(
+    await formatMemory(518 * 1024 * 1024),
+    "518MB",
+    "Megabytes stay whole"
+  );
+  Assert.equal(
+    await formatMemory(1.42 * 1024 * 1024 * 1024),
+    "1.4GB",
+    "Gigabytes show one decimal place"
+  );
+  Assert.equal(
+    await formatMemory(2 * 1024 * 1024 * 1024),
+    "2.0GB",
+    "Whole gigabytes keep their decimal place"
+  );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+  BrowserTestUtils.removeTab(tab);
 });
 
 add_task(async function testAboutBlankTabIsIncluded() {
@@ -597,7 +674,7 @@ add_task(async function testTotalsBarShowsTabCountAndSums() {
   );
   let cpuCell = totalsRow.querySelector(".cpu");
   Assert.ok(
-    /^([0-9.]+%|idle|…|< 0\.1%)$/.test(cpuCell.textContent),
+    /^([0-9.]+%|idle|…|< 0\.01%)$/.test(cpuCell.textContent),
     `Totals CPU "${cpuCell.textContent}" is formatted as a percent or idle, same as row cells`
   );
   Assert.equal(

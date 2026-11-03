@@ -250,16 +250,16 @@ about-processes-cpu-almost-idle = < 0.1%
 about-processes-cpu-fully-idle = idle
     .title = Total CPU time: { NUMBER($total, maximumFractionDigits: 0) }{ $unit }
 
-# A tab's share of total CPU capacity across all cores. Unlike about-processes-cpu, no tooltip.
-# Variables:
-#    $percent (Number) Always >= 0, and never above 1.
-about-processes-tab-cpu = { NUMBER($percent, maximumSignificantDigits: 2, style: "percent") }
-
 # Special case: a tab is currently idle.
 about-processes-tab-cpu-fully-idle = idle
 
-# Special case: a tab's CPU share rounds to less than 0.1% of total capacity.
-about-processes-tab-cpu-almost-idle = < 0.1%
+# A tab’s share of total CPU capacity across all cores, shown to two decimal places.
+# Variables:
+#    $percent (Number) Always >= 0, and never above 1.
+about-processes-tab-cpu2 = { NUMBER($percent, minimumFractionDigits: 2, maximumFractionDigits: 2, style: "percent") }
+
+# Special case: a positive tab-view CPU share below its two-decimal display precision.
+about-processes-tab-cpu-almost-idle2 = < 0.01%
 
 ## Displaying Memory (total and delta)
 ## Variables:
@@ -278,6 +278,9 @@ about-processes-total-memory-size-changed = { NUMBER($total, maximumFractionDigi
 
 # Special case: no change.
 about-processes-total-memory-size-no-change = { NUMBER($total, maximumFractionDigits:0) }{ $totalUnit }
+
+# A tab’s memory of a gigabyte or more, shown to one decimal place.
+about-processes-tab-memory-gb = { NUMBER($total, minimumFractionDigits: 1, maximumFractionDigits: 1) }{ $totalUnit }
 
 ## Duration units
 
