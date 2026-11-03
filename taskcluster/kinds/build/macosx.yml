@@ -21,7 +21,6 @@ task-defaults:
               path: checkouts/gecko/security/mac/hardenedruntime/{entitlement_directory}/security-module-helper.xml
               type: file
     run:
-        clone-with: hg
         using: mozharness
         actions: [get-secrets, build]
         secrets: true

@@ -22,7 +22,6 @@ task-defaults:
               path: checkouts/gecko/security/mac/hardenedruntime/{entitlement_directory}/security-module-helper.xml
               type: file
     run:
-        clone-with: hg
         using: mozharness
         script: "mozharness/scripts/fx_desktop_build.py"
 
