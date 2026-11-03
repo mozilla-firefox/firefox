@@ -622,6 +622,11 @@ os.environment:
       - rtestard@mozilla.com
       - shong@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   launched_to_handle:
     type: labeled_counter
@@ -648,6 +653,11 @@ os.environment:
     notification_emails:
       - application-update-telemetry-alerts@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   invoked_to_handle:
     type: labeled_counter
@@ -674,6 +684,11 @@ os.environment:
     notification_emails:
       - application-update-telemetry-alerts@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   is_default_handler:
     type: labeled_boolean
@@ -696,6 +711,11 @@ os.environment:
     notification_emails:
       - application-update-telemetry-alerts@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   is_kept_in_dock:
     type: boolean
@@ -712,6 +732,11 @@ os.environment:
       - shong@mozilla.com
     expires: never
     telemetry_mirror: OS_ENVIRONMENT_IS_KEPT_IN_DOCK
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   is_taskbar_pinned:
     type: boolean
@@ -730,6 +755,11 @@ os.environment:
       - application-update-telemetry-alerts@mozilla.com
       - shong@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   is_taskbar_pinned_private:
     type: boolean
@@ -762,6 +792,11 @@ os.environment:
     notification_emails:
       - drubino@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
 security:
   https_only_mode_enabled:

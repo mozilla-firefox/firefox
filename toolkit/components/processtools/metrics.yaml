@@ -154,6 +154,11 @@ power:
     notification_emails:
       - florian@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   total_gpu_time_ms:
     type: counter
@@ -168,6 +173,11 @@ power:
     notification_emails:
       - florian@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   total_thread_wakeups:
     type: counter
@@ -182,6 +192,11 @@ power:
     notification_emails:
       - florian@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
 power.wakeups_per_thread:
   parent_active: &per_thread_wakeups

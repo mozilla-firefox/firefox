@@ -72,6 +72,11 @@ browser.backup:
     notification_emails:
       - mconley@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   scheduler_toggle_source:
     type: string

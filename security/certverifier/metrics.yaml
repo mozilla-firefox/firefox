@@ -47,6 +47,11 @@ cert_verifier:
       - not_revoked
       - revoked_in_filter
       - revoked_in_stash
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   cert_revocation_mechanisms:
     type: labeled_counter
@@ -73,6 +78,11 @@ cert_verifier:
       - OCSP
       - OneCRL
       - ShortValidity
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
 cert_signature_cache:
   hits:

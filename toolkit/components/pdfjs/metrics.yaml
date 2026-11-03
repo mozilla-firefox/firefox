@@ -33,6 +33,12 @@ pdfjs:
       - cdenizet@mozilla.com
       - mcastelluccio@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
+
   stamp:
     type: labeled_counter
     labels:
@@ -56,6 +62,12 @@ pdfjs:
       - cdenizet@mozilla.com
       - mcastelluccio@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
+
   buttons:
     type: labeled_counter
     labels:
@@ -122,6 +134,12 @@ pdfjs:
     notification_emails:
       - cdenizet@mozilla.com
       - mcastelluccio@mozilla.com
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
+
   time_to_view:
     type: custom_distribution
     bugs:
@@ -169,6 +187,11 @@ pdfjs.editing.highlight:
       notification_emails:
         - pdfjs-team@mozilla.com
       expires: never
+      send_in_pings:
+        - metrics
+        - events # Temporary until bug 2087139
+      no_lint:
+        - METRIC_ON_EVENTS_LIFETIME
 
     method:
       type: labeled_counter
@@ -994,3 +1017,8 @@ pdfjs.organize:
     notification_emails:
       - pdfjs-team@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME

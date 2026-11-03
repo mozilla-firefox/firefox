@@ -313,6 +313,11 @@ tabgroup:
       - https://bugzil.la/1938398
     expires: never
     unit: tab groups
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   tabs_per_saved_group:
     type: labeled_quantity
@@ -453,6 +458,11 @@ tabgroup:
       - remove_other_window
       - remove_new_window
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   group_interactions:
     type: labeled_counter
@@ -877,6 +887,11 @@ splitview:
     labels:
       - "1"  # left side
       - "2"  # right side
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   start:
     type: event

@@ -105,6 +105,9 @@ fxa:
     notification_emails:
       - sync-dev@mozilla.org
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
 
   account_enabled:
     type: boolean
@@ -120,6 +123,9 @@ fxa:
     notification_emails:
       - sync-dev@mozilla.org
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
 
   sendtab_sent:
     type: event

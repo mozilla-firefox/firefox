@@ -2010,6 +2010,11 @@ urlbar.searchmode:
       - fx-search-telemetry@mozilla.com
     expires: never
     telemetry_mirror: URLBAR_SEARCHMODE_SEARCHBUTTON
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   shortcut:
     type: labeled_counter

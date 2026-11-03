@@ -99,6 +99,7 @@ sidebar:
       - vsabino@mozilla.com
     send_in_pings:
       - metrics
+      - events # Temporary until bug 2087139
   width:
     type: quantity
     unit: pixels

@@ -123,6 +123,11 @@ web_app:
     notification_emails:
       - nrishel@mozilla.com
     expires: never
+    send_in_pings:
+      - metrics
+      - events # Temporary until bug 2087139
+    no_lint:
+      - METRIC_ON_EVENTS_LIFETIME
 
   installed_web_app_count:
     type: quantity

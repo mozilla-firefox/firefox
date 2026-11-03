@@ -164,6 +164,7 @@ addons:
     send_in_pings:
       - metrics
       - addons
+      - events # Temporary until bug 2087139
 
   active_g_m_plugins:
     type: object
