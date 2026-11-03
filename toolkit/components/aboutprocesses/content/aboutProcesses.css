@@ -44,12 +44,13 @@ body {
 #tab-search-bar {
   display: none;
 }
+/* Matches the sidebar panels. */
 body.tab-view {
   --tab-search-bar-height: calc(2.5rem + 8px);
+  font: menu;
 }
 body.tab-view #tab-search-bar {
   display: flex;
-  font: menu;
   align-items: center;
   position: fixed;
   z-index: 1;
@@ -190,6 +191,10 @@ th:not(:first-child, .select-cell + th) {
   border-inline-start: 1px solid;
   border-image: linear-gradient(transparent 0%, transparent 20%, var(--border-color) 20%, var(--border-color) 80%, transparent 80%, transparent 100%) 1 1;
 }
+body.tab-view th:not(:first-child) {
+  border-inline-start: 0;
+  border-image: none;
+}
 th,
 td {
   padding: 5px 10px;
@@ -197,6 +202,11 @@ td {
   max-height: 2em;
   overflow: hidden;
   white-space: nowrap;
+}
+body.tab-view td.memory,
+body.tab-view td.cpu {
+  padding-inline-end: 4px;
+  font-variant-numeric: tabular-nums;
 }
 td.type,
 td.favicon {
@@ -423,6 +433,33 @@ th > button.clickable {
     }
   }
 }
+body.tab-view {
+  th > button.clickable {
+    flex: 1;
+    min-width: 0;
+    font-weight: var(--font-weight-bold);
+    padding-inline: 4px;
+    /* The default 32px min-height exceeds the 2em header row. */
+    min-height: 0;
+  }
+  /* Added to the 16px expand-all button, this lines "Name" up with
+     tr.tab-row's own 25px favicon-to-text offset. */
+  #column-name {
+    padding-inline-start: 9px;
+  }
+  #column-memory-resident,
+  #column-cpu-total {
+    text-align: end;
+    padding-inline-start: 20px;
+  }
+  #column-kill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0;
+    font-size: 1.25em;
+  }
+}
 .clickable {
   background-repeat: no-repeat;
   background-position: right 4px center;
@@ -442,6 +479,37 @@ th > button.clickable {
 }
 .arrow-down {
   background-image: url("chrome://global/skin/icons/arrow-down-12.svg");
+}
+
+/* An ::after on the column button, so rotating the ascending state doesn't
+   also flip its label. The glyph is distinct from the row caret. */
+body.tab-view .arrow-up,
+body.tab-view .arrow-down {
+  background-image: none;
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 4px;
+    width: 12px;
+    background: url("chrome://global/skin/icons/sort-arrow.svg") no-repeat center;
+    background-size: 12px;
+    -moz-context-properties: fill;
+    fill: currentColor;
+  }
+}
+body.tab-view .arrow-up::after {
+  transform: rotate(180deg);
+}
+/* End-aligned columns carry the arrow on the start side. */
+body.tab-view :is(#column-memory-resident, #column-cpu-total) {
+  &.arrow-up::after,
+  &.arrow-down::after {
+    inset-inline-end: auto;
+    inset-inline-start: 4px;
+  }
 }
 
 /* One glyph, rotated between states. :is() takes the id's specificity, to

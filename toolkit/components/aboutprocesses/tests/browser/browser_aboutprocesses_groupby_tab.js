@@ -601,6 +601,19 @@ add_task(async function testDefaultViewUnaffectedByGroupByParam() {
     !!doc.querySelector("tr.process"),
     "The default view should still render process rows"
   );
+  for (let id of ["column-memory-resident", "column-cpu-total"]) {
+    let header = doc.getElementById(id);
+    Assert.equal(
+      doc.defaultView.getComputedStyle(header).textAlign,
+      "start",
+      `${id} retains the default view's start-aligned heading`
+    );
+    Assert.equal(
+      doc.defaultView.getComputedStyle(header).fontWeight,
+      doc.defaultView.getComputedStyle(header.parentElement).fontWeight,
+      `${id} retains inherited header weight in the default view`
+    );
+  }
   Assert.ok(
     !doc.querySelector("tr.tab-row"),
     "The default view should never render tab-view rows"
