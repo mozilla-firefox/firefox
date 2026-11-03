@@ -12,6 +12,7 @@
 //! This parsing also permits any pref function to be used in user pref files, whereas the libpref
 //! parsing only allows `user_pref`.
 
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 const PREF_FUNCTION_NAMES: &[&str] = &["user_pref", "pref", "sticky_pref", "lockPref"];
@@ -78,8 +79,8 @@ impl PrefPattern {
     pub fn new(key: &str) -> Result<Self, regex::Error> {
         // Use debug-formatting to create a quoted string and regex-escape it.
         let escaped = regex::escape(&format!("{key:?}"));
-        // We don't escape the function names because we know their values don't need it (it
-        // avoids extra allocations for the strings and a Vec to join over).
+        // We don't regex::escape the function names because we know their contents don't need it
+        // (it avoids extra allocations for the strings and a Vec to join over).
         let func = PREF_FUNCTION_NAMES.join("|");
         let regex = Regex::new(&format!(
             r"(?x)
@@ -97,7 +98,7 @@ impl PrefPattern {
     }
 
     /// Find the value for this pattern in the given prefs content.
-    pub fn find<'a>(&self, prefs_content: &'a str) -> Option<PrefValue<'a>> {
+    pub fn find<'a>(&self, prefs_content: &'a PrefsString) -> Option<PrefValue<'a>> {
         let value_string = self
             .regex
             .captures(prefs_content)
@@ -116,104 +117,196 @@ impl PrefPattern {
                 .map(PrefValue::String)
         }
     }
+
+    /// Convenience function for asserting that find("string") matches a value
+    #[cfg(test)]
+    fn assert_find_eq(&self, content: &str, value: Option<PrefValue<'static>>) {
+        let content = content.into();
+        assert_eq!(self.find(&content), value);
+    }
 }
 
-// Doctests don't run for binaries, so make some unit tests instead.
+/// A string of prefs content.
+///
+/// This will remove comments, which is required for subsequent `PrefPattern` searching to operate
+/// correctly.
+pub struct PrefsString {
+    content: String,
+}
+
+impl PrefsString {
+    pub fn new(mut content: String) -> Self {
+        // Replace comments (which may be python- or c-style) with whitespace to avoid additional
+        // allocations.
+        static COMMENT: Lazy<Regex> = Lazy::new(|| {
+            Regex::new(
+                r#"(?x)
+                (?:
+                    # Python or c-style line comments ('#...' or '//...')
+                    # Because of verbose mode, this uses \x23 for a '#' character
+                    (?:(?:\x23|//) .* (?:$|\n))
+                    # Multiline c-style comments ('/*...*/')
+                    # The 's' flag allows '.' to match newlines.
+                    # We use a non-greedy match to stop at the first comment close token.
+                    | (?s:/\* .*? \*/)
+                )
+            "#,
+            )
+            .unwrap()
+        });
+        let ranges = COMMENT
+            .find_iter(&content)
+            .map(|m| m.range())
+            .collect::<Vec<_>>();
+        for range in ranges {
+            // SAFETY: str::as_bytes_mut() requires that the buffer slice be valid UTF8 after
+            // mutation. We are filling the buffer with space characters, which is valid UTF8.
+            unsafe { content[range].as_bytes_mut().fill(b' ') };
+        }
+
+        Self { content }
+    }
+}
+
+impl From<String> for PrefsString {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<&str> for PrefsString {
+    fn from(value: &str) -> Self {
+        value.to_owned().into()
+    }
+}
+
+impl std::ops::Deref for PrefsString {
+    type Target = str;
+    fn deref(&self) -> &Self::Target {
+        &self.content
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
     fn missing() {
-        let pat = PrefPattern::new("hello").unwrap();
-        let input = r#"
-            user_pref("rawr", "FOOBAR");
-            user_pref("FOOBAR", "hello");
-        "#;
-        assert_eq!(pat.find(input), None);
+        PrefPattern::new("hello").unwrap().assert_find_eq(
+            r#"
+                user_pref("rawr", "FOOBAR");
+                user_pref("FOOBAR", "hello");
+            "#,
+            None,
+        );
     }
 
     #[test]
     fn malformed() {
-        let pat = PrefPattern::new("FOOBAR").unwrap();
-        let input = r#"
-            user_pref("FOOBAR", "hi")
-        "#;
-        assert_eq!(pat.find(input), None);
+        PrefPattern::new("FOOBAR")
+            .unwrap()
+            .assert_find_eq(r#"user_pref("FOOBAR", "hi")"#, None);
     }
 
     #[test]
     fn string_pref() {
-        let pat = PrefPattern::new("FOOBAR").unwrap();
-        let input = r#"user_pref("FOOBAR", "baz");"#;
-        assert_eq!(pat.find(input), Some(PrefValue::String("baz")));
+        PrefPattern::new("FOOBAR").unwrap().assert_find_eq(
+            r#"user_pref("FOOBAR", "baz");"#,
+            Some(PrefValue::String("baz")),
+        );
     }
 
     #[test]
     fn precise_search() {
-        let pat = PrefPattern::new("FOOBAR").unwrap();
-        let input = r#"
-            user_pref("rawr", "FOOBAR");
-            user_pref("FOOBAR", "baz");
-        "#;
-        assert_eq!(pat.find(input), Some(PrefValue::String("baz")));
+        PrefPattern::new("FOOBAR").unwrap().assert_find_eq(
+            r#"
+                user_pref("rawr", "FOOBAR");
+                user_pref("FOOBAR", "baz");
+            "#,
+            Some(PrefValue::String("baz")),
+        );
     }
 
     #[test]
     fn bool_pref() {
         let pat = PrefPattern::new("FOOBAR").unwrap();
-        assert_eq!(
-            pat.find(r#"user_pref("FOOBAR", true);"#),
-            Some(PrefValue::Bool(true))
-        );
-        assert_eq!(
-            pat.find(r#"user_pref("FOOBAR", false);"#),
-            Some(PrefValue::Bool(false))
+        pat.assert_find_eq(r#"user_pref("FOOBAR", true);"#, Some(PrefValue::Bool(true)));
+        pat.assert_find_eq(
+            r#"user_pref("FOOBAR", false);"#,
+            Some(PrefValue::Bool(false)),
         );
     }
 
     #[test]
     fn int_pref() {
         let pat = PrefPattern::new("FOOBAR").unwrap();
-        assert_eq!(
-            pat.find(r#"user_pref("FOOBAR", 42);"#),
-            Some(PrefValue::Int(42))
-        );
-        assert_eq!(
-            pat.find(r#"user_pref("FOOBAR", -10);"#),
-            Some(PrefValue::Int(-10))
-        );
-        assert_eq!(
-            pat.find(r#"user_pref("FOOBAR", +123);"#),
-            Some(PrefValue::Int(123))
-        );
+        pat.assert_find_eq(r#"user_pref("FOOBAR", 42);"#, Some(PrefValue::Int(42)));
+        pat.assert_find_eq(r#"user_pref("FOOBAR", -10);"#, Some(PrefValue::Int(-10)));
+        pat.assert_find_eq(r#"user_pref("FOOBAR", +123);"#, Some(PrefValue::Int(123)));
     }
 
     #[test]
     fn pref_functions() {
         let pat = PrefPattern::new("A").unwrap();
-        assert_eq!(
-            pat.find(r#"user_pref("A", true);"#),
-            Some(PrefValue::Bool(true))
-        );
-        assert_eq!(pat.find(r#"pref("A", true);"#), Some(PrefValue::Bool(true)));
-        assert_eq!(
-            pat.find(r#"sticky_pref("A", true);"#),
-            Some(PrefValue::Bool(true))
-        );
-        assert_eq!(
-            pat.find(r#"lockPref("A", true);"#),
-            Some(PrefValue::Bool(true))
-        );
-        assert_eq!(pat.find(r#"somepref("A", true);"#), None);
+        pat.assert_find_eq(r#"user_pref("A", true);"#, Some(PrefValue::Bool(true)));
+        pat.assert_find_eq(r#"pref("A", true);"#, Some(PrefValue::Bool(true)));
+        pat.assert_find_eq(r#"sticky_pref("A", true);"#, Some(PrefValue::Bool(true)));
+        pat.assert_find_eq(r#"lockPref("A", true);"#, Some(PrefValue::Bool(true)));
+        pat.assert_find_eq(r#"somepref("A", true);"#, None);
     }
 
     #[test]
     fn whitespace() {
+        PrefPattern::new("A").unwrap().assert_find_eq(
+            r#" user_pref ( "A" , true ) ; "#,
+            Some(PrefValue::Bool(true)),
+        );
+    }
+
+    #[test]
+    fn same_line() {
+        PrefPattern::new("A").unwrap().assert_find_eq(
+            r#"user_pref("B", "foo");user_pref("A", true);"#,
+            Some(PrefValue::Bool(true)),
+        );
+    }
+
+    #[test]
+    fn comments() {
         let pat = PrefPattern::new("A").unwrap();
-        assert_eq!(
-            pat.find(r#" user_pref ( "A" , true ) ; "#),
-            Some(PrefValue::Bool(true))
+        pat.assert_find_eq(r#"#user_pref("A", true);"#, None);
+        pat.assert_find_eq(r#"//user_pref("A", true);"#, None);
+        pat.assert_find_eq(r#"/*user_pref("A", true);*/"#, None);
+        pat.assert_find_eq("/*\nuser_pref(\"A\", true);\n*/", None);
+        pat.assert_find_eq(
+            r#"/*
+            foo bar
+            user_pref("A", true);
+            */"#,
+            None,
+        );
+        pat.assert_find_eq(
+            r#"
+            //user_pref("A", true);
+            user_pref("A", false);
+            "#,
+            Some(PrefValue::Bool(false)),
+        );
+        pat.assert_find_eq(
+            r#"
+            user_pref("A", true);
+            //user_pref("A", false);
+            "#,
+            Some(PrefValue::Bool(true)),
+        );
+        pat.assert_find_eq(
+            r#"user_pref("A", false);#user_pref("A", true);"#,
+            Some(PrefValue::Bool(false)),
+        );
+        pat.assert_find_eq(
+            r#"user_pref("A", false);//user_pref("A", true);"#,
+            Some(PrefValue::Bool(false)),
         );
     }
 }

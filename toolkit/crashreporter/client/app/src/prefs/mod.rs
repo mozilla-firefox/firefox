@@ -108,7 +108,7 @@ impl Prefs {
     /// Any prefs set in the file will take precedence over loaded values.
     pub fn update_from_file(&mut self, prefs_file: &Path) -> &mut Self {
         let content = match read_to_string(prefs_file) {
-            Ok(s) => s,
+            Ok(s) => s.into(),
             Err(e) => {
                 if e.kind() != ErrorKind::NotFound {
                     log::error!("failed to read prefs file at {}: {e}", prefs_file.display());
