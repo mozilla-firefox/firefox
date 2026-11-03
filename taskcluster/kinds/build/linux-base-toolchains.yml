@@ -8,8 +8,6 @@
 ---
 task-defaults:
     worker-type: b-linux-docker-amd
-    run:
-        clone-with: hg
 
 linux64-base-toolchains/opt:
     description: "Linux64 base toolchains Opt"
