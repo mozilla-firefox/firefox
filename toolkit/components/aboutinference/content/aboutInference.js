@@ -3,6 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 "use strict";
 
+/* global HWInference */
+
 /**
  * @import { MLEngineParent } from "moz-src:///toolkit/components/ml/actors/MLEngineParent.sys.mjs"
  * @import { StatusByEngineId } from "../../ml/ml.d.ts"
@@ -82,6 +84,56 @@ function getNumThreadsArray() {
 
 /** @type {MLEngineParent | null} */
 let engineParent = null;
+
+const DEVICE_COLUMNS = ["id", "description", "kind", "backends"];
+
+/**
+ * Lists the devices of the browser inference process, launching it if needed.
+ */
+async function listDevices() {
+  const container = document.getElementById("devices.table");
+  let devices;
+  try {
+    devices = await HWInference.listDevices();
+  } catch (error) {
+    container.textContent = String(error);
+    return;
+  }
+  container.replaceChildren();
+  const table = makeTable(container, DEVICE_COLUMNS, "devices");
+  for (const device of devices) {
+    appendRow(table, [
+      device.id,
+      device.description,
+      device.kind,
+      device.backends.join(", "),
+    ]);
+  }
+}
+
+function makeTable(container, columns, panel) {
+  const table = document.createElement("table");
+  const headerRow = document.createElement("tr");
+  for (const column of columns) {
+    const th = document.createElement("th");
+    document.l10n.setAttributes(th, `about-inference-${panel}-col-${column}`);
+    headerRow.appendChild(th);
+  }
+  table.createTHead().appendChild(headerRow);
+  table.createTBody();
+  container.appendChild(table);
+  return table;
+}
+
+function appendRow(table, cells) {
+  const tr = document.createElement("tr");
+  for (const text of cells) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    tr.appendChild(td);
+  }
+  table.tBodies[0].appendChild(tr);
+}
 
 const TINY_ARTICLE =
   "The tower is 324 metres (1,063 ft) tall, about the same height as an 81-storey building, and the tallest structure in Paris. Its base is square, measuring 125 metres (410 ft) on each side. During its construction, the Eiffel Tower surpassed the Washington Monument to become the tallest man-made structure in the world, a title it held for 41 years until the Chrysler Building in New York City was finished in 1930. It was the first structure to reach a height of 300 metres. Due to the addition of a broadcasting aerial at the top of the tower in 1957, it is now taller than the Chrysler Building by 5.2 metres (17 ft). Excluding transmitters, the Eiffel Tower is the second tallest free-standing structure in France after the Millau Viaduct.";
@@ -1116,6 +1168,47 @@ function showTab(button) {
   button.setAttribute("selected", "true");
 }
 
+function showSubTab(name) {
+  for (const tab of document.querySelectorAll(".subtabs [role='tab']")) {
+    const selected = tab.getAttribute("aria-controls") === name;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    document.getElementById(tab.getAttribute("aria-controls")).hidden =
+      !selected;
+  }
+  if (
+    name === "devices" &&
+    !document.getElementById("devices.table").hasChildNodes()
+  ) {
+    listDevices();
+  }
+}
+
+function onSubTabKeydown(event) {
+  const tabs = [...event.currentTarget.querySelectorAll("[role='tab']")];
+  const rtl = getComputedStyle(document.documentElement).direction === "rtl";
+  const next = rtl ? "ArrowLeft" : "ArrowRight";
+  const previous = rtl ? "ArrowRight" : "ArrowLeft";
+  let index = tabs.indexOf(event.target);
+  if (index < 0) {
+    return;
+  }
+  if (event.key === next) {
+    index = (index + 1) % tabs.length;
+  } else if (event.key === previous) {
+    index = (index + tabs.length - 1) % tabs.length;
+  } else if (event.key === "Home") {
+    index = 0;
+  } else if (event.key === "End") {
+    index = tabs.length - 1;
+  } else {
+    return;
+  }
+  event.preventDefault();
+  tabs[index].focus();
+  showSubTab(tabs[index].getAttribute("aria-controls"));
+}
+
 /**
  * @returns {Promise<MLEngineParent | null>}
  */
@@ -1305,12 +1398,23 @@ async function runBenchmark() {
 window.onload = async function () {
   let menu = document.getElementById("categories");
   menu.addEventListener("click", function click(e) {
-    if (e.target && e.target.parentNode == menu) {
+    if (
+      e.target?.parentNode == menu &&
+      e.target.classList.contains("category")
+    ) {
       showTab(e.target);
     }
   });
 
   showTab(document.getElementById("category-local-inference"));
+  for (const tab of document.querySelectorAll(".subtabs [role='tab']")) {
+    tab.addEventListener("click", () =>
+      showSubTab(tab.getAttribute("aria-controls"))
+    );
+  }
+  document
+    .querySelector(".subtabs")
+    .addEventListener("keydown", onSubTabKeydown);
 
   fillSelect("dtype", DTYPE);
   fillSelect("taskName", TASKS);
@@ -1321,6 +1425,10 @@ window.onload = async function () {
 
   document.getElementById("predefined").value = "feature-large";
   loadExample("feature-large");
+
+  document
+    .getElementById("devices.refresh")
+    .addEventListener("click", listDevices);
 
   document.getElementById("console").value = "";
   document

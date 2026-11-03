@@ -218,3 +218,21 @@ legend {
   font-weight: var(--font-weight-bold);
   margin-top: 1px;
 }
+
+.subtabs {
+  display: flex;
+  gap: var(--space-small);
+  margin-block-end: var(--space-medium);
+}
+
+.subtabs button {
+  padding: var(--space-small) var(--space-medium);
+  border: var(--button-border);
+  border-color: var(--button-border-color-primary);
+  border-radius: var(--border-radius-small);
+}
+
+.subtabs button[aria-selected="true"] {
+  background-color: var(--button-background-color-primary);
+  color: var(--button-text-color-primary);
+}
