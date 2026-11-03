@@ -438,6 +438,15 @@ preference that looks wrong on either side:
 [Colors and high contrast mode](/accessible/ColorsAndHighContrastMode.md)
 describes how Gecko picks between those palettes in `PreferenceSheet::Load`.
 
+#### Focus rings
+
+The UA's `:focus-visible` rule sets `outline: 1px auto` (`ua.css`), and an
+`auto` outline paints its ring in the element's `accent-color`, subject to
+forced colors, whatever `outline-color` says (`Theme::PaintAutoStyleOutline`).
+A rule that sets only `outline-color` therefore changes nothing on screen,
+although the computed value reads back as set. Set `outline-style` together
+with the color, or use the `outline` shorthand.
+
 ### High contrast mode
 
 Four regimes act on the same stylesheet independently: forced colors,
