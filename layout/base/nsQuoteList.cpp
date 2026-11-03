@@ -38,31 +38,29 @@ bool nsQuoteNode::InitTextFrame(nsGenConList* aList, nsIFrame* aPseudoFrame,
   return dirty;
 }
 
-nsString nsQuoteNode::Text() {
-  NS_ASSERTION(mType == StyleContentType::OpenQuote ||
-                   mType == StyleContentType::CloseQuote,
-               "should only be called when mText should be non-null");
-  nsString result;
-  int32_t depth = Depth();
-  MOZ_ASSERT(depth >= -1);
+static nsString GetQuoteForFrame(nsIFrame* aFrame,
+                                 nsCounterNode::StyleContentType aType,
+                                 int32_t aDepth) {
+  // Get the `quotes` property of the target (often a ::before/::after pseudo).
+  const auto& quotesProp = aFrame->StyleList()->mQuotes;
 
-  if (depth < 0) {
-    return result;
+  // For `match-parent` we simply recurse up the frame tree.
+  if (quotesProp.IsMatchParent() && aFrame->GetParent()) {
+    return GetQuoteForFrame(aFrame->GetParent(), aType, aDepth);
   }
 
-  const auto& quotesProp = mPseudoFrame->StyleList()->mQuotes;
-
-  if (quotesProp.IsAuto()) {
-    // Look up CLDR-derived quotation marks for the language of the context.
-    const nsIFrame* frame = mPseudoFrame->GetInFlowParent();
-    // Parent of the pseudo is the element around which the quotes are applied;
-    // we want lang from *its* parent, unless it is the root.
-    // XXX Are there other cases where we shouldn't look up to the parent?
-    if (!frame->Style()->IsRootElementStyle()) {
-      if (const nsIFrame* parent = frame->GetInFlowParent()) {
-        frame = parent;
-      }
+  // For `auto` (or `match-parent` if there is no parent), choose quote marks
+  // based on the content language of the frame's parent, or in the case of
+  // ::before/::after pseudos, the language of the in-flow parent's parent.
+  if (quotesProp.IsAuto() || quotesProp.IsMatchParent()) {
+    // Frame whose parent we want to check:
+    nsIFrame* frame =
+        aFrame->Style()->IsPseudoElement() ? aFrame->GetInFlowParent() : aFrame;
+    // Go to the parent, if any.
+    if (frame->GetParent()) {
+      frame = frame->GetParent();
     }
+    // Look up CLDR-derived quotes for the language of the parent.
     const intl::Quotes* quotes =
         intl::QuotesForLang(frame->StyleFont()->GetLangAtom());
     // If we don't have quote-mark data for the language, use built-in
@@ -72,10 +70,11 @@ nsString nsQuoteNode::Text() {
           {0x201c, 0x201d, 0x2018, 0x2019}};
       quotes = &sDefaultQuotes;
     }
-    size_t index = (depth == 0 ? 0 : 2);  // select first or second pair
-    index += (mType == StyleContentType::OpenQuote ? 0 : 1);  // open or close
-    result.Append(quotes->mChars[index]);
-    return result;
+    // Select first or second pair based on quote nesting depth.
+    size_t index = (aDepth == 0 ? 0 : 2);
+    // Choose open or close quote from the pair.
+    index += (aType == nsCounterNode::StyleContentType::OpenQuote ? 0 : 1);
+    return nsString(&quotes->mChars[index], 1);
   }
 
   MOZ_ASSERT(quotesProp.IsQuoteList());
@@ -84,20 +83,34 @@ nsString nsQuoteNode::Text() {
   // Reuse the last pair when the depth is greater than the number of
   // pairs of quotes.  (Also make 'quotes: none' and close-quote from
   // a depth of 0 equivalent for the next test.)
-  if (depth >= static_cast<int32_t>(quotes.Length())) {
-    depth = static_cast<int32_t>(quotes.Length()) - 1;
+  if (aDepth >= static_cast<int32_t>(quotes.Length())) {
+    aDepth = static_cast<int32_t>(quotes.Length()) - 1;
   }
 
-  if (depth == -1) {
+  if (aDepth == -1) {
     // close-quote from a depth of 0 or 'quotes: none'
-    return result;
+    return nsString();
   }
 
-  const StyleQuotePair& pair = quotes[depth];
+  const StyleQuotePair& pair = quotes[aDepth];
   const StyleOwnedStr& quote =
-      mType == StyleContentType::OpenQuote ? pair.opening : pair.closing;
-  result.Assign(NS_ConvertUTF8toUTF16(quote.AsString()));
-  return result;
+      aType == nsCounterNode::StyleContentType::OpenQuote ? pair.opening
+                                                          : pair.closing;
+  return NS_ConvertUTF8toUTF16(quote.AsString());
+}
+
+nsString nsQuoteNode::Text() {
+  MOZ_ASSERT(mType == StyleContentType::OpenQuote ||
+                 mType == StyleContentType::CloseQuote,
+             "should only be called when mText should be non-null");
+  int32_t depth = Depth();
+  MOZ_ASSERT(depth >= -1);
+
+  if (depth < 0) {
+    return nsString();
+  }
+
+  return GetQuoteForFrame(mPseudoFrame, mType, depth);
 }
 
 static int32_t GetDepthBeforeFirstQuoteNode(ContainStyleScope* aScope) {

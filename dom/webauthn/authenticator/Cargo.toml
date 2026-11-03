@@ -40,6 +40,11 @@ base64 = "^0.21"
 sha2 = "^0.10.0"
 pkcs11-bindings = "0.1.4"
 
+[dependencies.icu_segmenter]
+version = "2.0"
+default-features = false
+features = ["auto", "compiled_data"]
+
 [dependencies.nss-rs]
 git = "https://github.com/mozilla/nss-rs"
 version = "0.16"

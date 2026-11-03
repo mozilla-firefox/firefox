@@ -360,6 +360,37 @@ fn test_media_vector_first_line_failure() {
 }
 
 #[test]
+fn test_media_vector_multiple_information() {
+    let mut sdp_lines: Vec<SdpLine> = Vec::new();
+    let media_line = SdpMediaLine {
+        media: SdpMediaValue::Audio,
+        port: 9,
+        port_count: 0,
+        proto: SdpProtocolValue::RtpSavpf,
+        formats: SdpFormatList::Integers(Vec::new()),
+    };
+    let media = SdpLine {
+        line_number: 0,
+        sdp_type: SdpType::Media(media_line),
+        text: "".to_owned(),
+    };
+    sdp_lines.push(media);
+    let i1 = SdpLine {
+        line_number: 1,
+        sdp_type: SdpType::Information("foo-information-1".to_owned()),
+        text: "foo-information-1".to_owned(),
+    };
+    let i2 = SdpLine {
+        line_number: 2,
+        sdp_type: SdpType::Information("foo-information-2".to_owned()),
+        text: "foo-information-2".to_owned(),
+    };
+    sdp_lines.push(i1);
+    sdp_lines.push(i2);
+    assert!(parse_media_vector(&mut sdp_lines).is_err());
+}
+
+#[test]
 fn test_media_vector_multiple_connections() {
     let mut sdp_lines: Vec<SdpLine> = Vec::new();
     let media_line = SdpMediaLine {

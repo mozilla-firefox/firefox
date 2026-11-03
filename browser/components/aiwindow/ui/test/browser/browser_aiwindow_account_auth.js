@@ -206,8 +206,8 @@ add_task(async function test_maybeSignIn_signs_in_when_denied() {
       "runSignInFlow is given the denial reason"
     );
     Assert.ok(
-      AuthProvider.hasToSConsent,
-      "ToS consent is recorded after signing in"
+      AuthProvider.hasToUConsent,
+      "ToU consent is recorded after signing in"
     );
   } finally {
     sb.restore();
@@ -226,7 +226,7 @@ add_task(async function test_maybeSignIn_denied_when_not_signed_in() {
       !(await AuthProvider.maybeSignIn(gBrowser.selectedBrowser)),
       "Access is denied"
     );
-    Assert.ok(!AuthProvider.hasToSConsent, "ToS consent is not recorded");
+    Assert.ok(!AuthProvider.hasToUConsent, "ToU consent is not recorded");
   } finally {
     sb.restore();
     await SpecialPowers.popPrefEnv();

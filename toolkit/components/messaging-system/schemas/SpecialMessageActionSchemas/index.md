@@ -547,6 +547,12 @@ Notify Firefox that the Terms of Use policy was interacted with.
 
 - args: (none)
 
+### `ACCEPT_SMARTWINDOW_TOU`
+
+Notify Smart Window that the user accepted its Terms of Use, through the `smartwindow-tou-accepted` observer notification. Smart Window records the consent itself.
+
+- args: (none)
+
 ### `CREATE_NEW_SELECTABLE_PROFILE`
 
 Creates a new user profile and launches it in a separate instance.

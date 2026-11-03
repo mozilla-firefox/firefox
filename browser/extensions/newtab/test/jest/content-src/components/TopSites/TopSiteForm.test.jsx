@@ -553,14 +553,11 @@ describe("<TopSiteForm>", () => {
   });
 
   describe("#cleanUrl", () => {
-    it("should properly prepend http:// to URLs when required", () => {
+    it("should properly prepend https:// to URLs when required", () => {
       testSetup();
-      // eslint-disable-next-line sdl/no-insecure-url
-      expect(ref.current.cleanUrl("mozilla.org")).toBe("http://mozilla.org");
-      // eslint-disable-next-line sdl/no-insecure-url
-      expect(ref.current.cleanUrl("https.org")).toBe("http://https.org");
-      // eslint-disable-next-line sdl/no-insecure-url
-      expect(ref.current.cleanUrl("httpcom")).toBe("http://httpcom");
+      expect(ref.current.cleanUrl("mozilla.org")).toBe("https://mozilla.org");
+      expect(ref.current.cleanUrl("https.org")).toBe("https://https.org");
+      expect(ref.current.cleanUrl("httpcom")).toBe("https://httpcom");
       expect(
         // eslint-disable-next-line sdl/no-insecure-url
         ref.current.cleanUrl("http://mozilla.org")

@@ -920,6 +920,18 @@
           "properties": {
             "type": {
               "type": "string",
+              "enum": ["ACCEPT_SMARTWINDOW_TOU"]
+            }
+          },
+          "required": ["type"],
+          "additionalProperties": false,
+          "description": "Notify Smart Window that the user accepted its Terms of Use."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "enum": ["CREATE_NEW_SELECTABLE_PROFILE"]
             }
           },

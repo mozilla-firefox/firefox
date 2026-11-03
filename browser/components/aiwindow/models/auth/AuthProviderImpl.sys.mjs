@@ -10,8 +10,23 @@
  *
  * @fires AuthProviderImpl#"AuthProviderImpl:Logout"
  *  When the user signs out of their account.
+ * @fires AuthProviderImpl#"AuthProviderImpl:FallbackNeeded"
+ *  When this backend can no longer be used and AuthProvider should switch to
+ *  another one.
  */
 export class AuthProviderImpl extends EventTarget {
+  /**
+   * Clears any state this backend persisted. Called whenever another backend
+   * is selected, even if this one was never instantiated.
+   */
+  static cleanup() {}
+
+  /**
+   * Releases the runtime resources held by this instance. Called when another
+   * instance replaces it.
+   */
+  uninit() {}
+
   /**
    * @returns {Promise<string|null>} The access token, or null if none could
    *   be obtained

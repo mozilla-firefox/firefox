@@ -535,12 +535,16 @@ table[bordercolor] > * > tr > th {
 
 /* inlines */
 
-q:before {
+q::before {
   content: open-quote;
 }
 
-q:after {
+q::after {
   content: close-quote;
+}
+
+q q {
+  quotes: match-parent;
 }
 
 b,

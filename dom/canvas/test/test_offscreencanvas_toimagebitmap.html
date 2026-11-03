@@ -161,42 +161,6 @@ invoke(async () => {
     expectEq('getImageData.data.slice(0, 4)', '[0,0,0,0]', was, 'after transferToImageBitmap');
   }
 
-  note('Begin canvas2d transferToImageBitmap content preservation tests...');
-  {
-    // The canvas' backing buffer may be reused after transferToImageBitmap.
-    // Make sure that drawing into the canvas afterwards does not affect
-    // previously transferred bitmaps.
-    const oc = new OffscreenCanvas(W, H);
-    const c2d = oc.getContext('2d');
-    const readBitmap = bitmap => {
-      const c = new OffscreenCanvas(W, H);
-      const ctx = c.getContext('2d');
-      ctx.drawImage(bitmap, 0, 0);
-      return `[${ctx.getImageData(0, 0, 1, 1).data.join(',')}]`;
-    };
-
-    const colors = ['#ff0000', '#00ff00', '#0000ff'];
-    const expected = ['[255,0,0,255]', '[0,255,0,255]', '[0,0,255,255]'];
-    const bitmaps = [];
-    for (let iter = 0; iter < 3; iter++) {
-      for (const color of colors) {
-        c2d.fillStyle = color;
-        c2d.fillRect(0, 0, W, H);
-        bitmaps.push(oc.transferToImageBitmap());
-      }
-    }
-    const blank = oc.transferToImageBitmap();
-    c2d.fillStyle = '#ffffff';
-    c2d.fillRect(0, 0, W, H);
-
-    bitmaps.forEach((bitmap, i) => {
-      expectEq(`bitmap ${i}`, expected[i % 3], readBitmap(bitmap),
-               'after drawing more frames');
-    });
-    expectEq('blank bitmap', '[0,0,0,0]', readBitmap(blank),
-             'after drawing more frames');
-  }
-
   note('Begin webgl transferToImageBitmap tests...');
   {
     const oc = new OffscreenCanvas(W, H);

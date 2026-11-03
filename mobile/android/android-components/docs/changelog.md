@@ -15,6 +15,8 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: `launchInApp` on `AppLinksInterceptor`, `AppLinksUseCases` and `AppLinksFeature`, and `shouldPrompt` on `AppLinksFeature` now receive the url being opened so the decision can vary by host. [Bug 2083207](https://bugzilla.mozilla.org/show_bug.cgi?id=2083207)
 * **feature-session**
     * `SwipeRefreshFeature` now disables pull-to-refresh while the observed tab is in fullscreen or showing a PDF. [Bug 2054920](https://bugzilla.mozilla.org/show_bug.cgi?id=2054920)
+* **support-utils**
+    * 🆕 Added `BuildMetadata`, which reads the R8/ProGuard mapping UUID and SHA-256 from the `build-metadata.properties` asset written by the `WriteBuildMetadata` Gradle task.
 
 # 160.0
 * **concept-engine**

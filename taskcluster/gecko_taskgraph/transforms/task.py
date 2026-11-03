@@ -66,6 +66,36 @@ def _run_task_suffix(repo_type):
     return hash_path(str(RUN_TASK_GIT))[0:20]
 
 
+# As an additional mechanism to force the use of different caches, this
+# string literal can be changed. This is preferred to changing run-task
+# because it doesn't require images to be rebuilt.
+RUN_TASK_CACHE_VERSION = "v3"
+
+
+def _run_task_cache_suffix(config, task, uses_run_task):
+    if not uses_run_task:
+        return RUN_TASK_CACHE_VERSION
+    repo_type = task["attributes"].get("clone_with", config.params["repository_type"])
+    return f"{RUN_TASK_CACHE_VERSION}-{_run_task_suffix(repo_type)}"
+
+
+def _uses_run_task(command, mounts):
+    main_command = command[0] if command and isinstance(command[0], str) else ""
+    return is_run_task(main_command) or any(
+        mount.get("file") == "./run-task" for mount in mounts
+    )
+
+
+def _run_task_arguments(command):
+    arguments = []
+    for part in command:
+        if isinstance(part, list):
+            arguments.extend(p for p in part if isinstance(p, str))
+        elif isinstance(part, str):
+            arguments.extend(part.split())
+    return arguments
+
+
 def _compute_geckoview_version(app_version, moz_build_date):
     """Geckoview version string that matches geckoview gradle configuration"""
     # Must be synchronized with /mobile/android/geckoview/build.gradle computeVersionCode(...)
@@ -669,25 +699,10 @@ def build_docker_worker_payload(config, task, task_def):
         # the mechanism whereby changing run-task results in new caches
         # everywhere.
 
-        # As an additional mechanism to force the use of different caches, the
-        # string literal in the variable below can be changed. This is
-        # preferred to changing run-task because it doesn't require images
-        # to be rebuilt.
-        cache_version = "v3"
-
-        if run_task:
-            suffix = (
-                f"{cache_version}-{_run_task_suffix(config.params['repository_type'])}"
-            )
-
-            if out_of_tree_image:
-                name_hash = hashlib.sha256(
-                    out_of_tree_image.encode("utf-8")
-                ).hexdigest()
-                suffix += name_hash[0:12]
-
-        else:
-            suffix = cache_version
+        suffix = _run_task_cache_suffix(config, task, run_task)
+        if run_task and out_of_tree_image:
+            name_hash = hashlib.sha256(out_of_tree_image.encode("utf-8")).hexdigest()
+            suffix += name_hash[0:12]
 
         for cache in worker["caches"]:
             # Some caches aren't enabled in environments where we can't
@@ -857,12 +872,16 @@ def build_generic_worker_payload(config, task, task_def):
     #   * 'task-id'    -> 'taskId'
     # All other key names are already suitable, and don't need renaming.
     mounts = deepcopy(worker.get("mounts", []))
+    uses_run_task = _uses_run_task(worker["command"], mounts)
     for mount in mounts:
         if "cache-name" in mount:
+            name = mount.pop("cache-name")
+            if uses_run_task:
+                name = f"{name}-{_run_task_cache_suffix(config, task, True)}"
             mount["cacheName"] = "{trust_domain}-level-{level}-{name}".format(
                 trust_domain=config.graph_config["trust-domain"],
                 level=config.params["level"],
-                name=mount.pop("cache-name"),
+                name=name,
             )
             task_def["scopes"].append(
                 "generic-worker:cache:{}".format(mount["cacheName"])
@@ -2689,14 +2708,16 @@ def check_run_task_caches(config, tasks):
         level=config.params["level"],
     )
 
-    suffix = _run_task_suffix(config.params["repository_type"])
-
     for task in tasks:
         payload = task["task"].get("payload", {})
         command = payload.get("command") or [""]
+        mounts = payload.get("mounts", [])
+        repo_type = task["attributes"].get(
+            "clone_with", config.params["repository_type"]
+        )
+        suffix = _run_task_suffix(repo_type)
 
-        main_command = command[0] if isinstance(command[0], str) else ""
-        run_task = is_run_task(main_command)
+        run_task = _uses_run_task(command, mounts)
 
         require_sparse_cache = False
         require_shallow_cache = False
@@ -2705,10 +2726,7 @@ def check_run_task_caches(config, tasks):
         have_shallow_cache = False
 
         if run_task:
-            for arg in command[1:]:
-                if not isinstance(arg, str):
-                    continue
-
+            for arg in _run_task_arguments(command)[1:]:
                 if arg == "--":
                     break
 
@@ -2733,7 +2751,10 @@ def check_run_task_caches(config, tasks):
                     require_shallow_cache = True
                     break
 
-        for cache in payload.get("cache", {}):
+        caches = list(payload.get("cache", {})) + [
+            mount["cacheName"] for mount in mounts if "cacheName" in mount
+        ]
+        for cache in caches:
             if not cache.startswith(cache_prefix):
                 raise Exception(
                     "{} is using a cache ({}) which is not appropriate "

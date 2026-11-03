@@ -27,12 +27,15 @@ const lazy = XPCOMUtils.declareLazy({
  * AuthProviderImpl backed by Mozilla accounts.
  */
 export class FxaAuthProviderImpl extends AuthProviderImpl {
+  #onLogout = () => this.dispatchEvent(new Event("AuthProviderImpl:Logout"));
+
   constructor() {
     super();
-    Services.obs.addObserver(
-      () => this.dispatchEvent(new Event("AuthProviderImpl:Logout")),
-      lazy.ONLOGOUT_NOTIFICATION
-    );
+    Services.obs.addObserver(this.#onLogout, lazy.ONLOGOUT_NOTIFICATION);
+  }
+
+  uninit() {
+    Services.obs.removeObserver(this.#onLogout, lazy.ONLOGOUT_NOTIFICATION);
   }
 
   async getToken() {

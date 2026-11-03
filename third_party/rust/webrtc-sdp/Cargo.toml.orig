@@ -1,6 +1,6 @@
 [package]
 name = "webrtc-sdp"
-version = "0.3.16"
+version = "0.3.17"
 authors = ["Nicolas Grunbaum <na-g+github@nostrum.com>", "Nils Ohlmeier <github@ohlmeier.org>"]
 description = "webrtc-sdp parses strings in the format of the Session Description Protocol according to RFC4566. It specifically supports the subset of features required to support WebRTC according to the JSEP draft."
 repository = "https://github.com/mozilla/webrtc-sdp"
@@ -27,7 +27,7 @@ serialize = ["serde", "serde_derive"]
 log = {version = "0.4"}
 serde = {version = "1.0" , optional = true}
 serde_derive = {version = "1.0" , optional = true}
-url = {version="2.1.0"}
+url = {version="2.5"}
 
 [dev-dependencies]
 serde_json = {version = "1.0"}

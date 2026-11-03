@@ -1,7 +1,13 @@
 ---
 android-lint:
     description: Android lint
-    include: ['mobile/android']
+    include:
+        - 'dom/media/systemservices/android_video_capture/java/src'
+        - 'mobile/android/android-components/plugins/dependencies'
+        - 'mobile/android/android-components/plugins/publicsuffixlist'
+        - 'mobile/android/fenix/plugins/apksize'
+        - 'mobile/android/geckoview'
+        - 'mobile/android/gradle/plugins/conventions'
     exclude: []
     extensions: ['java', 'kt']
     support-files:
@@ -9,8 +15,30 @@ android-lint:
         - 'mobile/android/config/**'
         - 'mobile/android/gradle.configure'
         - 'mobile/android/**/moz.build'
-        - '**/*.gradle'
-        - '**/*.gradle.kts'
+        - 'build.gradle'
+        - 'settings.gradle'
+        - 'gradle.properties'
+        - 'gradle/**'
+        - 'gradlew'
+        - 'gradlew.bat'
+        - 'mobile/android/shared-settings.gradle'
+        - 'mobile/android/version.txt'
+        - 'mobile/android/gradle/**'
+        - 'mobile/android/android-components/.buildconfig.yml'
+        - 'mobile/android/android-components/.config.yml'
+        - 'mobile/android/android-components/plugins/**'
+        - 'mobile/android/fenix/plugins/**'
+        - 'mobile/android/annotations/build.gradle'
+        - 'mobile/android/geckoview/build.gradle'
+        - 'mobile/android/geckoview/src/main/AndroidManifest.xml'
+        - 'mobile/android/geckoview/src/main/aidl/**'
+        - 'mobile/android/geckoview/src/main/res/**'
+        - 'third_party/application-services/.buildconfig-android.yml'
+        - 'third_party/application-services/**/*.gradle'
+        - 'mobile/android/geckoview/lint.xml'
+        - 'mobile/android/gradle.py'
+        - 'mobile/android/mach_commands.py'
+        - 'tools/lint/android/lints.py'
     type: global
     payload: android.lints:lint
     setup: android.lints:setup

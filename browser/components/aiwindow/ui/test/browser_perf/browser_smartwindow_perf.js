@@ -430,7 +430,7 @@ async function runScenario(scenario) {
 add_setup(async function () {
   const prefs = [
     ["browser.smartwindow.firstrun.modelChoice", "0"],
-    // The memories flows are only reachable with ToS consent.
+    // The memories flows are only reachable with ToU consent.
     ["browser.smartwindow.tos.consentTime", 123],
   ];
   const modelHubRootUrl = Services.env.get("MOZ_MODELS_HUB");

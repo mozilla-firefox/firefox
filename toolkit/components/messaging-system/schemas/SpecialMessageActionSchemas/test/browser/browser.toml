@@ -9,6 +9,8 @@ support-files = [
 
 ["browser_sma_accept_doh.js"]
 
+["browser_sma_accept_smartwindow_tou.js"]
+
 ["browser_sma_block_message.js"]
 
 ["browser_sma_bookmark_current_tab.js"]

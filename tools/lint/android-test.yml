@@ -1,7 +1,10 @@
 ---
 android-test:
     description: Android test
-    include: ['mobile/android']
+    include:
+        - 'dom/media/systemservices/android_video_capture/java/src'
+        - 'mobile/android/geckoview/src/main/java'
+        - 'mobile/android/geckoview/src/test/java'
     exclude: []
     extensions: ['java', 'kt']
     support-files:
@@ -9,7 +12,32 @@ android-test:
         - 'mobile/android/config/**'
         - 'mobile/android/gradle.configure'
         - 'mobile/android/**/moz.build'
-        - '**/*.gradle'
+        - 'build.gradle'
+        - 'settings.gradle'
+        - 'gradle.properties'
+        - 'gradle/**'
+        - 'gradlew'
+        - 'gradlew.bat'
+        - 'mobile/android/shared-settings.gradle'
+        - 'mobile/android/version.txt'
+        - 'mobile/android/gradle/**'
+        - 'mobile/android/android-components/.buildconfig.yml'
+        - 'mobile/android/android-components/.config.yml'
+        - 'mobile/android/android-components/plugins/**'
+        - 'mobile/android/fenix/plugins/**'
+        - 'mobile/android/annotations/build.gradle'
+        - 'mobile/android/geckoview/build.gradle'
+        - 'mobile/android/geckoview/src/main/AndroidManifest.xml'
+        - 'mobile/android/geckoview/src/main/aidl/**'
+        - 'mobile/android/geckoview/src/main/res/**'
+        - 'third_party/application-services/.buildconfig-android.yml'
+        - 'third_party/application-services/**/*.gradle'
+        - 'third_party/libwebrtc/rtc_base/java/**'
+        - 'third_party/libwebrtc/sdk/android/**'
+        - 'mobile/android/geckoview/src/test/resources/**'
+        - 'mobile/android/gradle.py'
+        - 'mobile/android/mach_commands.py'
+        - 'tools/lint/android/lints.py'
     type: global
     payload: android.lints:test
     setup: android.lints:setup

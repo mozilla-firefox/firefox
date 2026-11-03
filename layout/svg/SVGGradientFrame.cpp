@@ -409,10 +409,13 @@ SVGGradientFrame::GetWebRenderGradient(nsIFrame* aSource,
   }
 
   if (reflect) {
-    if (result.mIsLinear) {
-      result.mEnd = result.mStart + (result.mEnd - result.mStart) * 2.0f;
-    } else {
-      result.mRadii = result.mRadii * 2.0f;
+    switch (result.mType) {
+      case GradientType::Linear:
+        result.mEnd = result.mStart + (result.mEnd - result.mStart) * 2.0f;
+        break;
+      case GradientType::Radial:
+        result.mRadii = result.mRadii * 2.0f;
+        break;
     }
     nsTArray<wr::GradientStop> mirrored;
     mirrored.SetCapacity(result.mStops.Length() * 2);
@@ -627,7 +630,7 @@ bool SVGLinearGradientFrame::GetWebRenderGeometry(
     return false;
   }
 
-  aGradient.mIsLinear = true;
+  aGradient.mType = GradientType::Linear;
   aGradient.mStart = CSSPoint::FromUnknownPoint(ToPoint(m.TransformPoint(p1)));
   aGradient.mEnd = CSSPoint::FromUnknownPoint(ToPoint(m.TransformPoint(p2)));
   return true;
@@ -785,7 +788,7 @@ bool SVGRadialGradientFrame::GetWebRenderGeometry(
     radii = CSSSize(lx, ly);
   }
 
-  aGradient.mIsLinear = false;
+  aGradient.mType = GradientType::Radial;
   aGradient.mCenter =
       CSSPoint::FromUnknownPoint(ToPoint(m.TransformPoint(gfxPoint(cx, cy))));
   aGradient.mRadii = radii;

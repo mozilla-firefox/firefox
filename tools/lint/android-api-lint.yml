@@ -1,7 +1,7 @@
 ---
 android-api-lint:
     description: Android api-lint
-    include: ['mobile/android']
+    include: ['mobile/android/geckoview/src/main/java']
     exclude: []
     extensions: ['java', 'kt']
     support-files:
@@ -9,7 +9,30 @@ android-api-lint:
         - 'mobile/android/config/**'
         - 'mobile/android/gradle.configure'
         - 'mobile/android/**/moz.build'
-        - '**/*.gradle'
+        - 'build.gradle'
+        - 'settings.gradle'
+        - 'gradle.properties'
+        - 'gradle/**'
+        - 'gradlew'
+        - 'gradlew.bat'
+        - 'mobile/android/shared-settings.gradle'
+        - 'mobile/android/version.txt'
+        - 'mobile/android/gradle/**'
+        - 'mobile/android/android-components/.buildconfig.yml'
+        - 'mobile/android/android-components/.config.yml'
+        - 'mobile/android/android-components/plugins/**'
+        - 'mobile/android/fenix/plugins/**'
+        - 'mobile/android/annotations/build.gradle'
+        - 'mobile/android/geckoview/build.gradle'
+        - 'mobile/android/geckoview/src/main/aidl/**'
+        - 'third_party/application-services/.buildconfig-android.yml'
+        - 'third_party/application-services/**/*.gradle'
+        - 'config/milestone.txt'
+        - 'mobile/android/geckoview/api.txt'
+        - 'mobile/android/geckoview/src/main/java/org/mozilla/geckoview/doc-files/CHANGELOG.md'
+        - 'mobile/android/gradle.py'
+        - 'mobile/android/mach_commands.py'
+        - 'tools/lint/android/lints.py'
     type: global
     payload: android.lints:api_lint
     setup: android.lints:setup

@@ -3494,32 +3494,6 @@ startup:
     record_in_processes:
       - 'main'
 
-script.preloader:
-  mainthread_recompile:
-    bug_numbers:
-      - 1364235
-      - 1590385
-      - 1623098
-      - 1649954
-      - 1689257
-      - 1754639
-    description:
-      How many times we ended up recompiling a script from the script preloader
-      on the main thread.
-    expires: "never"
-    keyed: false
-    kind: uint
-    notification_emails:
-      - dothayer@mozilla.com
-      - plawless@mozilla.com
-    release_channel_collection: opt-out
-    products:
-      - 'firefox'
-      - 'fennec'
-    record_in_processes:
-      - 'main'
-      - 'content'
-
 # The following section is for the "deletion-request" ping (bug 1585410). All the
 # extra identifiers other than `client_id` could be added here.
 deletion.request:

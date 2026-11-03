@@ -363,18 +363,6 @@
     "releaseChannelCollection": "opt-out",
     "description": "Record hits and misses to the startup cache, with categories."
   },
-  "SCRIPT_PRELOADER_WAIT_TIME": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["dothayer@mozilla.com", "plawless@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 10000,
-    "n_buckets": 20,
-    "bug_numbers": [1364235, 1590385, 1623098, 1649954, 1689257, 1754639],
-    "releaseChannelCollection": "opt-out",
-    "description": "Time spent waiting for off-thread compiles in the script preloader."
-  },
   "IDLE_NOTIFY_IDLE_MS": {
     "record_in_processes": ["main", "content"],
     "products": ["firefox", "fennec"],

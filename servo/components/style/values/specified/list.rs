@@ -149,28 +149,17 @@ pub enum Quotes {
     QuoteList(QuoteList),
     /// auto (use lang-dependent quote marks)
     Auto,
+    /// match-parent (use the value from the element's parent)
+    MatchParent,
 }
 
 impl Parse for Quotes {
     fn parse(_: &ParserContext, input: &mut Parser) -> Result<Quotes, ParseError> {
-        if input
-            .try_parse(|input| input.expect_ident_matching("auto"))
-            .is_ok()
-        {
-            return Ok(Quotes::Auto);
-        }
-
-        if input
-            .try_parse(|input| input.expect_ident_matching("none"))
-            .is_ok()
-        {
-            return Ok(Quotes::QuoteList(QuoteList::default()));
-        }
-
         let mut quotes = Vec::new();
         loop {
             let opening = match input.next() {
                 Ok(Token::QuotedString(value)) => value.as_ref().to_owned().into(),
+                Ok(Token::Ident(id)) if quotes.is_empty() => return Self::from_ident(id),
                 Ok(_) => return Err(ParseError::unexpected_token()),
                 Err(_) => break,
             };
@@ -185,6 +174,19 @@ impl Parse for Quotes {
             ))))
         } else {
             Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError))
+        }
+    }
+}
+
+impl Quotes {
+    fn from_ident(id: &str) -> Result<Self, ParseError> {
+        match id {
+            "auto" => Ok(Self::Auto),
+            "none" => Ok(Self::QuoteList(QuoteList::default())),
+            "match-parent" if crate::pref!("layout.css.quotes.match-parent.enabled") => {
+                Ok(Self::MatchParent)
+            },
+            _ => Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError)),
         }
     }
 }

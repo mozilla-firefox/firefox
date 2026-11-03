@@ -23,6 +23,7 @@ import mozilla.components.lib.crash.service.socorro.MozillaSocorroService
 import mozilla.components.lib.crash.store.CrashReportOption
 import mozilla.components.support.ktx.android.content.isMainProcess
 import mozilla.components.support.utils.Browsers
+import mozilla.components.support.utils.BuildMetadata
 import mozilla.components.support.utils.RunWhenReadyQueue
 import mozilla.components.support.utils.ext.packageManagerCompatHelper
 import org.mozilla.fenix.BuildConfig
@@ -58,6 +59,7 @@ class Analytics(
     private val settings: Settings,
     private val nimbusComponents: NimbusComponents,
     private val runWhenReadyQueue: RunWhenReadyQueue,
+    val buildMetadata: BuildMetadata,
 ) {
     val crashReporter: CrashReporter by lazyMonitored {
         val services = mutableListOf<CrashReporterService>()

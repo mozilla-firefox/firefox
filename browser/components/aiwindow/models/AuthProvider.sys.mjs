@@ -4,14 +4,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-import { FxaAuthProviderImpl } from "moz-src:///browser/components/aiwindow/models/auth/FxaAuthProviderImpl.sys.mjs";
+import { AuthImplSelector } from "moz-src:///browser/components/aiwindow/models/auth/AuthImplSelector.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const PREF_TOS_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
+// "tos" is legacy naming: the consent is for the Firefox Terms of Use (ToU).
+const PREF_TOU_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
 
 const lazy = XPCOMUtils.declareLazy({
-  hasAIWindowToSConsent: {
-    pref: PREF_TOS_CONSENT_TIME,
+  hasAIWindowToUConsent: {
+    pref: PREF_TOU_CONSENT_TIME,
     default: 0,
   },
   log: () =>
@@ -24,17 +25,23 @@ const lazy = XPCOMUtils.declareLazy({
 });
 
 /**
- * Handles authentication and Terms of Service consent for Smart Window.
+ * Handles authentication and Terms of Use consent for Smart Window.
  * Account-specific operations are delegated to an AuthProviderImpl.
  *
  * @fires AuthProviderSingleton#"AuthProvider:Logout"
  *  When the user signs out of their account.
  */
 class AuthProviderSingleton extends EventTarget {
-  /** @type {AuthProviderImpl} */
-  #impl;
+  /** @type {AuthImplSelector} */
+  #selector;
 
-  #onLogout = () => this.dispatchEvent(new Event("AuthProvider:Logout"));
+  constructor() {
+    super();
+    this.#selector = new AuthImplSelector();
+    this.#selector.addEventListener("AuthImplSelector:Logout", () =>
+      this.dispatchEvent(new Event("AuthProvider:Logout"))
+    );
+  }
 
   /**
    * Sets the backend used for account-specific operations.
@@ -42,23 +49,22 @@ class AuthProviderSingleton extends EventTarget {
    * @param {AuthProviderImpl} impl
    */
   setImpl(impl) {
-    this.#impl?.removeEventListener("AuthProviderImpl:Logout", this.#onLogout);
-    this.#impl = impl;
-    this.#impl.addEventListener("AuthProviderImpl:Logout", this.#onLogout);
+    this.#selector.setImpl(impl);
   }
 
-  get hasToSConsent() {
-    return !!lazy.hasAIWindowToSConsent;
+  get hasToUConsent() {
+    return !!lazy.hasAIWindowToUConsent;
   }
 
-  set hasToSConsent(value) {
-    const nowSeconds = Math.floor(Date.now() / 1000);
-
-    Services.prefs.setIntPref(PREF_TOS_CONSENT_TIME, value ? nowSeconds : 0);
+  recordToUConsent() {
+    Services.prefs.setIntPref(
+      PREF_TOU_CONSENT_TIME,
+      Math.floor(Date.now() / 1000)
+    );
   }
 
-  clearToSConsent() {
-    Services.prefs.clearUserPref(PREF_TOS_CONSENT_TIME);
+  clearToUConsent() {
+    Services.prefs.clearUserPref(PREF_TOU_CONSENT_TIME);
   }
 
   /**
@@ -66,8 +72,9 @@ class AuthProviderSingleton extends EventTarget {
    *
    * @returns {Promise<string|null>}   The account token (string) or null
    */
-  getToken() {
-    return this.#impl.getToken();
+  async getToken() {
+    const impl = await this.#selector.getImpl();
+    return impl.getToken();
   }
 
   /**
@@ -80,7 +87,8 @@ class AuthProviderSingleton extends EventTarget {
     if (!token) {
       return;
     }
-    await this.#impl.invalidateToken(token);
+    const impl = await this.#selector.getImpl();
+    await impl.invalidateToken(token);
   }
 
   /**
@@ -88,8 +96,9 @@ class AuthProviderSingleton extends EventTarget {
    *
    * @returns {Promise<boolean>}
    */
-  isSignedIn() {
-    return this.#impl.isSignedIn();
+  async isSignedIn() {
+    const impl = await this.#selector.getImpl();
+    return impl.isSignedIn();
   }
 
   /**
@@ -110,12 +119,13 @@ class AuthProviderSingleton extends EventTarget {
       // Checked here as well as inside the sign-in flow so that a blocked
       // flow, where the sign-in page is never shown, is distinguishable from
       // one the user abandoned. Both make signIn return false.
-      if (!(await this.#impl.canSignIn())) {
+      const impl = await this.#selector.getImpl();
+      if (!(await impl.canSignIn())) {
         outcome = "blocked";
         return false;
       }
 
-      const didSignIn = await this.#impl.signIn(browser);
+      const didSignIn = await impl.signIn(browser);
       if (didSignIn) {
         outcome = "completed";
       }
@@ -137,7 +147,7 @@ class AuthProviderSingleton extends EventTarget {
    * @returns {string} One of signed_out, no_consent, both, or none
    */
   #denialReason(signedIn) {
-    if (this.hasToSConsent) {
+    if (this.hasToUConsent) {
       return signedIn ? "none" : "signed_out";
     }
     return signedIn ? "no_consent" : "both";
@@ -145,12 +155,12 @@ class AuthProviderSingleton extends EventTarget {
 
   /**
    * Whether the user can use Smart Window without going through the sign-in
-   * flow: they have consented to the Terms of Service and are signed in.
+   * flow: they have consented to the Terms of Use and are signed in.
    *
    * @returns {Promise<boolean>}
    */
   async hasAccess() {
-    return this.hasToSConsent && (await this.isSignedIn());
+    return this.hasToUConsent && (await this.isSignedIn());
   }
 
   /**
@@ -168,7 +178,7 @@ class AuthProviderSingleton extends EventTarget {
 
   /**
    * Runs the sign-in flow regardless of the current sign-in state, and records
-   * Terms of Service consent once the user signs in.
+   * Terms of Use consent once the user signs in.
    *
    * @param {Browser} browser
    * @returns {Promise<boolean>} Whether the user signed in successfully
@@ -183,10 +193,9 @@ class AuthProviderSingleton extends EventTarget {
       lazy.log.error("User did not sign in successfully.");
       return false;
     }
-    this.hasToSConsent = true;
+    this.recordToUConsent();
     return true;
   }
 }
 
 export const AuthProvider = new AuthProviderSingleton();
-AuthProvider.setImpl(new FxaAuthProviderImpl());

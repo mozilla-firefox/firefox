@@ -113,16 +113,12 @@ void nsDOMStringMap::NamedDeleter(const nsAString& aProp, bool& found) {
     return;
   }
 
-  RefPtr<nsAtom> attrAtom = NS_Atomize(attr);
+  RefPtr<nsAtom> attrAtom = NS_AtomizeMainThread(attr);
   MOZ_ASSERT(attrAtom, "Should be infallible");
 
-  found = mElement->HasAttr(attrAtom);
-
-  if (found) {
-    mRemovingProp = true;
-    mElement->UnsetAttr(kNameSpaceID_None, attrAtom, true);
-    mRemovingProp = false;
-  }
+  mRemovingProp = true;
+  mElement->UnsetAttr(kNameSpaceID_None, attrAtom, true, &found);
+  mRemovingProp = false;
 }
 
 void nsDOMStringMap::GetSupportedNames(nsTArray<nsString>& aNames) {

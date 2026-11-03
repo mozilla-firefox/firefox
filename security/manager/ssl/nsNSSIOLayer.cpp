@@ -1899,7 +1899,20 @@ struct RemoteCryptokiState {
 };
 
 constinit static StaticDataMutex<Maybe<RemoteCryptokiState>>
-    sRemoteCryptokiState("sRemoteCryptokiState");
+    sRemoteClientCertificatesState("sRemoteClientCertificatesState");
+
+constinit static StaticDataMutex<Maybe<RemoteCryptokiState>>
+    sRemoteCACertificatesState("sRemoteCACertificatesState");
+
+auto LockRemoteCryptokiState(SearchingFor searchingFor) {
+  switch (searchingFor) {
+    case SearchingFor::ClientCertificates:
+      return sRemoteClientCertificatesState.Lock();
+    case SearchingFor::CACertificates:
+      return sRemoteCACertificatesState.Lock();
+  }
+  MOZ_RELEASE_ASSERT(false);
+}
 
 void CacheRemoteCryptokiObjects(SearchingFor searchingFor) {
   MOZ_ASSERT(!NS_IsMainThread());
@@ -1907,9 +1920,9 @@ void CacheRemoteCryptokiObjects(SearchingFor searchingFor) {
     return;
   }
 
-  // If a search has been performed within the last scan delay, use the cached
-  // results.
-  auto remoteCryptokiState = sRemoteCryptokiState.Lock();
+  // If a search of the desired type has been performed within the last scan
+  // delay, use the cached results.
+  auto remoteCryptokiState(LockRemoteCryptokiState(searchingFor));
   if (remoteCryptokiState->isSome() &&
       TimeStamp::Now() - (*remoteCryptokiState)->mLastUpdate <
           TimeDuration::FromMilliseconds(
@@ -2053,7 +2066,7 @@ void RemoteCertsDoFindObjects(SearchingFor searchingFor, FindObjectsCallback cb,
 #if defined(NIGHTLY_BUILD) && !defined(MOZ_NO_SMART_CARDS)
   nsTArray<CryptokiObject> objects;
   {
-    auto remoteCryptokiState = sRemoteCryptokiState.Lock();
+    auto remoteCryptokiState(LockRemoteCryptokiState(searchingFor));
     // CacheRemoteCryptokiObjects should have run at least once at this point.
     MOZ_ASSERT(remoteCryptokiState->isSome());
     if (remoteCryptokiState->isSome()) {

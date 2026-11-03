@@ -1176,8 +1176,10 @@ class Element : public FragmentOrElement {
    * @param aName the name of the attribute to unset
    * @param aNotify specifies whether or not the document should be
    * notified of the attribute change
+   * @param aHadValue if non-null, receives whether the attribute was found
    */
-  nsresult UnsetAttr(int32_t aNameSpaceID, nsAtom* aName, bool aNotify);
+  nsresult UnsetAttr(int32_t aNameSpaceID, nsAtom* aName, bool aNotify,
+                     bool* aHadValue = nullptr);
 
   /**
    * Swap an attribute value. This is a public wrapper that ensures bloom

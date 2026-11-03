@@ -1,4 +1,13 @@
 # Changelog
+## [0.3.17] - 2026-11-02
+
+- Add support for i= lines
+- Updated dependencies
+
+### Fixed
+
+- Correct order of c= and t= lines; thanks sukhmel
+
 ## [0.3.16] - 2026-10-16
 
 - Turn AV1 FMTP value checks into pedantic checks

@@ -17,8 +17,8 @@ fn parse_minimal_sdp() {
     let sdp_str = "v=0\r\n\
                    o=- 1 1 IN IP4 0.0.0.0\r\n\
                    s=-\r\n\
-                   t=0 0\r\n\
                    c=IN IP4 0.0.0.0\r\n\
+                   t=0 0\r\n\
                    m=audio 0 UDP/TLS/RTP/SAVPF 0\r\n";
     let sdp_res = webrtc_sdp::parse_sdp(sdp_str, true);
     assert!(sdp_res.is_ok());
@@ -97,12 +97,12 @@ fn parse_minimal_sdp_with_most_session_types() {
     let sdp_str = "v=0\r\n\
                    o=- 0 0 IN IP4 0.0.0.0\r\n\
                    s=-\r\n\
-                   t=0 0\r\n\
+                   c=IN IP6 ::1/1/1\r\n\
                    b=AS:1\r\n\
                    b=CT:123\r\n\
                    b=TIAS:12345\r\n\
                    b=UNKNOWN:9\r\n\
-                   c=IN IP6 ::1/1/1\r\n\
+                   t=0 0\r\n\
                    a=ice-options:trickle\r\n\
                    m=audio 0 UDP/TLS/RTP/SAVPF 0\r\n";
     let sdp_res = webrtc_sdp::parse_sdp(sdp_str, false);
@@ -124,10 +124,10 @@ fn parse_minimal_sdp_with_most_media_types() {
                    s=-\r\n\
                    t=0 0\r\n\
                    m=video 0 UDP/TLS/RTP/SAVPF 0\r\n\
+                   c=IN IP4 0.0.0.0\r\n\
                    b=AS:1\r\n\
                    b=CT:123\r\n\
                    b=TIAS:12345\r\n\
-                   c=IN IP4 0.0.0.0\r\n\
                    a=sendrecv\r\n";
     let sdp_res = webrtc_sdp::parse_sdp(sdp_str, false);
     assert!(sdp_res.is_ok());
@@ -674,8 +674,8 @@ fn parse_and_serialize_sdp_with_unusual_attributes() {
                    t=0 0\r\n\
                    a=ice-pacing:500\r\n\
                    m=video 0 UDP/TLS/RTP/SAVPF 0\r\n\
-                   b=UNSUPPORTED:12345\r\n\
                    c=IN IP6 ::1\r\n\
+                   b=UNSUPPORTED:12345\r\n\
                    a=rtcp:9 IN IP6 2001:db8::8888\r\n\
                    a=rtcp-fb:* nack\r\n\
                    a=extmap:1/recvonly urn:ietf:params:rtp-hdrext:toffset\r\n\

@@ -936,7 +936,7 @@ impl AuthrsService {
             user: PublicKeyCredentialUserEntity {
                 id: user_id.to_vec(),
                 name: Some(user_name.to_string()),
-                display_name: None,
+                display_name: Some(user_display_name.to_string()),
             },
             pub_cred_params,
             exclude_list,

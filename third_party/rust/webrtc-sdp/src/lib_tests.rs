@@ -161,6 +161,17 @@ fn connection_addr_type_mismatch() {
 }
 
 #[test]
+fn information_works() -> Result<(), SdpParserInternalError> {
+    parse_information("foobar")?;
+    Ok(())
+}
+
+#[test]
+fn information_contains_carriage_return() {
+    assert!(parse_information("foobar\rbaz").is_err());
+}
+
+#[test]
 fn bandwidth_works() -> Result<(), SdpParserInternalError> {
     parse_bandwidth("AS:1")?;
     parse_bandwidth("CT:123")?;
@@ -213,7 +224,6 @@ fn test_parse_sdp_line_empty_line() {
 #[test]
 fn test_parse_sdp_line_unsupported_types() {
     assert!(parse_sdp_line("e=foobar", 0).is_err());
-    assert!(parse_sdp_line("i=foobar", 0).is_err());
     assert!(parse_sdp_line("k=foobar", 0).is_err());
     assert!(parse_sdp_line("p=foobar", 0).is_err());
     assert!(parse_sdp_line("r=foobar", 0).is_err());
@@ -413,6 +423,21 @@ c=IN IP6 ::1\r\n
 t=0 0\r\n",
         true,
     )?;
+    Ok(())
+}
+
+#[test]
+fn test_parse_session_information() -> Result<(), SdpParserError> {
+    let sdp_session = parse_sdp(
+        "v=0\r\n
+o=- 0 0 IN IP6 ::1\r\n
+s=-\r\n
+i=test\r\n
+c=IN IP6 ::1\r\n
+t=0 0\r\n",
+        true,
+    )?;
+    assert_eq!(sdp_session.information, Some("test".to_string()));
     Ok(())
 }
 

@@ -1795,6 +1795,32 @@ TEST_P(NewSdpTest, CheckOriginGetAddress) {
       << "Wrong address in origin";
 }
 
+TEST_P(NewSdpTest, parseSessionInformation) {
+  SKIP_TEST_WITH_SIPCC_PARSER
+  ParseSdp(
+      "v=0\r\n"
+      "o=- 4294967296 2 IN IP4 127.0.0.1\r\n"
+      "s=With information\r\n"
+      "i=an information\r\n"
+      "c=IN IP4 198.51.100.7\r\n"
+      "t=0 0\r\n"
+      "m=video 56436 RTP/SAVPF 120\r\n"
+      "a=rtpmap:120 VP8/90000\r\n");
+}
+
+TEST_P(NewSdpTest, parseMediaInformation) {
+  SKIP_TEST_WITH_SIPCC_PARSER
+  ParseSdp(
+      "v=0\r\n"
+      "o=- 4294967296 2 IN IP4 127.0.0.1\r\n"
+      "s=With information\r\n"
+      "c=IN IP4 198.51.100.7\r\n"
+      "t=0 0\r\n"
+      "m=video 56436 RTP/SAVPF 120\r\n"
+      "i=an information\r\n"
+      "a=rtpmap:120 VP8/90000\r\n");
+}
+
 TEST_P(NewSdpTest, CheckGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(0U, Sdp()->GetBandwidth("CT")) << "Wrong bandwidth in session";

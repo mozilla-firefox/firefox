@@ -507,6 +507,10 @@ add_task(async function test_text_block_content() {
         !block.shadowRoot.querySelector(".aitab-text-block-p"),
         "No paragraph is rendered before there are any"
       );
+      Assert.ok(
+        !block.shadowRoot.querySelector("h2"),
+        "No empty heading is rendered without a heading"
+      );
 
       block.heading = heading;
       block.paragraphs = Cu.cloneInto(paragraphs, content);

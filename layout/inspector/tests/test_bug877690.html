@@ -243,6 +243,9 @@ function do_test() {
   var prop = "quotes"
   var values = InspectorUtils.getCSSValuesForProperty(prop);
   var expected = [ ...CSS_WIDE_KEYWORDS, "auto", "none" ];
+  if (SpecialPowers.getBoolPref("layout.css.quotes.match-parent.enabled")) {
+    expected.push("match-parent");
+  }
   ok(testValues(values, expected), "property quotes's values.");
 
   // Regression test for bug 1255384.

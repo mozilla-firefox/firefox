@@ -11785,6 +11785,13 @@
   mirror: always
   rust: true
 
+# Support the `match-parent` value of CSS `quotes`.
+- name: layout.css.quotes.match-parent.enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+  rust: true
+
 # CSS for android picture-in-picture. See bug 1940052.
 - name: layout.css.android-pip.enabled
   type: RelaxedAtomicBool

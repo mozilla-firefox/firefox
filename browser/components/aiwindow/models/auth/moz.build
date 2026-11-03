@@ -6,6 +6,9 @@ with Files("**"):
     BUG_COMPONENT = ("Core", "Machine Learning: General")
 
 MOZ_SRC_FILES += [
+    "AuthImplSelector.sys.mjs",
     "AuthProviderImpl.sys.mjs",
     "FxaAuthProviderImpl.sys.mjs",
+    "FxaSignedInWatcher.sys.mjs",
+    "GuestAuthProviderImpl.sys.mjs",
 ]

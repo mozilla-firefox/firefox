@@ -55,7 +55,7 @@ describe("SmartWindowSwitcherTelemetry", () => {
     });
 
     it("records launch_command_invoked when opening a new window", async () => {
-      sb.stub(AuthProvider, "hasToSConsent").get(() => true);
+      sb.stub(AuthProvider, "hasToUConsent").get(() => true);
       win = await BrowserTestUtils.openNewBrowserWindow();
 
       const newWinPromise = BrowserTestUtils.waitForNewWindow();

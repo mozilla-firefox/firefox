@@ -1,7 +1,7 @@
 ---
 android-javadoc:
     description: Android javadoc
-    include: ['mobile/android/geckoview']
+    include: ['mobile/android/geckoview/src/main/java']
     exclude: []
     extensions: ['java', 'kt']
     support-files:
@@ -9,7 +9,27 @@ android-javadoc:
         - 'mobile/android/config/**'
         - 'mobile/android/gradle.configure'
         - 'mobile/android/**/moz.build'
-        - '**/*.gradle'
+        - 'build.gradle'
+        - 'settings.gradle'
+        - 'gradle.properties'
+        - 'gradle/**'
+        - 'gradlew'
+        - 'gradlew.bat'
+        - 'mobile/android/shared-settings.gradle'
+        - 'mobile/android/version.txt'
+        - 'mobile/android/gradle/**'
+        - 'mobile/android/android-components/.buildconfig.yml'
+        - 'mobile/android/android-components/.config.yml'
+        - 'mobile/android/android-components/plugins/**'
+        - 'mobile/android/fenix/plugins/**'
+        - 'mobile/android/annotations/build.gradle'
+        - 'mobile/android/geckoview/build.gradle'
+        - 'mobile/android/geckoview/src/main/aidl/**'
+        - 'third_party/application-services/.buildconfig-android.yml'
+        - 'third_party/application-services/**/*.gradle'
+        - 'mobile/android/gradle.py'
+        - 'mobile/android/mach_commands.py'
+        - 'tools/lint/android/lints.py'
     type: global
     payload: android.lints:javadoc
     setup: android.lints:setup

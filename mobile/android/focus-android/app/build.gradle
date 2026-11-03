@@ -1,3 +1,7 @@
+import com.android.build.api.artifact.SingleArtifact
+
+import org.mozilla.conventions.WriteBuildMetadata
+
 plugins {
     id 'com.android.application'
     id 'org.mozilla.conventions.zip-test-reports'
@@ -579,6 +583,18 @@ def generateLocaleList = tasks.register('generateLocaleList', GenerateLocaleList
 androidComponents {
     onVariants(selector().all()) { variant ->
         variant.sources.java.addGeneratedSourceDirectory(generateLocaleList) { it.outputDir }
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        if (!variant.minifyEnabled) {
+            return
+        }
+        def writeBuildMetadata = tasks.register("writeBuildMetadata${variant.name.capitalize()}", WriteBuildMetadata) {
+            mappingFile = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE.INSTANCE)
+        }
+        variant.sources.assets.addGeneratedSourceDirectory(writeBuildMetadata) { it.outputDir }
     }
 }
 

@@ -1,7 +1,13 @@
 ---
 android-format:
     description: Android formatting lint
-    include: ['mobile/android']
+    include:
+        - 'mobile/android/annotations'
+        - 'mobile/android/examples/messaging_example/app'
+        - 'mobile/android/examples/port_messaging_example/app'
+        - 'mobile/android/geckoview'
+        - 'mobile/android/geckoview_example'
+        - 'mobile/android/test_runner'
     exclude: []
     extensions: ['java', 'kt']
     support-files:
@@ -9,7 +15,30 @@ android-format:
         - 'mobile/android/config/**'
         - 'mobile/android/gradle.configure'
         - 'mobile/android/**/moz.build'
-        - '**/*.gradle'
+        - 'build.gradle'
+        - 'settings.gradle'
+        - 'gradle.properties'
+        - 'gradle/**'
+        - 'gradlew'
+        - 'gradlew.bat'
+        - 'mobile/android/shared-settings.gradle'
+        - 'mobile/android/version.txt'
+        - 'mobile/android/gradle/**'
+        - 'mobile/android/android-components/.buildconfig.yml'
+        - 'mobile/android/android-components/.config.yml'
+        - 'mobile/android/android-components/plugins/**'
+        - 'mobile/android/fenix/plugins/**'
+        - 'mobile/android/annotations/build.gradle'
+        - 'mobile/android/examples/messaging_example/app/build.gradle'
+        - 'mobile/android/examples/port_messaging_example/app/build.gradle'
+        - 'mobile/android/geckoview/build.gradle'
+        - 'mobile/android/geckoview_example/build.gradle'
+        - 'mobile/android/test_runner/build.gradle'
+        - 'third_party/application-services/.buildconfig-android.yml'
+        - 'third_party/application-services/**/*.gradle'
+        - 'mobile/android/gradle.py'
+        - 'mobile/android/mach_commands.py'
+        - 'tools/lint/android/lints.py'
     type: global
     payload: android.lints:format
     setup: android.lints:setup

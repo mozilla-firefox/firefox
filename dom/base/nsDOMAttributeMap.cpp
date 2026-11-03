@@ -101,11 +101,11 @@ void nsDOMAttributeMap::AdoptCachedAttributes(nsNodeInfoManager* aManager) {
   }
 }
 
-void nsDOMAttributeMap::DropAttribute(int32_t aNamespaceID,
-                                      nsAtom* aLocalName) {
+void nsDOMAttributeMap::DropAttribute(int32_t aNamespaceID, nsAtom* aLocalName,
+                                      const nsAttrValue* aValue) {
   nsAttrKey attr(aNamespaceID, aLocalName);
   if (auto entry = mAttributeCache.Lookup(attr)) {
-    entry.Data()->SetMap(nullptr);  // break link to map
+    entry.Data()->SetMap(nullptr, aValue);  // break link to map
     entry.Remove();
   }
 }
@@ -251,7 +251,10 @@ already_AddRefed<Attr> nsDOMAttributeMap::SetNamedItemNS(
       // Attr to the hashtable and do the actual attr set on the element.  This
       // will make the whole thing look like a single attribute mutation (with
       // the new attr node in place) as opposed to a removal and addition.
-      DropAttribute(oldNi->NamespaceID(), oldNi->NameAtom());
+      BorrowedAttrInfo info = mContent->GetAttrInfoAt(i);
+      MOZ_ASSERT(info.mName &&
+                 info.mName->Equals(oldNi->NameAtom(), oldNi->NamespaceID()));
+      DropAttribute(oldNi->NamespaceID(), oldNi->NameAtom(), info.mValue);
     }
   }
 

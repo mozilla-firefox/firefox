@@ -266,6 +266,10 @@
                        hidden="true"
                        type="icon ghost"
                        data-l10n-id="genai-shortcut-copy-button"/>
+      <html:span id="more-actions-separator"
+                 class="more-actions-separator"
+                 hidden="true"
+                 aria-hidden="true"/>
       <html:span id="copy-action-confirmation"
                   class="copy-action-confirmation"
                   role="status"
@@ -273,10 +277,6 @@
         <html:span class="copy-action-confirmation-icon" aria-hidden="true"/>
         <html:span class="copy-action-confirmation-text"/>
       </html:span>
-      <html:span id="more-actions-separator"
-                 class="more-actions-separator"
-                 hidden="true"
-                 aria-hidden="true"/>
       <html:moz-button id="more-actions-button"
                        hidden="true"
                        type="icon ghost"
@@ -312,6 +312,7 @@
                        inputlayout="inline-end"
                        data-l10n-id="genai-more-actions-copy"
                        data-l10n-attrs="label"/>
+      <toolbarseparator/>
       <html:p id="more-actions-all-off-notice"
               class="more-actions-notice"
               role="status"
@@ -320,7 +321,6 @@
         <html:span class="more-actions-notice-chevron"
                    data-l10n-name="chevron"/>
       </html:p>
-      <toolbarseparator/>
       <html:moz-button id="more-actions-manage-settings"
                        type="ghost"
                        data-l10n-id="genai-more-actions-manage-settings"
