@@ -30,8 +30,6 @@ class HWInferenceChild final : public PHWInferenceChild {
       Endpoint<hwinference::PTextGenerationChild>&& aEndpoint,
       const ipc::FileDescriptor& aModel, const TextGenerationOptions& aOptions);
 
-  mozilla::ipc::IPCResult RecvListDevices(ListDevicesResolver&& aResolver);
-
   RefPtr<IsModelAvailablePromise> SendIsModelAvailable(const nsCString& aTask,
                                                        const nsCString& aId);
 

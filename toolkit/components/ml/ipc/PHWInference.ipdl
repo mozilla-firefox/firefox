@@ -9,7 +9,6 @@ include protocol PSpeechRecognition;
 include protocol PTextGeneration;
 include protocol PUtilityProcess;
 
-include HWInferenceDeviceTypes;
 include TextGenerationTypes;
 
 using mozilla::dom::ContentParentId from "mozilla/dom/ipc/IdType.h";
@@ -88,8 +87,6 @@ protocol PHWInference
     async NewTextGeneration(Endpoint<PTextGenerationChild> endpoint,
                             FileDescriptor model,
                             TextGenerationOptions options);
-
-    async ListDevices() returns (DeviceDescriptor[] devices);
 
     async __delete__();
 };

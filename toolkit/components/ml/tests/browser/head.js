@@ -41,6 +41,7 @@ const {
   PipelineOptions,
   QuantizationLevel,
   ExecutionPriority,
+  InferenceDevice,
   LogLevel,
 } = ChromeUtils.importESModule(
   "chrome://global/content/ml/EngineProcess.sys.mjs"

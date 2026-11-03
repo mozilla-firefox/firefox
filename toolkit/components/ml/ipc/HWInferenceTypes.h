@@ -9,8 +9,6 @@
 #include <cstdint>
 
 #include "ipc/EnumSerializer.h"
-#include "mozilla/dom/BindingIPCUtils.h"
-#include "mozilla/dom/HWInferenceBinding.h"
 
 namespace mozilla::hwinference {
 
@@ -33,16 +31,6 @@ struct ParamTraits<mozilla::hwinference::ModelInstallResult>
           mozilla::hwinference::ModelInstallResult,
           mozilla::hwinference::ModelInstallResult::Installed,
           mozilla::hwinference::ModelInstallResult::Failed> {};
-
-template <>
-struct ParamTraits<mozilla::dom::HWInferenceDeviceKind>
-    : public mozilla::dom::WebIDLEnumSerializer<
-          mozilla::dom::HWInferenceDeviceKind> {};
-
-template <>
-struct ParamTraits<mozilla::dom::HWInferenceBackend>
-    : public mozilla::dom::WebIDLEnumSerializer<
-          mozilla::dom::HWInferenceBackend> {};
 
 }  // namespace IPC
 

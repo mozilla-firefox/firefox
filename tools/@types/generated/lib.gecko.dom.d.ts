@@ -2389,24 +2389,6 @@ interface HTMLMediaElementDebugInfo {
     decoder?: MediaDecoderDebugInfo;
 }
 
-interface HWInferenceDevice {
-    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_backends) --> */
-    backends: HWInferenceBackend[];
-    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_description) --> */
-    description: string;
-    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_id) --> */
-    id: string;
-    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferenceDevice_kind) --> */
-    kind: HWInferenceDeviceKind;
-}
-
-interface HWInferencePlacement {
-    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferencePlacement_devices) --> */
-    devices?: string[];
-    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferencePlacement_kinds) --> */
-    kinds?: HWInferenceDeviceKind[];
-}
-
 interface HasChildrenOptions {
     /** <!-- binding_to(idl, attribute, WEBIDL_HasChildrenOptions_ignoreAbsent) --> */
     ignoreAbsent?: boolean;
@@ -3014,6 +2996,10 @@ interface LlamaContextOptions {
     nUbatch?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_noPerf) --> */
     noPerf?: boolean;
+    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_offloadKqv) --> */
+    offloadKqv?: boolean;
+    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_opOffload) --> */
+    opOffload?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_swaFull) --> */
     swaFull?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_vCacheDtype) --> */
@@ -3046,8 +3032,8 @@ interface LlamaModelOptions {
     checkTensors?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_context) --> */
     context?: LlamaContextOptions;
-    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_placement) --> */
-    placement?: HWInferencePlacement;
+    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_nGpuLayers) --> */
+    nGpuLayers?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_useMlock) --> */
     useMlock?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_useMmap) --> */
@@ -6943,8 +6929,6 @@ interface TextGeneratorCreateOptions {
     numThreads?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_numThreadsDecoding) --> */
     numThreadsDecoding?: number;
-    /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_placement) --> */
-    placement?: HWInferencePlacement;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_ubatchSize) --> */
     ubatchSize?: number;
 }
@@ -34774,10 +34758,6 @@ declare var TextFormatUpdateEvent: {
 
 /** <!-- binding_to(idl, class, WEBIDL_TextGenerator) --> */
 interface TextGenerator {
-    /** <!-- binding_to(idl, attribute, WEBIDL_TextGenerator_device) --> */
-    readonly device: string;
-    /** <!-- binding_to(idl, attribute, WEBIDL_TextGenerator_deviceKind) --> */
-    readonly deviceKind: HWInferenceDeviceKind;
     /** <!-- binding_to(idl, method, WEBIDL_TextGenerator_cancel) --> */
     cancel(): void;
     /** <!-- binding_to(idl, method, WEBIDL_TextGenerator_clear) --> */
@@ -43050,12 +43030,6 @@ declare namespace GPUShaderStage {
 declare namespace GPUTextureUsage {
 }
 
-/** <!-- binding_to(idl, class, WEBIDL_HWInference) --> */
-declare namespace HWInference {
-    /** <!-- binding_to(idl, method, WEBIDL_HWInference_listDevices) --> */
-    function listDevices(): Promise<HWInferenceDevice[]>;
-}
-
 /** <!-- binding_to(idl, class, WEBIDL_IOUtils) --> */
 declare namespace IOUtils {
     /** <!-- binding_to(idl, attribute, WEBIDL_IOUtils_profileBeforeChange) --> */
@@ -45035,8 +45009,6 @@ type GetUserMediaRequestType = "getusermedia" | "recording-device-stopped" | "se
 type GridDeclaration = "explicit" | "implicit";
 type GridTrackState = "removed" | "repeat" | "static";
 type HDCPVersion = "1.0" | "1.1" | "1.2" | "1.3" | "1.4" | "2.0" | "2.1" | "2.2" | "2.3";
-type HWInferenceBackend = "llama.cpp";
-type HWInferenceDeviceKind = "cpu" | "gpu" | "npu";
 type HardwareAcceleration = "no-preference" | "prefer-hardware" | "prefer-software";
 type HashAlgorithm = "sha256" | "sha384" | "sha512";
 type HdrMetadataType = "smpteSt2086" | "smpteSt2094-10" | "smpteSt2094-40";

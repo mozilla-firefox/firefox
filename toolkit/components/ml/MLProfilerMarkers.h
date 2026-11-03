@@ -88,7 +88,6 @@ struct MLGeneratorCreateMarker
        MS::Format::Duration},
       {"overheadMs", MS::InputType::Double, "Overhead", MS::Format::Duration},
       {"featureId", MS::InputType::CString, "Feature", MS::Format::String},
-      {"device", MS::InputType::CString, "Device", MS::Format::String},
   };
   static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
                                                MS::Location::MarkerTable,
@@ -122,7 +121,6 @@ struct MLGeneratorRunMarker : public BaseMarkerType<MLGeneratorRunMarker> {
       {"overheadMs", MS::InputType::Double, "Overhead", MS::Format::Duration},
       {"reason", MS::InputType::CString, "Finish reason", MS::Format::String},
       {"featureId", MS::InputType::CString, "Feature", MS::Format::String},
-      {"device", MS::InputType::CString, "Device", MS::Format::String},
   };
   static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
                                                MS::Location::MarkerTable,
@@ -183,36 +181,6 @@ struct MLBackendInitMarker : public BaseMarkerType<MLBackendInitMarker> {
   static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
                                                MS::Location::MarkerTable};
   static constexpr const char* AllLabels = "backend init";
-};
-
-struct MLDeviceProbeMarker : public BaseMarkerType<MLDeviceProbeMarker> {
-  static constexpr const char* Name = "MLDeviceProbe";
-  static constexpr const char* Description =
-      "Initialising an accelerator once to list it as a device.";
-
-  using MS = MarkerSchema;
-  static constexpr MS::PayloadField PayloadFields[] = {
-      {"device", MS::InputType::CString, "Device", MS::Format::String},
-      {"usable", MS::InputType::Boolean, "Usable", MS::Format::Integer},
-  };
-  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
-                                               MS::Location::MarkerTable};
-  static constexpr const char* AllLabels = "probe: {marker.data.device}";
-};
-
-struct MLDeviceLoadMarker : public BaseMarkerType<MLDeviceLoadMarker> {
-  static constexpr const char* Name = "MLDeviceLoad";
-  static constexpr const char* Description =
-      "Loading the weights on one device of the placement.";
-
-  using MS = MarkerSchema;
-  static constexpr MS::PayloadField PayloadFields[] = {
-      {"device", MS::InputType::CString, "Device", MS::Format::String},
-      {"loaded", MS::InputType::Boolean, "Loaded", MS::Format::Integer},
-  };
-  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
-                                               MS::Location::MarkerTable};
-  static constexpr const char* AllLabels = "load on {marker.data.device}";
 };
 
 struct MLModelPrefillMarker : public BaseMarkerType<MLModelPrefillMarker> {

@@ -33,7 +33,7 @@ class TextGenerationParent final : public PTextGenerationParent {
     Cause cause;
     nsCString message;
   };
-  using ReadyPromise = MozPromise<LoadSuccess, LoadFailure, true>;
+  using ReadyPromise = MozPromise<double, LoadFailure, true>;
 
   // A generator on the browser HWInference process, launched if needed: the
   // parent side is bound here, the child side handed to the process with
@@ -45,7 +45,7 @@ class TextGenerationParent final : public PTextGenerationParent {
   // Whether Create() found the process already up.
   bool ProcessReused() const { return mProcessReused; }
 
-  // Resolves with the load time and the device that loaded the model.
+  // Resolves with the model load time in milliseconds.
   RefPtr<ReadyPromise> WhenReady();
 
   // The handler runs before the Generate reply.
@@ -69,7 +69,7 @@ class TextGenerationParent final : public PTextGenerationParent {
   const bool mProcessReused;
   DeltaHandler mDeltaHandler;
   MozPromiseHolder<ReadyPromise> mReadyPromise;
-  Maybe<LoadSuccess> mLoaded;
+  Maybe<double> mLoadMs;
   Maybe<LoadFailure> mLoadFailure;
 };
 

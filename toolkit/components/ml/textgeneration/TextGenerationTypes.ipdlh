@@ -8,8 +8,6 @@ using mozilla::dom::TextGenerationFinishReason from "mozilla/hwinference/TextGen
 using mozilla::dom::TextGenerationSamplerType from "mozilla/hwinference/TextGenerationEnums.h";
 using mozilla::dom::TextGenerationKVCacheDtype from "mozilla/hwinference/TextGenerationEnums.h";
 
-include HWInferenceDeviceTypes;
-
 namespace mozilla {
 namespace hwinference {
 
@@ -51,9 +49,6 @@ struct Timings {
 
 struct LoadSuccess {
   double loadMs;
-  // Id of the device that loaded the model, after fallback.
-  nsCString device;
-  HWInferenceDeviceKind deviceKind;
 };
 
 struct LoadError {
@@ -111,7 +106,6 @@ struct TextGenerationOptions {
   uint32_t ubatchSize;
   TextGenerationKVCacheDtype kvCacheDtype;
   bool flashAttn;
-  DevicePlacement placement;
 };
 
 }  // namespace hwinference

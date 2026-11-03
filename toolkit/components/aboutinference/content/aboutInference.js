@@ -3,8 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 "use strict";
 
-/* global HWInference */
-
 /**
  * @import { MLEngineParent } from "moz-src:///toolkit/components/ml/actors/MLEngineParent.sys.mjs"
  * @import { StatusByEngineId } from "../../ml/ml.d.ts"
@@ -19,21 +17,14 @@ ChromeUtils.defineESModuleGetters(lazy, {
   DownloadUtils: "resource://gre/modules/DownloadUtils.sys.mjs",
   ModelHub: "chrome://global/content/ml/ModelHub.sys.mjs",
   getInferenceProcessInfo: "chrome://global/content/ml/Utils.sys.mjs",
-  TextGenerationEngine:
-    "moz-src:///toolkit/components/ml/textgeneration/TextGenerationEngine.sys.mjs",
   getOptimalCPUConcurrency: "chrome://global/content/ml/Utils.sys.mjs",
   BACKENDS: "chrome://global/content/ml/EngineProcess.sys.mjs",
 });
 
-const {
-  ExecutionPriority,
-  EngineProcess,
-  KVCacheQuantizationLevel,
-  PipelineOptions,
-  createEngine,
-} = ChromeUtils.importESModule(
-  "chrome://global/content/ml/EngineProcess.sys.mjs"
-);
+const { ExecutionPriority, EngineProcess, PipelineOptions, createEngine } =
+  ChromeUtils.importESModule(
+    "chrome://global/content/ml/EngineProcess.sys.mjs"
+  );
 
 /**
  * Preferences for machine learning enablement and model hub configuration.
@@ -90,302 +81,6 @@ function getNumThreadsArray() {
 /** @type {MLEngineParent | null} */
 let engineParent = null;
 
-const TEXT_GENERATION_COLUMNS = [
-  "engine",
-  "run",
-  "init",
-  "total",
-  "first-chunk",
-  "prompt-tokens",
-  "prefill",
-  "output-tokens",
-  "decode",
-  "tokens-per-second",
-];
-
-// init is summarised across engines, the rest across runs.
-const TEXT_GENERATION_SUMMARY = [
-  ["init", row => row.initMs],
-  ["total", row => row.totalMs],
-  ["first-chunk", row => row.firstChunkMs],
-  ["prefill", row => row.metrics?.timeToFirstToken],
-  ["decode", row => row.metrics?.decodingTime],
-  ["tokens-per-second", row => row.metrics?.tokensPerSecond],
-];
-
-const DEVICE_COLUMNS = ["id", "description", "kind", "backends"];
-
-const TEXT_GENERATION_DEVICE_KINDS = {
-  cpu: { kinds: ["cpu"] },
-  gpu: { kinds: ["gpu", "cpu"] },
-};
-
-function fillTextGenerationDeviceKinds() {
-  const select = document.getElementById("tg.device");
-  for (const kind of Object.keys(TEXT_GENERATION_DEVICE_KINDS)) {
-    const option = document.createElement("option");
-    option.value = kind;
-    document.l10n.setAttributes(
-      option,
-      `about-inference-text-generation-device-${kind}`
-    );
-    select.appendChild(option);
-  }
-}
-
-// llama.cpp only quantizes the KV cache with flash attention.
-function updateTextGenerationKVCacheDtypes() {
-  const flashAttn = document.getElementById("tg.flashAttn").checked;
-  const select = document.getElementById("tg.kvCacheDtype");
-  for (const option of select.options) {
-    option.disabled = !flashAttn && option.value.startsWith("q");
-  }
-  if (select.selectedOptions[0].disabled) {
-    select.value = KVCacheQuantizationLevel.F16;
-  }
-}
-
-/**
- * Lists the devices of the browser inference process, launching it if
- * needed, and offers every accelerator in the text generation device select.
- */
-async function listDevices() {
-  const container = document.getElementById("devices.table");
-  const select = document.getElementById("tg.device");
-  let devices;
-  try {
-    devices = await HWInference.listDevices();
-  } catch (error) {
-    container.textContent = String(error);
-    return;
-  }
-  container.replaceChildren();
-  const table = makeTable(container, DEVICE_COLUMNS, "devices");
-  for (const device of devices) {
-    appendRow(table, [
-      device.id,
-      device.description,
-      device.kind,
-      device.backends.join(", "),
-    ]);
-  }
-  for (const option of select.querySelectorAll("option[data-device-id]")) {
-    option.remove();
-  }
-  for (const device of devices) {
-    if (device.kind === "cpu") {
-      continue;
-    }
-    const option = document.createElement("option");
-    option.value = device.id;
-    option.dataset.deviceId = device.id;
-    option.text = `${device.description} (${device.kind})`;
-    select.appendChild(option);
-  }
-}
-
-function formatNumber(value, decimals = 0) {
-  return value == null ? "-" : value.toFixed(decimals);
-}
-
-function makeTable(container, columns, panel) {
-  const table = document.createElement("table");
-  const headerRow = document.createElement("tr");
-  for (const column of columns) {
-    const th = document.createElement("th");
-    document.l10n.setAttributes(th, `about-inference-${panel}-col-${column}`);
-    headerRow.appendChild(th);
-  }
-  table.createTHead().appendChild(headerRow);
-  table.createTBody();
-  container.appendChild(table);
-  return table;
-}
-
-function appendRow(table, cells) {
-  const tr = document.createElement("tr");
-  for (const text of cells) {
-    const td = document.createElement("td");
-    td.textContent = text;
-    tr.appendChild(td);
-  }
-  table.tBodies[0].appendChild(tr);
-}
-
-/**
- * Appends one run to the results table, creating it on the first run.
- *
- * @param {object} row
- */
-function addTextGenerationResult(row) {
-  const container = document.getElementById("tg.results");
-  const table =
-    container.querySelector("table") ??
-    makeTable(container, TEXT_GENERATION_COLUMNS, "text-generation");
-  const { metrics } = row;
-  appendRow(table, [
-    row.engine,
-    row.run,
-    formatNumber(row.initMs),
-    formatNumber(row.totalMs),
-    formatNumber(row.firstChunkMs),
-    metrics?.inputTokens ?? "-",
-    formatNumber(metrics?.timeToFirstToken),
-    metrics?.outputTokens ?? "-",
-    formatNumber(metrics?.decodingTime),
-    formatNumber(metrics?.tokensPerSecond, 1),
-  ]);
-}
-
-/**
- * Min, median and max of each timing over the rows that have it.
- *
- * @param {object[]} rows
- */
-function addTextGenerationSummary(rows) {
-  const container = document.getElementById("tg.summary");
-  container.replaceChildren();
-  const table = makeTable(
-    container,
-    ["metric", "min", "median", "max"],
-    "text-generation"
-  );
-  for (const [metric, pick] of TEXT_GENERATION_SUMMARY) {
-    const values = rows
-      .map(pick)
-      .filter(value => value != null)
-      .sort((a, b) => a - b);
-    if (!values.length) {
-      continue;
-    }
-    const decimals = metric === "tokens-per-second" ? 1 : 0;
-    const middle = values.length >> 1;
-    const median =
-      values.length % 2
-        ? values[middle]
-        : (values[middle - 1] + values[middle]) / 2;
-    const tr = document.createElement("tr");
-    const name = document.createElement("td");
-    document.l10n.setAttributes(
-      name,
-      `about-inference-text-generation-col-${metric}`
-    );
-    tr.appendChild(name);
-    for (const value of [values[0], median, values.at(-1)]) {
-      const td = document.createElement("td");
-      td.textContent = formatNumber(value, decimals);
-      tr.appendChild(td);
-    }
-    table.tBodies[0].appendChild(tr);
-  }
-}
-
-async function runTextGeneration() {
-  const button = document.getElementById("tg.run");
-  const output = document.getElementById("tg.output");
-  output.value = "";
-  document.getElementById("tg.results").replaceChildren();
-  document.getElementById("tg.summary").replaceChildren();
-
-  const fullModelId = document.getElementById("tg.model").value.trim();
-  const lastSlash = fullModelId.lastIndexOf("/");
-  const prompt = document.getElementById("tg.prompt").value;
-  const maxTokens = parseInt(document.getElementById("tg.maxTokens").value);
-  const engines = parseInt(document.getElementById("tg.engines").value);
-  const runs = parseInt(document.getElementById("tg.runs").value);
-  // Characters bound the prompt tokens and the chat template adds a few; the
-  // batch must hold the whole prompt, which llama.cpp asserts.
-  const numContext = prompt.length + maxTokens + 64;
-  const numBatch = numContext;
-  const numUbatch = Math.min(numBatch, 512);
-  const options = {
-    featureId: "about-inference",
-    engineId: "about-inference-text-generation",
-    taskName: "text-generation",
-    backend: "llama.cpp",
-    modelId: fullModelId.substring(0, lastSlash),
-    modelFile: fullModelId.substring(lastSlash + 1),
-    modelRevision: document.getElementById("tg.revision").value.trim(),
-    numThreads: parseInt(document.getElementById("tg.threads").value),
-    numContext,
-    numBatch,
-    numUbatch,
-    kvCacheDtype: document.getElementById("tg.kvCacheDtype").value,
-    flashAttn: document.getElementById("tg.flashAttn").checked,
-    useMmap: true,
-    useMlock: false,
-    executionPriority: ExecutionPriority.LOW,
-    timeoutMS: 30 * 1000,
-  };
-  const hub = document.getElementById("tg.hub").value;
-  if (hub) {
-    options.modelHub = hub;
-  }
-  const chosen = document.getElementById("tg.device").selectedOptions[0];
-  options.device = chosen.dataset.deviceId
-    ? { devices: [chosen.dataset.deviceId] }
-    : TEXT_GENERATION_DEVICE_KINDS[chosen.value];
-
-  button.disabled = true;
-  const rows = [];
-  try {
-    for (let engineIndex = 1; engineIndex <= engines; engineIndex++) {
-      let engine;
-      try {
-        const initStart = performance.now();
-        engine = await createEngine(options, progressData => {
-          engineNotification(progressData).catch(err => {
-            console.error("Error in engineNotification:", err);
-          });
-        });
-        const initMs = performance.now() - initStart;
-
-        for (let run = 1; run <= runs; run++) {
-          output.value = "";
-          const runStart = performance.now();
-          let firstChunkMs = null;
-          const generator = engine.runWithGenerator({
-            prompt,
-            nPredict: maxTokens,
-          });
-          let result;
-          for (;;) {
-            const { value, done } = await generator.next();
-            if (done) {
-              result = value;
-              break;
-            }
-            if (value.text) {
-              firstChunkMs ??= performance.now() - runStart;
-              output.value += value.text;
-            }
-          }
-          const row = {
-            engine: engineIndex,
-            run,
-            initMs: run === 1 ? initMs : null,
-            totalMs: performance.now() - runStart,
-            firstChunkMs,
-            metrics: result?.metrics,
-          };
-          rows.push(row);
-          addTextGenerationResult(row);
-        }
-      } finally {
-        await engine?.terminate();
-      }
-    }
-    if (rows.length > 1) {
-      addTextGenerationSummary(rows);
-    }
-  } catch (error) {
-    output.value = String(error);
-  } finally {
-    button.disabled = false;
-    await refreshPage();
-  }
-}
-
 const TINY_ARTICLE =
   "The tower is 324 metres (1,063 ft) tall, about the same height as an 81-storey building, and the tallest structure in Paris. Its base is square, measuring 125 metres (410 ft) on each side. During its construction, the Eiffel Tower surpassed the Washington Monument to become the tallest man-made structure in the world, a title it held for 41 years until the Chrysler Building in New York City was finished in 1930. It was the first structure to reach a height of 300 metres. Due to the addition of a broadcasting aerial at the top of the tower in 1957, it is now taller than the Chrysler Building by 5.2 metres (17 ft). Excluding transmitters, the Eiffel Tower is the second tallest free-standing structure in France after the Millau Viaduct.";
 
@@ -399,6 +94,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
     inputArgs: [
       "Summarize: The exploration of space has always been a subject of fascination and curiosity for humanity. \nFrom the earliest  stargazers mapping the heavens to modern astronomers utilizing cutting-edge telescopes, the quest to \nunderstand the  cosmos has driven technological and scientific advancement. In the 20th century, the space race between \nthe United States and the Soviet Union culminated in humanity's first steps on the moon, marking a new era of space \nexploration.\n\nToday, space exploration is no longer confined to government agencies. Private companies, such as SpaceX and Blue \nOrigin, are pioneering new methods of space travel, with ambitions ranging from commercial space tourism to colonizing \nMars. These ventures have sparked debates about the ethical, environmental, and economic implications of privatizing \nspace.\n\nThe potential benefits of space exploration are vast. Satellites have revolutionized communication, weather forecasting, \nand navigation. Space-based observations have provided critical data for understanding climate change and protecting \nEarth’s ecosystems. Moreover, the possibility of mining asteroids for rare minerals could address resource shortages on \nour planet.\n\nHowever, the challenges are equally significant. Space travel remains extraordinarily expensive and risky. The harsh \nenvironment of space poses threats to human health, including exposure to radiation and the psychological effects of \nprolonged isolation. Additionally, the accumulation of space debris presents a growing hazard to both current and future \nmissions.\n\nInternational collaboration has proven to be a powerful tool in overcoming some of these challenges. The International \nSpace Station (ISS) serves as a testament to what can be achieved when nations work together, pooling resources and \nexpertise. Future projects, such as the planned Lunar Gateway and Mars missions, highlight the importance of cooperative \nefforts in pushing the boundaries of human capability.\n\nAs humanity looks to the stars, questions about our role in the universe arise. What responsibilities do we have as \nstewards of our own planet and potential explorers of others? How can we ensure that space exploration benefits all of \nhumanity and not just a privileged few?\n\nThe journey into space is a reflection of our innate desire to explore and understand. It challenges us to innovate, to \ndream, and to collaborate. While the road ahead is fraught with difficulties, the potential rewards—both tangible and \nintangible—make the endeavor worthwhile. With careful planning, international cooperation, and ethical considerations, \nspace exploration can continue to inspire and benefit humanity for generations to come.",
@@ -554,6 +250,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   "image-to-text": {
@@ -566,6 +263,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   ner: {
@@ -576,6 +274,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   summary: {
@@ -588,6 +287,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   zero: {
@@ -601,6 +301,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   feature: {
@@ -611,6 +312,7 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   "static-embeddings": {
@@ -674,6 +376,7 @@ const INFERENCE_PAD_PRESETS = {
     modelHubRootUrl: "https://model-hub.mozilla.org",
     numThreads: 0,
     dtype: "q8",
+    device: "cpu",
     backend: "onnx",
   },
   openai: {
@@ -761,23 +464,23 @@ function ts2str(ts) {
  */
 
 async function updateStatus() {
+  const engineParent = await getEngineParent();
+  if (!engineParent) {
+    // The engine parent is not available.
+    return;
+  }
+
   /**
    * @type {StatusByEngineId}
    */
-  let statusByEngineId = new Map();
+  let statusByEngineId;
 
-  // Asking the engine parent launches the inference process: only ask one
-  // that is already up.
-  if (EngineProcess.areAllEnginesTerminated()) {
-    engineParent = null;
-  } else {
-    const parent = await getEngineParent();
-    try {
-      statusByEngineId = await parent.getStatusByEngineId();
-    } catch (error) {
-      // The engine process went away under the poll.
-      engineParent = null;
-    }
+  // Fetch the engine status info
+  try {
+    statusByEngineId = await engineParent.getStatusByEngineId();
+  } catch (error) {
+    console.error("Failed to get the engine status", error);
+    statusByEngineId = new Map();
   }
 
   // Get the container where the table will be displayed
@@ -804,7 +507,14 @@ async function updateStatus() {
   let thead = document.createElement("thead");
   let headerRow = document.createElement("tr");
 
-  let columns = ["Engine ID", "Status", "Model ID", "Quantization", "Timeout"];
+  let columns = [
+    "Engine ID",
+    "Status",
+    "Model ID",
+    "Quantization",
+    "Device",
+    "Timeout",
+  ];
 
   columns.forEach(col => {
     let th = document.createElement("th");
@@ -838,6 +548,10 @@ async function updateStatus() {
     let dtypeCell = document.createElement("td");
     dtypeCell.textContent = options?.dtype || "N/A";
     row.appendChild(dtypeCell);
+
+    let deviceCell = document.createElement("td");
+    deviceCell.textContent = options?.device || "N/A";
+    row.appendChild(deviceCell);
 
     let timeoutCell = document.createElement("td");
     timeoutCell.textContent = options?.timeoutMS || "N/A";
@@ -966,6 +680,9 @@ async function updateModels() {
 
 async function refreshPage() {
   const ml_enable = Services.prefs.getBoolPref("browser.ml.enable");
+  const gpu_enabled =
+    Services.prefs.getBoolPref("dom.webgpu.enabled") &&
+    Services.prefs.getBoolPref("dom.webgpu.service-workers.enabled");
 
   const content = document.getElementById("content");
   const warning = document.getElementById("warning");
@@ -976,7 +693,17 @@ async function refreshPage() {
     content.style.display = "block";
   }
 
-  if (!ml_enable) {
+  if (!ml_enable || !gpu_enabled) {
+    let text = [];
+    if (!ml_enable) {
+      text =
+        "browser.ml.enable is set to False ! Toggle it to activate local inference.";
+    } else if (!gpu_enabled) {
+      text =
+        "WebGPU is not enabled, set dom.webgpu.enabled and dom.webgpu.service-workers.enabled to true.";
+    }
+
+    warning.setAttribute("message", text);
     warning.style.display = "block";
   } else {
     warning.style.display = "none";
@@ -1040,6 +767,7 @@ function loadExample(name) {
   document.getElementById("modelRevision").value = data.modelRevision;
   setSelectOption("modelHub", data.modelHub);
   setSelectOption("dtype", data.dtype);
+  setSelectOption("device", data.device);
   setSelectOption("backend", data.backend);
   document.getElementById("timeout").value = data.timeout || 30;
 }
@@ -1091,6 +819,7 @@ async function runInference() {
   const modelRevision = document.getElementById("modelRevision").value;
   const taskName = document.getElementById("taskName").value;
   const dtype = document.getElementById("dtype").value;
+  const device = document.getElementById("device").value;
   const numThreads = parseInt(document.getElementById("numThreads").value);
   const numRuns = parseInt(document.getElementById("numRuns").value);
   const modelHub = document.getElementById("modelHub").value;
@@ -1124,10 +853,10 @@ async function runInference() {
       numContext,
       numBatch,
       numUbatch: numBatch,
+      timeoutMS: -1,
       useMlock: false,
       useMmap: true,
       kvCacheDtype: "q8_0",
-      flashAttn: true,
     };
   }
 
@@ -1148,6 +877,7 @@ async function runInference() {
     processorId: modelId,
     taskName,
     modelHub,
+    device,
     dtype,
     backend,
     numThreads,
@@ -1156,14 +886,17 @@ async function runInference() {
     ...additionalEngineOptions,
   };
 
+  if (initData.device === "cpu" && initData.backend === "onnx") {
+    initData.device = "wasm";
+  }
+
   resultsConsole.addLine("Creating engine if needed");
   let engine;
   let startTime;
   const e2eRunTimeKey = "e2e run time (ms)";
   let e2eMetrics = { [e2eRunTimeKey]: [] };
-  let pipelineOptions;
   try {
-    pipelineOptions = new PipelineOptions(initData);
+    const pipelineOptions = new PipelineOptions(initData);
     startTime = performance.now();
     engine = await createEngine(pipelineOptions, progressData => {
       engineNotification(progressData).catch(err => {
@@ -1178,67 +911,57 @@ async function runInference() {
 
   resultsConsole.addLine("Running inference request");
 
-  try {
-    let request = { args: inputData.inputArgs, options: inputData.runOptions };
+  let request = { args: inputData.inputArgs, options: inputData.runOptions };
 
-    if (isLlama) {
-      request = { prompt: inputData.inputArgs, ...inputData.runOptions };
-    }
-
-    let res;
-    for (let i = 0; i < numRuns; i++) {
-      try {
-        startTime = performance.now();
-        res = await engine.run(request);
-        e2eMetrics[e2eRunTimeKey].push(performance.now() - startTime);
-      } catch (e) {
-        resultsConsole.addLine(e);
-        if (
-          e.message.includes(
-            "Invalid model hub root url: https://huggingface.co"
-          )
-        ) {
-          resultsConsole.addLine(
-            "Make sure you started Firefox with MOZ_ALLOW_EXTERNAL_ML_HUB=1"
-          );
-        }
-        engineParent = null; // let's re-create it on errors.
-        throw e;
-      }
-
-      const results_filter = (key, value) => {
-        if (key === "metrics") {
-          return undefined;
-        }
-        return value;
-      };
-
-      resultsConsole.addLine(
-        `Results: ${JSON.stringify(res, results_filter, 2)}`
-      );
-    }
-
-    resultsConsole.addLine(`Metrics: ${JSON.stringify(res.metrics, null, 2)}`);
-    const timeline = res.metrics?.runTimestamps ?? [];
-    const maxMemory = findMaxMemory(timeline);
-    resultsConsole.addLine(
-      `Resident Set Size (RSS) approximative peak usage: ${formatBytes(
-        maxMemory
-      )}`
-    );
-    resultsConsole.addLine(
-      `Timers: ${JSON.stringify(findTotalTime(timeline), null, 2)}`
-    );
-
-    resultsConsole.addLine(
-      `End to End Metrics: ${JSON.stringify(e2eMetrics, null, 2)}`
-    );
-  } finally {
-    // Nothing manages an HWInference engine's lifetime but its creator.
-    if (lazy.TextGenerationEngine.shouldRoute(pipelineOptions)) {
-      await engine.terminate();
-    }
+  if (isLlama) {
+    request = { prompt: inputData.inputArgs, ...inputData.runOptions };
   }
+
+  let res;
+  for (let i = 0; i < numRuns; i++) {
+    try {
+      startTime = performance.now();
+      res = await engine.run(request);
+      e2eMetrics[e2eRunTimeKey].push(performance.now() - startTime);
+    } catch (e) {
+      resultsConsole.addLine(e);
+      if (
+        e.message.includes("Invalid model hub root url: https://huggingface.co")
+      ) {
+        resultsConsole.addLine(
+          "Make sure you started Firefox with MOZ_ALLOW_EXTERNAL_ML_HUB=1"
+        );
+      }
+      engineParent = null; // let's re-create it on errors.
+      throw e;
+    }
+
+    const results_filter = (key, value) => {
+      if (key === "metrics") {
+        return undefined;
+      }
+      return value;
+    };
+
+    resultsConsole.addLine(
+      `Results: ${JSON.stringify(res, results_filter, 2)}`
+    );
+  }
+
+  resultsConsole.addLine(`Metrics: ${JSON.stringify(res.metrics, null, 2)}`);
+  const maxMemory = findMaxMemory(res.metrics);
+  resultsConsole.addLine(
+    `Resident Set Size (RSS) approximative peak usage: ${formatBytes(
+      maxMemory
+    )}`
+  );
+  resultsConsole.addLine(
+    `Timers: ${JSON.stringify(findTotalTime(res.metrics), null, 2)}`
+  );
+
+  resultsConsole.addLine(
+    `End to End Metrics: ${JSON.stringify(e2eMetrics, null, 2)}`
+  );
   await refreshPage();
 }
 
@@ -1419,21 +1142,6 @@ function showTab(button) {
   button.setAttribute("selected", "true");
 }
 
-function showSubTab(name) {
-  for (const tab of document.querySelectorAll(".subtabs [role='tab']")) {
-    const selected = tab.getAttribute("aria-controls") === name;
-    tab.setAttribute("aria-selected", String(selected));
-    document.getElementById(tab.getAttribute("aria-controls")).hidden =
-      !selected;
-  }
-  if (
-    name === "devices" &&
-    !document.getElementById("devices.table").hasChildNodes()
-  ) {
-    listDevices();
-  }
-}
-
 /**
  * @returns {Promise<MLEngineParent | null>}
  */
@@ -1486,6 +1194,7 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "huggingface",
         dtype: "q8",
+        device: "cpu",
       },
     },
     {
@@ -1499,6 +1208,7 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "huggingface",
         dtype: "q8",
+        device: "cpu",
       },
     },
     {
@@ -1514,6 +1224,7 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "huggingface",
         dtype: "q8",
+        device: "cpu",
       },
     },
     {
@@ -1536,7 +1247,6 @@ async function runBenchmark() {
         useMlock: false,
         useMmap: true,
         kvCacheDtype: "q8_0",
-        flashAttn: true,
       },
     },
   ];
@@ -1566,6 +1276,13 @@ async function runBenchmark() {
         benchmarkConsole.addText("Initialization...");
 
         workload.pipelineOptions.backend = currentBackend;
+
+        if (
+          workload.pipelineOptions.device === "cpu" &&
+          workload.pipelineOptions.backend === "onnx"
+        ) {
+          workload.pipelineOptions.device = "wasm";
+        }
 
         bench.initDuration = await measure(async () => {
           const pipelineOptions = new PipelineOptions(workload.pipelineOptions);
@@ -1623,20 +1340,12 @@ async function runBenchmark() {
 window.onload = async function () {
   let menu = document.getElementById("categories");
   menu.addEventListener("click", function click(e) {
-    if (
-      e.target?.parentNode == menu &&
-      e.target.classList.contains("category")
-    ) {
+    if (e.target && e.target.parentNode == menu) {
       showTab(e.target);
     }
   });
 
   showTab(document.getElementById("category-local-inference"));
-  for (const tab of document.querySelectorAll(".subtabs [role='tab']")) {
-    tab.addEventListener("click", () =>
-      showSubTab(tab.getAttribute("aria-controls"))
-    );
-  }
 
   fillSelect("dtype", DTYPE);
   fillSelect("taskName", TASKS);
@@ -1647,24 +1356,6 @@ window.onload = async function () {
 
   document.getElementById("predefined").value = "feature-large";
   loadExample("feature-large");
-
-  fillSelect("tg.threads", getNumThreadsArray());
-  fillTextGenerationDeviceKinds();
-  fillSelect("tg.kvCacheDtype", Object.values(KVCacheQuantizationLevel));
-  document.getElementById("tg.kvCacheDtype").value =
-    KVCacheQuantizationLevel.F16;
-  updateTextGenerationKVCacheDtypes();
-  document
-    .getElementById("tg.flashAttn")
-    .addEventListener("change", updateTextGenerationKVCacheDtypes);
-  document.getElementById("tg.prompt").value =
-    `Summarize this: ${TINY_ARTICLE}`;
-  document
-    .getElementById("tg.run")
-    .addEventListener("click", runTextGeneration);
-  document
-    .getElementById("devices.refresh")
-    .addEventListener("click", listDevices);
 
   document.getElementById("console").value = "";
   document
@@ -1679,23 +1370,12 @@ window.onload = async function () {
     selectedPreset = selectedOption.value;
     loadExample(selectedPreset);
   });
-  document
-    .getElementById("warning.enable")
-    .addEventListener("click", async () => {
-      Services.prefs.setBoolPref("browser.ml.enable", true);
-      await refreshPage();
-    });
 
   document
     .getElementById("benchmark.button")
     .addEventListener("click", runBenchmark);
 
   document.getElementById("benchmark.output").value = "";
-
-  window.addEventListener("unload", () => {
-    clearInterval(updateStatusInterval);
-    clearInterval(updateInterval);
-  });
 
   await refreshPage();
 };
