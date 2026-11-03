@@ -11,10 +11,12 @@ import androidx.annotation.DrawableRes
  *
  * @property key Abbreviation named for a given name (e.g. "ENG").
  * @property drawableResId Local drawable representing the team.
+ * @property name Long display name (e.g. "England"). This is not localized.
  */
 data class Team(
     val key: String,
     @param:DrawableRes val drawableResId: Int,
+    val name: String = "",
 )
 
 /** Game status of a match. */
@@ -115,3 +117,8 @@ data class MatchCard(
     val matches: List<Match>,
     val label: String,
 )
+
+/** Represents the source of the Live Match Refresh button clicks. */
+enum class LiveMatchRefreshSource(val value: String) {
+    LIVE_MATCH_CARD_ERROR_BUTTON("live_match_card_error_button")
+}

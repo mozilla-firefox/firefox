@@ -42,14 +42,21 @@ fun SportsWidgetErrorCard(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth().padding(horizontal = FirefoxTheme.layout.space.static200)) {
+    Box(modifier = modifier.fillMaxWidth()) {
         Image(
             painter = painterResource(R.drawable.fox_expressive_face_tail),
             contentDescription = null,
             modifier = Modifier.align(Alignment.BottomEnd),
         )
 
-        Column(modifier = Modifier.padding(bottom = FirefoxTheme.layout.space.static300)) {
+        Column(
+            modifier =
+                Modifier.padding(
+                    start = FirefoxTheme.layout.space.static200,
+                    end = FirefoxTheme.layout.space.static200,
+                    bottom = FirefoxTheme.layout.space.static300,
+                )
+        ) {
             Text(
                 text = stringResource(state.titleResId),
                 style = FirefoxTheme.typography.headline8,
