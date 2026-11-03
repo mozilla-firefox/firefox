@@ -5497,6 +5497,18 @@ linkPreviews:
         sub-pref and values objects indicating the desired branch and value
         defaulting to clearing the user branch value.
 
+resourceMonitor:
+  description: Resource Monitor sidebar panel
+  owner: tthorne@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: boolean
+      setPref:
+        branch: user
+        pref: browser.resourceMonitor.enabled
+      description: If true, the Resource Monitor sidebar panel is available.
+
 sidebar:
   description: Sidebar feature configuration
   owner: elee@mozilla.com

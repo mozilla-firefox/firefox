@@ -112,3 +112,8 @@ experimental-features-tab-notes-description = Tab notes are an experimental feat
 experimental-features-tab-context-menu =
     .label = Streamlined tab menu
 experimental-features-tab-context-menu-description = See a simpler context menu when you right-click a tab. It’s designed to make common actions easier to find. <a data-l10n-name="connect">Share feedback</a>
+
+# Resource Monitor
+experimental-features-resource-monitor =
+    .label = Resource monitor
+experimental-features-resource-monitor-description = See estimated memory and CPU use for your open tabs right in the sidebar, and unload tabs you’re not using to free up resources. <a data-l10n-name="connect">Share feedback</a>
