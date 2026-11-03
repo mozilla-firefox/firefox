@@ -10,14 +10,14 @@ import mozilla.components.concept.storage.FrecencyThresholdOption
  * Top sites configuration to specify the number of top sites to display and whether or not to include top frecent sites
  * in the top sites feature.
  *
- * @property totalSites A total number of sites that will be displayed.
+ * @property targetSitesCount The number of top sites to fill up to.
  * @property frecencyConfig An instance of [TopSitesFrecencyConfig] that specifies which top frecent sites should be
  *   included.
  * @property providerConfig An instance of [TopSitesProviderConfig] that specifies whether or not to fetch top sites
  *   from the [TopSitesProvider].
  */
 data class TopSitesConfig(
-    val totalSites: Int,
+    val targetSitesCount: Int,
     val frecencyConfig: TopSitesFrecencyConfig? = null,
     val providerConfig: TopSitesProviderConfig? = null,
 )

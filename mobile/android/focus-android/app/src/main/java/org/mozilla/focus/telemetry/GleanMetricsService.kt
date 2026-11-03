@@ -174,7 +174,7 @@ class GleanMetricsService(
             val shortcutsOnHomeNumber =
                 components.topSitesStorage
                     .getTopSites(
-                        totalSites = TOP_SITES_MAX_LIMIT,
+                        targetSitesCount = TOP_SITES_MAX_LIMIT,
                         frecencyConfig = null,
                     )
                     .size

@@ -449,7 +449,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
                     storage = components.topSitesStorage,
                     config = {
                         TopSitesConfig(
-                            totalSites = TOP_SITES_MAX_LIMIT,
+                            targetSitesCount = TOP_SITES_MAX_LIMIT,
                             frecencyConfig = null,
                             providerConfig = null,
                         )

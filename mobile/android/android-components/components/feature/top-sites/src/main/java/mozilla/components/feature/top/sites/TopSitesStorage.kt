@@ -48,14 +48,14 @@ interface TopSitesStorage : Observable<TopSitesStorage.Observer> {
      * Return a unified list of top sites based on the given number of sites desired. If `frecencyConfig` is specified,
      * fill in any missing top sites with frecent top site results.
      *
-     * @param totalSites A total number of sites that will be retrieve if possible.
+     * @param targetSitesCount The number of top sites to fill up to.
      * @param frecencyConfig An instance of [TopSitesFrecencyConfig] that specifies which top frecent sites to be
      *   included.
      * @param providerConfig An instance of [TopSitesProviderConfig] that specifies whether or not to fetch top sites
      *   from the [TopSitesProvider].
      */
     suspend fun getTopSites(
-        totalSites: Int,
+        targetSitesCount: Int,
         frecencyConfig: TopSitesFrecencyConfig? = null,
         providerConfig: TopSitesProviderConfig? = null,
     ): List<TopSite>

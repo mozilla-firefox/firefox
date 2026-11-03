@@ -38,10 +38,10 @@ class DefaultTopSitesStorage(private val pinnedSitesStorage: PinnedSiteStorage) 
     }
 
     override suspend fun getTopSites(
-        totalSites: Int,
+        targetSitesCount: Int,
         frecencyConfig: TopSitesFrecencyConfig?,
         providerConfig: TopSitesProviderConfig?,
-    ): List<TopSite> = pinnedSitesStorage.getPinnedSites().take(totalSites)
+    ): List<TopSite> = pinnedSitesStorage.getPinnedSites().take(targetSitesCount)
 
     companion object {
         const val TOP_SITES_MAX_LIMIT = 4

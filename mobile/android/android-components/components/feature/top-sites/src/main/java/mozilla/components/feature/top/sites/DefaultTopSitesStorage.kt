@@ -125,16 +125,22 @@ private constructor(
         notifyObservers { onStorageUpdated() }
     }
 
+    /**
+     * Return a unified list of [TopSite]s. Returns all the pinned sites available and uses [targetSitesCount] to
+     * backfill any remaining top site slots using frecent and provider sites so that the total number of top sites
+     * should have a minimum size of [targetSitesCount] if possible, however, this can return fewer if there are no
+     * sites to backfill with.
+     */
     @Suppress("ComplexCondition", "TooGenericExceptionCaught")
     override suspend fun getTopSites(
-        totalSites: Int,
+        targetSitesCount: Int,
         frecencyConfig: TopSitesFrecencyConfig?,
         providerConfig: TopSitesProviderConfig?,
     ): List<TopSite> {
         val topSites = ArrayList<TopSite>()
-        val pinnedSites = pinnedSitesStorage.getPinnedSites().take(totalSites)
+        val pinnedSites = pinnedSitesStorage.getPinnedSites()
         var providerTopSites = emptyList<TopSite>()
-        var numSitesRequired = totalSites - pinnedSites.size
+        var numSitesRequired = (targetSitesCount - pinnedSites.size).coerceAtLeast(0)
 
         if (
             numSitesRequired > 0 &&
@@ -166,11 +172,12 @@ private constructor(
         topSites.addAll(pinnedSites)
 
         if (frecencyConfig?.frecencyTresholdOption != null && numSitesRequired > 0) {
-            // Get 'totalSites' sites for duplicate entries with
-            // existing pinned sites
+            // Get `targetSitesCount` number of frecent sites from history storage to account for potential duplicates
+            // and filtering needed with provider and pinned sites.
+            val numItems = targetSitesCount
             val frecentSites =
                 historyStorage
-                    .getTopFrecentSites(totalSites, frecencyConfig.frecencyTresholdOption)
+                    .getTopFrecentSites(numItems = numItems, frecencyThreshold = frecencyConfig.frecencyTresholdOption)
                     .map { it.toTopSite() }
                     .filter {
                         !pinnedSites.hasUrl(it.url) &&

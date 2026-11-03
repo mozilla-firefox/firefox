@@ -103,24 +103,24 @@ class DefaultTopSitesStorageTest {
 
         var topSites =
             defaultTopSitesStorage.getTopSites(
-                totalSites = 0,
+                targetSitesCount = 0,
                 frecencyConfig = null,
             )
 
         assertTrue(topSites.isEmpty())
 
-        topSites = defaultTopSitesStorage.getTopSites(totalSites = 1)
+        topSites = defaultTopSitesStorage.getTopSites(targetSitesCount = 1)
 
         assertEquals(1, topSites.size)
         assertEquals(pinnedSite1, topSites[0])
 
-        topSites = defaultTopSitesStorage.getTopSites(totalSites = 2)
+        topSites = defaultTopSitesStorage.getTopSites(targetSitesCount = 2)
 
         assertEquals(2, topSites.size)
         assertEquals(pinnedSite1, topSites[0])
         assertEquals(pinnedSite2, topSites[1])
 
-        topSites = defaultTopSitesStorage.getTopSites(totalSites = 5)
+        topSites = defaultTopSitesStorage.getTopSites(targetSitesCount = 5)
 
         assertEquals(2, topSites.size)
         assertEquals(pinnedSite1, topSites[0])

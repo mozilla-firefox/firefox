@@ -261,7 +261,7 @@ class UrlInputFragment : BaseFragment(), View.OnClickListener {
                     storage = requireComponents.topSitesStorage,
                     config = {
                         TopSitesConfig(
-                            totalSites = TOP_SITES_MAX_LIMIT,
+                            targetSitesCount = TOP_SITES_MAX_LIMIT,
                             frecencyConfig = null,
                             providerConfig = null,
                         )

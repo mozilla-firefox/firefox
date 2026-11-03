@@ -17,6 +17,9 @@ permalink: /changelog/
     * `SwipeRefreshFeature` now disables pull-to-refresh while the observed tab is in fullscreen or showing a PDF. [Bug 2054920](https://bugzilla.mozilla.org/show_bug.cgi?id=2054920)
 * **support-utils**
     * 🆕 Added `BuildMetadata`, which reads the R8/ProGuard mapping UUID and SHA-256 from the `build-metadata.properties` asset written by the `WriteBuildMetadata` Gradle task.
+* **feature-top-sites**
+    * **Breaking change**: Renamed `totalSites` to `targetSitesCount` in `TopSitesConfig` and `TopSitesStorage.getTopSites`, since it is the number of top sites to fill up to rather than a limit. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
+    * **Behavior change**: `DefaultTopSitesStorage.getTopSites` now returns all the pinned sites, even beyond `targetSitesCount`. The provided, frecent and default top sites still only fill the slots left within `targetSitesCount`, so the returned list can be longer than `targetSitesCount`. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
 
 # 160.0
 * **concept-engine**

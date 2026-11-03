@@ -542,7 +542,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
                     // switches delay rendering top sites when the cache is empty, which
                     // we can prevent with this.
                     components.core.topSitesStorage.getTopSites(
-                        totalSites = components.settings.topSitesMaxLimit,
+                        targetSitesCount = components.settings.topSitesMaxLimit,
                         frecencyConfig =
                             if (FxNimbus.features.homepageHideFrecentTopSites.value().enabled) {
                                 null

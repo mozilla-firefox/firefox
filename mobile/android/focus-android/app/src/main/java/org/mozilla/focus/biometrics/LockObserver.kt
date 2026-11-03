@@ -80,7 +80,7 @@ class LockObserver(
 
                 val topSitesList =
                     context.components.topSitesStorage.getTopSites(
-                        totalSites = DefaultTopSitesStorage.TOP_SITES_MAX_LIMIT,
+                        targetSitesCount = DefaultTopSitesStorage.TOP_SITES_MAX_LIMIT,
                         frecencyConfig = null,
                     )
 

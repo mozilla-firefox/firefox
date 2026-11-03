@@ -54,7 +54,7 @@ class DefaultTopSitesPresenter(
         job = scope.launch {
             val topSites =
                 storage.getTopSites(
-                    totalSites = innerConfig.totalSites,
+                    targetSitesCount = innerConfig.targetSitesCount,
                     frecencyConfig = innerConfig.frecencyConfig,
                     providerConfig = innerConfig.providerConfig,
                 )

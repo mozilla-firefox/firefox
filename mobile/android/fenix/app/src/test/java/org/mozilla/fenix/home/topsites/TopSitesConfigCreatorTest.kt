@@ -58,13 +58,13 @@ class TopSitesConfigCreatorTest {
     }
 
     @Test
-    fun `GIVEN a topSitesMaxLimit THEN it returns TopSitesConfig with totalSites = topSitesMaxLimit`() {
+    fun `GIVEN a topSitesMaxLimit THEN it returns TopSitesConfig with targetSitesCount = topSitesMaxLimit`() {
         val topSitesMaxLimit = 15
         every { settings.topSitesMaxLimit } returns topSitesMaxLimit
 
         val topSitesConfig = getTopSitesConfig(settings = settings, store = browserStore).invoke()
 
-        assertEquals(topSitesMaxLimit, topSitesConfig.totalSites)
+        assertEquals(topSitesMaxLimit, topSitesConfig.targetSitesCount)
     }
 
     @Test

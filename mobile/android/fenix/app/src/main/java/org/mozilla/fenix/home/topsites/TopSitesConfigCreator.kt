@@ -36,7 +36,7 @@ internal fun getTopSitesConfig(
     return {
         val limit = if (settings.suppressSponsoredTopSitesEnabled) 0 else TOP_SITES_PROVIDER_LIMIT
         TopSitesConfig(
-            totalSites = settings.topSitesMaxLimit,
+            targetSitesCount = settings.topSitesMaxLimit,
             frecencyConfig =
                 if (FxNimbus.features.homepageHideFrecentTopSites.value().enabled) {
                     null
