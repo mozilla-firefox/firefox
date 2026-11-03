@@ -17,5 +17,11 @@ struct DeviceDescriptor {
   HWInferenceBackend[] backends;
 };
 
+// Fallback order, by devices or by kinds, never both; both empty is the CPU.
+struct DevicePlacement {
+  nsCString[] devices;
+  HWInferenceDeviceKind[] kinds;
+};
+
 }  // namespace hwinference
 }  // namespace mozilla

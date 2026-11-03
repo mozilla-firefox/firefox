@@ -44,6 +44,9 @@ class TextGenerator final : public nsISupports, public nsWrapperCache {
   void Cancel();
   void Terminate();
 
+  void GetDevice(nsACString& aDevice) const { aDevice = mDevice; }
+  dom::HWInferenceDeviceKind DeviceKind() const { return mDeviceKind; }
+
   nsIGlobalObject* GetParentObject() const { return mGlobal; }
   JSObject* WrapObject(JSContext* aCx,
                        JS::Handle<JSObject*> aGivenProto) override;
@@ -62,6 +65,9 @@ class TextGenerator final : public nsISupports, public nsWrapperCache {
   RefPtr<hwinference::TextGenerationParent> mActor;
   // Names the feature in profiler markers.
   const nsCString mFeatureId;
+  // Id of the device that loaded the model, see LoadSuccess.
+  nsCString mDevice;
+  dom::HWInferenceDeviceKind mDeviceKind = dom::HWInferenceDeviceKind::Cpu;
   bool mGenerateInFlight = false;
   bool mTerminated = false;
 };

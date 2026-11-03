@@ -46,11 +46,12 @@ dictionary TextGeneratorCreateOptions {
   unsigned long numThreadsDecoding = 0;
   unsigned long batchSize = 2048;
   unsigned long ubatchSize = 512;
-  /** Quantized values require flashAttn; create() rejects otherwise. */
+  /** Quantized values require flashAttn, which llama.cpp enforces. */
   TextGenerationKVCacheDtype kvCacheDtype = "f16";
   boolean flashAttn = false;
   /** Names the feature asking, in profiler markers only. */
   UTF8String featureId = "";
+  HWInferencePlacement placement = {};
 };
 
 dictionary TextGenerationMessage {
@@ -123,6 +124,10 @@ callback TextGenerationDeltaCallback = undefined (UTF8String text);
 
 [ChromeOnly, Exposed=Window]
 interface TextGenerator {
+  /** Id of the device that loaded the model, see HWInferenceDevice. */
+  readonly attribute UTF8String device;
+  readonly attribute HWInferenceDeviceKind deviceKind;
+
   /** The model Blob must be file-backed. Rejects with the load error. */
   [Throws]
   static Promise<TextGenerator> create(Blob model,

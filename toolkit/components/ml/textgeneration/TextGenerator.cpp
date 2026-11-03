@@ -47,12 +47,13 @@ static uint32_t ResolveNumThreads(uint32_t aRequested) {
 static constexpr uint32_t kDefaultSeed = LLAMA_DEFAULT_SEED;
 
 static void MarkGeneratorCreate(TimeStamp aStart, double aBackendInitMs,
-                                const nsCString& aFeatureId) {
+                                const nsCString& aFeatureId,
+                                const nsCString& aDevice) {
   const double wallMs = (TimeStamp::Now() - aStart).ToMilliseconds();
   PROFILER_MARKER(ML_TEXT_GENERATION_TRACK, ML_SETUP,
                   MarkerTiming::IntervalUntilNowFrom(aStart),
                   MLGeneratorCreateMarker, aBackendInitMs,
-                  std::max(0.0, wallMs - aBackendInitMs), aFeatureId);
+                  std::max(0.0, wallMs - aBackendInitMs), aFeatureId, aDevice);
 }
 
 static void MarkFailed(TimeStamp aStart, const nsCString& aPhase,
@@ -62,6 +63,18 @@ static void MarkFailed(TimeStamp aStart, const nsCString& aPhase,
                   aPhase, aReason);
 }
 
+static DevicePlacement ToDevicePlacement(
+    const dom::HWInferencePlacement& aPlacement) {
+  DevicePlacement placement;
+  for (const nsCString& id : aPlacement.mDevices) {
+    placement.devices().AppendElement(id);
+  }
+  for (dom::HWInferenceDeviceKind kind : aPlacement.mKinds) {
+    placement.kinds().AppendElement(kind);
+  }
+  return placement;
+}
+
 static TextGenerationOptions ResolveTextGenerationOptions(
     const dom::TextGeneratorCreateOptions& aOptions) {
   AssertIsOnMainThread();
@@ -69,10 +82,10 @@ static TextGenerationOptions ResolveTextGenerationOptions(
   const uint32_t numThreadsDecoding = aOptions.mNumThreadsDecoding > 0
                                           ? aOptions.mNumThreadsDecoding
                                           : numThreads;
-  return TextGenerationOptions(aOptions.mContextSize, numThreads,
-                               numThreadsDecoding, aOptions.mBatchSize,
-                               aOptions.mUbatchSize, aOptions.mKvCacheDtype,
-                               aOptions.mFlashAttn);
+  return TextGenerationOptions(
+      aOptions.mContextSize, numThreads, numThreadsDecoding,
+      aOptions.mBatchSize, aOptions.mUbatchSize, aOptions.mKvCacheDtype,
+      aOptions.mFlashAttn, ToDevicePlacement(aOptions.mPlacement));
 }
 
 static Result<mozilla::ipc::FileDescriptor, const char*> BlobToModelFd(
@@ -173,7 +186,8 @@ static TextGenerationParent::DeltaHandler MakeDeltaHandler(
 
 static void MarkGeneratorRun(TimeStamp aStart, const GenerateResult& aResult,
                              const DeltaStats& aStats, uint32_t aChunkTokens,
-                             const nsCString& aFeatureId) {
+                             const nsCString& aFeatureId,
+                             const nsCString& aDevice) {
   const hwinference::Usage& usage = aResult.usage();
   const double ttfcMs = aStats.mFirstDeltaAt.IsNull()
                             ? 0.0
@@ -189,7 +203,7 @@ static void MarkGeneratorRun(TimeStamp aStart, const GenerateResult& aResult,
       ml::TokensPerSecond(usage.generatedTokens(), usage.timings().decodeMs()),
       computeMs, aStats.mDeliverMs,
       std::max(0.0, wallMs - computeMs - aStats.mDeliverMs),
-      dom::GetEnumString(aResult.reason()), aFeatureId);
+      dom::GetEnumString(aResult.reason()), aFeatureId, aDevice);
 }
 
 TextGenerator::TextGenerator(nsIGlobalObject* aGlobal,
@@ -249,8 +263,11 @@ already_AddRefed<Promise> TextGenerator::Create(
       new TextGenerator(global, actor, aOptions.mFeatureId);
   actor->WhenReady()->Then(
       GetMainThreadSerialEventTarget(), __func__,
-      [promise, generator, createStart](double aBackendInitMs) {
-        MarkGeneratorCreate(createStart, aBackendInitMs, generator->mFeatureId);
+      [promise, generator, createStart](const LoadSuccess& aLoaded) {
+        generator->mDevice = aLoaded.device();
+        generator->mDeviceKind = aLoaded.deviceKind();
+        MarkGeneratorCreate(createStart, aLoaded.loadMs(),
+                            generator->mFeatureId, generator->mDevice);
         promise->MaybeResolve(generator);
       },
       [promise, generator,
@@ -321,7 +338,7 @@ already_AddRefed<Promise> TextGenerator::Generate(
         }
         const GenerateResult& result = aResponse.get_GenerateResult();
         MarkGeneratorRun(generateStart, result, *stats, chunkTokens,
-                         self->mFeatureId);
+                         self->mFeatureId, self->mDevice);
         promise->MaybeResolve(ToJSResult(result));
       },
       [promise, self, generateStart](mozilla::ipc::ResponseRejectReason) {

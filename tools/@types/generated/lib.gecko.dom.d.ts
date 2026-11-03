@@ -2400,6 +2400,13 @@ interface HWInferenceDevice {
     kind: HWInferenceDeviceKind;
 }
 
+interface HWInferencePlacement {
+    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferencePlacement_devices) --> */
+    devices?: string[];
+    /** <!-- binding_to(idl, attribute, WEBIDL_HWInferencePlacement_kinds) --> */
+    kinds?: HWInferenceDeviceKind[];
+}
+
 interface HasChildrenOptions {
     /** <!-- binding_to(idl, attribute, WEBIDL_HasChildrenOptions_ignoreAbsent) --> */
     ignoreAbsent?: boolean;
@@ -3007,10 +3014,6 @@ interface LlamaContextOptions {
     nUbatch?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_noPerf) --> */
     noPerf?: boolean;
-    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_offloadKqv) --> */
-    offloadKqv?: boolean;
-    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_opOffload) --> */
-    opOffload?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_swaFull) --> */
     swaFull?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_vCacheDtype) --> */
@@ -3043,8 +3046,8 @@ interface LlamaModelOptions {
     checkTensors?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_context) --> */
     context?: LlamaContextOptions;
-    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_nGpuLayers) --> */
-    nGpuLayers?: number;
+    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_placement) --> */
+    placement?: HWInferencePlacement;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_useMlock) --> */
     useMlock?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaModelOptions_useMmap) --> */
@@ -6940,6 +6943,8 @@ interface TextGeneratorCreateOptions {
     numThreads?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_numThreadsDecoding) --> */
     numThreadsDecoding?: number;
+    /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_placement) --> */
+    placement?: HWInferencePlacement;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_ubatchSize) --> */
     ubatchSize?: number;
 }
@@ -34769,6 +34774,10 @@ declare var TextFormatUpdateEvent: {
 
 /** <!-- binding_to(idl, class, WEBIDL_TextGenerator) --> */
 interface TextGenerator {
+    /** <!-- binding_to(idl, attribute, WEBIDL_TextGenerator_device) --> */
+    readonly device: string;
+    /** <!-- binding_to(idl, attribute, WEBIDL_TextGenerator_deviceKind) --> */
+    readonly deviceKind: HWInferenceDeviceKind;
     /** <!-- binding_to(idl, method, WEBIDL_TextGenerator_cancel) --> */
     cancel(): void;
     /** <!-- binding_to(idl, method, WEBIDL_TextGenerator_clear) --> */
