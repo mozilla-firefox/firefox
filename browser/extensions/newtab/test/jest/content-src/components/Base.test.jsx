@@ -2047,6 +2047,54 @@ describe("<Base> Nova logo placement with the search bar in variant B", () => {
   });
 });
 
+describe("<Base> Nova layout with a multistage message", () => {
+  const multistageMessage = {
+    ...INITIAL_STATE.Messages,
+    isVisible: true,
+    messageData: { content: { messageType: "ASRouterMultistageMessage" } },
+  };
+
+  // The message and search components have no module to load here,
+  // which the wrapper reports.
+  let consoleErrorSpy;
+  beforeEach(() => {
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it.each([
+    ["the default search", []],
+    [
+      "the search bar in variant B",
+      [{ type: "SEARCH", attributes: { "variant-b": "" } }],
+    ],
+  ])(
+    "keeps the Logo and search at the top with %s when stories and widgets are off",
+    (_label, components) => {
+      const { container, unmount } = renderNova(
+        { showSearch: true },
+        {
+          Messages: multistageMessage,
+          ExternalComponents: {
+            ...INITIAL_STATE.ExternalComponents,
+            components,
+          },
+        }
+      );
+
+      expect(
+        container.querySelector(".container.nova-enabled.logo-in-content")
+      ).not.toBeInTheDocument();
+      expect(
+        container.querySelector(".container.nova-enabled.search-lowered")
+      ).not.toBeInTheDocument();
+      unmount();
+    }
+  );
+});
+
 describe("<Base> Nova hideLogo pref", () => {
   it("renders the Logo by default (hideLogo unset, topsites enabled)", () => {
     const { container } = renderNova({ "feeds.topsites": true });

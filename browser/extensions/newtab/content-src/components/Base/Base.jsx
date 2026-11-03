@@ -1198,8 +1198,12 @@ export class BaseContent extends React.PureComponent {
           (this.props.ExternalComponents.components.find(
             c => c.type === "SEARCH"
           )?.attributes ?? {});
+      const hasMultistageMessage = shouldShowOMCHighlight(
+        this.props.Messages,
+        "ASRouterMultistageMessage"
+      );
       const contentShouldBeLowered =
-        noFeedOrContentWidgets && !hasManyTopSitesRows;
+        noFeedOrContentWidgets && !hasManyTopSitesRows && !hasMultistageMessage;
       const logoShouldBeCentered = contentShouldBeLowered && !searchHasOwnRow;
       const searchShouldBeLowered = contentShouldBeLowered && searchHasOwnRow;
       // The 5-column story grid is driven by the layout data alone: the content
