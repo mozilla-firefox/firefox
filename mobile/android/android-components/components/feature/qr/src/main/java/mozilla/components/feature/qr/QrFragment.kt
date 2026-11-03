@@ -605,12 +605,12 @@ class QrFragment : Fragment() {
                 false
             }
         if (!acquired) {
-            session.close()
+            closeUnusedSession(session)
             return
         }
         try {
             if (cameraDevice == null || session.device != cameraDevice) {
-                session.close()
+                closeUnusedSession(session)
                 return
             }
             captureSession = session
@@ -625,6 +625,14 @@ class QrFragment : Fragment() {
             } catch (e: IllegalArgumentException) {
                 logger.error("Failed to request capture", e)
             }
+        }
+    }
+
+    private fun closeUnusedSession(session: CameraCaptureSession) {
+        try {
+            session.close()
+        } catch (e: RejectedExecutionException) {
+            logger.error("backgroundExecutor terminated", e)
         }
     }
 
