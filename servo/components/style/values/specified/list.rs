@@ -8,7 +8,7 @@ use crate::counter_style::{CounterStyle, CounterStyleParsingFlags};
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use cssparser::{match_ignore_ascii_case, Parser, Token};
-use style_traits::{ParseError, StyleParseErrorKind};
+use style_traits::{KeywordsCollectFn, ParseError, SpecifiedValueInfo, StyleParseErrorKind};
 
 /// Specified and computed `list-style-type` property.
 #[derive(
@@ -128,14 +128,13 @@ pub struct QuoteList(
     pub crate::ArcSlice<QuotePair>,
 );
 
-/// Specified and computed `quotes` property: `auto`, `none`, or a list
-/// of characters.
+/// Specified and computed `quotes` property: `auto`, `none`, `match-parent`,
+/// or a list of characters.
 #[derive(
     Clone,
     Debug,
     MallocSizeOf,
     PartialEq,
-    SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
     ToResolvedValue,
@@ -151,6 +150,15 @@ pub enum Quotes {
     Auto,
     /// match-parent (use the value from the element's parent)
     MatchParent,
+}
+
+impl SpecifiedValueInfo for Quotes {
+    fn collect_completion_keywords(f: KeywordsCollectFn) {
+        f(&["auto", "none"]);
+        if crate::pref!("layout.css.quotes.match-parent.enabled") {
+            f(&["match-parent"]);
+        }
+    }
 }
 
 impl Parse for Quotes {
