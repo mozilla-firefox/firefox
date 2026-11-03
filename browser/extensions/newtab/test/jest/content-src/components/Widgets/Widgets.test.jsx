@@ -81,7 +81,6 @@ const PREF_WIDGETS_RECENT_SEARCHES_ENABLED = "widgets.recentSearches.enabled";
 const PREF_WIDGETS_HOROSCOPES_ENABLED = "widgets.horoscopes.enabled";
 const PREF_WIDGETS_TRAVEL_ENABLED = "widgets.travel.enabled";
 const PREF_WIDGETS_SOLITAIRE_ENABLED = "widgets.solitaire.enabled";
-const PREF_WIDGETS_WREXHAMAFC_ENABLED = "widgets.wrexhamAFC.enabled";
 const PREF_WIDGETS_PICTURE_OF_THE_DAY_ENABLED =
   "widgets.pictureOfTheDay.enabled";
 const PREF_WIDGETS_FEEDBACK_ENABLED = "widgets.feedback.enabled";
@@ -293,7 +292,7 @@ describe("<Widgets> handleHideAllWidgets", () => {
   }
 
   function expectAllWidgetPrefsDisabled(calls) {
-    expect(calls).toHaveLength(12);
+    expect(calls).toHaveLength(11);
     for (const name of [
       PREF_WIDGETS_LISTS_ENABLED,
       PREF_WIDGETS_TIMER_ENABLED,
@@ -306,7 +305,6 @@ describe("<Widgets> handleHideAllWidgets", () => {
       PREF_WIDGETS_HOROSCOPES_ENABLED,
       PREF_WIDGETS_TRAVEL_ENABLED,
       PREF_WIDGETS_SOLITAIRE_ENABLED,
-      PREF_WIDGETS_WREXHAMAFC_ENABLED,
     ]) {
       const call = calls.find(action => action.data?.name === name);
       expect(call).toBeDefined();

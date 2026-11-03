@@ -295,7 +295,6 @@ describe("getWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
   });
 
@@ -313,7 +312,6 @@ describe("getWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
   });
 
@@ -331,7 +329,6 @@ describe("getWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
   });
 
@@ -356,7 +353,6 @@ describe("getWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
     expect(result.length).toBe(registryIds.length);
   });
@@ -385,7 +381,6 @@ describe("resolveWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
   });
 
@@ -408,7 +403,6 @@ describe("resolveWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
   });
 
@@ -431,7 +425,6 @@ describe("resolveWidgetOrder", () => {
       "horoscopes",
       "travel",
       "solitaire",
-      "wrexhamAFC",
     ]);
   });
 });
@@ -1409,7 +1402,6 @@ describe("WIDGET_REGISTRY customize panel fields", () => {
     horoscopes: "WIDGET_HOROSCOPES",
     travel: "WIDGET_TRAVEL",
     solitaire: "WIDGET_SOLITAIRE",
-    wrexhamAFC: "WIDGET_WREXHAMAFC",
   };
 
   it("gives every active entry a customizeL10nId", () => {
