@@ -229,22 +229,36 @@ nsresult AudioStream::EnsureTimeStretcherInitialized() {
         SETTING_OVERLAP_MS,
         StaticPrefs::media_audio_playbackrate_soundtouch_overlap_ms());
 
-    const uint32_t primeFrames =
-        (StaticPrefs::media_audio_playbackrate_soundtouch_sequence_ms() +
-         StaticPrefs::media_audio_playbackrate_soundtouch_seekwindow_ms()) *
-        mAudioClock.GetInputRate() / 1000;
-    AutoTArray<AudioDataValue, 2048> silence;
-    silence.SetLength(primeFrames * mOutChannels);
-    std::fill(silence.begin(), silence.end(), AudioDataValue(0));
-    mTimeStretcher->putSamples(silence.Elements(), primeFrames);
-    const uint32_t numOut =
-        mTimeStretcher->numSamples().unverified_safe_because(
-            "Bounded by the number of frames used to prime the stretcher.");
-    MOZ_ASSERT(numOut <= primeFrames);
-    silence.SetLength(numOut * mOutChannels);
-    mTimeStretcher->receiveSamples(silence.Elements(), numOut);
+    PrimeTimeStretcher();
   }
   return NS_OK;
+}
+
+void AudioStream::PrimeTimeStretcher() {
+  AssertIsOnAudioThread();
+  MOZ_ASSERT(mTimeStretcher);
+  const uint32_t primeFrames =
+      (StaticPrefs::media_audio_playbackrate_soundtouch_sequence_ms() +
+       StaticPrefs::media_audio_playbackrate_soundtouch_seekwindow_ms()) *
+      mAudioClock.GetInputRate() / 1000;
+  // Feed and drain the silence in small chunks, so that up to 8 channels need
+  // no Gecko heap allocation on the audio thread.
+  constexpr uint32_t kChunkFrames = 128;
+  AutoTArray<AudioDataValue, kChunkFrames * 8> silence;
+  silence.SetLength(kChunkFrames * mOutChannels);
+  std::fill(silence.begin(), silence.end(), AudioDataValue(0));
+  for (uint32_t fed = 0; fed < primeFrames; fed += kChunkFrames) {
+    mTimeStretcher->putSamples(silence.Elements(),
+                               std::min(kChunkFrames, primeFrames - fed));
+  }
+  for (uint32_t drained = 0; drained < primeFrames;) {
+    const uint32_t received =
+        mTimeStretcher->receiveSamples(silence.Elements(), kChunkFrames);
+    if (!received) {
+      break;
+    }
+    drained += received;
+  }
 }
 
 nsresult AudioStream::SetPlaybackRate(double aPlaybackRate) {
@@ -628,6 +642,14 @@ void AudioStream::GetUnprocessed(AudioBufferWriter& aWriter) {
             return timeStretcher->receiveSamples(aPtr, aFrames);
           },
           aWriter.Available());
+      // Flushing pads the input with silence that SoundTouch keeps counting as
+      // owed output. Once the flushed output has played, start the next rate
+      // change from a clean, primed stretcher.
+      if (mTimeStretcher->numSamples().unverified_safe_because(
+              "Only used to decide whether to reset the stretcher.") == 0) {
+        mTimeStretcher->clear();
+        PrimeTimeStretcher();
+      }
     }
   }
 

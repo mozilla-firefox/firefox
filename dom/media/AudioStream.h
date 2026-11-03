@@ -421,6 +421,9 @@ class AudioStream final {
 
   // Audio thread only
   nsresult EnsureTimeStretcherInitialized();
+  // Feed the time stretcher enough silence to fill its processing window, so
+  // that the first stretched callback consumes less extra source.
+  void PrimeTimeStretcher();
   void GetUnprocessed(AudioBufferWriter& aWriter);
   void GetTimeStretched(AudioBufferWriter& aWriter);
   void UpdatePlaybackRateIfNeeded();
