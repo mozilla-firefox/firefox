@@ -352,7 +352,10 @@ def create_parser(mach_interface=False):
         help="Parameters to add to the test_url query string",
     )
     add_arg(
-        "--print-tests", action=_PrintTests, help="Print all available Raptor tests"
+        "--print-tests",
+        "--list-tests",
+        action=_PrintTests,
+        help="Print all available Raptor tests",
     )
     add_arg(
         "--debug-mode",
