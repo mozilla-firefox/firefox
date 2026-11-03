@@ -128,7 +128,14 @@ lints:
             - 'mobile/android/mach_commands.py'
             # Other misc lint related files.
             - 'python/mozlint/**'
-            - 'tools/lint/**'
+            - 'tools/lint/android/**'
+            - 'tools/lint/android-api-lint.yml'
+            - 'tools/lint/android-checkstyle.yml'
+            - 'tools/lint/android-format.yml'
+            - 'tools/lint/android-javadoc.yml'
+            - 'tools/lint/android-lint.yml'
+            - 'tools/lint/android-test.yml'
+            - 'tools/lint/mach_commands.py'
 
 fenix:
     treeherder:
@@ -174,7 +181,9 @@ fenix:
             - 'mobile/android/mach_commands.py'
             # Other misc lint related files.
             - 'python/mozlint/**'
-            - 'tools/lint/**'
+            - 'tools/lint/android/**'
+            - 'tools/lint/android-fenix.yml'
+            - 'tools/lint/mach_commands.py'
 
 focus:
     treeherder:
@@ -221,7 +230,9 @@ focus:
             - 'mobile/android/mach_commands.py'
             # Other misc lint related files.
             - 'python/mozlint/**'
-            - 'tools/lint/**'
+            - 'tools/lint/android/**'
+            - 'tools/lint/android-focus.yml'
+            - 'tools/lint/mach_commands.py'
 
 android-components:
     treeherder:
@@ -263,4 +274,6 @@ android-components:
             - 'mobile/android/mach_commands.py'
             # Other misc lint related files.
             - 'python/mozlint/**'
-            - 'tools/lint/**'
+            - 'tools/lint/android/**'
+            - 'tools/lint/android-ac.yml'
+            - 'tools/lint/mach_commands.py'
