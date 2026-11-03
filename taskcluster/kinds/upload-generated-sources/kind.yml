@@ -22,9 +22,6 @@ not-for-build-platforms:
     - macosx64-shippable/opt
     - macosx64-devedition/opt
 
-task-defaults:
-    run-on-repo-type: [hg]
-
 tasks:
     upload-generated-sources:
         description: Upload generated source files from build
@@ -38,7 +35,6 @@ tasks:
             docker-image: {in-tree: "lint"}
             max-run-time: 600
         run:
-            clone-with: hg
             using: mach
             mach: {artifact-reference: "python --virtualenv upload-generated-sources build/upload_generated_sources.py <build/public/build/target.generated-files.tar.gz>"}
             sparse-profile: upload-generated-sources

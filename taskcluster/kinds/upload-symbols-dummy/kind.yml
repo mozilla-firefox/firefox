@@ -10,9 +10,6 @@ transforms:
     - gecko_taskgraph.transforms.mac_dummy
     - gecko_taskgraph.transforms.task
 
-task-defaults:
-    run-on-repo-type: [hg]
-
 only-for-build-platforms:
     macosx64-shippable/opt
     macosx64-devedition/opt
