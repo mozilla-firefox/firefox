@@ -4,7 +4,7 @@
 
 use anyhow::{bail, Context, Result};
 use crash_helper_common::{
-    messages::{self, Header, Message, ProcessRendezVous},
+    messages::{self, Header, Message, PathType, ProcessRendezVous},
     AncillaryData, GeckoChildId, IPCConnector, IPCConnectorKey, IPCEvent, IPCListener, IPCQueue,
     Pid, ProcessHandle,
 };
@@ -204,13 +204,15 @@ impl IPCServer {
 
         match connection.endpoint {
             IPCEndpoint::Parent => match header.kind {
-                messages::Kind::SetCrashReportPath => {
-                    let message = messages::SetCrashReportPath::decode(data, ancillary_data)?;
-                    self.generator
-                        .lock()
-                        .unwrap()
-                        .set_path(message.path.clone());
-                    self.breakpad_server.set_path(message.path);
+                messages::Kind::SetPath => {
+                    let message = messages::SetPath::decode(data, ancillary_data)?;
+                    self.handle_set_path(message);
+                }
+                messages::Kind::GetPath => {
+                    let message = messages::GetPath::decode(data, ancillary_data)?;
+                    let path = self.handle_get_path(message);
+                    let reply = messages::PathReply::new(path);
+                    connector.send_message(reply)?;
                 }
                 messages::Kind::TransferMinidump => {
                     let message = messages::TransferMinidump::decode(data, ancillary_data)?;
@@ -317,6 +319,23 @@ impl IPCServer {
         };
 
         Ok(())
+    }
+
+    fn handle_set_path(&mut self, message: messages::SetPath) {
+        let mut generator = self.generator.lock().unwrap();
+        match message.path_type {
+            PathType::CrashReports => {
+                generator.set_minidump_path(&message.path);
+                self.breakpad_server.set_path(message.path);
+            }
+        }
+    }
+
+    fn handle_get_path(&self, message: messages::GetPath) -> OsString {
+        let generator = self.generator.lock().unwrap();
+        match message.path_type {
+            PathType::CrashReports => generator.get_minidump_path(),
+        }
     }
 
     fn register_child_process(&mut self, message: messages::RegisterChildProcess) -> Result<()> {

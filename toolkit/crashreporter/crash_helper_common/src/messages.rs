@@ -49,38 +49,42 @@ pub enum MessageError {
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive, PartialEq)]
 pub enum Kind {
-    /// Changes the folder where crash reports are generated
-    SetCrashReportPath = 1,
+    /// Set the path of a file or folder used by the crash helper
+    SetPath = 1,
+    /// Get the path of a file or folder used by the crash helper
+    GetPath = 2,
+    /// Holds a path, used as a reply for `GetPath`
+    PathReply = 3,
     /// Request the transfer of an already generated minidump of the specified
     /// process back to the client.
-    TransferMinidump = 2,
+    TransferMinidump = 4,
     /// Request the generation of a minidump of the specified process.
-    GenerateMinidump = 3,
+    GenerateMinidump = 5,
     /// Reply holding information about a minidump, can be used as a response
     /// for both a `TransferMinidump` and `GenerateMinidump` message.
-    MinidumpReply = 4,
+    MinidumpReply = 6,
     /// Request the generation of a minidump based on data obtained via the
     /// Windows Error Reporting runtime exception module. The reply is empty
     /// and only used to inform the WER module that it's time to shut down the
     /// crashed process. This is only enabled on Windows.
     #[cfg(target_os = "windows")]
-    WindowsErrorReporting = 5,
+    WindowsErrorReporting = 7,
     #[cfg(target_os = "windows")]
-    WindowsErrorReportingReply = 6,
+    WindowsErrorReportingReply = 8,
     /// Register and unregister additional information for the auxiliary
     /// vector of a process.
     #[cfg(any(target_os = "android", target_os = "linux"))]
-    RegisterAuxvInfo = 7,
+    RegisterAuxvInfo = 9,
     #[cfg(any(target_os = "android", target_os = "linux"))]
-    UnregisterAuxvInfo = 8,
+    UnregisterAuxvInfo = 10,
     /// Register a new child process and carry over the IPC channel it will use
     /// to talk to the crash helper. This is sent from the main process to the
     /// crash helper.
-    RegisterChildProcess = 9,
+    RegisterChildProcess = 11,
     /// Message sent by all processes checking-in with the crash helper. After
     /// this message has been received the crash helper is capable of dumping
     /// the sending process.
-    ProcessRendezVous = 10,
+    ProcessRendezVous = 12,
 }
 
 // Bytes helpers to serialize/deserialize values not supported directly by the
@@ -256,21 +260,131 @@ impl Header {
     }
 }
 
-/* Message used to change the path where crash reports are generated. */
+/* Message used to change a path used by the crash helper. */
 
-pub struct SetCrashReportPath {
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, FromPrimitive, ToPrimitive, PartialEq)]
+pub enum PathType {
+    /// The folder where crash reports are generated.
+    CrashReports = 1,
+}
+
+pub struct SetPath {
+    pub path_type: PathType,
     pub path: OsString,
 }
 
-impl SetCrashReportPath {
-    pub fn new(path: OsString) -> SetCrashReportPath {
-        SetCrashReportPath { path }
+impl SetPath {
+    pub fn new(path_type: PathType, path: OsString) -> Self {
+        Self { path_type, path }
     }
 }
 
-impl Message for SetCrashReportPath {
+impl Message for SetPath {
     fn kind() -> Kind {
-        Kind::SetCrashReportPath
+        Kind::SetPath
+    }
+
+    fn payload_size(&self) -> usize {
+        let path_len = self.path.bytes_len();
+        (size_of::<PathType>() + size_of::<usize>())
+            .checked_add(path_len)
+            .unwrap()
+    }
+
+    fn ancillary_data_len(&self) -> usize {
+        0
+    }
+
+    fn encode(self) -> (Bytes, Bytes, Vec<AncillaryData>) {
+        let header = Header::encode(Self::kind(), self.payload_size());
+        let mut payload = BytesMut::with_capacity(self.payload_size());
+        let path = self.path.serialize();
+        payload.put_u8(self.path_type as u8);
+        payload.put_vec(&path);
+
+        (header, payload.freeze(), vec![])
+    }
+
+    fn decode(data: Vec<u8>, ancillary_data: Vec<AncillaryData>) -> Result<Self, MessageError> {
+        if !ancillary_data.is_empty() {
+            return Err(MessageError::UnexpectedAncillaryData);
+        }
+
+        let mut data = Bytes::from(data);
+
+        let path_type = data.try_get_u8()?;
+        let path_type = PathType::from_u8(path_type).ok_or(MessageError::InvalidData)?;
+        let path = data.try_get_vec()?;
+        let path = <OsString as BreakpadString>::deserialize(path)
+            .map_err(|_| MessageError::InvalidData)?;
+
+        Ok(Self { path_type, path })
+    }
+}
+
+/* Message used to retrieve a path used by the crash helper. */
+
+pub struct GetPath {
+    pub path_type: PathType,
+}
+
+impl GetPath {
+    pub fn new(path_type: PathType) -> Self {
+        Self { path_type }
+    }
+}
+
+impl Message for GetPath {
+    fn kind() -> Kind {
+        Kind::GetPath
+    }
+
+    fn payload_size(&self) -> usize {
+        size_of::<PathType>()
+    }
+
+    fn ancillary_data_len(&self) -> usize {
+        0
+    }
+
+    fn encode(self) -> (Bytes, Bytes, Vec<AncillaryData>) {
+        let header = Header::encode(Self::kind(), self.payload_size());
+        let mut payload = BytesMut::with_capacity(self.payload_size());
+        payload.put_u8(self.path_type as u8);
+
+        (header, payload.freeze(), vec![])
+    }
+
+    fn decode(data: Vec<u8>, ancillary_data: Vec<AncillaryData>) -> Result<Self, MessageError> {
+        if !ancillary_data.is_empty() {
+            return Err(MessageError::UnexpectedAncillaryData);
+        }
+
+        let mut data = Bytes::from(data);
+
+        let path_type = data.try_get_u8()?;
+        let path_type = PathType::from_u8(path_type).ok_or(MessageError::InvalidData)?;
+
+        Ok(Self { path_type })
+    }
+}
+
+/* Message used as a reply to a `GetPath` message. */
+
+pub struct PathReply {
+    pub path: OsString,
+}
+
+impl PathReply {
+    pub fn new(path: OsString) -> Self {
+        Self { path }
+    }
+}
+
+impl Message for PathReply {
+    fn kind() -> Kind {
+        Kind::PathReply
     }
 
     fn payload_size(&self) -> usize {

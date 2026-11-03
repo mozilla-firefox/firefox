@@ -2162,13 +2162,21 @@ bool GetEnabled() { return gExceptionHandler != nullptr; }
 bool GetMinidumpPath(nsAString& aPath) {
   if (!gExceptionHandler) return false;
 
-#ifndef XP_LINUX
-  aPath = CONVERT_XP_CHAR_TO_UTF16(gExceptionHandler->dump_path().c_str());
+  BreakpadChar* path = nullptr;
+  StaticMutexAutoLock lock(gCrashHelperClientMutex);
+  if (gCrashHelperClient) {
+    path = get_crash_report_path(gCrashHelperClient);
+
+#if defined(XP_WIN)
+    aPath.Assign(BitwiseCast<wchar_t*>(path));
 #else
-  aPath = CONVERT_XP_CHAR_TO_UTF16(
-      gExceptionHandler->minidump_descriptor().directory().c_str());
-#endif
-  return true;
+    aPath = NS_ConvertUTF8toUTF16(path);
+#endif  // defined(XP_WIN)
+
+    release_path(path);
+  }
+
+  return !aPath.IsEmpty();
 }
 
 nsresult SetMinidumpPath(const nsAString& aPath) {

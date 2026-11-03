@@ -96,8 +96,12 @@ impl CrashGenerator {
         }
     }
 
-    pub(crate) fn set_path(&mut self, path: OsString) {
+    pub(crate) fn set_minidump_path(&mut self, path: &OsString) {
         self.minidump_path = PathBuf::from(path);
+    }
+
+    pub(crate) fn get_minidump_path(&self) -> OsString {
+        self.minidump_path.as_os_str().to_owned()
     }
 
     pub(crate) fn move_report_to_id(&mut self, pid: Pid, id: GeckoChildId) {
