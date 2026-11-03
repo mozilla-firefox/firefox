@@ -30,6 +30,15 @@ about-processes-expand-site =
 # See about-processes-expand-site for what a site is.
 about-processes-collapse-site =
     .title = Collapse this site’s tabs
+# See about-processes-expand-site for what a site is.
+# Variables:
+#   $site (String) The site’s name, e.g. example.com.
+about-processes-unload-site =
+    .title = Unload tabs from { $site }
+# Variables:
+#   $site (String) The site’s name, e.g. example.com.
+about-processes-reload-site =
+    .title = Reload tabs from { $site }
 about-processes-expand-all-sites =
     .title = Expand all
 about-processes-collapse-all-sites =

@@ -224,7 +224,7 @@ tr.site-header-row td.name {
 }
 
 /* Inline buttons size to their content, not to common.css's form buttons. */
-button:where(.caret-icon, #expand-all-button) {
+button:where(.caret-icon, #expand-all-button, .unload-icon, .reload-icon) {
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -445,11 +445,11 @@ tr.thread {
 /* Row-level opacity composites onto descendants, capping the reload
    icon's own focus-visible opacity below 1 -- undo the row dim for tab rows
    and apply it to the non-action cells instead so the button isn't capped. */
-tr.tab-row.killed {
+tr:is(.tab-row, .site-header-row).killed {
   opacity: 1;
 }
 
-tr.tab-row.killed > td:not(:last-child) {
+tr:is(.tab-row, .site-header-row).killed > td:not(:last-child) {
   opacity: 0.3;
 }
 
@@ -493,6 +493,7 @@ tr:is([selected], :hover, :focus-visible):not(.killing) > td > .close-icon,
   width: 16px;
   padding: 2px 4px;
   margin: -2px -5px;
+  box-sizing: content-box;
   opacity: 0;
   -moz-context-properties: fill;
   fill: currentColor;

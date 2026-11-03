@@ -8,6 +8,10 @@
 // mousemove event.
 const TIME_BEFORE_SORTING_AGAIN = 5000;
 
+// How long a row's unload/reload button ignores further clicks, so a
+// double-click doesn't act twice.
+const ACTION_REPEAT_DELAY_MS = 500;
+
 // How long we should wait between samples.
 const MINIMUM_INTERVAL_BETWEEN_SAMPLES_MS = 1000;
 
@@ -1268,6 +1272,11 @@ class ProcessesView extends RowSet {
   }
 }
 
+function updateTriStateCheckbox(checkbox, selectedCount, total) {
+  checkbox.checked = !!selectedCount && selectedCount == total;
+  checkbox.indeterminate = !!selectedCount && selectedCount < total;
+}
+
 // Shared by both view/controller pairs below (ProcessesView and
 // ProcessesTabView), so neither needs to reach into the other's instance.
 function fillCell(elt, { classes, fluentName, fluentArgs }) {
@@ -2019,6 +2028,7 @@ class ProcessesTabView extends RowSet {
         this._getOrCreateTabRow(tabData).classList.add("child-row");
       }
       this.setSiteExpanded(headerRow, headerRow.classList.contains("expanded"));
+      this.updateHeaderSelection(headerRow);
     }
     if (reorder) {
       this._commitOrder();
@@ -2034,26 +2044,50 @@ class ProcessesTabView extends RowSet {
     return row;
   }
 
-  _createRow(className) {
+  // labelId names the row's checkbox.
+  _createRow(className, labelId) {
     const cellCount = 5;
     let row = document.createElement("tr");
     row.className = className;
     while (row.children.length < cellCount) {
       row.appendChild(document.createElement("td"));
     }
-    row.children[0].className = "select-cell";
+
+    let selectCell = row.children[0];
+    selectCell.className = "select-cell";
+    let checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "select-checkbox";
+    checkbox.setAttribute("aria-labelledby", labelId);
+    selectCell.appendChild(checkbox);
+    row.checkbox = checkbox;
+
+    let unloadButton = document.createElement("button");
+    unloadButton.className = "action-icon unload-icon";
+    row.children[4].appendChild(unloadButton);
+    row.unloadButton = unloadButton;
+
     return row;
   }
 
-  _createHeaderRow(expanded) {
-    let row = this._createRow("site-header-row");
-    row.classList.toggle("expanded", expanded);
-    let nameCell = row.children[1];
+  // Discarded rows stay listed, dimmed, with a reload button in place of
+  // unload.
+  _updateUnloadButton(row, discarded, fluentId, fluentArgs) {
+    row.classList.toggle("killed", discarded);
+    row.unloadButton.classList.toggle("unload-icon", !discarded);
+    row.unloadButton.classList.toggle("reload-icon", discarded);
+    document.l10n.setAttributes(row.unloadButton, fluentId, fluentArgs);
+  }
 
+  _createHeaderRow(expanded) {
     let label = document.createElement("span");
     label.className = "site-label";
     label.id = `site-label-${this.#nextRowId++}`;
+
+    let row = this._createRow("site-header-row", label.id);
+    row.classList.toggle("expanded", expanded);
     row.label = label;
+    let nameCell = row.children[1];
 
     let caret = document.createElement("button");
     caret.className = "caret-icon ghost-button icon-button";
@@ -2091,8 +2125,27 @@ class ProcessesTabView extends RowSet {
     }
   }
 
+  // Any selected child highlights the header; there is no partial shade.
+  updateHeaderSelection(row) {
+    let { tabs } = row.group;
+    let selectedCount = tabs.filter(
+      tabData => this.getRow(tabData.tab).checkbox.checked
+    ).length;
+    updateTriStateCheckbox(row.checkbox, selectedCount, tabs.length);
+    row.toggleAttribute("selected", !!selectedCount);
+  }
+
   _updateHeaderRow(row, group) {
     row.group = group;
+    let allDiscarded = group.tabs.every(tabData => tabData.discarded);
+    this._updateUnloadButton(
+      row,
+      allDiscarded,
+      allDiscarded
+        ? "about-processes-reload-site"
+        : "about-processes-unload-site",
+      { site: group.siteLabel }
+    );
     let [, nameCell, memoryCell, cpuCell] = row.children;
     nameCell.className = "name";
     // The group's first tab stands in for the site; a real element rather than
@@ -2142,33 +2195,13 @@ class ProcessesTabView extends RowSet {
   }
 
   _createTabRow() {
-    let row = this._createRow("tab-row");
-
-    let checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "select-checkbox";
-    row.children[0].appendChild(checkbox);
-    row.checkbox = checkbox;
-
     let nameLink = document.createElement("button");
     nameLink.className = "name-link text-link";
     nameLink.id = `tab-name-${this.#nextRowId++}`;
-    checkbox.setAttribute("aria-labelledby", nameLink.id);
+
+    let row = this._createRow("tab-row", nameLink.id);
     row.children[1].appendChild(nameLink);
     row.nameLink = nameLink;
-
-    // The unload button, not the row, is the Tab stop -- same as the
-    // default view's kill button; rows here don't carry their own
-    // tabindex.
-    let actionCell = row.children[4];
-    let unloadButton = document.createElement("span");
-    unloadButton.className = "action-icon unload-icon";
-    unloadButton.setAttribute("role", "button");
-    unloadButton.setAttribute("tabindex", "0");
-    document.l10n.setAttributes(unloadButton, "about-processes-unload-tab");
-    actionCell.appendChild(unloadButton);
-    row.unloadButton = unloadButton;
-
     return row;
   }
 
@@ -2180,18 +2213,13 @@ class ProcessesTabView extends RowSet {
   _updateRow(row, tabData) {
     row.tabData = tabData;
 
-    // Keep discarded tabs in the list, shown asleep rather than removed.
-    row.classList.toggle("killed", !!tabData.discarded);
     if (tabData.discarded) {
       row.classList.remove("killing");
       row.removeAttribute("aria-busy");
     }
-    // Kept visible and focusable rather than hidden, so a discarded row
-    // still has a keyboard-reachable way back.
-    row.unloadButton.classList.toggle("unload-icon", !tabData.discarded);
-    row.unloadButton.classList.toggle("reload-icon", !!tabData.discarded);
-    document.l10n.setAttributes(
-      row.unloadButton,
+    this._updateUnloadButton(
+      row,
+      !!tabData.discarded,
       tabData.discarded
         ? "about-processes-reload-tab"
         : "about-processes-unload-tab"
@@ -2284,9 +2312,10 @@ class ProcessesTabController {
 
     let tbody = document.getElementById("process-tbody");
 
-    // Single click, and Enter/Space keypress: close a tab. One delegate at
-    // the tbody level, matching ProcessesController.init()'s own pattern,
-    // rather than a listener per row.
+    // One delegate at the tbody level, matching ProcessesController.init()'s
+    // own pattern, rather than a listener per row. Every control is a native
+    // button or checkbox, so keyboard activation arrives here as a click too,
+    // and starts the mouse freeze the same way.
     tbody.addEventListener("click", event => {
       this._lastMouseEvent = Date.now();
       let headerRow = event.target.closest("tr.site-header-row");
@@ -2294,6 +2323,14 @@ class ProcessesTabController {
         // The label and count are mouse-only; the caret is the keyboard path.
         if (event.target.closest(".caret-icon, .site-label, .site-tab-count")) {
           this._toggleSite(headerRow);
+          return;
+        }
+        this._handleActivate(event.target);
+        if (event.target.closest(".select-checkbox")) {
+          this._setRowsSelected(
+            headerRow.group.tabs.map(tabData => this._view.getRow(tabData.tab)),
+            event.target.checked
+          );
         }
         return;
       }
@@ -2301,14 +2338,6 @@ class ProcessesTabController {
       let row = event.target.closest("tr.tab-row");
       if (row) {
         this._handleRowClick(event, row);
-      }
-    });
-    tbody.addEventListener("keypress", event => {
-      if (event.key === "Enter" || event.key === " ") {
-        // Matches the click handler -- else keyboard-only users never get
-        // the freeze below, and a poll can reorder focus out from under them.
-        this._lastMouseEvent = Date.now();
-        this._handleActivate(event.target);
       }
     });
 
@@ -2381,6 +2410,16 @@ class ProcessesTabController {
     if (!target.classList.contains("action-icon")) {
       return;
     }
+    let headerRow = target.closest("tr.site-header-row");
+    if (headerRow) {
+      this._runRowAction(headerRow, () =>
+        this._unloadOrReloadSiteRow(
+          headerRow,
+          headerRow.group.tabs.every(tabData => tabData.discarded)
+        )
+      );
+      return;
+    }
     let row = target.closest("tr.tab-row");
     if (row.tabData.discarded) {
       this._recordTabAction([row.tabData], "reload", "tab_row");
@@ -2426,16 +2465,19 @@ class ProcessesTabController {
       this._view.setRowSelected(row, selected);
     }
     this._updateSelectAllCheckbox();
+    for (let headerRow of this._getHeaderRows()) {
+      this._view.updateHeaderSelection(headerRow);
+    }
     this._updateBulkActionBar();
   }
 
   _updateSelectAllCheckbox() {
     let rows = this._getDisplayedRows();
-    let selectedCount = rows.filter(row => row.checkbox.checked).length;
-    this._selectAllCheckbox.checked =
-      !!selectedCount && selectedCount == rows.length;
-    this._selectAllCheckbox.indeterminate =
-      !!selectedCount && selectedCount < rows.length;
+    updateTriStateCheckbox(
+      this._selectAllCheckbox,
+      rows.filter(row => row.checkbox.checked).length,
+      rows.length
+    );
   }
 
   _clearSelection() {
@@ -2543,6 +2585,38 @@ class ProcessesTabController {
       row.classList.remove("killing");
       row.removeAttribute("aria-busy");
     }
+  }
+
+  // Ignores repeat activations, like a double-click, until the action has
+  // finished and ACTION_REPEAT_DELAY_MS has passed.
+  async _runRowAction(row, action) {
+    if (row.hasAttribute("aria-busy")) {
+      return;
+    }
+    row.setAttribute("aria-busy", "true");
+    try {
+      await Promise.all([
+        action(),
+        new Promise(resolve => setTimeout(resolve, ACTION_REPEAT_DELAY_MS)),
+      ]);
+    } finally {
+      row.removeAttribute("aria-busy");
+    }
+  }
+
+  // Doesn't skip the active tab, matching per-row and bulk-bar unload.
+  async _unloadOrReloadSiteRow(row, reload) {
+    let eligible = row.group.tabs.filter(
+      tabData => !!tabData.discarded == reload
+    );
+    if (eligible.length) {
+      this._recordTabAction(
+        eligible,
+        reload ? "reload" : "unload",
+        "site_header"
+      );
+    }
+    await this._unloadOrReloadTabs(eligible, reload);
   }
 
   _recordTabAction(tabDataList, actionType, actionSource) {

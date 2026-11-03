@@ -253,6 +253,148 @@ add_task(async function testStaleSoloStateDoesNotSurviveSiteDisappearing() {
   BrowserTestUtils.removeTab(tabThree);
 });
 
+add_task(async function testSiteHeaderCheckboxSelectsAllChildTabs() {
+  let tabOne = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "Header checkbox 1"
+  );
+  let tabTwo = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "Header checkbox 2"
+  );
+
+  let { tabAboutProcesses, doc } = await openTabView();
+  let headerRow = findSiteHeaderRow(doc, "example.org");
+  clickRow(headerRow.querySelector(".caret-icon"));
+  let children = childRowsOf(headerRow);
+  Assert.equal(
+    headerRow.checkbox.getAttribute("aria-labelledby"),
+    headerRow.label.id,
+    "The header checkbox is named by its site"
+  );
+
+  info("Checking the header checkbox selects every child tab");
+  clickRow(headerRow.querySelector(".select-checkbox"));
+  for (let child of children) {
+    Assert.ok(child.hasAttribute("selected"), "Child row is selected");
+  }
+  Assert.ok(headerRow.checkbox.checked, "Header checkbox reads checked");
+  Assert.ok(
+    !headerRow.checkbox.indeterminate,
+    "Not indeterminate when all children are selected"
+  );
+
+  info("Deselecting one child makes the header checkbox indeterminate");
+  clickRow(children[0].querySelector(".select-checkbox"));
+  Assert.ok(!headerRow.checkbox.checked, "No longer fully checked");
+  Assert.ok(
+    headerRow.checkbox.indeterminate,
+    "Indeterminate with a partial child selection"
+  );
+  Assert.ok(
+    headerRow.hasAttribute("selected"),
+    "Header highlights while any child is selected"
+  );
+
+  info("Checking the header checkbox again re-selects every child");
+  clickRow(headerRow.querySelector(".select-checkbox"));
+  for (let child of children) {
+    Assert.ok(child.hasAttribute("selected"), "Every child selected again");
+  }
+
+  info("Unchecking the header checkbox clears every child's selection");
+  clickRow(headerRow.querySelector(".select-checkbox"));
+  for (let child of children) {
+    Assert.ok(!child.hasAttribute("selected"), "Every child cleared");
+  }
+  Assert.ok(
+    !headerRow.hasAttribute("selected"),
+    "Header not highlighted with nothing selected"
+  );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+  BrowserTestUtils.removeTab(tabOne);
+  BrowserTestUtils.removeTab(tabTwo);
+});
+
+add_task(async function testSiteRowTogglesToReloadWhenAllTabsDiscarded() {
+  let tabOne = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "Site reload toggle 1"
+  );
+  let tabTwo = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "Site reload toggle 2"
+  );
+
+  let { tabAboutProcesses, doc } = await openTabView();
+  let headerRow = findSiteHeaderRow(doc, "example.org");
+
+  info("Making one of the group's own tabs the active tab");
+  gBrowser.selectedTab = tabOne;
+  Services.fog.testResetFOG();
+  info("Double-clicking unload acts once");
+  let unloadIcon = headerRow.querySelector(".unload-icon");
+  Assert.equal(
+    doc.l10n.getAttributes(unloadIcon).args.site,
+    "example.org",
+    "The site's unload button names its site"
+  );
+  unloadIcon.click();
+  unloadIcon.click();
+  await Promise.all(
+    [tabOne, tabTwo].map(tab =>
+      BrowserTestUtils.waitForMutationCondition(
+        tab,
+        { attributeFilter: ["discarded"] },
+        () => tab.hasAttribute("discarded"),
+        {
+          msg: "The group's currently-active tab is unloaded too, same as per-row and bulk-bar unload",
+        }
+      )
+    )
+  );
+  assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_source: "site_header" },
+    "Only one unload is recorded, as a site_header action"
+  );
+  gBrowser.selectedTab = tabAboutProcesses;
+  await forceTabViewUpdate(tabAboutProcesses);
+  await BrowserTestUtils.waitForMutationCondition(
+    headerRow,
+    { attributeFilter: ["aria-busy"] },
+    () => !headerRow.hasAttribute("aria-busy")
+  );
+
+  headerRow = findSiteHeaderRow(doc, "example.org");
+  Assert.ok(
+    headerRow.classList.contains("killed"),
+    "The site row dims once every child tab is unloaded"
+  );
+  let reloadIcon = headerRow.querySelector(".reload-icon");
+  Assert.ok(
+    reloadIcon,
+    "The site row's action icon flips to reload once every child tab is unloaded"
+  );
+
+  reloadIcon.click();
+  await Promise.all(
+    [tabOne, tabTwo].map(tab =>
+      BrowserTestUtils.waitForMutationCondition(
+        tab,
+        { attributeFilter: ["discarded"] },
+        () => !tab.hasAttribute("discarded"),
+        { msg: "Clicking the site row's reload icon reloads every child tab" }
+      )
+    )
+  );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+  BrowserTestUtils.removeTab(tabOne);
+  BrowserTestUtils.removeTab(tabTwo);
+});
+
 add_task(async function testGlobalExpandCollapseAllSitesSyncsWithRowState() {
   let siteOne = [
     await setupTabWithOriginAndTitle("https://example.org", "Global sync A1"),

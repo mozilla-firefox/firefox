@@ -69,6 +69,8 @@ resource_monitor:
             "tab_row": The action originated from a single tab's own row.
             "bulk_bar": The action originated from the bulk-action bar
               acting on the current multi-select.
+            "site_header": The action originated from a site header row,
+              acting on that site's tabs.
 
   panel_opened:
     type: event
