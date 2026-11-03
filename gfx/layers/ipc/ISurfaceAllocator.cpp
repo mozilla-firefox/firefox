@@ -77,15 +77,17 @@ bool FixedSizeSmallShmemSectionAllocator::AllocShmemSection(
   }
 
   uint32_t allocationSize = (aSize + sizeof(ShmemSectionHeapAllocation));
+  // The heap header lives in shared memory and can be modified by the other
+  // process, so its values must be bounded before being used as offsets.
+  const uint32_t maxBlocks =
+      (sShmemPageSize - sizeof(ShmemSectionHeapHeader) - 1) / allocationSize;
 
   ipc::Shmem shmem;
 
   for (size_t i = 0; i < mUsedShmems.size(); i++) {
     ShmemSectionHeapHeader* header =
         mUsedShmems[i].get<ShmemSectionHeapHeader>();
-    if ((header->mAllocatedBlocks + 1) * allocationSize +
-            sizeof(ShmemSectionHeapHeader) <
-        sShmemPageSize) {
+    if (header->mAllocatedBlocks < maxBlocks) {
       shmem = mUsedShmems[i];
       MOZ_RELEASE_ASSERT(mUsedShmems[i].IsWritable());
       break;
@@ -111,24 +113,37 @@ bool FixedSizeSmallShmemSectionAllocator::AllocShmemSection(
   ShmemSectionHeapHeader* header = shmem.get<ShmemSectionHeapHeader>();
   uint8_t* heap = shmem.get<uint8_t>() + sizeof(ShmemSectionHeapHeader);
 
+  const uint32_t totalBlocks = header->mTotalBlocks;
+  if (totalBlocks > maxBlocks) {
+    gfxCriticalNote << "Invalid ShmemSection heap header";
+    return false;
+  }
+
   ShmemSectionHeapAllocation* allocHeader = nullptr;
 
-  if (header->mTotalBlocks > header->mAllocatedBlocks) {
+  if (totalBlocks > header->mAllocatedBlocks) {
     // Search for the first available block.
-    for (size_t i = 0; i < header->mTotalBlocks; i++) {
-      allocHeader = reinterpret_cast<ShmemSectionHeapAllocation*>(heap);
-
-      if (allocHeader->mStatus == STATUS_FREED) {
+    for (size_t i = 0; i < totalBlocks; i++) {
+      auto* block = reinterpret_cast<ShmemSectionHeapAllocation*>(heap);
+      if (block->mStatus == STATUS_FREED) {
+        allocHeader = block;
         break;
       }
       heap += allocationSize;
     }
-    MOZ_RELEASE_ASSERT(allocHeader && allocHeader->mStatus == STATUS_FREED);
+    if (!allocHeader) {
+      gfxCriticalNote << "Invalid ShmemSection heap header";
+      return false;
+    }
     MOZ_RELEASE_ASSERT(allocHeader->mSize == sSupportedBlockSize);
   } else {
-    heap += header->mTotalBlocks * allocationSize;
+    if (totalBlocks == maxBlocks) {
+      gfxCriticalNote << "Invalid ShmemSection heap header";
+      return false;
+    }
+    heap += totalBlocks * allocationSize;
 
-    header->mTotalBlocks++;
+    header->mTotalBlocks = totalBlocks + 1;
     allocHeader = reinterpret_cast<ShmemSectionHeapAllocation*>(heap);
     allocHeader->mSize = aSize;
   }
