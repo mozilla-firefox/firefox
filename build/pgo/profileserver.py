@@ -6,6 +6,7 @@
 
 import glob
 import os
+import re
 import subprocess
 import sys
 
@@ -26,6 +27,51 @@ PATH_MAPPINGS = {
     # refer to scripts located in `../..`.
     "/talos": "testing/talos/talos",
 }
+
+
+BENCHMARK_DONE = (
+    "globalThis.opener && globalThis.opener.postMessage({pgoBenchmarkDone: true}, '*');"
+)
+
+
+def benchmark_done_handler(url_path, file_path, transform):
+    """Serve the benchmark script at file_path after passing it through
+    transform, which adds a completion message to the PGO driver page
+    (see index.html)."""
+    with open(file_path, encoding="utf-8") as f:
+        content = transform(f.read(), file_path)
+
+    def handler(request):
+        return (200, {"Content-Type": "text/javascript"}, content)
+
+    return {"method": "GET", "path": re.escape(url_path) + "$", "function": handler}
+
+
+def after_anchor(anchor):
+    def transform(content, file_path):
+        if anchor not in content:
+            raise Exception(
+                f"Could not find {anchor!r} in {file_path}. If this benchmark was "
+                "updated, update its completion anchor in build/pgo/profileserver.py."
+            )
+        return content.replace(anchor, anchor + BENCHMARK_DONE, 1)
+
+    return transform
+
+
+def on_event(event):
+    def transform(content, file_path):
+        if f'"{event}"' not in content:
+            raise Exception(
+                f"{file_path} no longer dispatches {event!r}. If this benchmark was "
+                "updated, update its completion event in build/pgo/profileserver.py."
+            )
+        listener = (
+            f"globalThis.addEventListener({event!r}, () => {{{BENCHMARK_DONE}}});"
+        )
+        return f"{content}\n{listener}\n"
+
+    return transform
 
 
 def get_crashreports(directory, name=None):
@@ -101,21 +147,42 @@ if __name__ == "__main__":
     path_mappings = {
         k: os.path.join(build.topsrcdir, v) for k, v in PATH_MAPPINGS.items()
     }
+    webkit_dir = os.path.join(
+        build.topsrcdir, "third_party", "webkit", "PerformanceTests"
+    )
     httpd = MozHttpd(
         port=PORT,
         docroot=os.path.join(build.topsrcdir, "build", "pgo"),
         path_mappings=path_mappings,
+        urlhandlers=[
+            benchmark_done_handler(
+                "/webkit/PerformanceTests/Speedometer/resources/main.js",
+                os.path.join(webkit_dir, "Speedometer", "resources", "main.js"),
+                after_anchor("didFinishLastIteration: function () {"),
+            ),
+            benchmark_done_handler(
+                "/webkit/PerformanceTests/webaudio/webaudio-bench.js",
+                os.path.join(webkit_dir, "webaudio", "webaudio-bench.js"),
+                after_anchor("window.postMessage(_data, '*');"),
+            ),
+        ],
     )
     httpd.start(block=False)
 
     # Speedometer3 must run in its own server. The benchmark assumes that it
     # is in a root path, and will fail if it's not.
+    sp3_dir = os.path.join(webkit_dir, "Speedometer3")
     sp3_httpd = MozHttpd(
         port=8000,
-        docroot=os.path.join(
-            build.topsrcdir, "third_party", "webkit", "PerformanceTests", "Speedometer3"
-        ),
+        docroot=sp3_dir,
         path_mappings=path_mappings,
+        urlhandlers=[
+            benchmark_done_handler(
+                "/resources/main.mjs",
+                os.path.join(sp3_dir, "resources", "main.mjs"),
+                after_anchor("didFinishLastIteration(metrics) {"),
+            )
+        ],
     )
     sp3_httpd.start(block=False)
     print("started SP3 server on port 8000")
@@ -132,6 +199,13 @@ if __name__ == "__main__":
         js3_httpd = MozHttpd(
             port=8001,
             docroot=js3_dir,
+            urlhandlers=[
+                benchmark_done_handler(
+                    "/JetStreamDriver.js",
+                    os.path.join(js3_dir, "JetStreamDriver.js"),
+                    on_event("JetStreamDone"),
+                )
+            ],
         )
         js3_httpd.start(block=False)
         print("started JS3 server on port 8001")

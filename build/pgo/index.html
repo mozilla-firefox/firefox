@@ -11,12 +11,29 @@
   var hasExtendedCorpus =
     new URLSearchParams(location.search).get("extendedCorpus") == "true";
 
-  function waitTimeout(time) {
+  // How long to keep an item open after it signals that it is done, so that
+  // trailing work such as painting still gets profiled.
+  var loadGracePeriod = 500;
+  var reportGracePeriod = 250;
+  var benchmarkGracePeriod = 2 * 1000;
+
+  function waitTimeout(time, win = window) {
     return new Promise(resolve => {
-      window.setTimeout(() => {
+      win.setTimeout(() => {
         resolve();
       }, time);
     });
+  }
+
+  // This page is in a background tab while items run, so its own timers are
+  // clamped. Prefer the item's window for short waits when it is same-origin.
+  function timerWindow(subWindow) {
+    try {
+      if (typeof subWindow.setTimeout == "function") {
+        return subWindow;
+      }
+    } catch (e) {}
+    return window;
   }
 
   /**
@@ -25,23 +42,83 @@
   class Item {
     url;
     timeout;
+    waitFor;
 
-    constructor(url, timeout = defaultTimeout) {
+    /**
+     * @param {string} url URL to open.
+     * @param {number} timeout Maximum time to keep the item open.
+     * @param {string} waitFor What signals that the item is done: "load" for the load
+     *   event, "report" for a perf-reftest-singleton calling tpRecordTime,
+     *   "benchmark" for a completion message posted by the benchmark, or
+     *   "timeout" to always wait for the full timeout.
+     */
+    constructor(url, timeout = defaultTimeout, waitFor = "load") {
       this.url = url;
       this.timeout = timeout;
+      this.waitFor = waitFor;
     }
 
     async run() {
+      let finished;
+      let completed = new Promise(resolve => {
+        finished = resolve;
+      });
       var subWindow = window.open(this.url);
+      let onMessage = e => {
+        if (e.source === subWindow && e.data && e.data.pgoBenchmarkDone) {
+          finished(benchmarkGracePeriod);
+        }
+      };
 
       // Prevent the perf-reftest-singletons from calling alert()
-      subWindow.tpRecordTime = function () {};
+      subWindow.tpRecordTime = () => {
+        if (this.waitFor == "report") {
+          finished(reportGracePeriod);
+        }
+      };
+      if (this.waitFor == "load") {
+        watchLoad(subWindow, () => finished(loadGracePeriod));
+      } else if (this.waitFor == "benchmark") {
+        window.addEventListener("message", onMessage);
+      }
 
-      // Wait until the timeout is finished
-      await waitTimeout(this.timeout);
+      let gracePeriod = await Promise.race([
+        completed,
+        waitTimeout(this.timeout),
+      ]);
+      window.removeEventListener("message", onMessage);
+      if (gracePeriod !== undefined) {
+        await waitTimeout(gracePeriod, timerWindow(subWindow));
+      }
 
       subWindow.close();
     }
+  }
+
+  function watchLoad(subWindow, callback) {
+    let loaded = () => {
+      try {
+        return (
+          subWindow.location.href != "about:blank" &&
+          subWindow.document.readyState == "complete"
+        );
+      } catch (e) {
+        return false;
+      }
+    };
+    subWindow.addEventListener("load", () => {
+      if (loaded()) {
+        callback();
+      }
+    });
+    let poll = window.setInterval(() => {
+      if (subWindow.closed || loaded()) {
+        window.clearInterval(poll);
+        if (!subWindow.closed) {
+          callback();
+        }
+      }
+    }, 100);
   }
 
   var defaultItemUrls = [
@@ -117,18 +194,33 @@
   ];
 
   // Start with items with the default timeout
-  var items = defaultItemUrls.map(x => new Item(x));
+  var items = defaultItemUrls.map(x => {
+    if (x.includes("perf-reftest-singletons")) {
+      return new Item(x, defaultTimeout, "report");
+    }
+    // This page animates continuously, so it never finishes on its own.
+    if (x.endsWith("3d-thingy.html")) {
+      return new Item(x, defaultTimeout, "timeout");
+    }
+    return new Item(x);
+  });
 
   // Add items that needs longer timeouts
   items.push(
-    new Item("webkit/PerformanceTests/Speedometer/index.html", extendedTimeout),
+    new Item(
+      "webkit/PerformanceTests/Speedometer/index.html",
+      extendedTimeout,
+      "benchmark"
+    ),
     new Item(
       "http://localhost:8000/index.html?startAutomatically=true",
-      extendedTimeout
+      extendedTimeout,
+      "benchmark"
     ),
     new Item(
       "webkit/PerformanceTests/webaudio/index.html?raptor&rendering-buffer-length=30",
-      extendedTimeout
+      extendedTimeout,
+      "benchmark"
     )
   );
 
@@ -137,7 +229,8 @@
     items.push(
       new Item(
         "http://localhost:8001/index.html?startAutomatically=true&testIterationCount=3&worstCaseCount=1",
-        superExtendedTimeout
+        superExtendedTimeout,
+        "benchmark"
       )
     );
   }
