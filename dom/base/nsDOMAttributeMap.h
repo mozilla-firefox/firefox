@@ -16,6 +16,7 @@
 #include "nsWrapperCache.h"
 
 class nsAtom;
+class nsAttrValue;
 class nsINode;
 class nsIPrincipal;
 class nsNodeInfoManager;
@@ -112,8 +113,10 @@ class nsDOMAttributeMap final : public nsISupports, public nsWrapperCache {
   /**
    * Drop an attribute from the map's cache (does not remove the attribute
    * from the node!)
+   * aValue is optional and avoids looking up the attribute value when supplied.
    */
-  void DropAttribute(int32_t aNamespaceID, nsAtom* aLocalName);
+  void DropAttribute(int32_t aNamespaceID, nsAtom* aLocalName,
+                     const nsAttrValue* aValue = nullptr);
 
   /**
    * Returns the number of attribute nodes currently in the map.

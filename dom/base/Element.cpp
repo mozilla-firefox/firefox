@@ -1897,10 +1897,7 @@ already_AddRefed<Attr> Element::RemoveAttributeNode(Attr& aAttribute,
     return nullptr;
   }
 
-  nsAutoString nameSpaceURI;
-  aAttribute.NodeInfo()->GetNamespaceURI(nameSpaceURI);
-  return Attributes()->RemoveNamedItemNS(
-      nameSpaceURI, aAttribute.NodeInfo()->LocalName(), aError);
+  return Attributes()->RemoveNamedItem(aAttribute.NodeInfo(), aError);
 }
 
 void Element::GetAttributeNS(const nsAString& aNamespaceURI,
@@ -4520,10 +4517,14 @@ int32_t Element::FindAttrValueIn(int32_t aNameSpaceID, const nsAtom* aName,
   return mAttrs.FindAttrValueIn(aNameSpaceID, aName, aValues, aCaseSensitive);
 }
 
-nsresult Element::UnsetAttr(int32_t aNameSpaceID, nsAtom* aName, bool aNotify) {
+nsresult Element::UnsetAttr(int32_t aNameSpaceID, nsAtom* aName, bool aNotify,
+                            bool* aHadValue) {
   NS_ASSERTION(nullptr != aName, "must have attribute name");
 
   int32_t index = mAttrs.IndexOfAttr(aName, aNameSpaceID);
+  if (aHadValue) {
+    *aHadValue = index >= 0;
+  }
   if (index < 0) {
     return NS_OK;
   }
@@ -4543,7 +4544,8 @@ nsresult Element::UnsetAttr(int32_t aNameSpaceID, nsAtom* aName, bool aNotify) {
   // Clear the attribute out from attribute map.
   nsDOMSlots* slots = GetExistingDOMSlots();
   if (slots && slots->mAttributeMap) {
-    slots->mAttributeMap->DropAttribute(aNameSpaceID, aName);
+    slots->mAttributeMap->DropAttribute(aNameSpaceID, aName,
+                                        mAttrs.AttrAt(index));
   }
 
   // The id-handling code, and in the future possibly other code, need to
