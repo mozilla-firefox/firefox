@@ -770,6 +770,10 @@ export class DevToolsStartup {
           this.onBeforeCreated(anchor.ownerDocument);
         },
         onBeforeCreated: doc => {
+          if (doc.documentElement.hasAttribute("mini-window")) {
+            return;
+          }
+
           // The developer toggle needs the "key_toggleToolbox" <key> element.
           // In DEV EDITION, the toggle is added before 1st paint and hookKeyShortcuts() is
           // not called yet when CustomizableUI creates the widget.
