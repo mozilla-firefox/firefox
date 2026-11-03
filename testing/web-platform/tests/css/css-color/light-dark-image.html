@@ -190,6 +190,9 @@ test_light_dark_image(
 );
 
 test(() => {
+  if (!CSS.supports("background-image", "-webkit-cross-fade(url('a.png'), url('b.png'), 50%")) {
+    return;
+  }
   for (let element of [light, dark]) {
     element.style.setProperty("background-image", "");
     element.style.setProperty(
