@@ -1,10 +1,8 @@
-import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.FilterConfiguration
 
 import java.time.format.DateTimeFormatter
 
 import org.mozilla.conventions.WriteRuntimeDependencies
-import org.mozilla.conventions.WriteBuildMetadata
 
 import static org.mozilla.conventions.BuildConfigKt.getBuildId
 
@@ -337,18 +335,6 @@ androidComponents {
             versionName = variant.outputs.first().versionName
             outputFile = layout.buildDirectory.file("sbom/${variant.name}-runtime-dependencies.json")
         }
-    }
-}
-
-androidComponents {
-    onVariants(selector().all()) { variant ->
-        if (!variant.minifyEnabled) {
-            return
-        }
-        def writeBuildMetadata = tasks.register("writeBuildMetadata${variant.name.capitalize()}", WriteBuildMetadata) {
-            mappingFile = variant.artifacts.get(SingleArtifact.OBFUSCATION_MAPPING_FILE.INSTANCE)
-        }
-        variant.sources.assets.addGeneratedSourceDirectory(writeBuildMetadata) { it.outputDir }
     }
 }
 
