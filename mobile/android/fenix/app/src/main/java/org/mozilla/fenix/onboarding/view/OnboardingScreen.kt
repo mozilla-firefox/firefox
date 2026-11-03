@@ -50,10 +50,13 @@ import kotlinx.coroutines.launch
 import mozilla.components.compose.base.PagerIndicator
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.lib.state.ext.observeAsComposableState
+import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.components
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.isLargeScreenSize
+
+private val logger = Logger("OnboardingScreen")
 
 /** The small device max height. The value comes from [org.mozilla.fenix.ext.isTallWindow]. */
 private val SMALL_SCREEN_MAX_HEIGHT = 570.dp
@@ -157,7 +160,12 @@ fun OnboardingScreen(
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }
             .collect { page ->
-                onImpression(pagesToDisplay[page])
+                val pageUiData = pagesToDisplay.getOrNull(page)
+                if (pageUiData != null) {
+                    onImpression(pageUiData)
+                } else {
+                    logger.warn("Skipping impression for page $page, only ${pagesToDisplay.size} pages to display")
+                }
             }
     }
 
