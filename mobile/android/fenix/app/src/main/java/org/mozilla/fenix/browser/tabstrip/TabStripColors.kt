@@ -9,14 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.wallpapers.WallpaperTheme
 
 /**
  * Represents the colors for the tab strip.
  *
  * @property backgroundBrush The brush used to paint the tab strip background. Use [SolidColor] with a transparent color
- *   to let edge-to-edge wallpapers show through, or a gradient brush for the standard tab strip background.
+ *   to let edge-to-edge wallpapers show through.
  * @property tabItemBackgroundColors The background colors of the tab strip items.
  * @property tabItemContentColors The colors of the tab strip item titles.
  * @property closeButtonColors The colors of the tab strip item close buttons.
@@ -65,7 +64,7 @@ data class TabStripColors(
         @Composable
         fun default() =
             TabStripColors(
-                backgroundBrush = FirefoxTheme.gradients.accentSubtle.brush,
+                backgroundBrush = SolidColor(MaterialTheme.colorScheme.surface),
                 tabItemBackgroundColors =
                     TabColors(
                         activeColor = MaterialTheme.colorScheme.surface,

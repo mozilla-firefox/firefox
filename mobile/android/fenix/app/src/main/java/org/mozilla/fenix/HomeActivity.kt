@@ -201,7 +201,6 @@ import org.mozilla.fenix.splashscreen.SplashScreenOperation
 import org.mozilla.fenix.tabhistory.TabHistoryDialogFragment
 import org.mozilla.fenix.theme.DefaultThemeManager
 import org.mozilla.fenix.theme.StatusBarColorManager
-import org.mozilla.fenix.theme.TabStripStatusBarView
 import org.mozilla.fenix.theme.ThemeManager
 import org.mozilla.fenix.translations.TranslationsAIControllableFeatureRegistrar
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
@@ -704,13 +703,6 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             StatusBarColorManager(
                 themeManager = themeManager,
                 activity = this,
-                appStore = components.appStore,
-                settings = components.settings,
-                tabStripStatusBarView =
-                    TabStripStatusBarView(
-                        rootView = window.decorView as ViewGroup,
-                        lifecycle = lifecycle,
-                    ),
             ),
             true,
         )

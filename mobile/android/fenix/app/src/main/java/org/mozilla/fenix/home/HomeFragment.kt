@@ -1086,7 +1086,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         // Tabs will not be shown as selected on the homepage when Homepage as a New Tab is not
         // enabled.
         val isSelectDisabled = !requireComponents.settings.enableHomepageAsNewTab
-        // Tab strip doesn't show the gradient when displayed over edge to edge wallpaper.
+        // Tab strip doesn't show its background when displayed over edge to edge wallpaper.
         val isOverEdgeToEdgeWallpaper =
             requireComponents.appStore.observeAsComposableState { isOverUniversalEdgeToEdgeWallpaper(it) }.value
 
