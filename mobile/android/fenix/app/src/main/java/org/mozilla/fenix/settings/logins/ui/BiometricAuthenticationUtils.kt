@@ -26,6 +26,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.secure
 import org.mozilla.fenix.settings.biometric.BiometricPromptFeature
+import org.mozilla.fenix.settings.biometric.ext.isDeviceLockSetUp
 
 /** Allows handling of biometric authentication with compose. */
 interface BiometricAuthenticationUtils {
@@ -124,10 +125,7 @@ object DefaultBiometricUtils : BiometricAuthenticationUtils {
         biometricPrompt.authenticate(promptInfo)
     }
 
-    override fun canUsePinVerification(activity: FragmentActivity): Boolean {
-        val manager = activity.getSystemService<KeyguardManager>()
-        return manager?.isKeyguardSecure == true
-    }
+    override fun canUsePinVerification(activity: FragmentActivity): Boolean = activity.isDeviceLockSetUp()
 
     /**
      * Builds an intent to be used for starting an activity that will display the pin verification dialog.
