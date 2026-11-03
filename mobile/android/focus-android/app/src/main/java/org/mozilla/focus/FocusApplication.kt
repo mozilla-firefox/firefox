@@ -85,6 +85,10 @@ open class FocusApplication : Application(), Provider {
         super.onCreate()
 
         Log.addSink(AndroidLogSink("Focus"))
+
+        // Read buildMetadata once at startup, so that it is in memory before anything can crash.
+        components.buildMetadata
+
         components.crashReporter.install(this)
 
         if (isMainProcess()) {

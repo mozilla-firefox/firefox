@@ -73,6 +73,7 @@ import mozilla.components.support.remotesettings.DefaultRemoteSettingsSyncSchedu
 import mozilla.components.support.remotesettings.RemoteSettingsServer
 import mozilla.components.support.remotesettings.RemoteSettingsService
 import mozilla.components.support.remotesettings.into
+import mozilla.components.support.utils.BuildMetadata
 import mozilla.components.support.utils.DateTimeProvider
 import mozilla.components.support.utils.DefaultDateTimeProvider
 import mozilla.components.support.utils.DefaultDownloadFileUtils
@@ -282,6 +283,8 @@ class Components(
     val appLinksUseCases: AppLinksUseCases by lazy { AppLinksUseCases(context.applicationContext) }
 
     val customTabsUseCases: CustomTabsUseCases by lazy { CustomTabsUseCases(store, sessionUseCases.loadUrl) }
+
+    val buildMetadata: BuildMetadata by lazy { BuildMetadata.fromAssets(context.assets) }
 
     val crashReporter: CrashReporter by lazy { createCrashReporter(context) }
 
