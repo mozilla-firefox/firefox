@@ -1,0 +1,39 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.install_script_signing
+    - gecko_taskgraph.transforms.task
+
+kind-dependencies:
+    - source-artifact
+
+task-defaults:
+    description: Sign install-firefox.sh with autograph GPG
+    if-dependencies: [source-artifact]
+    # Only ever reached as a dependency of beetmover-install-script; never a
+    # target in its own right.
+    run-on-projects: []
+    worker-type: linux-signing
+    treeherder:
+        kind: other
+        tier: 1
+        platform: linux64/opt
+        symbol: InsS
+    worker:
+        implementation: scriptworker-signing
+        upstream-artifacts:
+            - taskId: {task-reference: '<source-artifact>'}
+              taskType: build
+              formats: [gcp_prod_autograph_gpg]
+              paths: [public/build/install-firefox.sh]
+
+tasks:
+    install-script-signing:
+        from-deps:
+            group-by: single-with-filters
+            copy-attributes: true

@@ -40,6 +40,8 @@ task-defaults:
         skip-unless-changed:
             - browser/installer/linux/script/install-firefox.sh
             - taskcluster/kinds/source-artifact/kind.yml
+            - taskcluster/kinds/install-script-signing/kind.yml
+            - taskcluster/gecko_taskgraph/transforms/install_script_signing.py
 
 tasks:
     linux64:
