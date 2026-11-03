@@ -1,0 +1,57 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.task_context
+    - gecko_taskgraph.transforms.job:transforms
+    - gecko_taskgraph.transforms.task:transforms
+
+task-defaults:
+    description: Fetch install-firefox.sh from GitHub into artifacts for signing
+    # The gate for the whole chain: install-script-signing and
+    # beetmover-install-script only run when this one does
+    # (if-dependencies), so skip-unless-changed below decides for all three.
+    run-on-projects: [mozilla-central-only]
+    worker-type: b-linux
+    treeherder:
+        kind: other
+        tier: 1
+    task-context:
+        from-parameters:
+            head_repository: head_repository
+            head_rev: head_rev
+        substitution-fields:
+            - run.command
+    worker:
+        docker-image: {in-tree: fetch-more}
+        max-run-time: 600
+        chain-of-trust: true
+        artifacts:
+            - name: public/build
+              type: directory
+              path: /builds/worker/artifacts
+    run:
+        using: run-task
+        checkout: false
+    optimization:
+        skip-unless-changed:
+            - browser/installer/linux/script/install-firefox.sh
+            - taskcluster/kinds/source-artifact/kind.yml
+
+tasks:
+    linux64:
+        attributes:
+            build_platform: linux64
+            build_type: opt
+        treeherder:
+            platform: linux64/opt
+            symbol: SA
+        run:
+            command: >-
+                mkdir -p /builds/worker/artifacts &&
+                curl --fail --location --retry 5
+                --output /builds/worker/artifacts/install-firefox.sh
+                {head_repository}/raw/{head_rev}/browser/installer/linux/script/install-firefox.sh

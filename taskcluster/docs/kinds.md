@@ -114,6 +114,15 @@ endpoint for notarizing apps.
 Downstream tasks switch to build-mac-signing in non-shippable builds or level 1
 environments.
 
+## source-artifact
+
+Exposes files from the source tree as artifacts for other tasks. Each task fetches
+its files from GitHub at the revision being built, without a checkout, and publishes
+them under ``public/build`` so downstream tasks can sign, test or publish them.
+
+For example, ``install-firefox.sh`` is fetched here, then signed by
+``install-script-signing`` and published by ``beetmover-install-script``.
+
 ## source-test
 
 Source-tests are tasks that run directly from the Gecko source. This can include linting,
