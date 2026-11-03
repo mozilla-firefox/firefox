@@ -163,14 +163,7 @@ add_task(async function testMouseoverFreezesExistingRowOrderOnly() {
   let rowOne = findTabRow(doc, "Freeze test 1");
   let rowOneIndex = [...tbody.children].indexOf(rowOne);
 
-  info("Moving the mouse over the tab list to start the freeze window");
-  EventUtils.synthesizeMouse(
-    tbody,
-    5,
-    5,
-    { type: "mousemove" },
-    doc.defaultView
-  );
+  startMouseFreeze(doc);
 
   let tabTwo = await setupTabWithOriginAndTitle(
     "https://example.net",
@@ -208,12 +201,14 @@ add_task(async function testMouseoverFreezesExistingRowOrderOnly() {
 });
 
 add_task(async function testFaviconAndColumnSort() {
+  // Site order (example.net < example.org) is the reverse of title order, so
+  // solo rows must sort by their displayed title, not their site.
   let tabZebra = await setupTabWithOriginAndTitle(
-    "https://example.org",
+    "https://example.net",
     "Zebra tab"
   );
   let tabApple = await setupTabWithOriginAndTitle(
-    "https://example.net",
+    "https://example.org",
     "Apple tab"
   );
   // Set directly on the <tab> element rather than relying on a real favicon

@@ -23,6 +23,17 @@ about-processes-reload-tab =
     .title = Reload tab
 about-processes-select-all-tabs =
     .title = Select all tabs
+# A site is the set of open tabs on one domain, e.g. example.com and its
+# subdomains.
+about-processes-expand-site =
+    .title = Expand this site’s tabs
+# See about-processes-expand-site for what a site is.
+about-processes-collapse-site =
+    .title = Collapse this site’s tabs
+about-processes-expand-all-sites =
+    .title = Expand all
+about-processes-collapse-all-sites =
+    .title = Collapse all
 
 # Profiler icons
 # Variables:
@@ -140,6 +151,14 @@ about-processes-tab-count = { $count ->
 about-processes-bulk-selected-count = { $count ->
    [one] { $count } tab selected
   *[other] { $count } tabs selected
+}
+
+# Shown next to a site’s label in a group header row.
+# Variables:
+#   $count (Number) The number of tabs in the site group.
+about-processes-site-tab-count = { $count ->
+   [one] ({ $count } tab)
+  *[other] ({ $count } tabs)
 }
 
 # Bulk-action bar icon button: clears the selection without acting on it.

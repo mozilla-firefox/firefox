@@ -48,6 +48,13 @@ ChromeUtils.defineLazyGetter(this, "ProfilerPopupBackground", function () {
 
 const { WebExtensionPolicy } = Cu.getGlobalForObject(Services);
 
+XPCOMUtils.defineLazyServiceGetter(
+  this,
+  "IDNService",
+  "@mozilla.org/network/idn-service;1",
+  Ci.nsIIDNService
+);
+
 const SHOW_THREADS = Services.prefs.getBoolPref(
   "toolkit.aboutProcesses.showThreads"
 );
@@ -152,6 +159,29 @@ function* iterateBrowsingContexts(browsingContext) {
   yield browsingContext;
   for (let child of browsingContext.children) {
     yield* iterateBrowsingContexts(child);
+  }
+}
+
+// Host-less URIs group under their scheme, except about: pages, which group
+// per page ignoring the query (about:reader?url=...).
+function getSiteKey(uri) {
+  try {
+    return Services.eTLD.getSchemelessSite(uri) || uri.scheme;
+  } catch (e) {
+    return uri.schemeIs("about") ? uri.prePath + uri.filePath : uri.scheme;
+  }
+}
+
+// Shown in place of the key: punycode decoded under the address bar's
+// spoofing rules, and an extension's name rather than its UUID.
+function getSiteLabel(uri, siteKey) {
+  if (uri.schemeIs("moz-extension")) {
+    return WebExtensionPolicy.getByHostname(uri.host)?.name ?? siteKey;
+  }
+  try {
+    return IDNService.convertToDisplayIDN(siteKey);
+  } catch (e) {
+    return siteKey;
   }
 }
 
@@ -289,11 +319,14 @@ class TabAttribution {
               : slopeCpuOneCore + slopeCpu * share;
         }
       }
+      let siteKey = getSiteKey(tab.uri);
       return {
         tab: tab.tab,
         tabbrowser: tab.tabbrowser,
         uri: tab.uri,
         title: tab.title,
+        siteKey,
+        siteLabel: getSiteLabel(tab.uri, siteKey),
         discarded: tab.discarded,
         // False for discarded/never-loaded tabs and ones whose process
         // isn't in `counters` at all -- shown as "—", not a misleading 0.
@@ -1958,10 +1991,34 @@ function fillTabCpuCell(cell, slopeCpuOfTotal, hasUsageData = true) {
 class ProcessesTabView extends RowSet {
   #nextRowId = 0;
 
-  commit(tabCounters, { reorder = true } = {}) {
-    for (let tabData of tabCounters) {
-      let row = this._getOrCreateRow(tabData.tab, () => this._createRow());
-      this._updateRow(row, tabData);
+  // groups drives the rows; tabCounters is only for the flat totals-bar sum.
+  commit(tabCounters, groups, { reorder = true } = {}) {
+    for (let group of groups) {
+      // A new group waits for the reorder, so no row shifts under the cursor.
+      if (group.solo || (!reorder && !this.getRow(group.siteKey))) {
+        for (let tabData of group.tabs) {
+          this._getOrCreateTabRow(tabData).classList.remove(
+            "child-row",
+            "collapsed"
+          );
+        }
+        continue;
+      }
+      let headerRow = this._getOrCreateRow(group.siteKey, () =>
+        // A solo tab gaining a sibling opens its new group, so the tab being
+        // looked at doesn't disappear.
+        this._createHeaderRow(
+          group.tabs.some(tabData => {
+            let row = this.getRow(tabData.tab);
+            return row && !row.classList.contains("child-row");
+          })
+        )
+      );
+      this._updateHeaderRow(headerRow, group);
+      for (let tabData of group.tabs) {
+        this._getOrCreateTabRow(tabData).classList.add("child-row");
+      }
+      this.setSiteExpanded(headerRow, headerRow.classList.contains("expanded"));
     }
     if (reorder) {
       this._commitOrder();
@@ -1969,6 +2026,87 @@ class ProcessesTabView extends RowSet {
       this._discardOrder();
     }
     this._updateTotals(tabCounters);
+  }
+
+  _getOrCreateTabRow(tabData) {
+    let row = this._getOrCreateRow(tabData.tab, () => this._createTabRow());
+    this._updateRow(row, tabData);
+    return row;
+  }
+
+  _createRow(className) {
+    const cellCount = 5;
+    let row = document.createElement("tr");
+    row.className = className;
+    while (row.children.length < cellCount) {
+      row.appendChild(document.createElement("td"));
+    }
+    row.children[0].className = "select-cell";
+    return row;
+  }
+
+  _createHeaderRow(expanded) {
+    let row = this._createRow("site-header-row");
+    row.classList.toggle("expanded", expanded);
+    let nameCell = row.children[1];
+
+    let label = document.createElement("span");
+    label.className = "site-label";
+    label.id = `site-label-${this.#nextRowId++}`;
+    row.label = label;
+
+    let caret = document.createElement("button");
+    caret.className = "caret-icon ghost-button icon-button";
+    caret.setAttribute("aria-labelledby", label.id);
+    nameCell.appendChild(caret);
+    row.caret = caret;
+
+    let favicon = document.createElement("span");
+    favicon.className = "site-favicon";
+    nameCell.appendChild(favicon);
+    row.favicon = favicon;
+
+    nameCell.appendChild(label);
+
+    let tabCount = document.createElement("span");
+    tabCount.className = "site-tab-count";
+    // l10n fills the count asynchronously, and an empty span can't be clicked.
+    tabCount.textContent = " ";
+    nameCell.appendChild(tabCount);
+    row.tabCount = tabCount;
+
+    return row;
+  }
+
+  // The header row's .expanded class is the group's expanded state.
+  setSiteExpanded(row, expanded) {
+    row.classList.toggle("expanded", expanded);
+    row.caret.setAttribute("aria-expanded", expanded);
+    document.l10n.setAttributes(
+      row.caret,
+      expanded ? "about-processes-collapse-site" : "about-processes-expand-site"
+    );
+    for (let tabData of row.group.tabs) {
+      this.getRow(tabData.tab).classList.toggle("collapsed", !expanded);
+    }
+  }
+
+  _updateHeaderRow(row, group) {
+    row.group = group;
+    let [, nameCell, memoryCell, cpuCell] = row.children;
+    nameCell.className = "name";
+    // The group's first tab stands in for the site; a real element rather than
+    // td.favicon's background, which leaves no room for the caret.
+    let image = group.tabs[0].tab.getAttribute("image");
+    row.favicon.style.backgroundImage = image ? `url('${image}')` : "";
+    row.label.textContent = group.siteLabel;
+    document.l10n.setAttributes(
+      row.tabCount,
+      "about-processes-site-tab-count",
+      { count: group.tabs.length }
+    );
+    fillTabMemoryCell(memoryCell, group.totalRamSize);
+    fillTabCpuCell(cpuCell, group.slopeCpuOfTotal);
   }
 
   _updateTotals(tabCounters) {
@@ -1988,28 +2126,28 @@ class ProcessesTabView extends RowSet {
   // rows' DOM position stays untouched either way.
   _discardOrder() {
     let tbody = document.getElementById("process-tbody");
-    for (let row of this._orderedRows) {
-      if (!row.parentNode) {
+    // A new tab in an existing group joins it instead of the end of the list.
+    let rows = this._orderedRows;
+    for (let [i, row] of rows.entries()) {
+      if (row.parentNode) {
+        continue;
+      }
+      if (row.classList.contains("child-row")) {
+        rows[i - 1].after(row);
+      } else {
         tbody.appendChild(row);
       }
     }
     this._orderedRows = [];
   }
 
-  _createRow() {
-    const cellCount = 5;
-    let row = document.createElement("tr");
-    row.className = "tab-row";
-    while (row.children.length < cellCount) {
-      row.appendChild(document.createElement("td"));
-    }
+  _createTabRow() {
+    let row = this._createRow("tab-row");
 
-    let selectCell = row.children[0];
-    selectCell.className = "select-cell";
     let checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.className = "select-checkbox";
-    selectCell.appendChild(checkbox);
+    row.children[0].appendChild(checkbox);
     row.checkbox = checkbox;
 
     let nameLink = document.createElement("button");
@@ -2139,6 +2277,11 @@ class ProcessesTabController {
       .getElementById("bulk-cancel-button")
       .addEventListener("click", () => this._clearSelection());
 
+    this._expandAllButton = document.getElementById("expand-all-button");
+    this._expandAllButton.addEventListener("click", () =>
+      this._toggleAllSites()
+    );
+
     let tbody = document.getElementById("process-tbody");
 
     // Single click, and Enter/Space keypress: close a tab. One delegate at
@@ -2146,6 +2289,14 @@ class ProcessesTabController {
     // rather than a listener per row.
     tbody.addEventListener("click", event => {
       this._lastMouseEvent = Date.now();
+      let headerRow = event.target.closest("tr.site-header-row");
+      if (headerRow) {
+        // The label and count are mouse-only; the caret is the keyboard path.
+        if (event.target.closest(".caret-icon, .site-label, .site-tab-count")) {
+          this._toggleSite(headerRow);
+        }
+        return;
+      }
       this._handleActivate(event.target);
       let row = event.target.closest("tr.tab-row");
       if (row) {
@@ -2421,24 +2572,96 @@ class ProcessesTabController {
     this._commitView(this._lastTabCounters, { force: true });
   }
 
-  _sortTabCounters(tabCounters) {
-    let order;
+  // Also ranks groups, whose aggregates share tabData's field names.
+  _getSortOrder() {
     switch (this._sortColumn) {
       case "column-name":
-        order = (a, b) =>
+        return (a, b) =>
           (a.title || "").localeCompare(b.title || "") ||
           (a.uri?.spec ?? "").localeCompare(b.uri?.spec ?? "");
-        break;
       case "column-cpu-total":
-        order = (a, b) => a.slopeCpuOfTotal - b.slopeCpuOfTotal;
-        break;
+        return (a, b) => a.slopeCpuOfTotal - b.slopeCpuOfTotal;
       case "column-memory-resident":
-        order = (a, b) => a.totalRamSize - b.totalRamSize;
-        break;
+        return (a, b) => a.totalRamSize - b.totalRamSize;
       default:
         throw new Error("Unsupported order: " + this._sortColumn);
     }
+  }
+
+  _sortTabCounters(tabCounters) {
+    let order = this._getSortOrder();
     tabCounters.sort(this._sortAscendent ? order : (a, b) => order(b, a));
+  }
+
+  // Groups the sorted tabCounters by site, keeping each site's tabs in order,
+  // then ranks the groups by the same column, by their displayed name.
+  _groupTabsBySite(tabCounters, reorder) {
+    let displayedGroups = new Map();
+    if (!reorder) {
+      for (let row of this._getHeaderRows()) {
+        for (let { tab } of row.group.tabs) {
+          displayedGroups.set(tab, row.group);
+        }
+      }
+    }
+    let groups = [];
+    for (let [siteKey, tabs] of Map.groupBy(
+      tabCounters,
+      tabData =>
+        displayedGroups.get(tabData.tab)?.siteKey ??
+        (!reorder && this._view.getRow(tabData.tab)
+          ? tabData.tab
+          : tabData.siteKey)
+    )) {
+      let displayedGroup = !reorder && this._view.getRow(siteKey)?.group;
+      let solo = !displayedGroup && tabs.length == 1;
+      let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(tabs);
+      let siteLabel = displayedGroup?.siteLabel ?? tabs[0].siteLabel;
+      groups.push({
+        siteKey,
+        siteLabel,
+        tabs,
+        solo,
+        title: solo ? tabs[0].title || tabs[0].uri?.spec : siteLabel,
+        totalRamSize,
+        slopeCpuOfTotal,
+      });
+    }
+    let order = this._getSortOrder();
+    groups.sort(this._sortAscendent ? order : (a, b) => order(b, a));
+    return groups;
+  }
+
+  _getHeaderRows() {
+    return document.querySelectorAll("#process-tbody > tr.site-header-row");
+  }
+
+  _updateExpandAllButton() {
+    let headerRows = [...this._getHeaderRows()];
+    let allExpanded =
+      !!headerRows.length &&
+      headerRows.every(row => row.classList.contains("expanded"));
+    this._expandAllButton.classList.toggle("expanded", allExpanded);
+    this._expandAllButton.disabled = !headerRows.length;
+    document.l10n.setAttributes(
+      this._expandAllButton,
+      allExpanded
+        ? "about-processes-collapse-all-sites"
+        : "about-processes-expand-all-sites"
+    );
+  }
+
+  _toggleSite(row) {
+    this._view.setSiteExpanded(row, !row.classList.contains("expanded"));
+    this._updateExpandAllButton();
+  }
+
+  _toggleAllSites() {
+    let expanded = !this._expandAllButton.classList.contains("expanded");
+    for (let row of this._getHeaderRows()) {
+      this._view.setSiteExpanded(row, expanded);
+    }
+    this._updateExpandAllButton();
   }
 
   _commitView(tabCounters, { force = false } = {}) {
@@ -2447,7 +2670,9 @@ class ProcessesTabController {
     // to click its unload button. Matches ProcessesController._updateDisplay.
     let reorder =
       force || Date.now() - this._lastMouseEvent >= TIME_BEFORE_SORTING_AGAIN;
-    this._view.commit(tabCounters, { reorder });
+    let groups = this._groupTabsBySite(tabCounters, reorder);
+    this._view.commit(tabCounters, groups, { reorder });
+    this._updateExpandAllButton();
     this._updateSelectAllCheckbox();
     this._updateBulkActionBar();
     document.dispatchEvent(new CustomEvent("AboutProcessesUpdated"));

@@ -170,6 +170,68 @@ td.name {
   text-overflow: ellipsis;
 }
 
+/* Child and solo rows share one favicon column, aligned with the site-header caret. */
+tr.tab-row > td.favicon {
+  background-position: 2px center;
+  padding-inline-start: 25px;
+}
+tr.tab-row > td.favicon:dir(rtl) {
+  background-position-x: right 2px;
+}
+/* Indented under the header's favicon. */
+tr.child-row > td.favicon {
+  background-position-x: 20px;
+  padding-inline-start: 43px;
+}
+tr.child-row > td.favicon:dir(rtl) {
+  background-position-x: right 20px;
+}
+
+/* Collapsed child rows stay in the DOM (RowSet still tracks them) but hidden. */
+tr.child-row.collapsed {
+  display: none;
+}
+
+/* Label only: bold figures would misalign with the rows below. */
+tr.site-header-row .site-label {
+  font-weight: var(--font-weight-bold);
+}
+/* No room for a caret in td.favicon's fixed reserve, so caret/favicon/label
+   flow as ordinary inline content instead (see _createHeaderRow). */
+tr.site-header-row td.name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Matches th.clickable-header's own padding: 0, so the caret lines up with the expand-all icon above it. */
+  padding-inline-start: 0;
+}
+.site-favicon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
+}
+.site-tab-count {
+  color: var(--text-color-deemphasized);
+  margin-inline-start: 4px;
+}
+.site-label,
+.site-tab-count {
+  cursor: pointer;
+}
+
+/* Inline buttons size to their content, not to common.css's form buttons. */
+button:where(.caret-icon, #expand-all-button) {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+  color: inherit;
+}
 .name-link {
   display: inline-block;
   vertical-align: top;
@@ -335,6 +397,33 @@ th > button.clickable {
   background-image: url("chrome://global/skin/icons/arrow-down-12.svg");
 }
 
+/* One glyph, rotated between states. :is() takes the id's specificity, to
+   beat the shared button and .icon-button rules. */
+:is(.caret-icon, #expand-all-button) {
+  background-image: url("chrome://global/skin/icons/arrow-down-12.svg");
+  background-size: 12px;
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transition: transform 0.1s;
+}
+:is(.caret-icon, #expand-all-button):dir(rtl) {
+  transform: rotate(90deg);
+}
+:is(tr.site-header-row.expanded .caret-icon, #expand-all-button.expanded) {
+  transform: none;
+}
+body:not(.tab-view) #expand-all-button {
+  display: none;
+}
+/* Nothing to toggle: keep the box so the Name header doesn't shift. */
+#expand-all-button:disabled {
+  visibility: hidden;
+}
+body.tab-view th.clickable-header {
+  display: flex;
+  align-items: center;
+}
+
 tr.process > td.type {
   font-weight: var(--font-weight-bold);
   user-select: text;
@@ -467,8 +556,11 @@ tr.separate-from-previous-process-group {
   background: linear-gradient(to right, var(--bar-color) calc(var(--bar-width) * 1%), transparent calc(var(--bar-width) * 1%));
 }
 
+/* No CPU bar in the tab view. The shared --bar-width: 0 default would
+   otherwise rasterize as a hairline sliver. */
 .tab-row > .cpu,
 .totals-row > .cpu,
-.bulk-summary-row > .cpu {
+.bulk-summary-row > .cpu,
+.site-header-row > .cpu {
   background-image: none;
 }
