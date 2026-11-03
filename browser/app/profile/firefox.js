@@ -1678,6 +1678,8 @@ pref("browser.places.speculativeConnect.enabled", true);
 // Limit query results in the native macOS menu. Set to 0 to disable the limit.
 // Restart for changes to fully apply to cached queries.
 pref("browser.places.nativeMenu.maxResults", 100);
+// Limit entries in each native bookmark folder menu. Set to 0 to disable.
+pref("browser.places.nativeMenu.maxFolderResults", 500);
 #endif
 
 // if true, use full page zoom instead of text zoom

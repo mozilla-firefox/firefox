@@ -746,15 +746,16 @@ export var PlacesUIUtils = {
   },
 
   /**
-   * Opens the sidebar for a query in a browser window, opening a new window
+   * Opens the sidebar for a Places node in a browser window, opening a new window
    * if none is available.
    *
    * @param {nsINavHistoryResultNode} node
-   *   The query node.
+   *   The folder or query node.
    */
-  async showSidebarForQuery(node) {
+  async showSidebarForNode(node) {
     let { query, queryOptions } = lazy.PlacesUtils.asQuery(node);
     let sidebarId =
+      lazy.PlacesUtils.nodeIsFolderOrShortcut(node) ||
       queryOptions.queryType ==
         Ci.nsINavHistoryQueryOptions.QUERY_TYPE_BOOKMARKS ||
       queryOptions.resultType ==

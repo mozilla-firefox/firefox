@@ -7,6 +7,9 @@ let folder;
 let queryFolder;
 
 add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.places.nativeMenu.maxFolderResults", 0]],
+  });
   registerCleanupFunction(async () => {
     SidebarController.hide();
     await PlacesUtils.bookmarks.eraseEverything();
@@ -430,7 +433,7 @@ add_task(async function test_sidebar_from_library() {
   try {
     library = await promiseLibrary("AllBookmarks");
     let shown = BrowserTestUtils.waitForEvent(window, "SidebarShown");
-    await PlacesUIUtils.showSidebarForQuery(view.result.root);
+    await PlacesUIUtils.showSidebarForNode(view.result.root);
     await shown;
     Assert.equal(SidebarController.currentID, "viewHistorySidebar");
   } finally {
@@ -458,7 +461,7 @@ add_task(async function test_sidebar_without_browser_window() {
   let browserWindow;
   try {
     let opened = BrowserTestUtils.waitForNewWindow();
-    let showing = PlacesUIUtils.showSidebarForQuery(view.result.root);
+    let showing = PlacesUIUtils.showSidebarForNode(view.result.root);
     browserWindow = await opened;
     await showing;
     Assert.equal(
@@ -487,7 +490,7 @@ add_task(async function test_sidebar_ignores_popup_window() {
     await SimpleTest.promiseFocus(popupWindow);
     Assert.ok(!popupWindow.toolbar.visible, "The popup has no browser toolbar");
     let shown = BrowserTestUtils.waitForEvent(window, "SidebarShown");
-    await PlacesUIUtils.showSidebarForQuery(view.result.root);
+    await PlacesUIUtils.showSidebarForNode(view.result.root);
     await shown;
     Assert.equal(
       SidebarController.currentID,

@@ -9,6 +9,13 @@ XPCOMUtils.defineLazyPreferenceGetter(
   100
 );
 
+XPCOMUtils.defineLazyPreferenceGetter(
+  this,
+  "NATIVE_MENU_MAX_FOLDER_RESULTS",
+  "browser.places.nativeMenu.maxFolderResults",
+  500
+);
+
 /**
  * The base view implements everything that's common to all the views.
  * It should not be instanced directly, use a derived class instead.
@@ -342,7 +349,7 @@ class PlacesViewBase {
     }
   }
 
-  _rebuildPopup(aPopup) {
+  _rebuildPopup(aPopup, maxResults = 0) {
     let resultNode = aPopup._placesNode;
     if (!resultNode.containerOpen) {
       return;
@@ -350,7 +357,10 @@ class PlacesViewBase {
 
     this._cleanPopup(aPopup);
 
-    let cc = resultNode.childCount;
+    let cc =
+      maxResults > 0
+        ? Math.min(resultNode.childCount, maxResults)
+        : resultNode.childCount;
     if (cc > 0) {
       this._setEmptyPopupStatus(aPopup, false);
       let fragment = document.createDocumentFragment();
@@ -2165,6 +2175,11 @@ class PlacesMenu extends PlacesViewBase {
     );
     this._addEventListeners(window, ["unload"], false);
     this._addEventListeners(this._rootElt, ["mousedown"], false);
+    this._onPopupShowing(popupShowingEvent);
+  }
+
+  _init() {
+    this._viewElt._placesView = this;
     if (AppConstants.platform === "macosx") {
       // Must walk up to support views in sub-menus, like Bookmarks Toolbar menu.
       for (let elt = this._viewElt.parentNode; elt; elt = elt.parentNode) {
@@ -2174,16 +2189,130 @@ class PlacesMenu extends PlacesViewBase {
         }
       }
     }
-
-    this._onPopupShowing(popupShowingEvent);
   }
 
-  _init() {
-    this._viewElt._placesView = this;
+  _rebuildPopup(popup) {
+    popup._folderResultLimit =
+      this._nativeView && PlacesUtils.nodeIsFolderOrShortcut(popup._placesNode)
+        ? Math.max(0, NATIVE_MENU_MAX_FOLDER_RESULTS)
+        : 0;
+    super._rebuildPopup(popup, popup._folderResultLimit);
+  }
+
+  _getMenuItemForPlacesNode(node) {
+    let element = this._getDOMNodeForPlacesNode(node, true);
+    return element?.localName == "menupopup" ? element.parentNode : element;
+  }
+
+  _updateNativeFolder(node, changedNode, newIndex) {
+    if (!this._nativeView || !PlacesUtils.nodeIsFolderOrShortcut(node)) {
+      return false;
+    }
+    let popup = this._getDOMNodeForPlacesNode(node, true);
+    if (!popup) {
+      return true;
+    }
+    if (NATIVE_MENU_MAX_FOLDER_RESULTS <= 0 && !popup._folderResultLimit) {
+      return false;
+    }
+    if (!popup._built || !node.containerOpen) {
+      popup._built = false;
+      return true;
+    }
+
+    let limit = popup._folderResultLimit || NATIVE_MENU_MAX_FOLDER_RESULTS;
+    popup._folderResultLimit = limit;
+    let changedElement = this._getMenuItemForPlacesNode(changedNode);
+    if (!changedElement?.isConnected && (newIndex < 0 || newIndex >= limit)) {
+      this._mayAddCommandsItems(popup);
+      return true;
+    }
+    if (
+      changedElement?.parentNode == popup &&
+      newIndex >= 0 &&
+      newIndex < limit
+    ) {
+      return false;
+    }
+    let count = Math.min(node.childCount, limit);
+    if (count) {
+      this._setEmptyPopupStatus(popup, false);
+    }
+    let visibleNodes = new Set();
+    for (let i = 0; i < count; ++i) {
+      visibleNodes.add(node.getChild(i));
+    }
+    let child = popup._startMarker.nextElementSibling;
+    while (child != popup._endMarker) {
+      let next = child.nextElementSibling;
+      if (child._placesNode && !visibleNodes.has(child._placesNode)) {
+        this._domNodes.delete(child._placesNode);
+        child.remove();
+      }
+      child = next;
+    }
+    child = popup._startMarker.nextElementSibling;
+    for (let placesNode of visibleNodes) {
+      let element = this._getMenuItemForPlacesNode(placesNode);
+      if (element?.parentNode != popup) {
+        element = this._createDOMNodeForPlacesNode(placesNode);
+      }
+      if (element != child) {
+        popup.insertBefore(element, child);
+      }
+      child = element.nextElementSibling;
+    }
+    this._mayAddCommandsItems(popup);
+    if (!count) {
+      this._setEmptyPopupStatus(popup, true);
+    }
+    return true;
+  }
+
+  nodeInserted(parent, node, index) {
+    if (!this._updateNativeFolder(parent, node, index)) {
+      super.nodeInserted(parent, node, index);
+    }
+  }
+
+  nodeRemoved(parent, node, index) {
+    if (!this._updateNativeFolder(parent, node, -1)) {
+      super.nodeRemoved(parent, node, index);
+    }
+  }
+
+  nodeMoved(node, oldParent, oldIndex, newParent, newIndex) {
+    if (!this._updateNativeFolder(newParent, node, newIndex)) {
+      super.nodeMoved(node, oldParent, oldIndex, newParent, newIndex);
+    }
+  }
+
+  nodeTitleChanged(node, title) {
+    // Items beyond the folder limit have no DOM node.
+    if (this._nativeView && !this._getDOMNodeForPlacesNode(node, true)) {
+      return;
+    }
+    super.nodeTitleChanged(node, title);
+  }
+
+  invalidateContainer(node) {
+    if (this._nativeView && !this._getDOMNodeForPlacesNode(node, true)) {
+      return;
+    }
+    super.invalidateContainer(node);
   }
 
   _onPopupShowing(event) {
     let popup = event.originalTarget;
+    if (
+      this._nativeView &&
+      popup._placesNode &&
+      PlacesUIUtils.getViewForNode(popup) == this &&
+      PlacesUtils.nodeIsFolderOrShortcut(popup._placesNode) &&
+      popup._folderResultLimit != Math.max(0, NATIVE_MENU_MAX_FOLDER_RESULTS)
+    ) {
+      popup._built = false;
+    }
     if (
       this._nativeView &&
       popup != this._rootElt &&
@@ -2219,12 +2348,16 @@ class PlacesMenu extends PlacesViewBase {
 
   _mayAddCommandsItems(popup) {
     super._mayAddCommandsItems(popup);
-    if (!this._nativeView || popup == this._rootElt) {
+    if (!this._nativeView) {
       return;
     }
     let node = popup._placesNode;
     let hasMore =
-      popup._queryResultLimit > 0 && node.childCount >= popup._queryResultLimit;
+      (popup._folderResultLimit > 0 &&
+        node.childCount > popup._folderResultLimit) ||
+      (popup != this._rootElt &&
+        popup._queryResultLimit > 0 &&
+        node.childCount >= popup._queryResultLimit);
     if (hasMore && !popup._moreMenuitem) {
       popup._moreMenuitem = document.createXULElement("menuitem");
       document.l10n.setAttributes(
@@ -2232,7 +2365,7 @@ class PlacesMenu extends PlacesViewBase {
         "menu-places-show-more-in-sidebar"
       );
       popup._moreMenuitem.addEventListener("command", () => {
-        PlacesUIUtils.showSidebarForQuery(popup._placesNode).catch(
+        PlacesUIUtils.showSidebarForNode(popup._placesNode).catch(
           console.error
         );
       });
@@ -2244,6 +2377,9 @@ class PlacesMenu extends PlacesViewBase {
     } else if (!hasMore && popup._moreMenuitem) {
       popup._moreMenuitem.remove();
       popup._moreMenuitem = null;
+      if (!node.childCount) {
+        this._setEmptyPopupStatus(popup, true);
+      }
     }
   }
 
