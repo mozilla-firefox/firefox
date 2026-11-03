@@ -56,7 +56,7 @@ task-defaults:
                 default:
                     - raptor/android_hw_config.py
         extra-options:
-            # Bug 1635749, disable window recorder temporarily
+            # Unstable on Android (bug 1635749); adb records the screen instead
             - --browsertime-no-ffwindowrecorder
     optimization:
         perf-cadence-android: null

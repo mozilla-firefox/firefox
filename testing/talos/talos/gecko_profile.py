@@ -95,9 +95,6 @@ class GeckoProfile:
         # itself, not by Talos JS code.
         env.update({
             "MOZ_PROFILER_STARTUP": "1",
-            # Temporary: Don't run Base Profiler, see bug 1630448.
-            # TODO: Remove when fix lands in bug 1648324 or bug 1648325.
-            "MOZ_PROFILER_STARTUP_NO_BASE": "1",
             "MOZ_PROFILER_STARTUP_INTERVAL": str(self.option("interval")),
             "MOZ_PROFILER_STARTUP_ENTRIES": str(self.option("entries")),
             "MOZ_PROFILER_STARTUP_FEATURES": str(self.option("features")),

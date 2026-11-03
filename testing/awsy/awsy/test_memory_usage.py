@@ -196,6 +196,5 @@ class TestMemoryUsage(AwsyTestCase):
             create_checkpoint("TabsClosedSettled", itr)
             create_checkpoint("TabsClosedForceGC", itr, minimize=True)
 
-        # TODO(ER): Temporary hack until bug 1121139 lands
         self.logger.info("setting results")
         self.testvars["results"] = results

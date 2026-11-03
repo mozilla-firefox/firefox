@@ -575,10 +575,6 @@ def get_raptor_test_list(args, oskey):
                 next_test["page_cycles"] = 2
             else:
                 next_test["page_cycles"] = 1
-            # also ensure '-cold' is in test name so perfherder results indicate warm cold-load
-            # Bug 1644344 we can remove this condition once we're migrated away from WebExtension
-            if "-cold" not in next_test["name"] and not args.browsertime:
-                next_test["name"] += "-cold"
         else:
             # when running in warm mode, just set test-cycles to 1 and leave page-cycles as/is
             next_test["cold"] = False

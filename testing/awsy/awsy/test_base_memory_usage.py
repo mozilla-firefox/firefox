@@ -124,6 +124,5 @@ class TestMemoryUsage(AwsyTestCase):
         # (If we wanted to do something after the preallocated process has been
         # recreated, we should call self.settle() again to wait for it.)
 
-        # TODO(ER): Temporary hack until bug 1121139 lands
         self.logger.info("setting results")
         self.testvars["results"] = results
