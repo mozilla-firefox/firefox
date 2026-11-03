@@ -14,7 +14,6 @@ task-defaults:
         env:
             MOZ_AUTOMATION_PACKAGE_TESTS: "1"
     run:
-        clone-with: hg
         using: mozharness
         actions: [build]
         script: mozharness/scripts/fx_desktop_build.py
