@@ -145,8 +145,11 @@ export const MultiStageAboutWelcome = props => {
   const [transition, setTransition] = useState(props.transitions ? "in" : "");
   useEffect(() => {
     if (transition === "in") {
+      // Don't clobber an "out" transition started in the meantime.
       requestAnimationFrame(() =>
-        requestAnimationFrame(() => setTransition(""))
+        requestAnimationFrame(() =>
+          setTransition(prev => (prev === "in" ? "" : prev))
+        )
       );
     }
   }, [transition]);

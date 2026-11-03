@@ -283,6 +283,29 @@ describe("MultiStageAboutWelcome module", () => {
         assert.include(currentScreen(wrapper), "SCREEN_2");
       });
 
+      it("should only advance once when navigating before the in transition ends", () => {
+        clock = sinon.useFakeTimers();
+        const wrapper = mount(
+          <MultiStageAboutWelcome
+            {...DEFAULT_PROPS}
+            defaultScreens={[
+              ...transitionScreens("split"),
+              { id: "SCREEN_3", content: { position: "split", title: "3" } },
+            ]}
+            transitions={true}
+          />
+        );
+
+        wrapper.find("button.primary").simulate("click");
+        clock.tick(100);
+        wrapper.update();
+        wrapper.find("button.primary").simulate("click");
+
+        clock.tick(2000);
+        wrapper.update();
+        assert.include(currentScreen(wrapper), "SCREEN_2");
+      });
+
       it("should advance other positions after the default 1000ms", async () => {
         const wrapper = await clickThroughFirstScreen("split");
 

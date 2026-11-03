@@ -6120,7 +6120,8 @@ const MultiStageAboutWelcome = props => {
   const [transition, setTransition] = (0,external_React_namespaceObject.useState)(props.transitions ? "in" : "");
   (0,external_React_namespaceObject.useEffect)(() => {
     if (transition === "in") {
-      requestAnimationFrame(() => requestAnimationFrame(() => setTransition("")));
+      // Don't clobber an "out" transition started in the meantime.
+      requestAnimationFrame(() => requestAnimationFrame(() => setTransition(prev => prev === "in" ? "" : prev)));
     }
   }, [transition]);
   const isCardStack = defaultScreens?.[0]?.content?.position === "card-stack";
