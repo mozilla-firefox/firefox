@@ -246,9 +246,6 @@ skip-if = [
 ["browser_aiwindow_stop_generation.js"]
 
 ["browser_aiwindow_switcher.js"]
-skip-if = [
-  "debug && standalone", # Bug 2025711
-]
 
 ["browser_aiwindow_tab_close_integration.js"]
 
