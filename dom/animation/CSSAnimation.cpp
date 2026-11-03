@@ -287,6 +287,101 @@ void CSSAnimation::QueueEvents(const StickyTimeDuration& aActiveTime) {
   }
 }
 
+void CSSAnimation::UpdatePropertiesWithNew(
+    const NonOwningAnimationTarget& aTarget,
+    const ComputedStyle* aComputedStyle, TimingParams&& aNewTiming,
+    nsTArray<Keyframe>&& aNewKeyframes,
+    const StyleComputedTimingFunction& aNewTimingFunction,
+    CompositeOperation aNewComposite, AnimationTimeline* aNewTimeline,
+    const dom::ScopedTimelineName& aNewTimelineName,
+    dom::AnimationRange&& aNewRange, bool aNewIsStylePaused) {
+  bool animationChanged = false;
+
+  // Update the old from the new so we can keep the original object
+  // identity (and any expando properties attached to it).
+  if (AnimationEffect* effect = GetEffect()) {
+    // Copy across the changes that are not overridden
+    TimingParams updatedTiming = effect->SpecifiedTiming();
+    if (~mOverriddenProperties & CSSAnimationProperties::Duration) {
+      updatedTiming.SetDuration(aNewTiming.Duration());
+    }
+    if (~mOverriddenProperties & CSSAnimationProperties::IterationCount) {
+      updatedTiming.SetIterations(aNewTiming.Iterations());
+    }
+    if (~mOverriddenProperties & CSSAnimationProperties::Direction) {
+      updatedTiming.SetDirection(aNewTiming.Direction());
+    }
+    if (~mOverriddenProperties & CSSAnimationProperties::Delay) {
+      updatedTiming.SetDelay(aNewTiming.Delay());
+    }
+    if (~mOverriddenProperties & CSSAnimationProperties::FillMode) {
+      updatedTiming.SetFill(aNewTiming.Fill());
+    }
+
+    animationChanged = effect->SpecifiedTiming() != updatedTiming;
+    effect->SetSpecifiedTiming(std::move(updatedTiming));
+
+    if (KeyframeEffect* keyframeEffect = effect->AsKeyframeEffect()) {
+      if (~mOverriddenProperties & CSSAnimationProperties::Keyframes) {
+        // FIXME(emilio): Should we update the effect target on top if different
+        // or something?
+        const auto* style = keyframeEffect->GetAnimationTarget() == aTarget
+                                ? aComputedStyle
+                                : nullptr;
+        keyframeEffect->SetKeyframes(std::move(aNewKeyframes), style,
+                                     aNewTimeline, &aNewRange);
+
+        // The default timing function and default composite for CSS Keyframes
+        // processing.
+        if (auto* cssEffect = keyframeEffect->AsCSSAnimationKeyframeEffect()) {
+          cssEffect->SetDefaultTimingFunction(aNewTimingFunction);
+          cssEffect->SetDefaultComposite(aNewComposite);
+        }
+      }
+
+      if (~mOverriddenProperties & CSSAnimationProperties::Composition) {
+        animationChanged = keyframeEffect->Composite() != aNewComposite;
+        keyframeEffect->SetCompositeFromStyle(aNewComposite);
+      }
+    }
+  }
+
+  // Checking pointers should be enough. If both are scroll-timeline, we reuse
+  // the scroll-timeline object if their scrollers and axes are the same.
+  if (GetTimeline() != aNewTimeline) {
+    // See `UpdateNamedTimelineAnimation` as to why `SetTimeline` isn't used.
+    const bool timelineDidChange = SetTimelineNoUpdate(
+        aNewTimeline, aNewTimelineName, Animation::FromJS::No);
+    animationChanged = animationChanged || timelineDidChange;
+  }
+
+  if (GetTimelineRange() != aNewRange) {
+    SetTimelineRange(std::move(aNewRange), Animation::FromJS::No);
+    animationChanged = true;
+  }
+
+  // Handle changes in play state. If the animation is idle, however,
+  // changes to animation-play-state should *not* restart it.
+  if (PlayState() != AnimationPlayState::Idle &&
+      ~mOverriddenProperties & CSSAnimationProperties::PlayState) {
+    bool wasPaused = PlayState() == AnimationPlayState::Paused;
+    if (!wasPaused && aNewIsStylePaused) {
+      PauseFromStyle();
+      animationChanged = true;
+    } else if (wasPaused && !aNewIsStylePaused) {
+      PlayFromStyle();
+      animationChanged = true;
+    }
+  }
+
+  // Updating the effect timing above might already have caused the
+  // animation to become irrelevant so only add a changed record if
+  // the animation is still relevant.
+  if (animationChanged && IsRelevant()) {
+    MutationObservers::NotifyAnimationChanged(this);
+  }
+}
+
 void CSSAnimation::UpdateTiming(SeekFlag aSeekFlag,
                                 SyncNotifyFlag aSyncNotifyFlag) {
   if (mNeedsNewAnimationIndexWhenRun &&

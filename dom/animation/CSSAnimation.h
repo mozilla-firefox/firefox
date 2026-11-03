@@ -129,6 +129,17 @@ class CSSAnimation final : public Animation {
     return mOverriddenProperties;
   }
 
+  // Try to sync with the new style and update the current CSSAnimation. This
+  // ignores the overridden properties.
+  void UpdatePropertiesWithNew(
+      const NonOwningAnimationTarget& aTarget,
+      const ComputedStyle* aComputedStyle, TimingParams&& aNewTiming,
+      nsTArray<Keyframe>&& aNewKeyframes,
+      const StyleComputedTimingFunction& aNewTimingFunction,
+      CompositeOperation aNewComposite, AnimationTimeline* aNewTimeline,
+      const dom::ScopedTimelineName& aNewTimelineName,
+      dom::AnimationRange&& aNewRange, bool aNewIsStylePaused);
+
  protected:
   virtual ~CSSAnimation() {
     MOZ_ASSERT(!mOwningElement.IsSet(),
