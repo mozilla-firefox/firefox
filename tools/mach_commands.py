@@ -284,7 +284,7 @@ def npm(command_context, args):
             os.environ["FIREFOX_BIN"] = firefox_bin
 
     return command_context.run_process(
-        [npm_path, "--scripts-prepend-node-path=auto"] + args,
+        [npm_path] + args,
         pass_thru=True,  # Avoid eating npm output/error messages
         ensure_exit_code=False,  # Don't throw on non-zero exit code.
     )

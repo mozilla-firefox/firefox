@@ -343,8 +343,6 @@ def setup_browsertime(
     # Add the mozbuild Node binary path to the OS environment in Apple Silicon.
     # During the browesertime installation, it seems installation of sitespeed.io
     # sub dependencies look for a global Node rather than the mozbuild Node binary.
-    # Normally `--scripts-prepend-node-path` should prevent this but it seems to still
-    # look for a system Node in the environment. This logic ensures the same Node is used.
     node_dir = os.path.dirname(node_path(command_context))
     if IS_APPLE_SILICON and node_dir not in os.environ["PATH"]:
         os.environ["PATH"] += os.pathsep + node_dir
