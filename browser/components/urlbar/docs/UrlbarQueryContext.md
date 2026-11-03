@@ -2,5 +2,5 @@
 
 ```{js:autoclass} UrlbarQueryContext
 :members:
-:exclude-members: UrlbarQueryContext, _checkRequiredOptions
+:exclude-members: UrlbarQueryContext, _checkRequiredOptions, _getShowSearchSuggestionsFirst, _maxResults
 ```
