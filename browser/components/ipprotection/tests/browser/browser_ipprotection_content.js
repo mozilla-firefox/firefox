@@ -354,8 +354,16 @@ add_task(async function test_site_inclusion_prompt() {
       ["browser.ipProtection.userEnableCount", 0],
     ],
   });
+  const EXCLUDED_SITE = "https://example.net";
   let sandbox = sinon.createSandbox();
   sandbox.stub(IPPProxyManager, "start").resolves({ started: true });
+  sandbox
+    .stub(IPPSiteRuleManager, "getRule")
+    .callsFake(principal =>
+      principal?.origin === EXCLUDED_SITE
+        ? IPPPrincipalRules.EXCLUDED
+        : IPPPrincipalRules.DEFAULT
+    );
 
   let tab = await BrowserTestUtils.openNewForegroundTab(
     gBrowser,
@@ -396,6 +404,27 @@ add_task(async function test_site_inclusion_prompt() {
     Services.prefs.getBoolPref("browser.ipProtection.siteInclusionPromptShown"),
     "Prompt should be recorded as shown"
   );
+
+  loaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+  BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, EXCLUDED_SITE);
+  await loaded;
+  await content.updateComplete;
+
+  Assert.ok(
+    !content.siteInclusionPromptEl,
+    "Prompt should not be shown on an excluded website"
+  );
+
+  loaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+  BrowserTestUtils.startLoadingURIString(
+    tab.linkedBrowser,
+    "https://example.org"
+  );
+  await loaded;
+  await content.updateComplete;
+
+  prompt = content.siteInclusionPromptEl;
+  Assert.ok(prompt, "Prompt should return after leaving the excluded website");
 
   await prompt.updateComplete;
   let dismissed = BrowserTestUtils.waitForEvent(

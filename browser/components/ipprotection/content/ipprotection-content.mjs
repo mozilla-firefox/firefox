@@ -505,6 +505,7 @@ export default class IPProtectionContentElement extends MozLitElement {
       !this.state.showSiteInclusionPrompt ||
       !this.state.siteData ||
       this.hasSiteInclusion ||
+      this.hasSiteExclusion ||
       !this.canEnableConnection
     ) {
       return null;
