@@ -63,6 +63,6 @@ private fun TabSessionState.toTab(): Tab =
         private = content.private,
         inactive = !isActive(maxActiveTime = maxActiveTime),
         icon = content.icon,
-        isMediaActive = mediaSessionState?.playbackState == MediaSession.PlaybackState.PLAYING,
+        isMediaActive = mediaSessionState?.playbackState == MediaSession.PlaybackState.PLAYING || listenToPageActive,
         lastAccess = lastAccess,
     )

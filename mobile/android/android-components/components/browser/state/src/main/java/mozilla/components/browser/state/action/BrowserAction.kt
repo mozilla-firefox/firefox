@@ -1513,3 +1513,14 @@ sealed class SystemPermissionRequestAction : BrowserAction() {
     /** Indicates that there is no system permission request currently in progress. */
     object SystemPermissionStateRequestNotInProgress : SystemPermissionRequestAction()
 }
+
+/** [BrowserAction] implementations related to reading a page out loud. */
+sealed class ListenToPageAction : BrowserAction() {
+    abstract val tabId: String
+
+    /** Indicates that the tab with the given [tabId] is no longer being read out loud. */
+    data class ListenToPageDeactivated(override val tabId: String) : ListenToPageAction()
+
+    /** Indicates that the tab with the given [tabId] is being read out loud. */
+    data class ListenToPageActivated(override val tabId: String) : ListenToPageAction()
+}

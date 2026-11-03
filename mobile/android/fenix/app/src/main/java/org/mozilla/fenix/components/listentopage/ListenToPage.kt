@@ -27,6 +27,7 @@ import mozilla.components.feature.media.service.AbstractMediaSessionService
 import mozilla.components.support.base.facts.register
 import mozilla.components.support.base.ids.SharedIdsHelper
 import mozilla.components.support.locale.LocaleManager
+import org.mozilla.fenix.listentopage.ListenToPageBinding
 
 private const val OPEN_TAB_PENDING_INTENT_TAG = "org.mozilla.fenix.listentopage.OPEN_TAB"
 
@@ -68,42 +69,49 @@ class ListenToPage(
     val store by lazy {
         val performanceMiddleware = profiler?.let { ListenPerformanceMiddleware(profiler = it) }?.also { it.register() }
 
-        ListenStore(
-            initialState = ListenState(),
-            reducer = ::listenReducer,
-            middleware =
-                listOfNotNull(
-                    performanceMiddleware,
-                    ListenMiddleware(
-                        browserStore = browserStore,
-                        contentProvider =
-                            ContentProvider.fromPage(
-                                pageContentExtractor = pageExtractor,
-                                pageMetadataExtractor = pageExtractor,
-                                fallbackLanguageTag = {
-                                    (LocaleManager.getCurrentLocale(context) ?: LocaleManager.getSystemDefault())
-                                        .toLanguageTag()
-                                },
-                            ),
-                        // A provider, not an instance: building one binds the speech engine over IPC, and the
-                        // middleware closes it when a session stops, so it needs a way to get another.
-                        synthesizerProvider = {
-                            SpeechSynthesizer.android(context = context, audioCache = audioCache)
-                        },
-                        audioCache = audioCache,
-                        playbackController =
-                            ListenPlaybackController(
-                                context = context,
-                                scope = scope,
-                                sessionActivity = { tabId -> context.openTabPendingIntent(tabId) },
-                            ),
-                        settings = settings,
-                        scope = scope,
+        val listenStore =
+            ListenStore(
+                initialState = ListenState(),
+                reducer = ::listenReducer,
+                middleware =
+                    listOfNotNull(
+                        performanceMiddleware,
+                        ListenMiddleware(
+                            browserStore = browserStore,
+                            contentProvider =
+                                ContentProvider.fromPage(
+                                    pageContentExtractor = pageExtractor,
+                                    pageMetadataExtractor = pageExtractor,
+                                    fallbackLanguageTag = {
+                                        (LocaleManager.getCurrentLocale(context) ?: LocaleManager.getSystemDefault())
+                                            .toLanguageTag()
+                                    },
+                                ),
+                            // A provider, not an instance: building one binds the speech engine over IPC, and the
+                            // middleware closes it when a session stops, so it needs a way to get another.
+                            synthesizerProvider = {
+                                SpeechSynthesizer.android(context = context, audioCache = audioCache)
+                            },
+                            audioCache = audioCache,
+                            playbackController =
+                                ListenPlaybackController(
+                                    context = context,
+                                    scope = scope,
+                                    sessionActivity = { tabId -> context.openTabPendingIntent(tabId) },
+                                ),
+                            settings = settings,
+                            scope = scope,
+                        ),
+                        ListenToPageTelemetryMiddleware(),
+                        thermalStatusMonitor()?.let { ListenThermalMiddleware(monitor = it) },
                     ),
-                    ListenToPageTelemetryMiddleware(),
-                    thermalStatusMonitor()?.let { ListenThermalMiddleware(monitor = it) },
-                ),
-        )
+            )
+        startListenBinding(listenStore = listenStore)
+        listenStore
+    }
+
+    private fun startListenBinding(listenStore: ListenStore) {
+        ListenToPageBinding(listenStore = listenStore, browserStore = browserStore).start()
     }
 
     private fun thermalStatusMonitor(): ThermalStatusMonitor? {

@@ -33,6 +33,7 @@ import mozilla.components.concept.storage.HistoryMetadataKey
  * @property restored Indicates if this page was restored from a persisted state.
  * @property originalInput If the user entered a URL, this is the original user input before any fixups were applied to
  *   it.
+ * @property listenToPageActive Whether this tab is currently being read out loud.
  */
 data class TabSessionState(
     override val id: String = UUID.randomUUID().toString(),
@@ -53,6 +54,7 @@ data class TabSessionState(
     val lastMediaAccessState: LastMediaAccessState = LastMediaAccessState(),
     val readerState: ReaderState = ReaderState(),
     val historyMetadata: HistoryMetadataKey? = null,
+    val listenToPageActive: Boolean = false,
 ) : SessionState {
 
     override fun createCopy(
@@ -110,6 +112,7 @@ fun createTab(
     initialTextDirectiveUserActivation: Boolean = false,
     trackingProtection: TrackingProtectionState = TrackingProtectionState(),
     securityInfo: SecurityInfo = SecurityInfo.Unknown,
+    listenToPageActive: Boolean = false,
 ): TabSessionState {
     return TabSessionState(
         id = id,
@@ -148,6 +151,7 @@ fun createTab(
         historyMetadata = historyMetadata,
         originalInput = originalInput,
         trackingProtection = trackingProtection,
+        listenToPageActive = listenToPageActive,
     )
 }
 

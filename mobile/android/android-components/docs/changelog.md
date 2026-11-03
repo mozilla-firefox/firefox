@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 161.0 (In Development)
+* **browser-state**
+    * Added `TabSessionState.listenToPageActive` and `ListenToPageAction` (`ListenToPageActivated`, `ListenToPageDeactivated`) to track which tab is being read out loud by Listen to Page. [Bug 2072957](https://bugzilla.mozilla.org/show_bug.cgi?id=2072957)
 * **feature-media**
     * ⚠️ **Breaking change**: Added `MediaSessionDelegate.handleMediaUpdated`, which `MediaSessionFeature` calls instead of the playing, paused or stopped handler when only the media tab's title, URL or icon changed. [Bug 2085570](https://bugzilla.mozilla.org/show_bug.cgi?id=2085570)
 * **lib-installation-blockstore**

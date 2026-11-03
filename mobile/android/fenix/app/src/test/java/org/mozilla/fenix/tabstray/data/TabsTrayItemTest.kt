@@ -282,4 +282,18 @@ class TabsTrayItemTest {
 
         assertFalse(tab.isMediaActive)
     }
+
+    @Test
+    fun `GIVEN a TabSessionState being read out loud WHEN creating a Tab THEN isMediaActive is true`() {
+        val tabSessionState =
+            createTabSessionState(
+                    url = "https://www.mozilla.org",
+                    mediaSessionState = null,
+                )
+                .copy(listenToPageActive = true)
+
+        val tab = TabsTrayItem.Tab(tabSessionState)
+
+        assertTrue(tab.isMediaActive)
+    }
 }

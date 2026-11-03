@@ -72,7 +72,8 @@ sealed interface TabsTrayItem {
             inactive = !tab.isActive(maxActiveTime = maxActiveTime),
             private = tab.content.private,
             icon = tab.content.icon,
-            isMediaActive = tab.mediaSessionState?.playbackState == MediaSession.PlaybackState.PLAYING,
+            isMediaActive =
+                tab.mediaSessionState?.playbackState == MediaSession.PlaybackState.PLAYING || tab.listenToPageActive,
             lastAccess = tab.lastAccess,
             isFocused = isFocused,
         )
@@ -139,6 +140,7 @@ sealed interface TabsTrayItem {
             is Tab -> {
                 url.contains(text, ignoreCase = true) || title.contains(text, ignoreCase = true)
             }
+
             is TabGroup -> false
         }
     }
