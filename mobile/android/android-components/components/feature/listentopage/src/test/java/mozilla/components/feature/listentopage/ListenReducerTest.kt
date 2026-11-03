@@ -53,18 +53,10 @@ class ListenReducerTest {
 
     @Test
     fun `test that a listen request drops everything the previous session held`() {
-        val state = listenReducer(fullState, ListenAction.Session.ListenRequested("tab-2", URL))
-
-        assertEquals("tab-2", state.tabId)
-        assertEquals(URL, state.url)
-        assertNull(state.title)
-        assertNull(state.site)
-        assertNull(state.error)
-        assertEquals(PlayerMode.Expanded, state.mode)
-        assertEquals("de-DE", state.languageTag)
-        assertEquals(fullState.voiceState, state.voiceState)
-        assertEquals(PlaybackState(), state.playbackState)
-        assertEquals(ArticleProgress(), state.articleProgress)
+        assertEquals(
+            ListenState(tabId = "tab-2", url = URL),
+            listenReducer(fullState, ListenAction.Session.ListenRequested("tab-2", URL)),
+        )
     }
 
     @Test

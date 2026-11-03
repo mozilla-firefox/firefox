@@ -43,14 +43,7 @@ private fun reduceControls(state: ListenState, action: ListenAction.Controls): L
 
 private fun reduceSession(state: ListenState, action: ListenAction.Session): ListenState =
     when (action) {
-        is ListenAction.Session.ListenRequested -> {
-            ListenState(
-                tabId = action.tabId,
-                url = action.url,
-                languageTag = state.languageTag,
-                voiceState = state.voiceState,
-            )
-        }
+        is ListenAction.Session.ListenRequested -> ListenState(tabId = action.tabId, url = action.url)
 
         is ListenAction.Session.StopRequested -> {
             ListenState(tabId = null, url = null, voiceState = state.voiceState.copy())

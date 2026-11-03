@@ -1094,27 +1094,50 @@ class ListenMiddlewareTest {
     }
 
     @Test
-    fun `test that a request in place of a live session throws away only that session's audio`() = runTest {
+    fun `test that a request in place of a live session ends that session as a stop would`() = runTest {
         val cache = FakeAudioFileCache()
-        val synthesizer = FakeSpeechSynthesizer()
+        val playback = FakePlaybackController()
+        val engines = mutableListOf<FakeSpeechSynthesizer>()
         val store =
-            storeWith(synthesizerProvider = { synthesizer }, audioCache = cache) {
+            storeWith(
+                synthesizerProvider = { FakeSpeechSynthesizer().also { engines.add(it) } },
+                playbackController = playback,
+                audioCache = cache,
+            ) {
                 Result.success(Content(text = longArticle(), languageTag = "en-US"))
             }
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
-
-        // A session replacing another keeps the engine, so this one fake writes for both and its files stay uniquely
-        // named across them. Everything it wrote up to here belongs to the article the reader is leaving.
-        val leftBehind = synthesizer.files.toList()
-
         store.listenAndPlay(OTHER_TAB_ID, URL)
         advanceUntilIdle()
 
-        assertTrue("Nothing was made to delete", leftBehind.isNotEmpty())
-        assertEquals(leftBehind.toSet(), cache.deleted.toSet())
-        assertFalse(cache.cleared)
+        assertTrue(playback.released)
+        assertTrue(cache.cleared)
+        assertTrue(engines.first().closed)
     }
+
+    @Test
+    fun `test that a request in place of a live session stops its audio even when the new one cannot be read`() =
+        runTest {
+            val playback = FakePlaybackController()
+            // The second session's engine has no voice for its article, so its opening is never handed to the player.
+            val engines = ArrayDeque(listOf(FakeSpeechSynthesizer(), FakeSpeechSynthesizer(voices = emptyList())))
+            val store =
+                storeWith(synthesizerProvider = { engines.removeFirst() }, playbackController = playback) { tabId ->
+                    if (tabId == TAB_ID) {
+                        Result.success(Content(text = "Article text.", languageTag = "en-US"))
+                    } else {
+                        Result.success(Content(text = "Texte de l'article.", languageTag = "fr-FR"))
+                    }
+                }
+            store.listenAndPlay(TAB_ID, URL)
+            advanceUntilIdle()
+            store.listenAndPlay(OTHER_TAB_ID, URL)
+            advanceUntilIdle()
+
+            assertEquals(ListenError.NoOfflineVoice, store.state.error)
+            assertTrue(playback.released)
+        }
 
     @Test
     fun `test that a session starting while the last one is still ending keeps its own audio`() = runTest {
@@ -1293,7 +1316,8 @@ class ListenMiddlewareTest {
         store.listenAndPlay(TAB_ID, URL)
         advanceUntilIdle()
 
-        assertFalse(audioCache.cleared)
+        // Starting a session ends whatever came before it, which empties the cache too.
+        audioCache.cleared = false
 
         store.dispatch(ListenAction.Session.StopRequested())
         advanceUntilIdle()
@@ -1717,10 +1741,10 @@ class ListenMiddlewareTest {
     }
 
     @Test
-    fun `test that a session on an article in the same language does not ask the engine again`() = runTest {
-        val synthesizer = FakeSpeechSynthesizer()
+    fun `test that a session replacing another in the same language gives its own engine a voice`() = runTest {
+        val engines = mutableListOf<FakeSpeechSynthesizer>()
         val store =
-            storeWith(synthesizerProvider = { synthesizer }) {
+            storeWith(synthesizerProvider = { FakeSpeechSynthesizer().also { engines.add(it) } }) {
                 Result.success(Content(text = "Article text.", languageTag = "en-US"))
             }
         store.listenAndPlay(TAB_ID, URL)
@@ -1728,7 +1752,9 @@ class ListenMiddlewareTest {
         store.listenAndPlay(OTHER_TAB_ID, URL)
         advanceUntilIdle()
 
-        assertEquals(listOf("en-US"), synthesizer.voiceRequests)
+        assertEquals(2, engines.size)
+        assertEquals(listOf("en-US"), engines[1].voiceRequests)
+        assertTrue(engines[1].voicesSet.isNotEmpty())
     }
 
     @Test

@@ -147,13 +147,13 @@ class ListenMiddleware(
 
         when (action) {
             is ListenAction.Session.ListenRequested -> {
-                store.endSession(releasePlayback = false)
+                store.endSession()
                 observePlayback(store)
                 requestContent(store, action.tabId)
                 trackTabClosure(store, action.tabId)
             }
 
-            is ListenAction.Session.StopRequested -> store.endSession(releasePlayback = true)
+            is ListenAction.Session.StopRequested -> store.endSession()
 
             is ListenAction.Content.ContentReady -> store.loadVoicesAndPlay(action.languageTag)
 
@@ -901,44 +901,33 @@ class ListenMiddleware(
     }
 
     /**
-     * Stops everything the session has in flight and throws away the audio it made.
-     *
-     * @param releasePlayback Whether to give up the playback and close the engine, which takes the notification away
-     *   with the service. A session starting in place of this one keeps both: it replaces what is playing, and it reads
-     *   with the same engine rather than paying to bind another.
+     * Stops everything the session has in flight, gives up the playback, closes the synthesis engine, and clears the
+     * audio cache for the session. This will also cause the notification to disappear.
      */
-    private fun ListenStore.endSession(releasePlayback: Boolean) {
+    private fun ListenStore.endSession() {
         contentJob?.cancel()
         voicesJob?.cancel()
         refreshVoicesJob?.cancel()
         tabClosureJob?.cancel()
+        playbackStatusJob?.cancel()
         article = null
 
-        val emptying = synthesisQueue
         synthesisQueue = null
         dispatch(MeasurementAction.Cleared)
 
-        val closing = synthesizer.takeIf { releasePlayback }
-        if (releasePlayback) {
-            playbackStatusJob?.cancel()
-            synthesizer = null
-        }
+        val closing = synthesizer
+        synthesizer = null
 
         stopSynthesizing {
-            if (releasePlayback) {
-                playbackController.release()
+            playbackController.release()
 
-                // The engine is an IPC binding into the text to speech app, which stays alive for the rest of this
-                // app's life unless it is shut down. Closing is terminal, which is why the next session builds its own.
-                withContext(ioDispatcher) { closing?.close() }
+            // The engine is an IPC binding into the text to speech app, which stays alive for the rest of this
+            // app's life unless it is shut down. Closing is terminal, which is why the next session builds its own.
+            withContext(ioDispatcher) { closing?.close() }
 
-                // Nothing else deletes the audio, so without this a session leaves its files behind for as long as the
-                // system keeps the cache directory. Only safe once the playback above has given up the files.
-                audioCache.clear()
-            } else {
-                // The playback carries on into the session replacing this one, so only this article's own audio goes.
-                emptying?.clear()
-            }
+            // Nothing else deletes the audio, so without this a session leaves its files behind for as long as the
+            // system keeps the cache directory. Only safe once the playback above has given up the files.
+            audioCache.clear()
         }
     }
 
