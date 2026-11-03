@@ -563,6 +563,21 @@ with a system background color and vice-versa.
 Note that using system colors is only useful for the chrome area, since
 content area colors are overridden by Gecko anyway.
 
+To put a window's chrome under forced colors on any platform, set
+`window.browsingContext.forcedColorsOverride = "active"` from chrome JS. The
+override is checked before any pref (`nsPresContext::UpdateForcedColors`), so
+the chrome reaches the `active` state and its declarations are rewritten as
+described below. The override applies to the top-level browsing context, and
+each tab's browser is its own top-level context, so the pages stay out. Windows
+high contrast mode puts chrome in the `requested` state instead. Adding
+`forced-color-adjust: none` on the chrome root stops the rewriting, but the
+state stays `active`: a bare `(forced-colors)` query still matches, while
+`(forced-colors: active)` and `(forced-colors: requested)` queries answer the
+other way round from Windows. The override does not make `prefers-contrast`
+match either. On Windows, setting `ui.useAccessibilityTheme` to 1 without the
+override reaches the `requested` state and matches `prefers-contrast`, but the
+system colors stay those of the OS theme.
+
 #### The forced-color adjustment
 
 Once a document is actually forcing colors - the `active` state above, not
@@ -574,13 +589,21 @@ and the filter is not the same for every property:
 
 - A bare system color and `currentcolor` are honored in every color property
   except the ones listed below as reverting whatever they are set to.
-- A *derived* color is not honored uniformly. `color-mix(in srgb, currentcolor
-  25%, transparent)` survives as a `background-color` and is replaced as a
-  `border-color`, so one variable reads as a subtle wash behind a box and a
-  solid `CanvasText` line around it.
 - `transparent` is honored for `background-color` and `color`, but not for
   `border-color`; that carve-out was removed in [bug
   1740924](https://bugzilla.mozilla.org/show_bug.cgi?id=1740924).
+  `outline-color`, `column-rule-color`, `text-decoration-color`,
+  `text-emphasis-color`, `-webkit-text-fill-color` and
+  `-webkit-text-stroke-color` follow the `border-color` rule.
+- A `var()` is judged by its substituted value.
+- A `light-dark()`, `color-mix()` or `contrast-color()` is kept when every color
+  inside it would be kept (`Color::honored_in_forced_colors_mode`). So
+  `color-mix(in srgb, currentcolor 25%, transparent)` survives as a
+  `background-color` and is replaced as a `border-color`, and one variable reads
+  as a faint fill behind a box and a solid `CanvasText` line around it. A
+  relative color such as `rgb(from ButtonText r g b / 50%)` is rejected even
+  when its origin is a system color, unless it resolves to `transparent` where
+  `transparent` is honored.
 - A rejected `background-color` becomes the canvas background with its alpha
   preserved. Any other rejected color reverts to its UA value.
 - `box-shadow`, `text-shadow`, `accent-color`, `caret-color`,
@@ -589,6 +612,10 @@ and the filter is not the same for every property:
 - A `background-image` with only `url()` and `none` layers is kept, as long as
   `browser.display.permit_backplate` is on (the default). Any other layer, such
   as a gradient, reverts the whole declaration to `none`.
+- `fill`, `stroke`, `stop-color`, `flood-color`, `lighting-color`, `opacity`
+  and `filter` are not filtered at all. An icon follows the regime only through
+  `currentcolor` or a system color in its own `fill` or `stroke`, including one
+  it receives as `context-fill` or `context-stroke`.
 
 The filter therefore fails in both directions, and both shapes exist in the tree:
 
