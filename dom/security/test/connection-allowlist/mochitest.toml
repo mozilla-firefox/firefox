@@ -5,6 +5,13 @@ support-files = [
   "file_enforce.html^headers^",
   "file_report_only.html",
   "file_report_only.html^headers^",
+  "file_upgrade.sjs",
 ]
 
 ["test_console_messages.html"]
+
+["test_https_upgrades.html"]
+skip-if = [
+  "http2", # Every load is upgraded to https
+  "http3", # Every load is upgraded to https
+]

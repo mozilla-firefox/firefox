@@ -1,0 +1,123 @@
+<!DOCTYPE HTML>
+<meta charset="utf-8">
+<title>Connection-Allowlist and https: upgrades</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+<script>
+/* global SpecialPowers */
+/* eslint-disable sdl/no-insecure-url */
+
+// Per https://fetch.spec.whatwg.org/#concept-main-fetch, the
+// upgrade-insecure-requests and mixed content upgrades happen before the
+// Connection Allowlists check, while the HSTS upgrade happens after it. None of
+// them are redirects.
+
+const PATH = "/tests/dom/security/test/connection-allowlist/file_upgrade.sjs";
+
+// Returns the scheme the image was requested over, or "" if the request never
+// reached the server.
+async function loadImage(frameOrigin, { allowlist, uir = false }) {
+  let token = Math.random();
+  let img = `http://example.org${PATH}?image=${token}`;
+  let params = new URLSearchParams({ allowlist, img });
+  if (uir) {
+    params.set("uir", "1");
+  }
+  let iframe = document.createElement("iframe");
+  let result = new Promise(resolve => {
+    window.addEventListener(
+      "message",
+      ({ data }) => {
+        iframe.remove();
+        resolve(data);
+      },
+      { once: true }
+    );
+  });
+  iframe.src = `${frameOrigin}${PATH}?${params}`;
+  document.body.appendChild(iframe);
+  let loaded = await result;
+  let response = await fetch(`${PATH}?scheme=${token}`);
+  let scheme = await response.text();
+  is(loaded, scheme ? "loaded" : "blocked", "load event matches the server");
+  return scheme;
+}
+
+add_task(async function test_upgrade_insecure_requests() {
+  is(
+    await loadImage("https://example.com", {
+      allowlist: `("https://example.org/*")`,
+      uir: true,
+    }),
+    "https",
+    "upgrade-insecure-requests: the upgraded URL is matched"
+  );
+  is(
+    await loadImage("https://example.com", {
+      allowlist: `("http://example.org/*")`,
+      uir: true,
+    }),
+    "",
+    "upgrade-insecure-requests: the URL before the upgrade isn't matched"
+  );
+});
+
+add_task(async function test_mixed_content_upgrade() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["security.mixed_content.upgrade_display_content", true]],
+  });
+  is(
+    await loadImage("https://example.com", {
+      allowlist: `("https://example.org/*")`,
+    }),
+    "https",
+    "Mixed content upgrade: the upgraded URL is matched"
+  );
+  is(
+    await loadImage("https://example.com", {
+      allowlist: `("http://example.org/*")`,
+    }),
+    "",
+    "Mixed content upgrade: the URL before the upgrade isn't matched"
+  );
+});
+
+add_task(async function test_hsts_upgrade() {
+  // HSTS state is partitioned by the top-level site.
+  const setHSTS = maxAge =>
+    SpecialPowers.spawnChrome(
+      [maxAge],
+      maxAgeValue => {
+        const partitionKey = ChromeUtils.getPartitionKeyFromURL(
+          browsingContext.top.currentWindowGlobal.documentURI.spec,
+          "https://example.org/",
+          true
+        );
+        Cc["@mozilla.org/ssservice;1"]
+          .getService(Ci.nsISiteSecurityService)
+          .processHeader(
+            Services.io.newURI("https://example.org"),
+            `max-age=${maxAgeValue}`,
+            { partitionKey }
+          );
+      }
+    );
+  await setHSTS(60);
+  SimpleTest.registerCleanupFunction(() => setHSTS(0));
+
+  is(
+    await loadImage("http://example.com", {
+      allowlist: `("http://example.org/*")`,
+    }),
+    "https",
+    "HSTS upgrade: the URL before the upgrade is matched"
+  );
+  is(
+    await loadImage("http://example.com", {
+      allowlist: `("https://example.org/*")`,
+    }),
+    "",
+    "HSTS upgrade: the upgraded URL isn't matched"
+  );
+});
+</script>

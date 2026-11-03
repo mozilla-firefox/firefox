@@ -51,10 +51,15 @@ ConnectionAllowlistsService::ShouldProcess(nsIURI* aContentLocation,
 nsresult ConnectionAllowlistsService::ConsultForRedirect(
     nsIURI* aOriginalURI, nsIURI* aNewURI, nsILoadInfo* aLoadInfo,
     uint32_t aFlags, Maybe<nsresult>& aCancelCode) {
-  // Internal redirects (e.g. service worker interception or HSTS upgrades)
-  // aren't part of the request's URL list, so they don't count as redirects
-  // for the Connection Allowlists.
-  if (aFlags & nsIChannelEventSink::REDIRECT_INTERNAL) {
+  // Internal redirects (e.g. service worker interception, cache or auth
+  // retries) and https: upgrades (HSTS, HTTPS RR, upgrade-insecure-requests,
+  // mixed content, HTTPS-Only/First) don't append to the request's URL list,
+  // so they aren't redirects for the Connection Allowlists. Fetch does the HSTS
+  // and HTTPS RR upgrades after the check (step 10 of
+  // https://fetch.spec.whatwg.org/#concept-main-fetch), and ShouldLoad already
+  // matched the URL upgraded by upgrade-insecure-requests or mixed content.
+  if (aFlags & (nsIChannelEventSink::REDIRECT_INTERNAL |
+                nsIChannelEventSink::REDIRECT_STS_UPGRADE)) {
     return NS_OK;
   }
 

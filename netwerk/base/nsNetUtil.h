@@ -1035,6 +1035,13 @@ nsresult NS_ShouldSecureUpgrade(
     std::function<void(bool, nsresult)>&& aResultCallback, bool& aWillCallback);
 
 /**
+ * Return true if NS_ShouldSecureUpgrade will upgrade |aURI| to https because
+ * of upgrade-insecure-requests or the mixed content auto-upgrade. Unlike
+ * NS_ShouldSecureUpgrade, this has no side effects and works in any process.
+ */
+bool NS_WillUpgradeInsecureRequest(nsIURI* aURI, nsILoadInfo* aLoadInfo);
+
+/**
  * Returns an https URI for channels that need to go through secure upgrades.
  */
 nsresult NS_GetSecureUpgradedURI(nsIURI* aURI, nsIURI** aUpgradedURI);

@@ -184,6 +184,17 @@ bool ConnectionAllowlists::ShouldLoad(nsIURI* aURI,
 
   nsCOMPtr<nsIURI> uri = aURI;
 
+  // Per https://fetch.spec.whatwg.org/#concept-main-fetch, the
+  // upgrade-insecure-requests and mixed content upgrades (steps 5 and 6) happen
+  // before the Connection Allowlists check (step 7), so match the upgraded URL.
+  // Gecko performs these upgrades later as a REDIRECT_STS_UPGRADE redirect,
+  // which ConnectionAllowlistsService::ConsultForRedirect ignores.
+  if (NS_WillUpgradeInsecureRequest(uri, aLoadInfo) &&
+      NS_WARN_IF(
+          NS_FAILED(NS_GetSecureUpgradedURI(aURI, getter_AddRefs(uri))))) {
+    return false;
+  }
+
   switch (aLoadInfo->GetExternalContentPolicyType()) {
     case ExtContentPolicyType::TYPE_DOCUMENT:
     case ExtContentPolicyType::TYPE_SUBDOCUMENT:
