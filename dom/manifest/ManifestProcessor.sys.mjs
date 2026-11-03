@@ -44,8 +44,11 @@ import { ValueExtractor } from "moz-src:///dom/manifest/ValueExtractor.sys.mjs";
 // ImageObjectProcessor is used to process things like icons and images
 import { ImageObjectProcessor } from "moz-src:///dom/manifest/ImageObjectProcessor.sys.mjs";
 
-const domBundle = Services.strings.createBundle(
-  "chrome://global/locale/dom/dom.properties"
+const lazy = {};
+ChromeUtils.defineLazyGetter(
+  lazy,
+  "l10n",
+  () => new Localization(["dom/manifest.ftl"], true)
 );
 
 export var ManifestProcessor = {
@@ -90,17 +93,18 @@ export var ManifestProcessor = {
       return null;
     }
     if (typeof rawManifest !== "object") {
-      const warn = domBundle.GetStringFromName("ManifestShouldBeObject");
+      const warn = lazy.l10n.formatValueSync("dom-manifest-should-be-object");
       errors.push({ warn });
       rawManifest = {};
     }
     const manifestURL = new URL(aManifestURL);
     const docURL = new URL(aDocURL);
-    const extractor = new ValueExtractor(errors, domBundle);
+    const getL10n = () => lazy.l10n;
+    const extractor = new ValueExtractor(errors, getL10n);
     const imgObjProcessor = new ImageObjectProcessor(
       errors,
       extractor,
-      domBundle
+      getL10n
     );
     const processedManifest = {
       dir: processDirMember.call(this),
@@ -217,12 +221,16 @@ export var ManifestProcessor = {
       }
       let scopeURL = URL.parse(value, manifestURL);
       if (!scopeURL) {
-        const warn = domBundle.GetStringFromName("ManifestScopeURLInvalid");
+        const warn = lazy.l10n.formatValueSync(
+          "dom-manifest-scope-url-invalid"
+        );
         errors.push({ warn });
         return defaultScope;
       }
       if (scopeURL.origin !== docURL.origin) {
-        const warn = domBundle.GetStringFromName("ManifestScopeNotSameOrigin");
+        const warn = lazy.l10n.formatValueSync(
+          "dom-manifest-scope-not-same-origin"
+        );
         errors.push({ warn });
         return defaultScope;
       }
@@ -231,8 +239,8 @@ export var ManifestProcessor = {
         startURL.origin !== scopeURL.origin ||
         startURL.pathname.startsWith(scopeURL.pathname) === false
       ) {
-        const warn = domBundle.GetStringFromName(
-          "ManifestStartURLOutsideScope"
+        const warn = lazy.l10n.formatValueSync(
+          "dom-manifest-start-url-outside-scope"
         );
         errors.push({ warn });
         return defaultScope;
@@ -259,13 +267,15 @@ export var ManifestProcessor = {
       }
       let potentialResult = URL.parse(value, manifestURL);
       if (!potentialResult) {
-        const warn = domBundle.GetStringFromName("ManifestStartURLInvalid");
+        const warn = lazy.l10n.formatValueSync(
+          "dom-manifest-start-url-invalid"
+        );
         errors.push({ warn });
         return defaultStartURL;
       }
       if (potentialResult.origin !== docURL.origin) {
-        const warn = domBundle.GetStringFromName(
-          "ManifestStartURLShouldBeSameOrigin"
+        const warn = lazy.l10n.formatValueSync(
+          "dom-manifest-start-url-should-be-same-origin"
         );
         errors.push({ warn });
         return defaultStartURL;
@@ -326,13 +336,15 @@ export var ManifestProcessor = {
 
       let appId = URL.parse(extractedValue, startURL.origin);
       if (!appId) {
-        const warn = domBundle.GetStringFromName("ManifestIdIsInvalid");
+        const warn = lazy.l10n.formatValueSync("dom-manifest-id-is-invalid");
         errors.push({ warn });
         return startURL.href;
       }
 
       if (appId.origin !== startURL.origin) {
-        const warn = domBundle.GetStringFromName("ManifestIdNotSameOrigin");
+        const warn = lazy.l10n.formatValueSync(
+          "dom-manifest-id-not-same-origin"
+        );
         errors.push({ warn });
         return startURL.href;
       }

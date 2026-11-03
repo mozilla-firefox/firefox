@@ -7,9 +7,15 @@
  */
 
 export class ValueExtractor {
-  constructor(errors, aBundle) {
+  /**
+   * @param {Array} errors
+   *        Collects the warnings that are reported.
+   * @param {Function} getL10n
+   *        Returns the Localization used to format warnings.
+   */
+  constructor(errors, getL10n) {
     this.errors = errors;
-    this.domBundle = aBundle;
+    this.getL10n = getL10n;
   }
 
   /**
@@ -35,9 +41,13 @@ export class ValueExtractor {
     const type = isArray ? "array" : typeof value;
     if (type !== expectedType) {
       if (type !== "undefined") {
-        const warn = this.domBundle.formatStringFromName(
-          "ManifestInvalidType",
-          [objectName, property, expectedType]
+        const warn = this.getL10n().formatValueSync(
+          "dom-manifest-invalid-type",
+          {
+            objectName,
+            property,
+            expectedType,
+          }
         );
         this.errors.push({ warn });
         if (throwTypeError) {
@@ -69,9 +79,12 @@ export class ValueExtractor {
           .toString(16)
           .padStart(2, "0");
     } else if (value) {
-      const warn = this.domBundle.formatStringFromName(
-        "ManifestInvalidCSSColor",
-        [spec.property, value]
+      const warn = this.getL10n().formatValueSync(
+        "dom-manifest-invalid-css-color",
+        {
+          property: spec.property,
+          value,
+        }
       );
       this.errors.push({ warn });
     }
@@ -85,9 +98,12 @@ export class ValueExtractor {
       try {
         langTag = Intl.getCanonicalLocales(value)[0];
       } catch (err) {
-        const warn = this.domBundle.formatStringFromName(
-          "ManifestLangIsInvalid",
-          [spec.property, value]
+        const warn = this.getL10n().formatValueSync(
+          "dom-manifest-lang-is-invalid",
+          {
+            property: spec.property,
+            value,
+          }
         );
         this.errors.push({ warn });
       }

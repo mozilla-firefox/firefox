@@ -12,51 +12,86 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1086997
   <script>
 "use strict";
 const options = {...data, checkConformance: true } ;
+const { Localization } = SpecialPowers.Cu.getGlobalForObject(
+  SpecialPowers.Services
+);
+const l10n = new Localization(["dom/manifest.ftl"], true);
+const fmt = (id, args) => l10n.formatValueSync(id, args);
+const listFormat = new Intl.ListFormat(
+  SpecialPowers.Services.locale.appLocaleAsBCP47,
+  { type: "unit" }
+);
 [
   {
     func: () => options.jsonText = JSON.stringify(1),
-    warn: "Manifest should be an object.",
+    get warn() {
+      return fmt("dom-manifest-should-be-object");
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify("a string"),
-    warn: "Manifest should be an object.",
+    get warn() {
+      return fmt("dom-manifest-should-be-object");
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
       scope: "https://www.mozilla.org",
     }),
-    warn: "The scope URL must be same origin as document.",
+    get warn() {
+      return fmt("dom-manifest-scope-not-same-origin");
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
       scope: "foo",
       start_url: "bar",
     }),
-    warn: "The start URL is outside the scope, so the scope is invalid.",
+    get warn() {
+      return fmt("dom-manifest-start-url-outside-scope");
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
       start_url: "https://www.mozilla.org",
     }),
-    warn: "The start URL must be same origin as document.",
+    get warn() {
+      return fmt("dom-manifest-start-url-should-be-same-origin");
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
       start_url: 42,
     }),
-    warn: "Expected the manifest\u2019s start_url member to be a string.",
+    get warn() {
+      return fmt("dom-manifest-invalid-type", {
+        objectName: "manifest",
+        property: "start_url",
+        expectedType: "string",
+      });
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
       theme_color: "42",
     }),
-    warn: "theme_color: 42 is not a valid CSS color.",
+    get warn() {
+      return fmt("dom-manifest-invalid-css-color", {
+        property: "theme_color",
+        value: "42",
+      });
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
       background_color: "42",
     }),
-    warn: "background_color: 42 is not a valid CSS color.",
+    get warn() {
+      return fmt("dom-manifest-invalid-css-color", {
+        property: "background_color",
+        value: "42",
+      });
+    },
   },
   {
     func: () => options.jsonText = JSON.stringify({
@@ -65,9 +100,16 @@ const options = {...data, checkConformance: true } ;
         { "src": "http://:Invalid", "sizes": "48x48"},
       ],
     }),
-    warn: "icons item at index 1 is invalid. The src member is an invalid URL http://:Invalid",
+    get warn() {
+      return fmt("dom-manifest-image-url-is-invalid", {
+        memberName: "icons",
+        index: 1,
+        member: "src",
+        value: "http://:Invalid",
+      });
+    },
   },
-  // testing dom.properties: ManifestImageUnusable
+  // testing dom-manifest-image-unusable
   {
     func() {
       return (options.jsonText = JSON.stringify({
@@ -77,15 +119,21 @@ const options = {...data, checkConformance: true } ;
         ],
       }));
     },
+    contains: ["banana"],
     get warn() {
       // Returns 2 warnings... array here is just to keep them organized
       return [
-        "icons item at index 1 includes unsupported purpose(s): banana.",
-        "icons item at index 1 lacks a usable purpose. It will be ignored.",
+        fmt("dom-manifest-image-unsupported-purposes", {
+          memberName: "icons",
+          index: 1,
+          count: 1,
+          purposes: listFormat.format(["banana"]),
+        }),
+        fmt("dom-manifest-image-unusable", { memberName: "icons", index: 1 }),
       ].join(" ");
     },
   },
-  // testing dom.properties: ManifestImageUnsupportedPurposes
+  // testing dom-manifest-image-unsupported-purposes
   {
     func() {
       return (options.jsonText = JSON.stringify({
@@ -95,9 +143,17 @@ const options = {...data, checkConformance: true } ;
         ],
       }));
     },
-    warn: "icons item at index 1 includes unsupported purpose(s): foo bar baz.",
+    contains: ["foo", "bar", "baz"],
+    get warn() {
+      return fmt("dom-manifest-image-unsupported-purposes", {
+        memberName: "icons",
+        index: 1,
+        count: 3,
+        purposes: listFormat.format(["foo", "bar", "baz"]),
+      });
+    },
   },
-  // testing dom.properties: ManifestImageRepeatedPurposes
+  // testing dom-manifest-image-repeated-purposes
   {
     func() {
       return (options.jsonText = JSON.stringify({
@@ -110,18 +166,27 @@ const options = {...data, checkConformance: true } ;
         ],
       }));
     },
-    warn: "icons item at index 1 includes repeated purpose(s): any maskable.",
+    contains: ["any", "maskable"],
+    get warn() {
+      return fmt("dom-manifest-image-repeated-purposes", {
+        memberName: "icons",
+        index: 1,
+        purposes: listFormat.format(["any", "maskable"]),
+      });
+    },
   },
-  // testing dom.properties: ManifestIdIsInvalid
+  // testing dom-manifest-id-is-invalid
   {
     func() {
       return (options.jsonText = JSON.stringify({
         id: "http://test:65536/foo",
       }));
     },
-    warn: "The id member did not resolve to a valid URL.",
+    get warn() {
+      return fmt("dom-manifest-id-is-invalid");
+    },
   },
-  // testing dom.properties ManifestIdNotSameOrigin
+  // testing dom-manifest-id-not-same-origin
   {
     func() {
       return (options.jsonText = JSON.stringify({
@@ -129,7 +194,9 @@ const options = {...data, checkConformance: true } ;
         start_url: "/this/place"
       }));
     },
-    warn: "The id member must have the same origin as the start_url member.",
+    get warn() {
+      return fmt("dom-manifest-id-not-same-origin");
+    },
   }
 ].forEach((test) => {
   test.func();
@@ -140,7 +207,11 @@ const options = {...data, checkConformance: true } ;
     const { warn } = validationError;
     messages.push(warn);
   }
-  is(messages.join(" "), test.warn, "Check warning.");
+  const actual = messages.join(" ");
+  is(actual, test.warn, "Check warning.");
+  for (const value of test.contains ?? []) {
+    ok(actual.includes(value), `Warning includes ${value}.`);
+  }
     options.manifestURL = manifestURL;
   options.docURL = docURL;
 });

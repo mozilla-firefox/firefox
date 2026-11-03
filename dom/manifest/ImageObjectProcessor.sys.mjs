@@ -18,13 +18,19 @@
  *
  */
 
-export function ImageObjectProcessor(aErrors, aExtractor, aBundle) {
+export function ImageObjectProcessor(aErrors, aExtractor, aGetL10n) {
   this.errors = aErrors;
   this.extractor = aExtractor;
-  this.domBundle = aBundle;
+  this.getL10n = aGetL10n;
 }
 
 const iconPurposes = Object.freeze(["any", "maskable", "monochrome"]);
+
+function formatList(items) {
+  return new Intl.ListFormat(Services.locale.appLocaleAsBCP47, {
+    type: "unit",
+  }).format(items);
+}
 
 // Static getters
 Object.defineProperties(ImageObjectProcessor, {
@@ -52,7 +58,7 @@ ImageObjectProcessor.prototype.process = function (
     expectedType: "array",
     trim: false,
   };
-  const { domBundle, extractor, errors } = this;
+  const { getL10n, extractor, errors } = this;
   const images = [];
   const value = extractor.extractValue(spec);
   if (Array.isArray(value)) {
@@ -135,27 +141,36 @@ ImageObjectProcessor.prototype.process = function (
 
     // Tell developer about unknown purposes...
     if (unknownPurposes.size) {
-      const warn = domBundle.formatStringFromName(
-        "ManifestImageUnsupportedPurposes",
-        [aMemberName, index, [...unknownPurposes].join(" ")]
+      const warn = getL10n().formatValueSync(
+        "dom-manifest-image-unsupported-purposes",
+        {
+          memberName: aMemberName,
+          index,
+          count: unknownPurposes.size,
+          purposes: formatList(unknownPurposes),
+        }
       );
       errors.push({ warn });
     }
 
     // Tell developer about repeated purposes...
     if (repeatedPurposes.size) {
-      const warn = domBundle.formatStringFromName(
-        "ManifestImageRepeatedPurposes",
-        [aMemberName, index, [...repeatedPurposes].join(" ")]
+      const warn = getL10n().formatValueSync(
+        "dom-manifest-image-repeated-purposes",
+        {
+          memberName: aMemberName,
+          index,
+          purposes: formatList(repeatedPurposes),
+        }
       );
       errors.push({ warn });
     }
 
     if (purposes.size === 0) {
-      const warn = domBundle.formatStringFromName("ManifestImageUnusable", [
-        aMemberName,
+      const warn = getL10n().formatValueSync("dom-manifest-image-unusable", {
+        memberName: aMemberName,
         index,
-      ]);
+      });
       errors.push({ warn });
       throw new TypeError(warn);
     }
@@ -200,9 +215,14 @@ ImageObjectProcessor.prototype.process = function (
       try {
         url = new URL(value, aBaseURL).href;
       } catch (e) {
-        const warn = domBundle.formatStringFromName(
-          "ManifestImageURLIsInvalid",
-          [aMemberName, index, "src", value]
+        const warn = getL10n().formatValueSync(
+          "dom-manifest-image-url-is-invalid",
+          {
+            memberName: aMemberName,
+            index,
+            member: "src",
+            value,
+          }
         );
         errors.push({ warn });
         throw e;
