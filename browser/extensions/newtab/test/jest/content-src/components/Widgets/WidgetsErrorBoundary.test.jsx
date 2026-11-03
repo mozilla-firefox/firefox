@@ -23,6 +23,7 @@ jest.mock("content-src/components/Widgets/WidgetsComponentRegistry.jsx", () => {
   return {
     WIDGET_ROW_COMPONENTS: { lists: ThrowingWidget, clocks: HealthyWidget },
     WIDGET_SIDEBAR_COMPONENTS: {},
+    WIDGET_CARD_COMPONENTS: {},
   };
 });
 

@@ -1235,6 +1235,73 @@ describe("<Widgets> overflow detection", () => {
   });
 });
 
+describe("<Widgets> card display size", () => {
+  const MENU_WIDGET = {
+    id: "menuWidget",
+    enabledPref: "widgets.menuWidget.enabled",
+    sizePref: "widgets.menuWidget.size",
+    systemEnabledPref: "widgets.system.menuWidget.enabled",
+    defaultSize: "medium",
+    validSizes: ["medium", "large"],
+    src: "https://example.com/widget.html",
+    card: "FramedWidgetCard",
+    menu: [
+      {
+        type: "choice",
+        id: "view",
+        l10nId: "menu-widget-view",
+        pref: "widgets.menuWidget.view",
+        options: [
+          { value: "day", l10nId: "menu-widget-view-day" },
+          { value: "week", l10nId: "menu-widget-view-week", size: "large" },
+        ],
+      },
+    ],
+  };
+
+  beforeAll(() => {
+    WIDGET_REGISTRY.push(MENU_WIDGET);
+  });
+
+  afterAll(() => {
+    WIDGET_REGISTRY.splice(WIDGET_REGISTRY.indexOf(MENU_WIDGET), 1);
+  });
+
+  function renderMenuWidget(view) {
+    const { container } = renderWidgets(
+      makeNovaWidgetState([["lists", "medium"]], {
+        "widgets.menuWidget.enabled": true,
+        "widgets.system.menuWidget.enabled": true,
+        "widgets.system.maximized": true,
+        "widgets.menuWidget.view": view,
+      })
+    );
+    return {
+      cell: container.querySelector('[data-widget-id="menuWidget"]'),
+      card: container.querySelector('moz-widget[widget-id="menuWidget"]'),
+    };
+  }
+
+  it("draws the card and its cell at the size its chosen option needs", () => {
+    const { cell, card } = renderMenuWidget("week");
+    expect(cell).toHaveClass("large-widget");
+    expect(card.getAttribute("size")).toBe("large");
+  });
+
+  it('draws a card: "FramedWidgetCard" entry with its menu items', () => {
+    const { card } = renderMenuWidget("day");
+    expect(
+      card.querySelector('panel-item[submenu="menuWidget-view-submenu"]')
+    ).not.toBeNull();
+  });
+
+  it("draws them at the widget's size otherwise", () => {
+    const { cell, card } = renderMenuWidget("day");
+    expect(cell).toHaveClass("medium-widget");
+    expect(card.getAttribute("size")).toBe("medium");
+  });
+});
+
 describe("<Widgets> extension widget", () => {
   const EXTENSION_ID = "fixture-widget@mozilla.org";
   const EXTENSION_SRC = "moz-extension://uuid/widget.html";

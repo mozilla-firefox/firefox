@@ -187,6 +187,18 @@ export const PREF_WIDGETS_SYSTEM_SOLITAIRE_ENABLED =
   "widgets.system.solitaire.enabled";
 
 /**
+ * An item in the menu of a FramedWidgetCard.
+ *
+ * @typedef {object} WidgetMenuItem
+ * @property {"choice"|"action"} type - A "choice" is a submenu of checkable options whose value is stored in a pref and passed to the widget's document as an `id=value` parameter in its URL fragment. An "action" runs one of the host actions FramedWidgetCard supports.
+ * @property {string} id - Names the item in telemetry and, for a choice, its URL fragment parameter.
+ * @property {string} l10nId - Fluent id of the item's label.
+ * @property {string} [pref] - For a choice, the pref storing the chosen value. It must be registered in PREFS_CONFIG in lib/ActivityStream.sys.mjs, or changes to it never reach the card. Until it holds one of the options, the first option is chosen.
+ * @property {{value: string, l10nId: string, size?: string}[]} [options] - For a choice, its options. While an option with a size is chosen, the widget is drawn at least that size where the layout allows it (see resolveWidgetDisplaySize), and choosing a smaller size switches the choice to its first option that fits that size: one without a size, or no larger than it.
+ * @property {"show-customize"} [action] - For an action, the host action it runs.
+ */
+
+/**
  * @typedef {object} WidgetRegistryEntry
  * @property {string} id - Unique key used in prefs and the order pref.
  * @property {string} [telemetryName] - Snake_case name sent in Glean events. May differ from id (e.g. "focus_timer" for id "focusTimer"). Required unless the entry has an extensionID, which sends the widget id from its extension.
@@ -211,6 +223,8 @@ export const PREF_WIDGETS_SYSTEM_SOLITAIRE_ENABLED =
  * @property {string} [src] - URL of the widget's document; a trainhop namespace `src` overrides it.
  * @property {string} [extensionID] - ID of an extension that provides the widget's document. getWidgets keeps the entry only while the ExtensionWidgets state has this extension.
  * @property {string} [icon] - URL of a 16px image drawn before the widget's name in its MozWidgetCard header.
+ * @property {"FramedWidgetCard"} [card] - The name of the card component that draws an entry without its own row component: FramedWidgetCard, for a document a hosted page provides. Without it, MozWidgetCard draws the entry.
+ * @property {WidgetMenuItem[]} [menu] - Items drawn above the shared items in the widget's card menu. Only FramedWidgetCard reads it, so it needs `card: "FramedWidgetCard"`.
  * @property {string} [l10nId] - Fluent id of the widget's name. The message carries .title, .label and .menu-label attributes.
  */
 
@@ -715,6 +729,47 @@ export function resolveWidgetSize(widget, prefs) {
     ? prefs.trainhopConfig?.widgets?.[widget.trainhopSizeKey]
     : null;
   return dedicatedSize || trainhopSize || widget.defaultSize;
+}
+
+/**
+ * Returns the chosen option of a WidgetMenuItem of type "choice": the one its
+ * pref holds, or the first option while the pref holds none of them.
+ *
+ * @param {WidgetMenuItem} item - a choice
+ * @param {object} prefs - current pref values from the Redux store
+ * @returns {{value: string, l10nId: string, size?: string}}
+ */
+export function getChosenOption(item, prefs) {
+  return (
+    item.options.find(option => option.value === prefs[item.pref]) ??
+    item.options[0]
+  );
+}
+
+/**
+ * Returns the size a widget is drawn at: resolveWidgetSize, grown for a
+ * `card: "FramedWidgetCard"` widget to the largest size the chosen options of its menu
+ * choices need when the layout allows widgets to be resized.
+ *
+ * @param {object} widget - a WIDGET_REGISTRY entry
+ * @param {object} prefs - current pref values from the Redux store
+ * @param {boolean} widgetsMayBeMaximized - whether the layout allows resizing
+ * @returns {string}
+ */
+export function resolveWidgetDisplaySize(widget, prefs, widgetsMayBeMaximized) {
+  const size = resolveWidgetSize(widget, prefs);
+  if (!widgetsMayBeMaximized || widget.card !== "FramedWidgetCard") {
+    return size;
+  }
+  const sizes = widget.validSizes ?? [];
+  return (widget.menu ?? [])
+    .filter(item => item.type === "choice")
+    .map(item => getChosenOption(item, prefs).size)
+    .reduce(
+      (biggest, needed) =>
+        sizes.indexOf(needed) > sizes.indexOf(biggest) ? needed : biggest,
+      size
+    );
 }
 
 /**
