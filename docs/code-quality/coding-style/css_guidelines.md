@@ -577,9 +577,12 @@ The filter therefore fails in both directions, and both shapes exist in the tree
 - **A line drawn with `background-color` vanishes.** An `hr` styled as a 1px
   separator, a `::before` hairline or a divider `div` each become exactly the
   surface they sit on. Drawing the line as a border survives instead, because a
-  rejected border reverts to its UA value: `currentcolor` on most elements,
-  `ButtonBorder` on `button`, `input` and `select`, and `ThreeDFace` on
-  `fieldset`. The swap is not geometrically free,
+  rejected border reverts to its UA value: `ButtonBorder` on text inputs,
+  `textarea`, `select` and buttons (`-moz-buttonhoverborder` on hover,
+  `-moz-buttonactiveborder` on `:active:hover`), `ThreeDFace` on `fieldset`,
+  `ThreeDShadow` and `ThreeDHighlight` on `progress`, and `currentcolor`
+  elsewhere, radio, checkbox and range inputs included.
+  The swap is not geometrically free,
   though: a used border width floors to whole device pixels where a height does
   not, so keep the box's block size and add `box-sizing: border-box`.
 - **A transparent border used as a spacer becomes a frame.** The
@@ -755,9 +758,10 @@ does it, with a `max(env(hairline), ...)` guard against rounding to zero;
 as the syntax for this, which nothing implements yet. Keeping the original height
 and adding `box-sizing: border-box` is the other way to hold a box exactly.
 
-`env(hairline)` is one device pixel. Like the chrome-only media features it is
-gated on the stylesheet's URL rather than the document's, so it resolves in a
-`chrome://` sheet in either realm and in `about:newtab`'s own CSS, and yields
-nothing in a stylesheet loaded from another origin. There the declaration is
-invalid at computed-value time and acts as `unset`: 0 for `padding` or
-`margin`, but `medium` for a border width with a border style.
+`env(hairline)` is one device pixel. Like the chrome-only media features, it
+depends on the stylesheet's URL rather than the document's. It resolves in a
+`chrome://` or `resource://` sheet in either realm and in `about:newtab`'s own
+CSS. In any other sheet it has no value, and the declaration behaves as `unset`:
+a `padding` or a `margin` computes to 0, a `border` shorthand loses its style
+and reads 0px, and a `border-width` longhand with its style declared separately
+falls back to `medium` (3px).
