@@ -360,18 +360,22 @@ void CSSAnimation::UpdatePropertiesWithNew(
     animationChanged = true;
   }
 
-  // Handle changes in play state. If the animation is idle, however,
-  // changes to animation-play-state should *not* restart it.
-  if (PlayState() != AnimationPlayState::Idle &&
-      ~mOverriddenProperties & CSSAnimationProperties::PlayState) {
-    bool wasPaused = PlayState() == AnimationPlayState::Paused;
-    if (!wasPaused && aNewIsStylePaused) {
-      PauseFromStyle();
-      animationChanged = true;
-    } else if (wasPaused && !aNewIsStylePaused) {
-      PlayFromStyle();
+  // Handle changes in play state.
+  if (mIsStylePaused != aNewIsStylePaused) {
+    // If the animation is idle, however, changes to animation-play-state should
+    // *not* restart it, e.g. if we call cancel() on this animation, updating
+    // the properties shouldn't make it live again.
+    // https://github.com/w3c/csswg-drafts/issues/13503
+    if (PlayState() != AnimationPlayState::Idle &&
+        ~mOverriddenProperties & CSSAnimationProperties::PlayState) {
+      if (aNewIsStylePaused) {
+        PauseFromStyle();
+      } else {
+        PlayFromStyle();
+      }
       animationChanged = true;
     }
+    mIsStylePaused = aNewIsStylePaused;
   }
 
   // Updating the effect timing above might already have caused the

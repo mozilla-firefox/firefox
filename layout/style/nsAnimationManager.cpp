@@ -364,7 +364,7 @@ static already_AddRefed<CSSAnimation> BuildAnimation(
                                        timeline, &range);
 
   auto animation = MakeRefPtr<CSSAnimation>(
-      aPresContext->Document()->GetScopeObject(), animationName);
+      aPresContext->Document()->GetScopeObject(), animationName, isStylePaused);
   animation->SetOwningElement(
       OwningElementRef(*aTarget.mElement, aTarget.mPseudoRequest));
 
