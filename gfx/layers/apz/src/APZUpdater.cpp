@@ -365,7 +365,7 @@ const WebRenderScrollData* APZUpdater::GetScrollData(LayersId aLayersId) const {
 
 void APZUpdater::AssertOnUpdaterThread() const {
   if (APZThreadUtils::GetThreadAssertionsEnabled()) {
-    MOZ_RELEASE_ASSERT(IsUpdaterThread());
+    MOZ_ASSERT(IsUpdaterThread());
   }
 }
 

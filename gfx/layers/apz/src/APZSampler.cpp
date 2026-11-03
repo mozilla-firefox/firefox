@@ -164,7 +164,7 @@ APZSampler::GetCurrentScrollOffsetAndRange(
 
 void APZSampler::AssertOnSamplerThread() const {
   if (APZThreadUtils::GetThreadAssertionsEnabled()) {
-    MOZ_RELEASE_ASSERT(IsSamplerThread());
+    MOZ_ASSERT(IsSamplerThread());
   }
 }
 
