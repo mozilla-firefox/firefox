@@ -463,6 +463,13 @@ SVGBBox SVGClipPathFrame::GetBBoxForClipPathFrame(const SVGBBox& aBBox,
     return SVGBBox();
   }
 
+  static int16_t sRefChainLengthCounter = AutoReferenceChainGuard::noChain;
+  AutoReferenceChainGuard refChainGuard(this, &mIsBeingProcessed,
+                                        &sRefChainLengthCounter);
+  if (MOZ_UNLIKELY(!refChainGuard.Reference())) {
+    return SVGBBox();  // Break reference chain
+  }
+
   nsIContent* node = GetContent()->GetFirstChild();
   SVGBBox unionBBox;
   for (; node; node = node->GetNextSibling()) {
