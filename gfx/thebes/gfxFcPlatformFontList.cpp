@@ -2736,13 +2736,15 @@ void gfxFcPlatformFontList::AddGenericFonts(
       aLanguage == nsGkAtoms::x_math) {
     nsAtom* langGroup = GetLangGroup(aLanguage);
     nsAutoCString fontlistValue;
-    mFontPrefs->LookupName(PrefName(generic, langGroup), fontlistValue);
+    AutoLock lock(mLock);
+    GetFontPrefs()->LookupName(PrefName(generic, langGroup), fontlistValue);
     if (fontlistValue.IsEmpty()) {
       // The font name list may have two or more family names as comma
       // separated list.  In such case, not matching with generic font
       // name is fine because if the list prefers specific font, we
       // should try to use the pref with complicated path.
-      mFontPrefs->LookupNameList(PrefName(generic, langGroup), fontlistValue);
+      GetFontPrefs()->LookupNameList(PrefName(generic, langGroup),
+                                     fontlistValue);
     }
     if (!fontlistValue.IsEmpty()) {
       if (!fontlistValue.EqualsLiteral("serif") &&

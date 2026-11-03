@@ -1121,7 +1121,7 @@ class gfxPlatformFontList : public gfxFontInfoLoader {
   nsRefPtrHashtable<nsPtrHashKey<const mozilla::fontlist::Face>, gfxFontEntry>
       mFontEntries MOZ_GUARDED_BY(mLock);
 
-  mozilla::UniquePtr<FontPrefs> mFontPrefs;
+  mozilla::UniquePtr<FontPrefs> mFontPrefs MOZ_GUARDED_BY(mLock);
 
   RefPtr<gfxFontEntry> mDefaultFontEntry MOZ_GUARDED_BY(mLock);
 

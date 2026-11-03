@@ -372,10 +372,11 @@ class gfxFcPlatformFontList final : public gfxPlatformFontList {
 
   // to avoid enumerating all fonts, maintain a mapping of local font
   // names to family
-  nsTHashMap<nsCString, RefPtr<FcPattern>> mLocalNames;
+  nsTHashMap<nsCString, RefPtr<FcPattern>> mLocalNames MOZ_GUARDED_BY(mLock);
 
   // caching generic/lang ==> font family list
-  nsClassHashtable<nsCStringHashKey, PrefFontList> mGenericMappings;
+  nsClassHashtable<nsCStringHashKey, PrefFontList> mGenericMappings
+      MOZ_GUARDED_BY(mLock);
 
   // Caching family lookups as found by FindAndAddFamilies after resolving
   // substitutions. The gfxFontFamily objects cached here are owned by the
@@ -383,7 +384,8 @@ class gfxFcPlatformFontList final : public gfxPlatformFontList {
   // font list is rebuilt (e.g. due to a fontconfig configuration change),
   // these pointers will be invalidated. InitFontList() flushes the cache
   // in this case.
-  nsTHashMap<nsCStringHashKey, nsTArray<FamilyAndGeneric>> mFcSubstituteCache;
+  nsTHashMap<nsCStringHashKey, nsTArray<FamilyAndGeneric>> mFcSubstituteCache
+      MOZ_GUARDED_BY(mLock);
 
   nsCOMPtr<nsITimer> mCheckFontUpdatesTimer;
   RefPtr<FcConfig> mLastConfig;
@@ -414,16 +416,16 @@ class gfxFcPlatformFontList final : public gfxPlatformFontList {
 
   // Cache for most recently used language code in FindAndAddFamiliesLocked,
   // and the result of checking whether to use lang-specific lookups.
-  RefPtr<nsAtom> mPrevLanguage;
-  nsCString mSampleLang;
-  bool mUseCustomLookups = false;
+  RefPtr<nsAtom> mPrevLanguage MOZ_GUARDED_BY(mLock);
+  nsCString mSampleLang MOZ_GUARDED_BY(mLock);
+  bool mUseCustomLookups MOZ_GUARDED_BY(mLock) = false;
 
   // By default, font prefs under Linux are set to simply lookup
   // via fontconfig the appropriate font for serif/sans-serif/monospace.
   // Rather than check each time a font pref is used, check them all at startup
   // and set a boolean to flag the case that non-default user font prefs exist
   // Note: langGroup == x-math is handled separately
-  bool mAlwaysUseFontconfigGenerics;
+  mozilla::Atomic<bool> mAlwaysUseFontconfigGenerics;
 
   static FT_Library sFTLibrary;
 };
