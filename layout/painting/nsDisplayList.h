@@ -1472,6 +1472,10 @@ class nsDisplayListBuilder {
     void CheckASR(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame);
 #endif
 
+    // Computes the visible rect and the dirty rect aOutDirtyRect of the
+    // out-of-flow frame aFrame. Both are relative to aFrame.
+    //
+    // Note: aVisibleRect and aDirtyRect are relative to aFrame's parent.
     static nsRect ComputeVisibleRectForFrame(nsDisplayListBuilder* aBuilder,
                                              nsIFrame* aFrame,
                                              const nsRect& aVisibleRect,

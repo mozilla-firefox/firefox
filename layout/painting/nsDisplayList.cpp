@@ -706,14 +706,15 @@ nsRect nsDisplayListBuilder::OutOfFlowDisplayData::ComputeVisibleRectForFrame(
                  "DisplayPortUtils::IsFixedPosFrameInDisplayPort() guarantees "
                  "that the root scroll container frame exists!");
 
-      // Note that the displayport here is already in the right coordinate
-      // space: it's relative to the scroll port (= layout viewport), but
-      // covers the visual viewport with some margins around it, which is
-      // exactly what we want.
+      // Note that the displayport here is in the right coordinate space: it's
+      // relative to the root scroll container frame, and covers the visual
+      // viewport with some margins around it, which is exactly what we want.
       DebugOnly<bool> hasDisplayPort = DisplayPortUtils::GetDisplayPort(
           rootScrollContainerFrame->GetContent(),
           &dirtyRectRelativeToDirtyFrame,
-          DisplayPortOptions().With(ContentGeometryType::Fixed));
+          DisplayPortOptions()
+              .With(DisplayportRelativeTo::ScrollFrame)
+              .With(ContentGeometryType::Fixed));
       MOZ_ASSERT(hasDisplayPort,
                  "DisplayPortUtils::IsFixedPosFrameInDisplayPort() guarantees "
                  "that the displayport exists!");
