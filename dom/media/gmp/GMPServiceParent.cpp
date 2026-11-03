@@ -316,15 +316,7 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
 #endif
     ShutdownGMPThread();
 
-    // InitializePlugins() settles mInitPromise from the GMP thread, which has
-    // now been joined, so a scan still in flight will never settle it. Do it
-    // here instead, so that EnsureInitialized() cannot leave a caller waiting
-    // forever.
-    MonitorAutoLock lock(mInitPromiseMonitor);
-    if (!mLoadPluginsFromDiskComplete) {
-      mLoadPluginsFromDiskComplete = true;
-      mInitPromise.RejectIfExists(NS_ERROR_ABORT, __func__);
-    }
+    RejectPendingInitPromise();
   } else if (!strcmp(NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID, aTopic)) {
     mXPCOMWillShutdown = true;
   } else if (!strcmp("last-pb-context-exited", aTopic)) {
@@ -386,6 +378,18 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
   }
 
   return NS_OK;
+}
+
+void GeckoMediaPluginServiceParent::RejectPendingInitPromise() {
+  // InitializePlugins() settles mInitPromise from the GMP thread, which has
+  // now been joined, so a scan still in flight will never settle it. Do it
+  // here instead, so that EnsureInitialized() cannot leave a caller waiting
+  // forever.
+  MonitorAutoLock lock(mInitPromiseMonitor);
+  if (!mLoadPluginsFromDiskComplete) {
+    mLoadPluginsFromDiskComplete = true;
+    mInitPromise.RejectIfExists(NS_ERROR_ABORT, __func__);
+  }
 }
 
 void GeckoMediaPluginServiceParent::OnPreferenceChanged(
