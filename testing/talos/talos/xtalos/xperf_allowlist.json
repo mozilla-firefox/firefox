@@ -176,6 +176,12 @@
     "minbytes": 0,
     "maxbytes": 15360
   },
+  "c:\\windows\\system32\\en-us\\wscapi.dll.mui": {
+    "mincount": 0,
+    "maxcount": 2,
+    "minbytes": 0,
+    "maxbytes": 24576
+  },
   "c:\\windows\\system32\\ucrtbase.dll": {
     "mincount": 4,
     "maxcount": 4,
