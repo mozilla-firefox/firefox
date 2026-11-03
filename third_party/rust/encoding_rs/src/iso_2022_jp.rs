@@ -130,6 +130,18 @@ impl Iso2022JpDecoder {
         loop_preamble = {},
         eof = {
             match self.decoder_state {
+                Iso2022JpDecoderState::TrailByte
+                | Iso2022JpDecoderState::EscapeStart
+                | Iso2022JpDecoderState::Escape => {
+                    // We need to check space without intent to write in order to
+                    // make sure that there is space for the replacement character.
+                    if let Space::Full(_) = dest.check_space_bmp() {
+                        return (DecoderResult::OutputFull, src_consumed, dest.written());
+                    }
+                }
+                _ => {}
+            }
+            match self.decoder_state {
                 Iso2022JpDecoderState::TrailByte | Iso2022JpDecoderState::EscapeStart => {
                     self.decoder_state = self.output_state;
                     return (DecoderResult::Malformed(1, 0), src_consumed, dest.written());
@@ -902,6 +914,52 @@ mod tests {
         decode_iso_2022_jp(b"\x1B(I\x21\x1B(I\x21", "\u{FF61}\u{FF61}");
         decode_iso_2022_jp(b"\x1B$@\x54\x64\x1B$@\x54\x64", "\u{58FA}\u{58FA}");
         decode_iso_2022_jp(b"\x1B$B\x54\x64\x1B$B\x54\x64", "\u{58FA}\u{58FA}");
+    }
+
+    #[test]
+    fn test_iso_2022_jp_decode_eof_with_small_output() {
+        let cases: [(&[u8], &str); 5] = [
+            (b"\x1B$B9\x1B", "\u{FFFD}\u{FFFD}"),
+            (b"\x1B$B9\x1B$", "\u{FFFD}\u{FFFD}\u{FFFD}"),
+            (b"\x1B$B9\x1B(", "\u{FFFD}\u{FFFD}\u{FFFD}"),
+            (b"\x80\x1B$", "\u{FFFD}\u{FFFD}$"),
+            (b"a\x1B$B9", "a\u{FFFD}"),
+        ];
+        for &(bytes, expect) in cases.iter() {
+            decode_iso_2022_jp(bytes, expect);
+        }
+        for &(bytes, expect) in cases.iter() {
+            for len in 4..16 {
+                let mut decoder = ISO_2022_JP.new_decoder_without_bom_handling();
+                let mut dst = vec![0u8; len];
+                let mut output = String::new();
+                let mut src = bytes;
+                loop {
+                    let (result, read, written, _) = decoder.decode_to_utf8(src, &mut dst, true);
+                    output.push_str(core::str::from_utf8(&dst[..written]).unwrap());
+                    src = &src[read..];
+                    if result == CoderResult::InputEmpty {
+                        break;
+                    }
+                }
+                assert_eq!(output, expect);
+            }
+            for len in 2..8 {
+                let mut decoder = ISO_2022_JP.new_decoder_without_bom_handling();
+                let mut dst = vec![0u16; len];
+                let mut output = Vec::new();
+                let mut src = bytes;
+                loop {
+                    let (result, read, written, _) = decoder.decode_to_utf16(src, &mut dst, true);
+                    output.extend_from_slice(&dst[..written]);
+                    src = &src[read..];
+                    if result == CoderResult::InputEmpty {
+                        break;
+                    }
+                }
+                assert_eq!(String::from_utf16(&output).unwrap(), expect);
+            }
+        }
     }
 
     #[test]

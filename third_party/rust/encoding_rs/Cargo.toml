@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "encoding_rs"
-version = "0.8.40"
+version = "0.8.44"
 authors = ["Henri Sivonen <hsivonen@hsivonen.fi>"]
 build = "build.rs"
 include = [
@@ -71,7 +71,7 @@ simd-accel = [
     "any_all_workaround",
     "rustversion",
 ]
-std = ["multiversion/std"]
+std = ["dep:multiversion"]
 
 [lib]
 name = "encoding_rs"
@@ -112,8 +112,8 @@ version = "1.0"
 version = "1.0.19"
 
 [target.'cfg(all(any(target_arch = "x86_64", target_arch = "x86"), not(all(target_feature = "avx2", target_feature = "bmi1"))))'.dependencies.multiversion]
-version = "0.8.0"
-default-features = false
+version = ">=0.8.0,<0.10.0"
+optional = true
 
 [target.'cfg(any(target_arch = "x86_64", target_arch = "x86"))'.dependencies.core_detect]
 version = "1"

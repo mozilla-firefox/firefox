@@ -34,7 +34,7 @@ checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
 
 [[package]]
 name = "encoding_rs"
-version = "0.8.40"
+version = "0.8.44"
 dependencies = [
  "any_all_workaround",
  "bincode",

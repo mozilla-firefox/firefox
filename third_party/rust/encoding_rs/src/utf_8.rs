@@ -714,8 +714,26 @@ pub fn convert_utf16_to_utf8_partial_inner(src: &[u16], dst: &mut [u8]) -> (usiz
     let mut written = 0;
     'outer: loop {
         let mut unit = {
+            // `basic_latin_to_ascii` may write garbage beyond the logical number
+            // of read and written code units. If `dst` was longer than necessary,
+            // this would not be a problem, since we know that every code unit
+            // in input will result in at least one code unit in output, so the
+            // garbage would get subsequently overwritten. However, when the
+            // conversion here ends due to running out of output space, we
+            // may have a situation where we have written a byte of garbage
+            // to output, but we don't overwrite it, because there is not
+            // enough space in the output for every possible scalar (4 bytes).
+            //
+            // Therefore, let's make the destination slice that this function
+            // operates on 3 bytes shorter to make the SIMD code stop a bit
+            // earlier and then `convert_utf16_to_utf8_partial_tail` will
+            // handle the part that this function does not.
+            let capped_dst_len = dst.len().saturating_sub(3);
+            if written >= capped_dst_len {
+                return (read, written);
+            }
             let src_remaining = &src[read..];
-            let dst_remaining = &mut dst[written..];
+            let dst_remaining = &mut dst[written..capped_dst_len];
             let length = if dst_remaining.len() < src_remaining.len() {
                 dst_remaining.len()
             } else {

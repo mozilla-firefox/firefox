@@ -69,7 +69,7 @@
 //! [Apache license, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 //! or the [MIT license](https://opensource.org/licenses/MIT), at your option.
 //! See the
-//! [`COPYRIGHT`](https://github.com/hsivonen/encoding_rs/blob/master/COPYRIGHT)
+//! [`COPYRIGHT`](https://github.com/hsivonen/encoding_rs/blob/main/COPYRIGHT)
 //! file for details.
 //! The [repository is on GitHub](https://github.com/hsivonen/encoding_rs). The
 //! [crate is available on crates.io](https://crates.io/crates/encoding_rs).
@@ -335,7 +335,7 @@
 //! and `Encoder` objects are not used at all.
 //!
 //! [1]: https://github.com/hsivonen/encoding_c
-//! [2]: https://github.com/hsivonen/encoding_c/blob/master/include/encoding_rs_cpp.h
+//! [2]: https://github.com/hsivonen/encoding_c/blob/main/include/encoding_rs_cpp.h
 //! [3]: https://github.com/Microsoft/GSL/
 //! [4]: https://searchfox.org/mozilla-central/source/intl/Encoding.h
 //!
@@ -3542,10 +3542,16 @@ impl<'de> Visitor<'de> for EncodingVisitor {
         if let Some(enc) = Encoding::for_label(value.as_bytes()) {
             Ok(enc)
         } else {
-            Err(E::custom(alloc::format!(
-                "invalid encoding label: {}",
-                value
-            )))
+            cfg_if! {
+                if #[cfg(feature = "alloc")] {
+                    Err(E::custom(alloc::format!(
+                        "invalid encoding label: {}",
+                        value
+                    )))
+                } else {
+                    Err(E::custom("invalid encoding label"))
+                }
+            }
         }
     }
 }
@@ -3750,10 +3756,9 @@ pub enum DecoderResult {
 /// # Infinite loops
 ///
 /// When converting with a fixed-size output buffer whose size is too small to
-/// accommodate one character or (when applicable) one numeric character
-/// reference of output, an infinite loop ensues. When converting with a
-/// fixed-size output buffer, it generally makes sense to make the buffer
-/// fairly large (e.g. couple of kilobytes).
+/// accommodate one character of output, an infinite loop ensues. When
+/// converting with a fixed-size output buffer, it generally makes sense to
+/// make the buffer fairly large (e.g. couple of kilobytes).
 pub struct Decoder {
     encoding: &'static Encoding,
     variant: VariantDecoder,
@@ -4590,9 +4595,10 @@ impl EncoderResult {
 /// # Infinite loops
 ///
 /// When converting with a fixed-size output buffer whose size is too small to
-/// accommodate one character of output, an infinite loop ensues. When
-/// converting with a fixed-size output buffer, it generally makes sense to
-/// make the buffer fairly large (e.g. couple of kilobytes).
+/// accommodate one character or (when applicable) one numeric character
+/// reference of output, an infinite loop ensues. When converting with a
+/// fixed-size output buffer, it generally makes sense to make the buffer
+/// fairly large (e.g. couple of kilobytes).
 pub struct Encoder {
     encoding: &'static Encoding,
     variant: VariantEncoder,
@@ -5084,7 +5090,11 @@ fn checked_div(opt: Option<usize>, num: usize) -> Option<usize> {
 #[cfg(feature = "alloc")]
 #[inline(always)]
 fn checked_next_power_of_two(opt: Option<usize>) -> Option<usize> {
-    opt.map(|n| n.next_power_of_two())
+    if let Some(n) = opt {
+        n.checked_next_power_of_two()
+    } else {
+        None
+    }
 }
 
 #[cfg(feature = "alloc")]
@@ -5861,6 +5871,41 @@ mod tests {
             let needed = decoder.max_utf16_buffer_length(1).unwrap();
             let (result, _, _, _) = decoder.decode_to_utf16(b"\xFF", &mut dst[..needed], true);
             assert_eq!(result, CoderResult::InputEmpty);
+        }
+    }
+
+    #[test]
+    fn test_short_buffer_after_non_bom_bytes() {
+        // EF BB at the end of one buffer turn out not to be a BOM. Decoding
+        // them as IBM866 or x-user-defined takes more than four bytes of UTF-8,
+        // so with a four-byte buffer the replay must return OutputFull and
+        // resume on the next call.
+        for (encoding, bytes, expect) in [
+            (IBM866, &b"\xEF\xBBab"[..], "\u{044F}\u{2557}ab"),
+            (X_USER_DEFINED, &b"\xEF\xBBab"[..], "\u{F7EF}\u{F7BB}ab"),
+            (X_USER_DEFINED, &b"\xFE\x80"[..], "\u{F7FE}\u{F780}"),
+            (ISO_2022_JP, &b"\xEF\xBBab"[..], "\u{FFFD}\u{FFFD}ab"),
+        ] {
+            for split in 1..bytes.len() {
+                for size in 4..8 {
+                    let mut decoder = encoding.new_decoder();
+                    let mut out = String::new();
+                    for (src, last) in [(&bytes[..split], false), (&bytes[split..], true)] {
+                        let mut src = src;
+                        loop {
+                            let mut dst = [0u8; 8];
+                            let (result, read, written, _) =
+                                decoder.decode_to_utf8(src, &mut dst[..size], last);
+                            out.push_str(core::str::from_utf8(&dst[..written]).unwrap());
+                            src = &src[read..];
+                            if result == CoderResult::InputEmpty {
+                                break;
+                            }
+                        }
+                    }
+                    assert_eq!(out, expect);
+                }
+            }
         }
     }
 

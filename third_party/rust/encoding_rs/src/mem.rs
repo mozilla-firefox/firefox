@@ -1338,11 +1338,9 @@ pub fn convert_utf8_to_utf16_without_replacement(src: &[u8], dst: &mut [u16]) ->
 ///
 /// # Safety
 ///
-/// This function may write garbage to bytes in the destination
-/// after the reported number of written bytes, so if you want to
-/// convert into a `&mut str`, use `convert_utf16_to_str_partial()`
-/// instead of using this function together with the `unsafe`
-/// method `as_bytes_mut()` on `&mut str`.
+/// If you want to convert into a `&mut str`, use
+/// `convert_utf16_to_str_partial()` instead of using this function
+/// together with the `unsafe` method `as_bytes_mut()` on `&mut str`.
 #[inline(always)]
 pub fn convert_utf16_to_utf8_partial(src: &[u16], dst: &mut [u8]) -> (usize, usize) {
     // The two functions called below are marked `inline(never)` to make
@@ -1403,11 +1401,11 @@ pub fn convert_utf16_to_utf8(src: &[u16], dst: &mut [u8]) -> usize {
 /// replaced with the REPLACEMENT CHARACTER.
 pub fn convert_utf16_to_str_partial(src: &[u16], dst: &mut str) -> (usize, usize) {
     // SAFETY: We trust that `convert_utf16_to_utf8_partial` writes
-    // valid UTF-8. To make the part of the slice after what was reported
-    // as logically written by that funtion, we use knowledge of the internals
-    // to overwrite trailing garbage that may have been written. Then we also
-    // overwrite a possible partial UTF-8 byte sequence after that. Then the
-    // rest must be valid on the assumption that `dst` was valid to begin with.
+    // valid UTF-8 and does not modify bytes beyond the reported logical written
+    // length. We then overwrite a possible partial UTF-8 byte sequence after that.
+    // Then the rest must be valid on the assumption that `dst` was valid to begin
+    // with.
+    //
     // In case of a panic, the `ScopeGuard` zeros the whole slice, which ensures
     // it's valid UTF-8 in an use-after-panic scenario when unwinding is enabled.
     // (Relevant only if there's a panic due to a crate-internal bug. Panics
@@ -1484,31 +1482,46 @@ pub fn convert_latin1_to_utf16(src: &[u8], dst: &mut [u16]) {
 pub fn convert_latin1_to_utf8_partial(src: &[u8], dst: &mut [u8]) -> (usize, usize) {
     let src_len = src.len();
     let dst_len = dst.len();
+    // Cap to avoid trailing garbage from `ascii_to_ascii` not getting overwritten
+    // when the check for 2 available slots fails.
+    let dst_len_capped = dst_len.saturating_sub(1);
     let mut total_read = 0usize;
     let mut total_written = 0usize;
     loop {
-        // src can't advance more than dst
-        let src_left = src_len - total_read;
-        let dst_left = dst_len - total_written;
-        let min_left = ::core::cmp::min(src_left, dst_left);
-        if let Some((non_ascii, consumed)) =
-            { ascii_to_ascii(&src[total_read..], &mut dst[total_written..]) }
-        {
-            total_read += consumed;
-            total_written += consumed;
-            if total_written.checked_add(2).unwrap() > dst_len {
-                return (total_read, total_written);
+        if total_written < dst_len_capped {
+            // src can't advance more than dst
+            let src_left = src_len - total_read;
+            let dst_left = dst_len_capped - total_written;
+            let min_left = ::core::cmp::min(src_left, dst_left);
+            if let Some((non_ascii, consumed)) =
+                { ascii_to_ascii(&src[total_read..], &mut dst[total_written..dst_len_capped]) }
+            {
+                total_read += consumed;
+                total_written += consumed;
+                if total_written.checked_add(2).unwrap() > dst_len {
+                    return (total_read, total_written);
+                }
+
+                total_read += 1; // consume `non_ascii`
+
+                dst[total_written] = (non_ascii >> 6) | 0xC0;
+                total_written += 1;
+                dst[total_written] = (non_ascii & 0x3F) | 0x80;
+                total_written += 1;
+                continue;
             }
-
-            total_read += 1; // consume `non_ascii`
-
-            dst[total_written] = (non_ascii >> 6) | 0xC0;
-            total_written += 1;
-            dst[total_written] = (non_ascii & 0x3F) | 0x80;
-            total_written += 1;
-            continue;
+            total_read += min_left;
+            total_written += min_left;
         }
-        return (total_read + min_left, total_written + min_left);
+        if total_read < src.len() && total_written < dst.len() {
+            let b = src[total_read];
+            if b.is_ascii() {
+                dst[total_written] = b;
+                total_read += 1;
+                total_written += 1;
+            }
+        }
+        return (total_read, total_written);
     }
 }
 
@@ -1529,7 +1542,7 @@ pub fn convert_latin1_to_utf8_partial(src: &[u8], dst: &mut [u8]) -> (usize, usi
 /// Note that this function may write garbage beyond the number of bytes
 /// indicated by the return value, so using a `&mut str` interpreted as
 /// `&mut [u8]` as the destination is not safe. If you want to convert into
-/// a `&mut str`, use `convert_utf16_to_str()` instead of this function.
+/// a `&mut str`, use `convert_latin1_to_str()` instead of this function.
 #[inline]
 pub fn convert_latin1_to_utf8(src: &[u8], dst: &mut [u8]) -> usize {
     assert!(
@@ -1551,8 +1564,15 @@ pub fn convert_latin1_to_utf8(src: &[u8], dst: &mut [u8]) -> usize {
 /// If the output isn't large enough, not all input is consumed.
 #[inline]
 pub fn convert_latin1_to_str_partial(src: &[u8], dst: &mut str) -> (usize, usize) {
-    let bytes: &mut [u8] = unsafe { dst.as_bytes_mut() };
-    let (read, written) = convert_latin1_to_utf8_partial(src, bytes);
+    // In case of a panic, the `ScopeGuard` zeros the whole slice, which ensures
+    // it's valid UTF-8 in an use-after-panic scenario when unwinding is enabled.
+    // (Relevant only if there's a panic due to a crate-internal bug. Panics
+    // arising from misuse of the public API don't need this guard and end up
+    // zeroing the slice unnecessarily.)
+    let mut bytes = scopeguard::guard(unsafe { dst.as_bytes_mut() }, |bytes| {
+        bytes.iter_mut().for_each(|b| *b = 0)
+    });
+    let (read, written) = convert_latin1_to_utf8_partial(src, &mut bytes);
     let len = bytes.len();
     let mut trail = written;
     let max = ::core::cmp::min(len, trail + MAX_STRIDE_SIZE);
@@ -1564,6 +1584,8 @@ pub fn convert_latin1_to_str_partial(src: &[u8], dst: &mut str) -> (usize, usize
         bytes[trail] = 0;
         trail += 1;
     }
+    // Defuse the zeroing guard.
+    let _ = scopeguard::ScopeGuard::<&mut [u8], _>::into_inner(bytes);
     (read, written)
 }
 
@@ -2238,6 +2260,52 @@ mod tests {
         let len = written + convert_utf16_to_utf8(&src[read..], &mut dst[written..]);
         dst.truncate(len);
         assert_eq!(dst, reference.as_bytes());
+    }
+
+    #[test]
+    fn test_convert_utf16_to_utf8_partial_leaves_tail_unmodified() {
+        // A non-Basic Latin code unit after an ASCII run of every length
+        // up to past a double stride, so that the SIMD stride functions see
+        // it at every position.
+        for &non_ascii in &[0x00CAu16, 0x00E4, 0x4E00, 0xD83D, 0xDCA9] {
+            for prefix_len in 0..70 {
+                let mut src = vec![u16::from(b'a'); prefix_len];
+                src.push(non_ascii);
+                src.extend_from_slice(&[u16::from(b'b'); 40]);
+                for dst_len in 0..=(src.len() * 3) {
+                    let mut dst = vec![b'q'; dst_len];
+                    let (_, written) = convert_utf16_to_utf8_partial(&src[..], &mut dst[..]);
+                    assert!(dst[written..].iter().all(|&b| b == b'q'));
+
+                    let mut string = "q".repeat(dst_len);
+                    convert_utf16_to_str_partial(&src[..], &mut string[..]);
+                    assert!(core::str::from_utf8(string.as_bytes()).is_ok());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_convert_latin1_to_utf8_partial_leaves_tail_unmodified() {
+        // A non-ASCII byte after an ASCII run of every length up to past a
+        // double stride, so that the SIMD stride functions see it at every
+        // position.
+        for &non_ascii in &[0x80u8, 0xA0, 0xCA, 0xE4, 0xFF] {
+            for prefix_len in 0..70 {
+                let mut src = vec![b'a'; prefix_len];
+                src.push(non_ascii);
+                src.extend_from_slice(&[b'b'; 40]);
+                for dst_len in 0..=(src.len() * 2) {
+                    let mut dst = vec![b'q'; dst_len];
+                    let (_, written) = convert_latin1_to_utf8_partial(&src[..], &mut dst[..]);
+                    assert!(dst[written..].iter().all(|&b| b == b'q'));
+
+                    let mut string = "q".repeat(dst_len);
+                    convert_latin1_to_str_partial(&src[..], &mut string[..]);
+                    assert!(core::str::from_utf8(string.as_bytes()).is_ok());
+                }
+            }
+        }
     }
 
     #[test]

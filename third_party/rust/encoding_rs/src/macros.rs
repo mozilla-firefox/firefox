@@ -1522,7 +1522,7 @@ macro_rules! public_decode_function{
             // First byte was seen previously.
             let first = [first_byte];
             let mut out_read = 0usize;
-            let (mut first_result, _, mut first_written) =
+            let (mut first_result, first_read, mut first_written) =
                 self.variant
                     .$decode_to_utf_raw(&first[..], dst, false);
             match first_result {
@@ -1537,7 +1537,20 @@ macro_rules! public_decode_function{
                     // Wasn't read from `src`!, leave out_read to 0
                 }
                 DecoderResult::OutputFull => {
-                    panic!("Output buffer must have been too small.");
+                    // `dst` can be shorter than the output for the byte, e.g.
+                    // the tail of the caller's buffer after a REPLACEMENT
+                    // CHARACTER. Go back to the state that replays the byte
+                    // so that the caller can retry with more space.
+                    debug_assert_eq!(first_read, 0usize);
+                    self.life_cycle = match first_byte {
+                        0xEFu8 => DecoderLifeCycle::SeenUtf8First,
+                        0xFEu8 => DecoderLifeCycle::SeenUtf16BeFirst,
+                        0xFFu8 => DecoderLifeCycle::SeenUtf16LeFirst,
+                        _ => {
+                            debug_assert_eq!(first_byte, 0xBBu8);
+                            DecoderLifeCycle::ConvertingWithPendingBB
+                        }
+                    };
                 }
             }
             return (first_result, out_read, first_written);
@@ -1577,7 +1590,14 @@ macro_rules! public_decode_function{
                     first_read = 0usize; // Wasn't read from `src`!
                 }
                 DecoderResult::OutputFull => {
-                    panic!("Output buffer must have been too small.");
+                    // Both bytes need not fit in a short `dst`. Keep what
+                    // wasn't decoded for the next call.
+                    self.life_cycle = match first_read {
+                        0usize => DecoderLifeCycle::SeenUtf8Second,
+                        1usize => DecoderLifeCycle::ConvertingWithPendingBB,
+                        _ => DecoderLifeCycle::Converting,
+                    };
+                    first_read = 0usize; // Wasn't read from `src`!
                 }
             }
             return (first_result, first_read, first_written);

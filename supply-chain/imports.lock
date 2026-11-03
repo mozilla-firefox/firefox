@@ -212,8 +212,8 @@ user-login = "jrconlin"
 user-name = "JR Conlin"
 
 [[publisher.encoding_rs]]
-version = "0.8.40"
-when = "2026-09-07"
+version = "0.8.44"
+when = "2026-10-30"
 user-id = 4484
 user-login = "hsivonen"
 user-name = "Henri Sivonen"
