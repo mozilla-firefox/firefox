@@ -9124,7 +9124,20 @@ For the sample commands found below, note that the capitalization used is import
   ./mach talos-test -a tscrollx_paint_skip
   ```
 
-* TODO: Add a description. See this bug: https://bugzilla.mozilla.org/show_bug.cgi?id=2036344
+* contact: :hiro, :botond, and layout team
+* source: [scroll.manifest](https://searchfox.org/mozilla-central/source/testing/talos/talos/tests/scroll)
+* type: [Page load]
+* measuring: Scroll performance with APZ paint skipping enabled
+* reporting: Average frame interval (1 ÷ fps). Lower is better.
+* data: we load 6 pages 25 times each, collecting 6 sets of 25 data points
+* summarization:
+  * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20
+  * suite: [geometric mean] of the 6 subtest results.
+* description:
+      | This is a variant of [tscrollx](#tscrollx) that runs the same pages in
+        ASAP mode, but with APZ paint skipping enabled
+        (``apz.paint_skipping.enabled = true``). Comparing it with tscrollx shows
+        the effect of paint skipping on scroll throughput.
 * preferences: {'layout.frame_rate': 0, 'docshell.event_starvation_delay_hint': 1, 'dom.send_after_paint_to_content': True, 'apz.paint_skipping.enabled': True, 'layout.css.scroll-snap.spring-constant': "'10'", 'layout.css.scroll-behavior.same-physics-as-user-input': False, 'toolkit.framesRecording.bufferSize': 10000}
 * **Test Task**:
 

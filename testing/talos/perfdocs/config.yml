@@ -1191,7 +1191,20 @@ suites:
                     * 4;iframe.svg;13.82;14.87;14.78;14.35;14.73;14.50;14.15;14.46;14.80;14.48;15.10;14.93;14.77;14.52;14.08;15.01;14.58;14.52;15.23;14.35;14.72;14.28;14.30;14.27;14.96
                     * 5;reader.htm;10.72;10.62;10.23;10.48;10.42;10.64;10.40;10.40;10.14;10.60;10.51;10.36;10.57;10.41;10.52;10.75;10.19;10.72;10.44;9.75;10.49;10.07;10.54;10.46;10.44
             tscrollx_paint_skip: >
-                - TODO: Add a description. See this bug: https://bugzilla.mozilla.org/show_bug.cgi?id=2036344
+                - contact: :hiro, :botond, and layout team
+                - source: [scroll.manifest](https://searchfox.org/mozilla-central/source/testing/talos/talos/tests/scroll)
+                - type: [Page load]
+                - measuring: Scroll performance with APZ paint skipping enabled
+                - reporting: Average frame interval (1 ÷ fps). Lower is better.
+                - data: we load 6 pages 25 times each, collecting 6 sets of 25 data points
+                - summarization:
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20
+                    * suite: [geometric mean] of the 6 subtest results.
+                - description:
+                      | This is a variant of [tscrollx](#tscrollx) that runs the same pages in
+                        ASAP mode, but with APZ paint skipping enabled
+                        (``apz.paint_skipping.enabled = true``). Comparing it with tscrollx shows
+                        the effect of paint skipping on scroll throughput.
             tsvg_static: >
                 - contact: :jwatt, :dholbert
                 - source: [svg_static](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/svg_static/)
