@@ -38,7 +38,7 @@ moz-input-text {
   border-radius: var(--border-radius-medium);
   border: var(--border-width) solid var(--border-color-interactive);
   background: none;
-  margin-top: var(--space-xsmall);
+  margin-block-start: var(--space-xsmall);
   overflow: hidden;
 }
 
@@ -51,5 +51,5 @@ moz-input-text {
   font-family: var(--platform-font-size-family);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight);
-  padding-top: var(--space-medium);
+  padding-block-start: var(--space-medium);
 }

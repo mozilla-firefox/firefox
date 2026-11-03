@@ -52,7 +52,7 @@
 
 #contentContainer {
   font-size: 1.2em;
-  margin-bottom: 10px;
+  margin-block-end: 10px;
 }
 
 .question-icon {

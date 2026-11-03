@@ -91,7 +91,7 @@ menulist.website-status {
 #closedDeliveryCheckbox,
 #permissionsDisableCheckbox {
   margin-inline-start: 4px;
-  padding-top: 10px;
+  padding-block-start: 10px;
 }
 
 .permissions-input-buttons {

@@ -51,7 +51,7 @@
   }
 
   .profile-details {
-    border-top: var(--border-width) dashed var(--border-color-interactive);
+    border-block-start: var(--border-width) dashed var(--border-color-interactive);
   }
 }
 
@@ -95,5 +95,5 @@
   justify-content: space-between;
   height: 46px;
   padding: 0 var(--space-large);
-  border-top: var(--border-width) solid var(--card-border-color);
+  border-block-start: var(--border-width) solid var(--card-border-color);
 }

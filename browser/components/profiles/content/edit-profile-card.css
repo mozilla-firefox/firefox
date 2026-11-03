@@ -17,7 +17,7 @@
 
   #profile-avatar-selector-button {
     position: absolute;
-    bottom: 0;
+    inset-block-end: 0;
     inset-inline-end: 0;
   }
 
@@ -33,7 +33,7 @@
 }
 
 #profile-name-area label {
-  margin-bottom: var(--space-xsmall);
+  margin-block-end: var(--space-xsmall);
 }
 
 #theme-group::part(label) {

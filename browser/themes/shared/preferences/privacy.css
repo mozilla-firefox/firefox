@@ -82,7 +82,7 @@
 }
 
 [data-subcategory="trackingprotection"] {
-  margin-top: 10px;
+  margin-block-start: 10px;
 }
 
 #trackingProtectionShield {
@@ -109,7 +109,7 @@
 #fpiIncompatibilityWarning,
 #rfpIncompatibilityWarning,
 #contentBlockingCategories {
-  margin-top: 16px;
+  margin-block-start: 16px;
 }
 
 .privacy-detailedoption {
@@ -225,7 +225,7 @@
 }
 
 .extra-information-label {
-  margin-top: 18px;
+  margin-block-start: 18px;
 }
 
 /* Apply display: block to the containers of all the category information, as
@@ -243,7 +243,7 @@
 }
 
 .privacy-extra-information > .indent {
-  margin-bottom: 18px;
+  margin-block-end: 18px;
 }
 
 .privacy-extra-information > .custom-option {
@@ -257,13 +257,13 @@
 }
 
 .content-blocking-warning:not([hidden]) + .content-blocking-warning {
-  margin-top: 0;
+  margin-block-start: 0;
 }
 
 .content-blocking-extra-blocking-desc {
   margin-inline-start: 0.5em;
   position: relative;
-  top: 0.65em;
+  inset-block-start: 0.65em;
 }
 
 .content-blocking-label,
@@ -282,8 +282,8 @@
 }
 
 .content-blocking-exceptions {
-  border-top: 1px solid var(--border-color);
-  padding-top: 18px;
+  border-block-start: 1px solid var(--border-color);
+  padding-block-start: 18px;
 }
 
 #blockCookiesMenu {
@@ -320,7 +320,7 @@
 }
 
 #deleteOnCloseNote {
-  margin-top: 8px;
+  margin-block-start: 8px;
   margin-inline-end: 32px;
 }
 

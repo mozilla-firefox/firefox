@@ -73,8 +73,8 @@ dialog {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding-bottom: var(--space-large);
-  border-bottom: var(--card-border);
+  padding-block-end: var(--space-large);
+  border-block-end: var(--card-border);
   font-weight: var(--font-weight-heading);
 
   #back-button {
@@ -188,6 +188,7 @@ dialog {
   height: var(--mover-size);
   z-index: var(--profiles-high-layer);
 
+  /* Positioning the resize handles depends on physical dimensions rather than logical ones */
   &.direction-topLeft {
     cursor: nwse-resize;
     top: var(--mover-offset);

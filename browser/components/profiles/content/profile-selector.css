@@ -12,7 +12,7 @@ profile-selector {
   flex-direction: column;
   align-items: center;
   padding: 8%;
-  padding-bottom: 0;
+  padding-block-end: 0;
 }
 
 .logo {

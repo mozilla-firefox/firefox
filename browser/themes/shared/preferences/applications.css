@@ -35,8 +35,7 @@ menuitem[appHandlerIcon] {
 @media (-moz-platform: macos) {
   /* Repeat what menu.css does for .menuitem-iconic */
   menuitem[appHandlerIcon] {
-    padding-top: 1px;
-    padding-bottom: 3px;
+    padding-block: 1px 3px;
   }
 }
 

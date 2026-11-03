@@ -73,7 +73,7 @@
 
 #search-container {
   position: sticky;
-  top: 0;
+  inset-block-start: 0;
   /* Bug 2026689 Negative margin is used here to hide the borders of setting-controls on scroll
      as well as the shadow to the left of the searchbar */
   margin-inline-start: -4px;
@@ -83,12 +83,11 @@
      up after searching. */
   z-index: 2;
   background-color: var(--background-color-canvas);
-  padding-top: var(--page-space-block-start);
-  padding-bottom: var(--search-container-padding);
+  padding-block: var(--page-space-block-start) var(--search-container-padding);
   padding-inline: var(--focus-outline-offset);
   /* Ensure focus indicators on elements below the search container
      aren't obscured. */
-  margin-bottom: var(--search-container-margin);
+  margin-block-end: var(--search-container-margin);
 
   display: flex;
   flex-direction: column;
@@ -104,7 +103,7 @@
   --search-container-margin: calc(var(--focus-outline-width) + var(--focus-outline-offset));
 
   contain: inline-size;
-  padding-top: 0;
+  padding-block-start: 0;
   scroll-padding-top: calc(calc(2 * var(--page-space-block-start)) + var(--search-container-padding) + var(--search-container-margin));
 
   @media (max-width: 950px) {
@@ -151,7 +150,7 @@ description.indent,
   color: var(--text-color-deemphasized);
 
   /* Ensures margin on checkboxes, radios, and description don't create a big gap between the input and indented description */
-  margin-top: calc(var(--space-xsmall) * -1);
+  margin-block-start: calc(var(--space-xsmall) * -1);
 }
 
 button,
@@ -287,8 +286,8 @@ radio {
 
   /* The first subcategory title for each category should not have margin-top. */
   .subcategory:not([hidden]) ~ .subcategory {
-    padding-top: var(--space-xxlarge);
-    border-top: 1px solid var(--border-color);
+    padding-block-start: var(--space-xxlarge);
+    border-block-start: 1px solid var(--border-color);
   }
 }
 
@@ -491,7 +490,7 @@ richlistitem[selected] .actionsMenu:focus-visible {
 }
 
 #historyPane {
-  margin-top: 4px;
+  margin-block-start: 4px;
 }
 
 #historyButtons {
@@ -502,7 +501,7 @@ richlistitem[selected] .actionsMenu:focus-visible {
 
 #blockCookies,
 #keepRow {
-  margin-top: 1.5em;
+  margin-block-start: 1.5em;
 }
 
 /* Collapse the non-active vboxes in decks to use only the height the
@@ -520,7 +519,7 @@ richlistitem[selected] .actionsMenu:focus-visible {
 }
 
 .text-link {
-  margin-bottom: 0;
+  margin-block-end: 0;
 }
 
 .text-link[disabled] {
@@ -595,7 +594,7 @@ html|dialog,
 
 .dialogTitleBar {
   padding: 0.4em 0.2em;
-  border-bottom: 1px solid var(--border-color);
+  border-block-end: 1px solid var(--border-color);
 }
 
 .dialogTitle {
@@ -687,11 +686,11 @@ html|dialog,
 }
 
 #fxaAccountDisabled {
-  margin-bottom: calc(-1 * var(--space-large));
+  margin-block-end: calc(-1 * var(--space-large));
 }
 
 #noFxaAccount > label:first-child {
-  margin-bottom: 0.6em;
+  margin-block-end: 0.6em;
 }
 
 #noFxaCaption {
@@ -731,11 +730,11 @@ button#noFxaSignIn {
 }
 
 .separator {
-  border-bottom: 1px solid var(--border-color);
+  border-block-end: 1px solid var(--border-color);
 }
 
 #fxaGroup {
-  margin-bottom: 32px;
+  margin-block-end: 32px;
 }
 
 .openLink {
@@ -764,7 +763,7 @@ button#noFxaSignIn {
 }
 
 #syncStatusContainer {
-  margin-top: 32px;
+  margin-block-start: 32px;
 }
 
 #syncChangeOptions {
@@ -787,13 +786,13 @@ button#noFxaSignIn {
 
 .sync-engines-list > div,
 .sync-engines-list + hbox {
-  margin-top: 0;
-  padding-top: var(--space-large);
+  margin-block-start: 0;
+  padding-block-start: var(--space-large);
 }
 
 dialog > .sync-engines-list > div,
 dialog > .sync-engines-list + hbox {
-  padding-top: 0;
+  padding-block-start: 0;
 }
 
 .sync-engines-list checkbox .checkbox-icon,
@@ -868,8 +867,8 @@ dialog > .sync-engines-list + hbox {
 }
 
 .fxaMobilePromo {
-  margin-top: 2px !important;
-  margin-bottom: var(--space-xxlarge);
+  margin-block-start: 2px !important;
+  margin-block-end: var(--space-xxlarge);
 }
 
 .androidIcon,
@@ -901,12 +900,12 @@ dialog > .sync-engines-list + hbox {
   height: 16px;
   margin-inline-end: 6px;
   align-self: start;
-  margin-top: 0.4em;
+  margin-block-start: 0.4em;
   flex-shrink: 0;
 }
 
 .info-box-container.smaller-font-size .info-icon {
-  margin-top: 0.3em;
+  margin-block-start: 0.3em;
 }
 
 #search-results-back-button {
@@ -921,7 +920,7 @@ dialog > .sync-engines-list + hbox {
 
 #search-tooltip-container {
   position: relative;
-  top: 0;
+  inset-block-start: 0;
 }
 
 .search-tooltip {
@@ -932,7 +931,7 @@ dialog > .sync-engines-list + hbox {
   background-color: #ffe900;
   color: #000;
   border: 1px solid #d7b600;
-  margin-top: -18px;
+  margin-block-start: -18px;
   opacity: 0.85;
   z-index: 1;
 }
@@ -945,8 +944,8 @@ dialog > .sync-engines-list + hbox {
   position: absolute;
   content: "";
   border: 7px solid transparent;
-  border-top-color: #d7b600;
-  top: 100%;
+  border-block-start-color: #d7b600;
+  inset-block-start: 100%;
   inset-inline-start: calc(50% - 7px);
   forced-color-adjust: none;
 }
@@ -955,19 +954,19 @@ dialog > .sync-engines-list + hbox {
   position: absolute;
   content: "";
   border: 6px solid transparent;
-  border-top-color: #ffe900;
-  top: 100%;
+  border-block-start-color: #ffe900;
+  inset-block-start: 100%;
   inset-inline-start: calc(50% - 6px);
   forced-color-adjust: none;
 }
 
 @media (forced-colors: active) {
   .search-tooltip::before {
-    border-top-color: CanvasText;
+    border-block-start-color: CanvasText;
   }
 
   .search-tooltip::after {
-    border-top-color: Canvas;
+    border-block-start-color: Canvas;
   }
 }
 
@@ -1047,7 +1046,7 @@ menulist[indicator="true"] > menupopup menuitem[indicator="true"]:not([image]) >
 }
 
 #warning-message {
-  margin-top: 8px;
+  margin-block-start: 8px;
 }
 
 .action-button {
@@ -1093,7 +1092,7 @@ richlistitem .text-link:hover {
 }
 
 #pane-experimental-featureGates > .featureGate:not(.visually-hidden) ~ .featureGate:not(.visually-hidden) {
-  margin-top: var(--space-xlarge);
+  margin-block-start: var(--space-xlarge);
 }
 
 #pane-experimental-featureGates moz-fieldset::part(label) {
@@ -1101,7 +1100,7 @@ richlistitem .text-link:hover {
 }
 
 #experimentalCategory-reset {
-  margin-top: var(--space-small);
+  margin-block-start: var(--space-small);
 }
 
 .featureGateDescription {
@@ -1140,7 +1139,7 @@ richlistitem .text-link:hover {
 }
 
 #moreFromMozillaCategory .mozilla-product-item {
-  margin-top: 30px;
+  margin-block-start: 30px;
 }
 
 #moreFromMozillaCategory .product-title {
@@ -1318,7 +1317,7 @@ richlistitem .text-link:hover {
     height: var(--icon-size);
     width: var(--icon-size);
     inset-inline-end: var(--space-large);
-    top: 50%;
+    inset-block-start: 50%;
     transform: translateY(-50%);
   }
 }
@@ -1366,7 +1365,7 @@ setting-group[groupid="aiFeatures"] {
 #aiBlockedMessage {
   /* Overshoot the border by a hair, at odd zoom levels an exact match can round short and leave a gap. */
   margin: calc(-1 * var(--space-large) - var(--box-border-width) - 1px);
-  margin-top: var(--space-medium);
+  margin-block-start: var(--space-medium);
   border-radius: 0;
   --message-bar-icon-container-border-radius-start-start: 0;
   border-color: transparent;
@@ -1443,9 +1442,9 @@ setting-group[groupid="aiStatesDescription"] {
 }
 
 .translations-manage-language:first-child {
-  border-bottom: 1px solid var(--border-color);
+  border-block-end: 1px solid var(--border-color);
   padding: 8px;
-  margin-bottom: 8px;
+  margin-block-end: 8px;
 }
 
 .translations-manage-language {
@@ -1485,7 +1484,7 @@ setting-group[groupid="aiStatesDescription"] {
   #browserUseCurrent,
   #browserUseBookmark,
   #browserUseBlank {
-    margin-top: 10px;
+    margin-block-start: 10px;
   }
 
   #privacyPrefs {
@@ -1525,7 +1524,7 @@ setting-group[groupid="aiStatesDescription"] {
 }
 
 .subsection-heading {
-  margin-bottom: var(--space-small);
+  margin-block-end: var(--space-small);
 }
 
 .section-header-last {
