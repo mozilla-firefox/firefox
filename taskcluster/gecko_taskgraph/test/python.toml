@@ -31,6 +31,8 @@ subsuite = "taskgraph"
 
 ["test_transforms_duplicate.py"]
 
+["test_transforms_fetch.py"]
+
 ["test_transforms_job.py"]
 
 ["test_transforms_job_common.py"]
