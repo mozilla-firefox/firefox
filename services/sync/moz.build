@@ -58,6 +58,10 @@ EXTRA_JS_MODULES["services-sync"].stages += [
     "modules/stages/enginesync.sys.mjs",
 ]
 
+MOZ_SRC_FILES += [
+    "modules/stages/syncids.sys.mjs",
+]
+
 XPCOM_MANIFESTS += [
     "components.conf",
 ]
