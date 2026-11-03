@@ -17,8 +17,8 @@ import mozilla.components.feature.top.sites.presenter.DefaultTopSitesPresenter
 import mozilla.components.lib.state.helpers.AbstractBinding
 
 /**
- * A binding for starting the [DefaultTopSitesPresenter] and observing the [SearchEngine] to update the top sites that
- * are displayed.
+ * A binding for starting the [DefaultTopSitesPresenter] and observing the [SearchEngine] and the region to update the
+ * top sites that are displayed.
  *
  * @param browserStore The [BrowserStore] to observe state changes.
  * @param presenter The [DefaultTopSitesPresenter] that connects the top sites view with the storage.
@@ -42,9 +42,10 @@ class TopSitesBinding(
     }
 
     override suspend fun onState(flow: Flow<BrowserState>) {
-        // Whenever the selected search engine changes, update the top sites that are presented.
+        // Whenever the selected search engine or the region changes, update the top sites that are presented. The
+        // default top sites depend on the region, which is often only detected after the top sites are first shown.
         flow
-            .map { state -> state.search.selectedOrDefaultSearchEngine?.name }
+            .map { state -> state.search.selectedOrDefaultSearchEngine?.name to state.search.region?.current }
             .distinctUntilChanged()
             .collect {
                 presenter.onStorageUpdated()

@@ -9,6 +9,7 @@ import io.mockk.verify
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.SearchAction
+import mozilla.components.browser.state.search.RegionState
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SearchState
@@ -86,6 +87,24 @@ class TopSitesBindingTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify { presenter.onStorageUpdated() }
+        }
+
+    @Test
+    fun `WHEN the region changes THEN presenter storage is updated`() =
+        runTest(testDispatcher) {
+            val binding = createBinding()
+            binding.start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            browserStore.dispatch(
+                SearchAction.SetRegionAction(
+                    regionState = RegionState(home = "JP", current = "JP"),
+                    distribution = null,
+                )
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 2) { presenter.onStorageUpdated() }
         }
 
     private fun createBinding() =
