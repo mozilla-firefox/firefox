@@ -846,9 +846,6 @@ void gfxPlatform::Init() {
     Preferences::GetCString("layers.windowrecording.path", path);
     gfxVars::SetLayersWindowRecordingPath(path);
 
-    if (gFxREmbedded) {
-      gfxVars::SetFxREmbedded(true);
-    }
   }
 
   // Drop a note in the crash report if we end up forcing an option that could

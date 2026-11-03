@@ -423,8 +423,6 @@ module.exports = {
         // Stylelint does not support negating the file glob within an overrides section,
         // so these rules get re-enabled for some devtools files in the section below
         "devtools/**",
-        // FXR is no longer maintained and is not expected to use design tokens
-        "browser/fxr/**",
         // Android does not use design tokens
         "mobile/android/**",
         "toolkit/themes/mobile/global/aboutLicense.css",

@@ -13,7 +13,6 @@ interface nsIGfxInfo : nsISupports
    * These are win32-specific
    */
   readonly attribute boolean DWriteEnabled;
-  readonly attribute boolean EmbeddedInFirefoxReality;
   readonly attribute AString AzureCanvasBackend;
   readonly attribute AString AzureContentBackend;
   readonly attribute boolean usingGPUProcess;

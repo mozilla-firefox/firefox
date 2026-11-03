@@ -927,7 +927,6 @@ class nsPIDOMWindowOuter : public mozIDOMWindowProxy {
   MOZ_CAN_RUN_SCRIPT virtual void FinishFullscreenChange(
       bool aIsFullscreen) = 0;
 
-  virtual void ForceFullScreenInWidget() = 0;
 
   virtual void MacFullscreenMenubarOverlapChanged(
       mozilla::DesktopCoord aOverlapAmount) = 0;

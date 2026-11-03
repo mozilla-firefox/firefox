@@ -140,10 +140,6 @@
 #include "nsSubDocumentFrame.h"
 #include "nsThreadUtils.h"
 
-#ifdef XP_WIN
-#  include "FxRWindowManager.h"
-#endif
-
 #if defined(XP_WIN) && defined(ACCESSIBILITY)
 #  include "mozilla/a11y/AccessibleWrap.h"
 #  include "mozilla/a11y/Compatibility.h"
@@ -4287,12 +4283,10 @@ mozilla::ipc::IPCResult BrowserParent::RecvScrollForKeyboard(
 }
 
 mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingProtectedMedia(
-    const uint64_t& aOuterWindowID,
+    const uint64_t&,
     IsWindowSupportingProtectedMediaResolver&& aResolve) {
 #ifdef XP_WIN
-  bool isFxrWindow =
-      FxRWindowManager::GetInstance()->IsFxRWindow(aOuterWindowID);
-  aResolve(!isFxrWindow);
+  aResolve(true);
 #else
 #  ifdef FUZZING_SNAPSHOT
   return IPC_FAIL(this, "Should only be called on Windows");
@@ -4304,15 +4298,9 @@ mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingProtectedMedia(
 }
 
 mozilla::ipc::IPCResult BrowserParent::RecvIsWindowSupportingWebVR(
-    const uint64_t& aOuterWindowID,
+    const uint64_t&,
     IsWindowSupportingWebVRResolver&& aResolve) {
-#ifdef XP_WIN
-  bool isFxrWindow =
-      FxRWindowManager::GetInstance()->IsFxRWindow(aOuterWindowID);
-  aResolve(!isFxrWindow);
-#else
   aResolve(true);
-#endif
 
   return IPC_OK();
 }

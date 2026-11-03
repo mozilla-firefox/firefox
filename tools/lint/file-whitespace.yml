@@ -62,7 +62,6 @@ file-whitespace:
         - editor/reftests
         - extensions/universalchardet
         - gfx/tests/crashtests
-        - gfx/vr/nsFxrCommandLineHandler.cpp
         - image/test/crashtests
         - image/test/mochitest
         - image/test/reftest

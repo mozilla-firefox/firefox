@@ -262,11 +262,6 @@ GfxInfo::GetDWriteVersion(nsAString& aDwriteVersion) {
   return NS_ERROR_FAILURE;
 }
 
-NS_IMETHODIMP
-GfxInfo::GetEmbeddedInFirefoxReality(bool* aEmbeddedInFirefoxReality) {
-  return NS_ERROR_FAILURE;
-}
-
 /* readonly attribute DOMString cleartypeParameters; */
 NS_IMETHODIMP
 GfxInfo::GetCleartypeParameters(nsAString& aCleartypeParams) {

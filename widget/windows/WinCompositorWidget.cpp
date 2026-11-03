@@ -93,13 +93,5 @@ void WinCompositorWidget::UpdateCompositorWndSizeIfNecessary() {
   mLastCompositorWndSize = size;
 }
 
-// Creates a new instance of FxROutputHandler so that this compositor widget
-// can send its output to Firefox Reality for Desktop.
-void WinCompositorWidget::RequestFxrOutput() {
-  MOZ_ASSERT(mFxrHandler == nullptr);
-
-  mFxrHandler.reset(new FxROutputHandler());
-}
-
 }  // namespace widget
 }  // namespace mozilla

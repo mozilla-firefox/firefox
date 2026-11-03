@@ -15,7 +15,6 @@ DIRS += [
     "base",
     "components",
     "fonts",
-    "fxr",
     "locales",
     "modules",
     "themes",

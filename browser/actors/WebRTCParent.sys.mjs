@@ -97,15 +97,7 @@ export class WebRTCParent extends JSWindowActorParent {
 
         data.origin = this.manager.topWindowContext.documentPrincipal.origin;
 
-        let browser = this.getBrowser();
-        if (browser.fxrPermissionPrompt) {
-          // For Firefox Reality on Desktop, switch to a different mechanism to
-          // prompt the user since fewer permissions are available and since many
-          // UI dependencies are not available.
-          browser.fxrPermissionPrompt(data);
-        } else {
-          prompt(this, this.getBrowser(), data);
-        }
+        prompt(this, this.getBrowser(), data);
         break;
       }
       case "webrtc:StopRecording":

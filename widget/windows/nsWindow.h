@@ -673,7 +673,6 @@ class nsWindow final : public nsIWidget {
 
   void CreateCompositor() override;
   void DestroyCompositor() override;
-  void RequestFxrOutput() override;
 
   void RecreateDirectManipulationIfNeeded();
   void ResizeDirectManipulationViewport();
@@ -923,10 +922,6 @@ class nsWindow final : public nsIWidget {
   WinPointerEvents mPointerEvents;
 
   ScreenPoint mLastPanGestureFocus;
-
-  // When true, used to indicate an async call to RequestFxrOutput to the GPU
-  // process after the Compositor is created
-  bool mRequestFxrOutputPending = false;
 
   // A stack based class used in DispatchMouseEvent() to tell whether we should
   // NOT open context menu when we receives WM_CONTEXTMENU after the

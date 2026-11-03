@@ -4,7 +4,6 @@
 
 EXPORTS += [
     "external_api/moz_external_vr.h",
-    "FxRWindowManager.h",
     "gfxVR.h",
     "ipc/VRChild.h",
     "ipc/VRGPUChild.h",
@@ -78,24 +77,8 @@ IPDL_SOURCES = [
     "ipc/PVRManager.ipdl",
 ]
 
-# For now, only enable FxR CLH for Windows Nightly builds (BUG 1565349)
-if CONFIG["OS_ARCH"] == "WINNT" and CONFIG["NIGHTLY_BUILD"]:
-    XPCOM_MANIFESTS += [
-        "components.conf",
-    ]
-    SOURCES += [
-        "nsFxrCommandLineHandler.cpp",
-    ]
-    SOURCE_HEADERS += [
-        "nsFxrCommandLineHandler.h",
-    ]
-
 if CONFIG["OS_ARCH"] == "WINNT":
     LOCAL_INCLUDES += ["/layout/generic", "/widget", "/widget/windows"]
-    SOURCES += ["FxROutputHandler.cpp", "FxRWindowManager.cpp"]
-    EXPORTS += [
-        "FxROutputHandler.h",
-    ]
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]

@@ -19,8 +19,6 @@ class GfxInfo : public GfxInfoBase {
   // rest is brought forward from GfxInfoBase.
   NS_IMETHOD GetDWriteEnabled(bool* aDWriteEnabled) override;
   NS_IMETHOD GetDWriteVersion(nsAString& aDwriteVersion) override;
-  NS_IMETHOD GetEmbeddedInFirefoxReality(
-      bool* aEmbeddedInFirefoxReality) override;
   NS_IMETHOD GetHasBattery(bool* aHasBattery) override;
   NS_IMETHOD GetWindowProtocol(nsAString& aWindowProtocol) override;
   NS_IMETHOD GetTestType(nsAString& aTestType) override;

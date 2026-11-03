@@ -367,7 +367,6 @@ export default [
       "browser/extensions/pictureinpicture/**",
       "browser/extensions/search-detection/extension/background.js",
       "browser/extensions/webcompat/**",
-      "browser/fxr/content/permissions.js",
       "browser/modules/**",
       "browser/themes/BuiltInThemes.sys.mjs",
       "browser/tools/mozscreenshots/mozscreenshots/extension/TestRunner.sys.mjs",

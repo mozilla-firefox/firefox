@@ -21,12 +21,6 @@ NS_IMETHODIMP
 GfxInfo::GetDWriteEnabled(bool* aEnabled) { return NS_ERROR_FAILURE; }
 
 NS_IMETHODIMP
-GfxInfo::GetEmbeddedInFirefoxReality(bool* aEmbeddedInFirefoxReality) {
-  *aEmbeddedInFirefoxReality = false;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 GfxInfo::GetHasBattery(bool* aHasBattery) { return NS_ERROR_NOT_IMPLEMENTED; }
 
 NS_IMETHODIMP

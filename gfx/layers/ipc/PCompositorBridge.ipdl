@@ -208,9 +208,6 @@ parent:
   async EndRecording()
     returns (FrameRecording? recording);
 
-  // To set up sharing the composited output to Firefox Reality on Desktop
-  async RequestFxrOutput();
-
   async DynamicToolbarOffsetChanged(int32_t aOffset);
 };
 

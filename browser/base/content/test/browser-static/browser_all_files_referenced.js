@@ -378,14 +378,6 @@ if (AppConstants.platform != "win") {
   allowlist.push({
     file: "resource://app/localization/en-US/browser/backgroundtasks/defaultagent.ftl",
   });
-
-  if (AppConstants.NIGHTLY_BUILD) {
-    // This path is refereneced in nsFxrCommandLineHandler.cpp, which is only
-    // compiled in Windows. This path is allowed so that non-Windows builds
-    // can access the FxR UI via --chrome rather than --fxr (which includes VR-
-    // specific functionality)
-    allowlist.push({ file: "chrome://fxr/content/fxrui.html" });
-  }
 }
 
 if (AppConstants.platform == "android") {

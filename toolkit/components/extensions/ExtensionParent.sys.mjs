@@ -2585,10 +2585,8 @@ export var ExtensionParent = {
 
 // browserPaintedPromise and browserStartupPromise are promises that
 // resolve after the first browser window is painted and after browser
-// windows have been restored, respectively. Alternatively,
-// browserStartupPromise also resolves from the extensions-late-startup
-// notification sent by Firefox Reality on desktop platforms, because it
-// doesn't support SessionStore.
+// windows have been restored, respectively. browserStartupPromise also
+// resolves from the extensions-late-startup notification.
 // _resetStartupPromises should only be called from outside this file in tests.
 ExtensionParent._resetStartupPromises = () => {
   ExtensionParent.browserPaintedPromise = promiseObserved(

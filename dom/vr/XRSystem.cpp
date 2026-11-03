@@ -441,7 +441,7 @@ void XRSystem::ProcessSessionRequestsWaitingForRuntimeDetection() {
      * and should not trigger XR permission UI.
      * This is not a problem currently, as the only platforms
      * allowing xr-spatial-tracking for inline sessions do not
-     * present a modal XR permission UI. (eg. Android Firefox Reality)
+     * present a modal XR permission UI (e.g. Android).
      */
     GetOwnerWindow()->RequestXRPermission();
   }

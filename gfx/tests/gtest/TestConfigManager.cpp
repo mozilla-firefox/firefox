@@ -100,11 +100,6 @@ class MockGfxInfo final : public nsIGfxInfo {
     return NS_ERROR_NOT_IMPLEMENTED;
   }
 
-  NS_IMETHODIMP GetEmbeddedInFirefoxReality(
-      bool* aEmbeddedInFirefoxReality) override {
-    return NS_ERROR_NOT_IMPLEMENTED;
-  }
-
   NS_IMETHOD GetAzureCanvasBackend(nsAString& aBackend) override {
     return NS_ERROR_NOT_IMPLEMENTED;
   }

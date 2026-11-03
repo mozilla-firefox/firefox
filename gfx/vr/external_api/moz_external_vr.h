@@ -641,43 +641,6 @@ static_assert(std::is_trivial_v<VRHMDSensorState>);
 static_assert(std::is_trivial_v<VRControllerState>);
 static_assert(std::is_trivial_v<VRSystemState>);
 
-enum class VRFxEventType : uint8_t {
-  NONE = 0,
-  IME,
-  SHUTDOWN,
-  FULLSCREEN,
-  TOTAL
-};
-
-enum class VRFxEventState : uint8_t {
-  NONE = 0,
-  BLUR,
-  FOCUS,
-  FULLSCREEN_ENTER,
-  FULLSCREEN_EXIT,
-  TOTAL
-};
-
-// Data shared via shmem for running Firefox in a VR windowed environment
-struct VRWindowState {
-  // State from Firefox
-  uint64_t hwndFx;
-  uint32_t widthFx;
-  uint32_t heightFx;
-  VRLayerTextureHandle textureFx;
-  uint32_t windowID;
-  VRFxEventType eventType;
-  VRFxEventState eventState;
-
-  // State from VRHost
-  uint32_t dxgiAdapterHost;
-  uint32_t widthHost;
-  uint32_t heightHost;
-
-  // Name of synchronization primitive to signal change to this struct
-  char signalName[32];
-};
-
 enum class VRTelemetryId : uint8_t {
   NONE = 0,
   INSTALLED_FROM = 1,
@@ -739,7 +702,6 @@ struct VRExternalShmem {
   int64_t servoGenerationB;
 #endif  // !defined(__ANDROID__)
 #if defined(XP_WIN)
-  VRWindowState windowState;
   VRTelemetryState telemetryState;
 #endif
 #ifdef MOZILLA_INTERNAL_API
@@ -770,7 +732,6 @@ struct VRExternalShmem {
 // type
 static_assert(std::is_trivial_v<VRSystemState>);
 static_assert(std::is_trivial_v<VRBrowserState>);
-static_assert(std::is_trivial_v<VRWindowState>);
 static_assert(std::is_trivial_v<VRTelemetryState>);
 static_assert(std::is_trivial_v<VRExternalShmem>,
               "VRExternalShmem must be a trivial type.");

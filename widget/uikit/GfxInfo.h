@@ -30,8 +30,6 @@ class GfxInfo : public GfxInfoBase {
   // We only declare the subset of nsIGfxInfo that we actually implement. The
   // rest is brought forward from GfxInfoBase.
   NS_IMETHOD GetDWriteEnabled(bool* aDWriteEnabled) override;
-  NS_IMETHOD GetEmbeddedInFirefoxReality(
-      bool* aEmbeddedInFirefoxReality) override;
   NS_IMETHOD GetHasBattery(bool* aHasBattery) override;
   NS_IMETHOD GetDWriteVersion(nsAString& aDwriteVersion) override;
   NS_IMETHOD GetCleartypeParameters(nsAString& aCleartypeParams) override;

@@ -2324,10 +2324,6 @@ class nsIWidget : public nsSupportsWeakReference {
       const nsTArray<mozilla::FontRange>& aFontRangeArray,
       const bool aIsVertical, const LayoutDeviceIntPoint& aPoint) {}
 
-  virtual void RequestFxrOutput() {
-    MOZ_ASSERT(false, "This function should only execute in Windows");
-  }
-
   /**
    * NotifyCompositorScrollUpdates notify widget about an update to the
    * composited scroll offset and zoom

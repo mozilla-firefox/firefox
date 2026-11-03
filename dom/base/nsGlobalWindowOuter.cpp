@@ -126,9 +126,6 @@
 // Interfaces Needed
 #include "AccessCheck.h"
 #include "Crypto.h"
-#include "FxRWindowManager.h"
-#include "VRShMem.h"
-#include "gfxVR.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/DOMEventTargetHelper.h"
 #include "mozilla/EventDispatcher.h"
@@ -1330,7 +1327,6 @@ static JSObject* NewOuterWindowProxy(JSContext* cx,
 nsGlobalWindowOuter::nsGlobalWindowOuter(uint64_t aWindowID)
     : nsPIDOMWindowOuter(aWindowID),
       mFullscreenHasChangedDuringProcessing(false),
-      mForceFullScreenInWidget(false),
       mIsClosed(false),
       mInClose(false),
       mHavePendingClose(false),
@@ -4231,14 +4227,10 @@ nsresult nsGlobalWindowOuter::ProcessWidgetFullscreenRequest(
     appWin->SetIntrinsicallySized(false);
   }
 
-  // Sometimes we don't want the top-level widget to actually go fullscreen:
-  // - in the B2G desktop client, we don't want the emulated screen dimensions
-  //   to appear to increase when entering fullscreen mode; we just want the
-  //   content to fill the entire client area of the emulator window.
-  // - in FxR Desktop, we don't want fullscreen to take over the monitor, but
-  //   instead we want fullscreen to fill the FxR window in the the headset.
-  if (!StaticPrefs::full_screen_api_ignore_widgets() &&
-      !mForceFullScreenInWidget) {
+  // In the B2G desktop client, we don't want the emulated screen dimensions to
+  // appear to increase when entering fullscreen mode; we just want the content
+  // to fill the entire client area of the emulator window.
+  if (!StaticPrefs::full_screen_api_ignore_widgets()) {
     if (MakeWidgetFullscreen(this, aReason, aFullscreen)) {
       // The rest of code for switching fullscreen is in nsGlobalWindowOuter::
       // FinishFullscreenChange() which will be called after sizemodechange
@@ -4248,12 +4240,6 @@ nsresult nsGlobalWindowOuter::ProcessWidgetFullscreenRequest(
     }
   }
 
-#if defined(NIGHTLY_BUILD) && defined(XP_WIN)
-  if (FxRWindowManager::GetInstance()->IsFxRWindow(mWindowID)) {
-    mozilla::gfx::VRShMem shmem(nullptr, true /*aRequiresMutex*/);
-    shmem.SendFullscreenState(mWindowID, aFullscreen);
-  }
-#endif  // NIGHTLY_BUILD && XP_WIN
   FinishFullscreenChange(aFullscreen);
   return NS_OK;
 }
@@ -4380,14 +4366,6 @@ nsresult nsGlobalWindowOuter::SetFullscreenInternal(FullscreenReason aReason,
   return ProcessWidgetFullscreenRequest(aReason, aFullscreen);
 }
 
-// Support a per-window, dynamic equivalent of enabling
-// full-screen-api.ignore-widgets
-void nsGlobalWindowOuter::ForceFullScreenInWidget() {
-  MOZ_DIAGNOSTIC_ASSERT(XRE_IsParentProcess());
-
-  mForceFullScreenInWidget = true;
-}
-
 bool nsGlobalWindowOuter::TryMakeWidgetFullscreen(FullscreenReason aReason,
                                                   bool aIsFullscreen,
                                                   nsIWidget* aWidget) {
@@ -4449,8 +4427,7 @@ void nsGlobalWindowOuter::FullscreenWillChange(bool aIsFullscreen) {
       // fullscreen state, e.g. browser goes into fullscreen when widget
       // fullscreen is prevented, and then user triggers fullscreen from the OS
       // directly again.
-      MOZ_ASSERT(StaticPrefs::full_screen_api_ignore_widgets() ||
-                     mForceFullScreenInWidget,
+      MOZ_ASSERT(StaticPrefs::full_screen_api_ignore_widgets(),
                  "This should only happen when widget fullscreen is prevented");
     }
   }
