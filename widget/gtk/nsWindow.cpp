@@ -8,7 +8,6 @@
 #endif
 #ifdef MOZ_WAYLAND
 #  include "nsWindowWayland.h"
-#  include "nsWindowWaylandGtk.h"
 #endif
 
 #include <algorithm>
@@ -7311,9 +7310,9 @@ static already_AddRefed<nsIWidget> CreateWindow(bool aToplevel) {
 #ifdef MOZ_WAYLAND
   if (GdkIsWaylandDisplay()) {
     if (aToplevel) {
-      window = new nsWindowWaylandToplevelGtk();
+      window = new nsWindowWaylandToplevel();
     } else {
-      window = new nsWindowWaylandPopupGtk();
+      window = new nsWindowWaylandPopup();
     }
   }
 #endif

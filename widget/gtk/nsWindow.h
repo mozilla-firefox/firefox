@@ -139,6 +139,7 @@ namespace mozilla {
 enum class NativeKeyBindingsType : uint8_t;
 
 class TimeStamp;
+class WaylandVsyncSource;
 #ifdef MOZ_X11
 class CurrentX11TimeGetter;
 #endif
