@@ -109,6 +109,12 @@
   -moz-user-focus: none;
 }
 
+@media -moz-pref("dom.forms.retain_focus_on_disabled.enabled") {
+  :host(:disabled:not([readonly])) .datetime-edit-field {
+    -moz-user-focus: normal;
+  }
+}
+
 @media -moz-pref("dom.forms.datetime.timepicker") {
   :host([type="time"]) {
     .datetime-calendar-button-svg {

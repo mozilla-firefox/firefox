@@ -22,7 +22,7 @@ add_task(async function test_disabled_focus() {
   await SimpleTest.promiseFocus(window);
   const controls = [
     "button", "select", "textarea", "focusable-control",
-    "text", "password", "checkbox", "radio", "number", "range",
+    "text", "password", "checkbox", "radio", "number", "range", "date", "time",
   ];
   for (const retainFocus of [false, true]) {
     await SpecialPowers.pushPrefEnv({set: [

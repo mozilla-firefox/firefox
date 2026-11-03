@@ -2451,9 +2451,12 @@ bool nsGenericHTMLElement::IsHTMLFocusable(IsFocusableFlags aFlags,
   } else {
     disallowOverridingFocusability = false;
 
-    // Just check for disabled attribute on form controls
+    // Just check for disabled attribute on form controls, or on the host of
+    // a UA widget.
     if (!(aFlags & IsFocusableFlags::IgnoreDisabled)) {
-      disabled = IsDisabled();
+      ShadowRoot* root = GetContainingShadow();
+      disabled = IsDisabled() ||
+                 (root && root->IsUAWidget() && root->Host()->IsDisabled());
     }
     if (disabled) {
       *aTabIndex = -1;
