@@ -854,10 +854,10 @@ class ResourceMonitoringMixin(PerfherderResourceOptionsMixin):
                     json.loads(os.environ["MOZHARNESS_TEST_PATHS"]).keys()
                 )
             if "MOZ_SOURCE_CHANGESET" in os.environ and "MOZ_SOURCE_REPO" in os.environ:
+                repo = os.environ["MOZ_SOURCE_REPO"]
+                rev_path = "/rev/" if "hg.mozilla.org" in repo else "/commit/"
                 metadata["sourceURL"] = (
-                    os.environ["MOZ_SOURCE_REPO"]
-                    + "/rev/"
-                    + os.environ["MOZ_SOURCE_CHANGESET"]
+                    repo + rev_path + os.environ["MOZ_SOURCE_CHANGESET"]
                 )
             if "TASK_ID" in os.environ:
                 metadata["appBuildID"] = os.environ["TASK_ID"]

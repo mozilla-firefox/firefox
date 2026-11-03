@@ -51,9 +51,9 @@ def main(output, file):
         appdata["Crash Reporter:serverurl"] = ""
 
     if "App:sourcerepository" in appdata and "App:sourcestamp" in appdata:
-        appdata["App:sourceurl"] = (
-            '"%(App:sourcerepository)s/rev/%(App:sourcestamp)s"' % appdata
-        )
+        repo = appdata["App:sourcerepository"]
+        rev_path = "/rev/" if "hg.mozilla.org" in repo else "/commit/"
+        appdata["App:sourceurl"] = f'"{repo}{rev_path}{appdata["App:sourcestamp"]}"'
     else:
         appdata["App:sourceurl"] = "nullptr"
 

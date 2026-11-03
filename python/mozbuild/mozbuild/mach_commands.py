@@ -1516,6 +1516,11 @@ def android_gtest(
     return exit_code
 
 
+def _source_url(repo, changeset):
+    rev_path = "/rev/" if "hg.mozilla.org" in repo else "/commit/"
+    return f"{repo}{rev_path}{changeset}"
+
+
 @Command(
     "source-package",
     category="misc",
@@ -1606,8 +1611,8 @@ def source_package(command_context, output, upload):
             with open(sourcestamp_path, "w") as fd:
                 fd.write(
                     f"{buildid}\n"
-                    f"{comm_repo}/rev/{comm_changeset}\n"
-                    f"{gecko_repo}/rev/{gecko_changeset}\n"
+                    f"{_source_url(comm_repo, comm_changeset)}\n"
+                    f"{_source_url(gecko_repo, gecko_changeset)}\n"
                 )
         else:
             source_url = ""
@@ -1615,7 +1620,7 @@ def source_package(command_context, output, upload):
                 repo = substs.get("MOZ_SOURCE_REPO")
                 changeset = substs.get("MOZ_SOURCE_CHANGESET")
                 if repo and changeset:
-                    source_url = f"{repo}/rev/{changeset}"
+                    source_url = _source_url(repo, changeset)
 
             with open(sourcestamp_path, "w") as fd:
                 fd.write(f"{buildid}\n{source_url}")
