@@ -64,12 +64,13 @@ class VideoBridgeParent final : public PVideoBridgeParent,
  private:
   ~VideoBridgeParent();
 
-  explicit VideoBridgeParent(VideoBridgeSource aSource);
+  VideoBridgeParent();
   void Bind(Endpoint<PVideoBridgeParent>&& aEndpoint);
   static void ShutdownInternal();
 
   void DoUnregisterExternalImages();
 
+  void RegisterSingleton(VideoBridgeSource aSource);
   void UnregisterSingleton();
 
   struct TextureHolder {
