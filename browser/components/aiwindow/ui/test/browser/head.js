@@ -1091,7 +1091,15 @@ async function typeInSmartbar(browser, text) {
       "Wait for smartbar to receive focus"
     );
     info("typeInSmartbar: focus received, sending string");
+    // The editor applies typed text from a mutation observer after sendString
+    // returns, so wait for its input event before reading
+    // lastQueryContextPromise.
+    const textApplied = ContentTaskUtils.waitForEvent(
+      smartbar.inputField,
+      "input"
+    );
     EventUtils.sendString(searchText, content);
+    await textApplied;
     info("typeInSmartbar: string sent, awaiting lastQueryContextPromise");
     await smartbar.lastQueryContextPromise;
     info("typeInSmartbar: query complete");
@@ -1191,16 +1199,19 @@ async function assertSmartbarSuggestionsVisible(
 
   const viewRect = urlbarView.getBoundingClientRect();
   const inputRect = smartbarElement.inputField.getBoundingClientRect();
+  // DOMRect values are only float32-precise, so edges that touch in layout
+  // can differ by a rounding error once the view holds several rows.
+  const roundingTolerance = 0.001;
   if (expectedPosition == "top") {
     Assert.lessOrEqual(
       viewRect.bottom,
-      inputRect.top,
+      inputRect.top + roundingTolerance,
       "Suggestions should open above the input"
     );
   } else {
     Assert.greaterOrEqual(
       viewRect.top,
-      inputRect.bottom,
+      inputRect.bottom - roundingTolerance,
       "Suggestions should open below the input"
     );
   }
