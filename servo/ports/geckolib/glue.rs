@@ -8275,12 +8275,12 @@ fn relative_selector_invalidated_at(element: GeckoElement, result: &Invalidation
     }
 }
 
-fn add_relative_selector_attribute_dependency<'a>(
+fn add_relative_selector_attribute_dependency<'a, 'b>(
     element: &GeckoElement<'a>,
     scope: &Option<OpaqueElement>,
     invalidation_map: &'a InvalidationMap,
     attribute: &AtomIdent,
-    collector: &mut RelativeSelectorDependencyCollector<'a, GeckoElement<'a>>,
+    collector: &mut RelativeSelectorDependencyCollector<'a, 'b, GeckoElement<'a>>,
 ) {
     match invalidation_map
         .other_attribute_affecting_selectors
@@ -9094,14 +9094,14 @@ pub extern "C" fn Servo_CssUrl_IsLocalRef(url: &url::CssUrl) -> bool {
     url.is_fragment()
 }
 
-fn relative_selector_dependencies_for_id<'a>(
+fn relative_selector_dependencies_for_id<'a, 'b>(
     old_id: *const nsAtom,
     new_id: *const nsAtom,
     element: &GeckoElement<'a>,
     scope: Option<OpaqueElement>,
     quirks_mode: QuirksMode,
     invalidation_map: &'a InvalidationMap,
-    collector: &mut RelativeSelectorDependencyCollector<'a, GeckoElement<'a>>,
+    collector: &mut RelativeSelectorDependencyCollector<'a, 'b, GeckoElement<'a>>,
 ) {
     [old_id, new_id]
         .iter()
@@ -9120,13 +9120,13 @@ fn relative_selector_dependencies_for_id<'a>(
         });
 }
 
-fn relative_selector_dependencies_for_class<'a>(
+fn relative_selector_dependencies_for_class<'a, 'b>(
     classes_changed: &SmallVec<[Atom; 8]>,
     element: &GeckoElement<'a>,
     scope: Option<OpaqueElement>,
     quirks_mode: QuirksMode,
     invalidation_map: &'a InvalidationMap,
-    collector: &mut RelativeSelectorDependencyCollector<'a, GeckoElement<'a>>,
+    collector: &mut RelativeSelectorDependencyCollector<'a, 'b, GeckoElement<'a>>,
 ) {
     classes_changed.iter().for_each(|atom| {
         match invalidation_map.class_to_selector.get(atom, quirks_mode) {
@@ -9140,12 +9140,12 @@ fn relative_selector_dependencies_for_class<'a>(
     });
 }
 
-fn relative_selector_dependencies_for_custom_state<'a>(
+fn relative_selector_dependencies_for_custom_state<'a, 'b>(
     state: *const nsAtom,
     element: GeckoElement<'a>,
     scope: Option<OpaqueElement>,
     invalidation_map: &'a InvalidationMap,
-    collector: &mut RelativeSelectorDependencyCollector<'a, GeckoElement<'a>>,
+    collector: &mut RelativeSelectorDependencyCollector<'a, 'b, GeckoElement<'a>>,
 ) {
     unsafe {
         AtomIdent::with(state, |atom| {
