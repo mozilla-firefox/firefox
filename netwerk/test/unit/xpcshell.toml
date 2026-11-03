@@ -1309,6 +1309,21 @@ skip-if = [
 ]
 run-sequentially = ["true"] # node server exceptions dont replay well
 
+["test_https_proxy_h3_outer_via_https_rr.js"]
+run-sequentially = ["true"] # node server exceptions dont replay well
+requesttimeoutfactor = 2
+skip-if = [
+  "os == 'android'", # H3 proxy server doesn't work there, Bug 1982955
+  "os == 'win' && msix",
+]
+
+["test_https_proxy_with_https_rr.js"]
+run-sequentially = ["true"] # node server exceptions dont replay well
+requesttimeoutfactor = 2
+skip-if = [
+  "os == 'win' && msix",
+]
+
 ["test_httpssvc_https_upgrade.js"]
 
 ["test_httpssvc_iphint.js"]
@@ -1551,6 +1566,9 @@ skip-if = [
 ["test_proxy_cancel.js"]
 
 ["test_proxy_fast_path.js"]
+
+["test_proxy_forwarding_peer_port.js"]
+run-sequentially = ["true"] # node server exceptions dont replay well
 
 ["test_proxy_pac.js"]
 

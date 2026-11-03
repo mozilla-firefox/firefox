@@ -6766,13 +6766,27 @@ void HttpBaseChannel::MaybeFlushConsoleReports() {
 void HttpBaseChannel::DoDiagnosticAssertWhenOnStopNotCalledOnDestroy() {}
 
 bool HttpBaseChannel::Http3Allowed() const {
+  // Direct or MASQUE proxy is always h3-eligible. An HTTPS CONNECT proxy is too
+  // when the outer-proxy Happy Eyeballs feature is on (h3 discovered via the
+  // proxy host's HTTPS RR).
+  nsProxyInfo* proxyInfo = static_cast<nsProxyInfo*>(mProxyInfo.get());
   bool allowedProxyInfo =
-      mProxyInfo ? (static_cast<nsProxyInfo*>(mProxyInfo.get())->IsDirect() ||
-                    static_cast<nsProxyInfo*>(mProxyInfo.get())->IsHttp3Proxy())
+      mProxyInfo ? (proxyInfo->IsDirect() || proxyInfo->IsHttp3Proxy() ||
+                    (proxyInfo->IsHTTPS() &&
+                     StaticPrefs::network_http_happy_eyeballs_proxy_enabled()))
                  : true;
-  // TODO: When mUpgradeProtocolCallback is not null, we should allow HTTP/3 for
-  // connect-udp.
-  return !mUpgradeProtocolCallback && allowedProxyInfo &&
+  // An upgrade (WebSocket / WebTransport) normally forbids HTTP/3, because
+  // extended CONNECT can't be issued before the peer's SETTINGS are known. A
+  // MASQUE proxy is the exception: its outer hop *is* HTTP/3 (CONNECT-UDP) and
+  // the upgrade rides the inner tunnel, so forbidding h3 here leaves nothing
+  // but a TCP attempt against a QUIC-only port, which can never connect. Only
+  // Happy Eyeballs dispatches the upgrade onto that tunnel, so the exception is
+  // tied to the same pref.
+  bool upgradeAllowsHttp3 =
+      !mUpgradeProtocolCallback ||
+      (mProxyInfo && proxyInfo->IsHttp3Proxy() &&
+       StaticPrefs::network_http_happy_eyeballs_proxy_enabled());
+  return upgradeAllowsHttp3 && allowedProxyInfo &&
          !(mCaps & NS_HTTP_BE_CONSERVATIVE) && !LoadBeConservative() &&
          LoadAllowHttp3();
 }

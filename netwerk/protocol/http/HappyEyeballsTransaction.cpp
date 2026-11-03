@@ -11,6 +11,7 @@
 #include "HttpConnectionBase.h"
 #include "HttpLog.h"
 #include "nsHttpConnection.h"
+#include "nsHttpConnectionInfo.h"
 #include "nsHttpTransaction.h"
 #include "nsITLSSocketControl.h"
 #include "nsITransportSecurityInfo.h"
@@ -82,6 +83,17 @@ void HappyEyeballsTransaction::OnTransportStatus(nsITransport* aTransport,
 
 bool HappyEyeballsTransaction::Do0RTT(bool aCanSendEarlyData) {
   if (!mZeroRttHandle) {
+    return false;
+  }
+
+  // For a proxy CONNECT / MASQUE (CONNECT-UDP) connection, this is the *outer*
+  // connection to the proxy. The real transaction's request must travel through
+  // the inner tunnel, not as TLS early data on the outer proxy hop. Mirror the
+  // legacy path, which drives the outer handshake with a NullHttpTransaction
+  // (no request data): decline 0-RTT here so the outer connection establishes
+  // cleanly and is then converted to a wildcard proxy connection, after which
+  // the real transaction is dispatched through CreateTunnelStream.
+  if (nsHttpConnectionInfo* ci = ConnectionInfo(); ci && ci->UsingConnect()) {
     return false;
   }
 

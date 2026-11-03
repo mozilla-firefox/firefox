@@ -17629,6 +17629,14 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# When true, Happy Eyeballs establishes the outer connection to a proxy
+# (Firefox<->proxy) instead of the legacy DnsAndConnectSocket path. Gated
+# separately so it can roll out independently of the main Happy Eyeballs pref.
+- name: network.http.happy_eyeballs_proxy_enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # The time to wait after receiving the first DNS response before moving on
 # to the connection phase (ms).
 - name: network.http.happy_eyeballs_resolution_delay

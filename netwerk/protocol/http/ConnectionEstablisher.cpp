@@ -245,6 +245,18 @@ nsresult ConnectionEstablisher::ActivateConnectionWithTransaction(
   mResultConn = aConn;
   mHandle = new ConnectionHandle(aConn);
 
+  // A CONNECT tunnel through a plain-HTTP proxy has no TLS on the first hop, so
+  // there is nothing here for a speculative transaction to establish.
+  if (mConnInfo->UsingConnect() && !mConnInfo->UsingHttpsProxy()) {
+    LOG(
+        ("  plain-HTTP CONNECT proxy: handing over the bare connection without "
+         "activating the speculative transaction"));
+    NS_DispatchToCurrentThread(NS_NewRunnableFunction(
+        "ConnectionEstablisher::ActivateCallbackNoTunnel",
+        [onActivated = std::move(aOnActivated)]() { onActivated(NS_OK); }));
+    return NS_OK;
+  }
+
   MOZ_ASSERT(mTransaction,
              "HappyEyeballsConnectionAttempt must hand us a transaction "
              "before we can activate a connection.");
@@ -663,6 +675,30 @@ TCPConnectionEstablisher::OnOutputStreamReady(nsIAsyncOutputStream* aOut) {
     if (NS_FAILED(rv)) {
       mSocketTransport->Close(rv);
       Finish(rv);
+      return NS_OK;
+    }
+  }
+
+  // A plain-HTTP CONNECT proxy connection is handed over without activating a
+  // transaction on it (see ActivateConnectionWithTransaction), so nothing else
+  // would ever probe the socket. Being writable here means the connect either
+  // completed or failed; without this check a refused connect is reported as a
+  // success, Happy Eyeballs never falls back to the next address, and the real
+  // transaction is handed a dead socket. Probe it the same way
+  // nsHttpConnection::Activate does for a not-yet-connected transport.
+  if (mConnInfo->UsingConnect() && !mConnInfo->UsingHttpsProxy() &&
+      !mConnectedOK && mStreamOut) {
+    uint32_t count = 0;
+    nsresult probe = mStreamOut->Write("", 0, &count);
+    if (NS_FAILED(probe) && probe != NS_BASE_STREAM_WOULD_BLOCK) {
+      LOG(
+          ("TCPConnectionEstablisher::OnOutputStreamReady %p bare-handover "
+           "socket failed to connect [rv=%" PRIx32 "]",
+           this, static_cast<uint32_t>(probe)));
+      if (mSocketTransport) {
+        mSocketTransport->Close(probe);
+      }
+      Finish(probe);
       return NS_OK;
     }
   }

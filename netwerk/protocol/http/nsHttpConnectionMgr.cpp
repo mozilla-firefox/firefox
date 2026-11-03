@@ -1024,7 +1024,8 @@ void nsHttpConnectionMgr::UpdateCoalescingForNewConn(
 // entries used for de-sharding hostsnames.
 void nsHttpConnectionMgr::ReportSpdyConnection(nsHttpConnection* conn,
                                                bool usingSpdy,
-                                               bool disallowHttp3) {
+                                               bool disallowHttp3,
+                                               ConnectionEntry* entry) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   if (!conn->ConnectionInfo()) {
     return;
@@ -1033,7 +1034,8 @@ void nsHttpConnectionMgr::ReportSpdyConnection(nsHttpConnection* conn,
     // We are not sure if this connection will be used or not. Don't report it.
     return;
   }
-  ConnectionEntry* ent = mCT.GetWeak(conn->ConnectionInfo()->HashKey());
+  ConnectionEntry* ent =
+      entry ? entry : mCT.GetWeak(conn->ConnectionInfo()->HashKey());
   if (!ent || !usingSpdy) {
     return;
   }
@@ -2101,6 +2103,12 @@ nsresult nsHttpConnectionMgr::ProcessNewTransaction(nsHttpTransaction* trans) {
     bool isHttp3Proxy = ci->IsHttp3ProxyConnection();
     RefPtr<HttpConnectionBase> conn =
         GetH2orH3ActiveConn(ent, isHttp3Proxy, !isHttp3Proxy);
+    if (!conn) {
+      // The wildcard entry may hold the other protocol than
+      // ci->IsHttp3ProxyConnection() suggests (outer proxy raced h2/h3); accept
+      // either rather than dereferencing null.
+      conn = GetH2orH3ActiveConn(ent, false, false);
+    }
     if (ci->UsingHttpsProxy() && ci->UsingConnect()) {
       LOG(("About to create new tunnel conn from [%p]", conn.get()));
       ConnectionEntry* specificEnt = mCT.GetWeak(ci->HashKey());
@@ -2114,6 +2122,14 @@ nsresult nsHttpConnectionMgr::ProcessNewTransaction(nsHttpTransaction* trans) {
       bool atLimit = AtActiveConnectionLimit(ent, trans->Caps(), true);
       if (atLimit) {
         LOG(("hit limit in proxy conn"));
+        rv = NS_ERROR_NOT_AVAILABLE;
+      } else if (!conn) {
+        // The outer proxy connection should be in this wildcard entry by now
+        // (MoveToWildCardConnEntry put it there). If it is not, the transaction
+        // goes back on the pending queue and waits for one, as the limit case
+        // above does.
+        MOZ_ASSERT(false, "wildcard entry has no connection to tunnel through");
+        LOG(("no active conn for proxy tunnel; pending trans=%p", trans));
         rv = NS_ERROR_NOT_AVAILABLE;
       } else {
         RefPtr<HttpConnectionBase> newTunnel;
@@ -4029,7 +4045,7 @@ void nsHttpConnectionMgr::ExcludeHttp3(const nsHttpConnectionInfo* ci) {
   ent->DontReuseHttp3Conn();
 }
 
-void nsHttpConnectionMgr::MoveToWildCardConnEntry(
+bool nsHttpConnectionMgr::MoveToWildCardConnEntry(
     nsHttpConnectionInfo* specificCI, nsHttpConnectionInfo* wildCardCI,
     HttpConnectionBase* proxyConn) {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
@@ -4047,8 +4063,21 @@ void nsHttpConnectionMgr::MoveToWildCardConnEntry(
        proxyConn, ent, ent ? ent->mUsingSpdy : 0,
        ent ? ent->IsHttp3ProxyConnection() : 0));
 
-  if (!ent || (!ent->mUsingSpdy && !ent->IsHttp3ProxyConnection())) {
-    return;
+  // Source entry is normally mUsingSpdy (H2) or IsHttp3ProxyConnection
+  // (MASQUE); an HTTPS proxy over h3 is neither, so also accept an H3
+  // connection directly.
+  bool proxyConnIsHttp3 = proxyConn && proxyConn->UsingHttp3();
+  if (!ent || (!ent->mUsingSpdy && !ent->IsHttp3ProxyConnection() &&
+               !proxyConnIsHttp3)) {
+    LOG(
+        ("nsHttpConnectionMgr::MakeConnEntryWildCard BAILING conn %p: ent=%p "
+         "mUsingSpdy=%d isH3Proxy=%d proxyConnIsHttp3=%d specificCI=%s -- no "
+         "wildcard entry will be created and the connection stays in the "
+         "specific entry\n",
+         proxyConn, ent, ent ? ent->mUsingSpdy : 0,
+         ent ? ent->IsHttp3ProxyConnection() : 0, proxyConnIsHttp3,
+         specificCI->HashKey().get()));
+    return false;
   }
 
   bool isWildcard = false;
@@ -4057,12 +4086,12 @@ void nsHttpConnectionMgr::MoveToWildCardConnEntry(
   if (wcEnt == ent) {
     // nothing to do!
     LOG(("nothing to do "));
-    return;
+    return true;
   }
   if (ent->mUsingSpdy) {
     wcEnt->mUsingSpdy = true;
   } else {
-    MOZ_ASSERT(wcEnt->IsHttp3ProxyConnection());
+    MOZ_ASSERT(wcEnt->IsHttp3ProxyConnection() || proxyConnIsHttp3);
   }
 
   LOG(
@@ -4080,6 +4109,12 @@ void nsHttpConnectionMgr::MoveToWildCardConnEntry(
   ent->MoveConnection(proxyConn, wcEnt);
   // Ensure other wildcard connections are closed gracefully.
   wcEnt->MakeAllDontReuseExcept(proxyConn);
+
+  LOG((
+      "nsHttpConnectionMgr::MakeConnEntryWildCard MOVED conn %p from ent %p to "
+      "wc-ent %p\n",
+      proxyConn, ent, wcEnt));
+  return true;
 }
 
 bool nsHttpConnectionMgr::RemoveTransFromConnEntry(nsHttpTransaction* aTrans,

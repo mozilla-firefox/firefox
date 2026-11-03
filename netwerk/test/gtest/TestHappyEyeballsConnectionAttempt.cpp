@@ -216,7 +216,8 @@ class RecordingConnMgrDelegate final : public HappyEyeballsConnMgrDelegate {
   void AddTransaction(nsHttpTransaction*, int32_t) override {
     mCalls.AppendElement("AddTransaction"_ns);
   }
-  void ReportSpdyConnection(HttpConnectionBase*, bool, bool) override {
+  void ReportSpdyConnection(HttpConnectionBase*, bool, bool,
+                            ConnectionEntry*) override {
     mCalls.AppendElement("ReportSpdyConnection"_ns);
   }
   void ReportHttp3Connection(HttpConnectionBase*, ConnectionEntry*) override {

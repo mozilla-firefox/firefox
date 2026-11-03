@@ -12,8 +12,21 @@ var { setTimeout } = ChromeUtils.importESModule(
 
 add_setup(async function () {
   Services.prefs.setIntPref("network.http.speculative-parallel-limit", 0);
-
+  Services.prefs.setIntPref("logging.nsHttp", 5);
+  // Give the H3 outer attempt to the MASQUE proxy a head start over the TCP
+  // attempt that reaches the HTTP/2 fallback proxy on the same port.
+  Services.prefs.setIntPref(
+    "network.http.happy_eyeballs_connection_attempt_delay",
+    500
+  );
   await setup_http3_proxy();
+
+  registerCleanupFunction(async () => {
+    Services.prefs.clearUserPref("logging.nsHttp");
+    Services.prefs.clearUserPref(
+      "network.http.happy_eyeballs_connection_attempt_delay"
+    );
+  });
 });
 
 add_task(test_http_connect);

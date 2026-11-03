@@ -120,6 +120,7 @@ class HappyEyeballsTransaction final : public SpeculativeTransaction {
                          uint32_t* aCountWritten) override;
   void Close(nsresult aReason) override;
   nsHttpTransaction* QueryHttpTransaction() override;
+  bool IsHappyEyeballsTransaction() override { return true; }
 
   // Forward to the real nsHttpTransaction this race is being run for so
   // the deferred LNA check in nsHttpConnection::HandshakeDoneInternal
