@@ -3822,7 +3822,7 @@
 # processes run at THREAD_PRIORITY_ABOVE_NORMAL.
 - name: dom.ipc.processPriorityManager.foregroundRaisesMainThreadPriority
   type: bool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 #endif
 
