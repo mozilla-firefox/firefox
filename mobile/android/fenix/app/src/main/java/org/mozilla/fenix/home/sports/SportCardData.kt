@@ -11,12 +11,28 @@ import androidx.annotation.DrawableRes
  *
  * @property key Abbreviation named for a given name (e.g. "ENG").
  * @property drawableResId Local drawable representing the team.
+ * @property globalTeamId Unique numeric identifier for this team.
  * @property name Long display name (e.g. "England"). This is not localized.
+ * @property iconUrl Optional URL for the team logo.
+ * @property eliminated True once the team is out of the tournament.
+ * @property standing The [TeamStanding] record in the tournament.
  */
 data class Team(
     val key: String,
     @param:DrawableRes val drawableResId: Int,
+    val globalTeamId: Long = 0L,
     val name: String = "",
+    val iconUrl: String? = null,
+    val eliminated: Boolean = false,
+    val standing: TeamStanding = TeamStanding(),
+)
+
+/** The team's record within the tournament. */
+data class TeamStanding(
+    val wins: Int = 0,
+    val losses: Int = 0,
+    val draws: Int = 0,
+    val points: Int = 0,
 )
 
 /** Game status of a match. */
@@ -65,6 +81,12 @@ sealed class MatchStatus {
     /** API returned an unrecognized status string. */
     data object Unknown : MatchStatus()
 }
+
+/** True when the match is currently being played (regulation or penalty shootout). */
+internal fun MatchStatus.isLive(): Boolean = this is MatchStatus.Live || this is MatchStatus.Penalties
+
+/** True when the match has finished (regulation or after a shootout). */
+internal fun MatchStatus.isPast(): Boolean = this is MatchStatus.Final || this is MatchStatus.FinalAfterPenalties
 
 /**
  * True when this period description denotes extra time — the feed uses both "ET" and "Extra" (case-insensitively), so
