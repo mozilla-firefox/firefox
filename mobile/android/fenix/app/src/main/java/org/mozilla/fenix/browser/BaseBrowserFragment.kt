@@ -178,6 +178,7 @@ import org.mozilla.fenix.biometricauthentication.AuthenticationStatus
 import org.mozilla.fenix.biometricauthentication.BiometricAuthenticationManager
 import org.mozilla.fenix.browser.applinks.AppLinksPromptFragment
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
+import org.mozilla.fenix.browser.browsingmode.BrowsingModeObserver
 import org.mozilla.fenix.browser.permissions.FenixSitePermissionLearnMoreUrlProvider
 import org.mozilla.fenix.browser.readermode.DefaultReaderModeController
 import org.mozilla.fenix.browser.readermode.ReaderModeController
@@ -344,6 +345,7 @@ abstract class BaseBrowserFragment :
     private val snackbarBinding = ViewBoundFeatureWrapper<SnackbarBinding>()
     private val standardSnackbarErrorBinding = ViewBoundFeatureWrapper<StandardSnackbarErrorBinding>()
     private val ipProtectionWarningBinding = ViewBoundFeatureWrapper<IPProtectionWarningBinding>()
+    private val browsingModeObserver = ViewBoundFeatureWrapper<BrowsingModeObserver>()
 
     protected val summarizeToolbarCfrBinding = ViewBoundFeatureWrapper<SummarizeToolbarCFRBinding>()
 
@@ -477,10 +479,20 @@ abstract class BaseBrowserFragment :
             observeRestoreComplete(requireComponents.core.store, findNavController())
         }
 
-        observeTabSelection(
-            requireComponents.core.store,
-            isCustomTabSession = customTabSessionId != null,
+        browsingModeObserver.set(
+            feature =
+                BrowsingModeObserver(
+                    store = requireComponents.core.store,
+                    customTabSessionId = customTabSessionId,
+                    onSelectedTabChanged = { tab ->
+                        activity?.runOnUiThread { updateThemeForSession(tab) }
+                    },
+                ),
+            owner = viewLifecycleOwner,
+            view = view,
         )
+
+        observeTabSelection(requireComponents.core.store)
 
         if (customTabSessionId == null) {
             tabGroupsStripStore.dispatch(TabGroupsStripAction.InitializeDataObservation)
@@ -2071,7 +2083,6 @@ abstract class BaseBrowserFragment :
     @VisibleForTesting
     internal fun observeTabSelection(
         store: BrowserStore,
-        isCustomTabSession: Boolean,
         mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     ) {
         consumeFlow(store, mainDispatcher = mainDispatcher) { flow ->
@@ -2085,7 +2096,7 @@ abstract class BaseBrowserFragment :
                 .collect {
                     dismissDownloadDialogs()
                     dismissRenameDialog()
-                    handleTabSelected(it, isCustomTabSession)
+                    handleTabSelected(it)
                 }
         }
     }
@@ -2102,11 +2113,7 @@ abstract class BaseBrowserFragment :
         downloadDialog?.dismiss()
     }
 
-    private fun handleTabSelected(selectedTab: TabSessionState, isCustomTabSession: Boolean) {
-        if (!this.isRemoving && !isCustomTabSession) {
-            updateThemeForSession(selectedTab)
-        }
-
+    private fun handleTabSelected(selectedTab: TabSessionState) {
         if (browserInitialized) {
             view?.let {
                 fullScreenChanged(false)
@@ -2314,7 +2321,7 @@ abstract class BaseBrowserFragment :
     @VisibleForTesting
     internal fun updateThemeForSession(session: SessionState) {
         val sessionMode = BrowsingMode.fromBoolean(session.content.private)
-        (activity as HomeActivity).browsingModeManager.mode = sessionMode
+        (activity as HomeActivity?)?.browsingModeManager?.mode = sessionMode
     }
 
     /** A safe version of [getCurrentTab] that safely checks for context nullability. */

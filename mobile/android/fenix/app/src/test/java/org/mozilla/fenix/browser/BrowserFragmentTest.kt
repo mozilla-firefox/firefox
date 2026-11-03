@@ -103,57 +103,9 @@ class BrowserFragmentTest {
     }
 
     @Test
-    fun `GIVEN fragment is added WHEN selected tab changes THEN theme is updated`() = runTest {
-        browserFragment.observeTabSelection(
-            store,
-            false,
-            coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
-        )
-        verify(exactly = 0) { browserFragment.updateThemeForSession(testTab) }
-
-        addAndSelectTab(testTab)
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 1) { browserFragment.updateThemeForSession(testTab) }
-    }
-
-    @Test
-    fun `GIVEN fragment is added WHEN selected tab is customTab THEN theme is not updated`() = runTest {
-        browserFragment.observeTabSelection(
-            store,
-            true,
-            coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
-        )
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 0) { browserFragment.updateThemeForSession(testTab) }
-
-        addAndSelectTab(testTab)
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 0) { browserFragment.updateThemeForSession(testTab) }
-    }
-
-    @Test
-    fun `GIVEN fragment is removing WHEN selected tab changes THEN theme is not updated`() = runTest {
-        every { browserFragment.isRemoving } returns true
-        browserFragment.observeTabSelection(
-            store,
-            false,
-            coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
-        )
-
-        addAndSelectTab(testTab)
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 0) { browserFragment.updateThemeForSession(testTab) }
-    }
-
-    @Test
     fun `GIVEN browser UI is not initialized WHEN selected tab changes THEN browser UI is initialized`() = runTest {
         browserFragment.observeTabSelection(
             store,
-            false,
             coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
         )
 
@@ -170,7 +122,6 @@ class BrowserFragmentTest {
         browserFragment.browserInitialized = true
         browserFragment.observeTabSelection(
             store,
-            false,
             coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
         )
 
@@ -189,7 +140,6 @@ class BrowserFragmentTest {
         browserFragment.browserInitialized = true
         browserFragment.observeTabSelection(
             store,
-            false,
             coroutineContext[ContinuationInterceptor] as CoroutineDispatcher,
         )
 
