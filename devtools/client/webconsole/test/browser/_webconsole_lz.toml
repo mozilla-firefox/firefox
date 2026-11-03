@@ -158,8 +158,6 @@ support-files = [
   "test-non-javascript-mime-worker.html",
   "test-reopen-closed-tab.html",
   "test-same-origin-required-load.html",
-  "test-service-worker.html",
-  "test-service-worker.js",
   "test-sourcemap-error-01.html",
   "test-sourcemap-error-01.js",
   "test-sourcemap-error-02.html",
@@ -300,8 +298,6 @@ fail-if = [
 ["browser_webconsole_scroll.js"]
 
 ["browser_webconsole_select_all.js"]
-
-["browser_webconsole_service_worker.js"]
 
 ["browser_webconsole_show_subresource_security_errors.js"]
 skip-if = [
