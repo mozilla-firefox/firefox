@@ -94,7 +94,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
     inputArgs: [
       "Summarize: The exploration of space has always been a subject of fascination and curiosity for humanity. \nFrom the earliest  stargazers mapping the heavens to modern astronomers utilizing cutting-edge telescopes, the quest to \nunderstand the  cosmos has driven technological and scientific advancement. In the 20th century, the space race between \nthe United States and the Soviet Union culminated in humanity's first steps on the moon, marking a new era of space \nexploration.\n\nToday, space exploration is no longer confined to government agencies. Private companies, such as SpaceX and Blue \nOrigin, are pioneering new methods of space travel, with ambitions ranging from commercial space tourism to colonizing \nMars. These ventures have sparked debates about the ethical, environmental, and economic implications of privatizing \nspace.\n\nThe potential benefits of space exploration are vast. Satellites have revolutionized communication, weather forecasting, \nand navigation. Space-based observations have provided critical data for understanding climate change and protecting \nEarth’s ecosystems. Moreover, the possibility of mining asteroids for rare minerals could address resource shortages on \nour planet.\n\nHowever, the challenges are equally significant. Space travel remains extraordinarily expensive and risky. The harsh \nenvironment of space poses threats to human health, including exposure to radiation and the psychological effects of \nprolonged isolation. Additionally, the accumulation of space debris presents a growing hazard to both current and future \nmissions.\n\nInternational collaboration has proven to be a powerful tool in overcoming some of these challenges. The International \nSpace Station (ISS) serves as a testament to what can be achieved when nations work together, pooling resources and \nexpertise. Future projects, such as the planned Lunar Gateway and Mars missions, highlight the importance of cooperative \nefforts in pushing the boundaries of human capability.\n\nAs humanity looks to the stars, questions about our role in the universe arise. What responsibilities do we have as \nstewards of our own planet and potential explorers of others? How can we ensure that space exploration benefits all of \nhumanity and not just a privileged few?\n\nThe journey into space is a reflection of our innate desire to explore and understand. It challenges us to innovate, to \ndream, and to collaborate. While the road ahead is fraught with difficulties, the potential rewards—both tangible and \nintangible—make the endeavor worthwhile. With careful planning, international cooperation, and ethical considerations, \nspace exploration can continue to inspire and benefit humanity for generations to come.",
@@ -250,7 +249,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   "image-to-text": {
@@ -263,7 +261,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   ner: {
@@ -274,7 +271,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   summary: {
@@ -287,7 +283,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   zero: {
@@ -301,7 +296,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   feature: {
@@ -312,7 +306,6 @@ const INFERENCE_PAD_PRESETS = {
     modelRevision: "main",
     modelHub: "huggingface",
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   "static-embeddings": {
@@ -376,7 +369,6 @@ const INFERENCE_PAD_PRESETS = {
     modelHubRootUrl: "https://model-hub.mozilla.org",
     numThreads: 0,
     dtype: "q8",
-    device: "cpu",
     backend: "onnx",
   },
   openai: {
@@ -507,14 +499,7 @@ async function updateStatus() {
   let thead = document.createElement("thead");
   let headerRow = document.createElement("tr");
 
-  let columns = [
-    "Engine ID",
-    "Status",
-    "Model ID",
-    "Quantization",
-    "Device",
-    "Timeout",
-  ];
+  let columns = ["Engine ID", "Status", "Model ID", "Quantization", "Timeout"];
 
   columns.forEach(col => {
     let th = document.createElement("th");
@@ -548,10 +533,6 @@ async function updateStatus() {
     let dtypeCell = document.createElement("td");
     dtypeCell.textContent = options?.dtype || "N/A";
     row.appendChild(dtypeCell);
-
-    let deviceCell = document.createElement("td");
-    deviceCell.textContent = options?.device || "N/A";
-    row.appendChild(deviceCell);
 
     let timeoutCell = document.createElement("td");
     timeoutCell.textContent = options?.timeoutMS || "N/A";
@@ -680,9 +661,6 @@ async function updateModels() {
 
 async function refreshPage() {
   const ml_enable = Services.prefs.getBoolPref("browser.ml.enable");
-  const gpu_enabled =
-    Services.prefs.getBoolPref("dom.webgpu.enabled") &&
-    Services.prefs.getBoolPref("dom.webgpu.service-workers.enabled");
 
   const content = document.getElementById("content");
   const warning = document.getElementById("warning");
@@ -693,17 +671,7 @@ async function refreshPage() {
     content.style.display = "block";
   }
 
-  if (!ml_enable || !gpu_enabled) {
-    let text = [];
-    if (!ml_enable) {
-      text =
-        "browser.ml.enable is set to False ! Toggle it to activate local inference.";
-    } else if (!gpu_enabled) {
-      text =
-        "WebGPU is not enabled, set dom.webgpu.enabled and dom.webgpu.service-workers.enabled to true.";
-    }
-
-    warning.setAttribute("message", text);
+  if (!ml_enable) {
     warning.style.display = "block";
   } else {
     warning.style.display = "none";
@@ -767,7 +735,6 @@ function loadExample(name) {
   document.getElementById("modelRevision").value = data.modelRevision;
   setSelectOption("modelHub", data.modelHub);
   setSelectOption("dtype", data.dtype);
-  setSelectOption("device", data.device);
   setSelectOption("backend", data.backend);
   document.getElementById("timeout").value = data.timeout || 30;
 }
@@ -819,7 +786,6 @@ async function runInference() {
   const modelRevision = document.getElementById("modelRevision").value;
   const taskName = document.getElementById("taskName").value;
   const dtype = document.getElementById("dtype").value;
-  const device = document.getElementById("device").value;
   const numThreads = parseInt(document.getElementById("numThreads").value);
   const numRuns = parseInt(document.getElementById("numRuns").value);
   const modelHub = document.getElementById("modelHub").value;
@@ -877,7 +843,6 @@ async function runInference() {
     processorId: modelId,
     taskName,
     modelHub,
-    device,
     dtype,
     backend,
     numThreads,
@@ -885,10 +850,6 @@ async function runInference() {
     executionPriority: ExecutionPriority.LOW,
     ...additionalEngineOptions,
   };
-
-  if (initData.device === "cpu" && initData.backend === "onnx") {
-    initData.device = "wasm";
-  }
 
   resultsConsole.addLine("Creating engine if needed");
   let engine;
@@ -1194,7 +1155,6 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "huggingface",
         dtype: "q8",
-        device: "cpu",
       },
     },
     {
@@ -1208,7 +1168,6 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "huggingface",
         dtype: "q8",
-        device: "cpu",
       },
     },
     {
@@ -1224,7 +1183,6 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "huggingface",
         dtype: "q8",
-        device: "cpu",
       },
     },
     {
@@ -1276,13 +1234,6 @@ async function runBenchmark() {
         benchmarkConsole.addText("Initialization...");
 
         workload.pipelineOptions.backend = currentBackend;
-
-        if (
-          workload.pipelineOptions.device === "cpu" &&
-          workload.pipelineOptions.backend === "onnx"
-        ) {
-          workload.pipelineOptions.device = "wasm";
-        }
 
         bench.initDuration = await measure(async () => {
           const pipelineOptions = new PipelineOptions(workload.pipelineOptions);
@@ -1370,6 +1321,12 @@ window.onload = async function () {
     selectedPreset = selectedOption.value;
     loadExample(selectedPreset);
   });
+  document
+    .getElementById("warning.enable")
+    .addEventListener("click", async () => {
+      Services.prefs.setBoolPref("browser.ml.enable", true);
+      await refreshPage();
+    });
 
   document
     .getElementById("benchmark.button")

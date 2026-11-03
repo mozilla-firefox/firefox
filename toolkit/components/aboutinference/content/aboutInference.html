@@ -62,8 +62,15 @@
         <moz-message-bar
           type="warning"
           id="warning"
-          message=""
-        ></moz-message-bar>
+          data-l10n-id="about-inference-ml-disabled"
+          data-l10n-attrs="message"
+        >
+          <moz-button
+            id="warning.enable"
+            slot="actions"
+            data-l10n-id="about-inference-ml-disabled-enable"
+          ></moz-button>
+        </moz-message-bar>
       </div>
       <div id="content">
         <!-- local tab -->
@@ -125,13 +132,6 @@
                 <div>
                   <label for="quantization">Quantization:</label>
                   <select id="dtype"></select>
-                </div>
-                <div>
-                  <label for="device">Device:</label>
-                  <select id="device">
-                    <option value="cpu" selected>cpu</option>
-                    <option value="gpu">gpu</option>
-                  </select>
                 </div>
                 <div>
                   <label for="numRuns">Number of runs:</label>

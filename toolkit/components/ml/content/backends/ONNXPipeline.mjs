@@ -583,25 +583,6 @@ function isMultiThreadSupported() {
 }
 
 /**
- * Copied over from ONNX see https://github.com/microsoft/onnxruntime
- *
- * This is the code used by the lib to detect GPU support.
- *
- */
-async function checkGPUSupport() {
-  if (!navigator?.gpu) {
-    return false;
-  }
-
-  const adapter = await navigator.gpu.requestAdapter({
-    powerPreference: "high-performance",
-    forceFallbackAdapter: false,
-  });
-
-  return !!adapter;
-}
-
-/**
  * Represents a pipeline for processing machine learning tasks.
  */
 export class ONNXPipeline {
@@ -675,10 +656,7 @@ export class ONNXPipeline {
           break;
       }
       lazy.console.debug("Transformers.js env", transformers.env);
-      if (config.device === "cpu") {
-        config.device = "wasm";
-      }
-      device = config.device || "wasm";
+      device = "wasm";
     } else {
       device = "cpu";
       session_options.intraOpNumThreads = config.numThreads;
@@ -865,13 +843,6 @@ export class ONNXPipeline {
    */
   async ensurePipelineIsReady() {
     if (!this.#isReady) {
-      if (this.#config.device === "gpu") {
-        if (!(await checkGPUSupport())) {
-          lazy.console.warn(
-            "GPU not supported. ONNX will fallback to CPU instead."
-          );
-        }
-      }
       // deactive console.warn, see https://bugzilla.mozilla.org/show_bug.cgi?id=1891003
       const originalWarn = console.warn;
       await this.#metricsSnapShot({ name: "ensurePipelineIsReadyStart" });

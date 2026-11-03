@@ -5,7 +5,9 @@
 about-inference-title = Inference Manager
 about-inference-header = ✨ Inference Manager
 about-inference-description = This page gathers all information about local inference
-about-inference-warning = browser.ml.enable is set to False !
+about-inference-ml-disabled =
+  .message = To use this page, enable local inference.
+about-inference-ml-disabled-enable = Enable
 about-inference-simd-supported = SIMD supported
 about-inference-onnx-runtime-file = ONNX Runtime file
 about-inference-downloads-description = You can delete models here to free up disk space. They will be downloaded again on first inference.
