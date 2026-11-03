@@ -13,7 +13,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Region: "resource://gre/modules/Region.sys.mjs",
 });
 const MODEL_PREF = "browser.smartwindow.firstrun.modelChoice";
-const MISTRAL_RELEASE_PREF = "browser.smartwindow.mistralRelease";
 const AUTO_ADVANCE_PREF = "browser.smartwindow.firstrun.autoAdvanceMS";
 const FIRST_RUN_COMPLETE_PREF = "browser.smartwindow.firstrun.hasCompleted";
 const EXPLAINER_PAGE_PREF = "browser.smartwindow.firstrun.explainerURL";
@@ -42,35 +41,8 @@ const PROMOTED_BRAND_NAME = "Mistral";
  * Model card content is keyed by the model's labelId.
  * Full l10n IDs and icon URLs are inlined so they stay greppable in the codebase.
  * Card display order comes from getModelDisplayOrder().
- *
- * TODO Bug 2053495
- * When the mistral release pref is removed, delete MODEL_CARDS and
- * make MODEL_CARDS_V2 the only set.
  */
-
-const isMistralRelease = Services.prefs.getBoolPref(
-  MISTRAL_RELEASE_PREF,
-  false
-);
 const MODEL_CARDS = {
-  1: {
-    label: "aiwindow-firstrun-model-fast-label",
-    body: "aiwindow-firstrun-model-fast-body",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-1.svg",
-  },
-  2: {
-    label: "aiwindow-firstrun-model-allpurpose-label",
-    body: "aiwindow-firstrun-model-allpurpose-body",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-2.svg",
-  },
-  3: {
-    label: "aiwindow-firstrun-model-personal-label",
-    body: "aiwindow-firstrun-model-personal-body",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-3.svg",
-  },
-};
-
-const MODEL_CARDS_V2 = {
   1: {
     label: "aiwindow-firstrun-model-fast-label-v2",
     body: "aiwindow-firstrun-model-fast-body-v2",
@@ -137,7 +109,7 @@ function isEuropePromotionRegion() {
 }
 
 function getPromotedChoiceId(modelData) {
-  if (!isMistralRelease || !isEuropePromotionRegion()) {
+  if (!isEuropePromotionRegion()) {
     return null;
   }
   return (
@@ -148,10 +120,9 @@ function getPromotedChoiceId(modelData) {
 }
 
 function buildModelCards(modelData, promotedChoiceId) {
-  const cards = isMistralRelease ? MODEL_CARDS_V2 : MODEL_CARDS;
   return getModelDisplayOrder().map(choiceId => {
     const model = modelData[choiceId] ?? {};
-    const cardContent = cards[choiceId] ?? {};
+    const cardContent = MODEL_CARDS[choiceId] ?? {};
     const card = {
       id: `model_${choiceId}`,
       flair:
@@ -172,14 +143,7 @@ function buildModelCards(modelData, promotedChoiceId) {
         data: { pref: { name: MODEL_PREF, value: choiceId } },
       },
     };
-    if (isMistralRelease) {
-      card.label.args = model;
-    } else {
-      card.subtitle = {
-        string_id: "aiwindow-firstrun-model-chip-subtitle",
-        args: model,
-      };
-    }
+    card.label.args = model;
     return card;
   });
 }
@@ -248,18 +212,14 @@ function getScreens(modelData, promotedChoiceId) {
           width: "100%",
         },
         title: {
-          string_id: isMistralRelease
-            ? "aiwindow-firstrun-model-title-v2"
-            : "aiwindow-firstrun-model-title",
+          string_id: "aiwindow-firstrun-model-title-v2",
           fontSize: "40px",
           fontWeight: "350",
           letterSpacing: 0,
           lineHeight: "normal",
         },
         subtitle: {
-          string_id: isMistralRelease
-            ? "aiwindow-firstrun-model-subtitle-v2"
-            : "aiwindow-firstrun-model-subtitle",
+          string_id: "aiwindow-firstrun-model-subtitle-v2",
           fontSize: "17px",
           fontWeight: 320,
         },

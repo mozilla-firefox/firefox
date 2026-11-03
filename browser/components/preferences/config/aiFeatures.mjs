@@ -317,29 +317,12 @@ const modelL10nArgs = key => ({
   ownerName: lazy.getCachedModelsData()[key].ownerName,
 });
 
-// TODO Bug 2053495: remove with mistral release pref
-const MISTRAL_RELEASE_PREF = "browser.smartwindow.mistralRelease";
-
-const isMistralRelease = () =>
-  Services.prefs.getBoolPref(MISTRAL_RELEASE_PREF, false);
-
 /**
  * Keyed by choice ID; entry order here does not matter. Radio display order is
  * controlled by getModelDisplayOrder().
- *
- * TODO Bug 2053495
- * When the mistral release pref is removed, delete MODEL_CHOICE_STRINGS and
- * make MODEL_CHOICE_STRINGS_V2 the only set.
  */
-/** @type {Record<string, {l10nId: string, descriptionL10nId?: string}>} */
+/** @type {Record<string, {l10nId: string}>} */
 const MODEL_CHOICE_STRINGS = {
-  1: { l10nId: "smart-window-model-fast" },
-  2: { l10nId: "smart-window-model-flexible" },
-  3: { l10nId: "smart-window-model-personal" },
-};
-
-/** @type {Record<string, {l10nId: string, descriptionL10nId?: string}>} */
-const MODEL_CHOICE_STRINGS_V2 = {
   1: {
     l10nId: "smart-window-model-fast-v2",
   },
@@ -353,17 +336,14 @@ const MODEL_CHOICE_STRINGS_V2 = {
 
 /**
  * Builds the preset (non-custom) model radio options. Ordering comes from
- * getModelDisplayOrder(); label and description string IDs come from the static
- * maps above; l10n args (display values) come from the cached model data.
+ * getModelDisplayOrder(); string IDs come from MODEL_CHOICE_STRINGS; l10n args
+ * (display values) come from the cached model data.
  *
  * @returns {object[]}
  */
 const buildPresetModelOptions = () => {
-  const strings = isMistralRelease()
-    ? MODEL_CHOICE_STRINGS_V2
-    : MODEL_CHOICE_STRINGS;
   return lazy.getModelDisplayOrder().map(choiceId => {
-    const { l10nId } = strings[choiceId];
+    const { l10nId } = MODEL_CHOICE_STRINGS[choiceId];
     const option = /** @type {Record<string, any>} */ ({
       value: choiceId,
       l10nId,
@@ -845,13 +825,6 @@ Preferences.addSetting({
       "smartWindowFirstRunModelChoice",
       "smartWindowCustomEndpoint",
     ],
-    // TODO Bug 2053495: remove with mistral release pref.
-    setup(emitChange) {
-      const observer = () => emitChange();
-      Services.prefs.addObserver(MISTRAL_RELEASE_PREF, observer);
-      return () =>
-        Services.prefs.removeObserver(MISTRAL_RELEASE_PREF, observer);
-    },
     getControlConfig(config) {
       const customOption = config.options.find(option => option.value === "0");
       return {

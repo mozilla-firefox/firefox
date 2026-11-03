@@ -3,12 +3,6 @@
 
 do_get_profile();
 
-// TODO: Bug 2053495 - Refactor tests upon pref removal.
-Services.prefs.setBoolPref("browser.smartwindow.mistralRelease", false);
-registerCleanupFunction(() => {
-  Services.prefs.clearUserPref("browser.smartwindow.mistralRelease");
-});
-
 const {
   FALLBACK_MODELS,
   getModelForChoice,
@@ -93,7 +87,13 @@ add_task(async function test_getModelForChoice_fallback_when_not_found() {
 
     Assert.deepEqual(
       result,
-      { model: "gemini-3.1-flash-lite", ownerName: "Google", labelId: "fast" },
+      {
+        model: "gemini-3.1-flash-lite",
+        ownerName: "Google",
+        labelId: "fast",
+        shortName: "Gemini 3.1 Flash Lite",
+        brandName: "Gemini",
+      },
       "Should return fallback data for choice 1"
     );
   } finally {
@@ -151,15 +151,15 @@ add_task(async function test_getAllModelsData_with_remote_settings() {
         kind: "params",
         feature: "chat",
         version: `${FEATURE_MAJOR_VERSIONS[MODEL_FEATURES.CHAT]}.10`,
-        model: "gpt-oss-120b",
+        model: "mistral-small-2603",
         model_choice_id: "3",
-        owner_name: "OpenAI",
+        owner_name: "Mistral",
         model_details: {
-          model: "gpt-oss-120b",
-          ownerName: "OpenAI",
+          model: "mistral-small-2603",
+          ownerName: "Mistral",
           labelId: "personal",
-          shortName: "GPT OSS 120B",
-          brandName: "GPT OSS",
+          shortName: "Mistral Small 4",
+          brandName: "Mistral",
         },
       },
     ];
@@ -189,11 +189,11 @@ add_task(async function test_getAllModelsData_with_remote_settings() {
           brandName: "Qwen",
         },
         3: {
-          model: "gpt-oss-120b",
-          ownerName: "OpenAI",
+          model: "mistral-small-2603",
+          ownerName: "Mistral",
           labelId: "personal",
-          shortName: "GPT OSS 120B",
-          brandName: "GPT OSS",
+          shortName: "Mistral Small 4",
+          brandName: "Mistral",
         },
       },
       "Should return all model choices with correct data"
@@ -342,11 +342,15 @@ add_task(async function test_getAllModelsData_with_fallbacks() {
           model: "qwen3-235b-a22b-instruct-2507-maas",
           ownerName: "Alibaba",
           labelId: "allpurpose",
+          shortName: "Qwen 3 235B",
+          brandName: "Qwen",
         },
         3: {
-          model: "gpt-oss-120b",
-          ownerName: "OpenAI",
+          model: "mistral-small-2603",
+          ownerName: "Mistral",
           labelId: "personal",
+          shortName: "Mistral Small 4",
+          brandName: "Mistral",
         },
       },
       "Should return all model choices with correct data"

@@ -8,13 +8,27 @@ import "chrome://global/content/elements/panel-list.mjs";
 import "chrome://browser/content/aiwindow/components/input-model-select.mjs";
 
 const AVAILABLE_MODELS = {
-  1: { model: "gemini-2.5-flash-lite", ownerName: "Google", labelId: "fast" },
+  1: {
+    model: "gemini-3.1-flash-lite",
+    ownerName: "Google",
+    labelId: "fast",
+    shortName: "Gemini 3.1 Flash Lite",
+    brandName: "Gemini",
+  },
   2: {
     model: "qwen3-235b-a22b-instruct-2507-maas",
     ownerName: "Alibaba",
     labelId: "allpurpose",
+    shortName: "Qwen 3 235B",
+    brandName: "Qwen",
   },
-  3: { model: "gpt-oss-120b", ownerName: "OpenAI", labelId: "personal" },
+  3: {
+    model: "mistral-small-2603",
+    ownerName: "Mistral",
+    labelId: "personal",
+    shortName: "Mistral Small 4",
+    brandName: "Mistral",
+  },
 };
 
 const AVAILABLE_MODELS_WITH_CUSTOM = {
@@ -35,8 +49,6 @@ aiwindow-input-model-select-button-label-fast = Fast
 aiwindow-input-model-select-button-label-allpurpose = Flexible
 aiwindow-input-model-select-button-label-personal = Personal
 aiwindow-input-model-select-button-label-custom = Custom
-aiwindow-input-model-select-menu-item-description = { $ownerName } { $model }
-aiwindow-input-model-select-menu-item-description-custom = Use your own LLM
 aiwindow-input-model-select-settings-link = Model settings
 aiwindow-input-model-select-default-badge =
     .label = Default
@@ -61,7 +73,7 @@ const Template = ({ availableModels, selectedModelId }) => html`
 export const Default = Template.bind({});
 Default.args = {
   availableModels: AVAILABLE_MODELS,
-  selectedModelId: "gemini-2.5-flash-lite",
+  selectedModelId: "gemini-3.1-flash-lite",
 };
 
 export const WithCustomModel = Template.bind({});

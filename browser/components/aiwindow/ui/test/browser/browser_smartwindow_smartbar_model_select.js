@@ -23,8 +23,6 @@ add_setup(async function () {
     set: [
       ["browser.smartwindow.firstrun.modelChoice", DEFAULT_MODEL_CHOICE_ID],
       ["places.semanticHistory.smartwindow.featureGate", false],
-      // TODO: Bug 2053495 - Refactor tests upon pref removal
-      ["browser.smartwindow.mistralRelease", false],
     ],
   });
 });
@@ -81,7 +79,10 @@ async function getCheckedModelChoiceIds(browser) {
         const iconSrc = item
           .querySelector(".model-item-icon")
           .getAttribute("src");
-        checkedIds.push(iconSrc.match(/model-choice-(\d+)\.svg/)?.[1]);
+        const iconName = iconSrc.match(/model-choice-(.+)\.svg/)?.[1];
+        checkedIds.push(
+          { 0: "0", gemini: "1", qwen: "2", mistral: "3" }[iconName]
+        );
       }
     }
 
@@ -130,8 +131,8 @@ add_task(async function test_smartbar_model_select_panel_shows_default_badge() {
 
     const defaultItemHasBadge = await SpecialPowers.spawn(
       browser,
-      [DEFAULT_MODEL_CHOICE_ID],
-      async defaultModelChoiceId => {
+      [FALLBACK_MODELS[DEFAULT_MODEL_CHOICE_ID].brandName.toLowerCase()],
+      async iconName => {
         const aiWindowElement = content.document.querySelector("ai-window");
         const smartbar = aiWindowElement.shadowRoot.querySelector(
           "#ai-window-smartbar"
@@ -149,7 +150,7 @@ add_task(async function test_smartbar_model_select_panel_shows_default_badge() {
         );
 
         const defaultItem = panelList.querySelector(
-          `button.model-item:has(.model-item-icon[src*="model-choice-${defaultModelChoiceId}.svg"])`
+          `button.model-item:has(.model-item-icon[src*="model-choice-${iconName}.svg"])`
         );
         return !!defaultItem.querySelector("moz-badge");
       }
@@ -232,7 +233,6 @@ add_task(async function test_smartbar_model_select_shows_custom_model_name() {
   const fullName = "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M";
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["browser.smartwindow.mistralRelease", true],
       ["browser.smartwindow.customEndpoint", "https://custom.endpoint/v1"],
       ["browser.smartwindow.model", fullName],
       ["browser.smartwindow.firstrun.modelChoice", "0"],

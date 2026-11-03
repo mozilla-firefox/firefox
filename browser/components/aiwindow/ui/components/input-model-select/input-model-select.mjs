@@ -19,28 +19,16 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/XPCOMUtils.sys.mjs"
 );
 
-// TODO Bug 2053495: remove with mistral release pref
-const MISTRAL_RELEASE_PREF = "browser.smartwindow.mistralRelease";
 const CUSTOM_MODEL_NAME_PREF = "browser.smartwindow.model";
 const { getModelDisplayOrder } = window.IS_STORYBOOK
-  ? // TODO Bug 2053495: ensure TypeError doesn't occur in Storybook once pref gating has been removed
-    { getModelDisplayOrder: () => ["1", "2", "3"] }
+  ? { getModelDisplayOrder: () => ["3", "1", "2"] }
   : ChromeUtils.importESModule(
       "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
     );
 
-// TODO Bug 2053495: remove with mistral release pref — delete
-// MODEL_ICONS and make MODEL_ICONS_V2 the only set.
 // Icon URL and l10n ID inlined as full URLs so they stay greppable
 
 const MODEL_ICONS = {
-  0: "chrome://browser/content/aiwindow/assets/model-choice-0.svg",
-  1: "chrome://browser/content/aiwindow/assets/model-choice-1.svg",
-  2: "chrome://browser/content/aiwindow/assets/model-choice-2.svg",
-  3: "chrome://browser/content/aiwindow/assets/model-choice-3.svg",
-};
-
-const MODEL_ICONS_V2 = {
   0: "chrome://browser/content/aiwindow/assets/model-choice-0.svg",
   1: "chrome://browser/content/aiwindow/assets/model-choice-gemini.svg",
   2: "chrome://browser/content/aiwindow/assets/model-choice-qwen.svg",
@@ -82,27 +70,18 @@ export class InputModelSelect extends MozLitElement {
     this.panelOpen = false;
     this.sidebarMode = false;
     this._menuId = `models-menu-${crypto.randomUUID()}`;
-    // TODO Bug 2053495: remove with mistral release pref. Caches the pref and
-    // re-renders the whole component when it changes (e.g. Nimbus enrollment
-    // mid-session), so labels, order, and icons all update in place.
-    XPCOMUtils.defineLazyPreferenceGetter(
-      this,
-      "mistralRelease",
-      MISTRAL_RELEASE_PREF,
-      false,
-      () => this.requestUpdate()
-    );
-    // defineLazyPreferenceGetter registers its pref observer on first read, so
-    // touch the value here to arm the onUpdate callback above.
-    void this.mistralRelease;
-    XPCOMUtils.defineLazyPreferenceGetter(
-      this,
-      "customModelName",
-      CUSTOM_MODEL_NAME_PREF,
-      "",
-      () => this.requestUpdate()
-    );
-    void this.customModelName;
+    if (window.IS_STORYBOOK) {
+      this.customModelName = "";
+    } else {
+      XPCOMUtils.defineLazyPreferenceGetter(
+        this,
+        "customModelName",
+        CUSTOM_MODEL_NAME_PREF,
+        "",
+        () => this.requestUpdate()
+      );
+      void this.customModelName;
+    }
   }
 
   get #caretIcon() {
@@ -177,16 +156,6 @@ export class InputModelSelect extends MozLitElement {
     return BUTTON_LABEL_L10N_IDS[choiceId];
   }
 
-  #getDescriptionL10nId(choiceId) {
-    if (choiceId === "0") {
-      return "aiwindow-input-model-select-menu-item-description-custom";
-    }
-    if (this.mistralRelease) {
-      return BUTTON_LABEL_L10N_IDS[choiceId];
-    }
-    return "aiwindow-input-model-select-menu-item-description";
-  }
-
   #modelName(item) {
     return item.index === "0" ? this.customModelName : item.shortName;
   }
@@ -209,7 +178,7 @@ export class InputModelSelect extends MozLitElement {
   }
 
   #iconSrc(index) {
-    return (this.mistralRelease ? MODEL_ICONS_V2 : MODEL_ICONS)[index];
+    return MODEL_ICONS[index];
   }
 
   render() {
@@ -217,12 +186,11 @@ export class InputModelSelect extends MozLitElement {
     if (!this.#modelsList.length || !selectedModel) {
       return html``;
     }
-    const buttonLabel =
-      this.mistralRelease && this.#modelBrandName(selectedModel);
+
+    const buttonLabel = this.#modelBrandName(selectedModel);
 
     const panelListTemplate = html`<panel-list
       id=${this._menuId}
-      mistral-release=${this.mistralRelease}
       @shown=${this.#onPanelShown}
       @hidden=${this.#onPanelHidden}
     >
@@ -241,11 +209,11 @@ export class InputModelSelect extends MozLitElement {
                   ? " model-item-icon--custom"
                   : ""}"
                 src=${this.#iconSrc(item.index)}
-                alt=${this.mistralRelease ? this.#modelName(item) : nothing}
+                alt=${this.#modelName(item)}
             /></span>
             <span class="model-item-content">
               <span class="model-item-header">
-                ${this.mistralRelease && this.#modelName(item)
+                ${this.#modelName(item)
                   ? html`<span class="model-item-label"
                       >${this.#modelName(item)}</span
                     >`
@@ -260,19 +228,10 @@ export class InputModelSelect extends MozLitElement {
                     ></moz-badge>`
                   : ""}
               </span>
-              ${this.mistralRelease
-                ? html`<span
-                    class="model-item-details"
-                    data-l10n-id=${this.#getButtonLabelL10nId(item.index)}
-                  ></span>`
-                : html`<span
-                    class="model-item-details"
-                    data-l10n-id=${this.#getDescriptionL10nId(item.index)}
-                    data-l10n-args=${JSON.stringify({
-                      model: item.model,
-                      ownerName: item.ownerName,
-                    })}
-                  ></span>`}
+              <span
+                class="model-item-details"
+                data-l10n-id=${this.#getButtonLabelL10nId(item.index)}
+              ></span>
             </span>
             ${item.model === this.selectedModelId
               ? html`<img
@@ -311,9 +270,7 @@ export class InputModelSelect extends MozLitElement {
           ? nothing
           : this.#getButtonLabelL10nId(selectedModel.index)}
         label=${buttonLabel || nothing}
-        .title=${this.mistralRelease && selectedModel.index === "0"
-          ? this.customModelName
-          : ""}
+        .title=${selectedModel.index === "0" ? this.customModelName : ""}
         .iconSrc=${this.#caretIcon}
         iconPosition="end"
       >

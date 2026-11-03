@@ -18,8 +18,6 @@ describe("Smart Window custom model selection", () => {
       set: [
         ["browser.preferences.aiControls", true],
         ["browser.smartwindow.enabled", true],
-        // TODO: Bug 2053495 - Refactor tests upon pref removal
-        ["browser.smartwindow.mistralRelease", false],
         ["browser.smartwindow.tos.consentTime", 1770830464],
       ],
     });
@@ -76,7 +74,7 @@ describe("Smart Window custom model selection", () => {
 
     // Reset to preset for keyboard test
     const fastRadio = doc.querySelector(
-      'moz-radio[data-l10n-id="smart-window-model-fast"]'
+      'moz-radio[data-l10n-id="smart-window-model-fast-v2"]'
     );
     fastRadio.click();
 
@@ -87,8 +85,7 @@ describe("Smart Window custom model selection", () => {
     );
 
     fastRadio.focus();
-    // Arrow down 3 times to get to custom (All-purpose -> Fast -> Personalization -> Custom)
-    EventUtils.synthesizeKey("KEY_ArrowDown", {}, win);
+    // Move from Fast through Flexible to Custom.
     EventUtils.synthesizeKey("KEY_ArrowDown", {}, win);
     EventUtils.synthesizeKey("KEY_ArrowDown", {}, win);
 
@@ -183,7 +180,7 @@ describe("Smart Window custom model selection", () => {
     ({ doc, win } = await openSmartWindowPanel());
 
     const fastRadio = doc.querySelector(
-      'moz-radio[data-l10n-id="smart-window-model-fast"]'
+      'moz-radio[data-l10n-id="smart-window-model-fast-v2"]'
     );
     fastRadio.click();
 

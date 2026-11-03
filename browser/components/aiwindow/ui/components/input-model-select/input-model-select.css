@@ -81,8 +81,9 @@ panel-item:not(.panel-section-header)::part(button) {
 .model-item-avatar {
   background: var(--background-color-canvas);
   border-radius: var(--border-radius-circle);
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-  border: var(--border-width) solid light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-50));
+  box-sizing: border-box;
+  padding: var(--space-small);
+  border: none;
   flex-shrink: 0;
   width: var(--size-item-large);
   height: var(--size-item-large);
@@ -151,13 +152,4 @@ panel-item:not(.panel-section-header)::part(button) {
   -moz-context-properties: fill;
   fill: currentColor;
   margin-inline-start: auto;
-}
-
-/* TODO Bug 2053495: update styles for mistral release */
-panel-list[mistral-release="true"] {
-  .model-item-avatar {
-    box-sizing: border-box;
-    padding: var(--space-small);
-    border: none;
-  }
 }

@@ -117,27 +117,15 @@ aiwindow-website-chip-remove-button =
 ## Firstrun onboarding
 
 aiwindow-firstrun-title = Welcome to { -smart-window-brand-name }
-aiwindow-firstrun-model-title = What’s important to you?
 aiwindow-firstrun-model-title-v2 = Pick a model to start
-aiwindow-firstrun-model-subtitle = Pick a model to power { -smart-window-brand-name }. Switch anytime.
 aiwindow-firstrun-model-subtitle-v2 = Each model can help you to summarize, compare, and explore across your tabs. Switch anytime.
 
-# $model (string) - The name of the AI model
-# $ownerName (string) - The name of the model owner/provider
-# $shortName (string) - The short name of the model version
-aiwindow-firstrun-model-chip-subtitle = Model { $model } by { $ownerName }
-aiwindow-firstrun-model-personal-label = Personal
-aiwindow-firstrun-model-personal-body = Most tailored answers
 # $shortName (string) - The short name of the model version
 aiwindow-firstrun-model-personal-label-v2 = Personal: { $shortName }
 aiwindow-firstrun-model-personal-body-v2 = Built for personalized help across languages
-aiwindow-firstrun-model-fast-label = Fast
-aiwindow-firstrun-model-fast-body = Answers quickly
 # $shortName (string) - The short name of the model version
 aiwindow-firstrun-model-fast-label-v2 = Fast: { $shortName }
 aiwindow-firstrun-model-fast-body-v2 = Best for quick answers when you’re moving fast
-aiwindow-firstrun-model-allpurpose-label = Flexible
-aiwindow-firstrun-model-allpurpose-body = Solid fit for most needs
 # $shortName (string) - The short name of the model version
 aiwindow-firstrun-model-flexible-label = Flexible: { $shortName }
 aiwindow-firstrun-model-flexible-body = Ready for a variety of tasks
@@ -155,13 +143,7 @@ aiwindow-input-model-select-button-label-fast = Fast
 aiwindow-input-model-select-button-label-allpurpose = Flexible
 aiwindow-input-model-select-button-label-personal = Personal
 aiwindow-input-model-select-button-label-custom = Custom
-aiwindow-input-model-select-button-description-custom = Use your own LLM
 
-# Variables:
-# $ownerName (string) - The name of the model owner/provider
-# $model (string) - The model name
-aiwindow-input-model-select-menu-item-description = { $ownerName } { $model }
-aiwindow-input-model-select-menu-item-description-custom = Use your own LLM
 aiwindow-input-model-select-default-badge =
     .label = Default
     .title = The selected default model

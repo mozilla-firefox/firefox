@@ -37,7 +37,6 @@ add_task(async function test_firstrun_europe_promotes_mistral() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
-      ["browser.smartwindow.mistralRelease", true],
       ["browser.smartwindow.firstrun.modelChoice", ""],
     ],
   });
@@ -93,7 +92,6 @@ add_task(async function test_firstrun_non_europe_no_promotion() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
-      ["browser.smartwindow.mistralRelease", true],
       ["browser.smartwindow.firstrun.modelChoice", ""],
     ],
   });
@@ -437,8 +435,6 @@ add_task(async function test_firstrun_telemetry() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
-      // TODO: Bug 2053495 - Refactor tests upon pref removal
-      ["browser.smartwindow.mistralRelease", false],
       ["browser.smartwindow.firstrun.modelChoice", ""],
     ],
   });
@@ -469,7 +465,9 @@ add_task(async function test_firstrun_telemetry() {
       () => content.document.querySelector(".screen.AI_WINDOW_CHOOSE_MODEL")
     );
 
-    const model2Box = content.document.querySelectorAll(".select-item")[1];
+    const model2Box = content.document.querySelector(
+      ".select-item:has(input[value='model_2'])"
+    );
     const nextButton = content.document.querySelector(
       ".action-buttons > button"
     );
@@ -771,8 +769,6 @@ add_task(async function test_firstrun_telemetry_unchecked() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
-      // TODO: Bug 2053495 - Refactor tests upon pref removal
-      ["browser.smartwindow.mistralRelease", false],
       ["browser.smartwindow.firstrun.modelChoice", ""],
       ["browser.smartwindow.memories.generateFromHistory", true],
       ["browser.smartwindow.memories.generateFromConversation", true],
@@ -812,7 +808,9 @@ add_task(async function test_firstrun_telemetry_unchecked() {
       () => content.document.querySelector(".screen.AI_WINDOW_CHOOSE_MODEL")
     );
 
-    const model2Box = content.document.querySelectorAll(".select-item")[1];
+    const model2Box = content.document.querySelector(
+      ".select-item:has(input[value='model_2'])"
+    );
     const nextButton = content.document.querySelector(
       ".action-buttons > button"
     );

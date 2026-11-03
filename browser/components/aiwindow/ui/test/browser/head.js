@@ -152,73 +152,6 @@ const MOCK_RS_RECORDS = [
       service_type: "ai",
       purpose: "chat",
       parameters: {},
-      is_default: true,
-      version: "v10.0",
-    },
-    {
-      kind: "params",
-      feature: "chat",
-      model: "gemini-3.1-flash-lite",
-      model_choice_id: "1",
-      model_details: {
-        model: "gemini-3.1-flash-lite",
-        ownerName: "Google",
-        labelId: "fast",
-        shortName: "Gemini 3.1 Flash Lite",
-        brandName: "Gemini",
-      },
-      service_type: "ai",
-      purpose: "chat",
-      parameters: {},
-      prompts: "Test system prompt.",
-      version: "v10.0",
-    },
-    {
-      kind: "params",
-      feature: "chat",
-      model: "qwen3-235b-a22b-instruct-2507-maas",
-      model_choice_id: "2",
-      model_details: {
-        model: "qwen3-235b-a22b-instruct-2507-maas",
-        ownerName: "Alibaba",
-        labelId: "allpurpose",
-        shortName: "Qwen 3 235B",
-        brandName: "Qwen",
-      },
-      service_type: "ai",
-      purpose: "chat",
-      parameters: {},
-      prompts: "Test system prompt.",
-      version: "v10.0",
-    },
-    {
-      kind: "params",
-      feature: "chat",
-      model: "gpt-oss-120b",
-      model_choice_id: "3",
-      model_details: {
-        model: "gpt-oss-120b",
-        ownerName: "OpenAI",
-        labelId: "personal",
-        shortName: "GPT OSS 120B",
-        brandName: "GPT OSS",
-      },
-      service_type: "ai",
-      purpose: "chat",
-      parameters: {},
-      prompts: "Test system prompt.",
-      version: "v10.0",
-    },
-    // TODO 2053495
-    // v12 records for mistral release (browser.smartwindow.mistralRelease pref)
-    {
-      kind: "params",
-      feature: "chat",
-      model: "generic",
-      model_choice_id: "0",
-      service_type: "ai",
-      purpose: "chat",
-      parameters: {},
       prompts: "Test system prompt.",
       version: "v12.0",
       is_default: true,
@@ -1535,7 +1468,12 @@ async function switchSmartbarModel(browser, modelChoiceId) {
       () => panelList.hasAttribute("open")
     );
 
-    const modelKeys = Object.keys(modelSelect.availableModels);
+    const { getModelDisplayOrder } = ChromeUtils.importESModule(
+      "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+    );
+    const modelKeys = ["0", ...getModelDisplayOrder()].filter(
+      id => id in modelSelect.availableModels
+    );
     const index = modelKeys.indexOf(choiceId);
     if (index === -1) {
       throw new Error(`Model choice "${choiceId}" not available`);
