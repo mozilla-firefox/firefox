@@ -22,7 +22,7 @@
   <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
   <string name="mozac_menu_customize_drag_to_hide">Arrastrar secciones aquí para ocultar</string>
   <!-- Button text to reset the menu to default configuration -->
-  <string name="mozac_menu_customize_reset_to_default">Reniciar como predeterminado</string>
+  <string name="mozac_menu_customize_reset_to_default">Restablecer los valores predeterminados</string>
   <!-- Content description for the back button in the Customize Menu top app bar -->
   <string name="mozac_menu_customize_back_button_content_description">Navegar hacia atrás</string>
 </resources>

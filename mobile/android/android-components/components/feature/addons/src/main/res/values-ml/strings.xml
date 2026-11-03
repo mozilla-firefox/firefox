@@ -272,9 +272,9 @@
   <string name="mozac_feature_addons_permissions_dialog_heading_required_permissions">ആവശ്യപ്പെട്ടവനുമതികൾ:</string>
   <!-- Heading for the data collection permissions section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">ആവശ്യപ്പെട്ട ഡാറ്റപ്പിരിവു് :</string>
-  <!-- Heading for the permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">പുതിയ അനുമതികൾ:</string>
-  <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the data collection permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_data_collection">പുതിയ ഡാറ്റപ്പിരിവു് :</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">കൂട്ടിച്ചേര്‍ക്കുക</string>

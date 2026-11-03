@@ -286,9 +286,9 @@
   <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">აუცილებელ მონაცემთა აღრიცხვა:</string>
   <!-- Heading for the optional settings section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_settings">დამატებითი პარამეტრები:</string>
-  <!-- Heading for the permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">ახალი ნებართვები:</string>
-  <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the data collection permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_data_collection">ახალ მონაცემთა აღრიცხვა:</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">ჩადგმა</string>

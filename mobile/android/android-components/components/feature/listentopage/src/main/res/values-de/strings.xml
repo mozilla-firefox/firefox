@@ -44,7 +44,7 @@
   <!-- Error text shown on the Listen to Page media player when the text-to-speech engine fails to convert the article into spoken audio -->
   <string name="mozac_feature_listentopage_error_audio_not_available">Audio nicht verfügbar</string>
   <!-- Error text shown on the Listen to Page media player when the player encounters an error partway through playing the audio. -->
-  <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">Die Audiowiedergabe konnte nicht beendet werden. Versuchen Sie es erneut.</string>
+  <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">Die Audiowiedergabe konnte nicht abgeschlossen werden. Versuchen Sie es erneut.</string>
   <!-- Error text shown on the Listen to Page media player when no voice options are available to play the audio. -->
   <string name="mozac_feature_listentopage_error_voice_options_not_available">Keine Sprachoptionen verfügbar</string>
   <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->

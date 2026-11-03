@@ -32,7 +32,7 @@
     browser or in case Focus is actually the default browser. Clicking this menu item will show
     a screen with multiple browsers (or other apps that can open the current URL) to choose from.
   -->
-  <string name="menu_open_with_a_browser2">Öffnen in…</string>
+  <string name="menu_open_with_a_browser2">Öffnen in …</string>
   <!-- Menu item: Add the current page as a shortcut to the device's home screen (launcher). -->
   <string name="menu_add_to_home_screen">Zum Startbildschirm hinzufügen</string>
   <!-- Menu item: Add the current site as a shortcut on the Home screen -->
@@ -116,7 +116,7 @@
     Content of about focus. %1$s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
     %2$s is the url for the learn-more link.
   -->
-  <string name="about_content" tools:ignore="BrandUsage,IncorrectStraightDoubleQuote"><![CDATA[<p>%1$s gibt Ihnen die Kontrolle.</p>\n<p>Verwenden Sie ihn als privaten Browser:\n<ul>\n<li>Suchen und blättern Sie in der App</li>\n<li>Blockieren Sie Tracker (oder aktualisieren Sie die Einstellungen, um Tracker zu erlauben)</li>\n<li>Entfernen Sie Cookies, um Such- und Browserverlauf zu löschen</li>\n</ul> </p>\n<p>%1$s wird von Mozilla entwickelt. Unsere Mission ist es, ein gesundes, offenes Internet zu fördern.<br/>\n<a href=\"%2$s\">Erfahren Sie mehr</a></p>]]></string>
+  <string name="about_content" tools:ignore="BrandUsage,IncorrectStraightDoubleQuote"><![CDATA[<p>%1$s gibt Ihnen die Kontrolle.</p>\n<p>Verwenden Sie ihn als privaten Browser:\n<ul>\n<li>Suchen und surfen Sie direkt in der App</li>\n<li>Blockieren Sie Tracker (oder aktualisieren Sie die Einstellungen, um Tracker zu erlauben)</li>\n<li>Entfernen Sie Cookies, um Such- und Browserverlauf zu löschen</li>\n</ul> </p>\n<p>%1$s wird von Mozilla entwickelt. Unsere Mission ist es, ein gesundes, offenes Internet zu fördern.<br/>\n<a href=\"%2$s\">Erfahren Sie mehr</a></p>]]></string>
   <!-- A link to SUMO at the bottom of About Focus screen. -->
   <string name="about_screen_learn_more">Weitere Informationen</string>
   <!-- Header for the Privacy and Security settings menu -->
@@ -255,7 +255,7 @@
   <string name="preference_performance_block_webfonts_summary">Kann zu fehlenden Symbolen oder Grafiken führen</string>
   <string name="preference_performance_block_javascript">JavaScript blockieren</string>
   <!-- This text is shown below setting for disabling JavaScript. Some websites may not work correctly when JavaScript is disabled -->
-  <string name="preference_performance_block_javascript_summary">Seiten laden schneller, verhalten sich aber möglicherweise unerwartet</string>
+  <string name="preference_performance_block_javascript_summary">Seiten laden eventuell schneller, verhalten sich aber möglicherweise unerwartet</string>
   <!--
     This preference does not set Focus as the default browser but instead links to Android's
     "default apps" settings screen or if not supported by this Android version to a SUMO page describing
@@ -440,7 +440,7 @@
     text was paraphrased from ETSI TS 119 411-5 V2.1.1 section 6.3 and
     indicates that the website uses a QWAC.
   -->
-  <string name="qualified_text">Qualifiziert im Sinne der Richtlinie (EU) 2024/1183.</string>
+  <string name="qualified_text">Qualifiziert im Sinne der Verordnung (EU) 2024/1183.</string>
   <string name="preference_autocomplete_duplicate_url_error">Adresse existiert bereits</string>
   <!-- Label for the Find in page button -->
   <string name="find_in_page">Seite durchsuchen</string>
@@ -616,7 +616,7 @@
   <!-- The error message shown when a website has an invalid or expired SSL certificate. -->
   <string name="mozac_browser_errorpages_security_bad_cert_message" tools:ignore="UnusedResources"><![CDATA[Dies könnte ein Problem mit der Konfiguration des Servers sein, oder es könnte jemand versuchen, sich als dieser Server auszugeben. <br/><br/> Wenn Sie in der Vergangenheit erfolgreich mit diesem Server verbunden waren, tritt der Fehler möglicherweise nur temporär auf.]]></string>
   <!-- The advanced certificate information shown when a website has an invalid SSL certificate. The %1$s will be replaced by the app name and %2$s will be replaced by website URL. It's only shown when a website has an invalid SSL certificate. -->
-  <string name="mozac_browser_errorpages_security_bad_cert_techInfo" tools:ignore="UnusedResources"><![CDATA[<label>Jemand könnte versuchen, sich als die Website auszugeben und fortfahren könnte riskant sein.</label> <br><br>\n<label>%1$s vertraut <b>%2$s</b> nicht, weil der Aussteller des Zertifikats unbekannt ist, das Zertifikat vom Austeller selbst signiert wurde oder der Server nicht die korrekten Zwischen-Zertifikate sendet.</label>]]></string>
+  <string name="mozac_browser_errorpages_security_bad_cert_techInfo" tools:ignore="UnusedResources"><![CDATA[<label>Jemand könnte versuchen, sich als die Website auszugeben und fortfahren könnte riskant sein.</label> <br><br>\n<label>%1$s vertraut <b>%2$s</b> nicht, weil der Aussteller des Zertifikats unbekannt ist, das Zertifikat vom Aussteller selbst signiert wurde oder der Server nicht die korrekten Zwischen-Zertifikate sendet.</label>]]></string>
   <!--
     Sessions List
 
