@@ -35,6 +35,7 @@ export const AUTOFILL_RESULT = {
   TYPE_NO_LONGER_PASSWORD: "type_no_longer_password",
   FORM_IN_CROSSORIGIN_SUBFRAME: "form_in_crossorigin_subframe",
   FILLED_USERNAME_ONLY_FORM: "filled_username_only_form",
+  FIELD_NOT_RENDERED: "field_not_rendered",
 };
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
@@ -2869,6 +2870,20 @@ export class LoginManagerChild extends JSWindowActorChild {
         return;
       }
 
+      // Don't autofill fields that aren't rendered: pages may keep inactive
+      // login flows inside hidden containers (bug 1247245). checkVisibility()
+      // is false for fields without a box, e.g. inside display:none or
+      // [hidden] ancestors. For username-only forms the username field is
+      // the fill target.
+      if (!userTriggered) {
+        const fillTarget = passwordField ?? usernameField;
+        if (!fillTarget.checkVisibility()) {
+          lazy.log("Not autofilling, the fill target field isn't rendered.");
+          autofillResult = AUTOFILL_RESULT.FIELD_NOT_RENDERED;
+          return;
+        }
+      }
+
       // Discard logins which have username/password values that don't
       // fit into the fields (as specified by the maxlength attribute).
       // The user couldn't enter these values anyway, and it helps
@@ -3091,8 +3106,11 @@ export class LoginManagerChild extends JSWindowActorChild {
 
       if (!userTriggered) {
         // Ignore fills as a result of user action for this probe.
-
-        Glean.pwmgr.formAutofillResult[autofillResult].add(1);
+        // FIELD_NOT_RENDERED has no data-reviewed label in
+        // pwmgr.form_autofill_result yet (bug 1247245), so it isn't counted.
+        if (autofillResult != AUTOFILL_RESULT.FIELD_NOT_RENDERED) {
+          Glean.pwmgr.formAutofillResult[autofillResult].add(1);
+        }
 
         if (usernameField) {
           let controlledElement = lazy.gFormFillService.controlledElement;

@@ -11,7 +11,10 @@
 <body>
 Login Manager test: input events should fire.
 <p id="display"></p>
-<div id="content" style="display: none"></div>
+<!-- The form must be rendered: page-load autofill only targets fields that
+     have a box (bug 1247245), and this test asserts the input events fired
+     by that autofill. -->
+<div id="content"></div>
 <pre id="test"></pre>
 <script>
   add_setup(async () => {
