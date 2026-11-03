@@ -328,6 +328,9 @@ add_task(async function testSiteRowTogglesToReloadWhenAllTabsDiscarded() {
   );
 
   let { tabAboutProcesses, doc } = await openTabView();
+  // Only the actions' own refreshes can update the rows.
+  pauseTabViewPolling(doc);
+  let tbody = doc.getElementById("process-tbody");
   let headerRow = findSiteHeaderRow(doc, "example.org");
 
   info("Making one of the group's own tabs the active tab");
@@ -342,53 +345,45 @@ add_task(async function testSiteRowTogglesToReloadWhenAllTabsDiscarded() {
   );
   unloadIcon.click();
   unloadIcon.click();
-  await Promise.all(
-    [tabOne, tabTwo].map(tab =>
-      BrowserTestUtils.waitForMutationCondition(
-        tab,
-        { attributeFilter: ["discarded"] },
-        () => tab.hasAttribute("discarded"),
-        {
-          msg: "The group's currently-active tab is unloaded too, same as per-row and bulk-bar unload",
-        }
-      )
-    )
+  await BrowserTestUtils.waitForMutationCondition(
+    tbody,
+    { subtree: true, childList: true, attributes: true },
+    () => findSiteHeaderRow(doc, "example.org")?.querySelector(".reload-icon"),
+    {
+      msg: "Every tab in the group, the active one included, is unloaded and the site row flips to reload",
+    }
   );
+  Assert.ok(tabOne.hasAttribute("discarded"));
+  Assert.ok(tabTwo.hasAttribute("discarded"));
   assertOneEvent(
     Glean.resourceMonitor.tabActionTaken,
     { action_source: "site_header" },
     "Only one unload is recorded, as a site_header action"
   );
   gBrowser.selectedTab = tabAboutProcesses;
-  await forceTabViewUpdate(tabAboutProcesses);
-  await BrowserTestUtils.waitForMutationCondition(
-    headerRow,
-    { attributeFilter: ["aria-busy"] },
-    () => !headerRow.hasAttribute("aria-busy")
-  );
 
   headerRow = findSiteHeaderRow(doc, "example.org");
   Assert.ok(
     headerRow.classList.contains("killed"),
     "The site row dims once every child tab is unloaded"
   );
-  let reloadIcon = headerRow.querySelector(".reload-icon");
-  Assert.ok(
-    reloadIcon,
-    "The site row's action icon flips to reload once every child tab is unloaded"
-  );
+  await promiseRowActionDone(headerRow);
 
-  reloadIcon.click();
-  await Promise.all(
-    [tabOne, tabTwo].map(tab =>
-      BrowserTestUtils.waitForMutationCondition(
-        tab,
-        { attributeFilter: ["discarded"] },
-        () => !tab.hasAttribute("discarded"),
-        { msg: "Clicking the site row's reload icon reloads every child tab" }
-      )
-    )
+  headerRow.querySelector(".reload-icon").click();
+  await BrowserTestUtils.waitForMutationCondition(
+    tbody,
+    { subtree: true, childList: true, attributes: true },
+    () => findSiteHeaderRow(doc, "example.org")?.querySelector(".unload-icon"),
+    { msg: "Reloading flips the site row back to unload right away" }
   );
+  for (let tab of [tabOne, tabTwo]) {
+    await BrowserTestUtils.waitForMutationCondition(
+      tab,
+      { attributeFilter: ["discarded"] },
+      () => !tab.hasAttribute("discarded"),
+      { msg: "Each child tab finishes restoring" }
+    );
+  }
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
   BrowserTestUtils.removeTab(tabOne);

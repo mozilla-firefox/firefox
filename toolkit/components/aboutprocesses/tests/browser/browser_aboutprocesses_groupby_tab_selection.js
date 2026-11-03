@@ -110,20 +110,34 @@ add_task(async function testSelectionSurvivesPollAndPrunesClosedTabs() {
   );
 
   info("Closing a selected tab out from under the selection");
+  let closedRow = findTabRow(doc, "Survives poll 1");
+  let closedIndex = closedRow.rowIndex;
   await BrowserTestUtils.removeTab(tabOne);
   await forceTabViewUpdate(tabAboutProcesses);
-  // The checkbox clicks above froze row removal (see testMouseoverFreezesExistingRowOrderOnly); force a reorder.
-  let updated = promiseTabViewUpdated(doc);
-  doc.getElementById("column-name").click();
-  await updated;
+  Assert.equal(
+    closedRow.rowIndex,
+    closedIndex,
+    "The closed tab's row holds its place while the checkbox clicks above freeze reordering"
+  );
   Assert.ok(
-    !findTabRow(doc, "Survives poll 1"),
-    "The closed tab's row is gone"
+    closedRow.classList.contains("departed") && closedRow.inert,
+    "...dimmed and inert, so it can't be acted on"
   );
   Assert.ok(
     findTabRow(doc, "Survives poll 2").hasAttribute("selected"),
     "The still-open tab's selection is untouched by the other tab closing"
   );
+  Assert.equal(
+    doc.querySelectorAll("tr.tab-row[selected]").length,
+    1,
+    "The closed tab no longer counts as selected"
+  );
+
+  info("Sorting ends the freeze");
+  let updated = promiseTabViewUpdated(doc);
+  doc.getElementById("column-name").click();
+  await updated;
+  Assert.ok(!closedRow.isConnected, "The closed tab's row is gone");
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
   BrowserTestUtils.removeTab(tabTwo);

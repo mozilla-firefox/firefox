@@ -496,7 +496,10 @@ tr:is(.tab-row, .site-header-row).killed {
   opacity: 1;
 }
 
-tr:is(.tab-row, .site-header-row).killed > td:not(:last-child) {
+/* Departed rows are gone from the list during the mouse freeze; removed on
+   the next reorder. */
+tr:is(.tab-row, .site-header-row).killed > td:not(:last-child),
+tr.departed > td {
   opacity: 0.3;
 }
 

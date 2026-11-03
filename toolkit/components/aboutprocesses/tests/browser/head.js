@@ -1130,12 +1130,17 @@ async function forceTabViewUpdate(tabAboutProcesses) {
 function pauseTabViewPolling(doc) {
   let control = doc.defaultView.TabControl;
   let update = control.update.bind(control);
-  control.update = async force => {
-    if (force) {
-      await update(force);
-    }
-  };
+  control.update = async () => {};
   return update;
+}
+
+// Unload/reload buttons ignore clicks until their row's action is done.
+function promiseRowActionDone(row) {
+  return BrowserTestUtils.waitForMutationCondition(
+    row,
+    { attributeFilter: ["aria-busy"] },
+    () => !row.hasAttribute("aria-busy")
+  );
 }
 
 function promiseTabViewUpdated(doc) {

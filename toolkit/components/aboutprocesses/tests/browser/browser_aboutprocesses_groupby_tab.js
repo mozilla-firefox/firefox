@@ -302,6 +302,8 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
   );
 
   let { tabAboutProcesses, doc } = await openTabView();
+  // Only the actions' own refreshes and poll() can update the rows.
+  let poll = pauseTabViewPolling(doc);
 
   let rowOne = findTabRow(doc, "Unload via button");
   Assert.ok(!!rowOne, "Found the row for the tab we're about to unload");
@@ -332,7 +334,8 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     "Waiting for the Enter-activated tab to be discarded"
   );
   Assert.ok(rowTwo.isConnected, "Enter-unloaded row also stays in the list");
-  await forceTabViewUpdate(tabAboutProcesses);
+  await poll();
+  await promiseRowActionDone(rowTwo);
 
   info(
     "Regression test: a discarded row's button used to be hidden, leaving " +
@@ -376,8 +379,10 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
   );
   Services.fog.testResetFOG();
 
-  info("Clicking the row's unload button");
+  info("Double-clicking unload acts once");
   unloadButtonOne.click();
+  unloadButtonOne.click();
+
   await TestUtils.waitForCondition(
     () => tabOne.hasAttribute("discarded"),
     "Waiting for the clicked tab to be discarded"
@@ -395,10 +400,17 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     "The view's total tab count includes both tabs we opened"
   );
 
+  await BrowserTestUtils.waitForMutationCondition(
+    rowOne,
+    { attributeFilter: ["class"] },
+    () => rowOne.classList.contains("killed"),
+    { msg: "Unloading refreshes the row without waiting for a poll" }
+  );
+
   info(
     "Confirming a poll after the discard settles the row into the static killed look, not removal"
   );
-  await forceTabViewUpdate(tabAboutProcesses);
+  await poll();
   Assert.ok(rowOne.isConnected, "Row is still in the list after a poll tick");
   Assert.ok(
     rowOne.classList.contains("killed"),
@@ -410,7 +422,12 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
   );
 
   info("Clicking the button on a discarded row reloads that tab");
+  await promiseRowActionDone(rowOne);
   unloadButtonOne.click();
+  Assert.ok(
+    unloadButtonOne.classList.contains("unload-icon"),
+    "Reloading shows the unload button again right away"
+  );
   await BrowserTestUtils.waitForMutationCondition(
     tabOne,
     { attributeFilter: ["discarded"] },
