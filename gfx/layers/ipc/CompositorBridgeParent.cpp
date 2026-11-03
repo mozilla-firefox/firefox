@@ -643,8 +643,9 @@ CompositorBridgeParent::AllocateAPZCTreeManagerParent(
   MOZ_RELEASE_ASSERT(aState.mParent == this);
   MOZ_RELEASE_ASSERT(mApzcTreeManager);
   MOZ_RELEASE_ASSERT(mApzUpdater);
-  MOZ_RELEASE_ASSERT(!aState.mApzcTreeManagerParent);
 
+  // BrowserChild::ReinitRendering can create a new PAPZCTreeManager for a
+  // layer tree whose previous actor is still alive. The newest one wins.
   auto treeManager = MakeRefPtr<APZCTreeManagerParent>(
       aLayersId, mApzcTreeManager, mApzUpdater);
   aState.mApzcTreeManagerParent = treeManager;

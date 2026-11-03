@@ -105,6 +105,7 @@ already_AddRefed<PAPZParent> ContentCompositorBridgeParent::AllocPAPZParent(
   }
 
   auto controller = MakeRefPtr<RemoteContentController>(aLayersId);
+  RefPtr<GeckoContentController> previousController;
 
   CompositorBridgeParent::WithIndirectLayerTreesLock(
       [&](const StaticMonitorAutoLock& aProofOfLock) {
@@ -113,9 +114,15 @@ already_AddRefed<PAPZParent> ContentCompositorBridgeParent::AllocPAPZParent(
                                                                   aProofOfLock);
         LAYERTREE_LOG("APZ controller created for layer tree {:x}, content {}",
                       aLayersId, GetContentId());
-        MOZ_RELEASE_ASSERT(!state.mController);
+        // BrowserChild::ReinitRendering can create a new PAPZ for a layer
+        // tree whose previous controller is still registered.
+        previousController = std::move(state.mController);
         state.mController = controller;
       });
+
+  if (previousController) {
+    previousController->Destroy();
+  }
 
   return controller.forget();
 }
