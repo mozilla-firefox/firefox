@@ -181,5 +181,7 @@ object ComponentsDependencies {
     @JvmStatic
     val mozilla_appservices_sync15 get() = "${getGroupId()}:sync15:${getVersionNumber()}"
     @JvmStatic
+    val mozilla_appservices_tracing get() = "${getGroupId()}:tracing:${getVersionNumber()}"
+    @JvmStatic
     val mozilla_appservices_fxrelay get() = "${getGroupId()}:relay:${getVersionNumber()}"
 }

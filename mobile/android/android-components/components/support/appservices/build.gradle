@@ -15,8 +15,10 @@ dependencies {
     api project(':components:concept-fetch') // Needed for rusthttp
     api project(':components:support-base') // Log.Priority is in the public api.
 
+
     implementation ComponentsDependencies.mozilla_appservices_errorsupport
     implementation ComponentsDependencies.mozilla_appservices_fxrelay
+    implementation ComponentsDependencies.mozilla_appservices_tracing
     implementation (ComponentsDependencies.mozilla_appservices_viaduct) {
         // Override the version of concept-fetch that A-S depends on,
         // since we want to replace it with our own.
@@ -24,6 +26,7 @@ dependencies {
     }
     implementation ComponentsDependencies.mozilla_appservices_init_rust_components
     implementation ComponentsDependencies.mozilla_appservices_rust_log_forwarder
+    implementation libs.kotlinx.serialization.json
     implementation libs.kotlinx.coroutines
 
     testImplementation project(':components:support-test')
