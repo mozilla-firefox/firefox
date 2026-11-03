@@ -2345,8 +2345,6 @@ nsresult BrowsingContext::LoadURI(nsDocShellLoadState* aLoadState,
     return NS_OK;
   }
 
-  MOZ_DIAGNOSTIC_ASSERT(aLoadState->TargetBrowsingContext().IsNull(),
-                        "Targeting occurs in InternalLoad");
   aLoadState->AssertProcessCouldTriggerLoadIfSystem();
 
   // When this tab sets these load flags, we disable or force TRR for the
