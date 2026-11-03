@@ -11,6 +11,6 @@ DIRS += [
     "test",
 ]
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "dbg-browser-actors.js",
 ]

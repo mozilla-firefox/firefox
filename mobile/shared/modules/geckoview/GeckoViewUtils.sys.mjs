@@ -15,7 +15,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 if (AppConstants.platform == "android") {
   ChromeUtils.defineESModuleGetters(lazy, {
-    AndroidAppender: "resource://gre/modules/AndroidLog.sys.mjs",
+    AndroidAppender:
+      "moz-src:///mobile/android/modules/geckoview/AndroidLog.sys.mjs",
   });
 }
 

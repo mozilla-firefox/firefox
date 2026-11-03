@@ -934,6 +934,9 @@
       "chrome://mozapps/content/extensions/components/aboutaddons-themes-picker.mjs": [
         "../../../toolkit/mozapps/extensions/content/components/aboutaddons-themes-picker.mjs"
       ],
+      "chrome://mozapps/content/extensions/components/aboutaddons-themes-pickers.mjs": [
+        "../../../toolkit/mozapps/extensions/content/components/aboutaddons-themes-pickers.mjs"
+      ],
       "chrome://mozapps/content/extensions/components/addon-card.mjs": [
         "../../../toolkit/mozapps/extensions/content/components/addon-card.mjs"
       ],
@@ -5668,9 +5671,6 @@
       "resource://gre/modules/AddonManager.sys.mjs": [
         "../../../toolkit/mozapps/extensions/AddonManager.sys.mjs"
       ],
-      "resource://gre/modules/AndroidLog.sys.mjs": [
-        "../../../mobile/android/modules/geckoview/AndroidLog.sys.mjs"
-      ],
       "resource://gre/modules/AppConstants.sys.mjs": [
         "../../../tools/@types/subs/AppConstants.sys.d.mts"
       ],
@@ -6117,12 +6117,6 @@
       ],
       "resource://gre/modules/GeckoViewPictureInPicture.sys.mjs": [
         "../../../mobile/shared/modules/geckoview/GeckoViewPictureInPicture.sys.mjs"
-      ],
-      "resource://gre/modules/GeckoViewPreferences.sys.mjs": [
-        "../../../mobile/shared/components/geckoview/GeckoViewPreferences.sys.mjs"
-      ],
-      "resource://gre/modules/GeckoViewPrompter.sys.mjs": [
-        "../../../mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs"
       ],
       "resource://gre/modules/GeckoViewSessionStore.sys.mjs": [
         "../../../mobile/shared/modules/geckoview/GeckoViewSessionStore.sys.mjs"
@@ -6657,9 +6651,6 @@
       ],
       "resource://gre/modules/ctypes.sys.mjs": [
         "../../../toolkit/components/ctypes/ctypes.sys.mjs"
-      ],
-      "resource://gre/modules/dbg-browser-actors.js": [
-        "../../../mobile/shared/modules/dbg-browser-actors.js"
       ],
       "resource://gre/modules/handlers/HandlerList.sys.mjs": [
         "../../../uriloader/exthandler/HandlerList.sys.mjs"
@@ -7204,6 +7195,9 @@
       "resource://pdf.js/build/pdf.sandbox.external.sys.mjs": [
         "../../../toolkit/components/pdfjs/content/build/pdf.sandbox.external.sys.mjs"
       ],
+      "resource://pdf.js/build/pdf.worker.mjs": [
+        "../../../toolkit/components/pdfjs/content/build/pdf.worker.mjs"
+      ],
       "resource://pdf.js/web/wasm/jbig2_nowasm_fallback.js": [
         "../../../toolkit/components/pdfjs/content/web/wasm/jbig2_nowasm_fallback.js"
       ],
@@ -7554,6 +7548,9 @@
       ],
       "resource://testing-common/BrowserTestUtils.sys.mjs": [
         "../../../testing/mochitest/BrowserTestUtils/BrowserTestUtils.sys.mjs"
+      ],
+      "resource://testing-common/ContentClassifierTestUtils.sys.mjs": [
+        "../../../toolkit/components/content-classifier/test/ContentClassifierTestUtils.sys.mjs"
       ],
       "resource://testing-common/ContentSharingMockServer.sys.mjs": [
         "../../../browser/components/sharing/tests/browser/ContentSharingMockServer.sys.mjs"

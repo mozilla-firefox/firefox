@@ -8,7 +8,8 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
-  GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+  GeckoViewPrompter:
+    "moz-src:///mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs",
   GeckoViewClipboardPermission:
     "resource://gre/modules/GeckoViewClipboardPermission.sys.mjs",
   PromptUtils: "resource://gre/modules/PromptUtils.sys.mjs",

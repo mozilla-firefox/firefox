@@ -7,7 +7,8 @@ import { GeckoViewUtils } from "resource://gre/modules/GeckoViewUtils.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+  GeckoViewPrompter:
+    "moz-src:///mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs",
 });
 
 const domBundle = Services.strings.createBundle(

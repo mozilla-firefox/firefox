@@ -9,7 +9,8 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
-  GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+  GeckoViewPrompter:
+    "moz-src:///mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs",
 });
 
 const { debug, warn } = GeckoViewUtils.initLogging("FilePickerDelegate");

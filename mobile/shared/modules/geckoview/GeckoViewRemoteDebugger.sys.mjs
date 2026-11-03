@@ -56,7 +56,7 @@ export var GeckoViewRemoteDebugger = {
     lazy.DevToolsServer.init();
     lazy.DevToolsServer.registerAllActors();
     const { createRootActor } = lazy.require(
-      "resource://gre/modules/dbg-browser-actors.js"
+      "moz-src:///mobile/shared/modules/dbg-browser-actors.js"
     );
     lazy.DevToolsServer.setRootActor(createRootActor);
     lazy.DevToolsServer.allowChromeProcess = true;

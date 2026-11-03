@@ -18,7 +18,8 @@ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 
 if (AppConstants.platform == "android") {
   ChromeUtils.defineESModuleGetters(lazy, {
-    GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+    GeckoViewPrompter:
+      "moz-src:///mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs",
   });
 }
 

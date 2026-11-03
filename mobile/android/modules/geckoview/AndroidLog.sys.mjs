@@ -6,7 +6,7 @@
  * Native Android logging for JavaScript, wrapped for use by Log.sys.mjs.
  *
  * // Import it as a ESM:
- * import { AndroidAppender } from "resource://gre/modules/AndroidLog.sys.mjs";
+ * import { AndroidAppender } from "moz-src:///mobile/android/modules/geckoview/AndroidLog.sys.mjs";
  *
  * // Add the appender to a Log.sys.mjs appender:
  * import { Log } from "resource://gre/modules/Log.sys.mjs";

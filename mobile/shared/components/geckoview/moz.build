@@ -19,7 +19,7 @@ EXTRA_COMPONENTS += [
     "GeckoView.manifest",
 ]
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "ColorPickerDelegate.sys.mjs",
     "FilePickerDelegate.sys.mjs",
     "GeckoViewPermission.sys.mjs",

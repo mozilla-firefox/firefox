@@ -15,7 +15,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Address: "resource://gre/modules/GeckoViewAutocomplete.sys.mjs",
   CreditCard: "resource://gre/modules/GeckoViewAutocomplete.sys.mjs",
   GeckoViewAutocomplete: "resource://gre/modules/GeckoViewAutocomplete.sys.mjs",
-  GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+  GeckoViewPrompter:
+    "moz-src:///mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs",
 });
 
 // Sync with Autocomplete.SaveOption.Hint in Autocomplete.java

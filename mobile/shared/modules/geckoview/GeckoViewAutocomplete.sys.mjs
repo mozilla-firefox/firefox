@@ -9,7 +9,8 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   EventDispatcher: "resource://gre/modules/Messaging.sys.mjs",
-  GeckoViewPrompter: "resource://gre/modules/GeckoViewPrompter.sys.mjs",
+  GeckoViewPrompter:
+    "moz-src:///mobile/shared/components/geckoview/GeckoViewPrompter.sys.mjs",
   AddressRecord: "resource://gre/modules/shared/AddressRecord.sys.mjs",
   CreditCardRecord: "resource://gre/modules/shared/CreditCardRecord.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",

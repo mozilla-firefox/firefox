@@ -12,7 +12,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   DoHController: "moz-src:///toolkit/components/doh/DoHController.sys.mjs",
   EventDispatcher: "resource://gre/modules/Messaging.sys.mjs",
   PdfJs: "resource://pdf.js/PdfJs.sys.mjs",
-  GeckoViewPreferences: "resource://gre/modules/GeckoViewPreferences.sys.mjs",
+  GeckoViewPreferences:
+    "moz-src:///mobile/shared/components/geckoview/GeckoViewPreferences.sys.mjs",
 });
 
 const { debug, warn } = GeckoViewUtils.initLogging("Startup");
