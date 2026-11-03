@@ -6,7 +6,6 @@ package org.mozilla.fenix.components.menu.middleware
 
 import android.app.PendingIntent
 import android.content.SharedPreferences
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,13 +21,10 @@ import mozilla.components.feature.app.links.AppLinksUseCases
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.feature.top.sites.PinnedSiteStorage
-import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.feature.top.sites.TopSitesUseCases
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.base.log.logger.Logger
-import mozilla.components.ui.widgets.withCenterAlignedButtons
-import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.BookmarkAction
@@ -70,9 +66,6 @@ import org.mozilla.fenix.utils.Settings
  * @param requestDesktopSiteUseCase The [SessionUseCases.RequestDesktopSiteUseCase] for toggling desktop mode for the
  *   current session.
  * @param migratePrivateTabUseCase The [TabsUseCases.MigratePrivateTabUseCase] for moving a private tab to a normal tab.
- * @param materialAlertDialogBuilder The [MaterialAlertDialogBuilder] used to create a popup when trying to add a
- *   shortcut after the shortcut limit has been reached.
- * @param topSitesMaxLimit The maximum number of top sites the user can have.
  * @param mainDispatcher The [CoroutineDispatcher] for performing UI updates.
  */
 @Suppress("LongParameterList", "CyclomaticComplexMethod")
@@ -90,8 +83,6 @@ class MenuDialogMiddleware(
     private val removePinnedSitesUseCase: TopSitesUseCases.RemoveTopSiteUseCase,
     private val requestDesktopSiteUseCase: SessionUseCases.RequestDesktopSiteUseCase,
     private val migratePrivateTabUseCase: TabsUseCases.MigratePrivateTabUseCase,
-    private val materialAlertDialogBuilder: MaterialAlertDialogBuilder,
-    private val topSitesMaxLimit: Int,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : Middleware<MenuState, MenuAction> {
 
@@ -249,26 +240,6 @@ class MenuDialogMiddleware(
         val browserMenuState = store.state.browserMenuState ?: return@launch
 
         if (browserMenuState.isPinned) {
-            return@launch
-        }
-
-        val numPinnedSites =
-            pinnedSiteStorage.getPinnedSites().filter { it is TopSite.DefaultPinned || it is TopSite.Pinned }.size
-
-        if (numPinnedSites >= topSitesMaxLimit) {
-            materialAlertDialogBuilder
-                .apply {
-                    setTitle(R.string.shortcut_max_limit_title)
-                    setMessage(R.string.shortcut_max_limit_content)
-                    setPositiveButton(R.string.top_sites_max_limit_confirmation_button) { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    create().withCenterAlignedButtons()
-                }
-                .show()
-
-            store.emitEvent(NavigationEvent.Dismiss)
-
             return@launch
         }
 

@@ -11,7 +11,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import androidx.lifecycle.coroutineScope
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuContent
@@ -101,7 +100,6 @@ class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
             summarizeEligibilityChecker = components.core.summarizationEligibilityChecker,
             translationsSettings = TranslationsEnabledSettings.dataStore(context),
             isAndroidAutomotiveAvailable = context.isAndroidAutomotiveAvailable(),
-            materialAlertDialogBuilder = MaterialAlertDialogBuilder(context),
             quitApplicationDelegate = activity::finishAndRemoveTask,
             setAsDefaultBrowserDelegate = activity::openSetDefaultBrowserOption,
             menuViewScope = viewLifecycleOwner.lifecycle.coroutineScope,

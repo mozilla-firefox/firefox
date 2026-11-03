@@ -55,7 +55,6 @@ import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlin.getValue
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.menu.Menu
@@ -382,7 +381,6 @@ class MenuFragment : BottomSheetDialogFragment() {
             summarizeEligibilityChecker = components.core.summarizationEligibilityChecker,
             translationsSettings = TranslationsEnabledSettings.dataStore(context),
             isAndroidAutomotiveAvailable = context.isAndroidAutomotiveAvailable(),
-            materialAlertDialogBuilder = MaterialAlertDialogBuilder(context),
             quitApplicationDelegate = activity::finishAndRemoveTask,
             setAsDefaultBrowserDelegate = activity::openSetDefaultBrowserOption,
             menuViewScope = viewLifecycleOwner.lifecycle.coroutineScope,

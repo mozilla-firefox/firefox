@@ -53,7 +53,6 @@ import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -992,8 +991,6 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
             removePinnedSitesUseCase = components.useCases.topSitesUseCase.removeTopSites,
             requestDesktopSiteUseCase = components.useCases.sessionUseCases.requestDesktopSite,
             migratePrivateTabUseCase = components.useCases.tabsUseCases.migratePrivateTabUseCase,
-            materialAlertDialogBuilder = MaterialAlertDialogBuilder(requireContext()),
-            topSitesMaxLimit = components.settings.topSitesMaxLimit,
             mainDispatcher = Dispatchers.Main,
         )
     }

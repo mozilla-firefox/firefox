@@ -161,7 +161,6 @@ class MenuItemProvidersFactoryTest {
             summarizeEligibilityChecker = mockk(relaxed = true),
             translationsSettings = mockk(relaxed = true),
             isAndroidAutomotiveAvailable = false,
-            materialAlertDialogBuilder = mockk(relaxed = true),
             quitApplicationDelegate = {},
             setAsDefaultBrowserDelegate = {},
             menuViewScope = scope,

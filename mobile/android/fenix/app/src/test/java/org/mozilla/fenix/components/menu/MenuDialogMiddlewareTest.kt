@@ -6,9 +6,6 @@ package org.mozilla.fenix.components.menu
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -65,6 +62,7 @@ import org.mozilla.fenix.components.menu.store.MenuStore
 import org.mozilla.fenix.components.menu.store.NavigationEvent
 import org.mozilla.fenix.home.topsites.AddShortcutEntryPoint
 import org.mozilla.fenix.home.topsites.AddShortcutSource
+import org.mozilla.fenix.home.topsites.TopSitesConfigConstants.TOP_SITES_MAX_COUNT
 import org.mozilla.fenix.settings.summarize.FakeSummarizationFeatureConfiguration
 import org.mozilla.fenix.summarization.eligibility.SummarizationEligibilityChecker
 import org.mozilla.fenix.utils.Settings
@@ -81,7 +79,6 @@ class MenuDialogMiddlewareTest {
     private val addonManager: AddonManager = mockk(relaxed = true)
     private val navigationEvents = mutableListOf<NavigationEvent>()
 
-    private lateinit var alertDialogBuilder: MaterialAlertDialogBuilder
     private lateinit var pinnedSiteStorage: PinnedSiteStorage
     private lateinit var addPinnedSiteUseCase: TopSitesUseCases.AddPinnedSiteUseCase
     private lateinit var removePinnedSiteUseCase: TopSitesUseCases.RemoveTopSiteUseCase
@@ -93,13 +90,8 @@ class MenuDialogMiddlewareTest {
     private val summarizeFeatureSettings = FakeSummarizationFeatureConfiguration()
     private lateinit var lastSavedFolderCache: LastSavedFolderCache
 
-    companion object {
-        const val TOP_SITES_MAX_COUNT = 16
-    }
-
     @Before
     fun setup() {
-        alertDialogBuilder = mockk(relaxed = true)
         pinnedSiteStorage = mockk(relaxUnitFun = true)
         addPinnedSiteUseCase = mockk(relaxUnitFun = true)
         removePinnedSiteUseCase = mockk(relaxUnitFun = true)
@@ -444,6 +436,51 @@ class MenuDialogMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN there are TOP_SITES_MAX_COUNT number of pinned sites WHEN add to shortcuts action is dispatched THEN the site is still pinned`() =
+        runTest(testDispatcher) {
+            val url = "https://www.mozilla.org"
+            val title = "Mozilla"
+
+            coEvery { pinnedSiteStorage.getPinnedSites() } returns
+                List(TOP_SITES_MAX_COUNT) { index ->
+                    TopSite.Pinned(id = index.toLong(), title = title, url = "$url/$index", createdAt = 0)
+                }
+
+            val browserMenuState =
+                BrowserMenuState(
+                    selectedTab =
+                        createTab(
+                            url = url,
+                            title = title,
+                        )
+                )
+            val appStore = spyk(AppStore())
+            val store =
+                createStore(
+                    appStore = appStore,
+                    menuState = MenuState(browserMenuState = browserMenuState),
+                )
+            testScheduler.advanceUntilIdle()
+
+            assertFalse(store.state.browserMenuState!!.isPinned)
+
+            store.dispatch(MenuAction.AddShortcut)
+            testScheduler.advanceUntilIdle()
+
+            coVerify { addPinnedSiteUseCase.invoke(url = url, title = title) }
+            verify {
+                appStore.dispatch(
+                    ShortcutAction.ShortcutAdded(
+                        url = url,
+                        source = AddShortcutSource.MANUAL,
+                        entryPoint = AddShortcutEntryPoint.PAGE_MENU,
+                    )
+                )
+            }
+            assertTrue(navigationEvents.contains(NavigationEvent.Dismiss))
+        }
+
+    @Test
     fun `GIVEN selected tab is pinned WHEN add to shortcuts action is dispatched THEN add pinned site use case is never called`() =
         runTest(testDispatcher) {
             val url = "https://www.mozilla.org"
@@ -573,66 +610,6 @@ class MenuDialogMiddlewareTest {
             testScheduler.advanceUntilIdle()
 
             coVerify { removePinnedSiteUseCase.invoke(topSite = topSite) }
-            assertTrue(navigationEvents.contains(NavigationEvent.Dismiss))
-        }
-
-    @Test
-    fun `GIVEN maximum number of top sites is reached WHEN add to shortcuts action is dispatched THEN add pinned site use case is never called`() =
-        runTest(testDispatcher) {
-            val url = "https://www.mozilla.org"
-            val title = "Mozilla"
-
-            val pinnedSitesList = mutableListOf<TopSite>()
-
-            repeat(TOP_SITES_MAX_COUNT) {
-                pinnedSitesList.add(
-                    TopSite.Pinned(
-                        id = 0,
-                        title = title,
-                        url = "$url/1",
-                        createdAt = 0,
-                    )
-                )
-            }
-
-            coEvery { pinnedSiteStorage.getPinnedSites() } returns pinnedSitesList
-
-            val newAlertDialog: AlertDialog = mockk(relaxed = true)
-            val mockButton: TextView = mockk(relaxed = true)
-            every { alertDialogBuilder.create() } returns newAlertDialog
-            every { newAlertDialog.findViewById<TextView>(any()) } returns mockButton
-
-            val browserMenuState =
-                BrowserMenuState(
-                    selectedTab =
-                        createTab(
-                            url = url,
-                            title = title,
-                        )
-                )
-            val appStore = spyk(AppStore())
-            val store =
-                createStore(
-                    appStore = appStore,
-                    menuState = MenuState(browserMenuState = browserMenuState),
-                )
-            testScheduler.advanceUntilIdle()
-
-            assertFalse(store.state.browserMenuState!!.isPinned)
-
-            store.dispatch(MenuAction.AddShortcut)
-            testScheduler.advanceUntilIdle()
-
-            coVerify(exactly = 0) { addPinnedSiteUseCase.invoke(url = url, title = title) }
-            verify(exactly = 0) {
-                appStore.dispatch(
-                    ShortcutAction.ShortcutAdded(
-                        url = url,
-                        source = AddShortcutSource.MANUAL,
-                        entryPoint = AddShortcutEntryPoint.PAGE_MENU,
-                    )
-                )
-            }
             assertTrue(navigationEvents.contains(NavigationEvent.Dismiss))
         }
 
@@ -1169,8 +1146,6 @@ class MenuDialogMiddlewareTest {
                             removePinnedSitesUseCase = removePinnedSiteUseCase,
                             requestDesktopSiteUseCase = requestDesktopSiteUseCase,
                             migratePrivateTabUseCase = migratePrivateTabUseCase,
-                            materialAlertDialogBuilder = alertDialogBuilder,
-                            topSitesMaxLimit = TOP_SITES_MAX_COUNT,
                             mainDispatcher = testDispatcher,
                         )
                     ),
