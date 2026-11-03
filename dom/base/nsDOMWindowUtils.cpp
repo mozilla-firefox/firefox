@@ -34,6 +34,7 @@
 #include "mozilla/dom/BlobBinding.h"
 #include "mozilla/dom/ContentList.h"
 #include "mozilla/dom/DOMCollectedFramesBinding.h"
+#include "mozilla/dom/DOMMozPromiseRequestHolder.h"
 #include "mozilla/dom/DOMRect.h"
 #include "mozilla/dom/DirectionalityUtils.h"
 #include "mozilla/dom/DocumentInlines.h"
@@ -2649,29 +2650,34 @@ nsDOMWindowUtils::DefaultDevicesRoundTripLatency(Promise** aOutPromise) {
     return err.StealNSResult();
   }
 
-  NS_ADDREF(promise.get());
-  void* p = reinterpret_cast<void*>(promise.get());
-  NS_DispatchBackgroundTask(
-      NS_NewRunnableFunction("DefaultDevicesRoundTripLatency", [p]() {
-        double mean, stddev;
-        bool success =
-            CubebUtils::EstimatedLatencyDefaultDevices(&mean, &stddev);
+  using LatencyPromise = MozPromise<nsTArray<double>, nsresult, true>;
+  auto holder =
+      MakeRefPtr<DOMMozPromiseRequestHolder<LatencyPromise>>(inner->AsGlobal());
+  nsCOMPtr<nsISerialEventTarget> taskQueue;
+  nsresult rv = NS_CreateBackgroundTaskQueue("DefaultDevicesRoundTripLatency",
+                                             getter_AddRefs(taskQueue));
+  NS_ENSURE_SUCCESS(rv, rv);
 
-        NS_DispatchToMainThread(NS_NewRunnableFunction(
-            "DefaultDevicesRoundTripLatency", [p, success, mean, stddev]() {
-              Promise* promise = reinterpret_cast<Promise*>(p);
-              if (!success) {
-                promise->MaybeReject(NS_ERROR_FAILURE);
-                NS_RELEASE(promise);
-                return;
-              }
-              nsTArray<double> a;
-              a.AppendElement(mean);
-              a.AppendElement(stddev);
-              promise->MaybeResolve(a);
-              NS_RELEASE(promise);
-            }));
-      }));
+  InvokeAsync(
+      taskQueue, __func__,
+      []() {
+        double mean, stddev;
+        if (!CubebUtils::EstimatedLatencyDefaultDevices(&mean, &stddev)) {
+          return LatencyPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);
+        }
+        return LatencyPromise::CreateAndResolve(nsTArray<double>{mean, stddev},
+                                                __func__);
+      })
+      ->Then(GetMainThreadSerialEventTarget(), __func__,
+             [holder, promise](LatencyPromise::ResolveOrRejectValue&& aValue) {
+               holder->Complete();
+               if (aValue.IsResolve()) {
+                 promise->MaybeResolve(aValue.ResolveValue());
+               } else {
+                 promise->MaybeReject(aValue.RejectValue());
+               }
+             })
+      ->Track(*holder);
 
   promise.forget(aOutPromise);
   return NS_OK;
