@@ -152,7 +152,7 @@ impl fmt::Display for SdpTiming {
 #[cfg_attr(feature = "serialize", derive(Serialize))]
 #[cfg_attr(feature = "enhanced_debug", derive(Debug))]
 pub enum SdpType {
-    // Note: Email, Information, Key, Phone, Repeat, Uri and Zone are left out
+    // Note: Email, Key, Phone, Repeat, Uri and Zone are left out
     //       on purposes as we don't want to support them.
     Attribute(SdpAttribute),
     Bandwidth(SdpBandwidth),
@@ -161,6 +161,7 @@ pub enum SdpType {
     Origin(SdpOrigin),
     Session(String),
     Timing(SdpTiming),
+    Information(String),
     Version(u64),
 }
 
@@ -196,13 +197,13 @@ pub struct SdpSession {
     pub version: u64,
     pub origin: SdpOrigin,
     pub session: Option<String>,
+    pub information: Option<String>,
     pub connection: Option<SdpConnection>,
     pub bandwidth: Vec<SdpBandwidth>,
     pub timing: Option<SdpTiming>,
     pub attribute: Vec<SdpAttribute>,
     pub media: Vec<SdpMedia>,
     pub warnings: Vec<SdpParserError>, // unsupported values:
-                                       // information: Option<String>,
                                        // uri: Option<String>,
                                        // email: Option<String>,
                                        // phone: Option<String>,
@@ -218,14 +219,16 @@ impl fmt::Display for SdpSession {
             "v={version}\r\n\
              o={origin}\r\n\
              s={session}\r\n\
-             {timing}\
-             {bandwidth}\
+             {information}\
              {connection}\
+             {bandwidth}\
+             {timing}\
              {session_attributes}\
              {media_sections}",
             version = self.version,
             origin = self.origin,
             session = self.get_session_text(),
+            information = option_to_string!("i={}\r\n", self.information),
             timing = option_to_string!("t={}\r\n", self.timing),
             bandwidth = maybe_vector_to_string!("b={}\r\n", self.bandwidth, "\r\nb="),
             connection = option_to_string!("c={}\r\n", self.connection),
@@ -245,6 +248,7 @@ impl SdpSession {
             version,
             origin,
             session,
+            information: None,
             connection: None,
             bandwidth: Vec::new(),
             timing: None,
@@ -273,6 +277,15 @@ impl SdpSession {
             " "
         }
     }
+
+    pub fn get_information(&self) -> &Option<String> {
+        &self.information
+    }
+
+    pub fn set_information(&mut self, i: Option<String>) {
+        self.information = i
+    }
+
     pub fn get_connection(&self) -> &Option<SdpConnection> {
         &self.connection
     }
@@ -307,6 +320,7 @@ impl SdpSession {
         while !lines.is_empty() {
             let line = lines.remove(0);
             match line.sdp_type {
+                SdpType::Information(i) => self.set_information(Some(i)),
                 SdpType::Attribute(a) => {
                     let _line_number = line.line_number;
                     self.add_attribute(a).map_err(|e: SdpParserInternalError| {
@@ -378,6 +392,7 @@ impl AnonymizingClone for SdpSession {
         let mut masked: SdpSession = SdpSession {
             version: self.version,
             session: self.session.clone(),
+            information: self.information.clone(),
             origin: self.origin.masked_clone(anon),
             connection: self.connection.clone(),
             timing: self.timing.clone(),
@@ -527,6 +542,15 @@ fn parse_bandwidth(value: &str) -> Result<SdpType, SdpParserInternalError> {
     Ok(SdpType::Bandwidth(bw))
 }
 
+fn parse_information(value: &str) -> Result<SdpType, SdpParserInternalError> {
+    if value.contains("\r") {
+        return Err(SdpParserInternalError::Generic(
+            "information attribute must not contain carriage return".to_string(),
+        ));
+    }
+    Ok(SdpType::Information(String::from(value)))
+}
+
 fn parse_timing(value: &str) -> Result<SdpType, SdpParserInternalError> {
     let tv: Vec<&str> = value.split_whitespace().collect();
     if tv.len() != 2 {
@@ -605,9 +629,7 @@ pub fn parse_sdp_line(line: &str, line_number: usize) -> Result<SdpLine, SdpPars
         "e" => Err(SdpParserInternalError::Generic(format!(
             "unsupported type email: {line_value}"
         ))),
-        "i" => Err(SdpParserInternalError::Generic(format!(
-            "unsupported type information: {line_value}"
-        ))),
+        "i" => parse_information(line_value),
         "k" => Err(SdpParserInternalError::Generic(format!(
             "unsupported insecure key exchange: {line_value}"
         ))),
@@ -801,7 +823,16 @@ fn parse_sdp_vector(lines: &mut Vec<SdpLine>) -> Result<SdpSession, SdpParserErr
             });
         }
     };
+
     let mut sdp_session = SdpSession::new(version, origin, session);
+    if let Some(SdpLine {
+        sdp_type: SdpType::Information(i),
+        ..
+    }) = lines.first()
+    {
+        sdp_session.information = Some(i.clone());
+        lines.remove(0);
+    }
 
     let _media_pos = lines
         .iter()

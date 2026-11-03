@@ -12,7 +12,7 @@
 [package]
 rust-version = "1.88.0"
 name = "webrtc-sdp"
-version = "0.3.16"
+version = "0.3.17"
 authors = [
     "Nicolas Grunbaum <na-g+github@nostrum.com>",
     "Nils Ohlmeier <github@ohlmeier.org>",
@@ -79,7 +79,7 @@ version = "1.0"
 optional = true
 
 [dependencies.url]
-version = "2.1.0"
+version = "2.5"
 
 [dev-dependencies.serde_json]
 version = "1.0"

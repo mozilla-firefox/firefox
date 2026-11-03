@@ -152,11 +152,11 @@ impl SdpFormatList {
 #[cfg_attr(feature = "enhanced_debug", derive(Debug))]
 pub struct SdpMedia {
     media: SdpMediaLine,
+    information: Option<String>,
     connection: Option<SdpConnection>,
     bandwidth: Vec<SdpBandwidth>,
     attribute: Vec<SdpAttribute>,
     // unsupported values:
-    // information: Option<String>,
     // key: Option<String>,
 }
 
@@ -164,7 +164,7 @@ impl fmt::Display for SdpMedia {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "m={mline}\r\n{bw}{connection}{attributes}",
+            "m={mline}\r\n{connection}{bw}{attributes}",
             mline = self.media,
             bw = maybe_vector_to_string!("b={}\r\n", self.bandwidth, "\r\nb="),
             connection = option_to_string!("c={}\r\n", self.connection),
@@ -177,6 +177,7 @@ impl SdpMedia {
     pub fn new(media: SdpMediaLine) -> SdpMedia {
         SdpMedia {
             media,
+            information: None,
             connection: None,
             bandwidth: Vec::new(),
             attribute: Vec::new(),
@@ -205,6 +206,14 @@ impl SdpMedia {
 
     pub fn get_formats(&self) -> &SdpFormatList {
         &self.media.formats
+    }
+
+    pub fn get_information(&self) -> &Option<String> {
+        &self.information
+    }
+
+    pub fn set_information(&mut self, information: Option<String>) {
+        self.information = information;
     }
 
     pub fn get_bandwidth(&self) -> &Vec<SdpBandwidth> {
@@ -328,6 +337,7 @@ impl AnonymizingClone for SdpMedia {
     fn masked_clone(&self, anon: &mut StatefulSdpAnonymizer) -> Self {
         let mut masked = SdpMedia {
             media: self.media.clone(),
+            information: self.information.clone(),
             bandwidth: self.bandwidth.clone(),
             connection: self.connection.clone(),
             attribute: Vec::new(),
@@ -485,6 +495,15 @@ pub fn parse_media_vector(lines: &mut Vec<SdpLine>) -> Result<Vec<SdpMedia>, Sdp
         let line = lines.remove(0);
         let _line_number = line.line_number;
         match line.sdp_type {
+            SdpType::Information(i) => {
+                if sdp_media.information.is_some() {
+                    return Err(SdpParserError::Sequence {
+                        message: "information type already exists at this media level".to_string(),
+                        line_number: _line_number,
+                    });
+                }
+                sdp_media.set_information(Some(i));
+            }
             SdpType::Connection(c) => {
                 if sdp_media.connection.is_some() {
                     return Err(SdpParserError::Sequence {
