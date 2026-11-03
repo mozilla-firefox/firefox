@@ -18,7 +18,6 @@ Array [
     >
       <Connect(Registration)
         className="registrations-container__item"
-        isDebugEnabled={true}
         key="id-reg-1-example"
         registration={
           Object {
@@ -76,7 +75,6 @@ Array [
     >
       <Connect(Registration)
         className="registrations-container__item"
-        isDebugEnabled={true}
         key="id-reg-1-example"
         registration={
           Object {
@@ -97,7 +95,6 @@ Array [
       />
       <Connect(Registration)
         className="registrations-container__item"
-        isDebugEnabled={true}
         key="id-reg-1-example"
         registration={
           Object {
@@ -118,7 +115,6 @@ Array [
       />
       <Connect(Registration)
         className="registrations-container__item"
-        isDebugEnabled={true}
         key="id-reg-3-example"
         registration={
           Object {

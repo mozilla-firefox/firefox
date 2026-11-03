@@ -18,13 +18,6 @@ class ManifestDevToolsError extends Error {
 class ApplicationServices {
   init(toolbox) {
     this._toolbox = toolbox;
-
-    this.features = {
-      doesDebuggerSupportWorkers: Services.prefs.getBoolPref(
-        "devtools.debugger.features.windowless-service-workers",
-        false
-      ),
-    };
   }
 
   selectTool(toolId) {

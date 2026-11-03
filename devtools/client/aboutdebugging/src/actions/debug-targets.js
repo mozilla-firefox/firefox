@@ -148,9 +148,8 @@ function installTemporaryExtension() {
 function pushServiceWorker(id, registrationFront) {
   return async () => {
     try {
-      // The push button is only available if canDebugServiceWorkers is true.
-      // With this configuration, `push` should always be called on the
-      // registration front, and not on the (service) WorkerTargetActor.
+      // `push` should always be called on the registration front,
+      // and not on the (service) WorkerTargetActor.
       await registrationFront.push();
     } catch (e) {
       console.error(e);

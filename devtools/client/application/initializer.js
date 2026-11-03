@@ -85,12 +85,6 @@ window.Application = {
     this.workersListener = new WorkersListener(this.client.mainRoot);
     this.workersListener.addListener(this.safeUpdateWorkers);
 
-    const deviceFront = await this.client.mainRoot.getFront("device");
-    const { canDebugServiceWorkers } = await deviceFront.getDescription();
-    this.actions.updateCanDebugWorkers(
-      canDebugServiceWorkers && services.features.doesDebuggerSupportWorkers
-    );
-
     const { resourceCommand } = this._commands;
     this._watchedResources = [resourceCommand.TYPES.DOCUMENT_EVENT];
     if (

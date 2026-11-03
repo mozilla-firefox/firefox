@@ -31,12 +31,12 @@ const WorkersPage = createFactory(
  */
 describe("WorkersPage", () => {
   const baseState = {
-    workers: { list: [], canDebugWorkers: true },
+    workers: { list: [] },
     page: { domain: "example.com" },
   };
 
   function buildStoreWithWorkers(workerList) {
-    const workers = { list: workerList, canDebugWorkers: true };
+    const workers = { list: workerList };
     const state = Object.assign({}, baseState, { workers });
     return setupStore(state);
   }
