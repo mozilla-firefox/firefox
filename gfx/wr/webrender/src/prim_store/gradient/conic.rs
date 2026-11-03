@@ -12,11 +12,10 @@ use api::{AlphaMode, ExtendMode, GradientStop};
 use api::units::*;
 use crate::pattern::gradient::{conic_gradient_pattern};
 use crate::pattern::{Pattern, PatternBuilder, PatternBuilderState};
-use crate::intern::{Internable, InternDebug, Handle as InternHandle};
-use crate::internal_types::LayoutPrimitiveInfo;
-use crate::prim_store::{PrimitiveKind, PrimitiveOpacity};
-use crate::prim_store::{PrimTemplateCommonData, PrimitiveStore};
-use crate::prim_store::{NinePatchDescriptor, InternablePrimitive};
+use crate::dl_interner::{DlResolve, DlResolveContext};
+use crate::prim_store::PrimitiveOpacity;
+use crate::prim_store::PrimTemplateCommonData;
+use crate::prim_store::NinePatchDescriptor;
 
 use std::ops::{Deref, DerefMut};
 use super::stops_and_min_alpha;
@@ -27,15 +26,19 @@ use super::stops_and_min_alpha;
 pub use api::key_types::ConicGradientParams;
 
 // `ConicGradientKey` lives in `webrender_api::interned_prims` (alongside the
-// `ConicGradient` value) so the key can be built from api-resident types. The
-// frame-time `ConicGradientTemplate` and interning glue stay here.
+// `ConicGradient` value), since the content display list builder interns
+// them. The frame-time `ConicGradientTemplate` stays here.
 pub use api::interned_prims::ConicGradientKey;
 
-impl InternDebug for ConicGradientKey {}
+impl crate::prim_store::PrimKeyCommon for ConicGradientKey {
+    fn key_common(&self) -> &crate::prim_store::PrimKeyCommonData {
+        &self.common
+    }
+}
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(MallocSizeOf)]
+#[derive(MallocSizeOf, Clone)]
 pub struct ConicGradientTemplate {
     pub common: PrimTemplateCommonData,
     pub extend_mode: ExtendMode,
@@ -84,8 +87,9 @@ impl DerefMut for ConicGradientTemplate {
     }
 }
 
-impl From<ConicGradientKey> for ConicGradientTemplate {
-    fn from(item: ConicGradientKey) -> Self {
+/// Nothing to validate: a gradient names no resource.
+impl DlResolve<ConicGradientKey> for ConicGradientTemplate {
+    fn resolve(item: &ConicGradientKey, _ctx: &DlResolveContext) -> Self {
         let common = PrimTemplateCommonData::with_key_common(item.common);
 
         let (stops, min_alpha) = stops_and_min_alpha(&item.stops);
@@ -100,45 +104,14 @@ impl From<ConicGradientKey> for ConicGradientTemplate {
             center: item.center.into(),
             extend_mode: item.extend_mode,
             alpha_mode: item.alpha_mode,
-            params: item.params,
+            params: item.params.clone(),
             stretch_ratio: item.stretch_ratio.into(),
             tile_spacing: item.tile_spacing.into(),
-            border_nine_patch: item.nine_patch,
+            border_nine_patch: item.nine_patch.clone(),
             stops_opacity,
             stops,
         }
     }
 }
 
-pub type ConicGradientDataHandle = InternHandle<ConicGradient>;
-
-// `ConicGradient` now lives in `webrender_api::interned_prims` so content-process
-// interning can hold it. Re-exported to keep existing references working.
-pub use api::interned_prims::ConicGradient;
-
-impl Internable for ConicGradient {
-    type Key = ConicGradientKey;
-    type StoreData = ConicGradientTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_CONIC_GRADIENTS;
-}
-
-impl InternablePrimitive for ConicGradient {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> ConicGradientKey {
-        ConicGradientKey::new(info.into(), self)
-    }
-
-    fn make_instance_kind(
-        _key: ConicGradientKey,
-        data_handle: ConicGradientDataHandle,
-        _prim_store: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::ConicGradient {
-            data_handle,
-        }
-    }
-}
 

@@ -6,7 +6,6 @@
 
 pub use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
 pub use crate::prim_store::borders::{ImageBorder, NormalBorderPrim};
-pub use crate::prim_store::gradient::{LinearGradient, RadialGradient, ConicGradient};
 pub use crate::prim_store::picture::Picture;
 pub use crate::prim_store::text_run::TextRun;
 

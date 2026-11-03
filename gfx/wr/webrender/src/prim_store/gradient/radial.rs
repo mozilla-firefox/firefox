@@ -12,11 +12,9 @@ use api::{AlphaMode, ExtendMode, GradientStop};
 use api::units::*;
 use crate::pattern::gradient::{radial_gradient_pattern};
 use crate::pattern::{Pattern, PatternBuilder, PatternBuilderState};
-use crate::intern::{Internable, InternDebug, Handle as InternHandle};
-use crate::internal_types::LayoutPrimitiveInfo;
-use crate::prim_store::{InternablePrimitive};
-use crate::prim_store::{PrimitiveKind, PrimitiveOpacity};
-use crate::prim_store::{PrimTemplateCommonData, PrimitiveStore};
+use crate::dl_interner::{DlResolve, DlResolveContext};
+use crate::prim_store::PrimitiveOpacity;
+use crate::prim_store::PrimTemplateCommonData;
 use crate::prim_store::NinePatchDescriptor;
 
 use std::ops::{Deref, DerefMut};
@@ -28,15 +26,19 @@ use super::stops_and_min_alpha;
 pub use api::key_types::RadialGradientParams;
 
 // `RadialGradientKey` lives in `webrender_api::interned_prims` (alongside the
-// `RadialGradient` value) so the key can be built from api-resident types. The
-// frame-time `RadialGradientTemplate` and interning glue stay here.
+// `RadialGradient` value), since the content display list builder interns
+// them. The frame-time `RadialGradientTemplate` stays here.
 pub use api::interned_prims::RadialGradientKey;
 
-impl InternDebug for RadialGradientKey {}
+impl crate::prim_store::PrimKeyCommon for RadialGradientKey {
+    fn key_common(&self) -> &crate::prim_store::PrimKeyCommonData {
+        &self.common
+    }
+}
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(MallocSizeOf)]
+#[derive(MallocSizeOf, Clone)]
 #[derive(Debug)]
 pub struct RadialGradientTemplate {
     pub common: PrimTemplateCommonData,
@@ -86,8 +88,9 @@ impl DerefMut for RadialGradientTemplate {
     }
 }
 
-impl From<RadialGradientKey> for RadialGradientTemplate {
-    fn from(item: RadialGradientKey) -> Self {
+/// Nothing to validate: a gradient names no resource.
+impl DlResolve<RadialGradientKey> for RadialGradientTemplate {
+    fn resolve(item: &RadialGradientKey, _ctx: &DlResolveContext) -> Self {
         let common = PrimTemplateCommonData::with_key_common(item.common);
 
         let (stops, min_alpha) = stops_and_min_alpha(&item.stops);
@@ -102,45 +105,14 @@ impl From<RadialGradientKey> for RadialGradientTemplate {
             center: item.center.into(),
             extend_mode: item.extend_mode,
             alpha_mode: item.alpha_mode,
-            params: item.params,
+            params: item.params.clone(),
             stretch_ratio: item.stretch_ratio.into(),
             tile_spacing: item.tile_spacing.into(),
-            border_nine_patch: item.nine_patch,
+            border_nine_patch: item.nine_patch.clone(),
             stops_opacity,
             stops,
         }
     }
 }
 
-pub type RadialGradientDataHandle = InternHandle<RadialGradient>;
-
-// `RadialGradient` now lives in `webrender_api::interned_prims` so content-process
-// interning can hold it. Re-exported to keep existing references working.
-pub use api::interned_prims::RadialGradient;
-
-impl Internable for RadialGradient {
-    type Key = RadialGradientKey;
-    type StoreData = RadialGradientTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_RADIAL_GRADIENTS;
-}
-
-impl InternablePrimitive for RadialGradient {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> RadialGradientKey {
-        RadialGradientKey::new(info.into(), self)
-    }
-
-    fn make_instance_kind(
-        _key: RadialGradientKey,
-        data_handle: RadialGradientDataHandle,
-        _prim_store: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::RadialGradient {
-            data_handle,
-        }
-    }
-}
 

@@ -2858,8 +2858,8 @@ impl TileCacheInstance {
                     generation: resource_cache.get_image_generation(border_data.request.key),
                 });
             }
-            PrimitiveKind::LinearGradient { data_handle, .. } => {
-                let gradient_data = &data_stores.linear_grad[data_handle];
+            PrimitiveKind::LinearGradient { handle } => {
+                let gradient_data = &dl_stores.linear_gradients[handle];
                 if gradient_data.stops_opacity.is_opaque
                     && gradient_data.tile_spacing == LayoutSize::zero()
                 {
@@ -2871,8 +2871,8 @@ impl TileCacheInstance {
                     });
                 }
             }
-            PrimitiveKind::ConicGradient { data_handle, .. } => {
-                let gradient_data = &data_stores.conic_grad[data_handle];
+            PrimitiveKind::ConicGradient { handle } => {
+                let gradient_data = &dl_stores.conic_gradients[handle];
                 if gradient_data.stops_opacity.is_opaque
                     && gradient_data.tile_spacing == LayoutSize::zero()
                 {
@@ -2884,8 +2884,8 @@ impl TileCacheInstance {
                     });
                 }
             }
-            PrimitiveKind::RadialGradient { data_handle, .. } => {
-                let gradient_data = &data_stores.radial_grad[data_handle];
+            PrimitiveKind::RadialGradient { handle } => {
+                let gradient_data = &dl_stores.radial_gradients[handle];
                 if gradient_data.stops_opacity.is_opaque
                     && gradient_data.tile_spacing == LayoutSize::zero()
                 {

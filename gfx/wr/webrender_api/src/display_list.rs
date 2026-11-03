@@ -24,17 +24,20 @@ use crate::color::{ColorF, ColorU};
 use crate::font::{FontInstanceKey, GlyphInstance, GlyphOptions};
 use crate::image::{ColorDepth, ImageKey};
 use crate::interned_prims::{
-    BoxShadow, BoxShadowKey, Image, ImagePrimKey, LineDecoration, LineDecorationKey, RectangleKey,
-    RectanglePrim, YuvImage, YuvImagePrimKey,
+    BoxShadow, BoxShadowKey, ConicGradientKey, Image, ImagePrimKey, LineDecoration,
+    LineDecorationKey, LinearGradientKey, RadialGradientKey, RectangleKey, RectanglePrim,
+    YuvImage, YuvImagePrimKey,
 };
 use crate::interning::{self, DlDelta};
 use crate::path::Path;
 use crate::key_types::{
-    EdgeMask, GradientStopKey, PointKey, PrimKeyCommonData, StretchSizeKey, SubRectKey,
+    EdgeMask, GradientStopKey, NinePatchDescriptor, PointKey, PrimKeyCommonData, StretchSizeKey,
+    SubRectKey,
 };
 use crate::prim_geometry::{
-    apply_gradient_local_clip, image_stretch_size, optimize_linear_gradient,
-    optimize_radial_gradient, resolve_tile_size, simplify_repeated_primitive,
+    apply_gradient_local_clip, conic_gradient_prim, image_stretch_size, linear_gradient_prim,
+    optimize_linear_gradient, optimize_radial_gradient, radial_gradient_prim,
+    resolve_tile_size, simplify_repeated_primitive,
 };
 use crate::units::*;
 
@@ -2000,22 +2003,98 @@ impl DisplayListBuilder {
         gradient_stops: &[di::GradientStop],
     ) {
         let (common, offset) = self.normalize_common(common);
-        self.push_stops(gradient_stops);
         let bounds = self.shift_rect(bounds, offset);
 
-        // Shrink radii that would make adjacent corners overlap.
-        if let di::BorderDetails::Normal(ref mut border) = details {
-            crate::key_types::ensure_no_corner_overlap(&mut border.radius, bounds.size());
-        }
+        let details = match details {
+            di::BorderDetails::Normal(ref mut border) => {
+                // Shrink radii that would make adjacent corners overlap.
+                crate::key_types::ensure_no_corner_overlap(&mut border.radius, bounds.size());
+                di::BorderKind::Normal(*border)
+            }
+            // A gradient source is interned as the gradient it is, with the
+            // nine-patch descriptor folded into its key; an image source is not
+            // interned, so it keeps carrying its description.
+            di::BorderDetails::NinePatch(border) => {
+                let descriptor = || {
+                    Some(Box::new(NinePatchDescriptor {
+                        width: border.width,
+                        height: border.height,
+                        slice: border.slice,
+                        fill: border.fill,
+                        repeat_horizontal: border.repeat_horizontal,
+                        repeat_vertical: border.repeat_vertical,
+                        widths: widths.into(),
+                    }))
+                };
+                // The nine-patch stretches one gradient over the border box, so
+                // the tile is the whole nine-patch and there is no spacing. A
+                // border gradient skips the standalone optimisation pass, as it
+                // did on the scene builder.
+                let stretch = LayoutSize::new(border.height as f32, border.width as f32);
+                let key_common = prim_key_common(&common, bounds, EdgeMask::all());
+                match border.source {
+                    di::NinePatchBorderSource::Image(..) => di::BorderKind::NinePatchImage(border),
+                    di::NinePatchBorderSource::Gradient(gradient) => {
+                        let Some(prim) = linear_gradient_prim(
+                            bounds,
+                            gradient.start,
+                            gradient.end,
+                            to_stop_keys(gradient_stops),
+                            gradient.extend_mode,
+                            gradient.alpha_mode,
+                            stretch,
+                            LayoutSize::zero(),
+                            descriptor(),
+                        ) else {
+                            return;
+                        };
+                        let key = LinearGradientKey::new(key_common, prim);
+                        di::BorderKind::NinePatchLinearGradient(self.interners.intern(&key))
+                    }
+                    di::NinePatchBorderSource::RadialGradient(gradient) => {
+                        let prim = radial_gradient_prim(
+                            bounds,
+                            gradient.center,
+                            gradient.start_offset * gradient.radius.width,
+                            gradient.end_offset * gradient.radius.width,
+                            gradient.radius.width / gradient.radius.height,
+                            to_stop_keys(gradient_stops),
+                            gradient.extend_mode,
+                            gradient.alpha_mode,
+                            stretch,
+                            LayoutSize::zero(),
+                            descriptor(),
+                        );
+                        let key = RadialGradientKey::new(key_common, prim);
+                        di::BorderKind::NinePatchRadialGradient(self.interners.intern(&key))
+                    }
+                    di::NinePatchBorderSource::ConicGradient(gradient) => {
+                        let prim = conic_gradient_prim(
+                            bounds,
+                            gradient.center,
+                            gradient.angle,
+                            gradient.start_offset,
+                            gradient.end_offset,
+                            to_stop_keys(gradient_stops),
+                            gradient.extend_mode,
+                            gradient.alpha_mode,
+                            stretch,
+                            LayoutSize::zero(),
+                            descriptor(),
+                        );
+                        let key = ConicGradientKey::new(key_common, prim);
+                        di::BorderKind::NinePatchConicGradient(self.interners.intern(&key))
+                    }
+                }
+            }
+        };
 
-        let item = di::DisplayItem::Border(di::BorderDisplayItem {
+        self.push_item(&di::DisplayItem::Border(di::BorderDisplayItem {
             common,
             bounds,
             details,
             widths,
-        });
-
-        self.push_item(&item);
+        }));
     }
 
     pub fn push_box_shadow(
@@ -2296,18 +2375,48 @@ impl DisplayListBuilder {
         }
 
         let (common, offset) = self.normalize_common(common);
-        let mut bounds = self.shift_rect(bounds, offset);
+        let bounds = self.shift_rect(bounds, offset);
 
+        let Some(handle) = self.intern_linear_gradient(
+            bounds,
+            &common,
+            &gradient,
+            tile_size,
+            tile_spacing,
+            stops,
+        ) else {
+            return;
+        };
+
+        self.push_item(&di::DisplayItem::Gradient(di::GradientDisplayItem {
+            spatial_id: common.spatial_id,
+            clip_chain_id: common.clip_chain_id,
+            gradient: handle,
+        }));
+    }
+
+    /// Run a standalone linear gradient through the geometry pipeline and
+    /// intern the result. Returns the optimized rect to record the item with,
+    /// or `None` if the gradient cannot contribute to the scene. The fast-path
+    /// two-stop segment decomposition is not done here: it happens at prepare
+    /// time, so segments tile against the snapped prim rect (see
+    /// `decompose_axis_aligned_gradient`).
+    fn intern_linear_gradient(
+        &mut self,
+        bounds: LayoutRect,
+        common: &di::CommonItemProperties,
+        gradient: &di::Gradient,
+        tile_size: LayoutSize,
+        tile_spacing: LayoutSize,
+        stops: &[di::GradientStop],
+    ) -> Option<interning::Handle<LinearGradientKey>> {
         let mut tile_size = resolve_tile_size(&bounds, tile_size);
 
+        let mut prim_rect = bounds;
         let mut start = gradient.start;
         let mut end = gradient.end;
-        // The simplification and clip pass. The fast-path two-stop segment
-        // decomposition is not done here: it happens at prepare time, so
-        // segments tile against the snapped prim rect (see
-        // `decompose_axis_aligned_gradient`).
         optimize_linear_gradient(
-            &mut bounds,
+            &mut prim_rect,
             &mut tile_size,
             tile_spacing,
             &common.clip_rect,
@@ -2317,23 +2426,26 @@ impl DisplayListBuilder {
 
         // A tile that rounds up to nothing covers no pixel.
         if tile_size.ceil().is_empty() {
-            return;
+            return None;
         }
 
-        self.push_stops(stops);
-        let item = di::DisplayItem::Gradient(di::GradientDisplayItem {
-            common,
-            bounds,
-            gradient: di::Gradient {
-                start,
-                end,
-                ..gradient
-            },
+        let prim = linear_gradient_prim(
+            prim_rect,
+            start,
+            end,
+            to_stop_keys(stops),
+            gradient.extend_mode,
+            gradient.alpha_mode,
             tile_size,
             tile_spacing,
-        });
+            None,
+        )?;
 
-        self.push_item(&item);
+        let key = LinearGradientKey::new(
+            prim_key_common(common, prim_rect, EdgeMask::all()),
+            prim,
+        );
+        Some(self.interners.intern(&key))
     }
 
     /// Pushes a radial gradient to be displayed.
@@ -2353,24 +2465,51 @@ impl DisplayListBuilder {
         }
 
         let (common, offset) = self.normalize_common(common);
-        let mut prim_rect = self.shift_rect(bounds, offset);
+        let bounds = self.shift_rect(bounds, offset);
 
-        let mut tile_size = resolve_tile_size(&prim_rect, tile_size);
+        let Some(handle) = self.intern_radial_gradient(
+            bounds,
+            &common,
+            &gradient,
+            tile_size,
+            tile_spacing,
+            stops,
+        ) else {
+            return;
+        };
 
-        let stop_keys: Vec<GradientStopKey> = stops
-            .iter()
-            .map(|stop| GradientStopKey {
-                offset: stop.offset,
-                color: stop.color.into(),
-            })
-            .collect();
+        self.push_item(&di::DisplayItem::RadialGradient(di::RadialGradientDisplayItem {
+            spatial_id: common.spatial_id,
+            clip_chain_id: common.clip_chain_id,
+            gradient: handle,
+        }));
+    }
 
+    /// See `intern_linear_gradient`.
+    ///
+    /// A clamped radial gradient whose ellipse leaves wide constant-colour
+    /// margins is shrunk to the interesting part, and the margins are pushed as
+    /// solid rects. Each carries its own AA edge mask so its interior edges do
+    /// not seam against the gradient, which is what
+    /// `RectangleDisplayItem::transformed_aa_edges` is for.
+    fn intern_radial_gradient(
+        &mut self,
+        bounds: LayoutRect,
+        common: &di::CommonItemProperties,
+        gradient: &di::RadialGradient,
+        tile_size: LayoutSize,
+        tile_spacing: LayoutSize,
+        stops: &[di::GradientStop],
+    ) -> Option<interning::Handle<RadialGradientKey>> {
+        let mut tile_size = resolve_tile_size(&bounds, tile_size);
+        let stop_keys = to_stop_keys(stops);
+
+        let mut prim_rect = bounds;
         let mut center = gradient.center;
         let mut tile_spacing = tile_spacing;
         let mut aa_mask = EdgeMask::all();
+        let mut margins: Vec<(LayoutRect, ColorU, EdgeMask)> = Vec::new();
 
-        // Shrinks the gradient to the part that is not a constant colour and
-        // emits the margins around it as solid rects.
         optimize_radial_gradient(
             &mut prim_rect,
             &mut tile_size,
@@ -2382,41 +2521,43 @@ impl DisplayListBuilder {
             gradient.end_offset,
             gradient.extend_mode,
             &stop_keys,
-            &mut |solid_rect, color, aa_mask| {
-                // Pushed before the gradient, and whether or not the gradient
-                // itself survives the empty-tile reject below: a gradient that
-                // optimizes away entirely is all margin. A transparent margin
-                // is dropped like any other transparent rectangle.
-                self.push_rect_prim(
-                    &common,
-                    *solid_rect,
-                    PropertyBinding::Value(color.into()),
-                    aa_mask,
-                );
-            },
+            &mut |solid_rect, color, mask| margins.push((*solid_rect, color, mask)),
         );
+
+        // Pushed before the gradient, and whether or not the gradient itself
+        // survives the empty-tile reject below: a gradient that optimizes away
+        // entirely is all margin. A transparent margin is dropped like any
+        // other transparent rectangle.
+        for (rect, color, mask) in margins {
+            self.push_rect_prim(common, rect, PropertyBinding::Value(color.into()), mask);
+        }
 
         // `radial_gradient_prim` runs this too but discards the rect it
         // produces, so the mutation has to happen out here.
         simplify_repeated_primitive(&tile_size, &mut tile_spacing, &mut prim_rect);
 
-        // A tile that rounds up to nothing covers no pixel. The margins above
-        // are already out.
+        // A tile that rounds up to nothing covers no pixel.
         if tile_size.ceil().is_empty() {
-            return;
+            return None;
         }
 
-        self.push_stops(stops);
-        let item = di::DisplayItem::RadialGradient(di::RadialGradientDisplayItem {
-            common,
-            bounds: prim_rect,
-            gradient: di::RadialGradient { center, ..gradient },
+        let prim = radial_gradient_prim(
+            prim_rect,
+            center,
+            gradient.start_offset * gradient.radius.width,
+            gradient.end_offset * gradient.radius.width,
+            gradient.radius.width / gradient.radius.height,
+            stop_keys,
+            gradient.extend_mode,
+            gradient.alpha_mode,
             tile_size,
             tile_spacing,
-            transformed_aa_edges: aa_mask,
-        });
+            None,
+        );
 
-        self.push_item(&item);
+        // The mask is narrowed where a margin now covers an edge.
+        let key = RadialGradientKey::new(prim_key_common(common, prim_rect, aa_mask), prim);
+        Some(self.interners.intern(&key))
     }
 
     /// Pushes a conic gradient to be displayed.
@@ -2436,31 +2577,66 @@ impl DisplayListBuilder {
         }
 
         let (common, offset) = self.normalize_common(common);
-        let mut bounds = self.shift_rect(bounds, offset);
+        let bounds = self.shift_rect(bounds, offset);
 
+        let Some(handle) = self.intern_conic_gradient(
+            bounds,
+            &common,
+            &gradient,
+            tile_size,
+            tile_spacing,
+            stops,
+        ) else {
+            return;
+        };
+
+        self.push_item(&di::DisplayItem::ConicGradient(di::ConicGradientDisplayItem {
+            spatial_id: common.spatial_id,
+            clip_chain_id: common.clip_chain_id,
+            gradient: handle,
+        }));
+    }
+
+    /// See `intern_linear_gradient`.
+    fn intern_conic_gradient(
+        &mut self,
+        bounds: LayoutRect,
+        common: &di::CommonItemProperties,
+        gradient: &di::ConicGradient,
+        tile_size: LayoutSize,
+        tile_spacing: LayoutSize,
+        stops: &[di::GradientStop],
+    ) -> Option<interning::Handle<ConicGradientKey>> {
         let tile_size = resolve_tile_size(&bounds, tile_size);
 
+        let mut prim_rect = bounds;
         let clip_offset =
-            apply_gradient_local_clip(&mut bounds, &tile_size, &tile_spacing, &common.clip_rect);
+            apply_gradient_local_clip(&mut prim_rect, &tile_size, &tile_spacing, &common.clip_rect);
 
         // A tile that rounds up to nothing covers no pixel.
         if tile_size.ceil().is_empty() {
-            return;
+            return None;
         }
 
-        self.push_stops(stops);
-        let item = di::DisplayItem::ConicGradient(di::ConicGradientDisplayItem {
-            common,
-            bounds,
-            gradient: di::ConicGradient {
-                center: gradient.center + clip_offset,
-                ..gradient
-            },
+        let prim = conic_gradient_prim(
+            prim_rect,
+            gradient.center + clip_offset,
+            gradient.angle,
+            gradient.start_offset,
+            gradient.end_offset,
+            to_stop_keys(stops),
+            gradient.extend_mode,
+            gradient.alpha_mode,
             tile_size,
             tile_spacing,
-        });
+            None,
+        );
 
-        self.push_item(&item);
+        let key = ConicGradientKey::new(
+            prim_key_common(common, prim_rect, EdgeMask::all()),
+            prim,
+        );
+        Some(self.interners.intern(&key))
     }
 
     pub fn define_reference_frame(
@@ -3403,10 +3579,10 @@ impl DisplayListBuilder {
             Border(info) => {
                 // Only normal borders cast a shadow via this path.
                 let details = match info.details {
-                    di::BorderDetails::Normal(border) => {
-                        di::BorderDetails::Normal(border.with_color(color))
+                    di::BorderKind::Normal(border) => {
+                        di::BorderKind::Normal(border.with_color(color))
                     }
-                    di::BorderDetails::NinePatch(_) => return None,
+                    _ => return None,
                 };
                 Border(di::BorderDisplayItem {
                     common: shift(info.common),
@@ -4347,6 +4523,169 @@ mod yuv_image_interning_tests {
         let kind = &dl.delta().yuv_images.adds[0].key.kind;
         assert_eq!(kind.format, di::YuvFormat::NV12);
         assert_eq!(kind.yuv_key, [plane(1), plane(2), ImageKey::DUMMY]);
+    }
+}
+
+/// The interning-key form of a gradient's stops.
+fn to_stop_keys(stops: &[di::GradientStop]) -> Vec<GradientStopKey> {
+    stops
+        .iter()
+        .map(|stop| GradientStopKey {
+            offset: stop.offset,
+            color: stop.color.into(),
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod gradient_interning_tests {
+    use super::*;
+
+    const BOUNDS: LayoutRect = LayoutRect {
+        min: LayoutPoint::new(0.0, 0.0),
+        max: LayoutPoint::new(200.0, 100.0),
+    };
+
+    fn common() -> di::CommonItemProperties {
+        let pipeline_id = PipelineId::dummy();
+        di::CommonItemProperties {
+            clip_rect: LayoutRect::from_size(LayoutSize::new(1000.0, 1000.0)),
+            clip_chain_id: di::ClipChainId::INVALID,
+            spatial_id: di::SpatialId::root_scroll_node(pipeline_id),
+            flags: di::PrimitiveFlags::default(),
+        }
+    }
+
+    fn stops(a: ColorF, b: ColorF) -> [di::GradientStop; 2] {
+        [
+            di::GradientStop { offset: 0.0, color: a },
+            di::GradientStop { offset: 1.0, color: b },
+        ]
+    }
+
+    fn linear(builder: &mut DisplayListBuilder, bounds: LayoutRect, stops: &[di::GradientStop]) {
+        let (gradient, stops) = builder.create_gradient(
+            LayoutVector2D::new(0.0, 0.0),
+            LayoutVector2D::new(0.0, 100.0),
+            stops.to_vec(),
+            di::ExtendMode::Clamp,
+            di::AlphaMode::Premultiplied,
+        );
+        builder.push_gradient(&common(), bounds, gradient, bounds.size(), LayoutSize::zero(), &stops);
+    }
+
+    fn count<F: Fn(&di::DisplayItem) -> bool>(dl: &BuiltDisplayList, f: F) -> usize {
+        let mut n = 0;
+        let mut iter = dl.iter();
+        while let Some(item) = iter.next() {
+            if f(item.item()) {
+                n += 1;
+            }
+        }
+        n
+    }
+
+    #[test]
+    fn identical_gradients_intern_once_and_carry_no_stops() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let black_white = stops(ColorF::BLACK, ColorF::WHITE);
+        linear(&mut builder, BOUNDS, &black_white);
+        linear(&mut builder, BOUNDS, &black_white);
+        linear(&mut builder, BOUNDS, &stops(ColorF::WHITE, ColorF::BLACK));
+
+        let (_, dl) = builder.end();
+        let adds = &dl.delta().linear_gradients.adds;
+        assert_eq!(adds.len(), 2, "the stops are part of the key");
+        assert_eq!(adds[0].key.stops.len(), 2);
+        assert_eq!(count(&dl, |item| matches!(item, di::DisplayItem::Gradient(..))), 3);
+        assert_eq!(
+            count(&dl, |item| matches!(item, di::DisplayItem::SetGradientStops)),
+            0,
+            "the stops no longer ride the display list",
+        );
+    }
+
+    #[test]
+    fn a_nine_patch_gradient_border_is_a_gradient_with_a_descriptor() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let black_white = stops(ColorF::BLACK, ColorF::WHITE);
+        let (gradient, black_white) = builder.create_gradient(
+            LayoutVector2D::new(0.0, 0.0),
+            LayoutVector2D::new(0.0, 100.0),
+            black_white.to_vec(),
+            di::ExtendMode::Clamp,
+            di::AlphaMode::Premultiplied,
+        );
+        let widths = LayoutSideOffsets::new_all_same(10.0);
+        builder.push_border(
+            &common(),
+            BOUNDS,
+            widths,
+            di::BorderDetails::NinePatch(di::NinePatchBorder {
+                source: di::NinePatchBorderSource::Gradient(gradient),
+                width: 200,
+                height: 100,
+                slice: DeviceIntSideOffsets::new_all_same(10),
+                fill: false,
+                repeat_horizontal: di::RepeatMode::Stretch,
+                repeat_vertical: di::RepeatMode::Stretch,
+            }),
+            &black_white,
+        );
+
+        let (_, dl) = builder.end();
+        let adds = &dl.delta().linear_gradients.adds;
+        assert_eq!(adds.len(), 1);
+        let descriptor = adds[0].key.nine_patch.as_ref().expect("no nine-patch descriptor");
+        assert_eq!(descriptor.widths, widths.into());
+        let mut iter = dl.iter();
+        let mut borders = 0;
+        while let Some(item) = iter.next() {
+            if let di::DisplayItem::Border(info) = item.item() {
+                borders += 1;
+                assert!(matches!(info.details, di::BorderKind::NinePatchLinearGradient(..)));
+            }
+        }
+        assert_eq!(borders, 1);
+    }
+
+    #[test]
+    fn a_clamped_radial_gradient_still_emits_its_margins() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // A small ellipse in a big rect: the constant-colour margins around it
+        // (at least 128px wide, or the optimisation does not bother) become
+        // solid rects, pushed whether or not the gradient itself survives.
+        let bounds = LayoutRect::from_size(LayoutSize::new(1000.0, 600.0));
+        let black_white = stops(ColorF::BLACK, ColorF::WHITE);
+        let (gradient, black_white) = builder.create_radial_gradient(
+            LayoutVector2D::new(500.0, 300.0),
+            LayoutSize::new(50.0, 50.0),
+            black_white.to_vec(),
+            di::ExtendMode::Clamp,
+            di::AlphaMode::Premultiplied,
+        );
+        builder.push_radial_gradient(
+            &common(),
+            bounds,
+            gradient,
+            bounds.size(),
+            LayoutSize::zero(),
+            &black_white,
+        );
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().radial_gradients.adds.len(), 1);
+        assert!(
+            dl.delta().rectangles.adds.len() >= 2,
+            "the margins were not interned as rectangles",
+        );
+        assert!(count(&dl, |item| matches!(item, di::DisplayItem::Rectangle(..))) >= 2);
     }
 }
 

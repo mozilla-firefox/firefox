@@ -78,15 +78,15 @@ fn test_struct_sizes() {
     //     test expectations and move on.
     // (b) You made a structure larger. This is not necessarily a problem, but should only
     //     be done with care, and after checking if talos performance regresses badly.
-    assert_eq!(mem::size_of::<LinearGradient>(), 72, "LinearGradient size changed");
+    assert_eq!(mem::size_of::<api::interned_prims::LinearGradient>(), 72, "LinearGradient size changed");
     assert_eq!(mem::size_of::<LinearGradientTemplate>(), 104, "LinearGradientTemplate size changed");
     assert_eq!(mem::size_of::<LinearGradientKey>(), 104, "LinearGradientKey size changed");
 
-    assert_eq!(mem::size_of::<RadialGradient>(), 72, "RadialGradient size changed");
+    assert_eq!(mem::size_of::<api::interned_prims::RadialGradient>(), 72, "RadialGradient size changed");
     assert_eq!(mem::size_of::<RadialGradientTemplate>(), 112, "RadialGradientTemplate size changed");
     assert_eq!(mem::size_of::<RadialGradientKey>(), 112, "RadialGradientKey size changed");
 
-    assert_eq!(mem::size_of::<ConicGradient>(), 72, "ConicGradient size changed");
+    assert_eq!(mem::size_of::<api::interned_prims::ConicGradient>(), 72, "ConicGradient size changed");
     assert_eq!(mem::size_of::<ConicGradientTemplate>(), 112, "ConicGradientTemplate size changed");
     assert_eq!(mem::size_of::<ConicGradientKey>(), 112, "ConicGradientKey size changed");
 }

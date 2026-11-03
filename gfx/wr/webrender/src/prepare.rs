@@ -757,9 +757,10 @@ fn prepare_prim_for_render(
 
             return;
         }
-        PrimitiveKind::LinearGradient { data_handle, .. } => {
+        PrimitiveKind::LinearGradient { handle } => {
             tracy_rs::profile_scope!("LinearGradient");
-            let prim_data = &data_stores.linear_grad[*data_handle];
+            let prim_data = &dl_stores.linear_gradients[*handle];
+            let prim_uid = dl_stores.linear_gradients.uid(*handle);
             let prim_rect = prim_info.snapped_pattern_rect;
             let stretch_size = LayoutSize::new(
                 prim_data.stretch_ratio.width * prim_rect.size().width,
@@ -871,7 +872,7 @@ fn prepare_prim_for_render(
 
             let cache_key = if should_cache {
                 quad::cache_key(
-                    data_handle.uid(),
+                    prim_uid,
                     quad_transform,
                     quad_clips,
                 )
@@ -901,9 +902,9 @@ fn prepare_prim_for_render(
 
             return;
         }
-        PrimitiveKind::RadialGradient { data_handle, .. } => {
+        PrimitiveKind::RadialGradient { handle } => {
             tracy_rs::profile_scope!("RadialGradient");
-            let prim_data = &data_stores.radial_grad[*data_handle];
+            let prim_data = &dl_stores.radial_gradients[*handle];
             let pattern_rect = prim_info.snapped_pattern_rect;
             let stretch_size = LayoutSize::new(
                 prim_data.stretch_ratio.width * pattern_rect.size().width,
@@ -951,9 +952,10 @@ fn prepare_prim_for_render(
             );
             return;
         }
-        PrimitiveKind::ConicGradient { data_handle, .. } => {
+        PrimitiveKind::ConicGradient { handle } => {
             tracy_rs::profile_scope!("ConicGradient");
-            let prim_data = &data_stores.conic_grad[*data_handle];
+            let prim_data = &dl_stores.conic_gradients[*handle];
+            let prim_uid = dl_stores.conic_gradients.uid(*handle);
             let prim_rect = prim_info.snapped_pattern_rect;
             let stretch_size = LayoutSize::new(
                 prim_data.stretch_ratio.width * prim_rect.size().width,
@@ -1003,7 +1005,7 @@ fn prepare_prim_for_render(
 
             let cache_key = if should_cache {
                 quad::cache_key(
-                    data_handle.uid(),
+                    prim_uid,
                     quad_transform,
                     quad_clips,
                 )

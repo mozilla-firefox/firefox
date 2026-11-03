@@ -11,7 +11,6 @@ use crate::{APZScrollGeneration, HasScrollLinkedEffect, PipelineId, PropertyBind
 use crate::serde::{Serialize, Deserialize};
 use crate::color::ColorF;
 use crate::image::ImageKey;
-use crate::key_types::EdgeMask;
 use crate::interning;
 use crate::path::Path;
 use crate::units::*;
@@ -580,10 +579,24 @@ pub struct NinePatchBorder {
     pub repeat_vertical: RepeatMode,
 }
 
+/// What a caller hands `push_border`. The item records a `BorderKind`.
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub enum BorderDetails {
     Normal(NormalBorder),
     NinePatch(NinePatchBorder),
+}
+
+/// What a border item carries. A gradient-sourced nine-patch is interned as
+/// the gradient it is, with the nine-patch descriptor (widths included) folded
+/// into its key, so the item holds a bare handle for it. An image source is
+/// not interned, so it keeps its description; the item's `widths` complete it.
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize, PeekPoke)]
+pub enum BorderKind {
+    Normal(NormalBorder),
+    NinePatchImage(NinePatchBorder),
+    NinePatchLinearGradient(crate::interning::Handle<crate::interned_prims::LinearGradientKey>),
+    NinePatchRadialGradient(crate::interning::Handle<crate::interned_prims::RadialGradientKey>),
+    NinePatchConicGradient(crate::interning::Handle<crate::interned_prims::ConicGradientKey>),
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
@@ -591,7 +604,7 @@ pub struct BorderDisplayItem {
     pub common: CommonItemProperties,
     pub bounds: LayoutRect,
     pub widths: LayoutSideOffsets,
-    pub details: BorderDetails,
+    pub details: BorderKind,
 }
 
 #[repr(C)]
@@ -741,17 +754,15 @@ impl Gradient {
 /// The area
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct GradientDisplayItem {
-    /// NOTE: common.clip_rect is the area the gradient covers
-    pub common: CommonItemProperties,
-    /// The area to tile the gradient over (first tile starts at origin of this rect)
-    // FIXME: this should ideally just be `tile_origin` here, with the clip_rect
-    // defining the bounds of the item. Needs non-trivial backend changes.
-    pub bounds: LayoutRect,
-    /// How big a tile of the of the gradient should be (common case: bounds.size)
-    pub tile_size: LayoutSize,
-    /// The space between tiles of the gradient (common case: 0)
-    pub tile_spacing: LayoutSize,
-    pub gradient: Gradient,
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The gradient's entry in the builder's interner, which holds the stops,
+    /// the endpoints, the extend mode, the tile stretch ratio and spacing. The
+    /// stops are the point: they were twenty bytes each on every paint. Its
+    /// prim rect is the gradient's local rect, already through
+    /// `optimize_linear_gradient`: simplified, clipped to the clip rect and
+    /// with the tile size folded in.
+    pub gradient: crate::interning::Handle<crate::interned_prims::LinearGradientKey>,
 }
 
 #[repr(C)]
@@ -811,30 +822,22 @@ pub struct ClipChainItem {
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct RadialGradientDisplayItem {
-    pub common: CommonItemProperties,
-    /// The area to tile the gradient over (first tile starts at origin of this rect)
-    // FIXME: this should ideally just be `tile_origin` here, with the clip_rect
-    // defining the bounds of the item. Needs non-trivial backend changes.
-    pub bounds: LayoutRect,
-    pub gradient: RadialGradient,
-    pub tile_size: LayoutSize,
-    pub tile_spacing: LayoutSize,
-    /// Which edges get anti-aliased under a transform. Narrowed by
-    /// `optimize_radial_gradient` where the gradient abuts a solid margin it
-    /// split off; see `RectangleDisplayItem::rect`.
-    pub transformed_aa_edges: EdgeMask,
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The key's prim rect is the gradient's local rect, already through
+    /// `optimize_radial_gradient`, which is also what emitted the solid margin
+    /// rects that precede this item; its edge mask is narrowed where a margin
+    /// covers an edge.
+    pub gradient: crate::interning::Handle<crate::interned_prims::RadialGradientKey>,
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct ConicGradientDisplayItem {
-    pub common: CommonItemProperties,
-    /// The area to tile the gradient over (first tile starts at origin of this rect)
-    // FIXME: this should ideally just be `tile_origin` here, with the clip_rect
-    // defining the bounds of the item. Needs non-trivial backend changes.
-    pub bounds: LayoutRect,
-    pub gradient: ConicGradient,
-    pub tile_size: LayoutSize,
-    pub tile_spacing: LayoutSize,
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The key's prim rect is the gradient's local rect, already clipped by
+    /// `apply_gradient_local_clip`.
+    pub gradient: crate::interning::Handle<crate::interned_prims::ConicGradientKey>,
 }
 
 /// Renders a filtered region of its backdrop
@@ -2486,6 +2489,7 @@ impl_default_for_enums! {
     RepeatMode => Stretch,
     NinePatchBorderSource => Image(ImageKey::default(), ImageRendering::Auto),
     BorderDetails => Normal(NormalBorder::default()),
+    BorderKind => Normal(NormalBorder::default()),
     BorderRadiusKind => Uniform,
     BorderStyle => None,
     BoxShadowClipMode => Outset,

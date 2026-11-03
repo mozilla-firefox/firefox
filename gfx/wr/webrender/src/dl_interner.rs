@@ -43,6 +43,9 @@ macro_rules! enumerate_dl_stores {
             line_decorations: api::interned_prims::LineDecorationKey => crate::prim_store::line_dec::LineDecorationTemplate, INTERNED_LINE_DECORATIONS, line_decoration,
             images: api::interned_prims::ImagePrimKey => crate::prim_store::image::ImageTemplate, INTERNED_IMAGES, image,
             yuv_images: api::interned_prims::YuvImagePrimKey => crate::prim_store::image::YuvImageTemplate, INTERNED_YUV_IMAGES, yuv_image,
+            linear_gradients: api::interned_prims::LinearGradientKey => crate::prim_store::gradient::LinearGradientTemplate, INTERNED_LINEAR_GRADIENTS, linear_grad,
+            radial_gradients: api::interned_prims::RadialGradientKey => crate::prim_store::gradient::RadialGradientTemplate, INTERNED_RADIAL_GRADIENTS, radial_grad,
+            conic_gradients: api::interned_prims::ConicGradientKey => crate::prim_store::gradient::ConicGradientTemplate, INTERNED_CONIC_GRADIENTS, conic_grad,
         }
     }
 }
@@ -62,6 +65,9 @@ macro_rules! enumerate_scene_dl_stores {
             line_decorations: api::interned_prims::LineDecorationKey => crate::prim_store::PrimPlacement, line_decoration,
             images: api::interned_prims::ImagePrimKey => crate::prim_store::PrimPlacement, image,
             yuv_images: api::interned_prims::YuvImagePrimKey => crate::prim_store::PrimPlacement, yuv_image,
+            linear_gradients: api::interned_prims::LinearGradientKey => crate::prim_store::PrimPlacement, linear_grad,
+            radial_gradients: api::interned_prims::RadialGradientKey => crate::prim_store::PrimPlacement, radial_grad,
+            conic_gradients: api::interned_prims::ConicGradientKey => crate::prim_store::PrimPlacement, conic_grad,
         }
     }
 }

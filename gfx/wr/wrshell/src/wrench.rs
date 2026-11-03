@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use webrender::scene::Scene;
-use webrender_api::{units::LayoutRect, BorderDetails, BorderStyle, BuiltDisplayList};
+use webrender_api::{units::LayoutRect, BorderKind, BorderStyle, BuiltDisplayList};
 use webrender_api::{ColorF, DisplayItem, PipelineId, SpatialId};
 use webrender_api::{ClipId, SpatialTreeItem, ClipChainId};
 
@@ -425,7 +425,7 @@ impl YamlWriter {
                         self.write_bounds(info.bounds);
 
                         match info.details {
-                            BorderDetails::Normal(border) => {
+                            BorderKind::Normal(border) => {
                                 self.write_line("border-type: normal");
 
                                 let colors = [
@@ -509,7 +509,10 @@ impl YamlWriter {
                                     self.write_line("}");
                                 }
                             }
-                            BorderDetails::NinePatch(..) => {
+                            BorderKind::NinePatchImage(..)
+                            | BorderKind::NinePatchLinearGradient(..)
+                            | BorderKind::NinePatchRadialGradient(..)
+                            | BorderKind::NinePatchConicGradient(..) => {
                                 todo!();
                             }
                         }

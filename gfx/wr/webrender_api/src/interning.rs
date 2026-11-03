@@ -452,6 +452,9 @@ macro_rules! enumerate_dl_interned_types {
             line_decorations: $crate::interned_prims::LineDecorationKey,
             images: $crate::interned_prims::ImagePrimKey,
             yuv_images: $crate::interned_prims::YuvImagePrimKey,
+            linear_gradients: $crate::interned_prims::LinearGradientKey,
+            radial_gradients: $crate::interned_prims::RadialGradientKey,
+            conic_gradients: $crate::interned_prims::ConicGradientKey,
         }
     }
 }

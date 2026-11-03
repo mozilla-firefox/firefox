@@ -35,10 +35,10 @@
 //!  - backdrop filters (see add_backdrop_filter)
 //!
 
-use api::{BorderDetails, BorderDisplayItem, BuiltDisplayList, BuiltDisplayListIter, PrimitiveFlags, SnapshotInfo};
+use api::{BorderDisplayItem, BorderKind, BuiltDisplayList, BuiltDisplayListIter, PrimitiveFlags, SnapshotInfo};
 use api::{ClipId, ColorF, CommonItemProperties, ComplexClipRegion, ComponentTransferFuncType, RasterSpace};
 use api::{DebugFlags, DisplayItem, DisplayItemRef, DlParseContext, ExternalScrollId, FilterData};
-use api::{FilterOp, FontInstanceKey, FontSize, GlyphInstance, GlyphOptions, GlyphShadowMode, GradientStop};
+use api::{FilterOp, FontInstanceKey, FontSize, GlyphInstance, GlyphOptions, GlyphShadowMode};
 use api::{IdNamespace, IframeDisplayItem, ImageKey, ItemRange, QualitySettings};
 use api::{NinePatchBorderSource, PipelineId, MixBlendMode, StackingContextFlags};
 use api::{PropertyBinding, ReferenceFrameKind, ScrollFrameDescriptor};
@@ -49,9 +49,6 @@ use api::{FilterOpGraphPictureBufferId, SVGFE_GRAPH_MAX};
 use api::Path;
 use api::channel::{unbounded_channel, Receiver, Sender};
 use api::units::*;
-use api::prim_geometry::{
-    conic_gradient_prim, linear_gradient_prim, radial_gradient_prim,
-};
 use crate::box_shadow::BLUR_SAMPLE_SCALE;
 use crate::clip::{ClipIntern, ClipItemKey, ClipItemKeyKind, ClipStore};
 use crate::clip::{ClipInternData, ClipNodeId};
@@ -76,9 +73,6 @@ use crate::prim_store::{InternablePrimitive, PictureIndex, PrimPlacement};
 use crate::prim_store::PolygonKey;
 use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
 use crate::prim_store::borders::ImageBorder;
-use crate::prim_store::gradient::{
-    GradientStopKey,
-};
 use crate::prim_store::picture::{Picture, PictureKey};
 use crate::picture_composite_mode::{PictureCompositeKey, PictureCompositeMode};
 use crate::prim_store::text_run::TextRun;
@@ -1502,88 +1496,37 @@ impl<'a> SceneBuilder<'a> {
             DisplayItem::Gradient(ref info) => {
                 tracy_rs::profile_scope!("gradient");
 
-                let (layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
-                    &info.common,
-                    info.bounds,
+                let stores = self.scene_stores;
+                self.add_dl_prim(
+                    info.spatial_id,
+                    info.clip_chain_id,
+                    &stores.linear_gradients,
+                    info.gradient,
+                    |handle| PrimitiveKind::LinearGradient { handle },
                 );
-
-                if let Some(prim_key_kind) = linear_gradient_prim(
-                    layout.rect,
-                    info.gradient.start,
-                    info.gradient.end,
-                    read_gradient_stops(item.gradient_stops()),
-                    info.gradient.extend_mode,
-                    info.gradient.alpha_mode,
-                    info.tile_size,
-                    info.tile_spacing,
-                    None,
-                ) {
-                    self.add_primitive(
-                        spatial_node_index,
-                        clip_node_id,
-                        &layout,
-                        prim_key_kind,
-                    );
-                }
             }
             DisplayItem::RadialGradient(ref info) => {
                 tracy_rs::profile_scope!("radial");
 
-                let (mut layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
-                    &info.common,
-                    info.bounds,
-                );
-
-                layout.transformed_aa_edges &= info.transformed_aa_edges;
-
-                let prim_key_kind = radial_gradient_prim(
-                    layout.rect,
-                    info.gradient.center,
-                    info.gradient.start_offset * info.gradient.radius.width,
-                    info.gradient.end_offset * info.gradient.radius.width,
-                    info.gradient.radius.width / info.gradient.radius.height,
-                    read_gradient_stops(item.gradient_stops()),
-                    info.gradient.extend_mode,
-                    info.gradient.alpha_mode,
-                    info.tile_size,
-                    info.tile_spacing,
-                    None,
-                );
-
-                self.add_primitive(
-                    spatial_node_index,
-                    clip_node_id,
-                    &layout,
-                    prim_key_kind,
+                let stores = self.scene_stores;
+                self.add_dl_prim(
+                    info.spatial_id,
+                    info.clip_chain_id,
+                    &stores.radial_gradients,
+                    info.gradient,
+                    |handle| PrimitiveKind::RadialGradient { handle },
                 );
             }
             DisplayItem::ConicGradient(ref info) => {
                 tracy_rs::profile_scope!("conic");
 
-                let (layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
-                    &info.common,
-                    info.bounds,
-                );
-
-                let prim_key_kind = conic_gradient_prim(
-                    layout.rect,
-                    info.gradient.center,
-                    info.gradient.angle,
-                    info.gradient.start_offset,
-                    info.gradient.end_offset,
-                    read_gradient_stops(item.gradient_stops()),
-                    info.gradient.extend_mode,
-                    info.gradient.alpha_mode,
-                    info.tile_size,
-                    info.tile_spacing,
-                    None,
-                );
-
-                self.add_primitive(
-                    spatial_node_index,
-                    clip_node_id,
-                    &layout,
-                    prim_key_kind,
+                let stores = self.scene_stores;
+                self.add_dl_prim(
+                    info.spatial_id,
+                    info.clip_chain_id,
+                    &stores.conic_gradients,
+                    info.gradient,
+                    |handle| PrimitiveKind::ConicGradient { handle },
                 );
             }
             DisplayItem::BoxShadow(ref info) => {
@@ -1601,12 +1544,50 @@ impl<'a> SceneBuilder<'a> {
             DisplayItem::Border(ref info) => {
                 tracy_rs::profile_scope!("border");
 
-                if let BorderDetails::NinePatch(ref border) = info.details {
+                if let BorderKind::NinePatchImage(ref border) = info.details {
                     if let NinePatchBorderSource::Image(key, _) = border.source {
                         if !validate_image_key(key, namespace) {
                             return;
                         }
                     }
+                }
+
+                // A gradient-sourced nine-patch is the gradient it is, with the
+                // descriptor and the border's rect in its key.
+                let stores = self.scene_stores;
+                let (spatial_id, clip_chain_id) = (info.common.spatial_id, info.common.clip_chain_id);
+                match info.details {
+                    BorderKind::NinePatchLinearGradient(gradient) => {
+                        self.add_dl_prim(
+                            spatial_id,
+                            clip_chain_id,
+                            &stores.linear_gradients,
+                            gradient,
+                            |handle| PrimitiveKind::LinearGradient { handle },
+                        );
+                        return;
+                    }
+                    BorderKind::NinePatchRadialGradient(gradient) => {
+                        self.add_dl_prim(
+                            spatial_id,
+                            clip_chain_id,
+                            &stores.radial_gradients,
+                            gradient,
+                            |handle| PrimitiveKind::RadialGradient { handle },
+                        );
+                        return;
+                    }
+                    BorderKind::NinePatchConicGradient(gradient) => {
+                        self.add_dl_prim(
+                            spatial_id,
+                            clip_chain_id,
+                            &stores.conic_gradients,
+                            gradient,
+                            |handle| PrimitiveKind::ConicGradient { handle },
+                        );
+                        return;
+                    }
+                    BorderKind::Normal(..) | BorderKind::NinePatchImage(..) => {}
                 }
 
                 let (layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
@@ -1619,7 +1600,6 @@ impl<'a> SceneBuilder<'a> {
                     clip_node_id,
                     &layout,
                     info,
-                    item.gradient_stops(),
                 );
             }
             DisplayItem::ImageMaskClip(ref info) => {
@@ -2793,10 +2773,9 @@ impl<'a> SceneBuilder<'a> {
         clip_node_id: ClipNodeId,
         info: &LayoutPrimitiveInfo,
         border_item: &BorderDisplayItem,
-        gradient_stops: ItemRange<GradientStop>,
     ) {
         match border_item.details {
-            BorderDetails::NinePatch(ref border) => {
+            BorderKind::NinePatchImage(ref border) => {
                 let nine_patch = NinePatchDescriptor {
                     width: border.width,
                     height: border.height,
@@ -2807,92 +2786,32 @@ impl<'a> SceneBuilder<'a> {
                     widths: border_item.widths.into(),
                 };
 
-                match border.source {
-                    NinePatchBorderSource::Image(key, rendering) => {
-                        let prim = ImageBorder {
-                            key,
-                            rendering,
-                            tile: None,
-                            nine_patch,
-                        };
-
-                        self.add_primitive(
-                            spatial_node_index,
-                            clip_node_id,
-                            info,
-                            prim,
-                        );
-                    }
-                    NinePatchBorderSource::Gradient(gradient) => {
-                        let prim = match linear_gradient_prim(
-                            info.rect,
-                            gradient.start,
-                            gradient.end,
-                            read_gradient_stops(gradient_stops),
-                            gradient.extend_mode,
-                            gradient.alpha_mode,
-                            LayoutSize::new(border.height as f32, border.width as f32),
-                            LayoutSize::zero(),
-                            Some(Box::new(nine_patch)),
-                        ) {
-                            Some(prim) => prim,
-                            None => return,
-                        };
-
-                        self.add_primitive(
-                            spatial_node_index,
-                            clip_node_id,
-                            info,
-                            prim,
-                        );
-                    }
-                    NinePatchBorderSource::RadialGradient(gradient) => {
-                        let prim = radial_gradient_prim(
-                            info.rect,
-                            gradient.center,
-                            gradient.start_offset * gradient.radius.width,
-                            gradient.end_offset * gradient.radius.width,
-                            gradient.radius.width / gradient.radius.height,
-                            read_gradient_stops(gradient_stops),
-                            gradient.extend_mode,
-                            gradient.alpha_mode,
-                            LayoutSize::new(border.height as f32, border.width as f32),
-                            LayoutSize::zero(),
-                            Some(Box::new(nine_patch)),
-                        );
-
-                        self.add_primitive(
-                            spatial_node_index,
-                            clip_node_id,
-                            info,
-                            prim,
-                        );
-                    }
-                    NinePatchBorderSource::ConicGradient(gradient) => {
-                        let prim = conic_gradient_prim(
-                            info.rect,
-                            gradient.center,
-                            gradient.angle,
-                            gradient.start_offset,
-                            gradient.end_offset,
-                            read_gradient_stops(gradient_stops),
-                            gradient.extend_mode,
-                            gradient.alpha_mode,
-                            LayoutSize::new(border.height as f32, border.width as f32),
-                            LayoutSize::zero(),
-                            Some(Box::new(nine_patch)),
-                        );
-
-                        self.add_primitive(
-                            spatial_node_index,
-                            clip_node_id,
-                            info,
-                            prim,
-                        );
-                    }
+                let (key, rendering) = match border.source {
+                    NinePatchBorderSource::Image(key, rendering) => (key, rendering),
+                    // The builder interns every gradient source and records it
+                    // as one of the handle variants below.
+                    _ => unreachable!("nine-patch image border with a gradient source"),
                 };
+                let prim = ImageBorder {
+                    key,
+                    rendering,
+                    tile: None,
+                    nine_patch,
+                };
+
+                self.add_primitive(
+                    spatial_node_index,
+                    clip_node_id,
+                    info,
+                    prim,
+                );
             }
-            BorderDetails::Normal(ref border) => {
+            BorderKind::NinePatchLinearGradient(..)
+            | BorderKind::NinePatchRadialGradient(..)
+            | BorderKind::NinePatchConicGradient(..) => {
+                unreachable!("gradient-sourced nine-patch placed by build_item")
+            }
+            BorderKind::Normal(ref border) => {
                 self.add_normal_border(
                     info,
                     border,
@@ -3961,15 +3880,6 @@ fn filter_datas_for_compositing(
 /// image_tiling::repetitions's `stride > 0` assertion (NaN width passes the
 /// finite-height needs_repetition check and reaches the assert before the
 /// NaN-aware intersection short-circuit fires).
-fn read_gradient_stops(stops: ItemRange<GradientStop>) -> Vec<GradientStopKey> {
-    stops.iter().map(|stop| {
-        GradientStopKey {
-            offset: stop.offset,
-            color: stop.color.into(),
-        }
-    }).collect()
-}
-
 /// Resource keys embedded in display items are only unique within the id
 /// namespace that minted them, and all namespaces of a window share a single
 /// `ResourceCache`. A key read out of a display item must be checked against

@@ -38,7 +38,7 @@ pub mod storage;
 
 use backdrop::{BackdropCaptureDataHandle, BackdropRenderDataHandle};
 use borders::{ImageBorderDataHandle, NormalBorderDataHandle};
-use gradient::{LinearGradientDataHandle, RadialGradientDataHandle, ConicGradientDataHandle};
+use gradient::{ConicGradientKey, LinearGradientKey, RadialGradientKey};
 use image::{ImagePrimKey, YuvImagePrimKey};
 use line_dec::LineDecorationKey;
 use picture::PictureDataHandle;
@@ -180,12 +180,25 @@ pub struct PrimPlacement {
     pub flags: PrimitiveFlags,
 }
 
-impl<T: malloc_size_of::MallocSizeOf> crate::dl_interner::DlResolve<PrimKey<T>> for PrimPlacement {
-    fn resolve(key: &PrimKey<T>, _ctx: &crate::dl_interner::DlResolveContext) -> Self {
+/// A primitive key, which whatever its shape starts from the common data
+/// every primitive carries.
+pub trait PrimKeyCommon {
+    fn key_common(&self) -> &PrimKeyCommonData;
+}
+
+impl<T: malloc_size_of::MallocSizeOf> PrimKeyCommon for PrimKey<T> {
+    fn key_common(&self) -> &PrimKeyCommonData {
+        &self.common
+    }
+}
+
+impl<K: PrimKeyCommon> crate::dl_interner::DlResolve<K> for PrimPlacement {
+    fn resolve(key: &K, _ctx: &crate::dl_interner::DlResolveContext) -> Self {
+        let common = key.key_common();
         PrimPlacement {
-            rect: key.common.prim_rect.into(),
-            clip_rect: key.common.local_clip_rect.into(),
-            flags: key.common.flags,
+            rect: common.prim_rect.into(),
+            clip_rect: common.local_clip_rect.into(),
+            flags: common.flags,
         }
     }
 }
@@ -268,16 +281,19 @@ pub enum PrimitiveKind {
         handle: DlHandle<ImagePrimKey>,
     },
     LinearGradient {
-        /// Handle to the common interned data for this primitive.
-        data_handle: LinearGradientDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<LinearGradientKey>,
     },
     RadialGradient {
-        /// Handle to the common interned data for this primitive.
-        data_handle: RadialGradientDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<RadialGradientKey>,
     },
     ConicGradient {
-        /// Handle to the common interned data for this primitive.
-        data_handle: ConicGradientDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<ConicGradientKey>,
     },
     /// Render a portion of a specified backdrop.
     BackdropCapture {
@@ -443,8 +459,8 @@ impl PrimitiveInstance {
             PrimitiveKind::LineDecoration { handle } => {
                 dl_stores.line_decorations.uid(*handle)
             }
-            PrimitiveKind::LinearGradient { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::LinearGradient { handle } => {
+                dl_stores.linear_gradients.uid(*handle)
             }
             PrimitiveKind::NormalBorder { data_handle, .. } => {
                 data_handle.uid()
@@ -452,11 +468,11 @@ impl PrimitiveInstance {
             PrimitiveKind::Picture { data_handle, .. } => {
                 data_handle.uid()
             }
-            PrimitiveKind::RadialGradient { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::RadialGradient { handle } => {
+                dl_stores.radial_gradients.uid(*handle)
             }
-            PrimitiveKind::ConicGradient { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::ConicGradient { handle } => {
+                dl_stores.conic_gradients.uid(*handle)
             }
             PrimitiveKind::TextRun { data_handle, .. } => {
                 data_handle.uid()
