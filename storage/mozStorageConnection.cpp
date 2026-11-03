@@ -1679,8 +1679,11 @@ bool Connection::isClosed(MutexAutoLock& /*lock*/) {
 
 bool Connection::isAsyncExecutionThreadAvailable() {
   MOZ_ASSERT(IsOnCurrentSerialEventTarget(eventTargetOpenedOn));
+  if (!mAsyncExecutionThread) {
+    return false;
+  }
   MutexAutoLock lockedScope(sharedAsyncExecutionMutex);
-  return mAsyncExecutionThread && !mAsyncExecutionThreadShuttingDown;
+  return !mAsyncExecutionThreadShuttingDown;
 }
 
 void Connection::shutdownAsyncThread() {
