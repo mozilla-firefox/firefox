@@ -523,7 +523,7 @@ class SitePermissionsFeature(
                 handleNoRuledFlow(permissionFromStorage, permissionRequest, origin)
             }
 
-        return if (prompt == null) {
+        return if (prompt == null || cannotShowPrompt()) {
             null
         } else {
             // If we are in fullscreen, then exit to show the permission prompt.
@@ -534,6 +534,9 @@ class SitePermissionsFeature(
             prompt
         }
     }
+
+    /** Whether a prompt cannot currently be committed to [fragmentManager]. */
+    private fun cannotShowPrompt(): Boolean = fragmentManager.isDestroyed || fragmentManager.isStateSaved
 
     @VisibleForTesting
     internal fun handleNoRuledFlow(
