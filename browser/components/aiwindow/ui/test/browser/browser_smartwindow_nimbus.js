@@ -284,6 +284,12 @@ add_task(async function test_nimbus_authImpl_sets_pref() {
     !Services.prefs.prefHasUserValue(PREF_AUTH_IMPL),
     "No user value for the auth impl before enrollment"
   );
+  is(
+    await AuthProvider.getProviderName(),
+    "fxa",
+    "FxA is used before enrollment"
+  );
+  Services.fog.testResetFOG();
 
   const cleanup = await NimbusTestUtils.enrollWithFeatureConfig({
     featureId: "smartWindow",
@@ -293,6 +299,13 @@ add_task(async function test_nimbus_authImpl_sets_pref() {
     Services.prefs.getStringPref(PREF_AUTH_IMPL),
     "",
     "The auth impl pref is set from the enrollment"
+  );
+  const events = Glean.smartWindow.authImplSwitched.testGetValue();
+  is(events?.length, 1, "One auth_impl_switched was recorded");
+  Assert.deepEqual(
+    events[0].extra,
+    { from: "fxa", to: "guest", reason: "nimbus" },
+    "The enrollment switch is attributed to Nimbus"
   );
 
   await cleanup();

@@ -38,6 +38,10 @@ export class FxaAuthProviderImpl extends AuthProviderImpl {
     Services.obs.removeObserver(this.#onLogout, lazy.ONLOGOUT_NOTIFICATION);
   }
 
+  get providerName() {
+    return "fxa";
+  }
+
   async getToken() {
     try {
       const fxAccounts = lazy.getFxAccountsSingleton();

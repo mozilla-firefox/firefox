@@ -46,6 +46,16 @@ class FxaSignedInWatcherSingleton extends EventTarget {
   }
 
   /**
+   * Waits for init, then returns the signed-in state.
+   *
+   * @returns {Promise<boolean>} Whether a verified Mozilla account is signed in
+   */
+  async isFxaSignedIn() {
+    await this.init();
+    return this.signedIn;
+  }
+
+  /**
    * Reads the initial state and starts watching for changes.
    *
    * @returns {Promise<void>}

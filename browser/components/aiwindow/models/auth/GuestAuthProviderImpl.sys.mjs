@@ -37,6 +37,10 @@ export class GuestAuthProviderImpl extends AuthProviderImpl {
     Services.prefs.clearUserPref(PREF_TOKEN);
   }
 
+  get providerName() {
+    return "guest";
+  }
+
   async getToken() {
     return lazy.token || null;
   }
@@ -44,7 +48,11 @@ export class GuestAuthProviderImpl extends AuthProviderImpl {
   async invalidateToken(token) {
     if (token === lazy.token) {
       Services.prefs.clearUserPref(PREF_TOKEN);
-      this.dispatchEvent(new Event("AuthProviderImpl:FallbackNeeded"));
+      this.dispatchEvent(
+        new CustomEvent("AuthProviderImpl:FallbackNeeded", {
+          detail: { reason: "token_rejected" },
+        })
+      );
     }
   }
 

@@ -6,16 +6,22 @@
 const { SmartWindowTelemetry } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/SmartWindowTelemetry.sys.mjs"
 );
+const { FxaSignedInWatcher } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/auth/FxaSignedInWatcher.sys.mjs"
+);
 
 describe("SmartWindowSwitcherTelemetry", () => {
   let sb;
   let win;
+  let fxaSignedIn;
 
   beforeEach(async () => {
     sb = sinon.createSandbox();
 
     Services.fog.testResetFOG();
     sb.stub(AuthProvider, "isSignedIn").resolves(true);
+    fxaSignedIn = true;
+    sb.stub(FxaSignedInWatcher, "signedIn").get(() => fxaSignedIn);
   });
 
   afterEach(async () => {
@@ -51,6 +57,11 @@ describe("SmartWindowSwitcherTelemetry", () => {
         events[0].extra.new_window,
         "false",
         "new_window is false when switching the current window"
+      );
+      Assert.equal(
+        events[0].extra.auth_provider,
+        "fxa",
+        "auth_provider is correct"
       );
     });
 
@@ -93,6 +104,7 @@ describe("SmartWindowSwitcherTelemetry", () => {
 
     it("records fxa=false when the user is not signed in", async () => {
       AuthProvider.isSignedIn.resolves(false);
+      fxaSignedIn = false;
       sb.stub(AuthProvider, "maybeSignIn").resolves(false);
       win = await BrowserTestUtils.openNewBrowserWindow();
 
@@ -185,9 +197,35 @@ describe("SmartWindowSwitcherTelemetry", () => {
       Assert.equal(events[0].extra.trigger, "menu", "trigger is correct");
       Assert.equal(events[0].extra.fxa, "true", "fxa is correct");
       Assert.equal(
+        events[0].extra.auth_provider,
+        "fxa",
+        "auth_provider is correct"
+      );
+      Assert.equal(
         events[0].extra.opened_tabs,
         String(win.gBrowser.tabs.length),
         "opened_tabs reflects tab count at open"
+      );
+    });
+
+    it("records fxa=false and provider=guest for a guest user", async () => {
+      fxaSignedIn = false;
+      sb.stub(AuthProvider, "getProviderName").resolves("guest");
+      win = await BrowserTestUtils.openNewBrowserWindow();
+      AIWindow.toggleAIWindow(win, true, "menu");
+
+      await TestUtils.waitForCondition(
+        () => Glean.smartWindow.openWindow.testGetValue()?.length > 0,
+        "Wait for open_window event"
+      );
+
+      const events = Glean.smartWindow.openWindow.testGetValue();
+      Assert.equal(events?.length, 1, "One open_window event was recorded");
+      Assert.equal(events[0].extra.fxa, "false", "fxa is false for guest user");
+      Assert.equal(
+        events[0].extra.auth_provider,
+        "guest",
+        "auth_provider is guest"
       );
     });
 

@@ -41,7 +41,10 @@ add_task(async function test_watcher() {
   );
 
   try {
-    await FxaSignedInWatcher.init();
+    Assert.ok(
+      !(await FxaSignedInWatcher.isFxaSignedIn()),
+      "isFxaSignedIn waits for init and reports an unverified account"
+    );
     Assert.ok(
       !FxaSignedInWatcher.signedIn,
       "An unverified account is not signed in"
@@ -50,6 +53,10 @@ add_task(async function test_watcher() {
 
     updateUIState(uiState, UIState.STATUS_SIGNED_IN);
     Assert.ok(FxaSignedInWatcher.signedIn, "Signed in after verification");
+    Assert.ok(
+      await FxaSignedInWatcher.isFxaSignedIn(),
+      "isFxaSignedIn reports the verified account"
+    );
     Assert.equal(changes, 1, "The change is notified");
 
     updateUIState(uiState, UIState.STATUS_SIGNED_IN);

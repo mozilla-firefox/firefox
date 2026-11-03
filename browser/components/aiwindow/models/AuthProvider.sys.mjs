@@ -30,6 +30,15 @@ const lazy = XPCOMUtils.declareLazy({
  *
  * @fires AuthProviderSingleton#"AuthProvider:Logout"
  *  When the user signs out of their account.
+ * @fires AuthProviderSingleton#"AuthProvider:ImplChanged"
+ *  When an impl is set. detail: { providerName }
+ * @fires AuthProviderSingleton#"AuthProvider:ImplSwitched"
+ *  When the impl in use is replaced by one of another type.
+ *  detail: { from, to, reason }
+ * @fires AuthProviderSingleton#"AuthProvider:SignInFlowStarted"
+ *  When the sign-in flow starts. detail: { reason }
+ * @fires AuthProviderSingleton#"AuthProvider:SignInFlowCompleted"
+ *  When the sign-in flow ends. detail: { outcome }
  */
 class AuthProviderSingleton extends EventTarget {
   /** @type {AuthImplSelector} */
@@ -41,6 +50,28 @@ class AuthProviderSingleton extends EventTarget {
     this.#selector.addEventListener("AuthImplSelector:Logout", () =>
       this.dispatchEvent(new Event("AuthProvider:Logout"))
     );
+    for (const type of ["ImplChanged", "ImplSwitched"]) {
+      this.#selector.addEventListener(`AuthImplSelector:${type}`, event =>
+        this.#dispatch(type, event.detail)
+      );
+    }
+  }
+
+  /**
+   * @param {string} type Event type, without the AuthProvider: prefix
+   * @param {object} detail
+   */
+  #dispatch(type, detail) {
+    this.dispatchEvent(new CustomEvent(`AuthProvider:${type}`, { detail }));
+  }
+
+  /**
+   * @returns {string|null} The provider name of the active backend, or null
+   *   if none has been chosen yet. Unlike getProviderName, does not trigger
+   *   the selection.
+   */
+  get currentProviderName() {
+    return this.#selector.providerName;
   }
 
   /**
@@ -92,6 +123,14 @@ class AuthProviderSingleton extends EventTarget {
   }
 
   /**
+   * @returns {Promise<string>} The provider name of the active backend
+   */
+  async getProviderName() {
+    const impl = await this.#selector.getImpl();
+    return impl.providerName;
+  }
+
+  /**
    * Whether the user is signed in to their account.
    *
    * @returns {Promise<boolean>}
@@ -112,7 +151,7 @@ class AuthProviderSingleton extends EventTarget {
    * @returns {Promise<boolean>} Whether the user signed in successfully
    */
   async runSignInFlow(browser, { reason }) {
-    Glean.smartWindow.signinFlowStarted.record({ reason });
+    this.#dispatch("SignInFlowStarted", { reason });
 
     let outcome = "abandoned";
     try {
@@ -135,7 +174,7 @@ class AuthProviderSingleton extends EventTarget {
       lazy.log.error("Error prompting sign-in:", error);
       throw error;
     } finally {
-      Glean.smartWindow.signinFlowCompleted.record({ outcome });
+      this.#dispatch("SignInFlowCompleted", { outcome });
     }
   }
 

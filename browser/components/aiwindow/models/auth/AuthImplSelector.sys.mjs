@@ -36,20 +36,34 @@ const lazy = XPCOMUtils.declareLazy({
  *
  * @fires AuthImplSelector#"AuthImplSelector:Logout"
  *  When the user signs out of their account.
+ * @fires AuthImplSelector#"AuthImplSelector:ImplChanged"
+ *  When an impl is set. detail: { providerName }
+ * @fires AuthImplSelector#"AuthImplSelector:ImplSwitched"
+ *  When the selection replaces an impl already in use with one of another
+ *  type. detail: { from, to, reason }
  */
 export class AuthImplSelector extends EventTarget {
   /** @type {AuthProviderImpl|null} */
   #impl = null;
 
+  /**
+   * Recorded as the reason key on auth_impl_switched. Pref changes not made
+   * through #setAuthImplPref, for example in about:config, are recorded as
+   * other.
+   *
+   * @type {"token_rejected"|"fxa_signed_in"|"nimbus"|"other"}
+   */
+  static #switchReason = "other";
+
   #onImplLogout = () =>
     this.dispatchEvent(new Event("AuthImplSelector:Logout"));
 
-  #onFallbackNeeded = () => {
+  #onFallbackNeeded = event => {
     if (Services.prefs.getStringPref(PREF_AUTH_IMPL, "") === "fxa") {
       lazy.log.error("Fallback requested, but FxA is already selected.");
       return;
     }
-    Services.prefs.setStringPref(PREF_AUTH_IMPL, "fxa");
+    AuthImplSelector.#setAuthImplPref("fxa", event.detail?.reason ?? "other");
   };
 
   #onSelectionInputChanged = () => {
@@ -79,6 +93,14 @@ export class AuthImplSelector extends EventTarget {
   }
 
   /**
+   * @returns {string|null} The provider of the current impl, or null if none
+   *   has been chosen yet. Does not trigger the selection.
+   */
+  get providerName() {
+    return this.#impl?.providerName ?? null;
+  }
+
+  /**
    * Overrides the chosen impl until the selection changes.
    *
    * @param {AuthProviderImpl} impl
@@ -94,6 +116,11 @@ export class AuthImplSelector extends EventTarget {
     );
     this.#impl?.uninit();
     this.#impl = impl;
+    this.dispatchEvent(
+      new CustomEvent("AuthImplSelector:ImplChanged", {
+        detail: { providerName: impl.providerName },
+      })
+    );
     this.#impl.addEventListener("AuthProviderImpl:Logout", this.#onImplLogout);
     this.#impl.addEventListener(
       "AuthProviderImpl:FallbackNeeded",
@@ -112,7 +139,7 @@ export class AuthImplSelector extends EventTarget {
       authImpl !== null &&
       authImpl !== Services.prefs.getStringPref(PREF_AUTH_IMPL)
     ) {
-      Services.prefs.setStringPref(PREF_AUTH_IMPL, authImpl);
+      AuthImplSelector.#setAuthImplPref(authImpl, "nimbus");
     }
   }
 
@@ -124,7 +151,34 @@ export class AuthImplSelector extends EventTarget {
       }
     }
     if (!(this.#impl instanceof Impl)) {
+      const from = this.#impl?.providerName;
       this.setImpl(new Impl());
+      if (from) {
+        this.dispatchEvent(
+          new CustomEvent("AuthImplSelector:ImplSwitched", {
+            detail: {
+              from,
+              to: this.#impl.providerName,
+              reason: AuthImplSelector.#switchReason,
+            },
+          })
+        );
+      }
+    }
+  }
+
+  /**
+   * Sets the auth impl pref, attributing the switch it causes to reason.
+   *
+   * @param {string} value
+   * @param {"token_rejected"|"fxa_signed_in"|"nimbus"|"other"} reason
+   */
+  static #setAuthImplPref(value, reason) {
+    AuthImplSelector.#switchReason = reason;
+    try {
+      Services.prefs.setStringPref(PREF_AUTH_IMPL, value);
+    } finally {
+      AuthImplSelector.#switchReason = "other";
     }
   }
 
@@ -147,7 +201,7 @@ export class AuthImplSelector extends EventTarget {
         if (!FxaSignedInWatcher.signedIn) {
           return GuestAuthProviderImpl;
         }
-        Services.prefs.setStringPref(PREF_AUTH_IMPL, "fxa");
+        AuthImplSelector.#setAuthImplPref("fxa", "fxa_signed_in");
         return FxaAuthProviderImpl;
     }
   }

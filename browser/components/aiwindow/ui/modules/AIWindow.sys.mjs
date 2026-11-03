@@ -56,6 +56,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/auth/AuthImplSelector.sys.mjs",
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
+  FxaSignedInWatcher:
+    "moz-src:///browser/components/aiwindow/models/auth/FxaSignedInWatcher.sys.mjs",
   AutoTabGroupingSuggestions:
     "moz-src:///browser/components/aiwindow/ui/modules/AutoTabGroupingSuggestions.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
@@ -1135,20 +1137,16 @@ export const AIWindow = {
    *   not available yet, in which case the tab count is reported as 0
    */
   recordOpenWindowTelemetry(trigger, win) {
-    let signedIn = false;
     const opened_tabs = win?.gBrowser?.tabs.length ?? 0;
-    lazy.AuthProvider.isSignedIn()
-      .then(result => {
-        signedIn = result;
-      })
-      .finally(() => {
-        Glean.smartWindow.openWindow.record({
-          trigger,
-          fxa: signedIn,
-          onboarding: !lazy.hasFirstrunCompleted,
-          opened_tabs,
-        });
+    this.getAuthTelemetryExtras().then(({ fxa, provider }) => {
+      Glean.smartWindow.openWindow.record({
+        trigger,
+        fxa,
+        onboarding: !lazy.hasFirstrunCompleted,
+        opened_tabs,
+        auth_provider: provider,
       });
+    });
   },
 
   /**
@@ -1161,18 +1159,29 @@ export const AIWindow = {
    * @param {boolean} openNewWindow - Whether a new window will be opened
    */
   recordLaunchCommandTelemetry(trigger, openNewWindow) {
-    let signedIn = false;
-    lazy.AuthProvider.isSignedIn()
-      .then(result => {
-        signedIn = result;
-      })
-      .finally(() => {
-        Glean.smartWindow.launchCommandInvoked.record({
-          trigger,
-          fxa: signedIn,
-          new_window: openNewWindow,
-        });
+    this.getAuthTelemetryExtras().then(({ fxa, provider }) => {
+      Glean.smartWindow.launchCommandInvoked.record({
+        trigger,
+        fxa,
+        new_window: openNewWindow,
+        auth_provider: provider,
       });
+    });
+  },
+
+  /**
+   * Reads the fxa and provider extras recorded on open_window and
+   * launch_command_invoked. fxa reflects the Mozilla account only, whichever
+   * provider is active.
+   *
+   * @returns {Promise<{fxa: boolean, provider: string|undefined}>}
+   */
+  async getAuthTelemetryExtras() {
+    const [fxa, provider] = await Promise.all([
+      lazy.FxaSignedInWatcher.isFxaSignedIn(),
+      lazy.AuthProvider.getProviderName().catch(() => undefined),
+    ]);
+    return { fxa, provider };
   },
 
   /**

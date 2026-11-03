@@ -18,8 +18,10 @@ smart_window:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2015626
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2009615
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
     data_reviews:
       - https://phabricator.services.mozilla.com/D282873
+      - https://phabricator.services.mozilla.com/D338147
     data_sensitivity:
       - interaction
     notification_emails: &emails
@@ -77,6 +79,11 @@ smart_window:
         type: string
         description: >
           Version of chat prompt used for this request
+      auth_provider: &auth_provider
+        type: string
+        description: >
+          The Smart Window auth provider active when the event is recorded. One
+          of: fxa (Mozilla account) or guest (guest token, no account)
 
   search_submit:
     type: event
@@ -639,8 +646,10 @@ smart_window:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2021947
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2035241
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2040801
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
     data_reviews:
       - https://phabricator.services.mozilla.com/D287710
+      - https://phabricator.services.mozilla.com/D338147
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -682,6 +691,7 @@ smart_window:
         description: >
           True when this response (success or failure) was produced by a
           user-initiated retry of a previous turn
+      auth_provider: *auth_provider
 
   time_to_first_character:
     type: event
@@ -1102,13 +1112,15 @@ smart_window:
     type: event
     description: |
       Recorded when a Smart Window launch is requested by a user with Smart
-      Window not blocked by AI controls, before any Firefox Accounts sign-in
-      flow runs. Captures the intent to use Smart Window, so it can be compared
-      against open_window, which is only recorded once the window opens.
+      Window not blocked by AI controls, before any sign-in flow runs. Captures
+      the intent to use Smart Window, so it can be compared against
+      open_window, which is only recorded once the window opens.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2065555
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
     data_reviews:
       - https://phabricator.services.mozilla.com/D321341
+      - https://phabricator.services.mozilla.com/D338147
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -1122,26 +1134,30 @@ smart_window:
       fxa:
         type: boolean
         description: >
-          Whether the user is signed in to their Firefox Account when the launch
-          is requested. False means the launch sends the user through the
-          sign-in flow first
+          Whether a verified Mozilla account is signed in when the launch is
+          requested. Reflects the Mozilla account only, so it is false by
+          default for guest users; see auth_provider
       new_window:
         type: boolean
         description: >
           Whether the launch opens a new window instead of switching the current
           window to Smart Window
+      auth_provider: *auth_provider
     expires: never
 
   signin_flow_started:
     type: event
     description: |
-      Recorded when Smart Window sends the user into the Firefox Accounts
-      sign-in flow, before the sign-in page is requested. Always paired with a
-      signin_flow_completed, which records how the flow ended.
+      Recorded when Smart Window sends the user into the sign-in flow of the
+      active auth provider (Mozilla account or guest), before the sign-in page
+      is requested. Always paired with a signin_flow_completed, which records
+      how the flow ended.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2070652
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
     data_reviews:
       - https://phabricator.services.mozilla.com/D324742
+      - https://phabricator.services.mozilla.com/D338147
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -1151,19 +1167,22 @@ smart_window:
         description: >
           Why Smart Window access was denied, which is what made the sign-in
           flow necessary. One of: signed_out, no_consent (signed in but has not
-          accepted the terms of service), both, or none (the flow was requested
+          accepted the Terms of Use), both, or none (the flow was requested
           directly while access was already allowed)
+      auth_provider: *auth_provider
     expires: never
 
   signin_flow_completed:
     type: event
     description: |
-      Recorded when the Firefox Accounts sign-in flow that Smart Window started
-      ends, whatever the result. Always follows a signin_flow_started.
+      Recorded when the sign-in flow that Smart Window started ends, whatever
+      the result. Always follows a signin_flow_started.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2070652
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
     data_reviews:
       - https://phabricator.services.mozilla.com/D324742
+      - https://phabricator.services.mozilla.com/D338147
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -1175,6 +1194,58 @@ smart_window:
           (the user closed the sign-in tab or window without finishing), blocked
           (an account cannot be connected, so the sign-in page was never shown),
           or error (the flow threw)
+      auth_provider: *auth_provider
+    expires: never
+
+  auth_impl_switched:
+    type: event
+    description: |
+      Recorded when the Smart Window auth provider changes from one backend to
+      another after one was already in use. Not recorded when the first
+      provider is chosen.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D338147
+    data_sensitivity:
+      - technical
+    notification_emails: *emails
+    extra_keys:
+      from:
+        type: string
+        description: >
+          The auth provider in use before the switch. One of: fxa (Mozilla
+          account) or guest (guest token, no account)
+      to:
+        type: string
+        description: >
+          The auth provider in use after the switch. One of: fxa or guest
+      reason:
+        type: string
+        description: >
+          Why the provider changed. One of: token_rejected (the server rejected
+          the guest token, so Smart Window fell back to fxa), fxa_signed_in (a
+          verified Mozilla account signed in), nimbus (a Nimbus enrollment set
+          the auth impl pref), or other (the auth impl pref was changed some
+          other way, for example in about:config)
+    expires: never
+
+  auth_impl:
+    type: string
+    lifetime: application
+    description: |
+      The Smart Window auth provider currently in use. One of: fxa (Mozilla
+      account) or guest (guest token, no account). Set when a provider is
+      chosen, which happens the first time Smart Window needs one, and again
+      whenever it switches. Lets other Smart Window metrics be split by guest
+      vs fxa.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D338147
+    data_sensitivity:
+      - technical
+    notification_emails: *emails
     expires: never
 
   open_window:
@@ -1185,10 +1256,12 @@ smart_window:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2009610
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037980
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2065555
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084445
     data_reviews:
       - https://phabricator.services.mozilla.com/D285902
       - https://phabricator.services.mozilla.com/D299196
       - https://phabricator.services.mozilla.com/D321341
+      - https://phabricator.services.mozilla.com/D338147
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -1200,7 +1273,9 @@ smart_window:
       fxa:
         type: boolean
         description: >
-          Whether the user is signed in to their Firefox Account
+          Whether a verified Mozilla account is signed in. Reflects the Mozilla
+          account only, so it is false by default for guest users; see
+          auth_provider
       onboarding:
         type: boolean
         description: >
@@ -1210,6 +1285,7 @@ smart_window:
         unit: count
         description: >
           Number of tabs the user had opened when they switched to Smart window if the switch was used
+      auth_provider: *auth_provider
     expires: never
 
   classic_switch:

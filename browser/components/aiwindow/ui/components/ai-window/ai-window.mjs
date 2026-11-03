@@ -2278,6 +2278,7 @@ export class AIWindow extends MozLitElement {
       submit_type: submitType,
       tabs: contextMentions.filter(member => !lazy.isTabGroupMember(member))
         .length,
+      auth_provider: lazy.AuthProvider.currentProviderName ?? undefined,
     });
 
     if (this.#conversation) {
@@ -3080,6 +3081,7 @@ export class AIWindow extends MozLitElement {
       http_status: httpStatus,
       model: this.modelName,
       is_retry: isRetry,
+      auth_provider: lazy.AuthProvider.currentProviderName ?? undefined,
     });
   }
 

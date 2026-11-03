@@ -9,6 +9,9 @@ const { GuestAuthProviderImpl } = ChromeUtils.importESModule(
 const { FxaAuthProviderImpl } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/auth/FxaAuthProviderImpl.sys.mjs"
 );
+const { FxaSignedInWatcher } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/auth/FxaSignedInWatcher.sys.mjs"
+);
 const { ToUSpotlight } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ToUSpotlight.sys.mjs"
 );
@@ -76,6 +79,21 @@ async function withMockMLPA(mode, onVerify, task) {
     await SpecialPowers.popPrefEnv();
     await new Promise(resolve => server.stop(resolve));
   }
+}
+
+function assertSwitched(from, to, reason) {
+  const events = Glean.smartWindow.authImplSwitched.testGetValue();
+  Assert.equal(events?.length, 1, "One auth_impl_switched was recorded");
+  Assert.deepEqual(
+    events[0].extra,
+    { from, to, reason },
+    `auth_impl_switched records ${from} -> ${to} (${reason})`
+  );
+  Assert.equal(
+    Glean.smartWindow.authImpl.testGetValue(),
+    to,
+    `auth_impl is ${to}`
+  );
 }
 
 function successURL(origin, params) {
@@ -374,11 +392,32 @@ add_task(async function test_invalidateToken() {
   Services.prefs.clearUserPref(PREF_TOKEN);
 });
 
+add_task(async function test_auth_impl_set_on_setImpl() {
+  Services.fog.testResetFOG();
+  try {
+    AuthProvider.setImpl(new GuestAuthProviderImpl());
+    Assert.equal(
+      Glean.smartWindow.authImpl.testGetValue(),
+      "guest",
+      "auth_impl is guest"
+    );
+    AuthProvider.setImpl(new FxaAuthProviderImpl());
+    Assert.equal(
+      Glean.smartWindow.authImpl.testGetValue(),
+      "fxa",
+      "auth_impl is fxa"
+    );
+  } finally {
+    AuthProvider.setImpl(new FxaAuthProviderImpl());
+  }
+});
+
 add_task(async function test_auth_impl_pref_change_switches_to_fxa() {
   const sb = sinon.createSandbox();
   sb.stub(FxaAuthProviderImpl.prototype, "getToken").resolves("fxa-token");
   Services.prefs.setStringPref(PREF_TOKEN, "guest-token");
   AuthProvider.setImpl(new GuestAuthProviderImpl());
+  Services.fog.testResetFOG();
 
   try {
     await SpecialPowers.pushPrefEnv({ set: [[PREF_AUTH_IMPL, "guest"]] });
@@ -394,6 +433,7 @@ add_task(async function test_auth_impl_pref_change_switches_to_fxa() {
       "fxa-token",
       "Setting the pref to fxa switches to the FxA impl"
     );
+    assertSwitched("guest", "fxa", "other");
 
     await SpecialPowers.popPrefEnv();
     await SpecialPowers.popPrefEnv();
@@ -411,6 +451,7 @@ add_task(async function test_rejected_token_switches_to_fxa() {
     .stub(FxaAuthProviderImpl.prototype, "getToken")
     .resolves("fxa-token");
   Services.prefs.setStringPref(PREF_TOKEN, "guest-token");
+  Services.fog.testResetFOG();
 
   try {
     Assert.equal(await AuthProvider.getToken(), "guest-token", "Guest token");
@@ -422,6 +463,7 @@ add_task(async function test_rejected_token_switches_to_fxa() {
       "fxa",
       "The auth impl pref is switched to FxA"
     );
+    assertSwitched("guest", "fxa", "token_rejected");
     Assert.equal(
       await AuthProvider.getToken(),
       "fxa-token",
@@ -431,6 +473,35 @@ add_task(async function test_rejected_token_switches_to_fxa() {
   } finally {
     sb.restore();
     Services.prefs.clearUserPref(PREF_TOKEN);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_fxa_sign_in_switches_to_fxa() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF_AUTH_IMPL, ""]] });
+  AuthProvider.setImpl(new GuestAuthProviderImpl());
+  Services.fog.testResetFOG();
+  const sb = sinon.createSandbox();
+  sb.stub(FxaSignedInWatcher, "signedIn").get(() => true);
+
+  try {
+    FxaSignedInWatcher.dispatchEvent(
+      new Event("FxaSignedInWatcher:StateChanged")
+    );
+
+    Assert.equal(
+      Services.prefs.getStringPref(PREF_AUTH_IMPL),
+      "fxa",
+      "The auth impl pref is set to FxA"
+    );
+    Assert.equal(
+      await AuthProvider.getProviderName(),
+      "fxa",
+      "AuthProvider uses FxA after the account signs in"
+    );
+    assertSwitched("guest", "fxa", "fxa_signed_in");
+  } finally {
+    sb.restore();
     await SpecialPowers.popPrefEnv();
   }
 });
