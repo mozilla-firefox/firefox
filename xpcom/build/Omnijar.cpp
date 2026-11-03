@@ -75,7 +75,10 @@ void Omnijar::InitOne(nsIFile* aPath, Type aType) {
     return;
   }
 
-  RefPtr<nsZipArchive> zipReader = nsZipArchive::OpenArchive(file);
+  // This file is our own build-time packaged omni.jar, so it's safe to let
+  // nsZipArchive trust its optimized (Central-Directory-at-offset-4) layout.
+  RefPtr<nsZipArchive> zipReader =
+      nsZipArchive::OpenArchive(file, /* aAllowOptimizedLayout */ true);
   if (!zipReader) {
     return;
   }
@@ -85,7 +88,8 @@ void Omnijar::InitOne(nsIFile* aPath, Type aType) {
   if (NS_SUCCEEDED(nsZipHandle::Init(zipReader, MOZ_STRINGIFY(OMNIJAR_NAME),
                                      getter_AddRefs(handle)))) {
     outerReader = zipReader;
-    zipReader = nsZipArchive::OpenArchive(handle);
+    zipReader = nsZipArchive::OpenArchive(handle, nullptr,
+                                          /* aAllowOptimizedLayout */ true);
     if (!zipReader) {
       return;
     }
