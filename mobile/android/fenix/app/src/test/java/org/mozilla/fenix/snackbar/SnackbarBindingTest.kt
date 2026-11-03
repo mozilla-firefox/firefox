@@ -301,6 +301,7 @@ class SnackbarBindingTest {
 
             appStore.dispatch(
                 ShortcutAction.ShortcutAdded(
+                    url = "https://www.mozilla.org",
                     source = AddShortcutSource.MANUAL,
                     entryPoint = AddShortcutEntryPoint.PAGE_MENU,
                 )

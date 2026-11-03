@@ -217,19 +217,31 @@ class DefaultTopSiteController(
 
     @VisibleForTesting
     internal suspend fun updateTopSite(topSite: TopSite, title: String, url: String) {
-        if (topSite is TopSite.Frecent) {
-            topSitesUseCases.addPinnedSites(
-                title = title,
-                url = url,
-            )
+        when (topSite) {
+            is TopSite.Frecent -> {
+                topSitesUseCases.addPinnedSites(
+                    title = title,
+                    url = url,
+                )
 
-            appStore.dispatch(ShortcutAction.FrecencyTopSitePromoted)
-        } else {
-            topSitesUseCases.updateTopSites(
-                topSite = topSite,
-                title = title,
-                url = url,
-            )
+                appStore.dispatch(ShortcutAction.FrecencyTopSitePromoted(url = url))
+            }
+
+            is TopSite.Default -> {
+                topSitesUseCases.addPinnedSites(
+                    title = title,
+                    url = url,
+                )
+
+                appStore.dispatch(ShortcutAction.DefaultTopSitePromoted(url = url))
+            }
+
+            else ->
+                topSitesUseCases.updateTopSites(
+                    topSite = topSite,
+                    title = title,
+                    url = url,
+                )
         }
     }
 
@@ -421,7 +433,7 @@ class DefaultTopSiteController(
         source: AddShortcutSource,
         entryPoint: AddShortcutEntryPoint,
     ) {
-        appStore.dispatch(ShortcutAction.ShortcutAdded(source = source, entryPoint = entryPoint))
+        appStore.dispatch(ShortcutAction.ShortcutAdded(url = url, source = source, entryPoint = entryPoint))
 
         viewLifecycleScope.launch {
             topSitesUseCases.addPinnedSites(

@@ -122,6 +122,7 @@ class ShortcutMenuItemProvider(
         topSitesUseCases.addPinnedSites(title = title, url = url)
         appStore.dispatch(
             ShortcutAction.ShortcutAdded(
+                url = url,
                 source = AddShortcutSource.MANUAL,
                 entryPoint = AddShortcutEntryPoint.PAGE_MENU,
             )

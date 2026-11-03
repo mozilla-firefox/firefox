@@ -282,6 +282,7 @@ class MenuDialogMiddleware(
 
         appStore.dispatch(
             ShortcutAction.ShortcutAdded(
+                url = url,
                 source = AddShortcutSource.MANUAL,
                 entryPoint = AddShortcutEntryPoint.PAGE_MENU,
             )

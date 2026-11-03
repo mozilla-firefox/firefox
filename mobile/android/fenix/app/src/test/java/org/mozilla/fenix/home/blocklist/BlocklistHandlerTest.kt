@@ -51,6 +51,19 @@ class BlocklistHandlerTest {
     }
 
     @Test
+    fun `WHEN url removed from blocklist THEN settings updated without its hash`() {
+        val removedUrl = "https://www.mozilla.org/"
+        val url = "https://www.firefox.com/"
+        val updateSlot = slot<Set<String>>()
+        every { mockSettings.homescreenBlocklist } returns setOf(removedUrl.stripAndHash(), url.stripAndHash())
+        every { mockSettings.homescreenBlocklist = capture(updateSlot) } just Runs
+
+        blocklistHandler.removeUrlFromBlocklist(removedUrl)
+
+        assertEquals(setOf(url.stripAndHash()), updateSlot.captured)
+    }
+
+    @Test
     fun `GIVEN bookmark is not in blocklist THEN will not be filtered`() {
         val bookmarks = listOf(Bookmark(url = "test"))
         every { mockSettings.homescreenBlocklist } returns setOf()

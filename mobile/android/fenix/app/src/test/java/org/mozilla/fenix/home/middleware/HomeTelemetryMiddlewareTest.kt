@@ -207,6 +207,7 @@ class HomeTelemetryMiddlewareTest {
 
         store.dispatch(
             ShortcutAction.ShortcutAdded(
+                url = "https://www.mozilla.org",
                 source = AddShortcutSource.POPULAR,
                 entryPoint = AddShortcutEntryPoint.SHORTCUTS_LIBRARY,
             )
@@ -224,7 +225,7 @@ class HomeTelemetryMiddlewareTest {
 
         assertNull(TopSites.add.testGetValue())
 
-        store.dispatch(ShortcutAction.FrecencyTopSitePromoted)
+        store.dispatch(ShortcutAction.FrecencyTopSitePromoted(url = "https://www.mozilla.org"))
 
         val event = TopSites.add.testGetValue()!!
         assertEquals(1, event.size)

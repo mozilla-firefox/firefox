@@ -368,10 +368,12 @@ sealed class AppAction : Action {
         /**
          * [ShortcutAction] dispatched when a shortcut is added.
          *
+         * @property url The URL of the added shortcut.
          * @property source The [AddShortcutSource] of how the shortcut was added.
          * @property entryPoint The [AddShortcutEntryPoint] from where the add flow was started from.
          */
         data class ShortcutAdded(
+            val url: String,
             val source: AddShortcutSource,
             val entryPoint: AddShortcutEntryPoint,
         ) : ShortcutAction()
@@ -386,8 +388,19 @@ sealed class AppAction : Action {
         /** [ShortcutAction] dispatched when the manual add website dialog is shown. */
         data object AddWebsiteDialogShown : ShortcutAction()
 
-        /** [ShortcutAction] dispatched when a frecent top site is promoted to a pinned shortcut. */
-        data object FrecencyTopSitePromoted : ShortcutAction()
+        /**
+         * [ShortcutAction] dispatched when a frecent top site is promoted to a pinned shortcut.
+         *
+         * @property url The URL of the pinned shortcut.
+         */
+        data class FrecencyTopSitePromoted(val url: String) : ShortcutAction()
+
+        /**
+         * [ShortcutAction] dispatched when a default top site is promoted to a pinned shortcut.
+         *
+         * @property url The URL of the pinned shortcut.
+         */
+        data class DefaultTopSitePromoted(val url: String) : ShortcutAction()
     }
 
     /** [AppAction]s related to the share feature. */

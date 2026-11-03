@@ -15,6 +15,7 @@ internal object ShortcutStateReducer {
 
             is ShortcutAction.AddShortcutSheetShown,
             is ShortcutAction.AddWebsiteDialogShown,
-            is ShortcutAction.FrecencyTopSitePromoted -> state
+            is ShortcutAction.FrecencyTopSitePromoted,
+            is ShortcutAction.DefaultTopSitePromoted -> state
         }
 }

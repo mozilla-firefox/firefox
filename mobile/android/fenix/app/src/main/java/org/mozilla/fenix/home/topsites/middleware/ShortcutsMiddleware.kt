@@ -118,6 +118,7 @@ class ShortcutsMiddleware(
         topSitesUseCases.addPinnedSites(title = title, url = url)
         appStore.dispatch(
             ShortcutAction.ShortcutAdded(
+                url = url,
                 source = source,
                 entryPoint = AddShortcutEntryPoint.SHORTCUTS_LIBRARY,
             )

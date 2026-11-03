@@ -434,6 +434,7 @@ class MenuDialogMiddlewareTest {
             verify {
                 appStore.dispatch(
                     ShortcutAction.ShortcutAdded(
+                        url = url,
                         source = AddShortcutSource.MANUAL,
                         entryPoint = AddShortcutEntryPoint.PAGE_MENU,
                     )
@@ -488,6 +489,7 @@ class MenuDialogMiddlewareTest {
             verify(exactly = 0) {
                 appStore.dispatch(
                     ShortcutAction.ShortcutAdded(
+                        url = url,
                         source = AddShortcutSource.MANUAL,
                         entryPoint = AddShortcutEntryPoint.PAGE_MENU,
                     )
@@ -625,6 +627,7 @@ class MenuDialogMiddlewareTest {
             verify(exactly = 0) {
                 appStore.dispatch(
                     ShortcutAction.ShortcutAdded(
+                        url = url,
                         source = AddShortcutSource.MANUAL,
                         entryPoint = AddShortcutEntryPoint.PAGE_MENU,
                     )

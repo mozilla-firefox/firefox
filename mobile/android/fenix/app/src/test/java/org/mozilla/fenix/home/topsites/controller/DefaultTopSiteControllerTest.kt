@@ -1155,8 +1155,48 @@ class DefaultTopSiteControllerTest {
             topSitesUseCases.addPinnedSites(title = title, url = url)
         }
         verify {
-            appStore.dispatch(ShortcutAction.FrecencyTopSitePromoted)
+            appStore.dispatch(ShortcutAction.FrecencyTopSitePromoted(url = url))
         }
+    }
+
+    @Test
+    fun `WHEN the default top site is updated THEN add the default top site as a pinned top site`() = runTest {
+        val topSite =
+            TopSite.Default(
+                id = 1L,
+                title = "Mozilla",
+                url = "mozilla.org",
+                createdAt = null,
+            )
+
+        val controller = spyk(createController(this))
+        val title = "Firefox"
+        val url = "firefox.com"
+
+        controller.updateTopSite(topSite = topSite, title = title, url = url)
+
+        coVerify { topSitesUseCases.addPinnedSites(title = title, url = url) }
+        verify { appStore.dispatch(ShortcutAction.DefaultTopSitePromoted(url = url)) }
+    }
+
+    @Test
+    fun `WHEN the default pinned top site is updated THEN update the default pinned top site in storage`() = runTest {
+        val topSite =
+            TopSite.DefaultPinned(
+                id = 1L,
+                title = "Google",
+                url = SupportUtils.GOOGLE_URL,
+                createdAt = 0,
+            )
+
+        val controller = spyk(createController(this))
+        val title = "Search"
+        val url = "google.com"
+
+        controller.updateTopSite(topSite = topSite, title = title, url = url)
+
+        coVerify { topSitesUseCases.updateTopSites(topSite = topSite, title = title, url = url) }
+        coVerify(exactly = 0) { topSitesUseCases.addPinnedSites(any(), any(), any()) }
     }
 
     @Test
@@ -1200,6 +1240,7 @@ class DefaultTopSiteControllerTest {
         verify {
             appStore.dispatch(
                 ShortcutAction.ShortcutAdded(
+                    url = url,
                     source = AddShortcutSource.MANUAL,
                     entryPoint = AddShortcutEntryPoint.HOMEPAGE,
                 )

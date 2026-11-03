@@ -22,6 +22,7 @@ class ShortcutStateReducerTest {
             AppStoreReducer.reduce(
                 initialState,
                 ShortcutAction.ShortcutAdded(
+                    url = "https://www.mozilla.org",
                     source = AddShortcutSource.MANUAL,
                     entryPoint = AddShortcutEntryPoint.PAGE_MENU,
                 ),

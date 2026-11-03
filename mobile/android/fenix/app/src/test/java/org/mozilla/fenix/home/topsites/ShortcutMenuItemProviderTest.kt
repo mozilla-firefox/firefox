@@ -118,6 +118,7 @@ class ShortcutMenuItemProviderTest {
         verify {
             appStore.dispatch(
                 ShortcutAction.ShortcutAdded(
+                    url = TEST_URL,
                     source = AddShortcutSource.MANUAL,
                     entryPoint = AddShortcutEntryPoint.PAGE_MENU,
                 )

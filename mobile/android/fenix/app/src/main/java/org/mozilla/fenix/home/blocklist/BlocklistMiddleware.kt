@@ -7,6 +7,7 @@ package org.mozilla.fenix.home.blocklist
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.components.appstate.AppAction
+import org.mozilla.fenix.components.appstate.AppAction.ShortcutAction
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.home.recenttabs.RecentTab
 
@@ -19,12 +20,24 @@ import org.mozilla.fenix.home.recenttabs.RecentTab
  */
 class BlocklistMiddleware(private val blocklistHandler: BlocklistHandler) : Middleware<AppState, AppAction> {
 
-    /** Will filter "Change" actions using the blocklist and use "Remove" actions to update the blocklist. */
+    /**
+     * Will filter "Change" actions using the blocklist and use "Remove" actions to update the blocklist. A shortcut
+     * being pinned will remove the entry from the blocklist.
+     */
     override fun invoke(
         store: Store<AppState, AppAction>,
         next: (AppAction) -> Unit,
         action: AppAction,
     ) {
+        val pinnedShortcutUrl =
+            when (action) {
+                is ShortcutAction.ShortcutAdded -> action.url
+                is ShortcutAction.FrecencyTopSitePromoted -> action.url
+                is ShortcutAction.DefaultTopSitePromoted -> action.url
+                else -> null
+            }
+        pinnedShortcutUrl?.let { blocklistHandler.removeUrlFromBlocklist(it) }
+
         next(getUpdatedAction(store.state, action))
     }
 
