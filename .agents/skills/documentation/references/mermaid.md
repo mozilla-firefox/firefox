@@ -67,10 +67,9 @@ need the `wrappingWidth` block.
 
 ## Laying out for the rendered width
 
-Labels render at `mermaid_init_config`'s `fontSize` in `docs/conf.py`, and the
-column is about 700px wide in a typical window. Pick the direction the content
-reads in, `flowchart LR` and `sequenceDiagram` included, then spend width where
-it buys clarity:
+The column is about 700px wide in a typical window. Pick the direction the
+content reads in, `flowchart LR` and `sequenceDiagram` included, then spend
+width where it buys clarity:
 
 -   **Keep a row short, whatever the direction.** Eight `flowchart LR` nodes or
     sequence participants with typical identifiers come out more than twice the

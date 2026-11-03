@@ -76,6 +76,11 @@ table.docutils {
 pre.mermaid {
   overflow-x: auto;
 
+  /* mermaid_init_config in docs/conf.py has diagrams inherit their font from
+     the parent <pre>. We want them to inherit the page font rather than the
+     monospace font used for generic <pre>. */
+  font-family: inherit;
+
   /* Overlay scrollbars stay hidden until the reader scrolls, so a diagram
      wider than the column reads as cut off. The mask fades whatever sits at
      the scrollport edge, and the padding keeps that off the diagram: the fade
