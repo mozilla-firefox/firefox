@@ -8,7 +8,7 @@
 # documentation and how to modify this file.
 repo: mozilla-central
 created_at: '2021-10-14T12:50:40.073465'
-updated_at: '2026-10-19T23:26:51.625727+00:00'
+updated_at: '2026-10-29T10:12:06.396239+00:00'
 export:
   path: ./docs/mots/index.md
   format: md
@@ -3828,6 +3828,7 @@ modules:
         peers:
           - *adw
           - *daisuke
+          - *jteow
           - *standard8
         machine_name: bookmarks_history
 
@@ -5076,5 +5077,5 @@ modules:
         - Ryan Tilder
       group: dev-platform
 hashes:
-  config: 0fa1edd1eb9e634b8f3b5cd772db6bf9be49af8f
-  export: 0a1dc9b3b63a79c423de97a6d3fb023bdd50a70f
+  config: 23cf4959245d8c94c03e9eecc16e421e26285243
+  export: 630300bb8cc32c5d7e66787a96618b5245c2d5dd
