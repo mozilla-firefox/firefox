@@ -17,7 +17,7 @@ import mozilla.components.concept.base.profiler.Profiler
 import mozilla.components.feature.listentopage.ListenMiddleware
 import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
-import mozilla.components.feature.listentopage.content.ContentProvider
+import mozilla.components.feature.listentopage.content.ContentExtractor
 import mozilla.components.feature.listentopage.listenReducer
 import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
 import mozilla.components.feature.listentopage.playback.ListenPlaybackController
@@ -66,6 +66,9 @@ class ListenToPage(
 
     val settings by lazy { ListenSettings.dataStore(context = context, available = isAvailable, scope = scope) }
 
+    /** Allows the behavior of individual tabs to be overridden for testing purposes. */
+    val debugController by lazy { ListenDebugController() }
+
     val store by lazy {
         val performanceMiddleware = profiler?.let { ListenPerformanceMiddleware(profiler = it) }?.also { it.register() }
 
@@ -78,15 +81,7 @@ class ListenToPage(
                         performanceMiddleware,
                         ListenMiddleware(
                             browserStore = browserStore,
-                            contentProvider =
-                                ContentProvider.fromPage(
-                                    pageContentExtractor = pageExtractor,
-                                    pageMetadataExtractor = pageExtractor,
-                                    fallbackLanguageTag = {
-                                        (LocaleManager.getCurrentLocale(context) ?: LocaleManager.getSystemDefault())
-                                            .toLanguageTag()
-                                    },
-                                ),
+                            contentExtractor = { tabId -> contentProvider.extractorFor(tabId).getContent(tabId) },
                             // A provider, not an instance: building one binds the speech engine over IPC, and the
                             // middleware closes it when a session stops, so it needs a way to get another.
                             synthesizerProvider = {
@@ -124,7 +119,21 @@ class ListenToPage(
     // session stops. Two instances would each hold their own directory and neither would clean up after the other.
     private val audioCache by lazy { DirectoryAudioFileCache(context) }
 
-    private val pageExtractor by lazy {
-        FenixListenPageExtractor { tabId -> browserStore.state.findTab(tabId)?.engineState?.engineSession }
+    private val contentProvider by lazy {
+        val pageExtractor = FenixListenPageExtractor { tabId ->
+            browserStore.state.findTab(tabId)?.engineState?.engineSession
+        }
+
+        FenixListenContentExtractorProvider(
+            extractor =
+                ContentExtractor.fromPage(
+                    pageContentExtractor = pageExtractor,
+                    pageMetadataExtractor = pageExtractor,
+                    fallbackLanguageTag = {
+                        (LocaleManager.getCurrentLocale(context) ?: LocaleManager.getSystemDefault()).toLanguageTag()
+                    },
+                ),
+            debugController = debugController,
+        )
     }
 }

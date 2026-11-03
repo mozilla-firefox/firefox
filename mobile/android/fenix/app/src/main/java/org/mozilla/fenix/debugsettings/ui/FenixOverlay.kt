@@ -40,6 +40,7 @@ import mozilla.telemetry.glean.Glean
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.ClientUuid
 import org.mozilla.fenix.components.components
+import org.mozilla.fenix.components.listentopage.ListenDebugController
 import org.mozilla.fenix.debugsettings.addresses.AddressesDebugRegionRepository
 import org.mozilla.fenix.debugsettings.addresses.AddressesTools
 import org.mozilla.fenix.debugsettings.addresses.FakeAddressesDebugRegionRepository
@@ -76,6 +77,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
  * @param inactiveTabsEnabled Whether the inactive tabs feature is enabled.
  * @param tabGroupRepository [TabGroupRepository] used to access and modify tab groups for [TabGroupTools].
  * @param listenStore Store for [ListenToPageTools]
+ * @param listenDebugController Failures [ListenToPageTools] can force on listen to page.
  */
 @Composable
 fun FenixOverlay(
@@ -84,6 +86,7 @@ fun FenixOverlay(
     inactiveTabsEnabled: Boolean,
     tabGroupRepository: TabGroupRepository,
     listenStore: ListenStore,
+    listenDebugController: ListenDebugController,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -144,6 +147,7 @@ fun FenixOverlay(
         tabGroupRepository = tabGroupRepository,
         lazyIPProtectionStore = remember { lazy { context.components.ipProtection.store } },
         listenStore = listenStore,
+        listenDebugController = listenDebugController,
     )
 }
 
@@ -162,6 +166,7 @@ fun FenixOverlay(
  * @param inactiveTabsEnabled Whether the inactive tabs feature is enabled.
  * @param lazyIPProtectionStore [IPProtectionStore] used by the IP protection location debug tools.
  * @param listenStore Store for [ListenToPageTools]
+ * @param listenDebugController Failures [ListenToPageTools] can force on listen to page.
  */
 @Suppress("LongParameterList")
 @Composable
@@ -178,6 +183,7 @@ private fun FenixOverlay(
     inactiveTabsEnabled: Boolean,
     lazyIPProtectionStore: Lazy<IPProtectionStore>,
     listenStore: ListenStore,
+    listenDebugController: ListenDebugController,
 ) {
     val navController = rememberNavController()
     val coroutineScope = rememberCoroutineScope()
@@ -214,6 +220,7 @@ private fun FenixOverlay(
             tabGroupRepository = tabGroupRepository,
             lazyIPProtectionStore = lazyIPProtectionStore,
             listenStore = listenStore,
+            listenDebugController = listenDebugController,
         )
     }
     val drawerStatus by remember {
@@ -310,5 +317,6 @@ private fun FenixOverlayPreview() {
         tabGroupRepository = mockTabGroupRepository,
         lazyIPProtectionStore = lazy { IPProtectionStore() },
         listenStore = ListenStore(ListenState(), ::listenReducer),
+        listenDebugController = ListenDebugController(),
     )
 }

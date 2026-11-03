@@ -26,7 +26,7 @@ import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
-import mozilla.components.feature.listentopage.content.ContentProvider
+import mozilla.components.feature.listentopage.content.ContentExtractor
 import mozilla.components.feature.listentopage.content.TextChunker
 import mozilla.components.feature.listentopage.facts.emitEngineBoundFact
 import mozilla.components.feature.listentopage.playback.ArticleDisplayData
@@ -57,7 +57,7 @@ import mozilla.components.support.ktx.kotlin.stripCommonSubdomains
 /**
  * [Middleware] that extracts the article a listening session reads out, synthesizes it and plays it.
  *
- * @property contentProvider Provides the article text and language for a tab.
+ * @property contentExtractor Provides the article text and language for a tab.
  * @property synthesizerProvider Builds the speech engine. A provider rather than an instance for two reasons: building
  *   one binds the platform engine over IPC, which must not happen on the caller's thread, and [SpeechSynthesizer.close]
  *   is terminal, so a session that closes its engine needs a way to get another one.
@@ -75,7 +75,7 @@ import mozilla.components.support.ktx.kotlin.stripCommonSubdomains
 @Suppress("TooManyFunctions")
 class ListenMiddleware(
     private val browserStore: BrowserStore,
-    private val contentProvider: ContentProvider,
+    private val contentExtractor: ContentExtractor,
     private val synthesizerProvider: () -> SpeechSynthesizer,
     private val audioCache: AudioFileCache,
     private val playbackController: PlaybackController,
@@ -282,7 +282,7 @@ class ListenMiddleware(
     private fun requestContent(store: Store<ListenState, ListenAction>, tabId: String) {
         contentJob?.cancel()
         contentJob = scope.launch {
-            val content = contentProvider.getContent(tabId)
+            val content = contentExtractor.getContent(tabId)
 
             // A session for another tab was started, or the session was stopped, while the article was extracted.
             if (store.state.tabId != tabId) {

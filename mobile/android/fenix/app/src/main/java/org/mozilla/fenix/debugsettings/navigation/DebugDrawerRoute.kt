@@ -16,6 +16,7 @@ import mozilla.components.feature.listentopage.ListenStore
 import mozilla.components.feature.tabgroups.storage.repository.TabGroupRepository
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.ClientUuid
+import org.mozilla.fenix.components.listentopage.ListenDebugController
 import org.mozilla.fenix.debugsettings.addons.ui.AddonsDebugToolsScreen
 import org.mozilla.fenix.debugsettings.addresses.AddressesDebugRegionRepository
 import org.mozilla.fenix.debugsettings.addresses.AddressesTools
@@ -134,6 +135,7 @@ enum class DebugDrawerRoute(
          * @param lazyIPProtectionStore [IPProtectionStore] used to edit the country list in
          *   [IPProtectionLocationToolsScreen]. Lazy so that opening the drawer does not build the store.
          * @param listenStore Store for [ListenToPageTools]
+         * @param listenDebugController Controller for [ListenToPageTools], to override feature behavior.
          */
         @Suppress("LongParameterList", "LongMethod")
         fun generateDebugDrawerDestinations(
@@ -150,6 +152,7 @@ enum class DebugDrawerRoute(
             tabGroupRepository: TabGroupRepository,
             lazyIPProtectionStore: Lazy<IPProtectionStore>,
             listenStore: ListenStore,
+            listenDebugController: ListenDebugController,
         ): List<DebugDrawerDestination> = entries.map { debugDrawerRoute ->
             var isChildDestination: Boolean = false
             val onClick: () -> Unit
@@ -308,7 +311,11 @@ enum class DebugDrawerRoute(
                         debugDrawerStore.dispatch(DebugDrawerAction.NavigateTo.ListenToPageTools)
                     }
                     content = {
-                        ListenToPageTools(listenStore = listenStore, browserStore = browserStore)
+                        ListenToPageTools(
+                            listenStore = listenStore,
+                            browserStore = browserStore,
+                            debugController = listenDebugController,
+                        )
                     }
                 }
             }

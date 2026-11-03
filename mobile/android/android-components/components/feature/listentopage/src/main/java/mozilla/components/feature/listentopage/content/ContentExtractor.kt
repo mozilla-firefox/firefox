@@ -35,13 +35,13 @@ enum class LanguageSource {
  * Use [fromPage] to create an instance backed by a [PageContentExtractor] and a [PageMetadataExtractor], or supply a
  * custom implementation.
  */
-fun interface ContentProvider {
+fun interface ContentExtractor {
     /** Returns the [Content] of the page loaded in [tabId], or a failure if it could not be retrieved. */
     suspend fun getContent(tabId: String): Result<Content>
 
     companion object {
         /**
-         * Creates a [ContentProvider] that derives [Content] from the given extractors.
+         * Creates a [ContentExtractor] that derives [Content] from the given extractors.
          *
          * A failure of the content or metadata extractor fails the returned [Result]. The article language is the one
          * the page declares in metadata, else the fallback language.
@@ -56,7 +56,7 @@ fun interface ContentProvider {
             pageContentExtractor: PageContentExtractor,
             pageMetadataExtractor: PageMetadataExtractor,
             fallbackLanguageTag: () -> String,
-        ) = ContentProvider { tabId ->
+        ) = ContentExtractor { tabId ->
             try {
                 val metadata = pageMetadataExtractor.getPageMetadata(tabId).getOrThrow()
                 val text = pageContentExtractor.getPageContent(tabId).getOrThrow()

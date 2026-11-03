@@ -33,6 +33,7 @@ import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
 import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.listenReducer
+import org.mozilla.fenix.components.listentopage.ListenDebugController
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private const val MILLIS_PER_SECOND = 1000
@@ -42,9 +43,10 @@ private const val MILLIS_PER_SECOND = 1000
  *
  * @param listenStore The store a session is driven through and reported by.
  * @param browserStore Used to find the tab the "Listen" button reads out.
+ * @param debugController Holds the failures forced on a tab from these tools.
  */
 @Composable
-fun ListenToPageTools(listenStore: ListenStore, browserStore: BrowserStore) {
+fun ListenToPageTools(listenStore: ListenStore, browserStore: BrowserStore, debugController: ListenDebugController) {
     var showingLog by remember { mutableStateOf(false) }
 
     // Recorded out here rather than inside the log, which is only composed while it is on screen. The article's
@@ -66,6 +68,7 @@ fun ListenToPageTools(listenStore: ListenStore, browserStore: BrowserStore) {
         lengthChanges = lengthChanges,
         listenStore = listenStore,
         browserStore = browserStore,
+        debugController = debugController,
         onChangeLogVisibility = { showingLog = it },
     )
 }
@@ -76,6 +79,7 @@ private fun ListenToPageToolsContent(
     lengthChanges: List<LengthChange>,
     listenStore: ListenStore,
     browserStore: BrowserStore,
+    debugController: ListenDebugController,
     onChangeLogVisibility: (Boolean) -> Unit,
 ) {
     val listenState by listenStore.stateFlow.collectAsState()
@@ -96,6 +100,10 @@ private fun ListenToPageToolsContent(
                     browserStore.state.selectedTab?.let {
                         listenStore.dispatch(ListenAction.Session.ListenRequested(tabId = it.id, url = it.content.url))
                     }
+                }
+
+                FilledButton(text = "Cause extraction to fail for tab") {
+                    browserStore.state.selectedTab?.let { debugController.failExtractionFor(it.id) }
                 }
 
                 FilledButton(text = "Timeline log") { onChangeLogVisibility(true) }
@@ -180,6 +188,7 @@ private fun PreviewListenToPageTools() {
         ListenToPageTools(
             listenStore = ListenStore(initialState = ListenState(), ::listenReducer),
             browserStore = BrowserStore(),
+            debugController = ListenDebugController(),
         )
     }
 }

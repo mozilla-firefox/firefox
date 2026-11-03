@@ -575,6 +575,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
                                 loginsStorage = components.core.passwordsStorage,
                                 tabGroupRepository = components.core.tabGroupRepository,
                                 listenStore = components.listenToPage.store,
+                                listenDebugController = components.listenToPage.debugController,
                             )
                         }
                     } else {

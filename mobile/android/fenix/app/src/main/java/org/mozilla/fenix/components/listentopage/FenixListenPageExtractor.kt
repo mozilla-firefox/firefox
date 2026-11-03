@@ -9,6 +9,8 @@ import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.pageextraction.ContentParams
+import mozilla.components.feature.listentopage.content.Content
+import mozilla.components.feature.listentopage.content.ContentExtractor
 import mozilla.components.feature.listentopage.content.PageContentExtractor
 import mozilla.components.feature.listentopage.content.PageMetadata
 import mozilla.components.feature.listentopage.content.PageMetadataExtractor
@@ -59,4 +61,27 @@ class FenixListenPageExtractor(private val engineSessionProvider: (tabId: String
 
     private fun engineSession(tabId: String): EngineSession =
         requireNotNull(engineSessionProvider(tabId)) { "No engine session for tab $tabId" }
+}
+
+/**
+ * Provides the [ContentExtractor] for a tab, replacing a real extractor with a fake if the debug controller has
+ * indicated that the behavior for a tab should be overridden.
+ *
+ * @param extractor Reads the article from the tab.
+ * @param debugController Handles state for tabs that should have their behavior overridden.
+ */
+class FenixListenContentExtractorProvider(
+    private val extractor: ContentExtractor,
+    private val debugController: ListenDebugController,
+) {
+    /** The extractor to read the article in [tabId] with. */
+    fun extractorFor(tabId: String): ContentExtractor =
+        if (debugController.isExtractionFailing(tabId)) FailingListenContentExtractor else extractor
+}
+
+/** Fails every extraction to recreate the experience of a misbehaving page. */
+private object FailingListenContentExtractor : ContentExtractor {
+    private fun failure() = IllegalStateException("Extraction made to fail from the debug drawer")
+
+    override suspend fun getContent(tabId: String): Result<Content> = Result.failure(failure())
 }

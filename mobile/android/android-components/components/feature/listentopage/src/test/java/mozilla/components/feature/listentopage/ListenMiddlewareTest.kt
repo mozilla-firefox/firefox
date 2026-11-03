@@ -31,7 +31,7 @@ import mozilla.components.browser.state.state.ReaderState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
-import mozilla.components.feature.listentopage.content.ContentProvider
+import mozilla.components.feature.listentopage.content.ContentExtractor
 import mozilla.components.feature.listentopage.content.LanguageSource
 import mozilla.components.feature.listentopage.content.TextChunker
 import mozilla.components.feature.listentopage.facts.ListenToPageFacts
@@ -3801,7 +3801,7 @@ class ListenMiddlewareTest {
         browserStore: BrowserStore = browserStoreWithOpenTabs(),
         recordInto: MutableList<ListenAction>? = null,
         recordPositionsInto: MutableList<Long>? = null,
-        contentProvider: ContentProvider,
+        contentExtractor: ContentExtractor,
     ): ListenStore {
         val middlewareScope = CoroutineScope(StandardTestDispatcher(testScheduler))
         middlewareScopes.add(middlewareScope)
@@ -3815,7 +3815,7 @@ class ListenMiddlewareTest {
                     recordPositionsInto?.let(::positionRecordingMiddleware),
                     ListenMiddleware(
                         browserStore = browserStore,
-                        contentProvider = contentProvider,
+                        contentExtractor = contentExtractor,
                         synthesizerProvider = synthesizerProvider,
                         audioCache = audioCache,
                         playbackController = playbackController,
