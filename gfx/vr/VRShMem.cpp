@@ -290,7 +290,7 @@ void VRShMem::CloseShMem() {
 
 #if defined(XP_WIN)
   if (mMutex) {
-    MOZ_ASSERT(mRequiresMutex);
+    MOZ_RELEASE_ASSERT(mRequiresMutex);
     CloseHandle(mMutex);
     mMutex = nullptr;
   }
@@ -386,7 +386,7 @@ void VRShMem::LeaveShMem() {
   }
 #if defined(XP_WIN)
   if (mMutex) {
-    MOZ_ASSERT(mRequiresMutex);
+    MOZ_RELEASE_ASSERT(mRequiresMutex);
     CloseHandle(mMutex);
     mMutex = nullptr;
   }
