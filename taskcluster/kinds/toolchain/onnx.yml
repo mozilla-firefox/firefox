@@ -12,7 +12,6 @@ task-defaults:
     attributes:
         local-toolchain: true
     run:
-        clone-with: hg
         script: build-onnxruntime.sh
         resources:
             - taskcluster/scripts/misc/onnxruntime.patches/**
@@ -20,7 +19,6 @@ task-defaults:
         fetch:
             - onnxruntime-src
             - onnxruntime-deps
-
 
 onnxruntime-x86_64-linux-gnu:
     description: "ONNX Runtime (linux x64)"
@@ -83,7 +81,6 @@ onnxruntime-x86_64-windows-msvc:
         fetch:
             - win64-ninja
 
-
 onnxruntime-i686-windows-msvc:
     description: "ONNX Runtime (win32 x86)"
     attributes:
@@ -106,7 +103,6 @@ onnxruntime-i686-windows-msvc:
             - win64-dump_syms
         fetch:
             - win64-ninja
-
 
 onnxruntime-aarch64-windows-msvc:
     description: "ONNX Runtime (win64 aarch64)"
@@ -131,7 +127,6 @@ onnxruntime-aarch64-windows-msvc:
         fetch:
             - win64-ninja
 
-
 onnxruntime-x86_64-apple-darwin:
     description: "ONNX Runtime (macOS x64)"
     attributes:
@@ -149,7 +144,6 @@ onnxruntime-x86_64-apple-darwin:
             - linux64-dump_syms
             - macosx64-sdk-toolchain
 
-
 onnxruntime-aarch64-apple-darwin:
     description: "ONNX Runtime (macOS aarch64)"
     attributes:
@@ -166,7 +160,6 @@ onnxruntime-aarch64-apple-darwin:
             - linux64-clang-toolchain
             - linux64-dump_syms
             - macosx64-sdk-toolchain
-
 
 onnxruntime-arm-linux-androideabi:
     description: "ONNX Runtime (android arm)"

@@ -10,7 +10,6 @@ task-defaults:
         max-run-time: 1800
     worker-type: b-linux-docker-amd
     run:
-        clone-with: hg
         script: build-7zz.sh
         resources:
             - taskcluster/scripts/misc/7zz.patch

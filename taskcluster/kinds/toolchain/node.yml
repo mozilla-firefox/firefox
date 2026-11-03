@@ -10,7 +10,6 @@ task-defaults:
     worker:
         max-run-time: 1800
     run:
-        clone-with: hg
         script: repack-node.sh
         toolchain-artifact: public/build/node.tar.zst
 

@@ -8,7 +8,6 @@ task-defaults:
     worker:
         max-run-time: 7200
     run:
-        clone-with: hg
         script: build-cpython.sh
         resources:
             - 'build/psutil_requirements.txt'

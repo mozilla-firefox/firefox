@@ -10,7 +10,6 @@ task-defaults:
         max-run-time: 1800
     worker-type: b-linux-docker-amd
     run:
-        clone-with: hg
         script: build-cabextract.sh
         toolchain-artifact: public/build/cabextract.tar.zst
     fetches:

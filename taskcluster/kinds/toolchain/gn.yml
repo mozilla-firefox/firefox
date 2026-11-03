@@ -10,7 +10,6 @@ task-defaults:
     worker:
         max-run-time: 1800
     run:
-        clone-with: hg
         resources:
             - 'taskcluster/scripts/misc/build-gn-common.sh'
         toolchain-artifact: public/build/gn.tar.zst

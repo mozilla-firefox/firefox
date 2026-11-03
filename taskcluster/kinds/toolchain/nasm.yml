@@ -7,7 +7,6 @@ task-defaults:
     worker:
         max-run-time: 1800
     run:
-        clone-with: hg
         toolchain-artifact: public/build/nasm.tar.zst
 
 win64-nasm:

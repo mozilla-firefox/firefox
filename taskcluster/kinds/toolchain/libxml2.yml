@@ -8,7 +8,6 @@ task-defaults:
         max-run-time: 1800
     description: "libxml2 toolchain build"
     run:
-        clone-with: hg
         script: build-libxml2.sh
         toolchain-artifact: public/build/libxml2.tar.zst
     fetches:
