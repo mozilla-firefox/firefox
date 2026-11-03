@@ -5,7 +5,11 @@
 #ifndef mozilla_dom_ConnectionAllowlistsService_h_
 #define mozilla_dom_ConnectionAllowlistsService_h_
 
+#include "mozilla/Maybe.h"
 #include "nsIContentPolicy.h"
+
+class nsILoadInfo;
+class nsIURI;
 
 namespace mozilla::dom {
 
@@ -17,6 +21,12 @@ class ConnectionAllowlistsService final : public nsIContentPolicy {
   NS_DECL_NSICONTENTPOLICY
 
   ConnectionAllowlistsService() = default;
+
+  // Static helper to check the Connection Allowlists when doing a channel
+  // redirect, called from nsContentPolicy::AsyncOnChannelRedirect.
+  static nsresult ConsultForRedirect(nsIURI* aOriginalURI, nsIURI* aNewURI,
+                                     nsILoadInfo* aLoadInfo, uint32_t aFlags,
+                                     Maybe<nsresult>& aCancelCode);
 
  private:
   ~ConnectionAllowlistsService() = default;

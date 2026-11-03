@@ -8,6 +8,7 @@
 #include "PolicyContainer.h"
 #include "mozilla/RefPtr.h"
 #include "nsCOMPtr.h"
+#include "nsIChannelEventSink.h"
 #include "nsILoadInfo.h"
 #include "nsNetUtil.h"
 
@@ -43,6 +44,37 @@ ConnectionAllowlistsService::ShouldProcess(nsIURI* aContentLocation,
                                            nsILoadInfo* aLoadInfo,
                                            int16_t* aDecision) {
   *aDecision = nsIContentPolicy::ACCEPT;
+  return NS_OK;
+}
+
+/* static */
+nsresult ConnectionAllowlistsService::ConsultForRedirect(
+    nsIURI* aOriginalURI, nsIURI* aNewURI, nsILoadInfo* aLoadInfo,
+    uint32_t aFlags, Maybe<nsresult>& aCancelCode) {
+  // Internal redirects (e.g. service worker interception or HSTS upgrades)
+  // aren't part of the request's URL list, so they don't count as redirects
+  // for the Connection Allowlists.
+  if (aFlags & nsIChannelEventSink::REDIRECT_INTERNAL) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIPolicyContainer> policyContainer =
+      aLoadInfo->GetPolicyContainer();
+  RefPtr<ConnectionAllowlists> allowlists =
+      PolicyContainer::GetConnectionAllowlists(policyContainer);
+  if (!allowlists) {
+    return NS_OK;
+  }
+
+  if (allowlists->ShouldBlockRedirect(aOriginalURI, aLoadInfo)) {
+    NS_SetRequestBlockingReason(
+        aLoadInfo, nsILoadInfo::BLOCKING_REASON_CONNECTION_ALLOWLIST);
+    // Use the same status as a load blocked by a content policy, so that
+    // e.g. the frame's error event fires for a blocked navigation.
+    aCancelCode = Some(NS_ERROR_CONTENT_BLOCKED);
+    return NS_BINDING_FAILED;
+  }
+
   return NS_OK;
 }
 

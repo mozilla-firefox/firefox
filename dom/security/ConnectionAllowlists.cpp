@@ -301,6 +301,34 @@ bool ConnectionAllowlists::ShouldBlockURL(nsIURI* aURI,
   return false;
 }
 
+// The redirect steps of
+// https://w3c.github.io/connection-allowlists/#abstract-opdef-should-request-be-blocked-by-connection-allowlists
+bool ConnectionAllowlists::ShouldBlockRedirect(nsIURI* aOriginalURI,
+                                               nsILoadInfo* aLoadInfo) const {
+  // 2. For each allowlist in allowlists:
+  for (const Maybe<Allowlist>& allowlist :
+       {std::cref(mEnforcement), std::cref(mReportOnly)}) {
+    if (allowlist.isNothing()) {
+      continue;
+    }
+
+    // 2.1. If request’s URL list’s size is greater than 1:
+    // 2.1.1. If allowlist’s redirects is allow, continue.
+    if (allowlist->mRedirects == Redirects::Allow) {
+      continue;
+    }
+
+    // 2.1.3. If allowlist’s disposition is enforce, return blocked.
+    if (allowlist->mDisposition == Disposition::Enforce) {
+      LOG("Blocking redirect of: {}", aOriginalURI->GetSpecOrDefault());
+      return true;
+    }
+  }
+
+  // 3. Return allowed.
+  return false;
+}
+
 // https://wicg.github.io/connection-allowlists/#abstract-opdef-should-webrtc-be-blocked-by-connection-allowlists
 bool ConnectionAllowlists::ShouldBlockWebRTC(
     nsPIDOMWindowInner* aWindow) const {

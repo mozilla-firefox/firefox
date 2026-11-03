@@ -54,6 +54,7 @@ class ConnectionAllowlists final {
   }
 
   bool ShouldLoad(nsIURI* aURI, nsILoadInfo* aLoadInfo) const;
+  bool ShouldBlockRedirect(nsIURI* aOriginalURI, nsILoadInfo* aLoadInfo) const;
   bool ShouldBlockWebRTC(nsPIDOMWindowInner* aWindow) const;
 
   void ToArgs(mozilla::ipc::ConnectionAllowlistsArgs& aArgs) const;
