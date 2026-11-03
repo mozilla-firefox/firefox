@@ -9,6 +9,7 @@ BROWSER_CHROME_MANIFESTS += [
     "test/browser/aitab/browser.toml",
     "test/browser/browser.toml",
     "test/browser/browser_smartwindow.toml",
+    "test/browser/chat/browser.toml",
     "test/browser/get_page_content/browser.toml",
     "test/browser_perf/perftest.toml",
 ]

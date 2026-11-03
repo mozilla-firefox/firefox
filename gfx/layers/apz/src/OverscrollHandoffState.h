@@ -136,6 +136,8 @@ class OverscrollHandoffChain {
   bool ScrollingUpWillTriggerPullToRefresh(
       const AsyncPanZoomController* aApzc) const;
 
+  SideBits GetSwipableDirections(const AsyncPanZoomController& aTarget) const;
+
  private:
   std::vector<RefPtr<AsyncPanZoomController>> mChain;
 

@@ -105,6 +105,9 @@ class nsCSSBorderRenderer final {
       mozilla::wr::IpcResourceUpdateQueue& aResources,
       const mozilla::layers::StackingContextHelper& aSc);
 
+  mozilla::wr::WrClipId CreateWebRenderClip(
+      mozilla::wr::DisplayListBuilder& aBuilder);
+
   // utility function used for background painting as well as borders
   static void ComputeInnerRadii(const RectCornerRadii& aRadii,
                                 const Margin& aBorderSizes,

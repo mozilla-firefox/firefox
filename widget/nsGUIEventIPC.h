@@ -928,6 +928,7 @@ struct ParamTraits<mozilla::MultiTouchInput> {
     WriteParam(aWriter, aParam.mType);
     WriteParam(aWriter, aParam.mTouches);
     WriteParam(aWriter, aParam.mHandledByAPZ);
+    WriteParam(aWriter, aParam.mMayTriggerSwipe);
     WriteParam(aWriter, aParam.mScreenOffset);
     WriteParam(aWriter, aParam.mButton);
     WriteParam(aWriter, aParam.mButtons);
@@ -940,6 +941,7 @@ struct ParamTraits<mozilla::MultiTouchInput> {
            ReadParam(aReader, &aResult->mType) &&
            ReadParam(aReader, &aResult->mTouches) &&
            ReadParam(aReader, &aResult->mHandledByAPZ) &&
+           ReadParam(aReader, &aResult->mMayTriggerSwipe) &&
            ReadParam(aReader, &aResult->mScreenOffset) &&
            ReadParam(aReader, &aResult->mButton) &&
            ReadParam(aReader, &aResult->mButtons) &&

@@ -567,6 +567,82 @@ add_task(async function check_isFxASignedIn_true() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_task(async function check_isFxASignedInMozilla_signed_out() {
+  await pushPrefs(
+    ["identity.fxaccounts.enabled", true],
+    ["services.sync.username", ""]
+  );
+  const sandbox = sinon.createSandbox();
+  sandbox.stub(FxAccounts.prototype, "getSignedInUser").resolves(null);
+  Assert.equal(
+    await ASRouterTargeting.Environment.isFxASignedInMozilla,
+    false,
+    "user should not appear signed in"
+  );
+
+  const message = { id: "foo", targeting: "isFxASignedInMozilla" };
+  Assert.notEqual(
+    await ASRouterTargeting.findMatchingMessage({ messages: [message] }),
+    message,
+    "should not select the message since user is not signed in"
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function check_isFxASignedInMozilla_non_mozilla_email() {
+  await pushPrefs(
+    ["identity.fxaccounts.enabled", true],
+    ["services.sync.username", ""]
+  );
+  const sandbox = sinon.createSandbox();
+  sandbox
+    .stub(FxAccounts.prototype, "getSignedInUser")
+    .resolves({ email: "someone@gmail.com" });
+  Assert.equal(
+    await ASRouterTargeting.Environment.isFxASignedInMozilla,
+    false,
+    "user should not appear signed in with a Mozilla email"
+  );
+
+  const message = { id: "foo", targeting: "isFxASignedInMozilla" };
+  Assert.notEqual(
+    await ASRouterTargeting.findMatchingMessage({ messages: [message] }),
+    message,
+    "should not select the message since user is not signed in with a Mozilla email"
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function check_isFxASignedInMozilla_mozilla_email() {
+  await pushPrefs(
+    ["identity.fxaccounts.enabled", true],
+    ["services.sync.username", ""]
+  );
+  const sandbox = sinon.createSandbox();
+  sandbox
+    .stub(FxAccounts.prototype, "getSignedInUser")
+    .resolves({ email: "someone@mozilla.com" });
+  Assert.equal(
+    await ASRouterTargeting.Environment.isFxASignedInMozilla,
+    true,
+    "user should appear signed in with a Mozilla email"
+  );
+
+  const message = { id: "foo", targeting: "isFxASignedInMozilla" };
+  Assert.equal(
+    await ASRouterTargeting.findMatchingMessage({ messages: [message] }),
+    message,
+    "should select the correct message"
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function check_totalBookmarksCount() {
   // Make sure we remove default bookmarks so they don't interfere
   await clearHistoryAndBookmarks();

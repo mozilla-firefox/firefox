@@ -121,6 +121,11 @@ run-if = [
   "os == 'mac'",
 ]
 
+["browser_test_menu_label_truncation.js"]
+run-if = [
+  "os == 'mac'",
+]
+
 ["browser_test_scrollbar_colors.js"]
 support-files = ["helper_scrollbar_colors.html"]
 
@@ -136,4 +141,59 @@ support-files = [
 skip-if = [
   "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland' && opt", # Bug 2059565
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 1784772
+]
+
+["browser_test_touchscreen_swipe_gesture.js"]
+support-files = [
+  "helper_swipe_gesture.html",
+  "helper_touchscreen_swipe_navigation.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "os == 'linux'" # TODO: Support Linux.
+]
+
+["browser_test_touchscreen_swipe_gesture_events.js"]
+support-files = [
+  "helper_swipe_gesture.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "os == 'linux'", # TODO: Support Linux.
+]
+
+["browser_test_touchscreen_swipe_gesture_with_css.js"]
+support-files = [
+  "helper_swipe_gesture.html",
+  "helper_touchscreen_swipe_overscroll.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "os == 'linux'", # TODO: Support Linux.
+]
+
+["browser_test_touchscreen_swipe_gesture_with_multitouch.js"]
+support-files = [
+  "helper_swipe_gesture.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "os == 'linux'", # TODO: Support Linux.
+]
+
+["browser_test_touchscreen_swipe_gesture_with_pan_gesture.js"]
+support-files = [
+  "helper_swipe_gesture.html",
+  "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
+  "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",
+]
+skip-if = [
+  "os == 'linux'", # TODO: Support Linux.
+  # HeadlessWidget::SynthesizeNativeTouchpadPan in widget/headless/HeadlessWidget.cpp
+  # calls DispatchPanGestureInput directly, bypassing the widget's swipe tracker.
+  "headless",
 ]

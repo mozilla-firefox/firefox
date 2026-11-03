@@ -138,7 +138,7 @@
     <!-- Label for enabling shake to summarize -->
     <string name="preferences_key_enable_shake_to_summarize" translatable="false">Enable Shake to Summarize Feature Flag</string>
     <!-- Label for enabling listen to page -->
-    <string name="preferences_key_enable_listen_to_page" translatable="false">Enable Listen to Page Feature Flag</string>
+    <string name="preferences_key_enable_listen_to_page" translatable="false">Enable Listen to Page Feature Flag (requires app restart)</string>
     <!-- Label for enabling the weekly privacy notification -->
     <string name="preferences_debug_settings_privacy_report_notification" translatable="false">Enable Weekly Privacy Report Notification Feature</string>
     <!-- Label for forcing the weekly privacy report notification to show, with a fixed count of blocked trackers -->
@@ -165,9 +165,6 @@
     <string name="preferences_debug_settings_enable_search_optimization_sport" translatable="false">Show Search Optimization Sport cards</string>
     <string name="preferences_debug_settings_enable_search_optimization_flight" translatable="false">Show Search Optimization Flight cards</string>
     <string name="preferences_debug_settings_search_optimization_card_summary" translatable="false">This needs the Search Optimization Feature enabled</string>
-
-    <!-- Label for enabling Private Mode and Stories Entry Point -->
-    <string name="preferences_debug_settings_private_mode_and_stories_entry_point" translatable="false">Enable Private Mode and Stories Entry Point</string>
 
     <!-- longfox secret setting -->
     <string name="preferences_debug_settings_enable_longfox" translatable="false">Enable Longfox</string>

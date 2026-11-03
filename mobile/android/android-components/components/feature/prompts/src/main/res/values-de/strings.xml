@@ -137,7 +137,7 @@
   <!-- Strings show in a dialog that appear when user confirm folder upload -->
   <string name="mozac_feature_prompt_folder_upload_confirm_title">Dateien hochladen?</string>
   <!-- Prompt message displayed when user selects a specific folder. %1$s is a folder / directory name. -->
-  <string name="mozac_feature_prompt_folder_upload_confirm_message">Überprüfen Sie, ob Sie der Website vertrauen, bevor Sie Inhalte von \"„%1$s“ hochladen.</string>
+  <string name="mozac_feature_prompt_folder_upload_confirm_message">Überprüfen Sie, ob Sie der Website vertrauen, bevor Sie Inhalte von „%1$s“ hochladen.</string>
   <!-- Pressing this will dismiss the dialog and allow to upload folder -->
   <string name="mozac_feature_prompt_folder_upload_confirm_positive_button_text">Hochladen</string>
   <!-- Pressing this will dismiss the dialog and disallow to upload folder -->
@@ -189,7 +189,7 @@
   <!-- Title of the Identity Credential privacy policy dialog title. The %1$s will be replaced with the name of the provider. -->
   <string name="mozac_feature_prompts_identity_credentials_privacy_policy_title">%1$s als Login-Anbieter verwenden</string>
   <!-- Title of the Identity Credential privacy policy dialog description. The %1$s will be replaced with the name of the provider, %2$s will be replaced with the account, %3$s will be replaced with the privacy policy url and  %4$s will be replaced with the terms of service. -->
-  <string name="mozac_feature_prompts_identity_credentials_privacy_policy_description" tools:ignore="IncorrectStraightDoubleQuote"><![CDATA[Die Anmeldung bei %1$s mit einem %2$s-Konto unterliegt deren <a href=\"%3$s\">Datenschutzerklärung</a> und <a href=\"%4$s\">Nutzungsbedingungen </a>]]></string>
+  <string name="mozac_feature_prompts_identity_credentials_privacy_policy_description" tools:ignore="IncorrectStraightDoubleQuote"><![CDATA[Die Anmeldung bei %1$s mit einem %2$s-Konto unterliegt deren <a href=\"%3$s\">Datenschutzerklärung</a> und <a href=\"%4$s\">Nutzungsbedingungen</a>]]></string>
   <!-- Text for the positive button of the Identity Credential dialogs. -->
   <string name="mozac_feature_prompts_identity_credentials_continue">Weiter</string>
   <!-- Text for the cancel button of the Identity Credential dialogs. -->

@@ -88,6 +88,7 @@
 #include "mozilla/layers/WebRenderScrollData.h"
 #include "nsCSSProps.h"
 #include "nsCSSRendering.h"
+#include "nsCSSRenderingBorders.h"
 #include "nsCSSRenderingGradients.h"
 #include "nsCanvasFrame.h"
 #include "nsCaret.h"
@@ -3048,6 +3049,26 @@ void nsDisplayBackgroundImage::Destroy(nsDisplayListBuilder* aBuilder) {
   nsPaintedDisplayItem::Destroy(aBuilder);
 }
 
+static bool NeedsBorderAreaMask(nsIFrame* aFrame, StyleBackgroundClip aClip) {
+  if (aClip != StyleBackgroundClip::BorderArea) {
+    return false;
+  }
+  for (auto side : AllPhysicalSides()) {
+    if (!aFrame->StyleBorder()->GetComputedBorderWidth(side)) {
+      continue;
+    }
+    switch (aFrame->StyleBorder()->GetBorderStyle(side)) {
+      case StyleBorderStyle::Dashed:
+      case StyleBorderStyle::Dotted:
+      case StyleBorderStyle::Double:
+        return true;
+      default:
+        break;
+    }
+  }
+  return false;
+}
+
 static void SetBackgroundClipRegion(
     DisplayListClipState::AutoSaveRestore& aClipState, nsIFrame* aFrame,
     const nsStyleImageLayers::Layer& aLayer, const nsRect& aBackgroundRect,
@@ -3057,13 +3078,17 @@ static void SetBackgroundClipRegion(
       aLayer, aFrame, *aFrame->StyleBorder(), aBackgroundRect, aBackgroundRect,
       aWillPaintBorder, aFrame->PresContext()->AppUnitsPerDevPixel(), &clip);
 
+  // Prevent applying the border-radius clip if we have a border-area mask.
+  // It would be redundant and just cause extra antialiasing seams.
+  const auto* radii =
+      clip.mHasRoundedCorners && !NeedsBorderAreaMask(aFrame, aLayer.mClip)
+          ? &clip.mRadii
+          : nullptr;
   if (clip.mHasAdditionalBGClipArea) {
-    aClipState.ClipContentDescendants(
-        clip.mAdditionalBGClipArea, clip.mBGClipArea,
-        clip.mHasRoundedCorners ? &clip.mRadii : nullptr);
+    aClipState.ClipContentDescendants(clip.mAdditionalBGClipArea,
+                                      clip.mBGClipArea, radii);
   } else {
-    aClipState.ClipContentDescendants(
-        clip.mBGClipArea, clip.mHasRoundedCorners ? &clip.mRadii : nullptr);
+    aClipState.ClipContentDescendants(clip.mBGClipArea, radii);
   }
 }
 
@@ -3292,7 +3317,8 @@ AppendedBackgroundType nsDisplayBackgroundImage::AppendBackgroundItemsToTop(
       if (clip.mHasAdditionalBGClipArea) {
         bgColorRect = bgColorRect.Intersect(clip.mAdditionalBGClipArea);
       }
-      if (clip.mHasRoundedCorners) {
+      if (clip.mHasRoundedCorners &&
+          !NeedsBorderAreaMask(aFrame, bg->BottomLayer().mClip)) {
         clipState.emplace(aBuilder);
         clipState->ClipContentDescendants(clip.mBGClipArea, &clip.mRadii);
       }
@@ -3540,6 +3566,20 @@ static void PushBorderAreaClipOut(
   nsRectCornerRadii radii;
   if (!GetBorderAreaExclusion(aFrame, aLayer, aBackgroundRect, rect, radii)) {
     return;
+  }
+
+  if (NeedsBorderAreaMask(aFrame, aLayer.mClip)) {
+    auto renderer = nsCSSRendering::CreateNullBorderRendererWithStyleBorder(
+        aFrame->PresContext(), nullptr, aFrame, aBackgroundRect,
+        aBackgroundRect, *aFrame->StyleBorder(), aFrame->Style(), nullptr,
+        aFrame->GetSkipSides());
+    if (renderer) {
+      wr::WrClipId clipId = renderer->CreateWebRenderClip(aBuilder);
+      wr::WrClipChainId chain = aBuilder.DefineClipChain(
+          {&clipId, 1}, aBuilder.CurrentClipChainIdIfNotRoot());
+      aClipHelper.emplace(aBuilder, chain);
+      return;
+    }
   }
 
   wr::ComplexClipRegion region = wr::ToComplexClipRegion(

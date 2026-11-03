@@ -2316,6 +2316,11 @@ void MacroAssembler::branchTestObjectImpl(Condition cond, const T& t,
   B(label, c);
 }
 
+void MacroAssembler::branchTestGCThing(Condition cond, Register tag,
+                                       Label* label) {
+  branchTestGCThingImpl(cond, tag, label);
+}
+
 void MacroAssembler::branchTestGCThing(Condition cond, const Address& address,
                                        Label* label) {
   branchTestGCThingImpl(cond, address, label);

@@ -1,0 +1,4 @@
+[DEFAULT]
+support-files = ["head.js"]
+
+["browser_generated_widgets.js"]

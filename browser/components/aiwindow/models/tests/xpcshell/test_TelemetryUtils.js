@@ -384,64 +384,62 @@ add_task(
   }
 );
 
-add_task(async function test_runTelemetry_returns_empty_for_no_triggers() {
+add_task(async function test_selectPrompts_returns_empty_for_no_triggers() {
   const engine = new TelemetryEngine();
 
-  const results = await engine.runTelemetry([], makeConversation());
+  const selected = await engine.selectPrompts([]);
   Assert.deepEqual(
-    results,
+    selected,
     [],
-    "runTelemetry with no triggers should return []"
+    "selectPrompts with no triggers should return []"
   );
 });
 
-add_task(async function test_runTelemetry_runs_engine_for_matched_trigger() {
-  const engine = new TelemetryEngine();
-  const TELEMETRY_NAME = "wasSuccessful";
+add_task(
+  async function test_selectPrompts_selects_prompt_for_matched_trigger() {
+    const engine = new TelemetryEngine();
+    const TELEMETRY_NAME = "wasSuccessful";
 
-  const sb = sinon.createSandbox();
-  try {
-    const fakeResult = {
-      wasSuccessful: "successful",
-      conversationTopic: "sports",
-      memoryReferenced: "no",
-    };
-    sb.stub(engine, "_fetchRecords").resolves([
-      {
-        id: "my-prompt-v1",
-        version: "1.0",
-        telemetry_name: TELEMETRY_NAME,
-        triggers: [UNIFORM_SAMPLE],
-        output_schema: { myField: ["a", "b"] },
-        prompt: "...",
-      },
-    ]);
-    const fakeEngine = { run: sb.stub().resolves(fakeResult) };
-    sb.stub(TelemetryPromptEngine, "build").resolves(fakeEngine);
+    const sb = sinon.createSandbox();
+    try {
+      sb.stub(engine, "_fetchRecords").resolves([
+        {
+          id: "my-prompt-v1",
+          version: "1.0",
+          telemetry_name: TELEMETRY_NAME,
+          triggers: [UNIFORM_SAMPLE],
+          output_schema: { myField: ["a", "b"] },
+          prompt: "...",
+        },
+      ]);
+      const buildStub = sb.stub(TelemetryPromptEngine, "build");
 
-    const trigger = new Trigger(UNIFORM_SAMPLE, () => true, 1.0);
-    const results = await engine.runTelemetry([trigger], makeConversation());
+      const trigger = new Trigger(UNIFORM_SAMPLE, () => true, 1.0);
+      const selected = await engine.selectPrompts([trigger]);
 
-    Assert.ok(
-      results.length,
-      "should return results when a trigger matches a prompt record"
-    );
-    Assert.ok(
-      results.some(r => r.telemetry_name === TELEMETRY_NAME),
-      `${TELEMETRY_NAME} result should be present`
-    );
-    Assert.ok(fakeEngine.run.called, "engine.run should be called");
-    Assert.equal(
-      results[0].samplingProbability,
-      1.0,
-      "result should include the samplingProbability of the matching trigger"
-    );
-  } finally {
-    sb.restore();
+      Assert.equal(
+        selected.length,
+        1,
+        "should select a prompt when a trigger matches a prompt record"
+      );
+      Assert.equal(
+        selected[0].record.telemetry_name,
+        TELEMETRY_NAME,
+        `${TELEMETRY_NAME} should be selected`
+      );
+      Assert.equal(
+        selected[0].samplingProbability,
+        1.0,
+        "selection should include the samplingProbability of the matching trigger"
+      );
+      Assert.ok(buildStub.notCalled, "selecting prompts should not run them");
+    } finally {
+      sb.restore();
+    }
   }
-});
+);
 
-add_task(async function test_runTelemetry_deduplicates_by_telemetry_name() {
+add_task(async function test_selectPrompts_deduplicates_by_telemetry_name() {
   const engine = new TelemetryEngine();
   const TELEMETRY_NAME = "wasSuccessful";
 
@@ -457,29 +455,20 @@ add_task(async function test_runTelemetry_deduplicates_by_telemetry_name() {
         prompt: "...",
       },
     ]);
-    const fakeEngine = {
-      run: sb.stub().resolves({ wasSuccessful: "successful" }),
-    };
-    sb.stub(TelemetryPromptEngine, "build").resolves(fakeEngine);
 
     const triggers = [
       new Trigger(UNIFORM_SAMPLE, () => true, 1.0),
       new Trigger(`${UNIFORM_SAMPLE}_turn2`, () => true, 1.0),
     ];
-    const results = await engine.runTelemetry(triggers, makeConversation());
+    const selected = await engine.selectPrompts(triggers);
 
-    const wasSuccessfulCount = results.filter(
-      r => r.telemetry_name === "wasSuccessful"
+    const wasSuccessfulCount = selected.filter(
+      s => s.record.telemetry_name === TELEMETRY_NAME
     ).length;
     Assert.equal(
       wasSuccessfulCount,
       1,
-      "wasSuccessful prompt should run only once despite multiple matching triggers"
-    );
-    Assert.equal(
-      TelemetryPromptEngine.build.callCount,
-      1,
-      "build should be called only once for the deduplicated prompt"
+      "wasSuccessful prompt should be selected only once despite multiple matching triggers"
     );
   } finally {
     sb.restore();
@@ -487,7 +476,7 @@ add_task(async function test_runTelemetry_deduplicates_by_telemetry_name() {
 });
 
 add_task(
-  async function test_runTelemetry_samplingProbability_comes_from_first_matching_trigger() {
+  async function test_selectPrompts_samplingProbability_comes_from_first_matching_trigger() {
     const engine = new TelemetryEngine();
     const TELEMETRY_NAME = "wasSuccessful";
 
@@ -503,19 +492,15 @@ add_task(
           prompt: "...",
         },
       ]);
-      const fakeEngine = {
-        run: sb.stub().resolves({ wasSuccessful: "successful" }),
-      };
-      sb.stub(TelemetryPromptEngine, "build").resolves(fakeEngine);
 
       const triggers = [
         new Trigger(UNIFORM_SAMPLE, () => true, 0.3),
         new Trigger(`${UNIFORM_SAMPLE}_turn2`, () => true, 0.7),
       ];
-      const results = await engine.runTelemetry(triggers, makeConversation());
+      const selected = await engine.selectPrompts(triggers);
 
       Assert.equal(
-        results[0].samplingProbability,
+        selected[0].samplingProbability,
         0.3,
         "samplingProbability should come from the first matching trigger in the record's trigger list"
       );
@@ -526,7 +511,7 @@ add_task(
 );
 
 add_task(
-  async function test_runTelemetry_does_not_run_prompt_for_unmatched_trigger() {
+  async function test_selectPrompts_does_not_select_prompt_for_unmatched_trigger() {
     const engine = new TelemetryEngine();
     const TELEMETRY_NAME = "wasSuccessful";
 
@@ -550,20 +535,18 @@ add_task(
           prompt: "...",
         },
       ]);
-      const fakeEngine = { run: sb.stub().resolves({}) };
-      sb.stub(TelemetryPromptEngine, "build").resolves(fakeEngine);
 
       // long_conversation matches isLongConvo prompt, not wasSuccessful
       const trigger = new Trigger(LONG_CONVERSATION, () => true, 1.0);
-      const results = await engine.runTelemetry([trigger], makeConversation());
+      const selected = await engine.selectPrompts([trigger]);
 
       Assert.ok(
-        !results.some(r => r.telemetry_name === TELEMETRY_NAME),
-        `${TELEMETRY_NAME} should not run when only ${LONG_CONVERSATION} trigger fires`
+        !selected.some(s => s.record.telemetry_name === TELEMETRY_NAME),
+        `${TELEMETRY_NAME} should not be selected when only ${LONG_CONVERSATION} trigger fires`
       );
       Assert.ok(
-        results.some(r => r.telemetry_name === "conversationCategory"),
-        `conversationCategory should run when ${LONG_CONVERSATION} trigger fires`
+        selected.some(s => s.record.telemetry_name === "conversationCategory"),
+        `conversationCategory should be selected when ${LONG_CONVERSATION} trigger fires`
       );
     } finally {
       sb.restore();
@@ -623,64 +606,6 @@ add_task(async function test_runTelemetryByName_happy_path() {
     Assert.ok(
       results.some(r => r.telemetry_name === TELEMETRY_NAMES[1]),
       `${TELEMETRY_NAMES[1]} should be run`
-    );
-  } finally {
-    sb.restore();
-  }
-});
-
-add_task(async function test_runTelemetryByName_dont_run_terminal() {
-  const engine = new TelemetryEngine();
-  const TELEMETRY_NAMES = ["wasSuccessful", "conversationCategory"];
-
-  const sb = sinon.createSandbox();
-  try {
-    sb.stub(engine, "_fetchRecords").resolves([
-      {
-        id: "my-prompt-v1",
-        version: "1.0",
-        telemetry_name: "wasSuccessful",
-        triggers: [UNIFORM_SAMPLE, `${UNIFORM_SAMPLE}_turn2`],
-        output_schema: { myField: ["a", "b"] },
-        prompt: "...",
-        run_terminal: true,
-      },
-      {
-        id: "my-prompt-v2",
-        version: "1.0",
-        telemetry_name: "conversationCategory",
-        triggers: [LONG_CONVERSATION],
-        output_schema: { myField: ["a", "b"] },
-        prompt: "...",
-        run_terminal: false,
-      },
-    ]);
-    sb.stub(engine, "_runPrompts").callsFake(records =>
-      Promise.resolve(
-        records.map(r => ({ telemetry_name: r.telemetry_name, result: {} }))
-      )
-    );
-    const fakeEngine = { run: sb.stub().resolves({}) };
-    sb.stub(TelemetryPromptEngine, "build").resolves(fakeEngine);
-
-    // long_conversation matches isLongConvo prompt, not wasSuccessful
-    const results = await engine.runTelemetryByName(
-      TELEMETRY_NAMES,
-      makeConversation()
-    );
-
-    Assert.strictEqual(
-      results.length,
-      1,
-      `Results should not be run on non-terminal telemetry`
-    );
-    Assert.ok(
-      results.some(r => r.telemetry_name === "wasSuccessful"),
-      `wasSuccessful should be run`
-    );
-    Assert.ok(
-      !results.some(r => r.telemetry_name === "isLongConvo"),
-      `isLongConvo should not be run`
     );
   } finally {
     sb.restore();

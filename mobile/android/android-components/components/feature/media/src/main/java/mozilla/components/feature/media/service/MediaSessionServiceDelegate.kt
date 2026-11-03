@@ -18,15 +18,6 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
 import java.util.UUID
-import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.launch
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.base.crash.CrashReporting
@@ -76,14 +67,14 @@ internal class MediaSessionServiceDelegate(
     @get:VisibleForTesting internal val store: BrowserStore,
     @get:VisibleForTesting internal val crashReporter: CrashReporting?,
     @get:VisibleForTesting internal val notificationsDelegate: NotificationsDelegate,
-    @get:VisibleForTesting internal val mainScope: CoroutineScope = MainScope(),
 ) : MediaSessionDelegate {
     private val logger = Logger("MediaSessionService")
 
     @VisibleForTesting internal var notificationHelper = MediaNotification(context, service::class.java)
 
     @VisibleForTesting
-    internal var player: BrowserStorePlayer = BrowserStorePlayer(context, store, onPlay = ::onMediaSessionPlay)
+    internal var player: BrowserStorePlayer =
+        BrowserStorePlayer(context, store, onPlay = ::onMediaSessionPlay, onArtworkChanged = ::onArtworkChanged)
 
     // Media3 MediaSession enforces process-global ID uniqueness via a static registry keyed by id;
     // a random suffix keeps multiple concurrent instances (across tests or restart races) from colliding.
@@ -104,7 +95,7 @@ internal class MediaSessionServiceDelegate(
         SharedIdsHelper.getIdForTag(context, AbstractMediaSessionService.NOTIFICATION_TAG)
     }
 
-    @VisibleForTesting internal var notificationScope: CoroutineScope? = null
+    private var notificationState: SessionState? = null
 
     @VisibleForTesting internal val intentFilter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
 
@@ -120,23 +111,11 @@ internal class MediaSessionServiceDelegate(
     // focus back. The system returns focus after a transient loss on its own.
     private var focusRequestKey: Pair<String, MozMediaSession.AudioSessionType>? = null
 
-    // Bumped when playback pauses, stops or shuts down, and when startForeground() is called, so only
-    // the latest startForeground() requests audio focus, and only if playback has not paused or
-    // stopped since. Like focusRequestKey, it is only read and written on the main thread: the media
-    // session feature and callbacks call in there, and the startForeground() coroutine runs on
-    // mainScope.
-    private var focusRequestGeneration = 0
-
     fun onCreate() {
         logger.debug("Service created")
-        // A child SupervisorJob of mainScope: shutdown()/onDestroy() cancel only notificationScope, while
-        // cancelling mainScope still cancels it.
-        notificationScope = CoroutineScope(mainScope.coroutineContext + SupervisorJob(mainScope.coroutineContext[Job]))
     }
 
     fun onDestroy() {
-        notificationScope?.cancel()
-        notificationScope = null
         mediaSession.release()
         player.release()
         audioFocus.abandon()
@@ -228,64 +207,67 @@ internal class MediaSessionServiceDelegate(
         updateNotification(sessionState)
     }
 
+    override fun handleMediaUpdated(sessionState: SessionState) {
+        updateNotification(sessionState)
+    }
+
     override fun handleNoMedia() {
         shutdown()
     }
 
     @VisibleForTesting
     internal fun updateNotification(sessionState: SessionState) {
-        notificationScope?.launch {
-            when (sessionState.mediaSessionState?.playbackState) {
-                PLAYING,
-                PAUSED -> {
-                    val notification = notificationHelper.create(sessionState, mediaSession)
-                    notificationsDelegate.notify(
-                        notificationId = notificationId,
-                        notification = notification,
-                    )
-                }
-                else -> {
-                    notificationsDelegate.notificationManagerCompat.cancel(notificationId)
-                }
+        notificationState = sessionState
+        when (sessionState.mediaSessionState?.playbackState) {
+            PLAYING,
+            PAUSED -> {
+                notificationsDelegate.notify(
+                    notificationId = notificationId,
+                    notification = createNotification(sessionState),
+                )
+            }
+            else -> {
+                notificationsDelegate.notificationManagerCompat.cancel(notificationId)
             }
         }
     }
 
     @VisibleForTesting
     @Suppress("TooGenericExceptionCaught")
-    internal fun startForeground(
-        sessionState: SessionState,
-        coroutineContext: CoroutineContext = EmptyCoroutineContext,
-    ) {
-        val generation = ++focusRequestGeneration
-        notificationScope?.launch(coroutineContext) {
-            val notification = notificationHelper.create(sessionState, mediaSession)
-            try {
-                service.startForeground(notificationId, notification)
-            } catch (e: Exception) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && e is ForegroundServiceStartNotAllowedException) {
-                    // We should not encounter this exception if `android:foregroundServiceType="mediaPlayback"`
-                    // is added to the service. The crash reporter loses the stack trace for this
-                    // exception so we want to be able to track this crash independently to ensure
-                    // this case is fixed and be able to determine if there are other cases where we
-                    // might be trying to start foreground services from the background.
-                    // https://bugzilla.mozilla.org/show_bug.cgi?id=1802620
-                    crashReporter?.submitCaughtException(e)
-                    return@launch
-                } else {
-                    throw e
-                }
-            }
-
-            isForegroundService = true
-            // Request audio focus only after the foreground service is running. This satisfies
-            // the Android 15+ requirement that audio focus requests must come from an app that
-            // is either visible or running a foreground service with WIU (While In Use)
-            // capabilities, i.e. one that was started while the app was visible to the user.
-            if (generation == focusRequestGeneration) {
-                requestAudioFocusIfNeeded(sessionState)
+    internal fun startForeground(sessionState: SessionState) {
+        try {
+            service.startForeground(notificationId, createNotification(sessionState))
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && e is ForegroundServiceStartNotAllowedException) {
+                // We should not encounter this exception if `android:foregroundServiceType="mediaPlayback"`
+                // is added to the service. The crash reporter loses the stack trace for this
+                // exception so we want to be able to track this crash independently to ensure
+                // this case is fixed and be able to determine if there are other cases where we
+                // might be trying to start foreground services from the background.
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=1802620
+                crashReporter?.submitCaughtException(e)
+                notificationState = null
+                return
+            } else {
+                throw e
             }
         }
+
+        isForegroundService = true
+        notificationState = sessionState
+        // Request audio focus only after the foreground service is running. This satisfies
+        // the Android 15+ requirement that audio focus requests must come from an app that
+        // is either visible or running a foreground service with WIU (While In Use)
+        // capabilities, i.e. one that was started while the app was visible to the user.
+        requestAudioFocusIfNeeded(sessionState)
+    }
+
+    private fun createNotification(sessionState: SessionState) =
+        notificationHelper.create(sessionState, mediaSession, player.artworkFor(sessionState)?.bitmap)
+
+    @VisibleForTesting
+    internal fun onArtworkChanged() {
+        notificationState?.let(::updateNotification)
     }
 
     @MainThread
@@ -319,8 +301,7 @@ internal class MediaSessionServiceDelegate(
     @MainThread
     private fun resetFocusRequest() {
         focusRequestKey = null
-        focusRequestGeneration++
-        logger.debug("Audio focus request reset, generation=$focusRequestGeneration")
+        logger.debug("Audio focus request reset")
     }
 
     @VisibleForTesting
@@ -361,8 +342,8 @@ internal class MediaSessionServiceDelegate(
     @VisibleForTesting
     internal fun shutdown() {
         // MediaSessionFeature can keep the service bound past stopSelf(), and a later playing state
-        // must still reach the notification scope, session and player; onDestroy() releases them.
-        notificationScope?.coroutineContext?.cancelChildren()
+        // must still reach the session and player; onDestroy() releases them.
+        notificationState = null
         resetFocusRequest()
         // Explicitly cancel media notification.
         // Otherwise, when media is paused, with [STOP_FOREGROUND_DETACH] notification behavior,

@@ -346,7 +346,7 @@ export var ToolbarContextMenu = {
         .toggleAttribute("disabled", closedCount == 0);
       document.l10n.setArgs(
         document.getElementById("toolbar-context-undoCloseTab"),
-        { tabCount: closedCount }
+        { tabCount: Math.max(closedCount, 1) }
       );
       return;
     }

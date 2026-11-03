@@ -16,7 +16,7 @@ browser.jar:
   builtin-addons/newtab/data/data/content/assets/  (./data/content/assets/*)
 # The bundle and CSS files below are generated at build time into the objdir
 # by build-newtab-bundles.py (see moz.build). They are not present in the
-# source tree; the JAR maker finds them via its objdir fallback search path.
+# source tree, so a source missing there is read from the objdir instead.
   builtin-addons/newtab/data/content/vendor.bundle.js (./data/content/vendor.bundle.js)
   builtin-addons/newtab/data/content/activity-stream.bundle.js (./data/content/activity-stream.bundle.js)
   builtin-addons/newtab/data/content/newtab-render.js (./data/content/newtab-render.js)

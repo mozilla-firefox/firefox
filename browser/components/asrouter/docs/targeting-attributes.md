@@ -806,6 +806,16 @@ Is the user signed in to a Firefox Account?
 declare const isFxASignedIn: Promise<boolean>
 ```
 
+### `isFxASignedInMozilla`
+
+Is the user signed in to a Firefox Account with an @mozilla.com email?
+
+#### Definition
+
+```ts
+declare const isFxASignedInMozilla: Promise<boolean>
+```
+
 ### `creditCardsSaved`
 
 The number of credit cards the user has saved for Forms and Autofill.

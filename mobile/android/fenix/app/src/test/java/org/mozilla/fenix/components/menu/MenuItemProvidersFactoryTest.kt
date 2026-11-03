@@ -40,6 +40,8 @@ import org.mozilla.fenix.collections.SaveToCollectionMenuItemProvider
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.FindInPageMenuItemProvider
 import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
 import org.mozilla.fenix.components.menu.fake.reachableEvents
 import org.mozilla.fenix.customtabs.CustomTabAppMenuItemProvider
 import org.mozilla.fenix.downloads.DownloadsMenuItemProvider
@@ -95,7 +97,7 @@ class MenuItemProvidersFactoryTest {
                 settings = settings,
             )
         val registry =
-            MenuItemsRegistry(configuration = MenuConfigurations.home(), resolver = factory::buildProviderFor)
+            MenuItemsRegistry(configuration = HomeMenuConfiguration.sections(), resolver = factory::buildProviderFor)
 
         val shown = registry.providers.filterValues { it.itemsFlow.value.isNotEmpty() }.keys
         assertEquals(

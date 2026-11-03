@@ -9,6 +9,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
+  SCHEDULE_TYPES:
+    "moz-src:///browser/components/aiwindow/models/agents/Schedule.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
 });
 
@@ -50,11 +52,6 @@ function getOpenTabTitles() {
   return titles;
 }
 
-export const SCHEDULE_TYPES = Object.freeze({
-  DAILY: "daily",
-  WEEKLY: "weekly",
-});
-
 export const DAILY_SCHEDULE_L10N_ID = "ai-tasks-alert-schedule-daily-at";
 
 // Indexed by the weekday values used by the scheduler (0 = Sunday)
@@ -67,6 +64,54 @@ export const WEEKLY_SCHEDULE_L10N_IDS = Object.freeze([
   "ai-tasks-alert-schedule-weekly-friday",
   "ai-tasks-alert-schedule-weekly-saturday",
 ]);
+
+/**
+ * A monitor as the chat model is told about it: English, with no ids or
+ * check history. Not the stored monitor object. Users see monitors as
+ * "tasks", so this is named for that rather than for the monitor.
+ *
+ * @typedef {object} WatchTask
+ * @property {"watching"|"paused"|"expired"|"deleted"} status - Whether the
+ *   monitor is running
+ * @property {string} name - The task name
+ * @property {string[]} watchUrls - Pages the monitor checks
+ * @property {string} condition - What the user asked to be notified about
+ * @property {string} schedule - When it checks, e.g. "weekly on Monday at 08:30"
+ */
+
+const englishWeekdayFormat = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  timeZone: "UTC",
+});
+
+/**
+ * Describes a stored schedule in English, e.g. "weekly on Monday at 08:30"
+ *
+ * @param {?object} schedule - A serialized IntervalSchedule, DailySchedule or
+ *   WeeklySchedule
+ * @returns {string}
+ */
+function describeScheduleForModel(schedule) {
+  const pad = n => String(n ?? 0).padStart(2, "0");
+  const time = `${pad(schedule?.hour)}:${pad(schedule?.minute)}`;
+  switch (schedule?.type) {
+    case lazy.SCHEDULE_TYPES.INTERVAL:
+      return schedule.hours === 1
+        ? "every hour"
+        : `every ${schedule.hours} hours`;
+    case lazy.SCHEDULE_TYPES.DAILY:
+      return `daily at ${time}`;
+    case lazy.SCHEDULE_TYPES.WEEKLY: {
+      // January 1, 2023 was a Sunday, matching the scheduler's weekday 0
+      const weekday = englishWeekdayFormat.format(
+        Date.UTC(2023, 0, 1 + schedule.weekday)
+      );
+      return `weekly on ${weekday} at ${time}`;
+    }
+    default:
+      return "unknown";
+  }
+}
 
 /**
  * Shared utilities for monitor UI operations
@@ -192,6 +237,31 @@ export const MonitorUIUtils = {
   },
 
   /**
+   * Turns a stored monitor into the watch task the chat model is told about.
+   * In code, "monitor" is the stored object, while users and the model call
+   * it a "watch task", so this is the one place that translates between the
+   * two. The result is plain data for the model: English rather than
+   * localized, so the model's history doesn't depend on the UI locale, and
+   * without ids or check history.
+   *
+   * @param {object} monitor - The monitor object from the database
+   * @returns {WatchTask}
+   */
+  formatMonitorForModel(monitor) {
+    let status = this.buildMonitorStatus(monitor).kind;
+    if (monitor.expiry) {
+      status = "expired";
+    }
+    return {
+      status,
+      name: monitor.title || "",
+      watchUrls: monitor.watchUrls || [],
+      condition: monitor.monitorPrompt || "",
+      schedule: describeScheduleForModel(monitor.schedule),
+    };
+  },
+
+  /**
    * The Fluent string that states when a monitor checks, e.g. "Check daily at
    * 9:00 AM". Callers render it themselves so the string can be localized in
    * whichever document they live in.
@@ -210,7 +280,7 @@ export const MonitorUIUtils = {
     }
 
     const id =
-      schedule.frequency === SCHEDULE_TYPES.WEEKLY
+      schedule.frequency === lazy.SCHEDULE_TYPES.WEEKLY
         ? WEEKLY_SCHEDULE_L10N_IDS[Number(schedule.weekday)]
         : DAILY_SCHEDULE_L10N_ID;
     if (!id) {

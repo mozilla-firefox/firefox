@@ -1,0 +1,11 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+XPI_NAME = "stageonly"
+
+GENERATED_FILES += ["made.js"]
+GENERATED_FILES["made.js"].script = "make-it.py"
+
+FINAL_TARGET_FILES += [
+    "!made.js",
+]

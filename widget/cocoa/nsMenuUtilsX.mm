@@ -22,6 +22,7 @@
 #include "nsMenuX.h"
 #include "nsObjCExceptions.h"
 #include "nsPIDOMWindow.h"
+#include "nsPresContext.h"
 #include "nsQueryObject.h"
 
 using namespace mozilla;
@@ -53,16 +54,64 @@ void nsMenuUtilsX::DispatchCommandTo(nsIContent* aTargetContent,
   }
 }
 
-NSString* nsMenuUtilsX::GetTruncatedCocoaLabel(const nsString& itemLabel) {
+NSString* nsMenuUtilsX::TruncateLabelToWidth(NSString* aLabel, NSFont* aFont,
+                                             CGFloat aMaxWidth) {
   NS_OBJC_BEGIN_TRY_ABORT_BLOCK;
 
-  // We want to truncate long strings to some reasonable pixel length but there
-  // is no good API for doing that which works for all OS versions and
-  // architectures. For now we'll do nothing for consistency and depend on good
-  // user interface design to limit string lengths.
-  return [NSString
-      stringWithCharacters:reinterpret_cast<const unichar*>(itemLabel.get())
-                    length:itemLabel.Length()];
+  NSDictionary* attrs = @{NSFontAttributeName : aFont};
+  if ([aLabel sizeWithAttributes:attrs].width <= aMaxWidth) {
+    return aLabel;
+  }
+
+  NSString* ellipsis = @"…";
+  NSUInteger low = 0;
+  NSUInteger high = aLabel.length;
+  while (low < high) {
+    NSUInteger mid = (low + high + 1) / 2;
+    NSString* candidate =
+        [[aLabel substringToIndex:mid] stringByAppendingString:ellipsis];
+    if ([candidate sizeWithAttributes:attrs].width <= aMaxWidth) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  if (low < aLabel.length) {
+    low = [aLabel rangeOfComposedCharacterSequenceAtIndex:low].location;
+  }
+  return [[aLabel substringToIndex:low] stringByAppendingString:ellipsis];
+
+  NS_OBJC_END_TRY_ABORT_BLOCK;
+}
+
+NSString* nsMenuUtilsX::GetTruncatedCocoaLabel(const nsString& aLabel,
+                                               nsIContent* aContent) {
+  NS_OBJC_BEGIN_TRY_ABORT_BLOCK;
+
+  NSString* label = nsCocoaUtils::ToNSString(aLabel);
+  if (!aContent || !aContent->IsElement()) {
+    return label;
+  }
+
+  RefPtr<const ComputedStyle> style =
+      nsComputedDOMStyle::GetComputedStyleNoFlush(aContent->AsElement());
+  if (!style) {
+    return label;
+  }
+
+  // Native menu items usually have no frame and never use anchor positioning.
+  const AnchorPosResolutionParams params{
+      nullptr, style->StyleDisplay()->mPosition, nullptr, {}};
+  const auto maxWidth = style->StylePosition()->GetMaxWidth(params);
+  if (!maxWidth->ConvertsToLength()) {
+    return label;
+  }
+  const CGFloat maxWidthPx =
+      nsPresContext::AppUnitsToFloatCSSPixels(maxWidth->ToLength());
+
+  return TruncateLabelToWidth(
+      label, [NSFont menuFontOfSize:style->StyleFont()->mSize.ToCSSPixels()],
+      maxWidthPx);
 
   NS_OBJC_END_TRY_ABORT_BLOCK;
 }

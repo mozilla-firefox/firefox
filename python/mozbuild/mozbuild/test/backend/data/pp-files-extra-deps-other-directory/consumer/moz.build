@@ -1,0 +1,9 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+FINAL_TARGET_PP_FILES += [
+    "main.js",
+]
+PP_FILES_EXTRA_DEPS += [
+    "!/producer/generated-header.h",
+]

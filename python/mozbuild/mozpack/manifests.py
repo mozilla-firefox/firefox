@@ -6,6 +6,7 @@ import json
 from contextlib import contextmanager
 
 import mozpack.path as mozpath
+from mozbuild.util import FileAvoidWrite
 
 from .files import (
     AbsoluteSymlinkFile,
@@ -28,7 +29,9 @@ def _auto_fileobj(path, fileobj, mode="r"):
         raise AssertionError("Must specified 1 of path or fileobj.")
 
     if path:
-        fileobj = open(path, mode)
+        fileobj = (
+            FileAvoidWrite(path) if "w" in mode else open(path, mode, encoding="utf-8")
+        )
 
     try:
         yield fileobj
@@ -231,8 +234,9 @@ class InstallManifest:
     def write(self, path=None, fileobj=None, expand_pattern=False):
         """Serialize this manifest to a file or file object.
 
-        If path is specified, that file will be written to. If fileobj is specified,
-        the serialized content will be written to that file object.
+        If path is specified, that file will be written to, and left untouched
+        when the serialized content matches what is already there. If fileobj is
+        specified, the serialized content will be written to that file object.
 
         It is an error if both are specified.
         """
@@ -249,15 +253,15 @@ class InstallManifest:
                     type, base, pattern, dest = entry
                     type = self.LINK if type == self.PATTERN_LINK else self.COPY
                     finder = FileFinder(base)
-                    paths = [f[0] for f in finder.find(pattern)]
+                    paths = sorted(f[0] for f in finder.find(pattern))
                     for file_path in paths:
                         source = mozpath.join(base, file_path)
-                        parts = ["%d" % type, mozpath.join(dest, file_path), source]
-                        fh.write("%s\n" % self.FIELD_SEPARATOR.join(parts))
+                        parts = [f"{type}", mozpath.join(dest, file_path), source]
+                        fh.write(f"{self.FIELD_SEPARATOR.join(parts)}\n")
                 else:
-                    parts = ["%d" % entry[0], dest]
+                    parts = [f"{entry[0]}", dest]
                     parts.extend(entry[1:])
-                    fh.write("%s\n" % self.FIELD_SEPARATOR.join(parts))
+                    fh.write(f"{self.FIELD_SEPARATOR.join(parts)}\n")
 
     def add_link(self, source, dest):
         """Add a link to this manifest.
@@ -385,15 +389,12 @@ class InstallManifest:
 
             self._add_entry(new_dest, new_entry)
 
-    def populate_registry(self, registry, defines_override={}, link_policy="symlink"):
+    def populate_registry(self, registry, link_policy="symlink"):
         """Populate a mozpack.copier.FileRegistry instance with data from us.
 
         The caller supplied a FileRegistry instance (or at least something that
         conforms to its interface) and that instance is populated with data
         from this manifest.
-
-        Defines can be given to override the ones in the manifest for
-        preprocessing.
 
         The caller can set a link policy. This determines whether symlinks,
         hardlinks, or copies are used for LINK and PATTERN_LINK.
@@ -447,16 +448,13 @@ class InstallManifest:
                 continue
 
             if install_type == self.PREPROCESS:
-                defines = self._decode_field_entry(entry[4])
-                if defines_override:
-                    defines.update(defines_override)
                 registry.add(
                     dest,
                     PreprocessedFile(
                         entry[1],
                         depfile_path=entry[2],
                         marker=entry[3],
-                        defines=defines,
+                        defines=self._decode_field_entry(entry[4]),
                         extra_depends=self._source_files,
                         silence_missing_directive_warnings=bool(int(entry[5])),
                     ),

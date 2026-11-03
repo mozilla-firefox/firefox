@@ -297,6 +297,10 @@ interface nsIWindowsShellService : nsIShellService
    *        Pins private browsing.
    * @param aFireAndForget
    *        Skips waiting for user to confirm or reject pin prompt if present.
+   * @param aPromptOnly
+   *        Only pins through the WinRT API, which asks the user to confirm
+   *        with an OS prompt. If that API fails, the promise rejects instead
+   *        of falling back to the COM API, which can pin without asking.
    *
    * @throws NS_ERROR_NOT_SAME_THREAD
    *         if called off main thread.
@@ -309,13 +313,19 @@ interface nsIWindowsShellService : nsIShellService
    * @rejects NS_ERROR_FILE_NOT_FOUND
    *          if a shortcut matching this app's AUMID and exe path wasn't found
               in shell:appsfolder
+   * @rejects NS_ERROR_NOT_AVAILABLE
+   *          if aPromptOnly is set and the WinRT TaskbarManager is unavailable
+   * @rejects NS_ERROR_UNEXPECTED
+   *          if aPromptOnly is set and the WinRT pin request otherwise fails
    *
    * @returns {Promise<PinResult>} A Promise that resolves to
    *                               nsIWindowsShellService_PinResult if
    *                               successful or rejects with an nserror.
    */
   [implicit_jscontext]
-  Promise pinCurrentAppToTaskbar(in boolean aPrivateBrowsing, [optional] in boolean aFireAndForget);
+  Promise pinCurrentAppToTaskbar(in boolean aPrivateBrowsing,
+                                 [optional] in boolean aFireAndForget,
+                                 [optional] in boolean aPromptOnly);
 
   /*
    * Checks if a taskbar pinning API is available.

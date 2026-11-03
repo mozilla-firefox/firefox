@@ -322,6 +322,11 @@ const BROWSER_STARTUP_RESUME_SESSION = 3;
 const kNoIndex = Number.MAX_SAFE_INTEGER;
 const kLastIndex = Number.MAX_SAFE_INTEGER - 1;
 
+const WARN_LEVEL_FORGET_SAVED_GROUP_REASONS = new Set([
+  "unknown",
+  "deferred-session-restored",
+]);
+
 import { PrivateBrowsingUtils } from "resource://gre/modules/PrivateBrowsingUtils.sys.mjs";
 
 import { TabMetrics } from "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs";
@@ -944,6 +949,9 @@ class _SessionStore {
           );
 
           this.#savedGroups = state?.savedGroups ?? [];
+          this.#log.debug(
+            `initSession, loaded ${this.#savedGroups.length} saved groups: [${this.#savedGroups.map(g => g.id).join(", ")}]`
+          );
         } catch (ex) {
           decision.initError = ex.name;
           this.#log.error("The session file is invalid: ", ex);
@@ -4791,8 +4799,11 @@ class _SessionStore {
    *
    * @param {string} savedTabGroupId
    *   The ID of the tab group to remove
+   * @param {string} [reason]
+   *   Why the group is being forgotten, for logging. For example
+   *   "user-deleted" or "reopened".
    */
-  forgetSavedTabGroup(savedTabGroupId) {
+  forgetSavedTabGroup(savedTabGroupId, reason = "unknown") {
     let savedGroupIndex = this.#savedGroups.findIndex(
       savedTabGroup => savedTabGroup.id == savedTabGroupId
     );
@@ -4804,6 +4815,12 @@ class _SessionStore {
     }
 
     let savedGroup = this.#savedGroups[savedGroupIndex];
+    const logLevel = WARN_LEVEL_FORGET_SAVED_GROUP_REASONS.has(reason)
+      ? "warn"
+      : "debug";
+    this.#log[logLevel](
+      `forgetSavedTabGroup, removing ${savedGroup.id} with ${savedGroup.tabs.length} tabs, reason: ${reason}`
+    );
     while (savedGroup.tabs.length) {
       this.#removeClosedTabData({}, savedGroup.tabs, 0);
     }
@@ -4998,7 +5015,7 @@ class _SessionStore {
     this.#trimSavedTabGroupMetadataInClosedWindow(state.windows[0]);
     for (let tabGroup of state.windows[0].groups ?? []) {
       if (this.getSavedTabGroup(tabGroup.id)) {
-        this.forgetSavedTabGroup(tabGroup.id);
+        this.forgetSavedTabGroup(tabGroup.id, "closed-window-reopened");
       }
     }
 
@@ -5563,7 +5580,7 @@ class _SessionStore {
       group => group.removeAfterRestore
     );
     for (let group of groupsToRemove) {
-      this.forgetSavedTabGroup(group.id);
+      this.forgetSavedTabGroup(group.id, "deferred-session-restored");
     }
 
     // Set data that persists between sessions
@@ -6333,8 +6350,17 @@ class _SessionStore {
       const openTabGroupIdsInWindow = new Set(
         tabbrowser.tabGroups.map(group => group.id)
       );
+      const savedGroupIds = new Set(this.#savedGroups.map(group => group.id));
+      const savedGroupsToRemove = savedGroupIds.intersection(
+        openTabGroupIdsInWindow
+      );
+      if (savedGroupsToRemove.size) {
+        this.#log.warn(
+          `restoreWindow, removing ${savedGroupsToRemove.size} saved groups that are open in this window: [${[...savedGroupsToRemove].join(", ")}]`
+        );
+      }
       this.#savedGroups = this.#savedGroups.filter(
-        savedTabGroup => !openTabGroupIdsInWindow.has(savedTabGroup.id)
+        savedTabGroup => !savedGroupsToRemove.has(savedTabGroup.id)
       );
     }
 
@@ -9123,6 +9149,9 @@ class _SessionStore {
       return;
     }
     this.#savedGroups.push(savedTabGroupState);
+    this.#log.debug(
+      `recordSavedTabGroupState, saved ${savedTabGroupState.id} with ${savedTabGroupState.tabs.length} tabs`
+    );
     this.#notifyOfSavedTabGroupsChange();
   }
 
@@ -9304,9 +9333,12 @@ class _SessionStore {
       tabGroupData,
       targetWindow
     );
-    this.forgetSavedTabGroup(tabGroupId);
+    this.forgetSavedTabGroup(tabGroupId, "reopened");
 
     group.select();
+    this.#log.debug(
+      `openSavedTabGroup, reopened ${group.id} with ${group.tabs.length} tabs`
+    );
     return group;
   }
 

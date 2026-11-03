@@ -1,6 +1,0 @@
-#div: {
-  /* this is a ID rule, and should stay intact */
-}
-[lang="ab-X-stuff"] {
-  /* this selector should match content with lang="ab-X-stuff" */
-}

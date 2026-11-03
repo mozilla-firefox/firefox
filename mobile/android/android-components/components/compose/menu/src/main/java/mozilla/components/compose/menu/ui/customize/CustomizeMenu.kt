@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.text.Text
@@ -17,7 +18,6 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
-import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemIconRes
 import mozilla.components.ui.icons.R as iconsR
 
@@ -25,14 +25,16 @@ import mozilla.components.ui.icons.R as iconsR
  * A non-scrollable container for menu items inside a customize menu screen.
  *
  * @param menuGroups The groups of menu items to display.
- * @param onInteraction Callback for menu interactions.
  * @param modifier [Modifier] to be applied to the menu container.
+ * @param mandatoryGroupIds Ids of the [menuGroups] which cannot be removed from the menu.
+ * @param isHidden Whether these groups were removed from the menu.
  */
 @Composable
 fun CustomizeMenu(
     menuGroups: List<MenuItemsGroup>,
-    onInteraction: (MenuEvent) -> Unit,
     modifier: Modifier = Modifier,
+    mandatoryGroupIds: Set<String> = emptySet(),
+    isHidden: Boolean = false,
 ) {
     Column(
         modifier =
@@ -47,10 +49,17 @@ fun CustomizeMenu(
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
     ) {
         menuGroups.forEach { group ->
-            CustomizeMenuGroupContent(
-                group = group,
-                onInteraction = onInteraction,
-            )
+            key(group.id) {
+                CustomizeMenuGroupContent(
+                    group = group,
+                    state =
+                        when {
+                            isHidden -> CustomizeMenuGroupState.HIDDEN
+                            group.id in mandatoryGroupIds -> CustomizeMenuGroupState.MANDATORY
+                            else -> CustomizeMenuGroupState.SHOWN
+                        },
+                )
+            }
         }
     }
 }
@@ -91,8 +100,7 @@ private fun CustomizeMenuPreview() {
                                     ),
                                 ),
                         ),
-                    ),
-                onInteraction = {},
+                    )
             )
         }
     }

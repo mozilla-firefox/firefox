@@ -7,6 +7,10 @@
 #include "chrome/common/ipc_message.h"
 #include "chrome/common/ipc_message_utils.h"
 #include "gtest/gtest.h"
+#include "mozilla/SpinEventLoopUntil.h"
+#include "nsIMemoryReporter.h"
+#include "nsISupports.h"
+#include "nsServiceManagerUtils.h"
 
 #include "mozilla/ipc/SharedMemoryCursor.h"
 #include "mozilla/ipc/SharedMemoryHandle.h"
@@ -665,6 +669,146 @@ TEST_F(SharedMemoryInternalTest, SizeChangeMsgDown) {
   auto mapping = handle.Map();
   ASSERT_TRUE(mapping.IsValid());
   EXPECT_EQ(kFakeSize, mapping.Size());
+}
+
+class HandleMemoryReport final : public nsIHandleReportCallback {
+ public:
+  NS_DECL_ISUPPORTS
+
+  explicit HandleMemoryReport(const char* path) : mPath(path) {}
+
+  NS_IMETHOD Callback(const nsACString& aProcess, const nsACString& aPath,
+                      int32_t aKind, int32_t aUnits, int64_t aAmount,
+                      const nsACString& aDescription,
+                      nsISupports* aData) override {
+    if (aPath == mPath) {
+      amount = aAmount;
+    }
+    return NS_OK;
+  }
+
+  int64_t amount = 0;
+
+ private:
+  ~HandleMemoryReport() = default;
+  const char* mPath;
+};
+
+NS_IMPL_ISUPPORTS(HandleMemoryReport, nsIHandleReportCallback)
+
+class HandleFinishReporting final : public nsIFinishReportingCallback {
+ public:
+  NS_DECL_ISUPPORTS
+
+  HandleFinishReporting() : done(false) {}
+
+  NS_IMETHOD Callback(nsISupports* aData) override {
+    done = true;
+    return NS_OK;
+  }
+
+  Atomic<bool> done;
+
+ private:
+  ~HandleFinishReporting() = default;
+};
+
+NS_IMPL_ISUPPORTS(HandleFinishReporting, nsIFinishReportingCallback)
+
+struct MemoryReportTracker {
+  explicit MemoryReportTracker(const char* aPath) {
+    mgr = do_GetService("@mozilla.org/memory-reporter-manager;1");
+    EXPECT_TRUE(mgr);
+    callback = MakeRefPtr<HandleMemoryReport>(aPath);
+    finishCallback = MakeRefPtr<HandleFinishReporting>();
+    previous = Current();
+  }
+
+  int64_t Current() {
+    finishCallback->done = false;
+    mgr->GetReports(callback, nullptr, finishCallback, nullptr, false);
+    SpinEventLoopUntil("TestIPCMemoryAllocation"_ns, [&]() {
+      return static_cast<bool>(finishCallback->done);
+    });
+
+    return callback->amount;
+  }
+
+  int64_t Delta() { return Current() - previous; }
+  void Reset() { previous = Current(); }
+
+ private:
+  nsCOMPtr<nsIMemoryReporterManager> mgr;
+  RefPtr<HandleMemoryReport> callback;
+  RefPtr<HandleFinishReporting> finishCallback;
+  int64_t previous;
+};
+
+TEST(IPCSharedMemoryMapping, MemoryAllocationReporting)
+{
+  MemoryReportTracker tracker("shmem-allocated");
+
+  // Creation
+  auto handle = shared_memory::Create(1);
+  EXPECT_EQ(tracker.Delta(), 1);
+
+  // Move construction
+  tracker.Reset();
+  shared_memory::MutableHandle otherHandle(std::move(handle));
+  EXPECT_EQ(tracker.Delta(), 0);
+
+  // Move assignment
+  tracker.Reset();
+  auto handle2 = shared_memory::Create(4);
+  EXPECT_EQ(tracker.Delta(), 4);
+  tracker.Reset();
+  handle2 = std::move(otherHandle);
+  EXPECT_EQ(tracker.Delta(), -4);
+
+  // Cloning
+  tracker.Reset();
+  auto clonedHandle = handle2.Clone();
+  EXPECT_EQ(tracker.Delta(), 1);
+
+  // Destructing
+  tracker.Reset();
+  {
+    auto _handle2 = std::move(handle2);
+    auto _clonedHandle = std::move(clonedHandle);
+  }
+  EXPECT_EQ(tracker.Delta(), -2);
+}
+
+TEST(IPCSharedMemoryMapping, MemoryMappingReporting)
+{
+  MemoryReportTracker tracker("shmem-mapped");
+
+  // Handle creation
+  auto handle = shared_memory::Create(1);
+  EXPECT_EQ(tracker.Delta(), 0);
+
+  auto mapping = handle.Map();
+  EXPECT_EQ(tracker.Delta(), 1);
+
+  // Move construction
+  tracker.Reset();
+  shared_memory::MutableMapping newMapping(std::move(mapping));
+  EXPECT_EQ(tracker.Delta(), 0);
+
+  // Move assignment
+  tracker.Reset();
+  auto mapping2 = shared_memory::Create(4).Map();
+  EXPECT_EQ(tracker.Delta(), 4);
+  tracker.Reset();
+  mapping2 = std::move(newMapping);
+  EXPECT_EQ(tracker.Delta(), -4);
+
+  // Destructing
+  tracker.Reset();
+  {
+    auto _mapping2 = std::move(mapping2);
+  }
+  EXPECT_EQ(tracker.Delta(), -1);
 }
 
 }  // namespace mozilla::ipc

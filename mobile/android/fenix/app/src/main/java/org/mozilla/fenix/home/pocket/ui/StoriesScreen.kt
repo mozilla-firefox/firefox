@@ -37,7 +37,6 @@ import org.mozilla.fenix.components.appstate.recommendations.ContentRecommendati
 import org.mozilla.fenix.home.fake.FakeHomepagePreview
 import org.mozilla.fenix.home.pocket.controller.StoriesImpressionSource
 import org.mozilla.fenix.home.pocket.interactor.PocketStoriesInteractor
-import org.mozilla.fenix.home.ui.LeftChevronPillButton
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /** Stories screen. */
@@ -45,7 +44,6 @@ import org.mozilla.fenix.theme.FirefoxTheme
 @Composable
 fun StoriesScreen(
     state: ContentRecommendationsState,
-    entryPointExperimentEnabled: Boolean,
     interactor: PocketStoriesInteractor,
     onNavigationIconClick: () -> Unit,
 ) {
@@ -78,18 +76,14 @@ fun StoriesScreen(
                     )
                 },
                 navigationIcon = {
-                    if (entryPointExperimentEnabled) {
-                        HomeButton(onClick = onNavigationIconClick)
-                    } else {
-                        IconButton(
-                            onClick = onNavigationIconClick,
-                            contentDescription = stringResource(R.string.stories_back_button_content_description),
-                        ) {
-                            Icon(
-                                painter = painterResource(iconsR.drawable.mozac_ic_back_24),
-                                contentDescription = null,
-                            )
-                        }
+                    IconButton(
+                        onClick = onNavigationIconClick,
+                        contentDescription = stringResource(R.string.stories_back_button_content_description),
+                    ) {
+                        Icon(
+                            painter = painterResource(iconsR.drawable.mozac_ic_back_24),
+                            contentDescription = null,
+                        )
                     }
                 },
                 windowInsets =
@@ -177,36 +171,12 @@ private fun Stories(
 }
 
 @Composable
-private fun HomeButton(onClick: () -> Unit) {
-    LeftChevronPillButton(onClick = onClick) {
-        Icon(
-            painter = painterResource(iconsR.drawable.mozac_ic_home_24),
-            contentDescription = stringResource(R.string.content_description_normal_browsing),
-        )
-    }
-}
-
-@Composable
 @FlexibleWindowLightDarkPreview
 private fun StoriesScreenPreviews() {
     FirefoxTheme {
         StoriesScreen(
             state = ContentRecommendationsState(pocketStories = FakeHomepagePreview.stories()),
             interactor = FakeHomepagePreview.storiesInteractor,
-            entryPointExperimentEnabled = false,
-            onNavigationIconClick = {},
-        )
-    }
-}
-
-@Composable
-@FlexibleWindowLightDarkPreview
-private fun StoriesScreenExperimentPreviews() {
-    FirefoxTheme {
-        StoriesScreen(
-            state = ContentRecommendationsState(pocketStories = FakeHomepagePreview.stories()),
-            interactor = FakeHomepagePreview.storiesInteractor,
-            entryPointExperimentEnabled = true,
             onNavigationIconClick = {},
         )
     }

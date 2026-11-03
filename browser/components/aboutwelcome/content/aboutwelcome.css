@@ -2775,15 +2775,6 @@ html {
 .onboardingContainer .screen[pos=split] .section-main .main-content .main-content-inner {
   min-height: 330px;
 }
-.onboardingContainer .screen[pos=split] .section-main .main-content .main-content-inner .mobile-download-buttons {
-  padding: 0;
-  margin-inline-start: -5px;
-  display: flex;
-}
-.onboardingContainer .screen[pos=split] .section-main .main-content .main-content-inner .mobile-download-buttons button {
-  cursor: pointer;
-  border-radius: 0;
-}
 .onboardingContainer .screen[pos=split] .section-main .main-content .main-content-inner .qr-code-image {
   margin: 5px 0 10px;
   display: flex;
@@ -4950,34 +4941,6 @@ html {
 }
 .onboardingContainer .mobile-downloads .email-link:hover {
   background: none;
-}
-.onboardingContainer .mobile-downloads .ios button {
-  background-image: url("chrome://app-marketplace-icons/locale/ios.svg");
-}
-.onboardingContainer .mobile-downloads .android button {
-  background-image: url("chrome://app-marketplace-icons/locale/android.png");
-}
-.onboardingContainer .mobile-download-buttons {
-  list-style: none;
-  padding: 10px 0;
-  margin: 0;
-}
-.onboardingContainer .mobile-download-buttons li {
-  display: inline-block;
-}
-.onboardingContainer .mobile-download-buttons li button {
-  display: inline-block;
-  height: 45px;
-  width: 152px;
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
-  box-shadow: none;
-  border: 0;
-  border-radius: 0;
-}
-.onboardingContainer .mobile-download-buttons li:not(:first-child) {
-  margin-inline: 5px 0;
 }
 .onboardingContainer .onboardingContainer .main-content.no-steps:has(button.content-tiles-header[aria-expanded=false]) {
   padding-bottom: 0;

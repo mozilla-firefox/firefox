@@ -174,10 +174,10 @@ private:
                     size_t* pabbrev);
   void clean_ignore(std::string& dest, const std::string& src);
   void mkinitcap(std::string& u8);
-  int mkinitcap2(std::string& u8, std::vector<w_char>& u16);
-  int mkinitsmall2(std::string& u8, std::vector<w_char>& u16);
+  size_t mkinitcap2(std::string& u8, std::vector<w_char>& u16);
+  size_t mkinitsmall2(std::string& u8, std::vector<w_char>& u16);
   void mkallcap(std::string& u8);
-  int mkallsmall2(std::string& u8, std::vector<w_char>& u16);
+  size_t mkallsmall2(std::string& u8, std::vector<w_char>& u16);
   struct hentry* checkword(const std::string& source, int* info, std::string* root,
                            std::chrono::steady_clock::time_point suggest_start = std::chrono::steady_clock::time_point::max());
   std::string sharps_u8_l1(const std::string& source);
@@ -280,7 +280,7 @@ size_t HunspellImpl::cleanword2(std::string& dest,
   clean_ignore(w2, src);
 
   const char* q = w2.c_str();
-  int nl = (int)w2.size();
+  size_t nl = w2.size();
 
   // first skip over any leading blanks
   while (*q == ' ') {
@@ -297,7 +297,7 @@ size_t HunspellImpl::cleanword2(std::string& dest,
   }
 
   // if no characters are left it can't be capitalized
-  if (nl <= 0) {
+  if (nl == 0) {
     *pcaptype = NOCAP;
     return 0;
   }
@@ -401,7 +401,7 @@ void HunspellImpl::mkallcap(std::string& u8) {
   }
 }
 
-int HunspellImpl::mkallsmall2(std::string& u8, std::vector<w_char>& u16) {
+size_t HunspellImpl::mkallsmall2(std::string& u8, std::vector<w_char>& u16) {
   if (utf8) {
     ::mkallsmall_utf(u16, langnum);
     u16_u8(u8, u16);
@@ -597,7 +597,7 @@ bool HunspellImpl::spell_internal(const std::string& word, std::vector<std::stri
       // (uLinda written ULinda), is found by lowering only the first letter.
       if (!rv && captype == HUHINITCAP) {
         std::string u8buffer(scw);
-        std::vector<w_char> u16buffer(sunicw);
+        std::vector<w_char> u16buffer(std::move(sunicw));
         mkinitsmall2(u8buffer, u16buffer);
         rv = checkword(u8buffer, info, root, suggest_start);
         if (rv && is_keepcase(rv))
@@ -875,7 +875,7 @@ struct hentry* HunspellImpl::checkword(const std::string& w, int* info, std::str
       reverseword(word);
   }
 
-  int len = word.size();
+  size_t len = word.size();
 
   // look word in hash table
   struct hentry* he = nullptr;
@@ -1022,7 +1022,7 @@ struct hentry* HunspellImpl::checkword(const std::string& w, int* info, std::str
         // - not a dictionary word with a typo and
         // - not two words written separately,
         // - or if it's an arbitrary number accepted by compound rules (e.g. 999%)
-        if (he && !isdigit(word[0]))
+        if (he && !isdigit((unsigned char)word[0]))
         {
           std::vector<std::string> slst;
           bool simple;
@@ -1625,7 +1625,7 @@ void HunspellImpl::mkinitcap(std::string& u8) {
   }
 }
 
-int HunspellImpl::mkinitcap2(std::string& u8, std::vector<w_char>& u16) {
+size_t HunspellImpl::mkinitcap2(std::string& u8, std::vector<w_char>& u16) {
   if (utf8) {
     ::mkinitcap_utf(u16, langnum);
     u16_u8(u8, u16);
@@ -1635,7 +1635,7 @@ int HunspellImpl::mkinitcap2(std::string& u8, std::vector<w_char>& u16) {
   return u8.size();
 }
 
-int HunspellImpl::mkinitsmall2(std::string& u8, std::vector<w_char>& u16) {
+size_t HunspellImpl::mkinitsmall2(std::string& u8, std::vector<w_char>& u16) {
   if (utf8) {
     ::mkinitsmall_utf(u16, langnum);
     u16_u8(u8, u16);
@@ -1646,26 +1646,39 @@ int HunspellImpl::mkinitsmall2(std::string& u8, std::vector<w_char>& u16) {
 }
 
 int HunspellImpl::add(const std::string& word) {
-  if (!m_HMgrs.empty())
-    return m_HMgrs[0]->add(word);
+  if (!m_HMgrs.empty()) {
+    std::string converted;
+    input_conv(word, converted);
+    return m_HMgrs[0]->add(converted);
+  }
   return 0;
 }
 
 int HunspellImpl::add_with_flags(const std::string& word, const std::string& flags, const std::string& desc) {
-  if (!m_HMgrs.empty())
-    return m_HMgrs[0]->add_with_flags(word, flags, desc);
+  if (!m_HMgrs.empty()) {
+    std::string converted;
+    input_conv(word, converted);
+    return m_HMgrs[0]->add_with_flags(converted, flags, desc);
+  }
   return 0;
 }
 
 int HunspellImpl::add_with_affix(const std::string& word, const std::string& example) {
-  if (!m_HMgrs.empty())
-    return m_HMgrs[0]->add_with_affix(word, example);
+  if (!m_HMgrs.empty()) {
+    std::string converted, converted_example;
+    input_conv(word, converted);
+    input_conv(example, converted_example);
+    return m_HMgrs[0]->add_with_affix(converted, converted_example);
+  }
   return 0;
 }
 
 int HunspellImpl::remove(const std::string& word) {
-  if (!m_HMgrs.empty())
-    return m_HMgrs[0]->remove(word);
+  if (!m_HMgrs.empty()) {
+    std::string converted;
+    input_conv(word, converted);
+    return m_HMgrs[0]->remove(converted);
+  }
   return 0;
 }
 
@@ -2174,7 +2187,7 @@ std::vector<std::string> HunspellImpl::spellml(const std::string& in_word) {
 std::vector<std::string> HunspellImpl::suffix_suggest(const std::string& root_word) {
   std::vector<std::string> slst;
   struct hentry* he = nullptr;
-  int len;
+  size_t len;
   std::string w2;
   const char* word;
   const char* ignoredchars = pAMgr->get_ignore();
@@ -2188,10 +2201,10 @@ std::vector<std::string> HunspellImpl::suffix_suggest(const std::string& root_wo
       remove_ignored_chars(w2, ignoredchars);
     }
     word = w2.c_str();
-    len = (int)w2.size();
+    len = w2.size();
   } else {
     word = root_word.c_str();
-    len = (int)root_word.size();
+    len = root_word.size();
   }
 
   if (!len)
@@ -2226,7 +2239,8 @@ namespace {
       for (size_t i = 0; i < items.size(); ++i)
         (*slst)[i] = stringdup(items[i]);
     }
-    return items.size();
+    // The C API reports the count as an int.
+    return static_cast<int>(items.size());
   }
 }
 

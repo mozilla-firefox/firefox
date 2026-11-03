@@ -127,4 +127,9 @@
         android:layout_gravity="center"
         tools:visibility="gone" />
 
+  <androidx.compose.ui.platform.ComposeView
+    android:id="@+id/remove_addon_dialog_host"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" />
+
 </FrameLayout>

@@ -4,11 +4,114 @@
 
 #include "APZCBasicTester.h"
 #include "APZTestCommon.h"
+#include "InputBlockState.h"
 #include "InputUtils.h"
 #include "mozilla/ScrollPositionUpdate.h"
 #include "mozilla/layers/ScrollableLayerGuid.h"
 
 using LayersUpdateFlags = AsyncPanZoomController::LayersUpdateFlags;
+
+class APZCTouchSwipeTester : public APZCBasicTester {
+ public:
+  enum MayTriggerSwipeEnum {
+    MAY_TRIGGER_SWIPE,
+    NOT_TRIGGER_SWIPE,
+  };
+
+ protected:
+  APZEventResult SendTouchWithMayTriggerSwipe(
+      MultiTouchInput::MultiTouchType aType, const ScreenIntPoint& aPoint,
+      MayTriggerSwipeEnum aMayTriggerSwipe = MAY_TRIGGER_SWIPE) {
+    mcc->AdvanceByMillis(10);
+    MultiTouchInput input = CreateMultiTouchInput(aType, mcc->Time());
+    input.mTouches.AppendElement(CreateSingleTouchData(0, aPoint));
+    input.mMayTriggerSwipe = aMayTriggerSwipe == MAY_TRIGGER_SWIPE;
+    return apzc->ReceiveInputEvent(input);
+  }
+
+  TouchBlockState* Block() {
+    return tm->GetInputQueue()->GetCurrentTouchBlock();
+  }
+
+  void StartSwipeMove() {
+    SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_START,
+                                 ScreenIntPoint(50, 50));
+    ASSERT_NE(Block(), nullptr);
+    EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+    EXPECT_TRUE(Block()->IsReadyForHandling());
+    SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_MOVE,
+                                 ScreenIntPoint(50, 10));
+    EXPECT_TRUE(Block()->IsWaitingForBrowserGestureResponse());
+    EXPECT_FALSE(Block()->IsReadyForHandling());
+    // The page has not scrolled while waiting for the browser's decision.
+    EXPECT_EQ(CSSPoint(), apzc->GetFrameMetrics().GetVisualScrollOffset());
+  }
+};
+
+TEST_F(APZCTouchSwipeTester, Consumed) {
+  StartSwipeMove();
+  tm->GetInputQueue()->SetBrowserGestureResponse(
+      Block()->GetBlockId(), BrowserGestureResponse::Consumed);
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  // The browser owns the swipe, so the queued move does not scroll the page.
+  EXPECT_EQ(CSSPoint(), apzc->GetFrameMetrics().GetVisualScrollOffset());
+
+  // Later moves and lifting the finger also leave the page in place.
+  SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_MOVE,
+                               ScreenIntPoint(50, 0), NOT_TRIGGER_SWIPE);
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  EXPECT_EQ(CSSPoint(), apzc->GetFrameMetrics().GetVisualScrollOffset());
+  SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_END,
+                               ScreenIntPoint(50, 0), NOT_TRIGGER_SWIPE);
+  EXPECT_EQ(CSSPoint(), apzc->GetFrameMetrics().GetVisualScrollOffset());
+}
+
+TEST_F(APZCTouchSwipeTester, NotConsumed) {
+  StartSwipeMove();
+  tm->GetInputQueue()->SetBrowserGestureResponse(
+      Block()->GetBlockId(), BrowserGestureResponse::NotConsumed);
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  // Rejecting the swipe lets APZ scroll with the queued move.
+  const float firstScrollY = apzc->GetFrameMetrics().GetVisualScrollOffset().y;
+  EXPECT_GT(firstScrollY, 0);
+
+  // Subsequent moves keep scrolling without waiting for another response.
+  SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_MOVE,
+                               ScreenIntPoint(50, 0), NOT_TRIGGER_SWIPE);
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  EXPECT_GT(apzc->GetFrameMetrics().GetVisualScrollOffset().y, firstScrollY);
+  SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_END,
+                               ScreenIntPoint(50, 0), NOT_TRIGGER_SWIPE);
+}
+
+TEST_F(APZCTouchSwipeTester, SlopAndTap) {
+  // A tap never needs a browser response and does not scroll the page.
+  SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_START,
+                               ScreenIntPoint(50, 50));
+  ASSERT_NE(Block(), nullptr);
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  EXPECT_TRUE(Block()->IsReadyForHandling());
+
+  const auto result = SendTouchWithMayTriggerSwipe(
+      MultiTouchInput::MULTITOUCH_MOVE, ScreenIntPoint(50, 50));
+  EXPECT_EQ(nsEventStatus_eConsumeNoDefault, result.GetStatus());
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  EXPECT_TRUE(Block()->IsReadyForHandling());
+  SendTouchWithMayTriggerSwipe(MultiTouchInput::MULTITOUCH_END,
+                               ScreenIntPoint(50, 50));
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  EXPECT_EQ(CSSPoint(), apzc->GetFrameMetrics().GetVisualScrollOffset());
+}
+
+TEST_F(APZCTouchSwipeTester, TouchWithoutMayTriggerSwipeDoesNotWait) {
+  TouchDown(apzc, ScreenIntPoint(50, 50), mcc->Time());
+  mcc->AdvanceByMillis(10);
+  TouchMove(apzc, ScreenIntPoint(50, 10), mcc->Time());
+  ASSERT_NE(Block(), nullptr);
+  EXPECT_FALSE(Block()->IsWaitingForBrowserGestureResponse());
+  EXPECT_GT(apzc->GetFrameMetrics().GetVisualScrollOffset().y, 0);
+  TouchUp(apzc, ScreenIntPoint(50, 10), mcc->Time());
+}
 
 TEST_F(APZCBasicTester, Overzoom) {
   // the visible area of the document in CSS pixels is x=10 y=0 w=100 h=100

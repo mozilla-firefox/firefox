@@ -238,6 +238,21 @@ bool OverscrollHandoffChain::ScrollingUpWillTriggerPullToRefresh(
   return false;
 }
 
+SideBits OverscrollHandoffChain::GetSwipableDirections(
+    const AsyncPanZoomController& aTarget) const {
+  SideBits result = SideBits::eLeftRight;
+  for (auto i = IndexOf(&aTarget); i < Length(); i++) {
+    const auto& apzc = mChain[i];
+    result &= apzc->OverscrollBehaviorAllowsSwipe()
+                  ? ~(apzc->ScrollableDirections()) & SideBits::eLeftRight
+                  : SideBits::eNone;
+    if (result == SideBits::eNone) {
+      return result;
+    }
+  }
+  return result;
+}
+
 bool OverscrollHandoffState::IsScrolledByHandedOffGesture() const {
   // A chain index > 0 means the gesture originated on a descendant APZ
   // and was handed off to this one, rather than starting here.

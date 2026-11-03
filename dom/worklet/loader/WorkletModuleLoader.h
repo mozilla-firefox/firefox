@@ -44,9 +44,10 @@ class WorkletModuleLoader : public JS::loader::ModuleLoaderBase {
   WorkletModuleLoader(WorkletScriptLoader* aScriptLoader,
                       nsIGlobalObject* aGlobalObject);
 
-  void InsertRequest(nsIURI* aURI, JS::loader::ModuleLoadRequest* aRequest);
-  void RemoveRequest(nsIURI* aURI);
-  JS::loader::ModuleLoadRequest* GetRequest(nsIURI* aURI) const;
+  void InsertRequest(JS::loader::ModuleLoadRequest* aRequest);
+  void RemoveRequest(nsIURI* aURI, JS::ModuleType aModuleType);
+  JS::loader::ModuleLoadRequest* GetRequest(nsIURI* aURI,
+                                            JS::ModuleType aModuleType) const;
 
   bool HasSetLocalizedStrings() const { return !mLocalizedStrs.IsEmpty(); }
   void SetLocalizedStrings(nsTArray<nsString>&& aStrings) {
@@ -103,9 +104,9 @@ class WorkletModuleLoader : public JS::loader::ModuleLoaderBase {
            aModuleType == JS::ModuleType::Text;
   }
 
-  // A hashtable to map a nsIURI(from main thread) to a ModuleLoadRequest(in
-  // worklet thread).
-  nsRefPtrHashtable<nsURIHashKey, JS::loader::ModuleLoadRequest>
+  // A hashtable to map a nsIURI(from main thread) and module type to a
+  // ModuleLoadRequest(in worklet thread).
+  nsRefPtrHashtable<JS::loader::ModuleMapKey, JS::loader::ModuleLoadRequest>
       mFetchingRequests;
 
   // We get the localized strings on the main thread, and pass it to

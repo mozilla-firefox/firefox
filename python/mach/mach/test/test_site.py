@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -283,6 +284,44 @@ def test_venv_up_to_date_without_uv_lock(tmp_path):
     )
 
     assert result.is_up_to_date
+
+
+def test_recreate_venv_keeps_venv_when_move_fails(tmp_path):
+    venv, requirements, metadata = create_venv_for_up_to_date_check(tmp_path)
+
+    with mock.patch("mach.site.os.rename", side_effect=PermissionError):
+        with pytest.raises(PermissionError):
+            _create_venv_with_pthfile(venv, [], False, requirements, metadata)
+
+    assert os.path.exists(venv.python_path)
+
+    _create_venv_with_pthfile(venv, [], False, requirements, metadata)
+
+    assert [p.name for p in tmp_path.iterdir()] == ["venv"]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows DLL locking")
+def test_recreate_venv_with_loaded_dll(tmp_path):
+    import _ctypes
+
+    venv, requirements, metadata = create_venv_for_up_to_date_check(tmp_path)
+    dll = Path(venv.prefix) / "loaded.pyd"
+    shutil.copy(_ctypes.__file__, dll)
+    handle = _ctypes.LoadLibrary(str(dll))
+    try:
+        with pytest.raises(PermissionError):
+            dll.unlink()
+
+        _create_venv_with_pthfile(venv, [], False, requirements, metadata)
+
+        assert not dll.exists()
+        assert os.path.exists(venv.python_path)
+    finally:
+        _ctypes.FreeLibrary(handle)
+
+    _create_venv_with_pthfile(venv, [], False, requirements, metadata)
+
+    assert [p.name for p in tmp_path.iterdir()] == ["venv"]
 
 
 if __name__ == "__main__":

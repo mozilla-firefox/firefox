@@ -45,6 +45,12 @@ pushd /builds/worker/.mozbuild/
 git clone https://github.com/phacility/arcanist.git
 cd arcanist
 git checkout e50d1bc4eabac9c37e3220e9f3fb8e37ae20b957
+# Show the response when Phabricator (or something in front of it) answers a
+# Conduit call with something other than JSON.
+git apply /setup/arcanist_log_invalid_json.patch
+# Send Conduit requests uncompressed: Phabricator's PHP parses a gzipped form
+# body before decompressing it, and large ones fail on max_input_vars.
+git apply /setup/arcanist_no_gzip.patch
 ln -s /builds/worker/.mozbuild/arcanist/bin/arc /usr/local/bin/arc
 popd
 
@@ -93,5 +99,6 @@ chown -R worker:worker .*
 
 python3 -m pip install --break-system-packages -U pip==26.2.2
 python3 -m pip install --break-system-packages poetry==2.1.1
+python3 -m pip install --break-system-packages --only-binary :all: --require-hashes -r /setup/evolve-requirements.txt
 
 rm -rf /setup

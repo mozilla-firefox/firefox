@@ -1035,6 +1035,120 @@ describe("ASRouter", () => {
         assert.notCalled(FakeSpecialMessageActions.handleAction);
         assert.notCalled(addImpressionStub);
       });
+      describe("promptOnly pin actions", () => {
+        it("sets promptOnly on a top level PIN_FIREFOX_TO_TASKBAR action", () => {
+          const message = {
+            id: "PIN",
+            template: "action_only",
+            content: {
+              action: {
+                type: "PIN_FIREFOX_TO_TASKBAR",
+                data: { fireAndForget: true },
+              },
+            },
+          };
+          const original = structuredClone(message);
+          Router.routeCFRMessage(message, browser, {});
+
+          assert.calledOnceWithExactly(
+            FakeSpecialMessageActions.handleAction,
+            {
+              type: "PIN_FIREFOX_TO_TASKBAR",
+              data: { fireAndForget: true, promptOnly: true },
+            },
+            browser
+          );
+          assert.deepEqual(message, original, "message is not modified");
+        });
+        it("sets promptOnly on a PIN_FIREFOX_TO_TASKBAR action with no data", () => {
+          const message = {
+            id: "PIN_NO_DATA",
+            template: "action_only",
+            content: { action: { type: "PIN_FIREFOX_TO_TASKBAR" } },
+          };
+          Router.routeCFRMessage(message, browser, {});
+
+          assert.calledOnceWithExactly(
+            FakeSpecialMessageActions.handleAction,
+            { type: "PIN_FIREFOX_TO_TASKBAR", data: { promptOnly: true } },
+            browser
+          );
+          assert.deepEqual(message.content.action, {
+            type: "PIN_FIREFOX_TO_TASKBAR",
+          });
+        });
+        it("sets promptOnly on a PIN_AND_DEFAULT action", () => {
+          FakeMessagingSystemAllowlists.getActionOnlyActions.returns([
+            "PIN_AND_DEFAULT",
+          ]);
+          const message = {
+            id: "PIN_AND_DEFAULT",
+            template: "action_only",
+            content: { action: { type: "PIN_AND_DEFAULT" } },
+          };
+          Router.routeCFRMessage(message, browser, {});
+
+          assert.calledOnceWithExactly(
+            FakeSpecialMessageActions.handleAction,
+            { type: "PIN_AND_DEFAULT", data: { promptOnly: true } },
+            browser
+          );
+          assert.deepEqual(message.content.action, {
+            type: "PIN_AND_DEFAULT",
+          });
+        });
+        it("sets promptOnly on pin actions nested in a MULTI_ACTION", () => {
+          const message = {
+            id: "MULTI_PIN",
+            template: "action_only",
+            content: {
+              action: {
+                type: "MULTI_ACTION",
+                data: {
+                  orderedExecution: true,
+                  actions: [
+                    { type: "CONFIRM_LAUNCH_ON_LOGIN" },
+                    {
+                      type: "PIN_FIREFOX_TO_TASKBAR",
+                      data: { privatePin: true },
+                    },
+                  ],
+                },
+              },
+            },
+          };
+          const original = structuredClone(message);
+          Router.routeCFRMessage(message, browser, {});
+
+          assert.calledOnceWithExactly(
+            FakeSpecialMessageActions.handleAction,
+            {
+              type: "MULTI_ACTION",
+              data: {
+                orderedExecution: true,
+                actions: [
+                  { type: "CONFIRM_LAUNCH_ON_LOGIN" },
+                  {
+                    type: "PIN_FIREFOX_TO_TASKBAR",
+                    data: { privatePin: true, promptOnly: true },
+                  },
+                ],
+              },
+            },
+            browser
+          );
+          assert.deepEqual(message, original, "message is not modified");
+        });
+        it("does not set promptOnly on other actions", () => {
+          Router.routeCFRMessage(allowedMessage, browser, {});
+
+          assert.calledOnceWithExactly(
+            FakeSpecialMessageActions.handleAction,
+            { type: "CONFIRM_LAUNCH_ON_LOGIN" },
+            browser
+          );
+        });
+      });
       it("allows MULTI_ACTION mixing baseline and Remote Settings actions", async () => {
         FakeMessagingSystemAllowlists.getActionOnlyActions.returns([
           "FOO_ACTION",

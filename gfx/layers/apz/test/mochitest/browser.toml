@@ -99,6 +99,9 @@ run-if = [
 ["browser_test_position_sticky.js"]
 support-files = ["helper_position_sticky_flicker.html"]
 
+["browser_test_prevent_default_touchmove.js"]
+support-files = ["helper_prevent_default_touchmove.html"]
+
 ["browser_test_reset_scaling_zoom.js"]
 support-files = ["helper_test_reset_scaling_zoom.html"]
 

@@ -175,6 +175,13 @@ void wr_compositor_get_window_properties(void* aCompositor,
   compositor->GetWindowProperties(aProperties);
 }
 
+void wr_compositor_get_swapchain_mode(void* aCompositor, bool* aUsesOsLayers,
+                                      size_t* aMaxPartialPresentRects) {
+  RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
+  *aUsesOsLayers = compositor->UseLayerCompositor();
+  *aMaxPartialPresentRects = compositor->GetMaxPartialPresentRects();
+}
+
 void wr_compositor_unbind(void* aCompositor) {
   RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
   compositor->Unbind();
@@ -196,12 +203,6 @@ void wr_compositor_map_tile(void* aCompositor, wr::NativeTileId aId,
 void wr_compositor_unmap_tile(void* aCompositor) {
   RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
   compositor->UnmapTile();
-}
-
-void wr_partial_present_compositor_set_buffer_damage_region(
-    void* aCompositor, const wr::DeviceIntRect* aRects, size_t aNRects) {
-  RenderCompositor* compositor = static_cast<RenderCompositor*>(aCompositor);
-  compositor->SetBufferDamageRegion(aRects, aNRects);
 }
 
 /* static */

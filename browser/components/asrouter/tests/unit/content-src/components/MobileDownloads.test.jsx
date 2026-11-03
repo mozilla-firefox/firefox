@@ -1,5 +1,5 @@
 import React from "react";
-import { shallow, mount } from "enzyme";
+import { shallow } from "enzyme";
 import { GlobalOverrider } from "tests/unit/utils";
 import { MobileDownloads } from "content-src/components/MobileDownloads";
 
@@ -32,7 +32,6 @@ describe("Multistage AboutWelcome MobileDownloads module", () => {
         email: {
           link_text: "Email yourself a link",
         },
-        marketplace_buttons: ["ios", "android"],
       },
       handleAction: () => {
         window.AWFinish();
@@ -43,16 +42,6 @@ describe("Multistage AboutWelcome MobileDownloads module", () => {
       const wrapper = shallow(<MobileDownloads {...MOBILE_DOWNLOADS_PROPS} />);
 
       assert.ok(wrapper.exists());
-    });
-
-    it("should handle action on markeplace badge click", () => {
-      const wrapper = mount(<MobileDownloads {...MOBILE_DOWNLOADS_PROPS} />);
-
-      const stub = sandbox.stub(global, "AWFinish");
-      wrapper.find(".ios button").simulate("click");
-      wrapper.find(".android button").simulate("click");
-
-      assert.calledTwice(stub);
     });
 
     it("should handle action on email button click", () => {

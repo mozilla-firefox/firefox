@@ -1,4 +1,0 @@
-content test jar:test.jar!/one
-locale ab-X-stuff jar:test.jar!/three
-overlay chrome://one/file.xml chrome://two/otherfile.xml
-skin test classic jar:test.jar!/one

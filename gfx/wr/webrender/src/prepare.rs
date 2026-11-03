@@ -1283,6 +1283,7 @@ fn add_clip_mask_render_task(
         frame_state.rg_builder,
         &mut frame_state.frame_gpu_data.f32,
         frame_state.transforms,
+        frame_state.cmd_buffers,
     );
 
     clip_task_id

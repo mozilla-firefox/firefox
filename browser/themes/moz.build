@@ -34,7 +34,7 @@ elif toolkit == "gtk":
 else:
     DIRS += ["windows"]
 
-DIRS += ["addons", "shared/app-marketplace-icons"]
+DIRS += ["addons"]
 
 with Files("osx/**"):
     SCHEDULES.exclusive = ["macosx"]

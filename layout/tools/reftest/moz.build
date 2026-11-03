@@ -7,7 +7,6 @@ with Files("**"):
     SCHEDULES.exclusive = ["reftest", "crashtest"]
 
 XPI_NAME = "reftest"
-USE_EXTENSION_MANIFEST = True
 JAR_MANIFESTS += ["jar.mn"]
 FINAL_TARGET_FILES += [
     "api.js",

@@ -111,6 +111,34 @@ class TestInstallManifest(TestWithTmpDir):
 
         self.assertEqual(c, c2)
 
+    def test_write_leaves_an_unchanged_file_alone(self):
+        m = self._get_test_manifest()
+
+        p = self.tmppath("m")
+        m.write(path=p)
+        first = os.stat(p).st_mtime_ns
+
+        m.write(path=p)
+
+        self.assertEqual(os.stat(p).st_mtime_ns, first)
+
+    def test_write_updates_a_changed_file(self):
+        m = self._get_test_manifest()
+
+        p = self.tmppath("m")
+        m.write(path=p)
+        with open(p) as fh:
+            before = fh.read()
+
+        m.add_link(self.tmppath("s_extra"), "dest_extra")
+        m.write(path=p)
+
+        with open(p) as fh:
+            after = fh.read()
+
+        self.assertNotEqual(before, after)
+        self.assertEqual(InstallManifest(path=p), m)
+
     def test_populate_registry(self):
         m = self._get_test_manifest()
         r = FileRegistry()
@@ -162,6 +190,54 @@ class TestInstallManifest(TestWithTmpDir):
         self.assertEqual(
             sorted(dest for dest in m._dests), ["dest/foo/file1", "dest/foo/file2"]
         )
+
+    def test_write_expand_pattern_is_deterministic(self):
+        source = self.tmppath("source")
+        os.makedirs(f"{source}/base/foo")
+        for name in ("file2", "file1", "file3"):
+            with open(f"{source}/base/foo/{name}", "a"):
+                pass
+
+        m = InstallManifest()
+        m.add_pattern_link(f"{source}/base", "**", "dest")
+
+        first = self.tmppath("track1")
+        second = self.tmppath("track2")
+        m.write(path=first, expand_pattern=True)
+        m.write(path=second, expand_pattern=True)
+
+        with open(first) as fh:
+            with open(second) as fh2:
+                self.assertEqual(fh.read(), fh2.read())
+
+    def test_write_expand_pattern_leaves_an_unchanged_file_list_alone(self):
+        source = self.tmppath("source")
+        os.makedirs(f"{source}/base/foo")
+        with open(f"{source}/base/foo/file1", "a"):
+            pass
+
+        m = InstallManifest()
+        m.add_pattern_link(f"{source}/base", "**", "dest")
+
+        track = self.tmppath("track")
+        m.write(path=track, expand_pattern=True)
+        unchanged = os.stat(track).st_mtime_ns
+
+        m.write(path=track, expand_pattern=True)
+        self.assertEqual(os.stat(track).st_mtime_ns, unchanged)
+
+        with open(f"{source}/base/foo/file2", "a"):
+            pass
+        m.write(path=track, expand_pattern=True)
+
+        added = InstallManifest(path=track)
+        self.assertEqual(sorted(added._dests), ["dest/foo/file1", "dest/foo/file2"])
+
+        os.remove(f"{source}/base/foo/file2")
+        m.write(path=track, expand_pattern=True)
+
+        removed = InstallManifest(path=track)
+        self.assertEqual(sorted(removed._dests), ["dest/foo/file1"])
 
     def test_or(self):
         m1 = self._get_test_manifest()

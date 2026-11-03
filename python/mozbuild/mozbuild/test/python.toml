@@ -3,8 +3,6 @@ subsuite = "mozbuild"
 
 ["action/test_assemble_macos_bundle.py"]
 
-["action/test_buildlist.py"]
-
 ["action/test_fat_aar.py"]
 
 ["action/test_generate_archive_symbols.py"]
@@ -29,6 +27,8 @@ subsuite = "mozbuild"
 
 ["action/test_run_cargo.py"]
 
+["action/test_xpi_archive.py"]
+
 ["action/test_zip.py"]
 
 ["backend/test_build.py"]
@@ -43,6 +43,8 @@ subsuite = "mozbuild"
 
 ["backend/test_l10n_manifest.py"]
 
+["backend/test_l10n_stage.py"]
+
 ["backend/test_partialconfigenvironment.py"]
 
 ["backend/test_recursivemake.py"]
@@ -50,6 +52,8 @@ subsuite = "mozbuild"
 ["backend/test_test_manifest.py"]
 
 ["backend/test_visualstudio.py"]
+
+["backend/test_xpi_archive.py"]
 
 ["code_analysis/test_mach_commands.py"]
 
@@ -95,6 +99,8 @@ subsuite = "mozbuild"
 
 ["frontend/test_gyp_reader.py"]
 
+["frontend/test_jar_manifest.py"]
+
 ["frontend/test_l10n_manifest.py"]
 
 ["frontend/test_namespaces.py"]
@@ -126,8 +132,6 @@ subsuite = "mozbuild"
 ["test_expression.py"]
 
 ["test_generate_sbom.py"]
-
-["test_jarmaker.py"]
 
 ["test_legacy_test.py"]
 

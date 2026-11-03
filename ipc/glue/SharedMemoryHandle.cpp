@@ -63,7 +63,9 @@ HandleBase::~HandleBase() {
 
 HandleBase& HandleBase::operator=(HandleBase&& aOther) {
   mHandle = std::move(aOther.mHandle);
-  SetSize(std::exchange(aOther.mSize, 0));
+  const auto otherSize = aOther.mSize;
+  aOther.SetSize(0);
+  SetSize(otherSize);
   return *this;
 }
 

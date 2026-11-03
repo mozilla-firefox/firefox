@@ -48,6 +48,7 @@ class RenderCompositorLayerNative : public RenderCompositor {
   bool EnableAsyncScreenshot() override;
   void GetCompositorCapabilities(CompositorCapabilities* aCaps) override;
   void GetWindowProperties(WindowProperties* aProperties) override;
+  uint32_t GetMaxPartialPresentRects() override;
 
   bool SurfaceOriginIsTopLeft() override { return true; }
 

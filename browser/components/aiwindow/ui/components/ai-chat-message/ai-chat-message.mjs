@@ -873,6 +873,22 @@ export class AIChatMessage extends MozLitElement {
     </div>`;
   }
 
+  /**
+   * The text a localized message shows on screen, or "" when the message
+   * isn't localized or hasn't rendered yet
+   *
+   * @type {string}
+   */
+  get localizedText() {
+    if (!this.messageL10n?.id) {
+      return "";
+    }
+    return (
+      this.shadowRoot?.querySelector(".message-assistant [data-l10n-id]")
+        ?.innerText ?? ""
+    );
+  }
+
   render() {
     return html`
       <link

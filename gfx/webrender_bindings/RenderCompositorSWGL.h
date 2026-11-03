@@ -35,7 +35,7 @@ class RenderCompositorSWGL : public RenderCompositor {
                         const wr::DeviceIntRect* aOpaqueRects,
                         size_t aNumOpaqueRects) override;
 
-  bool UsePartialPresent() override { return true; }
+  bool UseWindowPartialPresent() override { return true; }
   bool RequestFullRender() override;
 
   void Pause() override;

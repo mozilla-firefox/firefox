@@ -11,4 +11,14 @@
   <string name="mozac_menu_item_new_indicator_label">Nieuw</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Promotie sluiten</string>
+  <!-- Title for the Customize Menu screen toolbar -->
+  <string name="mozac_menu_customize_toolbar_title">Menu aanpassen</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">Voorbeeld</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">Verborgen secties</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Standaardwaarden</string>
+  <!-- Content description for the back button in the Customize Menu top app bar -->
+  <string name="mozac_menu_customize_back_button_content_description">Terug bladeren</string>
 </resources>

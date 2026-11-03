@@ -324,15 +324,12 @@ pub enum CompositorConfig {
         /// If this is zero, a full screen present occurs at the end of the
         /// frame. This is the simplest and default mode. If this is non-zero,
         /// then the operating system supports a form of 'partial present' where
-        /// only dirty regions of the framebuffer need to be updated.
+        /// only dirty regions of the framebuffer need to be updated. WR also
+        /// redraws the regions that the back buffer is missing, based on the
+        /// buffer age passed to `Renderer::render`.
         max_partial_present_rects: usize,
-        /// If this is true, WR must draw the previous frames' dirty regions when
-        /// doing a partial present. This is used for EGL which requires the front
-        /// buffer to always be fully consistent.
-        draw_previous_partial_present_regions: bool,
-        /// A client provided interface to a compositor handling partial present.
-        /// Required if webrender must query the backbuffer's age.
-        partial_present: Option<Box<dyn PartialPresentCompositor>>,
+        /// A client provided interface that receives the region WR renders to.
+        buffer_damage: Option<Box<dyn BufferDamageCompositor>>,
     },
     Layer {
         /// Composite the frame into swapchain surfaces owned by the embedder.
@@ -361,13 +358,13 @@ impl CompositorConfig {
         }
     }
 
-    pub fn partial_present(&mut self) -> Option<&mut Box<dyn PartialPresentCompositor>> {
+    pub fn buffer_damage(&mut self) -> Option<&mut Box<dyn BufferDamageCompositor>> {
         match self {
             CompositorConfig::Native { .. } => {
                 None
             }
-            CompositorConfig::Draw { ref mut partial_present, .. } => {
-                partial_present.as_mut()
+            CompositorConfig::Draw { ref mut buffer_damage, .. } => {
+                buffer_damage.as_mut()
             }
             CompositorConfig::Layer { .. } => {
                 None
@@ -381,8 +378,7 @@ impl Default for CompositorConfig {
     fn default() -> Self {
         CompositorConfig::Draw {
             max_partial_present_rects: 0,
-            draw_previous_partial_present_regions: false,
-            partial_present: None,
+            buffer_damage: None,
         }
     }
 }
@@ -398,11 +394,10 @@ pub enum CompositorKind {
     Draw {
         /// Partial present support.
         max_partial_present_rects: usize,
-        /// Draw previous regions when doing partial present.
-        draw_previous_partial_present_regions: bool,
     },
+    /// WR composites picture cache tiles into the swapchains of a Layer compositor.
     Layer {
-
+        mode: SwapchainMode,
     },
     /// Native OS compositor.
     Native {
@@ -416,20 +411,80 @@ impl Default for CompositorKind {
     fn default() -> Self {
         CompositorKind::Draw {
             max_partial_present_rects: 0,
-            draw_previous_partial_present_regions: false,
         }
     }
+}
+
+/// The kind of swapchains a Layer compositor provides.
+#[cfg_attr(feature = "capture", derive(Serialize))]
+#[cfg_attr(feature = "replay", derive(Deserialize))]
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum SwapchainMode {
+    /// The only swapchain is the window's default framebuffer. WR composites
+    /// into it the same way as with CompositorConfig::Draw, including external
+    /// surfaces and the debug overlay, and may keep drawing into it after
+    /// present_swapchain until end_frame. The swapchain surface ids all refer
+    /// to the window, so creating, resizing and destroying them can be ignored.
+    WindowFramebuffer {
+        /// See CompositorConfig::Draw.
+        max_partial_present_rects: usize,
+    },
+    /// Each layer gets its own OS swapchain, and external surfaces can be
+    /// given their own OS surface. The swapchains keep their content between
+    /// frames. Swapchain surfaces have a top-left origin.
+    OsLayers {
+        /// If this is zero, swapchains are fully redrawn and presented each
+        /// frame. Otherwise WR passes the dirty region of each swapchain to
+        /// bind_swapchain and present_swapchain. WR currently produces at most
+        /// one dirty rect per swapchain.
+        max_partial_present_rects: usize,
+    },
 }
 
 impl CompositorKind {
     pub fn should_redraw_on_invalidation(&self) -> bool {
         match self {
-            CompositorKind::Draw { max_partial_present_rects, .. } => {
+            CompositorKind::Draw { max_partial_present_rects, .. } |
+            CompositorKind::Layer {
+                mode: SwapchainMode::WindowFramebuffer { max_partial_present_rects, .. },
+            } => {
                 // When partial present is enabled, we need to force redraw.
                 *max_partial_present_rects > 0
             }
-            CompositorKind::Layer {  } => false,    // TODO(gwc): Is this correct?
+            CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } } => false,    // TODO(gwc): Is this correct?
             CompositorKind::Native { capabilities, .. } => capabilities.redraw_on_invalidation,
+        }
+    }
+
+    /// WR composites into OS swapchains, one per layer.
+    pub fn uses_os_layers(&self) -> bool {
+        matches!(self, CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } })
+    }
+
+    /// External surfaces may be given their own OS layer.
+    pub fn allows_external_layers(&self) -> bool {
+        self.uses_os_layers()
+    }
+
+    /// Picture-cache tiles are rendered into OS surfaces.
+    pub fn uses_native_tiles(&self) -> bool {
+        matches!(self, CompositorKind::Native { .. })
+    }
+
+    /// Occlusion culling applies to every tile, not only fixed-position ones.
+    pub fn culls_all_tiles(&self) -> bool {
+        self.uses_os_layers()
+    }
+
+    /// A compositor surface may carry a single rounded-rect clip.
+    pub fn supports_rounded_clip_promotion(&self) -> bool {
+        self.uses_os_layers()
+    }
+
+    pub fn supports_backdrop_surface(&self) -> bool {
+        match self {
+            CompositorKind::Native { capabilities } => capabilities.supports_surface_for_backdrop,
+            CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => false,
         }
     }
 }
@@ -1355,7 +1410,7 @@ pub struct NativeSurfaceHandle(pub u64);
 
 impl NativeSurfaceHandle {
     /// Refers to whatever the embedder has already bound as the default
-    /// draw target, for example after `LayerCompositor::bind_layer`, or a
+    /// draw target, for example after `Compositor::bind_swapchain`, or a
     /// DirectComposition surface bound as the default framebuffer.
     pub const DEFAULT: Self = NativeSurfaceHandle(0);
 }
@@ -1625,7 +1680,11 @@ pub trait Compositor {
     }
 
     /// Bind a swapchain surface so that WebRender draws into the default framebuffer
-    /// handle (NativeSurfaceHandle::DEFAULT).
+    /// handle (NativeSurfaceHandle::DEFAULT). With SwapchainMode::WindowFramebuffer,
+    /// non-empty dirty rects are the total region WebRender is about to render to this
+    /// frame, ie the frame's dirty region and some previous frames' dirty regions, if
+    /// applicable (calculated using the buffer age), and bind_swapchain is called once
+    /// per frame before anything is rendered to the framebuffer.
     fn bind_swapchain(&mut self, _id: NativeSurfaceId, _dirty_rects: &[DeviceIntRect]) {
         unimplemented!("bind_swapchain");
     }
@@ -1636,6 +1695,14 @@ pub trait Compositor {
 
     fn get_window_properties(&self) -> WindowProperties {
         WindowProperties::default()
+    }
+
+    /// The kind of swapchains this compositor provides when used with
+    /// CompositorConfig::Layer.
+    fn get_swapchain_mode(&self) -> SwapchainMode {
+        SwapchainMode::OsLayers {
+            max_partial_present_rects: 1,
+        }
     }
 }
 
@@ -1660,6 +1727,8 @@ pub struct CompositorInputLayer {
 #[derive(Debug)]
 pub struct CompositorInputConfig<'a> {
     pub enable_screenshot: bool,
+    /// Layers are indexed front to back; surfaces are added to the visual tree
+    /// back to front.
     pub layers: &'a [CompositorInputLayer],
 }
 
@@ -1713,11 +1782,12 @@ pub trait MappableCompositor: Compositor {
     fn unlock_composite_surface(&mut self, ctx: *mut c_void, external_image_id: ExternalImageId);
 }
 
-/// Defines an interface to a non-native (application-level) Compositor which handles
-/// partial present. This is required if webrender must query the backbuffer's age.
+/// Defines an interface to a non-native (application-level) Compositor which receives
+/// the buffer damage region of the window. This is required if webrender must query the
+/// backbuffer's age.
 /// TODO: Use the Compositor trait for native and non-native compositors, and integrate
 /// this functionality there.
-pub trait PartialPresentCompositor {
+pub trait BufferDamageCompositor {
     /// Allows webrender to specify the total region that will be rendered to this frame,
     /// ie the frame's dirty region and some previous frames' dirty regions, if applicable
     /// (calculated using the buffer age). Must be called before anything has been rendered

@@ -7,6 +7,7 @@ package org.mozilla.fenix.settings.ai
 import mozilla.components.concept.ai.controls.AIControllableFeature
 import mozilla.components.concept.ai.controls.AIFeatureMetadata.FeatureId
 import mozilla.components.feature.summarize.PageSummaryFeature
+import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
 import org.mozilla.fenix.search.VoiceSearchAIControlFeature
 import org.mozilla.fenix.translations.TranslationsAIControllableFeature
 
@@ -20,6 +21,7 @@ private val aiFeatureDisplayOrder: List<FeatureId> =
         TranslationsAIControllableFeature.id,
         PageSummaryFeature.id,
         VoiceSearchAIControlFeature.id,
+        ListenToPageAIControlFeature.id,
     )
 
 private val aiFeatureDisplayRank: Map<FeatureId, Int> =

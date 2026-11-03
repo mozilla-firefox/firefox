@@ -8,13 +8,15 @@ There was a period of overlap on Windows 11 where both the COM and WinRT APIs we
 
 We are unable to detect if the COM API will prompt for user confirmation or be outright rejected by the system. Because the user may never respond to the confirmation prompt, the app remaining unpinned after the COM API is called does not necessarily indicate that the pinning request failed. For this reason, our implementation prefers the WinRT API when pinning Firefox to the Taskbar, and falls back to COM if WinRT fails.
 
+Because the COM API can pin without asking the user, callers can request prompt-only pinning. In that mode, a WinRT failure rejects instead of falling back to COM.
+
 :::{warning}
 When testing Taskbar pinning on systems with an OS confirmation prompt, it is important to affirm the prompt. Otherwise, the system might block further attempts to pin to the Taskbar until it is restarted.
 :::
 
 ### COM
 
-Taskbar pinning first became available via the undocumented `IPinnedList3` COM API implemented by the Taskband Pin COM class. This API has minimal requirements: just a shortcut to the application anywhere on the file system. In later versions of Windows 10 and an interim period of Windows 11, user confirmation was required via a system-issued Toast notification, though this notably diverges from WinRT in that showing the notification doesn't require window focus.
+Taskbar pinning first became available via the undocumented `IPinnedList3` COM API implemented by the Taskband Pin COM class. This API has minimal requirements: just a shortcut to the application anywhere on the file system. It pins without asking the user on Windows 10 and early Windows 11 builds. On Windows 11 24H2 and later it reports success without pinning.
 
 ### WinRT
 

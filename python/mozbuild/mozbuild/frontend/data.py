@@ -1115,20 +1115,25 @@ class PerSourceFlag(ContextDerived):
         self.object_deps = object_deps
 
 
-class JARManifest(ContextDerived):
-    """Describes an individual JAR manifest file and how to process it.
+class XPIArchive(ContextDerived):
+    """An extension archive built from what was staged for it.
 
-    This class isn't very useful for optimizing backends yet because we don't
-    capture defines. We can't capture defines safely until all of them are
-    defined in moz.build and not Makefile.in files.
+    The file list is what the install step recorded, so the archive describes
+    the declared installs rather than whatever the staging area holds.
     """
 
-    __slots__ = ("path",)
+    __slots__ = ("name", "destdir")
 
-    def __init__(self, context, path):
+    def __init__(self, context, name, destdir=None):
         ContextDerived.__init__(self, context)
+        self.name = name
+        self.destdir = destdir
 
-        self.path = path
+    @property
+    def archive(self):
+        """Path of the archive, beside what it packages unless told otherwise."""
+        destdir = self.destdir or mozpath.dirname(self.install_target)
+        return mozpath.join(destdir, self.name + ".xpi")
 
 
 class BaseSources(ContextDerived):

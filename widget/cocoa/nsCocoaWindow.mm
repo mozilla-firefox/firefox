@@ -731,6 +731,25 @@ static nsMenuItemX* FindMenuItemByElementId(nsMenuX* aMenu,
   return nullptr;
 }
 
+nsMenuItemX* nsCocoaWindow::FindMenuBarItemByElementId(
+    const nsAString& aElementId) {
+  // Not [NSApp mainMenu]: that may belong to a different window, for example
+  // the hidden window's menu bar.
+  RefPtr<nsMenuBarX> menuBar = GetMenuBar();
+  if (!menuBar) {
+    return nullptr;
+  }
+
+  for (uint32_t i = 0; i < menuBar->GetMenuCount(); i++) {
+    if (nsMenuX* menu = menuBar->GetMenuAt(i)) {
+      if (nsMenuItemX* item = FindMenuItemByElementId(menu, aElementId)) {
+        return item;
+      }
+    }
+  }
+  return nullptr;
+}
+
 // Used for testing native menu system structure and event handling.
 nsresult nsCocoaWindow::GetNativeMenuItemKeyEquivalent(
     const nsAString& aElementId, nsAString& aResult) {
@@ -738,19 +757,7 @@ nsresult nsCocoaWindow::GetNativeMenuItemKeyEquivalent(
 
   aResult.Truncate();
 
-  // Not [NSApp mainMenu]: that may belong to a different window, for example
-  // the hidden window's menu bar.
-  RefPtr<nsMenuBarX> menuBar = GetMenuBar();
-  if (!menuBar) {
-    return NS_ERROR_FAILURE;
-  }
-
-  nsMenuItemX* item = nullptr;
-  for (uint32_t i = 0; i < menuBar->GetMenuCount() && !item; i++) {
-    if (nsMenuX* menu = menuBar->GetMenuAt(i)) {
-      item = FindMenuItemByElementId(menu, aElementId);
-    }
-  }
+  RefPtr<nsMenuItemX> item = FindMenuBarItemByElementId(aElementId);
   if (!item) {
     return NS_ERROR_FAILURE;
   }
@@ -787,6 +794,21 @@ nsresult nsCocoaWindow::GetNativeMenuItemKeyEquivalent(
   nsCocoaUtils::GetStringForNSString(keyEquivalent, key);
   result.Append(key);
   aResult = result;
+  return NS_OK;
+
+  NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
+}
+
+// Used for testing native menu system structure and event handling.
+nsresult nsCocoaWindow::GetNativeMenuItemTitle(const nsAString& aElementId,
+                                               nsAString& aResult) {
+  NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
+
+  RefPtr<nsMenuItemX> item = FindMenuBarItemByElementId(aElementId);
+  if (!item) {
+    return NS_ERROR_FAILURE;
+  }
+  nsCocoaUtils::GetStringForNSString(item->NativeNSMenuItem().title, aResult);
   return NS_OK;
 
   NS_OBJC_END_TRY_BLOCK_RETURN(NS_ERROR_FAILURE);
@@ -1481,8 +1503,8 @@ void nsCocoaWindow::DispatchAPZWheelInputEvent(InputData& aEvent) {
     // Give the swipe tracker a first pass at the event. If a new pan gesture
     // has been started since the beginning of the swipe, the swipe tracker
     // will know to ignore the event.
-    nsEventStatus status =
-        mSwipeTracker->ProcessEvent(aEvent.AsPanGestureInput());
+    nsEventStatus status = mSwipeTracker->ProcessEvent(
+        aEvent.AsPanGestureInput(), SwipeInputSource::Touchpad);
     if (status == nsEventStatus_eConsumeNoDefault) {
       return;
     }

@@ -66,10 +66,13 @@ import org.mozilla.fenix.components.lens.LensImageSearch
 import org.mozilla.fenix.components.listentopage.ListenToPage
 import org.mozilla.fenix.components.llm.Llm
 import org.mozilla.fenix.components.llm.ext.accessTokenProvider
+import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.metrics.MetricsMiddleware
 import org.mozilla.fenix.components.tabs.DefaultTabRepository
 import org.mozilla.fenix.crashes.CrashReportingAppMiddleware
 import org.mozilla.fenix.crashes.SettingsCrashReportCache
+import org.mozilla.fenix.datastore.customizedBrowserMenuInfoDataStore
 import org.mozilla.fenix.datastore.pocketStoriesSelectedCategoriesDataStore
 import org.mozilla.fenix.distributions.DefaultDistributionBrowserStoreProvider
 import org.mozilla.fenix.distributions.DefaultDistributionProviderChecker
@@ -78,6 +81,7 @@ import org.mozilla.fenix.distributions.DistributionIdManager
 import org.mozilla.fenix.ext.asRecentTabs
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.filterState
+import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.ext.sort
 import org.mozilla.fenix.home.PocketMiddleware
 import org.mozilla.fenix.home.SettingsBackedPocketSettings
@@ -90,6 +94,7 @@ import org.mozilla.fenix.home.setup.store.DefaultSetupChecklistRepository
 import org.mozilla.fenix.home.setup.store.SetupChecklistPreferencesMiddleware
 import org.mozilla.fenix.home.setup.store.SetupChecklistTelemetryMiddleware
 import org.mozilla.fenix.ipprotection.store.DefaultIPProtectionPromptRepository
+import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
 import org.mozilla.fenix.messaging.state.MessagingMiddleware
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.onboarding.FenixOnboarding
@@ -414,6 +419,20 @@ class Components(
 
     val fxSuggest by lazyMonitored { FxSuggest(context, remoteSettingsService.value, analytics.crashReporter) }
 
+    val menuCustomizationRepository by lazyMonitored {
+        MenuCustomizationRepository(
+            dataStore = context.customizedBrowserMenuInfoDataStore,
+            defaultMenuInfo = {
+                BrowserMenuConfiguration.defaultMenuInfo(
+                    isToolbarAtBottom = context.isToolbarAtBottom(),
+                    isExpandedToolbarEnabled = settings.shouldUseExpandedToolbar,
+                )
+            },
+            requiredSectionIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
+            scope = applicationScope,
+        )
+    }
+
     val distributionIdManager by lazyMonitored {
         DistributionIdManager(
             packageManager = context.packageManagerWrapper,
@@ -521,6 +540,7 @@ class Components(
             context = context,
             scope = applicationScope,
             profiler = core.engine.profiler,
+            isAvailable = settings.listenToPageFeatureFlagEnabled,
         )
     }
 
@@ -528,6 +548,9 @@ class Components(
         AIFeatureRegistry.default(scope = applicationScope, context = context).also {
             if (settings.shakeToSummarizeFeatureFlagEnabled) {
                 it.register(PageSummaryFeature(summarizationSettings))
+            }
+            if (listenToPage.settings.available) {
+                it.register(ListenToPageAIControlFeature(listenToPage.settings))
             }
             it.register(
                 VoiceSearchAIControlFeature(

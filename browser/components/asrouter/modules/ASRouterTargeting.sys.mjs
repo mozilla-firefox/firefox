@@ -861,6 +861,15 @@ const TargetingGetters = {
         .catch(() => resolve(false));
     });
   },
+  get isFxASignedInMozilla() {
+    if (!lazy.isFxAEnabled) {
+      return Promise.resolve(false);
+    }
+    return lazy.fxAccounts.getSignedInUser().then(
+      data => data?.email?.endsWith("@mozilla.com") ?? false,
+      () => false
+    );
+  },
   get sync() {
     return {
       desktopDevices: lazy.clientsDevicesDesktop,

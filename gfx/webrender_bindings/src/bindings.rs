@@ -43,9 +43,9 @@ use webrender::{
     AsyncScreenshotHandle, ClipRadius, Compositor, CompositorCapabilities, CompositorConfig, CompositorKind,
     CompositorSurfaceTransform, Device, DeviceOptions, FrameBuilderConfig, GlBackendConfig, GpuBackendConfig,
     MappableCompositor, MappedTileInfo, NativeSurfaceHandle, NativeSurfaceId, NativeSurfaceInfo, NativeTileId,
-    PartialPresentCompositor, PendingShadersToPrecache, PipelineInfo, ProfilerHooks, RecordedFrameHandle,
-    RenderBackendHooks, Renderer, RendererStats, SWGLCompositeSurfaceInfo, SceneBuilderHooks, ShaderPrecacheFlags,
-    Shaders, SharedShaders, TextureCacheConfig, UploadMethod, WebRenderOptions, WindowProperties, WindowVisibility,
+    PendingShadersToPrecache, PipelineInfo, ProfilerHooks, RecordedFrameHandle, RenderBackendHooks, Renderer,
+    RendererStats, SWGLCompositeSurfaceInfo, SceneBuilderHooks, ShaderPrecacheFlags, Shaders, SharedShaders,
+    SwapchainMode, TextureCacheConfig, UploadMethod, WebRenderOptions, WindowProperties, WindowVisibility,
     ONE_TIME_USAGE_HINT,
 };
 use wr_malloc_size_of::MallocSizeOfOps;
@@ -1529,11 +1529,10 @@ extern "C" {
         stride: &mut i32,
     );
     fn wr_compositor_unmap_tile(compositor: *mut c_void);
-
-    fn wr_partial_present_compositor_set_buffer_damage_region(
+    fn wr_compositor_get_swapchain_mode(
         compositor: *mut c_void,
-        rects: *const DeviceIntRect,
-        n_rects: usize,
+        uses_os_layers: &mut bool,
+        max_partial_present_rects: &mut usize,
     );
 }
 
@@ -1719,6 +1718,27 @@ impl Compositor for WrCompositor {
             props
         }
     }
+
+    fn get_swapchain_mode(&self) -> SwapchainMode {
+        let mut uses_os_layers = false;
+        let mut max_partial_present_rects = 0;
+        unsafe {
+            wr_compositor_get_swapchain_mode(
+                self.0,
+                &mut uses_os_layers,
+                &mut max_partial_present_rects,
+            );
+        }
+        if uses_os_layers {
+            SwapchainMode::OsLayers {
+                max_partial_present_rects,
+            }
+        } else {
+            SwapchainMode::WindowFramebuffer {
+                max_partial_present_rects,
+            }
+        }
+    }
 }
 
 extern "C" {
@@ -1782,16 +1802,6 @@ impl MappableCompositor for WrCompositor {
     }
     fn unlock_composite_surface(&mut self, ctx: *mut c_void, external_image_id: ExternalImageId) {
         unsafe { wr_swgl_unlock_composite_surface(ctx, external_image_id) }
-    }
-}
-
-pub struct WrPartialPresentCompositor(*mut c_void);
-
-impl PartialPresentCompositor for WrPartialPresentCompositor {
-    fn set_buffer_damage_region(&mut self, rects: &[DeviceIntRect]) {
-        unsafe {
-            wr_partial_present_compositor_set_buffer_damage_region(self.0, rects.as_ptr(), rects.len());
-        }
     }
 }
 
@@ -1860,9 +1870,6 @@ pub extern "C" fn wr_window_new(
     document_id: u32,
     compositor: *mut c_void,
     use_native_compositor: bool,
-    use_partial_present: bool,
-    max_partial_present_rects: usize,
-    draw_previous_partial_present_regions: bool,
     out_handle: &mut *mut DocumentHandle,
     out_renderer: &mut *mut Renderer,
     out_max_texture_size: *mut i32,
@@ -1875,7 +1882,6 @@ pub extern "C" fn wr_window_new(
     low_quality_pinch_zoom: bool,
     max_shared_surface_size: i32,
     enable_subpixel_aa: bool,
-    use_layer_compositor: bool,
     limit_sdr_yuv_external_composites: bool,
 ) -> bool {
     assert!(unsafe { is_in_render_thread() });
@@ -1943,23 +1949,13 @@ pub extern "C" fn wr_window_new(
                 use_native_compositor,
             )),
         }
-    } else if use_layer_compositor {
-        CompositorConfig::Layer {
-            compositor: Box::new(WrCompositor(compositor)),
-        }
     } else if use_native_compositor {
         CompositorConfig::Native {
             compositor: Box::new(WrCompositor(compositor)),
         }
     } else {
-        CompositorConfig::Draw {
-            max_partial_present_rects,
-            draw_previous_partial_present_regions,
-            partial_present: if use_partial_present {
-                Some(Box::new(WrPartialPresentCompositor(compositor)))
-            } else {
-                None
-            },
+        CompositorConfig::Layer {
+            compositor: Box::new(WrCompositor(compositor)),
         }
     };
 
@@ -3181,6 +3177,37 @@ pub extern "C" fn wr_dp_define_rounded_rect_clip(
     } else {
         dl_builder.define_clip_rounded_rect(space, complex)
     };
+    WrClipId::from_webrender(clip_id)
+}
+
+#[no_mangle]
+pub extern "C" fn wr_dp_define_border_clip(
+    state: &mut WrState,
+    space: WrSpatialId,
+    rect: LayoutRect,
+    widths: LayoutSideOffsets,
+    top: BorderSide,
+    right: BorderSide,
+    bottom: BorderSide,
+    left: BorderSide,
+    radius: BorderRadius,
+    inset: LayoutSideOffsets,
+) -> WrClipId {
+    debug_assert!(unsafe { is_in_main_thread() });
+    let border = NormalBorder {
+        top,
+        right,
+        bottom,
+        left,
+        radius,
+        inset,
+        do_aa: true,
+    };
+    let clip_id =
+        state
+            .frame_builder
+            .dl_builder
+            .define_clip_border(space.to_webrender(state.pipeline_id), rect, border, widths);
     WrClipId::from_webrender(clip_id)
 }
 

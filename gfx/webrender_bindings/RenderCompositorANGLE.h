@@ -112,9 +112,10 @@ class RenderCompositorANGLE final : public RenderCompositor {
   void GetWindowProperties(WindowProperties* aProperties) override;
 
   // Interface for partial present
-  bool UsePartialPresent() override;
+  bool UseWindowPartialPresent() override;
   bool RequestFullRender() override;
   uint32_t GetMaxPartialPresentRects() override;
+  size_t GetBufferAge() const override { return 1; }
 
   RefPtr<layers::Fence> GetAndResetReadFence() override;
 
@@ -125,7 +126,7 @@ class RenderCompositorANGLE final : public RenderCompositor {
 
  protected:
   bool RecreateNonNativeCompositorSwapChain();
-  void InitializeUsePartialPresent();
+  void InitializeUseWindowPartialPresent();
   void InsertGraphicsCommandsFinishedWaitQuery(
       RenderedFrameId aRenderedFrameId);
   bool WaitForPreviousGraphicsCommandsFinishedQuery(bool aWaitAll = false);
@@ -165,7 +166,7 @@ class RenderCompositorANGLE final : public RenderCompositor {
   RenderedFrameId mLastCompletedFrameId;
 
   Maybe<LayoutDeviceIntSize> mBufferSize;
-  bool mUsePartialPresent = false;
+  bool mUseWindowPartialPresent = false;
   bool mFullRender = false;
   bool mFirstPresent = true;
   // Wether we're currently using alpha.

@@ -164,16 +164,16 @@ struct hentry* HashMgr::lookup(const char* word, size_t len) const {
 
 // add a word to the hash table (private)
 int HashMgr::add_word(const std::string& in_word,
-                      int wcl,
+                      size_t wcl,
                       unsigned short* aff,
-                      int al,
+                      size_t al,
                       const std::string* in_desc,
                       bool onlyupcase,
                       int captype,
                       bool own_aff) {
 
   if (al > std::numeric_limits<short>::max()) {
-    HUNSPELL_WARNING(stderr, "error: affix len %d is over max limit\n", al);
+    HUNSPELL_WARNING(stderr, "error: affix len %zu is over max limit\n", al);
     release_flags(aff, own_aff);
     return 1;
   }
@@ -226,7 +226,7 @@ int HashMgr::add_word(const std::string& in_word,
   }
 
   bool upcasehomonym = false;
-  int descl = desc ? (!aliasm.empty() ? sizeof(char*) : desc->size() + 1) : 0;
+  size_t descl = desc ? (!aliasm.empty() ? sizeof(char*) : desc->size() + 1) : 0;
   // variable-length hash record with word and optional fields
   auto hp =
       (struct hentry*)arena_alloc(sizeof(struct hentry) + word->size() + descl,
@@ -242,7 +242,7 @@ int HashMgr::add_word(const std::string& in_word,
   memcpy(hpw, word->data(), word->size());
   hpw[word->size()] = 0;
 
-  int i = hash(hpw, word->size());
+  size_t i = hash(hpw, word->size());
 
   hp->blen = (unsigned short)word->size();
   hp->clen = (unsigned short)wcl;
@@ -446,9 +446,9 @@ int HashMgr::add_word(const std::string& in_word,
 }
 
 int HashMgr::add_hidden_capitalized_word(const std::string& word,
-                                         int wcl,
+                                         size_t wcl,
                                          unsigned short* flags,
-                                         int flagslen,
+                                         size_t flagslen,
                                          const std::string* dp,
                                          int captype) {
   if (flags == nullptr)
@@ -487,10 +487,11 @@ int HashMgr::add_hidden_capitalized_word(const std::string& word,
 }
 
 // detect captype and modify word length for UTF-8 encoding
-int HashMgr::get_clen_and_captype(const std::string& word, int* captype, std::vector<w_char> &workbuf) {
-  int len;
+size_t HashMgr::get_clen_and_captype(const std::string& word, int* captype, std::vector<w_char> &workbuf) {
+  size_t len;
   if (utf8) {
-    len = u8_u16(workbuf, word);
+    u8_u16(workbuf, word);
+    len = workbuf.size();
     *captype = get_captype_utf8(workbuf, langnum);
   } else {
     len = word.size();
@@ -499,7 +500,7 @@ int HashMgr::get_clen_and_captype(const std::string& word, int* captype, std::ve
   return len;
 }
 
-int HashMgr::get_clen_and_captype(const std::string& word, int* captype) {
+size_t HashMgr::get_clen_and_captype(const std::string& word, int* captype) {
   std::vector<w_char> workbuf;
   return get_clen_and_captype(word, captype, workbuf);
 }
@@ -507,6 +508,12 @@ int HashMgr::get_clen_and_captype(const std::string& word, int* captype) {
 // remove word (personal dictionary function for standalone applications)
 int HashMgr::remove(const std::string& word) {
   struct hentry* dp = lookup(word.c_str(), word.size());
+  if (!dp) {
+    // Affixed forms need their own entry to override the generating rule.
+    if (add(word))
+      return 1;
+    dp = lookup(word.c_str(), word.size());
+  }
   while (dp) {
     if ((dp->alen == 0 || !TESTAFF(dp->astr, forbiddenword, dp->alen)) &&
         dp->alen < std::numeric_limits<short>::max()) {
@@ -559,18 +566,22 @@ int HashMgr::add(const std::string& word) {
   remove_forbidden_flag(word);
   int captype, al = 0;
   unsigned short* flags = nullptr;
-  int wcl = get_clen_and_captype(word, &captype);
+  size_t wcl = get_clen_and_captype(word, &captype);
   if (add_word(word, wcl, flags, al, nullptr, false, captype, true))
     return 1;
   return add_hidden_capitalized_word(word, wcl, flags, al, nullptr, captype);
 }
 
 int HashMgr::add_with_flags(const std::string& word, const std::string& flags, const std::string& desc) {
+  // the flags and the description have the same length limit as the word
+  if (flags.size() > std::numeric_limits<unsigned short>::max() ||
+      desc.size() > std::numeric_limits<unsigned short>::max())
+    return 1;
   remove_forbidden_flag(word);
   int captype;
   unsigned short *df;
-  int al = decode_flags(&df, flags, nullptr);
-  int wcl = get_clen_and_captype(word, &captype);
+  size_t al = decode_flags(&df, flags, nullptr);
+  size_t wcl = get_clen_and_captype(word, &captype);
   if (add_word(word, wcl, df, al, &desc, false, captype, true))
     return 1;
   return add_hidden_capitalized_word(word, wcl, df, al, &desc, captype);
@@ -582,7 +593,7 @@ int HashMgr::add_with_affix(const std::string& word, const std::string& example)
   remove_forbidden_flag(word);
   if (dp && dp->astr) {
     int captype;
-    int wcl = get_clen_and_captype(word, &captype);
+    size_t wcl = get_clen_and_captype(word, &captype);
     auto flags = new unsigned short[dp->alen];
     memcpy(flags, dp->astr, dp->alen * sizeof(unsigned short));
     if (add_word(word, wcl, flags, dp->alen, nullptr, false, captype, true))
@@ -708,7 +719,7 @@ int HashMgr::load_tables(const char* tpath, const char* key) {
     }
 
     unsigned short* flags;
-    int al;
+    size_t al;
     if (ap_pos != std::string::npos && ap_pos != ts.size()) {
       std::string ap(ts.substr(ap_pos + 1));
       ts.resize(ap_pos);
@@ -721,11 +732,6 @@ int HashMgr::load_tables(const char* tpath, const char* key) {
         }
       } else {
         al = decode_flags(&flags, ap, dict, /* arena = */ true);
-        if (al == -1) {
-          HUNSPELL_WARNING(stderr, "Can't allocate memory.\n");
-          delete dict;
-          return 6;
-        }
         std::sort(flags, flags + al);
       }
     } else {
@@ -734,7 +740,7 @@ int HashMgr::load_tables(const char* tpath, const char* key) {
     }
 
     int captype;
-    int wcl = get_clen_and_captype(ts, &captype, workbuf);
+    size_t wcl = get_clen_and_captype(ts, &captype, workbuf);
     const std::string* dp_str = dp.empty() ? nullptr : &dp;
     // add the word and its index plus its capitalized form optionally
     // flags are arena-allocated, so own_aff must be false
@@ -760,7 +766,7 @@ int HashMgr::load_tables(const char* tpath, const char* key) {
 
 // the hash function is a simple load and rotate
 // algorithm borrowed
-int HashMgr::hash(const char* word, size_t len) const {
+size_t HashMgr::hash(const char* word, size_t len) const {
   unsigned long hv = 0;
   size_t i = 0;
   while (i < 4 && i < len)
@@ -772,17 +778,17 @@ int HashMgr::hash(const char* word, size_t len) const {
   return (unsigned long)hv % tableptr.size();
 }
 
-int HashMgr::decode_flags(unsigned short** result, const std::string& flags, FileMgr* af) const {
+size_t HashMgr::decode_flags(unsigned short** result, const std::string& flags, FileMgr* af) const {
   return decode_flags(result, flags, af, /* arena = */ false);
 }
 
-int HashMgr::decode_flags(unsigned short** result, const std::string& flags, FileMgr* af, bool use_arena) const {
-  auto alloc = [&](int n) -> unsigned short* {
+size_t HashMgr::decode_flags(unsigned short** result, const std::string& flags, FileMgr* af, bool use_arena) const {
+  auto alloc = [&](size_t n) -> unsigned short* {
     return use_arena ? (unsigned short*)this->arena_alloc(n * sizeof(unsigned short),
                                                           alignof(unsigned short))
                      : new unsigned short[n];
   };
-  int len;
+  size_t len;
   if (flags.empty()) {
     *result = nullptr;
     return 0;
@@ -795,7 +801,7 @@ int HashMgr::decode_flags(unsigned short** result, const std::string& flags, Fil
                          af->getlinenum());
       len >>= 1;
       *result = alloc(len);
-      for (int i = 0; i < len; i++) {
+      for (size_t i = 0; i < len; i++) {
         unsigned short flag = ((unsigned short)((unsigned char)flags[i << 1]) << 8) |
                               ((unsigned short)((unsigned char)flags[(i << 1) | 1]));
 
@@ -805,7 +811,7 @@ int HashMgr::decode_flags(unsigned short** result, const std::string& flags, Fil
     }
     case FLAG_NUM: {  // decimal numbers separated by comma (4521,23,233 -> 4521
                       // 23 233)
-      len = int(1 + std::count_if(flags.begin(), flags.end(), [](char c) { return c == ','; }));
+      len = size_t(1 + std::count_if(flags.begin(), flags.end(), [](char c) { return c == ','; }));
       *result = alloc(len);
       unsigned short* dest = *result;
       const char* src = flags.c_str();
@@ -1030,7 +1036,7 @@ int HashMgr::load_config(const char* affpath, const char* key) {
     }
 
     /* parse in the try string */
-    if ((line.compare(0, 4, "FLAG", 4) == 0) && line.size() > 4 && isspace(line[4])) {
+    if ((line.compare(0, 4, "FLAG", 4) == 0) && line.size() > 4 && isspace((unsigned char)line[4])) {
       if (flag_mode != FLAG_CHAR) {
         HUNSPELL_WARNING(stderr,
                          "error: line %d: multiple definitions of the FLAG "
@@ -1089,14 +1095,14 @@ int HashMgr::load_config(const char* affpath, const char* key) {
       }
     }
 
-    if ((line.compare(0, 2, "AF", 2) == 0) && line.size() > 2 && isspace(line[2])) {
+    if ((line.compare(0, 2, "AF", 2) == 0) && line.size() > 2 && isspace((unsigned char)line[2])) {
       if (!parse_aliasf(line, afflst)) {
         delete afflst;
         return 1;
       }
     }
 
-    if ((line.compare(0, 2, "AM", 2) == 0) && line.size() > 2 && isspace(line[2])) {
+    if ((line.compare(0, 2, "AM", 2) == 0) && line.size() > 2 && isspace((unsigned char)line[2])) {
       if (!parse_aliasm(line, afflst)) {
         delete afflst;
         return 1;
@@ -1117,7 +1123,7 @@ int HashMgr::load_config(const char* affpath, const char* key) {
     // don't check the full affix file, yet
     if (((line.compare(0, 3, "SFX", 3) == 0) ||
          (line.compare(0, 3, "PFX", 3) == 0)) &&
-            line.size() > 3 && isspace(line[3]) &&
+            line.size() > 3 && isspace((unsigned char)line[3]) &&
             !reptable.empty()) // (REP table is in the end of Afrikaans aff file)
       break;
   }
@@ -1173,7 +1179,7 @@ bool HashMgr::parse_aliasf(const std::string& line, FileMgr* af) {
   for (int j = 0; j < numaliasf; ++j) {
     std::string nl;
     unsigned short* alias = nullptr;
-    unsigned aliaslen = 0;
+    size_t aliaslen = 0;
     i = 0;
     if (af->getline(nl)) {
       mychomp(nl);
@@ -1191,8 +1197,7 @@ bool HashMgr::parse_aliasf(const std::string& line, FileMgr* af) {
           }
           case 1: {
             std::string piece(start_piece, iter);
-            aliaslen =
-                (unsigned short)decode_flags(&alias, piece, af, /* arena = */ true);
+            aliaslen = decode_flags(&alias, piece, af, /* arena = */ true);
             std::sort(alias, alias + aliaslen);
             break;
           }
@@ -1224,7 +1229,7 @@ int HashMgr::is_aliasf() const {
   return !aliasf.empty();
 }
 
-int HashMgr::get_aliasf(int index, unsigned short** fvec, FileMgr* af) const {
+size_t HashMgr::get_aliasf(int index, unsigned short** fvec, FileMgr* af) const {
   if (index > 0 && static_cast<size_t>(index) <= aliasflen.size()) {
     *fvec = aliasf[index - 1];
     return aliasflen[index - 1];

@@ -504,14 +504,16 @@ CREATE TABLE IF NOT EXISTS llm_telemetry (
   telemetry_probabilities BLOB,
   uniform_sampling_probability REAL DEFAULT 0.0,
   processed_time TIMESTAMP,
-  processed INTEGER DEFAULT 0
+  processed INTEGER DEFAULT 0,
+  triggers BLOB
 )
 `;
 
 // The incoming values are merged into the stored ones by json_patch rather
 // than by a read-modify-write in JS. Note the argument order differs between
-// the two columns: json_patch's second argument wins, so prompts take the
+// the columns: json_patch's second argument wins, so prompts take the
 // incoming turn index while probabilities keep the value first recorded.
+// Triggers are a list of names, merged as the union of stored and incoming.
 // The columns are nullable and json_patch propagates NULL, so coalesce keeps
 // a NULL from silently blanking the merged result.
 export const UPSERT_LLM_TELEMETRY = `
@@ -521,7 +523,8 @@ INSERT INTO llm_telemetry (
   telemetry_probabilities,
   uniform_sampling_probability,
   processed_time,
-  processed
+  processed,
+  triggers
 )
 VALUES (
   :conv_id,
@@ -529,7 +532,8 @@ VALUES (
   :telemetry_probabilities,
   :uniform_sampling_probability,
   :processed_time,
-  :processed
+  :processed,
+  :triggers
 )
 ON CONFLICT(conv_id) DO UPDATE SET
   telemetry_prompts = json_patch(
@@ -539,6 +543,13 @@ ON CONFLICT(conv_id) DO UPDATE SET
   telemetry_probabilities = json_patch(
     excluded.telemetry_probabilities,
     coalesce(telemetry_probabilities, '{}')
+  ),
+  triggers = (
+    SELECT json_group_array(value) FROM (
+      SELECT value FROM json_each(coalesce(llm_telemetry.triggers, '[]'))
+      UNION
+      SELECT value FROM json_each(excluded.triggers)
+    )
   ),
   processed_time = excluded.processed_time,
   processed = excluded.processed
@@ -567,7 +578,8 @@ SELECT
   telemetry_probabilities,
   uniform_sampling_probability,
   processed_time,
-  processed
+  processed,
+  triggers
 FROM llm_telemetry
 WHERE conv_id = :conv_id
 `;
@@ -593,6 +605,7 @@ SELECT
   t.telemetry_prompts AS telemetryJobs,
   t.telemetry_probabilities AS telemetryProbs,
   t.uniform_sampling_probability,
+  t.triggers,
   m.model_id,
   m.turn_index
 FROM llm_telemetry t
@@ -607,5 +620,7 @@ JOIN message m
   ON m.conv_id = lm.conv_id
  AND m.created_date = lm.last_message_time
 WHERE t.processed = 0
-  AND lm.last_message_time < strftime('%s', 'now', '-5 hours') * 1000;
+  AND lm.last_message_time < strftime('%s', 'now', '-5 hours') * 1000
+ORDER BY lm.last_message_time ASC
+LIMIT :limit;
 `;

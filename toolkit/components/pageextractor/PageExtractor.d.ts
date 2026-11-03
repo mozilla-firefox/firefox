@@ -6,6 +6,8 @@ export type GetTextOptions = Partial<{
   // The length of extracted text that is sufficient for the purpose.
   // When set, extraction will stop when the text meets or exceeds this length.
   // When unset, the lenghth of the extracted text is unbounded.
+  // Link URLs count as a fixed length, so the text can be longer or shorter
+  // than this.
   sufficientLength: number;
   // The same as sufficientLength, but for a video transcript that replaces the
   // page content, e.g. on YouTube. Falls back to sufficientLength when unset.

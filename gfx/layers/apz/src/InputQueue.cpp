@@ -238,6 +238,43 @@ APZEventResult InputQueue::ReceiveTouchInput(
       result.SetStatusForTouchEvent(*block, aFlags, consumableFlags, target);
     }
   }
+
+  if (aEvent.mMayTriggerSwipe) {
+    switch (aEvent.mType) {
+      case MultiTouchInput::MULTITOUCH_START:
+        // Do not wait for a browser gesture response on touchstart. The widget
+        // only records the swipable directions here; it needs a move outside
+        // slop to decide whether to start a swipe and send a response. Moves
+        // within slop are suppressed, and ending or cancelling a touch before
+        // that decision does not send a response either. Waiting on touchstart
+        // would therefore leave a tap or stationary press queued indefinitely.
+        // APZ must also process touchstart to begin tap/long-press recognition.
+        // TODO: Handle the case in which the target is not confirmed or touch
+        // action is not confirmed.
+        if (block->IsTargetConfirmed() && block->HasAllowedTouchBehaviors() &&
+            block->TouchActionAllowsPanningX()) {
+          MOZ_ASSERT(target, "A confirmed target should be non-null here");
+          result.mSwipableDirectionsForTouch =
+              block->GetOverscrollHandoffChain()->GetSwipableDirections(
+                  *target);
+        }
+        break;
+      case MultiTouchInput::MULTITOUCH_MOVE:
+        // Wait before ProcessQueue() so that APZ cannot pan before widget
+        // decides if it triggers swipe. Moves whose status is set as
+        // eConsumeNoDefault never reach the widget and they get no response, so
+        // they must not wait. Note that the widget clears mMayTriggerSwipe
+        // after the first swipe decision, so later moves, which don't set
+        // browser gesture response, do not wait.
+        if (result.GetStatus() != nsEventStatus_eConsumeNoDefault) {
+          block->SetNeedsToWaitForBrowserGestureResponse(true);
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
   mQueuedInputs.AppendElement(std::make_unique<QueuedInput>(aEvent, *block));
   ProcessQueue();
 
@@ -1046,13 +1083,12 @@ void InputQueue::SetAllowedTouchBehavior(
 
 void InputQueue::SetBrowserGestureResponse(uint64_t aInputBlockId,
                                            BrowserGestureResponse aResponse) {
-  InputBlockState* inputBlock = FindBlockForId(aInputBlockId, nullptr);
-
-  if (inputBlock && inputBlock->AsPanGestureBlock()) {
-    PanGestureBlockState* block = inputBlock->AsPanGestureBlock();
-    block->SetBrowserGestureResponse(aResponse);
-  } else if (inputBlock) {
-    NS_WARNING("input block is not a pan gesture block");
+  if (auto* inputBlock = FindBlockForId(aInputBlockId, nullptr)) {
+    if (auto* block = inputBlock->AsBrowserGesturableBlock()) {
+      block->SetBrowserGestureResponse(aResponse);
+    } else {
+      NS_WARNING("input block should be browser gesturable here");
+    }
   }
   ProcessQueue();
 }
@@ -1100,9 +1136,11 @@ bool InputQueue::ProcessQueue() {
         if (curBlock->AsTouchBlock()) {
           // touch
           additionalLog.AppendPrintf(
-              "waiting-long-tap-result: %d allowed-touch-behaviors: %d",
+              "waiting-long-tap-result: %d allowed-touch-behaviors: %d "
+              "waiting-browser-gesture-response: %d",
               curBlock->AsTouchBlock()->IsWaitingLongTapResult(),
-              curBlock->AsTouchBlock()->HasAllowedTouchBehaviors());
+              curBlock->AsTouchBlock()->HasAllowedTouchBehaviors(),
+              curBlock->AsTouchBlock()->IsWaitingForBrowserGestureResponse());
         } else if (curBlock->AsPanGestureBlock()) {
           // pan gesture
           additionalLog.AppendPrintf(
@@ -1165,6 +1203,10 @@ bool InputQueue::ProcessQueue() {
       if (mLastActiveApzc && mLastActiveApzc != target &&
           mTouchCounter.GetActiveTouchCount() > 0) {
         mLastActiveApzc->ResetTouchInputState();
+      }
+      if (TouchBlockState* touchBlock = curBlock->AsTouchBlock()) {
+        touchBlock->UpdateTouchCounter(
+            mQueuedInputs[0]->Input()->AsMultiTouchInput());
       }
       if (curBlock->ShouldDropEvents()) {
         if (curBlock->AsTouchBlock()) {

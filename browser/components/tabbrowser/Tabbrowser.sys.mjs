@@ -4430,7 +4430,7 @@ export class Tabbrowser {
           // If this group is currently saved, it's being removed as part of a
           // save & close operation. We need to forget the saved group
           // if the close is canceled.
-          lazy.SessionStore.forgetSavedTabGroup(group.id);
+          lazy.SessionStore.forgetSavedTabGroup(group.id, "save-canceled");
         }
         return;
       }

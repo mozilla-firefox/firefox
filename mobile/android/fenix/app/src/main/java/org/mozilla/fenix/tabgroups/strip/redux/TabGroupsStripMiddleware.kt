@@ -31,13 +31,20 @@ class TabGroupsStripMiddleware(
         next: (TabGroupsStripAction) -> Unit,
         action: TabGroupsStripAction,
     ) {
-        // Bug 2072307 - React to TabClicked here by selecting and showing the tapped tab in the browser
+        val visibleState = store.state as? TabGroupsStripState.TabGroupStripVisible
+
         // Bug 2071335 - React to AddTabClicked here by opening and selecting a new homepage tab in this group
         // Bug 2069525 - React to ExpandGroupClicked here by opening the expanded tab group
         next(action)
 
-        if (action is TabGroupsStripAction.InitializeDataObservation) {
-            observeTabData(store)
+        when (action) {
+            is TabGroupsStripAction.InitializeDataObservation -> observeTabData(store)
+            is TabGroupsStripAction.TabClicked ->
+                if (action.tabId != visibleState?.focusedTabId) tabDataCoordinator.selectTab(action.tabId)
+            is TabGroupsStripAction.TabGroupChanged,
+            is TabGroupsStripAction.TabGroupCleared,
+            is TabGroupsStripAction.AddTabClicked,
+            is TabGroupsStripAction.ExpandGroupClicked -> Unit
         }
     }
 

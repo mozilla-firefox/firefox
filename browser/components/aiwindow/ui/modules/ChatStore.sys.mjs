@@ -100,6 +100,7 @@ import { migrations } from "./ChatMigrations.sys.mjs";
 
 const MAX_DB_SIZE_BYTES = 75 * 1024 * 1024;
 const SORTS = ["ASC", "DESC"];
+const MAX_TELEMETRY_CONVERSATIONS = 50;
 
 // time to wait/collect before running recordDatabaseSize
 //  prevents running this function after every chunk of the response
@@ -1507,13 +1508,15 @@ class ChatStore {
    * @param {object} probabilities - New telemetry probability attributes to merge
    * @param {number} uniform_sampling_probability - Uniform sampling probability if any, or 0
    * @param {number} processed - Processed flag value, 0 for unprocessed and 1 for processed
+   * @param {string[]} triggers - Names of fired triggers to merge
    */
   async updateLLMTelemetryRecord(
     conversationId,
     prompts = {},
     probabilities = {},
     uniform_sampling_probability = 0,
-    processed = 0
+    processed = 0,
+    triggers = []
   ) {
     await this.#ensureDatabase().catch(e => {
       lazy.log.error(
@@ -1532,6 +1535,7 @@ class ChatStore {
         uniform_sampling_probability,
         processed_time: Date.now(),
         processed,
+        triggers: JSON.stringify(triggers ?? []),
       })
       .catch(e => {
         lazy.log.error(
@@ -1591,6 +1595,7 @@ class ChatStore {
       ),
       processedTime: rows[0].getResultByName("processed_time"),
       processed: rows[0].getResultByName("processed"),
+      triggers: JSON.parse(rows[0].getResultByName("triggers") || "[]"),
     };
   }
 
@@ -1632,10 +1637,16 @@ class ChatStore {
       });
   }
 
-  async getConversationsForTelemetry() {
+  /**
+   * Fetches unprocessed conversations awaiting end-of-conversation telemetry,
+   * oldest first.
+   *
+   * @param {number} [limit] - Maximum number of conversations to return
+   */
+  async getConversationsForTelemetry(limit = MAX_TELEMETRY_CONVERSATIONS) {
     await this.#ensureDatabase();
     const rows = await this.#conn
-      .executeCached(GET_CONVERSATIONS_FOR_TELEMETRY)
+      .executeCached(GET_CONVERSATIONS_FOR_TELEMETRY, { limit })
       .catch(e => {
         lazy.log.error(
           "Failed to fetch conversations for telemetry",
@@ -1652,6 +1663,7 @@ class ChatStore {
       uniformSamplingProbability: row.getResultByName(
         "uniform_sampling_probability"
       ),
+      triggers: JSON.parse(row.getResultByName("triggers") ?? "[]"),
       modelId: row.getResultByName("model_id"),
       turnIndex: row.getResultByName("turn_index"),
     }));

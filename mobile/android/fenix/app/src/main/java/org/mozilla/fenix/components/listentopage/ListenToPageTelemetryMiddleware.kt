@@ -56,6 +56,7 @@ internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenA
                         ListenAction.Session.StopSource.TabClosed -> TAB_CLOSED
                         ListenAction.Session.StopSource.ReaderModeClosed -> READER_MODE_CLOSED
                         ListenAction.Session.StopSource.MediaSessionEndedOutsideApp -> MEDIA_SESSION_ENDED_OUTSIDE_APP
+                        ListenAction.Session.StopSource.FeatureDisabled -> FEATURE_DISABLED
                     }
                 ListenToPage.stopped.record(ListenToPage.StoppedExtra(source = source))
             }
@@ -155,6 +156,7 @@ private const val CLOSE_BUTTON = "close_button"
 private const val TAB_CLOSED = "tab_closed"
 private const val READER_MODE_CLOSED = "reader_mode_closed"
 private const val MEDIA_SESSION_ENDED_OUTSIDE_APP = "media_session_ended_outside_app"
+private const val FEATURE_DISABLED = "feature_disabled"
 private const val USER_SELECTED = "user_selected"
 private const val FALLBACK = "fallback"
 private const val PAGE = "page"

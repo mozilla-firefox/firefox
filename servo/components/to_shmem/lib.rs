@@ -509,13 +509,15 @@ impl<H: ToShmem, T: ToShmem> ToShmem for servo_arc::Arc<servo_arc::HeaderSlice<H
         // Create a new ThinArc with the shared value and have it place
         // its ArcInner in the shared memory buffer.
         let len = values.len();
-        let static_arc = Self::from_header_and_iter_alloc(
-            |layout| builder.alloc(layout),
-            ManuallyDrop::into_inner(header),
-            values.into_iter().map(ManuallyDrop::into_inner),
-            len,
-            /* is_static = */ true,
-        );
+        let static_arc = unsafe {
+            Self::from_header_and_iter_alloc(
+                |layout| builder.alloc(layout),
+                ManuallyDrop::into_inner(header),
+                values.into_iter().map(ManuallyDrop::into_inner),
+                len,
+                /* is_static = */ true,
+            )
+        };
 
         #[cfg(debug_assertions)]
         builder.shared_values.insert(self.heap_ptr());

@@ -17,11 +17,14 @@ import org.mozilla.fenix.browser.BackMenuItemProvider
 import org.mozilla.fenix.browser.ForwardMenuItemProvider
 import org.mozilla.fenix.browser.RefreshMenuItemProvider
 import org.mozilla.fenix.browser.ShareMenuItemProvider
-import org.mozilla.fenix.components.menu.FenixMenuItem.CustomizeReaderView
-import org.mozilla.fenix.components.menu.FenixMenuItem.FindInPage
-import org.mozilla.fenix.components.menu.FenixMenuItem.More
-import org.mozilla.fenix.components.menu.FenixMenuItem.Settings
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeReaderView
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Settings
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
 import org.mozilla.fenix.components.menu.store.MenuAction
 
 class MenuItemsRegistryTest {
@@ -60,7 +63,8 @@ class MenuItemsRegistryTest {
         val session = MenuTarget.BrowserTab
         val registry =
             MenuItemsRegistry(
-                configuration = MenuConfigurations.browser(isToolbarAtBottom = false, isExpandedToolbarEnabled = false),
+                configuration =
+                    BrowserMenuConfiguration.sections(isToolbarAtBottom = false, isExpandedToolbarEnabled = false),
                 resolver = { item ->
                     when (item) {
                         FenixMenuItem.Back ->

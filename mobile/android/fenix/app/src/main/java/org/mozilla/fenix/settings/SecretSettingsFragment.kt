@@ -579,11 +579,6 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
-        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_private_mode_and_stories_entry_point).apply {
-            isChecked = settings.privateModeAndStoriesEntryPointEnabled
-            onPreferenceChangeListener = SharedPreferenceUpdater()
-        }
-
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_native_share_sheet).apply {
             isVisible = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
             isChecked = settings.nativeShareSheetEnabled
@@ -623,7 +618,16 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_menu_customization_screen).apply {
             isVisible = Config.channel.isDebug
             isChecked = context.components.settings.isMenuCustomizationScreenEnabled
-            onPreferenceChangeListener = SharedPreferenceUpdater()
+            onPreferenceChangeListener =
+                object : SharedPreferenceUpdater() {
+                    override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+                        val enabled = newValue as? Boolean ?: false
+                        if (enabled) {
+                            context.components.menuCustomizationRepository.warmUp()
+                        }
+                        return super.onPreferenceChange(preference, newValue)
+                    }
+                }
         }
     }
 

@@ -18,12 +18,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.collectionInfo
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
@@ -73,6 +77,12 @@ internal fun MenuListItemBadge(
     }
 }
 
+/**
+ * The indicator shown for a menu list item which is new.
+ *
+ * @param showNewIndicator Whether to show the indicator.
+ * @param state The [MenuItemState] of the menu item, which determines the indicator color.
+ */
 @Composable
 internal fun MenuListItemNewIndicator(
     showNewIndicator: Boolean,
@@ -86,6 +96,13 @@ internal fun MenuListItemNewIndicator(
     }
 }
 
+/**
+ * The title and the optional summary of a menu list item, filling the remaining width of the row.
+ *
+ * @param title The title of the menu item.
+ * @param state The [MenuItemState] of the menu item, which determines the title color.
+ * @param summary An optional summary to show below the title.
+ */
 @Composable
 internal fun RowScope.MenuListItemText(
     title: MenuItemTitle,
@@ -116,6 +133,13 @@ internal fun RowScope.MenuListItemText(
     }
 }
 
+/**
+ * The leading icon of a menu list item. Space for the icon is reserved even when there is none, so that the texts of
+ * all items in a list line up.
+ *
+ * @param icon The [MenuItemIcon] to show, if any.
+ * @param state The [MenuItemState] of the menu item, which determines the icon tint.
+ */
 @Composable
 internal fun MenuListItemIcon(
     icon: MenuItemIcon?,
@@ -139,6 +163,16 @@ internal fun MenuListItemIcon(
     }
 }
 
+/**
+ * Make this clickable, and long-clickable if there is a [onLongClickEvent], as long as the menu item is not disabled.
+ * Without events to dispatch, or for a disabled item, this is left as it is.
+ *
+ * @param state The [MenuItemState] of the menu item.
+ * @param role The [Role] of the menu item.
+ * @param onClickEvent The [MenuEvent] to dispatch when the menu item is clicked.
+ * @param onLongClickEvent The [MenuEvent] to dispatch when the menu item is long-clicked.
+ * @param onInteraction The callback to invoke when the menu item is interacted with.
+ */
 @Composable
 internal fun Modifier.menuItemClickableBehavior(
     state: MenuItemState,
@@ -169,3 +203,42 @@ internal fun Modifier.menuItemClickableBehavior(
         this
     }
 }
+
+/**
+ * The [Shape] of an item in a vertical list: fully rounded corners on the outer sides of the first and last items, and
+ * slightly rounded corners where items meet.
+ *
+ * @param itemIndex The index of the item in the list.
+ * @param totalItems The number of items in the list.
+ */
+@Composable
+internal fun getListItemShape(
+    itemIndex: Int,
+    totalItems: Int,
+): Shape {
+    if (totalItems == 1) {
+        return MaterialTheme.shapes.extraLarge
+    }
+    return when (itemIndex) {
+        0 ->
+            MaterialTheme.shapes.extraLarge.copy(
+                bottomStart = MaterialTheme.shapes.extraSmall.bottomStart,
+                bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
+            )
+
+        totalItems - 1 ->
+            MaterialTheme.shapes.extraLarge.copy(
+                topStart = MaterialTheme.shapes.extraSmall.topStart,
+                topEnd = MaterialTheme.shapes.extraSmall.topEnd,
+            )
+
+        else -> MaterialTheme.shapes.extraSmall
+    }
+}
+
+/** Semantics of a vertical list of [itemCount] items. */
+internal fun Modifier.menuListGroupSemantics(itemCount: Int): Modifier =
+    this.semantics {
+        isTraversalGroup = true
+        collectionInfo = CollectionInfo(rowCount = itemCount, columnCount = 1)
+    }

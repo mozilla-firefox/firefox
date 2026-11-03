@@ -549,17 +549,13 @@ class Preprocessor:
         elif encoded_out is not None:
             encoded_out.write(out.getvalue().encode(options.output_encoding))
 
-    def getCommandLineParser(self, unescapeDefines=False):
-        escapedValue = re.compile('".*"$')
+    def getCommandLineParser(self):
         numberValue = re.compile(r"\d+$")
 
         def handleD(option, opt, value, parser):
             vals = value.split("=", 1)
             if len(vals) == 1:
                 vals.append(1)
-            elif unescapeDefines and escapedValue.match(vals[1]):
-                # strip escaped string values
-                vals[1] = vals[1][1:-1]
             elif numberValue.match(vals[1]):
                 vals[1] = int(vals[1])
             self.context[vals[0]] = vals[1]

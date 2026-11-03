@@ -41,7 +41,7 @@ interface PocketSettings {
  */
 class SettingsBackedPocketSettings(private val settings: Settings) : PocketSettings {
     override val showPocketRecommendationsFeature
-        get() = (settings.showPocketRecommendationsFeature || settings.privateModeAndStoriesEntryPointEnabled)
+        get() = settings.showPocketRecommendationsFeature
 
     override val showPocketSponsoredStories
         get() = settings.showPocketSponsoredStories

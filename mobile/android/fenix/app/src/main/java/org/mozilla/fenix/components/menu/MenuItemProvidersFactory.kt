@@ -39,6 +39,7 @@ import org.mozilla.fenix.components.PermissionStorage
 import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.components.UseCases
 import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
 import org.mozilla.fenix.customtabs.CustomTabAppMenuItemProvider
 import org.mozilla.fenix.downloads.DownloadsMenuItemProvider
 import org.mozilla.fenix.home.CustomizeHomepageMenuItemProvider

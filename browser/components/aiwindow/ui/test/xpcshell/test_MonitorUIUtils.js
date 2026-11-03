@@ -187,3 +187,77 @@ add_task(async function test_resolveWatchUrlTitles_empty() {
     "Returns an empty map when given no URLs"
   );
 });
+
+add_task(function test_formatMonitorForModel() {
+  const monitor = {
+    title: "Watches",
+    monitorPrompt: "new posts",
+    watchUrls: ["https://example.com/watches"],
+    enabled: true,
+    schedule: { type: "weekly", weekday: 1, hour: 8, minute: 30 },
+  };
+  Assert.deepEqual(
+    MonitorUIUtils.formatMonitorForModel(monitor),
+    {
+      status: "watching",
+      name: "Watches",
+      watchUrls: ["https://example.com/watches"],
+      condition: "new posts",
+      schedule: "weekly on Monday at 08:30",
+    },
+    "A watching weekly monitor is summarized in English"
+  );
+
+  const schedules = [
+    [
+      { type: "weekly", weekday: 0, hour: 23, minute: 5 },
+      "weekly on Sunday at 23:05",
+    ],
+    [
+      { type: "weekly", weekday: 6, hour: 0, minute: 0 },
+      "weekly on Saturday at 00:00",
+    ],
+    [{ type: "daily", hour: 9, minute: 0 }, "daily at 09:00"],
+    [{ type: "interval", hours: 1 }, "every hour"],
+    [{ type: "interval", hours: 6 }, "every 6 hours"],
+  ];
+  for (const [schedule, expected] of schedules) {
+    Assert.equal(
+      MonitorUIUtils.formatMonitorForModel({ ...monitor, schedule }).schedule,
+      expected,
+      `The ${schedule.type} schedule is described as "${expected}"`
+    );
+  }
+
+  Assert.equal(
+    MonitorUIUtils.formatMonitorForModel({ ...monitor, enabled: false }).status,
+    "paused",
+    "A disabled monitor is paused"
+  );
+  Assert.equal(
+    MonitorUIUtils.formatMonitorForModel({
+      ...monitor,
+      enabled: false,
+      expiry: { expiredAt: "2026-10-01T00:00:00.000Z", reason: "inactive" },
+    }).status,
+    "expired",
+    "An expired monitor is reported as expired rather than paused"
+  );
+});
+
+add_task(function test_getScheduleL10n() {
+  Assert.equal(
+    MonitorUIUtils.getScheduleL10n({
+      frequency: "weekly",
+      time: "08:30",
+      weekday: "1",
+    }).id,
+    "ai-tasks-alert-schedule-weekly-monday",
+    "A weekly schedule uses its weekday's string"
+  );
+  Assert.equal(
+    MonitorUIUtils.getScheduleL10n({ frequency: "daily", time: "08:30" }).id,
+    "ai-tasks-alert-schedule-daily-at",
+    "A daily schedule uses the daily string"
+  );
+});

@@ -7,6 +7,7 @@ package org.mozilla.fenix.datastore
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.IOException
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
@@ -20,6 +21,14 @@ internal val Context.pocketStoriesSelectedCategoriesDataStore: DataStore<Selecte
     dataStore(
         fileName = "pocket_recommendations_selected_categories.pb",
         serializer = SelectedPocketStoriesCategorySerializer,
+    )
+
+/** Application / process unique [DataStore] for the user customized browser menu structure. */
+internal val Context.customizedBrowserMenuInfoDataStore: DataStore<CustomizedMenuRecord> by
+    dataStore(
+        fileName = "browser_menu_customization.pb",
+        serializer = CustomizedMenuRecordSerializer,
+        corruptionHandler = ReplaceFileCorruptionHandler { CustomizedMenuRecord.getDefaultInstance() },
     )
 
 /** [DataStore] for accessing user preferences in Fenix. */

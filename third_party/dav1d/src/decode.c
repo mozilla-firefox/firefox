@@ -2825,7 +2825,10 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
         }
         dav1d_free_aligned(f->ts);
         f->ts = dav1d_alloc_aligned(ALLOC_TILE, sizeof(*f->ts) * n_ts, 32);
-        if (!f->ts) goto error;
+        if (!f->ts) {
+            f->n_ts = 0;
+            goto error;
+        }
         f->n_ts = n_ts;
     }
 

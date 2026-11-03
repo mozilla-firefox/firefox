@@ -6,13 +6,6 @@
 <body>
 </body>
 <script>
-// Workaround for bug 1962172: this will cause the CJK fallback order
-// to be loaded on the main thread, before the worker tries to use it.
-// (Can be removed when bug 1962172 is resolved.)
-let canvas = new OffscreenCanvas(100, 100);
-let ctx = canvas.getContext("2d");
-ctx.measureText("\u4567\u9876");
-
 // Try measuring a selection of characters from across the
 // Unicode space; almost certainly this will hit some codepoints
 // for which font support is lacking.

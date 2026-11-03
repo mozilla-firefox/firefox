@@ -9,7 +9,6 @@
 // browser.compactmode.auto.threshold pref (Bug 2044082).
 
 const PREF_UI_DENSITY = "browser.uidensity";
-const PREF_NOVA = "browser.nova.enabled";
 const PREF_THRESHOLD = "browser.compactmode.auto.threshold";
 
 // Returns a threshold string strictly below the given ratio (so the
@@ -82,7 +81,6 @@ async function withLauncherWidthCheckOnly(win, callback) {
 
 add_task(async function test_auto_compact_engages_in_small_window() {
   await SpecialPowers.pushPrefEnv({
-    set: [[PREF_NOVA, true]],
     clear: [[PREF_UI_DENSITY]],
   });
 
@@ -110,7 +108,6 @@ add_task(async function test_auto_compact_engages_in_small_window() {
 
 add_task(async function test_auto_compact_disabled_above_threshold() {
   await SpecialPowers.pushPrefEnv({
-    set: [[PREF_NOVA, true]],
     clear: [[PREF_UI_DENSITY]],
   });
 
@@ -138,7 +135,6 @@ add_task(async function test_user_uidensity_disables_auto_compact() {
     let ratio = heightRatio(win);
     await SpecialPowers.pushPrefEnv({
       set: [
-        [PREF_NOVA, true],
         // A triggering threshold, but the user has explicitly chosen a
         // (non-default) uidensity, which must win over auto-compact.
         [PREF_THRESHOLD, below(ratio)],
@@ -163,10 +159,7 @@ add_task(async function test_user_uidensity_disables_auto_compact() {
 
 add_task(async function test_threshold_zero_disables_auto_compact() {
   await SpecialPowers.pushPrefEnv({
-    set: [
-      [PREF_NOVA, true],
-      [PREF_THRESHOLD, "0"],
-    ],
+    set: [[PREF_THRESHOLD, "0"]],
     clear: [[PREF_UI_DENSITY]],
   });
 
@@ -183,32 +176,8 @@ add_task(async function test_threshold_zero_disables_auto_compact() {
   await SpecialPowers.popPrefEnv();
 });
 
-add_task(async function test_nova_disabled_disables_auto_compact() {
-  await SpecialPowers.pushPrefEnv({
-    set: [[PREF_NOVA, false]],
-    clear: [[PREF_UI_DENSITY]],
-  });
-
-  await withNewWindow(async win => {
-    let ratio = heightRatio(win);
-    Services.prefs.setCharPref(PREF_THRESHOLD, below(ratio));
-    win.gUIDensity.update();
-
-    is(
-      win.gUIDensity.getCurrentDensity().mode,
-      win.gUIDensity.MODE_NORMAL,
-      "Auto-compact does not engage when nova is disabled"
-    );
-    Assert.ok(!isCompact(win), "The document is not marked compact");
-  });
-
-  Services.prefs.clearUserPref(PREF_THRESHOLD);
-  await SpecialPowers.popPrefEnv();
-});
-
 add_task(async function test_threshold_change_reevaluates() {
   await SpecialPowers.pushPrefEnv({
-    set: [[PREF_NOVA, true]],
     clear: [[PREF_UI_DENSITY]],
   });
 
@@ -263,7 +232,6 @@ function resizeCallsUpdate(win) {
 add_task(
   async function test_resize_triggers_update_when_auto_compact_applies() {
     await SpecialPowers.pushPrefEnv({
-      set: [[PREF_NOVA, true]],
       clear: [[PREF_UI_DENSITY]],
     });
 
@@ -278,28 +246,9 @@ add_task(
   }
 );
 
-add_task(
-  async function test_resize_skips_update_when_auto_compact_inapplicable() {
-    await SpecialPowers.pushPrefEnv({
-      set: [[PREF_NOVA, false]],
-      clear: [[PREF_UI_DENSITY]],
-    });
-
-    await withNewWindow(async win => {
-      Assert.ok(
-        !resizeCallsUpdate(win),
-        "A resize skips update() when auto-compact can't apply (nova disabled)"
-      );
-    });
-
-    await SpecialPowers.popPrefEnv();
-  }
-);
-
 add_task(async function test_resize_skips_update_with_user_uidensity() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF_NOVA, true],
       // A non-default (touch) value so prefHasUserValue() is unambiguously true.
       [PREF_UI_DENSITY, 2],
     ],
@@ -358,12 +307,14 @@ add_task(async function test_uidensitychanged_only_on_actual_change() {
 // at the event level.
 add_task(async function test_resize_without_change_does_not_redispatch() {
   await SpecialPowers.pushPrefEnv({
-    set: [[PREF_NOVA, false]],
-    clear: [[PREF_UI_DENSITY]],
+    set: [
+      // A non-default (touch) value so prefHasUserValue() is unambiguously true.
+      [PREF_UI_DENSITY, 2],
+    ],
   });
 
   await withNewWindow(async win => {
-    // Settle on a stable density that a resize cannot change (nova off).
+    // Settle on a stable density that a resize cannot change.
     win.gUIDensity.update();
 
     let dispatched = false;
@@ -403,7 +354,6 @@ add_task(async function test_sidebar_launcher_collapsed_requires_revamp() {
 add_task(async function test_collapsed_launcher_width_triggers_compact() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF_NOVA, true],
       ["sidebar.revamp", true],
       ["sidebar.verticalTabs", true],
     ],
@@ -452,7 +402,6 @@ add_task(async function test_collapsed_launcher_width_triggers_compact() {
 add_task(async function test_hiding_launcher_disengages_compact() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF_NOVA, true],
       ["sidebar.revamp", true],
       ["sidebar.verticalTabs", false],
       ["sidebar.visibility", "hide-on-close"],
@@ -503,7 +452,6 @@ add_task(async function test_hiding_launcher_disengages_compact() {
 add_task(async function test_expand_on_hover_keeps_compact() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      [PREF_NOVA, true],
       ["sidebar.revamp", true],
       ["sidebar.verticalTabs", true],
       ["sidebar.visibility", "expand-on-hover"],

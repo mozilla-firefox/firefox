@@ -36,6 +36,7 @@ import mozilla.components.feature.media.ext.findActiveMediaTab
 import mozilla.components.feature.media.ext.getArtistOrUrl
 import mozilla.components.feature.media.ext.getNonPrivateIcon
 import mozilla.components.feature.media.ext.getTitleOrUrl
+import mozilla.components.feature.media.ext.mediaDisplayKey
 import mozilla.components.lib.state.ext.flowScoped
 
 /**
@@ -53,6 +54,7 @@ import mozilla.components.lib.state.ext.flowScoped
  * @param looper Looper for [SimpleBasePlayer]; must be the same thread backing [mainDispatcher].
  * @param onPlay Invoked with the active media tab when Media3 asks to play. The tab is told to play only if it returns
  *   true.
+ * @param onArtworkChanged Invoked when a completed artwork fetch changes the artwork reported for the active media tab.
  */
 @UnstableApi
 internal class BrowserStorePlayer(
@@ -62,13 +64,14 @@ internal class BrowserStorePlayer(
     private val encodingDispatcher: CoroutineDispatcher = Dispatchers.Default,
     looper: Looper = Looper.getMainLooper(),
     private val onPlay: (SessionState) -> Boolean = { true },
+    private val onArtworkChanged: () -> Unit = {},
 ) : SimpleBasePlayer(looper) {
 
-    @VisibleForTesting internal var cachedArtwork: Pair<String, ByteArray>? = null
+    @VisibleForTesting internal var cachedArtwork: Artwork? = null
 
     private var artworkJob: Job? = null
 
-    private var lastArtworkKey: Pair<String, MozMediaSession.Metadata?>? = null
+    private var lastArtworkKey: Triple<String, MozMediaSession.Metadata?, Bitmap?>? = null
 
     // On a track change the page often keeps reporting the previous track's positionState for a
     // short while before pushing a fresh one. While that stale value persists we report position 0
@@ -94,7 +97,7 @@ internal class BrowserStorePlayer(
         store.flowScoped(dispatcher = mainDispatcher) { flow ->
             flow
                 .map { it.findActiveMediaTab() }
-                .distinctUntilChangedBy { it?.mediaSessionState }
+                .distinctUntilChangedBy { it.mediaDisplayKey(context) }
                 .collect { tab ->
                     refreshArtwork(tab)
                     trackStalePosition(tab)
@@ -234,15 +237,18 @@ internal class BrowserStorePlayer(
         lastTitle = newTitle
     }
 
+    /** Returns the artwork fetched for [tab] and its current metadata, or null if none has arrived. */
+    fun artworkFor(tab: SessionState): Artwork? = cachedArtwork?.takeIf {
+        it.tabId == tab.id && it.metadata == tab.mediaSessionState?.metadata
+    }
+
     private fun buildMediaItemData(tab: SessionState): MediaItemData {
         val meta = tab.mediaSessionState?.metadata
         val builder =
             MediaMetadata.Builder()
                 .setTitle(tab.getTitleOrUrl(context, meta?.title))
                 .setArtist(tab.getArtistOrUrl(meta?.artist))
-        cachedArtwork
-            ?.takeIf { it.first == tab.id }
-            ?.let { builder.setArtworkData(it.second, MediaMetadata.PICTURE_TYPE_FRONT_COVER) }
+        artworkFor(tab)?.let { builder.setArtworkData(it.png, MediaMetadata.PICTURE_TYPE_FRONT_COVER) }
 
         val mss = tab.mediaSessionState
         return MediaItemData.Builder(tab.id)
@@ -262,28 +268,43 @@ internal class BrowserStorePlayer(
             return
         }
         val metadata = tab.mediaSessionState?.metadata
-        val key = tab.id to metadata
+        val key = Triple(tab.id, metadata, tab.content.icon)
         if (key == lastArtworkKey) return
         lastArtworkKey = key
         artworkJob?.cancel()
-        cachedArtwork = null
+        if (artworkFor(tab)?.fromIcon == false) return
         artworkJob = scope.launch {
-            val bytes = runCatching {
+            val artwork = runCatching {
                 tab.getNonPrivateIcon(metadata?.getArtwork)?.let { bitmap ->
-                    withContext(encodingDispatcher) {
-                        ByteArrayOutputStream()
-                            .also { out -> bitmap.compress(Bitmap.CompressFormat.PNG, BITMAP_COMPRESSION_QUALITY, out) }
-                            .toByteArray()
-                    }
+                    val png =
+                        withContext(encodingDispatcher) {
+                            ByteArrayOutputStream()
+                                .also { out ->
+                                    bitmap.compress(Bitmap.CompressFormat.PNG, BITMAP_COMPRESSION_QUALITY, out)
+                                }
+                                .toByteArray()
+                        }
+                    Artwork(tab.id, metadata, bitmap, png, fromIcon = bitmap === tab.content.icon)
                 }
             }
                 .onFailure { if (it is CancellationException || it !is Exception) throw it }
                 .getOrNull()
             if (store.state.findActiveMediaTab()?.id != tab.id) return@launch
-            cachedArtwork = bytes?.let { tab.id to it }
+            val unchanged = artworkFor(tab)?.png contentEquals artwork?.png
+            cachedArtwork = artwork
+            if (unchanged) return@launch
             invalidateState()
+            onArtworkChanged()
         }
     }
+
+    internal class Artwork(
+        val tabId: String,
+        val metadata: MozMediaSession.Metadata?,
+        val bitmap: Bitmap,
+        val png: ByteArray,
+        val fromIcon: Boolean,
+    )
 }
 
 private data class PositionKey(

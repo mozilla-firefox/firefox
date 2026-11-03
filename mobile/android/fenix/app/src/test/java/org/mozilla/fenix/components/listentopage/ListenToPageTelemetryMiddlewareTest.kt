@@ -309,6 +309,15 @@ class ListenToPageTelemetryMiddlewareTest {
     }
 
     @Test
+    fun `WHEN the session is stopped by turning the feature off THEN record stopped with feature_disabled`() {
+        val store = createStore(phase = PlaybackPhase.Paused)
+
+        store.dispatch(ListenAction.Session.StopRequested(ListenAction.Session.StopSource.FeatureDisabled))
+
+        assertEquals("feature_disabled", ListenToPage.stopped.testGetValue()!!.single().extra?.get("source"))
+    }
+
+    @Test
     fun `WHEN the media session ended outside the app THEN record stopped with media_session_ended_outside_app`() {
         val store = createStore(phase = PlaybackPhase.Paused)
 

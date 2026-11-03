@@ -31,6 +31,7 @@
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/ElementInlines.h"
+#include "nsBlockFrame.h"
 #include "nsCSSProps.h"
 #include "nsContentUtils.h"
 #include "nsDOMCSSDeclaration.h"
@@ -987,6 +988,7 @@ bool nsComputedDOMStyle::NeedsToFlushLayout(
       // anchor-dependent values here.
       Side side = SideForPaddingOrMarginOrInsetProperty(aPropId);
       return !style->StyleMargin()->mMargin.Get(side).ConvertsToLength() ||
+             MarginMayBeTrimmed(outerFrame, side) ||
              HasPositionFallbacks(frame);
     }
     default:
@@ -2107,11 +2109,54 @@ already_AddRefed<CSSValue> nsComputedDOMStyle::GetPaddingWidthFor(
   return AppUnitsToCSSValue(mInnerFrame->GetUsedPadding().Side(aSide));
 }
 
+/* static */
+bool nsComputedDOMStyle::MarginMayBeTrimmed(const nsIFrame* aFrame,
+                                            Side aSide) {
+  if (!aFrame->IsBlockOutside() ||
+      aFrame->HasAnyStateBits(NS_FRAME_OUT_OF_FLOW)) {
+    return false;
+  }
+
+  for (const nsIFrame* parent = aFrame->GetParent(); parent;
+       parent = parent->GetParent()) {
+    const nsBlockFrame* block = do_QueryFrame(parent);
+    if (!block) {
+      return false;
+    }
+    const WritingMode wm = parent->GetWritingMode();
+    const StyleMarginTrim trim = parent->StyleMargin()->mMarginTrim;
+    if ((bool(trim & StyleMarginTrim::BLOCK_START) &&
+         aSide == wm.PhysicalSide(LogicalSide::BStart)) ||
+        (bool(trim & StyleMarginTrim::BLOCK_END) &&
+         aSide == wm.PhysicalSide(LogicalSide::BEnd))) {
+      return true;
+    }
+    // A further ancestor can only discard our margin if the margin collapses
+    // out through this block to reach that ancestor's content edge.
+    const bool isBStart = aSide == wm.PhysicalSide(LogicalSide::BStart);
+    const bool isBEnd = aSide == wm.PhysicalSide(LogicalSide::BEnd);
+    if (!isBStart && !isBEnd) {
+      return false;
+    }
+    bool bStartMarginRoot, bEndMarginRoot;
+    block->IsMarginRoot(&bStartMarginRoot, &bEndMarginRoot);
+    if ((isBStart && bStartMarginRoot) || (isBEnd && bEndMarginRoot) ||
+        parent->StyleBorder()->GetComputedBorderWidth(aSide) != 0 ||
+        !nsLayoutUtils::IsPaddingZero(
+            parent->StylePadding()->mPadding.Get(aSide))) {
+      return false;
+    }
+  }
+  return false;
+}
+
 already_AddRefed<CSSValue> nsComputedDOMStyle::GetMarginFor(Side aSide) {
   // Use raw margin here, layout-dependent margins should be stored in used
-  // margin.
+  // margin. Note that a plain length can be layout-dependent too, since
+  // `margin-trim` on an ancestor may have discarded it.
   const auto& margin = StyleMargin()->mMargin.Get(aSide);
-  if (!mInnerFrame || margin.ConvertsToLength()) {
+  if (!mInnerFrame ||
+      (margin.ConvertsToLength() && !MarginMayBeTrimmed(mOuterFrame, aSide))) {
     auto val = MakeRefPtr<nsROCSSPrimitiveValue>();
     SetValueToMargin(val, margin);
     return val.forget();

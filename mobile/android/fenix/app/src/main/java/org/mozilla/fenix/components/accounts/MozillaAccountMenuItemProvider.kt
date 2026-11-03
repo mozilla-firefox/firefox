@@ -147,11 +147,6 @@ class MozillaAccountMenuItemProvider(
         private val DEFAULT_MENU_ITEM =
             StandardMenuItem(
                 title = MenuItemTitle(Text.Resource(R.string.browser_menu_sign_in)),
-                summary =
-                    MenuItemSummary(
-                        text = Text.Resource(R.string.browser_menu_sign_in_caption_3),
-                        maxLines = 2,
-                    ),
                 icon = MenuItemIconRes(iconsR.drawable.mozac_ic_avatar_circle_24),
             )
     }

@@ -9,6 +9,14 @@ import mozpack.path as mozpath
 from mozpack.manifests import InstallManifest
 
 from mozbuild.backend.base import PartialBackend
+from mozbuild.backend.common import (
+    add_preprocess_entry,
+    chrome_manifest_contents,
+    configured_defines,
+    pattern_link_dest,
+    pattern_link_parts,
+    record_chrome_manifest_entry,
+)
 from mozbuild.backend.make import MakeBackend
 from mozbuild.frontend.context import ObjDirPath, Path
 from mozbuild.frontend.data import (
@@ -16,7 +24,6 @@ from mozbuild.frontend.data import (
     FinalTargetFiles,
     FinalTargetPreprocessedFiles,
     GeneratedFile,
-    JARManifest,
     LocalizedFiles,
     LocalizedPreprocessedFiles,
     XPIDLModule,
@@ -31,6 +38,7 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         self._manifest_entries = defaultdict(set)
 
         self._install_manifests = defaultdict(InstallManifest)
+        self._configured_defines = configured_defines(self.environment)
 
         self._dependencies = defaultdict(list)
         self._l10n_dependencies = defaultdict(list)
@@ -40,28 +48,21 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         self._generated_files_map = {}
         self._generated_files = []
 
-    def _add_preprocess(self, obj, src, dest, f, **kwargs):
-        basename = FinalTargetPreprocessedFiles.get_obj_basename(f)
-        if basename.endswith(".css"):
-            kwargs["marker"] = "%"
-        depfile = mozpath.join(
-            self.environment.topobjdir,
-            "faster",
-            ".deps",
-            mozpath.join(obj.install_target, dest, basename).replace("/", "_"),
-        )
-        self._install_manifests[obj.install_target].add_preprocess(
+    def _add_preprocess(self, obj, src, dest, f, defines=None, **kwargs):
+        add_preprocess_entry(
+            self._install_manifests[obj.install_target],
             mozpath.join(obj.srcdir, src),
-            mozpath.join(dest, basename),
-            depfile,
+            obj.install_target,
+            dest,
+            FinalTargetPreprocessedFiles.get_obj_basename(f),
+            mozpath.join(self.environment.topobjdir, "faster", ".deps"),
+            defines,
+            self._configured_defines,
             **kwargs,
         )
 
     def consume_object(self, obj):
-        if isinstance(obj, JARManifest) and obj.install_target.startswith("dist/bin"):
-            self._consume_jar_manifest(obj)
-
-        elif isinstance(
+        if isinstance(
             obj, (FinalTargetFiles, FinalTargetPreprocessedFiles)
         ) and obj.install_target.startswith("dist/bin"):
             ab_cd = self.environment.substs["MOZ_UI_LOCALE"]
@@ -98,20 +99,9 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
                     if isinstance(obj, FinalTargetPreprocessedFiles):
                         self._add_preprocess(obj, src, path, f, defines=defines)
                     elif "*" in f:
-
-                        def _prefix(s):
-                            for p in mozpath.split(s):
-                                if "*" not in p:
-                                    yield p + "/"
-
-                        prefix = "".join(_prefix(src))
-
-                        if "*" in f.target_basename:
-                            target = path
-                        else:
-                            target = mozpath.join(path, f.target_basename)
+                        prefix, pattern = pattern_link_parts(src)
                         self._install_manifests[obj.install_target].add_pattern_link(
-                            prefix, src[len(prefix) :], target
+                            prefix, pattern, pattern_link_dest(f, path)
                         )
                     else:
                         self._install_manifests[obj.install_target].add_link(
@@ -131,11 +121,7 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         elif isinstance(obj, ChromeManifestEntry) and obj.install_target.startswith(
             "dist/bin"
         ):
-            top_level = mozpath.join(obj.install_target, "chrome.manifest")
-            if obj.path != top_level:
-                entry = "manifest %s" % mozpath.relpath(obj.path, obj.install_target)
-                self._manifest_entries[top_level].add(entry)
-            self._manifest_entries[obj.path].add(str(obj.entry))
+            record_chrome_manifest_entry(self._manifest_entries, obj)
 
         elif isinstance(obj, GeneratedFile):
             if obj.outputs:
@@ -170,14 +156,13 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         mk.add_statement("TOUCH ?= touch")
         mk.add_statement("include $(TOPSRCDIR)/config/makefiles/functions.mk")
         mk.add_statement("include $(TOPSRCDIR)/config/AB_rCD.mk")
-        mk.add_statement("AB_CD = en-US")
+        mk.add_statement(f"AB_CD = {self.environment.substs['MOZ_UI_LOCALE']}")
         if not self._has_xpidl:
             mk.add_statement("NO_XPIDL = 1")
 
         # Add a few necessary variables inherited from configure
         for var in (
             "PYTHON3",
-            "ACDEFINES",
             "MOZ_BUILD_APP",
             "MOZ_WIDGET_TOOLKIT",
         ):
@@ -190,12 +175,11 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
         # Add information for chrome manifest generation
         manifest_targets = []
 
-        for target, entries in self._manifest_entries.items():
+        for target, content in chrome_manifest_contents(self._manifest_entries):
             manifest_targets.append(target)
             install_target = mozpath.basedir(target, install_manifests_bases)
             self._install_manifests[install_target].add_content(
-                "".join("%s\n" % e for e in sorted(entries)),
-                mozpath.relpath(target, install_target),
+                content, mozpath.relpath(target, install_target)
             )
 
         # Add information for install manifests.

@@ -25,6 +25,7 @@
 #include "mozilla/image/Resolution.h"
 #include "mozilla/layers/LayersTypes.h"
 #include "mozilla/layers/ScrollableLayerGuid.h"
+#include "mozilla/layers/TouchCounter.h"
 #include "mozilla/layers/ZoomConstraints.h"
 #include "mozilla/widget/IMEData.h"
 #include "mozilla/widget/InitData.h"
@@ -72,6 +73,7 @@ class WidgetGUIEvent;
 class WidgetInputEvent;
 class WidgetKeyboardEvent;
 enum ScreenRotation : uint8_t;
+enum class SwipeInputSource : uint8_t;
 enum class ColorScheme : uint8_t;
 enum class NativeKeyBindingsType : uint8_t;
 enum class WindowButtonType : uint8_t;
@@ -1256,7 +1258,8 @@ class nsIWidget : public nsSupportsWeakReference {
 
   void TrackScrollEventAsSwipe(const mozilla::PanGestureInput& aSwipeStartEvent,
                                uint32_t aAllowedDirections,
-                               uint64_t aInputBlockId);
+                               uint64_t aInputBlockId,
+                               mozilla::SwipeInputSource aInputSource);
   struct SwipeInfo {
     bool wantsSwipe;
     uint32_t allowedDirections;
@@ -1353,6 +1356,12 @@ class nsIWidget : public nsSupportsWeakReference {
    * the APZ controller thread.
    */
   void DispatchTouchInput(mozilla::MultiTouchInput& aInput);
+
+  void MayStartSwipeForTouchInput(
+      const mozilla::MultiTouchInput& aInput,
+      const mozilla::layers::APZEventResult& aResult);
+  void HandleTouchInputAsSwipe(const mozilla::MultiTouchInput& aInput);
+  bool MayTriggerSwipe(const mozilla::MultiTouchInput& aInput);
 
   /**
    * Dispatch the given PanGestureInput through APZ to Gecko (if APZ is enabled)
@@ -2002,6 +2011,17 @@ class nsIWidget : public nsSupportsWeakReference {
   /**
    * This is used for native menu system testing.
    *
+   * Returns the title of the native menu item built from the element with id
+   * aElementId. Fails if no menu item was built from that element.
+   */
+  virtual nsresult GetNativeMenuItemTitle(const nsAString& aElementId,
+                                          nsAString& aResult) {
+    return NS_ERROR_NOT_IMPLEMENTED;
+  }
+
+  /**
+   * This is used for native menu system testing.
+   *
    * Updates a native menu at the position specified by the index string.
    * The index string is a string of positive integers separated by the "|"
    * (pipe) character.
@@ -2426,6 +2446,107 @@ class nsIWidget : public nsSupportsWeakReference {
   PopupType mPopupType;
   SizeConstraints mSizeConstraints;
   bool mHasRemoteContent;
+
+  // TouchSwipeState phase transition:
+  // - Initially Idle:       wait for a MULTITOUCH_START.
+  // - Idle -> Pending:      a MULTITOUCH_START records APZ's swipable
+  //                         directions.
+  // - Pending -> Tracking:  a MULTITOUCH_MOVE passes navigation-direction
+  //                         checks. In this case, APZ drops the block's events
+  //                         and the subsequent touch events are processed as
+  //                         swipe.
+  // - Tracking -> Rejected: a finger is added during swipe. Swipe is canceled
+  //                         and SwipeTracker is cleared.
+  // - Pending -> Rejected:  a finger is added, or a MULTITOUCH_MOVE fails
+  //                         navigation-direction checks.
+  // - Idle -> Rejected:     multiple fingers touch at the same time, or the
+  //                         first finger's touch is consumed by APZ.
+  // - ANY -> Idle:          the last touch ends, or MULTITOUCH_CANCEL resets
+  //                         any phase to the initial Idle state.
+  // Adding a finger and the last touch ending change the phase even if APZ
+  // consumes the event.
+  struct TouchSwipeState {
+    // Nothing until Start() records the first touch point.
+    mozilla::Maybe<ScreenIntPoint> previousTouchPoint;
+    mozilla::SideBits swipableDirections = mozilla::SideBits::eLeftRight;
+    enum class Phase {
+      // Wait for touchstart to determine the swipable directions.
+      Idle,
+      // Swipable directions are known. Wait for movement outside APZ's slop
+      // region, then check whether the movement can start a browser swipe.
+      Pending,
+      // Convert touch movements into pan gesture input for SwipeTracker.
+      Tracking,
+      // Do not reconsider swipe navigation until all touches end or CANCEL
+      // resets the state.
+      Rejected
+    };
+    Phase phase = Phase::Idle;
+    // Swipe-to-nav on touchscreen doesn't support a multi-finger gesture. This
+    // tracks the number of fingers on the screen. It is updated before passing
+    // events to APZ so that it also counts the events APZ consumes.
+    mozilla::layers::TouchCounter touchCounter;
+
+    void AssertCountConsistency() const {
+      const mozilla::DebugOnly<uint32_t> count =
+          touchCounter.GetActiveTouchCount();
+      MOZ_ASSERT((phase == TouchSwipeState::Phase::Idle && count == 0) ||
+                 (phase == TouchSwipeState::Phase::Pending && count == 1) ||
+                 (phase == TouchSwipeState::Phase::Tracking && count == 1) ||
+                 (phase == TouchSwipeState::Phase::Rejected && count > 0));
+    }
+
+    void Start(mozilla::SideBits aSwipableDirections,
+               const ScreenIntPoint& aTouchPoint) {
+      MOZ_ASSERT(phase == Phase::Idle &&
+                     swipableDirections == mozilla::SideBits::eLeftRight,
+                 "This is the start point of touch swipe-to-nav. "
+                 "TouchSwipeState should have an initial state");
+      swipableDirections &= aSwipableDirections;
+      phase = Phase::Pending;
+      previousTouchPoint = mozilla::Some(aTouchPoint);
+    }
+
+    void Reset() { *this = TouchSwipeState{}; }
+
+    ScreenIntPoint GetDelta(const ScreenIntPoint& point) {
+      MOZ_ASSERT(previousTouchPoint.isSome());
+      return point - *previousTouchPoint;
+    }
+
+    // We should not use consumed inputs for swipe operation. But we have
+    // to keep counting the finger and changing phase to avoid inconsistency.
+    // Note that we don't have to call SetBrowserGestureResponse here at
+    // all, because APZ waits for that response only when it receives
+    // MULTITOUCH_MOVE and returns values other than
+    // nsEventStatus_eConsumeNoDefault. See InputQueue::ReceiveTouchInput.
+    void ChangePhaseForConsumedTouchInput() {
+      const auto count = touchCounter.GetActiveTouchCount();
+      switch (phase) {
+        case TouchSwipeState::Phase::Idle:
+          if (count > 0) {
+            // We do not use consumed inputs for swipe operation, even when
+            // MULTITOUCH_START by the first finger reaches here,
+            phase = TouchSwipeState::Phase::Rejected;
+          }
+          return;
+        case TouchSwipeState::Phase::Pending:
+        case TouchSwipeState::Phase::Tracking:
+          if (count == 0) {
+            Reset();
+          } else if (count > 1) {
+            phase = TouchSwipeState::Phase::Rejected;
+          }
+          return;
+        case TouchSwipeState::Phase::Rejected:
+          if (count == 0) {
+            Reset();
+          }
+          return;
+      }
+    }
+  };
+  TouchSwipeState mTouchSwipeState;
 
   struct FullscreenSavedState {
     DesktopRect windowRect;

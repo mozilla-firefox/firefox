@@ -17,6 +17,9 @@ interface MediaSessionDelegate {
     /** Handle media being stopped in the passed in [sessionState]. */
     fun handleMediaStopped(sessionState: SessionState)
 
+    /** Refresh the media shown for [sessionState] after a change that leaves its media session state untouched. */
+    fun handleMediaUpdated(sessionState: SessionState)
+
     /** Handle no media available. */
     fun handleNoMedia()
 }

@@ -1669,6 +1669,16 @@ impl<'a> SceneBuilder<'a> {
                     self.add_rect_clip_node(info.id, info.spatial_id, &LayoutRect::zero(), false);
                 }
             }
+            DisplayItem::BorderClip(ref info) => {
+                let spatial_node_index = self.get_space(info.spatial_id);
+                let item = ClipItemKey {
+                    kind: ClipItemKeyKind::Border(crate::clip::BorderClipKey::new(&info.border, info.widths)),
+                };
+                let handle = self.interners.clip.intern(&item, || ClipInternData { key: item });
+                self.clip_tree_builder.define_rect_clip(
+                    info.id, handle, spatial_node_index, info.clip_rect, false
+                );
+            }
             DisplayItem::RoundedRectClip(ref info) => {
                 tracy_rs::profile_scope!("rounded_clip");
 

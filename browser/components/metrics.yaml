@@ -99,10 +99,23 @@ taskbar:
           - `error_get_taskbar_manager`: Failed to get the TaskbarManager.
           - `error_schedule_request_pin`: Failed to schedule the pin request.
           - `error_request_pin`: The pin request failed.
+      hresult:
+        type: string
+        description: >
+          The HRESULT of the Windows error as a hex string (e.g.
+          `0x80070490`). Only recorded when `result` is an `error_*` value.
+      com_fallback:
+        type: boolean
+        description: >
+          Whether pinning fell back to the undocumented COM API after the
+          WinRT attempt failed. False when WinRT succeeded or when the caller
+          requested prompt-only pinning.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1890634
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2084830
     data_reviews:
       - https://phabricator.services.mozilla.com/D311921
+      - https://phabricator.services.mozilla.com/D336270
     data_sensitivity:
       - interaction
     notification_emails:

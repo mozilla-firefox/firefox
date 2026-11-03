@@ -70,7 +70,6 @@ add_setup(async function () {
 
   const optionalPrefsToSet = [
     ["dom.fs.enabled", true],
-    ["dom.fs.writable_file_stream.enabled", true],
     ["dom.fs.testing", true],
   ];
 
@@ -89,11 +88,7 @@ add_setup(async function () {
 
     await resetStorage();
 
-    const optionalPrefsToClear = [
-      "dom.fs.enabled",
-      "dom.fs.writable_file_stream.enabled",
-      "dom.fs.testing",
-    ];
+    const optionalPrefsToClear = ["dom.fs.enabled", "dom.fs.testing"];
 
     clearStoragePrefs(optionalPrefsToClear);
   });

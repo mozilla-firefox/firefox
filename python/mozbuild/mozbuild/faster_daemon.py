@@ -66,16 +66,6 @@ class Daemon:
         self.config_environment = config_environment
         self._client = None
 
-    @property
-    def defines(self):
-        defines = dict(self.config_environment.acdefines)
-        # These additions work around warts in the build system: see
-        # http://searchfox.org/mozilla-central/rev/ad093e98f42338effe2e2513e26c3a311dd96422/config/faster/rules.mk#92-93
-        defines.update({
-            "AB_CD": "en-US",
-        })
-        return defines
-
     @functools.cached_property
     def file_copier(self):
         # TODO: invalidate the file copier when the build system
@@ -89,7 +79,7 @@ class Daemon:
             )
         )
 
-        unified_manifest.populate_registry(file_copier, defines_override=self.defines)
+        unified_manifest.populate_registry(file_copier)
 
         return file_copier
 

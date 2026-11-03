@@ -47,6 +47,9 @@ sealed interface ListenAction : Action {
              * notification was dismissed.
              */
             MediaSessionEndedOutsideApp,
+
+            /** The user turned the feature off. */
+            FeatureDisabled,
         }
     }
 

@@ -1559,6 +1559,14 @@ void TraceJitFrames(JSTracer* trc, JitActivation* activation) {
           // the stack will be traced below.
           wasmFrameIter.contStack()->traceFields(trc);
         }
+        // Trace the initial function's instance, which the base-frame stub
+        // stashed in the crossed base frame; no stack map covers it, and a
+        // return_call may have collapsed the frame that otherwise held it.
+        if (wasm::Instance* contBaseInstance =
+                wasmFrameIter.contBaseInstance()) {
+          wasm::TraceInstanceEdge(trc, contBaseInstance,
+                                  "cont base frame instance");
+        }
       }
 #endif
       wasm::Instance* instance = wasmFrameIter.instance();

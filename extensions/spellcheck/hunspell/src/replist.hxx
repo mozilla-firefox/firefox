@@ -78,6 +78,7 @@
 #include <vector>
 
 #include <limits>
+#include <cstddef>
 #include <cstdint>
 
 // ============================================================================
@@ -289,8 +290,8 @@ class RepList {
   bool check_against_breaktable(const std::vector<std::string>& breaktable) const;
 
   int add(const std::string& pat1, const std::string& pat2);
-  int find(const char* word, size_t max_len);
-  std::string replace(const size_t wordlen, int n, bool atstart);
+  ptrdiff_t find(const char* word, size_t max_len);
+  std::string replace(const size_t wordlen, ptrdiff_t n, bool atstart);
   // dest can end just over maxlen, with the rest of the word left unconverted
   bool conv(const std::string& word, std::string& dest, size_t maxlen = std::string::npos);
 };

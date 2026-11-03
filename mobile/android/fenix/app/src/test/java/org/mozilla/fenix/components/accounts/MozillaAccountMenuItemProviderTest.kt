@@ -80,11 +80,6 @@ class MozillaAccountMenuItemProviderTest {
         assertEquals(
             StandardMenuItem(
                 title = MenuItemTitle(Text.Resource(R.string.browser_menu_sign_in)),
-                summary =
-                    MenuItemSummary(
-                        text = Text.Resource(R.string.browser_menu_sign_in_caption_3),
-                        maxLines = SUMMARY_MAX_LINES,
-                    ),
                 icon = MenuItemIconRes(iconsR.drawable.mozac_ic_avatar_circle_24),
                 onClickEvent = null,
                 state = MenuItemState.DEFAULT,

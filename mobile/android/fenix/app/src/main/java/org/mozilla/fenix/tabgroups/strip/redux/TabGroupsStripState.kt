@@ -24,7 +24,11 @@ sealed interface TabGroupsStripState : State {
         val groupId: String,
         val groupTitle: String,
         val tabs: List<Tab> = emptyList(),
-    ) : TabGroupsStripState
+    ) : TabGroupsStripState {
+        /** The ID of the active tab. */
+        val focusedTabId: String
+            get() = tabs.first { it.isFocused }.id
+    }
 
     /**
      * A tab shown in the strip.

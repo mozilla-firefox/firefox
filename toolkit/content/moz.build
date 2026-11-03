@@ -45,6 +45,8 @@ GENERATED_FILES["license.html"].inputs = [
 
 JAR_MANIFESTS += ["jar.mn"]
 
+PP_FILES_EXTRA_DEPS += ["!/source-repo.h"]
+
 SPHINX_TREES["toolkit_widgets"] = "widgets/docs"
 
 DEFINES["TOPOBJDIR"] = TOPOBJDIR

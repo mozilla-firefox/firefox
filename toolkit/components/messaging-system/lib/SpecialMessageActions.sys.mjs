@@ -155,9 +155,14 @@ export const SpecialMessageActions = {
    *   confirmed the action, so it will hang until the prompt is dismissed. This
    *   parameter makes the API resolve after the prompt is shown, but before the
    *   user has confirmed or rejected the action. Defaults to false.
+   * @param {boolean} options.promptOnly Only pin through the OS prompt that
+   *   asks for the user's consent, never through an API that may pin silently.
+   *   Defaults to false.
    */
-  pinFirefoxToTaskbar(window, { privatePin, fireAndForget } = {}) {
-    return window.getShellService().pinToTaskbar(privatePin, fireAndForget);
+  pinFirefoxToTaskbar(window, { privatePin, fireAndForget, promptOnly } = {}) {
+    return window
+      .getShellService()
+      .pinToTaskbar(privatePin, fireAndForget, promptOnly);
   },
 
   /**

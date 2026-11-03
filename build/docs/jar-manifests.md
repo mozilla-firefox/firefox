@@ -2,20 +2,22 @@
 
 # JAR Manifests
 
-JAR Manifests are plaintext files in the tree that are used to package chrome
-files into `.jar` files and create {doc}`Chrome Registration <chrome-registration>`
+JAR Manifests are plaintext files in the tree that are used to install chrome
+files and create {doc}`Chrome Registration <chrome-registration>`
 manifests. JAR Manifests are commonly named `jar.mn`. They are declared in `moz.build` files using the `JAR_MANIFESTS` variable, which makes up a collection of `jar.mn` files.
-All files declared in JAR Manifests are processed and installed into `omni.ja` files in `browser/` and `toolkit/` when building Firefox.
+A JAR Manifest names the same installs `moz.build` already expresses, so what it
+declares is installed the same way, and packaged into `omni.ja` files in
+`browser/` and `toolkit/` when building Firefox.
 
-`jar.mn` files are automatically processed by the build system when building a
-source directory that contains one. The `jar.mn` is run through the
-{ref}`preprocessor` before being passed to the manifest processor. In order to
-have `@variables@` expanded (such as `@AB_CD@`) throughout the file, add
-the line `#filter substitution` at the top of your `jar.mn` file.
+`jar.mn` files are read by the build system when generating the build backend.
+The `jar.mn` is run through the {ref}`preprocessor` before being parsed. In
+order to have `@variables@` expanded (such as `@AB_CD@`) throughout the file,
+add the line `#filter substitution` at the top of your `jar.mn` file.
 
-The format of a jar.mn is fairly simple; it consists of a heading specifying
-which JAR file is being packaged, followed by indented lines listing files and
-chrome registration instructions.
+The format of a `jar.mn` is fairly simple; it consists of a heading naming the
+destination its entries are installed under, written with the historical
+`.jar:` syntax, followed by indented lines listing files and chrome
+registration instructions.
 
 For a simple `jar.mn` file, see {searchfox}`toolkit/profile/jar.mn <mozilla-central/rev/5b2d2863bd315f232a3f769f76e0eb16cdca7cb0:toolkit/profile/jar.mn>`. For a much
 more complex `jar.mn` file, see {searchfox}`toolkit/locales/jar.mn <mozilla-central/rev/5b2d2863bd315f232a3f769f76e0eb16cdca7cb0:toolkit/locales/jar.mn>`. More examples with specific formats and uses are available below.
@@ -24,11 +26,12 @@ more complex `jar.mn` file, see {searchfox}`toolkit/locales/jar.mn <mozilla-cent
 
 ### General Format
 
-To ship chrome files in a JAR, an indented line indicates a file to be packaged:
+To ship chrome files, an indented line names a destination and the file
+installed there:
 
 ```
-<jarfile>.jar:
-  path/in/jar/file_name.xul     (source/tree/location/file_name.xul)
+<section>.jar:
+  path/in/destination/file_name.xul     (source/tree/location/file_name.xul)
 ```
 
 Note that file path mappings are listed by destination (left) followed by source (right).
@@ -45,7 +48,7 @@ browser.jar:
   content/browser/colorwaycloset.js
 ```
 
-Writing the following is equivalent, given that the aforementioned files exist in the same directory as the `jar.mn`. Notice the `.jar` file is named `browser.jar`:
+Writing the following is equivalent, given that the aforementioned files exist in the same directory as the `jar.mn`. Notice the section is named `browser.jar`:
 
 ```
 browser.jar:
@@ -81,8 +84,8 @@ run through the preprocessor, since it contains `#ifdef` and `#endif` statements
 
 ### Base Path, Variables, Wildcards and Localized Files
 
-The `.jar` file location may be preceded with a base path between square brackets.
-The file {searchfox}`toolkit/locales/jar.mn <mozilla-central/rev/5b2d2863bd315f232a3f769f76e0eb16cdca7cb0:toolkit/locales/jar.mn>` uses a base path so that the `.jar` file is under a `localization` directory,
+The section name may be preceded with a base path between square brackets.
+The file {searchfox}`toolkit/locales/jar.mn <mozilla-central/rev/5b2d2863bd315f232a3f769f76e0eb16cdca7cb0:toolkit/locales/jar.mn>` uses a base path so that the destination is under a `localization` directory,
 which is a {searchfox}`special directory parsed by mozbuild <mozilla-central/rev/2005e8d87ee045f19dac58e5bff32eff7d01bc9b:python/mozbuild/mozpack/packager/l10n.py#260-265>`.
 
 It is also named according to the value passed by the variable `@AB_CD@`, normally a locale. Note the use of the preprocessor directive `#filter substitution` at the top of the file for replacing the variable with the value:
@@ -104,18 +107,12 @@ The wildcards in `**/*.ftl` tell the processor to install all Fluent files withi
 ## Registering Chrome
 
 {doc}`Chrome Registration <chrome-registration>` instructions are marked with a percent sign (`%`) at the beginning of the
-line, and must be part of the definition of a JAR file. Any additional percents
-signs are replaced with an appropriate relative URL of the JAR file being
-packaged.
+line, and must be part of a section. Any additional percent signs are replaced
+with an appropriate relative URL of the destination the section names.
 
-There are two possible locations for a manifest file. If the chrome is being
-built into a standalone application, the `jar.mn` processor creates a
-`<jarfilename>.manifest` next to the JAR file itself. This is the default
-behavior.
-
-If the `moz.build` specifies `USE_EXTENSION_MANIFEST = 1`, the `jar.mn` processor
-creates a single `chrome.manifest` file suitable for registering chrome as
-an extension.
+A `<jarfilename>.manifest` is created next to the content it registers, and a
+`manifest` line referring to it is added to the `chrome.manifest` of the
+directory the content is installed into.
 
 ### Example
 

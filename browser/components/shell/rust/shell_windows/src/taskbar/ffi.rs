@@ -72,7 +72,8 @@ pub unsafe extern "C" fn shell_windows_taskbar_is_current_app_pinned(
 }
 
 /// FFI accessible interface to asynchronously pin a given shortcut and AUMID to
-/// the taskbar.
+/// the taskbar. When `prompt_only` is set, only the WinRT API (which prompts
+/// the user) is used and the COM fallback is skipped.
 ///
 /// # Safety
 ///
@@ -83,6 +84,7 @@ pub unsafe extern "C" fn shell_windows_taskbar_pin_app_to_taskbar(
     aumid: &nsAString,
     shortcut_path: &nsAString,
     fire_and_forget: bool,
+    prompt_only: bool,
     promise: &Promise,
 ) -> nsresult {
     let main_guard = match thread_guard::get_thread_guard() {
@@ -98,9 +100,15 @@ pub unsafe extern "C" fn shell_windows_taskbar_pin_app_to_taskbar(
     let promise = RefPtr::new(promise);
 
     moz_task::spawn_local("Pin to Taskbar", async move {
-        let result = pin_app(&aumid, &shortcut_path, fire_and_forget, main_guard)
-            .await
-            .and_then(pin_result_to_variant);
+        let result = pin_app(
+            &aumid,
+            &shortcut_path,
+            fire_and_forget,
+            prompt_only,
+            main_guard,
+        )
+        .await
+        .and_then(pin_result_to_variant);
 
         match result {
             Ok(variant) => promise.resolve_with_variant(&variant),

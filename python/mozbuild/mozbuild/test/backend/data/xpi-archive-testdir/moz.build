@@ -1,0 +1,10 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+XPI_NAME = "testext-staged"
+XPI_PKGNAME = "testext"
+XPI_TESTDIR = "!/_tests/somewhere"
+
+FINAL_TARGET_FILES += [
+    "manifest.json",
+]

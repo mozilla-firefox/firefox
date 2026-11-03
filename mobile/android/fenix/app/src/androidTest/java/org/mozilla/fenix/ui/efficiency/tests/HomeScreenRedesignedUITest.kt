@@ -13,20 +13,17 @@ import org.mozilla.fenix.ui.efficiency.selectors.StoriesSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.ToolbarSelectors
 
 /**
- * Verifies the homepage UI after the entry-points redesign: the experimental header (private-mode button, Firefox
- * wordmark, stories button), the navigation bar (search box, tab counter, main menu), the default shortcuts, and the
- * blocked-trackers widget.
+ * Verifies the homepage UI: the header (stories button, Firefox wordmark, private-mode toggle), the navigation bar
+ * (search box, tab counter, main menu), the default shortcuts, and the blocked-trackers widget.
  *
- * The experimental header only renders when isPrivateModeAndStoriesEntryPointEnabled is on, and the stories button
- * additionally requires Pocket (isPocketEnabled), so both are enabled here. This is why the test lives in its own class
- * rather than in HomeTest, which runs with Pocket disabled.
+ * The stories button requires Pocket (isPocketEnabled), so it is enabled here. This is why the test lives in its own
+ * class rather than in HomeTest, which runs with Pocket disabled.
  */
 class HomeScreenRedesignedUITest :
     BaseTest(
         LaunchConfig(
             isPocketEnabled = true,
             isRecentlyVisitedFeatureEnabled = false,
-            isPrivateModeAndStoriesEntryPointEnabled = true,
         )
     ) {
 
@@ -36,7 +33,7 @@ class HomeScreenRedesignedUITest :
     fun verifyHomeScreenUITest() {
         on.home.navigateToPage()
 
-        // Experimental header: private-mode button (left), Firefox wordmark (center), stories (right)
+        // Header: stories (left), private-mode toggle (right), Firefox wordmark (below)
         on.home
             .mozVerify(HomeSelectors.PRIVATE_MODE_BUTTON)
             .mozVerify(HomeSelectors.HOME_WORDMARK_LOGO)
@@ -59,9 +56,9 @@ class HomeScreenRedesignedUITest :
     fun verifyStoriesViewUITest() {
         on.home.navigateToPage().mozVerify(HomeSelectors.STORIES_BUTTON)
 
-        // Tap the stories button to open the Stories view. Only the static chrome is asserted (home button
+        // Tap the stories button to open the Stories view. Only the static chrome is asserted (back button
         // top-left, "News" header): the story items (thumbnail, title, source) are dynamic and network-backed
         // and expose no stable handles, so asserting them would be flaky.
-        on.stories.navigateToPage().mozVerify(StoriesSelectors.NEWS_HEADER).mozVerify(StoriesSelectors.HOME_BUTTON)
+        on.stories.navigateToPage().mozVerify(StoriesSelectors.NEWS_HEADER).mozVerify(StoriesSelectors.BACK_BUTTON)
     }
 }

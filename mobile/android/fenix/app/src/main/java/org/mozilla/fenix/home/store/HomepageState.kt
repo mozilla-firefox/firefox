@@ -5,7 +5,6 @@
 package org.mozilla.fenix.home.store
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalWindowInfo
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
 import org.mozilla.fenix.components.appstate.AppState
@@ -22,9 +21,6 @@ import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTabState
 import org.mozilla.fenix.home.recenttabs.RecentTab
 import org.mozilla.fenix.home.recentvisits.RecentlyVisitedItem
 import org.mozilla.fenix.home.topsites.TopSiteState
-import org.mozilla.fenix.home.topsites.calculateTopSitesRowLayout
-import org.mozilla.fenix.home.topsites.collapsedTopSitesCount
-import org.mozilla.fenix.home.ui.horizontalMargin
 import org.mozilla.fenix.termsofuse.store.PrivacyNoticeBannerState
 import org.mozilla.fenix.utils.Settings
 
@@ -201,9 +197,7 @@ internal sealed class HomepageState {
                             showCollections = settings.collections,
                             shouldShowCollectionsMigrationCard = collectionsMigrationCardState.visible,
                         ),
-                    showTopSitesHeader =
-                        !(settings.privateModeAndStoriesEntryPointEnabled &&
-                            topSites.size < collapsedTopSitesCount(topSitesColumns())) && !settings.showMoreShortcuts,
+                    showTopSitesHeader = !settings.showMoreShortcuts,
                     showPrivacyReport = settings.showPrivacyReportFeature,
                     longfoxEnabled = settings.longfoxEnabled,
                     showLongfoxAnimation = settings.longfoxEnabled && longfoxEntryPointReady,
@@ -224,26 +218,11 @@ internal sealed class HomepageState {
     }
 }
 
-/** Returns the number of shortcut columns the homepage lays out for the current screen width. */
-@Composable
-private fun topSitesColumns(): Int {
-    val availableWidth = LocalWindowInfo.current.containerDpSize.width - horizontalMargin * 2
-    return calculateTopSitesRowLayout(availableWidth).columns
-}
-
-private fun buildHeaderState(settings: Settings): HeaderState {
-    return if (settings.privateModeAndStoriesEntryPointEnabled) {
-        HeaderState.Experimental.Normal(
-            showButtonAnimation = settings.shouldShowNewsButtonAnimation(),
-            showStoriesButton = settings.showPocketRecommendationsFeature,
-        )
-    } else {
-        HeaderState.Normal(
-            showStoriesButton = settings.showPocketRecommendationsFeature,
-            showButtons = !settings.isHomepageMiddleSearchEnabled,
-        )
-    }
-}
+private fun buildHeaderState(settings: Settings) =
+    HeaderState(
+        showStoriesButton = settings.showPocketRecommendationsFeature,
+        showButtons = !settings.isHomepageMiddleSearchEnabled,
+    )
 
 @Composable
 private fun buildMiddleSearchState(appState: AppState, settings: Settings) =
@@ -252,50 +231,23 @@ private fun buildMiddleSearchState(appState: AppState, settings: Settings) =
         searchBarEnabled = settings.isHomepageMiddleSearchEnabled,
     )
 
-private fun buildPrivateHeaderState(settings: Settings): HeaderState {
-    return if (settings.privateModeAndStoriesEntryPointEnabled) {
-        HeaderState.Experimental.Private
-    } else {
-        HeaderState.Normal(
-            showStoriesButton = false,
-            showButtons = !settings.isHomepageMiddleSearchEnabled,
-        )
-    }
-}
+private fun buildPrivateHeaderState(settings: Settings) =
+    HeaderState(
+        showStoriesButton = false,
+        showButtons = !settings.isHomepageMiddleSearchEnabled,
+    )
 
-/** A simple wrapper around state required for the homepage header. */
-internal sealed class HeaderState {
-
-    /**
-     * Represents the non-experimental header state for both normal and private mode. The header's colors are derived
-     * from the wallpaper at render time (see `HomepageHeader`), so no colors are held here.
-     *
-     * @property showStoriesButton Whether to show the stories button.
-     * @property showButtons Whether to show the stories and private browsing buttons.
-     */
-    data class Normal(
-        val showStoriesButton: Boolean,
-        val showButtons: Boolean = true,
-    ) : HeaderState()
-
-    /** Represents the experimental states for the entry points experiment. */
-    sealed class Experimental : HeaderState() {
-
-        /**
-         * Represents the header in normal mode for the entry points experiment.
-         *
-         * @property showStoriesButton Whether to show the stories button.
-         * @property showButtonAnimation Whether to animate the news button label.
-         */
-        data class Normal(
-            val showStoriesButton: Boolean,
-            val showButtonAnimation: Boolean,
-        ) : Experimental()
-
-        /** Represents the header in private mode for the entry points experiment. */
-        data object Private : Experimental()
-    }
-}
+/**
+ * State required for the homepage header in both normal and private mode. The header's colors are derived from the
+ * wallpaper at render time (see `HomepageHeader`), so no colors are held here.
+ *
+ * @property showStoriesButton Whether to show the stories button.
+ * @property showButtons Whether to show the stories and private browsing buttons.
+ */
+internal data class HeaderState(
+    val showStoriesButton: Boolean,
+    val showButtons: Boolean = true,
+)
 
 /**
  * State of the middle search bar on the homepage.

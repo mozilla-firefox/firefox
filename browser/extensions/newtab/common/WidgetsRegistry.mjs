@@ -323,7 +323,9 @@ export const WIDGET_REGISTRY = [
     enabledPref: PREF_WIDGETS_PRIVACY_ENABLED,
     sizePref: PREF_PRIVACY_SIZE,
     defaultSize: "medium",
-    validSizes: ["medium", "large"],
+    // Small is reached only through the trainhop sidebar config; the widget's
+    // size menu only displays medium and large.
+    validSizes: ["small", "medium", "large"],
     hasSidebar: false,
     systemEnabledPref: PREF_WIDGETS_SYSTEM_PRIVACY_ENABLED,
     trainhopEnabledKey: "privacyEnabled",

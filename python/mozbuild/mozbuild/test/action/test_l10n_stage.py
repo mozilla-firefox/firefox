@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,11 +10,14 @@ from pathlib import Path
 from mozunit import main
 
 from mozbuild.action.l10n_stage import MissingJarSource, stage_locale
-from mozbuild.frontend.l10n_manifest import (
-    MANIFEST_VERSION,
-    MOZ_L10N_AB_CD_PLACEHOLDER,
+from mozbuild.frontend.jar_manifest import (
+    AB_CD_TOKEN,
     JarEntry,
     JarSection,
+    LocaleTemplate,
+)
+from mozbuild.frontend.l10n_manifest import (
+    MANIFEST_VERSION,
     L10nManifest,
     L10nManifestContextData,
     write_l10n_manifest,
@@ -33,25 +37,22 @@ def _necko_manifest():
                 locale_relsrcdir="netwerk/locales",
                 install_subdir="",
                 defines={},
-                locale_pp_defines={},
                 jar_sections=[
                     JarSection(
-                        name=f"chrome/{MOZ_L10N_AB_CD_PLACEHOLDER}",
+                        name=LocaleTemplate(f"chrome/{AB_CD_TOKEN}"),
                         base="",
                         relativesrcdir="dom/locales",
-                        chrome_manifests=[],
-                        pp_includes=[],
-                        entries=[
+                        chrome_manifests=(),
+                        entries=(
                             JarEntry(
-                                source="necko.properties",
-                                output=(
-                                    f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}"
-                                    "/necko/necko.properties"
+                                source=LocaleTemplate("necko.properties"),
+                                output=LocaleTemplate(
+                                    f"locale/{AB_CD_TOKEN}/necko/necko.properties"
                                 ),
                                 is_locale=True,
                                 preprocess=False,
-                            )
-                        ],
+                            ),
+                        ),
                     )
                 ],
             )
@@ -62,24 +63,24 @@ def _necko_manifest():
 def _two_section_manifest():
     def section(name, chrome_packages, sources):
         return JarSection(
-            name=name,
+            name=LocaleTemplate(name),
             base="",
             relativesrcdir="",
-            chrome_manifests=[
-                f"locale {package} {MOZ_L10N_AB_CD_PLACEHOLDER} "
-                f"%locale/{MOZ_L10N_AB_CD_PLACEHOLDER}/{package}/"
+            chrome_manifests=tuple(
+                LocaleTemplate(
+                    f"locale {package} {AB_CD_TOKEN} %locale/{AB_CD_TOKEN}/{package}/"
+                )
                 for package in chrome_packages
-            ],
-            pp_includes=[],
-            entries=[
+            ),
+            entries=tuple(
                 JarEntry(
-                    source=source,
-                    output=f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}/{name}/{source}",
+                    source=LocaleTemplate(source),
+                    output=LocaleTemplate(f"locale/{AB_CD_TOKEN}/{name}/{source}"),
                     is_locale=True,
                     preprocess=False,
                 )
                 for source in sources
-            ],
+            ),
         )
 
     return L10nManifest(
@@ -94,7 +95,6 @@ def _two_section_manifest():
                 locale_relsrcdir="app/locales",
                 install_subdir="",
                 defines={},
-                locale_pp_defines={},
                 jar_sections=[
                     section("zeta", ["zulu", "alpha"], ["zulu.properties"]),
                     section("alpha", ["one"], ["one.properties"]),
@@ -117,25 +117,22 @@ def _comm_manifest():
                 locale_relsrcdir="mail/locales",
                 install_subdir="",
                 defines={},
-                locale_pp_defines={},
                 jar_sections=[
                     JarSection(
-                        name=f"chrome/{MOZ_L10N_AB_CD_PLACEHOLDER}",
+                        name=LocaleTemplate(f"chrome/{AB_CD_TOKEN}"),
                         base="",
                         relativesrcdir="",
-                        chrome_manifests=[],
-                        pp_includes=[],
-                        entries=[
+                        chrome_manifests=(),
+                        entries=(
                             JarEntry(
-                                source="chrome/messenger/messenger.dtd",
-                                output=(
-                                    f"locale/{MOZ_L10N_AB_CD_PLACEHOLDER}"
-                                    "/messenger/messenger.dtd"
+                                source=LocaleTemplate("chrome/messenger/messenger.dtd"),
+                                output=LocaleTemplate(
+                                    f"locale/{AB_CD_TOKEN}/messenger/messenger.dtd"
                                 ),
                                 is_locale=True,
                                 preprocess=False,
-                            )
-                        ],
+                            ),
+                        ),
                     )
                 ],
             )
@@ -256,6 +253,23 @@ class TestChromeManifestOrdering(unittest.TestCase):
                     "locale zulu de zeta/locale/de/zulu/",
                     "locale zulu fr zeta/locale/fr/zulu/",
                 ],
+            )
+
+    def test_chrome_mode_replaces_a_linked_destination(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            installed = Path(tmp) / "src" / "zulu.properties"
+            installed.parent.mkdir(parents=True)
+            installed.write_text("# en-US\n", encoding="utf-8")
+            dest = Path(tmp) / "stage" / "zeta" / "locale" / "de" / "zeta"
+            dest.mkdir(parents=True)
+            os.link(installed, dest / "zulu.properties")
+
+            self._stage(tmp, mode="chrome")
+
+            self.assertEqual(installed.read_text(encoding="utf-8"), "# en-US\n")
+            self.assertEqual(
+                (dest / "zulu.properties").read_text(encoding="utf-8"),
+                "# zulu.properties\n",
             )
 
 

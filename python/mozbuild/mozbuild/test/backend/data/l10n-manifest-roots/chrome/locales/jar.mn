@@ -2,3 +2,8 @@
 
 @AB_CD@.jar:
   locale/@AB_CD@/chrome/chrome.properties (en-US/chrome.properties)
+
+[localization] @AB_CD@.jar:
+% locale chrome @AB_CD@ %
+  chrome                                  (%chrome/*.ftl)
+  preview/preview.ftl                     (en-US/preview.ftl)

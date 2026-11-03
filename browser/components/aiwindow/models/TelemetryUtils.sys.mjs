@@ -14,11 +14,11 @@ const lazy = XPCOMUtils.declareLazy({
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
-  setTimeout: "resource://gre/modules/Timer.sys.mjs",
   ChatStore:
     "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs",
   openAIEngine:
     "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
@@ -56,6 +56,10 @@ const UNKNOWN = "unknown";
 
 const RS_TELEMETRY_PROMPTS_COLLECTION = "ai-window-telemetry-prompts";
 const RS_TELEMETRY_TRIGGERS_COLLECTION = "ai-window-telemetry-triggers";
+
+// Pause before every prompt, including each conversation's first, so requests
+// stay under the 20 rpm rate limit (at most 15 rpm) regardless of latency.
+const PROMPT_PAUSE_MS = 4000;
 
 // ============================================================
 // Trigger
@@ -255,6 +259,10 @@ export class TelemetryEngine {
     return Math.random();
   }
 
+  _pause(ms) {
+    return new Promise(resolve => lazy.setTimeout(resolve, ms));
+  }
+
   async getTriggers(conversation) {
     await this.getTriggerDefinitions();
 
@@ -296,15 +304,14 @@ export class TelemetryEngine {
   }
 
   /**
-   * Runs LLM-based evaluations for all prompt records that match any of the
-   * fired triggers. Prompts that apply to multiple triggers are deduplicated
-   * and run only once.
+   * Selects the prompt records that match any of the fired triggers. Prompts
+   * that apply to multiple triggers are deduplicated and selected only once,
+   * taking the sampling probability of the first matching trigger.
    *
    * @param {Trigger[]} triggers
-   * @param {object} conversation
-   * @returns {Promise<Array<{feature: string, result: object}>>}
+   * @returns {Promise<Array<{record: object, samplingProbability: number}>>}
    */
-  async runTelemetry(triggers, conversation) {
+  async selectPrompts(triggers) {
     if (!triggers.length) {
       return [];
     }
@@ -315,8 +322,7 @@ export class TelemetryEngine {
     const triggerByName = new Map(triggers.map(t => [t.name, t]));
 
     const seen = new Set();
-    const promptsToRun = [];
-    const samplingProbabilities = new Map();
+    const selected = [];
     for (const record of allRecords) {
       const recordTriggers = record.triggers ?? [];
       if (
@@ -331,24 +337,19 @@ export class TelemetryEngine {
         );
         if (matchingTriggerName) {
           seen.add(record.telemetry_name);
-          promptsToRun.push(record);
-          samplingProbabilities.set(
-            record.telemetry_name,
-            triggerByName.get(matchingTriggerName).samplingProbability
-          );
+          selected.push({
+            record,
+            samplingProbability:
+              triggerByName.get(matchingTriggerName).samplingProbability,
+          });
         }
       }
     }
-    const results = await this._runPrompts(promptsToRun, conversation);
-    return results.map(r => ({
-      ...r,
-      samplingProbability: samplingProbabilities.get(r.telemetry_name),
-    }));
+    return selected;
   }
 
   /**
    * Runs LLM-based evaluations for all telemetry prompts passed by name.
-   * Prompt records that have run_terminal flag set to False will not be run
    *
    * @param {string[]} promptNames
    * @param {object} conversation
@@ -371,47 +372,40 @@ export class TelemetryEngine {
           record.version,
           TELEMETRY_MAJOR_VERSIONS[record.telemetry_name]
         )
-      )
-      .filter(record => record.run_terminal);
+      );
 
     return this._runPrompts(promptsToRun, conversation);
   }
 
+  /**
+   * Runs each prompt record once, without retries, pausing before each one.
+   * A 429 is rethrown so the caller can stop sending requests; other errors
+   * are logged and skipped.
+   *
+   * @param {object[]} promptsToRun
+   * @param {object} conversation
+   * @returns {Promise<object[]>}
+   */
   async _runPrompts(promptsToRun, conversation) {
     const results = [];
     for (const record of promptsToRun) {
-      let lastError;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) {
-          await new Promise(resolve =>
-            lazy.setTimeout(resolve, 1000 * 2 ** attempt + Math.random() * 500)
-          );
+      await this._pause(PROMPT_PAUSE_MS);
+      try {
+        const engine = await TelemetryPromptEngine.build(record);
+        const result = await engine.run(conversation);
+        results.push({
+          telemetry_name: record.telemetry_name,
+          result,
+          telemetry_version: record.version,
+          judge_model: record.model ?? "",
+        });
+      } catch (error) {
+        if (lazy.openAIEngine.is429Error(error)) {
+          throw error;
         }
-        try {
-          const engine = await TelemetryPromptEngine.build(record);
-          const result = await engine.run(conversation);
-          results.push({
-            telemetry_name: record.telemetry_name,
-            result,
-            telemetry_version: record.version,
-          });
-          lastError = null;
-          break;
-        } catch (error) {
-          if (lazy.openAIEngine.is429Error(error)) {
-            lastError = error;
-          } else {
-            lazy.console.error(
-              `Telemetry: evaluation failed for ${record.telemetry_name}:`,
-              error
-            ); // other errors fail
-            break;
-          }
-        }
-      }
-      if (lastError) {
         lazy.console.error(
-          `Encountered error running batch telemetry job: ${lastError}`
+          `Telemetry: evaluation failed for ${record.telemetry_name}:`,
+          error
         );
       }
     }
@@ -463,6 +457,7 @@ export function submitTelemetryResult(
         ...normalized_metadata,
         chat_id: conversation.id,
         model: modelId,
+        judge_model: resultObject?.judge_model ?? "",
         turn_number: conversation.currentTurnIndex(),
         telemetry_name: resultObject?.telemetry_name ?? "",
         attribute_name: attributeName,
@@ -481,7 +476,8 @@ export function submitTelemetryResult(
 
 /**
  * Marks conversations as unprocessed (since new turns have been added) and
- * runs LLM-as-judge-based telemetry.
+ * queues the prompts matched by any fired triggers for the end-of-conversation
+ * run in TelemetryScheduler. No LLM requests are made here.
  *
  * @param {ChatConversation} conversation
  */
@@ -493,38 +489,26 @@ export async function runLLMaJTelemetry(conversation) {
 
   const telemetryEngine = new TelemetryEngine();
   const triggers = await telemetryEngine.getTriggers(conversation);
-  const telemetryStart = ChromeUtils.now();
-  telemetryEngine
-    .runTelemetry(triggers, conversation)
-    .then(results => {
-      if (!results.length) {
-        return;
-      }
-      submitTelemetryResult(results, conversation, conversation.engine?.model, {
-        record_type: "midChat",
-        uniform_sampling_probability: conversation._telemetryUniformProbability,
-        triggers: triggers.map(t => t.name),
-        chat_version: conversation.systemPromptVersion,
-      });
-      const prompts = Object.fromEntries(
-        results.map(r => [r.telemetry_name, turnIndex])
-      );
-      const probabilities = Object.fromEntries(
-        results.map(r => [r.telemetry_name, r.samplingProbability])
-      );
-      lazy.ChatStore.updateLLMTelemetryRecord(
-        conversation.id,
-        prompts,
-        probabilities,
-        conversation._telemetryUniformProbability
-      ).catch(e => console.error("Failed to update telemetry record:", e));
-    })
-    .catch(e => console.error("Telemetry run failed:", e))
-    .finally(() => {
-      ChromeUtils.addProfilerMarker(
-        "SmartWindow",
-        { startTime: telemetryStart },
-        "LLMaJTelemetry"
-      );
-    });
+  const selected = await telemetryEngine.selectPrompts(triggers);
+  if (!selected.length) {
+    return;
+  }
+
+  const prompts = Object.fromEntries(
+    selected.map(({ record }) => [record.telemetry_name, turnIndex])
+  );
+  const probabilities = Object.fromEntries(
+    selected.map(({ record, samplingProbability }) => [
+      record.telemetry_name,
+      samplingProbability,
+    ])
+  );
+  await lazy.ChatStore.updateLLMTelemetryRecord(
+    conversation.id,
+    prompts,
+    probabilities,
+    conversation._telemetryUniformProbability,
+    0,
+    triggers.map(t => t.name)
+  ).catch(e => console.error("Failed to update telemetry record:", e));
 }

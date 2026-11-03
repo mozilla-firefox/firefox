@@ -220,6 +220,8 @@ struct APZEventResult {
 
   // Whether APZ found a horizontal scroll target.
   bool mTargetCanScrollHorizontally = false;
+
+  SideBits mSwipableDirectionsForTouch = SideBits::eNone;
 };
 
 /**

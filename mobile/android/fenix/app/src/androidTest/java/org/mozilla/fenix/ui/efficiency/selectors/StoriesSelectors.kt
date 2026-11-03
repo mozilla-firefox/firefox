@@ -27,14 +27,12 @@ object StoriesSelectors : SelectorContainer {
             readiness = PageReadinessProfiles.IDENTITY_ANCHOR,
         )
 
-    // Top-left navigation button. With isPrivateModeAndStoriesEntryPointEnabled on, the Stories view shows a
-    // home (chevron) button carrying the "Normal browsing" content description rather than the "Navigate
-    // back" button. Clicking it returns to the homepage.
-    val HOME_BUTTON =
+    // Top-left navigation button. Clicking it returns to the homepage.
+    val BACK_BUTTON =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
-            value = getStringResource(R.string.content_description_normal_browsing),
-            description = "Stories view home button",
+            value = getStringResource(R.string.stories_back_button_content_description),
+            description = "Stories view back button",
             groups = setOf(Group.STORIES_VIEW),
         )
 }

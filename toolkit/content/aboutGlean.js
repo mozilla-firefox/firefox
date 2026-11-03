@@ -186,7 +186,7 @@ function fillDebugTag() {
 
 function showTab(button) {
   let current_tab = document.querySelector(".active");
-  let category = button.getAttribute("id").substring("category-".length);
+  let category = button.getAttribute("view");
   let content = document.getElementById(category);
   if (current_tab == content) {
     return;
@@ -195,9 +195,6 @@ function showTab(button) {
   current_tab.hidden = true;
   content.classList.add("active");
   content.hidden = false;
-  let current_button = document.querySelector("[selected=true]");
-  current_button.removeAttribute("selected");
-  button.setAttribute("selected", "true");
 
   if (category == "metrics-table") {
     // Init base level metric data
@@ -224,18 +221,6 @@ function showTab(button) {
 }
 
 function handleRedesign() {
-  const categories = document.getElementById("categories");
-  const div = document.createElement("div");
-  div.id = "category-metrics-table";
-  div.className = "category";
-  div.setAttribute("role", "menuitem");
-  div.setAttribute("tabindex", 0);
-  const span = document.createElement("span");
-  span.className = "category-name";
-  span.setAttribute("data-l10n-id", "about-glean-category-metrics-table");
-  div.appendChild(span);
-  categories.appendChild(div);
-
   /**
    * Handle metric filter input.
    *
@@ -275,7 +260,7 @@ function onLoad() {
       showTab(e.target);
     }
   });
-  showTab(document.getElementById("category-about-glean"));
+  showTab(document.querySelector("[view='about-glean']"));
 
   updatePrefsAndDefines();
   refillPingNames();
@@ -309,9 +294,9 @@ function onLoad() {
     loadStoredSubmittedPings();
   });
 
-  handleRedesign();
-
   DOCUMENT_BODY_SEL = d3.select(document.body);
+
+  handleRedesign();
 
   document
     .getElementById("metrics-table-settings-button")
@@ -1237,10 +1222,6 @@ function updateTable() {
     .attr("data-d3-row", d => d.fullName)
     .classed({ "metric-row": true });
 
-  const actions = newRows
-    .append("td")
-    .attr("data-d3-cell", "actions")
-    .append("div");
   // Set the HTML content for the `category` and `name` cells, and store the name cells in-scope so we can
   // append our buttons to them.
   newRows
@@ -1258,22 +1239,25 @@ function updateTable() {
     .append("td")
     .attr("data-d3-cell", "type")
     .text(d => d.type);
+  const actions = newRows
+    .append("td")
+    .attr("data-d3-cell", "actions")
+    .append("div");
   newRows.append("td").attr("data-d3-cell", "value");
 
   actions
     .append("button")
-    .attr("data-l10n-id", "about-glean-button-load-value")
-    .on("click", datum => updateDatum(datum));
-  actions
-    .append("button")
     .attr("data-l10n-id", "about-glean-button-dictionary-link")
-    .classed({ primary: true })
     // On click, rewrite the metric category+name to snake-case, so we can link to the Glean dictionary.
     // TODO: add canonical_name field to metrics https://bugzilla.mozilla.org/show_bug.cgi?id=1983630
     .on("click", datum => {
       const url = getDocsURL(datum);
       window.open(url, "_blank").focus();
     });
+  actions
+    .append("button")
+    .attr("data-l10n-id", "about-glean-button-load-value")
+    .on("click", datum => updateDatum(datum));
 
   // Since `.enter` has been called on `rows` and we've handled new data points, everything
   // that touches `rows` from here on out will affect ALL elements, old and new.

@@ -6,7 +6,6 @@
 
 #include "FileSystemEntryMetadataArray.h"
 #include "fs/FileSystemConstants.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/BlobImpl.h"
 #include "mozilla/dom/File.h"
 #include "mozilla/dom/FileSystemAccessHandleChild.h"
@@ -439,12 +438,6 @@ void FileSystemRequestHandler::GetWritable(RefPtr<FileSystemManager>& aManager,
   MOZ_ASSERT(aPromise);
   LOG(("GetWritable %s keep %d", NS_ConvertUTF16toUTF8(aFile.entryName()).get(),
        aKeepData));
-
-  // XXX This should be removed once bug 1798513 is fixed.
-  if (!StaticPrefs::dom_fs_writable_file_stream_enabled()) {
-    aError.Throw(NS_ERROR_NOT_IMPLEMENTED);
-    return;
-  }
 
   if (aManager->IsShutdown()) {
     aError.Throw(NS_ERROR_ILLEGAL_DURING_SHUTDOWN);

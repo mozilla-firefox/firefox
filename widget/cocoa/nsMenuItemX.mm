@@ -96,7 +96,7 @@ nsMenuItemX::nsMenuItemX(nsMenuX* aParent, const nsString& aLabel,
     mNativeMenuItem = [[NSMenuItem separatorItem] retain];
   } else {
     NSString* newCocoaLabelString =
-        nsMenuUtilsX::GetTruncatedCocoaLabel(aLabel);
+        nsMenuUtilsX::GetTruncatedCocoaLabel(aLabel, mContent);
     mNativeMenuItem = [[GeckoNSMenuItem alloc] initWithTitle:newCocoaLabelString
                                                       action:nil
                                                keyEquivalent:@""];
@@ -398,8 +398,7 @@ void nsMenuItemX::SetBadge() {
       return;
     }
     mNativeMenuItem.badge = [[[NSMenuItemBadge alloc]
-        initWithString:nsMenuUtilsX::GetTruncatedCocoaLabel(badgeValue)]
-        autorelease];
+        initWithString:nsCocoaUtils::ToNSString(badgeValue)] autorelease];
   }
 
   NS_OBJC_END_TRY_ABORT_BLOCK;
@@ -410,7 +409,8 @@ void nsMenuItemX::SetTitle() {
 
   nsAutoString newLabel;
   mContent->AsElement()->GetAttr(nsGkAtoms::label, newLabel);
-  mNativeMenuItem.title = nsMenuUtilsX::GetTruncatedCocoaLabel(newLabel);
+  mNativeMenuItem.title =
+      nsMenuUtilsX::GetTruncatedCocoaLabel(newLabel, mContent);
 
   SetAttributedTitle();
   // System Settings assigns shortcuts by title.
@@ -526,7 +526,7 @@ void nsMenuItemX::SetTooltip() {
     return;
   }
 
-  mNativeMenuItem.toolTip = nsMenuUtilsX::GetTruncatedCocoaLabel(tooltip);
+  mNativeMenuItem.toolTip = nsCocoaUtils::ToNSString(tooltip);
 
   NS_OBJC_END_TRY_ABORT_BLOCK;
 }

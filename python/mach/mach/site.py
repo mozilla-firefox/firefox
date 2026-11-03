@@ -8,6 +8,7 @@
 import ast
 import enum
 import functools
+import glob
 import os
 import platform
 import shutil
@@ -1511,6 +1512,20 @@ def _deprioritize_venv_packages(virtualenv, populate_virtualenv):
     ]
 
 
+def _remove_virtualenv(virtualenv_root):
+    if os.path.exists(virtualenv_root):
+        # Moving first keeps the venv intact on failure. On Windows, loaded DLLs
+        # block deleting the moved copy, but not moving it.
+        old_dir = tempfile.mkdtemp(
+            prefix=f"{os.path.basename(virtualenv_root)}.old-",
+            dir=os.path.dirname(virtualenv_root),
+        )
+        os.rename(virtualenv_root, os.path.join(old_dir, "venv"))
+
+    for old_dir in glob.glob(f"{glob.escape(virtualenv_root)}.old-*"):
+        shutil.rmtree(old_dir, ignore_errors=True)
+
+
 def _create_venv_with_pthfile(
     target_venv,
     pthfile_lines,
@@ -1519,8 +1534,7 @@ def _create_venv_with_pthfile(
     metadata,
 ):
     virtualenv_root = target_venv.prefix
-    if os.path.exists(virtualenv_root):
-        shutil.rmtree(virtualenv_root)
+    _remove_virtualenv(virtualenv_root)
 
     os.makedirs(virtualenv_root)
     metadata.write(is_finalized=False)

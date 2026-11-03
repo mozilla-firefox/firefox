@@ -1,0 +1,1 @@
+chrome-string = en-US

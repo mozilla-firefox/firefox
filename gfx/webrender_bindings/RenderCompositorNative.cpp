@@ -253,7 +253,15 @@ void RenderCompositorNative::WaitUntilPresentationFlushed() {
   mNativeLayerRoot->WaitUntilCommitToScreenHasBeenProcessed();
 }
 
+// Without the native compositor, WebRender's only swapchain is
+// mNativeLayerForEntireWindow, which BeginFrame and EndFrame manage, so the
+// base class implementations apply.
+
 void RenderCompositorNative::CompositorBeginFrame() {
+  if (!ShouldUseNativeCompositor()) {
+    RenderCompositor::CompositorBeginFrame();
+    return;
+  }
   mAddedLayers.Clear();
   mAddedTilePixelCount = 0;
   mAddedClippedPixelCount = 0;
@@ -263,6 +271,10 @@ void RenderCompositorNative::CompositorBeginFrame() {
 }
 
 void RenderCompositorNative::CompositorEndFrame() {
+  if (!ShouldUseNativeCompositor()) {
+    RenderCompositor::CompositorEndFrame();
+    return;
+  }
   if (profiler_thread_is_being_profiled_for_markers()) {
     auto bufferSize = GetBufferSize();
     uint64_t windowPixelCount = uint64_t(bufferSize.width) * bufferSize.height;
@@ -331,6 +343,7 @@ void RenderCompositorNative::CreateSurface(wr::NativeSurfaceId aId,
 
 void RenderCompositorNative::CreateExternalSurface(wr::NativeSurfaceId aId,
                                                    bool aIsOpaque) {
+  MOZ_RELEASE_ASSERT(ShouldUseNativeCompositor());
   MOZ_RELEASE_ASSERT(mSurfaces.find(aId) == mSurfaces.end());
 
   RefPtr<layers::NativeLayer> layer =
@@ -390,6 +403,10 @@ void RenderCompositorNativeOGL::AttachExternalImage(
 }
 
 void RenderCompositorNative::DestroySurface(NativeSurfaceId aId) {
+  if (!ShouldUseNativeCompositor()) {
+    RenderCompositor::DestroySurface(aId);
+    return;
+  }
   auto surfaceCursor = mSurfaces.find(aId);
   MOZ_RELEASE_ASSERT(surfaceCursor != mSurfaces.end());
 
@@ -451,6 +468,11 @@ void RenderCompositorNative::AddSurface(
     wr::NativeSurfaceId aId, const wr::CompositorSurfaceTransform& aTransform,
     wr::DeviceIntRect aClipRect, wr::ImageRendering aImageRendering,
     wr::DeviceIntRect aRoundedClipRect, wr::ClipRadius aClipRadius) {
+  if (!ShouldUseNativeCompositor()) {
+    RenderCompositor::AddSurface(aId, aTransform, aClipRect, aImageRendering,
+                                 aRoundedClipRect, aClipRadius);
+    return;
+  }
   MOZ_RELEASE_ASSERT(!mCurrentlyBoundNativeLayer);
 
   auto surfaceCursor = mSurfaces.find(aId);

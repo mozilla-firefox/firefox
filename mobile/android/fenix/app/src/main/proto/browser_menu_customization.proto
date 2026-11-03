@@ -1,0 +1,28 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+syntax = "proto3";
+
+package proto;
+
+option java_package = "org.mozilla.fenix.datastore";
+option java_multiple_files = true;
+
+// Order and visibility of the browser menu sections chosen by the user.
+// See [org.mozilla.fenix.components.menu.CustomizedMenuInfo]
+message CustomizedMenuRecord {
+  // Version of this format. Records of any other version are ignored.
+  uint32 schema_version = 1;
+  // Sections to show, in the order they should be shown in.
+  repeated Section sections = 2;
+  // Sections the user removed from the menu.
+  repeated Section hidden_sections = 3;
+
+  // A menu section as customized by the user.
+  // Anything not set here, like the section's items, comes from the app's default menu configuration.
+  message Section {
+    // Id of the section, as declared in [org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration].
+    string id = 1;
+  }
+}

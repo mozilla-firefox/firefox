@@ -1910,7 +1910,10 @@ export const GenAI = {
       return;
     }
 
-    item.setAttribute("label", summarize.label);
+    item.setAttribute(
+      "label",
+      await lazy.l10n.formatValue("genai-menu-summarize-with-ai")
+    );
     if (summarize.badge && lazy.chatPageMenuBadge) {
       item.setAttribute("badge", summarize.badge);
     } else {

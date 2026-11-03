@@ -45,6 +45,7 @@ import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
 import mozilla.components.feature.listentopage.playback.PlaybackController
 import mozilla.components.feature.listentopage.playback.SEEK_BACK_INCREMENT_MS
 import mozilla.components.feature.listentopage.playback.SEEK_FORWARD_INCREMENT_MS
+import mozilla.components.feature.listentopage.settings.ListenEnabledState
 import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.NoOfflineVoiceAvailableException
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesisException
@@ -1894,6 +1895,54 @@ class ListenMiddlewareTest {
         )
         assertNull(store.state.tabId)
         assertTrue(playback.released)
+    }
+
+    @Test
+    fun `test that turning the feature off stops the session and releases the playback`() = runTest {
+        val playback = FakePlaybackController()
+        val settings = ListenSettings.inMemory(enabled = ListenEnabledState.Enabled)
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(playbackController = playback, settings = settings, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        settings.setEnabled(false)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                ListenAction.Session.ListenRequested(TAB_ID, URL),
+                ListenAction.Session.StopRequested(ListenAction.Session.StopSource.FeatureDisabled),
+            ),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
+        assertNull(store.state.tabId)
+        assertTrue(playback.released)
+    }
+
+    @Test
+    fun `test that turning the feature off after the session was stopped does not stop it again`() = runTest {
+        val settings = ListenSettings.inMemory(enabled = ListenEnabledState.Enabled)
+        val actions = mutableListOf<ListenAction>()
+        val store =
+            storeWith(settings = settings, recordInto = actions) {
+                Result.success(Content(text = "Article text.", languageTag = "en-US"))
+            }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+        store.dispatch(ListenAction.Session.StopRequested())
+        advanceUntilIdle()
+
+        settings.setEnabled(false)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ListenAction.Session.ListenRequested(TAB_ID, URL), ListenAction.Session.StopRequested()),
+            actions.filterIsInstance<ListenAction.Session>(),
+        )
     }
 
     @Test

@@ -18,11 +18,15 @@ import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuEvent
 import org.junit.Test
-import org.mozilla.fenix.components.menu.FenixMenuItem.CustomizeReaderView
-import org.mozilla.fenix.components.menu.FenixMenuItem.FindInPage
-import org.mozilla.fenix.components.menu.FenixMenuItem.More
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Grid
-import org.mozilla.fenix.components.menu.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeReaderView
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Grid
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
+import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
 
 class MenuBuilderTest {
     @Test
@@ -81,7 +85,8 @@ class MenuBuilderTest {
 
     @Test
     fun `WHEN building the default menu THEN keep the sections in the configured order`() = runTest {
-        val configuration = MenuConfigurations.browser(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+        val configuration =
+            BrowserMenuConfiguration.sections(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
         val builder =
             createMenuBuilder(
                 resolver = { FakeMenuItemProvider(MutableStateFlow(listOf(readerViewItem))) },

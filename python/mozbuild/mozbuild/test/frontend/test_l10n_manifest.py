@@ -9,10 +9,9 @@ from pathlib import Path
 import mozpack.path as mozpath
 from mozunit import main
 
+from mozbuild.frontend.jar_manifest import JarEntry, JarSection, LocaleTemplate
 from mozbuild.frontend.l10n_manifest import (
     MANIFEST_VERSION,
-    JarEntry,
-    JarSection,
     L10nManifest,
     L10nManifestContextData,
     LocalizedFileGroup,
@@ -42,28 +41,22 @@ class TestL10nManifestRoundTrip(unittest.TestCase):
                     locale_relsrcdir="browser/locales",
                     install_subdir="",
                     defines={"FOO": "bar"},
-                    locale_pp_defines={
-                        "ANDROID_MARKETPLACE_AB_CD": {
-                            "es*": "es-ES",
-                            "es-MX": "es-MX",
-                            "fr": "fr",
-                        },
-                    },
                     jar_sections=[
                         JarSection(
-                            name="browser",
+                            name=LocaleTemplate("browser"),
                             base="",
                             relativesrcdir="browser/locales",
-                            chrome_manifests=["locale browser %en-US %"],
-                            pp_includes=[],
-                            entries=[
+                            chrome_manifests=(
+                                LocaleTemplate("locale browser %en-US %"),
+                            ),
+                            entries=(
                                 JarEntry(
-                                    source="en-US/foo.ftl",
-                                    output="foo.ftl",
+                                    source=LocaleTemplate("en-US/foo.ftl"),
+                                    output=LocaleTemplate("foo.ftl"),
                                     is_locale=True,
                                     preprocess=False,
                                 ),
-                            ],
+                            ),
                         ),
                     ],
                     localized_files=[
@@ -122,7 +115,6 @@ class TestBuildL10nManifestFromSubsts(unittest.TestCase):
             locale_relsrcdir="browser/locales",
             install_subdir="",
             defines={},
-            locale_pp_defines={},
         )
         manifest = build_l10n_manifest_from_substs(substs, [ctx])
 
@@ -177,7 +169,6 @@ class TestL10nManifestRoots(unittest.TestCase):
             locale_relsrcdir=relsrcdir,
             install_subdir="",
             defines={},
-            locale_pp_defines={},
         )
 
     def _relsrcdirs(self, roots, relsrcdirs):
@@ -229,19 +220,18 @@ class TestL10nManifestRoots(unittest.TestCase):
 
     def _jar_section(self):
         return JarSection(
-            name="chrome",
+            name=LocaleTemplate("chrome"),
             base="",
             relativesrcdir="",
-            chrome_manifests=[],
-            pp_includes=[],
-            entries=[
+            chrome_manifests=(),
+            entries=(
                 JarEntry(
-                    source="en-US/necko.properties",
-                    output="locale/necko.properties",
+                    source=LocaleTemplate("en-US/necko.properties"),
+                    output=LocaleTemplate("locale/necko.properties"),
                     is_locale=True,
                     preprocess=False,
-                )
-            ],
+                ),
+            ),
         )
 
     def _gen_script(self):
@@ -275,6 +265,60 @@ class TestL10nManifestRoots(unittest.TestCase):
     def test_out_of_root_context_with_only_chrome_is_dropped(self):
         context = self._context("netwerk/locales")
         context.jar_sections = [self._jar_section()]
+
+        self.assertEqual(self._scoped(["mobile/android/locales"], context), [])
+
+    def _localization_section(self, *entries, chrome_manifests=()):
+        return JarSection(
+            name=LocaleTemplate("@AB_CD@"),
+            base="localization",
+            relativesrcdir=None,
+            chrome_manifests=chrome_manifests,
+            entries=entries,
+        )
+
+    def test_out_of_root_context_keeps_its_localized_fluent_files(self):
+        localized = JarEntry(
+            source=LocaleTemplate("toolkit/**/*.ftl"),
+            output=LocaleTemplate("toolkit"),
+            is_locale=True,
+            preprocess=False,
+        )
+        fallback = JarEntry(
+            source=LocaleTemplate("../locales-preview/aboutRestricted.ftl"),
+            output=LocaleTemplate("locales-preview/aboutRestricted.ftl"),
+            is_locale=False,
+            preprocess=False,
+        )
+        context = self._context("toolkit/locales")
+        context.jar_sections = [
+            self._jar_section(),
+            self._localization_section(
+                localized,
+                fallback,
+                chrome_manifests=("locale toolkit MOZ_L10N_AB_CD_PLACEHOLDER %",),
+            ),
+        ]
+
+        contexts = self._scoped(["mobile/android/locales"], context)
+
+        self.assertEqual(len(contexts), 1)
+        self.assertEqual(
+            contexts[0].jar_sections, [self._localization_section(localized)]
+        )
+
+    def test_out_of_root_context_with_only_unlocalized_fluent_is_dropped(self):
+        context = self._context("remote/locales")
+        context.jar_sections = [
+            self._localization_section(
+                JarEntry(
+                    source=LocaleTemplate("../locales-preview/remote-agent.ftl"),
+                    output=LocaleTemplate("locales-preview/remote-agent.ftl"),
+                    is_locale=False,
+                    preprocess=False,
+                )
+            )
+        ]
 
         self.assertEqual(self._scoped(["mobile/android/locales"], context), [])
 

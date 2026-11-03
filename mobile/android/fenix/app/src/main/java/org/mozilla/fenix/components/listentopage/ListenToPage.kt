@@ -53,13 +53,17 @@ internal fun Context.openTabPendingIntent(tabId: String): PendingIntent? {
  * @param scope The application scope. The [store] outlives any screen, because the audio keeps playing when the app is
  *   in the background, so its work cannot be tied to a fragment or a view model.
  * @param profiler Profiler to log performance markers for the feature.
+ * @param isAvailable Whether remote configuration has made the feature available.
  */
 class ListenToPage(
     private val browserStore: BrowserStore,
     private val context: Context,
     private val scope: CoroutineScope,
     private val profiler: Profiler?,
+    private val isAvailable: Boolean,
 ) {
+
+    val settings by lazy { ListenSettings.dataStore(context = context, available = isAvailable, scope = scope) }
 
     val store by lazy {
         val performanceMiddleware = profiler?.let { ListenPerformanceMiddleware(profiler = it) }?.also { it.register() }
@@ -93,7 +97,7 @@ class ListenToPage(
                                 scope = scope,
                                 sessionActivity = { tabId -> context.openTabPendingIntent(tabId) },
                             ),
-                        settings = ListenSettings.dataStore(context),
+                        settings = settings,
                         scope = scope,
                     ),
                     ListenToPageTelemetryMiddleware(),

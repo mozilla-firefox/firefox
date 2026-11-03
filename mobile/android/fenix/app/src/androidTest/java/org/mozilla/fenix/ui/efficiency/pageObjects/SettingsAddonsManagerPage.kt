@@ -101,6 +101,8 @@ class SettingsAddonsManagerPage(composeRule: AndroidComposeTestRule<HomeActivity
         mozClick(SettingsAddonsManagerSelectors.INSTALLED_ADDON_ITEM(addonTitle))
         mozVerify(SettingsAddonsManagerSelectors.REMOVE_ADDON_BUTTON)
         mozClick(SettingsAddonsManagerSelectors.REMOVE_ADDON_BUTTON)
+        mozVerify(SettingsAddonsManagerSelectors.REMOVE_ADDON_DIALOG_CONFIRM_BUTTON)
+        mozClick(SettingsAddonsManagerSelectors.REMOVE_ADDON_DIALOG_CONFIRM_BUTTON)
         return this
     }
 

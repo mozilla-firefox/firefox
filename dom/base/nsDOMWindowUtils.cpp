@@ -1193,6 +1193,17 @@ nsDOMWindowUtils::GetNativeMenuItemKeyEquivalent(const nsAString& aElementId,
 }
 
 NS_IMETHODIMP
+nsDOMWindowUtils::GetNativeMenuItemTitle(const nsAString& aElementId,
+                                         nsAString& aResult) {
+  nsCOMPtr<nsIWidget> widget = GetWidget();
+  if (!widget) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return widget->GetNativeMenuItemTitle(aElementId, aResult);
+}
+
+NS_IMETHODIMP
 nsDOMWindowUtils::GetSelectionAsPlaintext(nsAString& aResult) {
   // Get the widget to send the event to.
   nsCOMPtr<nsIWidget> widget = GetWidget();

@@ -25,6 +25,7 @@ namespace layers {
 class AsyncPanZoomController;
 class OverscrollHandoffChain;
 class CancelableBlockState;
+class BrowserGesturableBlockState;
 class TouchBlockState;
 class WheelBlockState;
 class DragBlockState;
@@ -57,6 +58,9 @@ class InputBlockState : public RefCounted<InputBlockState> {
   virtual ~InputBlockState() = default;
 
   virtual CancelableBlockState* AsCancelableBlock() { return nullptr; }
+  virtual BrowserGesturableBlockState* AsBrowserGesturableBlock() {
+    return nullptr;
+  }
   virtual TouchBlockState* AsTouchBlock() { return nullptr; }
   virtual const TouchBlockState* AsTouchBlock() const { return nullptr; }
   virtual WheelBlockState* AsWheelBlock() { return nullptr; }
@@ -209,6 +213,36 @@ class CancelableBlockState : public InputBlockState {
   bool mHasStateBeenReset;
 };
 
+// This class is for a gesture that may be used for browser's gesture such as
+// swipe. Before consuming this type of gesture, APZ needs to wait for the
+// response from the browser whether the gesture has been used for browser's
+// gesture.
+class BrowserGesturableBlockState : public CancelableBlockState {
+ public:
+  BrowserGesturableBlockState* AsBrowserGesturableBlock() override {
+    return this;
+  }
+
+  void SetNeedsToWaitForBrowserGestureResponse(
+      bool aWaitForBrowserGestureResponse);
+
+  bool IsWaitingForBrowserGestureResponse() const;
+
+  void SetBrowserGestureResponse(const BrowserGestureResponse aResponse);
+
+  bool ShouldDropEvents() const override;
+
+ protected:
+  // This is an intermediate class.
+  BrowserGesturableBlockState(const RefPtr<AsyncPanZoomController>& aTargetApzc,
+                              TargetConfirmationFlags aFlags);
+  // The waiting state
+  bool mWaitingForBrowserGestureResponse;
+  // Whether the browser is consuming this block as a gesture and so APZ should
+  // drop its events.
+  bool mStartedBrowserGesture;
+};
+
 /**
  * A single block of wheel events.
  */
@@ -336,7 +370,7 @@ class DragBlockState : public CancelableBlockState {
 /**
  * A single block of pan gesture events.
  */
-class PanGestureBlockState : public CancelableBlockState {
+class PanGestureBlockState : public BrowserGesturableBlockState {
  public:
   PanGestureBlockState(const RefPtr<AsyncPanZoomController>& aTargetApzc,
                        TargetConfirmationFlags aFlags,
@@ -353,8 +387,6 @@ class PanGestureBlockState : public CancelableBlockState {
 
   PanGestureBlockState* AsPanGestureBlock() override { return this; }
 
-  bool ShouldDropEvents() const override;
-
   bool TimeoutContentResponse() override;
 
   /**
@@ -365,17 +397,11 @@ class PanGestureBlockState : public CancelableBlockState {
   bool WasInterrupted() const { return mInterrupted; }
 
   void SetNeedsToWaitForContentResponse(bool aWaitForContentResponse);
-  void SetNeedsToWaitForBrowserGestureResponse(
-      bool aWaitForBrowserGestureResponse);
-  void SetBrowserGestureResponse(BrowserGestureResponse aResponse);
 
   ScrollDirections GetAllowedScrollDirections() const {
     return mAllowedScrollDirections;
   }
 
-  bool IsWaitingForBrowserGestureResponse() const {
-    return mWaitingForBrowserGestureResponse;
-  }
   bool IsWaitingForContentResponse() const {
     return mWaitingForContentResponse;
   }
@@ -392,13 +418,6 @@ class PanGestureBlockState : public CancelableBlockState {
  private:
   bool mInterrupted;
   bool mWaitingForContentResponse;
-  // A pan gesture may be used for browser's swipe gestures so APZ needs to wait
-  // for the response from the browser whether the gesture has been used for
-  // swipe or not. This `mWaitingForBrowserGestureResponse` flag represents the
-  // waiting state. And below `mStartedBrowserGesture` represents the response
-  // from the browser.
-  bool mWaitingForBrowserGestureResponse;
-  bool mStartedBrowserGesture;
   ScrollDirections mAllowedScrollDirections;
 };
 
@@ -453,7 +472,7 @@ class PinchGestureBlockState : public CancelableBlockState {
  * be populated with some latency. The mAllowedTouchBehaviorSet and
  * mAllowedTouchBehaviors variables track this information.
  */
-class TouchBlockState : public CancelableBlockState {
+class TouchBlockState : public BrowserGesturableBlockState {
  public:
   explicit TouchBlockState(const RefPtr<AsyncPanZoomController>& aTargetApzc,
                            TargetConfirmationFlags aFlags,
@@ -574,7 +593,12 @@ class TouchBlockState : public CancelableBlockState {
    */
   uint32_t GetActiveTouchCount() const;
 
-  void DispatchEvent(const InputData& aEvent) const override;
+  /**
+   * Update the active touch count with the given input. This needs to be
+   * called for every input in this block, whether it is dispatched or dropped.
+   */
+  void UpdateTouchCounter(const MultiTouchInput& aInput) const;
+
   bool MustStayActive() override;
   const char* Type() override;
   TimeDuration GetTimeSinceBlockStart() const;

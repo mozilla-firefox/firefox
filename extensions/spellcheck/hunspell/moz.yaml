@@ -10,15 +10,27 @@ origin:
 
   url: http://hunspell.github.io
 
-  release: e8342700b4dde06130cdbba75f7e6500ffa58864 (2026-10-04T18:42:59Z).
-  revision: e8342700b4dde06130cdbba75f7e6500ffa58864
+  release: v1.7.6 (2026-10-26T16:29:20Z).
+  revision: v1.7.6
   license: MPL-1.1
   license-file: COPYING.MPL
+
+updatebot:
+  maintainer-phab: smaug
+  maintainer-bz: smaug@mozilla.com
+  fuzzy-query: "'mochitest-plain | 'mochitest-chrome-1proc | 'xpcshell !android !gpu !swr !http !xorig !headless !standalone !no-nv !msix !nofis"
+  fuzzy-paths:
+    - extensions/spellcheck
+    - editor/spellchecker
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: every
 
 vendoring:
   url: https://github.com/hunspell/hunspell
   source-hosting: github
-  tracking: commit
+  tracking: tag
 
   exclude:
     - "**"
@@ -35,10 +47,6 @@ vendoring:
 
   include:
     - src/hunspell
-
-  patches:
-    - patches/bug1410214.patch
-    - patches/bug1653659.patch
 
   update-actions:
     - action: move-dir

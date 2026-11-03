@@ -346,7 +346,8 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
 
     private fun initListenSheet(context: Context, rootView: View) {
         val settings = context.components.settings
-        if (!settings.listenToPageFeatureFlagEnabled) {
+        val listenSettings = context.components.listenToPage.settings
+        if (!listenSettings.available) {
             return
         }
 
@@ -358,6 +359,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                     listenStore = context.components.listenToPage.store,
                     engineView = binding.engineView,
                     isAddressBarAtBottom = settings.toolbarPosition == ToolbarPosition.BOTTOM,
+                    isEnabled = listenSettings.enabled,
                     onListenClicked = {
                         context.components.core.store.state.selectedTab?.let { tab ->
                             context.components.listenToPage.store.dispatch(

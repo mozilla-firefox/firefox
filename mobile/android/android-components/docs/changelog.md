@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 161.0 (In Development)
+* **feature-media**
+    * ⚠️ **Breaking change**: Added `MediaSessionDelegate.handleMediaUpdated`, which `MediaSessionFeature` calls instead of the playing, paused or stopped handler when only the media tab's title, URL or icon changed. [Bug 2085570](https://bugzilla.mozilla.org/show_bug.cgi?id=2085570)
 * **lib-installation-blockstore**
     * New component that checks for app reinstalls. [Bug 2084343](https://bugzilla.mozilla.org/show_bug.cgi?id=2084343)
 * **support-ktx**

@@ -40,6 +40,7 @@ const USER_ACTION_TYPES = {
 const WIDGET_VARIANT = {
   ETP_OFF: "etp_off",
   NO_TRACKERS_BLOCKED: "no_trackers_blocked",
+  COUNT_ONLY: "count_only",
 };
 
 // The message fields of a feed pick, the part a tab locks after its impression.
@@ -65,6 +66,7 @@ const privacyWidgetVariant = ({
   initialized,
   isEtpOff,
   isEmptyState,
+  countOnly,
   showsMessage,
   ctaMessageId,
 }) => {
@@ -76,6 +78,9 @@ const privacyWidgetVariant = ({
   }
   if (isEmptyState) {
     return WIDGET_VARIANT.NO_TRACKERS_BLOCKED;
+  }
+  if (countOnly) {
+    return WIDGET_VARIANT.COUNT_ONLY;
   }
   return showsMessage ? ctaMessageId : undefined;
 };
@@ -206,6 +211,10 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   const countCeiling =
     privacyData?.messageId === messageId ? privacyData?.countCeiling : null;
   const isLarge = widgetSize === "large";
+  // Small comes only from the trainhop sidebar config. Picking medium or large
+  // from the menu sets the pref, which outranks trainhop, so the menu has no
+  // way back to small, intentionally.
+  const isSmall = widgetSize === "small";
 
   const celebrationRef = useRef(null);
   const {
@@ -283,10 +292,11 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
   // ETP-off card nor the empty state has taken the body.
   const showCount = !isEtpOff && !isEmptyState;
   // Streak and tip both use the count + divider + message layout; "blank"
-  // shows the count only (plus a CTA).
-  const isStreak = showCount && variant === "streak";
-  const isTip = showCount && variant === "tip";
-  const isBlank = showCount && variant === "blank";
+  // shows the count only (plus a CTA). None of them fit the small card.
+  const showSecondary = showCount && !isSmall;
+  const isStreak = showSecondary && variant === "streak";
+  const isTip = showSecondary && variant === "tip";
+  const isBlank = showSecondary && variant === "blank";
   const hasMessage = (isStreak || isTip) && messageId;
   // Telemetry id for a CTA click. The blank state has no messageId, so give it
   // a stable, distinguishable id — otherwise its clicks report null and the
@@ -296,6 +306,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
     initialized,
     isEtpOff,
     isEmptyState,
+    countOnly: isSmall,
     showsMessage: isBlank || Boolean(hasMessage),
     ctaMessageId,
   });
@@ -684,10 +695,12 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
               href={ETP_SETTINGS_URL}
               onClick={handleOpenEtpSettings}
             >
-              <p
-                className="privacy-etp-off-bold"
-                data-l10n-id="newtab-privacy-etp-off-faster-browsing"
-              />
+              {!isSmall && (
+                <p
+                  className="privacy-etp-off-bold"
+                  data-l10n-id="newtab-privacy-etp-off-faster-browsing"
+                />
+              )}
               <p
                 className="privacy-etp-off-message"
                 data-l10n-id="newtab-privacy-etp-off-turn-on-tracking"
@@ -708,11 +721,21 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
                 onClick={handleViewProtections}
               >
                 <div className="privacy-empty-message-wrapper">
-                  <p data-l10n-id="newtab-privacy-empty-state" />
+                  <p
+                    data-l10n-id={
+                      isSmall
+                        ? "newtab-privacy-empty-state-small-title"
+                        : "newtab-privacy-empty-state"
+                    }
+                  />
                   {/* Adding a string literal here to add spaces to the sentences in the medium widget */}{" "}
                   <p
-                    className="privacy-empty-message"
-                    data-l10n-id="newtab-privacy-empty-state-tally"
+                    className={isSmall ? undefined : "privacy-empty-message"}
+                    data-l10n-id={
+                      isSmall
+                        ? "newtab-privacy-empty-state-small-message"
+                        : "newtab-privacy-empty-state-tally"
+                    }
                   />
                 </div>
               </a>

@@ -9,7 +9,7 @@ use crate::composite::{
     CompositeState, CompositeSurfaceFormat, CompositeTileSurface,
     CompositorInputLayer, CompositorSurfaceUsage, CompositorSurfaceTransform,
     CompositeRoundedCorner, NativeTileId, ResolvedExternalSurface,
-    ResolvedExternalSurfaceColorData, ClipRadius, CompositeFeatures, CompositorKind, TileKind,
+    ResolvedExternalSurfaceColorData, ClipRadius, CompositeFeatures, CompositorKind, SwapchainMode, TileKind,
 };
 use crate::frame_builder::Frame;
 use crate::{CompositorInputConfig, PictureCacheDebugInfo, debug_colors};
@@ -461,8 +461,8 @@ impl Renderer {
         }
     }
 
-    // Composite tiles in a swapchain. When using LayerCompositor, we may
-    // split the compositing in to multiple swapchains.
+    // Composite tiles in a swapchain. When compositing into embedder
+    // swapchains, we may split the compositing in to multiple swapchains.
     fn composite_pass(
         &mut self,
         composite_state: &CompositeState,
@@ -557,14 +557,11 @@ impl Renderer {
         let num_tiles = composite_state.tiles.len();
         self.profile.set(profiler::PICTURE_TILES, num_tiles);
 
-        let layer_mode = layer_tree::layer_mode(&self.compositor_config);
-        let allows_external_layers = layer_tree::allows_external_layers(
-            &self.compositor_config,
-            self.current_compositor_kind,
-        );
+        let layer_mode = layer_tree::layer_mode(self.current_compositor_kind);
+        let allows_external_layers = self.current_compositor_kind.allows_external_layers();
 
         let (window_is_opaque, enable_screenshot) = {
-            let props = layer_tree::window_properties(&self.compositor_config);
+            let props = layer_tree::window_properties(&self.compositor_config, self.current_compositor_kind);
             (props.is_opaque, props.enable_screenshot)
         };
 
@@ -639,8 +636,9 @@ impl Renderer {
 
         // Calculate layers with full device rect
 
-        // Add a debug overlay request if enabled
-        if self.debug_overlay_state.is_enabled {
+        // Add a debug overlay request if enabled. In the framebuffer mode, the
+        // overlay is drawn over the content in the window's framebuffer.
+        if self.debug_overlay_state.is_enabled && layer_mode == LayerMode::Swapchains {
             self.debug_overlay_state.layer_index = input_layers.len();
 
             input_layers.push(CompositorInputLayer {
@@ -777,7 +775,7 @@ impl Renderer {
                         // Switch of layer type, or video -> video, need new swapchain
                         (CompositorSurfaceUsage::Content, CompositorSurfaceUsage::External { .. }) |
                         (CompositorSurfaceUsage::External { .. }, CompositorSurfaceUsage::External { .. }) => {
-                            // Only create a new layer if we're using LayerCompositor
+                            // Only create a new layer when external layers are allowed
                             debug_assert!(allows_external_layers);
                             Some(usage)
                         }
@@ -1028,8 +1026,14 @@ impl Renderer {
                 }
             }
 
+            let supports_partial_present = match self.current_compositor_kind {
+                CompositorKind::Layer {
+                    mode: SwapchainMode::OsLayers { max_partial_present_rects },
+                } => max_partial_present_rects > 0,
+                _ => unreachable!(),
+            };
             let can_use_partial_present =
-                !self.force_redraw && !full_render &&
+                supports_partial_present && !self.force_redraw && !full_render &&
                 self.layer_compositor_frame_state_in_prev_frame.is_some();
 
             if can_use_partial_present {
@@ -1330,7 +1334,7 @@ impl Renderer {
         }
 
         // End frame notify for experimental compositor
-        for (layer_index, layer) in input_layers.iter().enumerate() {
+        for (layer_index, layer) in input_layers.iter().enumerate().rev() {
             // External surfaces need transform applied, but content
             // surfaces are always at identity
             let transform = match layer.usage {
@@ -1446,52 +1450,38 @@ impl Renderer {
         draw_target_dimensions: DeviceIntSize,
         results: &mut RenderResults,
     ) -> Option<PartialPresentMode> {
-        if layer_tree::layer_mode(&self.compositor_config) == LayerMode::Swapchains {
-            // Calculate dirty rects of layer compositor in composite_simple()
-            return None;
-        }
-
         let mut partial_present_mode = None;
 
-        let (max_partial_present_rects, draw_previous_partial_present_regions) =
-            match self.current_compositor_kind {
-                CompositorKind::Native { .. } => {
-                    // Assume that we can return a single dirty rect for native
-                    // compositor for now, and that there is no buffer-age functionality.
-                    // These params can be exposed by the compositor capabilities struct
-                    // as the Draw compositor is ported to use it.
-                    (1, false)
-                }
-                CompositorKind::Draw {
-                    draw_previous_partial_present_regions,
-                    max_partial_present_rects,
-                } => (
-                    max_partial_present_rects,
-                    draw_previous_partial_present_regions,
-                ),
-                CompositorKind::Layer { .. } => {
-                    unreachable!();
-                }
-            };
+        let max_partial_present_rects = match self.current_compositor_kind {
+            CompositorKind::Native { .. } => {
+                // Assume that we can return a single dirty rect for native
+                // compositor for now.
+                // This param can be exposed by the compositor capabilities struct
+                // as the Draw compositor is ported to use it.
+                1
+            }
+            CompositorKind::Draw { max_partial_present_rects } |
+            CompositorKind::Layer {
+                mode: SwapchainMode::WindowFramebuffer { max_partial_present_rects },
+            } => max_partial_present_rects,
+            CompositorKind::Layer { mode: SwapchainMode::OsLayers { .. } } => {
+                // Calculate dirty rects of layer compositor in composite_simple()
+                return None;
+            }
+        };
 
         if max_partial_present_rects > 0 {
-            let prev_frames_damage_rect = if let Some(..) = self.compositor_config.partial_present()
-            {
-                self.buffer_damage_tracker
-                    .get_damage_rect(buffer_age)
-                    .or_else(|| Some(DeviceRect::from_size(draw_target_dimensions.to_f32())))
-            } else {
-                None
-            };
+            let fb_rect = DeviceRect::from_size(draw_target_dimensions.to_f32());
+            let prev_frames_damage_rect = self.buffer_damage_tracker
+                .get_damage_rect(buffer_age)
+                .unwrap_or(fb_rect);
 
             let can_use_partial_present = composite_state.dirty_rects_are_valid
                 && !self.force_redraw
-                && !(prev_frames_damage_rect.is_none() && draw_previous_partial_present_regions)
                 && !self.debug_overlay_state.is_enabled;
 
             if can_use_partial_present {
                 let mut combined_dirty_rect = DeviceRect::zero();
-                let fb_rect = DeviceRect::from_size(draw_target_dimensions.to_f32());
 
                 // Work out how many dirty rects WR produced, and if that's more than
                 // what the device supports.
@@ -1517,21 +1507,15 @@ impl Renderer {
                 }
 
                 // Track this frame's dirty region, for calculating subsequent frames' damage.
-                if draw_previous_partial_present_regions {
-                    self.buffer_damage_tracker
-                        .push_dirty_rect(&combined_dirty_rect);
-                }
+                self.buffer_damage_tracker
+                    .push_dirty_rect(&combined_dirty_rect);
 
-                // If the implementation requires manually keeping the buffer consistent,
-                // then we must combine this frame's dirty region with that of previous frames
-                // to determine the total_dirty_rect. The is used to determine what region we
-                // render to, and is what we send to the compositor as the buffer damage region
-                // (eg for KHR_partial_update).
-                let total_dirty_rect = if draw_previous_partial_present_regions {
-                    combined_dirty_rect.union(&prev_frames_damage_rect.unwrap())
-                } else {
-                    combined_dirty_rect
-                };
+                // The back buffer may be missing the dirty regions of previous frames
+                // (see the buffer age), so they are rendered again along with this
+                // frame's dirty region. This is the region we render to, and is what
+                // we send to the compositor as the buffer damage region (eg for
+                // KHR_partial_update).
+                let total_dirty_rect = combined_dirty_rect.union(&prev_frames_damage_rect);
 
                 partial_present_mode = Some(PartialPresentMode::Single {
                     dirty_rect: total_dirty_rect,
@@ -1542,10 +1526,8 @@ impl Renderer {
                 let fb_rect = DeviceIntRect::from_size(draw_target_dimensions);
                 results.dirty_rects.push(fb_rect);
 
-                if draw_previous_partial_present_regions {
-                    self.buffer_damage_tracker
-                        .push_dirty_rect(&fb_rect.to_f32());
-                }
+                self.buffer_damage_tracker
+                    .push_dirty_rect(&fb_rect.to_f32());
             }
         }
 

@@ -1,0 +1,4 @@
+#filter substitution
+browser.jar:
+%  locale testing @AB_CD@ %locale/@AB_CD@/testing/
+  locale/@AB_CD@/testing/plain.txt          (en-US/plain.txt)

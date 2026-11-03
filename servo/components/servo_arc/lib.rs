@@ -777,6 +777,8 @@ impl<H, T> Arc<HeaderSlice<H, T>> {
     ///
     /// `is_static` indicates whether to create a static Arc.
     ///
+    /// # Safety
+    ///
     /// `alloc` is used to get a pointer to the memory into which the
     /// dynamically sized ArcInner<HeaderSlice<H, T>> value will be
     /// written.  If `is_static` is true, then `alloc` must return a
@@ -784,7 +786,7 @@ impl<H, T> Arc<HeaderSlice<H, T>> {
     /// then `alloc` must return an allocation that can be dellocated
     /// by calling Box::from_raw::<ArcInner<HeaderSlice<H, T>>> on it.
     #[inline]
-    pub fn from_header_and_iter_alloc<F, I>(
+    pub unsafe fn from_header_and_iter_alloc<F, I>(
         alloc: F,
         header: H,
         mut items: I,
@@ -876,13 +878,15 @@ impl<H, T> Arc<HeaderSlice<H, T>> {
     where
         I: Iterator<Item = T>,
     {
-        Arc::from_header_and_iter_alloc(
-            |layout| unsafe { alloc::alloc(layout) },
-            header,
-            items,
-            num_items,
-            /* is_static = */ false,
-        )
+        unsafe {
+            Arc::from_header_and_iter_alloc(
+                |layout| alloc::alloc(layout),
+                header,
+                items,
+                num_items,
+                /* is_static = */ false,
+            )
+        }
     }
 
     /// Creates an Arc for a HeaderSlice using the given header struct and

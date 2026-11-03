@@ -68,7 +68,7 @@
   <!-- The document title and heading of the error page shown when a website takes too long to load. -->
   <string name="mozac_browser_errorpages_net_timeout_title">Fehler: Netzwerk-Zeitüberschreitung</string>
   <!-- The error message shown when a website took long to load. -->
-  <string name="mozac_browser_errorpages_net_timeout_message"><![CDATA[<p>Die angeforderte Website hat auf eine Verbindungsanfrage nicht reagiert und der Browser wartet inzwischen nicht mehr auf eine Antwort.</p>\n<ul>\n<li>Ist der Server eventuell zu stark ausgelastet oder vorübergehend ausgefallen? Versuchen Sie es später erneut.</li>\n<li>Können Sie auch keine anderen Websites aufrufen? Prüfen Sie die Netzwerkverbindung des Computers.</li>\n<li>Wird Ihr Computer oder Ihr Netzwerk von einer Firewall oder einem Proxy geschützt? Durch falsche Einstellungen kann das Surfen im Internet behindert werden.</li>\n<li>Treten immer noch Probleme auf? Bitten Sie Ihren Netzwerkadministrator oder Internetanbieter um Hilfestellung.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_net_timeout_message"><![CDATA[<p>Die angeforderte Website hat auf eine Verbindungsanfrage nicht reagiert und der Browser wartet inzwischen nicht mehr auf eine Antwort.</p>\n<ul>\n<li>Ist der Server eventuell zu stark ausgelastet oder vorübergehend ausgefallen? Versuchen Sie es später erneut.</li>\n<li>Können Sie auch keine anderen Websites aufrufen? Prüfen Sie die Netzwerkverbindung des Computers.</li>\n<li>Wird Ihr Gerät oder Ihr Netzwerk von einer Firewall oder einem Proxy geschützt? Durch falsche Einstellungen kann das Surfen im Internet behindert werden.</li>\n<li>Treten immer noch Probleme auf? Bitten Sie Ihren Netzwerkadministrator oder Internetanbieter um Hilfestellung.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website could not be reached. -->
   <string name="mozac_browser_errorpages_connection_failure_title">Fehler: Verbindung fehlgeschlagen</string>
   <!-- The error message shown when a website could not be reached. -->
@@ -80,11 +80,11 @@
   <!-- The document title and heading of the error page shown when the browser gets stuck in an infinite loop when loading a website. -->
   <string name="mozac_browser_errorpages_redirect_loop_title">Fehler: Umleitungsfehler</string>
   <!-- The error message shown when the browser gets stuck in an infinite loop when loading a website. -->
-  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>Der Browser versucht nicht mehr, das angeforderte Element zu öffnen. Die aufgerufene Website leitet die Anfrage so um, dass sie nie beendet werden kann.</p>\n<ul>\n<li>Haben Sie Cookies, die von dieser Website benötigt werden, deaktiviert oder blockiert?</li>\n<li> Falls das Akzeptieren von Cookies das Problem nicht behebt, handelt es sich vermutlich um eine Fehlkonfiguration des Servers und nicht um einen Fehler Ihres Computers.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>Der Browser versucht nicht mehr, das angeforderte Element zu öffnen. Die aufgerufene Website leitet die Anfrage so um, dass sie nie beendet werden kann.</p>\n<ul>\n<li>Haben Sie Cookies, die von dieser Website benötigt werden, deaktiviert oder blockiert?</li>\n<li> Falls das Akzeptieren von Cookies das Problem nicht behebt, handelt es sich vermutlich um eine Fehlkonfiguration des Servers und nicht um einen Fehler Ihres Geräts.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Offline-Modus</string>
   <!-- The error message shown when a website cannot be loaded because the browser is in offline mode. -->
-  <string name="mozac_browser_errorpages_offline_message"><![CDATA[<p>Der Browser arbeitet im Offline-Modus und kann daher keine Verbindung mit dem angefragten Element aufbauen.</p>\n<ul>\n<li>Ist der Computer mit einem aktiven Netzwerk verbunden?</li>\n<li>Wählen Sie „Erneut versuchen“, um in den Online-Modus zu wechseln und die Seite erneut zu laden.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_offline_message"><![CDATA[<p>Der Browser arbeitet im Offline-Modus und kann daher keine Verbindung mit dem angefragten Element aufbauen.</p>\n<ul>\n<li>Ist das Gerät mit einem aktiven Netzwerk verbunden?</li>\n<li>Wählen Sie „Erneut versuchen“, um in den Online-Modus zu wechseln und die Seite erneut zu laden.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when the browser prevents loading a website on a restricted port. -->
   <string name="mozac_browser_errorpages_port_blocked_title">Port aus Sicherheitsgründen gesperrt</string>
   <!-- The error message shown when the browser prevents loading a website on a restricted port. -->
@@ -114,7 +114,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_title_2">Anscheinend gibt es ein Problem mit Ihrer Internetverbindung</string>
   <!-- The main body text of this error page. It will be shown beneath the title -->
-  <string name="mozac_browser_errorpages_no_internet_message_2">Versuchen Sie, auf einem anderen Gerät eine Verbindung herzustellen. Überprüfen Sie Ihr Modem oder Router. Trennen Sie die WLAN-Verbindung und stellen Sie die Verbindung wieder her.</string>
+  <string name="mozac_browser_errorpages_no_internet_message_2">Versuchen Sie, auf einem anderen Gerät eine Verbindung herzustellen. Überprüfen Sie Ihr Modem oder Ihren Router. Trennen Sie die WLAN-Verbindung und stellen Sie die Verbindung wieder her.</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_error_code">Fehlercode: NS_ERROR_OFFLINE</string>
   <!-- Text that will show up on the button at the bottom of the error page -->
@@ -140,7 +140,7 @@
   <string name="mozac_browser_errorpages_proxy_connection_refused_message"><![CDATA[<p>Der Browser ist für die Verwendung eines Proxy-Servers konfiguriert, doch der Proxy verweigert die Verbindung.</p>\n<ul>\n<li>Stimmt die Proxy-Konfiguration des Browsers? Überprüfen Sie die Einstellungen und versuchen Sie es erneut.</li>\n<li>Lässt der Proxy-Dienst es zu, dass aus diesem Netzwerk heraus Verbindungen hergestellt werden?</li>\n<li>Bestehen die Probleme weiterhin? Bitten Sie Ihren Netzwerkadministrator oder Internetanbieter um Hilfestellung.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_proxy_host_title">Proxy-Server nicht gefunden</string>
-  <string name="mozac_browser_errorpages_unknown_proxy_host_message"><![CDATA[<p>Der Browser ist für die Verwendung eines Proxy-Servers konfiguriert, doch der Proxy konnte nicht gefunden werden.</p>\n<ul>\n<li>Stimmt die Proxy-Konfiguration des Browsers? Überprüfen Sie die Einstellungen und versuchen Sie es erneut.</li>\n<li>Ist der Computer mit einem aktiven Netzwerk verbunden?</li>\n<li>Bestehen die Probleme weiterhin? Bitten Sie Ihren Netzwerkadministrator oder Internetanbieter um Hilfestellung.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_unknown_proxy_host_message"><![CDATA[<p>Der Browser ist für die Verwendung eines Proxy-Servers konfiguriert, doch der Proxy konnte nicht gefunden werden.</p>\n<ul>\n<li>Stimmt die Proxy-Konfiguration des Browsers? Überprüfen Sie die Einstellungen und versuchen Sie es erneut.</li>\n<li>Ist das Gerät mit einem aktiven Netzwerk verbunden?</li>\n<li>Bestehen die Probleme weiterhin? Bitten Sie Ihren Netzwerkadministrator oder Internetanbieter um Hilfestellung.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_safe_browsing_malware_uri_title">Malware-Website blockiert</string>
   <!-- The %1$s will be replaced by the malicious website URL -->

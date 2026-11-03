@@ -4,7 +4,7 @@ username = Updatebot <updatebot@mozilla.com>
 
 [extensions]
 strip =
-evolve = $HOME/.mozbuild/evolve/hgext3rd/evolve
+evolve =
 push-to-try = $HOME/.mozbuild/version-control-tools/hgext/push-to-try
 
 [experimental]

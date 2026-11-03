@@ -8,7 +8,7 @@ import unittest
 import mozpack.path as mozpath
 from mozunit import main
 
-from mozbuild.frontend.context import ObjDirPath, Path, SourcePath
+from mozbuild.frontend.context import ObjDirPath, SourcePath
 from mozbuild.frontend.data import (
     ComputedFlags,
     ConfigFileSubstitution,
@@ -17,6 +17,7 @@ from mozbuild.frontend.data import (
     Defines,
     DirectoryTraversal,
     Exports,
+    FinalTargetFiles,
     FinalTargetPreprocessedFiles,
     GeneratedFile,
     Headers,
@@ -25,7 +26,6 @@ from mozbuild.frontend.data import (
     HostRustProgram,
     HostSources,
     IPDLCollection,
-    JARManifest,
     LocalInclude,
     LocalizedFiles,
     LocalizedPreprocessedFiles,
@@ -1255,13 +1255,65 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertEqual(defines, expected)
 
     def test_jar_manifests(self):
+        """An application tree jar manifest becomes ordinary installs."""
         reader = self.reader("jar-manifests")
         objs = self.read_topsrcdir(reader)
 
         self.assertEqual(len(objs), 1)
+        obj = objs[0]
+        self.assertIsInstance(obj, FinalTargetFiles)
+        self.assertEqual(obj.install_target, "dist/bin")
+        self.assertEqual(
+            [dest for dest, _ in obj.files.walk() if dest],
+            ["chrome/test/content/test"],
+        )
+
+    def test_jar_manifests_pp_files_extra_deps(self):
+        """A preprocessed jar entry reads what PP_FILES_EXTRA_DEPS names."""
+        reader = self.reader("jar-manifests-pp-extra-deps")
+        objs = self.read_topsrcdir(reader)
+
+        self.assertEqual(len(objs), 1)
+        obj = objs[0]
+        self.assertIsInstance(obj, FinalTargetPreprocessedFiles)
+        self.assertEqual(
+            [mozpath.basename(d.full_path) for d in obj.extra_deps], ["generated.h"]
+        )
+
+    def test_jar_manifests_non_application(self):
+        """Any install target is expanded, not only the application tree."""
+        reader = self.reader("jar-manifests-non-application")
+        objs = self.read_topsrcdir(reader)
+
+        files = [o for o in objs if isinstance(o, FinalTargetFiles)]
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].install_target, "_tests/jar-manifests")
+
+    def test_jar_manifests_pattern_in_subdir(self):
+        """A pattern resolves beside the jar.mn, like a plain source."""
+        reader = self.reader("jar-manifests-subdirectory")
+        objs = self.read_topsrcdir(reader)
+
+        files = [o for o in objs if isinstance(o, FinalTargetFiles)]
+        self.assertEqual(len(files), 1)
+        sources = [f for _, entries in files[0].files.walk() for f in entries]
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(
+            mozpath.normsep(sources[0].full_path),
+            mozpath.join(mozpath.normsep(reader.config.topsrcdir), "sub/assets/**"),
+        )
+
+    def test_jar_manifests_empty(self):
+        """A jar.mn with no section is still a build input."""
+        reader = self.reader("jar-manifests-empty")
+        objs = self.read_topsrcdir(reader, filter_common=False)
+
+        recorded = set()
         for obj in objs:
-            self.assertIsInstance(obj, JARManifest)
-            self.assertIsInstance(obj.path, Path)
+            recorded |= {mozpath.normsep(p) for p in obj.context_all_paths}
+        self.assertIn(
+            mozpath.join(mozpath.normsep(reader.config.topsrcdir), "jar.mn"), recorded
+        )
 
     def test_jar_manifests_multiple_files(self):
         with self.assertRaisesRegex(SandboxValidationError, "limited to one value"):
@@ -1673,6 +1725,14 @@ class TestEmitterBasic(unittest.TestCase):
             SandboxValidationError,
             "Test.cpp from UNIFIED_SOURCES would have the same object name as"
             " Test.c from UNIFIED_SOURCES in non-unified builds\\.",
+        ):
+            self.read_topsrcdir(reader)
+
+    def test_xpi_pkgname_without_xpi_name(self):
+        """An archive packages a staging area, and only XPI_NAME makes one."""
+        reader = self.reader("xpi-pkgname-without-xpi-name")
+        with self.assertRaisesRegex(
+            SandboxValidationError, "XPI_PKGNAME set but XPI_NAME not set"
         ):
             self.read_topsrcdir(reader)
 

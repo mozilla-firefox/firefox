@@ -10,26 +10,17 @@ from collections import defaultdict
 from operator import itemgetter
 
 import mozpack.path as mozpath
-from mozpack.chrome.manifest import parse_manifest_line
 
 from mozbuild.backend.base import BuildBackend
 from mozbuild.dirutils import mkdir
-from mozbuild.frontend.context import (
-    VARIABLES,
-    Context,
-    ObjDirPath,
-    Path,
-    RenamedSourcePath,
-)
+from mozbuild.frontend.context import ObjDirPath
 from mozbuild.frontend.data import (
     BaseProgram,
     BaseRustLibrary,
     BaseRustProgram,
-    ChromeManifestEntry,
     ComputedFlags,
     ConfigFileSubstitution,
     Exports,
-    FinalTargetFiles,
     FinalTargetPreprocessedFiles,
     GeneratedFile,
     HostLibrary,
@@ -37,8 +28,6 @@ from mozbuild.frontend.data import (
     HostSources,
     IPDLCollection,
     JsShellArchive,
-    LocalizedFiles,
-    LocalizedPreprocessedFiles,
     RustTests,
     SandboxedWasmLibrary,
     SharedLibrary,
@@ -47,6 +36,7 @@ from mozbuild.frontend.data import (
     UnifiedSources,
     WebIDLCollection,
     XPCOMComponentManifests,
+    XPIArchive,
     XPIDLModule,
 )
 from mozbuild.frontend.l10n_manifest import (
@@ -55,10 +45,111 @@ from mozbuild.frontend.l10n_manifest import (
     write_l10n_manifest,
 )
 from mozbuild.frontend.reader import SandboxValidationError
-from mozbuild.jar import DeprecatedJarManifest, JarManifestParser
 from mozbuild.licenses import LicenseCollection, LicenseError
-from mozbuild.preprocessor import Preprocessor
 from mozbuild.rust_commands import CARGO_SPEC_FILES, CargoCommand, cargo_spec
+
+
+def configured_defines(environment):
+    """The defines a preprocessed install carries beyond its own declaration.
+
+    Recording them on the entry tells the install what to preprocess with, and
+    makes a changed define rebuild the files it applies to.
+    """
+    return {**environment.defines, "AB_CD": environment.substs["MOZ_UI_LOCALE"]}
+
+
+def _preprocessor_defines(declared, configured):
+    """The defines as the preprocessor receives them from a command line.
+
+    A define set to True becomes 1, one set to False is not present at all, and
+    a digit valued one is a number.
+    """
+    defines = {}
+    # A configured define wins over one that the declaring moz.build sets.
+    for name, value in {**(declared or {}), **configured}.items():
+        if value is False:
+            continue
+        if value is True:
+            defines[name] = 1
+        elif isinstance(value, str) and value.isdigit():
+            defines[name] = int(value)
+        else:
+            defines[name] = value
+    return defines
+
+
+def add_preprocess_entry(
+    manifest,
+    source,
+    install_target,
+    dest,
+    basename,
+    depdir,
+    declared,
+    configured,
+    **kwargs,
+):
+    """Describe a preprocessed install to the manifest installing it.
+
+    Both backends have to agree on the marker and on where the dependency file
+    goes, or the same declaration would preprocess differently depending on who
+    installed it.
+    """
+    if basename.endswith(".css"):
+        kwargs["marker"] = "%"
+    depfile = mozpath.join(depdir, install_target, dest, f"{basename}.pp")
+    manifest.add_preprocess(
+        source,
+        mozpath.join(dest, basename),
+        depfile,
+        defines=_preprocessor_defines(declared, configured),
+        **kwargs,
+    )
+
+
+def pattern_link_parts(source):
+    """Split a wildcard source into the directory to search and the pattern.
+
+    The search root ends at the first component carrying a wildcard, so what
+    the pattern matches is the path below the destination.
+    """
+    parts = mozpath.split(source)
+    for i, part in enumerate(parts):
+        if "*" in part:
+            return "/".join(parts[:i]), "/".join(parts[i:])
+    raise ValueError(f"{source} has no wildcard to split on")
+
+
+def pattern_link_dest(source, install_dir):
+    """Where a wildcard's matches land under an install directory.
+
+    When the destination's basename differs from the pattern's, the destination
+    names the directory the matches go in. Otherwise the matched path already
+    supplies the basename.
+    """
+    if source.target_basename != mozpath.basename(source.full_path):
+        return mozpath.join(install_dir, source.target_basename)
+    return install_dir
+
+
+def record_chrome_manifest_entry(entries, obj):
+    """Collect a registration under the manifest it is written to.
+
+    A manifest other than the install target's own chrome.manifest is reached
+    through a `manifest` line in that file, so that line is recorded as well.
+    """
+    top_level = mozpath.join(obj.install_target, "chrome.manifest")
+    if obj.path != top_level:
+        entries[top_level].add(
+            f"manifest {mozpath.relpath(obj.path, obj.install_target)}"
+        )
+    entries[obj.path].add(str(obj.entry))
+
+
+def chrome_manifest_contents(entries):
+    """Each chrome manifest with the content its registrations make."""
+    for target, lines in sorted(entries.items()):
+        yield target, "".join(f"{line}\n" for line in sorted(lines))
 
 
 class XPIDLManager:
@@ -125,6 +216,7 @@ class CommonBackend(BuildBackend):
         self._generated_sources = set()
         self._l10n_manifest_data = []
         self._licenses = LicenseCollection()
+        self._xpi_archives = []
         self._computed_flags = defaultdict(list)
         # Collect Rust edges until all per directory flags are available.
         self._rust_libraries_for_spec = []
@@ -313,6 +405,9 @@ class CommonBackend(BuildBackend):
         elif isinstance(obj, ComputedFlags):
             self._computed_flags[obj.relobjdir].append(obj)
             return False
+
+        elif isinstance(obj, XPIArchive):
+            self._xpi_archives.append(obj)
 
         elif isinstance(obj, BaseRustLibrary):
             self._rust_libraries_for_spec.append(obj)
@@ -712,119 +807,6 @@ class CommonBackend(BuildBackend):
         else:
             l10nrelsrcdir = relativesrcdir
         return mozpath.join(l10nbase, l10nrelsrcdir, filename)
-
-    def _consume_jar_manifest(self, obj):
-        # Ideally, this would all be handled somehow in the emitter, but
-        # this would require all the magic surrounding l10n and addons in
-        # the recursive make backend to die, which is not going to happen
-        # any time soon enough.
-        # Notably missing:
-        # - DEFINES from config/config.mk
-        # - The equivalent of -e when USE_EXTENSION_MANIFEST is set in
-        #   moz.build, but it doesn't matter in dist/bin.
-        pp = Preprocessor()
-        if obj.defines:
-            pp.context.update(obj.defines.defines)
-        pp.context.update(self.environment.defines)
-        ab_cd = obj.config.substs["MOZ_UI_LOCALE"]
-        pp.context.update(AB_CD=ab_cd)
-        pp.out = JarManifestParser()
-        try:
-            pp.do_include(obj.path.full_path)
-        except DeprecatedJarManifest as e:
-            raise DeprecatedJarManifest(
-                "Parsing error while processing %s: %s" % (obj.path.full_path, e)
-            )
-        self.backend_input_files |= pp.includes
-
-        for jarinfo in pp.out:
-            jar_context = Context(
-                allowed_variables=VARIABLES, config=obj._context.config
-            )
-            jar_context.push_source(obj._context.main_path)
-            jar_context.push_source(obj.path.full_path)
-
-            install_target = obj.install_target
-            if jarinfo.base:
-                install_target = mozpath.normpath(
-                    mozpath.join(install_target, jarinfo.base)
-                )
-            jar_context["FINAL_TARGET"] = install_target
-            if obj.defines:
-                jar_context["DEFINES"] = obj.defines.defines
-            files = jar_context["FINAL_TARGET_FILES"]
-            files_pp = jar_context["FINAL_TARGET_PP_FILES"]
-            localized_files = jar_context["LOCALIZED_FILES"]
-            localized_files_pp = jar_context["LOCALIZED_PP_FILES"]
-
-            for e in jarinfo.entries:
-                if e.is_locale:
-                    if jarinfo.relativesrcdir:
-                        src = "/%s" % jarinfo.relativesrcdir
-                    else:
-                        src = ""
-                    src = mozpath.join(src, "en-US", e.source)
-                else:
-                    src = e.source
-
-                src = Path(jar_context, src)
-
-                if "*" not in e.source and not os.path.exists(src.full_path):
-                    if e.is_locale:
-                        raise Exception(
-                            "%s: Cannot find %s (tried %s)"
-                            % (obj.path, e.source, src.full_path)
-                        )
-                    if e.source.startswith("/"):
-                        src = Path(jar_context, "!" + e.source)
-                    else:
-                        # This actually gets awkward if the jar.mn is not
-                        # in the same directory as the moz.build declaring
-                        # it, but it's how it works in the recursive make,
-                        # not that anything relies on that, but it's simpler.
-                        src = Path(obj._context, "!" + e.source)
-
-                output_basename = mozpath.basename(e.output)
-                if output_basename != src.target_basename:
-                    src = RenamedSourcePath(jar_context, (src, output_basename))
-                path = mozpath.dirname(mozpath.join(jarinfo.name, e.output))
-
-                if e.preprocess:
-                    if "*" in e.source:
-                        raise Exception(
-                            "%s: Wildcards are not supported with "
-                            "preprocessing" % obj.path
-                        )
-                    if e.is_locale:
-                        localized_files_pp[path] += [src]
-                    else:
-                        files_pp[path] += [src]
-                elif e.is_locale:
-                    localized_files[path] += [src]
-                else:
-                    files[path] += [src]
-
-            if files:
-                self.consume_object(FinalTargetFiles(jar_context, files))
-            if files_pp:
-                self.consume_object(FinalTargetPreprocessedFiles(jar_context, files_pp))
-            if localized_files:
-                self.consume_object(LocalizedFiles(jar_context, localized_files))
-            if localized_files_pp:
-                self.consume_object(
-                    LocalizedPreprocessedFiles(jar_context, localized_files_pp)
-                )
-
-            for m in jarinfo.chrome_manifests:
-                entry = parse_manifest_line(
-                    mozpath.dirname(jarinfo.name),
-                    m.replace("%", mozpath.basename(jarinfo.name) + "/"),
-                )
-                self.consume_object(
-                    ChromeManifestEntry(
-                        jar_context, "%s.manifest" % jarinfo.name, entry
-                    )
-                )
 
     def _write_rust_xpidl_summary(self, manager):
         """Write out a rust file which includes the generated xpcom rust modules"""

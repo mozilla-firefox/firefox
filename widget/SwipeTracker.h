@@ -19,6 +19,8 @@ class nsRefreshDriver;
 
 namespace mozilla {
 
+enum class SwipeInputSource : uint8_t { Touchscreen, Touchpad };
+
 /**
  * SwipeTracker turns PanGestureInput events into swipe events
  * (WidgetSimpleGestureEvent) and dispatches them into Gecko.
@@ -48,15 +50,18 @@ class SwipeTracker final : public nsARefreshObserver {
   NS_INLINE_DECL_REFCOUNTING(SwipeTracker, override)
 
   SwipeTracker(nsIWidget& aWidget, const PanGestureInput& aSwipeStartEvent,
-               uint32_t aAllowedDirections, uint32_t aSwipeDirection);
+               uint32_t aAllowedDirections, uint32_t aSwipeDirection,
+               SwipeInputSource aInputSource);
 
   void Destroy();
 
   void StartTracking(const PanGestureInput& aSwipeStartEvent);
 
   nsEventStatus ProcessEvent(const PanGestureInput& aEvent,
+                             SwipeInputSource aInputSource,
                              bool aProcessingFirstEvent = false);
   void CancelSwipe(const TimeStamp& aTimeStamp);
+  bool EventsAreControllingSwipe() const { return mEventsAreControllingSwipe; }
 
   static WidgetSimpleGestureEvent CreateSwipeGestureEvent(
       EventMessage aMsg, nsIWidget* aWidget,
@@ -65,7 +70,8 @@ class SwipeTracker final : public nsARefreshObserver {
   // nsARefreshObserver
   void WillRefresh(mozilla::TimeStamp aTime) override;
 
-  static bool CanTriggerSwipe(const PanGestureInput& aPanInput);
+  static bool CanTriggerSwipe(const PanGestureInput& aPanInput,
+                              SwipeInputSource aInputSource);
 
  protected:
   ~SwipeTracker();
@@ -90,6 +96,7 @@ class SwipeTracker final : public nsARefreshObserver {
   TimeStamp mLastAnimationFrameTime;
   const uint32_t mAllowedDirections;
   const uint32_t mSwipeDirection;
+  const SwipeInputSource mInputSource;
   double mGestureAmount = 0.0;
   double mCurrentVelocity = 0.0;
   bool mDeltaTypeIsPage = false;

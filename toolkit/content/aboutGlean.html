@@ -12,6 +12,8 @@
     <title data-l10n-id="about-glean-page-title2"></title>
 
     <script type="module" src="chrome://global/content/elements/moz-toggle.mjs"></script>
+    <script type="module" src="chrome://global/content/elements/moz-page-nav.mjs"></script>
+    <script type="module" src="chrome://global/content/elements/moz-input-search.mjs"></script>
 
     <link rel="stylesheet" href="chrome://global/content/aboutGlean.css"/>
 
@@ -22,23 +24,33 @@
   </head>
 
   <body>
-    <div id="categories" role="menu">
-      <div class="category" selected="true" id="category-about-glean" role="menuitem" tabindex="0">
-        <span class="category-name" data-l10n-id="about-glean-category-about-glean"></span>
-      </div>
-      <div class="category" id="category-manual-testing" role="menuitem" tabindex="0">
-        <span class="category-name" data-l10n-id="about-glean-category-manual-testing"></span>
-      </div>
-      <div class="category" id="category-adhoc-testing" role="menuitem" tabindex="0">
-        <span class="category-name" data-l10n-id="about-glean-category-adhoc-testing"></span>
-      </div>
-      <div class="category" id="category-profiler" role="menuitem" tabindex="0">
-        <span class="category-name" data-l10n-id="about-glean-category-profiler"></span>
-      </div>
-      <div class="category" id="category-about-data" role="menuitem" tabindex="0">
-        <span class="category-name" data-l10n-id="about-glean-category-about-data"></span>
-      </div>
-    </div>
+    <moz-page-nav id="categories" heading="about:glean">
+      <moz-page-nav-button
+        data-l10n-id="about-glean-category-about-glean"
+        view="about-glean">
+      </moz-page-nav-button>
+      <moz-page-nav-button
+        data-l10n-id="about-glean-category-manual-testing"
+        view="manual-testing">
+      </moz-page-nav-button>
+      <moz-page-nav-button
+        data-l10n-id="about-glean-category-adhoc-testing"
+        view="adhoc-testing">
+      </moz-page-nav-button>
+      <moz-page-nav-button
+        data-l10n-id="about-glean-category-profiler"
+        view="profiler">
+      </moz-page-nav-button>
+      <moz-page-nav-button
+        data-l10n-id="about-glean-category-about-data"
+        view="about-data">
+      </moz-page-nav-button>
+      <moz-page-nav-button
+        id="category-metrics-table-button"
+        data-l10n-id="about-glean-category-metrics-table"
+        view="metrics-table">
+      </moz-page-nav-button>
+    </moz-page-nav>
 
     <div class="main-content">
       <!-- about glean tab -->
@@ -227,11 +239,7 @@
           </div>
         </div>
         <div id="metrics-table-controls">
-          <div class="input">
-            <label for="filter-metrics" data-l10n-id="about-glean-label-for-filter-metrics"></label>
-            <input type="text" name="filter-metrics" id="filter-metrics" pattern="[a-zA-Z0-9\-]*">
-            <small data-l10n-id="about-glean-description-for-filter-metrics"></small>
-          </div>
+          <moz-input-search id="filter-metrics" data-l10n-id="about-glean-filter-metrics"></moz-input-search>
           <div>
             <button name="load-all" id="load-all" data-l10n-id="about-glean-button-load-all"></button>
             <button name="export-data" id="export-data" data-l10n-id="about-glean-button-export-data"></button>
@@ -242,10 +250,10 @@
           <table>
             <thead>
               <tr>
-                <th data-d3-cell="actions" data-l10n-id="about-glean-metrics-table-header-actions"></th>
                 <th data-d3-cell="category" data-l10n-id="about-glean-metrics-table-header-category"></th>
                 <th data-d3-cell="name" data-l10n-id="about-glean-metrics-table-header-name"></th>
                 <th data-d3-cell="type" data-l10n-id="about-glean-metrics-table-header-type"></th>
+                <th data-d3-cell="actions" data-l10n-id="about-glean-metrics-table-header-actions"></th>
                 <th data-d3-cell="value" data-l10n-id="about-glean-metrics-table-header-value"></th>
               </tr>
             </thead>

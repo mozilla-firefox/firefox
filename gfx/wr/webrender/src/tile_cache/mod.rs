@@ -601,7 +601,7 @@ impl Tile {
             &state.composite_state.compositor_kind,
             frame_context.config.gpu_supports_render_target_partial_update,
         );
-        let supports_simple_prims = !matches!(state.composite_state.compositor_kind, CompositorKind::Native { .. });
+        let supports_simple_prims = !state.composite_state.compositor_kind.uses_native_tiles();
 
         // TODO(gw): Consider using smaller tiles and/or tile splits for
         //           native compositors that don't support dirty rects.
@@ -670,21 +670,18 @@ impl Tile {
                     // involves drawing to a texture. Create the correct surface
                     // descriptor depending on the compositing mode that will read
                     // the output.
-                    let descriptor = match state.composite_state.compositor_kind {
-                        CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => {
-                            // For a texture cache entry, create an invalid handle that
-                            // will be allocated when update_picture_cache is called.
-                            SurfaceTextureDescriptor::TextureCache {
-                                handle: None,
-                            }
+                    let descriptor = if state.composite_state.compositor_kind.uses_native_tiles() {
+                        // Create a native surface surface descriptor, but don't allocate
+                        // a surface yet. The surface is allocated *after* occlusion
+                        // culling occurs, so that only visible tiles allocate GPU memory.
+                        SurfaceTextureDescriptor::Native {
+                            id: None,
                         }
-                        CompositorKind::Native { .. } => {
-                            // Create a native surface surface descriptor, but don't allocate
-                            // a surface yet. The surface is allocated *after* occlusion
-                            // culling occurs, so that only visible tiles allocate GPU memory.
-                            SurfaceTextureDescriptor::Native {
-                                id: None,
-                            }
+                    } else {
+                        // For a texture cache entry, create an invalid handle that
+                        // will be allocated when update_picture_cache is called.
+                        SurfaceTextureDescriptor::TextureCache {
+                            handle: None,
                         }
                     };
 
@@ -1164,13 +1161,9 @@ impl TileCacheInstance {
         compositor_kind: &CompositorKind,
         root_spatial_node_index: SpatialNodeIndex,
     ) -> bool {
-        match compositor_kind {
-            CompositorKind::Layer { .. } => true,
-            CompositorKind::Native { .. } | CompositorKind::Draw { .. } => {
-                // Only check for occlusion on visible tiles that are fixed position.
-                self.spatial_node_index == root_spatial_node_index
-            }
-        }
+        compositor_kind.culls_all_tiles() ||
+            // Only check for occlusion on visible tiles that are fixed position.
+            self.spatial_node_index == root_spatial_node_index
     }
 
     /// Whether a backdrop-filter in this slice or a slice above may sample `rect`.
@@ -1714,7 +1707,7 @@ impl TileCacheInstance {
                 // simple composite mode, the texture cache handle will expire and be collected
                 // by the texture cache. For native compositor mode, we need to explicitly
                 // invoke a callback to the client to destroy that surface.
-                if let CompositorKind::Native { .. } = frame_state.composite_state.compositor_kind {
+                if frame_state.composite_state.compositor_kind.uses_native_tiles() {
                     for tile in old_tiles.values_mut() {
                         // Only destroy native surfaces that have been allocated. It's
                         // possible for display port tiles to be created that never
@@ -1787,7 +1780,7 @@ impl TileCacheInstance {
                 // promoted directly to a compositor surface.
                 if prim_clip_chain.needs_mask {
                     let mut is_supported_rounded_rect = false;
-                    if let CompositorKind::Layer { .. } = composite_state.compositor_kind {
+                    if composite_state.compositor_kind.supports_rounded_clip_promotion() {
                         if prim_clip_chain.clips_range.count == 1 && self.compositor_clip.is_none() {
                             let clip_instance = clip_store.get_instance_from_range(&prim_clip_chain.clips_range, 0);
                             let clip_node = &data_stores.clip[clip_instance.handle];
@@ -2219,12 +2212,8 @@ impl TileCacheInstance {
         // handle to use, or allocate a new one. For existing native surfaces, we can
         // also determine whether this needs to be updated, depending on whether the
         // image generation(s) of the planes have changed since last composite.
-        let (native_surface_id, update_params) = match composite_state.compositor_kind {
-            CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => {
-                (None, None)
-            }
-            CompositorKind::Native { .. } => {
-                let native_surface_size = surface_size.to_i32();
+        let (native_surface_id, update_params) = if composite_state.compositor_kind.uses_native_tiles() {
+            let native_surface_size = surface_size.to_i32();
 
                 let key = ExternalNativeSurfaceKey {
                     image_keys: *api_keys,
@@ -2306,7 +2295,8 @@ impl TileCacheInstance {
                 };
 
                 (Some(native_surface.native_surface_id), update_params)
-            }
+        } else {
+            (None, None)
         };
 
         let descriptor = ExternalSurfaceDescriptor {
@@ -3103,6 +3093,7 @@ impl TileCacheInstance {
             let clip_local_rect = match clip.item.kind {
                 ClipItemKind::Rectangle { .. }
                 | ClipItemKind::RoundedRectangle { .. }
+                | ClipItemKind::Border { .. }
                 | ClipItemKind::Image { .. }
                 | ClipItemKind::Path { .. } => Some(clip_instance.clip_rect),
             };

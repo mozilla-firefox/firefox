@@ -211,26 +211,6 @@ add_task(async function observe_domwindowopened_withLoadEvent() {
   sandbox.restore();
 });
 
-add_task(async function observe_domwindowopened() {
-  const sandbox = sinon.createSandbox();
-  let stub = sandbox.stub(InfoBar, "showInfoBarMessage").resolves();
-
-  InfoBar._activeInfobar = {
-    message: { content: { type: "universal" } },
-    dispatch: sandbox.stub(),
-  };
-
-  let win = BrowserWindowTracker.getTopWindow();
-  InfoBar.observe(win, "domwindowopened");
-
-  Assert.ok(stub.calledOnce);
-  Assert.equal(stub.firstCall.args[3], true);
-
-  // Cleanup
-  cleanupInfobars();
-  sandbox.restore();
-});
-
 add_task(async function observe_skips_nonUniversal() {
   const sandbox = sinon.createSandbox();
   let stub = sandbox.stub(InfoBar, "showInfoBarMessage").resolves();
@@ -335,6 +315,7 @@ add_task(async function universalInfobar_persists_original_window_closure() {
   );
 
   let fakeNewWindow = makeFakeWin({ selectedBrowser: "win2" });
+  fakeNewWindow.addEventListener = (event, cb) => cb();
 
   makeFakeWin({ selectedBrowser: "win2" });
 
@@ -1258,6 +1239,39 @@ add_task(async function universal_dismissed_from_later_window() {
     Assert.ok(
       !InfoBar._observingWindowOpened,
       "The new window observer was unregistered"
+    );
+  } finally {
+    removeByIdInWin(win1, message.id);
+    if (win2) {
+      removeByIdInWin(win2, message.id);
+      await BrowserTestUtils.closeWindow(win2);
+    }
+    sandbox.restore();
+    cleanupInfobars();
+  }
+});
+
+add_task(async function universal_reaches_a_newly_opened_window() {
+  const sandbox = sinon.createSandbox();
+  const win1 = BrowserWindowTracker.getTopWindow();
+
+  const message = {
+    id: "TEST_UNIVERSAL_NEW_WINDOW",
+    content: { type: "universal", text: "new window", buttons: [] },
+  };
+
+  let win2;
+  try {
+    await InfoBar.showInfoBarMessage(
+      win1.gBrowser.selectedBrowser,
+      message,
+      sandbox.stub()
+    );
+
+    win2 = await BrowserTestUtils.openNewBrowserWindow();
+    await TestUtils.waitForCondition(
+      () => !!getNotificationFromWin(win2, message.id),
+      "Visible in the newly opened window"
     );
   } finally {
     removeByIdInWin(win1, message.id);

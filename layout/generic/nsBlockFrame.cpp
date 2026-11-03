@@ -1862,6 +1862,11 @@ void nsBlockFrame::Reflow(nsPresContext* aPresContext, ReflowOutput& aMetrics,
 
   nsReflowStatus reflowStatus;
   nsFloatManager::SavedState floatManagerState;
+  if (aReflowInput.mFlags.mTrimBEndMargin ||
+      GetProperty(InheritedBEndMarginTrim())) {
+    MarkAllDescendantLinesDirty(this);
+  }
+  RemoveProperty(InheritedBEndMarginTrim());
   TrialReflowState trialState(consumedBSize, effectiveContentBoxBSize,
                               needFloatManager);
 
@@ -1977,6 +1982,25 @@ void nsBlockFrame::Reflow(nsPresContext* aPresContext, ReflowOutput& aMetrics,
   // in order to properly trim a line at a fragment boundary.
   if (aMetrics.mNeedsTextBoxTrimAtFragmentEndRetry) {
     trialState.Reset();
+    aReflowInput.mFloatManager->PopState(&floatManagerState);
+    aMetrics = ReflowOutput(aMetrics.GetWritingMode());
+    reflowStatus =
+        TrialReflow(aPresContext, aMetrics, aReflowInput, trialState);
+  }
+
+  // Reflow with trimming to reposition descendants laid out with untrimmed
+  // margins. However, avoid it if we're interrupted, we'll come back to it.
+  // Block-end margin from lines that successfully reflowed before being
+  // interrupted can be reconstructed, so no further action is required.
+  if (aReflowInput.mFlags.mTrimBEndMargin &&
+      !aMetrics.mCarriedOutBEndMargin.IsZero() &&
+      reflowStatus.IsFullyComplete() &&
+      !aReflowInput.WillReflowAgainForClearance() &&
+      !aPresContext->HasPendingInterrupt()) {
+    trialState.Reset();
+    trialState.mShouldTrimInheritedBEndMargins = true;
+    SetProperty(InheritedBEndMarginTrim(), true);
+    MarkAllDescendantLinesDirty(this);
     aReflowInput.mFloatManager->PopState(&floatManagerState);
     aMetrics = ReflowOutput(aMetrics.GetWritingMode());
     reflowStatus =
@@ -2230,6 +2254,8 @@ nsReflowStatus nsBlockFrame::TrialReflow(nsPresContext* aPresContext,
                          aTrialState.mConsumedBSize,
                          aTrialState.mEffectiveContentBoxBSize,
                          aTrialState.mInset);
+  state.mFlags.mShouldTrimInheritedBEndMargins =
+      aTrialState.mShouldTrimInheritedBEndMargins;
 
   // mLineClamping is set for root, and mDimensionsReadyForLineClampAuto is used
   // to pass the flag down to descendants. We should apply automatic line-clamp
@@ -3540,6 +3566,11 @@ void nsBlockFrame::PropagateFloatDamage(BlockReflowState& aState,
   }
 }
 
+// Call only for a line reflowed or slid during the current block reflow.
+static bool LineStopsBStartMarginCollapsing(nsLineBox& aLine) {
+  return !aLine.CachedIsEmpty() || aLine.HasClearance();
+}
+
 static bool LineHasClear(nsLineBox* aLine) {
   return aLine->IsBlock()
              ? (aLine->HasFloatClearTypeBefore() ||
@@ -3599,6 +3630,19 @@ bool nsBlockFrame::ReflowDirtyLines(BlockReflowState& aState) {
   bool foundAnyClears = aState.mTrailingClearFromPIF != UsedClear::None;
   bool willReflowAgain = false;
   bool usedOverflowWrap = false;
+  const bool trimChildBStartMargins = aState.ShouldTrimChildBStartMargins();
+
+  if (aState.ShouldTrimChildBEndMargins()) {
+    for (auto& line : Lines()) {
+      if (!line.IsBlock()) {
+        continue;
+      }
+      nsBlockFrame* block = do_QueryFrame(line.mFirstChild);
+      if (block && block->GetProperty(InheritedBEndMarginTrim())) {
+        line.MarkDirty();
+      }
+    }
+  }
 
 #ifdef DEBUG
   if (gNoisyReflow) {
@@ -4054,6 +4098,10 @@ bool nsBlockFrame::ReflowDirtyLines(BlockReflowState& aState) {
       foundAnyClears = true;
     }
 
+    if (trimChildBStartMargins && LineStopsBStartMarginCollapsing(*line)) {
+      aState.mFlags.mIsCurrentLineAdjacentToBStart = false;
+    }
+
     DumpLine(aState, line, deltaBCoord, -1);
 
     if (aState.mPresContext->HasPendingInterrupt()) {
@@ -4236,6 +4284,11 @@ bool nsBlockFrame::ReflowDirtyLines(BlockReflowState& aState) {
 
           if (LineHasClear(line.get())) {
             foundAnyClears = true;
+          }
+
+          if (trimChildBStartMargins &&
+              LineStopsBStartMarginCollapsing(*line)) {
+            aState.mFlags.mIsCurrentLineAdjacentToBStart = false;
           }
 
           if (aState.mPresContext->CheckForInterrupt(this)) {
@@ -4724,7 +4777,7 @@ bool nsBlockFrame::ShouldApplyBStartMargin(BlockReflowState& aState,
     line = aState.mLineAdjacentToTop;
   }
   while (line != aLine) {
-    if (!line->CachedIsEmpty() || line->HasClearance()) {
+    if (LineStopsBStartMarginCollapsing(*line)) {
       // A line which precedes aLine is non-empty, or has clearance,
       // so therefore the block-start margin applies.
       aState.mFlags.mShouldApplyBStartMargin = true;
@@ -4858,6 +4911,15 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
     applyBStartMargin = true;
   }
 
+  // Determine whether `margin-trim` discards this child's block-axis margins.
+  // Note that this has to be decided before we start collapsing margins, since
+  // a trimmed margin must not take part in the collapsing at all.
+  const bool trimChildBStartMargins = aState.ShouldTrimChildBStartMargins();
+  const ReflowInput::InitFlags marginTrimFlags =
+      BlockReflowState::ComputeChildMarginTrim(
+          this, trimChildBStartMargins, aState.ShouldTrimChildBEndMargins(),
+          aLine, trimChildBStartMargins && IsLineAdjacentToBStart(aState));
+
   nsIFrame* clearanceFrame = nullptr;
   const nscoord startingBCoord = aState.mBCoord;
   const CollapsingMargin incomingMargin = aState.mPrevBEndMargin;
@@ -4885,7 +4947,7 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
       WritingMode wm = frame->GetWritingMode();
       LogicalSize availSpace = aState.ContentSize(wm);
       ReflowInput reflowInput(aState.mPresContext, aState.mReflowInput, frame,
-                              availSpace);
+                              availSpace, Nothing(), marginTrimFlags);
 
       if (treatWithClearance) {
         aState.mBCoord += aState.mPrevBEndMargin.Get();
@@ -5075,7 +5137,7 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
 
     childReflowInput.emplace(aState.mPresContext, aState.mReflowInput, frame,
                              availSize.ConvertTo(frame->GetWritingMode(), wm),
-                             cbSize);
+                             cbSize, marginTrimFlags);
 
     childReflowInput->mFlags.mColumnSetWrapperHasNoBSizeLeft =
         columnSetWrapperHasNoBSizeLeft;
@@ -5252,7 +5314,8 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
       childReflowInput.reset();
       childReflowInput.emplace(
           aState.mPresContext, aState.mReflowInput, frame,
-          availSpace.Size(wm).ConvertTo(frame->GetWritingMode(), wm));
+          availSpace.Size(wm).ConvertTo(frame->GetWritingMode(), wm), Nothing(),
+          marginTrimFlags);
     } while (true);
 
     if (mayNeedRetry && clearanceFrame) {
@@ -6181,6 +6244,20 @@ bool nsBlockFrame::IsLastFormattedLine(LineIterator aLine) {
     }
   }
 
+  return true;
+}
+
+bool nsBlockFrame::IsLineAdjacentToBStart(BlockReflowState& aState) {
+  return aState.mFlags.mIsCurrentLineAdjacentToBStart &&
+         aState.IsAdjacentWithBStart();
+}
+
+bool nsBlockFrame::IsLineAdjacentToBEnd(LineIterator aLine) {
+  for (LineIterator line = aLine.next(); line != LinesEnd(); ++line) {
+    if (!line->IsEmpty() || line->HasClearance()) {
+      return false;
+    }
+  }
   return true;
 }
 
@@ -9289,7 +9366,7 @@ void nsBlockFrame::CheckFloats(BlockReflowState& aState) {
 }
 
 void nsBlockFrame::IsMarginRoot(bool* aBStartMarginRoot,
-                                bool* aBEndMarginRoot) {
+                                bool* aBEndMarginRoot) const {
   nsIFrame* parent = GetParent();
   if (!HasAnyStateBits(NS_BLOCK_BFC)) {
     if (!parent || parent->IsFloatContainingBlock()) {

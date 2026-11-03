@@ -556,7 +556,7 @@ pub fn bind_debug_overlay(
                 Some(draw_target)
             }
             CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => {
-                match layer_tree::layer_mode(compositor_config) {
+                match layer_tree::layer_mode(compositor_kind) {
                     LayerMode::Swapchains => {
                         layer_tree.bind_layer(compositor_config, state.layer_index, &[]);
 
@@ -620,7 +620,7 @@ pub fn unbind_debug_overlay(
                 );
             }
             CompositorKind::Draw { .. } | CompositorKind::Layer { .. } => {
-                match layer_tree::layer_mode(compositor_config) {
+                match layer_tree::layer_mode(compositor_kind) {
                     LayerMode::Swapchains => {
                         layer_tree.present_layer(compositor_config, state.layer_index, &[]);
                     }

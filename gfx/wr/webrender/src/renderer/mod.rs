@@ -842,9 +842,8 @@ pub struct Renderer {
     /// State related to the debug / profiling overlays
     debug_overlay_state: DebugOverlayState,
 
-    /// Tracks the dirty rectangles from previous frames. Used on platforms
-    /// that require keeping the front buffer fully correct when doing
-    /// partial present (e.g. unix desktop with EGL_EXT_buffer_age).
+    /// Tracks the dirty rectangles from previous frames, to find the region
+    /// of the back buffer that must be redrawn given its buffer age.
     buffer_damage_tracker: BufferDamageTracker,
 
     max_primitive_instance_count: usize,
@@ -1562,8 +1561,10 @@ impl Renderer {
     /// Renders the current frame.
     ///
     /// A Frame is supplied by calling [`generate_frame()`][webrender_api::Transaction::generate_frame].
-    /// buffer_age is the age of the current backbuffer. It is only relevant if partial present
-    /// is active, otherwise 0 should be passed here.
+    /// buffer_age is the number of frames since the current backbuffer was last presented.
+    /// 1 means that it holds the previous frame, and 0 means that its content is unknown,
+    /// which forces a full redraw. It is only relevant if partial present is active,
+    /// otherwise 0 should be passed here.
     pub fn render(
         &mut self,
         device_size: DeviceIntSize,

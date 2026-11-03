@@ -20,11 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.semantics.CollectionInfo
-import androidx.compose.ui.semantics.collectionInfo
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.text.Text
@@ -54,13 +49,14 @@ internal fun MenuGridContainer(
     isSticky: Boolean = false,
     backgroundColor: Color = if (isSticky) MaterialTheme.colorScheme.surface else Color.Transparent,
 ) {
-    val displayedItems = items.filter { it !is BannerMenuItem && it.icon != null }
+    val displayedItems = items.displayedInGrid()
     Row(
         modifier =
-            modifier.fillMaxWidth().height(IntrinsicSize.Min).applyGridGroupStyle(isSticky, backgroundColor).semantics {
-                isTraversalGroup = true
-                collectionInfo = CollectionInfo(rowCount = 1, columnCount = displayedItems.size)
-            },
+            modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .applyGridGroupStyle(isSticky, backgroundColor)
+                .menuGridGroupSemantics(displayedItems.size),
         horizontalArrangement =
             Arrangement.spacedBy(if (isSticky) AcornTheme.layout.space.static50 else AcornTheme.layout.space.static25),
         verticalAlignment = Alignment.CenterVertically,
@@ -110,31 +106,6 @@ private fun RowScope.GridGroupContent(
             showContainer = !isSticky,
             shape = shape,
         )
-    }
-}
-
-@Composable
-private fun getGridItemShape(
-    index: Int,
-    total: Int,
-): Shape {
-    if (total == 1) {
-        return MaterialTheme.shapes.extraLarge
-    }
-    return when (index) {
-        0 ->
-            MaterialTheme.shapes.extraLarge.copy(
-                topEnd = MaterialTheme.shapes.extraSmall.topEnd,
-                bottomEnd = MaterialTheme.shapes.extraSmall.bottomEnd,
-            )
-
-        total - 1 ->
-            MaterialTheme.shapes.extraLarge.copy(
-                topStart = MaterialTheme.shapes.extraSmall.topStart,
-                bottomStart = MaterialTheme.shapes.extraSmall.bottomStart,
-            )
-
-        else -> MaterialTheme.shapes.extraSmall
     }
 }
 

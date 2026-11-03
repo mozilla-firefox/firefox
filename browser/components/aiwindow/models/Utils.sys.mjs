@@ -213,6 +213,8 @@ export const MODEL_FEATURES = Object.freeze({
   SEARCH_ANSWERS: "search-answers",
   // aitab structured-page generation
   AITAB: "aitab",
+  // widget generation
+  WIDGET_GENERATION: "widget-generation",
 });
 
 /** @typedef {(typeof MODEL_FEATURES)[keyof typeof MODEL_FEATURES]} ModelFeature */
@@ -225,6 +227,7 @@ export const SERVICE_TYPES = Object.freeze({
   MEMORIES: "memories",
   AGENT: "agent",
   SW_ANSWER: "sw-answer",
+  WIDGET_GENERATION: "widget-generation",
 });
 
 /**
@@ -241,6 +244,7 @@ export const PURPOSES = Object.freeze({
   MONITOR: "monitor",
   // aitab structured-page generation
   AITAB: "aitab",
+  WIDGET_GENERATION: "widget-generation",
 });
 
 /**

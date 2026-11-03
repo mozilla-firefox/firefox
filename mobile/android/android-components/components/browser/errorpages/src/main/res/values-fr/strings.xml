@@ -84,7 +84,7 @@
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Mode hors connexion</string>
   <!-- The error message shown when a website cannot be loaded because the browser is in offline mode. -->
-  <string name="mozac_browser_errorpages_offline_message"><![CDATA[<p>Le navigateur est en mode hors connexion et ne peut pas se connecter à l’adresse indiquée.</p>\n<ul>\n<li>L’appareil est-il connecté au réseau\u00a0?</li>\n<li>Cliquez sur le bouton «\u00a0Réessayer\u00a0» pour revenir en mode connecté et recharger la page.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_offline_message"><![CDATA[<p>Le navigateur est en mode hors connexion et ne peut pas se connecter à l’adresse indiquée.</p>\n<ul>\n<li>L’appareil est-il connecté au réseau\u00a0?</li>\n<li>Appuyez sur le bouton «\u00a0Réessayer\u00a0» pour revenir en mode connecté et recharger la page.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when the browser prevents loading a website on a restricted port. -->
   <string name="mozac_browser_errorpages_port_blocked_title">Port restreint pour des raisons de sécurité</string>
   <!-- The error message shown when the browser prevents loading a website on a restricted port. -->

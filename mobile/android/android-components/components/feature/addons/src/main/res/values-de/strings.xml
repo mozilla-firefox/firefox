@@ -59,7 +59,7 @@
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description">Inhalte auf jeder Seite blockieren</string>
   <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description">Lesen Sie Ihre Surf-Chronik</string>
+  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description">Ihre Surf-Chronik lesen</string>
   <!-- Description for the "downloads" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_downloads_description">Dateien herunterladen und die Download-Chronik lesen und verändern</string>
   <!-- Description for the "downloads.open" WebExtensions API permission. -->
@@ -87,11 +87,11 @@
   <!-- Description for the "topSites" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_top_sites_description">Auf Chronik zugreifen</string>
   <!-- Description for the "trialML" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_trial_ml_description">Laden Sie KI-Modelle herunter und führen Sie diese auf Ihrem Gerät aus</string>
+  <string name="mozac_feature_addons_permissions_trial_ml_description">KI-Modelle herunterladen und auf Ihrem Gerät ausführen</string>
   <!-- Description for the "userScripts" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_user_scripts_description">Nicht verifizierten Skripten von Drittanbietern den Zugriff auf Ihre Daten erlauben</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_devtools_description">Entwicklerwerkzeuge erweitern, sodass Zugriff auf offene Tabs besteht</string>
+  <string name="mozac_feature_addons_permissions_devtools_description">Entwicklerwerkzeuge erweitern, sodass Zugriff auf Ihre Daten in offenen Tabs besteht</string>
   <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_privacy_description_for_update">Datenschutzeinstellungen lesen und ändern.</string>
   <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -105,7 +105,7 @@
   <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">Browser-Einstellungen lesen und verändern.</string>
   <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Browser-Chronik, Cookies und verwandte Daten löschen.</string>
+  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Neueste Browser-Chronik, Cookies und verwandte Daten löschen.</string>
   <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">Daten aus der Zwischenablage abrufen.</string>
   <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -145,7 +145,7 @@
   <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">Nicht verifizierten Skripten von Drittanbietern den Zugriff auf Ihre Daten erlauben.</string>
   <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Entwicklerwerkzeuge erweitern, sodass Zugriff auf offene Tabs besteht.</string>
+  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Entwicklerwerkzeuge erweitern, sodass Zugriff auf Ihre Daten in offenen Tabs besteht.</string>
   <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
   <string name="mozac_feature_addons_permissions_one_site_description_for_update">Auf Ihre Daten für %1$s zugreifen.</string>
   <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
@@ -187,7 +187,7 @@
   <!-- Short description for the bookmarksInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_bookmarksInfo_short_description">Lesezeichen</string>
   <!-- Short description for the browsingActivity data collection permission -->
-  <string name="mozac_feature_addons_permissions_data_collection_browsingActivity_short_description">Surfaktivität</string>
+  <string name="mozac_feature_addons_permissions_data_collection_browsingActivity_short_description">Surf-Aktivität</string>
   <!-- Short description for the financialAndPaymentInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_financialAndPaymentInfo_short_description">Finanz- und Zahlungsinformationen</string>
   <!-- Short description for the healthInfo data collection permission -->
@@ -277,18 +277,18 @@
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title_2">%1$s hinzufügen</string>
   <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s bittet um zusätzliche Einstellungen.</string>
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s bittet um zusätzliche Einstellungen</string>
   <!-- This is the title of a dialog that asks the users to grant optional data collection permissions only. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_optional_permissions_with_data_collection_only_dialog_title">%1$s bittet um zusätzliche Datenerfassung.</string>
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_only_dialog_title">%1$s bittet um zusätzliche Datenerfassung</string>
   <!-- Heading for the permissions section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_required_permissions">Benötigte Berechtigungen:</string>
   <!-- Heading for the data collection permissions section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">Benötigte Datenerhebung:</string>
   <!-- Heading for the optional settings section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_settings">Optionale Einstellungen:</string>
-  <!-- Heading for the permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">Neue Berechtigungen:</string>
-  <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the data collection permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_data_collection">Neue Datenerhebung:</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">Hinzufügen</string>
@@ -306,6 +306,20 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">%1$s installieren</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Abbrechen</string>
+  <!-- In list of installed extensions: displayed when the update for an extension requires changes to its permission settings. %1$s is the extension name. -->
+  <string name="mozac_feature_addons_update_requires_new_settings">Für die Aktualisierung von %1$s sind neue Einstellungen erforderlich.</string>
+  <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
+  <string name="mozac_feature_addons_update_requires_new_settings_this_extension">Für die Aktualisierung dieser Erweiterung müssen neue Einstellungen festgelegt werden.</string>
+  <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
+  <string name="mozac_feature_addons_update_review_changes_button">Änderungen überprüfen</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s benötigt neue Einstellungen zur Aktualisierung</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Brechen Sie ab, um die aktuelle Version und die Einstellungen zu behalten, oder aktualisieren Sie, um die neue Version zu holen und die Änderungen zu akzeptieren.</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Aktualisieren</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">Abbrechen</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Bewertungen: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->

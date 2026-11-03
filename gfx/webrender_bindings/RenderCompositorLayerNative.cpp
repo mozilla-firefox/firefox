@@ -135,6 +135,10 @@ void RenderCompositorLayerNative::GetCompositorCapabilities(
   RenderCompositor::GetCompositorCapabilities(aCaps);
 }
 
+uint32_t RenderCompositorLayerNative::GetMaxPartialPresentRects() {
+  return gfx::gfxVars::WebRenderMaxPartialPresentRects();
+}
+
 void RenderCompositorLayerNative::GetWindowProperties(
     WindowProperties* aProperties) {
   // XXX
@@ -258,8 +262,6 @@ void RenderCompositorLayerNative::CompositorEndFrame() {
   // MacOS fails rendering without the flush here.
   DoFlush();
 #endif
-
-  mAddedLayers.Reverse();
 
   mNativeLayerRoot->SetLayers(mAddedLayers);
   mNativeLayerRoot->CommitToScreen();

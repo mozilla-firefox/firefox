@@ -49,8 +49,12 @@ function makeConversationStub() {
     addUserMessage: () => ({}),
     emit: () => {},
     addAssistantMessage: (_type, body) => assistantMessages.push(body),
-    addAssistantWithL10nMessage: l10nId => l10nMessages.push(l10nId),
+    addAssistantWithL10nMessage: l10nId => {
+      l10nMessages.push(l10nId);
+      return { content: { body: "", l10nId } };
+    },
     addUIToolToCurrentMessage: (_id, data) => resolveSeeded(data),
+    resolvePendingToolConfirmation: () => false,
   };
   return { conversation, seeded, assistantMessages, l10nMessages };
 }
@@ -255,6 +259,7 @@ add_task(async function test_cancel_monitor_replaces_setup_message() {
       dismissed = nextUI === null;
       msg.toolUIData = null;
     },
+    resolvePendingToolConfirmation: () => false,
   };
 
   const handled = await AgentUI.handleUpdate(
@@ -273,7 +278,6 @@ add_task(async function test_cancel_monitor_replaces_setup_message() {
     "smartwindow-agent-monitor-canceled",
     "The setup prompt is replaced with the cancellation message"
   );
-  Assert.equal(message.content.body, "", "The setup body no longer renders");
   Assert.equal(message.content.link, null, "No tasks link is carried over");
   Assert.equal(message.toolUIDraft, null, "The in-progress draft is dropped");
 
@@ -282,6 +286,230 @@ add_task(async function test_cancel_monitor_replaces_setup_message() {
     l10n.formatValueSync("smartwindow-agent-monitor-canceled"),
     "The cancellation message has a localized string"
   );
+});
+
+// Trailing slash needed, see promiseNavigateAndLoad in head.js
+const WATCHABLE_PAGE = "https://example.com/";
+
+/**
+ * Opens a Smart Window with its sidebar on a page that can be watched, with
+ * the model replaced by a mock server that records its requests.
+ *
+ * @returns {Promise<object>} The sidebar and chat browsers, the recorded model
+ *   requests, and a cleanup function
+ */
+async function openWatchableChat() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF_AGENT_ENABLED, true]] });
+  await MonitorAgent._resetForTesting();
+  const restoreSignIn = skipSignIn();
+  const { restore, capturedRequests } = await stubEngineNetworkBoundaries({
+    serverOptions: { streamChunks: ["Mock reply."] },
+  });
+  const { win, sidebarBrowser } = await openAIWindowWithSidebar(WATCHABLE_PAGE);
+  const aichatBrowser = await getAichatBrowser(sidebarBrowser);
+  return {
+    sidebarBrowser,
+    aichatBrowser,
+    capturedRequests,
+    async cleanup() {
+      await BrowserTestUtils.closeWindow(win);
+      await restore();
+      restoreSignIn();
+      await MonitorAgent._resetForTesting();
+      await SpecialPowers.popPrefEnv();
+    },
+  };
+}
+
+/**
+ * Runs `/watch <condition>` from the sidebar and waits for the create card.
+ *
+ * @param {object} chat - Result of openWatchableChat
+ * @param {string} condition - Text typed after the command
+ */
+async function runWatchCommand(chat, condition) {
+  const { sidebarBrowser, aichatBrowser } = chat;
+  await typeInSmartbar(sidebarBrowser, `${WATCH_COMMAND} ${condition}`);
+  await submitSmartbar(sidebarBrowser);
+  await SpecialPowers.spawn(aichatBrowser, [], async () => {
+    const chatContent = content.document.querySelector("ai-chat-content");
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        chatContent.shadowRoot.querySelector(
+          'agent-monitor-item[mode="create"]'
+        ),
+      "Waiting for the watch task card"
+    );
+  });
+}
+
+/**
+ * Names the task on the create card and clicks Create.
+ *
+ * @param {object} chat - Result of openWatchableChat
+ */
+async function createFromCard(chat) {
+  await SpecialPowers.spawn(chat.aichatBrowser, [], async () => {
+    const chatContent = content.document.querySelector("ai-chat-content");
+    const card = chatContent.shadowRoot.querySelector("agent-monitor-item");
+    await card.updateComplete;
+    card.shadowRoot.querySelector("moz-input-text").focus();
+    EventUtils.sendString("Watches", content);
+    card.shadowRoot
+      .querySelector('moz-button[data-l10n-id="ai-tasks-alert-create-button"]')
+      .click();
+    await ContentTaskUtils.waitForCondition(
+      () => card.getAttribute("mode") === "display",
+      "Waiting for the card to show the created task"
+    );
+  });
+}
+
+/**
+ * Waits for the chat to hold text meant for the model, so a follow-up isn't
+ * sent before the card action has been recorded.
+ *
+ * @param {object} chat - Result of openWatchableChat
+ * @param {string} text - Text expected in an assistant message body
+ */
+async function waitForModelText(chat, text) {
+  await TestUtils.waitForCondition(
+    () =>
+      chat.sidebarBrowser.contentDocument
+        .querySelector("ai-window")
+        ?.conversation?.messages.some(m => m.content?.body?.includes?.(text)),
+    `Waiting for the chat to record "${text}" for the model`
+  );
+}
+
+/**
+ * Sends a follow-up message and returns the assistant turns of the history
+ * the model received with it.
+ *
+ * @param {object} chat - Result of openWatchableChat
+ * @returns {Promise<string>}
+ */
+async function sendFollowUp(chat) {
+  const { sidebarBrowser, capturedRequests } = chat;
+  const before = capturedRequests.length;
+  await typeInSmartbar(sidebarBrowser, "What did I just do?");
+  await submitSmartbar(sidebarBrowser);
+  await TestUtils.waitForCondition(
+    () => capturedRequests.length > before,
+    "Waiting for the follow-up to reach the model"
+  );
+  return capturedRequests
+    .at(-1)
+    .messages.filter(m => m.role === "assistant")
+    .map(m => m.content)
+    .join("\n");
+}
+
+add_task(async function test_model_is_told_about_cancelled_watch_task() {
+  const chat = await openWatchableChat();
+  try {
+    await runWatchCommand(chat, "new posts");
+    await SpecialPowers.spawn(chat.aichatBrowser, [], async () => {
+      const chatContent = content.document.querySelector("ai-chat-content");
+      const card = chatContent.shadowRoot.querySelector("agent-monitor-item");
+      card.shadowRoot.querySelector("#cancel-create-button").click();
+    });
+    const cancelled =
+      "User cancelled setting up a watch task. No watch task was created.";
+    await waitForModelText(chat, cancelled);
+
+    Assert.stringContains(
+      await sendFollowUp(chat),
+      cancelled,
+      "The model is told the watch task was cancelled"
+    );
+  } finally {
+    await chat.cleanup();
+  }
+});
+
+add_task(async function test_model_is_told_about_created_watch_task() {
+  const chat = await openWatchableChat();
+  try {
+    await runWatchCommand(chat, "new posts");
+    await createFromCard(chat);
+    await waitForModelText(chat, "User created a watch task in this chat.");
+
+    const history = await sendFollowUp(chat);
+    Assert.stringContains(
+      history,
+      "User created a watch task in this chat.",
+      "The model is told a watch task was created"
+    );
+    Assert.stringMatches(
+      history,
+      /- \d{4}-\d{2}-\d{2} \d{2}:\d{2} created/,
+      "The task's log starts with its creation"
+    );
+    Assert.stringContains(
+      history,
+      '"condition":"new posts"',
+      "The model is told what the task watches for"
+    );
+  } finally {
+    await chat.cleanup();
+  }
+});
+
+add_task(async function test_model_is_told_about_paused_watch_task() {
+  const chat = await openWatchableChat();
+  try {
+    await runWatchCommand(chat, "new posts");
+    await createFromCard(chat);
+    await SpecialPowers.spawn(chat.aichatBrowser, [], async () => {
+      const chatContent = content.document.querySelector("ai-chat-content");
+      const card = chatContent.shadowRoot.querySelector("agent-monitor-item");
+      // Creating a task from the card expands it, which shows the pause button
+      const pauseButton = await ContentTaskUtils.waitForCondition(
+        () => card.shadowRoot.querySelector("#pause-button"),
+        "Waiting for the pause button"
+      );
+      pauseButton.click();
+    });
+    await waitForModelText(chat, " paused");
+
+    Assert.stringMatches(
+      await sendFollowUp(chat),
+      /- \d{4}-\d{2}-\d{2} \d{2}:\d{2} paused/,
+      "The model is told the watch task was paused"
+    );
+  } finally {
+    await chat.cleanup();
+  }
+});
+
+add_task(async function test_model_is_told_about_edits_made_outside_chat() {
+  const chat = await openWatchableChat();
+  try {
+    await runWatchCommand(chat, "new posts");
+    await createFromCard(chat);
+
+    // The tasks page saves edits through MonitorAgent
+    const [monitor] = await MonitorAgent.listMonitors();
+    await MonitorAgent.updateMonitor(monitor.id, {
+      monitorPrompt: "price drops",
+    });
+    await waitForModelText(chat, "edited (condition)");
+
+    const history = await sendFollowUp(chat);
+    Assert.stringMatches(
+      history,
+      /- \d{4}-\d{2}-\d{2} \d{2}:\d{2} edited \(condition\)/,
+      "The model is told the watch task was edited outside the chat"
+    );
+    Assert.stringContains(
+      history,
+      '"condition":"price drops"',
+      "The model is told the task's new condition"
+    );
+  } finally {
+    await chat.cleanup();
+  }
 });
 
 // The region gate has to stop the command before it reaches a handler, both

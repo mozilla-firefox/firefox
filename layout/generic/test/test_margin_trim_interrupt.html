@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<title>Block-end margin trimming completes after interrupted reflow</title>
+<link rel="help" href="https://drafts.csswg.org/css-box-4/#margin-trim-block">
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+<style id="test-styles">
+.outer {
+  display: flow-root;
+  inline-size: 200px;
+  margin-trim: block-end;
+}
+.untrimmed { margin-trim: none; }
+.wrapper { margin-block-end: 30px; }
+.line { block-size: 1px; margin-block-end: 1px; }
+.taller { block-size: 2px; }
+.content { block-size: 50px; margin-block-end: 40px; }
+.empty { margin-block: 50px 40px; }
+</style>
+<body>
+<script>
+add_task(async function test_margin_trim_after_interrupt() {
+  await SpecialPowers.pushPrefEnv({ set: [
+    ["layout.css.margin-trim.enabled", true],
+    ["layout.interruptible-reflow.enabled", true],
+  ] });
+  SimpleTest.registerCleanupFunction(() => SpecialPowers.popPrefEnv());
+  // Reparse the stylesheet after enabling margin-trim.
+  document.getElementById("test-styles").append("\n");
+
+  for (const [name, initiallyTrimmed, finallyTrimmed] of [
+    ["enabling trimming", false, true],
+    ["resizing trimmed content", true, true],
+    ["disabling trimming", true, false],
+  ]) {
+    await new Promise(resolve => SimpleTest.executeSoon(resolve));
+    const outer = document.createElement("div");
+    outer.className = initiallyTrimmed ? "outer" : "outer untrimmed";
+    // Exceed sInterruptChecksToSkip (200) to reach the interrupt check.
+    outer.innerHTML = '<div class="wrapper">' +
+      '<div class="line"></div>'.repeat(400) +
+      '<div class="content"></div><div class="empty"></div>' +
+      '<div class="empty"></div></div>';
+    document.body.append(outer);
+
+    try {
+      const wrapper = outer.firstElementChild;
+      const firstLine = wrapper.firstElementChild;
+      const content = outer.querySelector(".content");
+      const emptyBlocks = outer.querySelectorAll(".empty");
+      const initialHeight = outer.getBoundingClientRect().height;
+      is(initialHeight, initiallyTrimmed ? 850 : 900,
+         `${name}: initial container height`);
+      const utils = SpecialPowers.DOMWindowUtils;
+      utils.advanceTimeAndRefresh(0);
+      try {
+        utils.forceReflowInterrupt();
+        firstLine.classList.add("taller");
+        outer.classList.toggle("untrimmed", !finallyTrimmed);
+        utils.advanceTimeAndRefresh(0);
+
+        const interrupted = utils.needsFlush(utils.FLUSH_LAYOUT);
+        const changedLineHeight = utils.getBoundsWithoutFlushing(firstLine).height;
+        ok(interrupted, `${name}: layout was interrupted and needs another reflow`);
+        is(changedLineHeight, 2,
+           `${name}: the changed line was reflowed before the interrupt`);
+
+        utils.advanceTimeAndRefresh(0);
+        const completed = !utils.needsFlush(utils.FLUSH_LAYOUT);
+        const bounds = utils.getBoundsWithoutFlushing(outer);
+        const contentEnd = utils.getBoundsWithoutFlushing(content).bottom - bounds.top;
+        const emptyOffsets = Array.from(emptyBlocks, empty =>
+          utils.getBoundsWithoutFlushing(empty).top - bounds.top);
+
+        ok(completed, `${name}: the next refresh completes layout`);
+        const expectedHeight = finallyTrimmed ? 851 : 901;
+        is(bounds.height, expectedHeight, `${name}: final container height`);
+        is(contentEnd, 851, `${name}: preceding content has the reconstructed position`);
+        for (const offset of emptyOffsets) {
+          is(offset, expectedHeight,
+             `${name}: trailing empty blocks have the final margin offset`);
+        }
+      } finally {
+        utils.restoreNormalRefresh();
+      }
+    } finally {
+      outer.remove();
+    }
+  }
+});
+</script>

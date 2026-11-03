@@ -638,11 +638,6 @@
     <string name="pref_key_tab_reload_cover_enabled" translatable="false">pref_key_tab_reload_cover_enabled</string>
     <string name="pref_key_tab_reload_cover_scroll_aware_enabled" translatable="false">pref_key_tab_reload_cover_scroll_aware_enabled</string>
 
-    <!-- Private Mode and Stories Entry Point -->
-    <string name="pref_key_private_mode_and_stories_entry_point" translatable="false">pref_key_private_mode_and_stories_entry_point</string>
-    <string name="pref_key_news_button_foreground_count" translatable="false">pref_key_news_button_foreground_count</string>
-    <string name="pref_key_news_button_animation_last_shown" translatable="false">pref_key_news_button_animation_last_shown</string>
-
     <!-- Tab Groups -->
     <string name="pref_key_tab_groups" translatable="false">pref_key_tab_groups_feature</string>
     <string name="pref_key_tab_groups_drag_and_drop" translatable="false">pref_key_tab_groups_drag_and_drop</string>

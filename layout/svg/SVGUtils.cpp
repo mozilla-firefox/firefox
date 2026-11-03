@@ -43,6 +43,7 @@
 #include "mozilla/dom/SVGViewportElement.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/PatternHelpers.h"
+#include "mozilla/gfx/gfxVars.h"
 #include "nsCSSFrameConstructor.h"
 #include "nsDisplayList.h"
 #include "nsFrameList.h"
@@ -379,6 +380,12 @@ float SVGUtils::ComputeOpacity(const nsIFrame* aFrame, bool aHandleOpacity) {
   return styleEffects->mOpacity;
 }
 
+static bool UseWebRenderPaths() {
+  return gfxVars::UseSoftwareWebRender()
+             ? StaticPrefs::gfx_webrender_paths_swgl()
+             : StaticPrefs::gfx_webrender_paths();
+}
+
 SVGUtils::MaskUsage SVGUtils::DetermineMaskUsage(const nsIFrame* aFrame,
                                                  bool aHandleOpacity) {
   MaskUsage usage;
@@ -432,7 +439,7 @@ SVGUtils::MaskUsage SVGUtils::DetermineMaskUsage(const nsIFrame* aFrame,
       usage.mIsSimpleClipShape =
           !usage.mShouldGenerateMaskLayer &&
           (shape->IsRect() || shape->IsCircle() || shape->IsEllipse() ||
-           (shape->IsPathOrShape() && StaticPrefs::gfx_webrender_paths()));
+           (shape->IsPathOrShape() && UseWebRenderPaths()));
       break;
     }
     case ClipPathType::Box:

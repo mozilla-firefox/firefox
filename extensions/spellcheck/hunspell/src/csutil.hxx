@@ -334,4 +334,21 @@ inline char* HENTRY_FIND(struct hentry* h, const char* p) {
   return data ? strstr(data, p) : nullptr;
 }
 
+// COMPLEXPREFIXES stores both the word and its morphology in reverse order.
+// Keep synthesized stem fields in that representation too: the final reversal
+// in analyze() must restore st:word, and explicit stem fields must be detected.
+inline void append_morph_stem(std::string& result, const struct hentry* h, bool complexprefixes) {
+  const char* data = HENTRY_DATA(h);
+  if (data && strstr(data, complexprefixes ? ":ts" : MORPH_STEM))
+    return;
+  result.push_back(MSEP_FLD);
+  if (complexprefixes) {
+    result.append(HENTRY_WORD(h));
+    result.append(":ts");
+  } else {
+    result.append(MORPH_STEM);
+    result.append(HENTRY_WORD(h));
+  }
+}
+
 #endif

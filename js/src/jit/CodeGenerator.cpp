@@ -1964,7 +1964,7 @@ void CodeGenerator::visitTestOAndBranch(LTestOAndBranch* lir) {
   if (intact) {
     assertObjectDoesNotEmulateUndefined(input, temp, lir->mir());
     // Bug 1874905: It would be fantastic if this could be optimized out
-    masm.jump(truthy);
+    jumpToBlock(lir->ifTruthy());
   } else {
     auto* ool = new (alloc()) OutOfLineTestObject();
     addOutOfLineCode(ool, lir->mir());
@@ -1991,7 +1991,7 @@ void CodeGenerator::visitTestVAndBranch(LTestVAndBranch* lir) {
 
   testValueTruthy(input, tempToUnbox, temp, floatTemp, observedTypes, truthy,
                   falsy, ool);
-  masm.jump(truthy);
+  jumpToBlock(lir->ifTruthy());
 }
 
 void CodeGenerator::visitBooleanToString(LBooleanToString* lir) {
@@ -2113,35 +2113,18 @@ void CodeGenerator::visitValueToString(LValueToString* lir) {
   }
 
   // Objects/symbols are only possible when |mir->mightHaveSideEffects()|.
-  if (lir->mir()->mightHaveSideEffects()) {
-    // Object
-    if (lir->mir()->supportSideEffects()) {
-      masm.branchTestObject(Assembler::Equal, tag, ool->entry());
-    } else {
-      // Bail.
-      MOZ_ASSERT(lir->mir()->needsSnapshot());
-      Label bail;
-      masm.branchTestObject(Assembler::Equal, tag, &bail);
-      bailoutFrom(&bail, lir->snapshot());
-    }
-
-    // Symbol
-    if (lir->mir()->supportSideEffects()) {
-      masm.branchTestSymbol(Assembler::Equal, tag, ool->entry());
-    } else {
-      // Bail.
-      MOZ_ASSERT(lir->mir()->needsSnapshot());
-      Label bail;
-      masm.branchTestSymbol(Assembler::Equal, tag, &bail);
-      bailoutFrom(&bail, lir->snapshot());
-    }
+  if (lir->mir()->mightHaveSideEffects() && !lir->mir()->supportSideEffects()) {
+    // Bail.
+    MOZ_ASSERT(lir->mir()->needsSnapshot());
+    Label bail;
+    masm.branchTestObject(Assembler::Equal, tag, &bail);
+    masm.branchTestSymbol(Assembler::Equal, tag, &bail);
+    bailoutFrom(&bail, lir->snapshot());
   }
 
-  // BigInt
-  {
-    // No fastpath currently implemented.
-    masm.branchTestBigInt(Assembler::Equal, tag, ool->entry());
-  }
+  // Any other GC thing is a BigInt, object or symbol, none of which have a
+  // fastpath.
+  masm.branchTestGCThing(Assembler::Equal, tag, ool->entry());
 
   masm.assumeUnreachable("Unexpected type for LValueToString.");
 
@@ -13670,7 +13653,7 @@ void CodeGenerator::visitIsNullOrLikeUndefinedAndBranchT(
   if (intact) {
     // Bug 1874905. Ideally branches like this would be optimized out.
     assertObjectDoesNotEmulateUndefined(input, scratch, lir->mir());
-    masm.jump(ifFalseLabel);
+    jumpToBlock(ifFalse);
   } else {
     auto* ool = new (alloc()) OutOfLineTestObject();
     addOutOfLineCode(ool, lir->cmpMir());

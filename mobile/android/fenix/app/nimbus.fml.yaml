@@ -1180,14 +1180,6 @@ features:
         type: Boolean
         default: false
 
-  private-mode-and-stories-entry-point:
-    description: Feature to enable the Private Mode and Stories Entry Point Experiment.
-    variables:
-      enabled:
-        description: If true, Private Mode and Stories Entry Point Experiment is enabled.
-        type: Boolean
-        default: false
-
   search-optimization-option:
     description: Feature to enable the Search Optimization cards for users on Firefox on Android.
     variables:

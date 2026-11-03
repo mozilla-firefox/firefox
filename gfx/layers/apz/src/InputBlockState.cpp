@@ -243,6 +243,32 @@ bool CancelableBlockState::ShouldDropEvents() const {
   return InputBlockState::ShouldDropEvents() || IsDefaultPrevented();
 }
 
+BrowserGesturableBlockState::BrowserGesturableBlockState(
+    const RefPtr<AsyncPanZoomController>& aTargetApzc,
+    TargetConfirmationFlags aFlags)
+    : CancelableBlockState(aTargetApzc, aFlags),
+      mWaitingForBrowserGestureResponse(false),
+      mStartedBrowserGesture(false) {}
+
+void BrowserGesturableBlockState::SetNeedsToWaitForBrowserGestureResponse(
+    bool aWaitForBrowserGestureResponse) {
+  mWaitingForBrowserGestureResponse = aWaitForBrowserGestureResponse;
+}
+
+bool BrowserGesturableBlockState::IsWaitingForBrowserGestureResponse() const {
+  return mWaitingForBrowserGestureResponse;
+}
+
+void BrowserGesturableBlockState::SetBrowserGestureResponse(
+    const BrowserGestureResponse aResponse) {
+  mWaitingForBrowserGestureResponse = false;
+  mStartedBrowserGesture = bool(aResponse);
+}
+
+bool BrowserGesturableBlockState::ShouldDropEvents() const {
+  return CancelableBlockState::ShouldDropEvents() || mStartedBrowserGesture;
+}
+
 DragBlockState::DragBlockState(
     const RefPtr<AsyncPanZoomController>& aTargetApzc,
     TargetConfirmationFlags aFlags, const MouseInput& aInitialEvent)
@@ -521,11 +547,9 @@ void WheelBlockState::EndTransaction() {
 PanGestureBlockState::PanGestureBlockState(
     const RefPtr<AsyncPanZoomController>& aTargetApzc,
     TargetConfirmationFlags aFlags, const PanGestureInput& aInitialEvent)
-    : CancelableBlockState(aTargetApzc, aFlags),
+    : BrowserGesturableBlockState(aTargetApzc, aFlags),
       mInterrupted(false),
-      mWaitingForContentResponse(false),
-      mWaitingForBrowserGestureResponse(false),
-      mStartedBrowserGesture(false) {
+      mWaitingForContentResponse(false) {
   if (aFlags.mTargetConfirmed) {
     // Find the nearest APZC in the overscroll handoff chain that is scrollable.
     // If we get a content confirmation later that the apzc is different, then
@@ -588,10 +612,6 @@ bool PanGestureBlockState::IsReadyForHandling() const {
          (!mWaitingForContentResponse || IsContentResponseTimerExpired());
 }
 
-bool PanGestureBlockState::ShouldDropEvents() const {
-  return CancelableBlockState::ShouldDropEvents() || mStartedBrowserGesture;
-}
-
 bool PanGestureBlockState::TimeoutContentResponse() {
   // Reset mWaitingForBrowserGestureResponse here so that we will not wait for
   // the response forever.
@@ -604,17 +624,6 @@ bool PanGestureBlockState::AllowScrollHandoff() const { return false; }
 void PanGestureBlockState::SetNeedsToWaitForContentResponse(
     bool aWaitForContentResponse) {
   mWaitingForContentResponse = aWaitForContentResponse;
-}
-
-void PanGestureBlockState::SetNeedsToWaitForBrowserGestureResponse(
-    bool aWaitForBrowserGestureResponse) {
-  mWaitingForBrowserGestureResponse = aWaitForBrowserGestureResponse;
-}
-
-void PanGestureBlockState::SetBrowserGestureResponse(
-    BrowserGestureResponse aResponse) {
-  mWaitingForBrowserGestureResponse = false;
-  mStartedBrowserGesture = bool(aResponse);
 }
 
 Maybe<LayersId> PanGestureBlockState::WheelTransactionLayersId() const {
@@ -660,7 +669,7 @@ void PinchGestureBlockState::SetNeedsToWaitForContentResponse(
 TouchBlockState::TouchBlockState(
     const RefPtr<AsyncPanZoomController>& aTargetApzc,
     TargetConfirmationFlags aFlags, TouchCounter& aCounter)
-    : CancelableBlockState(aTargetApzc, aFlags),
+    : BrowserGesturableBlockState(aTargetApzc, aFlags),
       mAllowedTouchBehaviorSet(false),
       mDuringFastFling(false),
       mInSlop(false),
@@ -713,7 +722,7 @@ bool TouchBlockState::IsReadyForHandling() const {
     return false;
   }
 
-  if (mIsWaitingLongTapResult) {
+  if (mIsWaitingLongTapResult || mWaitingForBrowserGestureResponse) {
     return false;
   }
 
@@ -746,10 +755,8 @@ TimeDuration TouchBlockState::GetTimeSinceBlockStart() const {
   return GetTargetApzc()->GetFrameTime().Time() - mStartTime;
 }
 
-void TouchBlockState::DispatchEvent(const InputData& aEvent) const {
-  MOZ_ASSERT(aEvent.mInputType == MULTITOUCH_INPUT);
-  mTouchCounter.Update(aEvent.AsMultiTouchInput());
-  CancelableBlockState::DispatchEvent(aEvent);
+void TouchBlockState::UpdateTouchCounter(const MultiTouchInput& aInput) const {
+  mTouchCounter.Update(aInput);
 }
 
 bool TouchBlockState::TouchActionAllowsPinchZoom() const {

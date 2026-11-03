@@ -283,6 +283,13 @@ static inline void AssertDirectJitCall(const void* fp) {
 
 #ifdef ENABLE_WASM_JSPI
 void WasmFrameIter::popContBaseFrame() {
+  // Recover the initial function's instance from the base frame's callee slot
+  // so GC traces it while crossing this frame. When a return_call collapsed the
+  // initial function's frame (e.g. a return_call_indirect that trapped on a
+  // signature mismatch) this is the only remaining reference to it.
+  contBaseInstance_ =
+      const_cast<Instance*>(ExtractCalleeInstanceFromFrameWithInstances(fp_));
+
   ContStack* stack = ContStack::fromBaseFrameFP(fp_);
   MOZ_ASSERT(cx()->wasm().findStackForAddress(
                  cx(), reinterpret_cast<uintptr_t>(fp_)) == stack);
@@ -315,8 +322,9 @@ void WasmFrameIter::popContBaseFrame() {
 
 void WasmFrameIter::popFrame(bool isLeavingFrame) {
 #ifdef ENABLE_WASM_JSPI
-  // Clearing unwound continuation stack here.
+  // Clearing unwound continuation stack and base frame instance here.
   unwoundContStack_ = nullptr;
+  contBaseInstance_ = nullptr;
 #endif
 
   // If we're visiting inlined frames, see if this frame was inlined.

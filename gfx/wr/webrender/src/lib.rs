@@ -232,8 +232,8 @@ extern crate webrender_build;
 #[doc(hidden)]
 pub use crate::composite::{CompositorInputConfig, CompositorSurfaceUsage, ClipRadius};
 pub use crate::composite::{CompositorConfig, Compositor, CompositorCapabilities, CompositorSurfaceTransform};
-pub use crate::composite::{NativeSurfaceId, NativeTileId, NativeSurfaceHandle, NativeSurfaceInfo, PartialPresentCompositor};
-pub use crate::composite::{MappableCompositor, MappedTileInfo, SWGLCompositeSurfaceInfo, WindowVisibility, WindowProperties};
+pub use crate::composite::{NativeSurfaceId, NativeTileId, NativeSurfaceHandle, NativeSurfaceInfo, BufferDamageCompositor};
+pub use crate::composite::{MappableCompositor, MappedTileInfo, SWGLCompositeSurfaceInfo, SwapchainMode, WindowVisibility, WindowProperties};
 pub use crate::device::{UploadMethod, VertexUsageHint, get_unoptimized_shader_source};
 pub use crate::device::{ProgramBinary, ProgramCache, ProgramCacheObserver, ShaderError};
 pub use crate::device::{Device, DeviceOptions, GlBackendConfig, GpuBackendConfig, GraphicsApi, GraphicsApiInfo};

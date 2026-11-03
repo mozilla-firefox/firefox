@@ -7,4 +7,4 @@ package mozilla.components.compose.menu.store
 import mozilla.components.lib.state.Action
 
 /** [Action]s to be dispatched on [MenuStore] when the user interacts with a menu item. */
-interface MenuEvent : MenuAction
+interface MenuEvent : MenuAction, CustomizableMenuAction

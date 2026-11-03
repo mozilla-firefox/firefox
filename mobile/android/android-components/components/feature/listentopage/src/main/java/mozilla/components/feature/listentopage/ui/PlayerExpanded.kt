@@ -143,12 +143,11 @@ private fun AudioProgress(
     // Media player controls are always LTR:
     // https://m3.material.io/foundations/layout/bidirectionality-rtl
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-        Column(
+        Box(
             modifier =
                 Modifier.padding(
-                        start = AcornTheme.layout.space.static200,
-                        end = AcornTheme.layout.space.static200,
-                        top = AcornTheme.layout.space.static100,
+                        horizontal = AcornTheme.layout.space.static200,
+                        vertical = AcornTheme.layout.space.static150,
                     )
                     .fillMaxWidth()
         ) {

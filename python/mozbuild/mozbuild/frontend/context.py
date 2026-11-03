@@ -980,23 +980,6 @@ class SourcePath(Path):
         return ObjDirPath(self.context, "!%s" % self).full_path
 
 
-class RenamedSourcePath(SourcePath):
-    """Like SourcePath, but with a different base name when installed.
-
-    The constructor takes a tuple of (source, target_basename). In moz.build
-    files the same effect is achieved by appending a (source, target_basename)
-    tuple to a ``*_FILES`` variable; this class is kept for direct internal
-    construction (e.g. from jar manifests).
-    """
-
-    def __new__(cls, context, value):
-        assert isinstance(value, tuple)
-        source, target_basename = value
-        self = super().__new__(cls, context, source)
-        self._target_basename = target_basename
-        return self
-
-
 class ObjDirPath(Path):
     """Like Path, but limited to paths in the object directory."""
 
@@ -2447,30 +2430,6 @@ VARIABLES = {
         see {ref}`jar-manifests`.
         """,
     ),
-    "LOCALE_PP_DEFINES": (
-        dict,
-        dict,
-        """Per-locale preprocessor defines applied when localized jar.mn
-        files are processed.
-
-        Each top-level key is the name of a define. Each value is a lookup
-        table that maps an ab_cd code or an fnmatch pattern to the value
-        the define should take for that locale.
-
-        Example:
-            LOCALE_PP_DEFINES = {
-                "ANDROID_MARKETPLACE_AB_CD": {
-                    "es*": "es-ES",
-                    "es-MX": "es-MX",
-                    "fr": "fr",
-                },
-            }
-
-        Exact ab_cd keys win over patterns. A locale that matches neither
-        leaves the define unset, so #ifdef branches in the jar.mn fall
-        through to their #else.
-        """,
-    ),
     # IDL Generation.
     "XPIDL_SOURCES": (
         ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList),
@@ -2666,10 +2625,11 @@ VARIABLES = {
     "XPI_NAME": (
         str,
         str,
-        """The name of an extension XPI to generate.
+        """The name of the staging area an extension is installed into.
 
-        When this variable is present, the results of this directory will end up
-        being packaged into an extension instead of the main dist/bin results.
+        When this variable is present, the results of this directory are
+        installed under that name instead of into the main dist/bin results.
+        XPI_PKGNAME asks for an archive of what was staged.
         """,
     ),
     "XPI_PKGNAME": (
@@ -2678,6 +2638,9 @@ VARIABLES = {
         """The name of the package associated to an extension XPI to generate.
 
         Override the name of the package generated for an XPI extension.
+
+        XPI_NAME must be set as well, because the archive packages the staging
+        area that XPI_NAME creates.
         """,
     ),
     "XPI_TESTDIR": (
@@ -2708,16 +2671,6 @@ VARIABLES = {
         neither are present, the result is dist/bin. If XPI_NAME is present, the
         result is dist/xpi-stage/$(XPI_NAME). If DIST_SUBDIR is present, then
         the $(DIST_SUBDIR) directory of the otherwise default value is used.
-        """,
-    ),
-    "USE_EXTENSION_MANIFEST": (
-        bool,
-        bool,
-        """Controls the name of the manifest for JAR files.
-
-        By default, the name of the manifest is ${JAR_MANIFEST}.manifest.
-        Setting this variable to `True` changes the name of the manifest to
-        chrome.manifest.
         """,
     ),
     "GYP_DIRS": (

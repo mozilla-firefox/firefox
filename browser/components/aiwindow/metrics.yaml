@@ -1763,6 +1763,10 @@ smart_window:
       model: *model
       turn_number: *turn_number
       chat_version: *chat_version
+      judge_model:
+        type: string
+        description: >
+          Model used as the judge to evaluate the conversation
       telemetry_version:
         type: string
         description: >

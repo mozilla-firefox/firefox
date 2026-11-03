@@ -7,13 +7,10 @@ package org.mozilla.fenix.ui.efficiency.tests
 import org.junit.Test
 import org.mozilla.fenix.customannotations.Critical
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
-import org.mozilla.fenix.ui.efficiency.navigation.LaunchConfig
 import org.mozilla.fenix.ui.efficiency.selectors.HomeSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.TabDrawerSelectors
 
-// The private browsing homepage header shows the Home button only under the Private Mode and Stories
-// entry-point experiment, so this class launches with that flag enabled.
-class PrivateBrowsingTest : BaseTest(LaunchConfig(isPrivateModeAndStoriesEntryPointEnabled = true)) {
+class PrivateBrowsingTest : BaseTest() {
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3938236
     @Critical
@@ -31,10 +28,10 @@ class PrivateBrowsingTest : BaseTest(LaunchConfig(isPrivateModeAndStoriesEntryPo
         // When: we tap the "+" button to open a new private tab
         on.tabDrawer.mozClick(TabDrawerSelectors.FAB)
 
-        // Then: the private browsing home screen shows the Home button and the info card (title + description + link)
+        // Then: the private browsing home screen shows the private toggle and info card (title + description + link)
         on.home
             .mozVerify(HomeSelectors.HOMEPAGE_VIEW)
-            .mozVerify(HomeSelectors.PRIVATE_BROWSING_HOME_BUTTON)
+            .mozVerify(HomeSelectors.PRIVATE_MODE_BUTTON)
             .mozVerifyElementsByGroup(HomeSelectors.Group.PRIVATE_BROWSING_HOME_SCREEN)
             .mozVerify(HomeSelectors.PRIVATE_BROWSING_LEARN_MORE_LINK)
 

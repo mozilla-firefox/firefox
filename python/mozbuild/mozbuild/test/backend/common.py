@@ -30,6 +30,13 @@ CONFIGS = defaultdict(
         "substs": {"OS_TARGET": "WINNT"},
     },
     {
+        "pp-defines": {
+            "defines": {
+                "A_CONFIGURED_NUMBER": "1",
+                "A_CONFIGURED_STRING": "a value",
+            },
+            "substs": {"OS_TARGET": "WINNT"},
+        },
         "binary-components": {
             "defines": {},
             "substs": {

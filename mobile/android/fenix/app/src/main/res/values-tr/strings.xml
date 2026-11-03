@@ -215,6 +215,10 @@
   <string name="browser_menu_no_extensions_installed_description">Etkinleştirilmiş uzantı yok</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Önerilen uzantıları deneyin</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">%1$s güncellemesini incele</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Güncellenecek ayarları inceleyin</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Hesap bilgileri</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -842,6 +846,8 @@
   <string name="preferences_toolbar_select_shortcut">Bir kısayol seçin</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Kısayolu düzenle</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Menü</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Parmak hareketleri</string>
   <!-- Preference for settings related to visual options -->
@@ -1306,6 +1312,8 @@
   <string name="preference_simple_toolbar">Basit</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Genişletilmiş</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Giriş sayfasındaki arama çubuğu konumu</string>
   <!-- Preference for showing the homepage search bar in the middle of the homepage -->
   <string name="preference_homepage_search_location_middle">Ortada</string>
   <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
@@ -4495,6 +4503,39 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">Daha fazla bilgiyi %1$s bulabilirsiniz.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">burada</string>
+  <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">CANLI</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Gecikmeli</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Askıya alındı</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Ertelendi</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Sonuçlar</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Sıralama</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Duvar kâğıtları</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Aracı kaldır</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Diğer seçenekler</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, maç devam ediyor</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, sayfa %2$d/%3$d</string>
   <!--
     Privacy notice homepage banner
 

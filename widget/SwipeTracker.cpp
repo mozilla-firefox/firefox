@@ -37,7 +37,8 @@ static already_AddRefed<nsRefreshDriver> GetRefreshDriver(nsIWidget& aWidget) {
 SwipeTracker::SwipeTracker(nsIWidget& aWidget,
                            const PanGestureInput& aSwipeStartEvent,
                            uint32_t aAllowedDirections,
-                           uint32_t aSwipeDirection)
+                           uint32_t aSwipeDirection,
+                           SwipeInputSource aInputSource)
     : mWidget(do_GetWeakReference(&aWidget)),
       mRefreshDriver(GetRefreshDriver(aWidget)),
       mAxis(0.0, 0.0, 0.0, kSpringForce, 1.0),
@@ -46,11 +47,13 @@ SwipeTracker::SwipeTracker(nsIWidget& aWidget,
           PixelCastJustification::LayoutDeviceIsScreenForUntransformedEvent))),
       mLastEventTimeStamp(aSwipeStartEvent.mTimeStamp),
       mAllowedDirections(aAllowedDirections),
-      mSwipeDirection(aSwipeDirection) {}
+      mSwipeDirection(aSwipeDirection),
+      mInputSource(aInputSource) {}
 
 void SwipeTracker::StartTracking(const PanGestureInput& aSwipeStartEvent) {
   SendSwipeEvent(eSwipeGestureStart, 0, 0.0, aSwipeStartEvent.mTimeStamp);
-  ProcessEvent(aSwipeStartEvent, /* aProcessingFirstEvent = */ true);
+  ProcessEvent(aSwipeStartEvent, mInputSource,
+               /* aProcessingFirstEvent = */ true);
 }
 
 void SwipeTracker::Destroy() { UnregisterFromRefreshDriver(); }
@@ -95,8 +98,14 @@ bool SwipeTracker::ComputeSwipeSuccess() const {
 }
 
 nsEventStatus SwipeTracker::ProcessEvent(
-    const PanGestureInput& aEvent, bool aProcessingFirstEvent /* = false */) {
+    const PanGestureInput& aEvent, SwipeInputSource aInputSource,
+    bool aProcessingFirstEvent /* = false */) {
   RefPtr<SwipeTracker> selfPin(this);
+
+  if (aInputSource != mInputSource) {
+    return mEventsAreControllingSwipe ? nsEventStatus_eConsumeNoDefault
+                                      : nsEventStatus_eIgnore;
+  }
 
   // If the fingers have already been lifted or the swipe direction is where
   // navigation is impossible, don't process this event for swiping.
@@ -271,7 +280,8 @@ void SwipeTracker::SendSwipeEvent(EventMessage aMsg, uint32_t aDirection,
 }
 
 // static
-bool SwipeTracker::CanTriggerSwipe(const PanGestureInput& aPanInput) {
+bool SwipeTracker::CanTriggerSwipe(const PanGestureInput& aPanInput,
+                                   SwipeInputSource aInputSource) {
   if (StaticPrefs::widget_disable_swipe_tracker()) {
     return false;
   }
@@ -281,13 +291,16 @@ bool SwipeTracker::CanTriggerSwipe(const PanGestureInput& aPanInput) {
   }
 
   // Only initiate horizontal tracking for events whose horizontal element is
-  // at least eight times larger than its vertical element. This minimizes
-  // performance problems with vertical scrolls (by minimizing the possibility
-  // that they'll be misinterpreted as horizontal swipes), while still
-  // tolerating a small vertical element to a true horizontal swipe.  The number
-  // '8' was arrived at by trial and error.
+  // at least |thresholdRatio| times larger than its vertical element. This
+  // minimizes performance problems with vertical scrolls (by minimizing the
+  // possibility that they'll be misinterpreted as horizontal swipes), while
+  // still tolerating a small vertical element to a true horizontal swipe.  The
+  // number '8' was arrived at by trial and error. '3.7' aims to make the
+  // threshold degree roughly 15 degree. ('8' was too tight for touch swipe.)
+  const double thresholdRatio =
+      aInputSource == SwipeInputSource::Touchpad ? 8.0 : 3.7;
   return std::abs(aPanInput.mPanDisplacement.x) >
-         std::abs(aPanInput.mPanDisplacement.y) * 8;
+         std::abs(aPanInput.mPanDisplacement.y) * thresholdRatio;
 }
 
 }  // namespace mozilla

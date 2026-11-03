@@ -3047,23 +3047,6 @@ const SingleSelect = ({
 
 
 
-const MarketplaceButtons = props => {
-  return /*#__PURE__*/external_React_default().createElement("ul", {
-    className: "mobile-download-buttons"
-  }, props.buttons.includes("ios") ? /*#__PURE__*/external_React_default().createElement("li", {
-    className: "ios"
-  }, /*#__PURE__*/external_React_default().createElement("button", {
-    "data-l10n-id": "spotlight-ios-marketplace-button",
-    value: "ios",
-    onClick: props.handleAction
-  })) : null, props.buttons.includes("android") ? /*#__PURE__*/external_React_default().createElement("li", {
-    className: "android"
-  }, /*#__PURE__*/external_React_default().createElement("button", {
-    "data-l10n-id": "spotlight-android-marketplace-button",
-    value: "android",
-    onClick: props.handleAction
-  })) : null);
-};
 const MobileDownloads = props => {
   const {
     QR_code: QRCode
@@ -3083,10 +3066,7 @@ const MobileDownloads = props => {
     className: "email-link",
     value: "email_link",
     onClick: props.handleAction
-  }))) : null, props.data.marketplace_buttons ? /*#__PURE__*/external_React_default().createElement(MarketplaceButtons, {
-    buttons: props.data.marketplace_buttons,
-    handleAction: props.handleAction
-  }) : null);
+  }))) : null);
 };
 ;// ./content-src/components/MultiSelect.jsx
 /* This Source Code Form is subject to the terms of the Mozilla Public

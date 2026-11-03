@@ -1,0 +1,14 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+XPI_NAME = "genext"
+XPI_PKGNAME = "genext"
+
+GENERATED_FILES += ["made.js"]
+GENERATED_FILES["made.js"].script = "make-it.py"
+
+FINAL_TARGET_FILES += [
+    "!made.js",
+    "manifest.json",
+]
+FINAL_TARGET_FILES += [("!made.js", "renamed.js")]

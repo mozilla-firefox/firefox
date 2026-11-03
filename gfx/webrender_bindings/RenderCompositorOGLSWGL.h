@@ -39,7 +39,7 @@ class RenderCompositorOGLSWGL : public RenderCompositorLayersSWGL {
   // RenderCompositorOGLSWGL::MaybeReadback() requests rendering.
   // This value is not used by WebRender, since native compositor API is used
   // for sw-wr.
-  bool UsePartialPresent() override { return true; }
+  bool UseWindowPartialPresent() override { return true; }
   bool RequestFullRender() override;
 
   void Pause() override;

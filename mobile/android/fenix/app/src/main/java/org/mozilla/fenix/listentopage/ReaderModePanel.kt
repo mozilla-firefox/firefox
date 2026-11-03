@@ -21,39 +21,42 @@ import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.theme.FirefoxTheme
 
-private const val READER_MODE_PANEL_BUTTON_COUNT = 2
-
 /**
  * The floating panel shown over an article in reader mode.
  *
  * @param modifier The [Modifier] to be applied to this panel.
+ * @param isListeningEnabled Whether to show the button that reads the article out loud.
  * @param onListenClicked Invoked when the user asks to listen to the article.
  * @param onCustomizeReaderViewClicked Invoked when the user asks for the reader view appearance controls.
  */
 @Composable
 fun ReaderModePanel(
     modifier: Modifier = Modifier,
+    isListeningEnabled: Boolean,
     onListenClicked: () -> Unit,
     onCustomizeReaderViewClicked: () -> Unit,
 ) {
     val panelDescription = stringResource(id = R.string.reader_mode_panel_content_description_2)
+    val buttonCount = if (isListeningEnabled) 2 else 1
 
     FloatingPanel(
         modifier =
             modifier.semantics {
                 isTraversalGroup = true
                 contentDescription = panelDescription
-                collectionInfo = CollectionInfo(rowCount = 1, columnCount = READER_MODE_PANEL_BUTTON_COUNT)
+                collectionInfo = CollectionInfo(rowCount = 1, columnCount = buttonCount)
             }
     ) {
-        IconButton(
-            onClick = onListenClicked,
-            contentDescription = stringResource(id = R.string.reader_mode_panel_listen_content_description),
-        ) {
-            Icon(
-                painter = painterResource(iconsR.drawable.mozac_ic_listen_to_page_24),
-                contentDescription = null,
-            )
+        if (isListeningEnabled) {
+            IconButton(
+                onClick = onListenClicked,
+                contentDescription = stringResource(id = R.string.reader_mode_panel_listen_content_description),
+            ) {
+                Icon(
+                    painter = painterResource(iconsR.drawable.mozac_ic_listen_to_page_24),
+                    contentDescription = null,
+                )
+            }
         }
 
         IconButton(
@@ -73,7 +76,7 @@ fun ReaderModePanel(
 private fun ReaderModePanelPreview() {
     FirefoxTheme {
         Surface {
-            ReaderModePanel(onListenClicked = {}, onCustomizeReaderViewClicked = {})
+            ReaderModePanel(isListeningEnabled = true, onListenClicked = {}, onCustomizeReaderViewClicked = {})
         }
     }
 }

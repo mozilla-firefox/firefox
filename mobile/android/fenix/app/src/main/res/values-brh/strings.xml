@@ -252,6 +252,8 @@
   <string name="preferences_page_summaries">پنہ غاتا گونڈیک</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">پین ہیل کبو</string>
+  <!-- Title for the translations AI feature toggle -->
+  <string name="ai_controls_translations_title">مٹ اک</string>
   <!-- Title for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_title">توارتون پٹبو</string>
   <!-- Cancel button text in the block AI enhancements confirmation dialog -->
@@ -293,6 +295,10 @@
     Content description (not visible, for screen readers etc.): Close button for the home onboarding dialog
   -->
   <string name="onboarding_home_content_description_close_button">بند</string>
+  <!-- Title for the privacy preferences dialog shown during onboarding. Note: The word "Firefox" should NOT be translated. -->
+  <string name="onboarding_preferences_dialog_title" tools:ignore="BrandUsage">Firefox اے بہتر کننگ کن نن تون کمک کبو</string>
+  <!-- Title for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
+  <string name="onboarding_preferences_dialog_crash_reporting_title">تینٹ پننگ نا رپورٹ اتے رائ کے</string>
   <!-- Learn more link for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="onboarding_preferences_dialog_crash_reporting_learn_more_2">پین ہیل کبو</string>
   <!-- Title for the startup crash page. %s is the name of the app (for example "Firefox") -->
@@ -310,10 +316,14 @@
   <string name="onboarding_preferences_dialog_positive_button">مس</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Firefox ٹی ببوخیرٹ</string>
+  <!-- Sync onboarding redesign title. 'Firefox' is intentionally hardcoded. -->
+  <string name="onboarding_redesign_sync_title" tools:ignore="BrandUsage,UnusedResources">ہر جا کہ Firefox استعمال کیرے ہمگام کبو</string>
   <!-- Sync onboarding redesign negative button text. -->
   <string name="onboarding_redesign_sync_negative_button" tools:ignore="UnusedResources">داسہ نہ</string>
   <!-- Marketing onboarding page title variant. “One last thing” refers to the final step or action in the onboarding process that we’re asking users to take before they can start using the browser. -->
   <string name="onboarding_marketing_title_1" tools:ignore="UnusedResources">اسہ گڈیکو گڑاس</string>
+  <!-- Marketing onboarding page button label variant. Button to confirm choice and start browsing. -->
+  <string name="onboarding_marketing_positive_button_1" tools:ignore="UnusedResources">منبو و ویبگشت شروع کبو</string>
   <!-- "Continue" onboarding button. -->
   <string name="nova_onboarding_continue_button">برجا</string>
   <!-- "Not now" onboarding button. -->
@@ -328,16 +338,34 @@
   <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">تینا تیم اے گچین کبو</string>
   <!-- Theme selection onboarding "automatic" option label. -->
   <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">تینٹ</string>
+  <!-- Theme selection onboarding "light" option label. -->
+  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">رژنا</string>
   <!-- Theme selection onboarding "dark" option label. -->
   <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">تہار</string>
+  <!-- Marketing onboarding body link text. -->
+  <string name="nova_onboarding_marketing_body_link_text_1">پین ہیل کبو</string>
+  <!-- Marketing onboarding primary button text. -->
+  <string name="nova_onboarding_marketing_primary_button_text_3">جی آؤ</string>
+  <!-- Marketing onboarding secondary button text. -->
+  <string name="nova_onboarding_marketing_secondary_button_text" tools:ignore="UnusedResources">آ خا منت واری</string>
+  <!-- Marketing onboarding secondary button text. -->
+  <string name="nova_onboarding_marketing_secondary_button_text_2">اخہ</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">اعلاناتےملبو</string>
+  <!--
+    Search Widget
+
+    Content description for searching with a widget. %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="search_widget_content_description_2">پوسکنو %1$s ٹیب اسے ٹی ملبو</string>
   <!-- Text preview for smaller sized widgets -->
   <string name="search_widget_text_short">پٹبو</string>
   <!-- Text preview for larger sized widgets -->
   <string name="search_widget_text_long">ویب اے پٹبو</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">توارتون پٹبو</string>
+  <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
+  <string name="search_widget_private_search">ڈکوئ پٹ</string>
   <!--
     Preferences
 
@@ -367,6 +395,8 @@
   <string name="preferences_https_only_off">بند</string>
   <!-- Text displayed that links to website containing documentation about "HTTPS-Only" mode -->
   <string name="preferences_http_only_learn_more">پین ہیل کبو</string>
+  <!-- Preference category for account information -->
+  <string name="preferences_category_account">اکاؤنٹ</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">ڈس بار نا جاگہ</string>
   <!-- Preference for changing default theme to dark or light mode -->
