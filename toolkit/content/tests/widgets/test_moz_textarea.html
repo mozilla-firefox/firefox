@@ -117,6 +117,23 @@
         );
       });
 
+      add_task(async function testMozTextareaMaxLength() {
+        let renderTarget = await testHelpers.renderTemplate();
+        let el = renderTarget.querySelector("moz-textarea");
+        ok(
+          !el.inputEl.hasAttribute("maxlength"),
+          "Inner textarea has no maxlength by default."
+        );
+
+        el.maxLength = 20;
+        await el.updateComplete;
+        is(
+          el.inputEl.getAttribute("maxlength"),
+          "20",
+          "Setting maxLength is reflected on the inner textarea."
+        );
+      });
+
       add_task(async function testMozTextareaRows() {
         let renderTarget = await testHelpers.renderTemplate();
         let textarea = renderTarget.querySelector("moz-textarea");

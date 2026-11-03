@@ -47,6 +47,31 @@
         await testHelpers.verifyRequired("moz-input-text");
       });
 
+      add_task(async function testMozInputTextMaxLength() {
+        let renderTarget = await testHelpers.renderTemplate();
+        let el = renderTarget.querySelector("moz-input-text");
+        ok(
+          !el.inputEl.hasAttribute("maxlength"),
+          "Inner input has no maxlength by default."
+        );
+
+        el.maxLength = 10;
+        await el.updateComplete;
+        is(
+          el.inputEl.getAttribute("maxlength"),
+          "10",
+          "Setting maxLength is reflected on the inner input."
+        );
+
+        el.setAttribute("maxlength", "5");
+        await el.updateComplete;
+        is(
+          el.inputEl.getAttribute("maxlength"),
+          "5",
+          "Setting the maxlength attribute is reflected on the inner input."
+        );
+      });
+
       add_task(async function testMozInputTextFocusOutline() {
         let renderTarget = await testHelpers.renderTemplate();
         let el = renderTarget.querySelector("moz-input-text");

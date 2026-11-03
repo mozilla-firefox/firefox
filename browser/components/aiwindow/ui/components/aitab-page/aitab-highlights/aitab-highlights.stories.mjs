@@ -18,6 +18,10 @@ export default {
 };
 
 const Template = ({ title, items }) => html`
+  <link
+    rel="stylesheet"
+    href="chrome://browser/content/aiwindow/ai-window-shared.css"
+  />
   <aitab-highlights .title=${title} .items=${items}></aitab-highlights>
 `;
 

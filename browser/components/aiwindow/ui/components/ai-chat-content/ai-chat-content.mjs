@@ -29,6 +29,9 @@ import "chrome://browser/content/aiwindow/components/ai-action-confirmation.mjs"
 import "chrome://browser/content/aiwindow/components/kit-mention.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/agent-monitor-item.mjs";
+// TODO: Bug 2088699 - Render this as a tool UI in the research flow.
+// eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://browser/content/aiwindow/components/ai-clarifying-question.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-textarea.mjs";
 import {
