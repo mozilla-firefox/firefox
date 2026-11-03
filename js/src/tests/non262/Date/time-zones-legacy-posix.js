@@ -22,9 +22,19 @@ for (let year = 1900; year <= 2040; year += 4) {
 function describe(tz) {
     let result;
     inTimeZone(tz, () => {
+        let dtf = new Intl.DateTimeFormat("en-US", {dateStyle: "full", timeStyle: "full"});
         result = {
-            id: new Intl.DateTimeFormat().resolvedOptions().timeZone,
-            dates: dates.map(date => [date.toString(), date.getTimezoneOffset()]),
+            id: dtf.resolvedOptions().timeZone,
+            now: typeof Temporal !== "undefined" ? Temporal.Now.timeZoneId() : undefined,
+            dates: dates.map(date => [
+                date.toString(),
+                date.toTimeString(),
+                date.getTimezoneOffset(),
+                date.getHours(),
+                date.toLocaleString("en-US", {timeZoneName: "long"}),
+                dtf.format(date),
+                new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime(),
+            ]),
         };
     });
     return result;
@@ -33,6 +43,9 @@ function describe(tz) {
 for (let [legacy, city] of Object.entries(legacyZones)) {
     let legacyResult = describe(legacy);
     assertEq(legacyResult.id, city);
+    if (typeof Temporal !== "undefined") {
+        assertEq(legacyResult.now, city);
+    }
     assertEqArray(legacyResult.dates.flat(), describe(city).dates.flat());
 }
 

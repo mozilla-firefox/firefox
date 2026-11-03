@@ -19,6 +19,7 @@
 #include "mozilla/intl/DateTimeFormat.h"
 #include "mozilla/intl/DateTimePatternGenerator.h"
 #include "mozilla/intl/Locale.h"
+#include "mozilla/intl/TimeZone.h"
 
 namespace mozilla::intl {
 
@@ -267,6 +268,12 @@ Result<UniquePtr<DateTimeFormat>, ICUError> DateTimeFormat::TryCreateFromStyle(
   // The time zone is optional.
   int32_t tzIDLength = -1;
   const UChar* tzID = nullptr;
+  auto resolvedTimeZone =
+      TimeZone::ResolveLegacyPOSIXTimeZone(aTimeZoneOverride);
+  if (resolvedTimeZone.isErr()) {
+    return resolvedTimeZone.propagateErr();
+  }
+  aTimeZoneOverride = resolvedTimeZone.unwrap();
   if (aTimeZoneOverride) {
     tzIDLength = static_cast<int32_t>(aTimeZoneOverride->size());
     tzID = aTimeZoneOverride->Elements();
@@ -558,6 +565,12 @@ DateTimeFormat::TryCreateFromPattern(
   // The time zone is optional.
   int32_t tzIDLength = -1;
   const UChar* tzID = nullptr;
+  auto resolvedTimeZone =
+      TimeZone::ResolveLegacyPOSIXTimeZone(aTimeZoneOverride);
+  if (resolvedTimeZone.isErr()) {
+    return resolvedTimeZone.propagateErr();
+  }
+  aTimeZoneOverride = resolvedTimeZone.unwrap();
   if (aTimeZoneOverride) {
     tzIDLength = static_cast<int32_t>(aTimeZoneOverride->size());
     tzID = aTimeZoneOverride->data();
