@@ -8915,7 +8915,7 @@
 # Same as gfx.webrender.paths, for software WebRender (SWGL).
 - name: gfx.webrender.paths.swgl
   type: bool
-  value: false
+  value: true
   mirror: always
 
 # When gl debug message is a high severity message, forwward it to gfx critical
