@@ -1106,6 +1106,15 @@ bool AntiTrackingUtils::IsThirdPartyTrackingChannel(nsIChannel* aChannel) {
 }
 
 /* static */
+bool AntiTrackingUtils::IsThirdPartySocialTrackingChannel(
+    nsIChannel* aChannel) {
+  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
+      do_QueryInterface(aChannel);
+  return classifiedChannel &&
+         classifiedChannel->IsThirdPartySocialTrackingResource();
+}
+
+/* static */
 bool AntiTrackingUtils::IsThirdPartyWindow(nsPIDOMWindowInner* aWindow,
                                            nsIURI* aURI) {
   MOZ_ASSERT(aWindow);

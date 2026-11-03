@@ -22,7 +22,6 @@
 #include "nsIHttpChannel.h"
 #include "nsIPermission.h"
 #include "nsIWebProgressListener.h"
-#include "nsIClassifiedChannel.h"
 #include "nsNetUtil.h"
 #include "nsScriptSecurityManager.h"
 #include "nsSandboxFlags.h"
@@ -570,16 +569,10 @@ bool ShouldAllowAccessFor(nsPIDOMWindowInner* aWindow, nsIURI* aURI,
       return true;
     }
 
-    nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-        do_QueryInterface(document->GetChannel());
-    if (classifiedChannel) {
-      uint32_t classificationFlags =
-          classifiedChannel->GetThirdPartyClassificationFlags();
-      if (classificationFlags & nsIClassifiedChannel::ClassificationFlags::
-                                    CLASSIFIED_SOCIALTRACKING) {
-        blockedReason =
-            nsIWebProgressListener::STATE_COOKIES_BLOCKED_SOCIALTRACKER;
-      }
+    if (AntiTrackingUtils::IsThirdPartySocialTrackingChannel(
+            document->GetChannel())) {
+      blockedReason =
+          nsIWebProgressListener::STATE_COOKIES_BLOCKED_SOCIALTRACKER;
     }
   } else if (behavior == nsICookieService::BEHAVIOR_PARTITION_FOREIGN) {
     if (nsContentUtils::IsThirdPartyTrackingResourceWindow(aWindow) ||
@@ -750,22 +743,14 @@ bool ShouldAllowAccessFor(nsIChannel* aChannel, nsIURI* aURI,
       nsIWebProgressListener::STATE_COOKIES_BLOCKED_TRACKER;
 
   if (behavior == nsICookieService::BEHAVIOR_REJECT_TRACKER) {
-    // Not a tracker.
-    nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-        do_QueryInterface(aChannel);
-    if (classifiedChannel) {
-      if (!classifiedChannel->IsThirdPartyTrackingResource()) {
-        LOG(("Our channel isn't a third-party tracking channel"));
-        return true;
-      }
+    if (!AntiTrackingUtils::IsThirdPartyTrackingChannel(aChannel)) {
+      LOG(("Our channel isn't a third-party tracking channel"));
+      return true;
+    }
 
-      uint32_t classificationFlags =
-          classifiedChannel->GetThirdPartyClassificationFlags();
-      if (classificationFlags & nsIClassifiedChannel::ClassificationFlags::
-                                    CLASSIFIED_SOCIALTRACKING) {
-        blockedReason =
-            nsIWebProgressListener::STATE_COOKIES_BLOCKED_SOCIALTRACKER;
-      }
+    if (AntiTrackingUtils::IsThirdPartySocialTrackingChannel(aChannel)) {
+      blockedReason =
+          nsIWebProgressListener::STATE_COOKIES_BLOCKED_SOCIALTRACKER;
     }
   } else if (behavior == nsICookieService::BEHAVIOR_PARTITION_FOREIGN) {
     if (AntiTrackingUtils::IsThirdPartyTrackingChannel(aChannel) ||

@@ -318,8 +318,7 @@ void NotifyBlockingDecision(nsIChannel* aTrackingChannel,
         nsIWebProgressListener::STATE_COOKIES_LOADED_TRACKER, trackingOrigin);
   }
 
-  if (classificationFlags &
-      nsIClassifiedChannel::ClassificationFlags::CLASSIFIED_SOCIALTRACKING) {
+  if (classifiedChannel->IsThirdPartySocialTrackingResource()) {
     ContentBlockingNotifier::OnEvent(
         aTrackingChannel, false,
         nsIWebProgressListener::STATE_COOKIES_LOADED_SOCIALTRACKER,
