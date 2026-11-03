@@ -1063,7 +1063,14 @@ export const PREFS_CONFIG = new Map([
     "section.highlights.rows",
     {
       title: "Number of rows of Highlights to display",
-      value: 1,
+      // @nova-cleanup(remove-conditional): Replace getValue with value: 2
+      getValue: () =>
+        Services.prefs.getBoolPref(
+          "browser.newtabpage.activity-stream.nova.enabled",
+          false
+        )
+          ? 2
+          : 1,
     },
   ],
   [

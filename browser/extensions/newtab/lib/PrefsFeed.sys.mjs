@@ -387,6 +387,14 @@ export class PrefsFeed {
         .setIntPref("topSitesRows", valueObj.topSites.topSitesRows);
     }
 
+    // Write the Recent Activity (highlights) row count to the default branch to
+    // enable experiments with it without overriding an explicit user choice.
+    if (valueObj.highlights?.rows) {
+      Services.prefs
+        .getDefaultBranch(this._prefs._branchStr)
+        .setIntPref("section.highlights.rows", valueObj.highlights.rows);
+    }
+
     this._applySpacePrefDefaults(valueObj);
 
     // Write initialWallpaper to the user branch so it persists after the

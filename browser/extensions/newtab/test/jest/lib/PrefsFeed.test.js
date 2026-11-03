@@ -807,6 +807,25 @@ describe("PrefsFeed", () => {
       );
     });
 
+    it("should write trainhop highlights.rows to the default branch", () => {
+      const setIntPref = jest.fn();
+      services.prefs.getDefaultBranch.mockReturnValue({
+        setIntPref,
+        setStringPref: jest.fn(),
+        setBoolPref: jest.fn(),
+      });
+      nimbusFeatures.newtabTrainhop.getAllEnrollments.mockReturnValue([
+        {
+          meta: { isRollout: false },
+          value: { type: "highlights", payload: { rows: 3 } },
+        },
+      ]);
+
+      feed.onTrainhopExperimentUpdated();
+
+      expect(setIntPref).toHaveBeenCalledWith("section.highlights.rows", 3);
+    });
+
     it("should write widgetsSettings default-enabled values to the default branch", () => {
       const setBoolPref = jest.fn();
       services.prefs.getDefaultBranch.mockReturnValue({

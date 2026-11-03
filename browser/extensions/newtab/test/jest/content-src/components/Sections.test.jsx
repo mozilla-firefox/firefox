@@ -216,6 +216,42 @@ describe("<Section>", () => {
     });
   });
 
+  describe("Nova highlights", () => {
+    const fakeSite = { url: "https://example.com", hostname: "example" };
+    function renderNovaHighlights(rows, initialized = true) {
+      return mountSectionWithProps({
+        ...FAKE_SECTION,
+        id: "highlights",
+        rows,
+        initialized,
+        dispatch: jest.fn(),
+        Prefs: { values: { "section.rows": 2, "nova.enabled": true } },
+      });
+    }
+
+    it("should render 4 cards per row and mark the ones narrower widths hide", () => {
+      wrapper = renderNovaHighlights(new Array(10).fill(fakeSite));
+      const cards = wrapper.container.querySelectorAll(".section-list > li");
+      expect(cards).toHaveLength(8);
+      expect(cards[3].className).not.toContain("nova-hide");
+      expect(cards[4]).toHaveClass("nova-hide-below-3");
+      expect(cards[4]).not.toHaveClass("nova-hide-below-4");
+      expect(cards[6]).toHaveClass("nova-hide-below-3", "nova-hide-below-4");
+    });
+
+    it("should only show placeholders until initialized", () => {
+      wrapper = renderNovaHighlights([], false);
+      expect(
+        wrapper.container.querySelectorAll(".card-outer.placeholder")
+      ).toHaveLength(8);
+
+      wrapper = renderNovaHighlights([fakeSite]);
+      expect(
+        wrapper.container.querySelectorAll(".section-list > li")
+      ).toHaveLength(1);
+    });
+  });
+
   describe("empty state", () => {
     beforeEach(() => {
       Object.assign(FAKE_SECTION, {

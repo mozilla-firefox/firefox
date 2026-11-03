@@ -422,6 +422,51 @@ function formatRelativeTime(timestamp, locale, now, justNowL10nId) {
 }
 
 /**
+ * Formats a past timestamp as "Today", "Yesterday", "N days ago" (up to 6),
+ * "N weeks ago" (up to 4), "N months ago" (up to 11), and as an absolute date
+ * beyond that. Unlike formatRelativeTime, it counts local calendar days rather
+ * than elapsed time. Buckets are similar to UrlbarShared.formatDate.
+ *
+ * @param {number} timestamp ms epoch of the moment being described.
+ * @param {string} [appLocale] BCP-47 locale; falls back to the runtime default.
+ * @param {Date} [now]
+ * @returns {string}
+ */
+function formatRelativeDate(timestamp, appLocale, now = new Date()) {
+  // Intl throws on "", which App.locale holds until INIT.
+  const locale = appLocale || undefined;
+  const date = new Date(timestamp);
+  const startOfDay = d =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysAgo = Math.max(
+    0,
+    Math.round((startOfDay(now) - startOfDay(date)) / (24 * 60 * 60 * 1000))
+  );
+  const weeksAgo = Math.floor(daysAgo / 7);
+  const monthsAgo =
+    (now.getFullYear() - date.getFullYear()) * 12 +
+    now.getMonth() -
+    date.getMonth();
+
+  const rtf = new Intl.RelativeTimeFormat(locale, {
+    numeric: daysAgo <= 1 ? "auto" : "always",
+  });
+  let formatted;
+  if (daysAgo <= 6) {
+    formatted = rtf.format(-daysAgo, "day");
+  } else if (weeksAgo <= 4) {
+    formatted = rtf.format(-weeksAgo, "week");
+  } else if (monthsAgo <= 11) {
+    formatted = rtf.format(-monthsAgo, "month");
+  } else {
+    return new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+      date
+    );
+  }
+  return formatted[0].toLocaleUpperCase(locale) + formatted.slice(1);
+}
+
+/**
  * Focus a moz-button that may have just been created. Its inner button only
  * exists after the first render, and focus() on the host does nothing until
  * then, so wait for that render if one is pending.
@@ -441,6 +486,7 @@ function focusOnceRendered(el) {
 
 export {
   focusOnceRendered,
+  formatRelativeDate,
   formatRelativeTime,
   useIntersectionObserver,
   useSizeSubmenu,

@@ -3,10 +3,9 @@
 .ds-highlights {
   .section {
     .section-list {
-      grid-gap: var(--gridRowGap);
-
       // @nova-cleanup(remove-styles): Remove, replace with nova styles.
       &:not(.nova-enabled *) {
+        grid-gap: var(--gridRowGap);
         grid-template-columns: repeat(1, 1fr);
 
         @media (min-width: $break-point-medium) {
@@ -16,47 +15,47 @@
         @media (min-width: $break-point-large) {
           grid-template-columns: repeat(4, 1fr);
         }
-      }
 
-      .card-outer {
-        $line-height: 20px;
+        .card-outer {
+          $line-height: 20px;
 
-        height: 175px;
+          height: 175px;
 
-        .card-host-name {
-          font-size: var(--font-size-small);
-          line-height: $line-height;
-          padding-block-end: 0;
-          margin-block-end: var(--space-xxsmall);
-          text-transform: unset;
-        }
-
-        .card-title {
-          font-size: var(--font-size-small);
-          font-weight: var(--font-weight-heading);
-          line-height: $line-height;
-          max-height: $line-height;
-        }
-
-        a {
-          text-decoration: none;
-        }
-
-        // Override note: The colors set here are intentionally static
-        // due to transparency issues over images.
-        .context-menu-button {
-          background-color: var(--newtab-button-static-background);
-
-          &:hover {
-            background-color: var(--newtab-button-static-hover-background);
-
-            &:active {
-              background-color: var(--newtab-button-static-active-background);
-            }
+          .card-host-name {
+            font-size: var(--font-size-small);
+            line-height: $line-height;
+            padding-block-end: 0;
+            margin-block-end: var(--space-xxsmall);
+            text-transform: unset;
           }
 
-          &:focus-visible {
-            background-color: var(--newtab-button-static-focus-background);
+          .card-title {
+            font-size: var(--font-size-small);
+            font-weight: var(--font-weight-heading);
+            line-height: $line-height;
+            max-height: $line-height;
+          }
+
+          a {
+            text-decoration: none;
+          }
+
+          // Override note: The colors set here are intentionally static
+          // due to transparency issues over images.
+          .context-menu-button {
+            background-color: var(--newtab-button-static-background);
+
+            &:hover {
+              background-color: var(--newtab-button-static-hover-background);
+
+              &:active {
+                background-color: var(--newtab-button-static-active-background);
+              }
+            }
+
+            &:focus-visible {
+              background-color: var(--newtab-button-static-focus-background);
+            }
           }
         }
       }
@@ -71,46 +70,203 @@
   .nova-enabled & {
     display: grid;
     grid-column: 1 / -1;
-    grid-template-columns: repeat(2, var(--col-span-2));
-    gap: var(--space-medium);
+    grid-template-columns: #{--col-span(4)};
     justify-content: center;
 
-    // 2-column layout
     @include at-content-cols(8) {
-      grid-template-columns: repeat(4, var(--col-span-2));
+      grid-template-columns: #{--col-span(8)};
     }
 
-    // 3, and 4 column layouts.
     @include at-content-cols(12) {
-      grid-template-columns: repeat(4, var(--col-span-3));
+      grid-template-columns: var(--col-span-12);
+    }
+
+    @include at-content-cols(16) {
+      grid-template-columns: var(--col-span-16);
     }
 
     .ds-highlights-title {
       @include wallpaper-contrast-fix;
 
-      grid-column: 1 / -1;
+      // Matches the moz-button height in the sections and widgets headers
+      line-height: var(--button-min-height);
       font-weight: var(--font-weight-heading);
       font-size: var(--font-size-heading-medium);
       color: var(--newtab-contextual-text-primary-color);
-      margin-block: var(--space-small) 0;
-    }
-
-    .section {
-      display: contents;
-    }
-
-    .section > div {
-      display: contents;
+      margin-block: var(--space-small) var(--space-large);
     }
 
     .section-list {
-      grid-column: 1 / -1;
       padding-block-end: var(--space-xxlarge);
-      grid-template-columns: repeat(2, 1fr);
+      list-style: none;
+      grid-template-columns: 1fr;
+      row-gap: var(--space-large);
+      column-gap: var(--space-medium);
 
-      // 2, 3, and 4 column layouts.
       @include at-content-cols(8) {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      @include at-content-cols(12) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      @include at-content-cols(16) {
         grid-template-columns: repeat(4, 1fr);
+      }
+
+      .nova-hide-below-3,
+      .nova-hide-below-4 {
+        display: none;
+      }
+
+      @include at-content-cols(12) {
+        .nova-hide-below-3:not(.nova-hide-below-4) {
+          display: block;
+        }
+      }
+
+      @include at-content-cols(16) {
+        .nova-hide-below-4 {
+          display: block;
+        }
+      }
+
+      .card-outer {
+        --nova-highlight-image-width: 132px;
+        --nova-highlight-image-height: 108px;
+
+        @include newtab-card-style;
+
+        position: relative;
+        // Keeps long nowrap text from widening the grid track
+        min-width: 0;
+        font-size: var(--font-size-small);
+        border: var(--card-border);
+        border-radius: var(--border-radius-large);
+
+        &:not(.placeholder) {
+          box-shadow: var(--card-box-shadow);
+        }
+
+        &:is(:hover, :focus-within, .active):not(.placeholder) {
+          box-shadow: var(--card-box-shadow-hover);
+
+          .card-context {
+            padding-inline-end: var(--space-xlarge);
+          }
+        }
+
+        > a {
+          display: block;
+          color: inherit;
+          text-decoration: none;
+          border-radius: inherit;
+
+          &:focus-visible {
+            @include ds-focus;
+          }
+        }
+
+        .card {
+          display: flex;
+          gap: var(--space-small);
+          padding: var(--space-medium);
+        }
+
+        .card-preview-image-outer {
+          flex: none;
+          width: var(--nova-highlight-image-width);
+          height: var(--nova-highlight-image-height);
+          border-radius: calc(var(--border-radius-small) + var(--space-xxsmall));
+          overflow: hidden;
+          background: var(--newtab-element-secondary-color);
+        }
+
+        &.placeholder .card-preview-image-outer {
+          background: var(--newtab-card-placeholder-background-color);
+        }
+
+        .card-preview-image {
+          height: 100%;
+          background-position: center;
+          background-size: cover;
+          opacity: 0;
+
+          &.loaded {
+            opacity: 1;
+          }
+        }
+
+        .card-details {
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+        }
+
+        .card-host-name,
+        .card-context {
+          color: var(--newtab-text-secondary-color);
+        }
+
+        .card-host-name,
+        .card-context-label {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .card-host-name {
+          margin-block-end: var(--space-xxsmall);
+        }
+
+        .card-title {
+          -webkit-line-clamp: 3;
+          margin: 0;
+          font-weight: var(--font-weight-heading);
+        }
+
+        .card-context {
+          display: flex;
+          align-items: center;
+          gap: var(--space-xsmall);
+          margin-block-start: auto;
+          min-height: var(--size-item-medium);
+        }
+
+        .card-context-icon {
+          flex: none;
+          fill: var(--newtab-text-secondary-color);
+
+          &.icon-bookmark-added {
+            fill: var(--color-accent-primary);
+          }
+
+          &.icon-download {
+            fill: var(--icon-color-success);
+          }
+        }
+
+        .card-context-type {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+        }
+
+        .context-menu-button {
+          position: absolute;
+          inset-block-end: var(--space-medium);
+          inset-inline-end: var(--space-medium);
+          opacity: 0;
+        }
+
+        &:is(:hover, :focus-within, .active) .context-menu-button {
+          opacity: 1;
+          transition: opacity 0.3s;
+        }
       }
     }
   }
