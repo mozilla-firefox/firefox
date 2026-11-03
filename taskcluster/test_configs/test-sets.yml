@@ -501,6 +501,7 @@ macosx1500-aarch64-tests:
     - mochitest-a11y
     - mochitest-browser-a11y
     - mochitest-browser-chrome
+    - mochitest-browser-chrome-ml-models
     - mochitest-browser-media
     - mochitest-browser-translations
     - mochitest-chrome

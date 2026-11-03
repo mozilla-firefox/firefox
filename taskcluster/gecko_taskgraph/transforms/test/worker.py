@@ -290,6 +290,19 @@ def set_wayland_env(config, tasks):
 
 
 @transforms.add
+def set_ml_accelerator_env(config, tasks):
+    """Tell the ML tests that llama.cpp must find an accelerator (Metal)."""
+    for task in tasks:
+        if (
+            task["test-platform"].startswith("macosx")
+            and task["worker-type"] == MACOSX_WORKER_TYPES["macosx1500-aarch64"]
+        ):
+            env = task.setdefault("worker", {}).setdefault("env", {})
+            env["MOZ_ML_EXPECT_ACCELERATOR"] = "1"
+        yield task
+
+
+@transforms.add
 def set_screenshots_font_antialiasing(config, tasks):
     """The Linux test image disables font antialiasing image-wide to match
     releng's setup; mozscreenshots wants real antialiased text for its

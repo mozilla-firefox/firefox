@@ -5,6 +5,12 @@
 
 /* global HWInference */
 
+// CI sets this on workers that have an accelerator llama.cpp can use.
+const EXPECT_ACCELERATOR =
+  Services.env.get("MOZ_ML_EXPECT_ACCELERATOR") === "1";
+
+requestLongerTimeout(2);
+
 add_task(async function test_device_discovery() {
   const devices = await HWInference.listDevices();
   info(`devices: ${JSON.stringify(devices)}`);
@@ -16,6 +22,12 @@ add_task(async function test_device_discovery() {
   );
   for (const device of devices) {
     Assert.notEqual(device.id, "", `${device.description} has an id`);
+  }
+  if (EXPECT_ACCELERATOR) {
+    Assert.ok(
+      devices.some(device => device.kind !== "cpu"),
+      "This machine lists an accelerator"
+    );
   }
 });
 
@@ -49,4 +61,31 @@ add_task(async function test_placement() {
     /placement/,
     "A placement no device matches rejects"
   );
+});
+
+add_task(async function test_generation_on_every_device() {
+  for (const device of await HWInference.listDevices()) {
+    const generator = await createTinyStoriesGenerator({
+      placement: { devices: [device.id] },
+    });
+    try {
+      Assert.equal(
+        generator.device,
+        device.id,
+        `${device.description} loads the model`
+      );
+      const result = await generator.generate({
+        messages: TINYSTORIES_STORYTELLER_PROMPT,
+        maxTokens: 8,
+        samplers: TINYSTORIES_GREEDY_SAMPLERS,
+      });
+      Assert.greater(
+        result.content.length,
+        0,
+        `${device.description} generates text`
+      );
+    } finally {
+      generator.terminate();
+    }
+  }
 });
