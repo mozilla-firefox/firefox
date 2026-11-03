@@ -666,6 +666,7 @@ class Core(
             pinnedSitesStorage = pinnedSiteStorage,
             historyStorage = historyStorage,
             topSitesProvider = macTopSitesProvider,
+            defaultTopSitesProvider = defaultTopSitesProvider,
         )
     }
 
