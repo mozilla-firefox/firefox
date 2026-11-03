@@ -596,25 +596,3 @@ aiwindow-resume-section-empty-no-suggestions-description = When there’s someth
 aiwindow-resume-section-empty-all-dismissed-heading = All caught up
 aiwindow-resume-section-empty-all-dismissed-description = That’s all the suggestions for now. Check back later for more.
 aiwindow-resume-section-hide = Hide for now
-
-## Clarifying question card
-## A card the assistant shows to ask the user a question before it continues
-## (for example, before starting a research report). The user picks one of the
-## listed answers, types their own, or skips.
-
-# Variables:
-#   $current (Number) - The number of the question being shown, starting at 1
-#   $total (Number) - How many questions there are in total
-ai-clarifying-question-progress = Question { $current } of { $total }
-# Badge on the answer the assistant suggests.
-ai-clarifying-question-recommended = Recommended
-# Text box where the user types their own answer instead of picking one.
-ai-clarifying-question-custom-answer =
-    .placeholder = Something else
-    .aria-label = Something else
-ai-clarifying-question-skip =
-    .label = Skip
-ai-clarifying-question-send =
-    .label = Send
-ai-clarifying-question-close =
-    .title = Close questions
