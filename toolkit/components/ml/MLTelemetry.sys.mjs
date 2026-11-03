@@ -183,8 +183,14 @@ export class MLTelemetry {
    * @param {string} [options.flowId] - The flow ID. Uses instance flowId if not provided.
    * @param {string} options.engineId - The engine identifier (e.g., "pdfjs", "ml-suggest-intent").
    * @param {number} options.duration - Engine creation time in milliseconds.
+   * @param {string | null} [options.deviceKind] - Kind of the device that loaded the model.
    */
-  recordEngineCreationSuccessFlow({ flowId, engineId, duration }) {
+  recordEngineCreationSuccessFlow({
+    flowId,
+    engineId,
+    duration,
+    deviceKind = null,
+  }) {
     const currentFlowId = flowId || this.#flowId;
     const actualEngineId = engineId;
     const actualLabel = MLTelemetry.getGleanLabel(engineId);
@@ -194,6 +200,7 @@ export class MLTelemetry {
       engineId: actualEngineId,
       duration: Math.round(duration),
       host_process: this.#hostProcess,
+      device_kind: deviceKind,
     });
 
     // Also record the old labeled timing distribution metric
@@ -380,6 +387,7 @@ export class MLTelemetry {
    * @param {number | null} [options.timeToFirstChunk]
    * @param {number | null} [options.averageChunkTime]
    * @param {string | null} [options.backendSourceRevision]
+   * @param {string | null} [options.deviceKind]
    * @param {string} [options.flow_id]
    * @param {string} [options.feature_id]
    */
@@ -395,6 +403,7 @@ export class MLTelemetry {
     timeToFirstChunk = null,
     averageChunkTime = null,
     backendSourceRevision = null,
+    deviceKind = null,
     flow_id = this.#flowId,
     feature_id = this.#featureId,
   }) {
@@ -432,6 +441,7 @@ export class MLTelemetry {
       model_id: modelId,
       backend,
       backend_source_revision: backendSourceRevision,
+      device_kind: deviceKind,
       // Specifically use the "||" operator since Glean expects "null" rather than
       // "undefined". When the counts are 0, this can mean nothing was generated for
       // the counts. We should count these as null.
