@@ -1233,6 +1233,9 @@ export const AIWindow = {
         // SessionStore entry before closeSidebar fires.
         this._uninitTabStateManager(win);
         lazy.AIWindowUI.closeSidebar(win);
+        // Classic windows don't need the hidden sidebar document;
+        // ensureBrowserIsAppended recreates it.
+        win.document.getElementById(lazy.AIWindowUI.BROWSER_ID)?.remove();
         this._recordSmartWindowUsage();
         Glean.smartWindow.classicSwitch.record({ duration_ms, opened_tabs });
       }
