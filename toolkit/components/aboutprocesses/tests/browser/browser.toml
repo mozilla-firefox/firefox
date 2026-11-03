@@ -9,6 +9,8 @@ https_first_disabled = true
 
 ["browser_aboutprocesses_groupby_tab.js"]
 
+["browser_aboutprocesses_groupby_tab_selection.js"]
+
 ["browser_aboutprocesses_selection.js"]
 fail-if = [
   "a11y_checks", # Bug 1854228 tr.process, tr.window, tr.thread, tr.thread-summary may not be focusable

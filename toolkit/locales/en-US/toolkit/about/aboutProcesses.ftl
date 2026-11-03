@@ -19,8 +19,10 @@ about-processes-shutdown-tab =
     .title = Close tab
 about-processes-unload-tab =
     .title = Unload tab
-about-processes-go-to-tab =
-    .title = Go to tab
+about-processes-reload-tab =
+    .title = Reload tab
+about-processes-select-all-tabs =
+    .title = Select all tabs
 
 # Profiler icons
 # Variables:
@@ -131,6 +133,31 @@ about-processes-tab-count = { $count ->
    [one] { $count } tab
   *[other] { $count } tabs
 }
+
+# Selected-tab count shown in the groupby=tab view's bulk-action bar.
+# Variables:
+#   $count (Number) The number of selected tabs. Always ≥ 1.
+about-processes-bulk-selected-count = { $count ->
+   [one] { $count } tab selected
+  *[other] { $count } tabs selected
+}
+
+# Bulk-action bar icon button: clears the selection without acting on it.
+about-processes-bulk-cancel-selection =
+    .title = Cancel selection
+
+# Bulk-action bar button: unloads every selected tab's content without
+# closing the tabs (see about-processes-unload-tab for the per-row version).
+about-processes-bulk-unload-tabs =
+    .label = Unload
+
+# Bulk-action bar button: reloads every selected tab.
+about-processes-bulk-reload-tabs =
+    .label = Reload
+
+# Bulk-action bar button: closes every selected tab.
+about-processes-bulk-close-tabs =
+    .label = Close
 
 # Single subframe
 # Variables:

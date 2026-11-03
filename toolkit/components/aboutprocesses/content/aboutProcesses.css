@@ -57,9 +57,9 @@ body.tab-view #process-tfoot {
 }
 /* The memory cell sizes to its content, taking slack from the name column
    instead of compressing. The CPU cell spans the shared grid's CPU and
-   action columns (15% + 36px), so multi-digit percentages fit. */
-.totals-row {
-  grid-template-columns: 1fr max-content calc(15% + 36px);
+   action columns (15% + 28px), so multi-digit percentages fit. */
+body.tab-view :is(.totals-row, .bulk-summary-row) {
+  grid-template-columns: 32px 1fr max-content calc(15% + 28px);
 }
 tr {
   display: grid;
@@ -68,6 +68,59 @@ tr {
   grid-template-columns: 1fr 15% 15% 36px;
   grid-auto-rows: 2em;
   width: 100%;
+}
+
+body.tab-view tr {
+  grid-template-columns: 32px 1fr 15% 15% 28px;
+}
+/* The action column is 28px (16px icon + 2*6px padding) in the sidebar. */
+body.tab-view #process-tbody > tr > td:last-child {
+  padding-inline: 6px;
+}
+body:not(.tab-view) #process-thead > tr > .select-cell {
+  display: none;
+}
+.select-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 8px;
+}
+.totals-count {
+  grid-column: span 2;
+}
+
+/* Stack the bulk-action summary row and buttons row above tab-view totals. */
+body.tab-view.bulk-action-visible #process-tbody {
+  margin-bottom: 6em;
+}
+body.tab-view.bulk-action-visible #process-tfoot {
+  height: 6em;
+}
+/* Hidden outright when empty, not just emptied, to avoid overlapping the totals row. */
+body:not(.bulk-action-visible) tr.bulk-summary-row,
+body:not(.bulk-action-visible) tr.bulk-buttons-row {
+  display: none;
+}
+tr.bulk-summary-row {
+  border-top: 1px solid var(--border-color);
+}
+#bulk-cancel-button {
+  background-image: url("chrome://global/skin/icons/close.svg");
+}
+tr.bulk-buttons-row {
+  /* Own line, not the summary row's grid, so neither risks wrapping. */
+  display: block;
+  height: 2em;
+
+  > td {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+moz-button-group {
+  justify-content: flex-start;
 }
 
 .cpu,
@@ -85,7 +138,8 @@ th {
   background-color: var(--button-background-color);
   color: var(--button-text-color);
 }
-th:not(:first-child) {
+/* .select-cell is hidden in the default view; its next th is the first visible one. */
+th:not(:first-child, .select-cell + th) {
   border-inline-start: 1px solid;
   border-image: linear-gradient(transparent 0%, transparent 20%, var(--border-color) 20%, var(--border-color) 80%, transparent 80%, transparent 100%) 1 1;
 }
@@ -111,8 +165,26 @@ td.type:dir(rtl),
 td.favicon:dir(rtl) {
   background-position-x: right 11px;
 }
-td:first-child {
+td:first-child,
+td.name {
   text-overflow: ellipsis;
+}
+
+.name-link {
+  display: inline-block;
+  vertical-align: top;
+  margin: 0;
+  max-width: 100%;
+  text-align: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font: inherit;
+  --link-color: currentColor;
+  --link-color-hover: currentColor;
+  --link-color-active: currentColor;
+}
+.name-link:hover {
+  text-decoration: underline;
 }
 
 .profiler-icon {
@@ -194,6 +266,13 @@ tr[selected] > td {
   background-color: var(--color-accent-primary-selected);
   color: var(--text-color-accent-primary-selected);
 }
+/* On the row, so an unloaded row's dimmed cells don't dim the highlight. */
+body.tab-view #process-tbody > tr[selected] {
+  background-color: var(--color-accent-primary-selected);
+}
+body.tab-view tr[selected] > td {
+  background-color: transparent;
+}
 #process-tbody > tr:hover {
   background-color: var(--background-color-list-item-hover);
   color: var(--text-color-list-item-hover);
@@ -274,7 +353,7 @@ tr.thread {
   opacity: 0.3;
 }
 
-/* Row-level opacity composites onto descendants, capping the go-to-tab
+/* Row-level opacity composites onto descendants, capping the reload
    icon's own focus-visible opacity below 1 -- undo the row dim for tab rows
    and apply it to the non-action cells instead so the button isn't capped. */
 tr.tab-row.killed {
@@ -317,8 +396,8 @@ tr:is([selected], :hover, :focus-visible):not(.killing) > td > .close-icon,
 }
 
 .unload-icon,
-.go-to-tab-icon {
-  /* Sized to moon.svg/arrow-right.svg's shared native 16px (clips oddly at
+.reload-icon {
+  /* Sized to moon.svg/reload.svg's shared native 16px (clips oddly at
      close-icon's 10px); padding trimmed to keep the same 24px footprint. */
   display: inline-block;
   height: 100%;
@@ -335,34 +414,29 @@ tr:is([selected], :hover, :focus-visible):not(.killing) > td > .close-icon,
   background: url("chrome://global/skin/icons/moon.svg") no-repeat center;
 }
 
-.go-to-tab-icon {
-  background: url("chrome://global/skin/icons/arrow-right.svg") no-repeat center;
+.reload-icon {
+  background: url("chrome://global/skin/icons/reload.svg") no-repeat center;
 }
 
-.go-to-tab-icon:dir(rtl) {
-  transform: scaleX(-1);
-}
-
-/* Unlike .close-icon, no [selected]/:focus-visible here -- this view's rows aren't focusable or selectable. */
-tr:hover:not(.killing) > td > .unload-icon,
-tr:hover:not(.killing) > td > .go-to-tab-icon,
+tr:is([selected], :hover, :focus-visible):not(.killing) > td > .unload-icon,
+tr:is([selected], :hover, :focus-visible):not(.killing) > td > .reload-icon,
 .unload-icon:focus-visible,
-.go-to-tab-icon:focus-visible {
+.reload-icon:focus-visible {
   opacity: 1;
 }
 
 .unload-icon:hover,
-.go-to-tab-icon:hover,
+.reload-icon:hover,
 .unload-icon:focus-visible,
-.go-to-tab-icon:focus-visible {
+.reload-icon:focus-visible {
   background-color: var(--button-background-color-hover);
   color: var(--button-text-color-hover);
 }
 
 .unload-icon:hover:active,
-.go-to-tab-icon:hover:active,
+.reload-icon:hover:active,
 .unload-icon:focus-visible:active,
-.go-to-tab-icon:focus-visible:active {
+.reload-icon:focus-visible:active {
   background-color: var(--button-background-color-active);
   color: var(--button-text-color-active);
 }
@@ -393,9 +467,8 @@ tr.separate-from-previous-process-group {
   background: linear-gradient(to right, var(--bar-color) calc(var(--bar-width) * 1%), transparent calc(var(--bar-width) * 1%));
 }
 
-/* No CPU bar in the tab view -- --bar-width's default of 0 still leaves a
-   rounding sliver of the gradient visible. */
 .tab-row > .cpu,
-.totals-row > .cpu {
-  background: none;
+.totals-row > .cpu,
+.bulk-summary-row > .cpu {
+  background-image: none;
 }

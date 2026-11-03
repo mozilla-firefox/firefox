@@ -370,14 +370,22 @@ function findProcessRowByOrigin(doc, origin) {
   return null;
 }
 
-async function setupTabWithOriginAndTitle(origin, title) {
-  let tab = BrowserTestUtils.addTab(gBrowser, origin, { skipAnimation: true });
+async function setupTabWithOriginAndTitle(origin, title, win = window) {
+  let tab = BrowserTestUtils.addTab(win.gBrowser, origin, {
+    skipAnimation: true,
+  });
   tab.testTitle = title;
   tab.testOrigin = origin;
   await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
   await SpecialPowers.spawn(tab.linkedBrowser, [title], async title => {
     content.document.title = title;
   });
+  // Rows are matched by title, which the view reads from the tab's label.
+  await BrowserTestUtils.waitForMutationCondition(
+    tab,
+    { attributeFilter: ["label"] },
+    () => tab.label == title
+  );
   return tab;
 }
 
@@ -1107,4 +1115,67 @@ async function testAboutProcessesWithConfig({ showAllFrames, showThreads }) {
   await SpecialPowers.popPrefEnv();
 
   await extension.unload();
+}
+
+// Helpers for the about:processes?groupby=tab view.
+
+async function forceTabViewUpdate(tabAboutProcesses) {
+  await SpecialPowers.spawn(tabAboutProcesses.linkedBrowser, [], async () => {
+    await content.TabControl.update();
+  });
+}
+
+// Stops the page's own poll so the test decides when polls run. Returns a
+// function that runs one real poll.
+function pauseTabViewPolling(doc) {
+  let control = doc.defaultView.TabControl;
+  let update = control.update.bind(control);
+  control.update = async force => {
+    if (force) {
+      await update(force);
+    }
+  };
+  return update;
+}
+
+function promiseTabViewUpdated(doc) {
+  return new Promise(resolve =>
+    doc.addEventListener("AboutProcessesUpdated", resolve, { once: true })
+  );
+}
+
+function tabRowTitles(doc) {
+  return [...doc.querySelectorAll("tr.tab-row")].map(
+    row => row.querySelector(".name").textContent
+  );
+}
+
+function findTabRow(doc, title) {
+  return [...doc.querySelectorAll("tr.tab-row")].find(row =>
+    row.querySelector(".name").textContent.includes(title)
+  );
+}
+
+// Not a raw dispatchEvent: that skips the layout/a11y flush real input goes through.
+function clickRow(target, options = {}) {
+  EventUtils.synthesizeMouseAtCenter(target, options, target.documentGlobal);
+}
+
+function clickCheckbox(doc, title) {
+  clickRow(findTabRow(doc, title).querySelector(".select-checkbox"));
+}
+
+async function openTabView() {
+  let tabAboutProcesses = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: "about:processes?groupby=tab",
+    waitForLoad: true,
+  });
+  await forceTabViewUpdate(tabAboutProcesses);
+  let doc = tabAboutProcesses.linkedBrowser.contentDocument;
+  await TestUtils.waitForCondition(
+    () => doc.querySelector("tr.tab-row"),
+    "Waiting for at least one row to exist"
+  );
+  return { tabAboutProcesses, doc };
 }

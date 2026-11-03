@@ -509,6 +509,10 @@ class RowSet {
   _rowsById = new Map();
   _orderedRows = [];
 
+  getRow(rowId) {
+    return this._rowsById.get(rowId);
+  }
+
   _getOrCreateRow(rowId, createRow) {
     let row = this._rowsById.get(rowId);
     if (!row) {
@@ -1926,6 +1930,8 @@ function fillTabCpuCell(cell, slopeCpuOfTotal, hasUsageData = true) {
  * is its own, since the two views show different columns.
  */
 class ProcessesTabView extends RowSet {
+  #nextRowId = 0;
+
   commit(tabCounters, { reorder = true } = {}) {
     for (let tabData of tabCounters) {
       let row = this._getOrCreateRow(tabData.tab, () => this._createRow());
@@ -1941,7 +1947,7 @@ class ProcessesTabView extends RowSet {
 
   _updateTotals(tabCounters) {
     let [countCell, memoryCell, cpuCell] = document.querySelector(
-      "#process-tfoot > tr"
+      "#process-tfoot > tr.totals-row"
     ).children;
     document.l10n.setAttributes(countCell, "about-processes-tab-count", {
       count: tabCounters.length,
@@ -1965,17 +1971,32 @@ class ProcessesTabView extends RowSet {
   }
 
   _createRow() {
-    const cellCount = 4;
+    const cellCount = 5;
     let row = document.createElement("tr");
     row.className = "tab-row";
     while (row.children.length < cellCount) {
       row.appendChild(document.createElement("td"));
     }
 
+    let selectCell = row.children[0];
+    selectCell.className = "select-cell";
+    let checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "select-checkbox";
+    selectCell.appendChild(checkbox);
+    row.checkbox = checkbox;
+
+    let nameLink = document.createElement("button");
+    nameLink.className = "name-link text-link";
+    nameLink.id = `tab-name-${this.#nextRowId++}`;
+    checkbox.setAttribute("aria-labelledby", nameLink.id);
+    row.children[1].appendChild(nameLink);
+    row.nameLink = nameLink;
+
     // The unload button, not the row, is the Tab stop -- same as the
     // default view's kill button; rows here don't carry their own
     // tabindex.
-    let actionCell = row.children[3];
+    let actionCell = row.children[4];
     let unloadButton = document.createElement("span");
     unloadButton.className = "action-icon unload-icon";
     unloadButton.setAttribute("role", "button");
@@ -1985,6 +2006,11 @@ class ProcessesTabView extends RowSet {
     row.unloadButton = unloadButton;
 
     return row;
+  }
+
+  setRowSelected(row, isSelected) {
+    row.toggleAttribute("selected", isSelected);
+    row.checkbox.checked = isSelected;
   }
 
   _updateRow(row, tabData) {
@@ -1997,21 +2023,19 @@ class ProcessesTabView extends RowSet {
       row.removeAttribute("aria-busy");
     }
     // Kept visible and focusable rather than hidden, so a discarded row
-    // still has a keyboard-reachable way back. Selecting a discarded tab
-    // already triggers Firefox's own restore-on-select, so this navigates
-    // there rather than claiming to reload in place.
+    // still has a keyboard-reachable way back.
     row.unloadButton.classList.toggle("unload-icon", !tabData.discarded);
-    row.unloadButton.classList.toggle("go-to-tab-icon", !!tabData.discarded);
+    row.unloadButton.classList.toggle("reload-icon", !!tabData.discarded);
     document.l10n.setAttributes(
       row.unloadButton,
       tabData.discarded
-        ? "about-processes-go-to-tab"
+        ? "about-processes-reload-tab"
         : "about-processes-unload-tab"
     );
 
-    let [nameCell, memoryCell, cpuCell] = row.children;
+    let [, nameCell, memoryCell, cpuCell] = row.children;
     nameCell.className = "name favicon";
-    nameCell.textContent = tabData.title || tabData.uri?.spec || "";
+    row.nameLink.textContent = tabData.title || tabData.uri?.spec || "";
     // Rows are reused across polls, so a stale image needs clearing, not
     // just skipping, when the current tab has none.
     let image = tabData.tab.getAttribute("image");
@@ -2057,6 +2081,29 @@ class ProcessesTabController {
       "about-processes-column-memory-resident-tab"
     );
 
+    this._selectAllCheckbox = document.getElementById("select-all-checkbox");
+    this._selectAllCheckbox.addEventListener("click", () => {
+      this._setRowsSelected(
+        this._getDisplayedRows(),
+        this._selectAllCheckbox.checked
+      );
+    });
+
+    this._bulkUnloadButton = document.getElementById("bulk-unload-button");
+    this._bulkReloadButton = document.getElementById("bulk-reload-button");
+    this._bulkUnloadButton.addEventListener("click", () =>
+      this._unloadOrReloadSelectedTabs(false)
+    );
+    this._bulkReloadButton.addEventListener("click", () =>
+      this._unloadOrReloadSelectedTabs(true)
+    );
+    document
+      .getElementById("bulk-close-button")
+      .addEventListener("click", () => this._closeSelectedTabs());
+    document
+      .getElementById("bulk-cancel-button")
+      .addEventListener("click", () => this._clearSelection());
+
     let tbody = document.getElementById("process-tbody");
 
     // Single click, and Enter/Space keypress: close a tab. One delegate at
@@ -2065,6 +2112,10 @@ class ProcessesTabController {
     tbody.addEventListener("click", event => {
       this._lastMouseEvent = Date.now();
       this._handleActivate(event.target);
+      let row = event.target.closest("tr.tab-row");
+      if (row) {
+        this._handleRowClick(event, row);
+      }
     });
     tbody.addEventListener("keypress", event => {
       if (event.key === "Enter" || event.key === " ") {
@@ -2075,21 +2126,16 @@ class ProcessesTabController {
       }
     });
 
-    // Double click: navigate to the tab. Not when the action button itself
-    // was double-clicked -- its own click handler already acted on the tab,
-    // and navigating too would immediately reload it right back.
-    tbody.addEventListener("dblclick", event => {
-      if (event.target.closest(".action-icon")) {
-        return;
-      }
-      let row = event.target.closest("tr.tab-row");
-      if (row) {
-        this._navigateToTab(row);
-      }
-    });
-
     tbody.addEventListener("mousemove", () => {
       this._lastMouseEvent = Date.now();
+    });
+
+    // Escape doesn't fire keypress, so it needs its own listener to clear a selection.
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && this._getSelectedTabData().length) {
+        event.preventDefault();
+        this._clearSelection();
+      }
     });
 
     // State already re-polls every interval tick regardless of
@@ -2144,14 +2190,14 @@ class ProcessesTabController {
   }
 
   _handleActivate(target) {
-    // Not .unload-icon: that class is swapped for .go-to-tab-icon once
+    // Not .unload-icon: that class is swapped for .reload-icon once
     // discarded, but the button itself is still the only activation target.
     if (!target.classList.contains("action-icon")) {
       return;
     }
     let row = target.closest("tr.tab-row");
     if (row.tabData.discarded) {
-      this._navigateToTab(row);
+      row.tabData.tabbrowser.reloadTab(row.tabData.tab);
     } else {
       this._unloadRow(row);
     }
@@ -2161,6 +2207,133 @@ class ProcessesTabController {
     let { tab, tabbrowser } = row.tabData;
     tabbrowser.selectedTab = tab;
     tabbrowser.documentGlobal.focus();
+  }
+
+  _handleRowClick(event, row) {
+    if (event.target.closest(".select-checkbox")) {
+      this._setRowsSelected([row], event.target.checked);
+      return;
+    }
+    if (event.target.closest(".name-link")) {
+      this._navigateToTab(row);
+    }
+  }
+
+  // Rows of tabs from the last poll. Rows outlive polls, so their checkboxes
+  // hold the selection.
+  _getDisplayedRows() {
+    return (this._lastTabCounters || []).map(tabData =>
+      this._view.getRow(tabData.tab)
+    );
+  }
+
+  _getSelectedTabData() {
+    return this._getDisplayedRows()
+      .filter(row => row.checkbox.checked)
+      .map(row => row.tabData);
+  }
+
+  _setRowsSelected(rows, selected) {
+    for (let row of rows) {
+      this._view.setRowSelected(row, selected);
+    }
+    this._updateSelectAllCheckbox();
+    this._updateBulkActionBar();
+  }
+
+  _updateSelectAllCheckbox() {
+    let rows = this._getDisplayedRows();
+    let selectedCount = rows.filter(row => row.checkbox.checked).length;
+    this._selectAllCheckbox.checked =
+      !!selectedCount && selectedCount == rows.length;
+    this._selectAllCheckbox.indeterminate =
+      !!selectedCount && selectedCount < rows.length;
+  }
+
+  _clearSelection() {
+    this._setRowsSelected(this._getDisplayedRows(), false);
+  }
+
+  _updateBulkActionBar() {
+    let selectedTabData = this._getSelectedTabData();
+    let selectedCount = selectedTabData.length;
+    document.body.classList.toggle("bulk-action-visible", !!selectedCount);
+    if (!selectedCount) {
+      return;
+    }
+
+    this._bulkUnloadButton.hidden = selectedTabData.every(
+      tabData => tabData.discarded
+    );
+
+    let [, countCell, memoryCell, cpuCell] = document.querySelector(
+      "#process-tfoot > tr.bulk-summary-row"
+    ).children;
+    document.l10n.setAttributes(
+      countCell,
+      "about-processes-bulk-selected-count",
+      { count: selectedCount }
+    );
+    let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(selectedTabData);
+    fillTabMemoryCell(memoryCell, totalRamSize);
+    fillTabCpuCell(cpuCell, slopeCpuOfTotal);
+  }
+
+  // Tab actions are per-tabbrowser, so cross-window selections must be grouped.
+  _groupTabsByTabbrowser(tabDataList) {
+    let groups = new Map();
+    for (let { tab, tabbrowser } of tabDataList) {
+      let tabs = groups.get(tabbrowser);
+      if (!tabs) {
+        tabs = [];
+        groups.set(tabbrowser, tabs);
+      }
+      tabs.push(tab);
+    }
+    return groups;
+  }
+
+  async _unloadOrReloadTabs(tabDataList, reload) {
+    for (let [tabbrowser, tabs] of this._groupTabsByTabbrowser(tabDataList)) {
+      if (reload) {
+        tabbrowser.reloadTabs(tabs);
+      } else {
+        await tabbrowser.explicitUnloadTabs(tabs);
+      }
+    }
+  }
+
+  async _unloadOrReloadSelectedTabs(reload) {
+    let eligible = this._getSelectedTabData();
+    if (!reload) {
+      eligible = eligible.filter(tabData => !tabData.discarded);
+    }
+    this._clearSelection();
+    await this._unloadOrReloadTabs(eligible, reload);
+    await this.update(true);
+  }
+
+  async _closeSelectedTabs() {
+    // Warns from this panel's own window, even for a cross-window selection.
+    let ownTabbrowser = window.browsingContext.topChromeWindow.gBrowser;
+    let selectedTabData = this._getSelectedTabData();
+    if (
+      !ownTabbrowser.warnAboutClosingTabs(
+        selectedTabData.length,
+        ownTabbrowser.constructor.closingTabsEnum.MULTI_SELECTED
+      )
+    ) {
+      return;
+    }
+    for (let [tabbrowser, tabs] of this._groupTabsByTabbrowser(
+      selectedTabData
+    )) {
+      // animate: false so tabs are gone before the eager refresh below runs.
+      tabbrowser.removeTabs(tabs, { animate: false });
+    }
+    this._clearSelection();
+    // forceReorder: closed rows only prune on reorder, and checkbox clicks just froze it.
+    await this.update(true);
   }
 
   // Unloads rather than closes, then dims the row for feedback until the
@@ -2218,10 +2391,12 @@ class ProcessesTabController {
     let reorder =
       force || Date.now() - this._lastMouseEvent >= TIME_BEFORE_SORTING_AGAIN;
     this._view.commit(tabCounters, { reorder });
+    this._updateSelectAllCheckbox();
+    this._updateBulkActionBar();
     document.dispatchEvent(new CustomEvent("AboutProcessesUpdated"));
   }
 
-  async update() {
+  async update(forceReorder = false) {
     // force=true is intentional, unlike the default view: right after
     // opening the panel this poll can beat MINIMUM_INTERVAL_BETWEEN_SAMPLES_MS,
     // and skipping the real snapshot then races a just-opened tab's title
@@ -2245,7 +2420,7 @@ class ProcessesTabController {
     let tabCounters = this._tabAttribution.getTabCounters(counters);
     this._lastTabCounters = tabCounters;
     this._sortTabCounters(tabCounters);
-    this._commitView(tabCounters);
+    this._commitView(tabCounters, { force: forceReorder });
   }
 }
 

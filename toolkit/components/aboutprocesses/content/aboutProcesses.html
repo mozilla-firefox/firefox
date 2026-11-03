@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="chrome://global/skin/in-content/common.css" />
     <link rel="localization" href="toolkit/about/aboutProcesses.ftl" />
     <link rel="localization" href="branding/brand.ftl" />
+    <script src="chrome://global/content/customElements.js"></script>
     <script src="chrome://global/content/aboutProcesses.js"></script>
     <link rel="stylesheet" href="chrome://global/content/aboutProcesses.css" />
   </head>
@@ -25,6 +26,14 @@
     <table id="process-table">
       <thead id="process-thead">
         <tr>
+          <th class="select-cell">
+            <input
+              type="checkbox"
+              id="select-all-checkbox"
+              class="select-checkbox"
+              data-l10n-id="about-processes-select-all-tabs"
+            />
+          </th>
           <th class="clickable-header">
             <button
               class="clickable"
@@ -59,6 +68,39 @@
       </thead>
       <tbody id="process-tbody"></tbody>
       <tfoot id="process-tfoot">
+        <tr class="bulk-summary-row">
+          <td class="select-cell">
+            <button
+              id="bulk-cancel-button"
+              class="ghost-button icon-button"
+              data-l10n-id="about-processes-bulk-cancel-selection"
+            ></button>
+          </td>
+          <td class="bulk-count"></td>
+          <td class="memory"></td>
+          <td class="cpu"></td>
+        </tr>
+        <tr class="bulk-buttons-row">
+          <td colspan="5">
+            <moz-button-group>
+              <moz-button
+                id="bulk-unload-button"
+                size="small"
+                data-l10n-id="about-processes-bulk-unload-tabs"
+              ></moz-button>
+              <moz-button
+                id="bulk-reload-button"
+                size="small"
+                data-l10n-id="about-processes-bulk-reload-tabs"
+              ></moz-button>
+              <moz-button
+                id="bulk-close-button"
+                size="small"
+                data-l10n-id="about-processes-bulk-close-tabs"
+              ></moz-button>
+            </moz-button-group>
+          </td>
+        </tr>
         <tr class="totals-row">
           <td class="totals-count"></td>
           <td class="memory"></td>

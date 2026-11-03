@@ -3,48 +3,11 @@
 
 "use strict";
 
+requestLongerTimeout(3);
+
 // Exercises the about:processes?groupby=tab dev/debug entry point: a flat
 // per-tab list rendered by a separate View/Controller pair from the default
 // process view (see ProcessesTabView/ProcessesTabController).
-
-async function forceTabViewUpdate(tabAboutProcesses) {
-  await SpecialPowers.spawn(tabAboutProcesses.linkedBrowser, [], async () => {
-    await content.TabControl.update();
-  });
-}
-
-function promiseTabViewUpdated(doc) {
-  return new Promise(resolve =>
-    doc.addEventListener("AboutProcessesUpdated", resolve, { once: true })
-  );
-}
-
-function tabRowTitles(doc) {
-  return [...doc.querySelectorAll("tr.tab-row")].map(
-    row => row.querySelector(".name").textContent
-  );
-}
-
-function findTabRow(doc, title) {
-  return [...doc.querySelectorAll("tr.tab-row")].find(row =>
-    row.querySelector(".name").textContent.includes(title)
-  );
-}
-
-async function openTabView() {
-  let tabAboutProcesses = await BrowserTestUtils.openNewForegroundTab({
-    gBrowser,
-    opening: "about:processes?groupby=tab",
-    waitForLoad: true,
-  });
-  await forceTabViewUpdate(tabAboutProcesses);
-  let doc = tabAboutProcesses.linkedBrowser.contentDocument;
-  await TestUtils.waitForCondition(
-    () => doc.querySelector("tr.tab-row"),
-    "Waiting for at least one row to exist"
-  );
-  return { tabAboutProcesses, doc };
-}
 
 add_task(async function testGroupByTabRendersOneRowPerTab() {
   let tabOne = await setupTabWithOriginAndTitle(
@@ -245,55 +208,26 @@ add_task(async function testFaviconAndColumnSort() {
   BrowserTestUtils.removeTab(tabApple);
 });
 
-add_task(async function testDoubleClickNavigatesToTab() {
+add_task(async function testNameLinkClickNavigatesToTab() {
+  // Only the name link navigates; the rest of the row does nothing.
   let tabOne = await setupTabWithOriginAndTitle(
     "https://example.org",
-    "Double-click me"
+    "Click me"
   );
 
   let { tabAboutProcesses, doc } = await openTabView();
 
-  let row = findTabRow(doc, "Double-click me");
+  let row = findTabRow(doc, "Click me");
   Assert.ok(!!row, "Found the row for the tab we're about to switch to");
   Assert.ok(
     !tabOne.selected,
     "about:processes tab is the one selected right now"
   );
 
-  info("Double-clicking the row");
-  row.dispatchEvent(
-    new doc.defaultView.MouseEvent("dblclick", { bubbles: true })
-  );
+  info("Clicking the name link");
+  clickRow(row.querySelector(".name-link"));
 
-  Assert.ok(tabOne.selected, "Double-click switched to the tab");
-
-  BrowserTestUtils.removeTab(tabAboutProcesses);
-  BrowserTestUtils.removeTab(tabOne);
-});
-
-add_task(async function testDoubleClickOnActionButtonDoesNotAlsoNavigate() {
-  // Regression test: the dblclick listener used to navigate regardless of
-  // what was clicked, so double-clicking the unload button both unloaded
-  // the tab and navigated to it -- the navigate reloads the tab right back,
-  // undoing the unload.
-  let tabOne = await setupTabWithOriginAndTitle(
-    "https://example.org",
-    "Double-click action button"
-  );
-
-  let { tabAboutProcesses, doc } = await openTabView();
-  let row = findTabRow(doc, "Double-click action button");
-
-  row
-    .querySelector(".unload-icon")
-    .dispatchEvent(
-      new doc.defaultView.MouseEvent("dblclick", { bubbles: true })
-    );
-
-  Assert.ok(
-    !tabOne.selected,
-    "Double-clicking the action button does not also navigate to the tab"
-  );
+  Assert.ok(tabOne.selected, "Clicking the name link switched to the tab");
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
   BrowserTestUtils.removeTab(tabOne);
@@ -346,7 +280,7 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     "Regression test: a discarded row's button used to be hidden, leaving " +
       "keyboard users with no way to reach it at all -- unlike a mouse " +
       "user, who could still double-click the row to get there. Confirming " +
-      "the still-focused button now relabels to go-to-tab and Enter reaches it."
+      "the still-focused button now relabels to reload and Enter restores it."
   );
   Assert.ok(
     !unloadButtonTwo.hidden,
@@ -354,25 +288,26 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
   );
   Assert.ok(
     !unloadButtonTwo.classList.contains("unload-icon") &&
-      unloadButtonTwo.classList.contains("go-to-tab-icon"),
+      unloadButtonTwo.classList.contains("reload-icon"),
     "The button's icon swaps once the tab is discarded"
   );
   Assert.equal(
     unloadButtonTwo.getAttribute("data-l10n-id"),
-    "about-processes-go-to-tab",
-    "The same button relabels itself to go-to-tab once the tab is discarded"
+    "about-processes-reload-tab",
+    "The same button relabels itself to reload once the tab is discarded"
   );
   Assert.ok(!tabTwo.selected, "The discarded tab isn't selected yet");
   EventUtils.synthesizeKey("KEY_Enter", {}, doc.defaultView);
-  Assert.ok(
-    tabTwo.selected,
-    "Enter on the relabeled button navigates to (and so reloads) the discarded tab -- keyboard parity with double-click"
+  await BrowserTestUtils.waitForMutationCondition(
+    tabTwo,
+    { attributeFilter: ["discarded"] },
+    () => !tabTwo.hasAttribute("discarded"),
+    { msg: "Enter on the relabeled button reloads the discarded tab" }
   );
-
-  // The reload above backgrounded tabAboutProcesses, and its poll loop
-  // deliberately stops updating while hidden (matching the default view) --
-  // switch back so the rest of this test can keep polling it.
-  await BrowserTestUtils.switchTab(gBrowser, tabAboutProcesses);
+  Assert.ok(
+    tabAboutProcesses.selected && !tabTwo.selected,
+    "Reloading a background tab doesn't navigate away from the monitor"
+  );
 
   info("Clicking the row's unload button");
   unloadButtonOne.click();
@@ -396,11 +331,17 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     "Transient fade-out class is cleared once the discard is confirmed"
   );
 
-  info("Clicking the button on a discarded row navigates to the tab instead");
+  info("Clicking the button on a discarded row reloads that tab");
   unloadButtonOne.click();
+  await BrowserTestUtils.waitForMutationCondition(
+    tabOne,
+    { attributeFilter: ["discarded"] },
+    () => !tabOne.hasAttribute("discarded"),
+    { msg: "Clicking the relabeled button reloads the discarded tab" }
+  );
   Assert.ok(
-    tabOne.selected,
-    "Clicking the relabeled button selects (and so reloads) the discarded tab"
+    tabAboutProcesses.selected && !tabOne.selected,
+    "Reloading a discarded background tab leaves the monitor selected"
   );
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
@@ -497,6 +438,26 @@ add_task(async function testDefaultViewUnaffectedByGroupByParam() {
       .display,
     "none",
     "The default view should not show the tab view's totals footer"
+  );
+  Assert.equal(
+    doc.defaultView.getComputedStyle(
+      doc.getElementById("select-all-checkbox").parentElement
+    ).display,
+    "none",
+    "The default view should not show the select-all column"
+  );
+  Assert.equal(
+    doc.defaultView.getComputedStyle(
+      doc.getElementById("column-name").parentElement
+    ).borderInlineStartWidth,
+    "0px",
+    "The hidden select-all column doesn't give the Name header a divider"
+  );
+  Assert.equal(
+    doc.defaultView.getComputedStyle(doc.querySelector("tr.process > td"))
+      .textOverflow,
+    "ellipsis",
+    "Long process names still truncate with an ellipsis"
   );
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
