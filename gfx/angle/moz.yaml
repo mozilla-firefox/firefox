@@ -11,8 +11,8 @@ origin:
 
   url: https://chromium.googlesource.com/angle/angle
 
-  release: d9c703d8031a570e9296837af14f8bf5708ddf07 (Tue Oct 06 19:05:44 2026).
-  revision: d9c703d8031a570e9296837af14f8bf5708ddf07
+  release: 76fb6f485785021e6e4c09e449bde7e413627f99 (Mon Oct 26 18:33:35 2026).
+  revision: 76fb6f485785021e6e4c09e449bde7e413627f99
 
   license: BSD-3-Clause
   license-file: LICENSE

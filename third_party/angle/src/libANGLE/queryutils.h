@@ -317,7 +317,7 @@ void QueryConfigAttrib(const Config *config, EGLint attribute, EGLint *value);
 
 void QueryContextAttrib(const gl::Context *context, EGLint attribute, EGLint *value);
 
-egl::Error QuerySurfaceAttrib(const Display *display,
+egl::Error QuerySurfaceAttrib(const ThreadSafeDisplay *display,
                               const gl::Context *context,
                               Surface *surface,
                               EGLint attribute,
@@ -327,7 +327,7 @@ Error GetSyncAttrib(const ThreadSafeDisplay *display,
                     const Sync *syncObject,
                     EGLint attribute,
                     EGLint *value);
-egl::Error QuerySurfaceAttrib64KHR(const Display *display,
+egl::Error QuerySurfaceAttrib64KHR(const ThreadSafeDisplay *display,
                                    const gl::Context *context,
                                    Surface *surface,
                                    EGLint attribute,

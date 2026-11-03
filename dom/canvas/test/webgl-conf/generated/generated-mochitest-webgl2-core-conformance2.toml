@@ -386,9 +386,6 @@ skip-if = [
 ["test_2_conformance2__rendering__framebuffer-completeness-unaffected.html"]
 
 ["test_2_conformance2__rendering__framebuffer-mismatched-attachment-targets.html"]
-fail-if = [
-  "os == 'win' && os_version == '11.26200'",
-]
 
 ["test_2_conformance2__rendering__framebuffer-render-to-layer-angle-issue.html"]
 fail-if = [
@@ -399,6 +396,7 @@ fail-if = [
 fail-if = [
   "os == 'android' && os_version == '14' && arch == 'aarch64'",
   "os == 'mac' && os_version == '10.15' && arch == 'x86_64'",
+  "os == 'win' && os_version == '11.26200'",
 ]
 
 ["test_2_conformance2__rendering__framebuffer-texture-changing-base-level.html"]

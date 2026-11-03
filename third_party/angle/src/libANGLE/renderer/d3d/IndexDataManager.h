@@ -45,7 +45,6 @@ struct SourceIndexData
     const void *srcIndices;
     unsigned int srcCount;
     gl::DrawElementsType srcIndexType;
-    bool srcIndicesChanged;
 };
 
 struct TranslatedIndexData

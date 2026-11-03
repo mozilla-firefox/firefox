@@ -67,7 +67,7 @@ void ShareGroup::addRef()
     mRefCount++;
 }
 
-void ShareGroup::release(const Display *display)
+void ShareGroup::release(const ThreadSafeDisplay *display)
 {
     if (--mRefCount == 0)
     {

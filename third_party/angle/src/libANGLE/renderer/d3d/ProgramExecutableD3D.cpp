@@ -830,11 +830,11 @@ void ProgramExecutableD3D::save(const gl::Context *context,
     for (gl::ShaderType shaderType : gl::AllShaderTypes())
     {
         stream->writeInt(mShaderSamplers[shaderType].size());
-        for (unsigned int i = 0; i < mShaderSamplers[shaderType].size(); ++i)
+        for (const D3DSampler &sampler : mShaderSamplers[shaderType])
         {
-            stream->writeBool(mShaderSamplers[shaderType][i].active);
-            stream->writeInt(mShaderSamplers[shaderType][i].logicalTextureUnit);
-            stream->writeEnum(mShaderSamplers[shaderType][i].textureType);
+            stream->writeBool(sampler.active);
+            stream->writeInt(sampler.logicalTextureUnit);
+            stream->writeEnum(sampler.textureType);
         }
 
         stream->writeInt(mUsedShaderSamplerRanges[shaderType].low());
@@ -844,17 +844,17 @@ void ProgramExecutableD3D::save(const gl::Context *context,
     {
         const gl::ShaderType shaderType = gl::ShaderType::Fragment;
         stream->writeInt(mImages[shaderType].size());
-        for (size_t imageIndex = 0; imageIndex < mImages[shaderType].size(); ++imageIndex)
+        for (const D3DImage &image : mImages[shaderType])
         {
-            stream->writeBool(mImages[shaderType][imageIndex].active);
-            stream->writeInt(mImages[shaderType][imageIndex].logicalImageUnit);
+            stream->writeBool(image.active);
+            stream->writeInt(image.logicalImageUnit);
         }
 
         stream->writeInt(mReadonlyImages[shaderType].size());
-        for (size_t imageIndex = 0; imageIndex < mReadonlyImages[shaderType].size(); ++imageIndex)
+        for (const D3DImage &readonlyImage : mReadonlyImages[shaderType])
         {
-            stream->writeBool(mReadonlyImages[shaderType][imageIndex].active);
-            stream->writeInt(mReadonlyImages[shaderType][imageIndex].logicalImageUnit);
+            stream->writeBool(readonlyImage.active);
+            stream->writeInt(readonlyImage.logicalImageUnit);
         }
 
         stream->writeInt(mUsedImageRange[shaderType].low());
@@ -922,10 +922,8 @@ void ProgramExecutableD3D::save(const gl::Context *context,
 
     const std::vector<PixelShaderOutputVariable> &pixelShaderKey = mPixelShaderKey;
     stream->writeInt(pixelShaderKey.size());
-    for (size_t pixelShaderKeyIndex = 0; pixelShaderKeyIndex < pixelShaderKey.size();
-         pixelShaderKeyIndex++)
+    for (const PixelShaderOutputVariable &variable : pixelShaderKey)
     {
-        const PixelShaderOutputVariable &variable = pixelShaderKey[pixelShaderKeyIndex];
         stream->writeInt(variable.type);
         stream->writeString(variable.name);
         stream->writeString(variable.source);
@@ -936,17 +934,14 @@ void ProgramExecutableD3D::save(const gl::Context *context,
     stream->writeString(mGeometryShaderPreamble);
 
     stream->writeInt(mVertexExecutables.size());
-    for (size_t vertexExecutableIndex = 0; vertexExecutableIndex < mVertexExecutables.size();
-         vertexExecutableIndex++)
+    for (const std::unique_ptr<D3DVertexExecutable> &vertexExecutable : mVertexExecutables)
     {
-        D3DVertexExecutable *vertexExecutable = mVertexExecutables[vertexExecutableIndex].get();
-
         const gl::InputLayout &inputLayout = vertexExecutable->inputs();
         stream->writeInt(inputLayout.size());
 
-        for (size_t inputIndex = 0; inputIndex < inputLayout.size(); inputIndex++)
+        for (angle::FormatID inputFormat : inputLayout)
         {
-            stream->writeEnum(inputLayout[inputIndex]);
+            stream->writeEnum(inputFormat);
         }
 
         size_t vertexShaderSize = vertexExecutable->shaderExecutable()->getLength();
@@ -957,16 +952,14 @@ void ProgramExecutableD3D::save(const gl::Context *context,
     }
 
     stream->writeInt(mPixelExecutables.size());
-    for (size_t pixelExecutableIndex = 0; pixelExecutableIndex < mPixelExecutables.size();
-         pixelExecutableIndex++)
+    for (const std::unique_ptr<D3DPixelExecutable> &pixelExecutable : mPixelExecutables)
     {
-        D3DPixelExecutable *pixelExecutable = mPixelExecutables[pixelExecutableIndex].get();
 
         const std::vector<GLenum> &outputs = pixelExecutable->outputSignature();
         stream->writeInt(outputs.size());
-        for (size_t outputIndex = 0; outputIndex < outputs.size(); outputIndex++)
+        for (unsigned int output : outputs)
         {
-            stream->writeInt(outputs[outputIndex]);
+            stream->writeInt(output);
         }
 
         const gl::ImageUnitTextureTypeMap &image2Ds = pixelExecutable->image2DSignature();
@@ -1576,10 +1569,8 @@ void ProgramExecutableD3D::updateCachedOutputLayout(const gl::Context *context,
     FramebufferD3D *fboD3D   = GetImplAs<FramebufferD3D>(framebuffer);
     const auto &colorbuffers = fboD3D->getColorAttachmentsForRender(context);
 
-    for (size_t colorAttachment = 0; colorAttachment < colorbuffers.size(); ++colorAttachment)
+    for (const gl::FramebufferAttachment *colorbuffer : colorbuffers)
     {
-        const gl::FramebufferAttachment *colorbuffer = colorbuffers[colorAttachment];
-
         if (colorbuffer)
         {
             auto binding    = colorbuffer->getBinding() == GL_BACK ? GL_COLOR_ATTACHMENT0

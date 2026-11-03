@@ -118,10 +118,9 @@ void BufferManager::collectGarbage(BufferManager::GCReason reason)
     }
 #endif
 
-    for (int i = 0; i < kNumCachedStorageModes; ++i)
+    for (BufferMap &map : mFreeBuffers)
     {
-        BufferMap &map = ANGLE_UNSAFE_TODO(mFreeBuffers[i]);
-        auto iter      = map.begin();
+        auto iter = map.begin();
         while (iter != map.end())
         {
             // Clean out cached buffers for the following reasons:
@@ -150,21 +149,20 @@ void BufferManager::collectGarbage(BufferManager::GCReason reason)
 #ifdef ANGLE_MTL_TRACK_BUFFER_MEM
         mAllocatedSizes.clear();
 #endif
-        for (auto iter = mInUseBuffers.begin(); iter != mInUseBuffers.end(); ++iter)
+        for (const mtl::BufferRef &inUseBuffer : mInUseBuffers)
         {
-            size_t sz = (*iter)->size();
+            size_t sz = inUseBuffer->size();
             mTotalMem += sz;
 #ifdef ANGLE_MTL_TRACK_BUFFER_MEM
             ++mAllocatedSizes[sz];
 #endif
         }
 
-        for (int i = 0; i < kNumCachedStorageModes; ++i)
+        for (BufferMap &map : mFreeBuffers)
         {
-            BufferMap &map = ANGLE_UNSAFE_TODO(mFreeBuffers[i]);
-            for (auto iter = map.begin(); iter != map.end(); ++iter)
+            for (const auto &entry : map)
             {
-                size_t sz = iter->first;
+                size_t sz = entry.first;
 #ifdef ANGLE_MTL_TRACK_BUFFER_MEM
                 ++mAllocatedSizes[sz];
 #endif

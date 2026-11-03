@@ -198,6 +198,21 @@ bool HexStringToUInt(const std::string_view &input, unsigned int *uintOut)
     return true;
 }
 
+bool StringToInt64(const std::string_view &input, int64_t *valueOut)
+{
+    // SAFETY: data() + size() is the end of the string view.
+    const char *end   = ANGLE_UNSAFE_BUFFERS(input.data() + input.size());
+    int64_t value     = 0;
+    const auto result = std::from_chars(input.data(), end, value);
+    if (result.ec != std::errc{} || result.ptr != end)
+    {
+        return false;
+    }
+
+    *valueOut = value;
+    return true;
+}
+
 bool ReadFileToString(const std::string &path, std::string *stringOut)
 {
     std::ifstream inFile(path.c_str(), std::ios::binary);
@@ -443,6 +458,24 @@ std::vector<uint8_t> HexStringToUintVector(const std::string_view &hexStr)
     }
 
     return bin;
+}
+
+std::string UintStreamToHexString(angle::Span<const uint8_t> uintStream)
+{
+    std::string result;
+    result.reserve(uintStream.size() * 2 + 1);
+
+    static constexpr std::array<char, 16> kNibbleToHex = {
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+    };
+
+    for (uint8_t u : uintStream)
+    {
+        result += kNibbleToHex[u >> 4];
+        result += kNibbleToHex[u & 0xF];
+    }
+
+    return result;
 }
 
 }  // namespace angle

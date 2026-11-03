@@ -131,6 +131,33 @@ class [[nodiscard]] ScopedSyncRef final
     Sync *mSync = nullptr;
 };
 
+class [[nodiscard]] ScopedSyncDestroy final : angle::NonCopyable
+{
+  public:
+    ScopedSyncDestroy() : mDisplay(nullptr), mSync(nullptr) {}
+    ScopedSyncDestroy(ThreadSafeDisplay *display, Sync *sync) : mDisplay(display), mSync(sync) {}
+    ~ScopedSyncDestroy()
+    {
+        if (mSync)
+        {
+            ASSERT(mDisplay != nullptr);
+            mDisplay->releaseSync(mSync);
+        }
+    }
+
+    Sync *get() const { return mSync; }
+    Sync *release()
+    {
+        Sync *sync = mSync;
+        mSync      = nullptr;
+        return sync;
+    }
+
+  private:
+    ThreadSafeDisplay *mDisplay;
+    Sync *mSync;
+};
+
 }  // namespace egl
 
 #endif  // LIBANGLE_EGLSYNC_H_

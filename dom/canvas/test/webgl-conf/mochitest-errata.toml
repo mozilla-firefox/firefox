@@ -285,13 +285,6 @@ skip-if = [
 # -
 # Platform-specific
 
-["generated/test_2_conformance2__rendering__framebuffer-mismatched-attachment-targets.html"]
-# https://bugzilla.mozilla.org/show_bug.cgi?id=1725283
-# E.g. framebuffer layer 0 should be drawn green
-fail-if = [
-  "os == 'win' && os_version == '11.26200'",
-]
-
 ["generated/test_2_conformance2__rendering__framebuffer-render-to-layer-angle-issue.html"]
 # framebuffer layer 0 should be green
 # framebuffer layer 1 should be green
@@ -301,9 +294,12 @@ fail-if = [
 
 ["generated/test_2_conformance2__rendering__framebuffer-render-to-layer.html"]
 # pixel 0,0 channel 2 was 51 expected 63 +/- 9
+# Windows: D3D11 rejects mixing 3D and non-3D attachments since ANGLE
+# b64f67868464 (FRAMEBUFFER_UNSUPPORTED for TEXTURE_3D with depth renderbuffer).
 fail-if = [
   "os == 'android' && os_version == '14' && arch == 'aarch64'",
   "os == 'mac' && os_version == '10.15' && arch == 'x86_64'",
+  "os == 'win' && os_version == '11.26200'",
 ]
 
 ########################################################################

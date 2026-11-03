@@ -115,10 +115,12 @@ bool BuiltInFunctionEmulator::setFunctionCalled(int uniqueId)
         return false;
     }
 
-    for (size_t i = 0; i < mFunctions.size(); ++i)
+    for (int functionId : mFunctions)
     {
-        if (mFunctions[i] == uniqueId)
+        if (functionId == uniqueId)
+        {
             return true;
+        }
     }
     // If the function depends on another, mark the dependency as called.
     auto dependency = mFunctionDependencies.find(uniqueId);

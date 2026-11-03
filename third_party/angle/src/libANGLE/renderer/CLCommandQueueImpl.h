@@ -164,10 +164,11 @@ class CLCommandQueueImpl : angle::NonCopyable
                                           cl::EventPtr &event,
                                           void *&mapPtr) = 0;
 
-    virtual angle::Result enqueueUnmapMemObject(const cl::Memory &memory,
-                                                void *mappedPtr,
-                                                const cl::EventPtrs &waitEvents,
-                                                cl::EventPtr &event) = 0;
+    virtual angle::Result enqueueUnmapMemObject(
+        const cl::Memory &memory,
+        const cl::MappedRegionInfo<const void *> &mappedInfo,
+        const cl::EventPtrs &waitEvents,
+        cl::EventPtr &event) = 0;
 
     virtual angle::Result enqueueMigrateMemObjects(const cl::MemoryPtrs &memObjects,
                                                    cl::MemMigrationFlags flags,

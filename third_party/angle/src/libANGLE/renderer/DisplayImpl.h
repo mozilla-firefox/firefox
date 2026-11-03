@@ -66,6 +66,10 @@ class ThreadSafeDisplayImpl : angle::NonCopyable
     virtual bool testDeviceLost()                                               = 0;
     virtual egl::Error restoreLostDevice(const egl::ThreadSafeDisplay *display) = 0;
 
+    virtual egl::Error makeCurrent(egl::Surface *drawSurface,
+                                   egl::Surface *readSurface,
+                                   gl::Context *context) = 0;
+
     virtual EGLSyncImpl *createSync();
 };
 
@@ -84,11 +88,6 @@ class DisplayImpl : public EGLImplFactory, public angle::Subject
     virtual egl::Error initialize(egl::Display *display) = 0;
     virtual void terminate()                             = 0;
     virtual egl::Error releaseThread();
-
-    virtual egl::Error makeCurrent(egl::Display *display,
-                                   egl::Surface *drawSurface,
-                                   egl::Surface *readSurface,
-                                   gl::Context *context) = 0;
 
     virtual egl::ConfigSet generateConfigs() = 0;
 

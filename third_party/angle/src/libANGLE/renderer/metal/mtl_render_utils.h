@@ -28,7 +28,6 @@ namespace rx
 class BufferMtl;
 class ContextMtl;
 class DisplayMtl;
-class VisibilityBufferOffsetsMtl;
 
 namespace mtl
 {
@@ -467,12 +466,12 @@ class IndexGeneratorUtils final : angle::NonCopyable
 class VisibilityResultUtils final : angle::NonCopyable
 {
   public:
-    angle::Result combineVisibilityResult(
-        ContextMtl *contextMtl,
-        bool keepOldValue,
-        const VisibilityBufferOffsetsMtl &renderPassResultBufOffsets,
-        const BufferRef &renderPassResultBuf,
-        const BufferRef &finalResultBuf);
+    angle::Result combineVisibilityResult(ContextMtl *contextMtl,
+                                          bool keepOldValue,
+                                          size_t startOffset,
+                                          size_t numOffsets,
+                                          const BufferRef &renderPassResultBuf,
+                                          const BufferRef &finalResultBuf);
 
   private:
     angle::Result getVisibilityResultCombinePipeline(
@@ -720,7 +719,8 @@ class RenderUtils : angle::NonCopyable
 
     void combineVisibilityResult(ContextMtl *contextMtl,
                                  bool keepOldValue,
-                                 const VisibilityBufferOffsetsMtl &renderPassResultBufOffsets,
+                                 size_t startOffset,
+                                 size_t numOffsets,
                                  const BufferRef &renderPassResultBuf,
                                  const BufferRef &finalResultBuf);
 

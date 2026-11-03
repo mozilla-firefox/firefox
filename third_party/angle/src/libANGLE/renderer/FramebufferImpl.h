@@ -107,6 +107,8 @@ class FramebufferImpl : angle::NonCopyable
 
     virtual angle::Result onAttachmentLayerCountChange(gl::FramebufferAttachment *attachment);
 
+    virtual void onAttachmentDetached(const gl::Context *context, size_t dirtyBit);
+
     const gl::FramebufferState &getState() const { return mState; }
 
   protected:
@@ -123,6 +125,8 @@ inline angle::Result FramebufferImpl::onAttachmentLayerCountChange(
 {
     return angle::Result::Continue;
 }
+
+inline void FramebufferImpl::onAttachmentDetached(const gl::Context *context, size_t dirtyBit) {}
 
 // Default implementation returns the format specified in the attachment.
 inline const gl::InternalFormat &FramebufferImpl::getImplementationColorReadFormat(

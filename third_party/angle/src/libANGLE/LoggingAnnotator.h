@@ -34,6 +34,10 @@ class LoggingAnnotator : public gl::DebugAnnotator
     void logMessage(const gl::LogMessage &msg) const override;
 };
 
+// Installs LoggingAnnotator as the global DebugAnnotator, for back-ends that do not implement
+// their own DebugAnnotator.
+void SetGlobalDebugAnnotator();
+
 }  // namespace angle
 
 #endif  // LIBANGLE_LOGGINGANNOTATOR_H_

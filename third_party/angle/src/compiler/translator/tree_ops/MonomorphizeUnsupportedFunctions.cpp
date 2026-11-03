@@ -54,6 +54,31 @@ void InitializeFunctionMap(TIntermBlock *root, FunctionMap *functionMapOut)
     }
 }
 
+void RemoveUnreferencedFunctions(TIntermBlock *root, const FunctionMap &functionMap)
+{
+    TIntermSequence &sequence = *root->getSequence();
+    TIntermSequence pruned;
+
+    for (TIntermNode *node : sequence)
+    {
+        TIntermFunctionDefinition *asFuncDef = node->getAsFunctionDefinition();
+        if (asFuncDef != nullptr)
+        {
+            const TFunction *function = asFuncDef->getFunction();
+            ASSERT(function && functionMap.find(function) != functionMap.end());
+            if (!function->isMain() && !functionMap.at(function).isOriginalUsed)
+            {
+                // This function was never called, remove it
+                continue;
+            }
+        }
+
+        pruned.push_back(node);
+    }
+
+    root->replaceAllChildren(std::move(pruned));
+}
+
 const TVariable *GetBaseUniform(TIntermTyped *node, bool *isSamplerInStructOut)
 {
     *isSamplerInStructOut = false;
@@ -537,6 +562,14 @@ bool MonomorphizeUnsupportedFunctionsImpl(TCompiler *compiler,
 
         if (!monomorphizer.getAnyMonomorphized())
         {
+            // This transformation does not correctly handle comma in function arguments, so if f
+            // needs monomorphization in f((g(x), y), the call to g is accidentally dropped.  If g
+            // needed monomorphization in a second pass, it's now lost but the function itself is
+            // still left in the AST, causing trouble in future passes.  This is not a problem in
+            // the IR; for now the AST pass is made to just remove g to prevent an unexpected AST
+            // even though the translation is incorrect.
+            RemoveUnreferencedFunctions(root, functionMap);
+
             break;
         }
 

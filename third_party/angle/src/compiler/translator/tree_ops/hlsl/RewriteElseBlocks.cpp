@@ -31,7 +31,7 @@ class ElseBlockRewriter : public TIntermTraverser
     bool visitBlock(Visit visit, TIntermBlock *block) override;
 
   private:
-    TIntermNode *rewriteIfElse(TIntermIfElse *ifElse);
+    TIntermNode *rewriteIfElse(TIntermIfElse *ifElse) const;
 
     const TType *mFunctionType;
 };
@@ -51,21 +51,19 @@ bool ElseBlockRewriter::visitBlock(Visit visit, TIntermBlock *node)
 {
     if (visit == PostVisit)
     {
-        for (size_t statementIndex = 0; statementIndex != node->getSequence()->size();
-             statementIndex++)
+        for (TIntermNode *&statement : *node->getSequence())
         {
-            TIntermNode *statement = (*node->getSequence())[statementIndex];
-            TIntermIfElse *ifElse  = statement->getAsIfElseNode();
+            TIntermIfElse *ifElse = statement->getAsIfElseNode();
             if (ifElse && ifElse->getFalseBlock() != nullptr)
             {
-                (*node->getSequence())[statementIndex] = rewriteIfElse(ifElse);
+                statement = rewriteIfElse(ifElse);
             }
         }
     }
     return true;
 }
 
-TIntermNode *ElseBlockRewriter::rewriteIfElse(TIntermIfElse *ifElse)
+TIntermNode *ElseBlockRewriter::rewriteIfElse(TIntermIfElse *ifElse) const
 {
     ASSERT(ifElse != nullptr);
 

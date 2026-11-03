@@ -713,6 +713,19 @@ mtl::TextureRef &GetLayerLevelTextureView(
     return levelTextureViews[level];
 }
 
+// Returns the texture extents in GL terms, substituting arrayLength into depth for array textures
+// since MTLTexture stores layer count in arrayLength with depth == 1.
+gl::Extents GetTextureGLSize(const mtl::TextureRef &texture,
+                             const mtl::MipmapNativeLevel &nativeLevel)
+{
+    gl::Extents size = texture->size(nativeLevel);
+    if (texture->textureType() == MTLTextureType2DArray)
+    {
+        size.depth = static_cast<int>(texture->arrayLength());
+    }
+    return size;
+}
+
 }  // namespace
 
 // TextureMtl::NativeTextureWrapper implementation.
@@ -799,6 +812,10 @@ class TextureMtl::NativeTextureWrapper : angle::NonCopyable
     uint32_t depth(GLuint glLevel) const { return mNativeTexture->depth(getNativeLevel(glLevel)); }
 
     gl::Extents size(GLuint glLevel) const { return mNativeTexture->size(getNativeLevel(glLevel)); }
+    gl::Extents getGLSize(GLuint glLevel) const
+    {
+        return GetTextureGLSize(mNativeTexture, getNativeLevel(glLevel));
+    }
 
     // Get width, height, depth, size at base level.
     uint32_t widthAt0() const { return width(mBaseGLLevel); }
@@ -2094,7 +2111,7 @@ angle::Result TextureMtl::redefineImage(const gl::Context *context,
         // must release it.
         ASSERT(mNativeTextureStorage->textureType() == mtl::GetTextureType(index.getType()));
         if (mNativeTextureStorage->getFormat() != mtlFormat ||
-            size != mNativeTextureStorage->size(glLevel))
+            size != mNativeTextureStorage->getGLSize(glLevel))
         {
             // Keep other images
             deallocateNativeStorage(/*keepImages=*/true);
@@ -2118,7 +2135,7 @@ angle::Result TextureMtl::redefineImage(const gl::Context *context,
             imageDef.image->textureType() ==
                 mtl::GetTextureType(GetTextureImageType(index.getType())) &&
             imageDef.formatID == mNativeTextureStorage->getFormat().intendedFormatId &&
-            imageDef.image->sizeAt0() == size)
+            GetTextureGLSize(imageDef.image, mtl::kZeroNativeMipLevel) == size)
         {
             // Keep it! (No-op)
         }

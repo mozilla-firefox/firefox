@@ -157,9 +157,8 @@ std::string DynamicHLSL::GenerateVertexShaderForInputLayout(
     int semanticIndex       = 0;
     unsigned int inputIndex = 0;
 
-    for (size_t attributeIndex = 0; attributeIndex < shaderAttributes.size(); ++attributeIndex)
+    for (const gl::ProgramInput &shaderAttribute : shaderAttributes)
     {
-        const gl::ProgramInput &shaderAttribute = shaderAttributes[attributeIndex];
         if (!shaderAttribute.name.empty())
         {
             // Built-in attributes do not count

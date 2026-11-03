@@ -110,7 +110,8 @@ class FindInterpolantsTraverser : public TIntermTraverser
             TIntermTyped *correctedOffset = TIntermAggregate::CreateFunctionCall(
                 *getFlipFunction(), new TIntermSequence{offsetNode});
 
-            queueReplacementWithParent(node, offsetNode, correctedOffset, OriginalNode::IS_DROPPED);
+            queueReplacementWithParent(node, offsetNode, correctedOffset,
+                                       OriginalNode::BECOMES_CHILD);
         }
 
         return true;
@@ -192,8 +193,8 @@ class WrapInterpolantsTraverser : public TIntermTraverser
             }
         }
 
-        const char *functionName   = nullptr;
-        TIntermSequence *arguments = new TIntermSequence{original};
+        const char *functionName = nullptr;
+        bool needsSampleID       = false;
         switch (type.getQualifier())
         {
             case EvqFragmentIn:
@@ -211,18 +212,55 @@ class WrapInterpolantsTraverser : public TIntermTraverser
                 break;
             case EvqSampleIn:
             case EvqNoPerspectiveSampleIn:
-                functionName = "interpolateAtSample";
-                arguments->push_back(new TIntermSymbol(BuiltInVariable::gl_SampleID()));
+                functionName           = "interpolateAtSample";
+                needsSampleID          = true;
                 mUsesSampleInterpolant = true;
                 break;
             default:
                 UNREACHABLE();
                 break;
         }
-        TIntermTyped *replacement = CreateBuiltInFunctionCallNode(
-            functionName, arguments, *mSymbolTable, kESSLInternalBackendBuiltIns);
 
-        queueReplacementWithParent(ancestor, original, replacement, OriginalNode::BECOMES_CHILD);
+        auto interpolate = [&](TIntermNode *interpolant) {
+            TIntermSequence *arguments = new TIntermSequence{interpolant};
+            if (needsSampleID)
+            {
+                arguments->push_back(new TIntermSymbol(BuiltInVariable::gl_SampleID()));
+            }
+            return CreateBuiltInFunctionCallNode(functionName, arguments, *mSymbolTable,
+                                                 kESSLInternalBackendBuiltIns);
+        };
+
+        TIntermTyped *originalTyped = original->getAsTyped();
+        const TType &originalType   = originalTyped->getType();
+        TIntermTyped *replacement   = nullptr;
+
+        if (originalType.isArray())
+        {
+            // An array reference has no matching overload. Since each element is an
+            // interpolant and not the array, interpolate the elements into a new one. The new
+            // array is just a temp, so it is not an interpolant itself.
+            TType resultType(originalType);
+            resultType.setInterpolant(false);
+
+            TIntermSequence elements;
+            const int size = static_cast<int>(originalType.getOutermostArraySize());
+            for (int i = 0; i < size; ++i)
+            {
+                TIntermBinary *element = new TIntermBinary(
+                    EOpIndexDirect, originalTyped->deepCopy(), CreateIndexNode(i));
+                elements.push_back(interpolate(element));
+            }
+            replacement = TIntermAggregate::CreateConstructor(resultType, &elements);
+        }
+        else
+        {
+            replacement = interpolate(original);
+        }
+
+        queueReplacementWithParent(
+            ancestor, original, replacement,
+            originalType.isArray() ? OriginalNode::IS_DROPPED : OriginalNode::BECOMES_CHILD);
     }
 
     bool usesSampleInterpolant() const { return mUsesSampleInterpolant; }

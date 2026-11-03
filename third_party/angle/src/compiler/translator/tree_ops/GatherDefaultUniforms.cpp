@@ -101,20 +101,6 @@ bool IsDefaultUniform(const TType &type)
            !IsOpaqueType(type.getBasicType());
 }
 
-TSet<ImmutableString> *GetActiveUniforms(const std::vector<ShaderVariable> &defaultUniforms)
-{
-    auto activeUniforms = new TSet<ImmutableString>();
-    for (const ShaderVariable &uniform : defaultUniforms)
-    {
-        if (uniform.active)
-        {
-            activeUniforms->insert(uniform.name);
-        }
-    }
-
-    return activeUniforms;
-}
-
 bool GatherDefaultUniforms(TCompiler *compiler,
                            TIntermBlock *root,
                            TSymbolTable *symbolTable,
@@ -126,8 +112,6 @@ bool GatherDefaultUniforms(TCompiler *compiler,
     // First, collect all default uniforms and declare a uniform block.
     TFieldList *uniformList = new TFieldList;
     TVector<const TVariable *> uniformVars;
-
-    TSet<ImmutableString> *activeUniforms = GetActiveUniforms(compiler->getUniforms());
 
     for (TIntermNode *node : *root->getSequence())
     {
@@ -146,8 +130,7 @@ bool GatherDefaultUniforms(TCompiler *compiler,
         }
 
         const TType &type = symbol->getType();
-        // Only gather active default uniforms.
-        if (IsDefaultUniform(type) && activeUniforms->count(symbol->getName()) != 0)
+        if (IsDefaultUniform(type))
         {
             TType *fieldType = new TType(type);
 

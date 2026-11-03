@@ -23,11 +23,13 @@
 #include <climits>
 #include <cstdarg>
 #include <cstddef>
+#include <iterator>
 #include <mutex>
 #include <set>
 #include <sstream>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "common/unsafe_buffers.h"
@@ -209,6 +211,42 @@ std::string_view GetVulkanApiPerfCounterGroupName(VulkanApiPerfCounterGroup grou
 std::string_view GetVulkanApiPerfCounterTypeName(VulkanApiPerfCounterType type);
 std::string_view GetVulkanApiPerfCounterName(VulkanApiPerfCounterGroup group,
                                              VulkanApiPerfCounterType type);
+
+namespace internal
+{
+template <typename Range>
+class ReversedAdapter
+{
+  public:
+    explicit constexpr ReversedAdapter(Range &&range) : mRange(std::forward<Range>(range)) {}
+    constexpr ReversedAdapter(const ReversedAdapter &)  = default;
+    constexpr ReversedAdapter(ReversedAdapter &&)       = default;
+    ReversedAdapter &operator=(const ReversedAdapter &) = delete;
+    ReversedAdapter &operator=(ReversedAdapter &&)      = delete;
+
+    constexpr auto begin() { return std::rbegin(mRange); }
+    constexpr auto begin() const { return std::rbegin(mRange); }
+    constexpr auto cbegin() const { return std::crbegin(mRange); }
+
+    constexpr auto end() { return std::rend(mRange); }
+    constexpr auto end() const { return std::rend(mRange); }
+    constexpr auto cend() const { return std::crend(mRange); }
+
+  private:
+    Range mRange;
+};
+}  // namespace internal
+
+// Reversed returns a container adapter usable in a range-based "for" statement
+// for iterating a reversible container in reverse order.
+//
+// TODO(http://crbug.com/330910097): Switch to std::views::reverse once ANGLE
+// drops C++17 support and requires C++20.
+template <typename Range>
+constexpr internal::ReversedAdapter<Range> Reversed(Range &&range)
+{
+    return internal::ReversedAdapter<Range>(std::forward<Range>(range));
+}
 }  // namespace angle
 
 template <typename T, size_t N>

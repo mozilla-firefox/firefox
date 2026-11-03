@@ -64,6 +64,9 @@ struct ValidateASTOptions
     // Check that every symbol has its precision specified.  That includes variables, block members,
     // function parameters and return values.
     bool validatePrecision = true;
+    // Check that there is no const-foldable control flow (like |switch (constant)|, |if (true)|,
+    // etc).
+    bool validateNoConstantControlFlow = false;  // TODO
     // Check that variable declarations that can't have initializers don't have initializers
     // (varyings, uniforms for example).
     bool validateInitializers = true;  // TODO

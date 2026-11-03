@@ -2544,9 +2544,9 @@ void State::reset(const Context *context)
             texBinding.set(context, nullptr);
         }
     }
-    for (size_t samplerIdx = 0; samplerIdx < mSamplers.size(); samplerIdx++)
+    for (BindingPointer<Sampler> &sampler : mSamplers)
     {
-        mSamplers[samplerIdx].set(context, nullptr);
+        sampler.set(context, nullptr);
     }
 
     for (ImageUnit &imageUnit : mImageUnits)

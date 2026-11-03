@@ -885,8 +885,10 @@ const TString &TFieldListCollection::mangledFieldList() const
 int TFieldListCollection::calculateDeepestNesting() const
 {
     int maxNesting = 0;
-    for (size_t i = 0; i < mFields->size(); ++i)
-        maxNesting = std::max(maxNesting, (*mFields)[i]->type()->getDeepestStructNesting());
+    for (const TField *field : *mFields)
+    {
+        maxNesting = std::max(maxNesting, field->type()->getDeepestStructNesting());
+    }
     return 1 + maxNesting;
 }
 

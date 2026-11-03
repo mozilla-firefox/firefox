@@ -64,7 +64,7 @@ class SharedEventSyncImpl : public SyncImpl
                       bool enqueueEvent)
     {
         mMetalSharedEvent = std::move(sharedEvent);
-        mSignalValue = signalValue;
+        mSignalValue      = signalValue;
 
         if (enqueueEvent)
         {

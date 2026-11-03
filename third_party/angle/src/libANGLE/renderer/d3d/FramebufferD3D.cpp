@@ -284,6 +284,42 @@ gl::FramebufferStatus FramebufferD3D::checkStatus(const gl::Context *context) co
             gl::err::kFramebufferIncompleteUnsupportedMissmatchedDimensions);
     }
 
+    // D3D11's OMSetRenderTargets requires all bound RenderTargetViews and the DepthStencilView to
+    // have matching resource dimensions; otherwise the call fails and leaves the previously bound
+    // targets active on the device context. 3D texture color attachments use
+    // D3D11_RTV_DIMENSION_TEXTURE3D, so they cannot be mixed with non-3D color attachments (such
+    // as 2D textures, 2D array textures, cube maps, or renderbuffers).
+    bool has3DAttachment    = false;
+    bool hasNon3DAttachment = false;
+    for (const gl::FramebufferAttachment &attachment : mState.getColorAttachments())
+    {
+        if (attachment.isAttached())
+        {
+            if (attachment.type() == GL_TEXTURE &&
+                attachment.getTextureImageIndex().getType() == gl::TextureType::_3D)
+            {
+                has3DAttachment = true;
+            }
+            else
+            {
+                hasNon3DAttachment = true;
+            }
+        }
+    }
+    // D3D11 does not support 3D depth/stencil views (D3D11_DSV_DIMENSION_TEXTURE3D does not
+    // exist), so any depth or stencil attachment is always non-3D and cannot be bound alongside a
+    // 3D texture color attachment in OMSetRenderTargets.
+    if (mState.getDepthAttachment() != nullptr || mState.getStencilAttachment() != nullptr)
+    {
+        hasNon3DAttachment = true;
+    }
+    if (has3DAttachment && hasNon3DAttachment)
+    {
+        return gl::FramebufferStatus::Incomplete(
+            GL_FRAMEBUFFER_UNSUPPORTED,
+            gl::err::kFramebufferIncompleteUnsupportedMixed3DAndNon3DAttachments);
+    }
+
     return gl::FramebufferStatus::Complete();
 }
 

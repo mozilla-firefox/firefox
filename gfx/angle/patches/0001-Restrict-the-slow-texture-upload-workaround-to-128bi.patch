@@ -1,4 +1,4 @@
-From e1231a3406b48ebac1d9b892086cbee8f50c3584 Mon Sep 17 00:00:00 2001
+From 23e4a78ecbaf6a15dbf80346b96874dc71f3aef5 Mon Sep 17 00:00:00 2001
 From: Dzmitry Malyshau <dmalyshau@mozilla.com>
 Date: Thu, 5 Dec 2019 13:02:14 -0500
 Subject: [PATCH] Restrict the slow texture upload workaround to 128bit
@@ -55,10 +55,10 @@ index c718cedff..09972897e 100644
              "name": "depth_stencil_blit_extra_copy",
              "category": "Workarounds",
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-index 01e299c54..d91d61c5d 100644
+index 842388878..932607fcc 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-@@ -290,6 +290,23 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
+@@ -366,6 +366,23 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
      return angle::Result::Continue;
  }
  
@@ -82,7 +82,7 @@ index 01e299c54..d91d61c5d 100644
  bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *image) const
  {
      if (!isValidIndex(index) || !isImageComplete(index))
-@@ -297,7 +314,7 @@ bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *i
+@@ -373,7 +390,7 @@ bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *i
          return false;
      }
  
@@ -91,8 +91,8 @@ index 01e299c54..d91d61c5d 100644
      {
          return false;
      }
-@@ -697,13 +714,13 @@ angle::Result TextureD3D::generateMipmapUsingImages(const gl::Context *context,
-         canCreateRenderTargetForImage(getImageIndex(mBaseLevel, 0)) &&
+@@ -775,13 +792,13 @@ angle::Result TextureD3D::generateMipmapUsingImages(const gl::Context *context,
+         canCreateRenderTargetForImage(getImageIndex(baseLevel, 0)) &&
          mRenderer->getRendererClass() == RENDERER_D3D11)
      {
 -        if (!mRenderer->getFeatures().setDataFasterThanImageUpload.enabled)
@@ -108,10 +108,10 @@ index 01e299c54..d91d61c5d 100644
          // When making mipmaps with the setData workaround enabled, the texture storage has
          // the image data already. For non-render-target storage, we have to pull it out into
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
-index 2e05754bc..bdb338041 100644
+index 3117f08c5..e100ad0e6 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.h
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.h
-@@ -241,6 +241,7 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+@@ -259,6 +259,7 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
  
      virtual angle::Result updateStorage(const gl::Context *context) = 0;
  
@@ -137,10 +137,10 @@ index a0feee978..6615f095c 100644
  
      ANGLE_FEATURE_CONDITION(features, disableB5G6R5Support,
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index 20700bf6a..9a7ec97b7 100644
+index bd0a23f86..946509568 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
-@@ -332,6 +332,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+@@ -335,6 +335,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
      {Feature::ScalarizeVecAndMatConstructorArgs, "scalarizeVecAndMatConstructorArgs"},
      {Feature::SelectViewInGeometryShader, "selectViewInGeometryShader"},
      {Feature::SetDataFasterThanImageUpload, "setDataFasterThanImageUpload"},
@@ -149,10 +149,10 @@ index 20700bf6a..9a7ec97b7 100644
      {Feature::SetPrimitiveRestartFixedIndexForDrawArrays, "setPrimitiveRestartFixedIndexForDrawArrays"},
      {Feature::SetZeroLevelBeforeGenerateMipmap, "setZeroLevelBeforeGenerateMipmap"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index 9806d537f..765a104d7 100644
+index 6d6b17a8e..147bd30bd 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
-@@ -332,6 +332,7 @@ enum class Feature
+@@ -335,6 +335,7 @@ enum class Feature
      ScalarizeVecAndMatConstructorArgs,
      SelectViewInGeometryShader,
      SetDataFasterThanImageUpload,
@@ -161,5 +161,5 @@ index 9806d537f..765a104d7 100644
      SetPrimitiveRestartFixedIndexForDrawArrays,
      SetZeroLevelBeforeGenerateMipmap,
 -- 
-2.43.0
+2.56.0
 

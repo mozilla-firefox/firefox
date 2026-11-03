@@ -33,9 +33,8 @@ void ExpandStructVariable(const ShaderVariable &variable,
 
     const std::vector<ShaderVariable> &fields = variable.fields;
 
-    for (size_t fieldIndex = 0; fieldIndex < fields.size(); fieldIndex++)
+    for (const ShaderVariable &field : fields)
     {
-        const ShaderVariable &field = fields[fieldIndex];
         ExpandVariable(field, name + "." + field.name, expanded);
     }
 }

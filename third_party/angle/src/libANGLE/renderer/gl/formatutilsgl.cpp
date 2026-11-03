@@ -658,6 +658,30 @@ static GLenum GetTexStorageNativeInternalFormat(const FunctionsGL *functions,
             // internal format. http://anglebug.com/42267264
             result = GL_BGRA8_EXT;
         }
+        else if (features.virtualizeBaseLevelAndMipchain.enabled)
+        {
+            // virtualizeBaseLevelAndMipchain allocates mutable texture levels and assembled
+            // mipchains with glTexStorage* and copies between them with glCopyImageSubData, which
+            // require sized internal formats and R/RG emulation for LUMA formats (since
+            // GL_LUMINANCE8_EXT / GL_LUMINANCE8_ALPHA8_EXT / GL_ALPHA8_EXT are not supported by
+            // glCopyImageSubData).
+            if (IsLUMAFormat(internalFormat.format))
+            {
+                result = EmulateLUMA(internalFormat).sizedInternalFormat;
+            }
+            else if (internalFormat.sizedInternalFormat == GL_DEPTH_COMPONENT32_OES &&
+                     !functions->hasGLESExtension("GL_OES_depth32"))
+            {
+                // Best-effort attempt to provide as many bits as possible when glTexStorage* is
+                // used for GL_DEPTH_COMPONENT / GL_UNSIGNED_INT (whose sizedInternalFormat is
+                // GL_DEPTH_COMPONENT32_OES) without GL_OES_depth32.
+                result = GL_DEPTH_COMPONENT24;
+            }
+            else
+            {
+                result = internalFormat.sizedInternalFormat;
+            }
+        }
         else
         {
             result = GetNativeInternalFormat(functions, features, internalFormat);
@@ -700,10 +724,13 @@ static GLenum GetNativeFormat(const FunctionsGL *functions,
     }
     else if (functions->isAtLeastGLES(gl::Version(3, 0)))
     {
-        // Transform sRGB formats to RGB if either the GLES driver doesn't support GL_EXT_sRGB, or
-        // to work around Adreno driver bugs reading back unsized sRGB texture data.
+        // Transform sRGB formats to RGB if either the GLES driver doesn't support GL_EXT_sRGB, to
+        // work around Adreno driver bugs reading back unsized sRGB texture data, or when
+        // virtualizeBaseLevelAndMipchain allocates sized GL_SRGB8 / GL_SRGB8_ALPHA8 storage and
+        // uploads via glTexSubImage* (which requires GL_RGB / GL_RGBA in ES 3.0).
         if (!functions->hasGLESExtension("GL_EXT_sRGB") ||
-            features.unsizedSRGBReadPixelsDoesntTransform.enabled)
+            features.unsizedSRGBReadPixelsDoesntTransform.enabled ||
+            features.virtualizeBaseLevelAndMipchain.enabled)
         {
             if (format == GL_SRGB)
             {
@@ -716,12 +743,14 @@ static GLenum GetNativeFormat(const FunctionsGL *functions,
             }
         }
 
-        if ((type == GL_FLOAT && !functions->hasGLESExtension("GL_OES_texture_float")) ||
+        if (features.virtualizeBaseLevelAndMipchain.enabled ||
+            (type == GL_FLOAT && !functions->hasGLESExtension("GL_OES_texture_float")) ||
             (type == GL_HALF_FLOAT_OES &&
              !functions->hasGLESExtension("GL_OES_texture_half_float")))
         {
-            // On ES 3.0 systems that don't have GL_OES_texture_float or OES_texture_half_float, the
-            // LUMINANCE/ALPHA formats from those extensions must be emulated with R/RG textures.
+            // On ES 3.0 systems that don't have GL_OES_texture_float or OES_texture_half_float, or
+            // when virtualizeBaseLevelAndMipchain emulates LUMA formats with sized R/RG storage,
+            // the LUMINANCE/ALPHA formats must be uploaded with GL_RED / GL_RG.
             if (IsLUMAFormat(format))
             {
                 result = EmulateLUMAFormat(format);
@@ -780,11 +809,13 @@ static GLenum GetNativeType(const FunctionsGL *functions,
     {
         if (type == GL_HALF_FLOAT_OES)
         {
-            if (!IsLUMAFormat(format) || !functions->hasGLESExtension("GL_OES_texture_half_float"))
+            if (!IsLUMAFormat(format) ||
+                !functions->hasGLESExtension("GL_OES_texture_half_float") ||
+                features.virtualizeBaseLevelAndMipchain.enabled)
             {
                 // In ES3, the luminance formats come from OES_texture_half_float, which uses
                 // HALF_FLOAT_OES. Other formats (like RGBA) use HALF_FLOAT (non-OES) in ES3.
-                // If they're emulated (see above), use HALF_FLOAT.
+                // If they're emulated with R/RG (see above), use HALF_FLOAT.
                 result = GL_HALF_FLOAT;
             }
         }

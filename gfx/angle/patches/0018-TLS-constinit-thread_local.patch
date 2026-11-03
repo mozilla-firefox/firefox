@@ -1,3 +1,5 @@
+From: Sotaro Ikeda <sotaro.ikeda.g@gmail.com>
+Date: Wed, 21 Oct 2026 07:49:54 +0000
 Subject: [PATCH] Mark ANGLE TLS pointers constinit
 
 Declare and define the current thread and context pointers as constinit so

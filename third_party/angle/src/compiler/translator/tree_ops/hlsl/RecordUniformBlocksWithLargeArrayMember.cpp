@@ -76,9 +76,9 @@ static bool IsSupportedTypeForStructuredBuffer(const TType &type)
     if (structure)
     {
         const TFieldList &fields = structure->fields();
-        for (size_t i = 0; i < fields.size(); i++)
+        for (const TField *field : fields)
         {
-            const TType &fieldType = *fields[i]->type();
+            const TType &fieldType = *field->type();
             // Do not allow the structure's member is array or structure.
             if (fieldType.isArray() || fieldType.getStruct() ||
                 !(fieldType.isScalar() || fieldType.isVector() ||
@@ -135,9 +135,9 @@ static bool FieldIsOrHasLargeArrayField(const TField &field)
     {
         const TFieldList &fields = structure->fields();
         bool hasLargeArrayField  = false;
-        for (size_t i = 0; i < fields.size(); i++)
+        for (const TField *subField : fields)
         {
-            hasLargeArrayField = FieldIsOrHasLargeArrayField(*fields[i]);
+            hasLargeArrayField = FieldIsOrHasLargeArrayField(*subField);
             if (hasLargeArrayField)
             {
                 break;
@@ -153,9 +153,9 @@ static bool IsInterfaceBlockWithLargeArrayField(const TInterfaceBlock &interface
 {
     const TFieldList &fields = interfaceBlock.fields();
     bool isLargeArrayField   = false;
-    for (size_t i = 0; i < fields.size(); i++)
+    for (const TField *field : fields)
     {
-        isLargeArrayField = FieldIsOrHasLargeArrayField(*fields[i]);
+        isLargeArrayField = FieldIsOrHasLargeArrayField(*field);
         if (isLargeArrayField)
         {
             break;

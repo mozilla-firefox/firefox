@@ -281,9 +281,9 @@ void AddPreciseSubObjects(ASTInfo *info, const ObjectAndAccessChain &object)
     }
     const TVector<size_t> &accessChain = object.accessChain.getChain();
 
-    for (size_t length = 0; length < accessChain.size(); ++length)
+    for (size_t fieldIndex : accessChain)
     {
-        block = block->fields()[accessChain[length]]->type()->getStruct();
+        block = block->fields()[fieldIndex]->type()->getStruct();
     }
 
     if (block == nullptr)

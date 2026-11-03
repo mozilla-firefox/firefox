@@ -35,10 +35,15 @@ constexpr const char kXfbBufferOffsets[]       = "xfbBufferOffsets";
 constexpr const char kXfbVerticesPerInstance[] = "xfbVerticesPerInstance";
 constexpr const char kUnused[]                 = "unused";
 constexpr const char kUnused2[]                = "unused2";
+
+// MSL-specific variable name, which is different from kDriverUniformsVarName, because the
+// assumptions about the naming conventions of ANGLE-internal variables run too deeply to rename
+// this one.
+constexpr const char kDriverUniformsVarNameMSL[] = "ANGLE_angleUniforms";
 }  // anonymous namespace
 
 // Class DriverUniform
-bool DriverUniform::addComputeDriverUniformsToShader(TIntermBlock *root, TSymbolTable *symbolTable)
+void DriverUniform::addComputeDriverUniformsToShader(TIntermBlock *root, TSymbolTable *symbolTable)
 {
     constexpr size_t kNumComputeDriverUniforms                                               = 1;
     constexpr std::array<const char *, kNumComputeDriverUniforms> kComputeDriverUniformNames = {
@@ -71,7 +76,6 @@ bool DriverUniform::addComputeDriverUniformsToShader(TIntermBlock *root, TSymbol
     mDriverUniforms = DeclareInterfaceBlockVariable(root, symbolTable, EvqUniform, interfaceBlock,
                                                     layoutQualifier, TMemoryQualifier::Create(), 0,
                                                     kDriverUniformsVarName);
-    return mDriverUniforms != nullptr;
 }
 
 TFieldList *DriverUniform::createUniformFields(TSymbolTable *symbolTable)
@@ -157,7 +161,7 @@ const TType *DriverUniform::createEmulatedDepthRangeType(TSymbolTable *symbolTab
 // variable.
 //
 // There are Graphics and Compute variations as they require different uniforms.
-bool DriverUniform::addGraphicsDriverUniformsToShader(TIntermBlock *root, TSymbolTable *symbolTable)
+void DriverUniform::addGraphicsDriverUniformsToShader(TIntermBlock *root, TSymbolTable *symbolTable)
 {
     ASSERT(!mDriverUniforms);
 
@@ -188,17 +192,67 @@ bool DriverUniform::addGraphicsDriverUniformsToShader(TIntermBlock *root, TSymbo
     else
     {
         // Declare a structure "ANGLEUniformBlock" with instance name "ANGLE_angleUniforms".
-        // This code path is taken only by the direct-to-Metal backend, and the assumptions
-        // about the naming conventions of ANGLE-internal variables run too deeply to rename
-        // this one.
-        auto varName = ImmutableString("ANGLE_angleUniforms");
+        const ImmutableString varName = ImmutableString(kDriverUniformsVarNameMSL);
         auto result =
             DeclareStructure(root, symbolTable, driverFieldList, EvqUniform,
                              TMemoryQualifier::Create(), 0, kDriverUniformsBlockName, &varName);
         mDriverUniforms = result.second;
     }
+}
 
-    return mDriverUniforms != nullptr;
+void DriverUniform::findDeclarationAddedByIR(TIntermBlock *root)
+{
+    TIntermSequence *original = root->getSequence();
+
+    for (TIntermNode *node : *original)
+    {
+        TIntermDeclaration *decl = node->getAsDeclarationNode();
+        if (decl == nullptr || decl->getSequence()->size() != 1)
+        {
+            continue;
+        }
+
+        TIntermSymbol *symbol = decl->getSequence()->front()->getAsSymbolNode();
+        if (symbol == nullptr)
+        {
+            continue;
+        }
+
+        const TVariable &variable = symbol->variable();
+        const TType &type         = variable.getType();
+        if (type.getInterfaceBlock() == nullptr && type.getStruct() == nullptr)
+        {
+            continue;
+        }
+
+        const TSymbol *typeSymbol = type.getInterfaceBlock() != nullptr
+                                        ? static_cast<const TSymbol *>(type.getInterfaceBlock())
+                                        : type.getStruct();
+
+        // The gl_DepthRangeParams struct is emulated with a struct by the name of
+        // kEmulatedDepthRangeParams.  This struct is only present in graphics shader.
+        if (typeSymbol->symbolType() == SymbolType::AngleInternal &&
+            typeSymbol->name() == kEmulatedDepthRangeParams)
+        {
+            ASSERT(mEmulatedDepthRangeType == nullptr);
+            mEmulatedDepthRangeType = new TType(type.getStruct(), false);
+            continue;
+        }
+
+        // The driver uniform declaration is normally an interface block, but could be a struct for
+        // MSL.  Either way, the name of the _type_ is the same and it's kDriverUniformsBlockName.
+        if (variable.symbolType() != SymbolType::Empty &&
+            typeSymbol->symbolType() == SymbolType::AngleInternal &&
+            typeSymbol->name() == kDriverUniformsBlockName)
+        {
+            ASSERT(mDriverUniforms == nullptr);
+            ASSERT((mMode == DriverUniformMode::InterfaceBlock) ==
+                   (type.getInterfaceBlock() != nullptr));
+            mDriverUniforms = &variable;
+        }
+    }
+
+    ASSERT(mDriverUniforms != nullptr);
 }
 
 TIntermTyped *DriverUniform::createDriverUniformRef(const char *fieldName) const
@@ -432,9 +486,9 @@ TFieldList *DriverUniformExtended::createUniformFields(TSymbolTable *symbolTable
             {kXfbBufferOffsets, kXfbVerticesPerInstance, kUnused, kUnused2}};
 
     const std::array<TType *, kNumGraphicsDriverUniformsExt> kDriverUniformTypesExt = {{
-        // xfbBufferOffsets: uvec4
+        // xfbBufferOffsets: ivec4
         new TType(EbtInt, EbpHigh, EvqGlobal, 4),
-        // xfbVerticesPerInstance: uint
+        // xfbVerticesPerInstance: int
         new TType(EbtInt, EbpHigh, EvqGlobal),
         // unused: uvec3
         new TType(EbtUInt, EbpHigh, EvqGlobal),

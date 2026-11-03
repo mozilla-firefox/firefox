@@ -24,6 +24,7 @@
 #include "libANGLE/renderer/metal/SurfaceMtl.h"
 #include "libANGLE/renderer/metal/mtl_utils.h"
 #include "libANGLE/renderer/renderer_utils.h"
+#include "libANGLE/trace.h"
 
 namespace rx
 {
@@ -163,7 +164,9 @@ void FramebufferMtl::reset()
 
     mRenderPassFirstColorAttachmentFormat = nullptr;
 
-    mReadPixelBuffer = nullptr;
+    mReadPixelBuffer                      = nullptr;
+    mRenderPassDesc                       = {};
+    mRenderPassDescChangedBeforeSyncState = false;
 }
 
 void FramebufferMtl::destroy(const gl::Context *context)
@@ -795,7 +798,9 @@ angle::Result FramebufferMtl::syncState(const gl::Context *context,
     }
 
     ANGLE_TRY(prepareRenderPass(context, &mRenderPassDesc, command));
-    bool renderPassChanged = !oldRenderPassDesc.equalIgnoreLoadStoreOptions(mRenderPassDesc);
+    bool renderPassChanged = mRenderPassDescChangedBeforeSyncState ||
+                             !oldRenderPassDesc.equalIgnoreLoadStoreOptions(mRenderPassDesc);
+    mRenderPassDescChangedBeforeSyncState = false;
 
     if (mustNotifyContext || renderPassChanged)
     {
@@ -819,6 +824,44 @@ angle::Result FramebufferMtl::getSamplePosition(const gl::Context *context,
 {
     rx::GetSamplePosition(getSamples(), index, xy);
     return angle::Result::Continue;
+}
+
+void FramebufferMtl::onAttachmentDetached(const gl::Context *context, size_t dirtyBit)
+{
+    ANGLE_TRACE_EVENT("gpu.angle", "FramebufferMtl::onAttachmentDetached");
+
+    // Ensure the next syncState() detects that the render pass changed even though mRenderPassDesc
+    // has already been updated before oldRenderPassDesc is snapshotted.
+    mRenderPassDescChangedBeforeSyncState = true;
+    mStartedRenderEncoderSerial           = 0;
+
+    switch (dirtyBit)
+    {
+        case gl::Framebuffer::DIRTY_BIT_DEPTH_ATTACHMENT:
+            mRenderPassDesc.depthAttachment = {};
+            mDepthRenderTarget              = nullptr;
+            break;
+        case gl::Framebuffer::DIRTY_BIT_STENCIL_ATTACHMENT:
+            mRenderPassDesc.stencilAttachment = {};
+            mStencilRenderTarget              = nullptr;
+            break;
+        default:
+            static_assert(gl::Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_0 == 0, "FB dirty bits");
+            if (dirtyBit < gl::Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_MAX)
+            {
+                size_t colorIndexGL = dirtyBit - gl::Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_0;
+                ASSERT(colorIndexGL < mColorRenderTargets.size());
+                if (mColorRenderTargets[colorIndexGL] &&
+                    mRenderPassFirstColorAttachmentFormat ==
+                        &mColorRenderTargets[colorIndexGL]->getFormat())
+                {
+                    mRenderPassFirstColorAttachmentFormat = nullptr;
+                }
+                mRenderPassDesc.colorAttachments[colorIndexGL] = {};
+                mColorRenderTargets[colorIndexGL]              = nullptr;
+            }
+            break;
+    }
 }
 
 angle::Result FramebufferMtl::prepareForUse(const gl::Context *context) const
@@ -1655,6 +1698,9 @@ angle::Result FramebufferMtl::readPixelsImpl(const gl::Context *context,
 
         buffer->syncContent(contextMtl, contextMtl->getBlitCommandEncoder());
         const uint8_t *bufferData = buffer->mapReadOnly(contextMtl).data();
+        // Verify that the command buffer (including any pending clears/draws and the readback
+        // blit) executed without GPU faults before reading back the buffer contents.
+        ANGLE_TRY(contextMtl->checkCommandBufferError());
 
         angle::Result result = readPixelsCopyImpl(
             context, area, packPixelsParams, renderTarget,
@@ -1674,6 +1720,8 @@ angle::Result FramebufferMtl::readPixelsImpl(const gl::Context *context,
     {
         contextMtl->flushCommandBuffer(mtl::WaitUntilFinished);
     }
+    // Verify that prior command buffers affecting this texture completed without GPU faults.
+    ANGLE_TRY(contextMtl->checkCommandBufferError());
 
     angle::MemoryBuffer readPixelRowBuffer;
     auto checkedRowPitch = angle::CheckedNumeric<size_t>(area.width) * readAngleFormat.pixelBytes;

@@ -36,7 +36,7 @@ LOCAL_INCLUDES += [
     "/third_party/angle/include/",
     "/third_party/angle/src/",
     "/third_party/angle/src/common/base/",
-    "/third_party/angle/src/common/third_party/xxhash/",
+    "/third_party/angle/src/common/third_party/xxhash/src/",
     "/third_party/angle/third_party/vulkan-headers/src/include/",
     "/tools/profiler/public"
 ]

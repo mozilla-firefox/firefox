@@ -345,7 +345,8 @@ angle::Result Image11::loadCompressedData(const gl::Context *context,
         d3dFormatInfo.getLoadFunctions()(GL_UNSIGNED_BYTE).loadFunction;
 
     D3D11_MAPPED_SUBRESOURCE mappedImage;
-    ANGLE_TRY(map(context, D3D11_MAP_WRITE, &mappedImage));
+    // Map as read-write to preserve zero-initialization on unwritten blocks.
+    ANGLE_TRY(map(context, D3D11_MAP_READ_WRITE, &mappedImage));
 
     uint8_t *offsetMappedData = ANGLE_UNSAFE_TODO(
         static_cast<uint8_t *>(mappedImage.pData) +
@@ -461,7 +462,8 @@ angle::Result Image11::copyFromFramebuffer(const gl::Context *context,
     // This format requires conversion, so we must copy the texture to staging and manually convert
     // via readPixels
     D3D11_MAPPED_SUBRESOURCE mappedImage;
-    ANGLE_TRY(map(context, D3D11_MAP_WRITE, &mappedImage));
+    // Map as read-write to preserve zero-initialization on unwritten pixels.
+    ANGLE_TRY(map(context, D3D11_MAP_READ_WRITE, &mappedImage));
 
     // determine the offset coordinate into the destination buffer
     const auto &dxgiFormatInfo = d3d11::GetDXGIFormatSizeInfo(mDXGIFormat);

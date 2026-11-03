@@ -898,12 +898,12 @@ angle::Result IncompleteTextureSet::getIncompleteTexture(
     {
         // We need to provide enough pixel data to fill the array of six faces
         GLubyte incompleteCubeArrayPixels[kCubeMapArraySize][4];
-        for (int i = 0; i < kCubeMapArraySize; ++i)
+        for (GLubyte *incompleteCubeArrayPixel : incompleteCubeArrayPixels)
         {
-            incompleteCubeArrayPixels[i][0] = incompleteTextureParam.clearColor[0];
-            incompleteCubeArrayPixels[i][1] = incompleteTextureParam.clearColor[1];
-            incompleteCubeArrayPixels[i][2] = incompleteTextureParam.clearColor[2];
-            incompleteCubeArrayPixels[i][3] = incompleteTextureParam.clearColor[3];
+            incompleteCubeArrayPixel[0] = incompleteTextureParam.clearColor[0];
+            incompleteCubeArrayPixel[1] = incompleteTextureParam.clearColor[1];
+            incompleteCubeArrayPixel[2] = incompleteTextureParam.clearColor[2];
+            incompleteCubeArrayPixel[3] = incompleteTextureParam.clearColor[3];
         }
 
         ANGLE_TRY(t->setSubImage(mutableContext, unpack, nullptr,

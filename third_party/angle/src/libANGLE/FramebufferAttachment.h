@@ -275,6 +275,10 @@ inline const ImageIndex &FramebufferAttachment::getTextureImageIndex() const
 inline angle::Result FramebufferAttachment::ensureSizeResolved(const Context *context) const
 {
     ASSERT(mResource);
+    // Do not lock Surface::mMutex here when mType == GL_FRAMEBUFFER_DEFAULT. This method is called
+    // from GL entry points while ContextMutex is already held, whereas EGL entry points acquire
+    // Surface::mMutex before ContextMutex. The default framebuffer surface is current on |context|
+    // and protected by ContextMutex.
     return mResource->ensureSizeResolved(context);
 }
 

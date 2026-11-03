@@ -254,26 +254,20 @@ struct FeaturesGL : FeatureSetBase
         &members,
     };
 
-    FeatureInfo resetBaseLevelForASTCImage = {
-        "resetBaseLevelForASTCImage",
+    FeatureInfo virtualizeBaseLevelAndMipchain = {
+        "virtualizeBaseLevelAndMipchain",
         FeatureCategory::OpenGLWorkarounds,
         &members,
     };
 
-    FeatureInfo recreateImmutableTextureOnBaseLevelIncrease = {
-        "recreateImmutableTextureOnBaseLevelIncrease",
+    FeatureInfo copyImageSubData3DFailsOnTailMipLevels = {
+        "copyImageSubData3DFailsOnTailMipLevels",
         FeatureCategory::OpenGLWorkarounds,
         &members,
     };
 
-    FeatureInfo resetTexStorage2DBaseLevel = {
-        "resetTexStorage2DBaseLevel",
-        FeatureCategory::OpenGLWorkarounds,
-        &members,
-    };
-
-    FeatureInfo useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData = {
-        "useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData",
+    FeatureInfo readback3DDepthStencilPbosDuringUpload = {
+        "readback3DDepthStencilPbosDuringUpload",
         FeatureCategory::OpenGLWorkarounds,
         &members,
     };
@@ -776,12 +770,6 @@ struct FeaturesGL : FeatureSetBase
         &members,
     };
 
-    FeatureInfo uploadOversizedMipLevelsViaUnpackBuffer = {
-        "uploadOversizedMipLevelsViaUnpackBuffer",
-        FeatureCategory::OpenGLWorkarounds,
-        &members,
-    };
-
     FeatureInfo validateState = {
         "validateState",
         FeatureCategory::OpenGLFeatures,
@@ -796,6 +784,36 @@ struct FeaturesGL : FeatureSetBase
 
     FeatureInfo useTexSubImageForClientDataNpotUploads = {
         "useTexSubImageForClientDataNpotUploads",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
+    FeatureInfo doubleClearForRobustInit = {
+        "doubleClearForRobustInit",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
+    FeatureInfo deferGlDeleteBuffers = {
+        "deferGlDeleteBuffers",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
+    FeatureInfo recreateFboOnAttachmentRespecification = {
+        "recreateFboOnAttachmentRespecification",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
+    FeatureInfo finishBeforeSameTextureCopy = {
+        "finishBeforeSameTextureCopy",
+        FeatureCategory::OpenGLWorkarounds,
+        &members,
+    };
+
+    FeatureInfo disablePixelLocalStorage = {
+        "disablePixelLocalStorage",
         FeatureCategory::OpenGLWorkarounds,
         &members,
     };

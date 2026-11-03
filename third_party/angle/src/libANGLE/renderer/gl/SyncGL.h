@@ -10,6 +10,7 @@
 #define LIBANGLE_RENDERER_GL_FENCESYNCGL_H_
 
 #include "libANGLE/renderer/SyncImpl.h"
+#include "libANGLE/renderer/gl/StateManagerGL.h"
 
 #include <memory>
 
@@ -38,6 +39,7 @@ class SyncGL : public SyncImpl
   private:
     std::shared_ptr<RendererGL> mRenderer;
     GLsync mSyncObject;
+    StateManagerGL::ExecutionSerial mDeferredBufferDeletionSerial;
 };
 }  // namespace rx
 

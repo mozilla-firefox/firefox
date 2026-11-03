@@ -99,17 +99,21 @@ constexpr ImmutableString kDefaultUniformsBlockName = ImmutableString("defaultUn
     TIntermBinary *inverseXY   = new TIntermBinary(EOpMul, removePivot, flipXY);
     TIntermBinary *plusPivot   = new TIntermBinary(EOpAdd, inverseXY, pivot->deepCopy());
 
-    // Create the corrected variable and copy the value of the original builtin.
-    TIntermBinary *assignment =
-        new TIntermBinary(EOpAssign, flippedBuiltinRef, builtinRef->deepCopy());
+    // Assign to the replaced variable, with .xy rotated and .zy (if any) retaining the original
+    // builtin value.
+    const uint8_t nominalSize = builtin->getType().getNominalSize();
+    ASSERT(nominalSize == 2 || nominalSize == 4);
 
-    // Create an assignment to the replaced variable's .xy.
-    TIntermSwizzle *correctedXY = new TIntermSwizzle(flippedBuiltinRef->deepCopy(), {0, 1});
-    TIntermBinary *assignToXY   = new TIntermBinary(EOpAssign, correctedXY, plusPivot);
+    TIntermTyped *flippedValue = plusPivot;
+    if (nominalSize == 4)
+    {
+        flippedValue = TIntermAggregate::CreateConstructor(
+            builtin->getType(), {plusPivot, new TIntermSwizzle(builtinRef->deepCopy(), {2, 3})});
+    }
 
     // Add this assigment at the beginning of the main function
-    insertSequence->insert(insertSequence->begin(), assignToXY);
-    insertSequence->insert(insertSequence->begin(), assignment);
+    insertSequence->insert(insertSequence->begin(),
+                           new TIntermBinary(EOpAssign, flippedBuiltinRef, flippedValue));
 
     return compiler->validateAST(root);
 }
@@ -205,7 +209,8 @@ TIntermSequence *GetMainSequence(TIntermBlock *root)
     //     ivec4 ANGLEGetXfbOffsets(ivec4 strides)
     //     {
     //         int xfbIndex = gl_VertexIndex
-    //                      + gl_InstanceIndex * ANGLEUniforms.xfbVerticesPerInstance;
+    //                      + (gl_InstanceIndex - ANGLEUniforms.baseInstance)
+    //                        * ANGLEUniforms.xfbVerticesPerInstance;
     //         return ANGLEUniforms.xfbBufferOffsets + xfbIndex * strides;
     //     }
 
@@ -220,16 +225,17 @@ TIntermSequence *GetMainSequence(TIntermBlock *root)
                                           SymbolType::AngleInternal);
     TIntermSymbol *stridesSymbol = new TIntermSymbol(stridesVar);
 
-    // Create references to gl_VertexIndex, gl_InstanceIndex, ANGLEUniforms.xfbVerticesPerInstance
-    // and ANGLEUniforms.xfbBufferOffsets.
+    // Create references to gl_VertexIndex, gl_InstanceIndex, ANGLEUniforms.baseInstance,
+    // ANGLEUniforms.xfbVerticesPerInstance and ANGLEUniforms.xfbBufferOffsets.
     TIntermSymbol *vertexIndex           = new TIntermSymbol(BuiltInVariable::gl_VertexIndex());
     TIntermSymbol *instanceIndex         = new TIntermSymbol(BuiltInVariable::gl_InstanceIndex());
+    TIntermTyped *baseInstance           = driverUniforms->getBaseInstance();
     TIntermTyped *xfbVerticesPerInstance = driverUniforms->getXfbVerticesPerInstance();
     TIntermTyped *xfbBufferOffsets       = driverUniforms->getXfbBufferOffsets();
 
-    // gl_InstanceIndex * ANGLEUniforms.xfbVerticesPerInstance
-    TIntermBinary *xfbInstanceIndex =
-        new TIntermBinary(EOpMul, instanceIndex, xfbVerticesPerInstance);
+    // (gl_InstanceIndex - ANGLEUniforms.baseInstance) * ANGLEUniforms.xfbVerticesPerInstance
+    TIntermBinary *instanceID       = new TIntermBinary(EOpSub, instanceIndex, baseInstance);
+    TIntermBinary *xfbInstanceIndex = new TIntermBinary(EOpMul, instanceID, xfbVerticesPerInstance);
 
     // gl_VertexIndex + |xfbInstanceIndex|
     TIntermBinary *xfbIndex = new TIntermBinary(EOpAdd, vertexIndex, xfbInstanceIndex);
@@ -674,18 +680,18 @@ bool TranslatorSPIRV::translateImpl(TIntermBlock *root,
         }
     }
 
-    // If there are any function calls that take array-of-array of opaque uniform parameters, or
-    // other opaque uniforms that need special handling in Vulkan, such as atomic counters,
-    // monomorphize the functions by removing said parameters and replacing them in the function
-    // body with the call arguments.
-    //
-    // This has a few benefits:
-    //
-    // - It dramatically simplifies future transformations w.r.t to samplers in structs, array of
-    //   arrays of opaque types, atomic counters etc.
-    // - Avoids the need for shader*ArrayDynamicIndexing Vulkan features.
     if (!compileOptions.useIR)
     {
+        // If there are any function calls that take array-of-array of opaque uniform parameters, or
+        // other opaque uniforms that need special handling in Vulkan, such as atomic counters,
+        // monomorphize the functions by removing said parameters and replacing them in the function
+        // body with the call arguments.
+        //
+        // This has a few benefits:
+        //
+        // - It dramatically simplifies future transformations w.r.t to samplers in structs, array
+        //   of arrays of opaque types, atomic counters etc.
+        // - Avoids the need for shader*ArrayDynamicIndexing Vulkan features.
         UnsupportedFunctionArgsBitSet args{UnsupportedFunctionArgs::StructContainingSamplers,
                                            UnsupportedFunctionArgs::ArrayOfArrayOfSamplerOrImage,
                                            UnsupportedFunctionArgs::AtomicCounter,
@@ -710,6 +716,21 @@ bool TranslatorSPIRV::translateImpl(TIntermBlock *root,
         {
             return false;
         }
+
+        if (getShaderType() == GL_COMPUTE_SHADER)
+        {
+            driverUniforms->addComputeDriverUniformsToShader(root, &getSymbolTable());
+        }
+        else
+        {
+            driverUniforms->addGraphicsDriverUniformsToShader(root, &getSymbolTable());
+        }
+    }
+    else
+    {
+        // The driver uniforms have been added in IR.  Discover it for the AST transformations that
+        // have not been ported yet.
+        driverUniforms->findDeclarationAddedByIR(root);
     }
 
     gl::ShaderType packedShaderType = gl::FromGLenum<gl::ShaderType>(getShaderType());
@@ -728,25 +749,18 @@ bool TranslatorSPIRV::translateImpl(TIntermBlock *root,
                       vk::spirv::kIdDefaultUniformsBlock);
     }
 
-    if (getShaderType() == GL_COMPUTE_SHADER)
-    {
-        driverUniforms->addComputeDriverUniformsToShader(root, &getSymbolTable());
-    }
-    else
-    {
-        driverUniforms->addGraphicsDriverUniformsToShader(root, &getSymbolTable());
-    }
-
     assignSpirvId(
         driverUniforms->getDriverUniformsVariable()->getType().getInterfaceBlock()->uniqueId(),
         vk::spirv::kIdDriverUniformsBlock);
 
-    if (getShaderType() == GL_VERTEX_SHADER)
+    if (!compileOptions.useIR)
     {
-        if (!ShaderBuiltinsWorkaround(this, root, driverUniforms, &getSymbolTable(),
-                                      compileOptions))
+        if (getShaderType() == GL_VERTEX_SHADER)
         {
-            return false;
+            if (!ShaderBuiltinsWorkaround(this, root, driverUniforms, &getSymbolTable()))
+            {
+                return false;
+            }
         }
     }
 

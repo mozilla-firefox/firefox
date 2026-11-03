@@ -21,9 +21,9 @@ QueryMtl::~QueryMtl() {}
 void QueryMtl::onDestroy(const gl::Context *context)
 {
     ContextMtl *contextMtl = mtl::GetImpl(context);
-    if (!getAllocatedVisibilityOffsets().empty())
+    if (mVisibilityResultBuffer)
     {
-        contextMtl->onOcclusionQueryDestroy(context, this);
+        contextMtl->onOcclusionQueryDestroy(*this);
     }
     mVisibilityResultBuffer = nullptr;
 }
@@ -48,7 +48,7 @@ angle::Result QueryMtl::begin(const gl::Context *context)
                 }
             }
 
-            ANGLE_TRY(contextMtl->onOcclusionQueryBegin(context, this));
+            ANGLE_TRY(contextMtl->onOcclusionQueryBegin(*this));
             break;
         case gl::QueryType::TransformFeedbackPrimitivesWritten:
             mTransformFeedbackPrimitivesDrawn = 0;
@@ -82,7 +82,7 @@ angle::Result QueryMtl::end(const gl::Context *context)
     {
         case gl::QueryType::AnySamples:
         case gl::QueryType::AnySamplesConservative:
-            contextMtl->onOcclusionQueryEnd(context, this);
+            contextMtl->onOcclusionQueryEnd();
             break;
         case gl::QueryType::TransformFeedbackPrimitivesWritten:
             onTransformFeedbackEnd(context);
@@ -202,18 +202,6 @@ angle::Result QueryMtl::getResult(const gl::Context *context, GLint64 *params)
 angle::Result QueryMtl::getResult(const gl::Context *context, GLuint64 *params)
 {
     return waitAndGetResult(context, params);
-}
-
-void QueryMtl::resetVisibilityResult(ContextMtl *contextMtl)
-{
-    // Occlusion query buffer must be allocated in QueryMtl::begin
-    ASSERT(mVisibilityResultBuffer);
-
-    // Fill the query's buffer with zeros
-    auto blitEncoder = contextMtl->getBlitCommandEncoder();
-    blitEncoder->fillBuffer(mVisibilityResultBuffer, NSMakeRange(0, mtl::kOcclusionQueryResultSize),
-                            0);
-    mVisibilityResultBuffer->syncContent(contextMtl, blitEncoder);
 }
 
 void QueryMtl::onTransformFeedbackEnd(const gl::Context *context)

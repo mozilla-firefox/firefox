@@ -932,7 +932,7 @@ void Context::initializeDefaultResources()
     mTilingDirtyObjects |= kTilingDirtyObjectsBase;
 }
 
-egl::Error Context::onDestroy(const egl::Display *display)
+egl::Error Context::onDestroy(const egl::ThreadSafeDisplay *display)
 {
     if (!mHasBeenCurrent)
     {
@@ -949,7 +949,7 @@ egl::Error Context::onDestroy(const egl::Display *display)
     // that still have it current.
     ASSERT(mIsDestroyed == true && mRefCount == 0);
 
-    ANGLE_TRY(unMakeCurrent(display));
+    ANGLE_TRY(unMakeCurrent());
 
     // Dump frame capture if enabled.
     getShareGroup()->getFrameCaptureShared()->onDestroyContext(this);
@@ -1073,11 +1073,12 @@ EGLLabelKHR Context::getLabel() const
     return mLabel;
 }
 
-egl::Error Context::makeCurrent(egl::Display *display,
+// Make sure this function only uses ThreadSafeDisplay since caller will not take display lock.
+egl::Error Context::makeCurrent(egl::ThreadSafeDisplay *display,
                                 egl::Surface *drawSurface,
                                 egl::Surface *readSurface)
 {
-    mDisplay = display;
+    mDisplay = static_cast<egl::Display *>(display);
 
     EGLint width  = 0;
     EGLint height = 0;
@@ -1127,8 +1128,10 @@ egl::Error Context::makeCurrent(egl::Display *display,
     return egl::NoError();
 }
 
-egl::Error Context::unMakeCurrent(const egl::Display *display)
+// Make sure this function only uses ThreadSafeDisplay since caller will not take display lock.
+egl::Error Context::unMakeCurrent()
 {
+    egl::ThreadSafeDisplay *display = mDisplay;
     ANGLE_TRY(angle::ResultToEGL(mImplementation->onUnMakeCurrent(this)));
 
     ANGLE_TRY(unsetDefaultFramebuffer());
@@ -1137,11 +1140,11 @@ egl::Error Context::unMakeCurrent(const egl::Display *display)
     // this one is not current.
     if (mScratchBuffer.valid())
     {
-        mDisplay->returnScratchBuffer(mScratchBuffer.release());
+        display->returnScratchBuffer(mScratchBuffer.release());
     }
     if (mZeroFilledBuffer.valid())
     {
-        mDisplay->returnZeroFilledBuffer(mZeroFilledBuffer.release());
+        display->returnZeroFilledBuffer(mZeroFilledBuffer.release());
     }
 
     return egl::NoError();
@@ -4341,22 +4344,22 @@ void Context::initCaps()
     {
         INFO() << "Limiting compressed format support.\n";
 
-        mSupportedExtensions.compressedETC1RGB8SubTextureEXT                 = false;
-        mSupportedExtensions.compressedETC1RGB8TextureOES                    = false;
-        mSupportedExtensions.compressedTextureEtcANGLE                       = false;
-        mSupportedExtensions.textureCompressionPvrtcIMG                      = false;
-        mSupportedExtensions.pvrtcSRGBEXT                                    = false;
-        mSupportedExtensions.copyCompressedTextureCHROMIUM                   = false;
-        mSupportedExtensions.textureCompressionAstcHdrKHR                    = false;
-        mSupportedExtensions.textureCompressionAstcLdrKHR                    = false;
-        mSupportedExtensions.textureCompressionAstcOES                       = false;
-        mSupportedExtensions.textureCompressionBptcEXT                       = false;
-        mSupportedExtensions.textureCompressionDxt1EXT                       = false;
-        mSupportedExtensions.textureCompressionDxt3ANGLE                     = false;
-        mSupportedExtensions.textureCompressionDxt5ANGLE                     = false;
-        mSupportedExtensions.textureCompressionRgtcEXT                       = false;
-        mSupportedExtensions.textureCompressionS3tcSrgbEXT                   = false;
-        mSupportedExtensions.textureCompressionAstcSliced3dKHR               = false;
+        mSupportedExtensions.compressedETC1RGB8SubTextureEXT   = false;
+        mSupportedExtensions.compressedETC1RGB8TextureOES      = false;
+        mSupportedExtensions.compressedTextureEtcANGLE         = false;
+        mSupportedExtensions.textureCompressionPvrtcIMG        = false;
+        mSupportedExtensions.pvrtcSRGBEXT                      = false;
+        mSupportedExtensions.copyCompressedTextureCHROMIUM     = false;
+        mSupportedExtensions.textureCompressionAstcHdrKHR      = false;
+        mSupportedExtensions.textureCompressionAstcLdrKHR      = false;
+        mSupportedExtensions.textureCompressionAstcOES         = false;
+        mSupportedExtensions.textureCompressionBptcEXT         = false;
+        mSupportedExtensions.textureCompressionDxt1EXT         = false;
+        mSupportedExtensions.textureCompressionDxt3ANGLE       = false;
+        mSupportedExtensions.textureCompressionDxt5ANGLE       = false;
+        mSupportedExtensions.textureCompressionRgtcEXT         = false;
+        mSupportedExtensions.textureCompressionS3tcSrgbEXT     = false;
+        mSupportedExtensions.textureCompressionAstcSliced3dKHR = false;
 
         caps->compressedTextureFormats.clear();
     }
@@ -9075,7 +9078,7 @@ void Context::getSemaphoreParameterui64v(SemaphoreID semaphore, GLenum pname, GL
 
 void Context::trimMemory(MemoryTrimLevel trimLevel)
 {
-    UNIMPLEMENTED();
+    mImplementation->trimMemory(this, trimLevel);
 }
 
 void Context::acquireTextures(GLuint numTextures,

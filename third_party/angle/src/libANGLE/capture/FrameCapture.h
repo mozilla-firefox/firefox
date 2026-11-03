@@ -198,6 +198,17 @@ using DefaultUniformBaseLocationMap =
 using ResourceSet   = std::set<GLuint>;
 using ResourceCalls = std::map<GLuint, std::vector<CallCapture>>;
 
+// For texture parameters, we should track the series of calls to reset the parameters for each
+// texture and which parameters are dirty per texture.
+struct TextureParamReset
+{
+    CallCapture call;
+    bool isDirty;
+};
+
+using TextureParamResetPerParamMap   = std::map<GLenum, TextureParamReset>;
+using TextureParamResetPerTextureMap = std::map<GLuint, TextureParamResetPerParamMap>;
+
 class TrackedResource final : angle::NonCopyable
 {
   public:
@@ -317,6 +328,11 @@ class ResourceTracker final : angle::NonCopyable
         return mDefaultUniformBaseLocations[{programID, location}];
     }
 
+    TextureParamResetPerTextureMap &getTextureParameterResetCalls()
+    {
+        return mTextureParameterResetCalls;
+    }
+
     TrackedResource &getTrackedResource(gl::ContextID contextID, ResourceIDType type);
 
     void getContextIDs(std::set<gl::ContextID> &idsOut);
@@ -372,6 +388,7 @@ class ResourceTracker final : angle::NonCopyable
         mDefaultUniformsToReset.clear();
         mDefaultUniformResetCalls.clear();
         mDefaultUniformBaseLocations.clear();
+        mTextureParameterResetCalls.clear();
         mImageDataMap.clear();
         mExternalImageBindingsToRestore.clear();
     }
@@ -405,6 +422,9 @@ class ResourceTracker final : angle::NonCopyable
     DefaultUniformCallsPerProgramMap mDefaultUniformResetCalls;
     // Base location of arrayed uniforms
     DefaultUniformBaseLocationMap mDefaultUniformBaseLocations;
+
+    // Texture parameter reset calls to be emitted in ResetReplay
+    TextureParamResetPerTextureMap mTextureParameterResetCalls;
 
     // These data structures must be preserved across all captures
 
@@ -547,6 +567,9 @@ class StateResetHelper final : angle::NonCopyable
     void setResetActiveTexture(size_t textureID) { mResetActiveTexture = textureID; }
     size_t getResetActiveTexture() { return mResetActiveTexture; }
 
+    void setCurrentResetActiveTexture(size_t textureID) { mCurrentResetActiveTexture = textureID; }
+    size_t getCurrentResetActiveTexture() const { return mCurrentResetActiveTexture; }
+
     const std::set<gl::BufferBinding> &getDirtyBufferBindings() const
     {
         return mDirtyBufferBindings;
@@ -568,7 +591,8 @@ class StateResetHelper final : angle::NonCopyable
         mResetCalls.clear();
         mDirtyTextureBindings.clear();
         mResetTextureBindings.clear();
-        mResetActiveTexture = 0;
+        mResetActiveTexture        = 0;
+        mCurrentResetActiveTexture = 0;
         mStartingBufferBindings.clear();
         mDirtyBufferBindings.clear();
     }
@@ -585,7 +609,8 @@ class StateResetHelper final : angle::NonCopyable
 
     // Texture bindings and active texture to restore
     TextureResetMap mResetTextureBindings;
-    size_t mResetActiveTexture = 0;
+    size_t mResetActiveTexture        = 0;
+    size_t mCurrentResetActiveTexture = 0;
 
     // Starting and dirty buffer bindings
     std::set<BufferBindingPair> mStartingBufferBindings;
@@ -859,6 +884,7 @@ class FrameCaptureShared final : angle::NonCopyable
                             bool persistent);
 
     void trackTextureUpdate(const gl::Context *context, const CallCapture &call);
+    void trackTextureStateUpdate(const gl::Context *context, const CallCapture &call);
     void trackFramebufferAttachmentUpdate(const gl::Context *context, const CallCapture &call);
     void trackImageUpdate(const gl::Context *context, const CallCapture &call);
     void trackDefaultUniformUpdate(const gl::Context *context, const CallCapture &call);

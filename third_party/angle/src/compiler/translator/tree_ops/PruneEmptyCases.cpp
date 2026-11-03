@@ -39,9 +39,9 @@ bool IsEmptyBlock(TIntermNode *node)
 // Returns true also if there are no statements.
 bool AreEmptyBlocks(const TIntermSequence *statements)
 {
-    for (size_t i = 0u; i < statements->size(); ++i)
+    for (TIntermNode *statement : *statements)
     {
-        if (!IsEmptyBlock(statements->at(i)))
+        if (!IsEmptyBlock(statement))
         {
             return false;
         }

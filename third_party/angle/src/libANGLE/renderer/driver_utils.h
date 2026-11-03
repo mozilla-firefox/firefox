@@ -9,6 +9,8 @@
 #ifndef LIBANGLE_RENDERER_DRIVER_UTILS_H_
 #define LIBANGLE_RENDERER_DRIVER_UTILS_H_
 
+#include <optional>
+
 #include "common/platform.h"
 #include "common/platform_helpers.h"
 #include "libANGLE/angletypes.h"
@@ -229,6 +231,26 @@ OSVersion GetiOSVersion();
 OSVersion GetLinuxOSVersion();
 
 int GetAndroidSDKVersion();
+
+// Android's EGL blob cache settings, from the system properties the platform reads in
+// frameworks/native/opengl/libs/EGL/egl_cache.cpp.
+struct AndroidBlobCacheProperties
+{
+    // The debug property overrides the read-only one when it is set.  Multifile is off by default.
+    bool isMultifileEnabled() const
+    {
+        return debugMultifileEnabled.value_or(multifileEnabled.value_or(false));
+    }
+
+    // Each property is empty when it is unset or does not parse: a boolean, as
+    // android::base::GetBoolProperty() reads it, for the multifile properties, and an integer for
+    // the limits.
+    std::optional<bool> multifileEnabled;        // ro.egl.blobcache.multifile
+    std::optional<bool> debugMultifileEnabled;   // debug.egl.blobcache.multifile
+    std::optional<int64_t> multifileLimit;       // ro.egl.blobcache.multifile_limit
+    std::optional<int64_t> debugMultifileLimit;  // debug.egl.blobcache.multifile_limit
+};
+AndroidBlobCacheProperties GetAndroidBlobCacheProperties();
 
 bool IsSamsungXclipse();
 

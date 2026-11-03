@@ -73,7 +73,7 @@ index c3aed0453..285be5dc4 100644
                          ]
  
 diff --git a/BUILD.gn b/BUILD.gn
-index f6227af7a..83cba5bcb 100644
+index 74f69f24a..9f5b2f45a 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -15,15 +15,15 @@ if (angle_enable_wgpu) {
@@ -106,8 +106,8 @@ index f6227af7a..83cba5bcb 100644
 +if (false && angle_has_build) {
    fuzzer_test("xxhash_fuzzer") {
      sources = [ "src/common/third_party/xxhash/xxhash_fuzzer.cpp" ]
-     deps = [ ":xxhash" ]
-@@ -608,7 +608,7 @@ template("angle_common_lib") {
+     include_dirs = [ "src/common/third_party/xxhash/src" ]
+@@ -609,7 +609,7 @@ template("angle_common_lib") {
  
      if (using_sanitizer && !build_with_chromium) {
        data_deps =
@@ -116,14 +116,16 @@ index f6227af7a..83cba5bcb 100644
      }
  
      if (is_apple) {
-@@ -1332,13 +1332,13 @@ group("angle_abseil") {
+@@ -1337,7 +1337,7 @@ group("angle_abseil") {
  }
  
  config("angle_compression_config") {
 -  include_dirs = [ "//third_party/zlib/google" ]
 +  include_dirs = [ "//angle/third_party/zlib/google" ]
- }
- 
+   if (angle_has_zstd) {
+     # Chromium's zstd targets export no include path for <zstd.h>.
+     include_dirs += [ "$angle_zstd_dir/src/lib" ]
+@@ -1347,7 +1347,7 @@ config("angle_compression_config") {
  group("angle_compression") {
    public_configs = [
      ":angle_compression_config",
@@ -132,7 +134,7 @@ index f6227af7a..83cba5bcb 100644
    ]
    public_deps =
        [ "$angle_zlib_compression_utils_dir:compression_utils_portable" ]
-@@ -1429,7 +1429,7 @@ config("shared_library_public_config") {
+@@ -1444,7 +1444,7 @@ config("shared_library_public_config") {
      if (build_with_chromium) {
        ldflags += [
          # Path for loading shared libraries for unbundled binaries.
@@ -141,7 +143,7 @@ index f6227af7a..83cba5bcb 100644
          # component builds. However, since ANGLE always dynamically
          # links to libvulkan, it should be re-added for non-component
          # builds. (anglebug.com/42263076)
-@@ -1943,7 +1943,7 @@ group("angle_static") {
+@@ -1958,7 +1958,7 @@ group("angle_static") {
  # toolchain will ensure write_file() is called only once.
  if (!build_with_chromium && angle_has_build &&
      current_toolchain == default_toolchain) {

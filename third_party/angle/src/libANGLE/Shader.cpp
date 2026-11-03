@@ -665,6 +665,11 @@ void Shader::compile(const Context *context, angle::JobResultExpectancy resultEx
         options.initializeUninitializedLocals = true;
     }
 
+    if (context->getFrontendFeatures().ensureLoopForwardProgress.enabled)
+    {
+        options.ensureLoopForwardProgress = true;
+    }
+
 #if defined(ANGLE_ENABLE_ASSERTS)
     options.validateAST = true;
 #endif

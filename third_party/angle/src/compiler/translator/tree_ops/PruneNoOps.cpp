@@ -9,6 +9,7 @@
 
 #include "compiler/translator/Symbol.h"
 #include "compiler/translator/tree_util/IntermTraverse.h"
+#include "compiler/translator/tree_util/ReplaceVariable.h"
 
 namespace sh
 {
@@ -63,6 +64,7 @@ class PruneNoOpsTraverser : private TIntermTraverser
     bool mIsBranchVisited = false;
 
     TVector<TVector<const TVariable *>> mSwitchPrunedDeclarationsStack;
+    TVector<const TVariable *> mSwitchDeclarationsToRename;
 };
 
 bool PruneNoOpsTraverser::apply(TCompiler *compiler, TIntermBlock *root, TSymbolTable *symbolTable)
@@ -70,7 +72,19 @@ bool PruneNoOpsTraverser::apply(TCompiler *compiler, TIntermBlock *root, TSymbol
     PruneNoOpsTraverser prune(symbolTable);
     root->traverse(&prune);
     ASSERT(prune.mSwitchPrunedDeclarationsStack.empty());
-    return prune.updateTree(compiler, root);
+    if (!prune.updateTree(compiler, root))
+    {
+        return false;
+    }
+
+    VariableReplacementMap replaceMap;
+    for (const TVariable *var : prune.mSwitchDeclarationsToRename)
+    {
+        const TVariable *replacementVariable = new TVariable(
+            symbolTable, kEmptyImmutableString, &var->getType(), SymbolType::AngleInternal);
+        replaceMap[var->uniqueId()] = new TIntermSymbol(replacementVariable);
+    }
+    return ReplaceVariables(compiler, root, replaceMap);
 }
 
 PruneNoOpsTraverser::PruneNoOpsTraverser(TSymbolTable *symbolTable)
@@ -166,6 +180,11 @@ bool PruneNoOpsTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
         replacement.push_back(node);
         mMultiReplacements.emplace_back(getParentNode()->getAsBlock(), node,
                                         std::move(replacement));
+
+        // The names may shadow variables outside the switch, so rename them at the end.
+        mSwitchDeclarationsToRename.insert(mSwitchDeclarationsToRename.end(),
+                                           mSwitchPrunedDeclarationsStack.back().begin(),
+                                           mSwitchPrunedDeclarationsStack.back().end());
     }
 
     mSwitchPrunedDeclarationsStack.pop_back();

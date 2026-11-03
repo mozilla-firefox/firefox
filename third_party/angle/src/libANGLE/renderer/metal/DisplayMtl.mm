@@ -449,10 +449,9 @@ EGLSyncImpl *ThreadSafeDisplayMtl::createSync()
     return new EGLSyncMtl();
 }
 
-egl::Error DisplayMtl::makeCurrent(egl::Display *display,
-                                   egl::Surface *drawSurface,
-                                   egl::Surface *readSurface,
-                                   gl::Context *context)
+egl::Error ThreadSafeDisplayMtl::makeCurrent(egl::Surface *drawSurface,
+                                             egl::Surface *readSurface,
+                                             gl::Context *context)
 {
     if (!context)
     {
@@ -511,6 +510,10 @@ void DisplayMtl::initializeFrontendFeatures(angle::FrontendFeatures *features) c
     ANGLE_FEATURE_CONDITION(features, linkJobIsThreadSafe, true);
 
     ANGLE_FEATURE_CONDITION(features, setNeedInitOnInvalidation, true);
+
+    // Metal compiler optimizations may remove infinite loops causing crashes later in shader
+    // execution. http://crbug.com/41486305
+    ANGLE_FEATURE_CONDITION(features, ensureLoopForwardProgress, true);
 }
 
 void DisplayMtl::populateFeatureList(angle::FeatureList *features)
@@ -1093,6 +1096,9 @@ void DisplayMtl::initializeExtensions() const
     mNativeExtensions.blendFuncExtendedEXT = true;
     mNativeCaps.maxDualSourceDrawBuffers   = 1;
 
+    // GL_ANGLE_trim_memory
+    mNativeExtensions.trimMemoryANGLE = true;
+
     // GL_ANGLE_shader_pixel_local_storage.
     if (!mFeatures.disableProgrammableBlending.enabled && supportsAppleGPUFamily(1))
     {
@@ -1265,6 +1271,7 @@ void DisplayMtl::initializeFeatures()
                             isSimulator || !supportsAppleGPUFamily(1));
 
     ANGLE_FEATURE_CONDITION((&mFeatures), writeHelperSampleMask, supportsAppleGPUFamily(1));
+    ANGLE_FEATURE_CONDITION((&mFeatures), purgeableBufferPool, false);
 
     ANGLE_FEATURE_CONDITION((&mFeatures), multisampleColorFormatShaderReadWorkaround, isAMD());
     ANGLE_FEATURE_CONDITION((&mFeatures), copyIOSurfaceToNonIOSurfaceForReadOptimization,
@@ -1301,8 +1308,6 @@ void DisplayMtl::initializeFeatures()
     ANGLE_FEATURE_CONDITION(&mFeatures, disableStagedInitializationOfPackedTextureFormats,
                             isIntel() || isAMD());
 
-    ANGLE_FEATURE_CONDITION((&mFeatures), generateShareableShaders, true);
-
     // http://anglebug.com/42266609: NVIDIA GPUs are unsupported due to scarcity of the hardware.
     ANGLE_FEATURE_CONDITION((&mFeatures), disableMetalOnNvidia, true);
 
@@ -1326,10 +1331,6 @@ void DisplayMtl::initializeFeatures()
     // the textureGrad shadow sampler emulation. The latter is used only on AMD.
     ASSERT(!mFeatures.preTransformTextureCubeGradDerivatives.enabled ||
            mFeatures.allowSamplerCompareGradient.enabled);
-
-    // Metal compiler optimizations may remove infinite loops causing crashes later in shader
-    // execution. http://crbug.com/41486305
-    ANGLE_FEATURE_CONDITION((&mFeatures), ensureLoopForwardProgress, true);
 }
 
 angle::Result DisplayMtl::initializeShaderLibrary()
@@ -1433,9 +1434,9 @@ bool DisplayMtl::isAMDBronzeDriver() const
         @"Radeon Pro 570",  @"Radeon Pro 570X", @"Radeon Pro 575", @"Radeon Pro 575X",
         @"Radeon Pro 580",  @"Radeon Pro 580X"};
 
-    for (size_t i = 0; i < ArraySize(kMTLBronzeDeviceNames); ++i)
+    for (NSString *deviceName : kMTLBronzeDeviceNames)
     {
-        if (ANGLE_UNSAFE_TODO([[mMetalDevice name] hasSuffix:kMTLBronzeDeviceNames[i]]))
+        if ([[mMetalDevice name] hasSuffix:deviceName])
         {
             mIsAMDBronze = true;
             break;

@@ -9,7 +9,10 @@
 
 #include "libANGLE/renderer/metal/BufferMtl.h"
 
+#include <tuple>
+
 #include "common/debug.h"
+#include "common/hash_utils.h"
 #include "common/span.h"
 #include "common/unsafe_buffers.h"
 #include "common/utilities.h"
@@ -97,6 +100,20 @@ VertexConversionBufferMtl::VertexConversionBufferMtl(ContextMtl *context,
       stride(strideIn),
       offset(offsetIn)
 {}
+
+// ProvokingVertexConversionKey implementation.
+size_t ProvokingVertexConversionKey::Hash::operator()(const ProvokingVertexConversionKey &key) const
+{
+    return angle::HashMultiple(key.mode, key.elemType, key.firstIndex, key.count,
+                               key.primitiveRestartEnabled);
+}
+
+bool ProvokingVertexConversionKey::operator==(const ProvokingVertexConversionKey &other) const
+{
+    return std::tie(mode, elemType, firstIndex, count, primitiveRestartEnabled) ==
+           std::tie(other.mode, other.elemType, other.firstIndex, other.count,
+                    other.primitiveRestartEnabled);
+}
 
 // BufferMtl implementation
 BufferMtl::BufferMtl(const gl::BufferState &state) : BufferImpl(state) {}
@@ -229,17 +246,20 @@ angle::Result BufferMtl::mapRange(const gl::Context *context,
     if (mapPtr)
     {
         ContextMtl *contextMtl = mtl::GetImpl(context);
+        uint8_t *ptr           = nullptr;
         if (mShadowCopy.size() == 0)
         {
-            *mapPtr = mBuffer
-                          ->mapWithOpt(contextMtl, (access & GL_MAP_WRITE_BIT) == 0,
-                                       access & GL_MAP_UNSYNCHRONIZED_BIT, offset, length)
-                          .data();
+            ptr = mBuffer
+                      ->mapWithOpt(contextMtl, (access & GL_MAP_WRITE_BIT) == 0,
+                                   access & GL_MAP_UNSYNCHRONIZED_BIT, offset, length)
+                      .data();
         }
         else
         {
-            *mapPtr = syncAndObtainShadowCopy(contextMtl, offset, length).data();
+            ptr = syncAndObtainShadowCopy(contextMtl, offset, length).data();
         }
+        ANGLE_TRY(contextMtl->checkCommandBufferError());
+        *mapPtr = ptr;
     }
 
     return angle::Result::Continue;
@@ -442,6 +462,41 @@ ConversionBufferMtl *BufferMtl::getUniformConversionBuffer(ContextMtl *context,
     return &mUniformConversionBuffers.back();
 }
 
+ConversionBufferMtl *BufferMtl::getProvokingVertexConversionBuffer(ContextMtl *context,
+                                                                   gl::PrimitiveMode mode,
+                                                                   gl::DrawElementsType elemType,
+                                                                   size_t firstIndex,
+                                                                   GLsizei count,
+                                                                   bool primitiveRestartEnabled)
+{
+    const ProvokingVertexConversionKey key          = {mode, elemType, firstIndex, count,
+                                                       primitiveRestartEnabled};
+    ProvokingVertexConversionCache::iterator cached = mProvokingVertexConversionBuffers.Get(key);
+    if (cached != mProvokingVertexConversionBuffers.end())
+    {
+        return cached->second.get();
+    }
+
+    std::unique_ptr<ConversionBufferMtl> conversion;
+    if (mProvokingVertexConversionBuffers.size() >= kMaxProvokingVertexConversionBuffers)
+    {
+        // Reuse the least recently used entry's pool to avoid allocating a new Metal buffer on
+        // every draw when an application cycles through more ranges than fit in the cache.
+        ProvokingVertexConversionCache::reverse_iterator oldest =
+            mProvokingVertexConversionBuffers.rbegin();
+        conversion = std::move(oldest->second);
+        mProvokingVertexConversionBuffers.Erase(oldest);
+        conversion->dirty  = true;
+        conversion->buffer = {};
+    }
+    else
+    {
+        conversion =
+            std::make_unique<ConversionBufferMtl>(context, 0, mtl::kIndexBufferOffsetAlignment);
+    }
+    return mProvokingVertexConversionBuffers.Put(key, std::move(conversion))->second.get();
+}
+
 void BufferMtl::markConversionBuffersDirty()
 {
     for (VertexConversionBufferMtl &buffer : mVertexConversionBuffers)
@@ -461,6 +516,11 @@ void BufferMtl::markConversionBuffersDirty()
         buffer.dirty  = true;
         buffer.buffer = {};
     }
+    for (ProvokingVertexConversionCache::value_type &entry : mProvokingVertexConversionBuffers)
+    {
+        entry.second->dirty  = true;
+        entry.second->buffer = {};
+    }
     mDrawIndexRangeCache.reset();
 }
 
@@ -469,6 +529,7 @@ void BufferMtl::clearConversionBuffers()
     mVertexConversionBuffers.clear();
     mIndexConversionBuffers.clear();
     mUniformConversionBuffers.clear();
+    mProvokingVertexConversionBuffers.Clear();
     mDrawIndexRangeCache.reset();
 }
 

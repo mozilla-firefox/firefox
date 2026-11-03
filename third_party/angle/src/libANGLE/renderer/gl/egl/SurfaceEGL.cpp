@@ -119,7 +119,7 @@ egl::Error SurfaceEGL::releaseTexImage(const gl::Context *context, EGLint buffer
     return egl::NoError();
 }
 
-void SurfaceEGL::setSwapInterval(const egl::Display *display, EGLint interval)
+void SurfaceEGL::setSwapInterval(const egl::ThreadSafeDisplay *display, EGLint interval)
 {
     EGLBoolean success = mEGL->swapInterval(interval);
     if (success == EGL_FALSE)
@@ -137,7 +137,9 @@ gl::Extents SurfaceEGL::getSize() const
     return gl::Extents(width, height, 1);
 }
 
-egl::Error SurfaceEGL::getUserSize(const egl::Display *display, EGLint *width, EGLint *height) const
+egl::Error SurfaceEGL::getUserSize(const egl::ThreadSafeDisplay *display,
+                                   EGLint *width,
+                                   EGLint *height) const
 {
     if (width != nullptr)
     {

@@ -35,19 +35,22 @@ VertexArray11::~VertexArray11() {}
 void VertexArray11::destroy(const gl::Context *context) {}
 
 // As VertexAttribPointer can modify both attribute and binding, we should also set other attributes
-// that are also using this binding dirty.
-#define ANGLE_VERTEX_DIRTY_ATTRIB_FUNC(INDEX)                                                \
-    case gl::VertexArray::DIRTY_BIT_ATTRIB_0 + INDEX:                                        \
-        if ((*attribBits)[INDEX][gl::VertexArray::DirtyAttribBitType::DIRTY_ATTRIB_POINTER]) \
-        {                                                                                    \
-            attributesToUpdate |= mState.getBindingToAttributesMask(INDEX);                  \
-        }                                                                                    \
-        else                                                                                 \
-        {                                                                                    \
-            attributesToUpdate.set(INDEX);                                                   \
-        }                                                                                    \
-        invalidateVertexBuffer = true;                                                       \
-        (*attribBits)[INDEX].reset();                                                        \
+// that are also using this binding dirty. Look for both DIRTY_ATTRIB_POINTER (when format/stride
+// changes) and DIRTY_ATTRIB_POINTER_BUFFER (when only the bound buffer or offset changes).
+#define ANGLE_VERTEX_DIRTY_ATTRIB_FUNC(INDEX)                                                  \
+    case gl::VertexArray::DIRTY_BIT_ATTRIB_0 + INDEX:                                          \
+        if ((*attribBits)[INDEX][gl::VertexArray::DirtyAttribBitType::DIRTY_ATTRIB_POINTER] || \
+            (*attribBits)[INDEX]                                                               \
+                         [gl::VertexArray::DirtyAttribBitType::DIRTY_ATTRIB_POINTER_BUFFER])   \
+        {                                                                                      \
+            attributesToUpdate |= mState.getBindingToAttributesMask(INDEX);                    \
+        }                                                                                      \
+        else                                                                                   \
+        {                                                                                      \
+            attributesToUpdate.set(INDEX);                                                     \
+        }                                                                                      \
+        invalidateVertexBuffer = true;                                                         \
+        (*attribBits)[INDEX].reset();                                                          \
         break;
 
 #define ANGLE_VERTEX_DIRTY_BINDING_FUNC(INDEX)                          \
@@ -57,13 +60,16 @@ void VertexArray11::destroy(const gl::Context *context) {}
         (*bindingBits)[INDEX].reset();                                  \
         break;
 
-#define ANGLE_VERTEX_DIRTY_BUFFER_DATA_FUNC(INDEX)                      \
-    case gl::VertexArray::DIRTY_BIT_BUFFER_DATA_0 + INDEX:              \
-        if (mAttributeStorageTypes[INDEX] == VertexStorageType::STATIC) \
-        {                                                               \
-            invalidateVertexBuffer = true;                              \
-            mAttribsToTranslate.set(INDEX);                             \
-        }                                                               \
+#define ANGLE_VERTEX_DIRTY_BUFFER_DATA_FUNC(INDEX)                                \
+    case gl::VertexArray::DIRTY_BIT_BUFFER_DATA_0 + INDEX:                        \
+        for (size_t attribIndex : mState.getBindingToAttributesMask(INDEX))       \
+        {                                                                         \
+            if (mAttributeStorageTypes[attribIndex] == VertexStorageType::STATIC) \
+            {                                                                     \
+                invalidateVertexBuffer = true;                                    \
+                mAttribsToTranslate.set(attribIndex);                             \
+            }                                                                     \
+        }                                                                         \
         break;
 
 angle::Result VertexArray11::syncState(const gl::Context *context,
@@ -85,9 +91,8 @@ angle::Result VertexArray11::syncState(const gl::Context *context,
     gl::AttributesMask attributesToUpdate;
 
     // Make sure we trigger re-translation for static index or vertex data.
-    for (auto iter = dirtyBits.begin(), endIter = dirtyBits.end(); iter != endIter; ++iter)
+    for (size_t dirtyBit : dirtyBits)
     {
-        size_t dirtyBit = *iter;
         switch (dirtyBit)
         {
             case gl::VertexArray::DIRTY_BIT_ELEMENT_ARRAY_BUFFER:
@@ -176,12 +181,14 @@ angle::Result VertexArray11::syncStateForDraw(const gl::Context *context,
             mLastDrawElementsIndices.value() != indices ||
             mLastPrimitiveRestartEnabled.value() != restartEnabled)
         {
+            ANGLE_TRY(updateElementArrayStorage(context, vertexOrIndexCount, indexTypeOrInvalid,
+                                                indices, restartEnabled));
+            // Only cache the draw parameters after updateElementArrayStorage succeeds so a failed
+            // call will be retried on a subsequent draw.
             mLastDrawElementsType        = indexTypeOrInvalid;
             mLastDrawElementsIndices     = indices;
             mLastPrimitiveRestartEnabled = restartEnabled;
 
-            ANGLE_TRY(updateElementArrayStorage(context, vertexOrIndexCount, indexTypeOrInvalid,
-                                                indices, restartEnabled));
             stateManager->invalidateIndexBuffer();
         }
         else if (mCurrentElementArrayStorage == IndexStorageType::Dynamic)

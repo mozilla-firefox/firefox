@@ -1432,6 +1432,15 @@ bool DecompressBlob(const uint8_t *compressedData,
                     const size_t compressedSize,
                     size_t maxUncompressedDataSize,
                     MemoryBuffer *uncompressedData);
+#if defined(ANGLE_HAS_ZSTD)
+bool CompressBlobZstd(const size_t cacheSize,
+                      const uint8_t *cacheData,
+                      MemoryBuffer *compressedData);
+bool DecompressBlobZstd(const uint8_t *compressedData,
+                        const size_t compressedSize,
+                        size_t maxUncompressedDataSize,
+                        MemoryBuffer *uncompressedData);
+#endif  // defined(ANGLE_HAS_ZSTD)
 uint32_t GenerateCRC32(const uint8_t *data, size_t size);
 uint32_t InitCRC32();
 uint32_t UpdateCRC32(uint32_t prevCrc32, const uint8_t *data, size_t size);

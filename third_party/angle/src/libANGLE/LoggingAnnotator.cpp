@@ -8,6 +8,7 @@
 
 #include "libANGLE/LoggingAnnotator.h"
 
+#include "anglebase/no_destructor.h"
 #include "libANGLE/trace.h"
 #include "platform/PlatformMethods.h"
 
@@ -59,6 +60,13 @@ void LoggingAnnotator::logMessage(const gl::LogMessage &msg) const
         }
     }
     gl::Trace(msg.getSeverity(), msg.getMessage().c_str());
+}
+
+void SetGlobalDebugAnnotator()
+{
+    static angle::base::NoDestructor<angle::LoggingAnnotator> sAnnotator;
+    std::unique_lock<angle::SimpleMutex> lock(gl::GetDebugMutex());
+    gl::InitializeDebugAnnotations(sAnnotator.get());
 }
 
 }  // namespace angle

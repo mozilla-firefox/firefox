@@ -234,6 +234,12 @@ void ContextMutex::unlock()
     root->unlockImpl();
 }
 
+void ContextMutex::assertLocked() const
+{
+    ASSERT(getRoot()->mOwnerThreadId.load(std::memory_order_relaxed) ==
+           angle::GetCurrentThreadId());
+}
+
 #if defined(ANGLE_ENABLE_CONTEXT_MUTEX_RECURSION)
 bool ContextMutex::tryLockImpl()
 {

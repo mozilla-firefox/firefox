@@ -18,7 +18,7 @@ namespace rx
 {
 
 SyncGL::SyncGL(const std::shared_ptr<RendererGL> &renderer)
-    : SyncImpl(), mRenderer(renderer), mSyncObject(0)
+    : SyncImpl(), mRenderer(renderer), mSyncObject(0), mDeferredBufferDeletionSerial(0)
 {
     ASSERT(mRenderer);
 }
@@ -42,6 +42,7 @@ angle::Result SyncGL::set(const gl::Context *context, GLenum condition, GLbitfie
     mSyncObject          = mRenderer->getFunctions()->fenceSync(condition, flags);
     ANGLE_CHECK(contextGL, mSyncObject != 0, "glFenceSync failed to create a GLsync object.",
                 GL_OUT_OF_MEMORY);
+    mDeferredBufferDeletionSerial = mRenderer->getStateManager()->onFenceSync();
     contextGL->markWorkSubmitted();
     return angle::Result::Continue;
 }
@@ -53,6 +54,10 @@ angle::Result SyncGL::clientWait(const gl::Context *context,
 {
     ASSERT(mSyncObject != 0);
     *outResult = mRenderer->getFunctions()->clientWaitSync(mSyncObject, flags, timeout);
+    if (*outResult == GL_ALREADY_SIGNALED || *outResult == GL_CONDITION_SATISFIED)
+    {
+        mRenderer->getStateManager()->onSerialCompleted(mDeferredBufferDeletionSerial);
+    }
     return angle::Result::Continue;
 }
 
@@ -67,6 +72,10 @@ angle::Result SyncGL::getStatus(const gl::Context *context, GLint *outResult)
 {
     ASSERT(mSyncObject != 0);
     mRenderer->getFunctions()->getSynciv(mSyncObject, GL_SYNC_STATUS, 1, nullptr, outResult);
+    if (*outResult == GL_SIGNALED)
+    {
+        mRenderer->getStateManager()->onSerialCompleted(mDeferredBufferDeletionSerial);
+    }
     return angle::Result::Continue;
 }
 }  // namespace rx

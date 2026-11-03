@@ -1108,8 +1108,14 @@ angle::Result Buffer::MakeBufferWithStorageMode(ContextMtl *context,
                                                 size_t size,
                                                 BufferRef *bufferOut)
 {
-    bufferOut->reset(new Buffer(context, storageMode, size));
-    ANGLE_CHECK_GL_ALLOC(context, *bufferOut && (*bufferOut)->get());
+    // Allocate into a temporary BufferRef first and only populate *bufferOut after verifying that
+    // the underlying id<MTLBuffer> creation succeeded. Otherwise, *bufferOut (e.g.
+    // BufferPool::mBuffer) would be left with a non-null BufferRef wrapping a nil id<MTLBuffer>
+    // when ANGLE_CHECK_GL_ALLOC returns GL_OUT_OF_MEMORY, breaking callers that assume a non-null
+    // BufferRef holds a valid allocated buffer.
+    BufferRef newBuffer(new Buffer(context, storageMode, size));
+    ANGLE_CHECK_GL_ALLOC(context, newBuffer && newBuffer->get());
+    *bufferOut = std::move(newBuffer);
     return angle::Result::Continue;
 }
 

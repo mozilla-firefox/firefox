@@ -129,6 +129,7 @@ constexpr VendorID kVendorID_PoCL        = 0x10006;
 constexpr DeviceID kDeviceID_Swiftshader  = 0xC0DE;
 constexpr DeviceID kDeviceID_Lavapipe     = 0x0;
 constexpr DeviceID kDeviceID_Adreno540    = 0x5040001;
+constexpr DeviceID kDeviceID_Adreno702    = 0x7000201;
 constexpr DeviceID kDeviceID_Adreno750    = 0x43051401;
 constexpr DeviceID kDeviceID_UHD630Mobile = 0x3E9B;
 

@@ -325,7 +325,28 @@ AHardwareBuffer *ClientBufferToAHardwareBuffer(EGLClientBuffer clientBuffer)
 
 bool GetSystemProperty(const char *propertyName, std::string *value)
 {
-#if defined(ANGLE_PLATFORM_ANDROID)
+#if defined(ANGLE_PLATFORM_ANDROID) && __ANDROID_API__ >= 26
+    std::string propertyValue;
+
+    const prop_info *propertyInfo = __system_property_find(propertyName);
+    if (propertyInfo != nullptr)
+    {
+        __system_property_read_callback(
+            propertyInfo,
+            [](void *cookie, const char *, const char *value, unsigned) {
+                auto propertyValue = reinterpret_cast<std::string *>(cookie);
+                *propertyValue     = value;
+            },
+            &propertyValue);
+    }
+
+    if (propertyValue.empty())
+    {
+        return false;
+    }
+    *value = std::move(propertyValue);
+    return true;
+#elif defined(ANGLE_PLATFORM_ANDROID)
     // PROP_VALUE_MAX from <sys/system_properties.h>
     std::vector<char> propertyBuf(PROP_VALUE_MAX);
     int len = __system_property_get(propertyName, propertyBuf.data());

@@ -9,6 +9,8 @@
 #ifndef LIBANGLE_RENDERER_GL_TEXTUREGL_H_
 #define LIBANGLE_RENDERER_GL_TEXTUREGL_H_
 
+#include <optional>
+
 #include "libANGLE/Texture.h"
 #include "libANGLE/angletypes.h"
 #include "libANGLE/renderer/TextureImpl.h"
@@ -219,17 +221,156 @@ class TextureGL : public TextureImpl
     GLenum getNativeInternalFormat(const gl::ImageIndex &index) const;
     bool hasEmulatedAlphaChannel(const gl::ImageIndex &index) const;
 
+    struct NativeLevelTarget
+    {
+        GLuint textureID         = 0;
+        gl::TextureTarget target = gl::TextureTarget::InvalidEnum;
+        GLint level              = 0;
+    };
+    NativeLevelTarget getNativeLevelTarget(gl::TextureTarget target,
+                                           size_t level,
+                                           bool invalidateCpuData = true) const;
+
   private:
+    // For the copyImageSubData3DFailsOnTailMipLevels workaround: caches CPU texel data uploaded to
+    // 1x1xD 3D tail mip levels so copyBetweenNativeLevels can re-upload via glTexSubImage3D instead
+    // of calling glCopyImageSubDataEXT (which fails on PowerVR when level >= log2(max(w, h)) + 1).
+    struct TailMip3DCpuData
+    {
+        TailMip3DCpuData() = default;
+
+        void clearCpuData() const
+        {
+            data.clear();
+            contiguousSlicesWritten = 0;
+        }
+
+        // Marked mutable because getNativeLevelTarget() is called on const TextureGL pointers
+        // (e.g., when attaching a texture level to a framebuffer or binding an image unit) and
+        // must invalidate any cached CPU data when the level may be modified by the GPU.
+        mutable std::vector<uint8_t> data = {};
+        // Tracks the number of consecutive Z slices starting from slice 0 (i.e. [0,
+        // contiguousSlicesWritten)) that have valid texel data cached in `data`.
+        // `copyBetweenNativeLevels` can only use `data` to re-upload the entire 1x1xD level via
+        // glTexSubImage3D when all slices [0, size.depth) have been contiguously populated
+        // (contiguousSlicesWritten == size.depth).
+        mutable size_t contiguousSlicesWritten = 0;
+
+        GLenum format   = GL_NONE;
+        GLenum type     = GL_NONE;
+        bool compressed = false;
+    };
+
+    struct VirtualLevelInfo
+    {
+        GLuint texID = 0;
+        gl::Extents size;
+        GLenum internalFormat = GL_NONE;
+
+        TailMip3DCpuData tailMip3DCpuData;
+    };
+
+    // Tracks the per-level metadata/companion textures and the contiguous mipmap chain currently
+    // materialized in the primary native texture mTextureID when the virtualizeBaseLevelAndMipchain
+    // workaround is active for this texture.
+    //
+    // Under this workaround, individual glTexImage* calls initially allocate standalone 1-level
+    // native textures in virtualLevels[idx].texID. When the texture is synchronized for use
+    // (in syncVirtualMipchain) or allocated via glTexStorage* / eglBindTexImage / EGLImage,
+    // mTextureID is allocated with immutable storage (glTexStorage*) holding the contiguous range
+    // of mipmap-compatible virtual levels [baseLevel, baseLevel + levels), where virtual level
+    // (baseLevel + k) resides at native level k of mTextureID.
+    struct VirtualMipChain
+    {
+        explicit VirtualMipChain(size_t maxLevelInfoCount) : virtualLevels(maxLevelInfoCount) {}
+
+        // The virtual level stored at native level 0 of mTextureID. Set to 0 for glTexStorage*,
+        // eglBindTexImage, and EGLImage targets, or to the texture's effective
+        // GL_TEXTURE_BASE_LEVEL when syncVirtualMipchain materializes the mipchain.
+        size_t baseLevel = 0;
+
+        // The number of contiguous, mip-compatible virtual levels currently allocated in
+        // mTextureID (or 0 if mTextureID has not yet been allocated by syncVirtualMipchain and all
+        // defined levels currently reside in per-level companion textures). This count is based on
+        // how many consecutive defined levels starting at baseLevel have matching internal formats
+        // and valid halved mip dimensions down to 1x1x1; GL_TEXTURE_MAX_LEVEL is not used to
+        // truncate this allocation, and is instead translated to native (maxLevel - baseLevel) on
+        // mTextureID so MAX_LEVEL changes do not force reallocation.
+        size_t levels = 0;
+
+        // The dimensions of native level 0 in mTextureID (virtual level baseLevel).
+        gl::Extents baseSize = {};
+
+        // The native sized internal format of mTextureID.
+        GLenum internalFormat = GL_NONE;
+
+        // True if mTextureID is backed by an EGLImage target.
+        bool isEGLImageTarget = false;
+
+        // True if mTextureID must be regenerated with a new texture ID on the next mipchain
+        // allocation (e.g., after being bound as an EGLImage source or target).
+        bool forceReallocation = false;
+
+        // Per-(target, level) dimensions, format, and optional standalone 1-level companion
+        // texture ID (when texID != 0, the level resides in texID at native level 0 rather than in
+        // mTextureID).
+        std::vector<VirtualLevelInfo> virtualLevels;
+    };
+
+    bool isVirtualMipchainType() const;
+    angle::Result allocateTexStorage(const gl::Context *context,
+                                     GLuint texID,
+                                     gl::TextureType type,
+                                     size_t levels,
+                                     GLenum internalFormat,
+                                     const gl::Extents &size);
+    angle::Result copyBetweenNativeLevels(const gl::Context *context,
+                                          GLuint srcTexID,
+                                          gl::TextureTarget srcTarget,
+                                          GLint srcLevel,
+                                          GLuint dstTexID,
+                                          gl::TextureTarget dstTarget,
+                                          GLint dstLevel,
+                                          const VirtualLevelInfo &dstVLevel);
+    angle::Result evacuateMipchainToLevelTextures(const gl::Context *context);
+    angle::Result allocateOrUpdateVirtualLevel(const gl::Context *context,
+                                               gl::TextureTarget target,
+                                               size_t level,
+                                               GLenum internalFormat,
+                                               const gl::Extents &size);
+    angle::Result syncVirtualMipchain(const gl::Context *context);
+    void clearVirtualLevels(const gl::Context *context);
+
+    // For the copyImageSubData3DFailsOnTailMipLevels workaround.
+    angle::Result updateVirtualLevel3D1x1CpuData(const gl::Context *context,
+                                                 size_t level,
+                                                 const gl::Box &area,
+                                                 GLenum format,
+                                                 GLenum type,
+                                                 GLenum nativeFormat,
+                                                 GLenum nativeType,
+                                                 const gl::PixelUnpackState &unpack,
+                                                 bool hasUnpackBuffer,
+                                                 const uint8_t *pixels);
+
+    // For the readback3DDepthStencilPbosDuringUpload workaround.
+    bool shouldReadback3DPboDuringUpload(const gl::Context *context,
+                                         const gl::InternalFormat &internalFormatInfo,
+                                         GLenum format,
+                                         GLenum type,
+                                         const gl::PixelUnpackState &unpack) const;
+    angle::Result setSubImage3DFromUnpackBufferViaCpu(const gl::Context *context,
+                                                      const NativeLevelTarget &nlt,
+                                                      size_t level,
+                                                      const gl::Box &area,
+                                                      GLenum format,
+                                                      GLenum type,
+                                                      GLenum nativeFormat,
+                                                      GLenum nativeType,
+                                                      const gl::PixelUnpackState &unpack,
+                                                      const uint8_t *pixels);
+
     angle::Result recreateTexture(const gl::Context *context);
-    // One of sourceTexture or destTexture must be mTextureID.
-    angle::Result copyLevelsBetweenTextures(const gl::Context *context,
-                                            GLuint sourceTexture,
-                                            size_t sourceLevel,
-                                            GLuint destTexture,
-                                            size_t destLevel,
-                                            size_t levelCount);
-    angle::Result recreateNativeStoragePreservingLevels(const gl::Context *context);
-    angle::Result useTempForNonZeroBaseLevelGenmipmap(const gl::Context *context);
 
     angle::Result recreateTextureOnTexImage3DDepthIncreaseWorkaround(const gl::Context *context,
                                                                      gl::TextureTarget target,
@@ -244,17 +385,6 @@ class TextureGL : public TextureImpl
                                  GLenum format,
                                  GLenum type,
                                  const uint8_t *pixels);
-    angle::Result setImageViaScratchUnpackBuffer(const gl::Context *context,
-                                                 gl::TextureTarget target,
-                                                 size_t level,
-                                                 GLenum internalFormat,
-                                                 const gl::Extents &size,
-                                                 GLenum format,
-                                                 GLenum type,
-                                                 const gl::PixelUnpackState &unpack,
-                                                 bool isCompressed,
-                                                 size_t imageSize,
-                                                 const uint8_t *pixels);
     // This changes the current pixel unpack state that will have to be reapplied.
     angle::Result reserveTexImageToBeFilled(const gl::Context *context,
                                             gl::TextureTarget target,
@@ -318,6 +448,11 @@ class TextureGL : public TextureImpl
                                                   gl::Framebuffer *source);
 
     std::vector<LevelInfoGL> mLevelInfo;
+
+    // Present once this texture's levels are managed by the virtualizeBaseLevelAndMipchain
+    // workaround; std::nullopt when the workaround is inactive or the texture was just reset.
+    std::optional<VirtualMipChain> mVirtualMipChain;
+
     gl::Texture::DirtyBits mLocalDirtyBits;
 
     // All dirty bits ever sychronized by this texture OR'd together. Used to know what state needs

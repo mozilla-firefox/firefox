@@ -138,7 +138,7 @@ class ShareGroup final : angle::NonCopyable
 
     void addRef();
 
-    void release(const egl::Display *display);
+    void release(const egl::ThreadSafeDisplay *display);
 
     rx::ShareGroupImpl *getImplementation() const { return mImplementation; }
 

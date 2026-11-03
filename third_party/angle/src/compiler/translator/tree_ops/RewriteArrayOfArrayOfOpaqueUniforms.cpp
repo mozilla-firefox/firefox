@@ -159,11 +159,9 @@ TIntermTyped *RewriteArrayOfArraySubscriptExpression(TCompiler *compiler,
 
     // Since the opaque uniforms are fully subscripted, we know exactly how many EOpIndex* nodes
     // there should be.
-    for (size_t dimIndex = 0; dimIndex < data.mSubArraySizes.size(); ++dimIndex)
+    for (unsigned int subArraySize : data.mSubArraySizes)
     {
         ASSERT(node);
-
-        unsigned int subArraySize = data.mSubArraySizes[dimIndex];
 
         switch (node->getOp())
         {

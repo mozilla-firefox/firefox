@@ -418,7 +418,8 @@ angle::Result ContextGL::drawArraysInstanced(const gl::Context *context,
     return angle::Result::Continue;
 }
 
-gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstance)
+gl::AttributesMask ContextGL::updateAttributesForBaseInstance(const gl::Context *context,
+                                                              GLuint baseInstance)
 {
     const gl::ProgramExecutable *executable = getState().getProgramExecutable();
     gl::AttributesMask attribToUpdateMask;
@@ -444,7 +445,8 @@ gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstanc
                 // and that information is in VertexArrayGL.
                 // Assert that the buffer is non-null because this case isn't handled.
                 ASSERT(buffer);
-                getStateManager()->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID());
+                getStateManager()->bindBuffer(gl::BufferBinding::Array, buffer->getBufferID(),
+                                              context->isHardenedContext());
                 if (attrib.format->isPureInt())
                 {
                     functions->vertexAttribIPointer(attribIndex, attrib.format->channelCount,
@@ -465,7 +467,7 @@ gl::AttributesMask ContextGL::updateAttributesForBaseInstance(GLuint baseInstanc
     return attribToUpdateMask;
 }
 
-void ContextGL::resetUpdatedAttributes(gl::AttributesMask attribMask)
+void ContextGL::resetUpdatedAttributes(const gl::Context *context, gl::AttributesMask attribMask)
 {
     const FunctionsGL *functions = getFunctions();
     for (size_t attribIndex : attribMask)
@@ -475,7 +477,8 @@ void ContextGL::resetUpdatedAttributes(gl::AttributesMask attribMask)
         const gl::Buffer *buffer =
             mState.getVertexArray()->getVertexArrayBuffer(attrib.bindingIndex);
         getStateManager()->bindBuffer(gl::BufferBinding::Array,
-                                      GetImplAs<BufferGL>(buffer)->getBufferID());
+                                      GetImplAs<BufferGL>(buffer)->getBufferID(),
+                                      context->isHardenedContext());
         if (attrib.format->isPureInt())
         {
             functions->vertexAttribIPointer(static_cast<GLuint>(attribIndex),
@@ -522,12 +525,13 @@ angle::Result ContextGL::drawArraysInstancedBaseInstance(const gl::Context *cont
         // pointer offset calling vertexAttribPointer Will refactor stateCache and pass baseInstance
         // to setDrawArraysState to set pointer offset
 
-        gl::AttributesMask attribToResetMask = updateAttributesForBaseInstance(baseInstance);
+        gl::AttributesMask attribToResetMask =
+            updateAttributesForBaseInstance(context, baseInstance);
 
         ANGLE_GL_TRY(context, functions->drawArraysInstanced(ToGLenum(mode), first, count,
                                                              adjustedInstanceCount));
 
-        resetUpdatedAttributes(attribToResetMask);
+        resetUpdatedAttributes(context, attribToResetMask);
     }
 
     mRenderer->markWorkSubmitted();
@@ -613,6 +617,7 @@ angle::Result ContextGL::drawElementsInstanced(const gl::Context *context,
     ANGLE_GL_TRY(context,
                  getFunctions()->drawElementsInstanced(ToGLenum(mode), count, ToGLenum(type),
                                                        drawIndexPointer, adjustedInstanceCount));
+    mRenderer->markWorkSubmitted();
     return angle::Result::Continue;
 }
 
@@ -669,13 +674,14 @@ angle::Result ContextGL::drawElementsInstancedBaseVertexBaseInstance(const gl::C
     {
         // GL 3.3+ or GLES 3.2+
         // TODO(http://anglebug.com/42262554): same as above
-        gl::AttributesMask attribToResetMask = updateAttributesForBaseInstance(baseInstance);
+        gl::AttributesMask attribToResetMask =
+            updateAttributesForBaseInstance(context, baseInstance);
 
         ANGLE_GL_TRY(context, functions->drawElementsInstancedBaseVertex(
                                   ToGLenum(mode), count, ToGLenum(type), drawIndexPointer,
                                   adjustedInstanceCount, baseVertex));
 
-        resetUpdatedAttributes(attribToResetMask);
+        resetUpdatedAttributes(context, attribToResetMask);
     }
 
     mRenderer->markWorkSubmitted();
@@ -762,6 +768,7 @@ angle::Result ContextGL::drawElementsIndirect(const gl::Context *context,
 {
     ANGLE_GL_TRY(context,
                  getFunctions()->drawElementsIndirect(ToGLenum(mode), ToGLenum(type), indirect));
+    mRenderer->markWorkSubmitted();
     return angle::Result::Continue;
 }
 
@@ -1114,7 +1121,8 @@ angle::Result ContextGL::getDepthInitPBO(const gl::Context *context,
 
     if (requestedSize > pbo.size)
     {
-        stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, pbo.bufferID);
+        stateManager->bindBuffer(gl::BufferBinding::PixelUnpack, pbo.bufferID,
+                                 context->isHardenedContext());
 
         functions->bufferData(GL_PIXEL_UNPACK_BUFFER, requestedSize, nullptr, GL_STATIC_DRAW);
         GLubyte *mapPointer = static_cast<GLubyte *>(

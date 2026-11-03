@@ -157,6 +157,7 @@ class FramebufferGL : public FramebufferImpl
 
     GLuint mFramebufferID;
     bool mHasEmulatedAlphaAttachment;
+    bool mHasSyncedAttachments;
     gl::DrawBufferMask mAppliedEnabledDrawBuffers;
     const FunctionsGL *mFunctions;
     StateManagerGL *mStateManager;

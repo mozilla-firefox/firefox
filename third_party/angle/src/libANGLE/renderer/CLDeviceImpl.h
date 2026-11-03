@@ -8,6 +8,7 @@
 #ifndef LIBANGLE_RENDERER_CLDEVICEIMPL_H_
 #define LIBANGLE_RENDERER_CLDEVICEIMPL_H_
 
+#include "libANGLE/CLCaps.h"
 #include "libANGLE/renderer/CLExtensions.h"
 
 namespace rx
@@ -68,11 +69,7 @@ class CLDeviceImpl : angle::NonCopyable
 
     virtual Info createInfo(cl::DeviceType type) const = 0;
 
-    virtual angle::Result getInfoUInt(cl::DeviceInfo name, cl_uint *value) const             = 0;
-    virtual angle::Result getInfoULong(cl::DeviceInfo name, cl_ulong *value) const           = 0;
-    virtual angle::Result getInfoSizeT(cl::DeviceInfo name, size_t *value) const             = 0;
-    virtual angle::Result getInfoStringLength(cl::DeviceInfo name, size_t *value) const      = 0;
-    virtual angle::Result getInfoString(cl::DeviceInfo name, size_t size, char *value) const = 0;
+    virtual const cl::DeviceCaps &getCaps() const = 0;
 
     virtual angle::Result createSubDevices(const cl_device_partition_property *properties,
                                            cl_uint numDevices,
@@ -81,6 +78,7 @@ class CLDeviceImpl : angle::NonCopyable
 
   protected:
     const cl::Device &mDevice;
+    cl::DeviceCaps mCaps;
 };
 
 inline bool CLDeviceImpl::Info::isValid() const

@@ -12,6 +12,7 @@
 #include <deque>
 
 #include "libANGLE/renderer/QueryImpl.h"
+#include "libANGLE/renderer/gl/StateManagerGL.h"
 
 namespace rx
 {
@@ -66,6 +67,7 @@ class StandardQueryGL : public QueryGL
     GLuint mActiveQuery;
     std::deque<GLuint> mPendingQueries;
     GLuint64 mResultSum;
+    StateManagerGL::ExecutionSerial mDeferredBufferDeletionSerial;
 };
 }  // namespace rx
 

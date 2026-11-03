@@ -76,10 +76,11 @@ static BlitFramebufferBounds GetBlitFramebufferBounds(const gl::Context *context
     return bounds;
 }
 
-void BindFramebufferAttachment(const FunctionsGL *functions,
-                               GLenum attachmentPoint,
-                               const FramebufferAttachment *attachment,
-                               const angle::FeaturesGL &features)
+angle::Result BindFramebufferAttachment(const gl::Context *context,
+                                        const FunctionsGL *functions,
+                                        GLenum attachmentPoint,
+                                        const FramebufferAttachment *attachment,
+                                        const angle::FeaturesGL &features)
 {
     if (attachment)
     {
@@ -101,6 +102,8 @@ void BindFramebufferAttachment(const FunctionsGL *functions,
                 texture->getType() == TextureType::Rectangle ||
                 texture->getType() == TextureType::External)
             {
+                TextureGL::NativeLevelTarget nativeTarget = textureGL->getNativeLevelTarget(
+                    NonCubeTextureTypeToTarget(texture->getType()), attachment->mipLevel());
                 if (attachment->isRenderToTexture())
                 {
                     // GL_OVR_multiview_multisampled_render_to_texture is not supported on GL
@@ -109,24 +112,22 @@ void BindFramebufferAttachment(const FunctionsGL *functions,
                     if (functions->framebufferTexture2DMultisampleEXT)
                     {
                         functions->framebufferTexture2DMultisampleEXT(
-                            GL_FRAMEBUFFER, attachmentPoint, ToGLenum(texture->getType()),
-                            textureGL->getTextureID(), attachment->mipLevel(),
-                            attachment->getSamples());
+                            GL_FRAMEBUFFER, attachmentPoint, ToGLenum(nativeTarget.target),
+                            nativeTarget.textureID, nativeTarget.level, attachment->getSamples());
                     }
                     else
                     {
                         ASSERT(functions->framebufferTexture2DMultisampleIMG);
                         functions->framebufferTexture2DMultisampleIMG(
-                            GL_FRAMEBUFFER, attachmentPoint, ToGLenum(texture->getType()),
-                            textureGL->getTextureID(), attachment->mipLevel(),
-                            attachment->getSamples());
+                            GL_FRAMEBUFFER, attachmentPoint, ToGLenum(nativeTarget.target),
+                            nativeTarget.textureID, nativeTarget.level, attachment->getSamples());
                     }
                 }
                 else
                 {
-                    functions->framebufferTexture2D(
-                        GL_FRAMEBUFFER, attachmentPoint, ToGLenum(texture->getType()),
-                        textureGL->getTextureID(), attachment->mipLevel());
+                    functions->framebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint,
+                                                    ToGLenum(nativeTarget.target),
+                                                    nativeTarget.textureID, nativeTarget.level);
                 }
             }
             else if (attachment->isLayered())
@@ -136,20 +137,37 @@ void BindFramebufferAttachment(const FunctionsGL *functions,
                        textureType == TextureType::CubeMap ||
                        textureType == TextureType::_2DMultisampleArray ||
                        textureType == TextureType::CubeMapArray);
+                gl::TextureTarget target = textureType == TextureType::CubeMap
+                                               ? gl::kCubeMapTextureTargetMin
+                                               : NonCubeTextureTypeToTarget(textureType);
+                TextureGL::NativeLevelTarget nativeTarget =
+                    textureGL->getNativeLevelTarget(target, attachment->mipLevel());
+                // If virtualizeBaseLevelAndMipchain virtualized a cube map into separate 2D
+                // textures per face, binding the entire cube map level as a layered attachment is
+                // not supported.
+                ANGLE_CHECK(GetImplAs<ContextGL>(context),
+                            gl::TextureTargetToType(nativeTarget.target) == textureType,
+                            "Layered framebuffer attachment is not supported when the texture type "
+                            "is virtualized.",
+                            GL_INVALID_OPERATION);
                 functions->framebufferTexture(GL_FRAMEBUFFER, attachmentPoint,
-                                              textureGL->getTextureID(), attachment->mipLevel());
+                                              nativeTarget.textureID, nativeTarget.level);
             }
             else if (texture->getType() == TextureType::CubeMap)
             {
+                TextureGL::NativeLevelTarget nativeTarget = textureGL->getNativeLevelTarget(
+                    attachment->cubeMapFace(), attachment->mipLevel());
                 functions->framebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint,
-                                                ToGLenum(attachment->cubeMapFace()),
-                                                textureGL->getTextureID(), attachment->mipLevel());
+                                                ToGLenum(nativeTarget.target),
+                                                nativeTarget.textureID, nativeTarget.level);
             }
             else if (texture->getType() == TextureType::_2DArray ||
                      texture->getType() == TextureType::_3D ||
                      texture->getType() == TextureType::_2DMultisampleArray ||
                      texture->getType() == TextureType::CubeMapArray)
             {
+                TextureGL::NativeLevelTarget nativeTarget = textureGL->getNativeLevelTarget(
+                    NonCubeTextureTypeToTarget(texture->getType()), attachment->mipLevel());
                 if (attachment->isMultiview())
                 {
                     // GL_OVR_multiview_multisampled_render_to_texture is not supported on GL
@@ -157,14 +175,13 @@ void BindFramebufferAttachment(const FunctionsGL *functions,
                     ASSERT(!attachment->isRenderToTexture());
                     ASSERT(functions->framebufferTexture);
                     functions->framebufferTexture(GL_FRAMEBUFFER, attachmentPoint,
-                                                  textureGL->getTextureID(),
-                                                  attachment->mipLevel());
+                                                  nativeTarget.textureID, nativeTarget.level);
                 }
                 else
                 {
                     functions->framebufferTextureLayer(GL_FRAMEBUFFER, attachmentPoint,
-                                                       textureGL->getTextureID(),
-                                                       attachment->mipLevel(), attachment->layer());
+                                                       nativeTarget.textureID, nativeTarget.level,
+                                                       attachment->layer());
                 }
             }
             else
@@ -204,6 +221,8 @@ void BindFramebufferAttachment(const FunctionsGL *functions,
         // Unbind this attachment
         functions->framebufferTexture2D(GL_FRAMEBUFFER, attachmentPoint, GL_TEXTURE_2D, 0, 0);
     }
+
+    return angle::Result::Continue;
 }
 
 bool AreAllLayersActive(const FramebufferAttachment &attachment)
@@ -451,6 +470,57 @@ bool IsNonTrivialClearColor(const GLuint *color)
                               (color[3] == 0 || color[3] == 1));
 }
 
+// Returns a DirtyBits mask with bits set for any framebuffer state that isn't the default.
+void SetNonDefaultBits(const FramebufferState &state,
+                       const FunctionsGL *functions,
+                       gl::Framebuffer::DirtyBits *dirtyBits)
+{
+    for (size_t index : state.getColorAttachmentsMask())
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_0 + index);
+    }
+    if (state.getDepthAttachment())
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DEPTH_ATTACHMENT);
+    }
+    if (state.getStencilAttachment())
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_STENCIL_ATTACHMENT);
+    }
+    if (functions->drawBuffers)
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DRAW_BUFFERS);
+    }
+    if (functions->readBuffer)
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_READ_BUFFER);
+    }
+    if (state.getDefaultWidth() != 0)
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_WIDTH);
+    }
+    if (state.getDefaultHeight() != 0)
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_HEIGHT);
+    }
+    if (state.getDefaultSamples() != 0)
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_SAMPLES);
+    }
+    if (state.getDefaultFixedSampleLocations())
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_FIXED_SAMPLE_LOCATIONS);
+    }
+    if (state.getDefaultLayers() != 0)
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_DEFAULT_LAYERS);
+    }
+    if (state.getFlipY())
+    {
+        dirtyBits->set(Framebuffer::DIRTY_BIT_FLIP_Y);
+    }
+}
+
 }  // namespace
 
 bool IsEmulatedAlphaChannelTextureAttachment(const gl::FramebufferAttachment *attachment)
@@ -473,6 +543,7 @@ FramebufferGL::FramebufferGL(const gl::FramebufferState &data,
     : FramebufferImpl(data),
       mFramebufferID(id),
       mHasEmulatedAlphaAttachment(emulatedAlpha),
+      mHasSyncedAttachments(false),
       mAppliedEnabledDrawBuffers(1),
       mFunctions(functions),
       mStateManager(stateManager)
@@ -1434,23 +1505,64 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
         return angle::Result::Continue;
     }
 
-    const FunctionsGL *functions = GetFunctionsGL(context);
-    StateManagerGL *stateManager = GetStateManagerGL(context);
+    const FunctionsGL *functions              = GetFunctionsGL(context);
+    StateManagerGL *stateManager              = GetStateManagerGL(context);
+    gl::Framebuffer::DirtyBits localDirtyBits = dirtyBits;
+    gl::DrawBufferMask activeColorAttachments;
+
+    // When using the recreateFboOnAttachmentRespecification workaround, recreate the native FBO
+    // when modifying attachments or draw/read buffers on an already-synced FBO.
+    // This prevents collisions with a stale hash in the PowerVR driver.
+    gl::Framebuffer::DirtyBits attachmentDirtyBits =
+        gl::Framebuffer::DirtyBits::Mask(Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_MAX) |
+        gl::Framebuffer::DirtyBits({Framebuffer::DIRTY_BIT_DEPTH_ATTACHMENT,
+                                    Framebuffer::DIRTY_BIT_STENCIL_ATTACHMENT,
+                                    Framebuffer::DIRTY_BIT_READ_BUFFER});
+    if (mState.getEnabledDrawBuffers().any())
+    {
+        attachmentDirtyBits.set(Framebuffer::DIRTY_BIT_DRAW_BUFFERS);
+    }
+
+    const bool attachmentsDirty = (dirtyBits & attachmentDirtyBits).any();
+    if (GetFeaturesGL(context).recreateFboOnAttachmentRespecification.enabled)
+    {
+        // mHasSyncedAttachments is true if the FBO has been synced at least once.
+        if (attachmentsDirty && mHasSyncedAttachments)
+        {
+            stateManager->deleteFramebuffer(mFramebufferID);
+            mFramebufferID = 0;
+            functions->genFramebuffers(1, &mFramebufferID);
+            // Ensure that all previously changed state will be re-synced to the new FBO.
+            SetNonDefaultBits(mState, functions, &localDirtyBits);
+        }
+
+        // Ensure only active attachements are reattached to the FBO on recreation.
+        activeColorAttachments = mState.getEnabledDrawBuffers();
+        if (mState.getReadAttachment() != nullptr)
+        {
+            activeColorAttachments.set(mState.getReadIndex());
+        }
+        if (activeColorAttachments.none() && !mState.getDepthAttachment() &&
+            !mState.getStencilAttachment() && mState.getColorAttachmentsMask().any())
+        {
+            activeColorAttachments.set(*mState.getColorAttachmentsMask().begin());
+        }
+    }
 
     stateManager->bindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
 
     // A pointer to one of the attachments for which the texture or the render buffer is not zero.
     const FramebufferAttachment *attachment = nullptr;
 
-    for (auto dirtyBit : dirtyBits)
+    for (auto dirtyBit : localDirtyBits)
     {
         switch (dirtyBit)
         {
             case Framebuffer::DIRTY_BIT_DEPTH_ATTACHMENT:
             {
                 const FramebufferAttachment *newAttachment = mState.getDepthAttachment();
-                BindFramebufferAttachment(functions, GL_DEPTH_ATTACHMENT, newAttachment,
-                                          GetFeaturesGL(context));
+                ANGLE_TRY(BindFramebufferAttachment(context, functions, GL_DEPTH_ATTACHMENT,
+                                                    newAttachment, GetFeaturesGL(context)));
                 if (newAttachment)
                 {
                     attachment = newAttachment;
@@ -1460,8 +1572,8 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
             case Framebuffer::DIRTY_BIT_STENCIL_ATTACHMENT:
             {
                 const FramebufferAttachment *newAttachment = mState.getStencilAttachment();
-                BindFramebufferAttachment(functions, GL_STENCIL_ATTACHMENT, newAttachment,
-                                          GetFeaturesGL(context));
+                ANGLE_TRY(BindFramebufferAttachment(context, functions, GL_STENCIL_ATTACHMENT,
+                                                    newAttachment, GetFeaturesGL(context)));
                 if (newAttachment)
                 {
                     attachment = newAttachment;
@@ -1521,9 +1633,20 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
                     size_t index =
                         static_cast<size_t>(dirtyBit - Framebuffer::DIRTY_BIT_COLOR_ATTACHMENT_0);
                     const FramebufferAttachment *newAttachment = mState.getColorAttachment(index);
-                    BindFramebufferAttachment(functions,
-                                              static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + index),
-                                              newAttachment, GetFeaturesGL(context));
+
+                    // If the recreateFboOnAttachmentRespecification workaround is enabled and the
+                    // attachment is not enabled in drawBuffers, skip it. If drawBuffers is updated
+                    // to include it the FBO will be recreated to include it again in a future sync.
+                    // This avoids a failure case in the PowerVR driver.
+                    if (GetFeaturesGL(context).recreateFboOnAttachmentRespecification.enabled &&
+                        !activeColorAttachments[index])
+                    {
+                        newAttachment = nullptr;
+                    }
+
+                    ANGLE_TRY(BindFramebufferAttachment(
+                        context, functions, static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + index),
+                        newAttachment, GetFeaturesGL(context)));
                     if (newAttachment)
                     {
                         attachment = newAttachment;
@@ -1542,6 +1665,11 @@ angle::Result FramebufferGL::syncState(const gl::Context *context,
                 break;
             }
         }
+    }
+
+    if (attachmentsDirty)
+    {
+        mHasSyncedAttachments = true;
     }
 
     if (attachment && mState.id() == context->getState().getDrawFramebuffer()->id())

@@ -7,14 +7,11 @@
 // system_utils.cpp: Implementation of common functions
 
 #include "common/system_utils.h"
+#include "common/android_util.h"
 #include "common/debug.h"
 
 #include <stdlib.h>
 #include <atomic>
-
-#if defined(ANGLE_PLATFORM_ANDROID)
-#    include <sys/system_properties.h>
-#endif
 
 #if defined(ANGLE_PLATFORM_APPLE)
 #    include <dispatch/dispatch.h>
@@ -59,21 +56,9 @@ std::string GetEnvironmentVarOrAndroidProperty(const char *variableName, const c
 std::string GetEnvironmentVarOrUnCachedAndroidProperty(const char *variableName,
                                                        const char *propertyName)
 {
-#if defined(ANGLE_PLATFORM_ANDROID) && __ANDROID_API__ >= 26
+#if defined(ANGLE_PLATFORM_ANDROID)
     std::string propertyValue;
-
-    const prop_info *propertyInfo = __system_property_find(propertyName);
-    if (propertyInfo != nullptr)
-    {
-        __system_property_read_callback(
-            propertyInfo,
-            [](void *cookie, const char *, const char *value, unsigned) {
-                auto propertyValue = reinterpret_cast<std::string *>(cookie);
-                *propertyValue     = value;
-            },
-            &propertyValue);
-    }
-
+    android::GetSystemProperty(propertyName, &propertyValue);
     return propertyValue;
 #else
     // Return the environment variable's value.

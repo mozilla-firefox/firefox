@@ -100,10 +100,12 @@ ShaderVariable *FindVariableInInterfaceBlock(const ImmutableString &name,
 ShaderVariable *FindShaderIOBlockVariable(const ImmutableString &blockName,
                                           std::vector<ShaderVariable> *infoList)
 {
-    for (size_t index = 0; index < infoList->size(); ++index)
+    for (ShaderVariable &variable : *infoList)
     {
-        if (blockName == (*infoList)[index].structOrBlockName)
-            return &(*infoList)[index];
+        if (blockName == variable.structOrBlockName)
+        {
+            return &variable;
+        }
     }
 
     return nullptr;
@@ -805,7 +807,7 @@ void CollectVariablesTraverser::setFieldOrVariableProperties(
                 auto iter = fieldsStaticallyUsedWithTexelFetch->subfields.find(fieldIndex);
                 if (iter != fieldsStaticallyUsedWithTexelFetch->subfields.end())
                 {
-                    subfieldsStaticallyUsedWithTexelFetch = &iter->second;
+                    subfieldsStaticallyUsedWithTexelFetch = iter->second;
                 }
             }
 
@@ -1364,13 +1366,13 @@ bool CollectVariablesTraverser::visitBinary(Visit, TIntermBinary *binaryNode)
             // The layout of the block cannot be changed by the translator based on which fields are
             // active, and there isn't anything else that ANGLE or the application would
             // realistically do with a knowledge that some fields may be inactive.
-            for (size_t fieldIndex = 0; fieldIndex < namedBlock->fields.size(); ++fieldIndex)
+            for (ShaderVariable &field : namedBlock->fields)
             {
                 // TODO(oetuaho): Would be nicer to record static use of fields of named interface
                 // blocks more accurately at parse time - now we only mark the fields statically
                 // used if they are active. http://anglebug.com/42261150 We need to mark this field
                 // and all of its sub-fields, as static/active
-                MarkActive(&namedBlock->fields[fieldIndex]);
+                MarkActive(&field);
             }
         }
 

@@ -922,10 +922,8 @@ bool TOutputGLSLBase::visitBlock(Visit visit, TIntermBlock *node)
         out << "{\n";
     }
 
-    for (TIntermSequence::const_iterator iter = node->getSequence()->begin();
-         iter != node->getSequence()->end(); ++iter)
+    for (TIntermNode *curNode : *node->getSequence())
     {
-        TIntermNode *curNode = *iter;
         ASSERT(curNode != nullptr);
 
         out << getIndentPrefix(curNode->getAsCaseNode() ? -1 : 0);
@@ -1233,10 +1231,9 @@ void TOutputGLSLBase::declareStruct(const TStructure *structure)
     }
     out << "{\n";
     const TFieldList &fields = structure->fields();
-    for (size_t i = 0; i < fields.size(); ++i)
+    for (const TField *field : fields)
     {
         out << getIndentPrefix(1);
-        const TField *field    = fields[i];
         const TType &fieldType = *field->type();
         if (writeVariablePrecision(fieldType.getPrecision()))
         {

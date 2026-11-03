@@ -744,10 +744,12 @@ class Texture final : public RefCountObject<TextureID>,
 
     bool isBoundToFramebuffer(rx::UniqueSerial framebufferSerial) const
     {
-        for (size_t index = 0; index < mBoundFramebufferSerials.size(); ++index)
+        for (rx::UniqueSerial boundFramebufferSerial : mBoundFramebufferSerials)
         {
-            if (mBoundFramebufferSerials[index] == framebufferSerial)
+            if (boundFramebufferSerial == framebufferSerial)
+            {
                 return true;
+            }
         }
 
         return false;

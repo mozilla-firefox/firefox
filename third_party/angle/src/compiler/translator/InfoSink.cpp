@@ -6,6 +6,7 @@
 
 #include "compiler/translator/InfoSink.h"
 
+#include "common/angleutils.h"
 #include "compiler/translator/ImmutableString.h"
 #include "compiler/translator/Symbol.h"
 #include "compiler/translator/Types.h"
@@ -74,10 +75,9 @@ TInfoSinkBase &TInfoSinkBase::operator<<(const TType &type)
 
     if (type.isArray())
     {
-        for (auto arraySizeIter = type.getArraySizes().rbegin();
-             arraySizeIter != type.getArraySizes().rend(); ++arraySizeIter)
+        for (unsigned int arraySize : angle::Reversed(type.getArraySizes()))
         {
-            *this << "array[" << (*arraySizeIter) << "] of ";
+            *this << "array[" << arraySize << "] of ";
         }
     }
     if (type.isMatrix())

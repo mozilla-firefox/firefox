@@ -6,6 +6,7 @@
 
 #include "compiler/translator/tree_ops/msl/RewriteCaseDeclarations.h"
 #include "compiler/translator/IntermRebuild.h"
+#include "compiler/translator/tree_util/ReplaceVariable.h"
 #include "compiler/translator/util.h"
 
 using namespace sh;
@@ -17,12 +18,12 @@ namespace
 
 class Rewriter : public TIntermRebuild
 {
-    std::vector<std::vector<const TVariable *>> mDeclaredVarStack;
-
   public:
     Rewriter(TCompiler &compiler) : TIntermRebuild(compiler, true, true) {}
 
     ~Rewriter() override { ASSERT(mDeclaredVarStack.empty()); }
+
+    [[nodiscard]] bool renameMovedDeclarations(TCompiler &compiler, TIntermBlock &root);
 
   private:
     PreResult visitSwitchPre(TIntermSwitch &node) override
@@ -61,6 +62,7 @@ class Rewriter : public TIntermRebuild
                 {
                     Declaration decl = ViewDeclaration(node);
                     mDeclaredVarStack.back().push_back(&decl.symbol.variable());
+                    mSwitchDeclarationsToRename.push_back(&decl.symbol.variable());
                     if (decl.initExpr)
                     {
                         return *new TIntermBinary(TOperator::EOpAssign, &decl.symbol,
@@ -75,17 +77,33 @@ class Rewriter : public TIntermRebuild
         }
         return node;
     }
+
+    TVector<TVector<const TVariable *>> mDeclaredVarStack;
+    TVector<const TVariable *> mSwitchDeclarationsToRename;
 };
 
+bool Rewriter::renameMovedDeclarations(TCompiler &compiler, TIntermBlock &root)
+{
+    // The names may shadow variables outside the switch, so rename them.
+    VariableReplacementMap replaceMap;
+    for (const TVariable *var : mSwitchDeclarationsToRename)
+    {
+        const TVariable *replacementVariable = new TVariable(
+            &mSymbolTable, kEmptyImmutableString, &var->getType(), SymbolType::AngleInternal);
+        replaceMap[var->uniqueId()] = new TIntermSymbol(replacementVariable);
+    }
+    return ReplaceVariables(&compiler, &root, replaceMap);
+}
 }  // anonymous namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 
 bool sh::RewriteCaseDeclarations(TCompiler &compiler, TIntermBlock &root)
 {
-    if (!Rewriter(compiler).rebuildRoot(root))
+    Rewriter rewriter(compiler);
+    if (!rewriter.rebuildRoot(root))
     {
         return false;
     }
-    return true;
+    return rewriter.renameMovedDeclarations(compiler, root);
 }

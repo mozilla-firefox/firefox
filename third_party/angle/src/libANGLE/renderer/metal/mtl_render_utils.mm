@@ -18,7 +18,6 @@
 #include "libANGLE/renderer/metal/ContextMtl.h"
 #include "libANGLE/renderer/metal/DisplayMtl.h"
 #include "libANGLE/renderer/metal/ProgramMtl.h"
-#include "libANGLE/renderer/metal/QueryMtl.h"
 #include "libANGLE/renderer/metal/mtl_common.h"
 #include "libANGLE/renderer/metal/mtl_utils.h"
 
@@ -229,33 +228,33 @@ constexpr angle::FormatID kSupportedPixelUnpackFormats[] = {
 struct ScopedDisableOcclusionQuery
 {
     ScopedDisableOcclusionQuery(ContextMtl *contextMtl, RenderCommandEncoder *encoder)
-        : mContextMtl(contextMtl), mEncoder(encoder)
+        : mEncoder(encoder), mOcclusionQueryIsEnabled(contextMtl->hasActiveOcclusionQuery())
     {
-#ifndef NDEBUG
-        if (contextMtl->hasActiveOcclusionQuery())
+        if (!mOcclusionQueryIsEnabled)
         {
-            encoder->pushDebugGroup(@"Disabled OcclusionQuery");
+            return;
         }
+#ifndef NDEBUG
+        encoder->pushDebugGroup(@"Disabled OcclusionQuery");
 #endif
-        // temporarily disable occlusion query
         contextMtl->disableActiveOcclusionQueryInRenderPass();
     }
     ~ScopedDisableOcclusionQuery()
     {
-#ifndef NDEBUG
-        if (mContextMtl->hasActiveOcclusionQuery())
+        if (!mOcclusionQueryIsEnabled)
         {
-            mEncoder->popDebugGroup();
+            return;
         }
+#ifndef NDEBUG
+        mEncoder->popDebugGroup();
 #else
-        ANGLE_UNUSED_VARIABLE(mContextMtl);
         ANGLE_UNUSED_VARIABLE(mEncoder);
 #endif
     }
 
   private:
-    ContextMtl *mContextMtl;
     RenderCommandEncoder *mEncoder;
+    const bool mOcclusionQueryIsEnabled;
 };
 
 void GetBlitTexCoords(const NormalizedCoords &normalizedCoords,
@@ -897,17 +896,17 @@ angle::Result RenderUtils::generateLineLoopLastSegmentFromElementsArray(
     return mIndexUtils.generateLineLoopLastSegmentFromElementsArray(contextMtl, params);
 }
 
-void RenderUtils::combineVisibilityResult(
-    ContextMtl *contextMtl,
-    bool keepOldValue,
-    const VisibilityBufferOffsetsMtl &renderPassResultBufOffsets,
-    const BufferRef &renderPassResultBuf,
-    const BufferRef &finalResultBuf)
+void RenderUtils::combineVisibilityResult(ContextMtl *contextMtl,
+                                          bool keepOldValue,
+                                          size_t startOffset,
+                                          size_t numOffsets,
+                                          const BufferRef &renderPassResultBuf,
+                                          const BufferRef &finalResultBuf)
 {
     // TODO(geofflang): Propagate this error. It spreads to adding angle::Result return values in
     // most of the metal backend's files.
     (void)mVisibilityResultUtils.combineVisibilityResult(
-        contextMtl, keepOldValue, renderPassResultBufOffsets, renderPassResultBuf, finalResultBuf);
+        contextMtl, keepOldValue, startOffset, numOffsets, renderPassResultBuf, finalResultBuf);
 }
 
 // Compute based mipmap generation
@@ -2157,22 +2156,20 @@ angle::Result VisibilityResultUtils::getVisibilityResultCombinePipeline(
                                                              outComputePipeline);
 }
 
-angle::Result VisibilityResultUtils::combineVisibilityResult(
-    ContextMtl *contextMtl,
-    bool keepOldValue,
-    const VisibilityBufferOffsetsMtl &renderPassResultBufOffsets,
-    const BufferRef &renderPassResultBuf,
-    const BufferRef &finalResultBuf)
+angle::Result VisibilityResultUtils::combineVisibilityResult(ContextMtl *contextMtl,
+                                                             bool keepOldValue,
+                                                             size_t startOffset,
+                                                             size_t numOffsets,
+                                                             const BufferRef &renderPassResultBuf,
+                                                             const BufferRef &finalResultBuf)
 {
-    ASSERT(!renderPassResultBufOffsets.empty());
-
-    if (renderPassResultBufOffsets.size() == 1 && !keepOldValue)
+    if (numOffsets == 1 && !keepOldValue)
     {
         // Use blit command to copy directly
         BlitCommandEncoder *blitEncoder = contextMtl->getBlitCommandEncoder();
 
-        blitEncoder->copyBuffer(renderPassResultBuf, renderPassResultBufOffsets.front(),
-                                finalResultBuf, 0, kOcclusionQueryResultSize);
+        blitEncoder->copyBuffer(renderPassResultBuf, startOffset, finalResultBuf, 0,
+                                kOcclusionQueryResultSize);
         return angle::Result::Continue;
     }
 
@@ -2185,8 +2182,8 @@ angle::Result VisibilityResultUtils::combineVisibilityResult(
 
     CombineVisibilityResultUniform options;
     // Offset is viewed as 64 bit unit in compute shader.
-    options.startOffset = renderPassResultBufOffsets.front() / kOcclusionQueryResultSize;
-    options.numOffsets  = renderPassResultBufOffsets.size();
+    options.startOffset = static_cast<uint32_t>(startOffset / kOcclusionQueryResultSize);
+    options.numOffsets  = static_cast<uint32_t>(numOffsets);
 
     cmdEncoder->setData(options, 0);
     cmdEncoder->setBuffer(renderPassResultBuf, 0, 1);

@@ -24,8 +24,8 @@ bool ValidateChooseConfig(const ValidationContext *val,
                           EGLint config_size,
                           const EGLint *num_config);
 bool ValidateCopyBuffers(const ValidationContext *val,
-                         const egl::Display *dpyPacked,
-                         SurfaceID surfacePacked,
+                         const egl::ThreadSafeDisplay *dpyPacked,
+                         const egl::Surface *surfacePacked,
                          EGLNativePixmapType target);
 bool ValidateCreateContext(const ValidationContext *val,
                            const egl::Display *dpyPacked,
@@ -50,8 +50,8 @@ bool ValidateDestroyContext(const ValidationContext *val,
                             const egl::Display *dpyPacked,
                             gl::ContextID ctxPacked);
 bool ValidateDestroySurface(const ValidationContext *val,
-                            const egl::Display *dpyPacked,
-                            SurfaceID surfacePacked);
+                            const egl::ThreadSafeDisplay *dpyPacked,
+                            const egl::Surface *surfacePacked);
 bool ValidateGetConfigAttrib(const ValidationContext *val,
                              const egl::Display *dpyPacked,
                              const egl::Config *configPacked,
@@ -72,9 +72,11 @@ bool ValidateInitialize(const ValidationContext *val,
                         const EGLint *major,
                         const EGLint *minor);
 bool ValidateMakeCurrent(const ValidationContext *val,
-                         const egl::Display *dpyPacked,
+                         const egl::ThreadSafeDisplay *dpyPacked,
                          SurfaceID drawPacked,
+                         const egl::Surface *drawPackedObject,
                          SurfaceID readPacked,
+                         const egl::Surface *readPackedObject,
                          gl::ContextID ctxPacked);
 bool ValidateQueryContext(const ValidationContext *val,
                           const egl::Display *dpyPacked,
@@ -83,33 +85,34 @@ bool ValidateQueryContext(const ValidationContext *val,
                           const EGLint *value);
 bool ValidateQueryString(const ValidationContext *val, const egl::Display *dpyPacked, EGLint name);
 bool ValidateQuerySurface(const ValidationContext *val,
-                          const egl::Display *dpyPacked,
-                          SurfaceID surfacePacked,
+                          const egl::ThreadSafeDisplay *dpyPacked,
+                          const egl::Surface *surfacePacked,
                           EGLint attribute,
                           const EGLint *value);
 bool ValidateSwapBuffers(const ValidationContext *val,
-                         const egl::Display *dpyPacked,
-                         SurfaceID surfacePacked);
+                         const egl::ThreadSafeDisplay *dpyPacked,
+                         const egl::Surface *surfacePacked);
 bool ValidateTerminate(const ValidationContext *val, const egl::Display *dpyPacked);
 bool ValidateWaitGL(const ValidationContext *val);
 bool ValidateWaitNative(const ValidationContext *val, EGLint engine);
 
 // EGL 1.1
 bool ValidateBindTexImage(const ValidationContext *val,
-                          const egl::Display *dpyPacked,
-                          SurfaceID surfacePacked,
+                          const egl::ThreadSafeDisplay *dpyPacked,
+                          const egl::Surface *surfacePacked,
                           EGLint buffer);
 bool ValidateReleaseTexImage(const ValidationContext *val,
-                             const egl::Display *dpyPacked,
-                             SurfaceID surfacePacked,
+                             const egl::ThreadSafeDisplay *dpyPacked,
+                             const egl::Surface *surfacePacked,
                              EGLint buffer);
 bool ValidateSurfaceAttrib(const ValidationContext *val,
-                           const egl::Display *dpyPacked,
-                           SurfaceID surfacePacked,
+                           const egl::ThreadSafeDisplay *dpyPacked,
+                           const egl::Surface *surfacePacked,
                            EGLint attribute,
                            EGLint value);
 bool ValidateSwapInterval(const ValidationContext *val,
                           const egl::Display *dpyPacked,
+                          const egl::Surface *drawSurface,
                           EGLint interval);
 
 // EGL 1.2
@@ -185,26 +188,26 @@ bool ValidateCreateNativeClientBufferANDROID(const ValidationContext *val,
 
 // EGL_ANDROID_get_frame_timestamps
 bool ValidateGetCompositorTimingSupportedANDROID(const ValidationContext *val,
-                                                 const egl::Display *dpyPacked,
-                                                 SurfaceID surfacePacked,
+                                                 const egl::ThreadSafeDisplay *dpyPacked,
+                                                 const egl::Surface *surfacePacked,
                                                  CompositorTiming namePacked);
 bool ValidateGetCompositorTimingANDROID(const ValidationContext *val,
-                                        const egl::Display *dpyPacked,
-                                        SurfaceID surfacePacked,
+                                        const egl::ThreadSafeDisplay *dpyPacked,
+                                        const egl::Surface *surfacePacked,
                                         EGLint numTimestamps,
                                         const EGLint *names,
                                         const EGLnsecsANDROID *values);
 bool ValidateGetNextFrameIdANDROID(const ValidationContext *val,
-                                   const egl::Display *dpyPacked,
-                                   SurfaceID surfacePacked,
+                                   const egl::ThreadSafeDisplay *dpyPacked,
+                                   const egl::Surface *surfacePacked,
                                    const EGLuint64KHR *frameId);
 bool ValidateGetFrameTimestampSupportedANDROID(const ValidationContext *val,
-                                               const egl::Display *dpyPacked,
-                                               SurfaceID surfacePacked,
+                                               const egl::ThreadSafeDisplay *dpyPacked,
+                                               const egl::Surface *surfacePacked,
                                                Timestamp timestampPacked);
 bool ValidateGetFrameTimestampsANDROID(const ValidationContext *val,
-                                       const egl::Display *dpyPacked,
-                                       SurfaceID surfacePacked,
+                                       const egl::ThreadSafeDisplay *dpyPacked,
+                                       const egl::Surface *surfacePacked,
                                        EGLuint64KHR frameId,
                                        EGLint numTimestamps,
                                        const EGLint *timestamps,
@@ -221,8 +224,8 @@ bool ValidateDupNativeFenceFDANDROID(const ValidationContext *val,
 
 // EGL_ANDROID_presentation_time
 bool ValidatePresentationTimeANDROID(const ValidationContext *val,
-                                     const egl::Display *dpyPacked,
-                                     SurfaceID surfacePacked,
+                                     const egl::ThreadSafeDisplay *dpyPacked,
+                                     const egl::Surface *surfacePacked,
                                      EGLnsecsANDROID time);
 
 // EGL_ANGLE_device_creation
@@ -238,8 +241,8 @@ bool ValidateUnlockVulkanQueueANGLE(const ValidationContext *val, const egl::Dis
 
 // EGL_ANGLE_external_context_and_surface
 bool ValidateAcquireExternalContextANGLE(const ValidationContext *val,
-                                         const egl::Display *dpyPacked,
-                                         SurfaceID drawAndReadPacked);
+                                         const egl::ThreadSafeDisplay *dpyPacked,
+                                         const egl::Surface *drawAndReadPacked);
 bool ValidateReleaseExternalContextANGLE(const ValidationContext *val,
                                          const egl::Display *dpyPacked);
 
@@ -276,8 +279,8 @@ bool ValidateForceGPUSwitchANGLE(const ValidationContext *val,
 
 // EGL_ANGLE_prepare_swap_buffers
 bool ValidatePrepareSwapBuffersANGLE(const ValidationContext *val,
-                                     const egl::Display *dpyPacked,
-                                     SurfaceID surfacePacked);
+                                     const egl::ThreadSafeDisplay *dpyPacked,
+                                     const egl::Surface *surfacePacked);
 
 // EGL_ANGLE_program_cache_control
 bool ValidateProgramCacheGetAttribANGLE(const ValidationContext *val,
@@ -303,8 +306,8 @@ bool ValidateProgramCacheResizeANGLE(const ValidationContext *val,
 
 // EGL_ANGLE_query_surface_pointer
 bool ValidateQuerySurfacePointerANGLE(const ValidationContext *val,
-                                      const egl::Display *dpyPacked,
-                                      SurfaceID surfacePacked,
+                                      const egl::ThreadSafeDisplay *dpyPacked,
+                                      const egl::Surface *surfacePacked,
                                       EGLint attribute,
                                       void *const *value);
 
@@ -321,8 +324,8 @@ bool ValidateStreamPostD3DTextureANGLE(const ValidationContext *val,
 
 // EGL_ANGLE_sync_control_rate
 bool ValidateGetMscRateANGLE(const ValidationContext *val,
-                             const egl::Display *dpyPacked,
-                             SurfaceID surfacePacked,
+                             const egl::ThreadSafeDisplay *dpyPacked,
+                             const egl::Surface *surfacePacked,
                              const EGLint *numerator,
                              const EGLint *denominator);
 
@@ -339,8 +342,8 @@ bool ValidateWaitUntilWorkScheduledANGLE(const ValidationContext *val,
 
 // EGL_CHROMIUM_sync_control
 bool ValidateGetSyncValuesCHROMIUM(const ValidationContext *val,
-                                   const egl::Display *dpyPacked,
-                                   SurfaceID surfacePacked,
+                                   const egl::ThreadSafeDisplay *dpyPacked,
+                                   const egl::Surface *surfacePacked,
                                    const EGLuint64KHR *ust,
                                    const EGLuint64KHR *msc,
                                    const EGLuint64KHR *sbc);
@@ -440,22 +443,22 @@ bool ValidateDestroyImageKHR(const ValidationContext *val,
 
 // EGL_KHR_lock_surface3
 bool ValidateLockSurfaceKHR(const ValidationContext *val,
-                            const egl::Display *dpyPacked,
-                            SurfaceID surfacePacked,
+                            const egl::ThreadSafeDisplay *dpyPacked,
+                            const egl::Surface *surfacePacked,
                             const AttributeMap &attrib_listPacked);
 bool ValidateQuerySurface64KHR(const ValidationContext *val,
-                               const egl::Display *dpyPacked,
-                               SurfaceID surfacePacked,
+                               const egl::ThreadSafeDisplay *dpyPacked,
+                               const egl::Surface *surfacePacked,
                                EGLint attribute,
                                const EGLAttribKHR *value);
 bool ValidateUnlockSurfaceKHR(const ValidationContext *val,
-                              const egl::Display *dpyPacked,
-                              SurfaceID surfacePacked);
+                              const egl::ThreadSafeDisplay *dpyPacked,
+                              const egl::Surface *surfacePacked);
 
 // EGL_KHR_partial_update
 bool ValidateSetDamageRegionKHR(const ValidationContext *val,
-                                const egl::Display *dpyPacked,
-                                SurfaceID surfacePacked,
+                                const egl::ThreadSafeDisplay *dpyPacked,
+                                const egl::Surface *surfacePacked,
                                 const EGLint *rects,
                                 EGLint n_rects);
 
@@ -501,8 +504,8 @@ bool ValidateStreamConsumerReleaseKHR(const ValidationContext *val,
 
 // EGL_KHR_swap_buffers_with_damage
 bool ValidateSwapBuffersWithDamageKHR(const ValidationContext *val,
-                                      const egl::Display *dpyPacked,
-                                      SurfaceID surfacePacked,
+                                      const egl::ThreadSafeDisplay *dpyPacked,
+                                      const egl::Surface *surfacePacked,
                                       const EGLint *rects,
                                       EGLint n_rects);
 
@@ -514,8 +517,8 @@ bool ValidateWaitSyncKHR(const ValidationContext *val,
 
 // EGL_NV_post_sub_buffer
 bool ValidatePostSubBufferNV(const ValidationContext *val,
-                             const egl::Display *dpyPacked,
-                             SurfaceID surfacePacked,
+                             const egl::ThreadSafeDisplay *dpyPacked,
+                             const egl::Surface *surfacePacked,
                              EGLint x,
                              EGLint y,
                              EGLint width,

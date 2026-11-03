@@ -481,6 +481,21 @@ void AtomicSerial::storeMaxValue(uint64_t value)
     }
 }
 
+// AtomicCommandBufferError implementation
+void AtomicCommandBufferError::store(MTLCommandBufferError value)
+{
+    // Do not overwrite an existing non-OOM GPU fault error (e.g. Timeout, PageFault,
+    // DeviceRemoved) with a subsequent error (such as NotPermitted from rejected follow-up
+    // submissions or OutOfMemory) so the root-cause fault is preserved until popped.
+    MTLCommandBufferError prevError = mValue.load(std::memory_order_relaxed);
+    while (
+        (prevError == MTLCommandBufferErrorNone || prevError == MTLCommandBufferErrorOutOfMemory) &&
+        !mValue.compare_exchange_weak(prevError, value, std::memory_order_release,
+                                      std::memory_order_consume))
+    {
+    }
+}
+
 // CommandQueue implementation
 void CommandQueue::reset()
 {
@@ -1526,8 +1541,7 @@ void RenderCommandEncoder::endEncodingImpl(bool considerDiscardSimulation)
                                 objCRenderPassDesc.stencilAttachment))
         hasAttachment = true;
 
-    // Set visibility result buffer
-    if (mOcclusionQueryPool.getNumRenderPassAllocatedQueries())
+    if (mOcclusionQueryPool.hasPendingVisibilityResults())
     {
         objCRenderPassDesc.visibilityResultBuffer =
             mOcclusionQueryPool.getRenderPassVisibilityPoolBuffer()->get();
@@ -1573,8 +1587,11 @@ void RenderCommandEncoder::endEncodingImpl(bool considerDiscardSimulation)
     }
 #endif
 
-    // reset state
-    mRenderPassDesc = RenderPassDesc();
+    // Reset the C++ render pass descriptor, then use convertToMetalDesc() to reset the cached
+    // Objective-C render pass descriptor.
+    const uint32_t numColorAttachments = mRenderPassDesc.numColorAttachments;
+    mRenderPassDesc                    = RenderPassDesc();
+    mRenderPassDesc.convertToMetalDesc(objCRenderPassDesc, numColorAttachments);
     mStateCache.reset();
 }
 

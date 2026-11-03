@@ -19,6 +19,12 @@
 
 #include <limits>
 
+#include <memory>
+
+#if defined(ANGLE_HAS_ZSTD)
+#    include <zstd.h>
+#endif
+
 #define USE_SYSTEM_ZLIB
 #include "compression_utils_portable.h"
 
@@ -1273,6 +1279,98 @@ bool DecompressBlob(const uint8_t *compressedData,
 
     return true;
 }
+
+#if defined(ANGLE_HAS_ZSTD)
+bool CompressBlobZstd(const size_t cacheSize,
+                      const uint8_t *cacheData,
+                      MemoryBuffer *compressedData)
+{
+    // Like zlib's streams, a context is created for each call rather than kept between calls.
+    std::unique_ptr<ZSTD_CCtx, decltype(&ZSTD_freeCCtx)> context(ZSTD_createCCtx(), ZSTD_freeCCtx);
+    if (context == nullptr)
+    {
+        ERR() << "Failed to allocate memory for compression";
+        return false;
+    }
+
+    // The checksum is zstd's counterpart to zlib's CRC32.  DecompressBlobZstd() verifies it, as
+    // DecompressBlob() verifies zlib's, so callers need no checksum of their own.
+    const size_t result = ZSTD_CCtx_setParameter(context.get(), ZSTD_c_checksumFlag, 1);
+    if (ZSTD_isError(result))
+    {
+        ERR() << "Failed to enable the checksum: " << ZSTD_getErrorName(result);
+        return false;
+    }
+
+    const size_t bound = ZSTD_compressBound(cacheSize);
+    if (!compressedData->clearAndReserve(bound))
+    {
+        ERR() << "Failed to allocate memory for compression";
+        return false;
+    }
+
+    const size_t compressedSize =
+        ZSTD_compress2(context.get(), compressedData->data(), bound, cacheData, cacheSize);
+    if (ZSTD_isError(compressedSize))
+    {
+        ERR() << "Failed to compress cache data: " << ZSTD_getErrorName(compressedSize);
+        return false;
+    }
+
+    compressedData->setSize(compressedSize);
+    return true;
+}
+
+bool DecompressBlobZstd(const uint8_t *compressedData,
+                        const size_t compressedSize,
+                        size_t maxUncompressedDataSize,
+                        MemoryBuffer *uncompressedData)
+{
+    // CompressBlobZstd() always records the size in the frame header.
+    const unsigned long long frameContentSize =
+        ZSTD_getFrameContentSize(compressedData, compressedSize);
+
+    // These are the only two error codes at this time.
+    if (frameContentSize == ZSTD_CONTENTSIZE_ERROR)
+    {
+        WARN() << "Failed to decompress data: not a zstd frame";
+        return false;
+    }
+    if (frameContentSize == ZSTD_CONTENTSIZE_UNKNOWN)
+    {
+        WARN() << "Failed to decompress data: the zstd frame does not record its size";
+        return false;
+    }
+
+    if (frameContentSize == 0 || frameContentSize > maxUncompressedDataSize)
+    {
+        ERR() << "Decompressed data size is zero or larger than the maximum supported ("
+              << frameContentSize << " vs " << maxUncompressedDataSize << ")";
+        return false;
+    }
+
+    // The size fits in size_t, having been checked against maxUncompressedDataSize.
+    const size_t uncompressedSize = static_cast<size_t>(frameContentSize);
+
+    if (!uncompressedData->clearAndReserve(uncompressedSize))
+    {
+        ERR() << "Failed to allocate memory for decompression";
+        return false;
+    }
+
+    // This also verifies the checksum.
+    const size_t decompressedSize =
+        ZSTD_decompress(uncompressedData->data(), uncompressedSize, compressedData, compressedSize);
+    if (ZSTD_isError(decompressedSize) || decompressedSize != uncompressedSize)
+    {
+        WARN() << "Failed to decompress data: " << ZSTD_getErrorName(decompressedSize);
+        return false;
+    }
+
+    uncompressedData->setSize(decompressedSize);
+    return true;
+}
+#endif  // defined(ANGLE_HAS_ZSTD)
 
 uint32_t GenerateCRC32(const uint8_t *data, size_t size)
 {

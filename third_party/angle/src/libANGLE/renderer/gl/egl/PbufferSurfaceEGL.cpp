@@ -22,7 +22,7 @@ PbufferSurfaceEGL::PbufferSurfaceEGL(const egl::SurfaceState &state,
 
 PbufferSurfaceEGL::~PbufferSurfaceEGL() {}
 
-egl::Error PbufferSurfaceEGL::initialize(const egl::Display *display)
+egl::Error PbufferSurfaceEGL::initialize(const egl::ThreadSafeDisplay *display)
 {
     constexpr EGLint kForwardedPBufferSurfaceAttributes[] = {
         EGL_WIDTH,          EGL_HEIGHT,         EGL_LARGEST_PBUFFER, EGL_TEXTURE_FORMAT,

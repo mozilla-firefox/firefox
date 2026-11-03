@@ -572,9 +572,8 @@ bool TIntermTraverser::updateTree(TCompiler *compiler, TIntermNode *node)
             }
         }
     }
-    for (size_t ii = 0; ii < mMultiReplacements.size(); ++ii)
+    for (const NodeReplaceWithMultipleEntry &replacement : mMultiReplacements)
     {
-        const NodeReplaceWithMultipleEntry &replacement = mMultiReplacements[ii];
         ASSERT(replacement.parent);
         bool replaced = replacement.parent->replaceChildNodeWithMultiple(replacement.original,
                                                                          replacement.replacements);

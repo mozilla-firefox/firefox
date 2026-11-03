@@ -13,9 +13,11 @@
 #import <Metal/Metal.h>
 
 #include <deque>
+#include <memory>
 #include <optional>
 #include <utility>
 
+#include "common/base/anglebase/containers/mru_cache.h"
 #include "common/span.h"
 #include "libANGLE/Buffer.h"
 #include "libANGLE/Observer.h"
@@ -96,6 +98,23 @@ struct UniformConversionBufferMtl : public ConversionBufferMtl
     const uint64_t programSerialId;
     const size_t uniformBufferBlockSize;
     const std::pair<size_t, size_t> offset;
+};
+
+// Identifies the draw whose indices a provoking vertex conversion rewrote.
+struct ProvokingVertexConversionKey
+{
+    struct Hash
+    {
+        size_t operator()(const ProvokingVertexConversionKey &key) const;
+    };
+
+    bool operator==(const ProvokingVertexConversionKey &other) const;
+
+    gl::PrimitiveMode mode;
+    gl::DrawElementsType elemType;
+    size_t firstIndex;
+    GLsizei count;
+    bool primitiveRestartEnabled;
 };
 
 class BufferHolderMtl
@@ -192,6 +211,13 @@ class BufferMtl : public BufferImpl, public BufferHolderMtl
 
     size_t size() const { return static_cast<size_t>(mState.getSize()); }
 
+    ConversionBufferMtl *getProvokingVertexConversionBuffer(ContextMtl *context,
+                                                            gl::PrimitiveMode mode,
+                                                            gl::DrawElementsType elemType,
+                                                            size_t firstIndex,
+                                                            GLsizei count,
+                                                            bool primitiveRestartEnabled);
+
     const std::vector<DrawIndexRange> &getDrawIndexRanges(ContextMtl *ctx,
                                                           gl::DrawElementsType indexType);
 
@@ -253,6 +279,15 @@ class BufferMtl : public BufferImpl, public BufferHolderMtl
 
     // TODO(crbug.com/500942658): Consider using LRU cache
     std::deque<UniformConversionBufferMtl> mUniformConversionBuffers;
+
+    // Each entry owns its pool so that other conversions cannot overwrite indices in use.
+    using ProvokingVertexConversionCache =
+        angle::base::HashingMRUCache<ProvokingVertexConversionKey,
+                                     std::unique_ptr<ConversionBufferMtl>,
+                                     ProvokingVertexConversionKey::Hash>;
+    static constexpr size_t kMaxProvokingVertexConversionBuffers = 4;
+    ProvokingVertexConversionCache mProvokingVertexConversionBuffers{
+        kMaxProvokingVertexConversionBuffers};
 
     struct DrawIndexRangeCache
     {

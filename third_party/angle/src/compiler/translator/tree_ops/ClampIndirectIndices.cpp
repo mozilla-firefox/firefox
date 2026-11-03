@@ -89,7 +89,7 @@ class ClampIndirectIndicesTraverser : public TIntermTraverser
         if (leftType.isArray())
         {
             const bool isFragData =
-                RemoveCommaLeftHandSize(node->getLeft())->getType().getQualifier() == EvqFragData;
+                RemoveCommaLeftHandSide(node->getLeft())->getType().getQualifier() == EvqFragData;
 
             int arraySize = static_cast<int>(leftType.getOutermostArraySize());
             if (isFragData && mExtDrawBuffers == ExtDrawBuffers::Disabled)

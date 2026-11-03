@@ -54,7 +54,7 @@ inline std::ostream &operator<<(std::ostream &o, const DecorateVariable &dv)
 {
     if (dv.getName().compare(0, 3, "gl_") != 0)
     {
-        o << "_";
+        o << "_u";
     }
     o << dv.getName();
     return o;

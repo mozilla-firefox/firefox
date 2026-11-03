@@ -22,6 +22,12 @@ class ContextMtl;
 namespace mtl
 {
 
+enum class TrackBufferInContext
+{
+    No,
+    Yes,
+};
+
 // A buffer pool is conceptually an infinitely long buffer. Each time you write to the buffer,
 // you will always write to a previously unused portion. After a series of writes, you must flush
 // the buffer data to the device. Buffer lifetime currently assumes that each new allocation will
@@ -44,13 +50,13 @@ class BufferPool
 
     // Init is called after the buffer creation so that the alignment can be specified later.
     void initialize(Context *context, size_t initialSize, size_t alignment, size_t maxBuffers);
-    // Calling this without initialize() will have same effect as calling initialize().
-    // If called after initialize(), the old pending buffers will be flushed and might be re-used if
-    // their size are big enough for the requested initialSize parameter.
-    angle::Result reset(ContextMtl *contextMtl,
-                        size_t initialSize,
-                        size_t alignment,
-                        size_t maxBuffers);
+    // If trackInContext is TrackBufferInContext::Yes, the pool must be tied to contextMtl's
+    // lifetime and will be registered with it for trimming on glTrimMemoryANGLE().
+    void initialize(ContextMtl *contextMtl,
+                    size_t initialSize,
+                    size_t alignment,
+                    size_t maxBuffers,
+                    TrackBufferInContext trackInContext);
 
     // This call will allocate a new region at the end of the buffer. It internally may trigger
     // a new buffer to be created (which is returned in the optional parameter
@@ -73,6 +79,9 @@ class BufferPool
     // This releases all the buffers that have been allocated since this was last called.
     void releaseInFlightBuffers(ContextMtl *contextMtl);
 
+    // Releases in-flight buffers and marks all idle free buffers as purgeable (volatile).
+    void trim(ContextMtl *contextMtl);
+
     // This frees resources immediately.
     void destroy(ContextMtl *contextMtl);
 
@@ -88,15 +97,26 @@ class BufferPool
     void setAlwaysAllocateNewBuffer(bool e) { mAlwaysAllocateNewBuffer = e; }
 
   private:
+    enum class BufferListType
+    {
+        InFlight,
+        NonVolatileFree,
+        VolatileFree,
+    };
+
     MTLStorageMode storageMode(ContextMtl *contextMtl) const;
     void reset();
     angle::Result allocateNewBuffer(ContextMtl *contextMtl);
-    void destroyBufferList(ContextMtl *contextMtl, std::deque<BufferRef> *buffers, bool isFreeList);
+    BufferRef popFreeBuffer(ContextMtl *contextMtl);
+    void clearFreeLists();
+    void destroyBufferList(std::deque<BufferRef> *buffers, BufferListType listType);
     angle::Result finalizePendingBuffer(ContextMtl *contextMtl);
 
+    ContextMtl *mContext{nullptr};
     BufferRef mBuffer;
     std::deque<BufferRef> mInFlightBuffers;
     std::deque<BufferRef> mBufferFreeList;
+    std::deque<BufferRef> mVolatileBufferFreeList;
     size_t mInitialSize{0};
     size_t mNextAllocationOffset{0};
     size_t mLastFlushOffset{0};

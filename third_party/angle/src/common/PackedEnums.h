@@ -976,6 +976,11 @@ gl::TextureTarget EGLImageTargetToTextureTarget(EGLenum eglTarget);
 gl::TextureType EGLTextureTargetToTextureType(EGLenum eglTarget);
 }  // namespace egl_gl
 
+namespace gl_egl
+{
+EGLenum TextureTargetToEGLImageTarget(gl::TextureTarget target);
+}  // namespace gl_egl
+
 namespace gl
 {
 // First case: handling packed enums.

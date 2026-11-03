@@ -64,7 +64,8 @@ StandardQueryGL::StandardQueryGL(gl::QueryType type,
       mStateManager(stateManager),
       mActiveQuery(0),
       mPendingQueries(),
-      mResultSum(0)
+      mResultSum(0),
+      mDeferredBufferDeletionSerial(0)
 {}
 
 StandardQueryGL::~StandardQueryGL()
@@ -92,7 +93,8 @@ void StandardQueryGL::clearInternalQueries()
 angle::Result StandardQueryGL::begin(const gl::Context *context)
 {
     clearInternalQueries();
-    mResultSum = 0;
+    mResultSum                    = 0;
+    mDeferredBufferDeletionSerial = mStateManager->onBeginQuery();
     return resume(context);
 }
 
@@ -229,6 +231,11 @@ angle::Result StandardQueryGL::flush(const gl::Context *context, bool force)
         mFunctions->deleteQueries(1, &id);
 
         mPendingQueries.pop_front();
+    }
+
+    if (mActiveQuery == 0 && mDeferredBufferDeletionSerial > 0)
+    {
+        mStateManager->onSerialCompleted(mDeferredBufferDeletionSerial);
     }
 
     return angle::Result::Continue;

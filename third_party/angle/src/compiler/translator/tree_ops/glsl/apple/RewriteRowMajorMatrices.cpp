@@ -281,10 +281,9 @@ class TransformArrayHelper
     TIntermTyped *getCurrentElement(TIntermTyped *expression)
     {
         TIntermTyped *element = expression->deepCopy();
-        for (auto it = mArrayIndices.rbegin(); it != mArrayIndices.rend(); ++it)
+        for (unsigned int index : angle::Reversed(mArrayIndices))
         {
-            unsigned int index = *it;
-            element            = new TIntermBinary(EOpIndexDirect, element, CreateIndexNode(index));
+            element = new TIntermBinary(EOpIndexDirect, element, CreateIndexNode(index));
         }
         return element;
     }

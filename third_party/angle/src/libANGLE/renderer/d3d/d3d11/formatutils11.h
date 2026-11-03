@@ -39,6 +39,12 @@ bool IsSupportedMultiplanarFormat(DXGI_FORMAT dxgiFormat);
 
 const Format &GetYUVPlaneFormat(DXGI_FORMAT dxgiFormat, int plane);
 
+// Returns the format entry for wrapping packed 10-bit YUV client buffers
+// (Y410/Y210), or nullptr for other formats. The texture keeps its native
+// DXGI format; the SRV uses the documented view alias (R10G10B10A2_UNORM /
+// R16G16B16A16_UNORM).
+const Format *GetPackedYUVFormat(DXGI_FORMAT dxgiFormat);
+
 struct DXGIFormatSize
 {
     DXGIFormatSize(GLuint pixelBits, GLuint blockWidth, GLuint blockHeight);

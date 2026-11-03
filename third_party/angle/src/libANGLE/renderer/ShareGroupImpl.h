@@ -14,7 +14,7 @@
 
 namespace egl
 {
-class Display;
+class ThreadSafeDisplay;
 }  // namespace egl
 
 namespace gl
@@ -29,7 +29,7 @@ class ShareGroupImpl : angle::NonCopyable
   public:
     ShareGroupImpl(const egl::ShareGroupState &state) : mState(state) {}
     virtual ~ShareGroupImpl() {}
-    virtual void onDestroy(const egl::Display *display) {}
+    virtual void onDestroy(const egl::ThreadSafeDisplay *display) {}
 
     virtual void onContextAdd() {}
 

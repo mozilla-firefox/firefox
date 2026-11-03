@@ -18,17 +18,14 @@ namespace sh
 namespace
 {
 constexpr const ImmutableString kGlInstanceIDString("gl_InstanceID");
-constexpr const ImmutableString kGlInstanceIndexString("gl_InstanceIndex");
 constexpr const ImmutableString kGlVertexIDString("gl_VertexID");
 
 class TBuiltinsWorkaround : public TIntermTraverser
 {
   public:
     TBuiltinsWorkaround(TSymbolTable *symbolTable,
-                        const ShCompileOptions &options,
                         const DriverUniform *driverUniforms)
         : TIntermTraverser(true, false, false, symbolTable),
-          mCompileOptions(options),
           mDriverUniforms(driverUniforms)
     {}
 
@@ -37,41 +34,23 @@ class TBuiltinsWorkaround : public TIntermTraverser
   private:
     void ensureVersionIsAtLeast(int version);
 
-    const ShCompileOptions &mCompileOptions;
     const DriverUniform *mDriverUniforms;
 };
 
 void TBuiltinsWorkaround::visitSymbol(TIntermSymbol *node)
 {
-    if (mCompileOptions.useIR)
+    if (node->variable().symbolType() == SymbolType::BuiltIn &&
+        node->getName() == kGlInstanceIDString)
     {
-        // The IR already converts gl_VertexID and gl_InstanceID to gl_VertexIndex and
-        // gl_InstanceIndex respectively.  It does not account for driver uniforms yet, so only
-        // adjust gl_InstanceIndex with the IR build.
-        if (node->variable().symbolType() == SymbolType::BuiltIn &&
-            node->getName() == kGlInstanceIndexString)
-        {
-            TIntermBinary *subBaseInstance =
-                new TIntermBinary(EOpSub, node, mDriverUniforms->getBaseInstance());
-            queueReplacement(subBaseInstance, OriginalNode::IS_DROPPED);
-        }
+        TIntermSymbol *instanceIndexRef = new TIntermSymbol(BuiltInVariable::gl_InstanceIndex());
+        TIntermBinary *subBaseInstance =
+            new TIntermBinary(EOpSub, instanceIndexRef, mDriverUniforms->getBaseInstance());
+        queueReplacement(subBaseInstance, OriginalNode::IS_DROPPED);
     }
-    else
+    else if (node->getName() == kGlVertexIDString)
     {
-        if (node->variable().symbolType() == SymbolType::BuiltIn &&
-            node->getName() == kGlInstanceIDString)
-        {
-            TIntermSymbol *instanceIndexRef =
-                new TIntermSymbol(BuiltInVariable::gl_InstanceIndex());
-            TIntermBinary *subBaseInstance =
-                new TIntermBinary(EOpSub, instanceIndexRef, mDriverUniforms->getBaseInstance());
-            queueReplacement(subBaseInstance, OriginalNode::IS_DROPPED);
-        }
-        else if (node->getName() == kGlVertexIDString)
-        {
-            TIntermSymbol *vertexIndexRef = new TIntermSymbol(BuiltInVariable::gl_VertexIndex());
-            queueReplacement(vertexIndexRef, OriginalNode::IS_DROPPED);
-        }
+        TIntermSymbol *vertexIndexRef = new TIntermSymbol(BuiltInVariable::gl_VertexIndex());
+        queueReplacement(vertexIndexRef, OriginalNode::IS_DROPPED);
     }
 }
 }  // anonymous namespace
@@ -79,10 +58,9 @@ void TBuiltinsWorkaround::visitSymbol(TIntermSymbol *node)
 [[nodiscard]] bool ShaderBuiltinsWorkaround(TCompiler *compiler,
                                             TIntermBlock *root,
                                             const DriverUniform *driverUniforms,
-                                            TSymbolTable *symbolTable,
-                                            const ShCompileOptions &compileOptions)
+                                            TSymbolTable *symbolTable)
 {
-    TBuiltinsWorkaround builtins(symbolTable, compileOptions, driverUniforms);
+    TBuiltinsWorkaround builtins(symbolTable, driverUniforms);
     root->traverse(&builtins);
     if (!builtins.updateTree(compiler, root))
     {

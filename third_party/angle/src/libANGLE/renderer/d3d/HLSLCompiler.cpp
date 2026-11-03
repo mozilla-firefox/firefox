@@ -127,9 +127,9 @@ angle::Result HLSLCompiler::ensureInitialized(d3d::Context *context)
     // versions.
     static const char *d3dCompilerNames[] = ANGLE_PRELOADED_D3DCOMPILER_MODULE_NAMES;
 
-    for (size_t i = 0; i < ArraySize(d3dCompilerNames); ++i)
+    for (const char *d3dCompilerName : d3dCompilerNames)
     {
-        if (GetModuleHandleExA(0, ANGLE_UNSAFE_TODO(d3dCompilerNames[i]), &mD3DCompilerModule))
+        if (GetModuleHandleExA(0, d3dCompilerName, &mD3DCompilerModule))
         {
             break;
         }

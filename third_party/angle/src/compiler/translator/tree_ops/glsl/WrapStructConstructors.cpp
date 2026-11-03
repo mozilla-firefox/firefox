@@ -144,7 +144,8 @@ class WrapRebuilder final : public TIntermRebuild
         {
             // Choose which strategy to use for this node.
             mIsGlobalScope = !node->getAsFunctionDefinition();
-            ASSERT(!rebuild(*node).isFail());
+            const bool failed = rebuild(*node).isFail();
+            ASSERT(!failed);
             replacement.insert(replacement.end(), mAdditionalVariables.begin(),
                                mAdditionalVariables.end());
             mAdditionalVariables.clear();

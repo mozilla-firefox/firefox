@@ -512,7 +512,7 @@ config("angle_asserts_config") {
 config("angle_common_config") {
   include_dirs = [
     "src/common/base",
-    "src/common/third_party/xxhash",
+    "src/common/third_party/xxhash/src",
   ]
   libs = []
   if (is_android) {
@@ -558,6 +558,7 @@ angle_source_set("xxhash") {
 if (false && angle_has_build) {
   fuzzer_test("xxhash_fuzzer") {
     sources = [ "src/common/third_party/xxhash/xxhash_fuzzer.cpp" ]
+    include_dirs = [ "src/common/third_party/xxhash/src" ]
     deps = [ ":xxhash" ]
   }
 }
@@ -1074,6 +1075,10 @@ config("libANGLE_config") {
     defines += [ "ANGLE_USE_WAYLAND" ]
   }
 
+  if (angle_has_zstd) {
+    defines += [ "ANGLE_HAS_ZSTD" ]
+  }
+
   if (angle_enable_perf_counter_output) {
     defines += [ "ANGLE_ENABLE_PERF_COUNTER_OUTPUT=1" ]
   }
@@ -1333,6 +1338,10 @@ group("angle_abseil") {
 
 config("angle_compression_config") {
   include_dirs = [ "//angle/third_party/zlib/google" ]
+  if (angle_has_zstd) {
+    # Chromium's zstd targets export no include path for <zstd.h>.
+    include_dirs += [ "$angle_zstd_dir/src/lib" ]
+  }
 }
 
 group("angle_compression") {
@@ -1342,6 +1351,12 @@ group("angle_compression") {
   ]
   public_deps =
       [ "$angle_zlib_compression_utils_dir:compression_utils_portable" ]
+  if (angle_has_zstd) {
+    public_deps += [
+      "$angle_zstd_dir:compress",
+      "$angle_zstd_dir:decompress",
+    ]
+  }
 }
 
 if (angle_has_rapidjson) {

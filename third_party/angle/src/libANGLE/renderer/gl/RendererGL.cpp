@@ -239,6 +239,7 @@ angle::Result RendererGL::finish()
     mNeedsFlushBeforeDeleteTextures = false;
     mWorkDoneSinceLastFlush         = false;
     mStateManager->onSyncedFlushOrFinish();
+    mStateManager->onFinish();
 
     if (mFeatures.finishDoesNotCauseQueriesToBeAvailable.enabled && mUseDebugOutput)
     {

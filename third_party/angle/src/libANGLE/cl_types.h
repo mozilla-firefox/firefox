@@ -11,6 +11,7 @@
 
 #if defined(ANGLE_ENABLE_CL)
 #    include "libANGLE/CLBitField.h"
+#    include "libANGLE/CLCaps.h"
 #    include "libANGLE/CLRefPointer.h"
 #    include "libANGLE/Debug.h"
 #    include "libANGLE/Error.h"
@@ -37,6 +38,7 @@
 #    include <list>
 #    include <memory>
 #    include <string>
+#    include <unordered_map>
 #    include <utility>
 #    include <vector>
 
@@ -68,15 +70,15 @@ using PlatformPtr     = RefPointer<Platform>;
 using ProgramPtr      = RefPointer<Program>;
 using SamplerPtr      = RefPointer<Sampler>;
 
-using BufferPtrs   = std::vector<BufferPtr>;
-using DevicePtrs   = std::vector<DevicePtr>;
-using EventPtrs    = std::vector<EventPtr>;
-using KernelPtrs   = std::vector<KernelPtr>;
-using MemoryPtrs   = std::vector<MemoryPtr>;
+using BufferPtrs      = std::vector<BufferPtr>;
+using DevicePtrs      = std::vector<DevicePtr>;
+using EventPtrs       = std::vector<EventPtr>;
+using KernelPtrs      = std::vector<KernelPtr>;
+using MemoryPtrs      = std::vector<MemoryPtr>;
 using ConstMemoryPtrs = std::vector<ConstMemoryPtr>;
-using PlatformPtrs = std::vector<PlatformPtr>;
-using ProgramPtrs  = std::vector<ProgramPtr>;
-using SamplerPtrs  = std::vector<SamplerPtr>;
+using PlatformPtrs    = std::vector<PlatformPtr>;
+using ProgramPtrs     = std::vector<ProgramPtr>;
+using SamplerPtrs     = std::vector<SamplerPtr>;
 
 using WorkgroupSize    = std::array<uint32_t, 3>;
 using GlobalWorkOffset = std::array<uint32_t, 3>;
@@ -102,6 +104,159 @@ union PixelColor
     int32_t s32[4];
     cl_half fp16[4];
     cl_float fp32[4];
+};
+
+class MemoryRegion
+{
+  public:
+    MemoryRegion() = default;
+    // A 1D region spans [0, 1) in y and z.
+    MemoryRegion(const size_t offset, const size_t size) : mOffset(offset, 0, 0), mSize(size, 1, 1)
+    {}
+    MemoryRegion(const Offset &offset, const Extents &size) : mOffset(offset), mSize(size) {}
+
+    bool overlaps(const MemoryRegion &other) const
+    {
+        // Per-axis half-open interval overlap: [off, off + size).
+        return axisOverlaps(mOffset.x, mSize.width, other.mOffset.x, other.mSize.width) &&
+               axisOverlaps(mOffset.y, mSize.height, other.mOffset.y, other.mSize.height) &&
+               axisOverlaps(mOffset.z, mSize.depth, other.mOffset.z, other.mSize.depth);
+    }
+
+    const Offset getOffset() const { return mOffset; }
+    Extents getExtents() const { return mSize; }
+
+  private:
+    bool axisOverlaps(size_t aOff, size_t aSize, size_t bOff, size_t bSize) const;
+
+    Offset mOffset;
+    Extents mSize;
+};
+
+inline bool MemoryRegion::axisOverlaps(size_t aOff, size_t aSize, size_t bOff, size_t bSize) const
+{
+    return aOff < bOff + bSize && bOff < aOff + aSize;
+}
+
+// MappedRegionInfo captures the full state of a mapped region request from the user
+// - region, mapped pointer, and if its mapped for write
+template <typename T>
+struct MappedRegionInfo
+{
+    const T key;
+    const MemoryRegion region;
+    const bool isWrite;
+};
+
+// A tracker to manage read and write dependencies at region level. The read and write regions are
+// tracked on a map to let multiple uses.
+//  - In case of mapping, the regions are tracked per mapped pointer
+template <typename T>
+class MemoryAccessTracker
+{
+  public:
+    MemoryAccessTracker()  = default;
+    ~MemoryAccessTracker() = default;
+
+    bool hasReadConflict(const T key) const { return mReaders.find(key) != mReaders.end(); }
+    bool hasWriteConflict(const T key) const { return mWriters.find(key) != mWriters.end(); }
+    bool hasConflict(const T key) const { return hasReadConflict(key) || hasWriteConflict(key); }
+
+    bool hasReadConflict(const MemoryRegion &region) const
+    {
+        return MapHasOverlap(mReaders, region);
+    }
+    bool hasWriteConflict(const MemoryRegion &region) const
+    {
+        return MapHasOverlap(mWriters, region);
+    }
+    bool hasConflict(const MemoryRegion &region) const
+    {
+        return hasReadConflict(region) || hasWriteConflict(region);
+    }
+
+    void addReader(const T key, const MemoryRegion &region)
+    {
+        ASSERT(!hasReadConflict(region));
+        mReaders[key].push_back(region);
+    }
+    void addWriter(const T key, const MemoryRegion &region)
+    {
+        ASSERT(!hasWriteConflict(region));
+        mWriters[key].push_back(region);
+    }
+
+    bool hasKey(const T key) const
+    {
+        return mReaders.find(key) != mReaders.end() || mWriters.find(key) != mWriters.end();
+    }
+
+    // Pops one tracked region for the given key and reports whether it came
+    // from the write map. Note that this removes the region from the tracker, for query only needs
+    // use `hasKey`. The region is popped from the back to keep it O(1), the user for this currently
+    // is map/unmap operations and the spec doesn't require any specific ordering.
+    MappedRegionInfo<T> popRegion(const T key)
+    {
+        // Spec doesn't enforce any specific order, so we pull out from writer first as that's more
+        // restricting on future maps
+        MemoryRegion region;
+        if (popOne(key, mWriters, &region))
+        {
+            return MappedRegionInfo<T>{key, region, /*isWrite=*/true};
+        }
+        const bool popped = popOne(key, mReaders, &region);
+
+        // addRegion and popRegion must be one-for-one
+        ASSERT(popped);
+        return MappedRegionInfo<T>{key, region, /*isWrite=*/false};
+    }
+
+  private:
+    using MemoryRegionMap = std::unordered_map<T, std::vector<MemoryRegion>>;
+
+    static bool MapHasOverlap(const MemoryRegionMap &map, const MemoryRegion &region)
+    {
+        for (const auto &[key, regions] : map)
+        {
+            for (const MemoryRegion &tracked : regions)
+            {
+                if (tracked.overlaps(region))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    static void MergeMap(MemoryRegionMap &dst, const MemoryRegionMap &src)
+    {
+        for (const auto &entry : src)
+        {
+            auto &dstRegions = dst[entry.first];
+            dstRegions.insert(dstRegions.end(), entry.second.begin(), entry.second.end());
+        }
+    }
+
+    bool popOne(const T key, MemoryRegionMap &m, MemoryRegion *outRegion)
+    {
+        auto it = m.find(key);
+        if (it == m.end())
+        {
+            return false;
+        }
+        ASSERT(!it->second.empty());
+        *outRegion = std::move(it->second.back());
+        it->second.pop_back();
+        if (it->second.empty())
+        {
+            m.erase(it);
+        }
+        return true;
+    }
+
+    MemoryRegionMap mReaders;
+    MemoryRegionMap mWriters;
 };
 
 struct KernelArg

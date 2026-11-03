@@ -17,9 +17,11 @@
 #include "common/unsafe_buffers.h"
 #include "compiler/translator/Compiler.h"
 
+#include <anglebase/sha1.h>
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "common/angleutils.h"
 #include "common/mathutil.h"
 #include "common/utilities.h"
 #include "compiler/preprocessor/SourceLocation.h"
@@ -486,15 +488,30 @@ TIntermDeclaration *RenameAndDeclareStruct(TSymbolTable *symbolTable,
     // always for simplicity.  +1 for the NUL terminator.
     //
     // If appending ID and the name is too long, cut off the end of the name.  The ID makes it
-    // unique.
+    // unique.  Where _0 is used, long names are hashed to avoid collision.
     constexpr uint32_t kAppendExtraChars = 1 + 11;  // underscore + 32-bit number
-    const ImmutableString name(
-        structure->name().data(),
-        std::min<size_t>(structure->name().length(), kESSLMaxIdentifierLength - kAppendExtraChars));
 
     ImmutableStringBuilder builder(structure->name().length() + kAppendExtraChars);
-    builder << name << "_"
-            << (scope == StructureOriginalScope::Global ? 0 : structure->uniqueId().get());
+    if (scope == StructureOriginalScope::Global &&
+        structure->name().length() > kESSLMaxIdentifierLength - kAppendExtraChars)
+    {
+        angle::base::SecureHashAlgorithm hasher;
+        hasher.Init();
+        hasher.Update(structure->name().data(), structure->name().length());
+        hasher.Final();
+        // SAFETY: The SHA1 hasher guarantees that the returned digest is kSHA1Length bytes.
+        const std::string hashed = angle::UintStreamToHexString(
+            ANGLE_UNSAFE_BUFFERS(angle::Span(hasher.Digest(), angle::base::kSHA1Length)));
+        builder << "struct" << ImmutableString(hashed.c_str(), hashed.size()) << "_0";
+    }
+    else
+    {
+        const ImmutableString name(structure->name().data(),
+                                   std::min<size_t>(structure->name().length(),
+                                                    kESSLMaxIdentifierLength - kAppendExtraChars));
+        builder << name << "_"
+                << (scope == StructureOriginalScope::Global ? 0 : structure->uniqueId().get());
+    }
     structure->setName(builder);
 
     return DeclareStruct(symbolTable, structure);
@@ -682,7 +699,7 @@ TVector<const TFunction *> GetSamplerPassingFunctionsInDAGOrder(
         {
             visitStack.push_back({arg.callee, false});
         }
-        for (auto paramToArg : functionSamplerAccess->second.paramsPassedToCallee)
+        for (const auto &paramToArg : functionSamplerAccess->second.paramsPassedToCallee)
         {
             for (const SamplerAsFunctionArg &arg : paramToArg)
             {
@@ -3565,7 +3582,7 @@ void TParseContext::functionCallFragDataCheck(const TFunction *fnCandidate,
         // Note: ESSL 100 does not allow arrays in ternary operator, so there is no need to check
         // for TIntermTernary here for a whole-array use of gl_FragData, only descending into
         // EOpComma nodes is sufficient.
-        if (RemoveCommaLeftHandSize(argument)->getQualifier() == EvqFragData)
+        if (RemoveCommaLeftHandSide(argument)->getQualifier() == EvqFragData)
         {
             // The whole array is passed to the function.  For validation purposes, assume all
             // indices are accessed in the function.
@@ -6800,7 +6817,6 @@ bool TParseContext::checkUnsizedArrayConstructorArgumentDimensionality(
 TIntermTyped *TParseContext::addConstructor(TFunctionLookup *fnCall, const TSourceLoc &line)
 {
     TType type = fnCall->constructorType();
-    checkVariableSize(line, ImmutableString(""), &type);
 
     TIntermSequence &arguments = fnCall->arguments();
     if (type.isUnsizedArray())
@@ -6825,6 +6841,8 @@ TIntermTyped *TParseContext::addConstructor(TFunctionLookup *fnCall, const TSour
         }
         ASSERT(!type.isUnsizedArray());
     }
+
+    checkVariableSize(line, ImmutableString(""), &type);
 
     if (!checkConstructorArguments(line, arguments, type))
     {
@@ -7475,7 +7493,7 @@ TIntermTyped *TParseContext::addIndexExpression(TIntermTyped *baseExpression,
         return CreateZeroNode(TType(EbtFloat, EbpHigh, EvqConst));
     }
 
-    TIntermTyped *effectivelyIndexedExpression = RemoveCommaLeftHandSize(baseExpression);
+    TIntermTyped *effectivelyIndexedExpression = RemoveCommaLeftHandSide(baseExpression);
     switch (effectivelyIndexedExpression->getQualifier())
     {
         case EvqPerVertexIn:
@@ -8855,9 +8873,9 @@ TTypeSpecifierNonArray TParseContext::addStructure(const TSourceLoc &structLine,
     checkDoesNotHaveDuplicateFieldNames(fieldList, structLine);
 
     // Ensure we do not specify any storage qualifiers on the struct members
-    for (unsigned int typeListIndex = 0; typeListIndex < fieldList->size(); typeListIndex++)
+    for (TField *fieldPtr : *fieldList)
     {
-        TField &field              = *(*fieldList)[typeListIndex];
+        TField &field              = *fieldPtr;
         const TQualifier qualifier = field.type()->getQualifier();
         switch (qualifier)
         {
@@ -9015,9 +9033,9 @@ bool TParseContext::isNestedIn(ControlFlowType type) const
     // Used for validation, we need to know for example that a `continue` statement is nested
     // within a loop, etc.  Search backwards in the nested control flow info to find the closest
     // control flow of given type.
-    for (auto iter = mControlFlow.rbegin(); iter != mControlFlow.rend(); ++iter)
+    for (const ControlFlow &controlFlow : angle::Reversed(mControlFlow))
     {
-        if (iter->type == type)
+        if (controlFlow.type == type)
         {
             return true;
         }
@@ -10875,18 +10893,18 @@ void TParseContext::checkCallGraph()
 
     // Visit all the functions; even if a function is unreachable, it must still result in a compile
     // error.
-    for (auto iter : mCallGraph)
+    for (const auto &entry : mCallGraph)
     {
-        visitStack.push_back(iter.first);
+        visitStack.push_back(entry.first);
 
         // Check the callees of this function too, if any is undefined, it's an error.
-        for (const TFunction *callee : iter.second)
+        for (const TFunction *callee : entry.second)
         {
             if (mDefinedFunctions.find(callee) == mDefinedFunctions.end())
             {
                 std::stringstream errorStream = sh::InitializeStream<std::stringstream>();
                 errorStream << "Function " << callee->name() << "() called by "
-                            << iter.first->name() << "() is undefined";
+                            << entry.first->name() << "() is undefined";
                 mDiagnostics->globalError(errorStream.str().c_str());
             }
         }
@@ -10901,15 +10919,15 @@ void TParseContext::checkCallGraph()
                         << callee->name();
             if (callee != function)
             {
-                for (auto caller = visitStack.rbegin(); caller != visitStack.rend(); ++caller)
+                for (const TFunction *caller : angle::Reversed(visitStack))
                 {
-                    if (visitState[*caller].state != VisitState::Visiting)
+                    if (visitState[caller].state != VisitState::Visiting)
                     {
                         continue;
                     }
 
-                    errorStream << " <- " << (*caller)->name();
-                    if (*caller == callee)
+                    errorStream << " <- " << caller->name();
+                    if (caller == callee)
                     {
                         break;
                     }
@@ -11324,11 +11342,10 @@ void TParseContext::addAndCheckOutputVaryings(const TVariable &variable, const T
     mNumOutputVaryingComponents =
         checkedNum.ValueOrDefault(std::numeric_limits<unsigned int>::max());
 
-    // The cap to 256 vec4s = 1024 components seems somewhat arbitrary, but this is intended as a
-    // workaround for a specific driver bug, and this limit being much
-    // higher than the device limits (mResources.MaxVertexOutputVectors *
-    // 4), it avoids regressing both tests and applications.
-    if (mNumOutputVaryingComponents > 1024)
+    // The cap to 256 components seems somewhat arbitrary, but this is intended as a workaround for
+    // a specific driver bug, and this limit being much higher than the device limits
+    // (mResources.MaxVertexOutputVectors * 4), it avoids regressing both tests and applications.
+    if (mNumOutputVaryingComponents > 256)
     {
         error(line, "Too many declared shader output varying components for this device",
               variable.name());

@@ -13,6 +13,7 @@
 #include "common/utilities.h"
 #include "libANGLE/Config.h"
 #include "libANGLE/Context.h"
+#include "libANGLE/Display.h"
 #include "libANGLE/ErrorStrings.h"
 #include "libANGLE/Image.h"
 #include "libANGLE/State.h"
@@ -909,9 +910,9 @@ void TextureState::clearImageDesc(TextureTarget target, size_t level)
 
 void TextureState::clearImageDescs()
 {
-    for (size_t descIndex = 0; descIndex < mImageDescs.size(); descIndex++)
+    for (ImageDesc &imageDesc : mImageDescs)
     {
-        mImageDescs[descIndex] = ImageDesc();
+        imageDesc = ImageDesc();
     }
 }
 
@@ -954,6 +955,8 @@ void Texture::onDestroy(const Context *context)
 
     if (mBoundSurface)
     {
+        // Do not lock mBoundSurface->mMutex here since ContextMutex is already held, which would
+        // invert the Surface::mMutex -> ContextMutex lock order.
         ANGLE_SWALLOW_ERR(mBoundSurface->releaseTexImage(context, EGL_BACK_BUFFER));
         mBoundSurface = nullptr;
     }

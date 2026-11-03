@@ -203,7 +203,6 @@ class GenMetalTraverser : public TIntermTraverser
     size_t mDriverUniformsBindingIndex     = 0;
     size_t mUBOArgumentBufferBindingIndex  = 0;
     bool mRasterOrderGroupsSupported       = false;
-    bool mInjectAsmStatementIntoLoopBodies = false;
 };
 }  // anonymous namespace
 
@@ -230,8 +229,7 @@ GenMetalTraverser::GenMetalTraverser(const TCompiler &compiler,
       mDriverUniformsBindingIndex(compileOptions.metal.driverUniformsBindingIndex),
       mUBOArgumentBufferBindingIndex(compileOptions.metal.UBOArgumentBufferBindingIndex),
       mRasterOrderGroupsSupported(compileOptions.pls.fragmentSyncType ==
-                                  ShFragmentSynchronizationType::RasterOrderGroups_Metal),
-      mInjectAsmStatementIntoLoopBodies(compileOptions.metal.injectAsmStatementIntoLoopBodies)
+                                  ShFragmentSynchronizationType::RasterOrderGroups_Metal)
 {}
 
 void GenMetalTraverser::emitIndentation()
@@ -905,20 +903,7 @@ void GenMetalTraverser::emitPostQualifier(const EmitVariableDeclarationConfig &e
 
 void GenMetalTraverser::emitLoopBody(TIntermBlock *bodyNode)
 {
-    if (mInjectAsmStatementIntoLoopBodies)
-    {
-        emitOpenBrace();
-
-        emitIndentation();
-        mOut << "__asm__(\"\");\n";
-    }
-
     bodyNode->traverse(this);
-
-    if (mInjectAsmStatementIntoLoopBodies)
-    {
-        emitCloseBrace();
-    }
 }
 
 static void EmitName(Sink &out, const Name &name, char userSymbolPrefix)

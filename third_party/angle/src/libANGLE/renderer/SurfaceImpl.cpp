@@ -140,7 +140,7 @@ angle::Result SurfaceImpl::ensureSizeResolved(const gl::Context *context)
     return angle::Result::Continue;
 }
 
-egl::Error SurfaceImpl::getUserSize(const egl::Display *display,
+egl::Error SurfaceImpl::getUserSize(const egl::ThreadSafeDisplay *display,
                                     EGLint *width,
                                     EGLint *height) const
 {
@@ -176,7 +176,7 @@ egl::Error SurfaceImpl::setAutoRefreshEnabled(bool enabled)
     return egl::Error(EGL_BAD_MATCH);
 }
 
-egl::Error SurfaceImpl::lockSurface(const egl::Display *display,
+egl::Error SurfaceImpl::lockSurface(const egl::ThreadSafeDisplay *display,
                                     EGLint usageHint,
                                     bool preservePixels,
                                     uint8_t **bufferPtrOut,
@@ -186,7 +186,7 @@ egl::Error SurfaceImpl::lockSurface(const egl::Display *display,
     return egl::Error(EGL_BAD_MATCH);
 }
 
-egl::Error SurfaceImpl::unlockSurface(const egl::Display *display, bool preservePixels)
+egl::Error SurfaceImpl::unlockSurface(const egl::ThreadSafeDisplay *display, bool preservePixels)
 {
     UNREACHABLE();
     return egl::Error(EGL_BAD_MATCH);
@@ -202,7 +202,7 @@ egl::Error SurfaceImpl::setRenderBuffer(EGLint renderBuffer)
     return egl::NoError();
 }
 
-egl::Error SurfaceImpl::getCompressionRate(const egl::Display *display,
+egl::Error SurfaceImpl::getCompressionRate(const egl::ThreadSafeDisplay *display,
                                            const gl::Context *context,
                                            EGLint *rate)
 {

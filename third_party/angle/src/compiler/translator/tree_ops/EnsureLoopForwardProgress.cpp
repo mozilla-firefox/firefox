@@ -3,11 +3,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 //
-// EnsureLoopForwardProgress is an AST traverser that inserts volatile variable
-// access inside loops which it cannot prove to be finite.
+// EnsureLoopForwardProgress is an AST traverser that ensures that loops are either finite or
+// invoke side-effects.
 //
 
-#include "compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.h"
+#include "compiler/translator/tree_ops/EnsureLoopForwardProgress.h"
 
 #include "compiler/translator/Compiler.h"
 #include "compiler/translator/StaticType.h"
@@ -86,31 +86,62 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
     {
         return nullptr;
     }
+    // Loop index must be compared with a constant or uniform or similar read-only variable.
+    if (!IsReadOnlyExpr(*binCond->getRight()))
+    {
+        return nullptr;
+    }
     switch (binCond->getOp())
     {
         case EOpEqual:
         case EOpNotEqual:
         case EOpLessThan:
         case EOpGreaterThan:
-        case EOpLessThanEqual:
             break;
+        case EOpLessThanEqual:
+        {
+            // If the condition is <=, it might be |<= UINT_MAX| or |<= INT_MAX| for signed ints.
+            // However, |for| loops with <= are likely common, so we try to avoid considering them
+            // as infinite loop unnecessarily.  For simplicity, if a variable is used or any
+            // unrealistically large constant, consider it a potential infinite loop.
+            constexpr int32_t kLoopLimit     = 1'000'000;
+            const TConstantUnion *comparator = binCond->getRight()->getConstantValue();
+            if (comparator == nullptr)
+            {
+                return nullptr;
+            }
+            switch (comparator->getType())
+            {
+                case EbtInt:
+                    if (comparator->getIConst() < 0 || comparator->getIConst() >= kLoopLimit)
+                    {
+                        return nullptr;
+                    }
+                    break;
+                case EbtUInt:
+                    if (comparator->getUConst() >= kLoopLimit)
+                    {
+                        return nullptr;
+                    }
+                    break;
+                default:
+                    return nullptr;
+            }
+            break;
+        }
         case EOpGreaterThanEqual:
             // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
             // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero|
             // may lead to infinite loop, but all uint with >= is considered infinite loop for
             // simplicity.
-            if (variable->getType().getBasicType() == EbtUInt)
-            {
-                return nullptr;
-            }
-            break;
+            //
+            // While signed int overflow is undefined behavior, |>= INT_MIN| would also be
+            // unconditionally true even if the compiler makes signed int overflow well-defined.
+            // Using >= in loops is uncommon, so any >= use is considered a potential infinite loop
+            // for simplicity.
+            return nullptr;
         default:
             return nullptr;
-    }
-    // Loop index must be compared with a constant or uniform or similar read-only variable.
-    if (!IsReadOnlyExpr(*binCond->getRight()))
-    {
-        return nullptr;
     }
     if (TIntermUnary *unary = expr->getAsUnaryNode())
     {
@@ -209,16 +240,23 @@ LoopInfoStack *LoopInfoStack::findLoopForVariable(const TVariable *variable)
 class EnsureLoopForwardProgressTraverser final : public TLValueTrackingTraverser
 {
   public:
-    EnsureLoopForwardProgressTraverser(TSymbolTable *symbolTable);
+    EnsureLoopForwardProgressTraverser(TSymbolTable *symbolTable,
+                                       EnsureLoopForwardProgressMode mode);
     void visitSymbol(TIntermSymbol *node) override;
     void traverseLoop(TIntermLoop *node) override;
 
   private:
+    void ensureProgressWithVolatile(TIntermLoop *node);
+    void ensureProgressWithCounter(TIntermLoop *node);
+
     LoopInfoStack *mLoopInfoStack = nullptr;
+    EnsureLoopForwardProgressMode mMode;
 };
 
-EnsureLoopForwardProgressTraverser::EnsureLoopForwardProgressTraverser(TSymbolTable *symbolTable)
-    : TLValueTrackingTraverser(true, false, false, symbolTable)
+EnsureLoopForwardProgressTraverser::EnsureLoopForwardProgressTraverser(
+    TSymbolTable *symbolTable,
+    EnsureLoopForwardProgressMode mode)
+    : TLValueTrackingTraverser(true, false, false, symbolTable), mMode(mode)
 {}
 
 void EnsureLoopForwardProgressTraverser::traverseLoop(TIntermLoop *node)
@@ -244,14 +282,73 @@ void EnsureLoopForwardProgressTraverser::traverseLoop(TIntermLoop *node)
 
     if (!loopInfo.isFinite())
     {
-        TIntermBlock *newBody     = new TIntermBlock();
-        TIntermSequence *sequence = newBody->getSequence();
-        sequence->push_back(CreateBuiltInFunctionCallNode("loopForwardProgress", {}, *mSymbolTable,
-                                                          kESSLInternalBackendBuiltIns));
-        sequence->push_back(node->getBody());
-        node->setBody(newBody);
+        switch (mMode)
+        {
+            case EnsureLoopForwardProgressMode::Volatile:
+                ensureProgressWithVolatile(node);
+                break;
+            case EnsureLoopForwardProgressMode::Counter:
+                ensureProgressWithCounter(node);
+                break;
+        }
     }
     mLoopInfoStack = mLoopInfoStack->getParent();
+}
+
+void EnsureLoopForwardProgressTraverser::ensureProgressWithVolatile(TIntermLoop *node)
+{
+    // Turn the loop into the following:
+    //
+    //     <loop> {
+    //         loopForwardProgress();
+    //         {
+    //             <original body>
+    //         }
+    //     }
+    TIntermBlock *newBody = new TIntermBlock();
+    newBody->appendStatement(CreateBuiltInFunctionCallNode("loopForwardProgress", {}, *mSymbolTable,
+                                                           kESSLInternalBackendBuiltIns));
+    newBody->appendStatement(node->getBody());
+    node->setBody(newBody);
+}
+
+void EnsureLoopForwardProgressTraverser::ensureProgressWithCounter(TIntermLoop *node)
+{
+    // Turn the loop into the following:
+    //
+    //     highp int progressCounter = INT_MIN;
+    //     <loop> {
+    //         ++progressCounter;
+    //         if (progressCounter == INT_MAX)
+    //         {
+    //             break;
+    //         }
+    //         {
+    //             <original body>
+    //         }
+    //     }
+    //
+    // A 32-bit counter is sufficient, as 4 billions iterations would most likely times out on the
+    // GPU before it's reached.
+    TIntermDeclaration *declaration = nullptr;
+    const TVariable *progressCounter =
+        DeclareTempVariable(mSymbolTable, CreateIndexNode(std::numeric_limits<int32_t>::min()),
+                            EvqTemporary, &declaration);
+    TIntermSymbol *progressCounterSymbol = new TIntermSymbol(progressCounter);
+
+    insertStatementInParentBlock(declaration);
+
+    TIntermBlock *ifBody = new TIntermBlock();
+    ifBody->appendStatement(new TIntermBranch(EOpBreak, nullptr));
+    TIntermBinary *ifCondition =
+        new TIntermBinary(EOpEqual, progressCounterSymbol->deepCopy(),
+                          CreateIndexNode(std::numeric_limits<int32_t>::max()));
+
+    TIntermBlock *newBody = new TIntermBlock();
+    newBody->appendStatement(new TIntermUnary(EOpPreIncrement, progressCounterSymbol, nullptr));
+    newBody->appendStatement(new TIntermIfElse(ifCondition, ifBody, nullptr));
+    newBody->appendStatement(node->getBody());
+    node->setBody(newBody);
 }
 
 void EnsureLoopForwardProgressTraverser::visitSymbol(TIntermSymbol *node)
@@ -269,9 +366,11 @@ void EnsureLoopForwardProgressTraverser::visitSymbol(TIntermSymbol *node)
 
 }  // namespace
 
-bool EnsureLoopForwardProgress(TCompiler *compiler, TIntermNode *root)
+bool EnsureLoopForwardProgress(TCompiler *compiler,
+                               TIntermNode *root,
+                               EnsureLoopForwardProgressMode mode)
 {
-    EnsureLoopForwardProgressTraverser traverser(&compiler->getSymbolTable());
+    EnsureLoopForwardProgressTraverser traverser(&compiler->getSymbolTable(), mode);
     root->traverse(&traverser);
     return traverser.updateTree(compiler, root);
 }

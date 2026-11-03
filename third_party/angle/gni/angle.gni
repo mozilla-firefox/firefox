@@ -426,6 +426,13 @@ if (!defined(angle_zlib_compression_utils_dir)) {
   angle_zlib_compression_utils_dir = "//third_party/zlib/google"
 }
 
+# zstd is only used if build_overrides/angle.gni provides it, so that embedders
+# without it can roll ANGLE.
+# (TODO: b/576387973) It is off until Android has a zstd that ANGLE's
+# libraries, which are built against the NDK, can link; restore
+# defined(angle_zstd_dir) then.
+angle_has_zstd = false
+
 angle_common_configs = [
   angle_root + ":angle_asserts_config",
   angle_root + ":constructor_and_destructor_warnings",
@@ -702,6 +709,8 @@ if (angle_standalone || build_with_chromium ||
       if (angle_has_rapidjson) {
         sources += [
           "$angle_root/src/tests/test_utils/runner/HistogramWriter.h",
+          "$angle_root/src/tests/test_utils/runner/PartitionAllocSupport.cpp",
+          "$angle_root/src/tests/test_utils/runner/PartitionAllocSupport.h",
           "$angle_root/src/tests/test_utils/runner/TestSuite.cpp",
           "$angle_root/src/tests/test_utils/runner/TestSuite.h",
         ]

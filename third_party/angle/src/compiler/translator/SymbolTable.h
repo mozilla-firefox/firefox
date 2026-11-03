@@ -219,10 +219,9 @@ class TSymbolTable : angle::NonCopyable, TSymbolTableBase
     // Going from IR back to AST, the symbols get redeclared.  Make sure the symbol table is
     // updated.
     void redeclare(TSymbol *symbol);
-#endif
-
     // Only used to declare internal variables.
     bool declareInternal(TSymbol *symbol);
+#endif
 
     // Functions are always declared at global scope.
     void declareUserDefinedFunction(TFunction *function, bool insertUnmangledName);

@@ -596,6 +596,8 @@ static_library("spvtools_opt") {
     "source/opt/modify_maximal_reconvergence.h",
     "source/opt/module.cpp",
     "source/opt/module.h",
+    "source/opt/nonwritable_propagation_pass.cpp",
+    "source/opt/nonwritable_propagation_pass.h",
     "source/opt/null_pass.h",
     "source/opt/opextinst_forward_ref_fixup_pass.cpp",
     "source/opt/opextinst_forward_ref_fixup_pass.h",

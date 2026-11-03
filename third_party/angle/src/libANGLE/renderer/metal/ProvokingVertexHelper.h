@@ -27,6 +27,9 @@ class ProvokingVertexHelper : angle::NonCopyable
 {
   public:
     ProvokingVertexHelper(ContextMtl *context);
+
+    // Rewrites indices for the last-vertex convention into a buffer that starts at firstIndex. A
+    // non-null conversion caches the result; pass nullptr for client-memory indices.
     angle::Result preconditionIndexBuffer(ContextMtl *context,
                                           GLsizei count,
                                           gl::PrimitiveMode mode,
@@ -35,6 +38,7 @@ class ProvokingVertexHelper : angle::NonCopyable
                                           const std::vector<DrawIndexRange> &drawIndexRanges,
                                           mtl::BufferSlice indexBuffer,
                                           gl::DrawElementsType indexBufferType,
+                                          ConversionBufferMtl *conversion,
                                           mtl::BufferSlice *outNewIndexBuffer);
 
     angle::Result generateIndexBuffer(ContextMtl *context,

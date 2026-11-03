@@ -13,7 +13,6 @@ angle_abseil_cpp_dir = "//third_party/abseil-cpp"
 angle_glslang_dir = "//third_party/glslang/src"
 angle_googletest_dir = "//third_party/googletest/src"
 angle_jsoncpp_dir = "//third_party/jsoncpp"
-angle_libjpeg_turbo_dir = "//third_party/libjpeg_turbo"
 angle_libpng_dir = "//third_party/libpng"
 angle_spirv_headers_dir = "//third_party/spirv-headers/src"
 angle_spirv_tools_dir = "//third_party/spirv-tools/src"
@@ -23,6 +22,7 @@ angle_llvm_dir = "//third_party/llvm/src"
 angle_dawn_dir = "//third_party/dawn"
 angle_partition_alloc_dir = "//third_party/partition_alloc"
 angle_perfetto_cpp_dir = "//third_party/perfetto"
+angle_zstd_dir = "//third_party/zstd"
 
 # Embedder override for `-fsanitize=array-bounds`
 # (see https://crbug.com/386992829)

@@ -104,9 +104,9 @@ void TransformFeedback::onDestroy(const Context *context)
     }
 
     ASSERT(!mState.mProgram);
-    for (size_t i = 0; i < mState.mIndexedBuffers.size(); i++)
+    for (OffsetBindingPointer<Buffer> &indexedBuffer : mState.mIndexedBuffers)
     {
-        mState.mIndexedBuffers[i].set(context, nullptr, 0, 0);
+        indexedBuffer.set(context, nullptr, 0, 0);
     }
 
     if (mImplementation)

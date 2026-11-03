@@ -127,9 +127,10 @@ void ClearMultiviewGL::attachTextures(const gl::FramebufferState &state, int lay
         GLenum colorAttachment =
             static_cast<GLenum>(GL_COLOR_ATTACHMENT0 + static_cast<int>(drawBufferId));
         const TextureGL *textureGL = GetImplAs<TextureGL>(attachment->getTexture());
+        TextureGL::NativeLevelTarget nativeTarget =
+            textureGL->getNativeLevelTarget(imageIndex.getTarget(), imageIndex.getLevelIndex());
         mFunctions->framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, colorAttachment,
-                                            textureGL->getTextureID(), imageIndex.getLevelIndex(),
-                                            layer);
+                                            nativeTarget.textureID, nativeTarget.level, layer);
     }
 
     const gl::FramebufferAttachment *depthStencilAttachment = state.getDepthStencilAttachment();
@@ -141,9 +142,10 @@ void ClearMultiviewGL::attachTextures(const gl::FramebufferState &state, int lay
         ASSERT(imageIndex.getType() == gl::TextureType::_2DArray);
 
         const TextureGL *textureGL = GetImplAs<TextureGL>(depthStencilAttachment->getTexture());
+        TextureGL::NativeLevelTarget nativeTarget =
+            textureGL->getNativeLevelTarget(imageIndex.getTarget(), imageIndex.getLevelIndex());
         mFunctions->framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                                            textureGL->getTextureID(), imageIndex.getLevelIndex(),
-                                            layer);
+                                            nativeTarget.textureID, nativeTarget.level, layer);
     }
     else if (depthAttachment != nullptr)
     {
@@ -151,9 +153,10 @@ void ClearMultiviewGL::attachTextures(const gl::FramebufferState &state, int lay
         ASSERT(imageIndex.getType() == gl::TextureType::_2DArray);
 
         const TextureGL *textureGL = GetImplAs<TextureGL>(depthAttachment->getTexture());
+        TextureGL::NativeLevelTarget nativeTarget =
+            textureGL->getNativeLevelTarget(imageIndex.getTarget(), imageIndex.getLevelIndex());
         mFunctions->framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-                                            textureGL->getTextureID(), imageIndex.getLevelIndex(),
-                                            layer);
+                                            nativeTarget.textureID, nativeTarget.level, layer);
     }
     else if (stencilAttachment != nullptr)
     {
@@ -161,9 +164,10 @@ void ClearMultiviewGL::attachTextures(const gl::FramebufferState &state, int lay
         ASSERT(imageIndex.getType() == gl::TextureType::_2DArray);
 
         const TextureGL *textureGL = GetImplAs<TextureGL>(stencilAttachment->getTexture());
+        TextureGL::NativeLevelTarget nativeTarget =
+            textureGL->getNativeLevelTarget(imageIndex.getTarget(), imageIndex.getLevelIndex());
         mFunctions->framebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT,
-                                            textureGL->getTextureID(), imageIndex.getLevelIndex(),
-                                            layer);
+                                            nativeTarget.textureID, nativeTarget.level, layer);
     }
 }
 

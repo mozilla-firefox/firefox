@@ -2357,6 +2357,64 @@ bool UsePresentPathFast(const Renderer11 *renderer,
             renderer->presentPathFastEnabled());
 }
 
+bool ClipRenderTargetReadArea(const RenderTarget11 &renderTarget,
+                              const gl::Rectangle &readArea,
+                              bool invertTexture,
+                              bool reverseRowOrderIn,
+                              gl::Rectangle *clippedReadAreaOut,
+                              bool *reverseRowOrderOut)
+{
+    const TextureHelper11 &srcTexture = renderTarget.getTexture();
+    ASSERT(srcTexture.valid());
+
+    // Compute the actual D3D11 subresource bounds for this glReadPixels / CopyTexImage call:
+    // - srcTexture.getExtents() queries ID3D11Texture2D::GetDesc(), which always reports mip 0's
+    //   dimensions across the whole texture resource.
+    // - renderTarget.getWidth() / getHeight() reports the attached subresource's dimensions (e.g.
+    //   when glFramebufferTexture2D attaches a non-zero mip level).
+    const gl::Rectangle srcSubresourceRect(
+        0, 0, std::min(renderTarget.getWidth(), srcTexture.getExtents().width),
+        std::min(renderTarget.getHeight(), srcTexture.getExtents().height));
+
+    gl::Rectangle d3dReadArea = readArea;
+    bool reverseRowOrder      = reverseRowOrderIn;
+    if (invertTexture)
+    {
+        // When EGL_EXPERIMENTAL_PRESENT_PATH_FAST_ANGLE is active, the default framebuffer is
+        // rendered upside-down in srcTexture. Because the staging texture is sized only to the
+        // cropped glReadPixels(x, y, width, height, ...) rectangle (clippedReadAreaOut->width x
+        // clippedReadAreaOut->height) and CopySubresourceRegion copies into (0, 0) of the staging
+        // texture without flipping rows, we must both:
+        // 1. Flip d3dReadArea.y (from GL's bottom-up glReadPixels y to D3D11's top-down row index)
+        //    so CopySubresourceRegion selects the corresponding vertical slice from srcTexture.
+        // 2. Toggle reverseRowOrder (combining with glPixelStorei(GL_PACK_REVERSE_ROW_ORDER_ANGLE))
+        //    so PackPixels reads the rows of the staging texture from bottom to top when packing
+        //    into the output buffer or GL_PIXEL_PACK_BUFFER.
+        d3dReadArea.y   = srcSubresourceRect.height - d3dReadArea.y - d3dReadArea.height;
+        reverseRowOrder = !reverseRowOrder;
+    }
+
+    // Before reaching here, FramebufferD3D::readPixels clips the read area against
+    // readAttachment.getSize(), which returns the GL/EGL frontend's attachment size (e.g.,
+    // ImageDesc size from glTexStorage2D / glTexImage2D, or Surface::getSize() for an
+    // EGL_FIXED_SIZE_ANGLE window surface updated via eglSurfaceAttrib before the swapchain is
+    // resized). When the frontend attachment size exceeds the actual D3D11 subresource size
+    // (or when an NPOT texture has non-zero GL_TEXTURE_BASE_LEVEL where
+    // (height >> baseLevel) << baseLevel < height), d3dReadArea can extend partially or
+    // completely outside srcSubresourceRect (including negative d3dReadArea.y when
+    // UsePresentPathFast flips y = srcSubresourceRect.height - y - height).
+    // Intersect d3dReadArea with srcSubresourceRect so callers early-out when the intersection is
+    // empty, and otherwise do not allocate an oversized staging texture, issue an out-of-bounds
+    // CopySubresourceRegion, and pack uninitialized staging texture rows into the output buffer.
+    if (!gl::ClipRectangle(d3dReadArea, srcSubresourceRect, clippedReadAreaOut))
+    {
+        return false;
+    }
+
+    *reverseRowOrderOut = reverseRowOrder;
+    return true;
+}
+
 bool UsePrimitiveRestartWorkaround(bool primitiveRestartFixedIndexEnabled,
                                    gl::DrawElementsType type)
 {

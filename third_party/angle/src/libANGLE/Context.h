@@ -616,16 +616,16 @@ class Context final : public egl::LabeledObject, angle::NonCopyable, public angl
 
     egl::Error initialize();
 
-    egl::Error onDestroy(const egl::Display *display);
+    egl::Error onDestroy(const egl::ThreadSafeDisplay *display);
     ~Context() override;
 
     void setLabel(EGLLabelKHR label) override;
     EGLLabelKHR getLabel() const override;
 
-    egl::Error makeCurrent(egl::Display *display,
+    egl::Error makeCurrent(egl::ThreadSafeDisplay *display,
                            egl::Surface *drawSurface,
                            egl::Surface *readSurface);
-    egl::Error unMakeCurrent(const egl::Display *display);
+    egl::Error unMakeCurrent();
 
     // These create and destroy methods pass through to ResourceManager, which owns these objects.
     bool createBuffer(BufferID *outBuffer);
@@ -923,9 +923,9 @@ class Context final : public egl::LabeledObject, angle::NonCopyable, public angl
                                 GLuint framebufferStencilSize) const;
     bool noopClearBuffer(GLenum buffer, GLint drawbuffer) const;
 
-    void addRef() const { mRefCount++; }
-    void release() const { mRefCount--; }
-    bool isReferenced() const { return mRefCount > 0; }
+    void addRef() const { mRefCount.fetch_add(1, std::memory_order_relaxed); }
+    void release() const { mRefCount.fetch_sub(1, std::memory_order_acq_rel); }
+    bool isReferenced() const { return mRefCount.load(std::memory_order_acquire) > 0; }
 
     egl::ShareGroup *getShareGroup() const { return mState.getShareGroup(); }
 
@@ -936,8 +936,8 @@ class Context final : public egl::LabeledObject, angle::NonCopyable, public angl
     bool supportsGeometryOrTesselation() const;
     void dirtyAllState();
 
-    bool isDestroyed() const { return mIsDestroyed; }
-    void setIsDestroyed() { mIsDestroyed = true; }
+    bool isDestroyed() const { return mIsDestroyed.load(std::memory_order_acquire); }
+    void setIsDestroyed() { mIsDestroyed.store(true, std::memory_order_release); }
 
     // This function acts as glEnable(GL_COLOR_LOGIC_OP), but it's called from the GLES1 emulation
     // code to implement logicOp using the non-GLES1 functionality (i.e. GL_ANGLE_logic_op).  The
@@ -1174,9 +1174,9 @@ class Context final : public egl::LabeledObject, angle::NonCopyable, public angl
     // Cache representation of the serialized context string.
     mutable std::string mCachedSerializedStateString;
 
-    mutable size_t mRefCount;
+    mutable std::atomic<size_t> mRefCount;
 
-    bool mIsDestroyed;
+    std::atomic<bool> mIsDestroyed;
     bool mDestroyedManagers;
 
     std::unique_ptr<Framebuffer> mDefaultFramebuffer;

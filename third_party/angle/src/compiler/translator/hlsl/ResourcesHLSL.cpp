@@ -193,11 +193,11 @@ void ResourcesHLSL::reserveUniformBlockRegisters(unsigned int registerCount)
 
 const ShaderVariable *ResourcesHLSL::findUniformByName(const ImmutableString &name) const
 {
-    for (size_t uniformIndex = 0; uniformIndex < mUniforms.size(); ++uniformIndex)
+    for (const ShaderVariable &uniform : mUniforms)
     {
-        if (name == mUniforms[uniformIndex].name)
+        if (name == uniform.name)
         {
-            return &mUniforms[uniformIndex];
+            return &uniform;
         }
     }
 
@@ -694,10 +694,10 @@ TString ResourcesHLSL::uniformBlockWithOneLargeArrayMemberString(
     {
         if (arrayIndex == GL_INVALID_INDEX || arrayIndex == 0)
         {
-            hlsl += "struct pack" + Decorate(interfaceBlock.name()) + " { " + typeString + " " +
-                    Decorate(field.name()) + "; };\n";
+            hlsl += "struct pack" + DecorateInterfaceVariable(interfaceBlock.name()) + " { " +
+                    typeString + " " + DecorateUserStructField(field.name()) + "; };\n";
         }
-        typeString = "pack" + Decorate(interfaceBlock.name());
+        typeString = "pack" + DecorateInterfaceVariable(interfaceBlock.name());
     }
     else if (fieldType.isVectorArray() || fieldType.isScalarArray())
     {
@@ -705,11 +705,11 @@ TString ResourcesHLSL::uniformBlockWithOneLargeArrayMemberString(
         // stride are rounded up to the base alignment of a vec4.
         if (arrayIndex == GL_INVALID_INDEX || arrayIndex == 0)
         {
-            hlsl += "struct pack" + Decorate(interfaceBlock.name()) + " { " + typeString + " " +
-                    Decorate(field.name()) + ";\n";
+            hlsl += "struct pack" + DecorateInterfaceVariable(interfaceBlock.name()) + " { " +
+                    typeString + " " + DecorateUserStructField(field.name()) + ";\n";
             hlsl += InterfaceBlockScalarVectorFieldPaddingString(fieldType) + " };\n";
         }
-        typeString = "pack" + Decorate(interfaceBlock.name());
+        typeString = "pack" + DecorateInterfaceVariable(interfaceBlock.name());
     }
 
     if (instanceVariable != nullptr)
@@ -717,11 +717,12 @@ TString ResourcesHLSL::uniformBlockWithOneLargeArrayMemberString(
 
         hlsl += "StructuredBuffer <" + typeString + "> " +
                 InterfaceBlockInstanceString(instanceVariable->name(), arrayIndex) + "_" +
-                Decorate(field.name()) + +" : register(t" + str(registerIndex) + ");\n";
+                DecorateUserStructField(field.name()) + +" : register(t" + str(registerIndex) +
+                ");\n";
     }
     else
     {
-        hlsl += "StructuredBuffer <" + typeString + "> " + Decorate(field.name()) +
+        hlsl += "StructuredBuffer <" + typeString + "> " + DecorateUserStructField(field.name()) +
                 " : register(t" + str(registerIndex) + ");\n";
     }
 
@@ -737,7 +738,7 @@ TString ResourcesHLSL::InterfaceBlockInstanceString(const ImmutableString &insta
     }
     else
     {
-        return Decorate(instanceName);
+        return DecorateInterfaceVariable(instanceName);
     }
 }
 
@@ -761,7 +762,7 @@ TString ResourcesHLSL::uniformBlockMembersString(const TInterfaceBlock &interfac
         }
 
         hlsl += "    " + InterfaceBlockFieldTypeString(field, blockStorage, false) + " " +
-                Decorate(field.name()) + ArrayString(fieldType).data() + ";\n";
+                DecorateUserStructField(field.name()) + ArrayString(fieldType).data() + ";\n";
 
         // must pad out after matrices and arrays, where HLSL usually allows itself room to pack
         // stuff

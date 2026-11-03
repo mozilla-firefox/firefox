@@ -93,6 +93,12 @@ struct FrontendFeatures : FeatureSetBase
         &members,
     };
 
+    FeatureInfo ensureLoopForwardProgress = {
+        "ensureLoopForwardProgress",
+        FeatureCategory::FrontendFeatures,
+        &members,
+    };
+
     FeatureInfo enableProgramBinaryForCapture = {
         "enableProgramBinaryForCapture",
         FeatureCategory::FrontendFeatures,

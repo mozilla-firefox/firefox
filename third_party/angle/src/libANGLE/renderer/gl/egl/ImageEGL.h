@@ -47,6 +47,7 @@ class ImageEGL final : public ImageGL
     const FunctionsEGL *mEGL;
 
     // State needed for initialization
+    const gl::Context *mGLContext;
     EGLContext mContext;
     EGLenum mTarget;
     bool mPreserveImage;

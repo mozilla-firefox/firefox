@@ -423,6 +423,29 @@ enum class StagingAccess
 };
 
 bool UsePresentPathFast(const Renderer11 *renderer, const gl::FramebufferAttachment *colorbuffer);
+
+// Helper for D3D11 framebuffer readback paths (e.g., Renderer11::readFromAttachment for client
+// memory glReadPixels / glCopyTex*Image, and Buffer11::PackStorage::packPixels for PBO
+// glReadPixels).
+//
+// Call this before allocating a staging texture or issuing CopySubresourceRegion from a
+// RenderTarget11:
+// 1. If |invertTexture| is true (i.e., UsePresentPathFast is active on the source attachment),
+//    flips |readArea.y| from GL bottom-up coordinates to D3D11 top-down coordinates and toggles
+//    |reverseRowOrderIn|.
+// 2. Clips the resulting read rectangle against the actual D3D11 subresource dimensions of
+//    |renderTarget| (which may be smaller than the GL frontend's FramebufferAttachment::getSize()).
+//
+// Returns true and populates |clippedReadAreaOut| and |reverseRowOrderOut| if the clipped region
+// is non-empty; callers must size the staging texture, D3D11_BOX, and PackPixelsParams using
+// |clippedReadAreaOut| and |reverseRowOrderOut|. Returns false if the clipped region is empty, in
+// which case the caller should early-out without performing a copy.
+[[nodiscard]] bool ClipRenderTargetReadArea(const RenderTarget11 &renderTarget,
+                                            const gl::Rectangle &readArea,
+                                            bool invertTexture,
+                                            bool reverseRowOrderIn,
+                                            gl::Rectangle *clippedReadAreaOut,
+                                            bool *reverseRowOrderOut);
 bool UsePrimitiveRestartWorkaround(bool primitiveRestartFixedIndexEnabled,
                                    gl::DrawElementsType type);
 

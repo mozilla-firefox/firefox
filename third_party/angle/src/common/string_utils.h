@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "common/Optional.h"
+#include "common/span.h"
 
 namespace angle
 {
@@ -53,6 +54,10 @@ std::string GetPrefix(const std::string &input, size_t offset, const char *delim
 std::string GetPrefix(const std::string &input, size_t offset, char delimiter);
 
 bool HexStringToUInt(const std::string_view &input, unsigned int *uintOut);
+
+// Parses a decimal integer.  Returns false, leaving *valueOut unchanged, if input is empty, has any
+// characters other than an optional leading '-' and digits, or is out of range.
+bool StringToInt64(const std::string_view &input, int64_t *valueOut);
 
 bool ReadFileToString(const std::string &path, std::string *stringOut);
 
@@ -135,6 +140,7 @@ bool IsGlobPattern(const std::string_view &potential_glob);
 bool NamesMatchWithWildcard(const std::string_view &glob, const std::string_view &name);
 
 std::vector<uint8_t> HexStringToUintVector(const std::string_view &hexStr);
+std::string UintStreamToHexString(angle::Span<const uint8_t> uintStream);
 }  // namespace angle
 
 #endif  // LIBANGLE_STRING_UTILS_H_

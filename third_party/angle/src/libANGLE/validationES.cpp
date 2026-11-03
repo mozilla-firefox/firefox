@@ -1471,7 +1471,7 @@ bool ValidateDrawArraysTransformFeedbackBufferSize(const Context *context,
             executable && (executable->hasLinkedShaderStage(ShaderType::Geometry) ||
                            executable->hasLinkedShaderStage(ShaderType::TessEvaluation));
         TransformFeedback *curTransformFeedback = state.getCurrentTransformFeedback();
-        if (!hasGSorTS &&
+        if (!hasGSorTS && context->getClientVersion() < ES_3_2 &&
             !curTransformFeedback->checkBufferSpaceForDraw(context, counts, primcounts, drawcount))
         {
             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, err::kTransformFeedbackBufferTooSmall);

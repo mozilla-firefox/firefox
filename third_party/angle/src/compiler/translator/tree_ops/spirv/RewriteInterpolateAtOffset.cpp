@@ -88,7 +88,7 @@ bool Traverser::visitAggregate(Visit visit, TIntermAggregate *node)
     correctedOffset->setLine(offsetNode->getLine());
 
     // Replace the offset by the rotated one.
-    queueReplacementWithParent(node, offsetNode, correctedOffset, OriginalNode::IS_DROPPED);
+    queueReplacementWithParent(node, offsetNode, correctedOffset, OriginalNode::BECOMES_CHILD);
 
     return true;
 }

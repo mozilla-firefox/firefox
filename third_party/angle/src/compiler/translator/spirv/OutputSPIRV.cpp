@@ -1224,14 +1224,14 @@ void OutputSPIRVTraverser::accessChainStore(NodeData *data,
 
 void OutputSPIRVTraverser::makeAccessChainIdList(NodeData *data, spirv::IdRefList *idsOut)
 {
-    for (size_t index = 0; index < data->idList.size(); ++index)
+    for (const SpirvIdOrLiteral &chainIndex : data->idList)
     {
-        spirv::IdRef indexId = data->idList[index].id;
+        spirv::IdRef indexId = chainIndex.id;
 
         if (!indexId.valid())
         {
             // The index is a literal integer, so replace it with an OpConstant id.
-            indexId = mBuilder.getUintConstant(data->idList[index].literal);
+            indexId = mBuilder.getUintConstant(chainIndex.literal);
         }
 
         idsOut->push_back(indexId);
@@ -1241,10 +1241,10 @@ void OutputSPIRVTraverser::makeAccessChainIdList(NodeData *data, spirv::IdRefLis
 void OutputSPIRVTraverser::makeAccessChainLiteralList(NodeData *data,
                                                       spirv::LiteralIntegerList *literalsOut)
 {
-    for (size_t index = 0; index < data->idList.size(); ++index)
+    for (const SpirvIdOrLiteral &chainIndex : data->idList)
     {
-        ASSERT(!data->idList[index].id.valid());
-        literalsOut->push_back(data->idList[index].literal);
+        ASSERT(!chainIndex.id.valid());
+        literalsOut->push_back(chainIndex.literal);
     }
 }
 
@@ -5367,7 +5367,12 @@ bool OutputSPIRVTraverser::visitTernary(Visit visit, TIntermTernary *node)
         {
             // SPIR-V prior to 1.4 requires that the condition value have as many components as the
             // result.  So when selecting between vectors, we must replicate the condition scalar.
-            if (!mCompileOptions.emitSPIRV14 && type.isVector())
+            //
+            // With SPIR-V 1.4, some drivers have been observed to crash if the condition has a
+            // single component and the values are constants.
+            if (type.isVector() && !conditionType.isVector() &&
+                (!mCompileOptions.emitSPIRV14 || (node->getTrueExpression()->hasConstantValue() &&
+                                                  node->getFalseExpression()->hasConstantValue())))
             {
                 const TType &boolVectorType =
                     *StaticType::GetForVec<EbtBool, EbpUndefined>(EvqGlobal, type.getNominalSize());

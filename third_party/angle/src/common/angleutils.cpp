@@ -101,12 +101,12 @@ std::string ArrayIndexString(const std::vector<unsigned int> &indices)
 {
     std::stringstream strstr;
 
-    for (auto indicesIt = indices.rbegin(); indicesIt != indices.rend(); ++indicesIt)
+    for (unsigned int index : angle::Reversed(indices))
     {
         // We assume that UINT_MAX and GL_INVALID_INDEX are equal.
-        ASSERT(*indicesIt != UINT_MAX);
+        ASSERT(index != UINT_MAX);
         strstr << "[";
-        strstr << (*indicesIt);
+        strstr << index;
         strstr << "]";
     }
 

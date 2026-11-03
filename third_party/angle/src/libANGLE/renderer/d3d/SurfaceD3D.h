@@ -29,7 +29,7 @@ class SurfaceD3D : public SurfaceImpl
     ~SurfaceD3D() override;
     void releaseSwapChain();
 
-    egl::Error initialize(const egl::Display *display) override;
+    egl::Error initialize(const egl::ThreadSafeDisplay *display) override;
 
     egl::Error swap(const gl::Context *context, SurfaceSwapFeedback *feedback) override;
     egl::Error postSubBuffer(const gl::Context *context,
@@ -44,7 +44,7 @@ class SurfaceD3D : public SurfaceImpl
     egl::Error releaseTexImage(const gl::Context *context, EGLint buffer) override;
     egl::Error getSyncValues(EGLuint64KHR *ust, EGLuint64KHR *msc, EGLuint64KHR *sbc) override;
     egl::Error getMscRate(EGLint *numerator, EGLint *denominator) override;
-    void setSwapInterval(const egl::Display *display, EGLint interval) override;
+    void setSwapInterval(const egl::ThreadSafeDisplay *display, EGLint interval) override;
     void setFixedWidth(EGLint width) override;
     void setFixedHeight(EGLint height) override;
 
@@ -56,7 +56,7 @@ class SurfaceD3D : public SurfaceImpl
     // D3D implementations
     SwapChainD3D *getSwapChain() const;
 
-    egl::Error resetSwapChain(const egl::Display *display);
+    egl::Error resetSwapChain(const egl::ThreadSafeDisplay *display);
 
     egl::Error checkForOutOfDateSwapChain(DisplayD3D *displayD3D);
 

@@ -11,6 +11,7 @@
 #include "libANGLE/AttributeMap.h"
 #include "libANGLE/Context.h"
 #include "libANGLE/Display.h"
+#include "libANGLE/LoggingAnnotator.h"
 #include "libANGLE/Surface.h"
 #include "libANGLE/renderer/gl/ContextGL.h"
 #include "libANGLE/renderer/gl/RendererGL.h"
@@ -136,14 +137,13 @@ ShareGroupImpl *DisplayGL::createShareGroup(const egl::ShareGroupState &state)
     return new ShareGroupGL(state);
 }
 
-egl::Error DisplayGL::makeCurrent(egl::Display *display,
-                                  egl::Surface *drawSurface,
-                                  egl::Surface *readSurface,
-                                  gl::Context *context)
+egl::Error ThreadSafeDisplayGL::makeCurrent(egl::Surface *drawSurface,
+                                            egl::Surface *readSurface,
+                                            gl::Context *context)
 {
     // Ensure that the correct global DebugAnnotator is installed when the end2end tests change
     // the ANGLE back-end (done frequently).
-    display->setGlobalDebugAnnotator();
+    angle::SetGlobalDebugAnnotator();
 
     if (!context)
     {
@@ -180,7 +180,7 @@ void DisplayGL::generateExtensions(egl::DisplayExtensions *outExtensions) const
         getRenderer()->getFunctions()->standard == STANDARD_GL_ES;
 }
 
-egl::Error DisplayGL::makeCurrentSurfaceless(gl::Context *context)
+egl::Error ThreadSafeDisplayGL::makeCurrentSurfaceless(gl::Context *context)
 {
     UNIMPLEMENTED();
     return egl::NoError();

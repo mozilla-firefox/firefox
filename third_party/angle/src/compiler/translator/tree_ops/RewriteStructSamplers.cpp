@@ -9,6 +9,7 @@
 #include "compiler/translator/tree_ops/RewriteStructSamplers.h"
 
 #include "GLSLANG/ShaderVars.h"
+#include "common/angleutils.h"
 #include "common/hash_containers.h"
 #include "common/span.h"
 #include "compiler/translator/Compiler.h"
@@ -232,15 +233,23 @@ TIntermTyped *RewriteModifiedStructFieldSelectionExpression(
     else
     {
         const TVariable *baseUniformVar = &baseUniform->variable();
-        ASSERT(structureUniformMap.find(baseUniformVar) != structureUniformMap.end());
-        rewritten = new TIntermSymbol(structureUniformMap.at(baseUniformVar));
+        if (structureUniformMap.find(baseUniformVar) != structureUniformMap.end())
+        {
+            rewritten = new TIntermSymbol(structureUniformMap.at(baseUniformVar));
+        }
+        else
+        {
+            // If the struct contains only samplers, it's entirely eliminated.  Normally a reference
+            // to the struct itself gets removed as dead-code, but it may survive in some cases
+            // (such as |(side_effect, struct_uniform)|.  The result of such a comma expression
+            // cannot be used, so it's safe to just replace the |struct_uniform| with anything.
+            return CreateZeroNode(TType(EbtInt, EbpMedium));
+        }
     }
 
     // Iterate again and build the expression from bottom up.
-    for (auto it = indexNodeStack.rbegin(); it != indexNodeStack.rend(); ++it)
+    for (TIntermBinary *indexNode : angle::Reversed(indexNodeStack))
     {
-        TIntermBinary *indexNode = *it;
-
         switch (indexNode->getOp())
         {
             case EOpIndexDirectStruct:
@@ -380,9 +389,8 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
 
         modifiedData->modified = nullptr;
 
-        for (size_t fieldIndex = 0; fieldIndex < structure->fields().size(); ++fieldIndex)
+        for (const TField *field : structure->fields())
         {
-            const TField *field    = structure->fields()[fieldIndex];
             const TType &fieldType = *field->type();
 
             // If the field is a sampler, or a struct that's entirely removed, skip it.
@@ -530,9 +538,9 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
     {
         sizesOut->reserve(mArraySizeStack.size());
 
-        for (auto it = mArraySizeStack.rbegin(); it != mArraySizeStack.rend(); ++it)
+        for (unsigned int arraySize : angle::Reversed(mArraySizeStack))
         {
-            sizesOut->push_back(*it);
+            sizesOut->push_back(arraySize);
         }
     }
 
@@ -575,10 +583,8 @@ class RewriteStructSamplersTraverser final : public TIntermTraverser
 
     void enterArray(const TType &arrayType)
     {
-        const angle::Span<const unsigned int> &arraySizes = arrayType.getArraySizes();
-        for (auto it = arraySizes.rbegin(); it != arraySizes.rend(); ++it)
+        for (unsigned int arraySize : angle::Reversed(arrayType.getArraySizes()))
         {
-            unsigned int arraySize = *it;
             mArraySizeStack.push_back(arraySize);
         }
     }

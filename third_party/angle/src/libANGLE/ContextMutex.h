@@ -59,6 +59,7 @@ class ContextMutex final : angle::NonCopyable
     bool try_lock();
     void lock();
     void unlock();
+    void assertLocked() const;
 
   private:
     enum class UnlockBehaviour

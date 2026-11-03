@@ -144,10 +144,9 @@ void TDirectiveHandler::handleExtension(const angle::pp::SourceLocation &loc,
         }
         else
         {
-            for (TExtensionBehavior::iterator iter = mExtensionBehavior.begin();
-                 iter != mExtensionBehavior.end(); ++iter)
+            for (auto &entry : mExtensionBehavior)
             {
-                iter->second = behaviorVal;
+                entry.second = behaviorVal;
             }
         }
         return;

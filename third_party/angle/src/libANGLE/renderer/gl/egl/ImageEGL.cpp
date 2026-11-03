@@ -27,7 +27,12 @@ ImageEGL::ImageEGL(const egl::ImageState &state,
                    EGLenum target,
                    const egl::AttributeMap &attribs,
                    const FunctionsEGL *egl)
-    : ImageGL(state), mEGL(egl), mContext(EGL_NO_CONTEXT), mTarget(target), mPreserveImage(false)
+    : ImageGL(state),
+      mEGL(egl),
+      mGLContext(context),
+      mContext(EGL_NO_CONTEXT),
+      mTarget(target),
+      mPreserveImage(false)
 {
     if (context)
     {
@@ -53,8 +58,20 @@ egl::Error ImageEGL::initialize(const egl::Display *display)
 
     if (egl::IsTextureTarget(mTarget))
     {
+        gl::Texture *texture = GetAs<gl::Texture>(mState.source);
+        TextureGL *textureGL = GetImplAs<TextureGL>(texture);
+        if (mGLContext != nullptr)
+        {
+            // Ensure any pending base level change or virtual mipchain sync is applied before
+            // querying the native texture ID and level for the EGLImage source.
+            (void)textureGL->setBaseLevel(mGLContext, texture->getState().getEffectiveBaseLevel());
+        }
+
+        TextureGL::NativeLevelTarget nlt = textureGL->getNativeLevelTarget(
+            mState.imageIndex.getTarget(), mState.imageIndex.getLevelIndex().get());
+
         attributes.push_back(EGL_GL_TEXTURE_LEVEL);
-        attributes.push_back(mState.imageIndex.getLevelIndex().get());
+        attributes.push_back(nlt.level);
 
         if (mState.imageIndex.has3DLayer())
         {
@@ -62,8 +79,12 @@ egl::Error ImageEGL::initialize(const egl::Display *display)
             attributes.push_back(mState.imageIndex.getLayerIndex().get());
         }
 
-        const TextureGL *textureGL = GetImplAs<TextureGL>(GetAs<gl::Texture>(mState.source));
-        buffer                = gl_egl::GLObjectHandleToEGLClientBuffer(textureGL->getTextureID());
+        // Map the native texture target back to an EGL image target. This helps with mapping
+        // between texture types when the virtualizeBaseLevelAndMipchain workaround is enabled
+        // (for example, when an unmerged cube map face is stored in a standalone 1-level
+        // GL_TEXTURE_2D companion texture rather than a cube map texture).
+        mTarget               = gl_egl::TextureTargetToEGLImageTarget(nlt.target);
+        buffer                = gl_egl::GLObjectHandleToEGLClientBuffer(nlt.textureID);
         mNativeInternalFormat = textureGL->getNativeInternalFormat(mState.imageIndex.get());
     }
     else if (egl::IsRenderbufferTarget(mTarget))

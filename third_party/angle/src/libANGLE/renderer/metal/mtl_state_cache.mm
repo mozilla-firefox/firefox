@@ -616,12 +616,7 @@ void RenderPassDesc::convertToMetalDesc(MTLRenderPassDescriptor *objCDesc,
     for (uint32_t i = numColorAttachments; i < deviceMaxRenderTargets; ++i)
     {
         // Inactive render target
-        objCDesc.colorAttachments[i].texture     = nil;
-        objCDesc.colorAttachments[i].level       = 0;
-        objCDesc.colorAttachments[i].slice       = 0;
-        objCDesc.colorAttachments[i].depthPlane  = 0;
-        objCDesc.colorAttachments[i].loadAction  = MTLLoadActionDontCare;
-        objCDesc.colorAttachments[i].storeAction = MTLStoreActionDontCare;
+        ToObjC(RenderPassColorAttachmentDesc{}, objCDesc.colorAttachments[i]);
     }
 
     ToObjC(depthAttachment, objCDesc.depthAttachment);

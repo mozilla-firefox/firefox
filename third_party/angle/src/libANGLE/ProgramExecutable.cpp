@@ -1064,9 +1064,9 @@ void ProgramExecutable::save(gl::BinaryOutputStream *stream) const
     {
         stream->writeInt(imageBinding.boundImageUnits.size());
         stream->writeInt(static_cast<unsigned int>(imageBinding.textureType));
-        for (size_t i = 0; i < imageBinding.boundImageUnits.size(); ++i)
+        for (unsigned int boundImageUnit : imageBinding.boundImageUnits)
         {
-            stream->writeInt(imageBinding.boundImageUnits[i]);
+            stream->writeInt(boundImageUnit);
         }
     }
 
@@ -1999,9 +1999,8 @@ bool ProgramExecutable::linkAtomicCounterBuffers(const Caps &caps)
     // per-stage and combined gl_Max*AtomicCounterBuffers.
     GLint combinedShaderACBCount           = 0;
     gl::ShaderMap<GLint> perShaderACBCount = {};
-    for (size_t bufferIndex = 0; bufferIndex < mAtomicCounterBuffers.size(); ++bufferIndex)
+    for (const AtomicCounterBuffer &acb : mAtomicCounterBuffers)
     {
-        AtomicCounterBuffer &acb        = mAtomicCounterBuffers[bufferIndex];
         const ShaderBitSet shaderStages = acb.activeShaders();
         for (gl::ShaderType shaderType : shaderStages)
         {

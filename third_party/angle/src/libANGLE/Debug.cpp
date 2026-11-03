@@ -369,13 +369,10 @@ bool Debug::isMessageEnabled(GLenum source, GLenum type, GLuint id, GLenum sever
         return false;
     }
 
-    for (auto groupIter = mGroups.rbegin(); groupIter != mGroups.rend(); groupIter++)
+    for (const Group &group : angle::Reversed(mGroups))
     {
-        const auto &controls = groupIter->controls;
-        for (auto controlIter = controls.rbegin(); controlIter != controls.rend(); controlIter++)
+        for (const Control &control : angle::Reversed(group.controls))
         {
-            const auto &control = *controlIter;
-
             if (control.source != GL_DONT_CARE && control.source != source)
             {
                 continue;

@@ -43,13 +43,15 @@ enum class CopyResult
     NOT_RECREATED,
 };
 
+constexpr size_t kConstantBufferOffsetAlignment = 256;
+
 void CalculateConstantBufferParams(GLintptr offset,
                                    GLsizeiptr size,
                                    UINT *outFirstConstant,
                                    UINT *outNumConstants)
 {
     // The offset must be aligned to 256 bytes (should have been enforced by glBindBufferRange).
-    ASSERT(offset % 256 == 0);
+    ASSERT(offset % kConstantBufferOffsetAlignment == 0);
 
     // firstConstant and numConstants are expressed in constants of 16-bytes. Furthermore they must
     // be a multiple of 16 constants.
@@ -57,7 +59,9 @@ void CalculateConstantBufferParams(GLintptr offset,
 
     // The GL size is not required to be aligned to a 256 bytes boundary.
     // Round the size up to a 256 bytes boundary then express the results in constants of 16-bytes.
-    *outNumConstants = static_cast<UINT>(rx::roundUpPow2(size, static_cast<GLsizeiptr>(256)) / 16);
+    *outNumConstants = static_cast<UINT>(
+        rx::roundUpPow2(size, static_cast<GLsizeiptr>(kConstantBufferOffsetAlignment)) / 16);
+    ASSERT(*outNumConstants <= D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT);
 
     // Since the size is rounded up, firstConstant + numConstants may be bigger than the actual size
     // of the buffer. This behaviour is explictly allowed according to the documentation on
@@ -733,17 +737,25 @@ angle::Result Buffer11::getConstantBufferRange(const gl::Context *context,
                                                UINT *numConstantsOut,
                                                BufferFeedback *feedback)
 {
+    const GLsizeiptr maxUniformBlockSize =
+        static_cast<GLsizeiptr>(mRenderer->getNativeCaps().maxUniformBlockSize);
+    // D3D11 constant buffer bindings are limited to D3D11_REQ_CONSTANT_BUFFER_ELEMENT_COUNT
+    // (maxUniformBlockSize bytes). Passing a larger count to *SetConstantBuffers1 causes the D3D11
+    // runtime to drop the call, leaving the previously bound constant buffer in the slot.
+    const GLsizeiptr clampedSize = std::min(size, maxUniformBlockSize);
+
     NativeStorage *bufferStorage = nullptr;
-    if ((offset == 0 &&
-         size < static_cast<GLsizeiptr>(mRenderer->getNativeCaps().maxUniformBlockSize)) ||
-        mRenderer->getRenderer11DeviceCaps().supportsConstantBufferOffsets)
+    if ((offset == 0 && size < maxUniformBlockSize) ||
+        (mRenderer->getRenderer11DeviceCaps().supportsConstantBufferOffsets &&
+         static_cast<size_t>(offset) < mSize))
     {
         ANGLE_TRY(getBufferStorage(context, BUFFER_USAGE_UNIFORM, &bufferStorage, feedback));
-        CalculateConstantBufferParams(offset, size, firstConstantOut, numConstantsOut);
+        CalculateConstantBufferParams(offset, clampedSize, firstConstantOut, numConstantsOut);
     }
     else
     {
-        ANGLE_TRY(getConstantBufferRangeStorage(context, offset, size, &bufferStorage, feedback));
+        ANGLE_TRY(
+            getConstantBufferRangeStorage(context, offset, clampedSize, &bufferStorage, feedback));
         *firstConstantOut = 0;
         *numConstantsOut  = 0;
     }
@@ -798,6 +810,11 @@ angle::Result Buffer11::packPixels(const gl::Context *context,
     ASSERT(packStorage);
     ANGLE_TRY(packStorage->packPixels(context, readAttachment, params));
     onStorageUpdate(packStorage);
+
+    // Pixel pack writes new data into this buffer. If the buffer is also bound as a vertex or
+    // index buffer, we must invalidate any cached static translated vertex/index buffers and set
+    // feedback->bufferStateChanged so bound VertexArrays re-sync on the next draw.
+    invalidateStaticData(context, feedback);
 
     return angle::Result::Continue;
 }
@@ -897,7 +914,9 @@ angle::Result Buffer11::getConstantBufferRangeStorage(const gl::Context *context
     {
         size_t maximumAllowedAdditionalSize = 2 * getSize();
 
-        size_t sizeDelta = size - newStorage->getSize();
+        const size_t alignedSize =
+            rx::roundUpPow2(static_cast<size_t>(size), static_cast<size_t>(16));
+        size_t sizeDelta = alignedSize - newStorage->getSize();
 
         while (mConstantBufferStorageAdditionalSize + sizeDelta > maximumAllowedAdditionalSize)
         {
@@ -925,6 +944,10 @@ angle::Result Buffer11::getConstantBufferRangeStorage(const gl::Context *context
 
         ANGLE_TRY(newStorage->resize(context, size, false, feedback));
         mConstantBufferStorageAdditionalSize += sizeDelta;
+
+        // Zero-initialize the newly resized range storage in case mLatestBufferStorage is null or
+        // empty (where updateBufferStorage returns early without calling copyFromStorage).
+        ANGLE_TRY(newStorage->setData(context, nullptr, 0, 0));
 
         // We don't copy the old data when resizing the constant buffer because the data may be
         // out-of-date therefore we reset the data revision and let updateBufferStorage() handle the
@@ -1710,9 +1733,17 @@ angle::Result Buffer11::PackStorage::packPixels(const gl::Context *context,
     RenderTarget11 *renderTarget = nullptr;
     ANGLE_TRY(readAttachment.getRenderTarget(context, 0, &renderTarget));
 
+    gl::Rectangle clippedReadArea;
+    bool reverseRowOrder     = false;
+    const bool invertTexture = UsePresentPathFast(mRenderer, &readAttachment);
+    if (!ClipRenderTargetReadArea(*renderTarget, params.area, invertTexture, params.reverseRowOrder,
+                                  &clippedReadArea, &reverseRowOrder))
+    {
+        return angle::Result::Continue;
+    }
+
     const TextureHelper11 *srcTexture = &renderTarget->getTexture();
-    ASSERT(srcTexture->valid());
-    unsigned int srcSubresource = renderTarget->getSubresourceIndex();
+    unsigned int srcSubresource       = renderTarget->getSubresourceIndex();
 
     TextureHelper11 resolvedTexture;
     if (srcTexture->getSampleCount() > 1)
@@ -1723,25 +1754,27 @@ angle::Result Buffer11::PackStorage::packPixels(const gl::Context *context,
         srcSubresource = 0;
     }
 
-    mQueuedPackCommand.reset(new PackPixelsParams(params));
+    mQueuedPackCommand.reset(new PackPixelsParams(clippedReadArea, *params.destFormat,
+                                                  params.outputPitch, reverseRowOrder,
+                                                  params.packBuffer, params.offset));
 
-    gl::Extents srcTextureSize(params.area.width, params.area.height, 1);
+    const gl::Extents stagingTextureSize(clippedReadArea.width, clippedReadArea.height, 1);
     if (!mStagingTexture.get() || mStagingTexture.getFormat() != srcTexture->getFormat() ||
-        mStagingTexture.getExtents() != srcTextureSize ||
+        mStagingTexture.getExtents() != stagingTextureSize ||
         mStagingTexture.getTextureType() != srcTexture->getTextureType())
     {
         mStagingTexture.reset();
         ANGLE_TRY(mRenderer->createStagingTexture(context, srcTexture->getTextureType(),
-                                                  srcTexture->getFormatSet(), srcTextureSize,
+                                                  srcTexture->getFormatSet(), stagingTextureSize,
                                                   StagingAccess::READ, &mStagingTexture));
     }
 
     ID3D11DeviceContext *immediateContext = mRenderer->getDeviceContext();
     D3D11_BOX srcBox;
-    srcBox.left   = params.area.x;
-    srcBox.right  = params.area.x + params.area.width;
-    srcBox.top    = params.area.y;
-    srcBox.bottom = params.area.y + params.area.height;
+    srcBox.left   = static_cast<UINT>(clippedReadArea.x);
+    srcBox.right  = static_cast<UINT>(clippedReadArea.x + clippedReadArea.width);
+    srcBox.top    = static_cast<UINT>(clippedReadArea.y);
+    srcBox.bottom = static_cast<UINT>(clippedReadArea.y + clippedReadArea.height);
 
     // Select the correct layer from a 3D attachment
     srcBox.front = 0;

@@ -724,3 +724,31 @@ gl::TextureType EGLTextureTargetToTextureType(EGLenum eglTarget)
     }
 }
 }  // namespace egl_gl
+
+namespace gl_egl
+{
+EGLenum TextureTargetToEGLImageTarget(gl::TextureTarget target)
+{
+    switch (target)
+    {
+        case gl::TextureTarget::_2D:
+            return EGL_GL_TEXTURE_2D_KHR;
+
+        case gl::TextureTarget::CubeMapPositiveX:
+        case gl::TextureTarget::CubeMapNegativeX:
+        case gl::TextureTarget::CubeMapPositiveY:
+        case gl::TextureTarget::CubeMapNegativeY:
+        case gl::TextureTarget::CubeMapPositiveZ:
+        case gl::TextureTarget::CubeMapNegativeZ:
+            return egl::LayerIndexToCubeMapTextureTarget(
+                gl::CubeMapTextureTargetToFaceIndex(target));
+
+        case gl::TextureTarget::_3D:
+            return EGL_GL_TEXTURE_3D_KHR;
+
+        default:
+            UNREACHABLE();
+            return EGL_NONE;
+    }
+}
+}  // namespace gl_egl

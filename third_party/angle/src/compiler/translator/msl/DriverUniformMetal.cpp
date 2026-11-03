@@ -40,7 +40,7 @@ TFieldList *DriverUniformMetal::createUniformFields(TSymbolTable *symbolTable)
     const std::array<TType *, kNumGraphicsDriverUniformsMetal> kDriverUniformTypesMetal = {{
         // xfbBufferOffsets: uvec4
         new TType(EbtInt, EbpHigh, EvqGlobal, 4),
-        // xfbVerticesPerInstance: uint
+        // xfbVerticesPerInstance: int
         new TType(EbtInt, EbpHigh, EvqGlobal),
         // coverageMask: uint
         new TType(EbtUInt, EbpHigh, EvqGlobal),

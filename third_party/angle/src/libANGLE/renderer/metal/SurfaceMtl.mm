@@ -123,7 +123,7 @@ SurfaceMtl::SurfaceMtl(DisplayMtl *display,
 
 SurfaceMtl::~SurfaceMtl() {}
 
-void SurfaceMtl::destroy(const egl::Display *display)
+void SurfaceMtl::destroy(const egl::ThreadSafeDisplay *display)
 {
     mColorTexture   = nullptr;
     mDepthTexture   = nullptr;
@@ -137,7 +137,7 @@ void SurfaceMtl::destroy(const egl::Display *display)
     mStencilRenderTarget.reset();
 }
 
-egl::Error SurfaceMtl::initialize(const egl::Display *display)
+egl::Error SurfaceMtl::initialize(const egl::ThreadSafeDisplay *display)
 {
     return egl::NoError();
 }
@@ -204,7 +204,7 @@ egl::Error SurfaceMtl::getMscRate(EGLint *numerator, EGLint *denominator)
     return egl::Error(EGL_BAD_ACCESS);
 }
 
-void SurfaceMtl::setSwapInterval(const egl::Display *display, EGLint interval) {}
+void SurfaceMtl::setSwapInterval(const egl::ThreadSafeDisplay *display, EGLint interval) {}
 
 void SurfaceMtl::setFixedWidth(EGLint width)
 {
@@ -408,7 +408,7 @@ WindowSurfaceMtl::WindowSurfaceMtl(DisplayMtl *display,
 
 WindowSurfaceMtl::~WindowSurfaceMtl() {}
 
-void WindowSurfaceMtl::destroy(const egl::Display *display)
+void WindowSurfaceMtl::destroy(const egl::ThreadSafeDisplay *display)
 {
     SurfaceMtl::destroy(display);
 
@@ -422,7 +422,7 @@ void WindowSurfaceMtl::destroy(const egl::Display *display)
     mMetalLayer = nil;
 }
 
-egl::Error WindowSurfaceMtl::initialize(const egl::Display *display)
+egl::Error WindowSurfaceMtl::initialize(const egl::ThreadSafeDisplay *display)
 {
     egl::Error re = SurfaceMtl::initialize(display);
     if (re.isError())
@@ -430,7 +430,7 @@ egl::Error WindowSurfaceMtl::initialize(const egl::Display *display)
         return re;
     }
 
-    DisplayMtl *displayMtl    = mtl::GetImpl(display);
+    DisplayMtl *displayMtl    = mtl::GetImpl(static_cast<const egl::Display *>(display));
     id<MTLDevice> metalDevice = displayMtl->getMetalDevice();
 
     StartFrameCapture(metalDevice, displayMtl->cmdQueue().get());
@@ -476,7 +476,7 @@ egl::Error WindowSurfaceMtl::swap(const gl::Context *context, SurfaceSwapFeedbac
     return egl::NoError();
 }
 
-void WindowSurfaceMtl::setSwapInterval(const egl::Display *display, EGLint interval)
+void WindowSurfaceMtl::setSwapInterval(const egl::ThreadSafeDisplay *display, EGLint interval)
 {
 #if TARGET_OS_OSX || TARGET_OS_MACCATALYST
     mMetalLayer.get().displaySyncEnabled = interval != 0;
@@ -706,7 +706,7 @@ OffscreenSurfaceMtl::OffscreenSurfaceMtl(DisplayMtl *display,
 
 OffscreenSurfaceMtl::~OffscreenSurfaceMtl() {}
 
-void OffscreenSurfaceMtl::destroy(const egl::Display *display)
+void OffscreenSurfaceMtl::destroy(const egl::ThreadSafeDisplay *display)
 {
     SurfaceMtl::destroy(display);
 }

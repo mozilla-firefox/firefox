@@ -284,12 +284,6 @@ struct FeaturesMtl : FeatureSetBase
         &members,
     };
 
-    FeatureInfo generateShareableShaders = {
-        "generateShareableShaders",
-        FeatureCategory::MetalFeatures,
-        &members,
-    };
-
     FeatureInfo disableMetalOnNvidia = {
         "disableMetalOnNvidia",
         FeatureCategory::MetalFeatures,
@@ -326,18 +320,6 @@ struct FeaturesMtl : FeatureSetBase
         &members,
     };
 
-    FeatureInfo injectAsmStatementIntoLoopBodies = {
-        "injectAsmStatementIntoLoopBodies",
-        FeatureCategory::MetalFeatures,
-        &members,
-    };
-
-    FeatureInfo ensureLoopForwardProgress = {
-        "ensureLoopForwardProgress",
-        FeatureCategory::MetalFeatures,
-        &members,
-    };
-
     FeatureInfo allocateNonZeroTextures = {
         "allocateNonZeroTextures",
         FeatureCategory::MetalFeatures,
@@ -346,6 +328,12 @@ struct FeaturesMtl : FeatureSetBase
 
     FeatureInfo limitMaxVisibilityQueryOffset = {
         "limitMaxVisibilityQueryOffset",
+        FeatureCategory::MetalFeatures,
+        &members,
+    };
+
+    FeatureInfo purgeableBufferPool = {
+        "purgeableBufferPool",
         FeatureCategory::MetalFeatures,
         &members,
     };

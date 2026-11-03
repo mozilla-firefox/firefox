@@ -556,9 +556,9 @@ TIntermDeclaration::TIntermDeclaration(const TIntermDeclaration &node)
 
 bool TIntermAggregateBase::replaceChildNodeInternal(TIntermNode *original, TIntermNode *replacement)
 {
-    for (size_t ii = 0; ii < getSequence()->size(); ++ii)
+    for (TIntermNode *&child : *getSequence())
     {
-        REPLACE_IF_IS((*getSequence())[ii], getAsNode, original, replacement);
+        REPLACE_IF_IS(child, getAsNode, original, replacement);
     }
     return false;
 }
@@ -3025,7 +3025,7 @@ TConstantUnion *TIntermConstantUnion::foldUnaryNonComponentWise(TOperator op)
         {
             ASSERT(getType().getBasicType() == EbtUInt);
             resultArray = new TConstantUnion[4];
-            float f[4];
+            std::array<float, 4> f;
             gl::UnpackUnorm4x8(operandArray[0].getUConst(), f);
             for (size_t i = 0; i < 4; ++i)
             {
@@ -3037,7 +3037,7 @@ TConstantUnion *TIntermConstantUnion::foldUnaryNonComponentWise(TOperator op)
         {
             ASSERT(getType().getBasicType() == EbtUInt);
             resultArray = new TConstantUnion[4];
-            float f[4];
+            std::array<float, 4> f;
             gl::UnpackSnorm4x8(operandArray[0].getUConst(), f);
             for (size_t i = 0; i < 4; ++i)
             {

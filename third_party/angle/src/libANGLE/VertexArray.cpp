@@ -545,11 +545,6 @@ ANGLE_INLINE VertexArray::DirtyBindingBits VertexArray::bindVertexBufferImpl(con
     binding->setOffset(offset);
     binding->setStride(stride);
 
-    if (mRobustBufferAccessEnabled)
-    {
-        updateCachedElementLimit(*binding, mCachedBufferSize[bindingIndex]);
-    }
-
     return dirtyBindingBits;
 }
 
@@ -577,6 +572,11 @@ void VertexArray::bindVertexBuffer(const Context *context,
     {
         mDirtyBits.set(DIRTY_BIT_BINDING_0 + bindingIndex);
         mDirtyBindingBits[bindingIndex] |= dirtyBindingBits;
+        if (mRobustBufferAccessEnabled)
+        {
+            updateCachedElementLimit(mState.mVertexBindings[bindingIndex],
+                                     mCachedBufferSize[bindingIndex]);
+        }
     }
 }
 
@@ -645,6 +645,11 @@ ANGLE_INLINE void VertexArray::setVertexAttribPointerImpl(const Context *context
     {
         setDirtyAttribBit(attribIndex, DIRTY_ATTRIB_POINTER_BUFFER);
         *isVertexAttribDirtyOut = true;
+    }
+    if (mRobustBufferAccessEnabled && (attribDirty || dirtyBindingBits.any()))
+    {
+        updateCachedElementLimit(mState.mVertexBindings[attribIndex],
+                                 mCachedBufferSize[attribIndex]);
     }
 
     mState.mNullPointerClientMemoryAttribsMask.set(attribIndex,

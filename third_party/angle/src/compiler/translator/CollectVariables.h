@@ -23,7 +23,8 @@ class NameMap;
 
 struct SelectedFields
 {
-    TMap<uint32_t, SelectedFields> subfields;
+    POOL_ALLOCATOR_NEW_DELETE
+    TUnorderedMap<uint32_t, SelectedFields *> subfields;
 };
 
 using SamplersStaticallyUsedWithTexelFetch = TUnorderedMap<const TVariable *, SelectedFields>;

@@ -75,9 +75,6 @@ std::shared_ptr<ShaderTranslateTask> ShaderMtl::compile(const gl::Context *conte
         options->initOutputVariables = true;
     }
 
-    options->metal.generateShareableShaders =
-        displayMtl->getFeatures().generateShareableShaders.enabled;
-
     options->clampPointSize = true;
 #if TARGET_OS_IPHONE && !TARGET_OS_MACCATALYST
     options->clampFragDepth = true;
@@ -106,15 +103,6 @@ std::shared_ptr<ShaderTranslateTask> ShaderMtl::compile(const gl::Context *conte
         displayMtl->getFeatures().preTransformTextureCubeGradDerivatives.enabled;
 
     options->rescopeGlobalVariables = displayMtl->getFeatures().rescopeGlobalVariables.enabled;
-
-    if (displayMtl->getFeatures().injectAsmStatementIntoLoopBodies.enabled)
-    {
-        options->metal.injectAsmStatementIntoLoopBodies = true;
-    }
-    if (displayMtl->getFeatures().ensureLoopForwardProgress.enabled)
-    {
-        options->ensureLoopForwardProgress = true;
-    }
 
     return std::shared_ptr<ShaderTranslateTask>(new ShaderTranslateTaskMtl(mCompiledState));
 }

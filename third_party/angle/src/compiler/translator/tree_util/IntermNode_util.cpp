@@ -571,7 +571,7 @@ TIntermNode *CastScalar(const TType &type, TIntermTyped *scalar)
     return TIntermAggregate::CreateConstructor(castDestType, {scalar});
 }
 
-TIntermTyped *RemoveCommaLeftHandSize(TIntermTyped *node)
+TIntermTyped *RemoveCommaLeftHandSide(TIntermTyped *node)
 {
     TIntermTyped *current = node;
     while (true)
