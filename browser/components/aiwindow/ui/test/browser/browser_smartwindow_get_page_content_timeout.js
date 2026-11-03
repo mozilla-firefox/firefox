@@ -21,6 +21,10 @@ const { GET_PAGE_CONTENT } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/Tools.sys.mjs"
 );
 
+const { PageExtractorParent } = ChromeUtils.importESModule(
+  "resource://gre/actors/PageExtractorParent.sys.mjs"
+);
+
 const { MESSAGE_ROLE } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ChatEnums.sys.mjs"
 );
@@ -125,13 +129,11 @@ add_task(async function test_get_page_content_page_never_loads() {
  * blocks automated access rather than reporting a generic timeout.
  */
 add_task(async function test_get_page_content_page_redirected_to_challenge() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.ml.pageExtractor.headlessTimeoutMs", 500]],
-  });
   const mockEngineManager = new MockEngineManager();
   const { win, sidebarBrowser } = await openAIWindowWithSidebar();
+  const challengeURL = "https://example.com/";
   const { url, cleanup: stopServer } = MLTestUtils.serveRedirect({
-    to: "https://example.com/",
+    to: challengeURL,
   });
 
   try {
@@ -149,6 +151,10 @@ add_task(async function test_get_page_content_page_redirected_to_challenge() {
       "Conversation should be created when the first message is sent."
     );
 
+    const reachedChallenge = TestUtils.topicObserved(
+      "page-extractor-headless-location",
+      (_subject, data) => data === challengeURL
+    );
     await mockEngineManager.respondTo({
       purpose: "chat",
       response: {
@@ -166,6 +172,9 @@ add_task(async function test_get_page_content_page_redirected_to_challenge() {
         ],
       },
     });
+
+    await reachedChallenge;
+    PageExtractorParent.expireHeadlessLoadsForTesting();
 
     const toolMessage = await TestUtils.waitForCondition(
       () =>
@@ -208,6 +217,5 @@ add_task(async function test_get_page_content_page_redirected_to_challenge() {
     mockEngineManager.cleanupMocks();
     await BrowserTestUtils.closeWindow(win);
     await stopServer();
-    await SpecialPowers.popPrefEnv();
   }
 });
