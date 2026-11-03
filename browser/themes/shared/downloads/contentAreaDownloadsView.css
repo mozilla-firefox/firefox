@@ -5,7 +5,7 @@
 @import url("chrome://global/skin/in-content/common.css");
 
 #contentAreaDownloadsView {
-  padding: 18px;
+  padding: var(--space-xlarge);
 }
 
 #downloadsListBox:empty {

@@ -24,7 +24,7 @@
 
 @media not (prefers-contrast) {
   #downloadsListBox[disabled] {
-    opacity: var(--downloads-item-disabled-opacity) !important;
+    opacity: var(--opacity-deemphasized-strong) !important;
   }
 }
 
@@ -35,6 +35,8 @@
 }
 
 #emptyDownloads {
+  /* Match the spacing of the downloads footer */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 1.5em 8px 2.1em;
   margin: 0;
   pointer-events: none;
@@ -101,6 +103,7 @@
   color: var(--panel-footer-text-color);
   border-top: 1px solid var(--panel-separator-color);
   /* Reserve the same space as the button and separator in download items. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-inline-end: 59px;
   -moz-user-focus: normal;
 }
@@ -139,11 +142,9 @@
 
 #downloadsSummaryDetails,
 .downloadDetails {
-  font-size: calc(100% * var(--downloads-item-font-size-factor));
-  opacity: var(--downloads-item-details-opacity);
-  /* Use calc() to keep the height consistent with .downloadTarget, so that the
-     progress bar can be vertically centered. */
-  margin: 4px 0 calc(1em / var(--downloads-item-font-size-factor) - 1em);
+  font-size: var(--font-size-small);
+  opacity: var(--opacity-deemphasized-strong);
+  margin: var(--space-xsmall) 0 0;
 }
 
 /* When hovering the mouse pointer over the item, instead of the normal message
@@ -252,7 +253,7 @@
 #downloadsPanel-blockedSubview-title {
   font-weight: var(--font-weight-heading);
   @media not -moz-pref("browser.nova.enabled") {
-    font-size: calc(100% * var(--downloads-item-font-size-factor));
+    font-size: var(--font-size-small);
     font-weight: normal;
     margin-block-end: var(--space-xlarge);
   }
@@ -271,7 +272,7 @@
   margin-block-end: 0;
   @media not -moz-pref("browser.nova.enabled") {
     margin-block-end: var(--space-small);
-    font-size: calc(100% * var(--downloads-item-font-size-factor));
+    font-size: var(--font-size-small);
   }
 }
 

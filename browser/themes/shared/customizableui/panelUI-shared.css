@@ -13,7 +13,6 @@
   --panel-banner-item-hover-bgcolor: var(--button-background-color-hover);
   --panel-banner-item-active-bgcolor: var(--button-background-color-active);
   --panel-banner-item-update-supported-bgcolor: var(--color-accent-attention);
-  --panel-banner-item-info-icon-bgcolor: light-dark(#0090ed, #80ebff);
 
   --menu-panel-width: 22.35em;
   --menu-panel-width-wide: 29em;
@@ -1076,8 +1075,7 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
   &[fxastatus="unverified"] #appMenu-fxa-label2::after {
     content: url("chrome://global/skin/icons/info-filled.svg");
     -moz-context-properties: fill;
-    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-    fill: var(--panel-banner-item-info-icon-bgcolor);
+    fill: var(--icon-color-information);
   }
 }
 

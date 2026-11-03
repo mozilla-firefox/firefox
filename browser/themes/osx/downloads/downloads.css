@@ -6,7 +6,4 @@
 
 :root {
   --downloads-item-height: 6em;
-  --downloads-item-font-size-factor: 0.8;
-  --downloads-item-details-opacity: 0.7;
-  --downloads-item-disabled-opacity: 0.7;
 }

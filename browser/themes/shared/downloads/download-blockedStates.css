@@ -29,11 +29,11 @@
 .downloadsPanel-blockedSubview-image {
   width: var(--size-item-small);
   background-repeat: no-repeat;
-  margin-inline-end: 25px;
+  margin-inline-end: var(--space-xxlarge);
 }
 
 .downloadsPanel-blockedSubview-title-box {
-  margin-block: 21.5px 0;
+  margin-block: var(--space-xlarge) 0;
 }
 
 #downloadsPanel-blockedSubview-title {

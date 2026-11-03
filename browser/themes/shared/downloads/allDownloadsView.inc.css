@@ -18,9 +18,9 @@
 }
 
 .downloadTypeIcon {
-  margin: 8px 13px;
-  width: 32px;
-  height: 32px;
+  margin: var(--space-small) var(--space-large);
+  width: var(--icon-size-xlarge);
+  height: var(--icon-size-xlarge);
 }
 
 .downloadTarget {
@@ -28,11 +28,9 @@
 }
 
 .downloadDetails {
-  opacity: 0.7;
-  font-size: 95%;
-  /* Use calc() to keep the height consistent with .downloadTarget, so that the
-     progress bar can be vertically centered. */
-  margin: 4px 0 calc(1em / 0.95 - 1em);
+  opacity: var(--opacity-deemphasized-strong);
+  font-size: var(--font-size-small);
+  margin: var(--space-xsmall) 0 0;
 }
 
 .downloadDetailsHover,
@@ -49,17 +47,17 @@
   margin: 0;
   border: none;
   color: inherit;
-  padding: 0 12px;
+  padding: 0 var(--space-medium);
 }
 
 .downloadButton > .button-box {
-  padding: 8px;
+  padding: var(--space-small);
   border-radius: var(--border-radius-small);
 }
 
 .downloadButton > .button-box > .button-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size);
+  height: var(--icon-size);
   margin: 0;
   -moz-context-properties: fill;
   fill: currentColor;

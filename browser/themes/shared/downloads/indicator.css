@@ -5,8 +5,8 @@
 /*** Status and progress indicator ***/
 
 #downloads-indicator-anchor {
-  min-width: 16px;
-  min-height: 16px;
+  min-width: var(--icon-size);
+  min-height: var(--icon-size);
   -moz-context-properties: fill, fill-opacity;
   list-style-image: url("chrome://browser/skin/downloads/downloads.svg");
 }
@@ -35,10 +35,10 @@ toolbarpaletteitem[place="palette"] > #downloads-button > .toolbarbutton-badge-s
   pointer-events: none;
   -moz-context-properties: fill, fill-opacity, stroke;
   grid-area: initial;
-  top: calc(50% - 10px); /* Vertically center the 20px tall animatable image */
-  left: calc(50% - 10px); /* Horizontally center the 20px wide animatable image */
-  width: 20px; /* Width of each frame within the SVG sprite */
-  height: 20px; /* Height of each frame within the SVG sprite */
+  top: calc(50% - var(--icon-size-medium) / 2); /* Vertically center the 20px tall animatable image */
+  left: calc(50% - var(--icon-size-medium) / 2); /* Horizontally center the 20px wide animatable image */
+  width: var(--icon-size-medium); /* Width of each frame within the SVG sprite */
+  height: var(--icon-size-medium); /* Height of each frame within the SVG sprite */
   /* Animation is not directional and shouldn't be reversed in RTL */
   direction: ltr;
   /* Revert to the xul.css user agent stylesheet's z-index value (auto) for
@@ -75,8 +75,8 @@ toolbarpaletteitem > #downloads-button > .toolbarbutton-badge-stack > #downloads
 #downloads-indicator-progress-inner {
   --download-progress-pcent: 0%;
 
-  width: 12px;
-  height: 12px;
+  width: var(--icon-size-xsmall);
+  height: var(--icon-size-xsmall);
   /*
     From javascript side we update the --download-progress-pcent variable to show the current progress
    */
@@ -91,18 +91,21 @@ toolbarpaletteitem > #downloads-button > .toolbarbutton-badge-stack > #downloads
 #downloads-button[attention="severe"] > .toolbarbutton-badge-stack > .toolbarbutton-badge {
   display: block;
   box-shadow: none;
+  /* Prefer pixels for placing the badge with negative margins */
   /* "!important" is necessary to override the rule in toolbarbutton.css */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin: -7px 0 0 !important;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-inline-end: -4px !important;
-  min-width: 12px;
-  min-height: 12px;
+  min-width: var(--icon-size-xsmall);
+  min-height: var(--icon-size-xsmall);
   -moz-context-properties: fill;
-  background-size: 12px;
+  background-size: var(--icon-size-xsmall);
 }
 
 #downloads-button[attention="info"] > .toolbarbutton-badge-stack > .toolbarbutton-badge {
   background: url(chrome://browser/skin/notification-fill-12.svg) no-repeat center;
-  fill: var(--panel-banner-item-info-icon-bgcolor);
+  fill: var(--icon-color-information);
 }
 
 #downloads-button[attention="warning"] > .toolbarbutton-badge-stack > .toolbarbutton-badge {
@@ -112,7 +115,7 @@ toolbarpaletteitem > #downloads-button > .toolbarbutton-badge-stack > #downloads
 
 #downloads-button[attention="severe"] > .toolbarbutton-badge-stack > .toolbarbutton-badge {
   background: url(chrome://browser/skin/notification-fill-12.svg) no-repeat center;
-  fill: light-dark(rgb(226, 40, 80), rgb(255, 132, 138));
+  fill: var(--icon-color-critical);
 }
 
 #downloads-button[animate] > .toolbarbutton-badge-stack > .toolbarbutton-badge {
@@ -127,8 +130,8 @@ toolbarpaletteitem > #downloads-button > .toolbarbutton-badge-stack > #downloads
   --anim-steps: calc(var(--anim-frames) - 1);
 
   list-style-image: url("chrome://browser/skin/downloads/notification-start-animation.svg");
-  width: calc(20px * var(--anim-frames));
-  height: 20px;
+  width: calc(var(--icon-size-medium) * var(--anim-frames));
+  height: var(--icon-size-medium);
 
   /* fill tints the spinner ring; stroke tints the download-arrow glyph, so it
      can be recolored or hidden independently (see the rules below). */
@@ -170,8 +173,8 @@ toolbarpaletteitem > #downloads-button > .toolbarbutton-badge-stack > #downloads
   stroke: var(--toolbarbutton-icon-fill-attention);
 
   list-style-image: url("chrome://browser/skin/downloads/notification-finish-animation.svg");
-  width: calc(20px * (var(--anim-frames) + 1));
-  height: 20px;
+  width: calc(var(--icon-size-medium) * (var(--anim-frames) + 1));
+  height: var(--icon-size-medium);
 
   /* initial state for animation */
   transform: translateX(0);

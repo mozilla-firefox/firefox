@@ -8,9 +8,6 @@
 
 :root {
   --downloads-item-height: 5.5em;
-  --downloads-item-font-size-factor: 0.9;
-  --downloads-item-details-opacity: 0.6;
-  --downloads-item-disabled-opacity: 0.6;
 }
 
 /*** Progress bars ***/

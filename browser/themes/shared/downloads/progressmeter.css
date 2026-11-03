@@ -28,12 +28,15 @@
 .downloadProgress {
   appearance: none;
   display: flex;
-  margin-block: 5px 1px;
+  margin-block: var(--space-small) var(--space-xxsmall);
   /* This value is kinda odd, it's used to align with the edge of the badge,
    * if shown, which is inside the edge of the image (the image gets 16px
    * margin). */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-inline-end: 18px;
   border: none;
+  /* Give the progress bar a fixed height */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   height: 4px;
   border-radius: var(--border-radius-xsmall);
   background-color: color-mix(in srgb, currentColor 15%, transparent);
@@ -61,6 +64,8 @@
 }
 
 .downloadProgress:indeterminate::-moz-progress-bar {
+  /* Add a little extra space */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   width: calc(100% + 2px);
   /* Make a white reflecting animation.
      Create a gradient with 2 identical patterns, and enlarge the size to 200%.

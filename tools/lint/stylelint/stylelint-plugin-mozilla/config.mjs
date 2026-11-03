@@ -422,6 +422,7 @@ const Size = {
   tokenTypes: ["size", "icon-size"],
   allowUnits: true,
   allowedUnits: ["%", "ch", "em", "vh", "vw"],
+  allowedTokens: ["--downloads-item-height"],
   customFixes: {
     ...createRawValuesObject(["size", "icon-size"]),
     "0.75rem": "var(--size-item-xsmall)",
