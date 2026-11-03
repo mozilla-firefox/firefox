@@ -31,11 +31,35 @@ export function dateToDays(date) {
   return Math.floor(date.getTime() / MILLISECONDS_IN_DAY);
 }
 
-// sendGleanPing will sequence calls so that we only have one crash reporter
-// spawned at a time.
+// Used by sendGleanPing to sequence calls so that we only have one crash
+// reporter spawned at a time.
 let lastSendPing = Promise.resolve();
+
+/**
+ * Send a glean ping with the given reason and annotations.
+ *
+ * This sends pings through the crashreporter client. The client requires
+ * exclusive access to its Glean store, so if there are multiple clients
+ * launched, only one will run at a time (the client manages this itself).
+ * However, since we know this requirement, this function sequences the
+ * submissions so that only one crashreporter client will be spawned at a time.
+ *
+ * A `sendTelemetry` shutdown blocker is attached to the subprocess spawn,
+ * allowing a 1 second period before killing the process.
+ *
+ * @returns whether the ping was successfully handed to the crashreporter
+ * client. This does _not_ mean the ping was submitted to the Glean server, it
+ * just means that the client now owns the ping submission process (at least
+ * persisted by Glean).
+ */
 function sendGleanPing(reason, annotations) {
   const doSendPing = async () => {
+    // If we're shutting down, return false immediately so that the ping
+    // submission is retried in the future.
+    if (Services.startup.shuttingDown) {
+      return false;
+    }
+
     const uAppDataPath = Services.dirsvc.get("UAppData", Ci.nsIFile).path;
     const crashDataPath = PathUtils.join(uAppDataPath, "Crash Reports");
 
@@ -44,6 +68,13 @@ function sendGleanPing(reason, annotations) {
       arguments: ["--send-ping", crashDataPath, reason],
       stderr: "stdout",
     });
+
+    // If we begin to shutdown, allow 1 second for the process to finish.
+    const blocker = () => process.kill(1000);
+    lazy.AsyncShutdown.sendTelemetry.addBlocker(
+      "CrashManager: submitting Glean crash ping(s)",
+      blocker
+    );
 
     await process.stdin.write(JSON.stringify(annotations));
     await process.stdin.close();
@@ -63,19 +94,28 @@ function sendGleanPing(reason, annotations) {
     while ((await process.stdout.read()).byteLength) {
       // We don't need to do anything, just wait for an empty read
     }
+
+    lazy.AsyncShutdown.sendTelemetry.removeBlocker(blocker);
+
+    // The ping submission code will only return non-zero values on fatal
+    // errors. For example:
+    // - on windows, -9 is returned if the process is killed.
+    // - on unix, SIGKILL returns -9, and SIGTERM returns -15.
+    // - if a panic occurs, 101 is returned.
+    //
+    // The kill/term values are expected if the process is killed (by the
+    // shutdown blocker or otherwise). Panics are not expected. But in either
+    // case, we do not know whether the ping was persisted to the Glean store,
+    // so we should retry submission in the future. There are no non-zero exit
+    // codes that indicate a handled logic error for which we know the Glean
+    // store would have shut down properly.
+    return exitCode === 0;
   };
 
   // `Promise.prototype.finally()` will resolve to the prior Promise state, so
   // we use `.then()`, since we want to sequence calls but return the error
   // from this `doSendPing()`.
-  lastSendPing = lastSendPing.then(doSendPing, doSendPing);
-  lazy.AsyncShutdown.sendTelemetry.addBlocker(
-    "CrashManager: submitting Glean crash ping(s)",
-    lastSendPing
-  );
-  return (lastSendPing = lastSendPing.finally(() =>
-    lazy.AsyncShutdown.sendTelemetry.removeBlocker(lastSendPing)
-  ));
+  return (lastSendPing = lastSendPing.then(doSendPing, doSendPing));
 }
 
 /*
@@ -812,17 +852,24 @@ CrashManager.prototype = Object.freeze({
       pingMeta.CrashTime ??= Math.floor(date.getTime() / 1000).toString();
       pingMeta.ProcessType ??= type;
 
-      this._gleanPingPromise = sendGleanPing(reason, pingMeta).catch(error => {
-        console.error(`failed to send Glean crash ping: ${error}`);
-        throw error;
-      });
-    }
-    if (store) {
-      // Consider the ping submitted, which means that the crashreporter client
-      // is passed the ping data (if applicable). This _doesn't_ mean the ping
-      // was received by the telemetry server. We rely on the crashreporter
-      // client's Glean instance to handle reliable delivery.
-      store.setPingSubmitted(crashId);
+      this._gleanPingPromise = sendGleanPing(reason, pingMeta)
+        .catch(error => {
+          console.error(
+            `failed to run Glean crash ping submission process: ${error}`
+          );
+          throw error;
+        })
+        .then(submitted => {
+          if (submitted) {
+            store?.setPingSubmitted(crashId);
+          }
+        });
+    } else {
+      // Consider the ping submitted: we've determined it shouldn't be sent. If
+      // someone were to change their telemetry settings, we shouldn't upload
+      // pings from crashes before that point, so this behaves as it should in
+      // that case.
+      store?.setPingSubmitted(crashId);
     }
   },
 
