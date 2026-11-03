@@ -18,7 +18,6 @@ import org.junit.Test
 import org.mozilla.fenix.browser.BrowserFragment
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.components.AppStore
-import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.search.SearchState
 import org.mozilla.fenix.customtabs.ExternalAppBrowserFragment
@@ -39,19 +38,6 @@ class StatusBarColorManagerTest {
     private val tabStripStatusBarView: TabStripStatusBarView = mockk(relaxed = true)
     private val fragmentManager: FragmentManager = mockk(relaxed = true)
     private val homeFragment: HomeFragment = mockk(relaxed = true)
-
-    @Test
-    fun `GIVEN tab strip is enabled WHEN the home fragment resumes THEN the gradient is shown`() =
-        runTest(testDispatcher) {
-            val manager = buildStatusBarColorManager(isTabStripEnabled = true)
-            manager.onFragmentResumed(fragmentManager, homeFragment)
-            testScheduler.advanceUntilIdle()
-
-            verify {
-                themeManager.applyStatusBarTheme(activity)
-                tabStripStatusBarView.show()
-            }
-        }
 
     @Test
     fun `GIVEN tab strip is enabled WHEN the browser fragment resumes THEN the gradient is shown`() =
@@ -76,53 +62,8 @@ class StatusBarColorManagerTest {
         }
 
     @Test
-    fun `GIVEN the home fragment is showing the gradient WHEN the wallpaper changes to edge-to-edge THEN the gradient is hidden`() =
+    fun `GIVEN a non-default wallpaper WHEN the home fragment resumes THEN the gradient is hidden`() =
         runTest(testDispatcher) {
-            val appStore = AppStore()
-            val manager = buildStatusBarColorManager(isTabStripEnabled = true, appStore = appStore)
-            manager.onFragmentResumed(fragmentManager, homeFragment)
-            testScheduler.advanceUntilIdle()
-
-            verify(exactly = 1) { tabStripStatusBarView.show() }
-
-            appStore.dispatch(AppAction.WallpaperAction.UpdateCurrentWallpaper(Wallpaper.EdgeToEdge))
-            testScheduler.advanceUntilIdle()
-
-            verify(exactly = 1) { tabStripStatusBarView.hide() }
-        }
-
-    @Test
-    fun `GIVEN the edge-to-edge wallpaper and an active search WHEN the home fragment resumes THEN the gradient is shown`() =
-        runTest(testDispatcher) {
-            val manager =
-                buildStatusBarColorManager(
-                    isTabStripEnabled = true,
-                    appStore = buildAppStore(Wallpaper.EdgeToEdge, isSearchActive = true),
-                )
-            manager.onFragmentResumed(fragmentManager, homeFragment)
-            testScheduler.advanceUntilIdle()
-
-            verify { tabStripStatusBarView.show() }
-        }
-
-    @Test
-    fun `GIVEN the edge-to-edge wallpaper and no active search WHEN the home fragment resumes THEN the gradient is hidden`() =
-        runTest(testDispatcher) {
-            val manager =
-                buildStatusBarColorManager(
-                    isTabStripEnabled = true,
-                    appStore = buildAppStore(Wallpaper.EdgeToEdge, isSearchActive = false),
-                )
-            manager.onFragmentResumed(fragmentManager, homeFragment)
-            testScheduler.advanceUntilIdle()
-
-            verify { tabStripStatusBarView.hide() }
-        }
-
-    @Test
-    fun `GIVEN universal edge-to-edge wallpapers and a non-default wallpaper WHEN the home fragment resumes THEN the gradient is hidden`() =
-        runTest(testDispatcher) {
-            every { settings.enableUniversalEdgeToEdgeWallpapers } returns true
             val manager =
                 buildStatusBarColorManager(
                     isTabStripEnabled = true,
@@ -136,9 +77,8 @@ class StatusBarColorManagerTest {
         }
 
     @Test
-    fun `GIVEN universal edge-to-edge wallpapers, a non-default wallpaper and an active search WHEN the home fragment resumes THEN the gradient is shown`() =
+    fun `GIVEN a non-default wallpaper and an active search WHEN the home fragment resumes THEN the gradient is shown`() =
         runTest(testDispatcher) {
-            every { settings.enableUniversalEdgeToEdgeWallpapers } returns true
             val manager =
                 buildStatusBarColorManager(
                     isTabStripEnabled = true,
@@ -151,9 +91,8 @@ class StatusBarColorManagerTest {
         }
 
     @Test
-    fun `GIVEN universal edge-to-edge wallpapers and the default wallpaper WHEN the home fragment resumes THEN the gradient is hidden`() =
+    fun `GIVEN the default wallpaper WHEN the home fragment resumes THEN the gradient is hidden`() =
         runTest(testDispatcher) {
-            every { settings.enableUniversalEdgeToEdgeWallpapers } returns true
             val manager =
                 buildStatusBarColorManager(
                     isTabStripEnabled = true,
@@ -167,9 +106,8 @@ class StatusBarColorManagerTest {
         }
 
     @Test
-    fun `GIVEN universal edge-to-edge wallpapers and the edge-to-edge wallpaper WHEN the home fragment resumes THEN the gradient is hidden`() =
+    fun `GIVEN the edge-to-edge wallpaper WHEN the home fragment resumes THEN the gradient is hidden`() =
         runTest(testDispatcher) {
-            every { settings.enableUniversalEdgeToEdgeWallpapers } returns true
             val manager =
                 buildStatusBarColorManager(
                     isTabStripEnabled = true,

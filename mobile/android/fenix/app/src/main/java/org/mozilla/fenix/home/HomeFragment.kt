@@ -489,7 +489,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         homeNavigationBar =
             HomeNavigationBar(
                 toolbarStore = toolbarStore,
-                appStore = activity.components.appStore,
                 browsingModeManager = activity.browsingModeManager,
                 settings = activity.components.settings,
                 hideWhenKeyboardShown = true,
@@ -719,30 +718,18 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
                 val isPrivateMode = appState.value.mode.isPrivate
                 val currentWallpaper = appState.value.wallpaperState.currentWallpaper
-                val universalEdgeToEdge = settings.enableUniversalEdgeToEdgeWallpapers
                 val showToolbarScrim = shouldShowToolbarScrim(appState.value)
                 var topBarHeight by remember { mutableIntStateOf(0) }
                 var bottomBarHeight by remember { mutableIntStateOf(0) }
                 val fadeContentEdges = isOverUniversalEdgeToEdgeWallpaper(appState.value)
 
-                LaunchedEffect(currentWallpaper.name, isPrivateMode, universalEdgeToEdge) {
-                    if (universalEdgeToEdge) {
-                        applyWallpaperSystemBarsTheme(activity as HomeActivity, settings, isPrivateMode)
-                    }
+                LaunchedEffect(currentWallpaper.name, isPrivateMode) {
+                    applyWallpaperSystemBarsTheme(activity as HomeActivity, settings, isPrivateMode)
                 }
 
                 CompositionLocalProvider(LocalWallpaperState provides appState.value.wallpaperState) {
-                    Box(
-                        modifier =
-                            Modifier.fillMaxSize().thenConditional(
-                                // Without the universal treatment the wallpaper is inset by the system
-                                // bars; with it, the wallpaper stays edge-to-edge and only the Scaffold
-                                // content is inset (below).
-                                Modifier.systemBarsPadding().displayCutoutPadding()
-                            ) {
-                                !universalEdgeToEdge
-                            }
-                    ) {
+                    // The wallpaper stays edge-to-edge and only the Scaffold content is inset (below).
+                    Box(modifier = Modifier.fillMaxSize()) {
                         if (!isPrivateMode) {
                             WallpaperBackground(currentWallpaper)
                         }
@@ -755,12 +742,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                         }
 
                         Scaffold(
-                            modifier =
-                                Modifier.fillMaxSize()
-                                    .thenConditional(Modifier.systemBarsPadding().displayCutoutPadding()) {
-                                        universalEdgeToEdge
-                                    }
-                                    .imePadding(),
+                            modifier = Modifier.fillMaxSize().systemBarsPadding().displayCutoutPadding().imePadding(),
                             topBar = {
                                 HomeTopBar(
                                     settings = settings,
@@ -1085,9 +1067,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
     /** Whether the homepage is drawn over a universal edge-to-edge wallpaper, outside private mode and search. */
     private fun isOverUniversalEdgeToEdgeWallpaper(appState: AppState): Boolean =
-        requireComponents.settings.enableUniversalEdgeToEdgeWallpapers &&
-            !appState.mode.isPrivate &&
-            !appState.searchState.isSearchActive
+        !appState.mode.isPrivate && !appState.searchState.isSearchActive
 
     /** Whether the gradient scrims are drawn behind the homepage toolbars over a universal edge-to-edge wallpaper. */
     private fun shouldShowToolbarScrim(appState: AppState): Boolean =

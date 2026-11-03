@@ -22,17 +22,15 @@ import org.mozilla.fenix.browser.BrowserFragment
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.customtabs.ExternalAppBrowserFragment
 import org.mozilla.fenix.home.HomeFragment
-import org.mozilla.fenix.home.HomepageEdgeToEdgeFeature
 import org.mozilla.fenix.tabstray.ui.TabManagementFragment
 import org.mozilla.fenix.utils.Settings
-import org.mozilla.fenix.wallpapers.Wallpaper
 
 /**
  * Uses the [ThemeManager] to set the status bar color based on the current fragment.
  *
  * @param themeManager The [ThemeManager] to use for setting the status bar color.
  * @param activity The [Activity] to set the status bar color on.
- * @param appStore The [AppStore] used to observe the wallpaper state.
+ * @param appStore The [AppStore] used to observe the search state.
  * @param settings The [Settings] used to read whether the tab strip is enabled.
  * @param tabStripStatusBarView View class that sets the status bar background with the tab strip gradient when the tab
  *   strip is visible.
@@ -81,7 +79,7 @@ class StatusBarColorManager(
                 tabStripStatusBarView.show()
             }
 
-            // Observe the wallpaper and search state and show the tab strip gradient accordingly.
+            // Observe the search state and show the tab strip gradient accordingly.
             fragment is HomeFragment -> {
                 observeHomepageGradient()
             }
@@ -93,12 +91,10 @@ class StatusBarColorManager(
     }
 
     /**
-     * Observe the wallpaper and search state while on the homepage and show the tab strip gradient accordingly.
+     * Observe the search state while on the homepage and show the tab strip gradient accordingly.
      *
-     * For edge-to-edge wallpaper, show the tab strip gradient only when a search is active. Otherwise,
-     * [HomepageEdgeToEdgeFeature] allows the wallpaper to show through the status bar. With universal edge-to-edge
-     * wallpapers, show it only when a search is active, as the tab strip has no background of its own and the wallpaper
-     * shows through the status bar otherwise.
+     * Show it only when a search is active, as the tab strip has no background of its own and the wallpaper shows
+     * through the status bar otherwise.
      */
     private fun observeHomepageGradient() {
         wallpaperScope =
@@ -107,15 +103,7 @@ class StatusBarColorManager(
                 dispatcher = mainDispatcher,
             ) { flow ->
                 flow
-                    .map { state ->
-                        val wallpaper = state.wallpaperState.currentWallpaper
-                        if (settings.enableUniversalEdgeToEdgeWallpapers) {
-                            state.searchState.isSearchActive
-                        } else {
-                            wallpaper != Wallpaper.EdgeToEdge ||
-                                (state.searchState.isSearchActive && state.searchState.sourceTabId != null)
-                        }
-                    }
+                    .map { state -> state.searchState.isSearchActive }
                     .distinctUntilChanged()
                     .collect { shouldShowGradient ->
                         if (shouldShowGradient) {

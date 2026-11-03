@@ -37,7 +37,6 @@ import mozilla.components.compose.browser.toolbar.store.DisplayState
 import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.components.AppStore
-import org.mozilla.fenix.components.components
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.wallpapers.WallpaperTheme
 
@@ -60,11 +59,11 @@ fun BrowserSimpleToolbar(
     val onInteraction: (BrowserToolbarEvent) -> Unit = { store.dispatch(it) }
 
     val isPrivateMode = appStore.observeAsComposableState { it.mode.isPrivate }.value
-    // Tint the browser action icons with the wallpaper text color only under the universal
-    // treatment. WallpaperTheme.onWallpaper falls back to onSurface for the default wallpaper, in
-    // previews, and anywhere LocalWallpaperState is not provided (e.g. tab previews).
+    // Tint the browser action icons with the wallpaper text color. WallpaperTheme.onWallpaper falls
+    // back to onSurface for the default wallpaper, in previews, and anywhere LocalWallpaperState is
+    // not provided (e.g. tab previews).
     val browserActionsColor =
-        if (!inComposePreview && components.settings.enableUniversalEdgeToEdgeWallpapers && !isPrivateMode) {
+        if (!inComposePreview && !isPrivateMode) {
             WallpaperTheme.onWallpaper
         } else {
             MaterialTheme.colorScheme.onSurface

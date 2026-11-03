@@ -112,13 +112,10 @@ internal class HomeToolbarComposable(
                 .value
         val currentQuery = toolbarStore.observeAsComposableState { it.editState.query.current }.value
         val isPrivateMode = browsingModeManager.mode.isPrivate
-        val isUniversalEdgeToEdge = settings.enableUniversalEdgeToEdgeWallpapers
-        val hasWallpaperBackground =
-            hasWallpaperBackground(appStore = appStore, settings = settings, isPrivateMode = isPrivateMode)
         // Tint the browser action icons outside the address bar (tab counter, menu) with the
         // wallpaper's text color. The page actions inside the address bar (e.g. voice search) keep
-        // the default color so they stay legible on the address bar background. Universal only.
-        val wallpaperTextColor = WallpaperTheme.onWallpaper.takeIf { isUniversalEdgeToEdge && hasWallpaperBackground }
+        // the default color so they stay legible on the address bar background.
+        val wallpaperTextColor = WallpaperTheme.onWallpaper.takeIf { !isPrivateMode }
 
         BackInvokedHandler(isSearching) {
             val sourceTabId = appStore.state.searchState.sourceTabId
@@ -135,12 +132,11 @@ internal class HomeToolbarComposable(
                     homepageToolbarColors(
                         isPrivateMode = isPrivateMode,
                         shouldUseEdgeToEdgeColors =
-                            hasWallpaperBackground &&
-                                if (settings.enableHomepageTrendingRecentSearch) {
-                                    !isSearching
-                                } else {
-                                    !isSearching || (currentQuery.isEmpty() && !queryWasPrefilled)
-                                },
+                            if (settings.enableHomepageTrendingRecentSearch) {
+                                !isSearching
+                            } else {
+                                !isSearching || (currentQuery.isEmpty() && !queryWasPrefilled)
+                            },
                     )
             ) {
                 ToolbarContent(wallpaperTextColor = wallpaperTextColor)

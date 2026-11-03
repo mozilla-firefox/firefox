@@ -704,17 +704,6 @@ features:
         value:
           enabled: true
 
-  universal-edge-to-edge-wallpapers:
-    description: >
-      Extends non-default homepage wallpapers edge-to-edge and adapts the toolbar, navigation bar
-      and system bars to them.
-    variables:
-      enabled:
-        description: >
-          Whether or not to enable the universal edge-to-edge wallpaper treatment.
-        type: Boolean
-        default: true
-
   homepage-hide-frecent-top-sites:
     description: Hides frecent top sites on the homepage.
     variables:

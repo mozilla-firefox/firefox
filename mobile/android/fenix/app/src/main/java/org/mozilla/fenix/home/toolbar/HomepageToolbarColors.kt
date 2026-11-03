@@ -10,11 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
-import mozilla.components.lib.state.ext.observeAsComposableState
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.AppStore
-import org.mozilla.fenix.utils.Settings
-import org.mozilla.fenix.wallpapers.Wallpaper
 
 /**
  * Returns the wallpaper and browsing mode derived colors for home content.
@@ -49,32 +45,6 @@ internal fun ColorScheme.withEdgeToEdgeToolbarColors(): ColorScheme =
         surface = colorResource(R.color.homepage_tab_edge_to_edge_toolbar_background),
         outlineVariant = colorResource(R.color.homepage_tab_edge_to_edge_toolbar_outline),
     )
-
-/**
- * Whether the homepage toolbars are drawn on top of a wallpaper and therefore need a transparent background.
- *
- * With the universal edge-to-edge treatment on, the wallpaper is drawn edge-to-edge behind the toolbars for any
- * non-default wallpaper. When off, only the dedicated edge-to-edge wallpaper is treated this way (gated by its own
- * feature flag).
- *
- * @param appStore [AppStore] used to observe the currently applied wallpaper.
- * @param settings [Settings] used to query the edge-to-edge feature flags.
- * @param isPrivateMode Whether private browsing is enabled.
- */
-@Composable
-internal fun hasWallpaperBackground(
-    appStore: AppStore,
-    settings: Settings,
-    isPrivateMode: Boolean,
-): Boolean {
-    val currentWallpaperName = appStore.observeAsComposableState { it.wallpaperState.currentWallpaper.name }.value
-
-    return when {
-        isPrivateMode -> false
-        settings.enableUniversalEdgeToEdgeWallpapers -> true
-        else -> settings.enableHomepageEdgeToEdgeBackgroundFeature && currentWallpaperName == Wallpaper.EDGE_TO_EDGE
-    }
-}
 
 /**
  * Returns the background color for the clipboard suggestion bar.

@@ -101,8 +101,6 @@
     <string name="preferences_sync_debug_pairing_start_title">Begin pairing</string>
     <!-- Label for enabling Homepage as a New Tab -->
     <string name="preferences_debug_settings_homepage_as_new_tab" translatable="false">Enable Homepage as a New Tab</string>
-    <!-- Label for enabling the universal edge-to-edge wallpapers treatment on the homepage -->
-    <string name="preferences_debug_settings_universal_edge_to_edge_wallpapers" translatable="false">Enable universal edge-to-edge wallpapers</string>
     <!-- Label for hiding the Collections UI -->
     <string name="preferences_debug_settings_hide_collections_ui" translatable="false">Hide Collections UI</string>
     <!-- Label for migrating Collections to Tab Groups -->
