@@ -155,7 +155,7 @@
   "text/color/deemphasized": {
     "light": "color-mix(in srgb, currentColor 69%, transparent)",
     "dark": "color-mix(in srgb, currentColor 69%, transparent)",
-    "forcedColors": "inherit"
+    "forcedColors": "currentColor"
   },
   "text/color/disabled": {
     "light": "color-mix(in srgb, currentColor 40%, transparent)",

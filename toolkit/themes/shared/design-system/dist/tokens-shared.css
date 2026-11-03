@@ -634,7 +634,7 @@
 
       /** text-color **/
       --text-color: CanvasText;
-      --text-color-deemphasized: inherit;
+      --text-color-deemphasized: currentColor;
       --text-color-error: inherit;
       --text-color-list-item-hover: SelectedItemText;
 

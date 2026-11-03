@@ -2358,7 +2358,7 @@ export const tokensTable = {
     {
       value: {
         default: "color-mix(in srgb, currentColor 69%, transparent)",
-        prefersContrast: "inherit",
+        prefersContrast: "currentColor",
       },
       name: "--text-color-deemphasized",
     },
@@ -4092,7 +4092,7 @@ export const variableLookupTable = {
   },
   "text-color-deemphasized": {
     default: "color-mix(in srgb, currentColor 69%, transparent)",
-    prefersContrast: "inherit",
+    prefersContrast: "currentColor",
   },
   "text-color-disabled": {
     default: "color-mix(in srgb, currentColor 40%, transparent)",

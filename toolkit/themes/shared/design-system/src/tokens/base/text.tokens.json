@@ -25,7 +25,7 @@
       "ignoreFigma": "color-mix with currentColor cannot be expressed in Figma",
       "value": {
         "default": "color-mix(in srgb, currentColor 69%, transparent)",
-        "prefersContrast": "inherit"
+        "prefersContrast": "currentColor"
       }
     },
     "disabled": {
