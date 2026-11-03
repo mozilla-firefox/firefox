@@ -33,7 +33,7 @@ def test_lint_api_yml(lint):
         "functions": r"\b{}\b",
         "macros": r"\b{}\b",
         "types": r"\b{}\b",
-        "literal": r'\boperator""{}\b',
+        "literals": r'\boperator""{}\b',
     }
 
     # Ensure all listed file exist and contain the described symbols
@@ -47,10 +47,12 @@ def test_lint_api_yml(lint):
         with open(header_path) as fd:
             header_content = fd.read()
 
+        unknown = set(categories) - category_re.keys()
+        assert not unknown, f"{header} has unknown categories in {api_yaml}: {unknown}"
+
         # NOTE: This detects removal of symbols in mfbt/* not reflected in
         # api.yml, but not addition of symbols.
-        for category in ("variables", "functions", "macros", "types", "literal"):
-            symbols = categories.get(category, [])
+        for category, symbols in categories.items():
             check_symbols_unicity(symbols)
             for symbol in symbols:
                 symbol_found = re.search(
