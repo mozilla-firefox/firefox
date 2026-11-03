@@ -39,6 +39,7 @@
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/EventCallbackDebuggerNotification.h"
 #include "mozilla/dom/EventTargetBinding.h"
+#include "mozilla/dom/NodeOwnedObjectList.h"
 #include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/PopupBlocker.h"
 #include "mozilla/dom/RequestBinding.h"
@@ -46,6 +47,7 @@
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/TouchEvent.h"
 #include "mozilla/dom/UserActivation.h"
+#include "nsCCUncollectableMarker.h"
 #include "nsCOMPtr.h"
 #include "nsContentUtils.h"
 #include "nsDOMCID.h"
@@ -147,7 +149,7 @@ EventListenerManager::~EventListenerManager() {
   //             from right here, if not previously called?
   NS_ASSERTION(!mTarget, "didn't call Disconnect");
   if (mIsMainThreadELM) {
-    nsContentUtils::RemoveNodeListenerManager(this);
+    NodeOwnedObjectList<EventListenerManager>::Remove(this);
   }
   RemoveAllListenersSilently();
 }
@@ -2155,6 +2157,11 @@ uint32_t EventListenerManager::ListenerCount() const {
     count += entry.mListeners->Length();
   }
   return count;
+}
+
+bool EventListenerManager::HasOwnerInCCGenerationDocument() const {
+  const nsINode* node = nsINode::FromEventTargetOrNull(mTarget);
+  return node && nsCCUncollectableMarker::IsInCCGenerationDocument(*node);
 }
 
 void EventListenerManager::MarkForCC() {

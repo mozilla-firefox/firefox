@@ -1925,19 +1925,6 @@ class nsContentUtils {
                                         mozilla::EventClassID aEventClassID,
                                         EventMessage* aEventMessage);
 
-  /**
-   * Adds aManager to the list of the managers nodes own, which is used for
-   * unmarking gray JS listeners during cycle collection.
-   */
-  static void AddNodeListenerManager(mozilla::EventListenerManager* aManager);
-
-  /**
-   * Removes aManager from that list, if it's in it.  Only for
-   * ~EventListenerManager.
-   */
-  static void RemoveNodeListenerManager(
-      mozilla::EventListenerManager* aManager);
-
   static void AddEntryToDOMArenaTable(nsINode* aNode,
                                       mozilla::dom::DOMArena* aDOMArena);
 
@@ -1946,8 +1933,6 @@ class nsContentUtils {
 
   static already_AddRefed<mozilla::dom::DOMArena> TakeEntryFromDOMArenaTable(
       const nsINode* aNode);
-
-  static void UnmarkGrayJSListenersInCCGenerationDocuments();
 
   static bool IsInitialized() { return sInitialized; }
 

@@ -8,6 +8,8 @@
 #include "js/TracingAPI.h"
 #include "nsIObserver.h"
 
+class nsINode;
+
 class nsCCUncollectableMarker final : public nsIObserver {
   NS_DECL_ISUPPORTS
   NS_DECL_NSIOBSERVER
@@ -28,6 +30,11 @@ class nsCCUncollectableMarker final : public nsIObserver {
   static bool InGeneration(CCCallback& aCb, uint32_t aGeneration) {
     return InGeneration(aGeneration) && !aCb.WantAllTraces();
   }
+
+  /**
+   * Checks if aNode is in a document marked for the current generation
+   */
+  static bool IsInCCGenerationDocument(const nsINode& aNode);
 
   static void CleanupForForgetSkippable();
 

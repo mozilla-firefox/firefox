@@ -174,8 +174,8 @@ class EventListenerManagerBase {
 
 class EventListenerManager final
     : public EventListenerManagerBase,
-      // The managers owned by nodes are kept in a list, see
-      // nsContentUtils::AddNodeListenerManager.
+      // The managers owned by nodes, except documents, are kept in
+      // NodeOwnedObjectList<EventListenerManager>.
       public DoublyLinkedListElement<EventListenerManager> {
   ~EventListenerManager();
 
@@ -561,6 +561,7 @@ class EventListenerManager final
 
   uint32_t ListenerCount() const;
 
+  bool HasOwnerInCCGenerationDocument() const;
   void MarkForCC();
 
   void TraceListeners(JSTracer* aTrc);

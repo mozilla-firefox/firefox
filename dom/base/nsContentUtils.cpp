@@ -203,6 +203,7 @@
 #include "mozilla/dom/NameSpaceConstants.h"
 #include "mozilla/dom/NodeBinding.h"
 #include "mozilla/dom/NodeInfo.h"
+#include "mozilla/dom/NodeOwnedObjectList.h"
 #include "mozilla/dom/PBrowser.h"
 #include "mozilla/dom/PContentChild.h"
 #include "mozilla/dom/PrototypeList.h"
@@ -679,11 +680,6 @@ static constexpr nsAttrValue::EnumTableEntry
 };
 
 namespace {
-
-// Non-owning list of the managers nodes store themselves; the managers remove
-// themselves from it when deleted.  Documents keep their manager in
-// Document::mListenerManager and are not in this list.
-constinit DoublyLinkedList<EventListenerManager> sNodeEventListenerManagers;
 
 // A global hashtable to for keeping the arena alive for cross docGroup node
 // adoption.
@@ -2416,7 +2412,7 @@ void nsContentUtils::Shutdown() {
 
   // Managers left in the list remove themselves from it when they're deleted,
   // which can happen after this point.
-  NS_ASSERTION(sNodeEventListenerManagers.isEmpty(),
+  NS_ASSERTION(NodeOwnedObjectList<EventListenerManager>::IsEmpty(),
                "Node event listener manager list not empty at shutdown!");
 
   MOZ_ASSERT_IF(sDOMArenaHashtable, sDOMArenaHashtable->Count() == 0);
@@ -6677,32 +6673,6 @@ void nsContentUtils::NotifyDevToolsOfNodeRemoval(nsINode& aRemovingNode) {
     const RefPtr<Document> doc = aRemovingNode.OwnerDoc();
     DispatchChromeEvent(doc, &aRemovingNode, u"devtoolschildremoved"_ns,
                         CanBubble::eNo, Cancelable::eNo);
-  }
-}
-
-void nsContentUtils::UnmarkGrayJSListenersInCCGenerationDocuments() {
-  for (EventListenerManager& mgr : sNodeEventListenerManagers) {
-    nsINode* n = static_cast<nsINode*>(mgr.GetTarget());
-    if (n && n->IsInComposedDoc() &&
-        nsCCUncollectableMarker::InGeneration(
-            n->OwnerDoc()->GetMarkedCCGeneration())) {
-      mgr.MarkForCC();
-    }
-  }
-}
-
-/* static */
-void nsContentUtils::AddNodeListenerManager(EventListenerManager* aManager) {
-  MOZ_ASSERT(NS_IsMainThread());
-  sNodeEventListenerManagers.pushBack(aManager);
-}
-
-/* static */
-void nsContentUtils::RemoveNodeListenerManager(EventListenerManager* aManager) {
-  MOZ_ASSERT(NS_IsMainThread());
-  // ~EventListenerManager passes here managers which are not in the list.
-  if (sNodeEventListenerManagers.ElementProbablyInList(aManager)) {
-    sNodeEventListenerManagers.remove(aManager);
   }
 }
 

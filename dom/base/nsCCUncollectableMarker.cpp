@@ -17,6 +17,7 @@
 #include "mozilla/dom/CustomElementRegistry.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/NodeOwnedObjectList.h"
 #include "mozilla/dom/ParentProcessMessageManager.h"
 #include "mozilla/dom/SessionHistoryEntry.h"
 #include "mozilla/dom/TimeoutManager.h"
@@ -56,6 +57,12 @@ uint32_t nsCCUncollectableMarker::sGeneration = 1;
 #include "nsXULPrototypeCache.h"
 
 NS_IMPL_ISUPPORTS(nsCCUncollectableMarker, nsIObserver)
+
+/* static */
+bool nsCCUncollectableMarker::IsInCCGenerationDocument(const nsINode& aNode) {
+  return aNode.IsInComposedDoc() &&
+         InGeneration(aNode.OwnerDoc()->GetMarkedCCGeneration());
+}
 
 /* static */
 nsresult nsCCUncollectableMarker::Init() {
@@ -376,7 +383,8 @@ nsresult nsCCUncollectableMarker::Cleanup(bool aPrepareForCC) {
 
   switch (sFSState) {
     case eUnmarkJSEventListeners: {
-      nsContentUtils::UnmarkGrayJSListenersInCCGenerationDocuments();
+      NodeOwnedObjectList<
+          EventListenerManager>::UnmarkGrayInCCGenerationDocuments();
       break;
     }
     case eUnmarkMessageManagers: {
