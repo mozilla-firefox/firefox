@@ -336,7 +336,7 @@ export class SidebarState {
     this.panelOpen = !!props.panelOpen;
     if (this.command && this.panelOpen) {
       // show() is async, so make sure we return its promise here
-      return this.#controller.showInitially(this.command);
+      return this.#controller.showInitially(this.command, "restored");
     }
     return this.#controller.hide();
   }

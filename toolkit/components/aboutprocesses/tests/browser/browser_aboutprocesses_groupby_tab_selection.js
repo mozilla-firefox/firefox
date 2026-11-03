@@ -231,6 +231,8 @@ add_task(async function testBulkActionsReflectLoadedAndDiscardedSelection() {
   Assert.ok(unloadButton.hidden, "Discarded-only selection hides Unload");
   clickCheckbox(doc, "Bulk reload loaded");
 
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
   let loadedTabReloaded = BrowserTestUtils.browserLoaded(tabTwo.linkedBrowser);
   reloadButton.click();
   await BrowserTestUtils.waitForMutationCondition(
@@ -244,9 +246,18 @@ add_task(async function testBulkActionsReflectLoadedAndDiscardedSelection() {
     tabAboutProcesses.selected,
     "Bulk Reload leaves the monitor selected"
   );
+  await Services.fog.testFlushAllChildren();
+
+  assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_type: "reload", action_source: "bulk_bar", tab_count: "2" },
+    "Bulk Reload records one action event"
+  );
+
   BrowserTestUtils.removeTab(tabAboutProcesses);
   BrowserTestUtils.removeTab(tabOne);
   BrowserTestUtils.removeTab(tabTwo);
+  Services.fog.testResetFOG();
 });
 
 add_task(async function testBulkActionBarCancelAndEscapeClearSelection() {
@@ -361,6 +372,8 @@ add_task(async function testBulkActionBarCloseButton() {
   let { tabAboutProcesses, doc } = await openTabView();
   clickCheckbox(doc, "Bulk close 1");
   clickCheckbox(doc, "Bulk close 2");
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
 
   let closed = Promise.all([
     BrowserTestUtils.waitForTabClosing(tabOne),
@@ -370,6 +383,12 @@ add_task(async function testBulkActionBarCloseButton() {
   pauseTabViewPolling(doc);
   buttonsRow.querySelector("#bulk-close-button").click();
   await closed;
+  await Services.fog.testFlushAllChildren();
+  assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_type: "close", action_source: "bulk_bar", tab_count: "2" },
+    "Bulk Close records one action event for both selected tabs"
+  );
   Assert.ok(
     !doc.body.classList.contains("bulk-action-visible"),
     "Close clears the selection eagerly, hiding the bar immediately"

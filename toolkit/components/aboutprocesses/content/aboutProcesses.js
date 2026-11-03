@@ -1284,6 +1284,17 @@ function formatMemory(value) {
   };
 }
 
+// Rounded to the units telemetry reports: MB and hundredths of a percent.
+function summarizeTabCounters(tabCounters) {
+  let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(tabCounters);
+  return {
+    totalTabCount: tabCounters.length,
+    totalRamMb: Math.round(totalRamSize / ONE_MEGA),
+    totalCpuHundredths:
+      slopeCpuOfTotal == null ? null : Math.round(slopeCpuOfTotal * 10000),
+  };
+}
+
 // Shared by both view/controller pairs (see the bottom of this file) so
 // gLocalizedUnits/gLocalizedProcessProperties get populated regardless of
 // which one is entered first.
@@ -2069,6 +2080,10 @@ class ProcessesTabController {
   _sortAscendent = false;
   _lastTabCounters = null;
   _lastMouseEvent = 0;
+  _panelOpenedRecorded = false;
+  // From the openType URL param SidebarController appends; absent means the
+  // page was reached without the sidebar.
+  _openType = "direct_nav";
 
   constructor(view) {
     this._view = view;
@@ -2076,6 +2091,11 @@ class ProcessesTabController {
   }
 
   init() {
+    let openType = new URLSearchParams(location.search).get("openType");
+    if (["sidebar_launch", "restored", "other"].includes(openType)) {
+      this._openType = openType;
+    }
+
     // Prefetch localizations: this view's entry point doesn't go through
     // ProcessesController.init(), so gLocalizedUnits isn't populated yet.
     this._promiseLocalizations = promiseLocalizations();
@@ -2212,6 +2232,7 @@ class ProcessesTabController {
     }
     let row = target.closest("tr.tab-row");
     if (row.tabData.discarded) {
+      this._recordTabAction([row.tabData], "reload", "tab_row");
       row.tabData.tabbrowser.reloadTab(row.tabData.tab);
     } else {
       this._unloadRow(row);
@@ -2219,6 +2240,7 @@ class ProcessesTabController {
   }
 
   _navigateToTab(row) {
+    this._recordTabAction([row.tabData], "navigate", "tab_row");
     let { tab, tabbrowser } = row.tabData;
     tabbrowser.selectedTab = tab;
     tabbrowser.documentGlobal.focus();
@@ -2323,6 +2345,9 @@ class ProcessesTabController {
     if (!reload) {
       eligible = eligible.filter(tabData => !tabData.discarded);
     }
+    if (eligible.length) {
+      this._recordTabAction(eligible, reload ? "reload" : "unload", "bulk_bar");
+    }
     this._clearSelection();
     await this._unloadOrReloadTabs(eligible, reload);
     await this.update(true);
@@ -2340,6 +2365,7 @@ class ProcessesTabController {
     ) {
       return;
     }
+    this._recordTabAction(selectedTabData, "close", "bulk_bar");
     for (let [tabbrowser, tabs] of this._groupTabsByTabbrowser(
       selectedTabData
     )) {
@@ -2355,6 +2381,7 @@ class ProcessesTabController {
   // next poll confirms the discard. Not removeTab(): the tab stays open,
   // just asleep, and reload-on-reselect brings it back.
   async _unloadRow(row) {
+    this._recordTabAction([row.tabData], "unload", "tab_row");
     row.classList.add("killing");
     row.setAttribute("aria-busy", "true");
     let { tab, tabbrowser } = row.tabData;
@@ -2365,6 +2392,21 @@ class ProcessesTabController {
       row.classList.remove("killing");
       row.removeAttribute("aria-busy");
     }
+  }
+
+  _recordTabAction(tabDataList, actionType, actionSource) {
+    let affected = summarizeTabCounters(tabDataList);
+    let all = summarizeTabCounters(this._lastTabCounters);
+    Glean.resourceMonitor.tabActionTaken.record({
+      tab_count: affected.totalTabCount,
+      action_type: actionType,
+      tab_ram_mb: affected.totalRamMb,
+      tab_cpu_hundredths: affected.totalCpuHundredths,
+      total_tab_count: all.totalTabCount,
+      total_ram_mb: all.totalRamMb,
+      total_cpu_hundredths: all.totalCpuHundredths,
+      action_source: actionSource,
+    });
   }
 
   // Re-sorts/re-renders from the last sample rather than update(): resampling
@@ -2436,6 +2478,21 @@ class ProcessesTabController {
     this._lastTabCounters = tabCounters;
     this._sortTabCounters(tabCounters);
     this._commitView(tabCounters, { force: forceReorder });
+
+    // Once CPU is known, which takes a second sample.
+    if (
+      !this._panelOpenedRecorded &&
+      sumTabCounters(tabCounters).slopeCpuOfTotal != null
+    ) {
+      this._panelOpenedRecorded = true;
+      let all = summarizeTabCounters(tabCounters);
+      Glean.resourceMonitor.panelOpened.record({
+        total_tab_count: all.totalTabCount,
+        total_ram_mb: all.totalRamMb,
+        total_cpu_hundredths: all.totalCpuHundredths,
+        open_type: this._openType,
+      });
+    }
   }
 }
 

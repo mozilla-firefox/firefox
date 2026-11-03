@@ -1,0 +1,111 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Adding a new metric? We have docs for that!
+# https://firefox-source-docs.mozilla.org/toolkit/components/glean/user/new_definitions_file.html
+
+---
+$schema: moz://mozilla.org/schemas/glean/metrics/2-0-0
+$tags:
+  - 'Toolkit :: Performance Monitoring'
+
+resource_monitor:
+  tab_action_taken:
+    type: event
+    description: >
+      A user took an action on one or more tabs from the Resource Monitor
+      tab view (about:processes?groupby=tab).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073286
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073286#c4
+    data_sensitivity:
+      - interaction
+    expires: 173
+    notification_emails:
+      - tthorne@mozilla.com
+    send_in_pings:
+      - events
+    extra_keys:
+      tab_count:
+        type: quantity
+        description: Number of tabs the user chose for this action.
+      action_type:
+        type: string
+        description: >
+          Which action the user chose.
+            "unload": The user chose to unload the tab(s).
+            "navigate": The user chose to switch to the tab from this view.
+            "close": The user chose to close the tab(s).
+            "reload": The user chose to reload the tab(s).
+      tab_ram_mb:
+        type: quantity
+        description: RAM (in MB) attributed to the tab(s) chosen for this action.
+      tab_cpu_hundredths:
+        type: quantity
+        description: >
+          CPU usage (in hundredths of a percent of total capacity)
+          attributed to the tab(s) chosen for this action. Omitted until CPU
+          has been measured, so a missing value is not zero.
+      total_tab_count:
+        type: quantity
+        description: >
+          Total number of tabs at action time.
+      total_ram_mb:
+        type: quantity
+        description: >
+          Total RAM (in MB) across all tabs at action time.
+      total_cpu_hundredths:
+        type: quantity
+        description: >
+          Total CPU usage (in hundredths of a percent of total capacity)
+          across all tabs at action time. Omitted until CPU has been
+          measured, so a missing value is not zero.
+      action_source:
+        type: string
+        description: >
+          Which UI surface the action originated from.
+            "tab_row": The action originated from a single tab's own row.
+            "bulk_bar": The action originated from the bulk-action bar
+              acting on the current multi-select.
+
+  panel_opened:
+    type: event
+    description: >
+      The Resource Monitor tab view was opened. Recorded once it has CPU
+      data to show.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073286
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073286#c4
+    data_sensitivity:
+      - interaction
+    expires: 173
+    notification_emails:
+      - tthorne@mozilla.com
+    send_in_pings:
+      - events
+    extra_keys:
+      total_tab_count:
+        type: quantity
+        description: Total number of tabs shown in the view.
+      total_ram_mb:
+        type: quantity
+        description: Total RAM (in MB) across all tabs shown in the view.
+      total_cpu_hundredths:
+        type: quantity
+        description: >
+          Total CPU usage (in hundredths of a percent of total capacity)
+          across all tabs shown in the view.
+      open_type:
+        type: string
+        description: >
+          Why this view was shown.
+            "sidebar_launch": Opened by the user through the sidebar, e.g.
+              its Resource Monitor icon or the View > Sidebar menu.
+            "restored": Shown automatically, carried over from another
+              window's sidebar or a previous session.
+            "direct_nav": Reached without going through the sidebar
+              (typed, bookmarked, or linked).
+            "other": Any firing that matches none of the above.

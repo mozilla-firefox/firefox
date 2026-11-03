@@ -124,6 +124,31 @@ add_task(async function testCpuIsMeasuringBeforeSecondSample() {
   win.fillTabCpuCell(cell, null);
   Assert.equal(cell.textContent, "…", "Unknown CPU shows as measuring");
 
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
+  let lastTabCounters = win.TabControl._lastTabCounters;
+  try {
+    win.TabControl._lastTabCounters = tabCounters;
+    win.TabControl._recordTabAction(tabCounters, "unload", "bulk_bar");
+  } finally {
+    win.TabControl._lastTabCounters = lastTabCounters;
+  }
+  await Services.fog.testFlushAllChildren();
+  let event = assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_type: "unload", action_source: "bulk_bar" },
+    "An action with unknown CPU still records the user's choice"
+  );
+  Assert.ok(
+    !("tab_cpu_hundredths" in event.extra),
+    "Unknown tab CPU is omitted"
+  );
+  Assert.ok(
+    !("total_cpu_hundredths" in event.extra),
+    "Unknown total CPU is omitted"
+  );
+  Services.fog.testResetFOG();
+
   BrowserTestUtils.removeTab(tabAboutProcesses);
 });
 
@@ -254,10 +279,18 @@ add_task(async function testNameLinkClickNavigatesToTab() {
     "about:processes tab is the one selected right now"
   );
 
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
   info("Clicking the name link");
   clickRow(row.querySelector(".name-link"));
 
   Assert.ok(tabOne.selected, "Clicking the name link switched to the tab");
+  await Services.fog.testFlushAllChildren();
+  assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_type: "navigate", action_source: "tab_row" },
+    "Navigating records one action event"
+  );
 
   BrowserTestUtils.removeTab(tabAboutProcesses);
   BrowserTestUtils.removeTab(tabOne);
@@ -327,6 +360,8 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     "The same button relabels itself to reload once the tab is discarded"
   );
   Assert.ok(!tabTwo.selected, "The discarded tab isn't selected yet");
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
   EventUtils.synthesizeKey("KEY_Enter", {}, doc.defaultView);
   await BrowserTestUtils.waitForMutationCondition(
     tabTwo,
@@ -338,6 +373,13 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     tabAboutProcesses.selected && !tabTwo.selected,
     "Reloading a background tab doesn't navigate away from the monitor"
   );
+  await Services.fog.testFlushAllChildren();
+  assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_type: "reload", action_source: "tab_row" },
+    "Inline Reload records one action event"
+  );
+  Services.fog.testResetFOG();
 
   info("Clicking the row's unload button");
   unloadButtonOne.click();
@@ -346,6 +388,17 @@ add_task(async function testUnloadButtonAndKeyboardActivation() {
     "Waiting for the clicked tab to be discarded"
   );
   Assert.ok(rowOne.isConnected, "Unloading a tab keeps its row in the list");
+  await Services.fog.testFlushAllChildren();
+  let unloadEvent = assertOneEvent(
+    Glean.resourceMonitor.tabActionTaken,
+    { action_type: "unload", action_source: "tab_row", tab_count: "1" },
+    "Inline Unload records one action event"
+  );
+  Assert.greaterOrEqual(
+    Number(unloadEvent?.extra.total_tab_count),
+    2,
+    "The view's total tab count includes both tabs we opened"
+  );
 
   info(
     "Confirming a poll after the discard settles the row into the static killed look, not removal"
@@ -545,4 +598,119 @@ add_task(async function testTotalsBarShowsTabCountAndSums() {
   BrowserTestUtils.removeTab(tabOne);
   BrowserTestUtils.removeTab(tabTwo);
   BrowserTestUtils.removeTab(anchorTab);
+});
+
+add_task(async function testPanelOpenedTelemetry() {
+  await Services.fog.testFlushAllChildren();
+  Services.fog.testResetFOG();
+  let tab = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "Panel opened telemetry"
+  );
+
+  // openTabView() already drives two polls, so CPU is known.
+  let { tabAboutProcesses } = await openTabView();
+  await Services.fog.testFlushAllChildren();
+
+  // openTabView() opens a tab directly, bypassing SidebarController.
+  let event = assertOneEvent(
+    Glean.resourceMonitor.panelOpened,
+    { open_type: "direct_nav" },
+    "panel_opened fired exactly once"
+  );
+  Assert.greaterOrEqual(
+    Number(event?.extra.total_tab_count),
+    1,
+    "Counted at least the one tab we opened."
+  );
+
+  info("A further poll tick must not re-fire the event.");
+  await forceTabViewUpdate(tabAboutProcesses);
+  await Services.fog.testFlushAllChildren();
+  Assert.equal(
+    Glean.resourceMonitor.panelOpened.testGetValue()?.length,
+    1,
+    "Still only one panel_opened event after a third poll."
+  );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+  BrowserTestUtils.removeTab(tab);
+  Services.fog.testResetFOG();
+});
+
+add_task(async function testPanelOpenedIgnoresUnknownOpenType() {
+  let tabAboutProcesses = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: "about:processes?groupby=tab&openType=foo",
+    waitForLoad: true,
+  });
+  await forceTabViewUpdate(tabAboutProcesses);
+  await Services.fog.testFlushAllChildren();
+
+  assertOneEvent(
+    Glean.resourceMonitor.panelOpened,
+    { open_type: "direct_nav" },
+    "An unrecognized openType is recorded as direct navigation"
+  );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+  Services.fog.testResetFOG();
+});
+
+add_task(async function testPanelOpenedSkipsHiddenPolls() {
+  // Not openTabView(): it forces the second poll immediately, with no room to insert a hidden gap.
+  let tab = await setupTabWithOriginAndTitle(
+    "https://example.org",
+    "Panel opened skips hidden polls"
+  );
+
+  let tabAboutProcesses = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: "about:processes?groupby=tab",
+    waitForLoad: true,
+  });
+  // The first (real) poll fires during window.onload, before we get here.
+  let doc = tabAboutProcesses.linkedBrowser.contentDocument;
+  await BrowserTestUtils.waitForMutationCondition(
+    doc.getElementById("process-tbody"),
+    { childList: true },
+    () => doc.querySelector("tr.tab-row"),
+    { msg: "Waiting for the first poll to render a row" }
+  );
+
+  let poll = pauseTabViewPolling(doc);
+  await Services.fog.testFlushAllChildren();
+  Assert.equal(
+    Glean.resourceMonitor.panelOpened.testGetValue()?.length ?? 0,
+    0,
+    "Only the first poll has run"
+  );
+
+  let hidden = BrowserTestUtils.waitForEvent(doc, "visibilitychange");
+  gBrowser.selectedTab = tab;
+  await hidden;
+
+  await poll();
+  await Services.fog.testFlushAllChildren();
+  Assert.equal(
+    Glean.resourceMonitor.panelOpened.testGetValue()?.length ?? 0,
+    0,
+    "panel_opened must not fire from a poll that lands while hidden"
+  );
+
+  let visible = BrowserTestUtils.waitForEvent(doc, "visibilitychange");
+  gBrowser.selectedTab = tabAboutProcesses;
+  await visible;
+
+  await poll();
+  await Services.fog.testFlushAllChildren();
+  Assert.equal(
+    Glean.resourceMonitor.panelOpened.testGetValue()?.length,
+    1,
+    "panel_opened fires exactly once, on the first real poll after visibility returns"
+  );
+
+  BrowserTestUtils.removeTab(tabAboutProcesses);
+  BrowserTestUtils.removeTab(tab);
+  Services.fog.testResetFOG();
 });

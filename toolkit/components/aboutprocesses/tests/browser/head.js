@@ -1179,3 +1179,15 @@ async function openTabView() {
   );
   return { tabAboutProcesses, doc };
 }
+
+// Checks that metric recorded exactly one event with these extra values, and
+// returns it (undefined otherwise) for any further checks.
+function assertOneEvent(metric, extra, description) {
+  let events = metric.testGetValue();
+  Assert.equal(events?.length, 1, description);
+  let event = events?.length == 1 ? events[0] : undefined;
+  for (let [key, value] of Object.entries(extra)) {
+    Assert.equal(event?.extra[key], value, `${description}: ${key}`);
+  }
+  return event;
+}

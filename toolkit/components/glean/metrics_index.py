@@ -69,6 +69,7 @@ gecko_metrics = [
     "services/sync/modules/metrics.yaml",
     "startupcache/metrics.yaml",
     "storage/metrics.yaml",
+    "toolkit/components/aboutprocesses/metrics.yaml",
     "toolkit/components/antitracking/bouncetrackingprotection/metrics.yaml",
     "toolkit/components/antitracking/metrics.yaml",
     "toolkit/components/backgroundhangmonitor/metrics.yaml",

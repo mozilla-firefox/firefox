@@ -84,6 +84,8 @@ tags = "vertical-tabs"
 
 ["browser_resize_sidebar.js"]
 
+["browser_resource_monitor_telemetry.js"]
+
 ["browser_sidebar_animation.js"]
 
 ["browser_sidebar_backup_state.js"]
