@@ -6489,7 +6489,7 @@
 # main-thread.
 - name: dom.worker.console.dispatch_events_to_main_thread
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 # Selects which WorkerDebugger mechanism is used to expose a worker to the
