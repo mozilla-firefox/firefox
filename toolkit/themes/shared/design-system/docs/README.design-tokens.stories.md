@@ -266,7 +266,7 @@ The above JSON indicates that `--button-background-color-disabled` will have the
 
 #### Global token brand and platform themes
 
-The Firefox desktop client consists of [two distinct surfaces](https://acorn.firefox.com/latest/resources/browser-anatomy/desktop-ZaxCgqkt#section-anatomy-fd); "the chrome," or the UI of the browser application that surrounds web pages, and the web content itself which is often referred to as "in-content." Firefox UI development spans both surfaces since our `about:` pages are "in-content" pages. In our design system we distinguish between these surfaces by using the terminology of `platform` vs `brand`. Chrome specific token values live in [`tokens-platform.css`](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/tokens-platform.css) and in-content specific token values live in [`tokens-brand.css`](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/tokens-brand.css).
+The Firefox desktop client consists of [two distinct surfaces](https://acorn.firefox.com/latest/resources/browser-anatomy/desktop-ZaxCgqkt#section-anatomy-fd); "the chrome," or the UI of the browser application that surrounds web pages, and the web content itself which is often referred to as "in-content." Firefox UI development spans both surfaces since our `about:` pages are "in-content" pages. In our design system we distinguish between these surfaces by using the terminology of `platform` vs `brand`. Chrome specific token values live in [`tokens-platform.css`](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/dist/tokens-platform.css) and in-content specific token values live in [`tokens-brand.css`](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/dist/tokens-brand.css).
 
 We use `platform` and `brand` keys in our JSON to indicate when a token has a surface-specific value. For example this token definition:
 
@@ -313,9 +313,52 @@ communicates that `--text-color` should have the value `currentColor` in `tokens
 
 #### Chrome native OS theme
 
-Sometimes rather than using our own theme, we defer to the user's OS theme, this only happens in the browser chrome and is referred to as the "native theme." If the user is on Linux (or has `browser.theme.native-theme=true`) and is using `System theme — auto` then we use the native theme. If the user is on a theme other than `System theme — auto`, `Dark` or `Light` (using a LWT) then we also apply the native theme.
+Sometimes rather than using our own theme, we defer to the user's OS theme, this only happens in the browser chrome and is referred to as the "native theme." The `(-moz-native-theme)` media query matches when `browser.theme.native-theme` is true, which it is by default on Linux only, unless the document forces the non-native theme. [`LightweightThemeConsumer.sys.mjs`](https://searchfox.org/firefox-main/source/toolkit/modules/LightweightThemeConsumer.sys.mjs) forces it for every theme other than `System theme — auto`, and sets the root attributes that decide which layer paints the chrome:
 
-This means there are several options of what the value of a design token will be in the browser chrome. When a `nativeTheme` property is set then that value is used for native theme and LWT modes. If they are not in this state, they aren't using Windows HCM, and we have a `nativeTheme` value, then we use the "browser theme" value. This is a special case where we use the platform/brand/shared value.
+<table>
+  <thead>
+    <tr>
+      <th>Theme</th>
+      <th>Root attributes</th>
+      <th><code>(-moz-native-theme)</code></th>
+      <th>Base token layers (before overrides)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>System theme — auto</code> on Linux</td>
+      <td><code>theme-in-app</code></td>
+      <td>matches</td>
+      <td><code>tokens-foundation</code></td>
+    </tr>
+    <tr>
+      <td><code>System theme — auto</code> on Windows and macOS</td>
+      <td><code>theme-in-app</code></td>
+      <td>doesn't match (the pref is false)</td>
+      <td><code>tokens-browser-theme</code></td>
+    </tr>
+    <tr>
+      <td><code>Light</code> and <code>Dark</code></td>
+      <td><code>theme-in-app</code></td>
+      <td>doesn't match (forced non-native)</td>
+      <td><code>tokens-browser-theme</code></td>
+    </tr>
+    <tr>
+      <td>Alpenglow and add-on themes</td>
+      <td><code>lwtheme</code></td>
+      <td>doesn't match (forced non-native)</td>
+      <td><code>tokens-foundation</code></td>
+    </tr>
+    <tr>
+      <td>Any theme under forced colors</td>
+      <td>The default theme is swapped in (<code>browser.theme.forced-colors-override.enabled</code>): no <code>lwtheme</code>, and <code>theme-in-app</code> as the selected theme sets it</td>
+      <td>as for <code>System theme — auto</code></td>
+      <td><code>tokens-forced-colors</code> over <code>tokens-prefers-contrast</code> where it matches, then <code>tokens-foundation</code></td>
+    </tr>
+  </tbody>
+</table>
+
+A lightweight theme therefore paints the same `tokens-foundation` values as the native theme, even though `(-moz-native-theme)` doesn't match for it. When a token has a `nativeTheme` value, that value goes into `tokens-foundation` and controls both the native theme and lightweight themes, while the token's light/dark value goes into the `tokens-browser-theme` layer for the in-app themes.
 
 ```json
 {
@@ -330,7 +373,9 @@ This means there are several options of what the value of a design token will be
 }
 ```
 
-This snippet will use the light/dark value in-content but it will also use it in the chrome when using the `Light` or `Dark` theme, and conditionally when using the `System theme — auto` (based on the native-theme pref). Otherwise it will use `AccentColor` (or `ButtonText` in HCM).
+This snippet will use the light/dark value in-content, and in the chrome under the `Light` and `Dark` themes and under `System theme — auto` on Windows and macOS. Under the native theme and lightweight themes it will use `AccentColor`, and `ButtonText` in HCM.
+
+So to give the chrome an in-app color without breaking the native theme and lightweight themes, put a value that follows the system or lightweight theme (e.g. a color-mix of `currentColor`, `{toolbar.background.color}`) in `nativeTheme`, and the fixed in-app color in `light`/`dark`.
 
 The "browser theme" values end up in the `tokens-browser-theme` layer, which needs a narrower selector than the other layers and so gets its own top-level rule:
 
@@ -372,16 +417,16 @@ If you need any help feel free to reach out in #firefox-reusable-components on S
 
 ### Overriding tokens
 
-Our build process provides a mechanism to override design tokens behind a pref. To do so, you will need to update [override-identifiers.js](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/config/override-identifiers.js), adding a name and pref to classify the token overrides. For example, to override design tokens for Nova, we use this configuration:
+Our build process provides a mechanism to override design tokens behind a pref. To do so, you will need to update [override-identifiers.mjs](https://searchfox.org/firefox-main/source/toolkit/themes/shared/design-system/config/helpers/general/override-identifiers.mjs), adding an `id` and a `pref` to classify the token overrides. For example, to override design tokens for Nova, we use this configuration:
 
 ```js
 {
-  name: "nova",
+  id: "nova",
   pref: "browser.nova.enabled",
 }
 ```
 
-Then you can create new JSON files in `src/tokens` that end with a suffix using the `name` (e.g. `*.nova.tokens.json`) and follow the JSON format to define the tokens that are different from the design system defaults. They should follow the same structure as the defaults so the tokens end up with the same names.
+Then you can create new JSON files in `src/tokens` that end with a suffix using the `id` (e.g. `*.nova.tokens.json`) and follow the JSON format to define the tokens that are different from the design system defaults. They should follow the same structure as the defaults so the tokens end up with the same names.
 
 The high contrast overrides are emitted into cascade layers. A single `@layer` statement at the top of `dist/tokens-shared.css` declares all of them in precedence order, ending `tokens-prefers-contrast`, `tokens-prefers-contrast-nova`, `tokens-forced-colors`, `tokens-forced-colors-nova`, so that forced colors wins when a surface is in both regimes at once. Anything a consumer declares outside a layer beats all of them, whatever the specificity - see the [CSS guidelines](https://firefox-source-docs.mozilla.org/code-quality/coding-style/css_guidelines.html#an-unlayered-declaration-outranks-every-cascade-layer).
 
