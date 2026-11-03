@@ -18,6 +18,7 @@ xenova-all-minilm-l6-v2:
         revision: 5f8986ea538762fd82a43a768d583a5a9d71d1ec
         path-prefix: "onnx-models/Xenova/all-MiniLM-L6-v2/main/"
         artifact-name: all-MiniLM-L6-v2.tar.zst
+        fetch-mode: fetch
 
 mozilla-ner:
     description: named entity model
@@ -27,6 +28,7 @@ mozilla-ner:
         revision: 7cd1d24c22a55fea06dd2d52e449235954d6c51d
         path-prefix: "onnx-models/Mozilla/distilbert-uncased-NER-LoRA/main/"
         artifact-name: distilbert-uncased-NER-LoRA.tar.zst
+        fetch-mode: fetch
 
 mozilla-intent:
     description: intent model
@@ -36,6 +38,7 @@ mozilla-intent:
         revision: 67edcd40da2b681d03072d5ea4943d2bff1284ef
         path-prefix: "onnx-models/Mozilla/mobilebert-uncased-finetuned-LoRA-intent-classifier/main/"
         artifact-name: mobilebert-uncased-finetuned-LoRA-intent-classifier.tar.zst
+        fetch-mode: fetch
 
 mozilla-smart-intent:
     description: Smart Window intent model
@@ -45,6 +48,7 @@ mozilla-smart-intent:
         revision: ab6ab166c5edb83c9b4893c5c1395c9ee2a14d17
         path-prefix: "onnx-models/mozilla/mobilebert-query-intent-detection/main/"
         artifact-name: mobilebert-query-intent-detection.tar.zst
+        fetch-mode: fetch
 
 # We are testing two model architectures for form autofill. The first
 # (below) is text classification
@@ -57,6 +61,7 @@ mozilla-autofill:
         revision: cd00055e7634d9ffb6ceb98a8027ee5a52b256b2
         path-prefix: "onnx-models/mozilla/tinybert-address-autofill/v0.2.5/"
         artifact-name: tinybert-address-autofill.tar.zst
+        fetch-mode: fetch
 
 # Triple-encoder autofill model - shared feature-extraction encoder and head
 mozilla-autofill-embed:
@@ -68,6 +73,7 @@ mozilla-autofill-embed:
         revision: 23fcf285489245e6270fb99ad2373e6275c45597
         path-prefix: "onnx-models/mozilla/form-autofill-embed/v0.3.1/"
         artifact-name: form-autofill-embed.tar.zst
+        fetch-mode: fetch
 
 mozilla-autofill-head:
     description: autofill triple-encoder fusion head model
@@ -77,6 +83,7 @@ mozilla-autofill-head:
         revision: 33f69b42305bcfc0aff34514f84ef16c7f5d9522
         path-prefix: "onnx-models/mozilla/form-autofill-head/v0.3.1/"
         artifact-name: form-autofill-head.tar.zst
+        fetch-mode: fetch
 
 mozilla-smart-tab-topic:
     description: Smart Tab Topic Model
@@ -86,6 +93,7 @@ mozilla-smart-tab-topic:
         revision: b0fd1b23dcb06bb68b5d60d18c7b1524c65a94af
         path-prefix: "onnx-models/Mozilla/smart-tab-topic/main/"
         artifact-name: smart-tab-topic.tar.zst
+        fetch-mode: fetch
 
 mozilla-smart-tab-emb:
     description: Smart Tab Embedding Model
@@ -95,6 +103,7 @@ mozilla-smart-tab-emb:
         revision: 2278e76f67ada584cfd3149fd2661dad03674e4d
         path-prefix: "onnx-models/Mozilla/smart-tab-embedding/main/"
         artifact-name: smart-tab-embedding.tar.zst
+        fetch-mode: fetch
 
 smollm2-360-instruct-gguf:
     description: SmolLM2 360M text summarization model GGUF
@@ -104,6 +113,7 @@ smollm2-360-instruct-gguf:
         revision: 593b5a2e04c8f3e4ee880263f93e0bd2901ad47f
         path-prefix: "onnx-models/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/main/"
         artifact-name: smollm2-360-instruct-gguf.tar.zst
+        fetch-mode: fetch
 
 Qwen3-0.6B-GGUF:
     description: Qwen3-0.6B summarization model GGUF
@@ -113,6 +123,7 @@ Qwen3-0.6B-GGUF:
         revision: 233b3855f89029f46416b3e8fe5970c79b2ad25d
         path-prefix: "onnx-models/unsloth/Qwen3-0.6B-GGUF/main/"
         artifact-name: Qwen3-0.6B-GGUF.tar.zst
+        fetch-mode: fetch
 
 mozilla-query-intent:
     description: Smart Window intent detection model
@@ -123,3 +134,4 @@ mozilla-query-intent:
         # Lowercase, to match the model id the browser requests.
         path-prefix: "onnx-models/mozilla/mobilebert-query-intent-detection/main/"
         artifact-name: mobilebert-query-intent-detection.tar.zst
+        fetch-mode: fetch
