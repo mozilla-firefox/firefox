@@ -1298,6 +1298,11 @@ static ArrayBufferContents NewCopiedBufferContents(
 /* static */
 void ArrayBufferObject::detach(JSContext* cx,
                                Handle<ArrayBufferObject*> buffer) {
+  // We do not expect GC or CC to detach array buffers.
+  JS::HeapState heapState = cx->runtime()->heapState();
+  MOZ_RELEASE_ASSERT(heapState == JS::HeapState::Idle ||
+                     heapState == JS::HeapState::Tracing);
+
   cx->check(buffer);
   MOZ_ASSERT(!buffer->isLengthPinned());
   MOZ_ASSERT(!buffer->isImmutable());
