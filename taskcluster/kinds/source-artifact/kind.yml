@@ -42,6 +42,9 @@ task-defaults:
             - taskcluster/kinds/source-artifact/kind.yml
             - taskcluster/kinds/install-script-signing/kind.yml
             - taskcluster/gecko_taskgraph/transforms/install_script_signing.py
+            - taskcluster/kinds/beetmover-install-script/kind.yml
+            - taskcluster/gecko_taskgraph/manifests/install_script.yml
+            - taskcluster/gecko_taskgraph/transforms/beetmover_install_script.py
 
 tasks:
     linux64:

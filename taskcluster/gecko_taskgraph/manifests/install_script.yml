@@ -1,0 +1,34 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+# This file contains information about the artifacts published at the root of
+# the bucket backing linux.firefox.com. See firefox_integration.yml for the
+# description of each field.
+
+bucket_paths:
+    - ''
+default_locales:
+    - en-US
+tasktype_map:
+    install-script-signing: signing
+
+default: &default
+    from:
+        - install-script-signing
+    all_locales: false
+    description: "TO_BE_OVERRIDDEN"
+    locale_prefix: ''
+    source_path_modifier: ''
+    destinations:
+        - ''
+
+mapping:
+    install-firefox.sh:
+        <<: *default
+        description: "Script piped to sh by `curl https://linux.firefox.com | sh`"
+        checksums_path: install-firefox.sh
+    install-firefox.sh.asc:
+        <<: *default
+        description: "Detached autograph GPG signature of install-firefox.sh"
+        checksums_path: install-firefox.sh.asc

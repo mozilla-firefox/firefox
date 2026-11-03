@@ -1,0 +1,46 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - gecko_taskgraph.transforms.name_sanity
+    - gecko_taskgraph.transforms.beetmover_install_script
+    - gecko_taskgraph.transforms.task
+
+kind-dependencies:
+    - install-script-signing
+
+task-defaults:
+    description: Beetmove install-firefox.sh to linux.firefox.com
+    if-dependencies: [install-script-signing]
+    # Automatic only on mozilla-central. Never on autoland (it shares
+    # gecko-3-beetmover with real release publishing). Still reachable on
+    # try via an explicit task-config/fuzzy selection, which bypasses this
+    # filter entirely and lands on the `default` scopes branch below.
+    run-on-projects: [mozilla-central-only]
+    worker-type: beetmover
+    treeherder:
+        tier: 1
+        kind: other
+        platform: linux64/opt
+        symbol: BM-ins
+    scopes:
+        by-project:
+            mozilla-central:
+                - project:releng:beetmover:bucket:linuxfirefoxcom
+                - project:releng:beetmover:action:direct-push-to-bucket
+            default:
+                - project:releng:beetmover:bucket:linuxfirefoxcom-stage
+                - project:releng:beetmover:action:direct-push-to-bucket
+
+tasks:
+    beetmover-install-script:
+        from-deps:
+            group-by: single-with-filters
+        attributes:
+            artifact_map: taskcluster/gecko_taskgraph/manifests/install_script.yml
+            build_platform: linux64
+            build_type: opt

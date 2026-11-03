@@ -296,6 +296,12 @@ promotion.
 
 Beetmover-source publishes release source. This is part of release promotion.
 
+## beetmover-install-script
+
+Publishes the signed ``install-firefox.sh`` (and its detached signature) to the
+bucket backing ``linux.firefox.com``. Runs automatically on mozilla-central; the
+staging variant only runs via an explicit try selection.
+
 ## beetmover-geckoview
 
 Beetmover-geckoview publishes the Android library called "geckoview".
