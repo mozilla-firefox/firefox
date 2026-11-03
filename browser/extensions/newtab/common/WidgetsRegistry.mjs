@@ -185,6 +185,11 @@ export const PREF_WIDGETS_SOLITAIRE_ENABLED = "widgets.solitaire.enabled";
 export const PREF_SOLITAIRE_SIZE = "widgets.solitaire.size";
 export const PREF_WIDGETS_SYSTEM_SOLITAIRE_ENABLED =
   "widgets.system.solitaire.enabled";
+export const PREF_WIDGETS_WREXHAMAFC_ENABLED = "widgets.wrexhamAFC.enabled";
+export const PREF_WREXHAMAFC_SIZE = "widgets.wrexhamAFC.size";
+export const PREF_WIDGETS_SYSTEM_WREXHAMAFC_ENABLED =
+  "widgets.system.wrexhamAFC.enabled";
+export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
 
 /**
  * An item in the menu of a FramedWidgetCard.
@@ -463,6 +468,58 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "solitaireVisible",
     widgetsSettingsEnabledKey: "solitaireEnabled",
     trainhopNamespace: "widgetSolitaire",
+  },
+  {
+    id: "wrexhamAFC",
+    telemetryName: "wrexhamafc",
+    customizeL10nId: "newtab-custom-widget-wrexhamafc",
+    customizeEventSource: "WIDGET_WREXHAMAFC",
+    order: 12,
+    enabledPref: PREF_WIDGETS_WREXHAMAFC_ENABLED,
+    sizePref: PREF_WREXHAMAFC_SIZE,
+    defaultSize: "medium",
+    validSizes: ["medium", "large"],
+    hasSidebar: false,
+    systemEnabledPref: PREF_WIDGETS_SYSTEM_WREXHAMAFC_ENABLED,
+    trainhopEnabledKey: "wrexhamAFCEnabled",
+    trainhopSizeKey: "wrexhamAFCSize",
+    trainhopSidebarKey: null,
+    widgetsSettingsVisibleKey: "wrexhamAFCVisible",
+    widgetsSettingsEnabledKey: "wrexhamAFCEnabled",
+    trainhopNamespace: "widgetWrexhamAFC",
+    card: "FramedWidgetCard",
+    icon: "chrome://activity-stream/content/data/content/tippytop/images/wrexham@2x.png",
+    l10nId: "newtab-custom-widget-wrexhamafc",
+    menu: [
+      {
+        type: "choice",
+        id: "view",
+        l10nId: "newtab-widget-wrexhamafc-menu-view",
+        pref: PREF_WREXHAMAFC_VIEW,
+        options: [
+          {
+            value: "matches",
+            l10nId: "newtab-widget-wrexhamafc-view-matches",
+          },
+          {
+            value: "table",
+            l10nId: "newtab-widget-wrexhamafc-view-table",
+            size: "large",
+          },
+          {
+            value: "fixtures",
+            l10nId: "newtab-widget-wrexhamafc-view-fixtures",
+            size: "large",
+          },
+        ],
+      },
+      {
+        type: "action",
+        id: "manage_wallpaper",
+        l10nId: "newtab-widget-wrexhamafc-menu-wallpapers",
+        action: "show-customize",
+      },
+    ],
   },
 ];
 
