@@ -76,24 +76,27 @@
 .resume-section-empty-hide {
   margin-block-start: var(--space-small);
   --button-border-radius: var(--border-radius-circle);
-  --button-background-color: transparent;
-  --button-background-color-hover: light-dark(
-    color-mix(in srgb, var(--color-violet-50) 15%, transparent),
-    color-mix(in srgb, var(--color-violet-40) 25%, transparent)
-  );
-  /* moz-button has no default active-state background outside Nova. */
-  --button-background-color-active: light-dark(
-    color-mix(in srgb, var(--color-violet-50) 25%, transparent),
-    color-mix(in srgb, var(--color-violet-40) 35%, transparent)
-  );
-  /* Nova's tokens supply a visible default border; without Nova, moz-button's
-   * border shorthand falls back to a transparent border color, so it must be
-   * set directly rather than through --button-border-color alone. */
-  --button-border: var(--border-width) solid var(--resume-section-empty-border-color);
-  --button-border-color-hover: var(--resume-section-empty-border-color);
-  --button-border-color-active: var(--resume-section-empty-border-color);
-  --button-border-color-selected: var(--resume-section-empty-border-color);
-  --button-text-color: var(--text-color);
+
+  @media not (forced-colors) {
+    --button-background-color: transparent;
+    --button-background-color-hover: light-dark(
+      color-mix(in srgb, var(--color-violet-50) 15%, transparent),
+      color-mix(in srgb, var(--color-violet-40) 25%, transparent)
+    );
+    /* moz-button has no default active-state background outside Nova. */
+    --button-background-color-active: light-dark(
+      color-mix(in srgb, var(--color-violet-50) 25%, transparent),
+      color-mix(in srgb, var(--color-violet-40) 35%, transparent)
+    );
+    /* Nova's tokens supply a visible default border; without Nova, moz-button's
+     * border shorthand falls back to a transparent border color, so it must be
+     * set directly rather than through --button-border-color alone. */
+    --button-border: var(--border-width) solid var(--resume-section-empty-border-color);
+    --button-border-color-hover: var(--resume-section-empty-border-color);
+    --button-border-color-active: var(--resume-section-empty-border-color);
+    --button-border-color-selected: var(--resume-section-empty-border-color);
+    --button-text-color: var(--text-color);
+  }
 }
 
 .resume-card-skeleton {
