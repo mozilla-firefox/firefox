@@ -118,10 +118,10 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
     ThemeFamily mFamily{0};
 
     // Cached fonts
-    nsString mDefaultFontName;
-    nsString mButtonFontName;
-    nsString mFieldFontName;
-    nsString mMenuFontName;
+    nsString mDefaultFontName{u"sans-serif"_ns};
+    nsString mButtonFontName{u"sans-serif"_ns};
+    nsString mFieldFontName{u"sans-serif"_ns};
+    nsString mMenuFontName{u"sans-serif"_ns};
     gfxFontStyle mDefaultFontStyle;
     gfxFontStyle mButtonFontStyle;
     gfxFontStyle mFieldFontStyle;
@@ -170,7 +170,7 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
     float mCaretRatio = 0.0f;
     int32_t mTitlebarRadius = 0;
     int32_t mTooltipRadius = 0;
-    char16_t mInvisibleCharacter = 0;
+    char16_t mInvisibleCharacter = 0x2022;
     bool mMenuSupportsDrag = false;
 
     void Init();
@@ -233,6 +233,7 @@ class nsLookAndFeel final : public nsXPLookAndFeel {
   bool mCSDReversedPlacement = false;
   bool mPrefersReducedMotion = false;
   bool mSystemThemeOverridden = false;
+  bool mIsHeadless = true;
   NativeChangeKind mPendingChanges = NativeChangeKind::All;
   int32_t mCSDMaximizeButtonPosition = 0;
   int32_t mCSDMinimizeButtonPosition = 0;

@@ -6,7 +6,6 @@
 
 #include <bitset>
 
-#include "HeadlessLookAndFeel.h"
 #include "RemoteLookAndFeel.h"
 #include "SurfaceCacheUtils.h"
 #include "Theme.h"
@@ -353,8 +352,6 @@ nsXPLookAndFeel* nsXPLookAndFeel::GetInstance() {
 
   if (lnf) {
     sInstance = new widget::RemoteLookAndFeel(std::move(*lnf));
-  } else if (gfxPlatform::IsHeadless()) {
-    sInstance = new widget::HeadlessLookAndFeel();
   } else {
     sInstance = new nsLookAndFeel();
   }
