@@ -227,6 +227,11 @@ In general, it's good to first think of how some CSS could be written
 cleanly without the CSS variable(s) and then think of how the CSS
 variable could improve that CSS.
 
+A custom property defined in a shipped stylesheet and never referenced from CSS
+fails `browser_parsable_css.js` unless an entry in that test's
+`propNameAllowlist` matches it. An allowlist entry that no longer matches
+anything fails the test too, on the platforms the entry applies to.
+
 ### Using variables
 
 #### Use the variable according to its naming
