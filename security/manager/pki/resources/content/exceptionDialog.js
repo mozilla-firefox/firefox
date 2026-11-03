@@ -141,28 +141,16 @@ async function checkCert() {
  *          otherwise.
  */
 function getURI() {
-  // Use fixup service instead of just ioservice's newURI since it's quite
-  // likely that the host will be supplied without a protocol prefix, resulting
-  // in malformed uri exceptions being thrown.
-  let locationTextBox = document.getElementById("locationTextBox");
-  let { preferredURI: uri } = Services.uriFixup.getFixupURIInfo(
-    locationTextBox.value
-  );
-
-  if (!uri) {
+  let value = document.getElementById("locationTextBox").value.trim();
+  let url = URL.parse(value);
+  if (!url?.hostname) {
+    url = URL.parse("https://" + value);
+  }
+  if (!url?.hostname) {
     return null;
   }
-
-  let mutator = uri.mutate();
-  if (uri.scheme == "http") {
-    mutator.setScheme("https");
-  }
-
-  if (uri.port == -1) {
-    mutator.setPort(443);
-  }
-
-  return mutator.finalize();
+  url.protocol = "https:";
+  return url.URI;
 }
 
 function resetDialog() {

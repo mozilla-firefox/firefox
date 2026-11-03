@@ -122,3 +122,54 @@ add_task(async function test_with_dialog() {
   ].getService(Ci.nsICertOverrideService);
   certOverrideService.clearValidityOverride(INVALID_CERT_DOMAIN, -1, {});
 });
+
+add_task(async function test_schemeless_host_port_with_external_handler() {
+  // Make the host look like a known external protocol scheme, as the desktop
+  // portal may do for any scheme on Flatpak and Snap.
+  let extProtocolSvc = Cc[
+    "@mozilla.org/uriloader/external-protocol-service;1"
+  ].getService(Ci.nsIExternalProtocolService);
+  let handlerSvc = Cc["@mozilla.org/uriloader/handler-service;1"].getService(
+    Ci.nsIHandlerService
+  );
+  let handlerInfo = extProtocolSvc.getProtocolHandlerInfo(INVALID_CERT_DOMAIN);
+  let handler = Cc["@mozilla.org/uriloader/web-handler-app;1"].createInstance(
+    Ci.nsIWebHandlerApp
+  );
+  handler.name = "Test handler";
+  handler.uriTemplate = "https://example.com/%s";
+  handlerInfo.possibleApplicationHandlers.appendElement(handler);
+  handlerSvc.store(handlerInfo);
+  registerCleanupFunction(() => handlerSvc.remove(handlerInfo));
+  ok(
+    extProtocolSvc.externalProtocolHandlerExists(INVALID_CERT_DOMAIN),
+    "The host should be handled as an external protocol scheme"
+  );
+
+  Services.obs.addObserver(onCertExceptionUI, "cert-exception-ui-ready");
+
+  let params = {
+    exceptionAdded: false,
+    location: INVALID_CERT_DOMAIN + ":443",
+    prefetchCert: true,
+  };
+
+  let bWin = BrowserWindowTracker.getTopWindow();
+  bWin.openDialog(EXCEPTIONS_DLG_URL, "", EXCEPTIONS_DLG_FEATURES, params);
+
+  ok(params.exceptionAdded, "The certificate exception should have been added");
+
+  BrowserTestUtils.startLoadingURIString(gBrowser, INVALID_CERT_LOCATION);
+  let loaded = await BrowserTestUtils.browserLoaded(
+    gBrowser,
+    false,
+    INVALID_CERT_LOCATION,
+    true
+  );
+  ok(loaded, "The certificate exception should allow the page to load");
+
+  let certOverrideService = Cc[
+    "@mozilla.org/security/certoverride;1"
+  ].getService(Ci.nsICertOverrideService);
+  certOverrideService.clearValidityOverride(INVALID_CERT_DOMAIN, -1, {});
+});
