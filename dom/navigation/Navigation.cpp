@@ -752,13 +752,6 @@ struct NavigationWaitForAllScope final : public nsISupports,
                             mNavigation->mOngoingAPIMethodTracker);
       // Step 11
       mAPIMethodTracker->CleanUp();
-      mNavigation->mOngoingNavigateEvent = nullptr;
-    } else {
-      // It needs to be ensured that the ongoing navigate event is cleared in
-      // every code path (e.g. for download events), so that we don't keep
-      // intermediate state around.
-      // See also https://github.com/whatwg/html/issues/11802
-      mNavigation->mOngoingNavigateEvent = nullptr;
     }
 
     return;
@@ -2010,6 +2003,23 @@ void Navigation::InnerInformAboutAbortingNavigation(JSContext* aCx) {
 
   while (HasOngoingNavigateEvent()) {
     AbortOngoingNavigation(aCx);
+  }
+}
+
+// https://html.spec.whatwg.org/#apply-the-history-step step 8.3
+void Navigation::ClearOngoingNavigationForHistoryStep() {
+  if (mOngoingNavigateEvent && mOngoingNavigateEvent->InterceptionState() !=
+                                   NavigateEvent::InterceptionState::None) {
+    return;
+  }
+
+  // 8.3.2 Set navigation's ongoing navigate event to null.
+  mOngoingNavigateEvent = nullptr;
+
+  // 8.3.3 Set navigation's ongoing API method tracker to null.
+  if (mOngoingAPIMethodTracker) {
+    mOngoingAPIMethodTracker = nullptr;
+    UpdateNeedsTraverse();
   }
 }
 

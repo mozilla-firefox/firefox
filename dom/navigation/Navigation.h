@@ -192,6 +192,11 @@ class Navigation final : public DOMEventTargetHelper {
   MOZ_CAN_RUN_SCRIPT
   void InnerInformAboutAbortingNavigation(JSContext* aCx);
 
+  // Drops the ongoing navigate event and API method tracker without aborting
+  // them, for when a history step moves away from this document. An
+  // intercepted navigate event is kept, since its handlers still finish it.
+  void ClearOngoingNavigationForHistoryStep();
+
   MOZ_CAN_RUN_SCRIPT
   void AbortOngoingNavigation(
       JSContext* aCx, JS::Handle<JS::Value> aError = JS::UndefinedHandleValue);

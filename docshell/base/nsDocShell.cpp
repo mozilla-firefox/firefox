@@ -1221,10 +1221,9 @@ nsDocShell::FirePageHideNotification() {
 
 void nsDocShell::FirePageHideNotificationInternal(
     bool aSkipCheckingDynEntries) {
-  {
-    nsAutoMicroTask mt;
-    SetOngoingNavigation(Nothing());
-  }
+  // https://html.spec.whatwg.org/#deactivate-a-document-for-a-cross-document-navigation
+  // 5.2 Set navigable's ongoing navigation to null.
+  SetOngoingNavigation(Nothing());
 
   if (mDocumentViewer && !mFiredUnloadEvent) {
     // Keep an explicit reference since calling PageHide could release
@@ -1524,6 +1523,8 @@ void nsDocShell::FirePageHideShowNonRecursive(
     }
 
     mFiredUnloadEvent = true;
+
+    ClearNavigationAPIOngoingNavigationForHistoryStep();
 
     MaybeFirePageSwapOnDeactivate(aPageSwapTargetInfo, aNavigationType);
 
@@ -4390,7 +4391,7 @@ nsresult nsDocShell::StopInternal(
       aUnsetOngoingNavigation == UnsetOngoingNavigation::Yes && doc &&
       !doc->ShouldIgnoreOpens() &&
       mOngoingNavigation == Some(OngoingNavigation::NavigationID)) {
-    SetOngoingNavigation(Nothing());
+    ResetOngoingNavigation(Nothing());
   }
 
   if (mLoadType == LOAD_ERROR_PAGE) {
@@ -7167,6 +7168,12 @@ nsresult nsDocShell::CreateDocumentViewer(const nsACString& aContentType,
   // it before we do call Embed.
   nsCOMPtr<nsIURI> previousURI = mCurrentURI;
 
+  // A reload's target entry still holds the active document, so the history
+  // step doesn't move away from it.
+  if (!(mLoadType & LOAD_CMD_RELOAD)) {
+    ClearNavigationAPIOngoingNavigationForHistoryStep();
+  }
+
   // https://html.spec.whatwg.org/#fire-the-pageswap-event
   // Fire pageswap without a view transition if no earlier path fired it for
   // this navigation.
@@ -8958,10 +8965,9 @@ nsresult nsDocShell::InternalLoad(nsDocShellLoadState* aLoadState,
       mBrowsingContext->Focus(CallerType::System, IgnoreErrors());
     }
     if (aLoadState->LoadIsFromSessionHistory() &&
-        (mLoadType & LOAD_CMD_HISTORY) &&
-        !aLoadState->IsResumingInterceptedNavigation()) {
-      // We must ensure to not abort intercepted history navigations. See
-      // https://github.com/whatwg/html/issues/12407
+        (mLoadType & LOAD_CMD_HISTORY)) {
+      // https://html.spec.whatwg.org/#apply-the-history-step
+      // 14.10.1 Set navigable's ongoing navigation to null.
       SetOngoingNavigation(Nothing());
     }
     return rv;
@@ -8993,7 +8999,13 @@ nsresult nsDocShell::InternalLoad(nsDocShellLoadState* aLoadState,
 
   // The following steps are from https://html.spec.whatwg.org/#navigate
   // 20. Set the ongoing navigation for navigable to navigationId.
-  SetOngoingNavigation(Some(OngoingNavigation::NavigationID));
+  // Session history loads are history steps, not #navigate, and must not abort
+  // the navigate event that was fired for them.
+  if (aLoadState->LoadIsFromSessionHistory()) {
+    SetOngoingNavigation(Some(OngoingNavigation::NavigationID));
+  } else {
+    ResetOngoingNavigation(Some(OngoingNavigation::NavigationID));
+  }
 
   // 21. If url's scheme is "javascript":
   if (isJavaScript) {
@@ -9007,7 +9019,7 @@ nsresult nsDocShell::InternalLoad(nsDocShellLoadState* aLoadState,
     // Note: We don't queue a task, so instead we run step 3 of
     // https://html.spec.whatwg.org/#navigate-to-a-javascript:-url
     // 3. Set the ongoing navigation for targetNavigable to null.
-    SetOngoingNavigation(Nothing());
+    ResetOngoingNavigation(Nothing());
   }
 
   // 22. If all of the following are true:
@@ -9172,6 +9184,11 @@ nsresult nsDocShell::InternalLoad(nsDocShellLoadState* aLoadState,
   if (aLoadState->LoadIsFromSessionHistory() &&
       (mLoadType & LOAD_CMD_HISTORY)) {
     SetOngoingNavigation(Nothing());
+  }
+
+  if (aLoadState->LoadIsFromSessionHistory() &&
+      (aLoadState->LoadType() & LOAD_CMD_HISTORY)) {
+    ClearNavigationAPIOngoingNavigationForHistoryStep();
   }
 
   // Don't stop current network activity for javascript: URL's since they might
@@ -13609,8 +13626,17 @@ void nsDocShell::InformNavigationAPIAboutChildNavigableDestruction() {
   navigation->InformAboutChildNavigableDestruction(jsapi.cx());
 }
 
+// https://html.spec.whatwg.org/#apply-the-history-step step 8.3, for a history
+// step that moves this navigable away from its active document.
+void nsDocShell::ClearNavigationAPIOngoingNavigationForHistoryStep() {
+  if (RefPtr<Navigation> navigation =
+          NavigationOfDocument(GetExtantDocument())) {
+    navigation->ClearOngoingNavigationForHistoryStep();
+  }
+}
+
 // https://html.spec.whatwg.org/#set-the-ongoing-navigation
-void nsDocShell::SetOngoingNavigation(
+void nsDocShell::ResetOngoingNavigation(
     const Maybe<OngoingNavigation>& aOngoingNavigation) {
   // We currently only use #set-the-ongoing-navigation to call,
   // #inform-the-navigation-api-about-aborting-navigation, but really it should
