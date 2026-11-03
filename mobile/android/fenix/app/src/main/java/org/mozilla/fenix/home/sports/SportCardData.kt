@@ -122,3 +122,30 @@ data class MatchCard(
 enum class LiveMatchRefreshSource(val value: String) {
     LIVE_MATCH_CARD_ERROR_BUTTON("live_match_card_error_button")
 }
+
+/**
+ * Identifies which card variant is displayed in the sports widget. Used as a Glean extra to distinguish error and match
+ * cards.
+ */
+enum class SportsCardType(val value: String) {
+    ERROR_LOAD_FAILED("error_load_failed"),
+    ERROR_CONNECTION_INTERRUPTED("error_connection_interrupted"),
+    ERROR_RESULTS_LOAD_FAILED("error_results_load_failed"),
+    MATCH("match");
+
+    companion object {
+        /** Maps an [error] state to its corresponding error-card [SportsCardType]. */
+        fun fromError(error: SportCardErrorState): SportsCardType =
+            when (error) {
+                SportCardErrorState.LoadFailed -> ERROR_LOAD_FAILED
+                SportCardErrorState.ConnectionInterrupted -> ERROR_CONNECTION_INTERRUPTED
+                SportCardErrorState.ResultsLoadFailed -> ERROR_RESULTS_LOAD_FAILED
+            }
+    }
+}
+
+/** Distinguishes the first card seen on widget mount from cards reached by swiping the pager. */
+enum class SportsCardImpressionSource(val value: String) {
+    IMPRESSION("impression"),
+    SWIPE("swipe"),
+}
