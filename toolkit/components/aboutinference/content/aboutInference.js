@@ -25,10 +25,15 @@ ChromeUtils.defineESModuleGetters(lazy, {
   BACKENDS: "chrome://global/content/ml/EngineProcess.sys.mjs",
 });
 
-const { ExecutionPriority, EngineProcess, PipelineOptions, createEngine } =
-  ChromeUtils.importESModule(
-    "chrome://global/content/ml/EngineProcess.sys.mjs"
-  );
+const {
+  ExecutionPriority,
+  EngineProcess,
+  KVCacheQuantizationLevel,
+  PipelineOptions,
+  createEngine,
+} = ChromeUtils.importESModule(
+  "chrome://global/content/ml/EngineProcess.sys.mjs"
+);
 
 /**
  * Preferences for machine learning enablement and model hub configuration.
@@ -85,13 +90,68 @@ function getNumThreadsArray() {
 /** @type {MLEngineParent | null} */
 let engineParent = null;
 
+const TEXT_GENERATION_COLUMNS = [
+  "engine",
+  "run",
+  "init",
+  "total",
+  "first-chunk",
+  "prompt-tokens",
+  "prefill",
+  "output-tokens",
+  "decode",
+  "tokens-per-second",
+];
+
+// init is summarised across engines, the rest across runs.
+const TEXT_GENERATION_SUMMARY = [
+  ["init", row => row.initMs],
+  ["total", row => row.totalMs],
+  ["first-chunk", row => row.firstChunkMs],
+  ["prefill", row => row.metrics?.timeToFirstToken],
+  ["decode", row => row.metrics?.decodingTime],
+  ["tokens-per-second", row => row.metrics?.tokensPerSecond],
+];
+
 const DEVICE_COLUMNS = ["id", "description", "kind", "backends"];
 
+const TEXT_GENERATION_DEVICE_KINDS = {
+  cpu: { kinds: ["cpu"] },
+  gpu: { kinds: ["gpu", "cpu"] },
+};
+
+function fillTextGenerationDeviceKinds() {
+  const select = document.getElementById("tg.device");
+  for (const kind of Object.keys(TEXT_GENERATION_DEVICE_KINDS)) {
+    const option = document.createElement("option");
+    option.value = kind;
+    document.l10n.setAttributes(
+      option,
+      `about-inference-text-generation-device-${kind}`
+    );
+    select.appendChild(option);
+  }
+}
+
+// llama.cpp only quantizes the KV cache with flash attention.
+function updateTextGenerationKVCacheDtypes() {
+  const flashAttn = document.getElementById("tg.flashAttn").checked;
+  const select = document.getElementById("tg.kvCacheDtype");
+  for (const option of select.options) {
+    option.disabled = !flashAttn && option.value.startsWith("q");
+  }
+  if (select.selectedOptions[0].disabled) {
+    select.value = KVCacheQuantizationLevel.F16;
+  }
+}
+
 /**
- * Lists the devices of the browser inference process, launching it if needed.
+ * Lists the devices of the browser inference process, launching it if
+ * needed, and offers every accelerator in the text generation device select.
  */
 async function listDevices() {
   const container = document.getElementById("devices.table");
+  const select = document.getElementById("tg.device");
   let devices;
   try {
     devices = await HWInference.listDevices();
@@ -109,6 +169,23 @@ async function listDevices() {
       device.backends.join(", "),
     ]);
   }
+  for (const option of select.querySelectorAll("option[data-device-id]")) {
+    option.remove();
+  }
+  for (const device of devices) {
+    if (device.kind === "cpu") {
+      continue;
+    }
+    const option = document.createElement("option");
+    option.value = device.id;
+    option.dataset.deviceId = device.id;
+    option.text = `${device.description} (${device.kind})`;
+    select.appendChild(option);
+  }
+}
+
+function formatNumber(value, decimals = 0) {
+  return value == null ? "-" : value.toFixed(decimals);
 }
 
 function makeTable(container, columns, panel) {
@@ -133,6 +210,180 @@ function appendRow(table, cells) {
     tr.appendChild(td);
   }
   table.tBodies[0].appendChild(tr);
+}
+
+/**
+ * Appends one run to the results table, creating it on the first run.
+ *
+ * @param {object} row
+ */
+function addTextGenerationResult(row) {
+  const container = document.getElementById("tg.results");
+  const table =
+    container.querySelector("table") ??
+    makeTable(container, TEXT_GENERATION_COLUMNS, "text-generation");
+  const { metrics } = row;
+  appendRow(table, [
+    row.engine,
+    row.run,
+    formatNumber(row.initMs),
+    formatNumber(row.totalMs),
+    formatNumber(row.firstChunkMs),
+    metrics?.inputTokens ?? "-",
+    formatNumber(metrics?.timeToFirstToken),
+    metrics?.outputTokens ?? "-",
+    formatNumber(metrics?.decodingTime),
+    formatNumber(metrics?.tokensPerSecond, 1),
+  ]);
+}
+
+/**
+ * Min, median and max of each timing over the rows that have it.
+ *
+ * @param {object[]} rows
+ */
+function addTextGenerationSummary(rows) {
+  const container = document.getElementById("tg.summary");
+  container.replaceChildren();
+  const table = makeTable(
+    container,
+    ["metric", "min", "median", "max"],
+    "text-generation"
+  );
+  for (const [metric, pick] of TEXT_GENERATION_SUMMARY) {
+    const values = rows
+      .map(pick)
+      .filter(value => value != null)
+      .sort((a, b) => a - b);
+    if (!values.length) {
+      continue;
+    }
+    const decimals = metric === "tokens-per-second" ? 1 : 0;
+    const middle = values.length >> 1;
+    const median =
+      values.length % 2
+        ? values[middle]
+        : (values[middle - 1] + values[middle]) / 2;
+    const tr = document.createElement("tr");
+    const name = document.createElement("td");
+    document.l10n.setAttributes(
+      name,
+      `about-inference-text-generation-col-${metric}`
+    );
+    tr.appendChild(name);
+    for (const value of [values[0], median, values.at(-1)]) {
+      const td = document.createElement("td");
+      td.textContent = formatNumber(value, decimals);
+      tr.appendChild(td);
+    }
+    table.tBodies[0].appendChild(tr);
+  }
+}
+
+async function runTextGeneration() {
+  const button = document.getElementById("tg.run");
+  const output = document.getElementById("tg.output");
+  output.value = "";
+  document.getElementById("tg.results").replaceChildren();
+  document.getElementById("tg.summary").replaceChildren();
+
+  const fullModelId = document.getElementById("tg.model").value.trim();
+  const lastSlash = fullModelId.lastIndexOf("/");
+  const prompt = document.getElementById("tg.prompt").value;
+  const maxTokens = parseInt(document.getElementById("tg.maxTokens").value);
+  const engines = parseInt(document.getElementById("tg.engines").value);
+  const runs = parseInt(document.getElementById("tg.runs").value);
+  // Characters bound the prompt tokens and the chat template adds a few; the
+  // batch must hold the whole prompt, which llama.cpp asserts.
+  const numContext = prompt.length + maxTokens + 64;
+  const numBatch = numContext;
+  const numUbatch = Math.min(numBatch, 512);
+  const options = {
+    featureId: "about-inference",
+    engineId: "about-inference-text-generation",
+    taskName: "text-generation",
+    backend: "llama.cpp",
+    modelId: fullModelId.substring(0, lastSlash),
+    modelFile: fullModelId.substring(lastSlash + 1),
+    modelRevision: document.getElementById("tg.revision").value.trim(),
+    numThreads: parseInt(document.getElementById("tg.threads").value),
+    numContext,
+    numBatch,
+    numUbatch,
+    kvCacheDtype: document.getElementById("tg.kvCacheDtype").value,
+    flashAttn: document.getElementById("tg.flashAttn").checked,
+    useMmap: true,
+    useMlock: false,
+    executionPriority: ExecutionPriority.LOW,
+    timeoutMS: 30 * 1000,
+  };
+  const hub = document.getElementById("tg.hub").value;
+  if (hub) {
+    options.modelHub = hub;
+  }
+  const chosen = document.getElementById("tg.device").selectedOptions[0];
+  options.device = chosen.dataset.deviceId
+    ? { devices: [chosen.dataset.deviceId] }
+    : TEXT_GENERATION_DEVICE_KINDS[chosen.value];
+
+  button.disabled = true;
+  const rows = [];
+  try {
+    for (let engineIndex = 1; engineIndex <= engines; engineIndex++) {
+      let engine;
+      try {
+        const initStart = performance.now();
+        engine = await createEngine(options, progressData => {
+          engineNotification(progressData).catch(err => {
+            console.error("Error in engineNotification:", err);
+          });
+        });
+        const initMs = performance.now() - initStart;
+
+        for (let run = 1; run <= runs; run++) {
+          output.value = "";
+          const runStart = performance.now();
+          let firstChunkMs = null;
+          const generator = engine.runWithGenerator({
+            prompt,
+            nPredict: maxTokens,
+          });
+          let result;
+          for (;;) {
+            const { value, done } = await generator.next();
+            if (done) {
+              result = value;
+              break;
+            }
+            if (value.text) {
+              firstChunkMs ??= performance.now() - runStart;
+              output.value += value.text;
+            }
+          }
+          const row = {
+            engine: engineIndex,
+            run,
+            initMs: run === 1 ? initMs : null,
+            totalMs: performance.now() - runStart,
+            firstChunkMs,
+            metrics: result?.metrics,
+          };
+          rows.push(row);
+          addTextGenerationResult(row);
+        }
+      } finally {
+        await engine?.terminate();
+      }
+    }
+    if (rows.length > 1) {
+      addTextGenerationSummary(rows);
+    }
+  } catch (error) {
+    output.value = String(error);
+  } finally {
+    button.disabled = false;
+    await refreshPage();
+  }
 }
 
 const TINY_ARTICLE =
@@ -1426,6 +1677,20 @@ window.onload = async function () {
   document.getElementById("predefined").value = "feature-large";
   loadExample("feature-large");
 
+  fillSelect("tg.threads", getNumThreadsArray());
+  fillTextGenerationDeviceKinds();
+  fillSelect("tg.kvCacheDtype", Object.values(KVCacheQuantizationLevel));
+  document.getElementById("tg.kvCacheDtype").value =
+    KVCacheQuantizationLevel.F16;
+  updateTextGenerationKVCacheDtypes();
+  document
+    .getElementById("tg.flashAttn")
+    .addEventListener("change", updateTextGenerationKVCacheDtypes);
+  document.getElementById("tg.prompt").value =
+    `Summarize this: ${TINY_ARTICLE}`;
+  document
+    .getElementById("tg.run")
+    .addEventListener("click", runTextGeneration);
   document
     .getElementById("devices.refresh")
     .addEventListener("click", listDevices);

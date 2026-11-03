@@ -85,6 +85,14 @@
             ></button>
             <button
               role="tab"
+              id="subtab-text-generation"
+              aria-selected="false"
+              tabindex="-1"
+              aria-controls="text-generation"
+              data-l10n-id="about-inference-tab-text-generation"
+            ></button>
+            <button
+              role="tab"
               id="subtab-devices"
               aria-selected="false"
               tabindex="-1"
@@ -107,6 +115,124 @@
                   data-l10n-id="about-inference-devices-refresh"
                 ></button>
                 <div id="devices.table"></div>
+              </fieldset>
+            </div>
+          </div>
+
+          <div
+            id="text-generation"
+            role="tabpanel"
+            aria-labelledby="subtab-text-generation"
+            hidden="true"
+          >
+            <div class="fieldset-container">
+              <fieldset id="textGeneration">
+                <legend data-l10n-id="about-inference-text-generation"></legend>
+                <div class="form-container">
+                  <div>
+                    <label
+                      for="tg.hub"
+                      data-l10n-id="about-inference-text-generation-hub"
+                    ></label>
+                    <select id="tg.hub">
+                      <option
+                        value=""
+                        data-l10n-id="about-inference-text-generation-hub-default"
+                      ></option>
+                      <option value="mozilla" selected>Mozilla</option>
+                      <option value="huggingface">Hugging Face</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      for="tg.model"
+                      data-l10n-id="about-inference-text-generation-model"
+                    ></label>
+                    <input
+                      type="text"
+                      id="tg.model"
+                      value="HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/smollm2-360m-instruct-q8_0.gguf"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="tg.revision"
+                      data-l10n-id="about-inference-text-generation-revision"
+                    ></label>
+                    <input type="text" id="tg.revision" value="main" />
+                  </div>
+                  <div>
+                    <label
+                      for="tg.device"
+                      data-l10n-id="about-inference-text-generation-device"
+                    ></label>
+                    <select id="tg.device"></select>
+                  </div>
+                  <div>
+                    <label
+                      for="tg.threads"
+                      data-l10n-id="about-inference-text-generation-threads"
+                    ></label>
+                    <select id="tg.threads"></select>
+                  </div>
+                  <div>
+                    <label
+                      for="tg.flashAttn"
+                      data-l10n-id="about-inference-text-generation-flash-attn"
+                    ></label>
+                    <input id="tg.flashAttn" type="checkbox" />
+                  </div>
+                  <div>
+                    <label
+                      for="tg.kvCacheDtype"
+                      data-l10n-id="about-inference-text-generation-kv-cache-dtype"
+                    ></label>
+                    <select id="tg.kvCacheDtype"></select>
+                  </div>
+                  <div>
+                    <label
+                      for="tg.engines"
+                      data-l10n-id="about-inference-text-generation-engines"
+                    ></label>
+                    <input id="tg.engines" type="number" min="1" value="1" />
+                  </div>
+                  <div>
+                    <label
+                      for="tg.runs"
+                      data-l10n-id="about-inference-text-generation-runs"
+                    ></label>
+                    <input id="tg.runs" type="number" min="1" value="1" />
+                  </div>
+                  <div>
+                    <label
+                      for="tg.maxTokens"
+                      data-l10n-id="about-inference-text-generation-max-tokens"
+                    ></label>
+                    <input
+                      id="tg.maxTokens"
+                      type="number"
+                      min="1"
+                      value="100"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="tg.prompt"
+                      data-l10n-id="about-inference-text-generation-prompt"
+                    ></label>
+                    <textarea id="tg.prompt"></textarea>
+                  </div>
+                  <div>
+                    <button
+                      id="tg.run"
+                      data-l10n-id="about-inference-text-generation-run"
+                    ></button>
+                  </div>
+                </div>
+                <h3 data-l10n-id="about-inference-text-generation-output"></h3>
+                <textarea readonly id="tg.output"></textarea>
+                <div id="tg.results"></div>
+                <div id="tg.summary"></div>
               </fieldset>
             </div>
           </div>
