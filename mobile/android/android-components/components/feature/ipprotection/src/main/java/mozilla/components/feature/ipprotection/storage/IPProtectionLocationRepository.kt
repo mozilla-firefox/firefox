@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.feature.ipprotection.store
+package mozilla.components.feature.ipprotection.storage
 
 import android.content.Context
 import android.content.Context.MODE_PRIVATE

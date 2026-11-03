@@ -7,6 +7,7 @@
 package mozilla.components.feature.ipprotection.store
 
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.feature.ipprotection.store.reducer.iPProtectionReducer
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Reducer

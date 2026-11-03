@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.feature.ipprotection.store
+package mozilla.components.feature.ipprotection.store.reducer
 
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -11,7 +11,10 @@ import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
 import mozilla.components.concept.engine.ipprotection.ProxyState
 import mozilla.components.concept.engine.ipprotection.ServiceState
-import mozilla.components.feature.ipprotection.buildIPProtectionState
+import mozilla.components.feature.ipprotection.storage.buildIPProtectionState
+import mozilla.components.feature.ipprotection.store.ActivationOperation
+import mozilla.components.feature.ipprotection.store.CachedLocationStatus
+import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.AccountState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.Authorized
@@ -201,7 +204,10 @@ class IPProtectionReducerTest {
         val state = buildIPProtectionState().copy(pendingActivationRequest = PendingActivationRequest.Activate(null))
         assertEquals(
             state.copy(pendingActivationRequest = null),
-            iPProtectionReducer(state, IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate)),
+            iPProtectionReducer(
+                state,
+                IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate),
+            ),
         )
     }
 
@@ -238,7 +244,10 @@ class IPProtectionReducerTest {
                 pendingActivationRequest = null,
                 accountState = state.accountState.copy(status = AccountStatus.TryAgain),
             ),
-            iPProtectionReducer(state, IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate)),
+            iPProtectionReducer(
+                state,
+                IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate),
+            ),
         )
     }
 
@@ -253,7 +262,10 @@ class IPProtectionReducerTest {
                 )
         assertEquals(
             state.copy(pendingActivationRequest = null, accountState = state.accountState),
-            iPProtectionReducer(state, IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate)),
+            iPProtectionReducer(
+                state,
+                IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate),
+            ),
         )
     }
 

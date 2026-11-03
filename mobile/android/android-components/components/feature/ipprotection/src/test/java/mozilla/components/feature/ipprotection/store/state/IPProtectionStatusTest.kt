@@ -8,7 +8,7 @@ package mozilla.components.feature.ipprotection.store.state
 
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.ServiceState
-import mozilla.components.feature.ipprotection.buildIPProtectionState
+import mozilla.components.feature.ipprotection.storage.buildIPProtectionState
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

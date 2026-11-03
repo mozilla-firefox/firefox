@@ -2,13 +2,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.feature.ipprotection.store
+package mozilla.components.feature.ipprotection.store.middleware
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.feature.ipprotection.storage.IPProtectionLocationRepository
+import mozilla.components.feature.ipprotection.store.CachedLocationStatus
+import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.Location
@@ -21,7 +24,7 @@ import mozilla.components.lib.state.Store
  * [IPProtectionLocationRepository].
  *
  * @param repository [IPProtectionLocationRepository] persistent storage interface.
- * @param coroutineScope [CoroutineScope] used to launch coroutines.
+ * @param coroutineScope [kotlinx.coroutines.CoroutineScope] used to launch coroutines.
  */
 @OptIn(ExperimentalAndroidComponentsApi::class)
 class IPProtectionLocationMiddleware(

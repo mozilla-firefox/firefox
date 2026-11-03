@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.feature.ipprotection.store
+package mozilla.components.feature.ipprotection.store.middleware
 
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -10,8 +10,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.IPProtectionHandler
-import mozilla.components.feature.ipprotection.IPProtectionTestMiddleware
+import mozilla.components.feature.ipprotection.storage.IPProtectionLocationRepository
+import mozilla.components.feature.ipprotection.storage.IPProtectionTestMiddleware
+import mozilla.components.feature.ipprotection.store.CachedLocationStatus
+import mozilla.components.feature.ipprotection.store.IPProtectionAction
+import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.AccountState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.Authorized
@@ -23,12 +28,11 @@ import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.Recommended
 import mozilla.components.feature.ipprotection.store.state.Uninitialized
 import mozilla.components.lib.state.Middleware
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(mozilla.components.ExperimentalAndroidComponentsApi::class)
+@OptIn(ExperimentalAndroidComponentsApi::class)
 class IPProtectionLocationMiddlewareTest {
 
     private lateinit var fakeRepository: FakeIPProtectionLocationRepository
@@ -61,14 +65,14 @@ class IPProtectionLocationMiddlewareTest {
                             )
                     )
 
-                assertEquals(null, fakeRepository.getSelectedLocationCode())
-                assertEquals(null, store.state.locationState.selectedLocation.countryCode)
+                Assert.assertEquals(null, fakeRepository.getSelectedLocationCode())
+                Assert.assertEquals(null, store.state.locationState.selectedLocation.countryCode)
 
                 store.dispatch(IPProtectionAction.LocationAction.LocationChanged(location, userAction = true))
                 testScheduler.advanceUntilIdle()
 
-                assertEquals(location.countryCode, fakeRepository.getSelectedLocationCode())
-                assertEquals(location.countryCode, store.state.locationState.selectedLocation.countryCode)
+                Assert.assertEquals(location.countryCode, fakeRepository.getSelectedLocationCode())
+                Assert.assertEquals(location.countryCode, store.state.locationState.selectedLocation.countryCode)
             }
     }
 
@@ -80,7 +84,7 @@ class IPProtectionLocationMiddlewareTest {
             val store = buildStore(locationState = LocationState(), middleware = listOf(middleware))
             fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-            assertFalse(cachedLocationCode == store.state.locationState.selectedLocation.countryCode)
+            Assert.assertFalse(cachedLocationCode == store.state.locationState.selectedLocation.countryCode)
 
             store.dispatch(
                 IPProtectionAction.LocationAction.CountryListChanged(
@@ -95,7 +99,7 @@ class IPProtectionLocationMiddlewareTest {
             )
             testScheduler.advanceUntilIdle()
 
-            assertEquals(cachedLocationCode, store.state.locationState.selectedLocation.countryCode)
+            Assert.assertEquals(cachedLocationCode, store.state.locationState.selectedLocation.countryCode)
         }
 
     // simulates the start of the app when a country list does not contain the previously cached code
@@ -120,8 +124,8 @@ class IPProtectionLocationMiddlewareTest {
 
             testScheduler.advanceUntilIdle()
 
-            assertEquals(Recommended, store.state.locationState.selectedLocation)
-            assertEquals(null, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(Recommended, store.state.locationState.selectedLocation)
+            Assert.assertEquals(null, fakeRepository.getSelectedLocationCode())
         }
 
     // simulates a country list update after the app has been running for a bit
@@ -144,8 +148,8 @@ class IPProtectionLocationMiddlewareTest {
                 )
             fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-            assertEquals(selectedCountry, store.state.locationState.selectedLocation)
-            assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+            Assert.assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
 
             store.dispatch(
                 IPProtectionAction.LocationAction.CountryListChanged(
@@ -159,8 +163,8 @@ class IPProtectionLocationMiddlewareTest {
             )
             testScheduler.advanceUntilIdle()
 
-            assertEquals(Recommended, store.state.locationState.selectedLocation)
-            assertEquals(null, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(Recommended, store.state.locationState.selectedLocation)
+            Assert.assertEquals(null, fakeRepository.getSelectedLocationCode())
         }
 
     // simulates a country list update after the app has been running for a bit
@@ -183,8 +187,8 @@ class IPProtectionLocationMiddlewareTest {
                 )
             fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-            assertEquals(selectedCountry, store.state.locationState.selectedLocation)
-            assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+            Assert.assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
 
             store.dispatch(
                 IPProtectionAction.LocationAction.CountryListChanged(
@@ -199,8 +203,8 @@ class IPProtectionLocationMiddlewareTest {
             )
             testScheduler.advanceUntilIdle()
 
-            assertEquals(Recommended, store.state.locationState.selectedLocation)
-            assertEquals(null, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(Recommended, store.state.locationState.selectedLocation)
+            Assert.assertEquals(null, fakeRepository.getSelectedLocationCode())
         }
 
     // simulates the start of the app when a country list update contains the previously cached location but the
@@ -212,7 +216,7 @@ class IPProtectionLocationMiddlewareTest {
             val store = buildStore(locationState = LocationState(), middleware = listOf(middleware))
             fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-            assertFalse(cachedLocationCode == store.state.locationState.selectedLocation.countryCode)
+            Assert.assertFalse(cachedLocationCode == store.state.locationState.selectedLocation.countryCode)
 
             store.dispatch(
                 IPProtectionAction.LocationAction.CountryListChanged(
@@ -227,8 +231,8 @@ class IPProtectionLocationMiddlewareTest {
             )
             testScheduler.advanceUntilIdle()
 
-            assertEquals(Recommended, store.state.locationState.selectedLocation)
-            assertEquals(null, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(Recommended, store.state.locationState.selectedLocation)
+            Assert.assertEquals(null, fakeRepository.getSelectedLocationCode())
         }
 
     @Test
@@ -250,13 +254,13 @@ class IPProtectionLocationMiddlewareTest {
             )
         fakeRepository.setSelectedLocationCode(cachedLocationCode)
 
-        assertEquals(selectedCountry, store.state.locationState.selectedLocation)
-        assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
+        Assert.assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+        Assert.assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
 
         store.dispatch(IPProtectionAction.AccountAction.AccountManagerStateChanged(status = AccountStatus.NoAccount))
         testScheduler.advanceUntilIdle()
 
-        assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
+        Assert.assertEquals(cachedLocationCode, fakeRepository.getSelectedLocationCode())
     }
 
     // a country list push can arrive at any time, including while the proxy is running
@@ -291,7 +295,7 @@ class IPProtectionLocationMiddlewareTest {
             testScheduler.advanceUntilIdle()
 
             captureMiddleware.assertNotDispatched(IPProtectionAction.LocationAction.LocationChanged::class)
-            assertEquals(selectedCountry, store.state.locationState.selectedLocation)
+            Assert.assertEquals(selectedCountry, store.state.locationState.selectedLocation)
         }
 
     @Test
@@ -310,7 +314,7 @@ class IPProtectionLocationMiddlewareTest {
             testScheduler.advanceUntilIdle()
 
             captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.LocationChanged::class) { action ->
-                assertFalse(action.userAction)
+                Assert.assertFalse(action.userAction)
             }
         }
 
@@ -330,8 +334,8 @@ class IPProtectionLocationMiddlewareTest {
 
             captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.PersistedLocationUnavailable::class) {
                 action ->
-                assertEquals("JP", action.countryCode)
-                assertEquals(CachedLocationStatus.Missing, action.status)
+                Assert.assertEquals("JP", action.countryCode)
+                Assert.assertEquals(CachedLocationStatus.Missing, action.status)
             }
             captureMiddleware.assertNotDispatched(IPProtectionAction.LocationAction.LocationReset::class)
         }
@@ -357,8 +361,8 @@ class IPProtectionLocationMiddlewareTest {
             testScheduler.advanceUntilIdle()
 
             captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.LocationReset::class) { action ->
-                assertEquals("JP", action.countryCode)
-                assertEquals(CachedLocationStatus.Missing, action.status)
+                Assert.assertEquals("JP", action.countryCode)
+                Assert.assertEquals(CachedLocationStatus.Missing, action.status)
             }
             captureMiddleware.assertNotDispatched(IPProtectionAction.LocationAction.PersistedLocationUnavailable::class)
         }
@@ -405,10 +409,10 @@ class IPProtectionLocationMiddlewareTest {
         )
         testScheduler.advanceUntilIdle()
 
-        assertEquals(france, store.state.locationState.selectedLocation)
-        assertEquals("FR", fakeRepository.getSelectedLocationCode())
+        Assert.assertEquals(france, store.state.locationState.selectedLocation)
+        Assert.assertEquals("FR", fakeRepository.getSelectedLocationCode())
         captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.LocationChanged::class) { action ->
-            assertEquals(france, action.location)
+            Assert.assertEquals(france, action.location)
         }
     }
 
@@ -433,10 +437,10 @@ class IPProtectionLocationMiddlewareTest {
         store.dispatch(IPProtectionAction.LocationAction.LocationChanged(france, userAction = true))
         testScheduler.advanceUntilIdle()
 
-        assertEquals(france, store.state.locationState.selectedLocation)
-        assertEquals("FR", fakeRepository.getSelectedLocationCode())
+        Assert.assertEquals(france, store.state.locationState.selectedLocation)
+        Assert.assertEquals("FR", fakeRepository.getSelectedLocationCode())
         captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.LocationChanged::class) { action ->
-            assertEquals(france, action.location)
+            Assert.assertEquals(france, action.location)
         }
     }
 
@@ -464,11 +468,11 @@ class IPProtectionLocationMiddlewareTest {
             store.dispatch(IPProtectionAction.LocationAction.LocationChanged(france, userAction = true))
             testScheduler.advanceUntilIdle()
 
-            assertEquals(france, store.state.locationState.selectedLocation)
-            assertEquals("FR", fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(france, store.state.locationState.selectedLocation)
+            Assert.assertEquals("FR", fakeRepository.getSelectedLocationCode())
             captureMiddleware.assertNotDispatched(IPProtectionAction.LocationAction.LocationReset::class)
             captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.LocationChanged::class) { action ->
-                assertEquals(france, action.location)
+                Assert.assertEquals(france, action.location)
             }
         }
 
@@ -494,11 +498,11 @@ class IPProtectionLocationMiddlewareTest {
             store.dispatch(IPProtectionAction.LocationAction.LocationChanged(france, userAction = true))
             testScheduler.advanceUntilIdle()
 
-            assertEquals(Recommended, store.state.locationState.selectedLocation)
-            assertEquals(null, fakeRepository.getSelectedLocationCode())
+            Assert.assertEquals(Recommended, store.state.locationState.selectedLocation)
+            Assert.assertEquals(null, fakeRepository.getSelectedLocationCode())
             captureMiddleware.assertLastAction(IPProtectionAction.LocationAction.LocationReset::class) { action ->
-                assertEquals("FR", action.countryCode)
-                assertEquals(CachedLocationStatus.Unavailable, action.status)
+                Assert.assertEquals("FR", action.countryCode)
+                Assert.assertEquals(CachedLocationStatus.Unavailable, action.status)
             }
         }
 

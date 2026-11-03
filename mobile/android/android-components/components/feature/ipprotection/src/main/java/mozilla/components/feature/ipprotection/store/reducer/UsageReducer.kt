@@ -4,10 +4,11 @@
 
 @file:OptIn(ExperimentalAndroidComponentsApi::class)
 
-package mozilla.components.feature.ipprotection.store
+package mozilla.components.feature.ipprotection.store.reducer
 
 import kotlin.time.Instant
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.UsageQuota
 import mozilla.components.feature.ipprotection.store.state.asDataVolume
@@ -25,8 +26,8 @@ internal object UsageReducer {
 }
 
 /**
- * Converts the data usage items in [IPProtectionAction.UsageAction.UsageChanged] to [UsageQuota]. When either
- * [remaining] or [max] is negative, the quota information is unavailable.
+ * Converts the data usage items in [UsageChanged] to [UsageQuota]. When either [remaining] or [max] is negative, the
+ * quota information is unavailable.
  */
 private fun IPProtectionAction.UsageAction.UsageChanged.toUsageQuota(): UsageQuota? {
     val remainingVolume = remaining.takeIf { it >= 0 }?.asDataVolume()

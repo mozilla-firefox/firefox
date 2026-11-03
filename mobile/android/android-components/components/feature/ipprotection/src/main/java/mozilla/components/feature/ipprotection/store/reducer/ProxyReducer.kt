@@ -4,10 +4,11 @@
 
 @file:OptIn(ExperimentalAndroidComponentsApi::class)
 
-package mozilla.components.feature.ipprotection.store
+package mozilla.components.feature.ipprotection.store.reducer
 
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.ProxyState
+import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
