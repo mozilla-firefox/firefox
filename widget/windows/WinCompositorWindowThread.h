@@ -7,6 +7,7 @@
 
 #include "base/message_loop.h"
 #include "base/thread.h"
+#include "mozilla/StaticMonitor.h"
 
 namespace mozilla {
 namespace widget {
@@ -45,6 +46,9 @@ class WinCompositorWindowThread final {
   static void DestroyCompositorWindow(WinCompositorWnds aWnds);
 
  private:
+  static StaticMonitor sShutdownMonitor;
+  static bool sShutdownComplete MOZ_GUARDED_BY(sShutdownMonitor);
+
   explicit WinCompositorWindowThread(base::Thread* aThread);
   ~WinCompositorWindowThread() = default;
 

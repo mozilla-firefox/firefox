@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "Units.h"
+#include "mozilla/StaticMonitor.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/widget/WindowOcclusionState.h"
 #include "nsIWeakReferenceUtils.h"
@@ -77,6 +78,9 @@ class WinWindowOcclusionTracker final {
  private:
   friend class ::WinWindowOcclusionTrackerTest;
   friend class ::WinWindowOcclusionTrackerInteractiveTest;
+
+  static StaticMonitor sShutdownMonitor;
+  static bool sShutdownComplete MOZ_GUARDED_BY(sShutdownMonitor);
 
   explicit WinWindowOcclusionTracker(UniquePtr<base::Thread> aThread);
   virtual ~WinWindowOcclusionTracker();
