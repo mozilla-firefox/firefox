@@ -52,6 +52,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowTabStatesManager.sys.mjs",
   AIWindowMenu:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowMenu.sys.mjs",
+  AuthImplSelector:
+    "moz-src:///browser/components/aiwindow/models/auth/AuthImplSelector.sys.mjs",
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   AutoTabGroupingSuggestions:
@@ -285,6 +287,7 @@ export const AIWindow = {
     if (lazy.NimbusFeatures.smartWindow.getVariable("enabled")) {
       Services.prefs.setBoolPref(PREF_SMARTWINDOW_ENABLED, true);
     }
+    lazy.AuthImplSelector.applyNimbusAuthImpl();
   },
 
   onAuthProviderLogout() {

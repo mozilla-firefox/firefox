@@ -14,6 +14,7 @@ const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 const IMPLS = [FxaAuthProviderImpl, GuestAuthProviderImpl];
 
 const lazy = XPCOMUtils.declareLazy({
+  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   log: () =>
     console.createInstance({
       prefix: "AuthImplSelector",
@@ -27,6 +28,11 @@ const lazy = XPCOMUtils.declareLazy({
  * Chooses and owns the AuthProviderImpl used by AuthProvider, based on the
  * auth impl pref and the Mozilla account state. The impl is chosen on first
  * use, and the FxA choice is persisted in the auth impl pref.
+ *
+ * If a Nimbus enrollment sets the smartWindow authImpl variable, its value is
+ * copied to the auth impl pref when the pref has a different value.
+ * Unenrolling does not reset the pref; it goes back to FxA when the server
+ * rejects the guest token or when the user signs in.
  *
  * @fires AuthImplSelector#"AuthImplSelector:Logout"
  *  When the user signs out of their account.
@@ -93,6 +99,21 @@ export class AuthImplSelector extends EventTarget {
       "AuthProviderImpl:FallbackNeeded",
       this.#onFallbackNeeded
     );
+  }
+
+  /**
+   * Writes the authImpl value of the enrollment to the auth impl pref.
+   * Called by AIWindow on updates of the smartWindow feature.
+   */
+  static applyNimbusAuthImpl() {
+    const authImpl =
+      lazy.NimbusFeatures.smartWindow.getVariable("authImpl") ?? null;
+    if (
+      authImpl !== null &&
+      authImpl !== Services.prefs.getStringPref(PREF_AUTH_IMPL)
+    ) {
+      Services.prefs.setStringPref(PREF_AUTH_IMPL, authImpl);
+    }
   }
 
   #update() {

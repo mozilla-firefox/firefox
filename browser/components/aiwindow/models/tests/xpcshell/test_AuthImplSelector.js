@@ -21,18 +21,30 @@ const { GuestAuthProviderImpl } = ChromeUtils.importESModule(
 const { ONLOGOUT_NOTIFICATION } = ChromeUtils.importESModule(
   "resource://gre/modules/FxAccountsCommon.sys.mjs"
 );
+const { NimbusFeatures } = ChromeUtils.importESModule(
+  "resource://nimbus/ExperimentAPI.sys.mjs"
+);
+const { NimbusTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/NimbusTestUtils.sys.mjs"
+);
 const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"
 );
 
 const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 const PREF_GUEST_TOKEN = "browser.smartwindow.auth.guest.token";
+const PREF_GUEST_MODE = "browser.smartwindow.auth.guest.mode";
+
+NimbusTestUtils.init(this);
 
 let sb;
 let watcherInit;
 let signedIn = false;
 
-add_setup(() => {
+add_setup(async () => {
+  do_get_profile();
+  const { cleanup } = await NimbusTestUtils.setupTest();
+  NimbusFeatures.smartWindow.onUpdate(AuthImplSelector.applyNimbusAuthImpl);
   sb = sinon.createSandbox();
   watcherInit = sb.stub(FxaSignedInWatcher, "init").resolves();
   sb.stub(FxaSignedInWatcher, "signedIn").get(() => signedIn);
@@ -41,6 +53,10 @@ add_setup(() => {
     sb.restore();
     Services.prefs.clearUserPref(PREF_AUTH_IMPL);
     Services.prefs.clearUserPref(PREF_GUEST_TOKEN);
+  });
+  registerCleanupFunction(async () => {
+    NimbusFeatures.smartWindow.offUpdate(AuthImplSelector.applyNimbusAuthImpl);
+    await cleanup();
   });
 });
 
@@ -267,5 +283,112 @@ add_task(async function test_fallback() {
   Assert.ok(
     (await selector.getImpl()) instanceof FxaAuthProviderImpl,
     "The selector switches to FxA"
+  );
+});
+
+/**
+ * Enrolls in an experiment on the smartWindow feature.
+ *
+ * @param {object} value The feature value
+ * @param {string} slug
+ * @returns {Promise<Function>} Unenrolls from the experiment
+ */
+function enrollSmartWindow(value, slug = "auth-experiment") {
+  return NimbusTestUtils.enrollWithFeatureConfig(
+    { featureId: "smartWindow", value },
+    { slug }
+  );
+}
+
+add_task(async function test_nimbus_authImpl_applied_on_enrollment() {
+  const { selector } = await select({ impl: "fxa", fxa: false });
+  Services.prefs.clearUserPref(PREF_AUTH_IMPL);
+
+  const unenroll = await enrollSmartWindow({ authImpl: "" });
+  Assert.equal(
+    Services.prefs.getStringPref(PREF_AUTH_IMPL),
+    "",
+    "The enrollment value is written to the pref"
+  );
+  Assert.ok(
+    (await selector.getImpl()) instanceof GuestAuthProviderImpl,
+    "The selector switches to guest"
+  );
+
+  setSignedIn(true);
+  Assert.ok(
+    (await selector.getImpl()) instanceof FxaAuthProviderImpl,
+    "Signing in to FxA during the enrollment switches to FxA"
+  );
+  Assert.equal(
+    Services.prefs.getStringPref(PREF_AUTH_IMPL),
+    "fxa",
+    "The FxA choice is persisted during the enrollment"
+  );
+
+  const restarted = new AuthImplSelector();
+  Assert.ok(
+    (await restarted.getImpl()) instanceof FxaAuthProviderImpl,
+    "A new selector keeps FxA for the same enrollment while signed in"
+  );
+
+  await unenroll();
+});
+
+add_task(async function test_nimbus_authImpl_kept_after_unenrollment() {
+  const { selector } = await select({ impl: "fxa", fxa: false });
+  Services.prefs.clearUserPref(PREF_AUTH_IMPL);
+
+  const unenroll = await enrollSmartWindow({ authImpl: "" });
+  await unenroll();
+  Assert.equal(
+    Services.prefs.getStringPref(PREF_AUTH_IMPL),
+    "",
+    "Unenrolling leaves the pref alone"
+  );
+
+  const guest = await selector.getImpl();
+  Assert.ok(guest instanceof GuestAuthProviderImpl, "The guest impl is kept");
+  guest.dispatchEvent(new Event("AuthProviderImpl:FallbackNeeded"));
+  Assert.ok(
+    !Services.prefs.prefHasUserValue(PREF_AUTH_IMPL),
+    "A rejected guest token switches the pref back to its default"
+  );
+  Assert.ok(
+    (await selector.getImpl()) instanceof FxaAuthProviderImpl,
+    "The selector switches to FxA"
+  );
+});
+
+add_task(async function test_nimbus_authImpl_overrides_user_value() {
+  const { selector } = await select({ impl: "", fxa: false });
+
+  const unenroll = await enrollSmartWindow({ authImpl: "fxa" });
+  Assert.equal(
+    Services.prefs.getStringPref(PREF_AUTH_IMPL),
+    "fxa",
+    "The enrollment value is written over a user value"
+  );
+  Assert.ok(
+    (await selector.getImpl()) instanceof FxaAuthProviderImpl,
+    "The selector switches to FxA"
+  );
+
+  await unenroll();
+});
+
+add_task(async function test_nimbus_guestMode() {
+  const unenroll = await enrollSmartWindow({ guestMode: "tab" });
+  Assert.equal(
+    Services.prefs.getStringPref(PREF_GUEST_MODE),
+    "tab",
+    "The enrollment sets the guest mode pref"
+  );
+
+  await unenroll();
+  Assert.equal(
+    Services.prefs.getStringPref(PREF_GUEST_MODE),
+    "fetch",
+    "Unenrolling restores the guest mode pref"
   );
 });

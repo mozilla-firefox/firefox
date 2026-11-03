@@ -10,6 +10,7 @@ const PREF_IS_DEFAULT_WINDOW = "browser.smartwindow.isDefaultWindow";
 const PREF_RESUME_ACTIVITY_ENABLED =
   "browser.smartwindow.resumeActivity.enabled";
 const PREF_SMARTWINDOW_ENABLED = "browser.smartwindow.enabled";
+const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 const PREF_AGENT_ENABLED = "browser.smartwindow.agent.enabled";
 const PREF_AGENT_SUPPORTED_REGIONS =
   "browser.smartwindow.agent.supportedRegions";
@@ -272,4 +273,33 @@ add_task(async function test_nimbus_resume_activity_overrides_fallback_pref() {
     true,
     "resumeActivity falls back to the pref again after unenrollment"
   );
+});
+
+/**
+ * Enrolling in the smartWindow feature with authImpl writes it to the auth
+ * impl pref via AIWindow.onNimbusUpdate, and unenrolling leaves the pref.
+ */
+add_task(async function test_nimbus_authImpl_sets_pref() {
+  ok(
+    !Services.prefs.prefHasUserValue(PREF_AUTH_IMPL),
+    "No user value for the auth impl before enrollment"
+  );
+
+  const cleanup = await NimbusTestUtils.enrollWithFeatureConfig({
+    featureId: "smartWindow",
+    value: { authImpl: "" },
+  });
+  is(
+    Services.prefs.getStringPref(PREF_AUTH_IMPL),
+    "",
+    "The auth impl pref is set from the enrollment"
+  );
+
+  await cleanup();
+  is(
+    Services.prefs.getStringPref(PREF_AUTH_IMPL),
+    "",
+    "Unenrolling leaves the auth impl pref"
+  );
+  Services.prefs.clearUserPref(PREF_AUTH_IMPL);
 });
