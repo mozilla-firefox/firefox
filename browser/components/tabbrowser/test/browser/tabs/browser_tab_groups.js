@@ -1420,6 +1420,66 @@ add_task(async function test_bug1997096_autoUncollapseOnRightClick() {
   BrowserTestUtils.removeTab(groupedTab);
 });
 
+add_task(async function test_bug2003021_relatedTabPositionInCollapsedGroup() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.insertRelatedAfterCurrent", true]],
+  });
+  let [tab1, tab2, tab3] = createManyTabs(3);
+  let group = gBrowser.addTabGroup([tab1, tab2, tab3]);
+  gBrowser.selectedTab = tab1;
+  group.collapsed = true;
+
+  let relatedTab1 = BrowserTestUtils.addTab(gBrowser, "about:blank", {
+    relatedToCurrent: true,
+    skipAnimation: true,
+  });
+  Assert.deepEqual(
+    group.tabs,
+    [tab1, relatedTab1, tab2, tab3],
+    "Related tab is inserted after the active tab in the collapsed group"
+  );
+
+  group.collapsed = true;
+  let relatedTab2 = BrowserTestUtils.addTab(gBrowser, "about:blank", {
+    relatedToCurrent: true,
+    skipAnimation: true,
+  });
+  Assert.deepEqual(
+    group.tabs,
+    [tab1, relatedTab1, relatedTab2, tab2, tab3],
+    "Second related tab is inserted after the first related tab"
+  );
+
+  await removeTabGroup(group);
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(
+  async function test_bug2003021_relatedTabPositionInCollapsedGroupSplitView() {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.tabs.insertRelatedAfterCurrent", true]],
+    });
+    let [tab1, tab2, tab3] = createManyTabs(3);
+    let splitview = gBrowser.addTabSplitView([tab1, tab2]);
+    let group = gBrowser.addTabGroup([splitview, tab3]);
+    gBrowser.selectedTab = tab1;
+    group.collapsed = true;
+
+    let relatedTab = BrowserTestUtils.addTab(gBrowser, "about:blank", {
+      relatedToCurrent: true,
+      skipAnimation: true,
+    });
+    Assert.deepEqual(
+      group.tabs,
+      [tab1, tab2, relatedTab, tab3],
+      "Related tab is inserted after the active split view in the collapsed group"
+    );
+
+    await removeTabGroup(group);
+    await SpecialPowers.popPrefEnv();
+  }
+);
+
 add_task(async function test_bug2007061_hideSplitViewWhenDraggingGroup() {
   let tab1 = BrowserTestUtils.addTab(gBrowser, "about:blank");
   let tab2 = BrowserTestUtils.addTab(gBrowser, "about:blank");

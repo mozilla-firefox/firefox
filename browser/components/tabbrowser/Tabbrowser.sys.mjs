@@ -5571,6 +5571,14 @@ export class Tabbrowser {
           previousTab.pinned
         ) {
           elementIndex = Infinity;
+        } else if (!previousTab.hidden && previousTab.group?.collapsed) {
+          // Most tabs in a collapsed group aren't in dragAndDropElements, so
+          // look up the position among all tabs instead.
+          elementIndex = undefined;
+          tabIndex =
+            this.tabs.indexOf(
+              previousTab.splitview?.tabs.at(-1) ?? previousTab
+            ) + 1;
         } else if (previousTab.visible && previousTab.splitview) {
           elementIndex =
             this.tabContainer.dragAndDropElements.indexOf(
@@ -5635,8 +5643,9 @@ export class Tabbrowser {
 
     if (tabGroup) {
       if (
-        (Tabbrowser.isTab(itemAfter) && itemAfter.group == tabGroup) ||
-        Tabbrowser.isSplitViewWrapper(itemAfter)
+        (Tabbrowser.isTab(itemAfter) ||
+          Tabbrowser.isSplitViewWrapper(itemAfter)) &&
+        itemAfter.group == tabGroup
       ) {
         // Place at the front of, or between tabs in, the same tab group
         this.tabContainer.insertBefore(tab, itemAfter);
