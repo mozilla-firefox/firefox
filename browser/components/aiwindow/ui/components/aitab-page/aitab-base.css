@@ -9,10 +9,6 @@
   --aitab-heading-font-family: "Mozilla Headline";
   --aitab-font-family: -apple-system, "Ubuntu Sans", "Noto Sans", Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
   --smartwindow-panel-item-border-radius: var(--border-radius-xlarge);
-  --smartwindow-border-color: light-dark(
-    var(--color-violet-desaturated-20, var(--color-violet-20)),
-    var(--color-violet-desaturated-50, var(--color-violet-60))
-  );
 
   color: var(--button-text-color);
   font-family: var(--aitab-font-family);

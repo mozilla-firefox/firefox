@@ -21,6 +21,7 @@ import { MozBaseInputElement } from "../lit-utils.mjs";
  * @property {string} description - The text for the description element that helps describe the input control
  * @property {string} supportPage - Name of the SUMO support page to link to.
  * @property {string} placeholder - Text to display when the input has no value.
+ * @property {number} maxLength - The maximum number of characters the input accepts.
  * @property {string} ariaLabel - The aria-label text when there is no visible label.
  * @property {string} ariaDescription - The aria-description text when there is no visible description.
  * @property {string} title - The title attribute, mapped onto the inner input.
@@ -30,6 +31,7 @@ export class MozInputText extends MozBaseInputElement {
     placeholder: { type: String, fluent: true },
     readonly: { type: Boolean, reflect: true },
     required: { type: Boolean, reflect: true },
+    maxLength: { type: Number },
   };
   static inputLayout = "block";
 
@@ -67,6 +69,7 @@ export class MozInputText extends MozBaseInputElement {
         ?required=${this.required}
         accesskey=${ifDefined(this.accessKey)}
         placeholder=${ifDefined(this.placeholder)}
+        maxlength=${ifDefined(this.maxLength)}
         aria-label=${ifDefined(this.ariaLabel ?? undefined)}
         aria-describedby="description"
         aria-description=${ifDefined(

@@ -8,13 +8,21 @@
  * group chicklets) can reference the group colors. */
 @import url("chrome://browser/skin/tabbrowser/tab.tokens.css");
 
-:root {
+:root,
+:host(.anonymous-content-host) {
   /* 580px - max width for chat content and smartbar */
   --smartwindow-content-max-width: calc(var(--size-layout-xlarge) + 80px);
   --smartwindow-brand-accent: light-dark(var(--color-violet-90), var(--color-violet-20));
   --smartwindow-prompt-button-background-color: light-dark(var(--color-white), var(--color-gray-80));
   --smartwindow-text-color-accent-deemphasized: light-dark(var(--color-violet-60), var(--color-violet-30));
   --smartwindow-border-color-gradient: linear-gradient(117deg, #321bfd -17.87%, #cf30e2 52.93%, #f90 89.02%, #f5c451 109.44%);
+  --smartwindow-border-color: light-dark(
+    var(--color-violet-desaturated-20, var(--color-violet-20)),
+    var(--color-violet-desaturated-50, var(--color-violet-60))
+  );
+  @media (forced-colors) {
+    --smartwindow-border-color: CanvasText;
+  }
 
   /* Non-nova dark-theme ghost chrome buttons (history menu, new chat, close).
      The dark fill approximates the design's #734d8d, which has no single

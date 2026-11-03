@@ -20,6 +20,7 @@ import { MozInputText } from "chrome://global/content/elements/moz-input-text.mj
  * @property {string} description - The text for the description element that helps describe the textarea control.
  * @property {string} supportPage - Name of the SUMO support page to link to.
  * @property {string} placeholder - Text to display when the textarea has no value.
+ * @property {number} maxLength - The maximum number of characters the textarea accepts.
  * @property {string} iconSrc - The src for an optional icon.
  * @property {string} ariaLabel - The aria-label text when there is no visible label.
  * @property {string} ariaDescription - The aria-description text when there is no visible description.
@@ -59,6 +60,7 @@ export class MozTextarea extends MozInputText {
         ?required=${this.required}
         accesskey=${ifDefined(this.accessKey)}
         placeholder=${ifDefined(this.placeholder)}
+        maxlength=${ifDefined(this.maxLength)}
         aria-label=${ifDefined(this.ariaLabel ?? undefined)}
         aria-describedby="description"
         aria-description=${ifDefined(

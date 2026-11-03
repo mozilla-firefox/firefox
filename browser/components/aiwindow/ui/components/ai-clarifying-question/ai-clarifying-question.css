@@ -1,0 +1,223 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  --clarifying-border-color: var(--smartwindow-border-color, var(--border-color));
+  --clarifying-option-background-color: light-dark(var(--color-violet-0), var(--color-violet-80));
+  --clarifying-option-background-color-hover: color-mix(in srgb, currentColor 7%, var(--clarifying-option-background-color));
+  --clarifying-badge-background-color: light-dark(var(--color-violet-10), var(--color-violet-70));
+  --clarifying-recommended-background-color: var(--background-color-box);
+  --clarifying-recommended-background-color-hover: color-mix(in srgb, currentColor 7%, var(--clarifying-recommended-background-color));
+
+  display: block;
+  position: relative;
+  /* Keep descendant z-indexes within this component. */
+  isolation: isolate;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  max-width: min(100%, var(--size-layout-large));
+
+  /* TODO: Bug 2033070 - desaturated tokens only exist in Nova, remove after it becomes default */
+  @media -moz-pref("browser.nova.enabled") {
+    --clarifying-option-background-color: light-dark(var(--color-violet-desaturated-0), var(--color-violet-desaturated-80));
+    --clarifying-badge-background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-70));
+  }
+
+  @media (forced-colors) {
+    --clarifying-option-background-color: ButtonFace;
+    --clarifying-option-background-color-hover: SelectedItem;
+    --clarifying-badge-background-color: Canvas;
+    --clarifying-recommended-background-color-hover: SelectedItem;
+  }
+}
+
+.ai-clarifying-question-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  padding: var(--space-large) var(--space-medium) var(--space-medium);
+  background-color: var(--background-color-box);
+  border: var(--border-width) solid var(--clarifying-border-color);
+  border-radius: var(--border-radius-xlarge, var(--border-radius-large));
+  box-shadow: var(--box-shadow-level-3);
+}
+
+moz-button.close-button {
+  --button-border-radius: var(--border-radius-circle);
+  --icon-size: var(--icon-size-xsmall);
+
+  position: absolute;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  inset-block-start: -10px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  inset-inline-end: -10px;
+  z-index: 1;
+  /* This is absolute positioned, give it an opaque background */
+  background-color: var(--background-color-box);
+  border-radius: var(--button-border-radius);
+  box-shadow: var(--box-shadow-level-3);
+
+  @media not (forced-colors) {
+    --button-border-color-ghost: var(--clarifying-border-color);
+    --button-border-color-ghost-hover: var(--clarifying-border-color);
+    --button-border-color-ghost-active: var(--clarifying-border-color);
+  }
+}
+
+.question-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xsmall);
+  padding-inline: var(--space-xsmall);
+}
+
+.question-progress {
+  margin: 0;
+}
+
+.question-text {
+  margin: 0;
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-semibold);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-small);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-medium);
+  width: 100%;
+  padding: var(--space-medium);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--border-radius-large);
+  background-color: var(--clarifying-option-background-color);
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--clarifying-option-background-color-hover);
+  }
+
+  &[data-recommended] {
+    border-color: var(--color-accent-primary);
+    background-color: var(--clarifying-recommended-background-color);
+
+    &:hover {
+      background-color: var(--clarifying-recommended-background-color-hover);
+    }
+  }
+
+  @media (forced-colors) {
+    &:hover {
+      color: var(--text-color-list-item-hover);
+
+      .option-number,
+      .option-description {
+        color: inherit;
+      }
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+}
+
+.option-number {
+  flex-shrink: 0;
+  color: var(--text-color-deemphasized);
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-xxsmall);
+  flex: 1;
+  min-width: 0;
+}
+
+.recommended-badge {
+  padding: var(--space-xxsmall) var(--space-small);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--clarifying-badge-background-color);
+  color: var(--color-accent-primary);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-semibold);
+}
+
+.option-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.option-description {
+  color: var(--text-color-deemphasized);
+}
+
+.option-arrow {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  -moz-context-properties: fill;
+  fill: currentColor;
+
+  &:dir(rtl) {
+    transform: scaleX(-1);
+  }
+}
+
+.custom-answer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
+  padding-inline: var(--space-medium) var(--space-xsmall);
+  padding-block: var(--space-xsmall);
+  border: var(--border-width) solid var(--clarifying-border-color);
+  border-radius: var(--border-radius-large);
+  background-color: var(--background-color-box);
+
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/no-has-selector -- Shows the focus ring for the textarea but not the Skip/Send button, without tracking focus in JS. */
+  &:has(.custom-answer-input:focus-within) {
+    outline: var(--focus-outline);
+    outline-offset: calc(-1 * var(--border-width));
+  }
+}
+
+.custom-answer-icon {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  -moz-context-properties: fill;
+  fill: currentColor;
+  /* The design's pencil leans the other way from edit-outline.svg. */
+  transform: scaleX(-1);
+
+  &:dir(rtl) {
+    transform: none;
+  }
+}
+
+.custom-answer-input {
+  --input-border: none;
+  --input-background-color: transparent;
+  --textarea-resize: none;
+  --focus-outline: none;
+
+  flex: 1;
+  min-width: 0;
+}
+
+.custom-answer-button {
+  flex-shrink: 0;
+}

@@ -41,6 +41,8 @@ browser.jar:
   content/browser/aiwindow/components/ai-website-select.css         (components/ai-website-select/ai-website-select.css)
   content/browser/aiwindow/components/ai-website-confirmation.mjs   (components/ai-website-confirmation/ai-website-confirmation.mjs)
   content/browser/aiwindow/components/ai-website-confirmation.css   (components/ai-website-confirmation/ai-website-confirmation.css)
+  content/browser/aiwindow/components/ai-clarifying-question.mjs    (components/ai-clarifying-question/ai-clarifying-question.mjs)
+  content/browser/aiwindow/components/ai-clarifying-question.css    (components/ai-clarifying-question/ai-clarifying-question.css)
   content/browser/aiwindow/components/ai-window.mjs                 (components/ai-window/ai-window.mjs)
   content/browser/aiwindow/components/ai-window.css                 (components/ai-window/ai-window.css)
   content/browser/aiwindow/components/chat-assistant-citations.mjs  (components/ai-chat-content/chat-assistant-citations/chat-assistant-citations.mjs)
