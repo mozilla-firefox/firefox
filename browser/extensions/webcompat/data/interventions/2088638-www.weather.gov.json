@@ -1,0 +1,21 @@
+{
+  "label": "www.weather.gov",
+  "bugs": {
+    "2088638": {
+      "issue": "broken-map",
+      "matches": ["*://www.weather.gov/srh/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "alter_response_headers": [
+        {
+          "headers": ["referrer-policy"],
+          "replacement": "strict-origin-when-cross-origin",
+          "types": ["main_frame"]
+        }
+      ]
+    }
+  ]
+}
