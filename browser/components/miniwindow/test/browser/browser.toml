@@ -31,6 +31,8 @@ skip-if = [
 
 ["browser_placement.js"]
 
+["browser_pop_tab.js"]
+
 ["browser_region_entry.js"]
 
 ["browser_restore_vs_close.js"]
