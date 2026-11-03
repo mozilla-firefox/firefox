@@ -189,11 +189,7 @@ static StorageAccess InternalStorageAllowedCheck(
     // If the channel is a third-party tracker, we should set the rejected
     // reason to partitioned tracker.
     uint32_t rejectedReason = aRejectedReason;
-    nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-        do_QueryInterface(aChannel);
-
-    if (classifiedChannel &&
-        classifiedChannel->IsThirdPartyTrackingResource() &&
+    if (AntiTrackingUtils::IsThirdPartyTrackingChannel(aChannel) &&
         aRejectedReason ==
             static_cast<uint32_t>(
                 nsIWebProgressListener::STATE_COOKIES_PARTITIONED_FOREIGN)) {
@@ -753,10 +749,10 @@ bool ShouldAllowAccessFor(nsIChannel* aChannel, nsIURI* aURI,
   uint32_t blockedReason =
       nsIWebProgressListener::STATE_COOKIES_BLOCKED_TRACKER;
 
-  // Not a tracker.
-  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-      do_QueryInterface(aChannel);
   if (behavior == nsICookieService::BEHAVIOR_REJECT_TRACKER) {
+    // Not a tracker.
+    nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
+        do_QueryInterface(aChannel);
     if (classifiedChannel) {
       if (!classifiedChannel->IsThirdPartyTrackingResource()) {
         LOG(("Our channel isn't a third-party tracking channel"));
@@ -772,8 +768,7 @@ bool ShouldAllowAccessFor(nsIChannel* aChannel, nsIURI* aURI,
       }
     }
   } else if (behavior == nsICookieService::BEHAVIOR_PARTITION_FOREIGN) {
-    if ((classifiedChannel &&
-         classifiedChannel->IsThirdPartyTrackingResource()) ||
+    if (AntiTrackingUtils::IsThirdPartyTrackingChannel(aChannel) ||
         AntiTrackingUtils::IsThirdPartyChannel(aChannel)) {
       LOG(("We're in the third-party context, storage should be partitioned"));
       // fall through but remember that we're partitioning.

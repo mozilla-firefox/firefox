@@ -22,6 +22,7 @@
 #include "nsGlobalWindowInner.h"
 #include "nsHttpChannel.h"
 #include "nsIChannel.h"
+#include "nsIClassifiedChannel.h"
 #include "nsICookieService.h"
 #include "nsIEffectiveTLDService.h"
 #include "nsIHttpChannel.h"
@@ -1095,6 +1096,13 @@ bool AntiTrackingUtils::IsThirdPartyChannel(nsIChannel* aChannel) {
     return true;
   }
   return thirdParty;
+}
+
+/* static */
+bool AntiTrackingUtils::IsThirdPartyTrackingChannel(nsIChannel* aChannel) {
+  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
+      do_QueryInterface(aChannel);
+  return classifiedChannel && classifiedChannel->IsThirdPartyTrackingResource();
 }
 
 /* static */

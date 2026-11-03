@@ -58,6 +58,7 @@
 #include "mozAutoDocUpdate.h"
 #include "mozIDOMWindow.h"
 #include "mozilla/AlreadyAddRefed.h"
+#include "mozilla/AntiTrackingUtils.h"
 #include "mozilla/ArrayIterator.h"
 #include "mozilla/AsyncEventDispatcher.h"
 #include "mozilla/AtomArray.h"
@@ -10928,13 +10929,7 @@ bool nsContentUtils::IsThirdPartyTrackingResourceWindow(
     return false;
   }
 
-  nsCOMPtr<nsIClassifiedChannel> classifiedChannel =
-      do_QueryInterface(document->GetChannel());
-  if (!classifiedChannel) {
-    return false;
-  }
-
-  return classifiedChannel->IsThirdPartyTrackingResource();
+  return AntiTrackingUtils::IsThirdPartyTrackingChannel(document->GetChannel());
 }
 
 // static public
