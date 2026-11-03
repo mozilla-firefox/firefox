@@ -1999,17 +1999,26 @@ function fillTabCpuCell(cell, slopeCpuOfTotal, hasUsageData = true) {
  */
 class ProcessesTabView extends RowSet {
   #nextRowId = 0;
+  #searching = false;
 
   // groups drives the rows; tabCounters is only for the flat totals-bar sum.
-  commit(tabCounters, groups, { reorder = true } = {}) {
+  // During a search, rows outside group.shownTabs are hidden, not removed, so
+  // they keep their state. Like row order, that changes only on a reorder.
+  commit(tabCounters, groups, { reorder = true, searching = false } = {}) {
+    this.#searching = searching;
+    let setShown = (row, shown) => {
+      if (reorder || !row.parentNode) {
+        row.hidden = !shown;
+      }
+    };
     for (let group of groups) {
+      let shownTabs = new Set(group.shownTabs);
       // A new group waits for the reorder, so no row shifts under the cursor.
       if (group.solo || (!reorder && !this.getRow(group.siteKey))) {
         for (let tabData of group.tabs) {
-          this._getOrCreateTabRow(tabData).classList.remove(
-            "child-row",
-            "collapsed"
-          );
+          let row = this._getOrCreateTabRow(tabData);
+          row.classList.remove("child-row", "collapsed");
+          setShown(row, shownTabs.has(tabData));
         }
         continue;
       }
@@ -2023,10 +2032,13 @@ class ProcessesTabView extends RowSet {
           })
         )
       );
-      this._updateHeaderRow(headerRow, group);
+      setShown(headerRow, shownTabs.size);
       for (let tabData of group.tabs) {
-        this._getOrCreateTabRow(tabData).classList.add("child-row");
+        let row = this._getOrCreateTabRow(tabData);
+        row.classList.add("child-row");
+        setShown(row, shownTabs.has(tabData));
       }
+      this._updateHeaderRow(headerRow, group);
       this.setSiteExpanded(headerRow, headerRow.classList.contains("expanded"));
       this.updateHeaderSelection(headerRow);
     }
@@ -2112,32 +2124,44 @@ class ProcessesTabView extends RowSet {
     return row;
   }
 
-  // The header row's .expanded class is the group's expanded state.
+  // The header row's .expanded class is the group's expanded state. Every
+  // group shows expanded during a search, without changing that state.
   setSiteExpanded(row, expanded) {
     row.classList.toggle("expanded", expanded);
-    row.caret.setAttribute("aria-expanded", expanded);
+    let shownExpanded = expanded || this.#searching;
+    row.caret.disabled = this.#searching;
+    row.caret.setAttribute("aria-expanded", shownExpanded);
     document.l10n.setAttributes(
       row.caret,
-      expanded ? "about-processes-collapse-site" : "about-processes-expand-site"
+      shownExpanded
+        ? "about-processes-collapse-site"
+        : "about-processes-expand-site"
     );
     for (let tabData of row.group.tabs) {
-      this.getRow(tabData.tab).classList.toggle("collapsed", !expanded);
+      this.getRow(tabData.tab).classList.toggle("collapsed", !shownExpanded);
     }
+  }
+
+  getShownChildRows(row) {
+    return row.group.tabs
+      .map(tabData => this.getRow(tabData.tab))
+      .filter(childRow => !childRow.hidden);
   }
 
   // Any selected child highlights the header; there is no partial shade.
   updateHeaderSelection(row) {
-    let { tabs } = row.group;
-    let selectedCount = tabs.filter(
-      tabData => this.getRow(tabData.tab).checkbox.checked
+    let rows = this.getShownChildRows(row);
+    let selectedCount = rows.filter(
+      childRow => childRow.checkbox.checked
     ).length;
-    updateTriStateCheckbox(row.checkbox, selectedCount, tabs.length);
+    updateTriStateCheckbox(row.checkbox, selectedCount, rows.length);
     row.toggleAttribute("selected", !!selectedCount);
   }
 
   _updateHeaderRow(row, group) {
     row.group = group;
-    let allDiscarded = group.tabs.every(tabData => tabData.discarded);
+    let tabs = this.getShownChildRows(row).map(childRow => childRow.tabData);
+    let allDiscarded = tabs.every(tabData => tabData.discarded);
     this._updateUnloadButton(
       row,
       allDiscarded,
@@ -2156,10 +2180,11 @@ class ProcessesTabView extends RowSet {
     document.l10n.setAttributes(
       row.tabCount,
       "about-processes-site-tab-count",
-      { count: group.tabs.length }
+      { count: tabs.length }
     );
-    fillTabMemoryCell(memoryCell, group.totalRamSize);
-    fillTabCpuCell(cpuCell, group.slopeCpuOfTotal);
+    let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(tabs);
+    fillTabMemoryCell(memoryCell, totalRamSize);
+    fillTabCpuCell(cpuCell, slopeCpuOfTotal);
   }
 
   _updateTotals(tabCounters) {
@@ -2250,6 +2275,10 @@ class ProcessesTabController {
   // From the openType URL param SidebarController appends; absent means the
   // page was reached without the sidebar.
   _openType = "direct_nav";
+  // Trimmed, original casing (echoed in the no-results message); "" means no
+  // filter.
+  _searchQuery = "";
+  _noResultsQuery = "";
 
   constructor(view) {
     this._view = view;
@@ -2310,6 +2339,18 @@ class ProcessesTabController {
       this._toggleAllSites()
     );
 
+    let searchInput = document.getElementById("tab-search-input");
+    searchInput.addEventListener("MozInputSearch:search", event => {
+      let query = event.detail.query.trim();
+      if (query == this._searchQuery) {
+        return;
+      }
+      this._searchQuery = query;
+      if (this._lastTabCounters) {
+        this._commitView(this._lastTabCounters, { force: true });
+      }
+    });
+
     let tbody = document.getElementById("process-tbody");
 
     // One delegate at the tbody level, matching ProcessesController.init()'s
@@ -2322,13 +2363,15 @@ class ProcessesTabController {
       if (headerRow) {
         // The label and count are mouse-only; the caret is the keyboard path.
         if (event.target.closest(".caret-icon, .site-label, .site-tab-count")) {
-          this._toggleSite(headerRow);
+          if (!headerRow.caret.disabled) {
+            this._toggleSite(headerRow);
+          }
           return;
         }
         this._handleActivate(event.target);
         if (event.target.closest(".select-checkbox")) {
           this._setRowsSelected(
-            headerRow.group.tabs.map(tabData => this._view.getRow(tabData.tab)),
+            this._view.getShownChildRows(headerRow),
             event.target.checked
           );
         }
@@ -2347,7 +2390,12 @@ class ProcessesTabController {
 
     // Escape doesn't fire keypress, so it needs its own listener to clear a selection.
     document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && this._getSelectedTabData().length) {
+      // Escape in the search box is for the search, not the selection.
+      if (
+        event.key === "Escape" &&
+        this._getSelectedTabData().length &&
+        !event.target.closest("moz-input-search")
+      ) {
         event.preventDefault();
         this._clearSelection();
       }
@@ -2415,7 +2463,9 @@ class ProcessesTabController {
       this._runRowAction(headerRow, () =>
         this._unloadOrReloadSiteRow(
           headerRow,
-          headerRow.group.tabs.every(tabData => tabData.discarded)
+          this._view
+            .getShownChildRows(headerRow)
+            .every(row => row.tabData.discarded)
         )
       );
       return;
@@ -2446,12 +2496,12 @@ class ProcessesTabController {
     }
   }
 
-  // Rows of tabs from the last poll. Rows outlive polls, so their checkboxes
-  // hold the selection.
+  // Shown rows of tabs from the last poll. Rows outlive polls, so their
+  // checkboxes hold the selection.
   _getDisplayedRows() {
-    return (this._lastTabCounters || []).map(tabData =>
-      this._view.getRow(tabData.tab)
-    );
+    return (this._lastTabCounters || [])
+      .map(tabData => this._view.getRow(tabData.tab))
+      .filter(row => !row.hidden);
   }
 
   _getSelectedTabData() {
@@ -2606,9 +2656,10 @@ class ProcessesTabController {
 
   // Doesn't skip the active tab, matching per-row and bulk-bar unload.
   async _unloadOrReloadSiteRow(row, reload) {
-    let eligible = row.group.tabs.filter(
-      tabData => !!tabData.discarded == reload
-    );
+    let eligible = this._view
+      .getShownChildRows(row)
+      .map(childRow => childRow.tabData)
+      .filter(tabData => !!tabData.discarded == reload);
     if (eligible.length) {
       this._recordTabAction(
         eligible,
@@ -2689,12 +2740,21 @@ class ProcessesTabController {
     )) {
       let displayedGroup = !reorder && this._view.getRow(siteKey)?.group;
       let solo = !displayedGroup && tabs.length == 1;
-      let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(tabs);
+      // Selected tabs stay shown, so bulk actions only act on shown tabs.
+      let shownTabs = this._searchQuery
+        ? tabs.filter(
+            tabData =>
+              this._matchesSearch(tabData) ||
+              this._view.getRow(tabData.tab)?.checkbox.checked
+          )
+        : tabs;
+      let { totalRamSize, slopeCpuOfTotal } = sumTabCounters(shownTabs);
       let siteLabel = displayedGroup?.siteLabel ?? tabs[0].siteLabel;
       groups.push({
         siteKey,
         siteLabel,
         tabs,
+        shownTabs,
         solo,
         title: solo ? tabs[0].title || tabs[0].uri?.spec : siteLabel,
         totalRamSize,
@@ -2706,17 +2766,50 @@ class ProcessesTabController {
     return groups;
   }
 
+  // Matches what the row shows: the title, or the URL without one, or the
+  // site's label.
+  _matchesSearch(tabData) {
+    let query = this._searchQuery.toLowerCase();
+    return [tabData.title || tabData.uri?.spec || "", tabData.siteLabel].some(
+      text => text.toLowerCase().includes(query)
+    );
+  }
+
+  // Only on change: the message is a live region, announced on each update.
+  _updateNoResults(tabCounters) {
+    let query = tabCounters.some(tabData => this._matchesSearch(tabData))
+      ? ""
+      : this._searchQuery;
+    if (query == this._noResultsQuery) {
+      return;
+    }
+    this._noResultsQuery = query;
+    let message = document.getElementById("tab-search-no-results");
+    if (query) {
+      document.l10n.setAttributes(
+        message,
+        "about-processes-search-no-results",
+        { query }
+      );
+    } else {
+      message.removeAttribute("data-l10n-id");
+      message.removeAttribute("data-l10n-args");
+      message.textContent = "";
+    }
+  }
+
   _getHeaderRows() {
     return document.querySelectorAll("#process-tbody > tr.site-header-row");
   }
 
   _updateExpandAllButton() {
-    let headerRows = [...this._getHeaderRows()];
+    let headerRows = [...this._getHeaderRows()].filter(row => !row.hidden);
     let allExpanded =
       !!headerRows.length &&
       headerRows.every(row => row.classList.contains("expanded"));
     this._expandAllButton.classList.toggle("expanded", allExpanded);
-    this._expandAllButton.disabled = !headerRows.length;
+    // Every group shows expanded during a search.
+    this._expandAllButton.disabled = !headerRows.length || !!this._searchQuery;
     document.l10n.setAttributes(
       this._expandAllButton,
       allExpanded
@@ -2745,8 +2838,12 @@ class ProcessesTabController {
     let reorder =
       force || Date.now() - this._lastMouseEvent >= TIME_BEFORE_SORTING_AGAIN;
     let groups = this._groupTabsBySite(tabCounters, reorder);
-    this._view.commit(tabCounters, groups, { reorder });
+    this._view.commit(tabCounters, groups, {
+      reorder,
+      searching: !!this._searchQuery,
+    });
     this._updateExpandAllButton();
+    this._updateNoResults(tabCounters);
     this._updateSelectAllCheckbox();
     this._updateBulkActionBar();
     document.dispatchEvent(new CustomEvent("AboutProcessesUpdated"));

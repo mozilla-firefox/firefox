@@ -23,6 +23,13 @@
     <link rel="stylesheet" href="chrome://global/content/aboutProcesses.css" />
   </head>
   <body>
+    <div id="tab-search-bar">
+      <moz-input-search
+        id="tab-search-input"
+        data-l10n-id="about-processes-search-tabs"
+        data-l10n-attrs="placeholder,aria-label"
+      ></moz-input-search>
+    </div>
     <table id="process-table">
       <thead id="process-thead">
         <tr>
@@ -72,6 +79,11 @@
         </tr>
       </thead>
       <tbody id="process-tbody"></tbody>
+      <tbody id="tab-search-status">
+        <tr>
+          <td id="tab-search-no-results" role="status"></td>
+        </tr>
+      </tbody>
       <tfoot id="process-tfoot">
         <tr class="bulk-summary-row">
           <td class="select-cell">

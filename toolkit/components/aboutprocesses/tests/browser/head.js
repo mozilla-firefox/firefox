@@ -1144,8 +1144,9 @@ function promiseTabViewUpdated(doc) {
   );
 }
 
+// Rows hidden by a search are skipped; collapsed rows aren't.
 function tabRowTitles(doc) {
-  return [...doc.querySelectorAll("tr.tab-row")].map(
+  return [...doc.querySelectorAll("tr.tab-row:not([hidden])")].map(
     row => row.querySelector(".name").textContent
   );
 }
@@ -1220,4 +1221,16 @@ function assertOneEvent(metric, extra, description) {
     Assert.equal(event?.extra[key], value, `${description}: ${key}`);
   }
   return event;
+}
+
+// Replaces any earlier query and waits for the search box's debounced event.
+async function enterTabSearch(doc, query) {
+  let search = doc.getElementById("tab-search-input");
+  await doc.defaultView.customElements.whenDefined("moz-input-search");
+  await search.updateComplete;
+  let searched = BrowserTestUtils.waitForEvent(search, "MozInputSearch:search");
+  clickRow(search.inputEl);
+  EventUtils.synthesizeKey("a", { accelKey: true }, doc.defaultView);
+  EventUtils.sendString(query, doc.defaultView);
+  await searched;
 }

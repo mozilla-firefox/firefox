@@ -44,6 +44,19 @@ about-processes-expand-all-sites =
 about-processes-collapse-all-sites =
     .title = Collapse all
 
+## Search
+
+# Search field above the tab list, filtering tabs by title or site. The
+# placeholder is shown inside the empty field.
+about-processes-search-tabs =
+    .placeholder = Search tabs
+    .aria-label = Search tabs
+
+# Shown in place of the tab list when a search matches no open tabs.
+# Variables:
+#   $query (String) The search text the user typed, unmodified.
+about-processes-search-no-results = No tabs found matching “{ $query }”
+
 # Profiler icons
 # Variables:
 #    $duration (Number) The time in seconds during which the profiler will be running.
