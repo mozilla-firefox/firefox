@@ -15,7 +15,7 @@ namespace gfx {
 using namespace ipc;
 
 VRGPUParent::VRGPUParent(EndpointProcInfo aChildProcess) : mClosed(false) {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   SetOtherEndpointProcInfo(aChildProcess);
 }
@@ -58,7 +58,7 @@ void VRGPUParent::Bind(Endpoint<PVRGPUParent>&& aEndpoint) {
 mozilla::ipc::IPCResult VRGPUParent::RecvStartVRService() {
 #if !defined(MOZ_WIDGET_ANDROID)
   mVRService = VRService::Create();
-  MOZ_ASSERT(mVRService);
+  MOZ_RELEASE_ASSERT(mVRService);
 
   mVRService->Start();
 #endif

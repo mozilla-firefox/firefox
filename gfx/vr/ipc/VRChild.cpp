@@ -69,7 +69,7 @@ class OpenVRControllerManifestManager {
 StaticRefPtr<OpenVRControllerManifestManager> sOpenVRControllerManifestManager;
 
 VRChild::VRChild(VRProcessParent* aHost) : mHost(aHost), mVRReady(false) {
-  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_RELEASE_ASSERT(XRE_IsParentProcess());
 }
 
 VRChild::~VRChild() = default;

@@ -774,7 +774,7 @@ void VRManager::ProcessManagerState_Idle() {
 }
 
 void VRManager::ProcessManagerState_DetectRuntimes() {
-  MOZ_ASSERT(mState == VRManagerState::RuntimeDetection);
+  MOZ_RELEASE_ASSERT(mState == VRManagerState::RuntimeDetection);
   MOZ_RELEASE_ASSERT(mShmem != nullptr);
 
   PullState();
@@ -808,7 +808,7 @@ void VRManager::ProcessManagerState_DetectRuntimes() {
 }
 
 void VRManager::ProcessManagerState_Enumeration() {
-  MOZ_ASSERT(mState == VRManagerState::Enumeration);
+  MOZ_RELEASE_ASSERT(mState == VRManagerState::Enumeration);
   MOZ_RELEASE_ASSERT(mShmem != nullptr);
 
   PullState();
@@ -1340,7 +1340,7 @@ bool VRManager::SubmitFrame(const layers::SurfaceDescriptor& aTexture,
   }
 #if defined(XP_WIN) || defined(XP_MACOSX) || defined(MOZ_WIDGET_ANDROID)
   MOZ_RELEASE_ASSERT(mBrowserState.layerState[0].type ==
-             VRLayerType::LayerType_Stereo_Immersive);
+                     VRLayerType::LayerType_Stereo_Immersive);
   VRLayer_Stereo_Immersive& layer =
       mBrowserState.layerState[0].layer_stereo_immersive;
 

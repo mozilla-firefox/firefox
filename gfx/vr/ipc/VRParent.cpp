@@ -86,7 +86,7 @@ mozilla::ipc::IPCResult VRParent::RecvRequestMemoryReport(
     const uint32_t& aGeneration, const bool& aAnonymize,
     const bool& aMinimizeMemoryUsage, const Maybe<FileDescriptor>& aDMDFile,
     const RequestMemoryReportResolver& aResolver) {
-  MOZ_ASSERT(XRE_IsVRProcess());
+  MOZ_RELEASE_ASSERT(XRE_IsVRProcess());
   nsPrintfCString processName("VR (pid %u)", (unsigned)getpid());
 
   mozilla::dom::MemoryReportRequestClient::Start(

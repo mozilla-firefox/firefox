@@ -165,7 +165,7 @@ bool VRService::IsInServiceThread() {
 }
 
 void VRService::ServiceInitialize() {
-  MOZ_ASSERT(IsInServiceThread());
+  MOZ_RELEASE_ASSERT(IsInServiceThread());
 
   if (!InitShmem()) {
     return;
@@ -258,7 +258,7 @@ void VRService::ServiceInitialize() {
 }
 
 void VRService::ServiceShutdown() {
-  MOZ_ASSERT(IsInServiceThread());
+  MOZ_RELEASE_ASSERT(IsInServiceThread());
 
   // Notify the browser that we have shut down.
   // This is indicated by enumerationCompleted being set
@@ -275,8 +275,8 @@ void VRService::ServiceShutdown() {
 }
 
 void VRService::ServiceWaitForImmersive() {
-  MOZ_ASSERT(IsInServiceThread());
-  MOZ_ASSERT(mSession);
+  MOZ_RELEASE_ASSERT(IsInServiceThread());
+  MOZ_RELEASE_ASSERT(mSession);
 
   mSession->ProcessEvents(mSystemState);
   PushState(mSystemState);
@@ -304,8 +304,8 @@ void VRService::ServiceWaitForImmersive() {
 }
 
 void VRService::ServiceImmersiveMode() {
-  MOZ_ASSERT(IsInServiceThread());
-  MOZ_ASSERT(mSession);
+  MOZ_RELEASE_ASSERT(IsInServiceThread());
+  MOZ_RELEASE_ASSERT(mSession);
 
   mSession->ProcessEvents(mSystemState);
   UpdateHaptics();
@@ -366,8 +366,8 @@ void VRService::ServiceImmersiveMode() {
 }
 
 void VRService::UpdateHaptics() {
-  MOZ_ASSERT(IsInServiceThread());
-  MOZ_ASSERT(mSession);
+  MOZ_RELEASE_ASSERT(IsInServiceThread());
+  MOZ_RELEASE_ASSERT(mSession);
 
   for (size_t i = 0; i < std::size(mBrowserState.hapticState); i++) {
     VRHapticState& state = mBrowserState.hapticState[i];

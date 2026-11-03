@@ -24,7 +24,7 @@ VRProcessManager* VRProcessManager::Get() { return sSingleton; }
 
 /* static */
 void VRProcessManager::Initialize() {
-  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_RELEASE_ASSERT(XRE_IsParentProcess());
   if (sSingleton == nullptr) {
     sSingleton = new VRProcessManager();
   }
@@ -52,7 +52,7 @@ VRProcessManager::~VRProcessManager() {
 
   DestroyProcess();
   // The VR process should have already been shut down.
-  MOZ_ASSERT(!mProcess);
+  MOZ_RELEASE_ASSERT(!mProcess);
 }
 
 void VRProcessManager::LaunchVRProcess() {
@@ -116,7 +116,7 @@ bool VRProcessManager::EnsureVRReady() {
 }
 
 void VRProcessManager::OnProcessLaunchComplete(VRProcessParent* aParent) {
-  MOZ_ASSERT(mProcess && mProcess == aParent);
+  MOZ_RELEASE_ASSERT(mProcess && mProcess == aParent);
 
   mVRChild = mProcess->GetActor();
 
@@ -137,7 +137,7 @@ void VRProcessManager::OnProcessLaunchComplete(VRProcessParent* aParent) {
 }
 
 void VRProcessManager::OnProcessUnexpectedShutdown(VRProcessParent* aParent) {
-  MOZ_ASSERT(mProcess && mProcess == aParent);
+  MOZ_RELEASE_ASSERT(mProcess && mProcess == aParent);
 
   DestroyProcess();
 }
@@ -220,7 +220,7 @@ void VRProcessManager::OnPreferenceChange(const char16_t* aData) {
   Preferences::GetPreference(&pref, GeckoProcessType_VR,
                              /* remoteType */ {});
   if (!!mVRChild) {
-    MOZ_ASSERT(mQueuedPrefs.IsEmpty());
+    MOZ_RELEASE_ASSERT(mQueuedPrefs.IsEmpty());
     mVRChild->SendPreferenceUpdate(pref);
   } else {
     mQueuedPrefs.AppendElement(pref);

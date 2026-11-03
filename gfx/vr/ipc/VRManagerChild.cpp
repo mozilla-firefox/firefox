@@ -49,12 +49,12 @@ VRManagerChild::VRManagerChild(uint32_t aNamespace)
       mFrameRequestCallbackCounter(0),
       mWaitingForEnumeration(false),
       mBackend(layers::LayersBackend::LAYERS_NONE) {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   mStartTimeStamp = TimeStamp::Now();
 }
 
-VRManagerChild::~VRManagerChild() { MOZ_ASSERT(NS_IsMainThread()); }
+VRManagerChild::~VRManagerChild() { MOZ_RELEASE_ASSERT(NS_IsMainThread()); }
 
 /*static*/
 void VRManagerChild::IdentifyTextureHost(
@@ -70,7 +70,7 @@ layers::LayersBackend VRManagerChild::GetBackendType() const {
 
 /*static*/
 VRManagerChild* VRManagerChild::Get() {
-  MOZ_ASSERT(sVRManagerChildSingleton);
+  MOZ_RELEASE_ASSERT(sVRManagerChildSingleton);
   return sVRManagerChildSingleton;
 }
 
@@ -94,7 +94,7 @@ bool VRManagerChild::IsPresenting() {
 }
 
 TimeStamp VRManagerChild::GetIdleDeadlineHint(TimeStamp aDefault) {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
   if (!VRManagerChild::IsCreated() || sMostRecentFrameEnd.IsNull()) {
     return aDefault;
   }
@@ -106,7 +106,7 @@ TimeStamp VRManagerChild::GetIdleDeadlineHint(TimeStamp aDefault) {
 /* static */
 bool VRManagerChild::InitForContent(Endpoint<PVRManagerChild>&& aEndpoint,
                                     uint32_t aNamespace) {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   RefPtr<VRManagerChild> child(new VRManagerChild(aNamespace));
   if (!aEndpoint.Bind(child)) {
@@ -118,8 +118,8 @@ bool VRManagerChild::InitForContent(Endpoint<PVRManagerChild>&& aEndpoint,
 
 /*static*/
 void VRManagerChild::InitSameProcess(uint32_t aNamespace) {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(!sVRManagerChildSingleton);
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(!sVRManagerChildSingleton);
 
   sVRManagerChildSingleton = new VRManagerChild(aNamespace);
   sVRManagerParentSingleton = VRManagerParent::CreateSameProcess(aNamespace);
@@ -130,8 +130,8 @@ void VRManagerChild::InitSameProcess(uint32_t aNamespace) {
 /* static */
 void VRManagerChild::InitWithGPUProcess(Endpoint<PVRManagerChild>&& aEndpoint,
                                         uint32_t aNamespace) {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(!sVRManagerChildSingleton);
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(!sVRManagerChildSingleton);
 
   sVRManagerChildSingleton = new VRManagerChild(aNamespace);
   if (!aEndpoint.Bind(sVRManagerChildSingleton)) {
@@ -141,7 +141,7 @@ void VRManagerChild::InitWithGPUProcess(Endpoint<PVRManagerChild>&& aEndpoint,
 
 /*static*/
 void VRManagerChild::ShutDown() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
   if (!sVRManagerChildSingleton) {
     return;
   }
@@ -550,7 +550,7 @@ void VRManagerChild::FireDOMVRDisplayConnectEventsForLoad(
 }
 
 void VRManagerChild::AddListener(VRManagerEventObserver* aObserver) {
-  MOZ_ASSERT(aObserver);
+  MOZ_RELEASE_ASSERT(aObserver);
 
   if (mListeners.IndexOf(aObserver) != kNoIndex) {
     return;  // already exists
@@ -563,7 +563,7 @@ void VRManagerChild::AddListener(VRManagerEventObserver* aObserver) {
 }
 
 void VRManagerChild::RemoveListener(VRManagerEventObserver* aObserver) {
-  MOZ_ASSERT(aObserver);
+  MOZ_RELEASE_ASSERT(aObserver);
 
   mListeners.RemoveElement(aObserver);
   if (mListeners.IsEmpty()) {
@@ -589,7 +589,7 @@ void VRManagerChild::HandleFatalError(const char* aMsg) {
 }
 
 void VRManagerChild::AddPromise(const uint32_t& aID, dom::Promise* aPromise) {
-  MOZ_ASSERT(!mGamepadPromiseList.Contains(aID));
+  MOZ_RELEASE_ASSERT(!mGamepadPromiseList.Contains(aID));
   mGamepadPromiseList.InsertOrUpdate(aID, RefPtr{aPromise});
 }
 
@@ -607,7 +607,7 @@ mozilla::ipc::IPCResult VRManagerChild::RecvReplyGamepadVibrateHaptic(
   // VRManagerChild could be at other processes, but GamepadManager
   // only exists at the content process or the same process
   // in non-e10s mode.
-  MOZ_ASSERT(XRE_IsContentProcess() || IsSameProcess());
+  MOZ_RELEASE_ASSERT(XRE_IsContentProcess() || IsSameProcess());
 
   RefPtr<dom::Promise> p;
   if (!mGamepadPromiseList.Get(aPromiseID, getter_AddRefs(p))) {

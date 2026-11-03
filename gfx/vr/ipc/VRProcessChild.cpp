@@ -18,7 +18,7 @@ VRProcessChild::~VRProcessChild() { sVRParent = nullptr; }
 
 /*static*/
 VRParent* VRProcessChild::GetVRParent() {
-  MOZ_ASSERT(sVRParent);
+  MOZ_RELEASE_ASSERT(sVRParent);
   return sVRParent;
 }
 

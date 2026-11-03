@@ -287,7 +287,7 @@ void OculusSession::CoverTransitions() {
   // traversal, we need to prevent the user from seeing the
   // last rendered frame.
   // We render black frames to cover up the transition.
-  MOZ_ASSERT(mSession);
+  MOZ_RELEASE_ASSERT(mSession);
   if (mIsPresenting) {
     // We are currently rendering immersive content.
     // Avoid interrupting the session
@@ -728,7 +728,7 @@ bool OculusSession::StartLib(ovrInitFlags aFlags) {
       return false;
     }
   }
-  MOZ_ASSERT(mInitFlags == aFlags);
+  MOZ_RELEASE_ASSERT(mInitFlags == aFlags);
   return true;
 }
 
@@ -1389,7 +1389,7 @@ void OculusSession::UpdateControllerInputs(VRSystemState& aState,
       UpdateButton(aInputState, handIdx, buttonIdx, controllerState);
       ++buttonIdx;
 
-      MOZ_ASSERT(buttonIdx == kNumOculusButtons);
+      MOZ_RELEASE_ASSERT(buttonIdx == kNumOculusButtons);
 
       // Update Thumbstick axis
       uint32_t axisIdx = 0;
@@ -1412,7 +1412,7 @@ void OculusSession::UpdateControllerInputs(VRSystemState& aState,
       controllerState.axisValue[axisIdx] = axisValue;
       axisIdx++;
 
-      MOZ_ASSERT(axisIdx == kNumOculusAxes);
+      MOZ_RELEASE_ASSERT(axisIdx == kNumOculusAxes);
     }
     SetControllerSelectionAndSqueezeFrameId(
         controllerState, aState.displayState.lastSubmittedFrameId);
@@ -1445,7 +1445,7 @@ void OculusSession::VibrateHaptic(uint32_t aControllerIdx,
   }
 
   // Vibration amplitude in the [0.0, 1.0] range
-  MOZ_ASSERT(aControllerIdx >= 0 && aControllerIdx <= 1);
+  MOZ_RELEASE_ASSERT(aControllerIdx >= 0 && aControllerIdx <= 1);
   mHapticPulseIntensity[aControllerIdx] = aIntensity > 1.0 ? 1.0 : aIntensity;
   mRemainingVibrateTime[aControllerIdx] = aDuration;
   ovrControllerType hand = OculusControllerTypes[aControllerIdx];
@@ -1465,7 +1465,7 @@ void OculusSession::StopVibrateHaptic(uint32_t aControllerIdx) {
   if (!mSession) {
     return;
   }
-  MOZ_ASSERT(aControllerIdx >= 0 && aControllerIdx <= 1);
+  MOZ_RELEASE_ASSERT(aControllerIdx >= 0 && aControllerIdx <= 1);
   ovrControllerType hand = OculusControllerTypes[aControllerIdx];
   mRemainingVibrateTime[aControllerIdx] = 0.0f;
   mHapticPulseIntensity[aControllerIdx] = 0.0f;

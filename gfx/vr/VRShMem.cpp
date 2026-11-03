@@ -203,9 +203,9 @@ void VRShMem::CreateShMem(bool aCreateOnSharedMemory) {
     return;
   }
 #elif defined(MOZ_WIDGET_ANDROID)
-  MOZ_ASSERT(false,
-             "CreateShMem should not be called for Android. Use "
-             "CreateShMemForAndroid instead");
+  MOZ_RELEASE_ASSERT(false,
+                     "CreateShMem should not be called for Android. Use "
+                     "CreateShMemForAndroid instead");
 #endif
 }
 
@@ -355,7 +355,7 @@ bool VRShMem::JoinShMem() {
   //
   // TODO: ** Does this mean that ShMem only works in Windows for now? If so,
   // let's delete the code from other platforms (Bug 1563234)
-  MOZ_ASSERT(false, "JoinShMem not implemented");
+  MOZ_RELEASE_ASSERT(false, "JoinShMem not implemented");
 #endif
   return true;
 }
@@ -448,7 +448,7 @@ void VRShMem::PullBrowserState(mozilla::gfx::VRBrowserState& aState) {
     pthread_mutex_unlock((pthread_mutex_t*)&(mExternalShmem->geckoMutex));
   }
   */
-  MOZ_ASSERT(false, "PullBrowserState not implemented");
+  MOZ_RELEASE_ASSERT(false, "PullBrowserState not implemented");
 #else
   bool status = true;
 #  if defined(XP_WIN)
@@ -489,7 +489,7 @@ void VRShMem::PushSystemState(const mozilla::gfx::VRSystemState& aState) {
 #if defined(MOZ_WIDGET_ANDROID)
   // TODO: This code is out-of-date and fails to compile, as
   // VRService isn't compiled for Android (Bug 1563234)
-  MOZ_ASSERT(false, "JoinShMem not implemented");
+  MOZ_RELEASE_ASSERT(false, "JoinShMem not implemented");
   /*
   if (pthread_mutex_lock((pthread_mutex_t*)&(mExternalShmem->systemMutex)) ==
       0) {

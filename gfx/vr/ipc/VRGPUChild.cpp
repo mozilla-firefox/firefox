@@ -17,8 +17,8 @@ static StaticRefPtr<VRGPUChild> sVRGPUChildSingleton;
 
 /* static */
 bool VRGPUChild::InitForGPUProcess(Endpoint<PVRGPUChild>&& aEndpoint) {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(!sVRGPUChildSingleton);
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(!sVRGPUChildSingleton);
 
   if (!StaticPrefs::dom_vr_enabled() && !StaticPrefs::dom_vr_webxr_enabled()) {
     return false;
@@ -48,13 +48,13 @@ bool VRGPUChild::IsCreated() { return !!sVRGPUChildSingleton; }
 
 /* static */
 VRGPUChild* VRGPUChild::Get() {
-  MOZ_ASSERT(IsCreated(), "VRGPUChild haven't initialized yet.");
+  MOZ_RELEASE_ASSERT(IsCreated(), "VRGPUChild haven't initialized yet.");
   return sVRGPUChildSingleton;
 }
 
 /*static*/
 void VRGPUChild::Shutdown() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
   if (sVRGPUChildSingleton && !sVRGPUChildSingleton->IsClosed()) {
     sVRGPUChildSingleton->Close();
   }

@@ -40,8 +40,8 @@ VRProcessParent::VRProcessParent(Listener* aListener)
 VRProcessParent::~VRProcessParent() = default;
 
 bool VRProcessParent::Launch() {
-  MOZ_ASSERT(mLaunchPhase == LaunchPhase::Unlaunched);
-  MOZ_ASSERT(!mVRChild);
+  MOZ_RELEASE_ASSERT(mLaunchPhase == LaunchPhase::Unlaunched);
+  MOZ_RELEASE_ASSERT(!mVRChild);
   mLaunchThread = NS_GetCurrentThread();
 
   mLaunchPhase = LaunchPhase::Waiting;
@@ -89,7 +89,7 @@ bool VRProcessParent::WaitForLaunch() {
 }
 
 void VRProcessParent::Shutdown() {
-  MOZ_ASSERT(!mShutdownRequested);
+  MOZ_RELEASE_ASSERT(!mShutdownRequested);
   mListener = nullptr;
   mShutdownRequested = true;
 
@@ -108,8 +108,8 @@ void VRProcessParent::Shutdown() {
 }
 
 bool VRProcessParent::InitAfterConnect(bool aSucceeded) {
-  MOZ_ASSERT(mLaunchPhase == LaunchPhase::Waiting);
-  MOZ_ASSERT(!mVRChild);
+  MOZ_RELEASE_ASSERT(mLaunchPhase == LaunchPhase::Waiting);
+  MOZ_RELEASE_ASSERT(!mVRChild);
 
   mLaunchPhase = LaunchPhase::Complete;
   mPrefSerializer = nullptr;
@@ -131,8 +131,8 @@ bool VRProcessParent::InitAfterConnect(bool aSucceeded) {
 
     mVRChild = MakeRefPtr<VRChild>(this);
 
-    DebugOnly<bool> rv = TakeInitialEndpoint().Bind(mVRChild.get());
-    MOZ_ASSERT(rv);
+    bool rv = TakeInitialEndpoint().Bind(mVRChild.get());
+    MOZ_RELEASE_ASSERT(rv);
 
     mVRChild->Init();
 
@@ -143,9 +143,9 @@ bool VRProcessParent::InitAfterConnect(bool aSucceeded) {
     // Make vr-gpu process connection
     Endpoint<PVRGPUChild> vrGPUBridge;
     VRProcessManager* vpm = VRProcessManager::Get();
-    DebugOnly<bool> opened =
+    bool opened =
         vpm->CreateGPUBridges(gpuChild->OtherEndpointProcInfo(), &vrGPUBridge);
-    MOZ_ASSERT(opened);
+    MOZ_RELEASE_ASSERT(opened);
 
     (void)gpuChild->SendInitVR(std::move(vrGPUBridge));
   }
@@ -163,7 +163,7 @@ void VRProcessParent::KillHard(const char* aReason) {
 }
 
 void VRProcessParent::OnChannelConnected(base::ProcessId peer_pid) {
-  MOZ_ASSERT(!NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(!NS_IsMainThread());
 
   GeckoChildProcessHost::OnChannelConnected(peer_pid);
 
@@ -193,7 +193,7 @@ void VRProcessParent::OnChannelClosed() {
 
   // Release the actor.
   VRChild::Destroy(std::move(mVRChild));
-  MOZ_ASSERT(!mVRChild);
+  MOZ_RELEASE_ASSERT(!mVRChild);
 }
 
 bool VRProcessParent::IsConnected() const { return !!mVRChild; }

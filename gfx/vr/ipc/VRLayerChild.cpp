@@ -29,7 +29,7 @@ VRLayerChild::~VRLayerChild() {
 void VRLayerChild::Initialize(dom::HTMLCanvasElement* aCanvasElement,
                               const gfx::Rect& aLeftEyeRect,
                               const gfx::Rect& aRightEyeRect) {
-  MOZ_ASSERT(aCanvasElement);
+  MOZ_RELEASE_ASSERT(aCanvasElement);
   mLeftEyeRect = aLeftEyeRect;
   mRightEyeRect = aRightEyeRect;
   mCanvasElement = aCanvasElement;

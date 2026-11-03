@@ -904,7 +904,7 @@ void OpenVRSession::UpdateHeadsetPose(VRSystemState& aState) {
 }
 
 void OpenVRSession::EnumerateControllers(VRSystemState& aState) {
-  MOZ_ASSERT(mVRSystem);
+  MOZ_RELEASE_ASSERT(mVRSystem);
 
   MutexAutoLock lock(mControllerHapticStateMutex);
 
@@ -933,7 +933,7 @@ void OpenVRSession::EnumerateControllers(VRSystemState& aState) {
         continue;
       }
     } else {
-      MOZ_ASSERT(false, "Unknown OpenVR hand type.");
+      MOZ_RELEASE_ASSERT(false, "Unknown OpenVR hand type.");
     }
 
     vr::InputOriginInfo_t originInfo;
@@ -1041,7 +1041,7 @@ void OpenVRSession::EnumerateControllers(VRSystemState& aState) {
 }
 
 void OpenVRSession::UpdateControllerButtons(VRSystemState& aState) {
-  MOZ_ASSERT(mVRSystem);
+  MOZ_RELEASE_ASSERT(mVRSystem);
 
   for (uint32_t stateIndex = 0; stateIndex < kVRControllerMaxCount;
        ++stateIndex) {
@@ -1058,7 +1058,7 @@ void OpenVRSession::UpdateControllerButtons(VRSystemState& aState) {
 }
 
 void OpenVRSession::UpdateControllerPoses(VRSystemState& aState) {
-  MOZ_ASSERT(mVRSystem);
+  MOZ_RELEASE_ASSERT(mVRSystem);
 
   for (uint32_t stateIndex = 0; stateIndex < kVRControllerMaxCount;
        ++stateIndex) {
@@ -1366,7 +1366,7 @@ void OpenVRSession::VibrateHaptic(uint32_t aControllerIdx,
 }
 
 void OpenVRSession::StartHapticThread() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
   if (!mHapticThread) {
     mHapticThread = new VRThread("VR_OpenVR_Haptics"_ns);
   }
@@ -1412,13 +1412,13 @@ void OpenVRSession::HapticTimerCallback(nsITimer* aTimer, void* aClosure) {
    * that this function runs if and only if the VRManager object is valid.
    */
   OpenVRSession* self = static_cast<OpenVRSession*>(aClosure);
-  MOZ_ASSERT(self);
+  MOZ_RELEASE_ASSERT(self);
   self->UpdateHaptics();
 }
 
 void OpenVRSession::UpdateHaptics() {
-  MOZ_ASSERT(mHapticThread->GetThread() == NS_GetCurrentThread());
-  MOZ_ASSERT(mVRSystem);
+  MOZ_RELEASE_ASSERT(mHapticThread->GetThread() == NS_GetCurrentThread());
+  MOZ_RELEASE_ASSERT(mVRSystem);
 
   MutexAutoLock lock(mControllerHapticStateMutex);
 

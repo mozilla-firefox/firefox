@@ -29,7 +29,7 @@ void VRThread::Start() {
     MOZ_RELEASE_ASSERT(mThread);
 
     if (NS_FAILED(rv)) {
-      MOZ_ASSERT(false, "Failed to create a vr thread.");
+      MOZ_RELEASE_ASSERT(false, "Failed to create a vr thread.");
     }
     RefPtr<Runnable> runnable =
         NewRunnableMethod<TimeStamp>("gfx::VRThread::CheckLife", this,

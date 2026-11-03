@@ -34,13 +34,13 @@ VRManagerParent::VRManagerParent(ipc::EndpointProcInfo aChildProcess,
       mIsContentChild(aIsContentChild),
       mVRActiveStatus(false) {
   MOZ_COUNT_CTOR(VRManagerParent);
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   SetOtherEndpointProcInfo(aChildProcess);
 }
 
 VRManagerParent::~VRManagerParent() {
-  MOZ_ASSERT(!mVRManagerHolder);
+  MOZ_RELEASE_ASSERT(!mVRManagerHolder);
 
   MOZ_COUNT_DTOR(VRManagerParent);
 }
@@ -134,8 +134,8 @@ bool VRManagerParent::CreateForGPUProcess(
 
 /*static*/
 void VRManagerParent::Shutdown() {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(
       CompositorThread(),
       "Shutdown() must gets called before the compositor thread is shutdown");
   ReleaseVRManagerParentSingleton();
