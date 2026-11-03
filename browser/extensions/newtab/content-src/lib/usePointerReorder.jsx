@@ -210,11 +210,18 @@ export function usePointerReorder({
       // pointerdown, including ones that never start a drag.
       dragRef.current?.retire();
 
+      // e.target can't see into shadow roots, so a press on the menu button in
+      // moz-widget-header would look like a press on the header itself. The
+      // composed path still has the button in it.
+      const path = e.nativeEvent.composedPath();
       if (
         !enabled ||
         (e.pointerType !== "mouse" && e.pointerType !== "pen") ||
         e.button !== 0 ||
-        (ignoreSelector && e.target.closest(ignoreSelector))
+        (ignoreSelector &&
+          path
+            .slice(0, path.indexOf(e.currentTarget))
+            .some(el => el.matches?.(ignoreSelector)))
       ) {
         return;
       }

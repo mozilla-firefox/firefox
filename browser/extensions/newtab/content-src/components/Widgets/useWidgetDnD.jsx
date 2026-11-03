@@ -11,8 +11,10 @@ import { usePointerReorder } from "content-src/lib/usePointerReorder.jsx";
 // Anchors are deliberately absent: dragging one moves the widget, and a click
 // still navigates because a gesture below the threshold commits nothing.
 // [draggable='true'] covers nested reorderable lists, such as the tasks inside
-// the Lists widget, which own their own drag.
+// the Lists widget, which own their own drag. panel-list is the widget's menu:
+// pressing anywhere in it, even on a separator, shouldn't move the widget.
 const INTERACTIVE_DESCENDANT_SELECTOR = [
+  "panel-list",
   "[draggable='true']",
   "button",
   "moz-button",
