@@ -28,7 +28,7 @@ A.eval(`
   }
   for (let i=0; i<2*N; i++) keys[makeString(i)]=i;
   atoms = Object.keys(keys);
-  indices=atoms.map(s=>getAtomMarkIndex(s));
+  indices=atoms.map(s=>getAtomRefIndex(s));
   function prime() {for(let i=0;i<2*N;i+=2)Reflect.defineProperty(keys,makeString(i),{value:0});}
   function wrappers() {
     bases=[];deps=[];B.copies.length=0;
@@ -61,7 +61,7 @@ for(round=0; round<1000; round++) {
   A.wrappers();minorgc();
   unsetgczeal(25);finishgc();
   for(let i=0;i<A.N;i++) {
-    if(getAtomMarkColor(B,A.indices[2*i+1])==='white') {lost=i;break;}
+    if(getAtomRefColor(B,A.indices[2*i+1])==='white') {lost=i;break;}
   }
   if(lost!==-1) {
     break;

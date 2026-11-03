@@ -54,7 +54,7 @@ var a52 = "AAAAAABZ";
 var a53 = "AAAAAACA";
 var a54 = "AAAAAACB";
 var a55 = "AAAAAACC";
-getAtomMarkColor(this, 34507);
+getAtomRefColor(this, 34507);
 function f01() {}
 function f02() {}
 function f03() {}

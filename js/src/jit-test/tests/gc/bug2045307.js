@@ -5,7 +5,7 @@ gczeal(0);
 // A dynamically-created atom, referenced by no script's atom list.
 let holder = {["poc_" + "atom_998877"]: 1};
 let s = Object.keys(holder)[0];
-let idx = getAtomMarkIndex(s);
+let idx = getAtomRefIndex(s);
 
 // Zone A marks the atom in its atom bitmap, then drops its reference.
 let a = newGlobal({newCompartment: true});
@@ -47,4 +47,4 @@ readJit(wm, key);
 // Finish: A refines its atom bitmap from the chunk mark bits. Without the
 // barrier the atom is white and A drops it.
 finishgc();
-assertEq(getAtomMarkColor(a, idx), "black");
+assertEq(getAtomRefColor(a, idx), "black");

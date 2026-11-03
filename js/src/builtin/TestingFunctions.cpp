@@ -3312,7 +3312,7 @@ static bool FullCompartmentChecks(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
-static bool IsAtomMarked(JSContext* cx, unsigned argc, Value* vp) {
+static bool IsAtomReferenced(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
 
   RootedObject callee(cx, &args.callee());
@@ -3350,7 +3350,7 @@ static bool IsAtomMarked(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
-static bool GetAtomMarkIndex(JSContext* cx, unsigned argc, Value* vp) {
+static bool GetAtomRefIndex(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
   RootedObject callee(cx, &args.callee());
 
@@ -3383,7 +3383,7 @@ static bool GetAtomMarkIndex(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
-static bool GetAtomMarkColor(JSContext* cx, unsigned argc, Value* vp) {
+static bool GetAtomRefColor(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
   RootedObject callee(cx, &args.callee());
 
@@ -10885,16 +10885,16 @@ gc::ZealModeHelpText),
 "abortgc()",
 "  Abort the current incremental GC."),
 
-    JS_FN_HELP("isAtomMarked", IsAtomMarked, 2, 0,
-"isAtomMarked(obj, atom)",
-"  Return whether |atom| is marked relative to the zone containing |obj|."),
+    JS_FN_HELP("isAtomReferenced", IsAtomReferenced, 2, 0,
+"isAtomReferenced(obj, atom)",
+"  Return whether |atom| is referenced relative to the zone containing |obj|."),
 
-    JS_FN_HELP("getAtomMarkIndex", GetAtomMarkIndex, 1, 0,
-"getAtomMarkIndex(atom)",
+    JS_FN_HELP("getAtomRefIndex", GetAtomRefIndex, 1, 0,
+"getAtomRefIndex(atom)",
 "  Return the atom reference bitmap's index for |atom|."),
 
-    JS_FN_HELP("getAtomMarkColor", GetAtomMarkColor, 2, 0,
-"getAtomMarkColor(obj, index)",
+    JS_FN_HELP("getAtomRefColor", GetAtomRefColor, 2, 0,
+"getAtomRefColor(obj, index)",
 "  Return the atom reference bitmap's color for |index| relative to the zone\n"
 "  containing |obj|."),
 
