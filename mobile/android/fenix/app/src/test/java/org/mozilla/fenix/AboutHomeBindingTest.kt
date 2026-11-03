@@ -4,12 +4,14 @@
 
 package org.mozilla.fenix
 
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.ContentAction
@@ -30,13 +32,16 @@ class AboutHomeBindingTest {
     private lateinit var browserStore: BrowserStore
     private lateinit var tabId: String
     private lateinit var navController: NavController
+    private lateinit var backStackEntryFlow: MutableSharedFlow<NavBackStackEntry>
 
     private val tab: TabSessionState
         get() = browserStore.state.tabs.find { it.id == tabId }!!
 
     @Before
     fun setUp() {
+        backStackEntryFlow = MutableSharedFlow()
         navController = mockk(relaxed = true)
+        every { navController.currentBackStackEntryFlow } returns backStackEntryFlow
 
         val tab =
             createTab(url = "https://www.mozilla.org").also {
@@ -264,11 +269,81 @@ class AboutHomeBindingTest {
         }
 
     @Test
-    fun `GIVEN the settings screen is currently shown WHEN URL is updated to ABOUT_HOME_URL THEN do not navigate to the homepage`() =
+    fun `GIVEN URL was updated to ABOUT_HOME_URL while the settings screen was shown WHEN the user returns to the browser THEN navigate to the homepage`() =
         runTest(testDispatcher) {
-            val mockDestination: NavDestination = mockk()
-            every { mockDestination.id } returns R.id.settingsFragment
-            every { navController.currentDestination } returns mockDestination
+            val settingsDestination = mockDestination(R.id.settingsFragment)
+            every { navController.currentDestination } returns settingsDestination
+
+            AboutHomeBinding(
+                    browserStore = browserStore,
+                    navController = navController,
+                    mainDispatcher = testDispatcher,
+                )
+                .start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            browserStore.dispatch(ContentAction.UpdateUrlAction(sessionId = tabId, url = ABOUT_HOME_URL))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(exactly = 0) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+
+            navigateTo(R.id.browserFragment)
+
+            verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+        }
+
+    @Test
+    fun `GIVEN URL was updated to ABOUT_HOME_URL while the settings screen was shown WHEN the user returns to the homepage and then the browser THEN do not navigate to the homepage`() =
+        runTest(testDispatcher) {
+            val settingsDestination = mockDestination(R.id.settingsFragment)
+            every { navController.currentDestination } returns settingsDestination
+
+            AboutHomeBinding(
+                    browserStore = browserStore,
+                    navController = navController,
+                    mainDispatcher = testDispatcher,
+                )
+                .start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            browserStore.dispatch(ContentAction.UpdateUrlAction(sessionId = tabId, url = ABOUT_HOME_URL))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            navigateTo(R.id.homeFragment)
+            navigateTo(R.id.browserFragment)
+
+            verify(exactly = 0) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+        }
+
+    @Test
+    fun `GIVEN URL was updated away from ABOUT_HOME_URL while the settings screen was shown WHEN the user returns to the browser THEN do not navigate to the homepage`() =
+        runTest(testDispatcher) {
+            val settingsDestination = mockDestination(R.id.settingsFragment)
+            every { navController.currentDestination } returns settingsDestination
+
+            AboutHomeBinding(
+                    browserStore = browserStore,
+                    navController = navController,
+                    mainDispatcher = testDispatcher,
+                )
+                .start()
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            browserStore.dispatch(ContentAction.UpdateUrlAction(sessionId = tabId, url = ABOUT_HOME_URL))
+            testDispatcher.scheduler.advanceUntilIdle()
+            browserStore.dispatch(ContentAction.UpdateUrlAction(sessionId = tabId, url = "https://www.firefox.com"))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            navigateTo(R.id.browserFragment)
+
+            verify(exactly = 0) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+        }
+
+    @Test
+    fun `GIVEN URL was updated to ABOUT_HOME_URL while the settings screen was shown WHEN the binding is restarted and the user returns to the browser THEN navigate to the homepage`() =
+        runTest(testDispatcher) {
+            val settingsDestination = mockDestination(R.id.settingsFragment)
+            every { navController.currentDestination } returns settingsDestination
 
             val binding =
                 AboutHomeBinding(
@@ -276,21 +351,21 @@ class AboutHomeBindingTest {
                     navController = navController,
                     mainDispatcher = testDispatcher,
                 )
-
             binding.start()
-
-            browserStore.dispatch(
-                ContentAction.UpdateUrlAction(
-                    sessionId = tabId,
-                    url = ABOUT_HOME_URL,
-                )
-            )
-
             testDispatcher.scheduler.advanceUntilIdle()
 
-            assertEquals(ABOUT_HOME_URL, tab.content.url)
+            browserStore.dispatch(ContentAction.UpdateUrlAction(sessionId = tabId, url = ABOUT_HOME_URL))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            binding.stop()
+            binding.start()
+            testDispatcher.scheduler.advanceUntilIdle()
 
             verify(exactly = 0) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
+
+            navigateTo(R.id.browserFragment)
+
+            verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
         }
 
     @Test
@@ -300,6 +375,7 @@ class AboutHomeBindingTest {
                 AboutHomeBinding(
                     browserStore = browserStore,
                     navController = navController,
+                    mainDispatcher = testDispatcher,
                 )
 
             binding.start()
@@ -409,4 +485,12 @@ class AboutHomeBindingTest {
 
             verify(exactly = 1) { navController.navigate(NavGraphDirections.actionGlobalHome()) }
         }
+
+    private fun mockDestination(id: Int): NavDestination = mockk { every { this@mockk.id } returns id }
+
+    private suspend fun navigateTo(id: Int) {
+        val destination = mockDestination(id)
+        backStackEntryFlow.emit(mockk { every { this@mockk.destination } returns destination })
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
 }
