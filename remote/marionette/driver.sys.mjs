@@ -1068,7 +1068,8 @@ export class GeckoDriver {
    *     Return the found element.
    *
    * @throws {NoSuchElementError}
-   *     If element represented by reference <var>element</var> is unknown.
+   *     If the element which is looked for with <var>value</var> was
+   *     not found.
    * @throws {NoSuchWindowError}
    *     Browsing context has been discarded.
    * @throws {StaleElementReferenceError}
@@ -1102,7 +1103,15 @@ export class GeckoDriver {
       all: false,
     };
 
-    return this.#getActor().findElement(using, value, opts);
+    const foundEls = await this.#getActor().findElements(using, value, opts);
+
+    if (!foundEls.length) {
+      throw new lazy.error.NoSuchElementError(
+        `Unable to locate element: ${value}`
+      );
+    }
+
+    return foundEls[0];
   }
 
   /**
@@ -1155,7 +1164,15 @@ export class GeckoDriver {
       timeout: this.currentSession.timeouts.implicit,
     };
 
-    return this.#getActor().findElement(using, value, opts);
+    const foundEls = await this.#getActor().findElements(using, value, opts);
+
+    if (!foundEls.length) {
+      throw new lazy.error.NoSuchElementError(
+        `Unable to locate element: ${value}`
+      );
+    }
+
+    return foundEls[0];
   }
 
   /**

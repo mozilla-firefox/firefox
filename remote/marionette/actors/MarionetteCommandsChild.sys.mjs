@@ -214,9 +214,6 @@ export class MarionetteCommandsChild extends JSWindowActorChild {
           result = await this.executeScript(data);
           waitForNextTick = true;
           break;
-        case "MarionetteCommandsParent:findElement":
-          result = await this.findElement(data);
-          break;
         case "MarionetteCommandsParent:findElements":
           result = await this.findElements(data);
           break;
@@ -359,25 +356,6 @@ export class MarionetteCommandsChild extends JSWindowActorChild {
   }
 
   /**
-   * Find an element in the current browsing context's document using the
-   * given search strategy.
-   *
-   * @param {object=} options
-   * @param {string} options.strategy
-   * @param {string} options.selector
-   * @param {object} options.opts
-   * @param {Element} options.opts.startNode
-   */
-  async findElement(options = {}) {
-    const { strategy, selector, opts } = options;
-
-    opts.all = false;
-
-    const container = { frame: this.document.defaultView };
-    return lazy.dom.find(container, strategy, selector, opts);
-  }
-
-  /**
    * Find elements in the current browsing context's document using the
    * given search strategy.
    *
@@ -389,8 +367,6 @@ export class MarionetteCommandsChild extends JSWindowActorChild {
    */
   async findElements(options = {}) {
     const { strategy, selector, opts } = options;
-
-    opts.all = true;
 
     const container = { frame: this.document.defaultView };
     return lazy.dom.find(container, strategy, selector, opts);

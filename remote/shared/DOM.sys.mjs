@@ -79,25 +79,18 @@ dom.Strategy = {
  *     the chosen search <var>strategy</var>.
  * @param {object=} options
  * @param {boolean=} options.all
- *     If true, a multi-element search selector is used and a sequence of
- *     elements will be returned, otherwise a single element. Defaults to false.
+ *     If true, all matching elements are searched for, otherwise only the first
+ *     match is searched for. Defaults to false.
  * @param {Element=} options.startNode
  *     Element to use as the root of the search.
  * @param {number=} options.timeout
- *     Duration to wait before timing out the search.  If <code>all</code>
- *     is false, a {@link NoSuchElementError} is thrown if unable to
- *     find the element within the timeout duration.
- *
- * @returns {Promise.<(Element|Array.<Element>)>}
- *     Single element or a sequence of elements.
- *
+ *     Duration to wait before timing out the search.
+ * @returns {Promise.<Array.<Element>>}
+ *     Sequence of elements.
  * @throws InvalidSelectorError
  *     If <var>strategy</var> is unknown.
  * @throws InvalidSelectorError
  *     If <var>selector</var> is malformed.
- * @throws NoSuchElementError
- *     If a single element is requested, this error will throw if the
- *     element is not found.
  */
 dom.find = function (container, strategy, selector, options = {}) {
   const { all = false, startNode, timeout = 0 } = options;
@@ -109,40 +102,24 @@ dom.find = function (container, strategy, selector, options = {}) {
     searchFn = findElement.bind(this);
   }
 
-  return new Promise((resolve, reject) => {
-    let findElements = new lazy.PollPromise(
-      async (resolve, reject) => {
-        try {
-          let res = await find_(container, strategy, selector, searchFn, {
-            all,
-            startNode,
-          });
-          if (res.length) {
-            resolve(Array.from(res));
-          } else {
-            reject([]);
-          }
-        } catch (e) {
-          reject(e);
+  return new lazy.PollPromise(
+    async (resolve, reject) => {
+      try {
+        let res = await find_(container, strategy, selector, searchFn, {
+          all,
+          startNode,
+        });
+        if (res.length) {
+          resolve(Array.from(res));
+        } else {
+          reject([]);
         }
-      },
-      { timeout, throws: null }
-    );
-
-    findElements.then(foundEls => {
-      // the following code ought to be moved into findElement
-      // and findElements when bug 1254486 is addressed
-      if (!all && (!foundEls || !foundEls.length)) {
-        let msg = `Unable to locate element: ${selector}`;
-        reject(new lazy.error.NoSuchElementError(msg));
+      } catch (e) {
+        reject(e);
       }
-
-      if (all) {
-        resolve(foundEls);
-      }
-      resolve(foundEls[0]);
-    }, reject);
-  });
+    },
+    { timeout, throws: null }
+  );
 };
 
 async function find_(

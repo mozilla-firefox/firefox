@@ -181,14 +181,6 @@ export class MarionetteCommandsParent extends JSWindowActorParent {
     });
   }
 
-  findElement(strategy, selector, opts) {
-    return this.sendQuery("MarionetteCommandsParent:findElement", {
-      strategy,
-      selector,
-      opts,
-    });
-  }
-
   findElements(strategy, selector, opts) {
     return this.sendQuery("MarionetteCommandsParent:findElements", {
       strategy,
