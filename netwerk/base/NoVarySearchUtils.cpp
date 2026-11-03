@@ -25,7 +25,8 @@ static void CollectInnerListStrings(const SFV::InnerListResult& aList,
   for (size_t i = 0; i < aList.Length(); i++) {
     nsAutoCString val;
     if (NS_SUCCEEDED(aList.GetItemAt(i).GetValue<SFV::SFVString>(val))) {
-      aOut.AppendElement(val);
+      // https://www.ietf.org/archive/id/draft-ietf-httpbis-no-vary-search-05.html#section-5.3
+      URLParams::DecodeString(val, *aOut.AppendElement());
     }
   }
 }
