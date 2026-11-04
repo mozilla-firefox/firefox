@@ -78,6 +78,11 @@ test_highlights(
     is(found, 2, "there should be 2 highlights cards");
 
     found = content.document.querySelectorAll(
+      "[data-section-id='highlights'] .section-list .placeholder"
+    ).length;
+    is(found, 2, "there should be 1 row * 4 - 2 = 2 highlights placeholder");
+
+    found = content.document.querySelectorAll(
       "[data-section-id='highlights'] .card-context-icon.icon-bookmark-added"
     ).length;
     is(found, 2, "there should be 2 bookmark icons");
@@ -87,15 +92,17 @@ test_highlights(
 test_highlights(
   1, // Number of highlights cards
   async function check_highlights_context_menu() {
-    const card = content.document.querySelector(
-      "[data-section-id='highlights'] .card-outer"
+    const menuButton = content.document.querySelector(
+      "[data-section-id='highlights'] .card-outer .context-menu-button"
     );
-    card.querySelector("moz-button").click();
-    await ContentTaskUtils.waitForCondition(
-      () => card.querySelector("panel-list")?.hasAttribute("open"),
-      "Should open the context menu"
+    // Open the menu.
+    menuButton.click();
+    // Wait for React to re-render the context menu.
+    await new Promise(r => content.requestAnimationFrame(r));
+    const found = content.document.querySelector(
+      "[data-section-id='highlights'] .card-outer .context-menu"
     );
-    ok(card.classList.contains("active"), "Card is active while menu is open");
+    ok(found && !found.hidden, "Should find a visible context menu");
   }
 );
 
@@ -111,18 +118,25 @@ test_highlights(
       "The highlight is a bookmark card to begin with"
     );
 
-    const card = content.document.querySelector(
-      "[data-section-id='highlights'] .card-outer"
+    const menuButton = content.document.querySelector(
+      "[data-section-id='highlights'] .card-outer .context-menu-button"
     );
-    card.querySelector("moz-button").click();
-    const panelList = card.querySelector("panel-list");
-    await ContentTaskUtils.waitForCondition(
-      () => panelList.hasAttribute("open"),
-      "Should open the context menu"
+    // Open the menu.
+    menuButton.click();
+    // Wait for React to re-render the context menu.
+    await new Promise(r => content.requestAnimationFrame(r));
+    const contextMenu = content.document.querySelector(
+      "[data-section-id='highlights'] .card-outer .context-menu"
+    );
+    ok(
+      contextMenu && !contextMenu.hidden,
+      "Should find a visible context menu"
     );
 
-    // The first item of a bookmark highlight's menu removes the bookmark.
-    panelList.querySelector("panel-item").click();
+    const removeBookmarkBtn = contextMenu.querySelector(
+      "[data-section-id='highlights'] button"
+    );
+    removeBookmarkBtn.click();
 
     await ContentTaskUtils.waitForCondition(
       () => !content.document.querySelector(bookmarkIconSelector),
