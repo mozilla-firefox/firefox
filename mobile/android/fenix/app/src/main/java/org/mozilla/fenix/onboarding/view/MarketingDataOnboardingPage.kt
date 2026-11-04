@@ -256,7 +256,7 @@ private fun PrimaryButton(
                 modifier.semantics {
                     testTag = state.title + "onboarding_card.positive_button"
                 },
-            onClick = { onMarketingDataContinueClick(checkboxChecked) },
+            onClick = hapticOnClick { onMarketingDataContinueClick(checkboxChecked) },
         )
     } else {
         FilledButton(
@@ -268,7 +268,7 @@ private fun PrimaryButton(
             icon = painterResource(id = R.drawable.ic_favourite_filled),
             iconModifier = Modifier.size(16.dp),
             iconTint = PhotonColors.Red50,
-            onClick = { onMarketingDataContinueClick(true) },
+            onClick = hapticOnClick { onMarketingDataContinueClick(true) },
         )
     }
 }
@@ -294,7 +294,7 @@ private fun SecondaryButtonOutline(
             modifier.semantics {
                 testTag = state.title + "onboarding_card.negative_button"
             },
-        onClick = { onMarketingDataSkipClick() },
+        onClick = hapticOnClick { onMarketingDataSkipClick() },
     )
 }
 
@@ -333,21 +333,19 @@ private fun DefaultContent(
     marketingData: OnboardingMarketingData,
     onMarketingDataLearnMoreClick: () -> Unit,
 ) {
+    val onToggle = hapticOnCheckedChange { onMarketingOptInToggle(!checkboxChecked) }
+
     Row(
         Modifier.toggleable(
             value = checkboxChecked,
             role = Role.Checkbox,
-            onValueChange = {
-                onMarketingOptInToggle.invoke(!checkboxChecked)
-            },
+            onValueChange = onToggle,
         )
     ) {
         Checkbox(
             modifier = Modifier.align(Alignment.Top).offset(y = (-12).dp, x = (-12).dp).clearAndSetSemantics {},
             checked = checkboxChecked,
-            onCheckedChange = {
-                onMarketingOptInToggle.invoke(!checkboxChecked)
-            },
+            onCheckedChange = onToggle,
         )
 
         LinkText(
@@ -357,7 +355,7 @@ private fun DefaultContent(
                     LinkTextState(
                         text = marketingData.bodyOneLinkText,
                         url = "",
-                        onClick = { onMarketingDataLearnMoreClick() },
+                        onClick = hapticOnLinkClick { onMarketingDataLearnMoreClick() },
                     )
                 ),
             linkTextDecoration = TextDecoration.Underline,
@@ -382,7 +380,7 @@ private fun TreatmentCContent(
                 LinkTextState(
                     text = lineOneLink,
                     url = "",
-                    onClick = { onMarketingDataLearnMoreClick() },
+                    onClick = hapticOnLinkClick { onMarketingDataLearnMoreClick() },
                 )
             ),
         linkTextDecoration = TextDecoration.Underline,

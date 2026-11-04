@@ -44,6 +44,9 @@ import mozilla.components.compose.base.theme.Theme
 import org.mozilla.fenix.R
 import org.mozilla.fenix.onboarding.store.PrivacyPreferencesAction
 import org.mozilla.fenix.onboarding.store.PrivacyPreferencesStore
+import org.mozilla.fenix.onboarding.view.hapticOnCheckedChange
+import org.mozilla.fenix.onboarding.view.hapticOnClick
+import org.mozilla.fenix.onboarding.view.hapticOnLinkClick
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /** Dialog to manage privacy preferences during onboarding. */
@@ -127,7 +130,7 @@ private fun CrashReportingPreference(
                 LinkTextState(
                     text = stringResource(id = R.string.onboarding_preferences_dialog_crash_reporting_learn_more_2),
                     url = "",
-                    onClick = { onLinkClick() },
+                    onClick = hapticOnLinkClick { onLinkClick() },
                 )
             ),
         style = FirefoxTheme.typography.caption,
@@ -166,7 +169,7 @@ private fun UsageDataPreference(
                 LinkTextState(
                     text = stringResource(id = R.string.onboarding_preferences_dialog_usage_data_learn_more_2),
                     url = "",
-                    onClick = { onLinkClick() },
+                    onClick = hapticOnLinkClick { onLinkClick() },
                 )
             ),
         style = FirefoxTheme.typography.caption,
@@ -181,7 +184,7 @@ private fun PositiveButton(onDismissRequest: () -> Unit) {
     ) {
         TextButton(
             text = stringResource(R.string.onboarding_preferences_dialog_positive_button),
-            onClick = { onDismissRequest() },
+            onClick = hapticOnClick { onDismissRequest() },
         )
     }
 }
@@ -196,13 +199,15 @@ private fun SwitchWithLabel(
     labelStyle: TextStyle = FirefoxTheme.typography.body1,
     onCheckedChange: ((Boolean) -> Unit),
 ) {
+    val onCheckedChangeWithHaptic = hapticOnCheckedChange(onCheckedChange)
+
     Row(
         modifier =
             Modifier.toggleable(
                     value = checked,
                     enabled = enabled,
                     role = Role.Switch,
-                    onValueChange = onCheckedChange,
+                    onValueChange = onCheckedChangeWithHaptic,
                 )
                 .then(modifier),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -239,7 +244,7 @@ private fun SwitchWithLabel(
         Switch(
             modifier = Modifier.clearAndSetSemantics {},
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = onCheckedChangeWithHaptic,
             enabled = enabled,
         )
     }

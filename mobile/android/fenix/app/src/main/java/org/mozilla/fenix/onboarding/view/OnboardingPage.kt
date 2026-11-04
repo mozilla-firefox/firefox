@@ -69,7 +69,7 @@ private fun SecondaryButton(
                 testTag = title + "onboarding_card.negative_button"
             },
         text = secondaryButton.text,
-        onClick = secondaryButton.onClick,
+        onClick = hapticOnClick(secondaryButton.onClick),
     )
 }
 
@@ -109,7 +109,7 @@ private fun CardView(
                         testTag = pageState.title + "onboarding_card.positive_button"
                     },
                 text = pageState.primaryButton.text,
-                onClick = pageState.primaryButton.onClick,
+                onClick = hapticOnClick(pageState.primaryButton.onClick),
             )
         }
     }
