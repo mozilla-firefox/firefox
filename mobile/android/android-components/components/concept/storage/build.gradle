@@ -9,6 +9,12 @@ plugins {
 }
 
 android {
+    buildTypes {
+        release {
+            consumerProguardFiles 'proguard-rules-consumer.pro'
+        }
+    }
+
     namespace = 'mozilla.components.concept.storage'
 }
 
