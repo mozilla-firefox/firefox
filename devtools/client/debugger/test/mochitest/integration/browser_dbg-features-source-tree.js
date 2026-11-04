@@ -181,32 +181,15 @@ add_task(async function testSimpleSourcesWithManualKeyShortcutsExpand() {
     { noExpand: true }
   );
 
-  // Right key on open dir
-  await pressKey(dbg, "Right");
+  // The directory label was clicked, so it is focused
   await assertNodeIsFocused(dbg, 3);
 
-  // Right key on closed dir
+  // Right key on an open dir focuses its first child, the nested dir
   await pressKey(dbg, "Right");
   await assertNodeIsFocused(dbg, 4);
 
-  // Left key on a open dir
-  await pressKey(dbg, "Left");
-  await assertNodeIsFocused(dbg, 4);
-
-  // Down key on a closed dir
-  await pressKey(dbg, "Down");
-  await assertNodeIsFocused(dbg, 4);
-
-  // Right key on a source
-  // We are focused on the nested source and up to this point we still display only the 4 initial sources
-  await waitForSourcesInSourceTree(
-    dbg,
-    ["doc-sources.html", "simple1.js", "simple2.js", "long.js"],
-    { noExpand: true }
-  );
+  // Right key on a closed dir expands it and displays the nested source
   await pressKey(dbg, "Right");
-  await assertNodeIsFocused(dbg, 4);
-  // Now, the nested source is also displayed
   await waitForSourcesInSourceTree(
     dbg,
     [
@@ -218,50 +201,60 @@ add_task(async function testSimpleSourcesWithManualKeyShortcutsExpand() {
     ],
     { noExpand: true }
   );
+  await assertNodeIsFocused(dbg, 4);
+
+  // Right key on an open dir focuses its first child, the nested source
+  await pressKey(dbg, "Right");
+  await assertNodeIsFocused(dbg, 5);
+
+  // Right key on a source focuses the next node
+  await pressKey(dbg, "Right");
+  await assertNodeIsFocused(dbg, 6);
 
   // Down key on a source
   await pressKey(dbg, "Down");
-  await assertNodeIsFocused(dbg, 5);
+  await assertNodeIsFocused(dbg, 7);
 
   // Go to bottom of tree and press down key
   await pressKey(dbg, "Down");
+  await assertNodeIsFocused(dbg, 8);
   await pressKey(dbg, "Down");
-  await assertNodeIsFocused(dbg, 6);
+  await assertNodeIsFocused(dbg, 9);
+  await pressKey(dbg, "Down");
+  await assertNodeIsFocused(dbg, 9);
 
   // Up key on a source
   await pressKey(dbg, "Up");
-  await assertNodeIsFocused(dbg, 5);
+  await assertNodeIsFocused(dbg, 8);
 
-  // Left key on a source
+  // Left key on a source focuses its parent dir
   await pressKey(dbg, "Left");
+  await assertNodeIsFocused(dbg, 3);
+
+  // Down key on a dir focuses the next (open) dir
+  await pressKey(dbg, "Down");
   await assertNodeIsFocused(dbg, 4);
 
-  // Left key on a closed dir
-  // We are about to close the nested folder, the nested source is about to disappear
-  await waitForSourcesInSourceTree(
-    dbg,
-    [
-      "doc-sources.html",
-      "simple1.js",
-      "simple2.js",
-      "long.js",
-      "nested-source.js",
-    ],
-    { noExpand: true }
-  );
+  // Left key on an open dir collapses it and hides the nested source
   await pressKey(dbg, "Left");
-  // And it disappeared
   await waitForSourcesInSourceTree(
     dbg,
     ["doc-sources.html", "simple1.js", "simple2.js", "long.js"],
     { noExpand: true }
   );
+  await assertNodeIsFocused(dbg, 4);
+
+  // Left key on a closed dir focuses its parent dir
   await pressKey(dbg, "Left");
   await assertNodeIsFocused(dbg, 3);
 
-  // Up Key at the top of the source tree
+  // Go to top of tree and press up key
   await pressKey(dbg, "Up");
   await assertNodeIsFocused(dbg, 2);
+  await pressKey(dbg, "Up");
+  await assertNodeIsFocused(dbg, 1);
+  await pressKey(dbg, "Up");
+  await assertNodeIsFocused(dbg, 1);
   dbg.toolbox.closeToolbox();
 });
 
