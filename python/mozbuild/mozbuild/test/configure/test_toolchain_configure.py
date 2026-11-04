@@ -325,7 +325,7 @@ class BaseToolchainTest(BaseConfigureTest):
         del self.out
         super().tearDown()
 
-    def do_toolchain_test(self, paths, results, args=[], environ={}):
+    def do_toolchain_test(self, paths, results, args=[], environ={}, overrides={}):
         """Helper to test the toolchain checks from toolchain.configure.
 
         - `paths` is a dict associating compiler paths to FakeCompiler
@@ -338,6 +338,8 @@ class BaseToolchainTest(BaseConfigureTest):
           When the results for host_c_compiler are identical to c_compiler,
           they can be omitted. Likewise for host_cxx_compiler vs.
           cxx_compiler.
+        - `overrides` is a dict associating names of `@depends` functions to
+          values they should return instead of being evaluated.
         """
         environ = dict(environ)
         if "PATH" not in environ:
@@ -348,6 +350,8 @@ class BaseToolchainTest(BaseConfigureTest):
         args = args + ["--enable-release", "--disable-bootstrap"]
 
         sandbox = self.get_sandbox(paths, {}, args, environ, logger=self.logger)
+        for name, value in overrides.items():
+            sandbox._dependency_overrides[sandbox._depends[sandbox[name]]] = value
 
         for var in (
             "c_compiler",
@@ -986,6 +990,85 @@ class WindowsToolchainTest(BaseToolchainTest):
             {"c_compiler": "Unknown compiler or compiler not supported."},
             environ={"CC": "clang-14", "CXX": "clang++-14"},
         )
+
+    VC_COMPILER_PATH = ["/vc/14.38.33130/bin/Hostx64/x64"]
+    WINDOWS_SDK = ReadOnlyNamespace(
+        path="/sdk",
+        include="/sdk/Include/10.0.22621.0",
+        lib="/sdk/Lib/10.0.22621.0",
+    )
+    VC_SDK_CL_FLAGS = [
+        "-vctoolsdir",
+        "/vc/14.38.33130",
+        "-winsdkdir",
+        "/sdk",
+        "-winsdkversion",
+        "10.0.22621.0",
+    ]
+
+    def get_msvc_sysroot_flags(self, overrides):
+        sandbox = self.get_sandbox(self.PATHS, {}, ["--disable-bootstrap"], {})
+        for name, value in overrides.items():
+            sandbox._dependency_overrides[sandbox._depends[sandbox[name]]] = value
+        return sandbox._value_for(sandbox["msvc_sysroot_flags"])
+
+    def test_msvc_sysroot_flags(self):
+        self.assertIsNone(self.get_msvc_sysroot_flags({"vc_compiler_path": None}))
+        self.assertIsNone(
+            self.get_msvc_sysroot_flags({
+                "vc_compiler_path": self.VC_COMPILER_PATH,
+                "valid_windows_sdk_dir": None,
+            })
+        )
+
+        flags = self.get_msvc_sysroot_flags({
+            "winsysroot": None,
+            "vc_compiler_path": self.VC_COMPILER_PATH,
+            "valid_windows_sdk_dir": self.WINDOWS_SDK,
+        })
+        self.assertEqual(flags.cl, self.VC_SDK_CL_FLAGS)
+        self.assertEqual(
+            flags.clang,
+            [
+                "-Xmicrosoft-visualc-tools-root",
+                "/vc/14.38.33130",
+                "-Xmicrosoft-windows-sdk-root",
+                "/sdk",
+                "-Xmicrosoft-windows-sdk-version",
+                "10.0.22621.0",
+            ],
+        )
+
+        flags = self.get_msvc_sysroot_flags({
+            "winsysroot": "/winsysroot",
+            "vc_compiler_path": self.VC_COMPILER_PATH,
+            "valid_windows_sdk_dir": self.WINDOWS_SDK,
+        })
+        self.assertEqual(flags.cl, ["-winsysroot", "/winsysroot"])
+        self.assertEqual(flags.clang, ["-Xmicrosoft-windows-sys-root", "/winsysroot"])
+
+    def test_clang_cl_msvc_sysroot_flags(self):
+        for winsysroot, sysroot_flags in (
+            (None, self.VC_SDK_CL_FLAGS),
+            ("/winsysroot", ["-winsysroot", "/winsysroot"]),
+        ):
+            with self.subTest(winsysroot=winsysroot):
+                version_flags = ["-fms-compatibility-version=19.38"]
+                self.do_toolchain_test(
+                    self.PATHS,
+                    {
+                        "c_compiler": self.CLANG_CL_19_RESULT
+                        + {"flags": version_flags + sysroot_flags},
+                        "cxx_compiler": self.CLANGXX_CL_19_RESULT
+                        + {"flags": PrependFlags(version_flags)}
+                        + {"flags": sysroot_flags},
+                    },
+                    overrides={
+                        "winsysroot": winsysroot,
+                        "vc_compiler_path": self.VC_COMPILER_PATH,
+                        "valid_windows_sdk_dir": self.WINDOWS_SDK,
+                    },
+                )
 
 
 class Windows64ToolchainTest(WindowsToolchainTest):

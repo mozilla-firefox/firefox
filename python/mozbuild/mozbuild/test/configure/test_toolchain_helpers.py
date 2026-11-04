@@ -215,8 +215,15 @@ class FakeCompiler(dict):
             if arg is None:
                 break
             if arg.startswith("-"):
-                # Ignore -isysroot/--sysroot and the argument that follows it.
-                if arg in ("-isysroot", "--sysroot"):
+                # Ignore sysroot flags and the argument that follows them.
+                if arg in (
+                    "-isysroot",
+                    "--sysroot",
+                    "-winsysroot",
+                    "-vctoolsdir",
+                    "-winsdkdir",
+                    "-winsdkversion",
+                ):
                     next(args, None)
                 else:
                     flags.append(arg)
