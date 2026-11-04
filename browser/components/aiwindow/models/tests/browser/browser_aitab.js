@@ -890,6 +890,71 @@ add_task(async function test_a_page_the_user_referenced_can_be_revised() {
 });
 
 /**
+ * A chat that has read untrusted input can revise a page another chat
+ * generated. The page keeps its links, but gains none to URLs the revising
+ * chat has not seen.
+ */
+add_task(async function test_untrusted_revision_keeps_only_existing_links() {
+  await withAITab(async ({ runWith }) => {
+    const unseenUrl = "https://example.org/unseen";
+    const linkedSurface = (title, urls) => {
+      const tokenizer = new lazy.UrlTokenizer();
+      const surface = generatedSurface(title);
+      surface.components[1].references = {
+        items: urls.map(url => ({ href: tokenizer.formatToken(url), title })),
+      };
+      return surface;
+    };
+
+    const { toolResult: created } = await runWith(
+      { url_list: [SOURCE_URL], focus: FOCUS },
+      GENERATED_TITLE,
+      linkedSurface(GENERATED_TITLE, [SOURCE_URL])
+    );
+    const { slug } = created.page;
+
+    const otherChat = await lazy.newChatConversation();
+    otherChat.addUserMessage(
+      MODIFY_INSTRUCTIONS,
+      null,
+      new lazy.UserRoleOpts({
+        contextMentions: [
+          {
+            type: "currentTab",
+            url: `about:smartpage?page=${slug}`,
+            label: GENERATED_TITLE,
+          },
+        ],
+      })
+    );
+    otherChat.securityProperties.setUntrustedInput();
+    otherChat.securityProperties.commit();
+
+    await runWith(
+      {
+        modify_slug: slug,
+        modify_instructions: `${MODIFY_INSTRUCTIONS}, and see ${unseenUrl}`,
+      },
+      MODIFIED_TITLE,
+      linkedSurface(MODIFIED_TITLE, [SOURCE_URL, unseenUrl]),
+      otherChat
+    );
+
+    const latest = await lazy.AITabStore.getBySlug(slug);
+    const header = latest.components.surface.components.find(
+      component => component.component == "Header"
+    );
+    Assert.deepEqual(
+      header.references.items.map(item => item.href),
+      [SOURCE_URL],
+      "The page keeps its link and gains none to an unseen URL."
+    );
+
+    await lazy.ConversationStore.deleteConversationById(latest.toolConvId);
+  });
+});
+
+/**
  * Seen URLs include open tabs and links in fetched pages, which the user did
  * not pick, so a page URL that is only seen does not unlock a revision.
  */
@@ -947,6 +1012,75 @@ add_task(async function test_raw_content_builds_a_page_without_a_url() {
     );
 
     await lazy.ConversationStore.deleteConversationById(page.toolConvId);
+  });
+});
+
+/**
+ * Generate a page from raw_content holding a seen and an unseen URL, with the
+ * model linking both, and return the links the stored page kept.
+ *
+ * @param {object} ctx - From withAITab.
+ * @param {ChatConversation} ctx.conversation
+ * @param {Function} ctx.runWith
+ * @param {boolean} untrusted - Whether the chat has read untrusted input.
+ * @returns {Promise<string[]>}
+ */
+async function linksFromRawContent({ conversation, runWith }, untrusted) {
+  const unseenUrl = "https://example.org/unseen";
+  const tokenizer = new lazy.UrlTokenizer();
+  const surface = generatedSurface();
+  surface.components[1].references = {
+    items: [
+      { href: tokenizer.formatToken(unseenUrl), title: "Unseen" },
+      { href: tokenizer.formatToken(SOURCE_URL), title: "Source" },
+    ],
+  };
+  conversation.addSeenUrls([SOURCE_URL]);
+  if (untrusted) {
+    conversation.securityProperties.setUntrustedInput();
+    conversation.securityProperties.commit();
+  }
+
+  const { messages } = await runWith(
+    {
+      focus: FOCUS,
+      raw_content: `${RAW_CONTENT} See ${SOURCE_URL} and ${unseenUrl}`,
+    },
+    GENERATED_TITLE,
+    surface
+  );
+  Assert.ok(
+    messages.at(-1).content.includes(tokenizer.formatToken(unseenUrl)),
+    "The URL reached the model as a token it could link."
+  );
+
+  const [page] = await lazy.AITabStore.getAITabPagesByConvId(conversation.id);
+  await lazy.ConversationStore.deleteConversationById(page.toolConvId);
+  const header = page.components.surface.components.find(
+    component => component.component == "Header"
+  );
+  return header.references.items.map(item => item.href);
+}
+
+/** Once the chat has read untrusted input, a page links only to seen URLs. */
+add_task(async function test_untrusted_chat_links_only_seen_urls() {
+  await withAITab(async ctx => {
+    Assert.deepEqual(
+      await linksFromRawContent(ctx, true),
+      [SOURCE_URL],
+      "Only the link to a URL the chat has seen is kept."
+    );
+  });
+});
+
+/** A chat that has read no untrusted input may link URLs it passed along. */
+add_task(async function test_trusted_chat_links_raw_content_urls() {
+  await withAITab(async ctx => {
+    Assert.deepEqual(
+      await linksFromRawContent(ctx, false),
+      ["https://example.org/unseen", SOURCE_URL],
+      "Both links are kept."
+    );
   });
 });
 

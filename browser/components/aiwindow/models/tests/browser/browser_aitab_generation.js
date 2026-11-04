@@ -553,6 +553,9 @@ add_task(async function test_generateAITab_hydrates_favicon_for_denied_url() {
     conversation.securityProperties.setUntrustedInput();
     conversation.securityProperties.commit();
     conversation.addSerpUrlsForAnonymousFetch([ALLOWED_URL]);
+    // A refused URL may only be linked when the chat has seen it, as it would
+    // have from history search.
+    conversation.addSeenUrls([DENIED_URL]);
     const call = generatePage(mockEngine, conversation, {
       url_list: [DENIED_URL, ALLOWED_URL],
     });

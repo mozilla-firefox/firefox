@@ -95,6 +95,39 @@ add_task(function test_expandSurfaceUrlTokens() {
   );
 });
 
+add_task(function test_expandSurfaceUrlTokens_allowedLinks() {
+  const tokenizer = new UrlTokenizer();
+  const seen = "https://example.com/article";
+  const unseen = "https://example.org/unseen";
+  const image = "https://example.org/image.png";
+  const seenToken = tokenizer.formatToken(seen);
+  const unseenToken = tokenizer.formatToken(unseen);
+  const imageToken = tokenizer.formatToken(image);
+
+  const surface = {
+    items: [
+      { title: "Seen", href: seenToken, image: imageToken },
+      { title: "Unseen", href: unseenToken },
+    ],
+  };
+
+  Assert.deepEqual(
+    AITab.expandSurfaceUrlTokens(surface, tokenizer, new Set([seen])),
+    { items: [{ title: "Seen", href: seen, image }] },
+    "an item linking to a URL outside allowedLinks is dropped"
+  );
+  Assert.deepEqual(
+    AITab.expandSurfaceUrlTokens(surface, tokenizer),
+    {
+      items: [
+        { title: "Seen", href: seen, image },
+        { title: "Unseen", href: unseen },
+      ],
+    },
+    "without allowedLinks any URL from the prompt may be linked"
+  );
+});
+
 add_task(function test_tokenizeSurfaceUrls_round_trips() {
   const surface = {
     components: [
