@@ -339,7 +339,8 @@ static Result<NetAddr, nsresult> ToNetAddr(
     case happy_eyeballs::IpAddr::Tag::V6:
       addr.inet6.family = AF_INET6;
       addr.inet6.port = port;
-      memcpy(&addr.inet6.ip, aIpAddr.v6._0, 16);
+      memcpy(&addr.inet6.ip, aIpAddr.v6.octets, 16);
+      addr.inet6.scope_id = aIpAddr.v6.scope_id;
       break;
     default:
       return Err(NS_ERROR_UNEXPECTED);
@@ -363,7 +364,8 @@ static happy_eyeballs::IpAddr ToIpAddrV6(const NetAddr& aAddr) {
   MOZ_ASSERT(aAddr.raw.family == AF_INET6);
   happy_eyeballs::IpAddr ip{};
   ip.tag = happy_eyeballs::IpAddr::Tag::V6;
-  memcpy(ip.v6._0, &aAddr.inet6.ip, 16);
+  memcpy(ip.v6.octets, &aAddr.inet6.ip, 16);
+  ip.v6.scope_id = aAddr.inet6.scope_id;
   return ip;
 }
 

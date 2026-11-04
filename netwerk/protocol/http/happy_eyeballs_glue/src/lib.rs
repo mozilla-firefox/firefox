@@ -351,14 +351,18 @@ impl HappyEyeballs {
         let id: happy_eyeballs::Id = id.into();
         let mut addrs = Vec::with_capacity(ip_addrs.len());
         for ip in ip_addrs {
-            let IpAddr::V6(octets) = ip else {
+            let IpAddr::V6 { octets, scope_id } = ip else {
                 debug_assert!(false, "got IPv4 address in AAAA record");
                 return NS_ERROR_UNEXPECTED;
             };
-            addrs.push(Ipv6Addr::from(*octets));
+            addrs.push(happy_eyeballs::ScopedIpv6Addr::new(
+                Ipv6Addr::from(*octets),
+                NonZeroU32::new(*scope_id),
+            ));
         }
 
-        self.profiler.dns_response(id, &addrs, stale);
+        let ips: Vec<Ipv6Addr> = addrs.iter().map(|a| a.ip).collect();
+        self.profiler.dns_response(id, &ips, stale);
         self.metrics.dns_response(id, !addrs.is_empty(), is_trr);
 
         let result =
@@ -409,7 +413,7 @@ impl HappyEyeballs {
 
             let mut ipv6_vec = Vec::new();
             for ip in &svc_info.ipv6_hints {
-                let IpAddr::V6(octets) = ip else {
+                let IpAddr::V6 { octets, .. } = ip else {
                     debug_assert!(false, "got IPv4 address in IPv6 hints");
                     return NS_ERROR_UNEXPECTED;
                 };
@@ -531,7 +535,7 @@ impl HappyEyeballs {
                         *ret_event = Output::AttemptConnection {
                             id: id.into(),
                             http_version: endpoint.http_version.into(),
-                            addr: address.ip().into(),
+                            addr: (*address).into(),
                             port: address.port(),
                             is_ech_retry,
                         };
@@ -690,14 +694,18 @@ pub struct ServiceInfo {
 #[repr(C)]
 pub enum IpAddr {
     V4([u8; 4]),
-    V6([u8; 16]),
+    /// `scope_id` identifies the interface of a link-local address, 0 otherwise.
+    V6 { octets: [u8; 16], scope_id: u32 },
 }
 
-impl From<std::net::IpAddr> for IpAddr {
-    fn from(ip: std::net::IpAddr) -> Self {
-        match ip {
-            std::net::IpAddr::V4(ipv4) => IpAddr::V4(ipv4.octets()),
-            std::net::IpAddr::V6(ipv6) => IpAddr::V6(ipv6.octets()),
+impl From<std::net::SocketAddr> for IpAddr {
+    fn from(addr: std::net::SocketAddr) -> Self {
+        match addr {
+            std::net::SocketAddr::V4(v4) => IpAddr::V4(v4.ip().octets()),
+            std::net::SocketAddr::V6(v6) => IpAddr::V6 {
+                octets: v6.ip().octets(),
+                scope_id: v6.scope_id(),
+            },
         }
     }
 }

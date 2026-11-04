@@ -874,6 +874,9 @@ skip-if = [
 
 ["test_happy_eyeballs_ip_preference.js"]
 
+["test_happy_eyeballs_ipv6_link_local.js"]
+run-if = ["os == 'mac'"] # needs a link-local address on the loopback interface
+
 ["test_happy_eyeballs_local_addr_retry.js"]
 skip-if = [
   "os == 'android'",
