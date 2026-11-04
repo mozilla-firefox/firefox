@@ -198,6 +198,11 @@ add_setup(async function () {
 add_task(async function cache_is_reused() {
   await getCurrentPosition();
   Assert.equal(requestCount, 1, "first lookup performs a network request");
+  Assert.equal(
+    Glean.geolocation.persistedCache.absent.testGetValue(),
+    1,
+    "counted the absent persisted entry"
+  );
 
   await getCurrentPosition();
   Assert.equal(requestCount, 1, "second lookup is served from the cache");
@@ -274,6 +279,11 @@ add_task(async function persisted_cache_is_reused() {
   Assert.equal(position.coords.longitude, 2, "position has the file longitude");
   Assert.equal(position.coords.accuracy, 3, "position has the file accuracy");
   Assert.equal(cacheHits(), hitsBefore + 1, "counted the cache hit");
+  Assert.equal(
+    Glean.geolocation.persistedCache.adopted.testGetValue(),
+    1,
+    "counted the adopted persisted entry"
+  );
 });
 
 // An entry from an earlier session carries an ID made with that session's seed.
@@ -322,6 +332,11 @@ add_task(async function persisted_cache_from_other_network_is_dropped() {
   let position = await getCurrentPosition();
   Assert.equal(requestCount, 5, "first lookup performs a network request");
   Assert.equal(position.coords.latitude, 42, "position is the fresh one");
+  Assert.equal(
+    Glean.geolocation.persistedCache.rejected.testGetValue(),
+    1,
+    "counted the rejected persisted entry"
+  );
 });
 
 add_task(async function max_age_is_at_least_one_day() {
@@ -356,6 +371,11 @@ add_task(async function entry_adopts_the_network_id_once_determined() {
 
   let position = await getCurrentPosition();
   Assert.equal(requestCount, 7, "lookup without a network ID fetches");
+  Assert.equal(
+    Glean.geolocation.persistedCache.superseded.testGetValue(),
+    1,
+    "counted the superseded persisted entry"
+  );
   Assert.equal(position.coords.latitude, 42, "position is the fresh one");
   await waitForPersistedEntry(
     entry => entry.lat == 42 && entry.networkID == "",

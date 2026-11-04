@@ -202,6 +202,7 @@ class CachedResponse {
     let { entry } = this.#file.data;
     if (!entry) {
       this.#fileChecked = true;
+      Glean.geolocation.persistedCache.absent.add();
       return;
     }
 
@@ -214,6 +215,7 @@ class CachedResponse {
 
     if (!networkID) {
       lazy.log.debug("Discarding persisted request cache: network changed");
+      Glean.geolocation.persistedCache.rejected.add();
       this.clear();
       return;
     }
@@ -226,10 +228,26 @@ class CachedResponse {
     this.#wifis = new Set(entry.wifis);
     this.#timestamp = entry.timestamp;
     this.#networkID = networkID;
+    Glean.geolocation.persistedCache.adopted.add();
     lazy.log.debug("Loaded persisted request cache");
   }
 
+  // True if the cache file holds a location that has not yet been checked
+  // against the current network.
+  #hasUncheckedPersistedEntry() {
+    // !#fileChecked means that the cache file hasn't been checked since the
+    // current network's identity was established.
+    // dataReady means the cache file has been read (it may not have existed)
+    // and data.entry means that it holds a location.
+    return (
+      !this.#fileChecked && this.#file?.dataReady && !!this.#file.data.entry
+    );
+  }
+
   store(location, wifiList) {
+    if (this.#hasUncheckedPersistedEntry()) {
+      Glean.geolocation.persistedCache.superseded.add();
+    }
     this.location = location;
     this.#wifis = wifiMacSet(wifiList);
     this.#timestamp = Date.now();
