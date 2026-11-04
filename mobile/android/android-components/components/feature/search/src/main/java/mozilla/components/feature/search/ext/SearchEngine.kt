@@ -119,7 +119,11 @@ fun SearchEngine.buildSuggestionsURL(query: String, accessPoint: String): String
  */
 private fun SearchEngine.atAccessPoint(accessPoint: String): SearchEngine =
     this.accessPoint(accessPoint)?.let {
-        copy(resultUrls = it.resultUrls, suggestUrl = it.suggestUrl, trendingUrl = it.trendingUrl)
+        copy(
+            resultUrls = it.resultUrls,
+            suggestUrl = it.suggestUrl,
+            trendingUrl = it.trendingUrl,
+        )
     } ?: this
 
 /** Parses a [SearchEngine] from the given [stream]. */

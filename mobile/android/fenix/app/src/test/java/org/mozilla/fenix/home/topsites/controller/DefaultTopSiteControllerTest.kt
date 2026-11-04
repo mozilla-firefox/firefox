@@ -20,6 +20,8 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.search.RegionState
 import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.browser.state.search.SearchEngineAccessPoint
+import mozilla.components.browser.state.search.TOPSITE_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SearchState
 import mozilla.components.browser.state.state.createTab
@@ -90,6 +92,18 @@ class DefaultTopSiteControllerTest {
             type = SearchEngine.Type.BUNDLED,
             resultUrls = listOf("https://www.google.com/?q={searchTerms}"),
             suggestUrl = "https://www.google.com/",
+        )
+
+    private val googleSearchEngineWithTopSiteAccessPoint =
+        googleSearchEngine.copy(
+            accessPoints =
+                mapOf(
+                    TOPSITE_SEARCH_ACCESS_POINT to
+                        SearchEngineAccessPoint(
+                            resultUrls = listOf("https://www.google.com/?q={searchTerms}"),
+                            partnerCode = "firefox-b-t",
+                        )
+                )
         )
 
     private val duckDuckGoSearchEngine =
@@ -474,6 +488,115 @@ class DefaultTopSiteControllerTest {
         }
         verify { navController.navigate(R.id.browserFragment) }
     }
+
+    @Test
+    fun `GIVEN the engine has a topsite partner code WHEN the Google top site is selected THEN it is used`() = runTest {
+        val topSite =
+            TopSite.Default(
+                id = 1L,
+                title = "Google",
+                url = SupportUtils.GOOGLE_URL,
+                createdAt = 0,
+            )
+        val controller = spyk(createController(this))
+
+        every { controller.getAvailableSearchEngines() } returns listOf(googleSearchEngineWithTopSiteAccessPoint)
+
+        store.dispatch(SearchAction.SetRegionAction(RegionState("US", "US")))
+
+        controller.handleSelectTopSite(topSite, position = 0)
+
+        verify {
+            tabsUseCases.addTab.invoke(
+                url = "https://www.google.com/webhp?client=firefox-b-t&channel=ts",
+                selectTab = true,
+                startLoading = true,
+            )
+        }
+    }
+
+    @Test
+    fun `GIVEN the engine has no topsite partner code WHEN the Google top site is selected THEN the region URL is used`() =
+        runTest {
+            val topSite =
+                TopSite.Default(
+                    id = 1L,
+                    title = "Google",
+                    url = SupportUtils.GOOGLE_URL,
+                    createdAt = 0,
+                )
+            val controller = spyk(createController(this))
+
+            every { controller.getAvailableSearchEngines() } returns listOf(googleSearchEngine)
+
+            store.dispatch(SearchAction.SetRegionAction(RegionState("US", "US")))
+
+            controller.handleSelectTopSite(topSite, position = 0)
+
+            verify {
+                tabsUseCases.addTab.invoke(
+                    url = SupportUtils.GOOGLE_US_URL,
+                    selectTab = true,
+                    startLoading = true,
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN homepage as new tab and a topsite partner code WHEN the Google top site is selected THEN it is used`() =
+        runTest {
+            val topSite =
+                TopSite.Default(
+                    id = 1L,
+                    title = "Google",
+                    url = SupportUtils.GOOGLE_URL,
+                    createdAt = 0,
+                )
+            val controller = spyk(createController(this))
+
+            every { controller.getAvailableSearchEngines() } returns listOf(googleSearchEngineWithTopSiteAccessPoint)
+            every { settings.enableHomepageAsNewTab } returns true
+
+            store.dispatch(SearchAction.SetRegionAction(RegionState("US", "US")))
+
+            controller.handleSelectTopSite(topSite, position = 0)
+
+            verify {
+                fenixBrowserUseCases.loadUrlOrSearch(
+                    searchTermOrURL = "https://www.google.com/webhp?client=firefox-b-t&channel=ts",
+                    newTab = false,
+                    private = false,
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN homepage as new tab and no topsite partner code WHEN the Google top site is selected THEN the region URL is used`() =
+        runTest {
+            val topSite =
+                TopSite.Default(
+                    id = 1L,
+                    title = "Google",
+                    url = SupportUtils.GOOGLE_URL,
+                    createdAt = 0,
+                )
+            val controller = spyk(createController(this))
+
+            every { controller.getAvailableSearchEngines() } returns listOf(googleSearchEngine)
+            every { settings.enableHomepageAsNewTab } returns true
+
+            store.dispatch(SearchAction.SetRegionAction(RegionState("US", "US")))
+
+            controller.handleSelectTopSite(topSite, position = 0)
+
+            verify {
+                fenixBrowserUseCases.loadUrlOrSearch(
+                    searchTermOrURL = SupportUtils.GOOGLE_US_URL,
+                    newTab = false,
+                    private = false,
+                )
+            }
+        }
 
     @Test
     fun handleSelectGoogleDefaultTopSiteXX() = runTest {

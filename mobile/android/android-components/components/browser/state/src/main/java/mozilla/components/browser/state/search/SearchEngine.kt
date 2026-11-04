@@ -14,6 +14,12 @@ const val OS_SEARCH_ENGINE_TERMS_PARAM = "{" + "searchTerms" + "}"
 /** The key of the [SearchEngineAccessPoint] a search engine falls back to for any access point it does not define. */
 const val DEFAULT_SEARCH_ACCESS_POINT = "default"
 
+/** The search access point for a search started from a top site. */
+const val TOPSITE_SEARCH_ACCESS_POINT = "topsite"
+
+/** The search access point for a search started from the search widget. */
+const val WIDGET_SEARCH_ACCESS_POINT = "widget"
+
 /**
  * The URLs and telemetry suffix a search engine uses at one search access point.
  *
@@ -24,12 +30,15 @@ const val DEFAULT_SEARCH_ACCESS_POINT = "default"
  * @property resultUrls the search results urls, best first, as [SearchEngine.resultUrls].
  * @property suggestUrl the search suggestion url.
  * @property trendingUrl the trending search url.
+ * @property partnerCode the partner code for this access point, already substituted into its URLs, and null when the
+ *   access point has none.
  * @property telemetrySuffix the telemetry suffix for this access point.
  */
 data class SearchEngineAccessPoint(
     val resultUrls: List<String> = emptyList(),
     val suggestUrl: String? = null,
     val trendingUrl: String? = null,
+    val partnerCode: String? = null,
     val telemetrySuffix: String? = null,
 )
 

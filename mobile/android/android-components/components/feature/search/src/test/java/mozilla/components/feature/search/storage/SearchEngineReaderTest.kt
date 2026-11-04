@@ -719,6 +719,28 @@ class SearchEngineReaderTest {
     }
 
     @Test
+    fun `GIVEN a v3 definition with several access points THEN each exposes the partner code its URLs were built with`() {
+        val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
+        val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
+        searchEngineDefinition.partner =
+            mapOf(
+                DEFAULT_SEARCH_ACCESS_POINT to
+                    SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
+                "widget" to SearchEnginePartnerDetails(code = "firefox-b-w", telemetrySuffix = "b-w"),
+                "topsite" to SearchEnginePartnerDetails(code = null, telemetrySuffix = "b-t"),
+                "context" to SearchEnginePartnerDetails(code = "", telemetrySuffix = "b-c"),
+            )
+
+        val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
+
+        assertEquals("firefox-b-m", searchEngine.accessPoint(DEFAULT_SEARCH_ACCESS_POINT)?.partnerCode)
+        assertEquals("firefox-b-w", searchEngine.accessPoint("widget")?.partnerCode)
+        // An access point with no code, or an empty one, exposes null rather than an empty string.
+        assertNull(searchEngine.accessPoint("topsite")?.partnerCode)
+        assertNull(searchEngine.accessPoint("context")?.partnerCode)
+    }
+
+    @Test
     fun `GIVEN an access point the engine does not define THEN it falls back to the default entry whole`() {
         val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
         val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()

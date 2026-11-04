@@ -403,6 +403,7 @@ internal class SearchEngineReader(
                         builderName = engineName,
                     )
                 },
+            partnerCode = partnerCode,
         )
     }
 

@@ -17,6 +17,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.browser.state.search.TOPSITE_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.WIDGET_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.accessPoint
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.experiments.nimbus.NimbusEventStore
@@ -272,8 +274,8 @@ object MetricsUtils {
  */
 fun MetricsUtils.Source.toSearchAccessPoint(): String =
     when (this) {
-        MetricsUtils.Source.TOPSITE -> "topsite"
-        MetricsUtils.Source.WIDGET -> "widget"
+        MetricsUtils.Source.TOPSITE -> TOPSITE_SEARCH_ACCESS_POINT
+        MetricsUtils.Source.WIDGET -> WIDGET_SEARCH_ACCESS_POINT
         MetricsUtils.Source.ACTION,
         MetricsUtils.Source.SHORTCUT,
         MetricsUtils.Source.SUGGESTION,
