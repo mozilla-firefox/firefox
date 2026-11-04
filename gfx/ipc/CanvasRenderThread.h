@@ -6,10 +6,8 @@
 #define _include_gfx_ipc_CanvasRenderThread_h_
 
 #include "mozilla/AlreadyAddRefed.h"
-#include "mozilla/Mutex.h"
 #include "nsCOMPtr.h"
 #include "nsISupportsImpl.h"
-#include "nsTArray.h"
 
 class nsIRunnable;
 class nsIThread;
@@ -40,12 +38,6 @@ class CanvasRenderThread final {
   /// Can be called from any thread.
   static bool IsInCanvasRenderThread();
 
-  /// Can be called from any thread.
-  static bool IsInCanvasWorkerThread();
-
-  /// Can be called from any thread.
-  static bool IsInCanvasRenderOrWorkerThread();
-
   /// Can be called from any thread, may return nullptr late in shutdown.
   static already_AddRefed<nsIThread> GetCanvasRenderThread();
 
@@ -54,8 +46,6 @@ class CanvasRenderThread final {
  private:
   CanvasRenderThread(nsCOMPtr<nsIThread>&& aThread, bool aCreatedThread);
   ~CanvasRenderThread();
-
-  Mutex mMutex;
 
   nsCOMPtr<nsIThread> const mThread;
 

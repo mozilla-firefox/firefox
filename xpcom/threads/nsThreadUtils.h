@@ -292,7 +292,7 @@ extern bool NS_ProcessNextEvent(nsIThread* aThread = nullptr,
  */
 extern bool NS_IsInCompositorThread();
 
-extern bool NS_IsInCanvasThreadOrWorker();
+extern bool NS_IsInCanvasThread();
 
 extern bool NS_IsInVRThread();
 

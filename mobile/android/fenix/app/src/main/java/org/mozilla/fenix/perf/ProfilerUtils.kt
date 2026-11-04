@@ -60,7 +60,6 @@ private val graphics_threads =
         "GlyphRasterizer",
         "SceneBuilder",
         "WrWorker",
-        "CanvasWorkers",
         "TextureUpdate",
         // Image decoding threads: most formats decode on the TaskController
         // thread pool, JPEG XL additionally uses its own pool.

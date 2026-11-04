@@ -1534,7 +1534,7 @@ Standard benchmarks are third-party tests (i.e. Speedometer) that we have integr
 * **fetch path**: motionmark
 * **gecko profile features**: stackwalk,js,java,processcpu,memory
 * **gecko profile interval**: 1
-* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,CanvasWorkers,TextureUpdate
+* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,TextureUpdate
 * **host from parent**: false
 * **link searchfox**: {searchfox}`testing/raptor/raptor/tests/benchmarks/motionmark-1-3-desktop.toml#13`
 * **lower is better**: false
@@ -1851,7 +1851,7 @@ Standard benchmarks are third-party tests (i.e. Speedometer) that we have integr
 * **fetch path**: motionmark
 * **gecko profile features**: stackwalk,js,java,processcpu,memory
 * **gecko profile interval**: 1
-* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,CanvasWorkers,TextureUpdate
+* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,TextureUpdate
 * **host from parent**: false
 * **link searchfox**: {searchfox}`testing/raptor/raptor/tests/benchmarks/motionmark-1-3-mobile.toml#12`
 * **lower is better**: false
@@ -2182,7 +2182,7 @@ Standard benchmarks are third-party tests (i.e. Speedometer) that we have integr
 * **fetch path**: motionmark
 * **gecko profile features**: stackwalk,js,java,processcpu,memory
 * **gecko profile interval**: 1
-* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,CanvasWorkers,TextureUpdate
+* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,TextureUpdate
 * **host from parent**: false
 * **link searchfox**: {searchfox}`testing/raptor/raptor/tests/benchmarks/motionmark-1-3-desktop.toml#32`
 * **lower is better**: false
@@ -2499,7 +2499,7 @@ Standard benchmarks are third-party tests (i.e. Speedometer) that we have integr
 * **fetch path**: motionmark
 * **gecko profile features**: stackwalk,js,java,processcpu,memory
 * **gecko profile interval**: 1
-* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,CanvasWorkers,TextureUpdate
+* **gecko profile threads**: GeckoMain,Compositor,Renderer,SwComposite,RenderBackend,SceneBuilder,WrWorker,TextureUpdate
 * **host from parent**: false
 * **link searchfox**: {searchfox}`testing/raptor/raptor/tests/benchmarks/motionmark-1-3-mobile.toml#31`
 * **lower is better**: false

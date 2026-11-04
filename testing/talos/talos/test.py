@@ -652,7 +652,7 @@ class glvideo(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = "CanvasRenderer,CanvasWorker,MediaSupervisor"
+    gecko_profile_extra_threads = "CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -674,7 +674,7 @@ class canvas2dvideo(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = "CanvasRenderer,CanvasWorker,MediaSupervisor"
+    gecko_profile_extra_threads = "CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -830,7 +830,7 @@ class offscreencanvas_webcodecs_main_2d_h264(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = "CanvasRenderer,CanvasWorker,MediaSupervisor"
+    gecko_profile_extra_threads = "CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -854,7 +854,7 @@ class offscreencanvas_webcodecs_main_2d_vp9(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = "CanvasRenderer,CanvasWorker,MediaSupervisor"
+    gecko_profile_extra_threads = "CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -878,7 +878,7 @@ class offscreencanvas_webcodecs_main_2d_av1(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = "CanvasRenderer,CanvasWorker,MediaSupervisor"
+    gecko_profile_extra_threads = "CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -900,9 +900,7 @@ class offscreencanvas_webcodecs_worker_2d_h264(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = (
-        "DOM Worker,CanvasRenderer,CanvasWorker,MediaSupervisor"
-    )
+    gecko_profile_extra_threads = "DOM Worker,CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -924,9 +922,7 @@ class offscreencanvas_webcodecs_worker_2d_vp9(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = (
-        "DOM Worker,CanvasRenderer,CanvasWorker,MediaSupervisor"
-    )
+    gecko_profile_extra_threads = "DOM Worker,CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"
@@ -948,9 +944,7 @@ class offscreencanvas_webcodecs_worker_2d_av1(PageloaderTest):
     tpchrome = False
     timeout = 600
     gecko_profile_interval = 2
-    gecko_profile_extra_threads = (
-        "DOM Worker,CanvasRenderer,CanvasWorker,MediaSupervisor"
-    )
+    gecko_profile_extra_threads = "DOM Worker,CanvasRenderer,MediaSupervisor"
     win_counters = linux_counters = mac_counters = None
     filters = filter.ignore_first.prepare(1) + filter.median.prepare()
     unit = "ms"

@@ -1086,7 +1086,7 @@ For the sample commands found below, note that the capitalization used is import
         ticks to measure how much time it will spend for a video texture upload
         to be a Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore
         the first found. Lower results are better.
-* gecko_profile_extra_threads: CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -2452,7 +2452,7 @@ For the sample commands found below, note that the capitalization used is import
         ticks to measure how much time it will spend for a video texture upload
         to be a WebGL texture (gl.texImage2D). We run it for 5 times and ignore
         the first found. Lower results are better.
-* gecko_profile_extra_threads: CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -3078,7 +3078,7 @@ For the sample commands found below, note that the capitalization used is import
         across 100 frames to measure how much time it will spend for a video texture upload to be a
         Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore the first found. Lower
         results are better.
-* gecko_profile_extra_threads: CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -3252,7 +3252,7 @@ For the sample commands found below, note that the capitalization used is import
         across 100 frames to measure how much time it will spend for a video texture upload to be a
         Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore the first found. Lower
         results are better.
-* gecko_profile_extra_threads: CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -3299,7 +3299,7 @@ For the sample commands found below, note that the capitalization used is import
         across 100 frames to measure how much time it will spend for a video texture upload to be a
         Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore the first found. Lower
         results are better.
-* gecko_profile_extra_threads: CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -3995,7 +3995,7 @@ For the sample commands found below, note that the capitalization used is import
         across 100 frames to measure how much time it will spend for a video texture upload to be a
         Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore the first found. Lower
         results are better.
-* gecko_profile_extra_threads: DOM Worker,CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: DOM Worker,CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -4169,7 +4169,7 @@ For the sample commands found below, note that the capitalization used is import
         across 100 frames to measure how much time it will spend for a video texture upload to be a
         Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore the first found. Lower
         results are better.
-* gecko_profile_extra_threads: DOM Worker,CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: DOM Worker,CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None
@@ -4216,7 +4216,7 @@ For the sample commands found below, note that the capitalization used is import
         across 100 frames to measure how much time it will spend for a video texture upload to be a
         Canvas2D texture (ctx.drawImage). We run it for 5 times and ignore the first found. Lower
         results are better.
-* gecko_profile_extra_threads: DOM Worker,CanvasRenderer,CanvasWorker,MediaSupervisor
+* gecko_profile_extra_threads: DOM Worker,CanvasRenderer,MediaSupervisor
 * gecko_profile_interval: 2
 * linux_counters: None
 * mac_counters: None

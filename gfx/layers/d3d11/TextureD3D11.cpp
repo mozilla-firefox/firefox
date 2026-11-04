@@ -882,7 +882,7 @@ already_AddRefed<TextureHost> CreateTextureHostD3D11(
 }
 
 already_AddRefed<DrawTarget> D3D11TextureData::BorrowDrawTarget() {
-  MOZ_ASSERT(NS_IsMainThread() || NS_IsInCanvasThreadOrWorker());
+  MOZ_ASSERT(NS_IsMainThread() || NS_IsInCanvasThread());
   gfxCriticalNote << "Could not borrow DrawTarget (D3D11) " << (int)mFormat;
   return nullptr;
 }
