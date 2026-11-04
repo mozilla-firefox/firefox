@@ -164,24 +164,6 @@ HOST_CXX_LDFLAGS = $(COMPUTED_HOST_LDFLAGS) $(COMPUTED_HOST_CXX_LDFLAGS)
 WASM_CFLAGS = $(COMPUTED_WASM_CFLAGS) $(_DEPEND_CFLAGS)
 WASM_CXXFLAGS = $(COMPUTED_WASM_CXXFLAGS) $(_DEPEND_CFLAGS)
 
-ifdef MOZ_LTO_OBJECT_PATH
-# When linking on macOS, debug info is not linked along with the final binary,
-# and the dwarf data stays in object files until they are "linked" with the
-# dsymutil tool.
-# With LTO, object files are temporary, and are not kept around, which
-# means there's no object file for dsymutil to do its job. Consequently,
-# there is no debug info for LTOed compilation units.
-# The macOS linker has however an option to explicitly keep those object
-# files, which dsymutil will then find.
-# The catch is that the linker uses sequential numbers for those object
-# files, and doesn't avoid conflicts from multiple linkers running at
-# the same time. So in directories with multiple binaries, object files
-# from the first linked binaries would be overwritten by those of the
-# last linked binary. So we use a subdirectory containing the name of the
-# linked binary.
-LDFLAGS += -Wl,-object_path_lto,$(@F).lto.o/
-endif
-
 # We only add color flags if neither the flag to disable color
 # (e.g. "-fno-color-diagnostics" nor a flag to control color
 # (e.g. "-fcolor-diagnostics=never") is present.

@@ -402,6 +402,15 @@ class Linkable(ContextDerived):
         else:
             return ObjDirPath(self._context, "!" + self.name)
 
+    @property
+    def lto_object_path_flags(self):
+        # On macOS, dsymutil reads debug info from the object files, which LTO
+        # does not keep. Keep them in a directory per binary, since the linker
+        # numbers them sequentially and parallel links would collide.
+        if self.KIND != "target" or not self.config.substs.get("MOZ_LTO_OBJECT_PATH"):
+            return []
+        return [f"-Wl,-object_path_lto,{self.name}.lto.o/"]
+
     def link_library(self, obj):
         assert isinstance(obj, BaseLibrary)
         if obj.KIND != self.KIND:

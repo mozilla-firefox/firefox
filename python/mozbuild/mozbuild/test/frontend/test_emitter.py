@@ -939,6 +939,16 @@ class TestEmitterBasic(unittest.TestCase):
             ],
         )
 
+    def test_host_program_lto_object_path_flags(self):
+        reader = self.reader(
+            "host-program-paths", extra_substs={"MOZ_LTO_OBJECT_PATH": "1"}
+        )
+        objs = self.read_topsrcdir(reader)
+        self.assertEqual(
+            [o.lto_object_path_flags for o in objs if isinstance(o, HostProgram)],
+            [[], [], []],
+        )
+
     def test_test_manifest_missing_manifest(self):
         """A missing manifest file should result in an error."""
         reader = self.reader("test-manifest-missing-manifest")

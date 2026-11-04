@@ -2208,6 +2208,29 @@ class TestRecursiveMakeBackend(BackendTester):
         )
         self.assertEqual([l for l in lines if l.startswith("plain.$(OBJ_SUFFIX)")], [])
 
+    def test_lto_object_path(self):
+        env = self._consume("lto-object-path", RecursiveMakeBackend)
+
+        expected = {
+            "prog": "$(DEPTH)/dist/bin/aprog.prog: LDFLAGS += "
+            "-Wl,-object_path_lto,aprog.prog.lto.o/\n",
+            "simple": "asimple.prog: LDFLAGS += "
+            "-Wl,-object_path_lto,asimple.prog.lto.o/\n",
+            "shared": "$(DEPTH)/dist/bin/libashared.so: LDFLAGS += "
+            "-Wl,-object_path_lto,libashared.so.lto.o/\n",
+        }
+        for subdir, line in expected.items():
+            with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+                self.assertIn(line, fh.readlines())
+
+    def test_lto_object_path_disabled(self):
+        env = self._consume("program-paths", RecursiveMakeBackend)
+
+        for subdir in ("dist-bin", "not-installed"):
+            with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+                content = fh.read()
+            self.assertNotIn("-object_path_lto", content)
+
     def test_extra_link_deps(self):
         """Test that EXTRA_LINK_DEPS is handled properly."""
         env = self._consume("extra-link-deps", RecursiveMakeBackend)

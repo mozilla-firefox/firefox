@@ -353,6 +353,17 @@ CONFIGS = defaultdict(
                 "BIN_SUFFIX": ".prog",
             },
         },
+        "lto-object-path": {
+            "defines": {},
+            "substs": {
+                "COMPILE_ENVIRONMENT": "1",
+                "BIN_SUFFIX": ".prog",
+                "DLL_PREFIX": "lib",
+                "DLL_SUFFIX": ".so",
+                "LIB_SUFFIX": "a",
+                "MOZ_LTO_OBJECT_PATH": "1",
+            },
+        },
         "extra-link-deps": {
             "defines": {},
             "substs": {

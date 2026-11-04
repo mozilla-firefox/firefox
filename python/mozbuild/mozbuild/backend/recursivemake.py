@@ -1414,11 +1414,15 @@ class RecursiveMakeBackend(MakeBackend):
         )
 
     def _process_program(self, obj, backend_file):
-        backend_file.write(
-            "PROGRAM = %s\n" % self._pretty_path(obj.output_path, backend_file)
-        )
+        program = self._pretty_path(obj.output_path, backend_file)
+        backend_file.write(f"PROGRAM = {program}\n")
         if not obj.cxx_link and not self.environment.bin_suffix:
             backend_file.write("PROG_IS_C_ONLY_%s := 1\n" % obj.program)
+        self._add_lto_object_path_flags(obj, program, backend_file)
+
+    def _add_lto_object_path_flags(self, obj, target, backend_file):
+        if flags := obj.lto_object_path_flags:
+            backend_file.write(f"{target}: LDFLAGS += {' '.join(flags)}\n")
 
     def _process_host_program(self, program, backend_file):
         backend_file.write(
@@ -1511,6 +1515,7 @@ class RecursiveMakeBackend(MakeBackend):
             backend_file.write("SIMPLE_PROGRAMS += %s\n" % obj.program)
             if not obj.cxx_link and not self.environment.bin_suffix:
                 backend_file.write("PROG_IS_C_ONLY_%s := 1\n" % obj.program)
+        self._add_lto_object_path_flags(obj, obj.program, backend_file)
 
     def _process_host_simple_program(self, obj, backend_file):
         backend_file.write(f"HOST_SIMPLE_PROGRAMS += {obj.program}\n")
@@ -1638,6 +1643,7 @@ class RecursiveMakeBackend(MakeBackend):
         )
         shared_lib = self._pretty_path(libdef.output_path, backend_file)
         backend_file.write("SHARED_LIBRARY := %s\n" % shared_lib)
+        self._add_lto_object_path_flags(libdef, shared_lib, backend_file)
         if libdef.soname:
             backend_file.write("DSO_SONAME := %s\n" % libdef.soname)
         if libdef.symbols_file:
