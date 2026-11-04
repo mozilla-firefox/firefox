@@ -17,6 +17,7 @@ const PDFJS_EVENT_ID = "pdf.js.message";
 const PDF_VIEWER_ORIGIN = "resource://pdf.js";
 const PDF_VIEWER_WEB_PAGE = "resource://pdf.js/web/viewer.html";
 const PDF_VIEWER_WORKER_URL = "resource://pdf.js/build/pdf.worker.mjs";
+const PDF_VIEWER_RENDERER_URL = "resource://pdf.js/build/pdf.renderer.mjs";
 const MAX_NUMBER_OF_PREFS = 60;
 // Recommended page-size limit in ISO 32000-1, Annex C.
 const MAX_PRINT_TO_PDF_PAGE_SIZE_IN_PT = 14400;
@@ -329,9 +330,11 @@ class ChromeActions {
 
   #viewerDocument = null;
 
-  #worker = null;
+  #workers = new Set();
 
-  #workerUnloadListener = () => this.closeWorker();
+  #rendererWorkers = null;
+
+  #workerUnloadListener = () => this.closeWorkers();
 
   constructor(domWindow, contentDispositionFilename) {
     this.domWindow = domWindow;
@@ -342,35 +345,87 @@ class ChromeActions {
     this.observer = new PrefObserver(domWindow, this.isMobile());
   }
 
-  // PDF.js does not terminate a Worker supplied through workerPort.
-  closeWorker() {
+  // PDF.js does not terminate supplied workers.
+  closeWorkers() {
     try {
-      const worker = this.#worker;
-      this.#worker = null;
-      worker?.terminate();
+      for (const worker of this.#workers) {
+        worker.terminate();
+      }
+      this.#workers.clear();
 
       const { domWindow } = this;
       if (domWindow.document === this.#viewerDocument) {
         domWindow.wrappedJSObject.pdfjsPreloadedWorker = null;
+        domWindow.wrappedJSObject.pdfjsPreloadedRendererWorkers = null;
+        if (this.#rendererWorkers) {
+          // Clear in place: AppOptions retains this array.
+          this.#rendererWorkers.length = 0;
+        }
       }
     } catch (e) {
-      console.error("Error while closing the PDF.js worker:", e);
+      console.error("Error while closing the PDF.js workers:", e);
     }
   }
 
-  preloadWorker() {
+  #createWorker(url) {
     const { domWindow } = this;
-    try {
-      this.#worker?.terminate();
-      this.#worker = new domWindow.Worker(PDF_VIEWER_WORKER_URL, {
-        type: "module",
-      });
-      domWindow.wrappedJSObject.pdfjsPreloadedWorker = this.#worker;
+    const worker = new domWindow.Worker(url, { type: "module" });
+    if (!this.#workers.size) {
       domWindow.addEventListener("unload", this.#workerUnloadListener, {
         once: true,
       });
+    }
+    this.#workers.add(worker);
+    return worker;
+  }
+
+  preloadWorker() {
+    try {
+      this.domWindow.wrappedJSObject.pdfjsPreloadedWorker = this.#createWorker(
+        PDF_VIEWER_WORKER_URL
+      );
     } catch (e) {
       console.error("Error while preloading the PDF.js worker:", e);
+    }
+  }
+
+  preloadRendererWorkers() {
+    if (Services.prefs.getBoolPref("pdfjs.disableWorkerRendering", true)) {
+      return;
+    }
+    const { domWindow } = this;
+    const count = Math.min(
+      Math.max(1, Services.prefs.getIntPref("pdfjs.rendererWorkerCount", 1)),
+      domWindow.navigator.hardwareConcurrency
+    );
+    try {
+      // Expose a content-realm array to the viewer.
+      const workers = Cu.waiveXrays(Cu.cloneInto([], domWindow));
+      this.#rendererWorkers = workers;
+      for (let i = 0; i < count; i++) {
+        const worker = this.#createWorker(PDF_VIEWER_RENDERER_URL);
+        // Handle load errors before PDF.js attaches its listeners.
+        const onError = event => {
+          if (this.#workers.delete(worker)) {
+            event.preventDefault();
+            worker.terminate();
+            const index = workers.indexOf(worker);
+            if (index !== -1) {
+              workers.splice(index, 1);
+            }
+          }
+        };
+        worker.addEventListener("error", onError, { once: true });
+        worker.addEventListener(
+          "message",
+          () => worker.removeEventListener("error", onError),
+          { once: true }
+        );
+        workers.push(worker);
+      }
+      domWindow.wrappedJSObject.pdfjsPreloadedRendererWorkers = workers;
+    } catch (e) {
+      console.error("Error while preloading the PDF.js renderer workers:", e);
     }
   }
 
@@ -1017,7 +1072,7 @@ class RangedChromeActions extends ChromeActions {
     }
 
     if (done && !data) {
-      this.closeWorker();
+      this.closeWorkers();
     }
     this.domWindow.postMessage(
       {
@@ -1115,7 +1170,7 @@ class StandardChromeActions extends ChromeActions {
 
     this.dataListener.oncomplete = (data, errorCode) => {
       if (!data) {
-        this.closeWorker();
+        this.closeWorkers();
       }
       this.domWindow.postMessage(
         {
@@ -1547,10 +1602,11 @@ PdfStreamConverter.prototype = {
             dataListener
           );
         }
-        // viewer.mjs reads pdfjsPreloadedWorker during module evaluation.
+        // viewer.mjs reads these globals during module evaluation.
         if (!disableWorker) {
           actions.preloadWorker();
         }
+        actions.preloadRendererWorkers();
 
         var requestListener = new RequestListener(actions);
         domWindow.document.addEventListener(

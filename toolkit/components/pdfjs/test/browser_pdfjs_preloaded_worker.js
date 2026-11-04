@@ -15,7 +15,11 @@ async function test_pdf_empty(disableStream, browser) {
   info(`Loading an empty PDF response with disableStream=${disableStream}.`);
 
   await SpecialPowers.pushPrefEnv({
-    set: [["pdfjs.disableStream", disableStream]],
+    set: [
+      ["pdfjs.disableStream", disableStream],
+      ["pdfjs.disableWorkerRendering", false],
+      ["pdfjs.rendererWorkerCount", 2],
+    ],
   });
 
   const loaded = BrowserTestUtils.browserLoaded(
@@ -27,15 +31,25 @@ async function test_pdf_empty(disableStream, browser) {
   await loaded;
 
   await SpecialPowers.spawn(browser, [], async () => {
-    // Preloading defines this property; cleanup sets it to null.
     await ContentTaskUtils.waitForCondition(
       () => content.wrappedJSObject.pdfjsPreloadedWorker === null,
-      "Waiting for the preloaded worker to be destroyed"
+      "Waiting for the preloaded worker reference to be cleared"
     );
     Assert.strictEqual(
       content.wrappedJSObject.pdfjsPreloadedWorker,
       null,
-      "The preloaded worker has been destroyed on load failure"
+      "The parser worker reference is cleared on an empty response"
+    );
+    Assert.strictEqual(
+      content.wrappedJSObject.pdfjsPreloadedRendererWorkers,
+      null,
+      "The renderer worker references are cleared on an empty response"
+    );
+    Assert.equal(
+      content.wrappedJSObject.PDFViewerApplicationOptions.get("rendererPorts")
+        .length,
+      0,
+      "The viewer no longer holds the closed renderer workers"
     );
   });
 
@@ -135,6 +149,101 @@ add_task(async function test_pdf_reopen_reuses_preloaded_worker() {
       await waitForPdfJSClose(browser);
     }
   );
+});
+
+add_task(async function test_pdf_uses_preloaded_renderer_workers() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["pdfjs.disableWorkerRendering", false],
+      ["pdfjs.rendererWorkerCount", 2],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: BLANK_URL },
+    async browser => {
+      await waitForPdfJS(browser, PDF_URL);
+
+      await SpecialPowers.spawn(browser, [], async () => {
+        const win = content.wrappedJSObject;
+        const { PDFViewerApplication: app } = win;
+        const workers = win.pdfjsPreloadedRendererWorkers;
+        Assert.equal(workers.length, 2, "Two renderer workers are preloaded");
+        Assert.strictEqual(
+          win.PDFViewerApplicationOptions.get("rendererPorts"),
+          workers,
+          "The viewer uses the preloaded renderer array"
+        );
+
+        const checkWorkerRendering = async () => {
+          Assert.strictEqual(
+            app.pdfLoadingTask._rendererWorker.port,
+            workers[0],
+            "The document uses the first preloaded renderer worker"
+          );
+          const renderTask = await new Promise(resolve => {
+            app.eventBus.on(
+              "pagerender",
+              evt => resolve(Cu.waiveXrays(evt).source.renderTask),
+              { once: true }
+            );
+            app.pdfViewer.currentScale *= 2;
+          });
+          await renderTask.promise;
+          Assert.ok(
+            renderTask.isWorkerRendering,
+            "The page rendered in a worker"
+          );
+        };
+
+        await checkWorkerRendering();
+
+        const data = await app.pdfDocument.getData();
+        // Wait for initial zoom restoration before changing the scale.
+        const reopened = Promise.all(
+          ["pagesloaded", "documentinit"].map(
+            name =>
+              new Promise(resolve => {
+                app.eventBus.on(name, resolve, { once: true });
+              })
+          )
+        );
+        await app.open(Cu.cloneInto({ data }, win));
+        await reopened;
+
+        await checkWorkerRendering();
+      });
+
+      await waitForPdfJSClose(browser);
+    }
+  );
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_disabled_worker_rendering_skips_preloading() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["pdfjs.disableWorkerRendering", true]],
+  });
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: BLANK_URL },
+    async browser => {
+      await waitForPdfJS(browser, PDF_URL);
+
+      await SpecialPowers.spawn(browser, [], () => {
+        Assert.strictEqual(
+          content.wrappedJSObject.pdfjsPreloadedRendererWorkers,
+          undefined,
+          "Disabling worker rendering skips renderer preloading"
+        );
+      });
+
+      await waitForPdfJSClose(browser);
+    }
+  );
+
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_disable_worker_skips_preloading() {
