@@ -908,7 +908,7 @@ firefox-profiler:
     fetch:
         type: git
         repo: https://github.com/firefox-devtools/profiler
-        revision: 5b88c03f4b0d811d3a159ea69e3ca318ac1764f9
+        revision: e93adc066f1f2c53f2e600bc17923f5f7007d639
 
 # See https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads
 # We can't catch regressions from these updates in CI. Testing should focus on
