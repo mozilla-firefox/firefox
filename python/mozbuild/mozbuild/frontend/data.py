@@ -947,6 +947,20 @@ class SharedLibrary(Library):
         assert self.import_name == self.name
         return self.output_path
 
+    @property
+    def dso_link_flags(self):
+        if self.config.substs.get("OS_ARCH") != "Darwin":
+            return []
+        return [
+            "-dynamiclib",
+            "-install_name",
+            f"@rpath/{self.lib_name}",
+            "-compatibility_version",
+            "1",
+            "-current_version",
+            "1",
+        ]
+
 
 class HostSharedLibrary(HostMixin, Library):
     """Context derived container object for a host shared library.

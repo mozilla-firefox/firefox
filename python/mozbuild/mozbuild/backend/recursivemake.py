@@ -1648,6 +1648,10 @@ class RecursiveMakeBackend(MakeBackend):
         self._add_lto_object_path_flags(libdef, shared_lib, backend_file)
         if libdef.soname:
             backend_file.write("DSO_SONAME := %s\n" % libdef.soname)
+        if libdef.dso_link_flags:
+            backend_file.write(
+                f"EXTRA_DSO_LDOPTS += {' '.join(libdef.dso_link_flags)}\n"
+            )
         if libdef.symbols_file:
             if libdef.symbols_link_arg:
                 backend_file.write("EXTRA_DSO_LDOPTS += %s\n" % libdef.symbols_link_arg)
