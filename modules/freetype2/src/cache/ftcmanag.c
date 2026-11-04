@@ -544,7 +544,7 @@
       node = prev;
       prev = FTC_NODE_PREV( node );
 
-      if ( node->ref_count <= 0 )
+      if ( node->ref_count == 0 )
         ftc_node_destroy( node, manager );
 
     } while ( node != first && manager->cur_weight > manager->max_weight );
@@ -626,7 +626,7 @@
       prev = FTC_NODE_PREV( node );
 
       /* don't touch locked nodes */
-      if ( node->ref_count <= 0 )
+      if ( node->ref_count == 0 )
       {
         ftc_node_destroy( node, manager );
         result++;
@@ -668,6 +668,7 @@
                   FTC_Manager  manager )
   {
     if ( node                                    &&
+         node->ref_count > 0                     &&
          manager                                 &&
          node->cache_index < manager->num_caches )
       node->ref_count--;

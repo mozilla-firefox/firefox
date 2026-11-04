@@ -79,7 +79,12 @@
 #  define DLSYM( lib, name ) \
             (ft_ ## name ## _func_t)GetProcAddress( lib, #name )
 #else
-    void  *lib;
+    void    *lib;
+#  ifdef RTLD_DEFAULT
+    Dl_info  info;
+    Dl_info  symbol_info;
+    FT_Bool  reassessed = FALSE;
+#  endif
 #  define DLSYM( lib, name ) \
             (ft_ ## name ## _func_t)dlsym( lib, #name )
 #endif
@@ -102,8 +107,14 @@
 
 #  ifdef RTLD_DEFAULT
 #    define FT_RTLD_FLAGS RTLD_LAZY | RTLD_GLOBAL
+
     lib             = RTLD_DEFAULT;
     version_atleast = DLSYM( lib, hb_version_atleast );
+
+    if ( version_atleast                              &&
+         ( !dladdr( (void*)version_atleast, &info ) ||
+           !info.dli_fname                          ) )
+      goto Fail;
 #  else
 #    define FT_RTLD_FLAGS RTLD_LAZY
 #  endif
@@ -130,15 +141,57 @@
     if ( !version_atleast )
       goto Fail;
 
-    /* Load all symbols we use. */
-#define HB_EXTERN( ret, name, args )  \
-  {                                   \
-    funcs->name = DLSYM( lib, name ); \
-    if ( !funcs->name )               \
-      goto Fail;                      \
-  }
+    /* Load all symbols we use.  `RTLD_DEFAULT` is a search scope, not a
+     * library handle.  If it finds a symbol in a second library, retry all
+     * lookups against that library to avoid mixing HarfBuzz versions.
+     */
+#if !defined( _WIN32 ) && defined( RTLD_DEFAULT )
+#  define CHECK_PROVIDER( name )                                      \
+            do                                                        \
+            {                                                         \
+              if ( lib == RTLD_DEFAULT                             && \
+                   ( !dladdr( (void*)funcs->name, &symbol_info ) ||   \
+                     !symbol_info.dli_fname                      ) )  \
+                goto Fail;                                            \
+                                                                      \
+              if ( lib == RTLD_DEFAULT                     &&         \
+                   !reassessed                             &&         \
+                   info.dli_fbase != symbol_info.dli_fbase )          \
+              {                                                       \
+                info       = symbol_info;                             \
+                reassessed = TRUE;                                    \
+              }                                                       \
+            } while ( 0 )
+#else
+#  define CHECK_PROVIDER( name )  do { } while ( 0 )
+#endif
+
+  Load_Symbols:
+
+#define HB_EXTERN( ret, name, args )          \
+          {                                   \
+            funcs->name = DLSYM( lib, name ); \
+            if ( !funcs->name )               \
+              goto Fail;                      \
+            CHECK_PROVIDER( name );           \
+          }
 #include "ft-hb-decls.h"
+
 #undef HB_EXTERN
+#undef CHECK_PROVIDER
+
+#if !defined( _WIN32 ) && defined( RTLD_DEFAULT )
+    if ( reassessed )
+    {
+      lib = dlopen( info.dli_fname, RTLD_LAZY );
+      if ( !lib )
+        goto Fail;
+
+      reassessed = FALSE;
+
+      goto Load_Symbols;
+    }
+#endif
 
 #undef DLSYM
 

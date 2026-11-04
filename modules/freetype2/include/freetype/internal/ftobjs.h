@@ -386,7 +386,7 @@ FT_BEGIN_HEADER
     FT_Char              no_stem_darkening;
     FT_Int32             random_seed;
 
-    FT_Int  refcount;
+    FT_UInt  refcount;
 
   } FT_Face_InternalRec;
 
@@ -916,7 +916,7 @@ FT_BEGIN_HEADER
     FT_Vector                lcd_geometry[3];  /* RGB subpixel positions */
 #endif
 
-    FT_Int             refcount;
+    FT_UInt            refcount;
 
   } FT_LibraryRec;
 
