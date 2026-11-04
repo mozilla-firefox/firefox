@@ -1954,7 +1954,7 @@ abstract class BaseBrowserFragment :
             val messagingFeature =
                 MessagingFeature(
                     appStore = requireComponents.appStore,
-                    surface = FenixMessageSurfaceId.MICROSURVEY,
+                    surfaces = listOf(FenixMessageSurfaceId.MICROSURVEY),
                 )
             messagingFeatureMicrosurvey.set(
                 feature = messagingFeature,

@@ -519,7 +519,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
             val messagingFeature =
                 MessagingFeature(
                     appStore = requireComponents.appStore,
-                    surface = FenixMessageSurfaceId.HOMESCREEN,
+                    surfaces = listOf(FenixMessageSurfaceId.HOMESCREEN),
                 )
             messagingFeatureHomescreen.set(
                 feature = messagingFeature,
@@ -539,7 +539,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
             val messagingFeature =
                 MessagingFeature(
                     appStore = requireComponents.appStore,
-                    surface = FenixMessageSurfaceId.MICROSURVEY,
+                    surfaces = listOf(FenixMessageSurfaceId.MICROSURVEY),
                 )
             messagingFeatureMicrosurvey.set(
                 feature = messagingFeature,
