@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+  <head>
+    <title>
+      Video controls test - Setting up many media elements should not restyle
+      once per element
+    </title>
+    <script src="/tests/SimpleTest/SimpleTest.js"></script>
+    <script type="text/javascript" src="head.js"></script>
+    <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  </head>
+  <body>
+    <p id="display"></p>
+    <div id="content"></div>
+
+    <pre id="test">
+<script class="testbody" type="text/javascript">
+  "use strict";
+
+  const COUNT = 20;
+  const utils = SpecialPowers.DOMWindowUtils;
+
+  async function insertMediaElements(tagName) {
+    const content = document.getElementById("content");
+    content.textContent = "";
+    // Make sure there's no pending restyle before starting to count.
+    content.getBoundingClientRect();
+
+    const restyleGenerationBefore = utils.restyleGeneration;
+    const elements = [];
+    for (let i = 0; i < COUNT; i++) {
+      const container = document.createElement("div");
+      const element = document.createElement(tagName);
+      element.controls = true;
+      container.appendChild(element);
+      content.appendChild(container);
+      elements.push(element);
+    }
+
+    await SimpleTest.promiseWaitForCondition(
+      () => elements.every(el => getElementWithinVideo(el, "controlBar")),
+      "Waiting for the controls to be set up"
+    );
+    // Let layout and the resulting resizevideocontrols events settle.
+    content.getBoundingClientRect();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    content.getBoundingClientRect();
+
+    return utils.restyleGeneration - restyleGenerationBefore;
+  }
+
+  add_task(async function test_video() {
+    const restyles = await insertMediaElements("video");
+    info(`${restyles} restyles for ${COUNT} <video> elements`);
+    ok(
+      restyles < COUNT,
+      `Setting up <video> controls should not restyle once per element (got ${restyles})`
+    );
+  });
+
+  add_task(async function test_audio() {
+    const restyles = await insertMediaElements("audio");
+    info(`${restyles} restyles for ${COUNT} <audio> elements`);
+    ok(
+      restyles < COUNT,
+      `Setting up <audio> controls should not restyle once per element (got ${restyles})`
+    );
+  });
+</script>
+</pre>
+  </body>
+</html>

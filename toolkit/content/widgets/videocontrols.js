@@ -109,6 +109,57 @@ this.VideoControlsWidget = class {
   // If you change this, also change SEEK_TIME_SECS in PictureInPictureChild.sys.mjs
   static SEEK_TIME_SECS = 5;
 
+  /**
+   * Cache of the control widths defined as CSS custom properties in
+   * videocontrols.css, shared across all instances.
+   *
+   * @type {Map<string, number>}
+   */
+  static controlWidthCache = new Map();
+
+  /**
+   * Parsed markup of each widget, per document, keyed by an identifier of
+   * the markup.
+   *
+   * @type {WeakMap<Document, Map<string, Element>>}
+   */
+  static templateCache = new WeakMap();
+
+  /**
+   * Returns the root element of the parsed `markup`, cached per document, to
+   * be imported into a shadow root with importNodeAndAppendChildAt(). Callers
+   * must not modify the returned element, other than from `fixup`, which runs
+   * once after parsing.
+   *
+   * @param {Document} document
+   *   Document whose widgets share the cached templates.
+   * @param {string} key
+   *   Cache key identifying the markup and any fixup variant.
+   * @param {string} markup
+   *   XML markup to parse when the template is not cached.
+   * @param {function(Element): void} [fixup]
+   *   Optional function that modifies the root element before it is cached.
+   * @returns {Element} The cached template's root element.
+   */
+  static parseTemplate(document, key, markup, fixup) {
+    let templates = this.templateCache.get(document);
+    if (!templates) {
+      templates = new Map();
+      this.templateCache.set(document, templates);
+    }
+    let template = templates.get(key);
+    if (!template) {
+      const parser = new document.defaultView.DOMParser();
+      template = parser.parseFromSafeString(
+        markup,
+        "application/xml"
+      ).documentElement;
+      fixup?.(template);
+      templates.set(key, template);
+    }
+    return template;
+  }
+
   static isPictureInPictureVideo(someVideo) {
     return someVideo.isCloningElementVisually;
   }
@@ -504,6 +555,16 @@ this.VideoControlsImplWidget = class {
               if (control.modifier) {
                 propertyName += "-" + control.modifier;
               }
+
+              // These only depend on videocontrols.css and on touch mode, so
+              // they're cached and shared across all instances.
+              let cacheKey = `${this.isTouchControls}:${propertyName}`;
+              let cachedWidths = VideoControlsWidget.controlWidthCache;
+              let width = cachedWidths.get(cacheKey);
+              if (width !== undefined) {
+                return width;
+              }
+
               let preDefinedSize =
                 this.controlBarComputedStyles.getPropertyValue(propertyName);
 
@@ -516,7 +577,9 @@ this.VideoControlsImplWidget = class {
                 return 0;
               }
 
-              return parseInt(preDefinedSize, 10);
+              width = parseInt(preDefinedSize, 10);
+              cachedWidths.set(cacheKey, width);
+              return width;
             },
           },
           offsetLeft: throwOnGet,
@@ -1546,8 +1609,10 @@ this.VideoControlsImplWidget = class {
           );
         }
 
+        // Creating the animation is not free, so avoid doing it for immediate
+        // fades (e.g. during setup) when there's nothing to cancel.
         let animation = this.animationMap.get(element);
-        if (!animation) {
+        if (!animation && !immediate) {
           animation = new this.window.Animation(
             new this.window.KeyframeEffect(
               element,
@@ -1638,7 +1703,7 @@ this.VideoControlsImplWidget = class {
           }
         } else {
           // immediate
-          animation.cancel();
+          animation?.cancel();
           finishedPromise = Promise.resolve();
         }
         finishedPromise.then(
@@ -2264,10 +2329,9 @@ this.VideoControlsImplWidget = class {
         videoWidth: 300,
 
         // <audio> takes this width to grow/shrink controls.
-        // The initial value has to be smaller than the calculated minRequiredWidth
-        // so that we don't run into bug 1495821 (see comment on adjustControlSize()
-        // below)
-        videocontrolsWidth: 0,
+        // Match Layout's kFallbackIntrinsicWidthInPixels (300px), which gives
+        // <audio controls> its intrinsic width regardless of the controls' size.
+        videocontrolsWidth: 300,
 
         // Used to decide if updating the scrubber progress will make a visible
         // change (ie. make it move by at least one pixel).
@@ -2765,8 +2829,11 @@ this.VideoControlsImplWidget = class {
   }
 
   generateContent() {
-    const parser = new this.window.DOMParser();
-    let parserDoc = parser.parseFromSafeString(
+    const tabToAllControls =
+      this.prefs["media.videocontrols.keyboard-tab-to-all-controls"];
+    let template = VideoControlsWidget.parseTemplate(
+      this.document,
+      tabToAllControls ? "controls-tab-to-all" : "controls",
       `<div class="videocontrols" xmlns="http://www.w3.org/1999/xhtml" role="none">
         <link rel="stylesheet" href="chrome://global/skin/media/videocontrols.css" />
         <link rel="stylesheet" href="chrome://global/skin/media/pipToggle.css" />
@@ -2848,26 +2915,21 @@ this.VideoControlsImplWidget = class {
           </div>
         </div>
       </div>`,
-      "application/xml"
+      template => {
+        if (tabToAllControls) {
+          // Make all of the individual controls tabbable.
+          for (const el of template.querySelectorAll('[tabindex="-1"]')) {
+            el.removeAttribute("tabindex");
+          }
+        }
+      }
     );
     this.l10n = new this.window.DOMLocalization(
       ["branding/brand.ftl", "toolkit/global/videocontrols.ftl"],
       true
     );
     this.l10n.connectRoot(this.shadowRoot);
-    if (this.prefs["media.videocontrols.keyboard-tab-to-all-controls"]) {
-      // Make all of the individual controls tabbable.
-      for (const el of parserDoc.documentElement.querySelectorAll(
-        '[tabindex="-1"]'
-      )) {
-        el.removeAttribute("tabindex");
-      }
-    }
-    this.shadowRoot.importNodeAndAppendChildAt(
-      this.shadowRoot,
-      parserDoc.documentElement,
-      true
-    );
+    this.shadowRoot.importNodeAndAppendChildAt(this.shadowRoot, template, true);
     this.l10n.translateRoots();
   }
 
@@ -3047,8 +3109,9 @@ this.NoControlsMobileImplWidget = class {
   }
 
   generateContent() {
-    const parser = new this.window.DOMParser();
-    let parserDoc = parser.parseFromSafeString(
+    let template = VideoControlsWidget.parseTemplate(
+      this.document,
+      "nocontrols-mobile",
       `<div class="videocontrols" xmlns="http://www.w3.org/1999/xhtml" role="none">
         <link rel="stylesheet" href="chrome://global/skin/media/videocontrols.css" />
         <div id="controlsContainer" class="controlsContainer" role="none" hidden="true">
@@ -3058,14 +3121,9 @@ this.NoControlsMobileImplWidget = class {
             </div>
           </div>
         </div>
-      </div>`,
-      "application/xml"
+      </div>`
     );
-    this.shadowRoot.importNodeAndAppendChildAt(
-      this.shadowRoot,
-      parserDoc.documentElement,
-      true
-    );
+    this.shadowRoot.importNodeAndAppendChildAt(this.shadowRoot, template, true);
   }
 };
 
@@ -3093,8 +3151,9 @@ this.NoControlsPictureInPictureImplWidget = class {
   }
 
   generateContent() {
-    const parser = new this.window.DOMParser();
-    let parserDoc = parser.parseFromSafeString(
+    let template = VideoControlsWidget.parseTemplate(
+      this.document,
+      "nocontrols-pip",
       `<div class="videocontrols" xmlns="http://www.w3.org/1999/xhtml" role="none">
         <link rel="stylesheet" href="chrome://global/skin/media/videocontrols.css" />
         <div id="controlsContainer" class="controlsContainer" role="none">
@@ -3104,14 +3163,9 @@ this.NoControlsPictureInPictureImplWidget = class {
           </div>
           <div class="controlsOverlay stackItem"></div>
         </div>
-      </div>`,
-      "application/xml"
+      </div>`
     );
-    this.shadowRoot.importNodeAndAppendChildAt(
-      this.shadowRoot,
-      parserDoc.documentElement,
-      true
-    );
+    this.shadowRoot.importNodeAndAppendChildAt(this.shadowRoot, template, true);
     let isMobile = this.window.navigator.appVersion.includes("Android");
     if (isMobile) {
       this.shadowRoot
@@ -3280,8 +3334,9 @@ this.NoControlsDesktopImplWidget = class {
   }
 
   generateContent() {
-    const parser = new this.window.DOMParser();
-    let parserDoc = parser.parseFromSafeString(
+    let template = VideoControlsWidget.parseTemplate(
+      this.document,
+      "nocontrols-desktop",
       `<div class="videocontrols" xmlns="http://www.w3.org/1999/xhtml" role="none">
         <link rel="stylesheet" href="chrome://global/skin/media/videocontrols.css" />
         <link rel="stylesheet" href="chrome://global/skin/media/pipToggle.css" />
@@ -3301,14 +3356,9 @@ this.NoControlsDesktopImplWidget = class {
             </button>
           </div>
         </div>
-      </div>`,
-      "application/xml"
+      </div>`
     );
-    this.shadowRoot.importNodeAndAppendChildAt(
-      this.shadowRoot,
-      parserDoc.documentElement,
-      true
-    );
+    this.shadowRoot.importNodeAndAppendChildAt(this.shadowRoot, template, true);
     this.l10n = new this.window.DOMLocalization([
       "branding/brand.ftl",
       "toolkit/global/videocontrols.ftl",

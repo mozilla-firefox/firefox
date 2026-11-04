@@ -108,6 +108,8 @@ skip-if = [
 
 ["test_videocontrols_scrubber_position_nopreload.html"]
 
+["test_videocontrols_setup_restyles.html"]
+
 ["test_videocontrols_size.html"]
 
 ["test_videocontrols_src_change.html"]
