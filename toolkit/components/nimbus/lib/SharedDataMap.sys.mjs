@@ -43,7 +43,7 @@ export class SharedDataMap extends EventEmitter {
        * @type {NimbusEnrollments | null}
        */
       this._db = lazy.NimbusEnrollments.persistenceEnabled
-        ? new lazy.NimbusEnrollments(this)
+        ? new lazy.NimbusEnrollments()
         : null;
     } else {
       this._syncFromParent();

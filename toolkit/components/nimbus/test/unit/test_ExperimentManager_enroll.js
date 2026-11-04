@@ -974,7 +974,7 @@ add_task(async function testForceEnrollmentWithCoenrollment() {
     Assert.ok(enrollment.active, `Enrollment for ${optInSlug} is active`);
   }
 
-  NimbusTestUtils.cleanupManager([
+  await NimbusTestUtils.cleanupManager([
     "optin-foo",
     "optin-bar",
     "optin-baz",

@@ -2,7 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/** @import { ExperimentStore } from "./ExperimentStore.sys.mjs" */
 /** @import { DeferredTask } from "../../../modules/DeferredTask.sys.mjs" */
 /** @import { OpenedConnection, Sqlite } from "../../../modules/Sqlite.sys.mjs" */
 
@@ -37,7 +36,55 @@ const PERSISTENCE_ENABLED = Services.prefs.getBoolPref(
   true
 );
 
+const PendingWriteKind = Object.freeze({
+  INSERT: "insert",
+  UPDATE: "update",
+  DELETE: "delete",
+});
+
+/**
+ * @typedef {object} _PendingInsert
+ * A pending write for an enrollment or an unenrollment that has not yet had its
+ * enrollment written to the database.
+ *
+ * @property {"insert"} kind
+ * The kind of the pending write.
+ *
+ * @property {object} enrollment
+ * The enrollment being recorded in the database.
+ *
+ * @property {object} recipe
+ * The recipe for the enrollment.
+ */
+
+/**
+ * @typedef {object} _PendingUpdate
+ * A pending write for an unenrollment.
+ *
+ * @property {"update"} kind
+ * The kind of the pending write.
+ *
+ * @property {object} enrollment
+ * The enrollment being updated to inactive in the database.
+ */
+
+/**
+ * @typedef {object} _PendingDelete
+ * A pending delete for an enrollment.
+ *
+ * @property {"delete"} kind
+ * The kind of the pending write.
+ */
+
+/**
+ * @typedef {_PendingInsert | _PendingUpdate | _PendingDelete} PendingWrite
+ *
+ * A pending write to the `NimbusEnrollments` database.
+ */
+
 export class PendingWrites {
+  static Kind = PendingWriteKind;
+
   /**
    * Create a new `PendingWrites` object.
    *
@@ -47,12 +94,7 @@ export class PendingWrites {
     /**
      * Enrollment changes to flush to the database.
      *
-     * The keys are enrollment slugs and the values are optional recipes. If the
-     * recipe is present, a new enrollment will be created in the database.
-     * Otherwise, an existing enrollment will be updated to be inactive (or
-     * deleted if it cannot be found in the `ExperimentStore`).
-     *
-     * @type {Map<string, object | null>}
+     * @type {Map<string, PendingWrite>}
      */
     this.enrollments = new Map(other?.enrollments.entries() ?? []);
 
@@ -74,21 +116,56 @@ export class PendingWrites {
   }
 
   /**
-   * Register an enrollment update.
+   * Record a new enrollment or re-enrollment.
    *
-   * @param {string} slug The slug of the enrollment that is changing.
-   * @param {object | undefined} recipe If this update is for an enrollment event,
-   * the recipe that resulted in the enrollment.
+   * @param {object} enrollment The enrollment.
+   * @param {string} enrollment.slug The slug of the enrollment.
+   * @param {object} recipe The recipe for the enrollment.
    */
-  updateEnrollment(slug, recipe) {
-    // Don't overwrite a pending entry that has a recipe with one that has none
-    // or we will try to do the wrong query (UPDATE instead of INSERT).
+  recordEnrollment(enrollment, recipe) {
+    this.enrollments.set(enrollment.slug, {
+      kind: PendingWriteKind.INSERT,
+      enrollment: structuredClone(enrollment),
+      recipe,
+    });
+  }
+
+  /**
+   * Record an unenrollment.
+   *
+   * @param {object} enrollment The enrollment.
+   * @param {string} enrollment.slug The slug of the enrollment.
+   */
+  recordUnenrollment(enrollment) {
+    // If there is no existing pending write for this enrollment, create a new
+    // update.
     //
-    // We explicitly check for the presence of the value, not the key, in case
-    // this is a re-enrollment following an unenrollment.
-    if (!this.enrollments.has(slug) || recipe) {
-      this.enrollments.set(slug, recipe);
+    // Otherwise if there is a pending insertion, update the associated
+    // unenrollment, which will cause the insert to write an inactive enrollment.
+    //
+    // It is **impossible** for an enrollment:
+    // - to follow a previous enrollment; or
+    // - to follow a deletion.
+    const existingWrite = this.enrollments.get(enrollment.slug);
+    if (!existingWrite) {
+      this.enrollments.set(enrollment.slug, {
+        kind: PendingWriteKind.UPDATE,
+        enrollment: structuredClone(enrollment),
+      });
+    } else if (existingWrite.kind === PendingWriteKind.INSERT) {
+      existingWrite.enrollment = structuredClone(enrollment);
     }
+  }
+
+  /**
+   * Delete an enrollmment.
+   *
+   * This only happens when garbage collecting old enrollments.
+   *
+   * @param {string} slug The slug of the enrollment to remove.
+   */
+  deleteEnrollment(slug) {
+    this.enrollments.set(slug, { kind: PendingWriteKind.DELETE });
   }
 
   /**
@@ -108,8 +185,20 @@ export class PendingWrites {
     }
 
     const merged = new PendingWrites(first);
-    for (const [slug, recipe] of second.enrollments.entries()) {
-      merged.updateEnrollment(slug, recipe);
+    for (const [slug, pendingWrite] of second.enrollments.entries()) {
+      switch (pendingWrite.kind) {
+        case PendingWriteKind.INSERT:
+          merged.recordEnrollment(pendingWrite.enrollment, pendingWrite.recipe);
+          break;
+
+        case PendingWriteKind.UPDATE:
+          merged.recordUnenrollment(pendingWrite.enrollment);
+          break;
+
+        case PendingWriteKind.DELETE:
+          merged.deleteEnrollment(slug);
+          break;
+      }
     }
     for (const [collection, lastModified] of second.syncTimestamps.entries()) {
       merged.syncTimestamps.set(collection, lastModified);
@@ -130,13 +219,6 @@ export class NimbusEnrollments {
    * @type {boolean}
    */
   #initialized;
-
-  /**
-   * The ExperimentStore.
-   *
-   * @type {ExperimentStore}
-   */
-  #store;
 
   /**
    * The task that will flush the changes to the database on a timer.
@@ -177,9 +259,8 @@ export class NimbusEnrollments {
    */
   #syncTimestamps;
 
-  constructor(store) {
+  constructor() {
     this.#initialized = false;
-    this.#store = store;
 
     this.#flushTask = new lazy.DeferredTask(
       this.#flush.bind(this),
@@ -221,24 +302,68 @@ export class NimbusEnrollments {
   }
 
   /**
-   * Queue an update to the database for the given enrollment.
+   * Queue writing an enrollment (or re-enrollment) to the database.
    *
-   * @param {string} slug The slug of the enrollment.
-   * @param {object | undefined} recipe If this update is for an enrollment event,
-   * the recipe that resulted in the enrollment.
+   * @param {object} enrollment The enrollment.
+   * @param {string} enrollment.slug The slug of the enrollment.
+   * @param {object} recipe The recipe for the enrollment.
    */
-  updateEnrollment(slug, recipe) {
+  recordEnrollment(enrollment, recipe) {
     if (this.#finalized) {
       lazy.log.debug(
-        `Did not queue update for enrollment ${slug}: already finalized`
+        `Did not queue update for enrollment ${enrollment.slug}: already finalized`
       );
       return;
     }
 
-    lazy.log.debug(`Queued update for enrollment ${slug}`);
-
-    this.#pendingWrites.updateEnrollment(slug, recipe);
+    this.#pendingWrites.recordEnrollment(enrollment, recipe);
     this.#flushSoon();
+
+    lazy.log.debug(`Queued insert for enrollment ${enrollment.slug}`);
+  }
+
+  /**
+   * Queue writing an unenrollment to the database.
+   *
+   * @param {object} enrollment The enrollment.
+   * @param {string} enrollment.slug The slug of the enrollment.
+   */
+  recordUnenrollment(enrollment) {
+    if (this.#finalized) {
+      lazy.log.debug(
+        `Did not queue update for enrollment ${enrollment.slug}: already finalized`
+      );
+      return;
+    }
+
+    this.#pendingWrites.recordUnenrollment(enrollment);
+    this.#flushSoon();
+
+    lazy.log.debug(`Queued update for enrollment ${enrollment.slug}`);
+  }
+
+  /**
+   * Queue removal from the database for the enrollments pertaining to the given
+   * slugs.
+   *
+   * @param {string[]} slugs The slugs of enrollments to remove.
+   */
+  deleteEnrollments(slugs) {
+    if (!slugs.length) {
+      return;
+    }
+
+    if (this.#finalized) {
+      lazy.log.debug(`Did not queue removal: already finalized`);
+      return;
+    }
+
+    for (const slug of slugs) {
+      this.#pendingWrites.deleteEnrollment(slug);
+    }
+    this.#flushSoon();
+
+    lazy.log.debug(`Queued removal for ${slugs.length} enrollments`);
   }
 
   /**
@@ -371,16 +496,29 @@ export class NimbusEnrollments {
       }
 
       await conn.executeTransaction(async txn => {
-        for (const [slug, recipe] of pendingWrites.enrollments.entries()) {
-          const enrollment = this.#store.get(slug);
-          if (enrollment) {
-            await NimbusEnrollments.#insertOrUpdateEnrollment(
-              txn,
-              enrollment,
-              recipe
-            );
-          } else {
-            await NimbusEnrollments.#deleteEnrollment(txn, slug);
+        for (const [
+          slug,
+          pendingWrite,
+        ] of pendingWrites.enrollments.entries()) {
+          switch (pendingWrite.kind) {
+            case PendingWriteKind.INSERT:
+              await NimbusEnrollments.#insertEnrollment(
+                txn,
+                pendingWrite.enrollment,
+                pendingWrite.recipe
+              );
+              break;
+
+            case PendingWriteKind.UPDATE:
+              await NimbusEnrollments.#updateEnrollment(
+                txn,
+                pendingWrite.enrollment
+              );
+              break;
+
+            case PendingWriteKind.DELETE:
+              await NimbusEnrollments.#deleteEnrollment(txn, slug);
+              break;
           }
         }
 
@@ -431,98 +569,113 @@ export class NimbusEnrollments {
   }
 
   /**
-   * Insert or update an enrollment.
+   * Record an enrollment.
    *
-   * @param {OpenedConnection} conn The connection to the database.
-   * @param {object} enrollment The enrollment.
-   * @param {object | null} recipe The recipe for the enrollment. Only non-null
-   * when the initial enrollment has not already been flushed.
+   * If a previous enrollment exists it will be overwritten.
+   *
+   * @param {OpenedConnection} conn
+   * The database connection.
+   *
+   * @param {object} enrollment
+   * The enrollment being written to the database.
+   *
+   * @param {object} recipe
+   * The recipe for the enrollment.
    */
-  static async #insertOrUpdateEnrollment(conn, enrollment, recipe) {
-    if (recipe) {
-      // This was a new enrollment at the time. It may have since unenrolled.
-      await conn.executeCached(
-        `
-          INSERT INTO NimbusEnrollments(
-            profileId,
-            slug,
-            branchSlug,
-            recipe,
-            active,
-            unenrollReason,
-            lastSeen,
-            setPrefs,
-            prefFlips,
-            source
-          )
-          VALUES(
-            :profileId,
-            :slug,
-            :branchSlug,
-            jsonb(:recipe),
-            :active,
-            :unenrollReason,
-            :lastSeen,
-            jsonb(:setPrefs),
-            jsonb(:prefFlips),
-            :source
-          )
-          ON CONFLICT(profileId, slug)
-          DO UPDATE SET
-            branchSlug = excluded.branchSlug,
-            recipe = excluded.recipe,
-            active = excluded.active,
-            unenrollReason = excluded.unenrollReason,
-            lastSeen = excluded.lastSeen,
-            setPrefs = excluded.setPrefs,
-            prefFlips = excluded.prefFlips,
-            source = excluded.source;
-        `,
-        {
-          profileId: lazy.ExperimentAPI.profileId,
-          slug: enrollment.slug,
-          branchSlug: enrollment.branch.slug,
-          recipe: JSON.stringify(recipe),
-          active: enrollment.active,
-          unenrollReason: enrollment.unenrollReason ?? null,
-          lastSeen: enrollment.lastSeen,
-          setPrefs:
-            enrollment.active && enrollment.prefs
-              ? JSON.stringify(enrollment.prefs)
-              : null,
-          prefFlips:
-            enrollment.active && enrollment.prefFlips
-              ? JSON.stringify(enrollment.prefFlips)
-              : null,
-          source: enrollment.source,
-        }
-      );
+  static async #insertEnrollment(conn, enrollment, recipe) {
+    await conn.executeCached(
+      `
+        INSERT INTO NimbusEnrollments(
+          profileId,
+          slug,
+          branchSlug,
+          recipe,
+          active,
+          unenrollReason,
+          lastSeen,
+          setPrefs,
+          prefFlips,
+          source
+        )
+        VALUES(
+          :profileId,
+          :slug,
+          :branchSlug,
+          jsonb(:recipe),
+          :active,
+          :unenrollReason,
+          :lastSeen,
+          jsonb(:setPrefs),
+          jsonb(:prefFlips),
+          :source
+        )
+        ON CONFLICT(profileId, slug)
+        DO UPDATE SET
+          branchSlug = excluded.branchSlug,
+          recipe = excluded.recipe,
+          active = excluded.active,
+          unenrollReason = excluded.unenrollReason,
+          lastSeen = excluded.lastSeen,
+          setPrefs = excluded.setPrefs,
+          prefFlips = excluded.prefFlips,
+          source = excluded.source;
+      `,
+      {
+        profileId: lazy.ExperimentAPI.profileId,
+        slug: enrollment.slug,
+        branchSlug: enrollment.branch.slug,
+        recipe: JSON.stringify(recipe),
+        active: enrollment.active,
+        unenrollReason: enrollment.unenrollReason ?? null,
+        lastSeen: enrollment.lastSeen,
+        setPrefs:
+          enrollment.active && enrollment.prefs
+            ? JSON.stringify(enrollment.prefs)
+            : null,
+        prefFlips:
+          enrollment.active && enrollment.prefFlips
+            ? JSON.stringify(enrollment.prefFlips)
+            : null,
+        source: enrollment.source,
+      }
+    );
 
-      lazy.log.debug(
-        `Created ${enrollment.active ? "active" : "inactive"} enrollment ${enrollment.slug}`
-      );
-    } else {
-      // This was an unenrollment.
-      await conn.executeCached(
-        `
-          UPDATE NimbusEnrollments SET
-            active = false,
-            unenrollReason = :unenrollReason,
-            setPrefs = null,
-            prefFlips = null
-          WHERE
-            profileId = :profileId AND
-            slug = :slug;
-        `,
-        {
-          profileId: lazy.ExperimentAPI.profileId,
-          slug: enrollment.slug,
-          unenrollReason: enrollment.unenrollReason,
-        }
-      );
+    lazy.log.debug(
+      `Created ${enrollment.active ? "active" : "inactive"} enrollment ${enrollment.slug}`
+    );
+  }
 
-      lazy.log.debug(`Updated enrollment ${enrollment.slug} to be inactive`);
-    }
+  /**
+   * Record an update to an existing enrollment.
+   *
+   * In practice, this always corresponds to an unenrollment.
+   *
+   * @param {OpenedConnection} conn
+   * The database connection
+   *
+   * @param {object} enrollment
+   * The enrollment being updated in the database.
+   */
+  static async #updateEnrollment(conn, enrollment) {
+    await conn.executeCached(
+      `
+        UPDATE NimbusEnrollments SET
+          active = false,
+          unenrollReason = :unenrollReason,
+          setPrefs = null,
+          prefFlips = null
+        WHERE
+          profileId = :profileId AND
+          slug = :slug;
+      `,
+      {
+        profileId: lazy.ExperimentAPI.profileId,
+        slug: enrollment.slug,
+        unenrollReason: enrollment.unenrollReason,
+      }
+    );
+
+    lazy.log.debug(`Updated enrollment ${enrollment.slug} to be inactive`);
   }
 
   /**

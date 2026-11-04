@@ -399,9 +399,12 @@ export class ExperimentStore extends SharedDataMap {
       )
       .map(r => r.slug);
 
-    this._removeEntriesByKeys(slugsToRemove);
-    for (const slug of slugsToRemove) {
-      this._db?.updateEnrollment(slug);
+    // Don't call the removal functions if there are no enrollments to remove.
+    // It can cause spurious test failures in `test_Enrollments.js` because it
+    // asserts on whether or not `deleteEnrollments` is called.
+    if (slugsToRemove.length) {
+      this._removeEntriesByKeys(slugsToRemove);
+      this._db?.deleteEnrollments(slugsToRemove);
     }
   }
 
@@ -493,7 +496,7 @@ export class ExperimentStore extends SharedDataMap {
     }
 
     this.set(enrollment.slug, enrollment);
-    this._db?.updateEnrollment(enrollment.slug, recipe);
+    this._db?.recordEnrollment(enrollment, recipe);
     this._updateSyncStore(enrollment);
     this._emitUpdates(enrollment);
   }
@@ -520,21 +523,25 @@ export class ExperimentStore extends SharedDataMap {
       prefs: null,
     };
     this.set(slug, inactiveEnrollment);
-    this._db?.updateEnrollment(slug);
+    this._db?.recordUnenrollment(inactiveEnrollment);
 
     this._updateSyncStore(inactiveEnrollment);
     this._emitUpdates(inactiveEnrollment);
   }
 
   /**
-   * Test only helper for cleanup
+   * Delete the given slug or feature ID from the store.
    *
-   * @param {string} slugOrFeatureId Can be called with slug (which removes the SharedDataMap entry) or
-   * with featureId which removes the SyncDataStore entry for the feature
+   * ** TEST ONLY **
+   *
+   * @param {string} slugOrFeatureId
+   * Can be called with slug (which removes the SharedDataMap entry) or with
+   * featureId which removes the SyncDataStore entry for the feature
    *
    * @param {object} options
-   * @param {boolean} removeFromNimbusEnrollments If true (the default), this
-   * will also queue a deletion from the NimbusEnrollments table.
+   * @param {boolean} removeFromNimbusEnrollments
+   * If true (the default), this function will also queue a deletion from the
+   * NimbusEnrollments table.
    */
   _deleteForTests(
     slugOrFeatureId,
@@ -546,10 +553,11 @@ export class ExperimentStore extends SharedDataMap {
     lazy.syncDataStore.deleteDefault(slugOrFeatureId);
     lazy.syncDataStore.delete(slugOrFeatureId);
 
-    // removeFromNimbusEnrollments must default to true becuase Nimbus DevTools
-    // uses this function to remove entries from the store.
+    // `removeFromNimbusEnrollments` must default to true becuase
+    // nimbus-devtools uses this function to remove entries from the store and
+    // we need to maintain backwards compatability.
     if (isEnrollment && removeFromNimbusEnrollments) {
-      this._db?.updateEnrollment(slugOrFeatureId);
+      this._db?.deleteEnrollments([slugOrFeatureId]);
     }
   }
 }
