@@ -1348,11 +1348,6 @@ LocalAccessible* nsAccessibilityService::CreateAccessible(
       newAcc = MakeRefPtr<HyperTextAccessible>(content, document);
     }
 
-    if (content->IsElement() && content->AsElement()->GetPseudoElementType() ==
-                                    PseudoStyleType::Picker) {
-      newAcc = MakeRefPtr<HTMLComboboxListAccessible>(content, document);
-    }
-
     // If there's still no Accessible but we do have an entry in the markup
     // map for this non-presentational element, create a generic
     // HyperTextAccessible.

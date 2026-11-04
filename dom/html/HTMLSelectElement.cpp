@@ -1629,13 +1629,6 @@ void HTMLSelectElement::SelectedContentTextMightHaveChanged(
   }
   ButtonControlFrame::EnsureNonEmptyLabel(newText);
   textNode->SetText(newText, aNotify);
-#ifdef ACCESSIBILITY
-  if (nsAccessibilityService* acc = GetAccService()) {
-    if (nsIFrame* f = GetPrimaryFrame()) {
-      acc->ScheduleAccessibilitySubtreeUpdate(f->PresShell(), this);
-    }
-  }
-#endif
 }
 
 // https://html.spec.whatwg.org/#send-select-update-notifications

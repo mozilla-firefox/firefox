@@ -317,9 +317,11 @@ EDescriptionValueFlag HTMLComboboxAccessible::Description(
 }
 
 void HTMLComboboxAccessible::Value(nsString& aValue) const {
-  // Use accessible name of selected option.
-  LocalAccessible* option = SelectedOption();
-  if (option) option->Name(aValue);
+  HTMLSelectElement* select = HTMLSelectElement::FromNode(mContent);
+
+  if (HTMLOptionElement* option = select->GetCurrentOption()) {
+    option->GetRenderedLabel(aValue);
+  }
 }
 
 bool HTMLComboboxAccessible::HasPrimaryAction() const { return true; }

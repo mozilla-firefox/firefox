@@ -31,39 +31,7 @@ addAccessibleTask(
     const rootAcc = getRootAccessible(document);
     ok(rootAcc, "Root Accessible exists");
 
-    const optA = findAccessibleChildByID(accDoc, "a");
     const select = findAccessibleChildByID(accDoc, "select");
-    let remoteAccDropdown = select.firstChild;
-    ok(remoteAccDropdown, "Remote acc dropdown exists");
-    let isRemote = true;
-    try {
-      remoteAccDropdown.id;
-    } catch (e) {
-      isRemote = false;
-    }
-
-    // Verify the remote dropdown:
-    // - is the role we expect
-    // - is not identical to the local dropdown via ID
-    // - is the parent of the remote accessible for the
-    //   option the select contains
-    if (isRemote) {
-      is(
-        remoteAccDropdown.role,
-        ROLE_COMBOBOX_LIST,
-        "Select's first child is the combobox list"
-      );
-      isnot(
-        remoteAccDropdown.id,
-        LOCAL_DROPDOWN_ID,
-        "Remote dropdown does not match local dropdown's ID."
-      );
-      is(
-        remoteAccDropdown.firstChild,
-        optA,
-        "Remote dropdown contains remote acc of option A."
-      );
-    }
 
     // Attempt to fetch the local dropdown
     let localAccDropdown = findAccessibleChildByID(rootAcc, LOCAL_DROPDOWN_ID);
@@ -89,33 +57,6 @@ addAccessibleTask(
     // process is a child of the select
     is(localAccDropdown.parent, select, "Dropdown is a child of the select");
 
-    // Verify walking from the select produces the
-    // appropriate option
-    remoteAccDropdown = select.firstChild;
-
-    // Verify the remote dropdown:
-    // - is the role we expect
-    // - is not identical to the local dropdown via ID
-    // - is the parent of the remote accessible for the
-    //   option the select contains
-    if (isRemote) {
-      is(
-        remoteAccDropdown.role,
-        ROLE_COMBOBOX_LIST,
-        "Select's first child is the combobox list"
-      );
-      isnot(
-        remoteAccDropdown.id,
-        LOCAL_DROPDOWN_ID,
-        "Remote dropdown does not match local dropdown's ID."
-      );
-      is(
-        remoteAccDropdown.firstChild,
-        optA,
-        "Remote dropdown contains remote acc of option A."
-      );
-    }
-
     // Close the dropdown.
     p = waitForEvents({
       expected: [[EVENT_HIDE, LOCAL_DROPDOWN_ID]],
@@ -129,33 +70,6 @@ addAccessibleTask(
       EventUtils.synthesizeKey("VK_ESCAPE");
     }
     await p;
-
-    // Verify walking down from the select produces the
-    // appropriate option
-    remoteAccDropdown = select.firstChild;
-
-    // Verify the remote dropdown:
-    // - is the role we expect
-    // - is not identical to the local dropdown via ID
-    // - is the parent of the remote accessible for the
-    //   option the select contains
-    if (isRemote) {
-      is(
-        remoteAccDropdown.role,
-        ROLE_COMBOBOX_LIST,
-        "Select's first child is the combobox list"
-      );
-      isnot(
-        remoteAccDropdown.id,
-        LOCAL_DROPDOWN_ID,
-        "Remote dropdown does not match local dropdown's ID."
-      );
-      is(
-        remoteAccDropdown.firstChild,
-        optA,
-        "Remote dropdown contains remote acc of option A."
-      );
-    }
 
     // Attempt to fetch the local dropdown
     localAccDropdown = findAccessibleChildByID(rootAcc, LOCAL_DROPDOWN_ID);

@@ -24,30 +24,6 @@
                  STATE_HASPOPUP | STATE_COLLAPSED | STATE_FOCUSABLE, 0,
                  STATE_FOCUSED, 0);
 
-      var comboboxList = combobox.firstChild;
-      testStates(comboboxList, STATE_INVISIBLE, 0, STATE_FOCUSABLE, 0);
-
-      var opt1 = comboboxList.firstChild;
-      testStates(opt1, STATE_SELECTABLE | STATE_SELECTED | STATE_FOCUSABLE,
-                 0, STATE_FOCUSED, 0);
-
-      var opt2 = comboboxList.lastChild;
-      testStates(opt2, STATE_SELECTABLE | STATE_FOCUSABLE, 0, STATE_SELECTED, 0,
-                 STATE_FOCUSED, 0);
-
-      // collapsed combobox
-      testStates("collapsedcombobox",
-                 STATE_COLLAPSED | STATE_FOCUSABLE, 0,
-                 STATE_FOCUSED, 0);
-
-      testStates("collapsed-1",
-                 STATE_FOCUSABLE | STATE_SELECTABLE, 0,
-                 STATE_OFFSCREEN | STATE_INVISIBLE, 0);
-
-      testStates("collapsed-2",
-                 STATE_OFFSCREEN, 0,
-                 STATE_INVISIBLE, 0);
-
       // listbox
       testStates("listbox",
                  STATE_FOCUSABLE, 0,
@@ -135,11 +111,6 @@
   <select id="combobox">
     <option>item 1</option>
     <option>item 2</option>
-  </select>
-
-  <select id="collapsedcombobox">
-    <option id="collapsed-1">item 1</option>
-    <option id="collapsed-2">item 2</option>
   </select>
 
   <select id="listbox" name="component" size="3">

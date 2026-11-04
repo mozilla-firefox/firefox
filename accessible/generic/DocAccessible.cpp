@@ -1235,6 +1235,12 @@ void DocAccessible::ElementStateChanged(dom::Document* /*aDocument*/,
     FireDelayedEvent(event);
   }
 
+  if (aStateMask.HasState(dom::ElementState::OPEN) &&
+      accessible->IsHTMLCombobox()) {
+    auto event = MakeRefPtr<AccStateChangeEvent>(accessible, states::EXPANDED);
+    FireDelayedEvent(event);
+  }
+
   if (aStateMask.HasState(dom::ElementState::POPOVER_OPEN)) {
     // When a popover opens or closes, invalidate relations so invokers
     // can re-calculate if they have a DESCRIBED_BY or DETAILS relation;

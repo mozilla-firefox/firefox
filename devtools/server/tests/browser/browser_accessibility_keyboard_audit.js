@@ -345,25 +345,14 @@ add_task(async function () {
   }
 
   info("Text leaf inside a link (jump action is propagated to the text link)");
-  let node = await walker.querySelector(walker.rootNode, "#link-5");
-  let parent = await a11yWalker.getAccessibleFor(node);
-  let front = (await parent.children())[0];
-  let audit = await front.audit({ types: [KEYBOARD] });
+  const node = await walker.querySelector(walker.rootNode, "#link-5");
+  const parent = await a11yWalker.getAccessibleFor(node);
+  const front = (await parent.children())[0];
+  const audit = await front.audit({ types: [KEYBOARD] });
   Assert.deepEqual(
     audit[KEYBOARD],
     null,
     "Text leafs are excluded from semantics rule."
-  );
-
-  info("Combobox list that is invisible");
-  node = await walker.querySelector(walker.rootNode, "#combobox-1");
-  parent = await a11yWalker.getAccessibleFor(node);
-  front = (await parent.children())[0];
-  audit = await front.audit({ types: [KEYBOARD] });
-  Assert.deepEqual(
-    audit[KEYBOARD],
-    null,
-    "Combobox lists (invisible) are excluded from semantics rule."
   );
 
   await waitForA11yShutdown(parentAccessibility);

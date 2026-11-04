@@ -200,7 +200,7 @@ const markupTests = [
     markup: `
     <span id="l1">test2</span>
     <span id="l2">test3</span>
-    <select>
+    <select size="3">
       <option id="opt"
               aria-label="test1"
               aria-labelledby="l1 l2"

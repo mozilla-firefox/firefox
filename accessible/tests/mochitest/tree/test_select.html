@@ -60,30 +60,7 @@
 
       accTree = {
         role: ROLE_COMBOBOX,
-        children: [
-          {
-            role: ROLE_COMBOBOX_LIST,
-            children: [
-              {
-                role: ROLE_GROUPING,
-                children: [
-                  {
-                    role: ROLE_COMBOBOX_OPTION,
-                    children: [ ],
-                  },
-                  {
-                    role: ROLE_COMBOBOX_OPTION,
-                    children: [ ],
-                  },
-                ],
-              },
-              {
-                role: ROLE_COMBOBOX_OPTION,
-                children: [ ],
-              },
-            ],
-          },
-        ],
+        children: [],
       };
       testAccessibleTree("combobox", accTree);
 
