@@ -960,7 +960,9 @@ class SharedLibrary(Library):
                 "-current_version",
                 "1",
             ]
-        if substs.get("OS_ARCH") == "WINNT" and substs.get("CC_TYPE") != "clang-cl":
+        if substs.get("OS_ARCH") == "WINNT":
+            if substs.get("CC_TYPE") == "clang-cl":
+                return [f"-IMPLIB:{self.import_name}"]
             return ["-Wl,--out-implib", f"-Wl,{self.import_name}"]
         return []
 

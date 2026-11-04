@@ -442,7 +442,7 @@ $(SHARED_LIBRARY): $(OBJS) $(call resfile,$(SHARED_LIBRARY)) $(STATIC_LIBS) $(GL
 	$(REPORT_BUILD)
 	$(call BUILDSTATUS,START_SharedLib $@)
 	$(RM) $@
-	$(MKSHLIB) $(if $(filter clang-cl_WINNT,$(CC_TYPE)_$(OS_ARCH)),-IMPLIB:$(basename $(@F)).lib )$($(notdir $@)_OBJS) $(filter %.res,$^) $(RELRHACK_LDFLAGS) $(LDFLAGS) $(STATIC_LIBS) $(SHARED_LIBS) $(EXTRA_DSO_LDOPTS) $(OS_LIBS)
+	$(MKSHLIB) $($(notdir $@)_OBJS) $(filter %.res,$^) $(RELRHACK_LDFLAGS) $(LDFLAGS) $(STATIC_LIBS) $(SHARED_LIBS) $(EXTRA_DSO_LDOPTS) $(OS_LIBS)
 	$(call py_action,check_binary,$@)
 
 ifeq (clang-cl_WINNT,$(CC_TYPE)_$(OS_ARCH))

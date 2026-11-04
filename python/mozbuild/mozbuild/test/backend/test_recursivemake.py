@@ -2250,8 +2250,9 @@ class TestRecursiveMakeBackend(BackendTester):
             "EXTRA_DSO_LDOPTS += -Wl,--out-implib -Wl,dist-bin.lib\n", content
         )
 
-    def test_mingw_import_library_clang_cl(self):
+    def test_clang_cl_import_library(self):
         content = self._windows_shared_lib_backend_mk("clang-cl")
+        self.assertIn("EXTRA_DSO_LDOPTS += -IMPLIB:dist-bin.lib\n", content)
         self.assertNotIn("--out-implib", content)
 
     def test_per_source_object_deps(self):
