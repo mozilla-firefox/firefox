@@ -2222,11 +2222,14 @@ async function typeInPanel(dbg, text, inLogPanel = false) {
 }
 
 async function toggleMapScopes(dbg) {
-  info("Turn on original variable mapping");
-  const scopesLoaded = waitForLoadedScopes(dbg);
+  const enabling = !dbg.selectors.isMapScopesEnabled();
+  info(`Turn ${enabling ? "on" : "off"} original variable mapping`);
   const onDispatch = waitForDispatch(dbg.store, "TOGGLE_MAP_SCOPES");
   clickElement(dbg, "mapScopesCheckbox");
-  return Promise.all([onDispatch, scopesLoaded]);
+  await onDispatch;
+  if (enabling) {
+    await waitForLoadedScopes(dbg);
+  }
 }
 
 async function waitForPausedInOriginalFileAndToggleMapScopes(

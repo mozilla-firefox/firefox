@@ -8,6 +8,9 @@
 "use strict";
 
 add_task(async function () {
+  // Make the editor tall enough for the previews to open below the hovered
+  // line. Otherwise a preview opens on the right and covers the other token.
+  await pushPref("devtools.toolbox.footer.height", 600);
   const dbg = await initDebugger("doc-preview.html", "preview.js");
 
   info(
