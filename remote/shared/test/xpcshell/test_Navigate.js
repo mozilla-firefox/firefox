@@ -33,11 +33,15 @@ const SEC_ERROR_EXPIRED_CERTIFICATE = Cc["@mozilla.org/nss_errors_service;1"]
   .getService(Ci.nsINSSErrorsService)
   .getXPCOMFromNSSError(Ci.nsINSSErrorsService.NSS_SEC_ERROR_BASE + 11);
 
+const BLOCKED_PAGE_URI = Services.io.newURI(
+  "about:blocked?e=deceptiveBlocked&u=http%3A//foo.cheese/"
+);
 const CURRENT_URI = Services.io.newURI("http://foo.bar/");
 const ERROR_PAGE_URI = Services.io.newURI(
   "about:neterror?e=customErrorMessage"
 );
 const INITIAL_URI = Services.io.newURI("about:blank");
+const PREVIOUS_LOAD_URI = Services.io.newURI("http://foo.previous/");
 const TARGET_URI = Services.io.newURI("http://foo.cheese/");
 const TARGET_URI_ERROR_PAGE = Services.io.newURI("doesnotexist://");
 const TARGET_URI_WITH_HASH = Services.io.newURI("http://foo.cheese/#foo");
@@ -97,14 +101,14 @@ class MockWebProgress {
   }
 
   sendLocationChange(options = {}) {
-    const { flag = 0 } = options;
+    const { errorPageURI = ERROR_PAGE_URI, flag = 0 } = options;
 
     this.documentRequest = null;
 
     if (flag & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT) {
       this.browsingContext.updateURI(TARGET_URI_WITH_HASH);
     } else if (flag & Ci.nsIWebProgressListener.LOCATION_CHANGE_ERROR_PAGE) {
-      this.browsingContext.updateURI(TARGET_URI_ERROR_PAGE, true);
+      this.browsingContext.updateURI(TARGET_URI_ERROR_PAGE, errorPageURI);
     }
 
     this.listener?.onLocationChange(
@@ -118,7 +122,7 @@ class MockWebProgress {
   }
 
   sendStartState(options = {}) {
-    const { coop = false, isInitial = false } = options;
+    const { coop = false, isInitial = false, uri } = options;
 
     if (coop) {
       this.browsingContext = new MockTopContext(this);
@@ -134,8 +138,9 @@ class MockWebProgress {
 
     this.isLoadingDocument = true;
     this.loadType = 0;
-    const uri = isInitial ? INITIAL_URI : TARGET_URI;
-    this.documentRequest = new MockRequest(uri);
+    this.documentRequest = new MockRequest(
+      uri ?? (isInitial ? INITIAL_URI : TARGET_URI)
+    );
 
     this.listener?.onStateChange(
       this,
@@ -148,9 +153,13 @@ class MockWebProgress {
   }
 
   sendStopState(options = {}) {
-    const { flag = 0, loadType = 0 } = options;
+    const { errorPageURI, flag = 0, loadType = 0, uri } = options;
 
-    this.browsingContext.currentURI = this.documentRequest.originalURI;
+    // A custom URI simulates a stop state for a different request than the
+    // one which is currently loading.
+    const request = uri ? new MockRequest(uri) : this.documentRequest;
+
+    this.browsingContext.currentURI = request.originalURI;
 
     this.isLoadingDocument = false;
     this.documentRequest = null;
@@ -162,13 +171,14 @@ class MockWebProgress {
 
     this.listener?.onStateChange(
       this,
-      this.documentRequest,
+      request,
       Ci.nsIWebProgressListener.STATE_STOP,
       flag
     );
 
     if (loadType & LOAD_FLAG_ERROR_PAGE) {
       return this.sendLocationChange({
+        errorPageURI,
         flag: Ci.nsIWebProgressListener.LOCATION_CHANGE_ERROR_PAGE,
       });
     }
@@ -190,10 +200,10 @@ class MockTopContext {
     this.webProgress = webProgress || new MockWebProgress(this);
   }
 
-  updateURI(uri, isError = false) {
+  updateURI(uri, errorPageURI = null) {
     this.currentURI = uri;
-    if (isError) {
-      this.currentWindowGlobal.documentURI = ERROR_PAGE_URI;
+    if (errorPageURI) {
+      this.currentWindowGlobal.documentURI = errorPageURI;
     } else {
       this.currentWindowGlobal.documentURI = uri;
     }
@@ -662,6 +672,91 @@ add_task(async function test_ProgressListener_waitForExplicitStart() {
   );
 });
 
+add_task(
+  async function test_ProgressListener_waitForExplicitStart_suppressedStartState() {
+    const browsingContext = new MockTopContext();
+    const webProgress = browsingContext.webProgress;
+    await webProgress.sendStartState({ uri: PREVIOUS_LOAD_URI });
+
+    const progressListener = new ProgressListener(webProgress, {
+      expectNavigation: true,
+      waitForExplicitStart: true,
+    });
+    const navigated = progressListener.start();
+
+    // The start state of the new navigation is not sent because the previous
+    // load has not been finished yet.
+    await webProgress.sendStopState({ uri: TARGET_URI });
+    ok(
+      await hasPromiseResolved(navigated),
+      "Listener resolved after finishing the new navigation"
+    );
+    equal(
+      progressListener.targetURI.spec,
+      TARGET_URI.spec,
+      "Expected target URI is set"
+    );
+  }
+);
+
+add_task(
+  async function test_ProgressListener_waitForExplicitStart_suppressedStartStateErrorPage() {
+    const browsingContext = new MockTopContext();
+    const webProgress = browsingContext.webProgress;
+    await webProgress.sendStartState({ uri: PREVIOUS_LOAD_URI });
+
+    const progressListener = new ProgressListener(webProgress, {
+      expectNavigation: true,
+      waitForExplicitStart: true,
+    });
+    const navigated = progressListener.start();
+
+    await webProgress.sendStopState({
+      errorPageURI: BLOCKED_PAGE_URI,
+      flag: Cr.NS_ERROR_PHISHING_URI,
+      loadType: LOAD_FLAG_ERROR_PAGE,
+      uri: TARGET_URI,
+    });
+    ok(
+      await hasPromiseRejected(navigated),
+      "Listener has rejected for the error page"
+    );
+
+    const error = await getRejectionReason(navigated);
+    ok(error.isNavigationError, "Rejected with a NavigationError");
+    equal(error.message, "NS_ERROR_PHISHING_URI", "Expected error name is set");
+  }
+);
+
+add_task(async function test_ProgressListener_start_waitForExplicitStart() {
+  const browsingContext = new MockTopContext();
+  const webProgress = browsingContext.webProgress;
+
+  const progressListener = new ProgressListener(webProgress, {
+    waitForExplicitStart: true,
+  });
+  let navigated = progressListener.start();
+  progressListener.stop();
+  await navigated;
+
+  await webProgress.sendStartState();
+
+  // Override the option to accept the already started navigation.
+  navigated = progressListener.start(undefined, {
+    waitForExplicitStart: false,
+  });
+  ok(
+    !(await hasPromiseResolved(navigated)),
+    "Listener has not resolved while the navigation is in progress"
+  );
+
+  await webProgress.sendStopState();
+  ok(
+    await hasPromiseResolved(navigated),
+    "Listener resolved after finishing the already started navigation"
+  );
+});
+
 add_task(async function test_invalid_resolveWhenCommitted() {
   // Create a webprogress and start it before creating the progress listener.
   const browsingContext = new MockTopContext();
@@ -836,6 +931,12 @@ add_task(async function test_ProgressListener_navigationRejectedOnErrorPage() {
       expectedErrorName: "customErrorMessage",
     },
     {
+      description: "blocked page",
+      errorPageURI: BLOCKED_PAGE_URI,
+      flag: Ci.nsIWebProgressListener.LOCATION_CHANGE_ERROR_PAGE,
+      expectedErrorName: "deceptiveBlocked",
+    },
+    {
       // For a same-document navigation the document URI is not replaced by an
       // error page URI, and no error name can be extracted from it.
       description: "same-document error page",
@@ -846,7 +947,12 @@ add_task(async function test_ProgressListener_navigationRejectedOnErrorPage() {
     },
   ];
 
-  for (const { description, flag, expectedErrorName } of testCases) {
+  for (const {
+    description,
+    errorPageURI,
+    flag,
+    expectedErrorName,
+  } of testCases) {
     info(`Checking location change for ${description}`);
 
     const browsingContext = new MockTopContext();
@@ -858,7 +964,7 @@ add_task(async function test_ProgressListener_navigationRejectedOnErrorPage() {
     const navigated = progressListener.start();
 
     await webProgress.sendStartState();
-    await webProgress.sendLocationChange({ flag });
+    await webProgress.sendLocationChange({ errorPageURI, flag });
 
     ok(
       await hasPromiseRejected(navigated),

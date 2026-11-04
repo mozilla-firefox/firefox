@@ -146,6 +146,7 @@ export class ProgressListener {
   #deferredNavigation;
   #errorName;
   #errorStatus;
+  #ignoredLoadURI;
   #navigationId;
   #navigationListener;
   #seenNavigationCommitted;
@@ -309,11 +310,7 @@ export class ProgressListener {
 
         this.#trace(lazy.truncate`Started loading ${this.targetURI?.spec}`);
 
-        if (this.#unloadTimerId !== null) {
-          lazy.clearTimeout(this.#unloadTimerId);
-          this.#trace("Cleared the unload timer");
-          this.#unloadTimerId = null;
-        }
+        this.#clearUnloadTimer();
 
         if (this.#resolveWhenStarted) {
           this.#trace("Request to stop listening when navigation started");
@@ -325,33 +322,57 @@ export class ProgressListener {
 
     if (isStop) {
       if (!this.#seenStartFlag) {
-        this.#trace("Skip stop state because seenStartFlag is not set");
-      } else {
-        // Treat NS_ERROR_PARSED_DATA_CACHED as a success code
-        // since navigation happened and content has been loaded.
-        if (
-          !Components.isSuccessCode(status) &&
-          status != Cr.NS_ERROR_PARSED_DATA_CACHED
-        ) {
-          const errorName = ChromeUtils.getXPCOMErrorName(status);
-
-          if (this.loadType & LOAD_FLAG_ERROR_PAGE) {
-            // Wait for the next location change notification to ensure that the
-            // real error page was loaded.
-            this.#trace(`Error=${errorName}, wait for redirect to error page`);
-            this.#seenNavigationCommitted = false;
-            this.#errorName = errorName;
-            this.#errorStatus = status;
-            return;
-          }
-
-          this.stop({ error: new lazy.NavigationError(errorName, status) });
+        // While a document is still loading, the STATE_START of a new load
+        // can be suppressed by the web progress. Accept the stop state if it
+        // belongs to a different load than the one already in progress.
+        const uri = this.#getTargetURI(request);
+        if (!this.#ignoredLoadURI || !uri || uri.equals(this.#ignoredLoadURI)) {
+          this.#trace(
+            lazy.truncate`Skip stop state without start state for ${uri?.spec} (ignored load: ${this.#ignoredLoadURI?.spec})`
+          );
           return;
         }
 
-        // If a page finished loading the navigation is done.
-        this.stop();
+        this.#trace(
+          lazy.truncate`Stop state without start state for ${uri.spec}`
+        );
+        this.#seenStartFlag = true;
+        this.#targetURI = uri;
+        this.#clearUnloadTimer();
       }
+
+      // Treat NS_ERROR_PARSED_DATA_CACHED as a success code
+      // since navigation happened and content has been loaded.
+      if (
+        !Components.isSuccessCode(status) &&
+        status != Cr.NS_ERROR_PARSED_DATA_CACHED
+      ) {
+        const errorName = ChromeUtils.getXPCOMErrorName(status);
+
+        if (this.loadType & LOAD_FLAG_ERROR_PAGE) {
+          // Wait for the next location change notification to ensure that the
+          // real error page was loaded.
+          this.#trace(`Error=${errorName}, wait for redirect to error page`);
+          this.#seenNavigationCommitted = false;
+          this.#errorName = errorName;
+          this.#errorStatus = status;
+          return;
+        }
+
+        this.stop({ error: new lazy.NavigationError(errorName, status) });
+        return;
+      }
+
+      // If a page finished loading the navigation is done.
+      this.stop();
+    }
+  }
+
+  #clearUnloadTimer() {
+    if (this.#unloadTimerId !== null) {
+      lazy.clearTimeout(this.#unloadTimerId);
+      this.#trace("Cleared the unload timer");
+      this.#unloadTimerId = null;
     }
   }
 
@@ -359,7 +380,7 @@ export class ProgressListener {
     try {
       // Otherwise try to retrieve it from the document URI if it is an
       // error page like `about:neterror?e=contentEncodingError&u=http%3A//...`
-      const regex = /about:.*error\?e=([^&]*)/;
+      const regex = /about:[^?]*\?e=([^&]*)/;
       return documentURI.spec.match(regex)[1];
     } catch (e) {
       // Or return a generic name
@@ -485,10 +506,16 @@ export class ProgressListener {
    *
    * @param {string=} navigationId
    *     The UUID for the navigation.
+   * @param {object=} options
+   * @param {boolean=} options.waitForExplicitStart
+   *     Overrides the value of the same option as passed to the constructor
+   *     for this navigation only.
    * @returns {Promise}
    *     A promise that will resolve when the navigation has been finished.
    */
-  start(navigationId) {
+  start(navigationId, options = {}) {
+    const { waitForExplicitStart = this.#waitForExplicitStart } = options;
+
     this.#navigationId = navigationId;
 
     if (this.#deferredNavigation) {
@@ -498,20 +525,26 @@ export class ProgressListener {
     this.#trace(
       `Start: expectNavigation=${this.#expectNavigation} resolveWhenStarted=${
         this.#resolveWhenStarted
-      } unloadTimeout=${this.#unloadTimeout} waitForExplicitStart=${
-        this.#waitForExplicitStart
-      }`
+      } unloadTimeout=${this.#unloadTimeout} waitForExplicitStart=${waitForExplicitStart}`
     );
 
+    this.#ignoredLoadURI = null;
     if (this.#webProgress.isLoadingDocument) {
       this.#targetURI = this.#getTargetURI(this.#webProgress.documentRequest);
       this.#trace(`Document already loading ${this.#targetURI?.spec}`);
 
-      if (this.#resolveWhenStarted && !this.#waitForExplicitStart) {
+      if (this.#resolveWhenStarted && !waitForExplicitStart) {
         this.#trace(
           "Resolve on document loading if not waiting for a load or a new navigation"
         );
         return Promise.resolve();
+      }
+
+      if (waitForExplicitStart) {
+        this.#ignoredLoadURI = this.#targetURI;
+        this.#trace(
+          lazy.truncate`Wait for explicit start state, ignore stop state for ${this.#ignoredLoadURI?.spec}`
+        );
       }
     }
 
@@ -526,7 +559,7 @@ export class ProgressListener {
 
     webProgressListeners.add(this);
 
-    if (this.#webProgress.isLoadingDocument && !this.#waitForExplicitStart) {
+    if (this.#webProgress.isLoadingDocument && !waitForExplicitStart) {
       this.#checkLoadingState(this.#webProgress.documentRequest, {
         isStart: true,
       });
