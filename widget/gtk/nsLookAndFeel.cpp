@@ -987,7 +987,7 @@ nsresult nsLookAndFeel::NativeGetInt(IntID aID, int32_t& aResult) {
       break;
     case IntID::SelectTextfieldsOnKeyFocus: {
       GtkSettings* settings = gtk_settings_get_default();
-      gboolean select_on_focus = FALSE;
+      gboolean select_on_focus = TRUE;
       if (MOZ_LIKELY(settings)) {
         g_object_get(settings, "gtk-entry-select-on-focus", &select_on_focus,
                      nullptr);
