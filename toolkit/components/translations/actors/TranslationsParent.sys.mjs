@@ -4603,7 +4603,10 @@ export class TranslationsParent extends JSWindowActorParent {
     }
 
     const browser = this.#getBrowserFromContext();
-    if (!browser) {
+    if (
+      !browser ||
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(browser)
+    ) {
       return;
     }
 
@@ -5078,10 +5081,18 @@ export class TranslationsParent extends JSWindowActorParent {
   /**
    * Returns the language tags used to decide whether full-page translation should be offered.
    *
-   * @returns {Promise<LangTags | null>} - Returns null if the actor was destroyed before
-   *   the result could be resolved.
+   * @returns {Promise<LangTags | null>} - Returns null for restricted pages or if the
+   *   actor was destroyed before the result could be resolved.
    */
   async getLangTags() {
+    const browser = this.#getBrowserFromContext();
+    if (
+      !browser ||
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(browser)
+    ) {
+      return null;
+    }
+
     if (this.languageState.detectedLanguages) {
       return this.languageState.detectedLanguages;
     }
@@ -5095,7 +5106,11 @@ export class TranslationsParent extends JSWindowActorParent {
 
     try {
       const langTags = await langTagsPromise;
-      if (this.#isDestroyed || !langTags) {
+      if (
+        this.#isDestroyed ||
+        !langTags ||
+        TranslationsParent.isFullPageTranslationsRestrictedForPage(browser)
+      ) {
         return null;
       }
       this.languageState.detectedLanguages = langTags;

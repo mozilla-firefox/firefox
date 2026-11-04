@@ -6,6 +6,7 @@ support-files = [
   "translations-test.mjs",
   "translations-tester-blank.html",
   "translations-tester-pdf-file.pdf",
+  "translations-tester-es.pdf",
   "translations-tester-en.html",
   "translations-tester-es-mismatch-short.html",
   "translations-tester-es-mismatch.html",

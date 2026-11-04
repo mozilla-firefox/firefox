@@ -131,4 +131,6 @@ skip-if = [
 
 ["browser_translations_full_page_panel_weblanguage_differs_from_app.js"]
 
+["browser_translations_full_page_pdf_is_restricted.js"]
+
 ["browser_translations_full_page_reader_mode.js"]

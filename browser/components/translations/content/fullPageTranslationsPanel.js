@@ -1644,6 +1644,10 @@ var FullPageTranslationsPanel = new (class {
         if (
           // Only show the button if the Translations feature is enabled.
           TranslationsFeature.isEnabled &&
+          // Full-Page Translations is allowed for this page.
+          !TranslationsParent.isFullPageTranslationsRestrictedForPage(
+            gBrowser.selectedBrowser
+          ) &&
           // We've already requested to translate this page, so always show the icon.
           (requestedLanguagePair ||
             // There was an error translating, so always show the icon. This can happen

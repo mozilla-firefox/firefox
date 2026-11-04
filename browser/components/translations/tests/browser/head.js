@@ -8,6 +8,10 @@ Services.scriptloader.loadSubScript(
   this
 );
 
+const { LanguageDetector: PageLanguageDetector } = ChromeUtils.importESModule(
+  "resource://gre/modules/translations/LanguageDetector.sys.mjs"
+);
+
 /**
  * Converts milliseconds to seconds.
  *
@@ -1167,6 +1171,69 @@ class TranslationsBencher {
  */
 class SharedTranslationsTestUtils {
   /**
+   * Loads or reloads a PDF and waits for its first page's text layer to render.
+   *
+   * @param {object} options
+   * @param {MozBrowser} options.browser - The browser containing the PDF viewer.
+   * @param {string} options.url - The PDF URL.
+   * @param {boolean} [options.reload=false] - Whether to reload the current PDF.
+   * @returns {Promise<void>}
+   */
+  static async loadPdfPage({ browser, url, reload = false }) {
+    const rendered = BrowserTestUtils.waitForContentEvent(
+      browser,
+      "textlayerrendered",
+      false,
+      event => {
+        const document = event.target.ownerDocument || event.target;
+
+        return Boolean(
+          document.querySelector(
+            ".page[data-page-number='1'] .textLayer .endOfContent"
+          )
+        );
+      },
+      true
+    );
+    const loaded = BrowserTestUtils.browserLoaded(browser, { wantLoad: url });
+
+    if (reload) {
+      browser.reload();
+    } else {
+      BrowserTestUtils.startLoadingURIString(browser, url);
+    }
+
+    await Promise.all([loaded, rendered]);
+  }
+
+  /**
+   * Asserts the detected page language and confidence.
+   *
+   * @param {object} options
+   * @param {MozBrowser} options.browser - The browser containing the document.
+   * @param {string} options.language - The expected BCP-47 language tag.
+   * @param {boolean} options.confident - The expected confidence.
+   * @returns {Promise<void>}
+   */
+  static async assertDetectedPageLanguage({ browser, language, confident }) {
+    const metadata = await requestDocumentLanguageMetadata(browser);
+    const detected = await PageLanguageDetector.detectLanguage(
+      metadata.textSample
+    );
+
+    is(
+      detected.language,
+      language,
+      "The document text has the expected language"
+    );
+    is(
+      detected.confident,
+      confident,
+      "The document language detection has the expected confidence"
+    );
+  }
+
+  /**
    * Asserts that the specified element currently has focus.
    *
    * @param {Element} element - The element to check for focus.
@@ -1332,6 +1399,58 @@ class SharedTranslationsTestUtils {
  * A class containing test utility functions specific to testing full-page translations.
  */
 class FullPageTranslationsTestUtils {
+  /**
+   * Asserts that a page cannot offer or start full-page translations.
+   *
+   * @param {object} options
+   * @param {MozBrowser} options.browser - The browser containing the restricted page.
+   * @param {LanguagePair} options.languagePair - The translation to attempt.
+   * @returns {Promise<void>}
+   */
+  static async assertPageTranslationIsRestricted({ browser, languagePair }) {
+    const actor = TranslationsParent.getTranslationsActor(browser);
+
+    await actor.maybeOfferTranslations();
+
+    is(
+      actor.languageState.requestedLanguagePair,
+      null,
+      "The restricted page is not automatically translated"
+    );
+    await FullPageTranslationsTestUtils.assertTranslationsButton(
+      { button: false },
+      "The URL-bar translations button is hidden on the restricted page"
+    );
+
+    await actor.translate(languagePair, false);
+    is(
+      actor.languageState.requestedLanguagePair,
+      null,
+      "Explicit full-page translation requests are restricted"
+    );
+
+    const shown = BrowserTestUtils.waitForEvent(
+      window.PanelUI.mainView,
+      "ViewShown"
+    );
+    window.PanelUI.show();
+    await shown;
+
+    try {
+      ok(
+        document.getElementById("appMenu-translate-button").disabled,
+        "The app-menu translate button is disabled on the restricted page"
+      );
+    } finally {
+      const hidden = BrowserTestUtils.waitForEvent(
+        window.PanelUI.panel,
+        "popuphidden"
+      );
+      window.PanelUI.hide();
+      await hidden;
+    }
+  }
+
   /**
    * A collection of element visibility expectations for the default panel view.
    */
