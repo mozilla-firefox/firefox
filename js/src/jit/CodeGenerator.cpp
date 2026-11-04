@@ -618,7 +618,7 @@ void CodeGeneratorShared::addIC(LInstruction* lir, size_t cacheIndex) {
       new (alloc()) OutOfLineICFallback(lir, cacheIndex, icInfo_.length() - 1);
   addOutOfLineCode(ool, mir);
 
-  masm.bind(ool->rejoin());
+  masm.bindIndirectTarget(ool->rejoin(), TargetKind::ImmJump);
   cache->setRejoinOffset(CodeOffset(ool->rejoin()->offset()));
 }
 
@@ -630,7 +630,7 @@ void CodeGenerator::visitOutOfLineICFallback(OutOfLineICFallback* ool) {
   DataPtr<IonIC> ic(this, cacheIndex);
 
   // Register the location of the OOL path in the IC.
-  ic->setFallbackOffset(CodeOffset(masm.currentOffset()));
+  ic->setFallbackOffset(masm.indirectTarget(TargetKind::Jump));
 
   switch (ic->kind()) {
     case CacheKind::GetProp:
@@ -4151,7 +4151,7 @@ void CodeGenerator::visitOsrEntry(LOsrEntry* lir) {
 
   // Remember the OSR entry offset into the code buffer.
   masm.flushBuffer();
-  setOsrEntryOffset(masm.size());
+  setOsrEntryOffset(masm.indirectTarget(TargetKind::Jump).offset());
 
   // Allocate the full frame for this function
   // Note we have a new entry here. So we reset MacroAssembler::framePushed()
@@ -8866,7 +8866,11 @@ bool CodeGenerator::generateBlock(LBlock* current, size_t blockNumber,
     masm.nopAlign(CodeAlignment);
   }
 
-  masm.bind(current->label());
+  if (current->isIndirectJumpTarget()) {
+    masm.bindIndirectTarget(current->label(), TargetKind::Jump);
+  } else {
+    masm.bind(current->label());
+  }
 
   mozilla::Maybe<ScriptCountBlockState> blockCounts;
   if (counts) {

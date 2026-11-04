@@ -59,6 +59,21 @@ void LIRGraph::dump() {
 }
 #endif
 
+bool jit::PropagateIndirectJumpTargets(MIRGenerator* mir, LIRGraph& graph) {
+  for (size_t i = 0; i < graph.numBlocks(); i++) {
+    if (mir->shouldCancel("Propagate Indirect Jump Targets")) {
+      return false;
+    }
+
+    LBlock* block = graph.getBlock(i);
+    if (block->isIndirectJumpTarget()) {
+      block->skipTrivialBlocks()->setIsIndirectJumpTarget();
+    }
+  }
+
+  return true;
+}
+
 LBlock::LBlock(MBasicBlock* from)
     : block_(from),
       entryMoveGroup_(nullptr),
@@ -179,6 +194,16 @@ LBlock* LBlock::isMoveGroupsThenGoto() {
   LGoto* ins = rbegin()->toGoto();
   MOZ_ASSERT(ins->numSuccessors() == 1);
   return ins->getSuccessor(0)->lir();
+}
+
+LBlock* LBlock::skipTrivialBlocks() {
+  LBlock* block = this;
+  while (block->isTrivial()) {
+    LGoto* ins = block->rbegin()->toGoto();
+    MOZ_ASSERT(ins->numSuccessors() == 1);
+    block = ins->getSuccessor(0)->lir();
+  }
+  return block;
 }
 
 #ifdef JS_JITSPEW
