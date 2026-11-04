@@ -913,6 +913,9 @@ void nsWindow::SendAnAPZEvent(InputData& aEvent) {
     WidgetWheelEvent event = panInput.ToWidgetEvent(this);
     if (mAPZC) {
       event = MayStartSwipe(panInput, result);
+      if (!panInput.ShouldDispatchToContentAfterAPZ()) {
+        return;
+      }
     }
 
     ProcessUntransformedAPZEvent(&event, result);

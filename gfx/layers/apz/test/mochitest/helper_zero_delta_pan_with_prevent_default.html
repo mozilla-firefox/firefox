@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width; initial-scale=1.0">
+  <title>Test that a zero-delta pan-start event does not defeat preventDefault() on subsequent events in the same pan gesture</title>
+  <script src="apz_test_utils.js"></script>
+  <script src="apz_test_native_event_utils.js"></script>
+  <script src="/tests/SimpleTest/paint_listener.js"></script>
+  <style>
+    #spacer {
+      height: 500vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="spacer"></div>
+</body>
+<script>
+async function test() {
+  const preventDefault = e => e.preventDefault();
+  window.addEventListener("wheel", preventDefault, { passive: false });
+
+  // Start in the middle of the page so the test does not depend on the
+  // scroll direction of the synthesized pan (which is reversed on Linux,
+  // see bug 1889039).
+  window.scrollTo(0, window.innerHeight * 2);
+  await promiseApzFlushedRepaints();
+  const startY = window.scrollY;
+  ok(startY > 0, "Should start scrolled down");
+
+  // The zero-delta pan-start does not result in a DOM wheel event, so the
+  // listener cannot prevent it. It must not cause APZ to treat the block as
+  // not prevented, and scroll in response to the next event before content
+  // has had a chance to prevent that.
+  const wheelPromise = promiseOneEvent(window, "wheel");
+  await NativePanHandler.promiseNativePanEvent(
+    window, 100, 100, 0, 0, NativePanHandler.beginPhase);
+  await NativePanHandler.promiseNativePanEvent(
+    window, 100, 100, 0, NativePanHandler.delta, NativePanHandler.updatePhase);
+  await wheelPromise;
+
+  // Wait for the content response for the pan-update to be sent, and for APZ
+  // to process it.
+  await promiseFrame();
+  await promiseApzFlushedRepaints();
+  is(window.scrollY, startY, "Should not have scrolled");
+
+  await NativePanHandler.promiseNativePanEvent(
+    window, 100, 100, 0, 0, NativePanHandler.endPhase);
+
+  // Check that the same gesture does scroll without the listener, so that the
+  // above check is not passing for some unrelated reason.
+  window.removeEventListener("wheel", preventDefault, { passive: false });
+  window.scrollTo(0, startY);
+  await promiseApzFlushedRepaints();
+
+  const scrollPromise = promiseOneEvent(window, "scroll");
+  await NativePanHandler.promiseNativePanEvent(
+    window, 100, 100, 0, 0, NativePanHandler.beginPhase);
+  await NativePanHandler.promiseNativePanEvent(
+    window, 100, 100, 0, NativePanHandler.delta, NativePanHandler.updatePhase);
+  await scrollPromise;
+  isnot(window.scrollY, startY, "Should have scrolled without the listener");
+
+  await NativePanHandler.promiseNativePanEvent(
+    window, 100, 100, 0, 0, NativePanHandler.endPhase);
+}
+
+waitUntilApzStable()
+.then(test)
+.then(subtestDone, subtestFailed);
+</script>
+</html>

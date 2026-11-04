@@ -38,9 +38,9 @@ scrollbar_prefs.push(["layout.scrollbars.always-layerize-track", true]);
 var timeout_prefs = prefs.slice(); // make a copy
 timeout_prefs.push(["apz.content_response_timeout", 0]);
 
-// For helper_zero_delta_pan_with_wheel_listener, we need a long APZ content
-// response timeout, so that a stalled input queue is not unstalled by the
-// timeout before the test checks for it.
+// For the helper_zero_delta_pan_* tests, we need a long APZ content response
+// timeout, so that the timeout does not make a decision for an input block
+// before the test checks for the outcome of the content response.
 var long_timeout_prefs = [["apz.content_response_timeout", 600000]];
 
 var smoothness_prefs = getSmoothScrollPrefs("wheel");
@@ -83,6 +83,8 @@ var subtests = [
   {"file": "helper_axis_lock_parent_layer_coords.html",
    "prefs": [["apz.axis_lock.mode", 1]]},
   {"file": "helper_zero_delta_pan_with_wheel_listener.html",
+   "prefs": long_timeout_prefs},
+  {"file": "helper_zero_delta_pan_with_prevent_default.html",
    "prefs": long_timeout_prefs},
 ];
 

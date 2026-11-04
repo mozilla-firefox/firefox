@@ -1523,6 +1523,9 @@ void nsCocoaWindow::DispatchAPZWheelInputEvent(InputData& aEvent) {
         }
 
         event = MayStartSwipe(aEvent.AsPanGestureInput(), result);
+        if (!aEvent.AsPanGestureInput().ShouldDispatchToContentAfterAPZ()) {
+          return;
+        }
         break;
       }
       case SCROLLWHEEL_INPUT: {

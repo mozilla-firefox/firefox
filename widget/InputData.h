@@ -439,6 +439,14 @@ class PanGestureInput : public InputData {
 
   bool IsMomentum() const;
 
+  // Returns whether this event, after being handled by APZ, should be
+  // dispatched to content as a wheel event. A zero-delta event does not result
+  // in a DOM wheel event, so content cannot prevent it, and its content
+  // response would not reflect the page's wheel listeners. Such an event is
+  // only dispatched if it may be the last event in its input block, so that
+  // the block still gets a content response.
+  bool ShouldDispatchToContentAfterAPZ() const;
+
   WidgetWheelEvent ToWidgetEvent(nsIWidget* aWidget) const;
 
   bool TransformToLocal(const ScreenToParentLayerMatrix4x4& aTransform);

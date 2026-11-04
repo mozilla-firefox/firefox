@@ -1537,7 +1537,8 @@ void nsIWidget::DispatchPanGestureInput(PanGestureInput& aInput) {
     MOZ_ASSERT(APZThreadUtils::IsControllerThread());
 
     APZEventResult result = mAPZC->Bridge()->ReceiveInputEvent(aInput);
-    if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
+    if (result.GetStatus() == nsEventStatus_eConsumeNoDefault ||
+        !aInput.ShouldDispatchToContentAfterAPZ()) {
       return;
     }
 
