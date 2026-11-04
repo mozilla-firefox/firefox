@@ -402,8 +402,9 @@ macosx1500-aarch64-shippable/opt:
     build-platform: macosx64-shippable/opt
     build-signing-label: repackage-macosx64-shippable/opt
     test-sets:
+        - browsertime
+        - browsertime-profiling
         - macosx1500-64-tests
-        - macosx1500-64-perftests
         - macosx1500-aarch64-tests
         - awsy-base
         - macosx64-talos

@@ -587,13 +587,9 @@ macosx64-talos:
     - talos-pdfpaint
     # - talos-h1 # too long to unpack profile- Bug 1442893
 
-macosx1500-64-perftests:
-    - browsertime-benchmark
-    - browsertime-nav-bench
-    - browsertime-tp6-essential
-
 macosx2700-aarch64-perftests:
     - browsertime-benchmark
+    - browsertime-video-playback-latency
 
 # Android
 
