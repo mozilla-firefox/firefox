@@ -232,6 +232,13 @@ export class TranslationsEngineParent extends JSProcessActorParent {
 
   didDestroy() {
     this.#isDestroyed = true;
+
+    // Disabling Translations via AI Controls can destroy this actor without
+    // stopping the shared inference process. We should release this actor's
+    // keep-alive immediately so that the process does not remain until GC runs.
+    this.processKeepAlive?.invalidateKeepAlive();
+    this.processKeepAlive = null;
+
     for (const waiter of this.#engineIdleTimeoutWaitersForTests.values()) {
       waiter.reject(
         new Error("The translations engine process was destroyed.")

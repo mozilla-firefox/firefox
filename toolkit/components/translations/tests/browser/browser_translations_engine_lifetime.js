@@ -4,6 +4,36 @@
 "use strict";
 
 /**
+ * This test case ensures that disabling Translations releases the actor's
+ * process keepalive without waiting for the actor to be garbage collected.
+ */
+add_task(async function test_process_shutdown_after_feature_disabled() {
+  const { cleanup } = await loadTestPage({ page: SPANISH_PAGE_URL });
+
+  try {
+    const engineParent = await EngineProcess.getTranslationsEngineParent();
+    const processShutdown =
+      TranslationsEngineTestUtils.waitForProcessShutdown(engineParent);
+
+    info("Disabling Translations while retaining its inference process actor.");
+    await TranslationsFeature.block();
+    await processShutdown;
+
+    is(
+      engineParent.processKeepAlive,
+      null,
+      "The destroyed actor no longer owns a process keepalive"
+    );
+    ok(
+      EngineProcess.areAllEnginesTerminated(),
+      "Unregistering the Translations actor releases its inference process"
+    );
+  } finally {
+    await cleanup();
+  }
+});
+
+/**
  * This test case verifies that every client receives an engine-termination
  * notification and that explicitly closed ports are removed independently.
  */

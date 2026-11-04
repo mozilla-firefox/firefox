@@ -5028,6 +5028,23 @@ const TRANSLATIONS_ENGINE_CACHE_TIMEOUT_MS = 300;
 /** Test utility functions for translations engine lifetime. */
 class TranslationsEngineTestUtils {
   /**
+   * Waits for the inference process associated with an engine actor to shut down.
+   *
+   * @param {TranslationsEngineParent} engineParent
+   * @returns {Promise<void>}
+   */
+  static async waitForProcessShutdown(engineParent) {
+    const childID = engineParent.childID;
+
+    await TestUtils.topicObserved(
+      "ipc:content-shutdown",
+      subject =>
+        subject instanceof Ci.nsIPropertyBag2 &&
+        subject.get("childID") === childID
+    );
+  }
+
+  /**
    * Waits for the translations engine process to exit after its idle timeout.
    *
    * @param {LanguagePair} languagePair
@@ -5035,12 +5052,8 @@ class TranslationsEngineTestUtils {
    */
   static async waitForIdleTimeout(languagePair) {
     const engineParent = await EngineProcess.getTranslationsEngineParent();
-    const processShutdown = TestUtils.topicObserved(
-      "ipc:content-shutdown",
-      subject =>
-        subject instanceof Ci.nsIPropertyBag2 &&
-        subject.get("childID") === engineParent.childID
-    );
+    const processShutdown =
+      TranslationsEngineTestUtils.waitForProcessShutdown(engineParent);
 
     await engineParent.waitForEngineIdleTimeoutForTests(
       languagePair,
