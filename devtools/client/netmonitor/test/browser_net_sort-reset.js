@@ -51,9 +51,9 @@ add_task(async function () {
     },
   ];
 
-  const wait = waitForNetworkEvents(monitor, 5);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 5);
   await performRequestsInContent(requests);
-  await wait;
+  await onNetworkEvents;
 
   store.dispatch(Actions.toggleNetworkDetails());
 

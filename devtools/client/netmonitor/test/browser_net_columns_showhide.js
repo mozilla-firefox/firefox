@@ -18,9 +18,9 @@ add_task(async function () {
     "devtools/client/netmonitor/src/selectors/index"
   );
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await navigateTo(HTTPS_SIMPLE_URL);
-  await wait;
+  await onNetworkEvents;
 
   const item = getSortedRequests(store.getState())[0];
   ok(

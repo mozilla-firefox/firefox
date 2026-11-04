@@ -20,9 +20,9 @@ add_task(async function () {
   const { document, windowRequire } = monitor.panelWin;
   const { Chart } = windowRequire("devtools/client/shared/widgets/Chart");
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await navigateTo(HTTPS_SIMPLE_URL);
-  await wait;
+  await onNetworkEvents;
 
   const chart = Chart.PieTable(document, {
     title: "Table title",

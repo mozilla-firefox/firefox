@@ -46,7 +46,7 @@ add_task(async function () {
   return teardown(monitor);
 
   async function performRequestAndWait(url) {
-    const wait = waitForNetworkEvents(monitor, 1);
+    const onNetworkEvents = waitForNetworkEvents(monitor, 1);
     await SpecialPowers.spawn(
       tab.linkedBrowser,
       [{ url }],
@@ -54,7 +54,7 @@ add_task(async function () {
         content.wrappedJSObject.performRequests(1, args.url);
       }
     );
-    return wait;
+    return onNetworkEvents;
   }
 
   async function clickAndTestSecurityIcon() {

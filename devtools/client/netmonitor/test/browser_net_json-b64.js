@@ -24,18 +24,16 @@ add_task(async function () {
   // Execute requests.
   await performRequests(monitor, tab, 1);
 
-  let wait = waitForDOM(document, "#response-panel .data-header");
-  const waitForPropsView = waitForDOM(
-    document,
-    "#response-panel .properties-view",
-    1
-  );
+  let onDomUpdated = Promise.all([
+    waitForDOM(document, "#response-panel .data-header"),
+    waitForDOM(document, "#response-panel .properties-view"),
+  ]);
 
   store.dispatch(Actions.toggleNetworkDetails());
 
   clickOnSidebarTab(document, "response");
 
-  await Promise.all([wait, waitForPropsView]);
+  await onDomUpdated;
 
   const tabpanel = document.querySelector("#response-panel");
   is(
@@ -59,12 +57,12 @@ add_task(async function () {
   );
 
   // Open the response payload section, it should hide the json section
-  wait = waitForDOM(document, "#response-panel .cm-content");
+  onDomUpdated = waitForDOM(document, "#response-panel .cm-content");
   const header = document.querySelector(
     "#response-panel .raw-data-toggle-input .devtools-checkbox-toggle"
   );
   clickElement(header, monitor);
-  await wait;
+  await onDomUpdated;
 
   is(
     tabpanel.querySelector(".response-error-header") === null,

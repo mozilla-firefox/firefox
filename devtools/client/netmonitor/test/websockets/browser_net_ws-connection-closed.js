@@ -33,7 +33,7 @@ add_task(async function () {
   // Click on the "Response" panel
   clickOnSidebarTab(document, "response");
 
-  const wait = waitForDOM(
+  const onDomUpdated = waitForDOM(
     document,
     "#messages-view .msg-connection-closed-message"
   );
@@ -42,7 +42,7 @@ add_task(async function () {
   await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
     await content.wrappedJSObject.closeConnection();
   });
-  await wait;
+  await onDomUpdated;
 
   is(
     !!document.querySelector("#messages-view .msg-connection-closed-message"),

@@ -47,10 +47,10 @@ add_task(async function () {
     }
   );
 
-  const wait = waitForDOM(document, "#response-panel .cm-content");
+  const onDomUpdated = waitForDOM(document, "#response-panel .cm-content");
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   const tabpanel = document.querySelector("#response-panel");
   is(

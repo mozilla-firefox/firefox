@@ -36,7 +36,7 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  let wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [`${ORIGIN}/keep-alive`],
@@ -47,7 +47,7 @@ add_task(async function () {
       });
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   const firstItem = document.querySelectorAll(".request-list-item")[0];
   is(
@@ -57,9 +57,9 @@ add_task(async function () {
   );
 
   info("Open the headers panel for the keep alive request");
-  wait = waitForDOM(document, ".headers-overview");
+  const onDomUpdated = waitForDOM(document, ".headers-overview");
   clickOnRequestRow(firstItem);
-  await wait;
+  await onDomUpdated;
   await waitForRequestData(store, ["requestHeaders"]);
 
   info("Check the connection header value");

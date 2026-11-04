@@ -26,13 +26,13 @@ add_task(async function () {
   await performRequests(monitor, tab, 1);
 
   // Wait for raw data toggle to be displayed
-  const wait = waitForDOM(
+  const onDomUpdated = waitForDOM(
     document,
     "#request-panel .raw-data-toggle-input .devtools-checkbox-toggle"
   );
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
   clickOnSidebarTab(document, "request");
-  await wait;
+  await onDomUpdated;
 
   const tabpanel = document.querySelector("#request-panel");
 

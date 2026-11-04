@@ -245,9 +245,9 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, REQUEST_COUNT);
+  const onNetworkEvents = waitForNetworkEvents(monitor, REQUEST_COUNT);
   await navigateTo(TOP_URL);
-  await wait;
+  await onNetworkEvents;
 
   is(
     store.getState().requests.requests.length,

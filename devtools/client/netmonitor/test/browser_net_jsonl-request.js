@@ -19,10 +19,14 @@ add_task(async function () {
 
   await performRequests(monitor, tab, 1);
 
-  const wait = waitForDOM(document, "#request-panel .properties-view", 1);
+  const onDomUpdated = waitForDOM(
+    document,
+    "#request-panel .properties-view",
+    1
+  );
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "request");
-  await wait;
+  await onDomUpdated;
 
   const tabpanel = document.querySelector("#request-panel");
 

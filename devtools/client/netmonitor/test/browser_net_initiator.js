@@ -151,12 +151,15 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, EXPECTED_REQUESTS.length);
+  const onNetworkEvents = waitForNetworkEvents(
+    monitor,
+    EXPECTED_REQUESTS.length
+  );
   BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, INITIATOR_URL);
 
   registerFaviconNotifier(tab.linkedBrowser);
 
-  await wait;
+  await onNetworkEvents;
 
   // For all expected requests
   for (const [index, { stack }] of EXPECTED_REQUESTS.entries()) {

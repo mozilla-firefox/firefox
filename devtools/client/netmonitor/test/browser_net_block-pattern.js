@@ -39,7 +39,7 @@ add_task(async function () {
   const TEST_URL_3 = HTTPS_SEARCH_SJS + "test/something/test3";
   const TEST_URL_4 = HTTPS_SEARCH_SJS + "test/something/test4";
 
-  let wait = waitForNetworkEvents(monitor, 4);
+  let onNetworkEvents = waitForNetworkEvents(monitor, 4);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [TEST_URL_1],
@@ -68,7 +68,7 @@ add_task(async function () {
       content.wrappedJSObject.performRequests(1, url);
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   // Wait till there are four resources rendered in the results
   await waitForDOM(document, ".request-list-item", 4);
@@ -105,7 +105,7 @@ add_task(async function () {
   );
 
   // Request the unblocked URL again, ensure the URL was not blocked
-  wait = waitForNetworkEvents(monitor, 1);
+  onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [TEST_URL_1],
@@ -113,7 +113,7 @@ add_task(async function () {
       content.wrappedJSObject.performRequests(1, url);
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   await waitForDOM(document, ".request-list-item", 5);
   requestItems = document.querySelectorAll(".request-list-item");

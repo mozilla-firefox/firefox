@@ -19,9 +19,9 @@ add_task(async function () {
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
 
   info("Loading initial page");
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await navigateTo(HTTPS_SIMPLE_URL);
-  await wait;
+  await onNetworkEvents;
 
   const requestListBlockingButton = document.querySelector(
     ".requests-list-blocking-button"
@@ -134,9 +134,9 @@ add_task(async function () {
 });
 
 async function waitForBlockingAction(store, action) {
-  const wait = waitForDispatch(store, "REQUEST_BLOCKING_UPDATE_COMPLETE");
+  const onDispatch = waitForDispatch(store, "REQUEST_BLOCKING_UPDATE_COMPLETE");
   store.dispatch(action());
-  await wait;
+  await onDispatch;
 }
 
 async function openMenuAndClick(monitor, store, document, itemSelector) {
@@ -146,13 +146,13 @@ async function openMenuAndClick(monitor, store, document, itemSelector) {
     document.querySelector(".request-blocking-contents")
   );
 
-  const wait = waitForDispatch(store, "REQUEST_BLOCKING_UPDATE_COMPLETE");
+  const onDispatch = waitForDispatch(store, "REQUEST_BLOCKING_UPDATE_COMPLETE");
   await selectContextMenuItem(monitor, itemSelector);
-  await wait;
+  await onDispatch;
 }
 
 async function reloadPage(monitor, { isRequestBlocked = false } = {}) {
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   if (isRequestBlocked) {
     // Note: Do not use navigateTo or reloadSelectedTab here as the request will
     // be blocked and no navigation happens
@@ -160,7 +160,7 @@ async function reloadPage(monitor, { isRequestBlocked = false } = {}) {
   } else {
     await reloadSelectedTab();
   }
-  await wait;
+  await onNetworkEvents;
 }
 
 function getCheckedCheckboxes(document) {

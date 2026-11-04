@@ -30,7 +30,7 @@ add_task(async function () {
   is(requests.length, 2, "There should be two requests");
 
   // Wait for all sent/received messages to be displayed in DevTools
-  let wait = waitForDOM(
+  let onDomUpdated = waitForDOM(
     document,
     "#messages-view .message-list-table .message-list-item",
     4
@@ -41,7 +41,7 @@ add_task(async function () {
 
   // Click on the "Response" panel
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   // Get all messages present in the "Response" panel
   const frames = document.querySelectorAll(
@@ -63,13 +63,13 @@ add_task(async function () {
   );
 
   // Select the second request and check that the messages are not cleared
-  wait = waitForDOM(
+  onDomUpdated = waitForDOM(
     document,
     "#messages-view .message-list-table .message-list-item",
     2
   );
   clickOnRequestRow(requests[1]);
-  await wait;
+  await onDomUpdated;
   const secondRequestFrames = document.querySelectorAll(
     "#messages-view .message-list-table .message-list-item"
   );

@@ -22,12 +22,12 @@ add_task(async function () {
 
   // Execute two XHRs (the same URL) and wait till it's finished.
   const URL = HTTPS_SEARCH_SJS + "?value=test";
-  const wait = waitForNetworkEvents(monitor, 2);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 2);
 
   await SpecialPowers.spawn(tab.linkedBrowser, [URL], async function (url) {
     content.wrappedJSObject.performRequests(2, url);
   });
-  await wait;
+  await onNetworkEvents;
 
   const searchButton = document.querySelector(".devtools-search-icon");
   is(

@@ -12,9 +12,9 @@ add_task(async function () {
 
   const { document } = monitor.panelWin;
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   // Wait until the tab panel summary is displayed
   const waitForTab = waitUntil(() =>
@@ -85,9 +85,9 @@ add_task(async function () {
 
   const { document } = monitor.panelWin;
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   // Wait until the tab panel summary is displayed
   const waitForTab = waitUntil(() =>

@@ -22,9 +22,9 @@ add_task(async function test_file_uris() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 2);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 2);
   reloadSelectedTab({ waitForLoad: false });
-  await wait;
+  await onNetworkEvents;
 
   const htmlEntry = document.querySelectorAll(".request-list-item")[0];
   ok(

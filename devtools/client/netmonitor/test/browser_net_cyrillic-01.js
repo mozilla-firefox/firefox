@@ -43,12 +43,12 @@ add_task(async function () {
     }
   );
 
-  let wait = waitForDOM(document, "#headers-panel");
+  let onDomUpdated = waitForDOM(document, "#headers-panel");
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-  await wait;
-  wait = waitForDOM(document, "#response-panel .cm-content");
+  await onDomUpdated;
+  onDomUpdated = waitForDOM(document, "#response-panel .cm-content");
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   ok(
     getCodeMirrorValue(monitor).includes(

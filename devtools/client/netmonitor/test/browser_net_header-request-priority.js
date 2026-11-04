@@ -21,11 +21,11 @@ add_task(async function () {
   await waitReq;
 
   // Wait until the tab panel summary is displayed
-  const wait = waitUntil(
+  const onSummaryLabel = waitUntil(
     () => document.querySelectorAll(".tabpanel-summary-label")[0]
   );
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-  await wait;
+  await onSummaryLabel;
 
   const requestPriorityHeaderExists = Array.from(
     document.querySelectorAll(".tabpanel-summary-label")

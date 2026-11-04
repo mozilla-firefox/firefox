@@ -15,7 +15,7 @@ add_task(async function () {
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
   store.dispatch(Actions.batchEnable(false));
 
-  let wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [SERVER_TIMINGS_TYPE_SJS],
@@ -23,11 +23,11 @@ add_task(async function () {
       content.wrappedJSObject.performRequests(1, url);
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   // There must be 4 timing values (including server side timings).
   const timingsSelector = "#timings-panel .tabpanel-summary-container.server";
-  wait = waitForDOM(document, timingsSelector, 4);
+  const onDomUpdated = waitForDOM(document, timingsSelector, 4);
 
   EventUtils.sendMouseEvent(
     { type: "click" },
@@ -35,7 +35,7 @@ add_task(async function () {
   );
 
   clickOnSidebarTab(document, "timings");
-  await wait;
+  await onDomUpdated;
 
   // Check the UI contains server side timings and correct values
   const timings = document.querySelectorAll(timingsSelector, 4);

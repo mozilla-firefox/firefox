@@ -108,9 +108,9 @@ async function checkPostDataRequest(expectErrorDisplay) {
 }
 
 async function performRequestsAndWait(monitor, tab) {
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(tab.linkedBrowser, [], async function () {
     content.wrappedJSObject.performLargePostDataRequest();
   });
-  await wait;
+  await onNetworkEvents;
 }

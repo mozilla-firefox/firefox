@@ -241,7 +241,7 @@ add_task(async function () {
 });
 
 async function performRequest(monitor, tab, method, contentType, payload) {
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [[method, contentType, payload]],
@@ -249,7 +249,7 @@ async function performRequest(monitor, tab, method, contentType, payload) {
       content.wrappedJSObject.performRequest(method_, contentType_, payload_);
     }
   );
-  await wait;
+  await onNetworkEvents;
   info("Performed request to test server");
 }
 

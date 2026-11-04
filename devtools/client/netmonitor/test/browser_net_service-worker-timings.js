@@ -27,7 +27,7 @@ add_task(async function testServiceWorkerTimings() {
 
   const timingsSelector =
     "#timings-panel .tabpanel-summary-container.service-worker";
-  wait = waitForDOM(document, timingsSelector, 3);
+  const onDomUpdated = waitForDOM(document, timingsSelector, 3);
 
   EventUtils.sendMouseEvent(
     { type: "click" },
@@ -35,7 +35,7 @@ add_task(async function testServiceWorkerTimings() {
   );
 
   clickOnSidebarTab(document, "timings");
-  await wait;
+  await onDomUpdated;
 
   const timings = document.querySelectorAll(timingsSelector, 3);
   // Note: The specific timing numbers change so this only asserts that the

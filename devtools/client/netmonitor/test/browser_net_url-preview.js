@@ -22,17 +22,17 @@ add_task(async function () {
   // Execute requests.
   await performRequests(monitor, tab, 12);
 
-  let wait = waitForDOM(document, "#headers-panel .url-preview", 1);
+  let onDomUpdated = waitForDOM(document, "#headers-panel .url-preview", 1);
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-  await wait;
+  await onDomUpdated;
 
   // Expand preview
   await toggleUrlPreview(true, monitor);
 
   // Select the second request
-  wait = waitForDOM(document, "#headers-panel .url-preview", 1);
+  onDomUpdated = waitForDOM(document, "#headers-panel .url-preview", 1);
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[1]);
-  await wait;
+  await onDomUpdated;
 
   // Test that the url is still expanded
   const noOfVisibleRowsAfterExpand = document.querySelectorAll(
@@ -48,9 +48,9 @@ add_task(async function () {
   await toggleUrlPreview(false, monitor);
 
   // Select the third request
-  wait = waitForDOM(document, "#headers-panel .url-preview", 1);
+  onDomUpdated = waitForDOM(document, "#headers-panel .url-preview", 1);
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[2]);
-  await wait;
+  await onDomUpdated;
 
   // Test that the url is still collapsed
   const noOfVisibleRowsAfterCollapse = document.querySelectorAll(

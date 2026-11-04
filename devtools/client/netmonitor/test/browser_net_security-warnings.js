@@ -28,7 +28,7 @@ add_task(async function () {
     info("Testing site with " + test.desc);
 
     info("Performing request to " + test.uri);
-    let wait = waitForNetworkEvents(monitor, 1);
+    const onNetworkEvents = waitForNetworkEvents(monitor, 1);
     await SpecialPowers.spawn(
       tab.linkedBrowser,
       [test.uri],
@@ -36,20 +36,20 @@ add_task(async function () {
         content.wrappedJSObject.performRequests(1, url);
       }
     );
-    await wait;
+    await onNetworkEvents;
 
     info("Wait until the Security Tab is visible");
-    wait = waitForDOM(document, "#security-tab");
+    let onDomUpdated = waitForDOM(document, "#security-tab");
 
     info("Selecting the request.");
     clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-    await wait;
+    await onDomUpdated;
 
     if (!document.querySelector("#security-tab[aria-selected=true]")) {
       info("Selecting the Security Tab");
-      wait = waitForDOM(document, "#security-panel .properties-view");
+      onDomUpdated = waitForDOM(document, "#security-panel .properties-view");
       clickOnSidebarTab(document, "security");
-      await wait;
+      await onDomUpdated;
     }
 
     is(

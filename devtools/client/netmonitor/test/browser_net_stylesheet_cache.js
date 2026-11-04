@@ -59,9 +59,9 @@ add_task(async function () {
 
   clickOnRequestRow(request);
 
-  const wait = waitForDOM(document, "#responseHeaders");
+  const onDomUpdated = waitForDOM(document, "#responseHeaders");
   clickOnSidebarTab(document, "headers");
-  await wait;
+  await onDomUpdated;
 
   const responseScope = document.querySelectorAll(
     "#headers-panel .accordion tr[id^='/responseHeaders']"

@@ -21,9 +21,9 @@ add_task(async function () {
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   // Verify request and response headers.
   await verifyHeaders(monitor);
@@ -38,9 +38,9 @@ async function verifyHeaders(monitor) {
 
   info("Check if Request-Headers and Response-Headers are sorted");
 
-  const wait = waitForDOM(document, ".headers-overview");
+  const onDomUpdated = waitForDOM(document, ".headers-overview");
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-  await wait;
+  await onDomUpdated;
 
   await waitForRequestData(store, ["requestHeaders", "responseHeaders"]);
 

@@ -1203,11 +1203,11 @@ async function selectIndexAndWaitForSourceEditor(monitor, index) {
  * @param {number} count - Number of requests to be executed.
  */
 async function performRequests(monitor, tab, count) {
-  const wait = waitForNetworkEvents(monitor, count);
+  const onNetworkEvents = waitForNetworkEvents(monitor, count);
   await SpecialPowers.spawn(tab.linkedBrowser, [count], requestCount => {
     content.wrappedJSObject.performRequests(requestCount);
   });
-  await wait;
+  await onNetworkEvents;
 }
 
 function getCMEditor(monitor) {
@@ -1568,7 +1568,7 @@ function typeInNetmonitor(string, monitor) {
  */
 async function toggleUrlPreview(shouldExpand, monitor) {
   const { document } = monitor.panelWin;
-  const wait = waitUntil(() => {
+  const onUrlPreviewToggled = waitUntil(() => {
     const rowSize = document.querySelectorAll(
       "#headers-panel .url-preview tr.treeRow"
     ).length;
@@ -1581,7 +1581,7 @@ async function toggleUrlPreview(shouldExpand, monitor) {
     ),
     monitor
   );
-  return wait;
+  return onUrlPreviewToggled;
 }
 
 /**

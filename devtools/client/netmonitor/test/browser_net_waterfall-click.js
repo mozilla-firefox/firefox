@@ -18,11 +18,11 @@ add_task(async function () {
   await performRequests(monitor, tab, CONTENT_TYPE_WITHOUT_CACHE_REQUESTS);
 
   info("Clicking waterfall and waiting for panel update.");
-  const wait = waitForDOM(document, "#timings-panel");
+  const onDomUpdated = waitForDOM(document, "#timings-panel");
 
   clickInView(document.querySelectorAll(".requests-list-timings")[0]);
 
-  await wait;
+  await onDomUpdated;
 
   ok(
     document.querySelector("#timings-tab[aria-selected=true]"),

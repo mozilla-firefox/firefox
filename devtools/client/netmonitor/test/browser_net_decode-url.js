@@ -20,13 +20,13 @@ add_task(async function () {
   await performRequests(monitor, tab, 1);
 
   // Wait until the url preview ihas loaded
-  const wait = waitUntil(() =>
+  const onUrlPreview = waitUntil(() =>
     document.querySelector("#headers-panel .url-preview")
   );
 
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
 
-  await wait;
+  await onUrlPreview;
 
   const requestURL = document.querySelector("#headers-panel .url-preview .url");
   is(

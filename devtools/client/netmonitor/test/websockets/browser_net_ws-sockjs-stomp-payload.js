@@ -33,7 +33,7 @@ add_task(async function () {
   is(requests.length, 1, "There should be one requests");
 
   // Wait for all sent/received messages to be displayed in DevTools
-  let wait = waitForDOM(
+  let onDomUpdated = waitForDOM(
     document,
     "#messages-view .message-list-table .message-list-item",
     2
@@ -44,7 +44,7 @@ add_task(async function () {
 
   // Click on the "Response" panel
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   // Get all messages present in the "Response" panel
   const frames = document.querySelectorAll(
@@ -87,12 +87,15 @@ add_task(async function () {
   );
 
   // Toggle raw data display
-  wait = waitForDOM(document, "#messages-view .message-rawData-payload");
+  onDomUpdated = waitForDOM(
+    document,
+    "#messages-view .message-rawData-payload"
+  );
   const rawDataToggle = document.querySelector(
     "#messages-view .devtools-checkbox-toggle"
   );
   clickElement(rawDataToggle, monitor);
-  await wait;
+  await onDomUpdated;
 
   is(
     document.querySelector("#messages-view .data-label").innerText,

@@ -25,9 +25,9 @@ add_task(async function () {
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 2);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 2);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   const requestList = document.querySelectorAll(
     ".network-monitor .request-list-item"

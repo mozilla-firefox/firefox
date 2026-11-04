@@ -30,9 +30,9 @@ add_task(async function () {
   assertNoRequestState();
 
   // Load one request and assert it shows up in the list
-  let wait = waitForNetworkEvents(monitor, 1);
+  let onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   assertSingleRequestState();
   assertNetworkEventResourceState(1);
@@ -71,9 +71,9 @@ add_task(async function () {
   await monitor.toolbox.selectTool("netmonitor");
 
   // Load a second request and make sure they still show up
-  wait = waitForNetworkEvents(monitor, 1);
+  onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   assertSingleRequestState();
   assertNetworkEventResourceState(1);

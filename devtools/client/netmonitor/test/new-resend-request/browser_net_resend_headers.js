@@ -32,7 +32,7 @@ add_task(async function () {
     { name: "Accept-Language", value: "cs-CZ" },
   ];
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   connector.networkCommand.sendHTTPRequest({
     url: requestUrl,
     method: "POST",
@@ -44,7 +44,7 @@ add_task(async function () {
       type: "xhr",
     },
   });
-  await wait;
+  await onNetworkEvents;
 
   let item = getSortedRequests(store.getState())[0];
 

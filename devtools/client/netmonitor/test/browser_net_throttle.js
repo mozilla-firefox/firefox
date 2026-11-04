@@ -42,9 +42,9 @@ async function throttleTest(options) {
 
   await updateNetworkThrottling(true, throttleProfile);
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await triggerActivity(ACTIVITY_TYPE.RELOAD.WITH_CACHE_DISABLED);
-  await wait;
+  await onNetworkEvents;
 
   await waitForRequestData(store, ["eventTimings"]);
 

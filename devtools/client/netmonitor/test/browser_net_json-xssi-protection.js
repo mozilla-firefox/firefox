@@ -22,18 +22,17 @@ add_task(async function () {
   // Execute requests.
   await performRequests(monitor, tab, 1);
 
-  const wait = waitForDOM(document, "#response-panel .data-header");
-  const waitForRawView = waitForDOM(document, "#response-panel .cm-content", 1);
-  const waitForRawToggleOn = waitUntil(
-    () =>
-      document.querySelector("#response-panel #raw-response-checkbox")?.checked
-  );
+  let onDomUpdated = Promise.all([
+    waitForDOM(document, "#response-panel .data-header"),
+    waitForDOM(document, "#response-panel .cm-content"),
+    waitForDOM(document, "#response-panel #raw-response-checkbox:checked"),
+  ]);
 
   store.dispatch(Actions.toggleNetworkDetails());
   info("Opening response panel");
   clickOnSidebarTab(document, "response");
 
-  await Promise.all([wait, waitForRawView, waitForRawToggleOn]);
+  await onDomUpdated;
 
   info(
     "making sure response panel defaults to raw view and correctly displays payload"
@@ -53,14 +52,10 @@ add_task(async function () {
   ok(!notification, "notification should not be present in raw view");
 
   info("switching to props view");
-  const waitForPropsView = waitForDOM(
-    document,
-    "#response-panel .properties-view",
-    1
-  );
+  onDomUpdated = waitForDOM(document, "#response-panel .properties-view");
   const tabpanel = document.querySelector("#response-panel");
   clickElement(tabpanel.querySelector("#raw-response-checkbox"), monitor);
-  await waitForPropsView;
+  await onDomUpdated;
 
   is(
     tabpanel.querySelectorAll(".treeRow").length,

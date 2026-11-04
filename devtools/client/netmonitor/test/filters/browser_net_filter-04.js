@@ -56,9 +56,11 @@ add_task(async function () {
   );
 
   // As the view is filtered and there is only one request for which we fetch event timings
-  const wait = waitForNetworkEvents(monitor, 9, { expectedEventTimings: 1 });
+  const onNetworkEvents = waitForNetworkEvents(monitor, 9, {
+    expectedEventTimings: 1,
+  });
   await performRequestsInContent(REQUESTS_WITH_MEDIA_AND_FLASH_AND_WS);
-  await wait;
+  await onNetworkEvents;
 
   testFilterButtons(monitor, "js");
   ok(true, "Only the correct filter type was taken into consideration.");

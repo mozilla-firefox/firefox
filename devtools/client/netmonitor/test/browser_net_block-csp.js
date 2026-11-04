@@ -37,10 +37,10 @@ async function testRequestsBlockedByCSP(baseUrl, page) {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 3);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 3);
   await reloadSelectedTab();
   info("Waiting until the requests appear in netmonitor");
-  await wait;
+  await onNetworkEvents;
 
   const displayedRequests = getDisplayedRequests(store.getState());
 

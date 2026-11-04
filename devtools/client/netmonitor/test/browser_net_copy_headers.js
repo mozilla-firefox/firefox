@@ -18,9 +18,9 @@ add_task(async function () {
     "devtools/client/netmonitor/src/selectors/index"
   );
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
 

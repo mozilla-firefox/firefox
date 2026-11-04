@@ -20,7 +20,7 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 2);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 2);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [HTTPS_REDIRECT_SJS],
@@ -28,7 +28,7 @@ add_task(async function () {
       content.wrappedJSObject.performRequests(1, url);
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   is(
     store.getState().requests.requests.length,

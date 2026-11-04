@@ -23,9 +23,9 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 3);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 3);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   const displayedRequests = getDisplayedRequests(store.getState());
 

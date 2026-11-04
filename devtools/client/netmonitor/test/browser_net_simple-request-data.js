@@ -455,9 +455,9 @@ function test() {
       );
     });
 
-    const wait = waitForNetworkEvents(monitor, 1);
+    const onNetworkEvents = waitForNetworkEvents(monitor, 1);
     await reloadSelectedTab();
-    await wait;
+    await onNetworkEvents;
 
     const requestItem = getSortedRequests(store.getState())[0];
 

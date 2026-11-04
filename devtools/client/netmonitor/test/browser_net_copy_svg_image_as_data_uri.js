@@ -17,11 +17,11 @@ add_task(async function () {
 
   const { document } = monitor.panelWin;
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(tab.linkedBrowser, [SVG_URL], async function (url) {
     content.wrappedJSObject.performRequest(url);
   });
-  await wait;
+  await onNetworkEvents;
 
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
   EventUtils.sendMouseEvent(

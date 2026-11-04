@@ -41,9 +41,9 @@ add_task(async function () {
   await onNetMonitor;
 
   // Reload debugee.
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   // Perform another batch of requests.
   await performRequests(monitor, tab, 1, { expectedEventTimings: 1 });

@@ -20,7 +20,7 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 2);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 2);
 
   info("Performing a CORS request");
   const requestUrl = "https://test1.example.com" + CORS_SJS_PATH;
@@ -37,7 +37,7 @@ add_task(async function () {
   );
 
   info("Waiting until the requests appear in netmonitor");
-  await wait;
+  await onNetworkEvents;
 
   info("Checking the flight and preflight methods");
   for (const [index, method] of ["POST", "OPTIONS"].entries()) {

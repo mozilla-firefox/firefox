@@ -153,9 +153,9 @@ add_task(async function testEarlyHintFilter() {
 });
 
 async function performEarlyHintRequest(monitor, tab) {
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(tab.linkedBrowser, [], async function () {
     content.wrappedJSObject.performEarlyHintRequest();
   });
-  await wait;
+  await onNetworkEvents;
 }

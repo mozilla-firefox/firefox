@@ -255,9 +255,9 @@ add_task(async function () {
     await reloadSelectedTab();
     await networkEvent;
 
-    const wait = waitForDOM(getDoc(), ".network-details-bar");
+    const onDomUpdated = waitForDOM(getDoc(), ".network-details-bar");
     getStore().dispatch(Actions.toggleNetworkDetails());
-    await wait;
+    await onDomUpdated;
   }
 
   async function testBottom() {

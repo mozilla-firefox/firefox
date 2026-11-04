@@ -27,7 +27,7 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  let wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [HTML_LONG_URL],
@@ -35,7 +35,7 @@ add_task(async function () {
       content.wrappedJSObject.performRequests(1, url);
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   const requestItem = document.querySelector(".request-list-item");
   requestItem.scrollIntoView();
@@ -56,17 +56,17 @@ add_task(async function () {
     }
   );
 
-  wait = waitForDOM(document, "#response-panel .data-header");
+  let onDomUpdated = waitForDOM(document, "#response-panel .data-header");
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
-  wait = waitForDOM(document, "#response-panel .cm-content");
+  onDomUpdated = waitForDOM(document, "#response-panel .cm-content");
   const payloadHeader = document.querySelector(
     "#response-panel .raw-data-toggle-input .devtools-checkbox-toggle"
   );
   clickElement(payloadHeader, monitor);
-  await wait;
+  await onDomUpdated;
 
   ok(
     getCodeMirrorValue(monitor).match(/^<p>/),

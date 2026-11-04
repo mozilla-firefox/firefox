@@ -22,9 +22,9 @@ add_task(async function () {
   const visibleColumns = getCurrentVisibleColumns(monitor);
 
   // Wait for network events (to have some requests in the table)
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   info("Testing column resize to fit using double-click on draggable resizer");
   const fileHeader = document.querySelector(`#requests-list-file-header-box`);

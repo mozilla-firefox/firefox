@@ -161,7 +161,7 @@ add_task(async function () {
     info("Performing a CORS request");
     const requestUrl = "https://example.com" + CORS_SJS_PATH;
 
-    const wait = waitForNetworkEvents(monitor, 1);
+    const onNetworkEvents = waitForNetworkEvents(monitor, 1);
     await SpecialPowers.spawn(
       tab.linkedBrowser,
       [requestUrl],
@@ -171,7 +171,7 @@ add_task(async function () {
     );
 
     info("Waiting until the requests appear in netmonitor");
-    await wait;
+    await onNetworkEvents;
 
     const { getSelectedRequest } = windowRequire(
       "devtools/client/netmonitor/src/selectors/index"

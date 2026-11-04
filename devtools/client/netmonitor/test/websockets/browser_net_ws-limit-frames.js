@@ -32,14 +32,17 @@ add_task(async function () {
   is(requests.length, 1, "There should be one request");
 
   // Wait for truncated message notification to appear
-  const wait = waitForDOM(document, "#messages-view .truncated-message");
+  const onDomUpdated = waitForDOM(
+    document,
+    "#messages-view .truncated-message"
+  );
 
   // Select the first request
   clickOnRequestRow(requests[0]);
 
   // Click on the "Response" panel
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   // Get all messages present in the "Response" panel
   const frames = document.querySelectorAll(

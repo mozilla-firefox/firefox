@@ -13,12 +13,12 @@ add_task(async function () {
 
   const { document } = monitor.panelWin;
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   EventUtils.sendMouseEvent(
     { type: "click" },
     document.querySelector(".requests-list-reload-notice-button")
   );
-  await wait;
+  await onNetworkEvents;
 
   is(
     document.querySelectorAll(".request-list-item").length,

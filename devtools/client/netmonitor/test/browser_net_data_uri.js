@@ -20,9 +20,9 @@ add_task(async function test_navigation_to_data_uri() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   reloadSelectedTab({ waitForLoad: false });
-  await wait;
+  await onNetworkEvents;
 
   const firstItem = document.querySelectorAll(".request-list-item")[0];
 

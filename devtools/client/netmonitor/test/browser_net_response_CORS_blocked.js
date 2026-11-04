@@ -20,7 +20,7 @@ add_task(async function testCORSNotificationPresent() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
 
   info("making request to a origin that doesn't allow cross origin");
   const requestUrl = HTTPS_EXAMPLE_ORG_URL + "sjs_simple-test-server.sjs";
@@ -37,7 +37,7 @@ add_task(async function testCORSNotificationPresent() {
   );
 
   info("Waiting until the requests appear in netmonitor");
-  await wait;
+  await onNetworkEvents;
 
   info("selecting preflight request at index 1");
   const firstItem = document.querySelectorAll(".request-list-item")[1];
@@ -78,7 +78,7 @@ add_task(async function testCORSNotificationNotPresent() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
 
   info("Making request to a origin that allows cross origin");
   const requestUrl = "https://test1.example.com" + CORS_SJS_PATH;
@@ -94,7 +94,7 @@ add_task(async function testCORSNotificationNotPresent() {
     }
   );
   info("waiting for requests to appear in netmonitor");
-  await wait;
+  await onNetworkEvents;
 
   info("selecting preflight request at index 1");
   const firstItem = document.querySelectorAll(".request-list-item")[1];

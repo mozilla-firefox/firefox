@@ -20,9 +20,9 @@ add_task(async function () {
   const { document, store, windowRequire } = monitor.panelWin;
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
 
-  let wait = waitForNetworkEvents(monitor, 1);
+  let onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   // Response content will be updated asynchronously, we should make sure data is updated
   // on DOM before asserting.
@@ -54,10 +54,10 @@ add_task(async function () {
     "Size should be rendered correctly."
   );
 
-  wait = waitForDOM(document, "#response-panel .cm-content");
+  let onDomUpdated = waitForDOM(document, "#response-panel .cm-content");
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   let tabpanel = document.querySelector("#response-panel");
   ok(
@@ -68,17 +68,17 @@ add_task(async function () {
   info("Reduce the body limit to have an emty body");
   await pushPref("devtools.netmonitor.bodyLimit", 1024);
 
-  wait = waitForNetworkEvents(monitor, 1);
+  onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   info("Wait for the truncated HTML page request");
   await waitUntil(() => document.querySelector(".request-list-item"));
 
-  wait = waitForDOM(document, "#response-panel .panel-container");
+  onDomUpdated = waitForDOM(document, "#response-panel .panel-container");
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
   tabpanel = document.querySelector("#response-panel");
   ok(
     tabpanel.querySelector(".response-error-header"),

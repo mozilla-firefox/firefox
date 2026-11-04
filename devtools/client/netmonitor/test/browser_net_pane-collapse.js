@@ -17,9 +17,9 @@ add_task(async function () {
   const Actions = windowRequire("devtools/client/netmonitor/src/actions/index");
   const { Prefs } = windowRequire("devtools/client/netmonitor/src/utils/prefs");
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   ok(
     !document.querySelector(".network-details-bar") &&

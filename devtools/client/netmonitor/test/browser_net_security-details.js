@@ -20,7 +20,7 @@ add_task(async function () {
 
   info("Performing a secure request.");
   const REQUESTS_URL = "https://example.com" + CORS_SJS_PATH;
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [REQUESTS_URL],
@@ -28,7 +28,7 @@ add_task(async function () {
       content.wrappedJSObject.performRequests(1, url);
     }
   );
-  await wait;
+  await onNetworkEvents;
 
   info("Wait until the Security Tab is visible");
   const waitForSecurityTab = waitForDOM(document, "#security-tab");

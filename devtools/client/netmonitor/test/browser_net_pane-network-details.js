@@ -41,9 +41,9 @@ add_task(async function () {
 
   info("Starting test... ");
 
-  const wait = waitForNetworkEvents(monitor, 9);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 9);
   await performRequestsInContent(REQUESTS_WITH_MEDIA_AND_FLASH_AND_WS);
-  await wait;
+  await onNetworkEvents;
 
   info("Test with the first request in the list visible");
   EventUtils.sendMouseEvent(

@@ -51,9 +51,9 @@ add_task(async function () {
     },
   ];
 
-  let wait = waitForNetworkEvents(monitor, 5);
+  let onNetworkEvents = waitForNetworkEvents(monitor, 5);
   await performRequestsInContent(requests);
-  await wait;
+  await onNetworkEvents;
 
   store.dispatch(Actions.toggleNetworkDetails());
 
@@ -85,9 +85,9 @@ add_task(async function () {
   await testContents([0, 1, 2, 3, 4], 0);
 
   info("Performing more requests.");
-  wait = waitForNetworkEvents(monitor, 5);
+  onNetworkEvents = waitForNetworkEvents(monitor, 5);
   await performRequestsInContent(requests);
-  await wait;
+  await onNetworkEvents;
 
   info("Testing status sort again, ascending.");
   testHeaders("status", "ascending");
@@ -102,9 +102,9 @@ add_task(async function () {
   await testContents([9, 8, 7, 6, 5, 4, 3, 2, 1, 0], 9);
 
   info("Performing more requests.");
-  wait = waitForNetworkEvents(monitor, 5);
+  onNetworkEvents = waitForNetworkEvents(monitor, 5);
   await performRequestsInContent(requests);
-  await wait;
+  await onNetworkEvents;
 
   info("Testing status sort again, descending.");
   testHeaders("status", "descending");

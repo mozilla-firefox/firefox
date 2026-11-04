@@ -35,7 +35,7 @@ add_task(async function () {
   clickOnRequestRow(requests[0]);
 
   // Wait for all sent/received messages to be displayed in DevTools.
-  const wait = waitForDOM(
+  const onDomUpdated = waitForDOM(
     document,
     "#messages-view .message-list-table .message-list-item",
     2
@@ -43,7 +43,7 @@ add_task(async function () {
 
   // Click on the "Response" panel.
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   // Get all messages present in the "Response" panel.
   const frames = document.querySelectorAll(

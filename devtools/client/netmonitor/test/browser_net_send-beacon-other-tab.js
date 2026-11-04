@@ -28,13 +28,13 @@ add_task(async function () {
     "The requests menu should be empty."
   );
 
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await SpecialPowers.spawn(beaconTab.linkedBrowser, [], async function () {
     content.wrappedJSObject.performRequests();
   });
   is(gBrowser.selectedTab, tab, "The test page is still the selected tab");
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   is(
     store.getState().requests.requests.length,

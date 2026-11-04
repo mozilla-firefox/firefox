@@ -141,10 +141,10 @@ add_task(async function () {
   await teardown(monitor);
 
   async function performRequestsAndWait() {
-    const wait = waitForNetworkEvents(monitor, 3);
+    const onNetworkEvents = waitForNetworkEvents(monitor, 3);
     await SpecialPowers.spawn(tab.linkedBrowser, [], async function () {
       content.wrappedJSObject.performCachedRequests();
     });
-    await wait;
+    await onNetworkEvents;
   }
 });

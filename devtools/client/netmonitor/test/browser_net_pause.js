@@ -115,7 +115,7 @@ function assertRequestCount(store, count) {
  * Execute simple GET request and wait till it's done.
  */
 async function performRequestAndWait(tab, monitor, requestURL) {
-  const wait = waitForRequest(monitor.panelWin.document, requestURL);
+  const onRequest = waitForRequest(monitor.panelWin.document, requestURL);
   await SpecialPowers.spawn(
     tab.linkedBrowser,
     [requestURL],
@@ -123,7 +123,7 @@ async function performRequestAndWait(tab, monitor, requestURL) {
       await content.wrappedJSObject.performRequests(url);
     }
   );
-  await wait;
+  await onRequest;
 }
 
 /**

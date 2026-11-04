@@ -41,7 +41,7 @@ add_task(async function testJsonlContentType() {
   );
 
   info("Toggling the raw response payload.");
-  const wait = waitForDOM(
+  const onDomUpdated = waitForDOM(
     monitor.panelWin.document,
     "#response-panel .cm-content"
   );
@@ -49,7 +49,7 @@ add_task(async function testJsonlContentType() {
     tabpanel.querySelector(".raw-data-toggle-input .devtools-checkbox-toggle"),
     monitor
   );
-  await wait;
+  await onDomUpdated;
 
   ok(
     tabpanel.querySelector(".cm-content"),
@@ -164,10 +164,14 @@ async function openResponsePanel(query) {
 
   await performRequests(monitor, tab, 1);
 
-  const wait = waitForDOM(document, "#response-panel .properties-view", 1);
+  const onDomUpdated = waitForDOM(
+    document,
+    "#response-panel .properties-view",
+    1
+  );
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
   return { monitor, tabpanel: document.querySelector("#response-panel") };
 }

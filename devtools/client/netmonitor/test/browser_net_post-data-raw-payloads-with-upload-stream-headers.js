@@ -84,9 +84,13 @@ add_task(async function () {
 
   async function assertRequestContentInHeaderAndRequestSidePanels(expected) {
     // Wait for all 3 headers sections to load (Response Headers, Request Headers, Request headers from upload stream)
-    let wait = waitForDOM(document, "#headers-panel .accordion-item", 3);
+    let onDomUpdated = waitForDOM(
+      document,
+      "#headers-panel .accordion-item",
+      3
+    );
     clickOnSidebarTab(document, "headers");
-    await wait;
+    await onDomUpdated;
 
     let tabpanel = document.querySelector("#headers-panel");
     is(
@@ -127,7 +131,7 @@ add_task(async function () {
       "Toggle to open the raw view for the request headers from upload stream"
     );
 
-    wait = waitForDOM(
+    onDomUpdated = waitForDOM(
       tabpanel,
       ".accordion-item:last-child .accordion-content .raw-headers-container"
     );
@@ -135,7 +139,7 @@ add_task(async function () {
     tabpanel
       .querySelector("#raw-requestHeadersFromUploadStream-checkbox")
       .click();
-    await wait;
+    await onDomUpdated;
 
     const rawTextArea = tabpanel.querySelector(
       ".accordion-item:last-child .accordion-content .raw-headers"
@@ -148,9 +152,9 @@ add_task(async function () {
 
     info("Switch to the Request panel");
 
-    wait = waitForDOM(document, "#request-panel .panel-container");
+    onDomUpdated = waitForDOM(document, "#request-panel .panel-container");
     clickOnSidebarTab(document, "request");
-    await wait;
+    await onDomUpdated;
 
     tabpanel = document.querySelector("#request-panel");
     if (expected.requestPanelFormData) {

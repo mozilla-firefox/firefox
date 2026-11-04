@@ -55,13 +55,13 @@ add_task(async function () {
     }
   );
 
-  const wait = waitForDOM(document, ".cm-content");
+  const onDomUpdated = waitForDOM(document, ".cm-content");
   const onResponseContent = monitor.panelWin.api.once(
     TEST_EVENTS.RECEIVED_RESPONSE_CONTENT
   );
   store.dispatch(Actions.toggleNetworkDetails());
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
   await onResponseContent;
   await testResponse("zstd");
   await teardown(monitor);

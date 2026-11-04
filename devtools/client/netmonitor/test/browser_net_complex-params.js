@@ -116,10 +116,12 @@ async function testRequestWithFormattedView(
   const { L10N } = windowRequire("devtools/client/netmonitor/src/utils/l10n");
 
   // Wait for header and properties view to be displayed
-  const wait = waitForDOM(document, "#request-panel .data-header");
-  let waitForContent = waitForDOM(document, "#request-panel .properties-view");
+  let onDomUpdated = Promise.all([
+    waitForDOM(document, "#request-panel .data-header"),
+    waitForDOM(document, "#request-panel .properties-view"),
+  ]);
   clickOnRequestRow(requestListItem);
-  await Promise.all([wait, waitForContent]);
+  await onDomUpdated;
 
   const tabpanel = document.querySelector("#request-panel");
   let headerLabel;
@@ -180,12 +182,12 @@ async function testRequestWithFormattedView(
   );
 
   // Toggle the raw data display. This should hide the formatted display.
-  waitForContent = waitForDOM(document, "#request-panel .cm-content");
+  onDomUpdated = waitForDOM(document, "#request-panel .cm-content");
   let rawDataToggle = document.querySelector(
     "#request-panel .raw-data-toggle-input .devtools-checkbox-toggle"
   );
   clickElement(rawDataToggle, monitor);
-  await waitForContent;
+  await onDomUpdated;
 
   const dataLabel = tabpanel.querySelector(".data-label") ?? {};
   is(
@@ -222,7 +224,7 @@ async function testRequestWithFormattedView(
 
   // Toggle the raw data display off again. This should show the formatted display.
   // This is required to reset the original state
-  waitForContent = waitForDOM(document, "#request-panel .properties-view");
+  onDomUpdated = waitForDOM(document, "#request-panel .properties-view");
   rawDataToggle = document.querySelector(
     "#request-panel .raw-data-toggle-input .devtools-checkbox-toggle"
   );
@@ -230,7 +232,7 @@ async function testRequestWithFormattedView(
   // Use keyboard to uncheck the toggle so we test Bug 1917296
   rawDataToggle.focus();
   EventUtils.synthesizeKey("VK_SPACE", {}, rawDataToggle.documentGlobal);
-  await waitForContent;
+  await onDomUpdated;
   ok(!rawDataToggle.checked, "Raw toggle is unchecked");
 }
 
@@ -243,10 +245,12 @@ async function testRequestWithOnlyRawDataView(
   const { L10N } = windowRequire("devtools/client/netmonitor/src/utils/l10n");
 
   // Wait for header and CodeMirror editor to be displayed
-  const wait = waitForDOM(document, "#request-panel .data-header");
-  const waitForContent = waitForDOM(document, "#request-panel .cm-content");
+  const onDomUpdated = Promise.all([
+    waitForDOM(document, "#request-panel .data-header"),
+    waitForDOM(document, "#request-panel .cm-content"),
+  ]);
   clickOnRequestRow(requestListItem);
-  await Promise.all([wait, waitForContent]);
+  await onDomUpdated;
 
   const tabpanel = document.querySelector("#request-panel");
 

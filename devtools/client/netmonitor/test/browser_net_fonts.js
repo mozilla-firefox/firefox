@@ -23,7 +23,7 @@ add_task(async function () {
   await reloadSelectedTab();
   await waitForRequests;
 
-  const wait = waitForDOM(
+  const onDomUpdated = waitForDOM(
     document,
     "#response-panel .response-font[src^='data:']"
   );
@@ -36,7 +36,7 @@ add_task(async function () {
   clickElement(requests[1], monitor);
   clickOnSidebarTab(document, "response");
 
-  await wait;
+  await onDomUpdated;
 
   ok(true, "Font preview is shown");
 

@@ -22,9 +22,9 @@ add_task(async function () {
 
   store.dispatch(Actions.batchEnable(false));
 
-  let wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await reloadSelectedTab();
-  await wait;
+  await onNetworkEvents;
 
   const requestItem = document.querySelectorAll(".request-list-item")[0];
   const requestsListStatus = requestItem.querySelector(".status-code");
@@ -45,20 +45,20 @@ add_task(async function () {
     }
   );
 
-  wait = waitForDOM(document, "#headers-panel");
+  let onDomUpdated = waitForDOM(document, "#headers-panel");
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-  await wait;
+  await onDomUpdated;
 
-  wait = waitForDOM(document, "#response-panel .data-header");
+  onDomUpdated = waitForDOM(document, "#response-panel .data-header");
   clickOnSidebarTab(document, "response");
-  await wait;
+  await onDomUpdated;
 
-  wait = waitForDOM(document, "#response-panel .cm-content");
+  onDomUpdated = waitForDOM(document, "#response-panel .cm-content");
   const header = document.querySelector(
     "#response-panel .raw-data-toggle-input .devtools-checkbox-toggle"
   );
   clickElement(header, monitor);
-  await wait;
+  await onDomUpdated;
 
   // CodeMirror will only load lines currently in view to the DOM. getValue()
   // retrieves all lines pending render after a user begins scrolling.

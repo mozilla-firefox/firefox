@@ -25,10 +25,10 @@ add_task(async function () {
   Services.fog.testResetFOG();
 
   // Reload to have one request in the list.
-  const wait = waitForNetworkEvents(monitor, 1);
+  const onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await waitForAllNetworkUpdateEvents();
   await navigateTo(HTTPS_SIMPLE_URL);
-  await wait;
+  await onNetworkEvents;
 
   info("Click on the 'HTML' filter");
   EventUtils.sendMouseEvent(

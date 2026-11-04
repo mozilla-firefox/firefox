@@ -33,9 +33,9 @@ add_task(async function testStackTraceForRedirects() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  let wait = waitForNetworkEvents(monitor, EXPECTED_REQUESTS.length);
+  let onNetworkEvents = waitForNetworkEvents(monitor, EXPECTED_REQUESTS.length);
   await performRequests(tab, 2, HSTS_SJS);
-  await wait;
+  await onNetworkEvents;
 
   // Fetch stack-trace data from the backend and wait till
   // all packets are received.
@@ -68,9 +68,9 @@ add_task(async function testStackTraceForRedirects() {
   }
 
   // Send a request to reset the HSTS policy to state before the test
-  wait = waitForNetworkEvents(monitor, 1);
+  onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await performRequests(tab, 1, HSTS_SJS + "?reset");
-  await wait;
+  await onNetworkEvents;
 
   await teardown(monitor);
 });
@@ -95,9 +95,9 @@ add_task(async function testResponseForRedirects() {
 
   store.dispatch(Actions.batchEnable(false));
 
-  let wait = waitForNetworkEvents(monitor, 3);
+  let onNetworkEvents = waitForNetworkEvents(monitor, 3);
   await performRequests(tab, 2, HSTS_SJS);
-  await wait;
+  await onNetworkEvents;
 
   await waitUntil(
     () => document.querySelectorAll(".request-list-item").length == 3
@@ -136,9 +136,9 @@ add_task(async function testResponseForRedirects() {
   );
 
   // Send a request to reset the HSTS policy to state before the test
-  wait = waitForNetworkEvents(monitor, 1);
+  onNetworkEvents = waitForNetworkEvents(monitor, 1);
   await performRequests(tab, 1, HSTS_SJS + "?reset");
-  await wait;
+  await onNetworkEvents;
 
   await teardown(monitor);
 });

@@ -24,17 +24,17 @@ add_task(async function () {
   // Execute requests.
   await performRequests(monitor, tab, 2);
 
-  let wait = waitForDOM(document, "#headers-panel .accordion-item", 2);
+  let onDomUpdated = waitForDOM(document, "#headers-panel .accordion-item", 2);
   clickOnRequestRow(document.querySelectorAll(".request-list-item")[0]);
-  await wait;
+  await onDomUpdated;
 
-  wait = waitForDOM(document, "#responseHeaders textarea.raw-headers", 1);
+  onDomUpdated = waitForDOM(document, "#responseHeaders textarea.raw-headers");
   EventUtils.sendMouseEvent({ type: "click" }, getRawHeadersToggle("RESPONSE"));
-  await wait;
+  await onDomUpdated;
 
-  wait = waitForDOM(document, "#requestHeaders textarea.raw-headers", 1);
+  onDomUpdated = waitForDOM(document, "#requestHeaders textarea.raw-headers");
   EventUtils.sendMouseEvent({ type: "click" }, getRawHeadersToggle("REQUEST"));
-  await wait;
+  await onDomUpdated;
 
   testRawHeaderToggleStyle(true);
   testShowRawHeaders(getSortedRequests(store.getState())[0]);
