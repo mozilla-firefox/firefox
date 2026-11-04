@@ -74,6 +74,13 @@ CONFIGS = defaultdict(
                 "LIB_SUFFIX": "a",
             },
         },
+        "no-pgo-source": {
+            "defines": {},
+            "substs": {
+                "LIB_PREFIX": "lib",
+                "LIB_SUFFIX": "a",
+            },
+        },
         "host-cpp-link": {
             "defines": {},
             "substs": {

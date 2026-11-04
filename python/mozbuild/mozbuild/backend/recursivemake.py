@@ -1616,6 +1616,8 @@ class RecursiveMakeBackend(MakeBackend):
                 "%s_FLAGS += %s\n" % (mozpath.basename(per_source_flag.file_name), flag)
             )
         stem = mozpath.splitext(mozpath.basename(per_source_flag.file_name))[0]
+        if per_source_flag.no_pgo:
+            backend_file.write(f"{stem}.$(OBJ_SUFFIX): COMPUTED_PGO_CFLAGS :=\n")
         if per_source_flag.object_deps:
             prerequisites = " ".join(
                 self._pretty_path(p, backend_file)

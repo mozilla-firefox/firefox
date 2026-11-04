@@ -2229,6 +2229,15 @@ class TestRecursiveMakeBackend(BackendTester):
         )
         self.assertEqual([l for l in lines if l.startswith("plain.$(OBJ_SUFFIX)")], [])
 
+    def test_no_pgo_source(self):
+        env = self._consume("no-pgo-source", RecursiveMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "backend.mk")) as fh:
+            lines = fh.readlines()
+
+        self.assertIn("unprofiled.$(OBJ_SUFFIX): COMPUTED_PGO_CFLAGS :=\n", lines)
+        self.assertNotIn("profiled.$(OBJ_SUFFIX): COMPUTED_PGO_CFLAGS :=\n", lines)
+
     def test_lto_object_path(self):
         env = self._consume("lto-object-path", RecursiveMakeBackend)
 

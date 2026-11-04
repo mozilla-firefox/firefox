@@ -100,8 +100,6 @@ MKDIR ?= mkdir
 SLEEP ?= sleep
 TOUCH ?= touch
 
-PGO_CFLAGS = $(if $(filter $(notdir $<),$(notdir $(NO_PROFILE_GUIDED_OPTIMIZE))),,$(COMPUTED_PGO_CFLAGS))
-
 # Overloaded by comm builds to refer to $(commtopsrcdir), so that
 # `mail` resolves in en-US builds and in repacks.
 LOCALE_TOPDIR ?= $(topsrcdir)
@@ -124,8 +122,8 @@ include $(MOZILLA_DIR)/config/static-checking-config.mk
 
 LDFLAGS		= $(COMPUTED_LDFLAGS)
 
-COMPILE_CFLAGS	= $(COMPUTED_CFLAGS) $(PGO_CFLAGS) $(_DEPEND_CFLAGS)
-COMPILE_CXXFLAGS = $(COMPUTED_CXXFLAGS) $(PGO_CFLAGS) $(_DEPEND_CFLAGS)
+COMPILE_CFLAGS	= $(COMPUTED_CFLAGS) $(COMPUTED_PGO_CFLAGS) $(_DEPEND_CFLAGS)
+COMPILE_CXXFLAGS = $(COMPUTED_CXXFLAGS) $(COMPUTED_PGO_CFLAGS) $(_DEPEND_CFLAGS)
 COMPILE_CMFLAGS = $(COMPUTED_CMFLAGS)
 COMPILE_CMMFLAGS = $(COMPUTED_CMMFLAGS)
 ASFLAGS = $(COMPUTED_ASFLAGS)
