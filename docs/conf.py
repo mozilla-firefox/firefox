@@ -97,7 +97,9 @@ mermaid_init_config = {
     "sequence": {"useMaxWidth": False},
     "class": {"useMaxWidth": False},
     "state": {"useMaxWidth": False, "wrappingWidth": 200, "minNodeWidth": 0},
-    "gantt": {"useMaxWidth": False},
+    # Without an explicit useWidth, gantt charts take the width of the element
+    # Mermaid renders them in, which is shrink-to-fit.
+    "gantt": {"useMaxWidth": False, "useWidth": 800},
     "er": {"useMaxWidth": False},
 }
 
