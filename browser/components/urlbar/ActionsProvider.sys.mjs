@@ -65,6 +65,8 @@ export class ActionsProvider {
  *   The id of the l10n string displayed in the action button, if any.
  * @property {{[arg: string]: any}} [l10nArgs]
  *   Arguments passed to construct the above string.
+ * @property {string} [labelText]
+ *   Plain text displayed in the action button when there's no `l10nId`.
  * @property {string} [icon]
  *   The icon displayed in the button; the view falls back to a default when
  *   it's absent.

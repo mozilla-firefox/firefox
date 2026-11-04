@@ -223,9 +223,9 @@ export class UrlbarProviderGlobalActions extends UrlbarProvider {
       };
     }
     result.payload.actionsResults.forEach((action, i) => {
-      viewUpdate[`label-${i}`] = {
-        l10n: { id: action.l10nId, args: action.l10nArgs },
-      };
+      viewUpdate[`label-${i}`] = action.l10nId
+        ? { l10n: { id: action.l10nId, args: action.l10nArgs } }
+        : { textContent: action.labelText ?? "" };
     });
     return viewUpdate;
   }

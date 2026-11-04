@@ -104,6 +104,10 @@ async function makeValidators() {
       "resource://testing-common/UpdateAction.schema.json",
       { common: true }
     ),
+    urlbar_action: await schemaValidatorFor(
+      "resource://testing-common/UrlbarAction.schema.json",
+      { common: true }
+    ),
     feature_callout: await schemaValidatorFor(
       // For now, Feature Callout and Spotlight share a common schema
       "resource://testing-common/Spotlight.schema.json",
