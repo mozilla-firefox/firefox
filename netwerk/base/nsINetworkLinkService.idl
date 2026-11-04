@@ -119,7 +119,7 @@ interface nsINetworkLinkService : nsISupports
 #define NS_NETWORK_LINK_DATA_UNKNOWN "unknown"
 
 /**
- * network ID has changed.
+ * The network ID has been assigned or changed.
  */
 #define NS_NETWORK_ID_CHANGED_TOPIC "network:networkid-changed"
 

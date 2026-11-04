@@ -1860,9 +1860,10 @@ void NetlinkService::CalculateNetworkID() {
     LOG(("has IPv6: %d", bool(sHasNonLocalIPv6)));
   }
 
-  // If this is first time we calculate network ID, don't report it as a network
-  // change. We've started with an empty ID and we've just calculated the
-  // correct ID. The network hasn't really changed.
+  // The first calculation only replaces the initial empty ID with the correct
+  // one. The network hasn't really changed, so don't send the network change
+  // event for it. The network ID change event is still sent so that observers
+  // learn that the ID is now available.
   static bool initialIDCalculation = true;
 
   RefPtr<NetlinkServiceListener> listener;
@@ -1871,9 +1872,11 @@ void NetlinkService::CalculateNetworkID() {
     listener = mListener;
   }
 
-  if (!initialIDCalculation && idChanged && listener) {
+  if (idChanged && listener) {
     listener->OnNetworkIDChanged();
-    mSendNetworkChangeEvent = true;
+    if (!initialIDCalculation) {
+      mSendNetworkChangeEvent = true;
+    }
   }
 
   if (mSendNetworkChangeEvent && listener) {
