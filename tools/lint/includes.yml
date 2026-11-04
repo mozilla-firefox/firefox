@@ -15,4 +15,5 @@ includes:
     - layout/style/ServoStyleConstsForwards.h
   type: external
   payload: includes:lint
+  split-dirs: 2
   support-files: ['tools/lint/includes/**']

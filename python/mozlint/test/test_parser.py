@@ -72,6 +72,18 @@ def test_parse_invalid_linter(parse, linter):
         parse(linter)
 
 
+@pytest.mark.parametrize(
+    "linter,message",
+    [
+        ("invalid_split_dirs.yml", "must be a positive integer, not '2'"),
+        ("invalid_split_dirs_global.yml", "global linter can't have a split-dirs"),
+    ],
+)
+def test_parse_invalid_split_dirs(parse, linter, message):
+    with pytest.raises(LinterParseError, match=message):
+        parse(linter)
+
+
 def test_parse_non_existent_linter(parse):
     with pytest.raises(LinterNotFound):
         parse("missing_file.lint")

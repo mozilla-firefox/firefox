@@ -91,6 +91,18 @@ class Parser:
                     "form 'module:object'".format(linter["setup"]),
                 )
 
+        if "split-dirs" in linter:
+            depth = linter["split-dirs"]
+            if isinstance(depth, bool) or not isinstance(depth, int) or depth < 1:
+                raise LinterParseError(
+                    relpath,
+                    f"The split-dirs directive must be a positive integer, not {depth!r}!",
+                )
+            if linter["type"] == "global":
+                raise LinterParseError(
+                    relpath, "A global linter can't have a split-dirs directive!"
+                )
+
         if "extensions" in linter and "exclude_extensions" in linter:
             raise LinterParseError(
                 relpath,
