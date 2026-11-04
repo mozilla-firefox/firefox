@@ -5,6 +5,7 @@
 #include "AndroidHardwareBuffer.h"
 
 #include <android/sync.h>
+#include <errno.h>
 #include <sys/socket.h>
 
 #include "mozilla/TimeStamp.h"
@@ -211,7 +212,19 @@ UniqueFileHandle AndroidHardwareBuffer::MergeFences(
   UniqueFileHandle fence1 = std::move(aFence1);
   UniqueFileHandle fence2 = std::move(aFence2);
 
-  int fd = sync_merge("MergeFences", fence1.get(), fence2.get());
+#ifdef DEBUG
+  // Limit retries in debug builds so persistent EINTR does not go unnoticed.
+  const int kMaxEintrRetries = 100;
+  int eintrCounter = 0;
+#endif
+  int fd;
+  do {
+    fd = sync_merge("MergeFences", fence1.get(), fence2.get());
+  } while (fd == -1 && errno == EINTR
+#ifdef DEBUG
+           && eintrCounter++ < kMaxEintrRetries
+#endif
+  );
   if (fd < 0) {
     gfxCriticalNote << "AndroidHardwareBuffer::MergeFences: "
                        "failed to merge fences";
