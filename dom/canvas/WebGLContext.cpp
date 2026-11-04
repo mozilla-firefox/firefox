@@ -2520,7 +2520,6 @@ webgl::LinkActiveInfo GetLinkActiveInfo(
     // -
 
     {
-      const auto& limits = webgl::Limits();
       const auto count = fnGetProgramui(LOCAL_GL_ACTIVE_ATTRIBUTES);
       ret.activeAttribs.reserve(count);
       for (const auto i : IntegerRange(count)) {
@@ -2545,20 +2544,6 @@ webgl::LinkActiveInfo GetLinkActiveInfo(
           // Bug 1328559: Appears problematic on ANGLE and OSX, but not Linux or
           // Win+GL.
           loc = -1;
-        }
-
-        // when loc is valid, check that it is not larger than max vertex
-        // attributes
-        if (loc > 0) {
-          const auto& maxVertexAttribs = limits.maxVertexAttribs;
-          // convert loc to the same type as maxVertexAttribs
-          auto locConverted = static_cast<decltype(maxVertexAttribs)>(loc);
-          if (locConverted >= maxVertexAttribs) {
-            gfxCriticalNote
-                << "Driver assigned attribute location " << loc
-                << " is larger than maxVertexAttribs: " << maxVertexAttribs;
-            return;
-          }
         }
 
 #ifdef DUMP_MakeLinkResult
