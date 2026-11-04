@@ -168,13 +168,13 @@ flowchart TD
     %% Final
     aggregate --> project
     %% Styling
-    style score1 fill:#4caf50,stroke:#2e7d32,stroke-width:3px,color:#fff
+    style score1 fill:#2e7d32,stroke:#1b5e20,stroke-width:3px,color:#fff
     style score2 fill:#8bc34a,stroke:#558b2f,stroke-width:2px,color:#1a1a1a
     style score3 fill:#ffc107,stroke:#f57f17,stroke-width:2px,color:#1a1a1a
     style bookmarkFallback fill:#8bc34a,stroke:#558b2f,stroke-width:2px,color:#1a1a1a
     style score4 fill:#ff9800,stroke:#e65100,stroke-width:2px,color:#1a1a1a
-    style project fill:#2196f3,stroke:#0d47a1,stroke-width:3px,color:#fff
-    style noData fill:#2196f3,stroke:#0d47a1,stroke-width:3px,color:#fff
+    style project fill:#1976d2,stroke:#0d47a1,stroke-width:3px,color:#fff
+    style noData fill:#1976d2,stroke:#0d47a1,stroke-width:3px,color:#fff
 ```
 
 1. **Gather visits and interactions:** For a given URL, collect recent visits
