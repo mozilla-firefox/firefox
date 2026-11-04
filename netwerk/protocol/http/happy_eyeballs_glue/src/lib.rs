@@ -361,7 +361,8 @@ impl HappyEyeballs {
         self.profiler.dns_response(id, &addrs, stale);
         self.metrics.dns_response(id, !addrs.is_empty(), is_trr);
 
-        let result = happy_eyeballs::DnsResult::Aaaa(Ok(addrs));
+        let result =
+            happy_eyeballs::DnsResult::Aaaa(Ok(addrs.into_iter().map(Into::into).collect()));
         let input = happy_eyeballs::Input::DnsResult { id, result, stale };
         self.inner.process_input(input, Instant::now());
 

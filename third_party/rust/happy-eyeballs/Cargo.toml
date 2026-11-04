@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.95.0"
 name = "happy-eyeballs"
-version = "1.1.0"
+version = "2.0.0"
 build = false
 autolib = false
 autobins = false

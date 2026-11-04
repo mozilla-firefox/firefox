@@ -241,7 +241,7 @@ pub fn in_dns_https_stale_ech(id: Id) -> Input {
 pub fn in_dns_aaaa_positive(id: Id) -> Input {
     Input::DnsResult {
         id,
-        result: DnsResult::Aaaa(Ok(vec![V6_ADDR])),
+        result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into()])),
         stale: false,
     }
 }
@@ -251,7 +251,7 @@ pub fn in_dns_aaaa_positive(id: Id) -> Input {
 pub fn in_dns_aaaa_stale(id: Id) -> Input {
     Input::DnsResult {
         id,
-        result: DnsResult::Aaaa(Ok(vec![V6_ADDR])),
+        result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into()])),
         stale: true,
     }
 }

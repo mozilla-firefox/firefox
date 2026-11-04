@@ -556,7 +556,7 @@ fn multiple_ips_per_record() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR, V6_ADDR_2, V6_ADDR_3])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into(), V6_ADDR_2.into(), V6_ADDR_3.into()])),
             stale: false,
         },
         now,

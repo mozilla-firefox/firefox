@@ -220,7 +220,7 @@ fn alt_svc_with_host() {
     he.input(
         Input::DnsResult {
             id: Id::from(3),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -398,7 +398,7 @@ fn ip_host_alt_svc_with_host() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -685,7 +685,7 @@ fn interleaves_protocol_variants_and_address_families() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR, V6_ADDR_2, V6_ADDR_3])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into(), V6_ADDR_2.into(), V6_ADDR_3.into()])),
             stale: false,
         },
         now,
@@ -762,7 +762,7 @@ fn interleaves_with_ipv4_preferred() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into()])),
             stale: false,
         },
         now,

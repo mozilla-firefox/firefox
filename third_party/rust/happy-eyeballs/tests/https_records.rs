@@ -574,7 +574,7 @@ fn per_record_alpn_not_unioned_across_records() {
     he.input(
         Input::DnsResult {
             id: Id::from(3),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -600,7 +600,7 @@ fn per_record_alpn_not_unioned_across_records() {
     he.input(
         Input::DnsResult {
             id: Id::from(5),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_3])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_3.into()])),
             stale: false,
         },
         now,
@@ -676,7 +676,7 @@ fn record_without_alpn_contributes_no_endpoints() {
     he.input(
         Input::DnsResult {
             id: Id::from(3),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -702,7 +702,7 @@ fn record_without_alpn_contributes_no_endpoints() {
     he.input(
         Input::DnsResult {
             id: Id::from(5),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_3])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_3.into()])),
             stale: false,
         },
         now,
@@ -1058,7 +1058,7 @@ fn https_svc1_addresses_trigger_additional_attempts() {
     he.input(
         Input::DnsResult {
             id: Id::from(3),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -1245,7 +1245,7 @@ fn target_name_redirect_addresses_used_in_connection_attempts() {
     he.input(
         Input::DnsResult {
             id: Id::from(3),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -1616,7 +1616,7 @@ fn rfc_multi_cdn_target_names_resolved_and_attempted() {
     he.input(
         Input::DnsResult {
             id: Id::from(3),
-            result: DnsResult::Aaaa(Ok(vec![H3POOL_V6])),
+            result: DnsResult::Aaaa(Ok(vec![H3POOL_V6.into()])),
             stale: false,
         },
         now,
@@ -1642,7 +1642,7 @@ fn rfc_multi_cdn_target_names_resolved_and_attempted() {
     he.input(
         Input::DnsResult {
             id: Id::from(5),
-            result: DnsResult::Aaaa(Ok(vec![CDN1_V6])),
+            result: DnsResult::Aaaa(Ok(vec![CDN1_V6.into()])),
             stale: false,
         },
         now,

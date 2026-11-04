@@ -6,11 +6,15 @@
 mod common;
 use common::*;
 
-use std::{net::SocketAddr, num::NonZeroU32, time::Duration};
+use std::{
+    net::{Ipv6Addr, SocketAddr, SocketAddrV6},
+    num::NonZeroU32,
+    time::Duration,
+};
 
 use happy_eyeballs::{
     CONNECTION_ATTEMPT_DELAY, ConnectionAttemptHttpVersions, DnsResult, Endpoint, EndpointTarget,
-    Id, Input, NetworkConfig, Output,
+    Id, Input, NetworkConfig, Output, ScopedIpv6Addr,
 };
 
 #[test]
@@ -70,7 +74,7 @@ fn connection_attempt_delay_multiplier() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR, V6_ADDR_2, V6_ADDR_3])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into(), V6_ADDR_2.into(), V6_ADDR_3.into()])),
             stale: false,
         },
         now,
@@ -112,7 +116,7 @@ fn failed_attempts_do_not_increase_delay() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR, V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into(), V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -156,7 +160,7 @@ fn successful_connection_cancels_others() {
     he.input(
         Input::DnsResult {
             id: Id::from(1),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR, V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR.into(), V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -291,4 +295,41 @@ fn cancelled_connection_result_ignored() {
     // This must not panic.
     he.input(in_connection_result_negative(Id::from(4)), now);
     he.expect(Output::Succeeded, now);
+}
+
+/// A link-local address is only usable with its scope id, and the same address
+/// on two interfaces is two distinct endpoints.
+#[test]
+fn link_local_keeps_scope_id() {
+    let link_local = Ipv6Addr::new(0xfe80, 0, 0, 0, 0, 0, 0, 1);
+    let (mut now, mut he) = setup();
+
+    expect_initial_dns_queries(&mut he, now);
+    he.input(in_dns_https_negative(Id::from(0)), now);
+    he.expect(out_resolution_delay(), now);
+    he.input(
+        Input::DnsResult {
+            id: Id::from(1),
+            result: DnsResult::Aaaa(Ok(vec![
+                ScopedIpv6Addr::new(link_local, NonZeroU32::new(2)),
+                ScopedIpv6Addr::new(link_local, NonZeroU32::new(3)),
+            ])),
+            stale: false,
+        },
+        now,
+    );
+
+    let first = he.process_output(now).unwrap().attempt().unwrap();
+    assert_eq!(
+        first.address(),
+        Some(SocketAddr::V6(SocketAddrV6::new(link_local, PORT, 0, 2)))
+    );
+
+    he.expect(out_connection_attempt_delay(), now);
+    now += CONNECTION_ATTEMPT_DELAY;
+    let second = he.process_output(now).unwrap().attempt().unwrap();
+    assert_eq!(
+        second.address(),
+        Some(SocketAddr::V6(SocketAddrV6::new(link_local, PORT, 0, 3)))
+    );
 }

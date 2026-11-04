@@ -291,7 +291,7 @@ fn refresh_with_changed_address_updates_candidates() {
     he.input(
         Input::DnsResult {
             id: Id::from(4),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -348,7 +348,7 @@ fn refresh_answer_after_success_is_ignored() {
     he.input(
         Input::DnsResult {
             id: Id::from(4),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
@@ -385,7 +385,7 @@ fn stale_failure_waits_for_refresh() {
     he.input(
         Input::DnsResult {
             id: Id::from(4),
-            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2])),
+            result: DnsResult::Aaaa(Ok(vec![V6_ADDR_2.into()])),
             stale: false,
         },
         now,
