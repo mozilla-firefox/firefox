@@ -10,6 +10,7 @@
         "revert-llvmorg-16-init-11301-g163bb6d64e5f_clang_22.patch",
         "revert-llvmorg-15-init-13446-g7524fe962e47.patch",
         "llvmorg-24-init-7807-g651d01e873c6.patch",
+        "llvmorg-24-init-15065-gd4599c550b54.patch",
         "llvmorg-24-init-16018-g88de0d5aed55.patch",
         "android-hardware-buffer-header-workaround_clang_21.patch",
         "arm64e-hack.patch",
