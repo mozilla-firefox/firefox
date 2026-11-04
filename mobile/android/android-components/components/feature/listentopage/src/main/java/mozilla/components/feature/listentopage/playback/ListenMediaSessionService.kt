@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.listentopage.playback
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -14,6 +15,7 @@ import androidx.annotation.OptIn
 import androidx.annotation.PluralsRes
 import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
+import androidx.core.app.ServiceCompat
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -48,6 +50,7 @@ internal class ListenMediaSessionService : MediaSessionService() {
     private var listenPlayer: ListenPlayer? = null
     private var sessionPlayer: SessionPlayer? = null
     private var mediaSession: MediaSession? = null
+    private var isPlaybackEnding = false
 
     @OptIn(UnstableApi::class)
     override fun onCreate() {
@@ -71,7 +74,7 @@ internal class ListenMediaSessionService : MediaSessionService() {
         )
 
         setMediaNotificationProvider(
-            DefaultMediaNotificationProvider.Builder(this).build().apply {
+            DefaultMediaNotificationProvider.Builder(this).setNotificationId(LISTEN_NOTIFICATION_ID).build().apply {
                 setSmallIcon(iconsR.drawable.mozac_ic_logo_firefox_24)
             }
         )
@@ -104,6 +107,25 @@ internal class ListenMediaSessionService : MediaSessionService() {
         endPlayback()
     }
 
+    /**
+     * Takes the notification away once [endPlayback] has begun so that the notification doesn't stay behind with no
+     * session behind it.
+     */
+    @OptIn(UnstableApi::class)
+    override fun onUpdateNotificationAsync(
+        session: MediaSession,
+        startInForegroundRequired: Boolean,
+    ): ListenableFuture<Void?> {
+        if (!isPlaybackEnding) {
+            return super.onUpdateNotificationAsync(session, startInForegroundRequired)
+        }
+
+        // Stopping the foreground alone does not take the notification away on every API level.
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        getSystemService(NotificationManager::class.java).cancel(LISTEN_NOTIFICATION_ID)
+        return Futures.immediateVoidFuture()
+    }
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
@@ -111,9 +133,10 @@ internal class ListenMediaSessionService : MediaSessionService() {
         super.onDestroy()
     }
 
-    /** Pauses the reading, takes the notification away and ends the service */
+    /** Pauses the reading, takes the notification away (see [onUpdateNotificationAsync]) and ends the service */
     @OptIn(UnstableApi::class)
     private fun endPlayback() {
+        isPlaybackEnding = true
         pauseAllPlayersAndStopSelf()
         releasePlayback()
     }
@@ -287,6 +310,7 @@ private fun secondsLabel(resources: Resources, @PluralsRes label: Int, increment
 }
 
 private const val MS_PER_SECOND = 1000L
+internal const val LISTEN_NOTIFICATION_ID = 1001
 
 /**
  * Media3 records the dismissal and stops republishing the notification, but it leaves the service running, so the

@@ -5,6 +5,7 @@
 package mozilla.components.feature.listentopage.playback
 
 import android.app.Activity
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
@@ -13,11 +14,13 @@ import android.os.Looper
 import android.os.Process
 import android.view.KeyEvent
 import androidx.annotation.OptIn
+import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaLibraryInfo
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
@@ -86,6 +89,24 @@ class ListenMediaSessionServiceTest {
         service.onStartCommand(mediaButton(), 0, 1)
 
         assertFalse(shadowOf(service).isStoppedBySelf)
+    }
+
+    @OptIn(UnstableApi::class)
+    @Test
+    fun `test that a notification update landing after the playback ended takes the notification away`() {
+        val service = startService()
+        val session = checkNotNull(service.onGetSession(mock()))
+        val notificationManager = testContext.getSystemService(NotificationManager::class.java)
+        service.onTaskRemoved(null)
+
+        val notification =
+            NotificationCompat.Builder(testContext, DefaultMediaNotificationProvider.DEFAULT_CHANNEL_ID)
+                .setSmallIcon(iconsR.drawable.mozac_ic_logo_firefox_24)
+                .build()
+        notificationManager.notify(LISTEN_NOTIFICATION_ID, notification)
+        service.onUpdateNotificationAsync(session, false)
+
+        assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
     }
 
     @OptIn(UnstableApi::class)
