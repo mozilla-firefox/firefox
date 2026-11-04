@@ -45,7 +45,7 @@ GeckoMediaPluginServiceChild::GetSingleton() {
   return service.forget().downcast<GeckoMediaPluginServiceChild>();
 }
 
-nsresult GeckoMediaPluginServiceChild::InitMainThread() {
+nsresult GeckoMediaPluginServiceChild::Init() {
   MOZ_ASSERT(NS_IsMainThread());
   GMP_LOG_DEBUG("{}::{}", __CLASS__, __FUNCTION__);
 
@@ -59,7 +59,7 @@ nsresult GeckoMediaPluginServiceChild::InitMainThread() {
     return rv;
   }
 
-  return GeckoMediaPluginService::InitMainThread();
+  return GeckoMediaPluginService::Init();
 }
 
 NS_IMPL_ISUPPORTS_INHERITED0(GeckoMediaPluginServiceChild,

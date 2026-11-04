@@ -40,6 +40,7 @@ class GeckoMediaPluginServiceParent final
   static already_AddRefed<GeckoMediaPluginServiceParent> GetSingleton();
 
   GeckoMediaPluginServiceParent();
+  nsresult Init() override;
 
   NS_DECL_ISUPPORTS_INHERITED
 
@@ -123,7 +124,6 @@ class GeckoMediaPluginServiceParent final
   void UnloadPlugins();
   void CrashPlugins();
   void NotifySyncShutdownComplete();
-  void RejectPendingInitPromise();
 
   void RemoveOnGMPThread(const nsAString& aDirectory,
                          const bool aDeleteFromDisk, const bool aCanDefer);
@@ -148,8 +148,6 @@ class GeckoMediaPluginServiceParent final
   friend class GMPParent;
   void ReAddOnGMPThread(const RefPtr<GMPParent>& aOld);
   void PluginTerminated(const RefPtr<GMPParent>& aOld);
-  nsresult InitMainThread() override;
-  void OnShutdown() override;
   void InitializePlugins(nsISerialEventTarget* GMPThread) override;
   RefPtr<GenericPromise> LoadFromEnvironment();
   RefPtr<GenericPromise> AddOnGMPThread(nsString aDirectory);
@@ -219,8 +217,7 @@ class GeckoMediaPluginServiceParent final
 
   nsTArray<nsString> mPluginsWaitingForDeletion;
 
-  // Set by InitStorage() on the main thread, readable from any thread.
-  nsCOMPtr<nsIFile> mStorageBaseDir MOZ_GUARDED_BY(mMutex);
+  nsCOMPtr<nsIFile> mStorageBaseDir;
 
   // Hashes of (origin,topLevelOrigin) to the node id for
   // non-persistent sessions.

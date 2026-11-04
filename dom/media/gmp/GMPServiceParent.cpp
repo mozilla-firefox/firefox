@@ -91,14 +91,20 @@ GeckoMediaPluginServiceParent::GeckoMediaPluginServiceParent()
       mWaitingForPluginsSyncShutdown(false),
       mInitPromiseMonitor("GeckoMediaPluginServiceParent::mInitPromiseMonitor"),
       mInitPromise(&mInitPromiseMonitor),
-      mLoadPluginsFromDiskComplete(false) {}
+      mLoadPluginsFromDiskComplete(false) {
+  MOZ_ASSERT(NS_IsMainThread());
+}
 
 GeckoMediaPluginServiceParent::~GeckoMediaPluginServiceParent() {
   MOZ_ASSERT(mPlugins.IsEmpty());
 }
 
-nsresult GeckoMediaPluginServiceParent::InitMainThread() {
+nsresult GeckoMediaPluginServiceParent::Init() {
   MOZ_ASSERT(NS_IsMainThread());
+
+  if (AppShutdown::GetCurrentShutdownPhase() != ShutdownPhase::NotInShutdown) {
+    return NS_OK;
+  }
 
   nsCOMPtr<nsIObserverService> obsService =
       mozilla::services::GetObserverService();
@@ -129,8 +135,9 @@ nsresult GeckoMediaPluginServiceParent::InitMainThread() {
     return rv;
   }
 
-  // Kicks off scanning for plugins
-  rv = GeckoMediaPluginService::InitMainThread();
+  // Kick off scanning for plugins
+  nsCOMPtr<nsIThread> thread;
+  rv = GetThread(getter_AddRefs(thread));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
@@ -204,15 +211,14 @@ nsresult GeckoMediaPluginServiceParent::InitStorage() {
 
   // Directory service is main thread only, so cache the profile dir here
   // so that we can use it off main thread.
-  nsCOMPtr<nsIFile> storageBaseDir;
   nsresult rv = NS_GetSpecialDirectory(NS_APP_USER_PROFILE_50_DIR,
-                                       getter_AddRefs(storageBaseDir));
+                                       getter_AddRefs(mStorageBaseDir));
 
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
-  rv = storageBaseDir->AppendNative("gmp"_ns);
+  rv = mStorageBaseDir->AppendNative("gmp"_ns);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
@@ -223,14 +229,12 @@ nsresult GeckoMediaPluginServiceParent::InitStorage() {
     return rv;
   }
 
-  rv = storageBaseDir->Append(platform);
+  rv = mStorageBaseDir->Append(platform);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
-  MutexAutoLock lock(mMutex);
-  mStorageBaseDir = std::move(storageBaseDir);
-  return NS_OK;
+  return GeckoMediaPluginService::Init();
 }
 
 NS_IMETHODIMP
@@ -306,7 +310,15 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
 #endif
     ShutdownGMPThread();
 
-    RejectPendingInitPromise();
+    // InitializePlugins() settles mInitPromise from the GMP thread, which has
+    // now been joined, so a scan still in flight will never settle it. Do it
+    // here instead, so that EnsureInitialized() cannot leave a caller waiting
+    // forever.
+    MonitorAutoLock lock(mInitPromiseMonitor);
+    if (!mLoadPluginsFromDiskComplete) {
+      mLoadPluginsFromDiskComplete = true;
+      mInitPromise.RejectIfExists(NS_ERROR_ABORT, __func__);
+    }
   } else if (!strcmp(NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID, aTopic)) {
     mXPCOMWillShutdown = true;
   } else if (!strcmp("last-pb-context-exited", aTopic)) {
@@ -370,20 +382,6 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
   return NS_OK;
 }
 
-void GeckoMediaPluginServiceParent::RejectPendingInitPromise() {
-  // InitializePlugins() settles mInitPromise from the GMP thread, which has
-  // been joined by now, so a scan still in flight will never settle it, and
-  // one that never started would not either. Do it here instead, so that
-  // EnsureInitialized() cannot leave a caller waiting forever.
-  MonitorAutoLock lock(mInitPromiseMonitor);
-  if (!mLoadPluginsFromDiskComplete) {
-    mLoadPluginsFromDiskComplete = true;
-    mInitPromise.RejectIfExists(NS_ERROR_ABORT, __func__);
-  }
-}
-
-void GeckoMediaPluginServiceParent::OnShutdown() { RejectPendingInitPromise(); }
-
 void GeckoMediaPluginServiceParent::OnPreferenceChanged(
     mozilla::dom::Pref&& aPref) {
   AssertOnGMPThread();
@@ -397,18 +395,11 @@ void GeckoMediaPluginServiceParent::OnPreferenceChanged(
 RefPtr<GenericNonExclusivePromise>
 GeckoMediaPluginServiceParent::EnsureInitialized() {
   MonitorAutoLock lock(mInitPromiseMonitor);
-  if (mMainInit == MainInit::Shutdown) {
-    // Shutdown() marks the plugin scan complete without having run it.
-    return GenericNonExclusivePromise::CreateAndReject(NS_ERROR_ABORT,
-                                                       __func__);
-  }
   if (mLoadPluginsFromDiskComplete) {
     return GenericNonExclusivePromise::CreateAndResolve(true, __func__);
   }
-  // InitializePlugins() settles this once it has started, which is not until
-  // the main thread setup has run. That can be after the first call to this,
-  // if the service was first used off the main thread. Shutdown() settles it if
-  // that never happens.
+  // We should have an init promise in flight.
+  MOZ_ASSERT(!mInitPromise.IsEmpty());
   return mInitPromise.Ensure(__func__);
 }
 
@@ -483,12 +474,12 @@ void GeckoMediaPluginServiceParent::InitializePlugins(
           [self]() -> void {
             MonitorAutoLock lock(self->mInitPromiseMonitor);
             self->mLoadPluginsFromDiskComplete = true;
-            self->mInitPromise.ResolveIfExists(true, __func__);
+            self->mInitPromise.Resolve(true, __func__);
           },
           [self]() -> void {
             MonitorAutoLock lock(self->mInitPromiseMonitor);
             self->mLoadPluginsFromDiskComplete = true;
-            self->mInitPromise.RejectIfExists(NS_ERROR_FAILURE, __func__);
+            self->mInitPromise.Reject(NS_ERROR_FAILURE, __func__);
           });
 }
 
@@ -1336,17 +1327,10 @@ void GeckoMediaPluginServiceParent::ReAddOnGMPThread(
 
 NS_IMETHODIMP
 GeckoMediaPluginServiceParent::GetStorageDir(nsIFile** aOutFile) {
-  // Not set until the main thread setup has run, which can be after the first
-  // use of the service from another thread.
-  nsCOMPtr<nsIFile> storageBaseDir;
-  {
-    MutexAutoLock lock(mMutex);
-    storageBaseDir = mStorageBaseDir;
+  if (NS_WARN_IF(!mStorageBaseDir)) {
+    return NS_ERROR_FAILURE;
   }
-  if (NS_WARN_IF(!storageBaseDir)) {
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-  return storageBaseDir->Clone(aOutFile);
+  return mStorageBaseDir->Clone(aOutFile);
 }
 
 nsresult WriteToFile(nsIFile* aPath, const nsACString& aFileName,
