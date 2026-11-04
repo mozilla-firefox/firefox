@@ -8,6 +8,7 @@
 #include "GeckoProfiler.h"
 #include "WebRenderTypes.h"
 #include "gfxUtils.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/Range.h"
 #include "mozilla/StaticPrefs_gfx.h"
@@ -171,7 +172,8 @@ void AddFontData(WrFontKey aKey, const uint8_t* aData, size_t aSize,
   }
 }
 
-void AddNativeFontHandle(WrFontKey aKey, void* aHandle, uint32_t aIndex) {
+void AddNativeFontHandle(WrFontKey aKey, void* aHandle, size_t aSize,
+                         uint32_t aIndex) {
   StaticMutexAutoLock lock(sFontDataTableLock);
   auto i = sFontDataTable.find(aKey);
   if (i == sFontDataTable.end()) {
@@ -182,12 +184,18 @@ void AddNativeFontHandle(WrFontKey aKey, void* aHandle, uint32_t aIndex) {
 #elif defined(XP_WIN)
     font.mUnscaledFont = new UnscaledFontDWrite(
         reinterpret_cast<IDWriteFontFace*>(aHandle), nullptr);
-#elif defined(ANDROID)
-    font.mUnscaledFont = new UnscaledFontFreeType(
-        reinterpret_cast<const char*>(aHandle), aIndex);
 #else
-    font.mUnscaledFont = new UnscaledFontFontconfig(
-        reinterpret_cast<const char*>(aHandle), aIndex);
+    CheckedUint32 size(aSize);
+    if (!size.isValid()) {
+      return;
+    }
+#  ifdef ANDROID
+    FontType type = FontType::FREETYPE;
+#  else
+    FontType type = FontType::FONTCONFIG;
+#  endif
+    font.mUnscaledFont = Factory::CreateUnscaledFontFromFontDescriptor(
+        type, reinterpret_cast<const uint8_t*>(aHandle), size.value(), aIndex);
 #endif
   }
 }
@@ -262,8 +270,13 @@ static RefPtr<UnscaledFont> GetUnscaledFont(Translator* aTranslator,
       FontType::FONTCONFIG;
 #endif
   // makes a copy of the data
-  RefPtr<NativeFontResource> fontResource = Factory::CreateNativeFontResource(
-      (uint8_t*)data.mData, data.mSize, type, aTranslator->GetFontContext());
+  CheckedUint32 size(data.mSize);
+  RefPtr<NativeFontResource> fontResource;
+  if (size.isValid()) {
+    fontResource =
+        Factory::CreateNativeFontResource((uint8_t*)data.mData, size.value(),
+                                          type, aTranslator->GetFontContext());
+  }
   RefPtr<UnscaledFont> unscaledFont;
   if (!fontResource) {
     gfxDevCrash(LogReason::NativeFontResourceNotFound)
