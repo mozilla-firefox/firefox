@@ -167,9 +167,11 @@ class ComputedFlags(ContextDerived):
         # setting a value here.
         dict.__setitem__(self.flags, key, value)
 
-    def get_flags(self):
+    def get_flags(self, exclude=()):
         flags = defaultdict(list)
         for key, _, dest_vars in self.flags.flag_variables:
+            if key in exclude:
+                continue
             value = self.flags.get(key)
             if value:
                 for dest_var in dest_vars:

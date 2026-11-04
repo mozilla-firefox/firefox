@@ -449,6 +449,7 @@ class LinkFlags(BaseCompileFlags):
         self._context = context
 
         self.flag_variables = (
+            ("LTO", context.config.substs.get("MOZ_LTO_LDFLAGS"), ("LDFLAGS",)),
             ("OS", self._os_ldflags(), ("LDFLAGS",)),
             (
                 "MOZ_HARDENING_LDFLAGS",
@@ -577,6 +578,11 @@ class CompileFlags(TargetCompileFlags):
         self._context = context
 
         self.flag_variables = (
+            (
+                "LTO",
+                context.config.substs.get("MOZ_LTO_CFLAGS"),
+                ("CXXFLAGS", "CFLAGS", "CMFLAGS", "CMMFLAGS"),
+            ),
             ("STL", context.config.substs.get("STL_FLAGS"), ("CXXFLAGS",)),
             (
                 "STL_HARDENING",

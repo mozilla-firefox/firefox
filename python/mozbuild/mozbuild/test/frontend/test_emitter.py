@@ -224,6 +224,26 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertEqual(flags.flags["MOZBUILD_CFLAGS"], ["-Os", "-funroll-loops"])
         self.assertEqual(flags.flags["MOZBUILD_CXXFLAGS"], ["-funroll-loops", "-Os"])
 
+    def test_lto_flags(self):
+        reader = self.reader(
+            "compile-flags",
+            extra_substs={
+                "MOZ_LTO_CFLAGS": ["-flto=thin"],
+                "MOZ_LTO_LDFLAGS": ["-flto=thin"],
+            },
+        )
+        sources, ldflags, lib, flags = self.read_topsrcdir(reader)
+        compile_flags = dict(flags.get_flags())
+        for var in ("CFLAGS", "CXXFLAGS", "CMFLAGS", "CMMFLAGS"):
+            self.assertEqual(compile_flags[var][0], "-flto=thin")
+        self.assertEqual(dict(ldflags.get_flags())["LDFLAGS"][0], "-flto=thin")
+
+    def test_lto_flags_unset(self):
+        reader = self.reader("compile-flags")
+        sources, ldflags, lib, flags = self.read_topsrcdir(reader)
+        self.assertEqual(flags.get_flags(), flags.get_flags(exclude=("LTO",)))
+        self.assertEqual(ldflags.get_flags(), ldflags.get_flags(exclude=("LTO",)))
+
     def test_win32_exe_default_ldflags(self):
         reader = self.reader(
             "host-compile-flags",

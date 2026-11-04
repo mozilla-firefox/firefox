@@ -1426,6 +1426,30 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertIn("-DMOZ_RUST_SPEC_HOST_CFLAG", edge["computed_host_cxxflags"])
         self.assertIn("-Wl,--moz-rust-spec-ldflag", edge["link_flags"])
 
+    def test_rust_library_command_spec_computed_flags_lto(self):
+        env = self._get_environment(
+            "rust-library-flags",
+            substs={
+                "MOZ_LTO_CFLAGS": ["-flto=thin"],
+                "MOZ_LTO_LDFLAGS": ["-flto=thin"],
+            },
+        )
+        self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
+
+        edge = self._cargo_spec(env, ".cargo-library-spec.json")["edge"]
+
+        cflags = [
+            "-DMOZ_RUST_SPEC_CFLAG",
+            f"-I{env.topsrcdir}",
+            f"-I{env.topobjdir}",
+            f"-I{mozpath.join(env.topobjdir, 'dist', 'include')}",
+            "-fno-strict-aliasing",
+            "-ffp-contract=off",
+        ]
+        self.assertEqual(edge["computed_cflags"], cflags)
+        self.assertEqual(edge["computed_cxxflags"], cflags)
+        self.assertEqual(edge["link_flags"], ["-Wl,--moz-rust-spec-ldflag"])
+
     def test_host_rust_library(self):
         """Test that a Rust library is written to backend.mk correctly."""
         env = self._consume("host-rust-library", RecursiveMakeBackend)
