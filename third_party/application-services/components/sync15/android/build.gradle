@@ -2,7 +2,7 @@ apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
 
 android {
-    namespace 'org.mozilla.appservices.sync15'
+    namespace = 'org.mozilla.appservices.sync15'
 }
 
 ext.configureUniFFIBindgen("sync15")

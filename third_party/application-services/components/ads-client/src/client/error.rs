@@ -11,6 +11,9 @@ pub enum ComponentError {
     #[error("Error requesting ads from worker: {0}")]
     BackgroundWorker(#[from] BackgroundWorkerError),
 
+    #[error("Error clearing the cache: {0}")]
+    ClearCache(#[from] sql_support::open_database::Error),
+
     #[error("Error recording a click for a placement: {0}")]
     RecordClick(#[from] RecordClickError),
 

@@ -67,7 +67,7 @@ pub enum HTTPError {
 }
 
 impl HTTPError {
-    pub fn check(response: &Response) -> Result<(), Self> {
+    pub(crate) fn check(response: &Response) -> Result<(), Self> {
         let status = response.status;
 
         if status == 200 {
@@ -111,7 +111,7 @@ pub enum ReportAdError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum TransportError {
+pub(crate) enum TransportError {
     #[error("HTTP error: {0}")]
     Http(#[from] HTTPError),
 

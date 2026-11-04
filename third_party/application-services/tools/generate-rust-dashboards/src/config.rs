@@ -218,6 +218,13 @@ impl TeamConfig {
     pub fn team_slug(&self) -> String {
         slug(self.team_name)
     }
+
+    /// Slug for the extra dashboard
+    pub fn details_slug(&self) -> String {
+        // Every once in a while uploading the JSON fails for me (BDK).
+        // To hack around this, I bump the number at the end there.
+        format!("{}-sync-details2", self.team_slug())
+    }
 }
 
 impl Application {

@@ -6,7 +6,11 @@ use rusqlite::Connection;
 use sql_support::open_database;
 use std::time::Duration;
 
-pub struct HttpCacheConnectionInitializer {}
+/// How long a connection waits for another connection's lock before failing
+/// with `SQLITE_BUSY`.
+const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
+
+pub(super) struct HttpCacheConnectionInitializer;
 
 impl open_database::ConnectionInitializer for HttpCacheConnectionInitializer {
     const END_VERSION: u32 = 2;
@@ -41,7 +45,7 @@ impl open_database::ConnectionInitializer for HttpCacheConnectionInitializer {
 
     fn prepare(&self, conn: &Connection, _db_empty: bool) -> open_database::Result<()> {
         conn.execute_batch("PRAGMA journal_mode=wal;")?;
-        conn.busy_timeout(Duration::from_secs(5))?;
+        conn.busy_timeout(BUSY_TIMEOUT)?;
         Ok(())
     }
 

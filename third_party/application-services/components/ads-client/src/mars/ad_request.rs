@@ -6,7 +6,7 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use viaduct::{Headers, Request};
 
 use crate::mars::Environment;
@@ -106,7 +106,7 @@ impl AdRequest {
         for ad_placement_request in placements {
             if used_placement_ids.contains(&ad_placement_request.placement) {
                 return Err(BuildRequestError::DuplicatePlacementId {
-                    placement_id: ad_placement_request.placement.clone(),
+                    placement_id: ad_placement_request.placement,
                 });
             }
 
@@ -128,8 +128,8 @@ impl AdRequest {
     }
 }
 
-pub type AdRequestFlags = HashMap<String, bool>;
-pub type AdRequestRelevance = HashMap<String, f64>;
+pub(crate) type AdRequestFlags = HashMap<String, bool>;
+pub(crate) type AdRequestRelevance = HashMap<String, f64>;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize)]
 pub struct AdPlacementRequest {
@@ -138,13 +138,13 @@ pub struct AdPlacementRequest {
     pub placement: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Hash, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize)]
 pub struct AdContentCategory {
     pub categories: Vec<String>,
     pub taxonomy: IABContentTaxonomy,
 }
 
-#[derive(Clone, Debug, Deserialize, Hash, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize)]
 pub enum IABContentTaxonomy {
     #[serde(rename = "IAB-1.0")]
     IAB1_0,

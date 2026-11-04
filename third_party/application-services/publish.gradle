@@ -35,7 +35,7 @@ ext.configurePublish = { groupIdArg = null, artifactIdArg = null, descriptionArg
 
                 if (isMegazord) {
                     artifact file("${projectDir}/../DEPENDENCIES.md"), {
-                        extension "LICENSES.md"
+                        extension = "LICENSES.md"
                     }
                 }
 

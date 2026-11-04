@@ -19,8 +19,10 @@ pub enum Component {
     Logins,
     Places,
     RemoteSettings,
+    Prefs,
     Suggest,
     Tabs,
+    WebextStorage,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -30,8 +32,10 @@ pub enum SyncEngine {
     CreditCards,
     History,
     Logins,
+    Prefs,
     RustLogins,
     Tabs,
+    WebextStorage,
 }
 
 impl Component {
@@ -42,9 +46,11 @@ impl Component {
             Self::Fxa => "fxa",
             Self::Logins => "logins",
             Self::Places => "places",
+            Self::Prefs => "prefs",
             Self::RemoteSettings => "remote-settings",
             Self::Suggest => "suggest",
             Self::Tabs => "tabs",
+            Self::WebextStorage => "webext-storage",
         }
     }
 
@@ -56,8 +62,10 @@ impl Component {
             Self::Logins => &[Desktop, Android, Ios],
             Self::Places => &[Android, Ios],
             Self::RemoteSettings => &[Desktop, Android, Ios],
+            Self::Prefs => &[Desktop],
             Self::Suggest => &[Desktop, Android, Ios],
             Self::Tabs => &[Desktop, Android, Ios],
+            Self::WebextStorage => &[Desktop],
         }
     }
 
@@ -73,7 +81,11 @@ impl Component {
             Self::Places => "places-",
             Self::RemoteSettings => "remote-settings-",
             Self::Suggest => "suggest-",
+            // Prefs is actually a JS-only engine and doesn't report errors via `report_error!`
+            // Put a placeholder here for now
+            Self::Prefs => "prefs-",
             Self::Tabs => "tabs-",
+            Self::WebextStorage => "webext-storage-",
         }
     }
 
@@ -88,10 +100,32 @@ impl Component {
             Self::Fxa => &[],
             Self::Logins => &[SyncEngine::Logins, SyncEngine::RustLogins],
             Self::Places => &[SyncEngine::Bookmarks, SyncEngine::History],
+            Self::Prefs => &[SyncEngine::Prefs],
             Self::RemoteSettings => &[],
             Self::Suggest => &[],
             Self::Tabs => &[SyncEngine::Tabs],
+            Self::WebextStorage => &[SyncEngine::WebextStorage],
         }
+    }
+
+    pub fn sync_engines_for_android(&self) -> impl Iterator<Item = &SyncEngine> {
+        self.applications()
+            .contains(&Application::Android)
+            .then(|| self.sync_engines().iter())
+            .into_iter()
+            .flatten()
+            // RustLogins is the Desktop name for the logins engine
+            .filter(|c| **c != SyncEngine::RustLogins)
+    }
+
+    pub fn sync_engines_for_ios(&self) -> impl Iterator<Item = &SyncEngine> {
+        self.applications()
+            .contains(&Application::Ios)
+            .then(|| self.sync_engines().iter())
+            .into_iter()
+            .flatten()
+            // RustLogins is the Desktop name for the logins engine
+            .filter(|c| **c != SyncEngine::RustLogins)
     }
 }
 
@@ -108,6 +142,8 @@ impl SyncEngine {
             Self::Logins => dashboard_count_color(4, false),
             Self::RustLogins => dashboard_count_color(5, false),
             Self::Tabs => dashboard_count_color(6, false),
+            Self::Prefs => dashboard_count_color(7, false),
+            Self::WebextStorage => dashboard_count_color(8, false),
         }
     }
 }
@@ -120,8 +156,10 @@ impl fmt::Display for SyncEngine {
             Self::CreditCards => write!(f, "creditcards"),
             Self::History => write!(f, "history"),
             Self::Logins => write!(f, "logins"),
+            Self::Prefs => write!(f, "prefs"),
             Self::RustLogins => write!(f, "rust-logins"),
             Self::Tabs => write!(f, "tabs"),
+            Self::WebextStorage => write!(f, "webext-storage"),
         }
     }
 }

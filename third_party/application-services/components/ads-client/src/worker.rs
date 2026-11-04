@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 use url::Url;
 
 use crate::{
@@ -38,10 +42,10 @@ impl BackgroundWorker {
         // Attempt to spawn a background worker thread to handle requests.
         // If it fails, all fields of `BackgroundWorker` will be populated with None, and an error will be logged.
         let Some(worker_thread) = std::thread::Builder::new()
-            .name(ADS_CLIENT_WORKER_THREAD_NAME.to_string())
-            .spawn(move || crate::worker::worker(inner_client, worker_request_queue.clone(), worker_sleep)).inspect_err(|err| {
+            .name(ADS_CLIENT_WORKER_THREAD_NAME.to_owned())
+            .spawn(move || worker(&inner_client, &worker_request_queue, worker_sleep)).inspect_err(|err| {
                 // TODO: Replace this log with telemetry.
-                error_support::error!("Failed to create ads-client worker thread `{ADS_CLIENT_WORKER_THREAD_NAME}` with: {err}")
+                error_support::error!("Failed to create ads-client worker thread `{ADS_CLIENT_WORKER_THREAD_NAME}` with: {err}");
             }).ok()
         else {
             return BackgroundWorker { thread_handle: None, request_queue }
@@ -73,8 +77,8 @@ impl BackgroundWorker {
 
 // Endless worker for background thread that synchronously run tasks in the order provided by the RequestQueue.
 fn worker(
-    inner_client: Arc<AdsClientInner>,
-    request_queue: RequestQueue,
+    inner_client: &Arc<AdsClientInner>,
+    request_queue: &RequestQueue,
     batch_duration: Duration,
 ) {
     loop {
@@ -84,7 +88,9 @@ fn worker(
             std::thread::sleep(batch_duration);
             if let Some(request) = request_queue.next() {
                 // TODO: Request should be logged via telemetry here.
-                let _ = request.handle_request(inner_client.clone());
+                if let Err(e) = request.handle_request(Arc::clone(inner_client)) {
+                    error_support::warn!("ads-client background request failed: {e}");
+                }
             }
         }
     }

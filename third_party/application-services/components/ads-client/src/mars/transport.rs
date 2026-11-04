@@ -16,31 +16,30 @@ use crate::{
 
 const OHTTP_CHANNEL_ID: &str = "ads-client";
 
-pub struct MARSTransport {
+pub(super) struct MARSTransport {
     http_cache: Option<HttpCache>,
 }
 
 impl MARSTransport {
-    pub fn new(http_cache: Option<HttpCache>) -> Self {
+    pub(super) fn new(http_cache: Option<HttpCache>) -> Self {
         Self { http_cache }
     }
 
-    pub fn clear_cache(&self) -> Result<(), open_database::Error> {
+    pub(super) fn clear_cache(&self) -> Result<(), open_database::Error> {
         if let Some(cache) = self.http_cache.as_ref() {
             cache.clear()?;
         }
         Ok(())
     }
 
-    pub fn fire(&self, request: Request, ohttp: bool) -> Result<(), TransportError> {
+    pub(super) fn fire(&self, request: Request, ohttp: bool) -> Result<(), TransportError> {
         let client = Self::client_for(ohttp)?;
         let response = client.send_sync(request)?;
         HTTPError::check(&response)?;
         Ok(())
     }
 
-    #[allow(dead_code)]
-    pub fn invalidate_cache_by_hash(
+    pub(super) fn invalidate_cache_by_hash(
         &self,
         request_hash: &RequestHash,
     ) -> Result<(), open_database::Error> {
@@ -50,7 +49,7 @@ impl MARSTransport {
         Ok(())
     }
 
-    pub fn send<R: Hash + Into<Request>>(
+    pub(super) fn send<R: Hash + Into<Request>>(
         &self,
         request: R,
         policy: &CachePolicy,
@@ -71,7 +70,7 @@ impl MARSTransport {
         }
     }
 
-    pub fn shutdown_db(&self) {
+    pub(super) fn shutdown_db(&self) {
         if let Some(cache) = self.http_cache.as_ref() {
             cache.shutdown_db();
         }

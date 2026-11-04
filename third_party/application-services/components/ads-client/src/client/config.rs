@@ -5,7 +5,7 @@
 
 use crate::mars::Environment;
 
-pub struct AdsClientConfig {
+pub(crate) struct AdsClientConfig {
     pub cache_config: Option<AdsCacheConfig>,
     pub environment: Environment,
     #[cfg(feature = "stateful")]
@@ -13,7 +13,7 @@ pub struct AdsClientConfig {
 }
 
 #[derive(Clone, Debug)]
-pub struct AdsCacheConfig {
+pub(crate) struct AdsCacheConfig {
     pub db_path: String,
     pub default_cache_ttl_seconds: Option<u64>,
     pub max_size_mib: Option<u64>,
@@ -21,6 +21,6 @@ pub struct AdsCacheConfig {
 
 #[cfg(feature = "stateful")]
 #[derive(Clone, Debug)]
-pub struct AdsStoreConfig {
+pub(crate) struct AdsStoreConfig {
     pub db_path: String,
 }

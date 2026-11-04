@@ -33,9 +33,5 @@ viaduct = { path = "../viaduct", features = ["ohttp"] }
 sql-support = { path = "../support/sql" }
 
 [dev-dependencies]
-mockall = "0.12"
 mockito = { version = "0.31", default-features = false }
 viaduct-dev = { path = "../support/viaduct-dev" }
-
-[build-dependencies]
-uniffi = { version = "0.32", features = ["build"] }

@@ -75,7 +75,8 @@ export class FfiConverterOptionalUInt64 extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsCacheConfig
+ * The on-disk HTTP cache. `default_cache_ttl_seconds` defaults to 300 and
+ * `max_size_mib` to 10.
  */
 export class MozAdsCacheConfig {
     constructor(
@@ -192,7 +193,7 @@ export class FfiConverterTypeMozAdsCacheConfig extends FfiConverterArrayBuffer {
 }
 
 /**
- * MozAdsCacheMode
+ * Whether a request reads the cache before the network.
  */
 export const MozAdsCacheMode = Object.freeze(/** @lends MozAdsCacheMode */ {
     /**
@@ -246,7 +247,8 @@ export class FfiConverterTypeMozAdsCacheMode extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsCachePolicy
+ * How one request uses the cache. `ttl_seconds` overrides the client's
+ * default TTL; `0` does not cache the response.
  */
 export class MozAdsCachePolicy {
     constructor(
@@ -338,7 +340,7 @@ export class FfiConverterTypeMozAdsCachePolicy extends FfiConverterArrayBuffer {
 
 
 /**
- * MozAdsCallbackOptions
+ * Options for a callback request (click, impression or report).
  */
 export class MozAdsCallbackOptions {
     constructor(
@@ -466,7 +468,8 @@ export class FfiConverterOptionalTypeAdsClientUrl extends FfiConverterArrayBuffe
     }
 }
 /**
- * MozAdsCallbacks
+ * The callback URLs of an ad: pass them to `record_click`,
+ * `record_impression` and `report_ad`.
  */
 export class MozAdsCallbacks {
     constructor(
@@ -626,7 +629,7 @@ export class FfiConverterSequenceString extends FfiConverterArrayBuffer {
 }
 
 /**
- * MozAdsIABContentTaxonomy
+ * The version of the IAB Content Taxonomy that category ids refer to.
  */
 export const MozAdsIabContentTaxonomy = Object.freeze(/** @lends MozAdsIabContentTaxonomy */ {
     /**
@@ -710,7 +713,7 @@ export class FfiConverterTypeMozAdsIABContentTaxonomy extends FfiConverterArrayB
     }
 }
 /**
- * MozAdsContentCategory
+ * IAB content categories, in one taxonomy version.
  */
 export class MozAdsContentCategory {
     constructor(
@@ -800,7 +803,7 @@ export class FfiConverterTypeMozAdsContentCategory extends FfiConverterArrayBuff
     }
 }
 /**
- * MozAdsIABContent
+ * The IAB content classification of a placement, for targeting.
  */
 export class MozAdsIabContent {
     constructor(
@@ -926,7 +929,7 @@ export class FfiConverterOptionalString extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsImage
+ * An image ad returned by MARS.
  */
 export class MozAdsImage {
     constructor(
@@ -1156,7 +1159,8 @@ export class FfiConverterOptionalTypeMozAdsIABContent extends FfiConverterArrayB
     }
 }
 /**
- * MozAdsPlacementRequest
+ * One placement to request a single ad for. `placement_id` must be unique
+ * within one request.
  */
 export class MozAdsPlacementRequest {
     constructor(
@@ -1248,7 +1252,8 @@ export class FfiConverterTypeMozAdsPlacementRequest extends FfiConverterArrayBuf
 
 
 /**
- * MozAdsPlacementRequestWithCount
+ * One placement to request `count` ads for. `placement_id` must be unique
+ * within one request.
  */
 export class MozAdsPlacementRequestWithCount {
     constructor(
@@ -1510,13 +1515,13 @@ export class FfiConverterMapStringFloat64 extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsRequestOptions
+ * Options for one ad request. Every field has a default.
  */
 export class MozAdsRequestOptions {
     constructor(
         {
             blocks= [], 
-            cachePolicy, 
+            cachePolicy= null, 
             flags= new Map(), 
             ohttp= false, 
             relevance= new Map()
@@ -1678,7 +1683,7 @@ export class FfiConverterTypeMozAdsRequestOptions extends FfiConverterArrayBuffe
     }
 }
 /**
- * MozAdsSpocFrequencyCaps
+ * Frequency capping information for a spoc.
  */
 export class MozAdsSpocFrequencyCaps {
     constructor(
@@ -1822,7 +1827,7 @@ export class FfiConverterMapStringUInt32 extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsSpocRanking
+ * Ranking and personalization information for a spoc.
  */
 export class MozAdsSpocRanking {
     constructor(
@@ -1938,7 +1943,7 @@ export class FfiConverterTypeMozAdsSpocRanking extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsSpoc
+ * A sponsored content (spoc) ad returned by MARS.
  */
 export class MozAdsSpoc {
     constructor(
@@ -2288,7 +2293,7 @@ export class FfiConverterTypeMozAdsSpoc extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsStoreConfig
+ * The SQLite database the stateful client keeps its ads in.
  */
 export class MozAdsStoreConfig {
     constructor(
@@ -2352,7 +2357,7 @@ export class FfiConverterTypeMozAdsStoreConfig extends FfiConverterArrayBuffer {
     }
 }
 /**
- * MozAdsTile
+ * A tile ad returned by MARS.
  */
 export class MozAdsTile {
     constructor(
@@ -2547,7 +2552,7 @@ export class FfiConverterTypeMozAdsTile extends FfiConverterArrayBuffer {
 }
 
 /**
- * MozAdsClientApiError
+ * The error every ads client method can throw.
  */
 export class MozAdsClientApiError extends Error {}
 
@@ -2604,7 +2609,10 @@ export class FfiConverterTypeMozAdsClientApiError extends FfiConverterArrayBuffe
 }
 
 /**
- * MozAdsEnvironment
+ * The MARS environment the client sends requests to. Defaults to `Prod`.
+ * 
+ * Variants are deliberately unsorted: UniFFI encodes them by index, and
+ * this mirrors `Environment`.
  */
 export class MozAdsEnvironment {}
 /**
@@ -2701,7 +2709,7 @@ export class FfiConverterTypeMozAdsEnvironment extends FfiConverterArrayBuffer {
 }
 
 /**
- * MozAdsImageOrSpoc
+ * An ad from a placement that can return either an image or a spoc.
  */
 export class MozAdsImageOrSpoc {}
 /**
@@ -2794,7 +2802,7 @@ export class FfiConverterTypeMozAdsImageOrSpoc extends FfiConverterArrayBuffer {
 }
 
 /**
- * MozAdsReportReason
+ * Why the user reported an ad.
  */
 export const MozAdsReportReason = Object.freeze(/** @lends MozAdsReportReason */ {
     /**
@@ -3349,17 +3357,18 @@ export class FfiConverterMapStringTypeMozAdsTile extends FfiConverterArrayBuffer
 }
 
 /**
- * MozAdsClientInterface
+ * Requests ads from MARS and records their clicks, impressions and reports.
+ * Build it with [`MozAdsClientBuilder`], ideally once per app.
  */
 export class MozAdsClientInterface {
     /**
-     * clearCache
+     * Deletes everything in the HTTP cache.
      */
     async clearCache() {
       throw Error("clearCache not implemented");
     }
     /**
-     * recordClick
+     * Records a click on an ad, from its `callbacks.click` URL.
      * @param {string} clickUrl
      * @param {?MozAdsCallbackOptions} options
      */
@@ -3369,7 +3378,7 @@ export class MozAdsClientInterface {
       throw Error("recordClick not implemented");
     }
     /**
-     * recordImpression
+     * Records an impression of an ad, from its `callbacks.impression` URL.
      * @param {string} impressionUrl
      * @param {?MozAdsCallbackOptions} options
      */
@@ -3379,7 +3388,7 @@ export class MozAdsClientInterface {
       throw Error("recordImpression not implemented");
     }
     /**
-     * reportAd
+     * Reports an ad, from its `callbacks.report` URL.
      * @param {string} reportUrl
      * @param {MozAdsReportReason[keyof MozAdsReportReason]} reason
      * @param {?MozAdsCallbackOptions} options
@@ -3391,7 +3400,8 @@ export class MozAdsClientInterface {
       throw Error("reportAd not implemented");
     }
     /**
-     * requestImageAds
+     * Requests one image ad per placement. The result is keyed by
+     * `placement_id` and leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequest>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3402,7 +3412,8 @@ export class MozAdsClientInterface {
       throw Error("requestImageAds not implemented");
     }
     /**
-     * requestSpocAds
+     * Requests `count` spocs per placement. The result is keyed by
+     * `placement_id` and leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequestWithCount>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3413,7 +3424,9 @@ export class MozAdsClientInterface {
       throw Error("requestSpocAds not implemented");
     }
     /**
-     * requestSpocOrImageAds
+     * Requests `count` ads per placement, for placements that can return
+     * either spocs or image ads. The result is keyed by `placement_id` and
+     * leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequestWithCount>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3424,7 +3437,8 @@ export class MozAdsClientInterface {
       throw Error("requestSpocOrImageAds not implemented");
     }
     /**
-     * requestTileAds
+     * Requests one tile ad per placement. The result is keyed by
+     * `placement_id` and leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequest>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3435,7 +3449,10 @@ export class MozAdsClientInterface {
       throw Error("requestTileAds not implemented");
     }
     /**
-     * shutdown
+     * Allows the ads-client to unload some references and prepare for a safe shutdown.
+     * Other methods should not be called after this one.
+     * Currently, we shutdown (with no expected errors).
+     * However, future shutdowns may require an error to be logged, so we keep the Result.
      */
     async shutdown() {
       throw Error("shutdown not implemented");
@@ -3444,7 +3461,8 @@ export class MozAdsClientInterface {
 }
 
 /**
- * MozAdsClient
+ * Requests ads from MARS and records their clicks, impressions and reports.
+ * Build it with [`MozAdsClientBuilder`], ideally once per app.
  */
 export class MozAdsClient extends MozAdsClientInterface {
     // Use `init` to instantiate this class.
@@ -3462,7 +3480,7 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * clearCache
+     * Deletes everything in the HTTP cache.
      */
     async clearCache() {
        
@@ -3478,7 +3496,7 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * recordClick
+     * Records a click on an ad, from its `callbacks.click` URL.
      * @param {string} clickUrl
      * @param {?MozAdsCallbackOptions} options
      */
@@ -3502,7 +3520,7 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * recordImpression
+     * Records an impression of an ad, from its `callbacks.impression` URL.
      * @param {string} impressionUrl
      * @param {?MozAdsCallbackOptions} options
      */
@@ -3526,7 +3544,7 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * reportAd
+     * Reports an ad, from its `callbacks.report` URL.
      * @param {string} reportUrl
      * @param {MozAdsReportReason[keyof MozAdsReportReason]} reason
      * @param {?MozAdsCallbackOptions} options
@@ -3554,7 +3572,8 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * requestImageAds
+     * Requests one image ad per placement. The result is keyed by
+     * `placement_id` and leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequest>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3579,7 +3598,8 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * requestSpocAds
+     * Requests `count` spocs per placement. The result is keyed by
+     * `placement_id` and leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequestWithCount>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3604,7 +3624,9 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * requestSpocOrImageAds
+     * Requests `count` ads per placement, for placements that can return
+     * either spocs or image ads. The result is keyed by `placement_id` and
+     * leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequestWithCount>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3629,7 +3651,8 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * requestTileAds
+     * Requests one tile ad per placement. The result is keyed by
+     * `placement_id` and leaves out placements with no ad.
      * @param {Array.<MozAdsPlacementRequest>} mozAdRequests
      * @param {?MozAdsRequestOptions} options
      * @returns {Promise<Map>}}
@@ -3654,7 +3677,10 @@ export class MozAdsClient extends MozAdsClientInterface {
     }
 
     /**
-     * shutdown
+     * Allows the ads-client to unload some references and prepare for a safe shutdown.
+     * Other methods should not be called after this one.
+     * Currently, we shutdown (with no expected errors).
+     * However, future shutdowns may require an error to be logged, so we keep the Result.
      */
     async shutdown() {
        
@@ -3851,18 +3877,20 @@ const uniffiCallbackHandlerMozAdsTelemetry = new UniFFICallbackHandler(
 UnitTestObjs.uniffiCallbackHandlerMozAdsTelemetry = uniffiCallbackHandlerMozAdsTelemetry;
 
 /**
- * MozAdsClientBuilderInterface
+ * Configures and builds a [`MozAdsClient`].
  */
 export class MozAdsClientBuilderInterface {
     /**
-     * build
+     * Builds the client. A telemetry instance set on the builder becomes the
+     * destination of every client's metrics in the process.
      * @returns {MozAdsClient}
      */
     build() {
       throw Error("build not implemented");
     }
     /**
-     * cacheConfig
+     * Enables the HTTP cache with this configuration. Without it, nothing is
+     * cached.
      * @param {MozAdsCacheConfig} cacheConfig
      * @returns {MozAdsClientBuilder}
      */
@@ -3871,7 +3899,7 @@ export class MozAdsClientBuilderInterface {
       throw Error("cacheConfig not implemented");
     }
     /**
-     * environment
+     * The MARS environment to send requests to. Defaults to production.
      * @param {MozAdsEnvironment[keyof MozAdsEnvironment]} environment
      * @returns {MozAdsClientBuilder}
      */
@@ -3880,7 +3908,8 @@ export class MozAdsClientBuilderInterface {
       throw Error("environment not implemented");
     }
     /**
-     * telemetry
+     * Where the client records its metrics. Telemetry is process-wide: see
+     * [`MozAdsTelemetry`].
      * @param {MozAdsTelemetry} telemetry
      * @returns {MozAdsClientBuilder}
      */
@@ -3892,7 +3921,7 @@ export class MozAdsClientBuilderInterface {
 }
 
 /**
- * MozAdsClientBuilder
+ * Configures and builds a [`MozAdsClient`].
  */
 export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     // Use `init` to instantiate this class.
@@ -3909,7 +3938,8 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
         this[uniffiObjectPtr] = opts[constructUniffiObject];
     }
     /**
-     * init
+     * A builder with the defaults: the production environment, no cache and
+     * no telemetry.
      * @returns {MozAdsClientBuilder}
      */
     static init() {
@@ -3925,7 +3955,8 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     }
 
     /**
-     * build
+     * Builds the client. A telemetry instance set on the builder becomes the
+     * destination of every client's metrics in the process.
      * @returns {MozAdsClient}
      */
     build() {
@@ -3942,7 +3973,8 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     }
 
     /**
-     * cacheConfig
+     * Enables the HTTP cache with this configuration. Without it, nothing is
+     * cached.
      * @param {MozAdsCacheConfig} cacheConfig
      * @returns {MozAdsClientBuilder}
      */
@@ -3963,7 +3995,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     }
 
     /**
-     * environment
+     * The MARS environment to send requests to. Defaults to production.
      * @param {MozAdsEnvironment[keyof MozAdsEnvironment]} environment
      * @returns {MozAdsClientBuilder}
      */
@@ -3984,7 +4016,8 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     }
 
     /**
-     * telemetry
+     * Where the client records its metrics. Telemetry is process-wide: see
+     * [`MozAdsTelemetry`].
      * @param {MozAdsTelemetry} telemetry
      * @returns {MozAdsClientBuilder}
      */

@@ -19,8 +19,6 @@ impl RequestHash {
 
     /// Takes the `request_hash` query parameter out of `url`, leaving the other
     /// parameters in place.
-    // TODO: Remove this allow(dead_code) when cache invalidation is re-enabled behind Nimbus experiment
-    #[allow(dead_code)]
     pub fn pop_from_url(url: &mut Url) -> Option<Self> {
         let mut request_hash = None;
         let mut query = url::form_urlencoded::Serializer::new(String::new());
@@ -45,7 +43,7 @@ impl RequestHash {
 
 impl From<&str> for RequestHash {
     fn from(s: &str) -> Self {
-        RequestHash(s.to_string())
+        RequestHash(s.to_owned())
     }
 }
 

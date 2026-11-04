@@ -2,7 +2,7 @@ apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
 
 android {
-    namespace 'org.mozilla.appservices.db_crypto'
+    namespace = 'org.mozilla.appservices.db_crypto'
 }
 
 ext.configureUniFFIBindgen("db_crypto")

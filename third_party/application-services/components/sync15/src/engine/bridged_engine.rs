@@ -171,7 +171,7 @@ impl BridgedEngineWrapper {
 /// harmless.
 #[macro_export]
 macro_rules! uniffi_bridged_engine {
-    ($name:ident) => {
+    ($name:ident, $error_ty:ty) => {
         // This is what UniFFI exposes; it does nothing other than delegate to
         // the shared `BridgedEngineWrapper`, which adapts our `SyncEngine`.
         pub struct $name($crate::engine::BridgedEngineWrapper);
@@ -183,60 +183,71 @@ macro_rules! uniffi_bridged_engine {
                 Self($crate::engine::BridgedEngineWrapper::new(inner))
             }
 
-            pub fn last_sync(&self) -> ::anyhow::Result<i64> {
-                self.0.last_sync()
+            pub fn last_sync(&self) -> ::std::result::Result<i64, $error_ty> {
+                self.0.last_sync().map_err(Into::into)
             }
 
-            pub fn reset_last_sync(&self) -> ::anyhow::Result<()> {
-                self.0.reset_last_sync()
+            pub fn reset_last_sync(&self) -> ::std::result::Result<(), $error_ty> {
+                self.0.reset_last_sync().map_err(Into::into)
             }
 
-            pub fn sync_id(&self) -> ::anyhow::Result<Option<String>> {
-                self.0.sync_id()
+            pub fn sync_id(&self) -> ::std::result::Result<Option<String>, $error_ty> {
+                self.0.sync_id().map_err(Into::into)
             }
 
-            pub fn reset_sync_id(&self) -> ::anyhow::Result<String> {
-                self.0.reset_sync_id()
+            pub fn reset_sync_id(&self) -> ::std::result::Result<String, $error_ty> {
+                self.0.reset_sync_id().map_err(Into::into)
             }
 
-            pub fn ensure_current_sync_id(&self, sync_id: &str) -> ::anyhow::Result<String> {
-                self.0.ensure_current_sync_id(sync_id)
+            pub fn ensure_current_sync_id(
+                &self,
+                sync_id: &str,
+            ) -> ::std::result::Result<String, $error_ty> {
+                self.0.ensure_current_sync_id(sync_id).map_err(Into::into)
             }
 
-            pub fn set_clients(&self, client_data: &str) -> ::anyhow::Result<()> {
-                self.0.set_clients(client_data)
+            pub fn set_clients(&self, client_data: &str) -> ::std::result::Result<(), $error_ty> {
+                self.0.set_clients(client_data).map_err(Into::into)
             }
 
-            pub fn sync_started(&self) -> ::anyhow::Result<()> {
-                self.0.sync_started()
+            pub fn sync_started(&self) -> ::std::result::Result<(), $error_ty> {
+                self.0.sync_started().map_err(Into::into)
             }
 
-            pub fn store_incoming(&self, incoming: Vec<String>) -> ::anyhow::Result<()> {
-                self.0.store_incoming(incoming)
+            pub fn store_incoming(
+                &self,
+                incoming: Vec<String>,
+            ) -> ::std::result::Result<(), $error_ty> {
+                self.0.store_incoming(incoming).map_err(Into::into)
             }
 
-            pub fn apply(&self, server_modified_millis: i64) -> ::anyhow::Result<Vec<String>> {
-                self.0.apply(server_modified_millis)
+            pub fn apply(
+                &self,
+                server_modified_millis: i64,
+            ) -> ::std::result::Result<Vec<String>, $error_ty> {
+                self.0.apply(server_modified_millis).map_err(Into::into)
             }
 
             pub fn set_uploaded(
                 &self,
                 server_modified_millis: i64,
                 ids: Vec<String>,
-            ) -> ::anyhow::Result<()> {
-                self.0.set_uploaded(server_modified_millis, ids)
+            ) -> ::std::result::Result<(), $error_ty> {
+                self.0
+                    .set_uploaded(server_modified_millis, ids)
+                    .map_err(Into::into)
             }
 
-            pub fn sync_finished(&self) -> ::anyhow::Result<()> {
-                self.0.sync_finished()
+            pub fn sync_finished(&self) -> ::std::result::Result<(), $error_ty> {
+                self.0.sync_finished().map_err(Into::into)
             }
 
-            pub fn reset(&self) -> ::anyhow::Result<()> {
-                self.0.reset()
+            pub fn reset(&self) -> ::std::result::Result<(), $error_ty> {
+                self.0.reset().map_err(Into::into)
             }
 
-            pub fn wipe(&self) -> ::anyhow::Result<()> {
-                self.0.wipe()
+            pub fn wipe(&self) -> ::std::result::Result<(), $error_ty> {
+                self.0.wipe().map_err(Into::into)
             }
         }
     };

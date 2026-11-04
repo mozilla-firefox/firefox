@@ -44,7 +44,7 @@ impl TestClient {
         // XXX - not clear if/how this device gets cleaned up - we never disconnect from the account!
         // And this is messy - I think it reflects that the public device api should be improved?
         let account = cli.account().expect("CliFxa must be logged in");
-        let device = match account
+        let mut device = match account
             .get_devices(false)?
             .into_iter()
             .find(|d| d.is_current_device)
@@ -59,6 +59,11 @@ impl TestClient {
                     .ok_or_else(|| anyhow::Error::msg("can't find new device"))?
             }
         };
+
+        // All clients share the same account and therefore the same FxA device, but sync uses
+        // the device ID as the client ID, so give each simulated client a distinct identity.
+        device.id = format!("{}-{}", device.id, device_name.replace(' ', "-"));
+        device.display_name = device_name.to_string();
 
         let key = create_key().unwrap();
         let encdec = Arc::new(ManagedEncryptorDecryptor::new(Arc::new(
@@ -81,7 +86,9 @@ impl TestClient {
             key,
             logins_store: Arc::new(LoginStore::new(":memory:", encdec.clone())?),
             encdec,
-            tabs_store: Arc::new(TabsStore::new_with_mem_path("sync-test-tabs")),
+            tabs_store: Arc::new(TabsStore::new_with_mem_path(&format!(
+                "sync-test-tabs-{device_name}"
+            ))),
             sync_manager: SyncManager::new(),
             persisted_state: None,
         })

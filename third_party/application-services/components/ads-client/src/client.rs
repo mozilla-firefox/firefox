@@ -23,14 +23,14 @@ use std::time::Duration;
 use url::Url;
 use uuid::Uuid;
 
-pub mod config;
-pub mod error;
+pub(crate) mod config;
+pub(crate) mod error;
 
 const DEFAULT_TTL_SECONDS: u64 = 300;
 const DEFAULT_MAX_CACHE_SIZE_MIB: u64 = 10;
 const DEFAULT_ROTATION_DAYS: u8 = 3;
 
-pub struct AdsClient {
+pub(crate) struct AdsClient {
     inner: Arc<AdsClientInner>,
 }
 
@@ -42,12 +42,12 @@ pub struct AdsClientInner {
 }
 
 impl AdsClient {
-    pub fn new(client_config: AdsClientConfig) -> Self {
+    pub(crate) fn new(client_config: AdsClientConfig) -> Self {
         let inner = Arc::new(AdsClientInner::new(client_config));
         AdsClient { inner }
     }
 
-    pub fn clear_cache(&self) -> Result<(), open_database::Error> {
+    pub(crate) fn clear_cache(&self) -> Result<(), open_database::Error> {
         self.inner.clear_cache()
     }
 
@@ -56,11 +56,11 @@ impl AdsClient {
         self.inner.get_context_id()
     }
 
-    pub fn record_click(&self, click_url: Url, ohttp: bool) -> Result<(), RecordClickError> {
+    pub(crate) fn record_click(&self, click_url: Url, ohttp: bool) -> Result<(), RecordClickError> {
         self.inner.record_click(click_url, ohttp)
     }
 
-    pub fn record_impression(
+    pub(crate) fn record_impression(
         &self,
         impression_url: Url,
         ohttp: bool,
@@ -68,7 +68,7 @@ impl AdsClient {
         self.inner.record_impression(impression_url, ohttp)
     }
 
-    pub fn report_ad(
+    pub(crate) fn report_ad(
         &self,
         report_url: Url,
         reason: ReportReason,
@@ -77,7 +77,7 @@ impl AdsClient {
         self.inner.report_ad(report_url, reason, ohttp)
     }
 
-    pub fn request_image_ads(
+    pub(crate) fn request_image_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -89,7 +89,7 @@ impl AdsClient {
             .request_image_ads(ad_placement_requests, flags, options, ohttp, blocks)
     }
 
-    pub fn request_spoc_ads(
+    pub(crate) fn request_spoc_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -101,7 +101,7 @@ impl AdsClient {
             .request_spoc_ads(ad_placement_requests, flags, options, ohttp, blocks)
     }
 
-    pub fn request_tile_ads(
+    pub(crate) fn request_tile_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -120,7 +120,7 @@ impl AdsClient {
         )
     }
 
-    pub fn request_spoc_or_image_ads(
+    pub(crate) fn request_spoc_or_image_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -132,7 +132,7 @@ impl AdsClient {
             .request_spoc_or_image_ads(ad_placement_requests, flags, options, ohttp, blocks)
     }
 
-    pub fn shutdown(&self) {
+    pub(crate) fn shutdown(&self) {
         self.inner.shutdown();
     }
 
@@ -152,7 +152,7 @@ impl AdsClient {
 }
 
 impl AdsClientInner {
-    pub fn new(client_config: AdsClientConfig) -> Self {
+    pub(crate) fn new(client_config: AdsClientConfig) -> Self {
         let context_id_component = ContextIDComponent::new(
             &Uuid::new_v4().to_string(),
             0,
@@ -219,15 +219,15 @@ impl AdsClientInner {
         }
     }
 
-    pub fn clear_cache(&self) -> Result<(), open_database::Error> {
+    pub(crate) fn clear_cache(&self) -> Result<(), open_database::Error> {
         self.client.clear_cache()
     }
 
-    pub fn get_context_id(&self) -> context_id::ApiResult<String> {
+    pub(crate) fn get_context_id(&self) -> context_id::ApiResult<String> {
         self.context_id_component.request(DEFAULT_ROTATION_DAYS)
     }
 
-    pub fn record_click(&self, click_url: Url, ohttp: bool) -> Result<(), RecordClickError> {
+    pub(crate) fn record_click(&self, click_url: Url, ohttp: bool) -> Result<(), RecordClickError> {
         // TODO: Re-enable cache invalidation behind a Nimbus experiment.
         // The mobile team has requested this be temporarily disabled.
         // let mut click_url = click_url.clone();
@@ -244,7 +244,7 @@ impl AdsClientInner {
             })
     }
 
-    pub fn record_impression(
+    pub(crate) fn record_impression(
         &self,
         impression_url: Url,
         ohttp: bool,
@@ -288,7 +288,7 @@ impl AdsClientInner {
             })
     }
 
-    pub fn report_ad(
+    pub(crate) fn report_ad(
         &self,
         report_url: Url,
         reason: ReportReason,
@@ -305,7 +305,7 @@ impl AdsClientInner {
     }
 
     // relevance is not implemented for image ads, using an empty HashMap.
-    pub fn request_image_ads(
+    pub(crate) fn request_image_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -330,7 +330,7 @@ impl AdsClientInner {
     }
 
     // relevance is not implemented for spocs, using an empty HashMap.
-    pub fn request_spoc_ads(
+    pub(crate) fn request_spoc_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -360,7 +360,7 @@ impl AdsClientInner {
     // This allows both types to be returned without error (as instances of the enum `AdImageOrSpoc`)
     // TODO: This, as well as the other synchronous functions, are to be deprecated
     // when the stateful client rework is complete.
-    pub fn request_spoc_or_image_ads(
+    pub(crate) fn request_spoc_or_image_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -386,7 +386,7 @@ impl AdsClientInner {
             })
     }
 
-    pub fn request_tile_ads(
+    pub(crate) fn request_tile_ads(
         &self,
         ad_placement_requests: Vec<AdPlacementRequest>,
         flags: AdRequestFlags,
@@ -413,7 +413,7 @@ impl AdsClientInner {
             })
     }
 
-    pub fn shutdown(&self) {
+    pub(crate) fn shutdown(&self) {
         telemetry::uninstall();
 
         #[cfg(feature = "stateful")]
@@ -473,7 +473,7 @@ mod tests {
         let inner = Arc::new(AdsClientInner {
             #[cfg(feature = "stateful")]
             ads_store: Arc::new(Some(
-                AdsStoreBuilder::new("test_store.db")
+                AdsStoreBuilder::new(crate::IN_MEMORY_DB_PATH)
                     .build()
                     .expect("Simplest AdsStoreBuilder should be constructable"),
             )),
@@ -687,9 +687,7 @@ mod tests {
     #[ignore = "Cache invalidation temporarily disabled - will be re-enabled behind Nimbus experiment"]
     fn test_record_click_invalidates_cache() {
         viaduct_dev::init_backend_dev();
-        let cache = HttpCache::builder("test_record_click_invalidates_cache")
-            .build()
-            .unwrap();
+        let cache = HttpCache::builder_memory().build().unwrap();
         let mars_client = MARSClient::new(Environment::Test, Some(cache));
         let ads_client = new_with_mars_client(mars_client);
 

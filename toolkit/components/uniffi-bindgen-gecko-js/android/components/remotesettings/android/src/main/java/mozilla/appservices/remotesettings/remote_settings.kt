@@ -2615,6 +2615,10 @@ data class RemoteSettingsContext (
      */
     var `country`: kotlin.String? = null 
     , 
+    /**
+     * Exposed as `env.distribution`.  When unset, the env value is `"default"`, matching the
+     * Gecko client which reads the `distribution.id` pref with that fallback.
+     */
     var `distribution`: kotlin.String? = null 
     , 
     /**

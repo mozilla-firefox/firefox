@@ -152,8 +152,9 @@ pub fn record_client_error(operation: ClientOperation, error: &impl Display) {
 /// `ads_client.build_cache_error`.
 pub fn record_build_cache_error(error: &HttpCacheBuilderError) {
     let label = match error {
-        HttpCacheBuilderError::Database(_) => BuildCacheErrorLabel::DatabaseError,
-        HttpCacheBuilderError::DatabaseMemory(_) => BuildCacheErrorLabel::DatabaseError,
+        HttpCacheBuilderError::Database(_) | HttpCacheBuilderError::DatabaseMemory(_) => {
+            BuildCacheErrorLabel::DatabaseError
+        }
         HttpCacheBuilderError::EmptyDbPath => BuildCacheErrorLabel::EmptyDbPath,
         HttpCacheBuilderError::InvalidMaxSize { .. } => BuildCacheErrorLabel::InvalidMaxSize,
         HttpCacheBuilderError::InvalidTtl { .. } => BuildCacheErrorLabel::InvalidTtl,
@@ -167,8 +168,12 @@ pub fn record_build_cache_error(error: &HttpCacheBuilderError) {
                 },
                 Some(_),
             ),
-        )) => format!("{0} ({1})", error, extended_code),
-        _ => error.to_string(),
+        )) => format!("{error} ({extended_code})"),
+        HttpCacheBuilderError::Database(_)
+        | HttpCacheBuilderError::DatabaseMemory(_)
+        | HttpCacheBuilderError::EmptyDbPath
+        | HttpCacheBuilderError::InvalidMaxSize { .. }
+        | HttpCacheBuilderError::InvalidTtl { .. } => error.to_string(),
     };
     backend::build_cache_error(label.as_str(), value);
 }

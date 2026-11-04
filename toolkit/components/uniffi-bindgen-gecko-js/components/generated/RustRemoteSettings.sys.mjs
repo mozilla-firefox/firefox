@@ -646,6 +646,8 @@ export class RemoteSettingsContext {
          */
         this.country = country;
         /**
+         * Exposed as `env.distribution`.  When unset, the env value is `"default"`, matching the
+         * Gecko client which reads the `distribution.id` pref with that fallback.
          * @type {?string}
          */
         this.distribution = distribution;

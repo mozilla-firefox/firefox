@@ -6,7 +6,11 @@ use rusqlite::Connection;
 use sql_support::open_database;
 use std::time::Duration;
 
-pub struct AdsStoreConnectionInitializer {}
+/// How long a connection waits for another connection's lock before failing
+/// with `SQLITE_BUSY`.
+const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
+
+pub struct AdsStoreConnectionInitializer;
 
 impl open_database::ConnectionInitializer for AdsStoreConnectionInitializer {
     const END_VERSION: u32 = 1;
@@ -34,7 +38,7 @@ impl open_database::ConnectionInitializer for AdsStoreConnectionInitializer {
 
     fn prepare(&self, conn: &Connection, _db_empty: bool) -> open_database::Result<()> {
         conn.execute_batch("PRAGMA journal_mode=wal;")?;
-        conn.busy_timeout(Duration::from_secs(5))?;
+        conn.busy_timeout(BUSY_TIMEOUT)?;
         Ok(())
     }
 

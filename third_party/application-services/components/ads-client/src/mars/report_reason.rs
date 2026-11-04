@@ -14,7 +14,7 @@ pub enum ReportReason {
 }
 
 impl ReportReason {
-    pub fn as_str(&self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             ReportReason::Inappropriate => "inappropriate",
             ReportReason::Misleading => "misleading",

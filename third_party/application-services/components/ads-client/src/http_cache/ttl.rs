@@ -8,7 +8,7 @@ use std::time::Duration;
 /// Hard ceiling on any resolved TTL, regardless of source. Guards against a
 /// misconfigured server (e.g. `Cache-Control: max-age=315360000`) pinning
 /// responses in the cache for far longer than is reasonable.
-pub const MAX_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
+pub(super) const MAX_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 
 // Deliberately unsorted: fields are in resolution priority order, matching
 // `resolve()` below.
@@ -17,7 +17,7 @@ pub const MAX_TTL: Duration = Duration::from_secs(7 * 24 * 60 * 60);
 ///
 /// `explicit` comes from the caller, `server_max_age` from the response's
 /// `Cache-Control` header, and `default` from the cache's configuration.
-pub struct EffectiveTtl {
+pub(super) struct EffectiveTtl {
     /// Per-request override provided by the caller, if any.
     pub explicit: Option<Duration>,
     /// `Cache-Control: max-age` from the server response, if present.
@@ -33,7 +33,7 @@ impl EffectiveTtl {
     /// 3. `default` — the cache's configured default.
     ///
     /// The result is capped at [`MAX_TTL`].
-    pub fn resolve(&self) -> Duration {
+    pub(super) fn resolve(&self) -> Duration {
         let chosen = self
             .explicit
             .or(self.server_max_age)

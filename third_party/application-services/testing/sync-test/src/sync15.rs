@@ -41,6 +41,7 @@ pub struct TestRecord {
 pub struct TestEngine {
     pub name: &'static str,
     pub test_records: RefCell<Vec<TestRecord>>,
+    pub staged_records: RefCell<Vec<TestRecord>>,
     pub engine_sync_assoc: RefCell<EngineSyncAssociation>,
     pub was_reset_called: Cell<bool>,
 
@@ -71,7 +72,7 @@ impl SyncEngine for TestEngine {
             let incoming_record = bso.into_content::<TestRecord>().content().unwrap();
             info!("Got incoming record {:?}", incoming_record);
 
-            self.test_records.borrow_mut().push(incoming_record);
+            self.staged_records.borrow_mut().push(incoming_record);
         }
         Ok(())
     }
@@ -84,6 +85,10 @@ impl SyncEngine for TestEngine {
         // Notice the `&mut *` and `.borrow_mut()` to extract the Vec from
         // the RefCell.
         let temp: Vec<TestRecord> = mem::take(&mut *self.test_records.borrow_mut());
+        // Only now that we've taken our outgoing records do we keep the incoming ones.
+        self.test_records
+            .borrow_mut()
+            .append(&mut self.staged_records.borrow_mut());
 
         Ok(temp
             .into_iter()
@@ -187,6 +192,7 @@ fn test_sync_multiple(c0: &mut TestClient, c1: &mut TestClient) {
     let first_client_engine = TestEngine {
         name: "c0",
         test_records: RefCell::new(test_vec.clone()),
+        staged_records: RefCell::default(),
         engine_sync_assoc: RefCell::new(EngineSyncAssociation::Disconnected), // should also test Connected
         was_reset_called: Cell::new(false),
 
@@ -202,6 +208,7 @@ fn test_sync_multiple(c0: &mut TestClient, c1: &mut TestClient) {
     let second_client_engine = TestEngine {
         name: "c1",
         test_records: RefCell::default(),
+        staged_records: RefCell::default(),
         engine_sync_assoc: first_client_engine.engine_sync_assoc, // unlike c0, will not call reset()
         was_reset_called: Cell::new(false),
 

@@ -4,7 +4,7 @@
 */
 
 pub mod error;
-pub mod telemetry;
+pub(crate) mod telemetry;
 use crate::ads::{
     AdCallbacks, AdImage, AdImageOrSpoc, AdSpoc, AdTile, SpocFrequencyCaps, SpocRanking,
 };
@@ -29,10 +29,12 @@ use std::sync::Weak;
 pub use error::{AdsClientApiResult, MozAdsClientApiError};
 pub use telemetry::MozAdsTelemetry;
 
+/// Options for one ad request. Every field has a default.
 #[derive(Default, uniffi::Record)]
 pub struct MozAdsRequestOptions {
     #[uniffi(default)]
     pub blocks: Vec<String>,
+    #[uniffi(default)]
     pub cache_policy: Option<MozAdsCachePolicy>,
     #[uniffi(default)]
     pub flags: HashMap<String, bool>,
@@ -42,18 +44,22 @@ pub struct MozAdsRequestOptions {
     pub relevance: HashMap<String, f64>, // tiles only
 }
 
+/// Options for a callback request (click, impression or report).
 #[derive(Default, uniffi::Record)]
 pub struct MozAdsCallbackOptions {
     #[uniffi(default = false)]
     pub ohttp: bool,
 }
 
+/// The IAB content classification of a placement, for targeting.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsIABContent {
     pub category_ids: Vec<String>,
     pub taxonomy: MozAdsIABContentTaxonomy,
 }
 
+/// One placement to request a single ad for. `placement_id` must be unique
+/// within one request.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsPlacementRequest {
     #[uniffi(default = None)]
@@ -61,6 +67,8 @@ pub struct MozAdsPlacementRequest {
     pub placement_id: String,
 }
 
+/// One placement to request `count` ads for. `placement_id` must be unique
+/// within one request.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsPlacementRequestWithCount {
     pub count: u32,
@@ -69,6 +77,8 @@ pub struct MozAdsPlacementRequestWithCount {
     pub placement_id: String,
 }
 
+/// The callback URLs of an ad: pass them to `record_click`,
+/// `record_impression` and `report_ad`.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsCallbacks {
     pub click: AdsClientUrl,
@@ -76,6 +86,7 @@ pub struct MozAdsCallbacks {
     pub report: Option<AdsClientUrl>,
 }
 
+/// Configures and builds a [`MozAdsClient`].
 #[derive(uniffi::Object)]
 pub struct MozAdsClientBuilder(Mutex<MozAdsClientBuilderInner>);
 
@@ -96,11 +107,15 @@ impl Default for MozAdsClientBuilder {
 
 #[uniffi::export]
 impl MozAdsClientBuilder {
+    /// A builder with the defaults: the production environment, no cache and
+    /// no telemetry.
     #[uniffi::constructor]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Builds the client. A telemetry instance set on the builder becomes the
+    /// destination of every client's metrics in the process.
     pub fn build(&self) -> MozAdsClient {
         let mut inner = self.0.lock();
         // Taken so the builder does not keep the callback alive.
@@ -119,16 +134,21 @@ impl MozAdsClientBuilder {
         MozAdsClient { inner }
     }
 
+    /// Enables the HTTP cache with this configuration. Without it, nothing is
+    /// cached.
     pub fn cache_config(self: Arc<Self>, cache_config: MozAdsCacheConfig) -> Arc<Self> {
         self.0.lock().cache_config = Some(cache_config);
         self
     }
 
+    /// The MARS environment to send requests to. Defaults to production.
     pub fn environment(self: Arc<Self>, environment: MozAdsEnvironment) -> Arc<Self> {
         self.0.lock().environment = Some(environment);
         self
     }
 
+    /// Where the client records its metrics. Telemetry is process-wide: see
+    /// [`MozAdsTelemetry`].
     pub fn telemetry(self: Arc<Self>, telemetry: Box<dyn MozAdsTelemetry>) -> Arc<Self> {
         self.0.lock().telemetry = Some(Arc::from(telemetry));
         self
@@ -138,6 +158,7 @@ impl MozAdsClientBuilder {
 #[cfg(feature = "stateful")]
 #[uniffi::export]
 impl MozAdsClientBuilder {
+    /// Where the stateful client keeps its ads database.
     #[cfg(feature = "stateful")]
     pub fn store_config(self: Arc<Self>, store_config: MozAdsStoreConfig) -> Arc<Self> {
         self.0.lock().store_config = Some(store_config);
@@ -152,8 +173,10 @@ impl MozAdsClientBuilder {
     }
 }
 
-// Deliberately unsorted: uniffi encodes variants by index, and this mirrors
-// `Environment`.
+/// The MARS environment the client sends requests to. Defaults to `Prod`.
+///
+/// Variants are deliberately unsorted: UniFFI encodes them by index, and
+/// this mirrors `Environment`.
 #[derive(Clone, Debug, Default, uniffi::Enum, PartialEq, Eq)]
 pub enum MozAdsEnvironment {
     #[default]
@@ -164,6 +187,8 @@ pub enum MozAdsEnvironment {
     Custom(AdsClientUrl),
 }
 
+/// The on-disk HTTP cache. `default_cache_ttl_seconds` defaults to 300 and
+/// `max_size_mib` to 10.
 #[derive(Clone, uniffi::Record)]
 pub struct MozAdsCacheConfig {
     pub db_path: String,
@@ -173,17 +198,20 @@ pub struct MozAdsCacheConfig {
     pub max_size_mib: Option<u64>,
 }
 
+/// The SQLite database the stateful client keeps its ads in.
 #[derive(Clone, uniffi::Record)]
 pub struct MozAdsStoreConfig {
     pub db_path: String,
 }
 
+/// IAB content categories, in one taxonomy version.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsContentCategory {
     pub categories: Vec<String>,
     pub taxonomy: MozAdsIABContentTaxonomy,
 }
 
+/// The version of the IAB Content Taxonomy that category ids refer to.
 #[derive(Clone, Copy, Debug, uniffi::Enum, PartialEq)]
 pub enum MozAdsIABContentTaxonomy {
     IAB1_0,
@@ -193,6 +221,8 @@ pub enum MozAdsIABContentTaxonomy {
     IAB3_0,
 }
 
+/// How one request uses the cache. `ttl_seconds` overrides the client's
+/// default TTL; `0` does not cache the response.
 #[derive(Clone, Copy, Debug, Default, uniffi::Record)]
 pub struct MozAdsCachePolicy {
     pub mode: MozAdsCacheMode,
@@ -200,6 +230,7 @@ pub struct MozAdsCachePolicy {
     pub ttl_seconds: Option<u64>,
 }
 
+/// Why the user reported an ad.
 #[derive(Clone, Copy, Debug, uniffi::Enum)]
 pub enum MozAdsReportReason {
     Inappropriate,
@@ -223,6 +254,7 @@ impl From<MozAdsReportReason> for ReportReason {
     }
 }
 
+/// Whether a request reads the cache before the network.
 #[derive(Clone, Copy, Debug, Default, uniffi::Enum)]
 pub enum MozAdsCacheMode {
     #[default]
@@ -230,6 +262,7 @@ pub enum MozAdsCacheMode {
     NetworkFirst,
 }
 
+/// An image ad returned by MARS.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsImage {
     pub alt_text: Option<String>,
@@ -240,6 +273,7 @@ pub struct MozAdsImage {
     pub url: AdsClientUrl,
 }
 
+/// A sponsored content (spoc) ad returned by MARS.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsSpoc {
     pub block_key: String,
@@ -256,25 +290,29 @@ pub struct MozAdsSpoc {
     pub url: AdsClientUrl,
 }
 
+/// An ad from a placement that can return either an image or a spoc.
 #[derive(Debug, PartialEq, uniffi::Enum)]
 pub enum MozAdsImageOrSpoc {
     Image(MozAdsImage),
     Spoc(MozAdsSpoc),
 }
 
+/// Frequency capping information for a spoc.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsSpocFrequencyCaps {
     pub cap_key: String,
     pub day: u32,
 }
 
+/// Ranking and personalization information for a spoc.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsSpocRanking {
     pub item_score: f64,
-    pub personalization_models: std::collections::HashMap<String, u32>,
+    pub personalization_models: HashMap<String, u32>,
     pub priority: u32,
 }
 
+/// A tile ad returned by MARS.
 #[derive(Debug, PartialEq, uniffi::Record)]
 pub struct MozAdsTile {
     pub block_key: String,
@@ -550,7 +588,7 @@ mod tests {
         let builder = Arc::new(MozAdsClientBuilder::new())
             .telemetry(Box::new(NoopMozAdsTelemetry))
             .cache_config(MozAdsCacheConfig {
-                db_path: "test_shutdown_is_idempotent".to_string(),
+                db_path: crate::IN_MEMORY_DB_PATH.to_string(),
                 default_cache_ttl_seconds: None,
                 max_size_mib: None,
             });
@@ -573,7 +611,7 @@ mod tests {
         let builder = Arc::new(MozAdsClientBuilder::new())
             .telemetry(Box::new(NoopMozAdsTelemetry))
             .cache_config(MozAdsCacheConfig {
-                db_path: "test_shutdown_is_idempotent".to_string(),
+                db_path: crate::IN_MEMORY_DB_PATH.to_string(),
                 default_cache_ttl_seconds: None,
                 max_size_mib: None,
             });

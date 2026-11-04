@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 pub mod builder;
 pub mod connection_initializer;
 pub mod store;
@@ -12,8 +16,10 @@ use std::path::Path;
 
 pub struct AdsStore {
     holder: AdsStoreHolder,
-    is_memory: bool,
-    #[allow(dead_code)]
+    #[expect(
+        dead_code,
+        reason = "validated by the builder, but nothing trims the store to it yet"
+    )]
     max_size: ByteSize,
 }
 
@@ -32,8 +38,8 @@ impl AdsStore {
         Ok(())
     }
 
-    pub fn is_memory(&self) -> bool {
-        self.is_memory
+    pub fn is_memory(&self) -> Result<bool, open_database::Error> {
+        self.holder.is_memory()
     }
 
     pub fn shutdown_db(&self) {
@@ -45,20 +51,21 @@ impl AdsStore {
 mod tests {
     use super::*;
     use crate::test_utils::get_example_happy_image_ads;
+    use crate::IN_MEMORY_DB_PATH;
 
     #[test]
     fn test_ads_store_creation() {
         // Test that AdsStore can be created successfully with test config
-        let store: Result<AdsStore, _> = AdsStore::builder("test_store.db").build();
+        let store: Result<AdsStore, _> = AdsStore::builder(IN_MEMORY_DB_PATH).build();
         assert!(store.is_ok());
     }
 
     #[test]
     fn test_clear_store() {
-        let store: AdsStore = AdsStore::builder("test_clear.db").build().unwrap();
+        let store: AdsStore = AdsStore::builder(IN_MEMORY_DB_PATH).build().unwrap();
 
         let (placement_id, ad) = get_example_happy_image_ads("mock_billboard_1");
-        store.holder.store_ad(&placement_id, ad.clone()).unwrap();
+        store.holder.store_ad(&placement_id, &ad).unwrap();
 
         // Verify it's cached
         let retrieved = store.holder.lookup(&placement_id).unwrap();
@@ -74,12 +81,12 @@ mod tests {
 
     #[test]
     fn test_invalidate_by_id() {
-        let store: AdsStore = AdsStore::builder("test_invalidate.db").build().unwrap();
+        let store: AdsStore = AdsStore::builder(IN_MEMORY_DB_PATH).build().unwrap();
 
         let (placement_1, ad_1) = get_example_happy_image_ads("mock_billboard_1");
         let (placement_2, ad_2) = get_example_happy_image_ads("mock_billboard_2");
-        store.holder.store_ad(&placement_1, ad_1).unwrap();
-        store.holder.store_ad(&placement_2, ad_2).unwrap();
+        store.holder.store_ad(&placement_1, &ad_1).unwrap();
+        store.holder.store_ad(&placement_2, &ad_2).unwrap();
 
         assert!(store.holder.lookup(&placement_1).unwrap().is_some());
         assert!(store.holder.lookup(&placement_2).unwrap().is_some());

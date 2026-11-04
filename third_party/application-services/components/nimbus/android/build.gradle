@@ -18,10 +18,6 @@ buildscript {
     }
 }
 
-if (!gradle.hasProperty("mozconfig")) {
-    apply plugin: libs.plugins.python.envs.plugin.get().pluginId
-}
-
 apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
 
@@ -35,7 +31,7 @@ ext {
 apply plugin: "org.mozilla.telemetry.glean-gradle-plugin"
 
 android {
-    namespace 'org.mozilla.experiments.nimbus'
+    namespace = 'org.mozilla.experiments.nimbus'
 }
 
 dependencies {

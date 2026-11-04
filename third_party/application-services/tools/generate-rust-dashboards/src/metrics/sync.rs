@@ -47,7 +47,7 @@ pub fn add_to_main_dashboard(builder: &mut DashboardBuilder, config: &TeamConfig
 pub fn extra_dashboard(config: &TeamConfig) -> Result<Dashboard> {
     let mut builder = DashboardBuilder::new(
         format!("{} - Sync Details", config.team_name),
-        format!("{}-sync-extra", config.team_slug()),
+        config.details_slug(),
     );
     builder.add_application_variable(config)?;
     builder.add_channel_variable();
@@ -189,7 +189,12 @@ fn overview_panel(
 
     let column_name = metric.column_name();
     let all_engines = all_engines(config);
-    let all_engine_literals: Vec<String> = all_engines.iter().map(|e| format!("'{e}'")).collect();
+    let engine_matches: Vec<String> = config.components.iter()
+        .flat_map(|c| c.sync_engines().iter().map(|e| (c.slug(), e.to_string())))
+        .map(|(component, engine)| {
+            format!("(engine_name = '{engine}' AND '{component}' IN (SELECT * FROM UNNEST(SPLIT('${{components:csv}}', ','))))")
+        })
+        .collect();
 
     let query = Query {
         select: vec![
@@ -207,7 +212,7 @@ fn overview_panel(
                 Application::Android => "application = 'firefox-android'",
             }
             .into(),
-            format!("engine_name IN ({})", all_engine_literals.join(", ")),
+            engine_matches.join(" OR "),
         ],
         order_by: Some("time".into()),
         ..Query::default()
@@ -235,7 +240,7 @@ fn overview_panel(
         field_config: FieldConfig {
             defaults: FieldConfigDefaults {
                 links: vec![DataLink {
-                    url: UrlBuilder::new_dashboard(format!("{}-sync-extra", config.team_slug()))
+                    url: UrlBuilder::new_dashboard(config.details_slug())
                         .with_time_range_param()
                         .with_param("var-application", application.slug())
                         .with_param("var-channel", channel.to_string())
@@ -412,36 +417,42 @@ WHERE
         config
             .components
             .iter()
-            .flat_map(|c| c.sync_engines())
-            // filter out desktop-only engines
-            .filter(|c| **c != SyncEngine::RustLogins)
-            .flat_map(|engine_name| {
-                [
-                    format!(
-                        "\
-    SELECT
-        'firefox_android' as application,
-        '{engine_name}' as engine_name,
-        normalized_channel,
-        failure_reason.key as error,
-        failure_reason.value as details,
-        submission_timestamp
-    FROM mozdata.fenix.{engine_name}_sync
-    CROSS JOIN UNNEST(metrics.labeled_string.{engine_name}_sync_v2_failure_reason) as failure_reason"
-                    ),
-                    format!(
-                        "\
-    SELECT
-        'firefox_ios' as application,
-        '{engine_name}' as engine_name,
-        normalized_channel,
-        failure_reason.key as error,
-        failure_reason.value as details,
-        submission_timestamp
-    FROM mozdata.firefox_ios.{engine_name}_sync
-    CROSS JOIN UNNEST(metrics.labeled_string.{engine_name}_sync_v2_failure_reason) as failure_reason"
-                    ),
-                ]
+            .flat_map(|c| c.sync_engines_for_android())
+            .map(|engine| {
+                let table_prefix = engine.to_string().replace("-", "_");
+                format!(
+                    "\
+SELECT
+    'firefox_android' as application,
+    '{engine}' as engine_name,
+    normalized_channel,
+    failure_reason.key as error,
+    failure_reason.value as details,
+    submission_timestamp
+FROM mozdata.fenix.{table_prefix}_sync
+CROSS JOIN UNNEST(metrics.labeled_string.{table_prefix}_sync_v2_failure_reason) as failure_reason"
+                )
+            }),
+    );
+    queries.extend(
+        config
+            .components
+            .iter()
+            .flat_map(|c| c.sync_engines_for_ios())
+            .map(|engine| {
+                let table_prefix = engine.to_string().replace("-", "_");
+                format!(
+                    "\
+SELECT
+    'firefox_ios' as application,
+    '{engine}' as engine_name,
+    normalized_channel,
+    failure_reason.key as error,
+    failure_reason.value as details,
+    submission_timestamp
+FROM mozdata.firefox_ios.{table_prefix}_sync
+CROSS JOIN UNNEST(metrics.labeled_string.{table_prefix}_sync_v2_failure_reason) as failure_reason"
+                )
             }),
     );
 

@@ -3,10 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#[cfg(not(feature = "keydb"))]
-use nss_as::ensure_initialized as ensure_nss_initialized;
-#[cfg(feature = "keydb")]
-use nss_as::ensure_initialized_with_profile_dir as ensure_nss_initialized_with_profile_dir;
 #[cfg(feature = "ohttp")]
 use viaduct::ohttp::configure_default_ohttp_channels;
 uniffi::setup_scaffolding!();
@@ -20,7 +16,10 @@ uniffi::setup_scaffolding!();
 #[cfg(not(feature = "keydb"))]
 #[uniffi::export]
 pub fn initialize() {
-    ensure_nss_initialized();
+    error_support::initialize();
+
+    #[cfg(feature = "nss")]
+    nss_as::ensure_initialized();
 
     #[cfg(feature = "ohttp")]
     {
@@ -40,7 +39,7 @@ pub fn initialize() {
 #[cfg(feature = "keydb")]
 #[uniffi::export]
 pub fn initialize(profile_path: String) {
-    ensure_nss_initialized_with_profile_dir(profile_path);
+    nss_as::ensure_initialized_with_profile_dir(profile_path);
 
     #[cfg(feature = "ohttp")]
     {

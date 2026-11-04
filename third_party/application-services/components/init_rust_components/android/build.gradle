@@ -2,7 +2,7 @@ apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
 
 android {
-    namespace 'org.mozilla.appservices.init_rust_components'
+    namespace = 'org.mozilla.appservices.init_rust_components'
 
     defaultConfig {
         buildConfigField("String", "LIBRARY_VERSION", "\"${config.componentsVersion}\"")

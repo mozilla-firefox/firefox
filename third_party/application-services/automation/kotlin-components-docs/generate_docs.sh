@@ -35,5 +35,5 @@ $CARGO build -p megazord
 $CARGO uniffi-bindgen generate --language kotlin --no-format --out-dir "$KOTLIN_DIR" "target/debug/${DLL_PREFIX}megazord${DLL_SUFFIX}"
 
 # Generate documentation with increased memory
-(cd "$WORKING_DIR" && "$REPO_ROOT/gradlew" --max-workers=2 dokkaHtml -Dorg.gradle.vfs.watch=false)
+(cd "$WORKING_DIR" && "$REPO_ROOT/gradlew" --max-workers=2 dokkaGenerate -Dorg.gradle.vfs.watch=false)
 echo "Documentation successfully generated"

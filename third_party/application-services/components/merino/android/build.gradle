@@ -2,7 +2,7 @@ apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
 
 android {
-    namespace 'org.mozilla.appservices.merino'
+    namespace = 'org.mozilla.appservices.merino'
 }
 
 ext.configureUniFFIBindgen("merino")

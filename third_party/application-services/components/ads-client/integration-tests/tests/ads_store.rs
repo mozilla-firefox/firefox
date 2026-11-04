@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #[cfg(feature = "stateful")]
 use ads_client::ads_store::builder::AdsStoreBuilder;
 #[cfg(feature = "stateful")]
@@ -13,7 +17,7 @@ fn clear_test_dbs(test_db_locations: &[&'static str]) {
         if test_db_location_path.components().count() != 1 || !test_db_location_path.is_relative() {
             panic!("Tests provided to `clear_test_dbs` must single-component and in the current directory: {test_db_location}");
         }
-        match std::fs::remove_file(&test_db_location_path) {
+        match std::fs::remove_file(test_db_location_path) {
             Ok(()) => println!("Deleted previous test's `{test_db_location}`"),
             Err(e) => println!("Did not delete previous test's `{test_db_location}`: {e}"),
         }
@@ -30,7 +34,7 @@ fn test_bad_path_opens_memory_db() {
         .build()
         .expect("Should be able to build a bad path");
     assert!(
-        !good_path.is_memory(),
+        !good_path.is_memory().unwrap(),
         "A valid path should result in a file-based sqlite database"
     );
 
@@ -38,7 +42,7 @@ fn test_bad_path_opens_memory_db() {
         .build()
         .expect("Should be able to build a bad path");
     assert!(
-        bad_path.is_memory(),
+        bad_path.is_memory().unwrap(),
         "Invalid path should result in a memory-based sqlite database"
     );
 

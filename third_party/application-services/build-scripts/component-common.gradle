@@ -70,7 +70,7 @@ android {
     compileSdk { version = release(config.compileSdkMajorVersion) { minorApiLevel = config.compileSdkMinorVersion } }
 
     defaultConfig {
-        ndkVersion config.ndkVersion
+        ndkVersion = config.ndkVersion
         minSdkVersion config.minSdkVersion
         targetSdkVersion config.targetSdkVersion
 
@@ -79,7 +79,7 @@ android {
     }
 
     buildFeatures {
-        buildConfig true
+        buildConfig = true
     }
 
     buildTypes {

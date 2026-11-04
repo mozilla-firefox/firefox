@@ -181,8 +181,7 @@ fn test_login_general(c0: &mut TestClient, c1: &mut TestClient) {
 
     assert_eq!(
         c0.logins_store.get(&l0id).unwrap().unwrap().times_used,
-        5, // initially 1, touched twice, updated twice (on two accounts!
-        // doing this right requires 3WM)
+        3, // initially 1, touched twice - updates don't count as a use.
         "Times used is wrong (final)"
     );
 }

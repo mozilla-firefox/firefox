@@ -2,7 +2,7 @@ apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
 
 android {
-    namespace 'org.mozilla.appservices.fxcontainers'
+    namespace = 'org.mozilla.appservices.fxcontainers'
 }
 
 ext.configureUniFFIBindgen("fxcontainers")

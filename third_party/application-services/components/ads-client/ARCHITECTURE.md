@@ -57,7 +57,7 @@ impl MozAdsClientBuilder {
         self.0.lock().environment = Some(environment);
         self  // Returns self for method chaining
     }
-    
+
     // build() takes &self (not consuming) to work with UniFFI's Arc wrapping
     pub fn build(&self) -> MozAdsClient { ... }
 }

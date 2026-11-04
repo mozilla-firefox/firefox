@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 use parking_lot::{Condvar, Mutex};
 use url::Url;
 
@@ -29,6 +33,12 @@ struct RequestQueueInner {
 
     // The ordered queue of non-AdPlacementRequest commands to iterate through.
     request_queue: VecDeque<QueuedRequest>,
+}
+
+impl Default for RequestQueue {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl RequestQueue {
@@ -80,7 +90,7 @@ impl RequestQueue {
         // First, if any ad requests are queued, batch the first `MAXIMUM_ADS_BATCH_COUNT` and resolve those.
         let num_ads = inner.queued_ads.len().min(MAXIMUM_ADS_BATCH_COUNT);
         let mut ad_requests: Vec<_> = inner.queued_ads.drain().collect();
-        if ad_requests.len() > 0 {
+        if !ad_requests.is_empty() {
             let requeue_requests = ad_requests.split_off(num_ads);
             inner.queued_ads = requeue_requests.into_iter().collect();
             return Some(DispatchRequest::RequestAds {
@@ -89,7 +99,7 @@ impl RequestQueue {
         }
 
         // Otherwise, pop the next queue-able command.
-        inner.request_queue.pop_front().map(|c| c.into())
+        inner.request_queue.pop_front().map(Into::into)
     }
 
     // Add a `DispatchRequest` to the `RequestQueue` (primary entry point for queuing requests).
@@ -99,13 +109,13 @@ impl RequestQueue {
         match request {
             DispatchRequest::RequestAds { ad_requests } => self.push_ad_requests(ad_requests),
             DispatchRequest::RecordImpression { url } => {
-                self.push_queued_request(QueuedRequest::RecordImpression { url })
+                self.push_queued_request(QueuedRequest::RecordImpression { url });
             }
             DispatchRequest::RecordClick { url } => {
-                self.push_queued_request(QueuedRequest::RecordClick { url })
+                self.push_queued_request(QueuedRequest::RecordClick { url });
             }
             DispatchRequest::ReportAd { url, reason } => {
-                self.push_queued_request(QueuedRequest::ReportAd { url, reason })
+                self.push_queued_request(QueuedRequest::ReportAd { url, reason });
             }
         }
     }
@@ -136,7 +146,7 @@ impl RequestQueue {
 }
 
 impl RequestQueueInner {
-    pub fn next_available(&self) -> bool {
+    pub(crate) fn next_available(&self) -> bool {
         !self.queued_ads.is_empty() || !self.request_queue.is_empty()
     }
 }

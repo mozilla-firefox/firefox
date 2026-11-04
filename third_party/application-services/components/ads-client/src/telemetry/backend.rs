@@ -37,7 +37,7 @@ pub trait Telemetry: Send + Sync {
 static CALLBACK: RwLock<Option<Arc<dyn Telemetry>>> = RwLock::new(None);
 
 /// Makes `callback` the destination of every metric recorded from now on.
-pub fn install(callback: impl Telemetry + 'static) {
+pub(crate) fn install(callback: impl Telemetry + 'static) {
     // Dropping a UniFFI callback calls into foreign code, so let the replaced
     // one drop after the lock is released.
     let _replaced = CALLBACK.write().replace(Arc::new(callback));
@@ -47,7 +47,7 @@ pub fn install(callback: impl Telemetry + 'static) {
 ///
 /// UniFFI callbacks left hanging at shutdown crash Firefox Desktop on quit, so
 /// the client uninstalls the callback when it shuts down.
-pub fn uninstall() {
+pub(crate) fn uninstall() {
     // As in `install`, the removed callback drops after the lock is released.
     let _removed = CALLBACK.write().take();
 }
@@ -67,7 +67,7 @@ const MAX_STRING_SIZE: ByteSize = ByteSize::b(255);
 
 /// Cuts `value` to fit in a Glean string, on a char boundary.
 fn fit(mut value: String) -> String {
-    let max = MAX_STRING_SIZE.as_u64() as usize;
+    let max = usize::try_from(MAX_STRING_SIZE.as_u64()).unwrap_or(usize::MAX);
     if value.len() > max {
         // `str::floor_char_boundary` does this, but needs Rust 1.91 and
         // mozilla-central still builds with 1.90.

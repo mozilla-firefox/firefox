@@ -29,7 +29,7 @@ tracing-support = { path = "../../components/support/tracing" }
 sync_manager = { path = "../../components/sync_manager" }
 as-ohttp-client = { path = "../../components/as-ohttp-client" }
 search = { path = "../../components/search" }
-init_rust_components = { path = "../../components/init_rust_components", features = ["ohttp"] }
+init_rust_components = { path = "../../components/init_rust_components", features = ["nss", "ohttp"] }
 merino = { path = "../../components/merino" }
 context_id = { path = "../../components/context_id" }
 relay = { path = "../../components/relay" }

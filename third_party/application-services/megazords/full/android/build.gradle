@@ -9,12 +9,12 @@ if (!gradle.hasProperty("mozconfig")) {
 }
 
 android {
-    namespace 'org.mozilla.appservices.full_megazord'
+    namespace = 'org.mozilla.appservices.full_megazord'
 
     compileSdk { version = release(config.compileSdkMajorVersion) { minorApiLevel = config.compileSdkMinorVersion } }
 
     defaultConfig {
-        ndkVersion config.ndkVersion
+        ndkVersion = config.ndkVersion
         minSdkVersion config.minSdkVersion
         targetSdkVersion config.targetSdkVersion
 
@@ -256,7 +256,7 @@ afterEvaluate {
                 artifact tasks['packageLibsForTest']
                 if (!gradle.hasProperty("mozconfig")) {
                     artifact file("${projectDir}/../DEPENDENCIES.md"), {
-                        extension "LICENSES.md"
+                        extension = "LICENSES.md"
                     }
                 }
 

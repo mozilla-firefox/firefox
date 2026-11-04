@@ -25,8 +25,8 @@ impl Store {
 
 // Generates the UniFFI-exposed bridged engines, newtypes around
 // `sync15::engine::BridgedEngineWrapper`.
-sync15::uniffi_bridged_engine!(AddressesBridgedEngine);
-sync15::uniffi_bridged_engine!(CreditCardsBridgedEngine);
+sync15::uniffi_bridged_engine!(AddressesBridgedEngine, crate::AutofillApiError);
+sync15::uniffi_bridged_engine!(CreditCardsBridgedEngine, crate::AutofillApiError);
 
 #[cfg(test)]
 mod tests {

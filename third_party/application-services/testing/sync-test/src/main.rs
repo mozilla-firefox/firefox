@@ -37,9 +37,13 @@ pub fn init_testing() {
     // our network stack) that happen to be particularly noisy (even on `info`
     // level), which get turned on at the warn level. This can still be
     // overridden with RUST_LOG, however.
-    let log_filter = "trace,tokio_threadpool=warn,tokio_reactor=warn,tokio_core=warn,tokio=warn,\
-         hyper=warn,want=warn,mio=warn,trust_dns_proto=warn,trust_dns_resolver=warn";
+    let log_filter = "trace,\
+        reqwest=info,hyper=warn,want=warn,mio=warn,\
+        tokio=warn,tokio_threadpool=warn,tokio_reactor=warn,tokio_core=warn,\
+        trust_dns_proto=warn,trust_dns_resolver=warn";
     env_logger::init_from_env(env_logger::Env::default().filter_or("RUST_LOG", log_filter));
+    // also need our local tracing-support log initialize, not sure how you might bump these to trace!?
+    cli_support::init_logging_with("tabs=debug,sync15=debug,sync_manager=debug");
 }
 
 // Runs each test group with a fresh Firefox account.
@@ -90,6 +94,8 @@ pub fn run_test_group(opts: &Opts, group: TestGroup) {
         (&mut c0s[0], &mut c1s[0])
     };
     log::info!("++ TestGroup begin {}", group.name);
+    // The account is reused across runs, and a failed test skips cleanup, so start clean.
+    crate::auth::cleanup_server(vec![&mut *c0, &mut *c1]).expect("Initial server wipe failed");
     for (name, test) in group.tests {
         log::info!("+++ Test begin {}::{}", group.name, name);
         test(c0, c1);

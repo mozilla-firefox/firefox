@@ -3,16 +3,16 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-pub mod ad_request;
-pub mod ad_response;
-pub mod environment;
-pub mod error;
+pub(crate) mod ad_request;
+pub(crate) mod ad_response;
+pub(crate) mod environment;
+pub(crate) mod error;
 mod preflight;
-pub mod report_reason;
+pub(crate) mod report_reason;
 mod transport;
 
-pub use environment::Environment;
-pub use report_reason::ReportReason;
+pub(crate) use environment::Environment;
+pub(crate) use report_reason::ReportReason;
 use sql_support::open_database;
 
 use self::{
@@ -31,25 +31,28 @@ use crate::{
 use url::Url;
 use viaduct::{Headers, Request};
 
-pub struct MARSClient {
+pub(crate) struct MARSClient {
     environment: Environment,
     transport: MARSTransport,
 }
 
 impl MARSClient {
-    pub fn new(environment: Environment, http_cache: Option<HttpCache>) -> Self {
+    pub(crate) fn new(environment: Environment, http_cache: Option<HttpCache>) -> Self {
         Self {
             environment,
             transport: MARSTransport::new(http_cache),
         }
     }
 
-    pub fn clear_cache(&self) -> Result<(), open_database::Error> {
+    pub(crate) fn clear_cache(&self) -> Result<(), open_database::Error> {
         self.transport.clear_cache()
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn fetch_ads(
+    #[allow(
+        clippy::too_many_arguments,
+        reason = "the fields of an ad request, and how to send it"
+    )]
+    pub(crate) fn fetch_ads(
         &self,
         context_id: Option<String>,
         flags: AdRequestFlags,
@@ -81,20 +84,22 @@ impl MARSClient {
         Ok((ads, request_hash))
     }
 
-    // TODO: Remove this allow(dead_code) when cache invalidation is re-enabled behind Nimbus experiment
-    #[allow(dead_code)]
-    pub fn invalidate_cache_by_hash(
+    #[expect(
+        dead_code,
+        reason = "cache invalidation on click is off until a Nimbus experiment re-enables it"
+    )]
+    pub(crate) fn invalidate_cache_by_hash(
         &self,
         request_hash: &RequestHash,
     ) -> Result<(), open_database::Error> {
         self.transport.invalidate_cache_by_hash(request_hash)
     }
 
-    pub fn record_click(&self, callback: Url, ohttp: bool) -> Result<(), RecordClickError> {
+    pub(crate) fn record_click(&self, callback: Url, ohttp: bool) -> Result<(), RecordClickError> {
         Ok(self.make_callback_request(callback, ohttp)?)
     }
 
-    pub fn record_impression(
+    pub(crate) fn record_impression(
         &self,
         callback: Url,
         ohttp: bool,
@@ -102,7 +107,7 @@ impl MARSClient {
         Ok(self.make_callback_request(callback, ohttp)?)
     }
 
-    pub fn report_ad(
+    pub(crate) fn report_ad(
         &self,
         mut callback: Url,
         reason: ReportReason,
@@ -114,8 +119,7 @@ impl MARSClient {
         Ok(self.make_callback_request(callback, ohttp)?)
     }
 
-    #[allow(dead_code)]
-    pub fn shutdown_db(&self) {
+    pub(crate) fn shutdown_db(&self) {
         self.transport.shutdown_db();
     }
 
@@ -247,7 +251,7 @@ mod tests {
             .expect(1) // only first request goes to network
             .create();
 
-        let cache = HttpCache::builder("test_fetch_ads_cache_hit_skips_network.db")
+        let cache = HttpCache::builder_memory()
             .default_ttl(std::time::Duration::from_secs(300))
             .max_size(crate::bytesize::ByteSize::mib(1))
             .build()
@@ -287,7 +291,7 @@ mod tests {
     #[test]
     fn test_record_click_makes_callback_request() {
         viaduct_dev::init_backend_dev();
-        let cache = HttpCache::builder("test_record_click.db")
+        let cache = HttpCache::builder_memory()
             .default_ttl(std::time::Duration::from_secs(300))
             .max_size(crate::bytesize::ByteSize::mib(1))
             .build()
@@ -306,7 +310,7 @@ mod tests {
     #[test]
     fn test_record_impression_makes_callback_request() {
         viaduct_dev::init_backend_dev();
-        let cache = HttpCache::builder("test_record_impression.db")
+        let cache = HttpCache::builder_memory()
             .default_ttl(std::time::Duration::from_secs(300))
             .max_size(crate::bytesize::ByteSize::mib(1))
             .build()

@@ -236,7 +236,7 @@ impl SyncEngine for WebExtSyncEngine {
 // `SyncEngine` impl on the `BridgedEngine` defined above (webext-storage is
 // Desktop-only, but implements the one unified `SyncEngine` trait like everyone
 // else).
-sync15::uniffi_bridged_engine!(WebExtStorageBridgedEngine);
+sync15::uniffi_bridged_engine!(WebExtStorageBridgedEngine, crate::WebExtStorageApiError);
 
 impl From<anyhow::Error> for crate::error::Error {
     fn from(value: anyhow::Error) -> Self {

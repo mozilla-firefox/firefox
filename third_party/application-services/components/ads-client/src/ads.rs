@@ -15,7 +15,7 @@ pub struct PlacementId(String);
 #[cfg(feature = "stateful")]
 impl PlacementId {
     pub fn new(s: &str) -> PlacementId {
-        PlacementId(s.to_string())
+        PlacementId(s.to_owned())
     }
     pub fn into_inner(self) -> String {
         self.0
@@ -165,7 +165,7 @@ impl TryFrom<Ad> for AdImage {
     fn try_from(ad: Ad) -> Result<Self, Self::Error> {
         match ad {
             Ad::Image(ad) => Ok(ad),
-            other => Err(other.unexpected("an image")),
+            other @ Ad::Spoc(_) | other @ Ad::Tile(_) => Err(other.unexpected("an image")),
         }
     }
 }
@@ -176,7 +176,7 @@ impl TryFrom<Ad> for AdSpoc {
     fn try_from(ad: Ad) -> Result<Self, Self::Error> {
         match ad {
             Ad::Spoc(ad) => Ok(ad),
-            other => Err(other.unexpected("a spoc")),
+            other @ Ad::Image(_) | other @ Ad::Tile(_) => Err(other.unexpected("a spoc")),
         }
     }
 }
@@ -187,7 +187,7 @@ impl TryFrom<Ad> for AdTile {
     fn try_from(ad: Ad) -> Result<Self, Self::Error> {
         match ad {
             Ad::Tile(ad) => Ok(ad),
-            other => Err(other.unexpected("a tile")),
+            other @ Ad::Image(_) | other @ Ad::Spoc(_) => Err(other.unexpected("a tile")),
         }
     }
 }
@@ -224,7 +224,7 @@ impl TryFrom<Ad> for AdImageOrSpoc {
         match ad {
             Ad::Image(ad) => Ok(AdImageOrSpoc::Image(ad)),
             Ad::Spoc(ad) => Ok(AdImageOrSpoc::Spoc(ad)),
-            other => Err(other.unexpected("an image or a spoc")),
+            other @ Ad::Tile(_) => Err(other.unexpected("an image or a spoc")),
         }
     }
 }

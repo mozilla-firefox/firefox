@@ -12,7 +12,7 @@ use std::collections::HashMap;
 /// Ads by placement, in the shape MARS sends them.
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(transparent)]
-pub struct AdResponse {
+pub(crate) struct AdResponse {
     pub data: HashMap<String, Vec<Ad>>,
 }
 
@@ -55,9 +55,9 @@ impl<A: Into<Ad>> From<HashMap<String, Vec<A>>> for AdResponse {
 }
 
 impl AdResponse {
-    pub fn enrich_callbacks(&mut self, request_hash: &RequestHash) {
+    pub(crate) fn enrich_callbacks(&mut self, request_hash: &RequestHash) {
         let hash_str = request_hash.to_string();
-        for (placement_id, ads) in self.data.iter_mut() {
+        for (placement_id, ads) in &mut self.data {
             for (position, ad) in ads.iter_mut().enumerate() {
                 let cap_key = ad.cap_key();
                 let callbacks = ad.callbacks_mut();
@@ -82,7 +82,7 @@ impl AdResponse {
 
     /// Keeps the ads `kind` accepts, dropping placements left with none. Ads of
     /// another kind are recorded like ads that don't parse.
-    pub fn into_kind<A>(self) -> HashMap<String, Vec<A>>
+    pub(crate) fn into_kind<A>(self) -> HashMap<String, Vec<A>>
     where
         A: TryFrom<Ad, Error = UnexpectedAdKind>,
     {
@@ -103,7 +103,7 @@ impl AdResponse {
     }
 
     /// The first ad `kind` accepts, for each placement that has one.
-    pub fn take_first<A>(self) -> HashMap<String, A>
+    pub(crate) fn take_first<A>(self) -> HashMap<String, A>
     where
         A: TryFrom<Ad, Error = UnexpectedAdKind>,
     {

@@ -75,7 +75,7 @@ fn test_cache_works_using_real_timeouts() {
     let client = Client::new(ClientSettings::default());
     let test_ttl = 2;
 
-    let _m1 = mock("POST", "/v1/ads")
+    let m1 = mock("POST", "/v1/ads")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(r#"{"ok":true}"#)
@@ -100,8 +100,9 @@ fn test_cache_works_using_real_timeouts() {
         .unwrap();
     assert!(matches!(outcomes.last().unwrap(), CacheOutcome::Hit));
     assert_eq!(response.status, 200);
+    m1.assert();
 
-    let _m2 = mock("POST", "/v1/ads")
+    let m2 = mock("POST", "/v1/ads")
         .with_status(200)
         .with_header("content-type", "application/json")
         .with_body(r#"{"ok":true}"#)
@@ -115,6 +116,7 @@ fn test_cache_works_using_real_timeouts() {
         .unwrap();
     assert!(matches!(outcomes.last().unwrap(), CacheOutcome::MissStored));
     assert_eq!(response.status, 200);
+    m2.assert();
 }
 
 #[test]
@@ -126,7 +128,7 @@ fn test_bad_path_opens_memory_db() {
         .build()
         .expect("Should be able to build a bad path");
     assert!(
-        !good_path.is_memory(),
+        !good_path.is_memory().unwrap(),
         "A valid path should result in a file-based sqlite database"
     );
 
@@ -134,7 +136,7 @@ fn test_bad_path_opens_memory_db() {
         .build()
         .expect("Should be able to build a bad path");
     assert!(
-        bad_path.is_memory(),
+        bad_path.is_memory().unwrap(),
         "Invalid path should result in a memory-based sqlite database"
     );
 
@@ -148,7 +150,7 @@ fn test_bad_path_opens_memory_db() {
         .build()
         .expect("Should be able to build a memory db");
     assert!(
-        no_path.is_memory(),
+        no_path.is_memory().unwrap(),
         "`builder_memory` should result in a memory-based sqlite database"
     )
 }

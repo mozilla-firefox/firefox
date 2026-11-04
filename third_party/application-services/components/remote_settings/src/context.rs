@@ -45,6 +45,8 @@ pub struct RemoteSettingsContext {
     ///     for example `Region` on Desktop and `RegionMiddleware` on Android.
     #[uniffi(default = None)]
     pub country: Option<String>,
+    /// Exposed as `env.distribution`.  When unset, the env value is `"default"`, matching the
+    /// Gecko client which reads the `distribution.id` pref with that fallback.
     #[uniffi(default = None)]
     pub distribution: Option<String>,
     /// Extra attributes to add to the env for JEXL filtering.
@@ -96,9 +98,12 @@ impl RemoteSettingsContext {
         if let Some(country) = self.country {
             v.insert("country".to_string(), country.into());
         }
-        if let Some(distribution) = self.distribution {
-            v.insert("distribution".to_string(), distribution.into());
-        }
+        v.insert(
+            "distribution".to_string(),
+            self.distribution
+                .unwrap_or_else(|| "default".to_string())
+                .into(),
+        );
         if let Some(custom) = self.custom_targetting_attributes {
             v.extend(custom.into_iter().map(|(k, v)| (k, v.into())));
         }
@@ -143,13 +148,19 @@ mod test {
                         "version": "6.1"
                     }
                 },
-                // Unofficial fields that we need for Suggest geo-expansion.  These should be made
-                // into official fields that both the Gecko and Rust client support.
                 "formFactor": "tablet",
                 "country": "US",
                 "distribution": "firefox-001",
+                // Custom attribute
                 "extra": "test",
             })
         );
+    }
+
+    /// `env.distribution` falls back to `"default"` when unset, matching the Gecko client.
+    #[test]
+    fn test_context_normalization_unset_distribution() {
+        let env = RemoteSettingsContext::default().into_env();
+        assert_eq!(env["distribution"], json!("default"));
     }
 }

@@ -19,10 +19,6 @@ buildscript {
     }
 }
 
-if (!gradle.hasProperty("mozconfig")) {
-    apply plugin: libs.plugins.python.envs.plugin.get().pluginId
-}
-
 apply plugin: 'kotlinx-serialization'
 
 apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
@@ -46,7 +42,7 @@ dependencies {
 }
 
 android {
-    namespace 'org.mozilla.appservices.errorsupport'
+    namespace = 'org.mozilla.appservices.errorsupport'
 }
 
 ext.configureUniFFIBindgen("error_support")
