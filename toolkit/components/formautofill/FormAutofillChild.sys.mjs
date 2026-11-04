@@ -225,6 +225,27 @@ export class FormAutofillChild extends JSWindowActorChild {
     }
   }
 
+  onFieldsDetectedNone(fieldDetails) {
+    if (!fieldDetails.length) {
+      return;
+    }
+
+    // Reset the state if no fields ended up being detected.
+
+    const handler = this._fieldDetailsManager.getFormHandlerByRootElementId(
+      fieldDetails[0].rootElementId
+    );
+    if (handler) {
+      handler.setIdentifiedFieldDetails(fieldDetails);
+
+      const fieldsDetectedResolver =
+        this.#handlerWaitingForDetectedComplete.get(handler);
+      this.#handlerWaitingForDetectedComplete.delete(handler);
+
+      fieldsDetectedResolver?.();
+    }
+  }
+
   /**
    * Disconnect all remaining form change observer that are still set up
    * for the form that was submitted.
@@ -858,6 +879,10 @@ export class FormAutofillChild extends JSWindowActorChild {
         );
         const isUpdate = true;
         this.onFieldsDetectedComplete(fieldDetails, isUpdate);
+        break;
+      }
+      case "FormAutofill:onFieldsDetectedNone": {
+        this.onFieldsDetectedNone(message.data.fds);
         break;
       }
       case "FormAutofill:onFormSubmissionComplete": {

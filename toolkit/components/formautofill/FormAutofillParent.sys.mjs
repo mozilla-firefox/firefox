@@ -658,6 +658,32 @@ export class FormAutofillParent extends JSWindowActorParent {
 
     await this.runMLInference(fieldDetails);
 
+    // If none of the detected fields belong to a known data type, don't
+    // set up autofill, but send the FormAutofill:onFieldsDetectedNone message
+    // to the original focused frame so that it can reset state. This
+    // optimization prevents processing fields further and adding unneeded
+    // mutation listeners.
+    if (
+      !fieldDetails.some(
+        fd => AutofillDataTypes.typeIdForFieldName(fd.fieldName) != null
+      )
+    ) {
+      const detailsByBC =
+        lazy.FormAutofillSection.groupFieldDetailsByBrowsingContext(
+          fieldDetails
+        );
+      for (const [bcId, fds] of Object.entries(detailsByBC)) {
+        if (bcId == this.browsingContext.id) {
+          FormAutofillParent.getActor(this.browsingContext).sendQuery(
+            "FormAutofill:onFieldsDetectedNone",
+            { fds }
+          );
+          break;
+        }
+      }
+      return;
+    }
+
     // Now we have collected all the fields for the form, run parsing heuristics
     // to update the field name based on surrounding fields.
     const sections = FormAutofillParent.parseAndClassifyFields(fieldDetails);
