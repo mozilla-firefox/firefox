@@ -276,9 +276,10 @@ object ToolbarSelectors : SelectorContainer {
             groups = setOf(Group.HOME_SCREEN_TOOLBAR),
         )
 
+    // Substring to support selecting Reader View whether "Listen to Page" is enabled or disabled.
     val READER_VIEW_BUTTON =
         Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION_SUBSTRING,
             value = getStringResource(R.string.browser_menu_read),
             description = "Reader view toolbar button",
         )

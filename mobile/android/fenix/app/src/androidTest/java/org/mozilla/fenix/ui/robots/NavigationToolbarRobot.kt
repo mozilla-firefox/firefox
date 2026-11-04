@@ -108,6 +108,11 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyTabButtonShortcutMenuItemsForPrivateHomescreen: Verified tab counter shortcut options")
     }
 
+    /** Matches the reader view toolbar button, whose label also offers Listen to Page when that is turned on. */
+    private fun readerViewToolbarButtonMatcher() =
+        hasContentDescription(getStringResource(R.string.browser_menu_read)) or
+            hasContentDescription(getStringResource(R.string.browser_menu_read_or_listen))
+
     fun verifyReaderViewToolbarButton(isDisplayed: Boolean = false) {
         waitForAppWindowToBeUpdated()
         if (isDisplayed) {
@@ -115,24 +120,14 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
                 TAG,
                 "verifyReaderViewToolbarButton: Trying to verify that the reader view toolbar button is displayed",
             )
-            composeTestRule
-                .onNodeWithContentDescription(
-                    getStringResource(R.string.browser_menu_read),
-                    useUnmergedTree = true,
-                )
-                .assertIsDisplayed()
+            composeTestRule.onNode(readerViewToolbarButtonMatcher(), useUnmergedTree = true).assertIsDisplayed()
             Log.i(TAG, "verifyReaderViewToolbarButton: Verified that the reader view toolbar button is displayed")
         } else {
             Log.i(
                 TAG,
                 "verifyReaderViewToolbarButton: Trying to verify that the reader view toolbar button is not displayed",
             )
-            composeTestRule
-                .onNodeWithContentDescription(
-                    getStringResource(R.string.browser_menu_read),
-                    useUnmergedTree = true,
-                )
-                .assertIsNotDisplayed()
+            composeTestRule.onNode(readerViewToolbarButtonMatcher(), useUnmergedTree = true).assertIsNotDisplayed()
             Log.i(TAG, "verifyReaderViewToolbarButton: Verified that the reader view toolbar button is not displayed")
         }
     }
@@ -149,12 +144,7 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
             Log.i(TAG, "clickReaderViewToolbarButton: Clicked the \"Close reader view\" toolbar button")
         } else {
             Log.i(TAG, "clickReaderViewToolbarButton: Trying to click the \"Reader view\" toolbar button")
-            composeTestRule
-                .onNodeWithContentDescription(
-                    getStringResource(R.string.browser_menu_read),
-                    useUnmergedTree = true,
-                )
-                .performClick()
+            composeTestRule.onNode(readerViewToolbarButtonMatcher(), useUnmergedTree = true).performClick()
             Log.i(TAG, "clickReaderViewToolbarButton: Clicked the \"Reader view\" toolbar button")
         }
         waitForAppWindowToBeUpdated()
