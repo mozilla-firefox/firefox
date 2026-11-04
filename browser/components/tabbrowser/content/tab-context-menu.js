@@ -1483,6 +1483,7 @@ var TabContextMenu = {
     );
     gBrowser.removeTabs(tabs, {
       animate: true,
+      closeWindowWithLastTab: false,
       metricsContext: gBrowser.TabMetrics.userTriggeredContext(
         gBrowser.TabMetrics.METRIC_SOURCE.TAB_MENU
       ),

@@ -899,6 +899,46 @@ add_task(async function test_tabGroupContextMenuSavedGroupsAndNoOpenGroups() {
 });
 
 /*
+ * Tests that moving the last open tab into a saved tab group does not close
+ * the browser window
+ */
+add_task(async function test_movingLastTabToSavedTabGroup() {
+  let tab = BrowserTestUtils.addTab(gBrowser, "https://example.com");
+  let group = gBrowser.addTabGroup([tab], {
+    label: "Test group",
+  });
+
+  await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+  await lazy.TabGroupTestUtils.saveAndCloseTabGroup(group);
+  Assert.equal(
+    SessionStore.getSavedTabGroups().length,
+    1,
+    "The group was saved"
+  );
+
+  openTrustedLinkIn("https://example.com", "current");
+  await BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
+
+  await lazy.TabStateFlusher.flush(gBrowser.selectedTab);
+
+  let onUnload = () => ok(false, "Window should not have closed");
+  window.addEventListener("unload", onUnload);
+
+  await withTabMenu(gBrowser.selectedTab, async () => {
+    // Actually opening the menu popups results in an AccessKeyConflictError
+    TabContextMenu.addTabsToSavedGroup(group.id);
+  });
+
+  await TestUtils.waitForTick();
+
+  Assert.ok(true, "Window didn't close");
+
+  window.removeEventListener("unload", onUnload);
+
+  lazy.TabGroupTestUtils.forgetSavedTabGroups();
+});
+
+/*
  * Tests that if there are both saved groups and open groups, the "move tab to
  * group" menu appears with both types of groups in it, and are separated correctly
  */
