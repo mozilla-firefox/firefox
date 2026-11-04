@@ -315,6 +315,9 @@ export const INITIAL_STATE = {
     initialized: false,
     results: [],
   },
+  // Framed widget documents from the Merino framed widgets manifest, keyed by
+  // widget id: { url, status }. See resolveWidgetFrame.
+  FramedWidgets: {},
 };
 
 function App(prevState = INITIAL_STATE.App, action) {
@@ -1303,6 +1306,15 @@ function RecentSearches(prevState = INITIAL_STATE.RecentSearches, action) {
   }
 }
 
+function FramedWidgets(prevState = INITIAL_STATE.FramedWidgets, action) {
+  switch (action.type) {
+    case at.FRAMED_WIDGETS_UPDATE:
+      return action.data;
+    default:
+      return prevState;
+  }
+}
+
 function Travel(prevState = INITIAL_STATE.Travel, action) {
   switch (action.type) {
     case at.WIDGETS_TRAVEL_UPDATE:
@@ -1520,4 +1532,5 @@ export const reducers = {
   PictureOfTheDay,
   RecentSearches,
   Travel,
+  FramedWidgets,
 };

@@ -157,6 +157,8 @@ export const PREF_WIDGETS_CROSSWORD_ENABLED = "widgets.crossword.enabled";
 export const PREF_CROSSWORD_SIZE = "widgets.crossword.size";
 export const PREF_WIDGETS_SYSTEM_CROSSWORD_ENABLED =
   "widgets.system.crossword.enabled";
+export const PREF_FRAMED_WIDGETS_ALLOWED_HOST_SUFFIXES =
+  "widgets.framed.allowedHostSuffixes";
 export const PREF_WIDGETS_STOCKS_ENABLED = "widgets.stocks.enabled";
 export const PREF_STOCKS_SIZE = "widgets.stocks.size";
 export const PREF_STOCKS_WATCHLIST = "widgets.stocks.watchlist";
@@ -225,7 +227,8 @@ export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
  * @property {boolean} [retired] - When true the widget never renders and gets no settings or devtools toggle, whatever its prefs and trainhopConfig say.
  * @property {boolean} [skipNightlyDefault] - When true, the widget opts out of being on everywhere in Nightly. See skipsNightlyDefault in lib/ActivityStream.sys.mjs.
  * @property {string|null} [trainhopNamespace] - When set, the widget ships its whole config in one dedicated object at trainhopConfig.<namespace>. Its `enabled` overrides the default value of enabledPref on the default branch (user toggle still wins, like widgetsSettings.*Enabled); `visible` reveals the widget (isWidgetAddable) without writing a pref; `size` is read by resolveWidgetSize. All widgets define this today.
- * @property {string} [src] - URL of the widget's document; a trainhop namespace `src` overrides it.
+ * @property {string} [src] - URL of the widget's document; a trainhop namespace `iframeSrcOverride` overrides it.
+ * @property {boolean} [framed] - When true, the widget's document URL comes from its entry in the Merino framed widgets manifest, which FramedWidgetsFeed stores in the FramedWidgets state under its id; the widget is hidden while it has no enabled entry (see resolveWidgetFrame). A trainhop namespace `iframeSrcOverride` still overrides it, but only when isAllowedFrameUrl accepts it; otherwise it is ignored. The frame-src CSP in render-activity-stream-html.js must allow the host too.
  * @property {string} [extensionID] - ID of an extension that provides the widget's document. getWidgets keeps the entry only while the ExtensionWidgets state has this extension.
  * @property {string} [icon] - URL of a 16px image drawn before the widget's name in its MozWidgetCard header.
  * @property {"FramedWidgetCard"} [card] - The name of the card component that draws an entry without its own row component: FramedWidgetCard, for a document a hosted page provides. Without it, MozWidgetCard draws the entry.
@@ -622,21 +625,64 @@ export function getWidgets(registry, extensionWidgets) {
     );
 }
 
+export const FRAMED_WIDGETS = WIDGET_REGISTRY.filter(w => w.framed);
+
 /**
- * Returns the document URL a widget's card should load, in precedence order:
- * the trainhop namespace src, the entry's static src.
+ * Returns true if a framed widget may load this URL. Framed widget URLs set the
+ * iframe src and the origin the widget trusts for postMessage, so only https
+ * URLs whose host ends with one of the comma-separated suffixes in the
+ * widgets.framed.allowedHostSuffixes pref are accepted.
+ *
+ * @param {string} value - candidate document URL
+ * @param {object} prefs - current pref values from the Redux store
+ * @returns {boolean}
+ */
+export function isAllowedFrameUrl(value, prefs) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  const suffixes = (prefs[PREF_FRAMED_WIDGETS_ALLOWED_HOST_SUFFIXES] ?? "")
+    .split(",")
+    .map(item => item.trim())
+    .filter(item => item);
+  return (
+    url.protocol === "https:" &&
+    suffixes.some(suffix => url.hostname.endsWith(suffix))
+  );
+}
+
+/**
+ * Returns the document URL a widget's card should load and its frame state.
+ *
+ * The trainhop namespace iframeSrcOverride wins and is treated as healthy; for a
+ * framed widget it must also pass isAllowedFrameUrl. Otherwise a framed widget
+ * takes its URL and state from the Merino frames manifest:
+ * it is "ok" while the manifest has an enabled entry for it and "hidden"
+ * otherwise. A non-framed
+ * widget loads its static src and is always "ok".
  *
  * @param {object} widget - a WIDGET_REGISTRY entry
  * @param {object} prefs - current pref values from the Redux store
- * @returns {string} document URL, "" when the widget has no document
+ * @param {object} [framedWidgets] - the FramedWidgets state, keyed by widget id
+ * @returns {{src: string, state: "ok" | "hidden"}}
  */
-export function resolveWidgetSrc(widget, prefs) {
-  return (
-    (widget?.trainhopNamespace &&
-      prefs.trainhopConfig?.[widget.trainhopNamespace]?.src) ||
-    widget?.src ||
-    ""
-  );
+export function resolveWidgetFrame(widget, prefs, framedWidgets) {
+  const override =
+    widget?.trainhopNamespace &&
+    prefs.trainhopConfig?.[widget.trainhopNamespace]?.iframeSrcOverride;
+  if (override && (!widget.framed || isAllowedFrameUrl(override, prefs))) {
+    return { src: override, state: "ok" };
+  }
+  if (!widget?.framed) {
+    return { src: widget?.src || "", state: "ok" };
+  }
+  const frame = framedWidgets?.[widget.id];
+  return frame?.url
+    ? { src: frame.url, state: "ok" }
+    : { src: "", state: "hidden" };
 }
 
 /**

@@ -57,6 +57,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "resource://newtab/lib/Widgets/RecentSearchesFeed.sys.mjs",
   PictureOfTheDayFeed:
     "resource://newtab/lib/Widgets/PictureOfTheDayFeed.sys.mjs",
+  FramedWidgetsFeed: "resource://newtab/lib/Widgets/FramedWidgetsFeed.sys.mjs",
   StartupCacheInit: "resource://newtab/lib/StartupCacheInit.sys.mjs",
   Store: "resource://newtab/lib/Store.sys.mjs",
   SystemTickFeed: "resource://newtab/lib/SystemTickFeed.sys.mjs",
@@ -2180,12 +2181,44 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
+    "widgets.framed.endpoint.prod",
+    {
+      title:
+        "The prod Merino endpoint serving the document URL and enabled state of every framed widget",
+      value: "https://merino.services.mozilla.com/api/v1/widgets/framed",
+    },
+  ],
+  [
+    "widgets.framed.endpoint.stage",
+    {
+      title:
+        "The stage Merino endpoint serving the document URL and enabled state of every framed widget",
+      value: "https://merino.services.allizom.org/api/v1/widgets/framed",
+    },
+  ],
+  [
     "widgets.crossword.endpoint",
     {
       title:
         "The Merino endpoint that serves the crossword bundle rendered in the widget iframe",
       value:
         "https://prod-games-particle.merino.prod.webservices.mozgcp.net/index.html",
+    },
+  ],
+  [
+    "widgets.framed.allowedHostSuffixes",
+    {
+      title:
+        "Host suffixes (comma-separated) framed widget documents may load from; the frame-src CSP must allow them too",
+      value: ".mozgcp.net,.mozilla.com",
+    },
+  ],
+  [
+    "widgets.framed.environment",
+    {
+      title:
+        "Which framed widgets endpoint framed widgets load from (prod or stage)",
+      value: "prod",
     },
   ],
   [
@@ -2799,6 +2832,12 @@ const FEEDS_DATA = [
     name: "pictureofthedayfeed",
     factory: () => new lazy.PictureOfTheDayFeed(),
     title: "Handles fetching and caching the daily Picture of the day",
+    value: true,
+  },
+  {
+    name: "framedwidgetsfeed",
+    factory: () => new lazy.FramedWidgetsFeed(),
+    title: "Handles fetching and caching the Merino framed widgets manifest",
     value: true,
   },
   {
