@@ -8,6 +8,7 @@ extern crate nsstring;
 extern crate skrifa;
 extern crate thin_vec;
 use nsstring::nsCString;
+use skrifa::charmap::MapVariant;
 use skrifa::metrics::GlyphMetrics;
 use skrifa::prelude::*;
 use skrifa::raw::TableProvider;
@@ -374,4 +375,19 @@ pub extern "C" fn skrifa_metrics_get_glyph_bounds(
     } else {
         false
     }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn skrifa_font_get_glyph_variant(
+    font: &SkrifaFontRef,
+    unicode: u32,
+    variation: u32,
+) -> u32 {
+    let charmap = font.0.charmap();
+    let glyph = match charmap.map_variant(unicode, variation) {
+        None => GlyphId::NOTDEF,
+        Some(MapVariant::UseDefault) => charmap.map(unicode).unwrap_or(GlyphId::NOTDEF),
+        Some(MapVariant::Variant(id)) => id,
+    };
+    glyph.into()
 }

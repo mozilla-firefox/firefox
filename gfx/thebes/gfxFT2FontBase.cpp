@@ -555,10 +555,23 @@ void gfxFT2FontBase::FinishInitFontMetrics() {
 uint32_t gfxFT2FontBase::GetGlyph(uint32_t unicode,
                                   uint32_t variation_selector) {
   if (variation_selector) {
-    uint32_t id =
-        gfxFT2LockedFace(this).GetUVSGlyph(unicode, variation_selector);
-    if (id) {
-      return id;
+    bool checkedSkrifa = false;
+#ifdef MOZ_FONTATIONS
+    if (const SkrifaFontRef* font = mFontEntry->GetSkrifaFont()) {
+      checkedSkrifa = true;
+      const uint32_t id =
+          skrifa_font_get_glyph_variant(font, unicode, variation_selector);
+      if (id) {
+        return id;
+      }
+    }
+#endif
+    if (!checkedSkrifa) {
+      const uint32_t id =
+          gfxFT2LockedFace(this).GetUVSGlyph(unicode, variation_selector);
+      if (id) {
+        return id;
+      }
     }
     unicode = gfxFontUtils::GetUVSFallback(unicode, variation_selector);
     if (unicode) {
