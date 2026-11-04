@@ -7,8 +7,6 @@
  * error states for synced tabs.
  */
 
-import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
-
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -19,13 +17,6 @@ ChromeUtils.defineLazyGetter(lazy, "syncUtils", () => {
   return ChromeUtils.importESModule("resource://services-sync/util.sys.mjs")
     .Utils;
 });
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "gNetworkLinkService",
-  "@mozilla.org/network/network-link-service;1",
-  Ci.nsINetworkLinkService
-);
 
 const FXA_ENABLED = "identity.fxaccounts.enabled";
 const NETWORK_STATUS_CHANGED = "network:offline-status-changed";
@@ -44,9 +35,7 @@ const ErrorType = Object.freeze({
 
 export const SyncedTabsErrorHandler = {
   init() {
-    this.networkIsOnline =
-      lazy.gNetworkLinkService.linkStatusKnown &&
-      lazy.gNetworkLinkService.isLinkUp;
+    this.networkIsOnline = Services.io.connectivity && !Services.io.offline;
     this.syncIsConnected = lazy.UIState.get().syncEnabled;
     this.syncIsWorking = true;
 
