@@ -70,8 +70,9 @@ class HistoryTest : BaseTest() {
         createHistoryItem(firstWebPage.url.toString())
         createHistoryItem(secondWebPage.url.toString())
 
-        on.history.navigateToPage().mozClick(HistorySelectors.HISTORY_ITEM_WITH_TEXT(firstWebPage.url.toString()))
-        on.browserPage.navigateToPage().verifyUrl(firstWebPage.url.toString())
+        on.history.navigateToPage()
+        on.history.openHistoryItem(firstWebPage.url.toString())
+        on.browserPage.verifyUrl(firstWebPage.url.toString())
         // Re-opening firstWebPage records a fresh visit, so it now sorts above secondWebPage in the
         // recency-ordered list.
         on.history
