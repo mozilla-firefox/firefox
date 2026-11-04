@@ -8372,7 +8372,6 @@ nsresult nsDocShell::HandleSameDocumentNavigation(
 
   nsCOMPtr<nsIInputStream> postData;
   nsCOMPtr<nsIReferrerInfo> referrerInfo;
-  uint32_t cacheKey = 0;
 
   bool scrollRestorationIsManual = false;
   if (mActiveEntry) {
@@ -8431,17 +8430,13 @@ nsresult nsDocShell::HandleSameDocumentNavigation(
       mActiveEntry->SetLayoutHistoryState(currentLayoutHistoryState);
     }
 
-    if (cacheKey != 0) {
-      mActiveEntry->SetCacheKey(cacheKey);
-    }
-
     // We're passing in mCurrentURI, which could be null. SessionHistoryCommit
     // does require a non-null uri if this is for a refresh load of the same
     // URI, but in that case mCurrentURI won't be null here.
     mBrowsingContext->SessionHistoryCommit(
         *mLoadingEntry, mLoadType, mCurrentURI, previousActiveEntry.get(), true,
         /* No expiration update on the same document loads*/
-        false, cacheKey);
+        false, 0);
     // FIXME Need to set postdata.
 
     // Set the title for the SH entry for this target url so that
@@ -8451,6 +8446,7 @@ nsresult nsDocShell::HandleSameDocumentNavigation(
     SetTitleOnHistoryEntry(false);
   } else {
     Maybe<bool> scrollRestorationIsManual;
+    uint32_t cacheKey = 0;
     if (mActiveEntry) {
       scrollRestorationIsManual.emplace(
           mActiveEntry->GetScrollRestorationIsManual());
