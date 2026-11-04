@@ -34,7 +34,7 @@ add_task(async function container_color_codes_match_css() {
   for (const color of ContextualIdentityService.containerColors) {
     let cssColor = resolveColor(
       `identity-color-${color}`,
-      "var(--identity-stroke-color)"
+      "var(--identity-color)"
     );
     let apiColor = resolveColor(
       null,

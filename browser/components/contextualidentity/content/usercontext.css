@@ -8,14 +8,14 @@
    literal.
 
    Under nova every container surface (tab stroke, selected tab outline, icons,
-   URL-bar button, container editor color swatches) uses --identity-stroke-color,
+   URL-bar button, container editor color swatches) uses --identity-color,
    a per-color light/dark shade. */
 .identity-color-blue {
   --identity-tab-color: #37adff;
   --identity-icon-color: #37adff;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: light-dark(var(--color-blue-50), var(--color-blue-40));
+    --identity-color: light-dark(var(--color-blue-50), var(--color-blue-40));
   }
 }
 
@@ -24,7 +24,7 @@
   --identity-icon-color: #00c79a;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-cyan-40);
+    --identity-color: var(--color-cyan-40);
   }
 }
 
@@ -33,7 +33,7 @@
   --identity-icon-color: #51cd00;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: light-dark(var(--color-green-50), var(--color-green-40));
+    --identity-color: light-dark(var(--color-green-50), var(--color-green-40));
   }
 }
 
@@ -42,7 +42,7 @@
   --identity-icon-color: #ffcb00;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-yellow-30);
+    --identity-color: var(--color-yellow-30);
   }
 }
 
@@ -51,7 +51,7 @@
   --identity-icon-color: #ff9f00;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-orange-40);
+    --identity-color: var(--color-orange-40);
   }
 }
 
@@ -60,7 +60,7 @@
   --identity-icon-color: #ff613d;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-red-40);
+    --identity-color: var(--color-red-40);
   }
 }
 
@@ -69,7 +69,7 @@
   --identity-icon-color: #ff4bda;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-pink-40);
+    --identity-color: var(--color-pink-40);
   }
 }
 
@@ -78,7 +78,7 @@
   --identity-icon-color: #af51f5;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-purple-40);
+    --identity-color: var(--color-purple-40);
   }
 }
 
@@ -87,7 +87,7 @@
   --identity-icon-color: #764edd;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: var(--color-violet-50);
+    --identity-color: var(--color-violet-50);
   }
 }
 
@@ -96,7 +96,7 @@
   --identity-icon-color: currentColor;
 
   @media -moz-pref("browser.nova.enabled") {
-    --identity-stroke-color: light-dark(var(--color-gray-40), var(--color-gray-15));
+    --identity-color: light-dark(var(--color-gray-40), var(--color-gray-15));
   }
 }
 
@@ -167,7 +167,7 @@
   white-space: nowrap;
 
   @media -moz-pref("browser.nova.enabled") {
-    color: var(--identity-stroke-color);
+    color: var(--identity-color);
     /* Reorder hack; fix the DOM order and drop it once nova ships (Bug 2046350). */
     order: 2;
   }
@@ -185,12 +185,12 @@
     cursor: pointer;
 
     &:hover {
-      background-color: color-mix(in srgb, var(--identity-stroke-color) 14%, transparent);
+      background-color: color-mix(in srgb, var(--identity-color) 14%, transparent);
     }
 
     &:hover:active,
     &[open] {
-      background-color: color-mix(in srgb, var(--identity-stroke-color) 21%, transparent);
+      background-color: color-mix(in srgb, var(--identity-color) 21%, transparent);
     }
   }
 }
@@ -211,11 +211,11 @@
     /* Reorder hack; fix the DOM order and drop it once nova ships (Bug 2046350). */
     order: 1;
     margin-inline-start: 0;
-    fill: var(--identity-stroke-color);
+    fill: var(--identity-color);
   }
 
   .subviewbutton[usercontextid] > .toolbarbutton-icon {
-    fill: var(--identity-stroke-color);
+    fill: var(--identity-color);
   }
 }
 
@@ -224,6 +224,6 @@
   --menuitem-icon-fill: var(--identity-icon-color);
 
   @media -moz-pref("browser.nova.enabled") {
-    --menuitem-icon-fill: var(--identity-stroke-color);
+    --menuitem-icon-fill: var(--identity-color);
   }
 }

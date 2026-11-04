@@ -114,7 +114,7 @@
   margin-inline-end: 8px;
 
   @media -moz-pref("browser.nova.enabled") {
-    fill: var(--identity-stroke-color);
+    fill: var(--identity-color);
   }
 }
 

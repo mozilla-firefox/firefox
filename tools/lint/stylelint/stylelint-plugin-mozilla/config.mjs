@@ -114,7 +114,7 @@ const BackgroundColor = {
     "--fxview-element-background-hover",
     "--fxviewtabrow-element-background-active",
     "--fxviewtabrow-element-background-hover",
-    "--identity-stroke-color",
+    "--identity-color",
     "--identity-tab-color",
     "--lwt-accent-color",
     "--newtab-background-card",

@@ -85,7 +85,7 @@
   /* Non-nova shows name + icon; nova shows icon + name, matching the URL bar. */
   @media -moz-pref("browser.nova.enabled") {
     order: 1;
-    fill: var(--identity-stroke-color);
+    fill: var(--identity-color);
   }
 }
 
@@ -97,7 +97,7 @@
 
   @media -moz-pref("browser.nova.enabled") {
     order: 2;
-    color: var(--identity-stroke-color);
+    color: var(--identity-color);
   }
 }
 

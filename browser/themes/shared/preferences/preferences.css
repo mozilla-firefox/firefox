@@ -1606,7 +1606,7 @@ setting-pane[onsearchpane] {
   --box-icon-size: var(--icon-size-xlarge);
 
   @media -moz-pref("browser.nova.enabled") {
-    --box-icon-start-fill: var(--identity-stroke-color);
+    --box-icon-start-fill: var(--identity-color);
     --box-icon-padding: round(up, var(--space-small), 0.5px);
   }
 }

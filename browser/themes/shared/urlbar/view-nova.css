@@ -755,7 +755,7 @@
       border-color: transparent;
       background-image: var(--user-context-icon);
       background-size: 14px;
-      fill: var(--identity-stroke-color);
+      fill: var(--identity-color);
 
       .urlbarView-row[selected] & {
         fill: currentColor;

@@ -20,7 +20,7 @@ const CONTEXTUAL_IDENTITY_ENABLED_PREF = "privacy.userContext.enabled";
 // Each color carries two codes: `code` is the legacy value used when
 // `browser.nova.enabled` is off, `codeNova` is the refreshed value used when it
 // is on. getContainerColorCode() picks between them based on the pref. Under
-// nova `codeNova` matches the light-mode value of --identity-stroke-color in
+// nova `codeNova` matches the light-mode value of --identity-color in
 // usercontext.css.
 export const CONTAINER_COLORS = [
   {

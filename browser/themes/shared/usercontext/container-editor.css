@@ -81,7 +81,7 @@
   @media -moz-pref("browser.nova.enabled") {
     .color-swatches .userContext-icon {
       background-image: none;
-      background-color: var(--identity-stroke-color);
+      background-color: var(--identity-color);
       border-radius: var(--border-radius-circle);
       inline-size: var(--size-item-medium);
       block-size: var(--size-item-medium);

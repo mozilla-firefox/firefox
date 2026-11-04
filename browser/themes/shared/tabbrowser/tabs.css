@@ -1211,7 +1211,7 @@ tab-split-view-wrapper[dragtarget] {
     .tab-context-line {
       position: absolute;
       margin: 0;
-      background: var(--identity-stroke-color) border-box border-box;
+      background: var(--identity-color) border-box border-box;
     }
 
     /* border-block guarantees it's snapped to device pixels */
@@ -1279,13 +1279,13 @@ tab-split-view-wrapper[dragtarget] {
     }
 
     @media not (forced-colors) {
-      --tab-border-color-selected: var(--identity-stroke-color);
-      --tab-border-color-selected-leading: var(--identity-stroke-color);
-      --tab-border-color-selected-trailing: var(--identity-stroke-color);
+      --tab-border-color-selected: var(--identity-color);
+      --tab-border-color-selected-leading: var(--identity-color);
+      --tab-border-color-selected-trailing: var(--identity-color);
       --tab-border-color-accent: linear-gradient(96deg, var(--tab-border-color-selected-leading) 20.68%, var(--tab-border-color-selected-trailing) 79.34%);
 
       > .tab-stack > .tab-background[multiselected] {
-        outline-color: var(--identity-stroke-color);
+        outline-color: var(--identity-color);
       }
     }
   }
@@ -3401,7 +3401,7 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
           background-position: center;
           background-size: 16px;
           -moz-context-properties: fill;
-          fill: var(--identity-stroke-color);
+          fill: var(--identity-color);
         }
       }
     }
