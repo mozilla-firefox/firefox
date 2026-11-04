@@ -155,6 +155,12 @@
           seenEvents.push(event.type);
         }
 
+        // Wait for the inner button to be visible before triggering accesskeys.
+        await TestUtils.waitForCondition(
+          () => BrowserTestUtils.isVisible(firstButton.buttonEl),
+          "Waiting for button to be visible."
+        );
+
         [firstButton, secondButton].forEach(button => {
           button.addEventListener("click", trackEvent);
         });

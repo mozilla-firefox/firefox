@@ -1,0 +1,115 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>Test for Bug 1945032 - HTML accesskeys in chrome</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css" />
+</head>
+
+<body>
+  <p id="display"></p>
+  <div id="content">
+    <button id="visible-button" accesskey="v">Visible</button>
+    <button id="hidden-display" accesskey="d" style="display: none">
+      Hidden (display)
+    </button>
+    <button id="hidden-visibility" accesskey="i" style="visibility: hidden">
+      Hidden (visibility)
+    </button>
+    <button id="hidden-attr" accesskey="h" hidden="">Hidden (attribute)</button>
+  </div>
+  <pre id="test">
+<script type="application/javascript">
+
+function performAccessKey(aKey) {
+  synthesizeKey(
+    aKey,
+    navigator.platform.includes("Mac")
+      ? { altKey: true, ctrlKey: true }
+      : { altKey: true, shiftKey: true }
+  );
+}
+
+add_task(async function hiddenButtons() {
+  let visibleButton = document.getElementById("visible-button");
+  let hiddenDisplay = document.getElementById("hidden-display");
+  let hiddenVisibility = document.getElementById("hidden-visibility");
+  let hiddenAttr = document.getElementById("hidden-attr");
+
+  let seenEvents = [];
+  function trackEvent(event) {
+    seenEvents.push({ target: event.target.id, type: event.type });
+  }
+
+  [visibleButton, hiddenDisplay, hiddenVisibility, hiddenAttr].forEach(
+    function (element) {
+      element.addEventListener("click", trackEvent);
+    }
+  );
+
+  isnot(
+    document.activeElement,
+    visibleButton,
+    "Visible button should not have focus initially."
+  );
+
+  performAccessKey("v");
+  is(seenEvents.length, 1, "One click event fired.");
+  is(seenEvents[0].target, "visible-button", "Visible button was clicked.");
+  is(
+    document.activeElement,
+    visibleButton,
+    "Focus should move to visible button."
+  );
+
+  performAccessKey("d");
+  is(seenEvents.length, 1, "No new click events for display:none button.");
+  is(
+    document.activeElement,
+    visibleButton,
+    "Focus should stay on visible button, display:none button skipped."
+  );
+
+  performAccessKey("i");
+  is(
+    seenEvents.length,
+    1,
+    "No new click events for visibility:hidden button."
+  );
+  is(
+    document.activeElement,
+    visibleButton,
+    "Focus should stay on visible button, visibility:hidden button skipped."
+  );
+
+  performAccessKey("h");
+  is(seenEvents.length, 1, "No new click events for hidden attribute button");
+  is(
+    document.activeElement,
+    visibleButton,
+    "Focus should stay on visible button, hidden attribute button skipped."
+  );
+
+  // Now un-hide the button and verify it can be activated
+  hiddenAttr.removeAttribute("hidden");
+  // Wait for layout to update
+  await new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  );
+  performAccessKey("h");
+  is(seenEvents.length, 2, "Second click event fired");
+  is(seenEvents[1].target, "hidden-attr", "Previously hidden button was clicked");
+  is(
+    document.activeElement,
+    hiddenAttr,
+    "Focus should move to previously hidden button."
+  );
+});
+
+</script>
+</pre>
+</body>
+
+</html>

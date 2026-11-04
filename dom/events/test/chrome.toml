@@ -11,6 +11,8 @@ support-files = [
   "test_bug336682.js",
 ]
 
+["test_accesskey_visibility.html"]
+
 ["test_DataTransferItemList.html"]
 
 ["test_bug336682_2.xhtml"]
