@@ -506,8 +506,14 @@ security:
       created and `used` whether a policy was invoked (explicitly or
       implicitly as the default policy) for any of `createHTML`,
       `createScript` or `createScriptURL`, unlike the sinks which only cover
-      HTML sinks; `used` implies `created`. `lib` is whether a library
-      supporting Trusted Types was detected. `js` is whether script of the
+      HTML sinks; `used` implies `created`. `lib` is whether a library that
+      eases Trusted Types adoption was detected: Lit by its `lit-html` policy,
+      counted even if the CSP blocked it, React by its lookup of
+      `__REACT_DEVTOOLS_GLOBAL_HOOK__` if that global still does not exist
+      after load, or otherwise by that hook holding React or being defined by
+      the page, htmx by an `htmx` global and Angular by an `ng-version`
+      attribute on `body` or one of its first children, all once after the
+      load event. `js` is whether script of the
       document itself ran, from a script element, an event handler attribute
       or a `javascript:` URL; with `js-0`, the sinks are `none` and
       `created`, `used` and `lib` are 0.

@@ -3526,6 +3526,21 @@ bool nsGlobalWindowInner::DoResolve(
     return ResolveComponentsShim(aCx, aObj, aDesc);
   }
 
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  // React DOM looks up this global when it loads. A lookup that reaches us
+  // means the page does not define it; we never resolve it.
+  if (StaticPrefs::dom_security_trusted_types_readiness_telemetry_enabled() &&
+      aId == XPCJSRuntime::Get()->GetStringID(
+                 XPCJSContext::IDX_REACT_DEVTOOLS_GLOBAL_HOOK) &&
+      !xpc::IsXrayWrapper(aObj)) {
+    if (Document* doc = GetExtantDoc();
+        doc && !doc->IsDetectingTrustedTypesLibrary()) {
+      doc->SetTrustedTypesReadinessSignal(
+          TrustedTypesReadinessSignal::LookedUpReactDevToolsHook);
+    }
+    return true;
+  }
+
   // We also support a "window.controllers" thing; apparently some
   // sites use it for browser-sniffing.  See bug 1010577.
 #ifdef USE_CONTROLLERS_SHIM
@@ -3582,6 +3597,13 @@ bool nsGlobalWindowInner::MayResolve(jsid aId) {
                  XPCJSContext::IDX_CONTROLLERS_CLASS)) {
     // We only resolve .controllers/.Controllers in release builds and on
     // non-chrome windows, but let's not worry about any of that stuff.
+    return true;
+  }
+
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  if (StaticPrefs::dom_security_trusted_types_readiness_telemetry_enabled() &&
+      aId == XPCJSRuntime::Get()->GetStringID(
+                 XPCJSContext::IDX_REACT_DEVTOOLS_GLOBAL_HOOK)) {
     return true;
   }
 

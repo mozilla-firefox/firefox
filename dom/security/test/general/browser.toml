@@ -92,5 +92,8 @@ support-files = [
   "file_framing_xfo_embed_object.sjs",
 ]
 
+["browser_trusted_types_libraries.js"]
+support-files = ["file_trusted_types_library.sjs"]
+
 ["browser_trusted_types_readiness.js"]
 support-files = ["file_trusted_types_readiness.sjs"]

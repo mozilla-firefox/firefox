@@ -362,6 +362,8 @@ class XPCJSContext final : public mozilla::CycleCollectedJSContext,
     IDX_LOCKS,
     IDX_SUPPRESSED,
     IDX_ERROR,
+    // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+    IDX_REACT_DEVTOOLS_GLOBAL_HOOK,
     IDX_TOTAL_COUNT  // just a count of the above
   };
 

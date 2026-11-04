@@ -13066,6 +13066,12 @@ void Document::OnPageShow(bool aPersisted, EventTarget* aDispatchStartTarget,
             ("Document::OnPageShow [%s] persisted=%i", uri.get(), aPersisted));
   }
 
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  // Only on the first pageshow, not when restoring from the bfcache.
+  if (!aPersisted) {
+    DetectTrustedTypesLibrary();
+  }
+
   const bool inFrameLoaderSwap = !!aDispatchStartTarget;
   MOZ_DIAGNOSTIC_ASSERT(
       inFrameLoaderSwap ==
@@ -18372,6 +18378,95 @@ void Document::InitUseCounters() {
   // Inform the parent process that we will send it page use counters later on.
   wgc->SendExpectPageUseCounters(top);
   mShouldSendPageUseCounters = true;
+}
+
+// Bug 2072122: Trusted Types readiness experiment only, to be removed.
+// Continues React detection after its initial `typeof` check. The hook on the
+// window is by now one of three things:
+//  - undefined: only the typeof check, aLookedUpHook, can tell React was here;
+//  - a getter: the React DevTools extension's hook, present on every page;
+//  - a data property: set by page script, usually to disable DevTools.
+static bool IsReactGlobal(JSContext* aCx, JS::Handle<JSObject*> aGlobal,
+                          bool aLookedUpHook) {
+  JS::Rooted<Maybe<JS::PropertyDescriptor>> desc(aCx);
+  if (!JS_GetOwnPropertyDescriptor(aCx, aGlobal,
+                                   "__REACT_DEVTOOLS_GLOBAL_HOOK__", &desc)) {
+    JS_ClearPendingException(aCx);
+    return false;
+  }
+  if (desc.isNothing()) {
+    // undefined
+    return aLookedUpHook;
+  }
+  if (desc->isAccessorDescriptor()) {
+    // getter (DevTools extension), not React itself
+    return false;
+  }
+  // data property (page script), only React sites do this
+  return true;
+}
+
+static bool IsHtmxGlobal(JSContext* aCx, JS::Handle<JSObject*> aGlobal) {
+  bool found = false;
+  if (!JS_HasOwnProperty(aCx, aGlobal, "htmx", &found)) {
+    JS_ClearPendingException(aCx);
+    return false;
+  }
+  return found;
+}
+
+// Check for an "ng-version" attribute (Angular). Limited to body and its first
+// 16 children as a performance optimization. Our measurement focuses on web
+// apps that can reasonably apply Trusted Types, so undercounting and missing a
+// widget using the library is fine.
+static bool HasAngularRoot(Document& aDocument) {
+  Element* body = aDocument.GetBodyElement();
+  if (!body) {
+    return false;
+  }
+  RefPtr<nsAtom> ngVersion = NS_AtomizeMainThread(u"ng-version"_ns);
+  if (body->HasAttr(ngVersion)) {
+    return true;
+  }
+  uint32_t remaining = 16;
+  for (Element* child = body->GetFirstElementChild(); child && remaining--;
+       child = child->GetNextElementSibling()) {
+    if (child->HasAttr(ngVersion)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Called from the first pageshow of a document, the one after its load event
+// rather than a bfcache restore. Lit is detected while it loads instead.
+void Document::DetectTrustedTypesLibrary() {
+  if (!StaticPrefs::dom_security_trusted_types_readiness_telemetry_enabled() ||
+      HasTrustedTypesReadinessSignal(
+          TrustedTypesReadinessSignal::HasTrustedTypesLibrary)) {
+    return;
+  }
+  nsGlobalWindowInner* window = nsGlobalWindowInner::Cast(GetInnerWindow());
+  if (!window) {
+    return;
+  }
+  AutoJSAPI jsapi;
+  if (!jsapi.Init(window)) {
+    return;
+  }
+  JSContext* cx = jsapi.cx();
+  JS::Rooted<JSObject*> global(cx, window->GetGlobalJSObject());
+  MOZ_ASSERT(global);
+  AutoRestore<bool> restore(mDetectingTrustedTypesLibrary);
+  mDetectingTrustedTypesLibrary = true;
+  if (IsReactGlobal(
+          cx, global,
+          HasTrustedTypesReadinessSignal(
+              TrustedTypesReadinessSignal::LookedUpReactDevToolsHook)) ||
+      IsHtmxGlobal(cx, global) || HasAngularRoot(*this)) {
+    SetTrustedTypesReadinessSignal(
+        TrustedTypesReadinessSignal::HasTrustedTypesLibrary);
+  }
 }
 
 // Bug 2072122: Trusted Types readiness experiment only, to be removed.

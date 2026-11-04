@@ -137,6 +137,9 @@ const char* const XPCJSRuntime::mStrings[] = {
     "locks",            // IDX_LOCKS
     "suppressed",       // IDX_SUPPRESSED
     "error",            // IDX_ERROR
+    // IDX_REACT_DEVTOOLS_GLOBAL_HOOK
+    // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+    "__REACT_DEVTOOLS_GLOBAL_HOOK__",
 };
 
 /***************************************************************************/

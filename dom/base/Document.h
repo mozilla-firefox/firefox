@@ -576,11 +576,14 @@ enum class TrustedTypesReadinessSignal : uint8_t {
   UsedWriteSinkWithString,
   CreatedPolicy,
   UsedPolicy,
-  // Not set yet, detection of libraries supporting Trusted Types is pending.
+  // A library that eases Trusted Types adoption was detected.
   HasTrustedTypesLibrary,
   // Script of the page itself ran: a script element, an event handler
   // attribute or a javascript: URL.
   RanScript,
+  // Tracks whether React code looked for the DevTools hook via `typeof` while
+  // that global variable did not exist. Finished by DetectTrustedTypesLibrary.
+  LookedUpReactDevToolsHook,
 };
 
 // Document interface.  This is implemented by all document objects in
@@ -3561,6 +3564,17 @@ class Document : public nsINode,
   // Bug 2072122: Trusted Types readiness experiment only, to be removed.
   void SetTrustedTypesReadinessSignal(TrustedTypesReadinessSignal aSignal);
 
+  bool HasTrustedTypesReadinessSignal(
+      TrustedTypesReadinessSignal aSignal) const {
+    return mTrustedTypesReadinessSignals.contains(aSignal);
+  }
+
+  // Whether DetectTrustedTypesLibrary is reading the window's globals, so that
+  // its own lookups are not mistaken for a library's.
+  bool IsDetectingTrustedTypesLibrary() const {
+    return mDetectingTrustedTypesLibrary;
+  }
+
   void RecordTrustedTypesHTMLSink(bool aIsTrustedHTML) {
     SetTrustedTypesReadinessSignal(
         aIsTrustedHTML
@@ -4123,6 +4137,11 @@ class Document : public nsINode,
   // ReportDocumentUseCounters so that it is reported exactly once for every
   // document counted in use.counter.content_documents_destroyed.
   void ReportTrustedTypesReadiness();
+
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  // Detects libraries from the window's globals and from Angular's ng-version
+  // attribute on body or one of its first children.
+  void DetectTrustedTypesLibrary();
 
   // Reports largest contentful paint via telemetry. We want the most up to
   // date value for LCP and so this is called during document destruction.
@@ -6134,6 +6153,7 @@ class Document : public nsINode,
   // Whether the pref was on when this document was created. Library detection
   // only runs while it is on, so earlier documents can't report a wrong lib.
   bool mRecordTrustedTypesReadiness = false;
+  bool mDetectingTrustedTypesLibrary = false;
 
   // Whether AccumulatePageLoadTelemetry() collected metrics, and whether the
   // tab was foreground when the load event started. Background loads are still
