@@ -16,6 +16,7 @@ from pathlib import Path
 
 import taskgraph
 import yaml
+from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
 from redo import retry
 from taskgraph import create
 from taskgraph.create import create_tasks
@@ -510,7 +511,7 @@ def get_decision_parameters(graph_config, options):
             set_try_config(parameters, task_config_file)
             parameters["try_mode"] = "try_task_config"
 
-        elif note_params := repo.get_note(note_ref, parameters["head_repository"]):
+        elif note_params := get_note(repo, note_ref, parameters["head_repository"]):
             try:
                 note_params = json.loads(note_params)
                 logger.info(
@@ -556,9 +557,20 @@ def get_existing_tasks(rebuild_kinds, parameters, graph_config):
     )
 
 
+def get_note(repo, note_ref, remote):
+    text = f"fetch {remote} {note_ref}"
+    SystemResourceMonitor.begin_marker("git", text)
+    try:
+        return repo.get_note(note_ref, remote)
+    finally:
+        SystemResourceMonitor.end_marker("git", text)
+
+
 def get_git_files_changed(repo, parameters):
     base_rev = parameters["base_rev"]
     if base_rev != repo.NULL_REVISION and repo.is_shallow:
+        text = f"fetch --depth=1 {parameters['base_repository']} {base_rev}"
+        SystemResourceMonitor.begin_marker("git", text)
         try:
             repo.run("fetch", "--depth=1", parameters["base_repository"], base_rev)
         except subprocess.CalledProcessError:
@@ -567,6 +579,8 @@ def get_git_files_changed(repo, parameters):
                 "treating the whole tree as changed."
             )
             base_rev = repo.NULL_REVISION
+        finally:
+            SystemResourceMonitor.end_marker("git", text)
 
     return repo.get_changed_files(rev=parameters["head_rev"], base=base_rev)
 
