@@ -93,7 +93,7 @@ function shouldRequireUserConfirmation(tabs, topAIWin, securityProperties) {
 }
 
 /**
- * @param {{ validUrls: Set<string>, askConfirmation: boolean, baseTelemetryInfo: object, conversation: ChatConversation, toolCallId?: string }} state
+ * @param {{ validUrls: Set<string>, askConfirmation: boolean, includeChatTab: boolean, baseTelemetryInfo: object, conversation: ChatConversation, toolCallId?: string }} state
  * @param {{ action: string, verb: string, failureError: string, failureMessage: string,
  *           takeUIAction: (gathered: object) => Promise<object>,
  *           getToolResults: (result: object, gathered: object) => object }} toolHandler
@@ -116,8 +116,11 @@ async function runManageTabsFlow(state, toolHandler) {
       state.conversation.securityProperties
     );
 
-  if (toolHandler.action === GROUP_TABS && needsConfirmation) {
-    offerChatTab(gatheredResult, state.conversation, false);
+  if (
+    toolHandler.action === GROUP_TABS &&
+    (needsConfirmation || state.includeChatTab)
+  ) {
+    offerChatTab(gatheredResult, state.conversation, state.includeChatTab);
   }
 
   if (needsConfirmation) {
@@ -207,7 +210,10 @@ async function runManageTabsFlow(state, toolHandler) {
  */
 function offerChatTab(gathered, conversation, checked) {
   const chatTab = lazy.ToolUI.findChatTab(conversation?.id);
-  if (!chatTab) {
+  if (
+    !chatTab ||
+    !gathered.matchedTabs.some(({ win }) => win === chatTab.documentGlobal)
+  ) {
     return;
   }
 
@@ -397,13 +403,13 @@ function makeGroupTabsToolHandler(rawLabel) {
           .map(failedTab => failedTab.tab?.linkedPanel)
           .filter(Boolean)
       );
-      const groupedTabs = gatheredResult.tabs.map(
-        ({ url, title, linkedPanel }) => ({
+      const groupedTabs = gatheredResult.tabs
+        .filter(tab => !tab.isChatTab)
+        .map(({ url, title, linkedPanel }) => ({
           url,
           title,
           grouped: !failedPanels.has(linkedPanel),
-        })
-      );
+        }));
 
       const groupedCount = groupedTabs.filter(tab => tab.grouped).length;
       const failedCount = groupedTabs.length - groupedCount;
@@ -430,7 +436,7 @@ function makeGroupTabsToolHandler(rawLabel) {
 /**
  * Tab management orchestrator to handle all tab-related actions.
  *
- * @param {{ action: string, validUrls: Set<string>, ask_confirmation: boolean, label: string, baseTelemetryInfo: object, toolCallId?: string }} params
+ * @param {{ action: string, validUrls: Set<string>, ask_confirmation: boolean, include_chat_tab?: boolean, label: string, baseTelemetryInfo: object, toolCallId?: string }} params
  * @param {ChatConversation} conversation
  * @returns {Promise<object>}
  */
@@ -439,6 +445,7 @@ export async function manageTabsAction(
     action,
     validUrls,
     ask_confirmation,
+    include_chat_tab = false,
     label = "",
     baseTelemetryInfo,
     toolCallId,
@@ -460,6 +467,7 @@ export async function manageTabsAction(
     {
       validUrls,
       askConfirmation: ask_confirmation,
+      includeChatTab: include_chat_tab,
       baseTelemetryInfo,
       conversation,
       toolCallId,

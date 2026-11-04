@@ -1046,12 +1046,16 @@ export class ToolUI {
     }
 
     // Tabs in tab groups only span a single window
-    let groupWindow = tabsByWindow.has(win) ? win : null;
+    const chatKey = tokenToKey.get(tabs.find(tab => tab.isChatTab)?.token);
+    const countRequested = (ownerTabs = []) =>
+      ownerTabs.filter(tab => tab.permanentKey !== chatKey).length;
+    let groupWindow = countRequested(tabsByWindow.get(win)) ? win : null;
     if (!groupWindow) {
       for (const [ownerWindow, ownerTabs] of tabsByWindow) {
         if (
           !groupWindow ||
-          ownerTabs.length > tabsByWindow.get(groupWindow).length
+          countRequested(ownerTabs) >
+            countRequested(tabsByWindow.get(groupWindow))
         ) {
           groupWindow = ownerWindow;
         }

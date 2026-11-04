@@ -20,6 +20,7 @@ import {
   MANAGE_TABS,
   AITAB_PREF,
   AITAB_TOOLS,
+  INCLUDE_CHAT_TAB_PREF,
   GENERATE_AITAB,
   ADD_MEMORY,
   SEARCH_THE_WEB,
@@ -295,6 +296,22 @@ function filterFeatureGatedTools(tools, conversation) {
   }
   if (!Services.prefs.getBoolPref(AITAB_PREF, false)) {
     filtered = filtered.filter(t => !AITAB_TOOLS.has(t.function?.name));
+  }
+  if (!Services.prefs.getBoolPref(INCLUDE_CHAT_TAB_PREF, false)) {
+    filtered = filtered.map(t => {
+      if (t.function.name !== MANAGE_TABS) {
+        return t;
+      }
+      const properties = { ...t.function.parameters.properties };
+      delete properties.include_chat_tab;
+      return {
+        ...t,
+        function: {
+          ...t.function,
+          parameters: { ...t.function.parameters, properties },
+        },
+      };
+    });
   }
   return filtered;
 }

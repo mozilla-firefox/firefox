@@ -21,6 +21,10 @@ const { MLTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/MLTestUtils.sys.mjs"
 );
 
+const { GROUP_TABS, manageTabsAction } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/ManageTabs.sys.mjs"
+);
+
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [
@@ -89,6 +93,11 @@ add_task(async function test_group_tabs_without_card_skips_chat_tab() {
       requestedToken && JSON.stringify(request.args).includes(requestedToken),
       "The requested tab reaches the model"
     );
+    Assert.ok(
+      !request.tools.find(tool => tool.function.name === "manage_tabs").function
+        .parameters.properties.include_chat_tab,
+      "include_chat_tab is not offered while its pref is off"
+    );
     respond({
       text: "",
       tokens: null,
@@ -101,6 +110,7 @@ add_task(async function test_group_tabs_without_card_skips_chat_tab() {
             arguments: JSON.stringify({
               action: "group_tabs",
               ask_confirmation: false,
+              include_chat_tab: true,
               url_tokens: [`§url_token: ${requestedToken}§`],
               label: "Tabs",
             }),
@@ -250,6 +260,138 @@ add_task(async function test_group_tabs_card_offers_the_chat_tab_unticked() {
     mockEngineManager.cleanupMocks();
     await server.cleanup();
     await BrowserTestUtils.closeWindow(win);
+  }
+});
+
+add_task(async function test_group_tabs_card_offers_included_chat_tab_ticked() {
+  const win = await openAIWindow();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+  const chatTab = win.gBrowser.selectedTab;
+
+  try {
+    const requested = await server.openTab({ title: "Requested tab" });
+    win.gBrowser.selectedTab = chatTab;
+    const { conversation } =
+      chatTab.linkedBrowser.contentDocument.querySelector("ai-window");
+    conversation.addUserMessage("Group these tabs");
+    const { toolResult, uiData } = await manageTabsAction(
+      {
+        action: GROUP_TABS,
+        validUrls: new Set([requested.url]),
+        ask_confirmation: true,
+        include_chat_tab: true,
+        label: "Tabs",
+        toolCallId: "call_group_tabs",
+      },
+      conversation
+    );
+
+    const chatRow = uiData.properties.tabs.find(tab => tab.isChatTab);
+    Assert.ok(chatRow.checked, "The chat tab is offered ticked");
+    Assert.equal(
+      toolResult.selectedTabs.length,
+      1,
+      "The model is not told about the chat tab"
+    );
+  } finally {
+    await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+  }
+});
+
+/**
+ * A chat about the same topic belongs in the group, so the model can include it
+ * even without a card.
+ */
+add_task(async function test_group_tabs_with_include_chat_tab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.manageTabs.includeChatTab", true]],
+  });
+  const mockEngineManager = new MockEngineManager();
+  const win = await openAIWindow();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+  const chatTab = win.gBrowser.selectedTab;
+
+  try {
+    const requested = await server.openTab({ title: "Requested tab" });
+    const other = await server.openTab({ title: "Other tab" });
+    win.gBrowser.selectedTab = chatTab;
+
+    const browser = chatTab.linkedBrowser;
+    await typeInSmartbar(browser, "hello");
+    await submitSmartbar(browser);
+    const conversation =
+      browser.contentDocument.querySelector("ai-window").conversation;
+    await triggerGetOpenTabsToolCall({
+      mockEngineManager,
+      conversation,
+      callId: "call_get_open_tabs",
+    });
+
+    const { request, respond } = await mockEngineManager.captureRequest({
+      purpose: "chat",
+    });
+    Assert.ok(
+      request.tools.find(tool => tool.function.name === "manage_tabs").function
+        .parameters.properties.include_chat_tab,
+      "include_chat_tab is offered while its pref is on"
+    );
+    const requestedToken = conversation.urlToToken.get(requested.url);
+    respond({
+      text: "",
+      tokens: null,
+      isPrompt: false,
+      toolCalls: [
+        {
+          id: "call_group_with_chat",
+          function: {
+            name: "manage_tabs",
+            arguments: JSON.stringify({
+              action: "group_tabs",
+              ask_confirmation: false,
+              include_chat_tab: true,
+              url_tokens: [`§url_token: ${requestedToken}§`],
+              label: "Tabs",
+            }),
+          },
+        },
+      ],
+    });
+
+    await TestUtils.waitForCondition(
+      () => requested.tab.group,
+      "The requested tab is grouped"
+    );
+    const groupTabs = requested.tab.group.tabs;
+    Assert.ok(
+      groupTabs.length == 2 && groupTabs.includes(chatTab),
+      "The group holds the requested and the chat tab"
+    );
+    Assert.ok(!other.tab.group, "The other tab is not grouped");
+
+    await typeInSmartbar(browser, "hello");
+    await submitSmartbar(browser);
+    const followUp = await mockEngineManager.captureRequest({
+      purpose: "chat",
+    });
+    Assert.ok(
+      JSON.stringify(followUp.request.args).includes(requestedToken),
+      "The model is told about the requested tab"
+    );
+    Assert.ok(
+      !JSON.stringify(followUp.request.args).includes(AIWINDOW_URL),
+      "The model is not told about the chat tab"
+    );
+  } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
+    await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+    await SpecialPowers.popPrefEnv();
   }
 });
 

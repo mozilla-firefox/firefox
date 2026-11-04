@@ -513,6 +513,52 @@ add_task(async function test_close_tabs_spanning_multiple_windows() {
   }
 });
 
+add_task(async function test_group_tabs_skips_chat_tab_window() {
+  const interactingWindow = await openAIWindow();
+  const otherWindow = await openAIWindow();
+
+  const chatTab = interactingWindow.gBrowser.selectedTab;
+  const tabA = await BrowserTestUtils.openNewForegroundTab(
+    otherWindow.gBrowser,
+    "https://example.com/"
+  );
+  const tabB = await BrowserTestUtils.openNewForegroundTab(
+    otherWindow.gBrowser,
+    "https://example.org/"
+  );
+
+  const tokenToKey = new Map([
+    ["token-a", tabA.permanentKey],
+    ["token-b", tabB.permanentKey],
+    ["token-chat", chatTab.permanentKey],
+  ]);
+  const selectedTabs = [
+    { token: "token-a", url: "https://example.com/" },
+    { token: "token-b", url: "https://example.org/" },
+    { token: "token-chat", url: AIWINDOW_URL, isChatTab: true },
+  ];
+
+  try {
+    const result = await ToolUI.createTabGroup({
+      tabs: selectedTabs,
+      tokenToKey,
+      window: interactingWindow,
+      label: "Group",
+    });
+
+    Assert.ok(result.success, "Should create the group");
+    Assert.deepEqual(
+      tabA.group.tabs,
+      [tabA, tabB],
+      "The group holds the tabs in the other window"
+    );
+    Assert.ok(!chatTab.group, "The chat tab is not grouped");
+  } finally {
+    await BrowserTestUtils.closeWindow(otherWindow);
+    await BrowserTestUtils.closeWindow(interactingWindow);
+  }
+});
+
 /**
  * Undoing a cross-window close restores the tabs in the owning windows.
  */

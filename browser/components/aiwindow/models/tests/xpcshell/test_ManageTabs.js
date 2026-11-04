@@ -351,10 +351,11 @@ add_task(async function test_manageTabsAction_offers_the_chat_tab() {
       "chrome://browser/content/aiwindow/aiWindow.html",
       "Smart Window"
     );
-    setupBrowserWindowTracker(
-      sb,
-      createFakeWindow([chatTab, targetTab1], { selectedTab: chatTab })
-    );
+    const win = createFakeWindow([chatTab, targetTab1], {
+      selectedTab: chatTab,
+    });
+    chatTab.documentGlobal = win;
+    setupBrowserWindowTracker(sb, win);
     sb.stub(ToolUI, "findChatTab").returns(chatTab);
     const registerTabKeys = sb.stub(ToolUI, "registerTabKeys");
 
@@ -387,6 +388,23 @@ add_task(async function test_manageTabsAction_offers_the_chat_tab() {
       tokenToKey.get(chatRow.token),
       chatTab.permanentKey,
       "The chat tab's token resolves back to it when the user confirms"
+    );
+
+    chatTab.documentGlobal = createFakeWindow([]);
+    const { uiData: otherWindowUIData } = await manageTabsAction(
+      {
+        action: GROUP_TABS,
+        validUrls: new Set([url1]),
+        ask_confirmation: true,
+        label: "Bears",
+        toolCallId: "tool-call-2",
+      },
+      makeConversation()
+    );
+    Assert.equal(
+      otherWindowUIData.properties.tabs.length,
+      1,
+      "The chat tab is not offered when it is in another window"
     );
   } finally {
     sb.restore();
