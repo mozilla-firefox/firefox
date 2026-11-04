@@ -26,7 +26,7 @@ class JsepUuidGenerator {
 
 class JsepTransceiver {
  public:
-  explicit JsepTransceiver(SdpMediaSection::MediaTypeInfo type,
+  explicit JsepTransceiver(const SdpMediaSection::MediaTypeInfo& type,
                            JsepUuidGenerator& aUuidGen,
                            SdpDirectionAttribute::Direction jsDirection =
                                SdpDirectionAttribute::kSendrecv)

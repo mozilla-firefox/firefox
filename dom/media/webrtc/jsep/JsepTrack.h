@@ -87,7 +87,7 @@ class JsepTrack {
  public:
   JsepTrack(mozilla::SdpMediaSection::MediaTypeInfo type,
             sdp::Direction direction)
-      : mType(type),
+      : mType(std::move(type)),
         mDirection(direction),
         mActive(false),
         mRemoteSetSendBit(false) {}
