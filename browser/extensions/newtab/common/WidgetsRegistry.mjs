@@ -164,7 +164,6 @@ export const PREF_STOCKS_SIZE = "widgets.stocks.size";
 export const PREF_STOCKS_WATCHLIST = "widgets.stocks.watchlist";
 export const PREF_WIDGETS_SYSTEM_STOCKS_ENABLED =
   "widgets.system.stocks.enabled";
-export const PREF_CROSSWORD_ENDPOINT = "widgets.crossword.endpoint";
 export const PREF_WIDGETS_PICTURE_OF_THE_DAY_ENABLED =
   "widgets.pictureOfTheDay.enabled";
 export const PREF_PICTURE_OF_THE_DAY_SIZE = "widgets.pictureOfTheDay.size";
@@ -376,6 +375,7 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "crosswordVisible",
     widgetsSettingsEnabledKey: "crosswordEnabled",
     trainhopNamespace: "widgetCrossword",
+    framed: true,
   },
   {
     id: "stocks",
@@ -958,24 +958,6 @@ export function hasContentAreaWidgets(
     w =>
       isWidgetEnabled(w, prefs, widgetsEnabled) &&
       !isWidgetInSidebar(w, prefs, widgetsEnabled)
-  );
-}
-
-/**
- * Returns the Merino endpoint the Crossword widget iframe should load.
- * The dedicated widgetCrossword trainhop object wins, then the legacy
- * widgets.crosswordEndpoint key, then the raw pref, so the endpoint can be
- * swapped (e.g. staging to production) without a release. The raw pref is never
- * read directly by the component.
- *
- * @param {object} prefs - current pref values from the Redux store
- * @returns {string}
- */
-export function resolveCrosswordEndpoint(prefs) {
-  return (
-    prefs.trainhopConfig?.widgetCrossword?.endpoint ||
-    prefs.trainhopConfig?.widgets?.crosswordEndpoint ||
-    prefs[PREF_CROSSWORD_ENDPOINT]
   );
 }
 

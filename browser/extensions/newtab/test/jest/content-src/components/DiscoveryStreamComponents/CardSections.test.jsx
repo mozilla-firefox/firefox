@@ -291,6 +291,9 @@ describe("<CardSections />", () => {
           [`widgets.${widgetId}.enabled`]: true,
         },
       },
+      FramedWidgets: {
+        [widgetId]: { url: "https://example.mozgcp.net/" },
+      },
     };
     const { container } = renderCardSections(
       {

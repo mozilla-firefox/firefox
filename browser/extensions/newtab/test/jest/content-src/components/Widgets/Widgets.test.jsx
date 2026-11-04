@@ -155,6 +155,28 @@ describe("<Widgets>", () => {
     expect(container.querySelector(".crossword")).not.toBeInTheDocument();
   });
 
+  it("renders a framed widget only while the manifest has an entry for it", () => {
+    const prefs = {
+      "nova.enabled": true,
+      [PREF_WIDGETS_ENABLED]: true,
+      [PREF_WIDGETS_CROSSWORD_ENABLED]: true,
+      "widgets.system.crossword.enabled": true,
+    };
+    const url =
+      "https://prod-games-particle.merino.prod.webservices.mozgcp.net/index.html";
+    for (const [FramedWidgets, rendered] of [
+      [{ crossword: { url } }, true],
+      [{}, false],
+    ]) {
+      const { container } = renderWidgets(
+        widgetsState(prefs, { FramedWidgets })
+      );
+      expect(
+        container.querySelector("[data-widget-id='crossword']") !== null
+      ).toBe(rendered);
+    }
+  });
+
   it("should render <Travel> under Nova when its prefs are enabled", () => {
     const state = widgetsState({
       "nova.enabled": true,

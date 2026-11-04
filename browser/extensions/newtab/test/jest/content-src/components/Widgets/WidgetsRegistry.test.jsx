@@ -19,7 +19,6 @@ import {
   resolveSidebarWidget,
   hasContentAreaWidgets,
   isAllowedFrameUrl,
-  resolveCrosswordEndpoint,
   resolveWidgetFrame,
   resolvePrivacyBlankChance,
   resolvePrivacyMaxCount,
@@ -1014,39 +1013,6 @@ describe("hasContentAreaWidgets", () => {
     expect(
       hasContentAreaWidgets({ "widgets.enabled": true, ...listsEnabled }, false)
     ).toBe(false);
-  });
-});
-
-describe("resolveCrosswordEndpoint", () => {
-  const dedicatedEndpoint = "https://dedicated.example.com/index.html";
-  const sharedEndpoint = "https://shared.example.com/index.html";
-  const prefEndpoint = "https://pref.example.com/index.html";
-
-  it("prefers the dedicated widgetCrossword endpoint over the shared key and pref", () => {
-    expect(
-      resolveCrosswordEndpoint({
-        "widgets.crossword.endpoint": prefEndpoint,
-        trainhopConfig: {
-          widgetCrossword: { endpoint: dedicatedEndpoint },
-          widgets: { crosswordEndpoint: sharedEndpoint },
-        },
-      })
-    ).toBe(dedicatedEndpoint);
-  });
-
-  it("falls back to the shared widgets endpoint when no dedicated endpoint", () => {
-    expect(
-      resolveCrosswordEndpoint({
-        "widgets.crossword.endpoint": prefEndpoint,
-        trainhopConfig: { widgets: { crosswordEndpoint: sharedEndpoint } },
-      })
-    ).toBe(sharedEndpoint);
-  });
-
-  it("falls back to the raw pref when no trainhop override is present", () => {
-    expect(
-      resolveCrosswordEndpoint({ "widgets.crossword.endpoint": prefEndpoint })
-    ).toBe(prefEndpoint);
   });
 });
 

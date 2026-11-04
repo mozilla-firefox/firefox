@@ -2197,15 +2197,6 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
-    "widgets.crossword.endpoint",
-    {
-      title:
-        "The Merino endpoint that serves the crossword bundle rendered in the widget iframe",
-      value:
-        "https://prod-games-particle.merino.prod.webservices.mozgcp.net/index.html",
-    },
-  ],
-  [
     "widgets.framed.allowedHostSuffixes",
     {
       title:

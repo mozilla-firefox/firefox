@@ -23,6 +23,8 @@ support-files = ["topstories.json"]
 
 ["test_ExternalComponentsFeed.js"]
 
+["test_FramedWidgetsFeed.js"]
+
 ["test_HighlightsFeed.js"]
 
 ["test_InferredFeatureModel.js"]
