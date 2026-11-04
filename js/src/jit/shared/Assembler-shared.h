@@ -521,6 +521,41 @@ class CodeLocationLabel {
   uint8_t* raw() const { return raw_; }
 };
 
+// Specifies how an indirect target may be reached, so that backends can emit
+// the appropriate control-flow integrity landing pad. We distinguish Call from
+// Jump because ARM64 BTI has separate landing pads for each (bti c and bti j).
+enum class TargetKind {
+  // Not reached indirectly, so no landing pad is needed.
+  None,
+
+  // Code entered with a return address in place (on the stack or in the link
+  // register). This includes code reached by indirect tail jumps.
+  Call,
+
+  // All other indirect jump targets.
+  Jump,
+
+// The remaining kinds are aliases for the above target kinds. They are for
+// targets that are reached directly on some architectures but indirectly on
+// others. If in doubt, or if a target is reached in more than one way, just use
+// TargetKind::Call or TargetKind::Jump. Marking a target that is never reached
+// indirectly only costs an unneeded landing pad, but when IBT or BTI is
+// enabled, reaching an unmarked indirect target will fault.
+
+// An ImmCall/ImmJump target is reached by a call or jump to an immediate
+// address given as a TrampolinePtr or ImmPtr, e.g. call(TrampolinePtr) or
+// jump(ImmPtr). On x86/x64, all JIT code is in a single reservation smaller
+// than 2GB, so these are direct rel32 branches. On other architectures, they
+// may be indirect (e.g. BLR, or an extended jump table entry on ARM64).
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+  ImmCall = None,
+  ImmJump = None,
+#else
+  ImmCall = Call,
+  ImmJump = Jump,
+#endif
+};
+
 }  // namespace jit
 
 namespace wasm {
