@@ -214,8 +214,8 @@ TEST_P(Pkcs11Pbkdf2LongPasswordTest, Derive) {
   ScopedPK11SymKey sym_key(
       PK11_PBEKeyGen(slot.get(), alg_id.get(), &pass_item, false, nullptr));
   ASSERT_TRUE(sym_key);
-  ASSERT_EQ(SECSuccess, PK11_ExtractKeyValue(sym_key.get()));
-  SECItem* key_data = PK11_GetKeyData(sym_key.get());
+  ASSERT_EQ(SECSuccess, nss_test::ExtractKeyValue(sym_key.get()));
+  SECItem* key_data = nss_test::GetKeyData(sym_key.get());
   ASSERT_TRUE(key_data);
 
   std::vector<uint8_t> expected;
