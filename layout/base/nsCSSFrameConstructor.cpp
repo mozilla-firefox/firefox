@@ -1590,10 +1590,12 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
         return;
       }
 
+      RefPtr wrapper = mDocument->CreateHTMLElement(nsGkAtoms::span);
       if (*accessKeyStart != 0) {
         RefPtr beginning = CreateGenConTextNode(
             aState, Substring(value, 0, *accessKeyStart), nullptr);
-        aAddChild(beginning);
+        wrapper->AppendChildTo(beginning, /* aNotify = */ false,
+                               IgnoreErrors());
       }
 
       {
@@ -1604,7 +1606,8 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
             mDocument->CreateHTMLElement(nsGkAtoms::u);
         underline->AppendChildTo(accessKeyText, /* aNotify = */ false,
                                  IgnoreErrors());
-        aAddChild(underline);
+        wrapper->AppendChildTo(underline, /* aNotify = */ false,
+                               IgnoreErrors());
       }
 
       size_t accessKeyEnd = *accessKeyStart + accesskey.Length();
@@ -1612,8 +1615,9 @@ void nsCSSFrameConstructor::CreateGeneratedContent(
         RefPtr valueEnd = CreateGenConTextNode(
             aState, Substring(value, *accessKeyStart + accesskey.Length()),
             nullptr);
-        aAddChild(valueEnd);
+        wrapper->AppendChildTo(valueEnd, /* aNotify = */ false, IgnoreErrors());
       }
+      aAddChild(wrapper);
       break;
     }
   }
