@@ -137,6 +137,12 @@ async function startFreshTurn({
   return conversation;
 }
 
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["places.semanticHistory.smartwindow.featureGate", false]],
+  });
+});
+
 /**
  * End-to-end: model sees the sanitized url/title/lastAccessed triple, titles are
  * spotlighted/truncated, about: pages filtered, security flags transition.
