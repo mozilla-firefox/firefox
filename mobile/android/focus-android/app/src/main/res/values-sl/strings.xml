@@ -187,7 +187,7 @@
   <!-- Preference category for settings about data choices -->
   <string name="preference_category_data_choices">Podatkovne možnosti</string>
   <!-- Title of the screen for removing custom autocomplete URLs. -->
-  <string name="preference_autocomplete_title_remove">Odstrani URL po meri</string>
+  <string name="preference_autocomplete_title_remove">Odstrani URL-je po meri</string>
   <!-- A link to SUMO at autocomplete settings. -->
   <string name="preference_autocomplete_learn_more">Več o tem</string>
   <!-- Label for the "custom autocomplete URL" input field -->
@@ -226,8 +226,8 @@
   <string name="preference_privacy_should_block_cookies_no_option2">Ne, hvala</string>
   <string name="preference_privacy_should_block_cookies_third_party_tracker_cookies_option">Zavračaj samo sledilne piškotke tretjih strani</string>
   <string name="preference_privacy_should_block_cookies_third_party_only_option">Zavračaj samo piškotke tretjih strani</string>
-  <string name="preference_privacy_should_block_cookies_cross_site_option">Zavračaj spletne piškotke</string>
-  <string name="preference_privacy_should_block_cookies_yes_option2">Da!</string>
+  <string name="preference_privacy_should_block_cookies_cross_site_option">Blokiraj medspletne piškotke</string>
+  <string name="preference_privacy_should_block_cookies_yes_option2">Da, prosim</string>
   <!-- Preference Title: Biometrics can be used to unlock Focus if the previous session's data was not erased by the user. -->
   <string name="preference_security_biometric">Uporabljaj prstni odtis za odklepanje aplikacije</string>
   <!--
@@ -414,7 +414,7 @@
     * To understand what notification channels are, see: https://www.androidcentral.com/notification-channels
     * To see how this string will look like in Android's UI, see: https://github.com/mozilla-mobile/focus-android/issues/863#issuecomment-324105723
   -->
-  <string name="notification_browsing_session_channel_description">Obvestila vam omogočajo izbrisati %1$sovo sejo z enim dotikom. Aplikacije vam ni potrebno niti odpreti niti videti, kaj je v brskalniku odprto.</string>
+  <string name="notification_browsing_session_channel_description">Obvestila vam omogočajo izbrisati %1$sovo sejo z enim dotikom. Aplikacije vam ni treba niti odpreti niti videti, kaj je v brskalniku odprto.</string>
   <!-- Label for the option in the Focus "tabs tray" to clos the other tabs except the current tab. -->
   <string name="tabs_tray_action_erase_other">Zapri ostale zavihke</string>
   <!-- Label for the option in the Focus "tabs tray" to add a new tab. -->
@@ -520,7 +520,7 @@
   <!-- Button to dismiss the message displayed  when using a search engine that doesn't provide suggestions -->
   <string name="dismiss_no_suggestions_prompt_button">V redu</string>
   <!-- Preference title for safe browsing which when enabled, blocks dangerous or deceptive webpages that may include phishing or malware -->
-  <string name="preference_safe_browsing_title">Zavrni morebitne nevarne in zavajajoče strani</string>
+  <string name="preference_safe_browsing_title">Zavrni morebitno nevarne in zavajajoče strani</string>
   <!-- Preference summary for safe browsing which when enabled, blocks dangerous or deceptive webpages that may include phishing or malware -->
   <string name="preference_safe_browsing_summary">Zavračaj znane zavajajoče in napadalne strani ter strani z zlonamerno ali neželeno programsko opremo.</string>
   <!-- Title of the preference to enable "HTTPS-Only" mode -->
@@ -540,7 +540,7 @@
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Oprostite. S tem zavihkom imamo težavo.</string>
   <!-- Subtitle for the tab crash report screen -->
-  <string name="tab_crash_report_description">Kot zaseben brskalnik nikoli ne shranimo vaših zavihkov in ga ne moremo obnoviti.</string>
+  <string name="tab_crash_report_description">Kot zaseben brskalnik nikoli ne shranimo tega zavihka in ga ne moremo obnoviti.</string>
   <!-- Label for button to close the tab -->
   <string name="tab_crash_report_close_tab_button_label">Zapri zavihek</string>
   <!-- Label for the checkbox to send the tab crash report to Mozilla -->

@@ -216,9 +216,9 @@
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Essayer une extension recommandée</string>
   <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
-  <string name="browser_menu_extensions_review_update_description">Mise à jour pour %1$s</string>
+  <string name="browser_menu_extensions_review_update_description">Passer en revue la mise à jour de %1$s</string>
   <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
-  <string name="browser_menu_extension_review_update_description">Vérifier les paramètres à mettre à jour</string>
+  <string name="browser_menu_extension_review_update_description">Voir les paramètres à mettre à jour</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Informations du compte</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -2445,7 +2445,7 @@
   <!-- Confirmation dialog button -->
   <string name="sync_confirmation_button">J’ai compris</string>
   <!-- Share error message -->
-  <string name="share_error_snackbar">Impossible de partager cette application</string>
+  <string name="share_error_snackbar">Impossible de partager avec cette application</string>
   <!-- Add new device screen title -->
   <string name="sync_add_new_device_title">Envoyer à un appareil</string>
   <!-- Text for the warning message on the Add new device screen -->
@@ -3675,7 +3675,7 @@
   <!-- Button text on the translations dialog to begin a translation of the website. -->
   <string name="translations_bottom_sheet_positive_button">Traduire</string>
   <!-- Button text on the translations dialog when a translation error appears. -->
-  <string name="translations_bottom_sheet_positive_button_error">Veuillez réessayer</string>
+  <string name="translations_bottom_sheet_positive_button_error">Réessayer</string>
   <!-- Inactive button text on the translations dialog that indicates a translation is currently in progress. This button will be accompanied by a loading icon. -->
   <string name="translations_bottom_sheet_translating_in_progress">Traduction</string>
   <!-- Button content description (not visible, for screen readers etc.) for the translations dialog translate button that indicates a translation is currently in progress. -->

@@ -4529,7 +4529,7 @@
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
-  <string name="wrex_widget_live_game_content_description">%s, juego en vivo</string>
+  <string name="wrex_widget_live_game_content_description">%s, partido en vivo</string>
   <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),

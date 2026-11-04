@@ -9,4 +9,12 @@
 <resources>
   <!-- Description for the button to accept the search suggestion and continue editing the search. -->
   <string name="mozac_browser_awesomebar_edit_suggestion">Qbel syen ẓreg asumer</string>
+  <!-- Description for the stock suggestion card when the stock is the same. -->
+  <string name="mozac_browser_awesomebar_stock_suggestion_no_change">Ulac asenfel</string>
+  <!-- Description for the button to share the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_share_website_details">Bḍu</string>
+  <!-- Description for the button to copy the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_copy_website_details">Nɣel</string>
+  <!-- Description for the button to edit the highlighted awesomebar element (URL, search query, etc.) -->
+  <string name="mozac_browser_awesomebar_edit_website_details">Ẓreg URL</string>
 </resources>

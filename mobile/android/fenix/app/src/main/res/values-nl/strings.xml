@@ -215,6 +215,10 @@
   <string name="browser_menu_no_extensions_installed_description">Geen extensies ingeschakeld</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Een aanbevolen extensie uitproberen</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Update voor %1$s beoordelen</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Bij te werken instellingen beoordelen</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Accountinformatie</string>
   <!-- Browser menu button that opens the settings menu -->

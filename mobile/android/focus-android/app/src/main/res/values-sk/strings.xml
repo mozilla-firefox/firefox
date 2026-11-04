@@ -293,7 +293,7 @@
   <!-- Action for dding an additional search engine to the list -->
   <string name="preference_search_add3">Pridať ďalší vyhľadávač</string>
   <!-- Explanation text above the list of search engines -->
-  <string name="preference_select_preferred_engine">Vyberte si vami požadovaný modul:</string>
+  <string name="preference_select_preferred_engine">Vyberte si preferovaný vyhľadávač:</string>
   <!-- Clickable action text that shows when user long-presses on a search engine search field (this is similar to paste or copy when long-pressing a text field) -->
   <string name="action_option_add_search_engine">Pridať vyhľadávač</string>
   <string name="search_add_manually_name_hint">Názov vyhľadávača</string>

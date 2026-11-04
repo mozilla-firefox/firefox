@@ -58,9 +58,9 @@
   <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
   <string name="mozac_feature_listentopage_playback_speed">Velocità di riproduzione</string>
   <!-- Listen to Page media player: screen reader state of the voice while its menu is closed. -->
-  <string name="mozac_feature_listentopage_dropdown_voice_collapsed">Raggruppato</string>
+  <string name="mozac_feature_listentopage_dropdown_voice_collapsed">Compresso</string>
   <!-- Listen to Page media player: screen reader state of the playback speed button while its menu is closed. %1$s is the selected speed. -->
-  <string name="mozac_feature_listentopage_playback_speed_collapsed">%1$s, raggruppato</string>
+  <string name="mozac_feature_listentopage_playback_speed_collapsed">%1$s, compresso</string>
   <!-- Listen to Page media player: screen reader state of the voice and playback speed buttons while their menu is open. -->
   <string name="mozac_feature_listentopage_dropdown_expanded">Espanso</string>
   <!-- Listen to Page compact player: accessibility action read by screen readers for the article title, such as "Double tap to expand player". -->
