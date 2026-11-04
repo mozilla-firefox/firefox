@@ -5958,6 +5958,10 @@ ${
         event.keyCode == KeyEvent.DOM_VK_LEFT;
 
       this._toggleActionOverride(event);
+    } else if (event.keyCode == KeyEvent.DOM_VK_RETURN) {
+      // Ignore repeated Enter, so holding it loads only once.
+      event.preventDefault();
+      return;
     }
 
     // Due to event deferring, it's possible preventDefault() won't be invoked

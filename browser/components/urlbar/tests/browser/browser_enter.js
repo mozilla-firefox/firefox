@@ -366,3 +366,19 @@ add_task(async function closeTabRightAfterEnter() {
 
   sandbox.restore();
 });
+
+add_task(async function repeatedEnterLoadsOnce() {
+  info("Holding Enter loads only once");
+  let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, START_VALUE);
+  let loadURLSpy = sinon.spy(gURLBar.parentController, "loadURL");
+
+  gURLBar.focus();
+  gURLBar.value = "https://example.com/some/url";
+  let onLoad = BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser);
+  EventUtils.synthesizeKey("KEY_Enter", { repeat: 3 });
+  await onLoad;
+  Assert.ok(loadURLSpy.calledOnce, "Repeated keydowns started one load");
+
+  BrowserTestUtils.removeTab(tab);
+  loadURLSpy.restore();
+});
