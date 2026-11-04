@@ -263,13 +263,13 @@ class MOZ_RAII AutoIOInterposer {
   AutoIOInterposer() = default;
 
   void Init() {
-#if defined(EARLY_BETA_OR_EARLIER)
+#if defined(NIGHTLY_BUILD)
     IOInterposer::Init();
 #endif
   }
 
   ~AutoIOInterposer() {
-#if defined(EARLY_BETA_OR_EARLIER)
+#if defined(NIGHTLY_BUILD)
     IOInterposer::Clear();
 #endif
   }
