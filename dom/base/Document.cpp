@@ -19943,20 +19943,27 @@ void Document::ScheduleResizeObserversNotification() {
   MaybeScheduleRenderingPhases({RenderingPhase::Layout});
 }
 
+static void FlushLayoutForSingleDocument(Document& aDoc,
+                                         const ChangesToFlush& aCtf) {
+  if (RefPtr ps = aDoc.GetPresShell(); ps && ps->DidInitialize()) {
+    ps->FlushPendingNotifications(aCtf);
+  }
+}
+
 static void FlushLayoutForWholeBrowsingContextTree(Document& aDoc,
                                                    const ChangesToFlush& aCtf) {
   BrowsingContext* bc = aDoc.GetBrowsingContext();
   if (bc && bc->GetExtantDocument() == &aDoc) {
     RefPtr<BrowsingContext> top = bc->Top();
     top->PreOrderWalk([aCtf](BrowsingContext* aCur) {
-      if (Document* doc = aCur->GetExtantDocument()) {
-        doc->FlushPendingNotifications(aCtf);
+      if (RefPtr doc = aCur->GetExtantDocument()) {
+        FlushLayoutForSingleDocument(*doc, aCtf);
       }
     });
   } else {
     // If there is no browsing context, or we're not the current document of the
     // browsing context, then we just flush this document itself.
-    aDoc.FlushPendingNotifications(aCtf);
+    FlushLayoutForSingleDocument(aDoc, aCtf);
   }
 }
 
