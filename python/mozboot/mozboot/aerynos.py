@@ -22,7 +22,7 @@ class AerynOsBootstrapper(LinuxBootstrapper, BaseBootstrapper):
         pass
 
     def package_install(self, *packages):
-        command = ["moss", "install"]
+        command = ["moss", "pkg", "add"]
         if self.no_interactive:
             command.append("--yes-all")
 
