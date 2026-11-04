@@ -20,11 +20,18 @@ PRETTIER_FORMATTING_MESSAGE = (
 
 
 def run_prettier(cmd_args, config, fix):
-    encoding = "utf-8"
+    return finish_prettier(start_process(cmd_args), config, fix)
 
+
+def start_process(cmd_args):
     orig = signal.signal(signal.SIGINT, signal.SIG_IGN)
     proc = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     signal.signal(signal.SIGINT, orig)
+    return proc
+
+
+def finish_prettier(proc, config, fix):
+    encoding = "utf-8"
 
     try:
         output, errors = proc.communicate()

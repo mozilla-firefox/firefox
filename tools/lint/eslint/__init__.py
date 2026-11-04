@@ -4,8 +4,6 @@
 
 import json
 import os
-import signal
-import subprocess
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "eslint"))
@@ -61,6 +59,7 @@ def lint(paths, config, binary=None, fix=None, rules=[], setup=None, **lintargs)
     extra_args = lintargs.get("extra_args") or []
 
     result = {"results": [], "fixed": 0}
+    eslint_proc = None
 
     # If something passes formatonly, avoid running eslint and only run prettier.
     # This allows ./mach format and similar mechanisms to work correctly.
@@ -95,6 +94,7 @@ def lint(paths, config, binary=None, fix=None, rules=[], setup=None, **lintargs)
                 "--format",
                 "json",
                 "--no-error-on-unmatched-pattern",
+                "--no-warn-ignored",
             ]
             + rules
             # Flat configuration doesn't understand --ignore-path, though Prettier does.
@@ -109,9 +109,12 @@ def lint(paths, config, binary=None, fix=None, rules=[], setup=None, **lintargs)
 
         log.debug("ESLint command: {}".format(" ".join(cmd_args)))
 
-        result = run(cmd_args, config)
-        if result == 1:
-            return result
+        eslint_proc = prettier_utils.start_process(cmd_args)
+        if fix:
+            result = finish_eslint(eslint_proc, config)
+            eslint_proc = None
+            if result == 1:
+                return result
 
     # Then run Prettier
     ignore_args = (
@@ -134,6 +137,7 @@ def lint(paths, config, binary=None, fix=None, rules=[], setup=None, **lintargs)
             ),
             "--list-different",
             "--no-error-on-unmatched-pattern",
+            "--ignore-unknown",
         ]
         # Don't pass the configuration, plugin or rule information to Prettier,
         # as it doesn't understand those arguments.
@@ -157,7 +161,19 @@ def lint(paths, config, binary=None, fix=None, rules=[], setup=None, **lintargs)
     if fix:
         cmd_args.append("--write")
 
-    prettier_result = prettier_utils.run_prettier(cmd_args, config, fix)
+    prettier_proc = prettier_utils.start_process(cmd_args)
+    if eslint_proc is not None:
+        result = None
+        try:
+            result = finish_eslint(eslint_proc, config)
+        finally:
+            if result in (None, 1):
+                prettier_proc.kill()
+                prettier_proc.communicate()
+        if result == 1:
+            return result
+
+    prettier_result = prettier_utils.finish_prettier(prettier_proc, config, fix)
     if prettier_result == 1:
         return prettier_result
 
@@ -166,18 +182,14 @@ def lint(paths, config, binary=None, fix=None, rules=[], setup=None, **lintargs)
     return result
 
 
-def run(cmd_args, config):
+def finish_eslint(proc, config):
     encoding = "utf-8"
-
-    orig = signal.signal(signal.SIGINT, signal.SIG_IGN)
-    proc = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    signal.signal(signal.SIGINT, orig)
 
     try:
         output, errors = proc.communicate()
     except KeyboardInterrupt:
         proc.kill()
-        return {"results": [], "fixed": 0}
+        raise
 
     if errors:
         errors = errors.decode(encoding, "replace")

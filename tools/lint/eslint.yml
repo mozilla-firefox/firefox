@@ -4,6 +4,12 @@ eslint:
     # ESLint infra handles its own path filtering, so just include cwd
     include: ['.']
     exclude: []
+    split-dirs: auto
+    split-ignore-files:
+        - eslint-ignores.config.mjs
+        - tools/rewriting/Generated.txt
+        - tools/rewriting/ThirdPartyPaths.txt
+    find-dotfiles: true
     # When adding to this list, consider updating hooks_js_format.py and
     # tools/lint/eslint/eslint-plugin-mozilla/lib/helpers.js as well.
     extensions: ['mjs', 'js', 'json', 'jsx', 'html', 'sjs', 'xhtml', '.ts']
