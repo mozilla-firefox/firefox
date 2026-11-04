@@ -841,6 +841,56 @@ class SitePermissionsFeatureTest {
         verify(mockPermissionRequest, never()).notifyShown()
     }
 
+    @OptIn(ExperimentalAndroidComponentsApi::class)
+    @Test
+    fun `GIVEN fragmentManager isDestroyed WHEN onContentPermissionRequested() THEN prompt is not shown`() = runTest {
+        val mockPermissionRequest: PermissionRequest = mock {
+            whenever(permissions).thenReturn(listOf(ContentGeoLocation(id = "permission")))
+        }
+        val sitePermissions = SitePermissions(origin = "origin", savedAt = 0)
+        val mockedSitePermissionsDialogFragment = SitePermissionsDialogFragment()
+        doReturn(sitePermissions).`when`(mockStorage).findSitePermissionsBy(URL, private = selectedTab.content.private)
+        doReturn(true).`when`(sitePermissionFeature).shouldApplyRules(any())
+        doReturn(mockedSitePermissionsDialogFragment)
+            .`when`(sitePermissionFeature)
+            .handleRuledFlow(mockPermissionRequest, URL)
+        doReturn(true).`when`(mockFragmentManager).isDestroyed
+
+        val result =
+            sitePermissionFeature.onContentPermissionRequested(
+                mockPermissionRequest,
+                URL,
+            )
+
+        assertNull(result)
+        verify(mockPermissionRequest, never()).notifyShown()
+    }
+
+    @OptIn(ExperimentalAndroidComponentsApi::class)
+    @Test
+    fun `GIVEN fragmentManager isStateSaved WHEN onContentPermissionRequested() THEN prompt is not shown`() = runTest {
+        val mockPermissionRequest: PermissionRequest = mock {
+            whenever(permissions).thenReturn(listOf(ContentGeoLocation(id = "permission")))
+        }
+        val sitePermissions = SitePermissions(origin = "origin", savedAt = 0)
+        val mockedSitePermissionsDialogFragment = SitePermissionsDialogFragment()
+        doReturn(sitePermissions).`when`(mockStorage).findSitePermissionsBy(URL, private = selectedTab.content.private)
+        doReturn(true).`when`(sitePermissionFeature).shouldApplyRules(any())
+        doReturn(mockedSitePermissionsDialogFragment)
+            .`when`(sitePermissionFeature)
+            .handleRuledFlow(mockPermissionRequest, URL)
+        doReturn(true).`when`(mockFragmentManager).isStateSaved
+
+        val result =
+            sitePermissionFeature.onContentPermissionRequested(
+                mockPermissionRequest,
+                URL,
+            )
+
+        assertNull(result)
+        verify(mockPermissionRequest, never()).notifyShown()
+    }
+
     @Test
     fun `GIVEN location permissionRequest and shouldApplyRules is false WHEN onContentPermissionRequested() THEN handleNoRuledFlow is called`() =
         runTest {
