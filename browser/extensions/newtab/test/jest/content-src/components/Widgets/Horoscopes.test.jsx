@@ -21,6 +21,11 @@ const mockState = {
       "widgets.horoscopes.interaction": false,
     },
   },
+  FramedWidgets: {
+    horoscopes: {
+      url: "https://stage-widgets-yahoo-horoscope.merino.nonprod.webservices.mozgcp.net/1.2.20261022081515/index.html",
+    },
+  },
 };
 
 const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
@@ -40,6 +45,32 @@ const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
 };
 
 describe("Horoscopes widget", () => {
+  it("loads the manifest url in a sandboxed iframe labelled by the title", () => {
+    const { container } = renderWidget();
+    const frame = container.querySelector("iframe.horoscopes-frame");
+    expect(frame).toHaveAttribute(
+      "src",
+      mockState.FramedWidgets.horoscopes.url
+    );
+    expect(frame).toHaveAttribute("aria-labelledby", "horoscopes-widget-label");
+    expect(frame).toHaveAttribute(
+      "sandbox",
+      "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+    );
+  });
+
+  it("renders nothing without a manifest entry", () => {
+    const { container } = renderWidget(
+      jest.fn(),
+      {},
+      {
+        ...mockState,
+        FramedWidgets: {},
+      }
+    );
+    expect(container.querySelector("article.horoscopes")).toBeNull();
+  });
+
   it("renders the widget at the resolved size", () => {
     const { container } = renderWidget();
     const root = container.querySelector("article.horoscopes");
@@ -63,13 +94,6 @@ describe("Horoscopes widget", () => {
         ".horoscopes-context-menu-button[data-l10n-id='newtab-horoscopes-widget-open-menu-button']"
       )
     ).toBeTruthy();
-  });
-
-  it("renders an empty body with no rows", () => {
-    const { container } = renderWidget();
-    const body = container.querySelector(".horoscopes-body");
-    expect(body).toBeTruthy();
-    expect(body.children.length).toBe(0);
   });
 
   it("shows the New badge until the widget has been interacted with", () => {

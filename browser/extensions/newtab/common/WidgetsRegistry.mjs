@@ -433,6 +433,7 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "horoscopesVisible",
     widgetsSettingsEnabledKey: "horoscopesEnabled",
     trainhopNamespace: "widgetHoroscopes",
+    framed: true,
   },
   {
     id: "travel",
