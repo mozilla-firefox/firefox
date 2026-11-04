@@ -6665,3 +6665,20 @@ nova:
         branch: default
         pref: browser.nova.enabled
       description: Whether Nova is enabled.
+
+# Bug 2072122: Trusted Types readiness experiment only, to be removed.
+trustedTypesReadinessTelemetry:
+  description: >-
+    Recording of the security.trusted_types_readiness Glean metric, which
+    measures per document how ready pages are to adopt Trusted Types.
+  owner: fbraun@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: boolean
+      setPref:
+        branch: default
+        pref: dom.security.trusted_types.readiness_telemetry.enabled
+      description: >-
+        Whether the security.trusted_types_readiness metric is recorded at
+        document destruction.
