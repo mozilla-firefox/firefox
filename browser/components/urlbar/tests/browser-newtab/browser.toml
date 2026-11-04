@@ -33,6 +33,8 @@ support-files = ["../browser/slow-page.sjs"]
 
 ["browser_mousedown.js"]
 
+["browser_narrowWindow.js"]
+
 ["browser_pickResult.js"]
 
 ["browser_placeholder.js"]

@@ -448,6 +448,10 @@ toolbar[inactive="true"] .urlbar,
 }
 
 .urlbar-input {
+  /* global-shared.css sets this in chrome documents, but not in the page that
+     hosts an in-page bar. */
+  min-width: 0;
+
   /* Make the editable line box span the field's full inner height so clicking
      anywhere in the field places the caret. The value equals the input's
      available height so it fills the field without growing it. */
@@ -666,7 +670,7 @@ toolbar[inactive="true"] .urlbar,
   flex: 1;
   min-width: 0;
   height: 100%;
-  margin-inline-start: var(--urlbar-input-gap);
+  margin-inline: var(--urlbar-input-gap);
   cursor: text;
 
   /* With the search engine button on its own row, a plain glass marks the
