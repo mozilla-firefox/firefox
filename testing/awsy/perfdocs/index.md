@@ -131,4 +131,9 @@ See the [about:memory documentation](/performance/memory/about_colon_memory.md#e
 
 ### Base Content Resident Unique Memory
 
-*to do: add test definition*
+- This is the "resident-unique" value in `about:memory`, also known as the unique set size ([USS](https://en.wikipedia.org/wiki/Unique_set_size)). It is the memory mapped by a content process that is present in physical memory and not shared with any other process, which is roughly the amount of RAM we'd expect to be freed if that process was closed. Read-only data such as shared libraries is shared between processes, so it is not counted here.
+- Since we can have dozens of content processes with Fission, this measures how much a single new content process adds to the total memory used by the system. The median value across all content processes is reported.
+
+**Possible regression causes**
+
+- A regression in this usually means more memory is allocated or touched in every content process, for example by loading more code or data at content process startup. It often tracks regressions in Base Content Explicit, Base Content Heap Unclassified, or Base Content JS. A regression here that isn't visible in those can indicate memory that isn't covered by memory reporters, such as graphics allocations or memory that used to be shared between processes.
