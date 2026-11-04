@@ -2,7 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* global FirefoxViewHandler, gBrowser, gMultiProcessBrowser, gSharedTabWarning,
+   isBlankPageURL, MozElements */
+
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
 const lazy = XPCOMUtils.declareLazy({
+  BrowserUIUtils: "resource:///modules/BrowserUIUtils.sys.mjs",
+  BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  ContextualIdentityService:
+    "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
   closeTabByDblclick: {
     pref: "browser.tabs.closeTabByDblclick",
@@ -355,7 +367,7 @@ export class MozTabbrowserTab extends MozElements.MozTab {
       return false;
     }
 
-    if (!BrowserUIUtils.checkEmptyPageOrigin(browser)) {
+    if (!lazy.BrowserUIUtils.checkEmptyPageOrigin(browser)) {
       return false;
     }
 
@@ -381,7 +393,7 @@ export class MozTabbrowserTab extends MozElements.MozTab {
   get lastSeenActive() {
     const isForegroundWindow =
       this.documentGlobal ==
-      BrowserWindowTracker.getTopWindow({ allowPopups: true });
+      lazy.BrowserWindowTracker.getTopWindow({ allowPopups: true });
     // the timestamp for the selected tab in the active window is always now
     if (isForegroundWindow && this.selected) {
       return Date.now();
@@ -820,7 +832,7 @@ export class MozTabbrowserTab extends MozElements.MozTab {
     }
 
     // Prepare connection to host beforehand.
-    SessionStore.speculativeConnectOnTabHover(this);
+    lazy.SessionStore.speculativeConnectOnTabHover(this);
 
     this.dispatchEvent(new CustomEvent("TabHoverStart", { bubbles: true }));
 
@@ -989,7 +1001,7 @@ export class MozTabbrowserTab extends MozElements.MozTab {
       this.removeAttribute("usercontextid");
     }
 
-    ContextualIdentityService.setTabStyle(this);
+    lazy.ContextualIdentityService.setTabStyle(this);
   }
 
   updateA11yDescription() {

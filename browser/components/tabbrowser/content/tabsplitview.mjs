@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* global gBrowser, isBlankPageURL, MozXULElement, XPCOMUtils */
+/* global gBrowser, isBlankPageURL, MozXULElement */
 
 const { Tabbrowser } = ChromeUtils.importESModule(
   "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs"
@@ -11,6 +11,9 @@ const { DeferredTask } = ChromeUtils.importESModule(
   "resource://gre/modules/DeferredTask.sys.mjs"
 );
 
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
 const lazy = XPCOMUtils.declareLazy({
   hasUsedSplitView: { pref: "browser.tabs.splitview.hasUsed", default: false },
 });

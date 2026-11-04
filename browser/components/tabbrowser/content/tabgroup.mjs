@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* global CustomizableUI, gBrowser, MozXULElement, SessionStore, XPCOMUtils */
+/* global gBrowser, MozXULElement */
 
 const { Tabbrowser } = ChromeUtils.importESModule(
   "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs"
@@ -11,7 +11,14 @@ const { TabMetrics } = ChromeUtils.importESModule(
   "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs"
 );
 
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
 const lazy = XPCOMUtils.declareLazy({
+  CustomizableUI:
+    "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   showTabGroupHoverPreview: {
     pref: "browser.tabs.groups.hoverPreview.enabled",
     default: false,
@@ -37,8 +44,8 @@ function getSaveHintAnchor(win) {
     false
   );
   let widgetId = alternateMenu ? "tab-groups-button" : "alltabs-button";
-  let anchor = CustomizableUI.getPlacementOfWidget(widgetId)
-    ? CustomizableUI.getWidget(widgetId)?.forWindow(win)?.anchor
+  let anchor = lazy.CustomizableUI.getPlacementOfWidget(widgetId)
+    ? lazy.CustomizableUI.getWidget(widgetId)?.forWindow(win)?.anchor
     : null;
   if (alternateMenu && !isVisible(anchor)) {
     anchor = win.document.getElementById("PanelUI-menu-button");
@@ -774,7 +781,7 @@ export class MozTabbrowserTabGroup extends MozXULElement {
    *   The context for the operation
    */
   save(metricsContext = TabMetrics.UNKNOWN_CONTEXT) {
-    SessionStore.addSavedTabGroup(this);
+    lazy.SessionStore.addSavedTabGroup(this);
     this.dispatchEvent(
       new CustomEvent("TabGroupSaved", {
         bubbles: true,
@@ -789,7 +796,7 @@ export class MozTabbrowserTabGroup extends MozXULElement {
     let groupId = this.id;
     await gBrowser.removeTabGroup(this, { metricsContext });
     // make sure the tab group was actually saved before showing the hint
-    if (!SessionStore.getSavedTabGroup(groupId)) {
+    if (!lazy.SessionStore.getSavedTabGroup(groupId)) {
       return;
     }
     maybeShowSaveHint(win);

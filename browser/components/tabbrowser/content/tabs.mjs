@@ -2,12 +2,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* global BrowserCommands, CreateContainerTabMenu, CustomTitlebar,
+   DynamicShortcutTooltip, gBrowser, gClickAndHoldListenersOnElement,
+   gMultiProcessBrowser, gSharedTabWarning, MozElements, RTL_UI */
+
 const DIRECTION_BACKWARD = -1;
 const DIRECTION_FORWARD = 1;
 
+const { Tabbrowser } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs"
+);
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
 const { isTab, isTabGroup, isTabGroupLabel, isSplitViewWrapper } = Tabbrowser;
 
 const lazy = XPCOMUtils.declareLazy({
+  AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
+  CustomizableUI:
+    "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
+  NewTabPagePreloading:
+    "moz-src:///browser/components/tabbrowser/NewTabPagePreloading.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   showTabHoverPreview: {
     pref: "browser.tabs.hoverPreview.enabled",
     default: false,
@@ -192,7 +208,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
     );
     this.#updateTabMinWidth(this._tabMinWidthPref);
 
-    CustomizableUI.addListener(this);
+    lazy.CustomizableUI.addListener(this);
     this._updateNewTabVisibility();
 
     // The base class set these up before we had the arrowscrollbox.
@@ -561,7 +577,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
   on_keydown(event) {
     let { altKey, shiftKey } = event;
     let [accel, nonAccel] =
-      AppConstants.platform == "macosx"
+      lazy.AppConstants.platform == "macosx"
         ? [event.metaKey, event.ctrlKey]
         : [event.ctrlKey, event.metaKey];
 
@@ -827,7 +843,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
   get emptyTabTitle() {
     // Normal tab title is used also in the permanent private browsing mode.
     const l10nId =
-      PrivateBrowsingUtils.isWindowPrivate(window) &&
+      lazy.PrivateBrowsingUtils.isWindowPrivate(window) &&
       !Services.prefs.getBoolPref("browser.privatebrowsing.autostart")
         ? "tabbrowser-empty-private-tab-title"
         : "tabbrowser-empty-tab-title";
@@ -1277,7 +1293,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
         // privacy.userContext.newTabContainerOnLeftClick.enabled.
         let containersEnabled =
           Services.prefs.getBoolPref("privacy.userContext.enabled") &&
-          !PrivateBrowsingUtils.isWindowPrivate(window);
+          !lazy.PrivateBrowsingUtils.isWindowPrivate(window);
 
         // This pref won't change so often, so just recreate the menu.
         const newTabLeftClickOpensContainersMenu = Services.prefs.getBoolPref(
@@ -1688,7 +1704,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
     // session restore), preload the next about:newtab if we don't
     // already have a preloaded browser.
     if (tab.linkedPanel) {
-      NewTabPagePreloading.maybeCreatePreloadedBrowser(window);
+      lazy.NewTabPagePreloading.maybeCreatePreloadedBrowser(window);
     }
 
     if (UserInteraction.running("browser.tabs.opening", window)) {
@@ -1791,7 +1807,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
     if (this.boundObserve) {
       Services.prefs.removeObserver("privacy.userContext", this.boundObserve);
     }
-    CustomizableUI.removeListener(this);
+    lazy.CustomizableUI.removeListener(this);
     this.previewPanel?.forceReset();
   }
 
