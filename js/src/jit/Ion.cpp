@@ -1724,6 +1724,11 @@ LIRGraph* GenerateLIR(MIRGenerator* mir) {
     return nullptr;
   }
 
+  if (!PropagateIndirectJumpTargets(mir, *lir)) {
+    return nullptr;
+  }
+  mir->spewPass("Propagate Indirect Jump Targets");
+
   return lir;
 }
 

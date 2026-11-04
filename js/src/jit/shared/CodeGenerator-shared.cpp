@@ -143,6 +143,7 @@ bool CodeGeneratorShared::generatePrologue() {
   MOZ_ASSERT(masm.framePushed() == 0);
   MOZ_ASSERT(!gen->compilingWasm());
 
+  masm.indirectTarget(TargetKind::Call);
 #ifdef JS_USE_LINK_REGISTER
   // LR, then FP for frame prologue.
   masm.pushRegs(LinkRegister, FramePointer);
