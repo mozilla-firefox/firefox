@@ -12,6 +12,7 @@ const lazy = XPCOMUtils.declareLazy({
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   NimbusTelemetry: "resource://nimbus/lib/Telemetry.sys.mjs",
+  NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   ProfilesDatastoreService:
     "moz-src:///toolkit/profile/ProfilesDatastoreService.sys.mjs",
   RemoteSettingsSyncError:
@@ -325,6 +326,13 @@ export class NimbusEnrollments {
    */
   #latestEnrollmentStatuses;
 
+  /**
+   * Whether or not to submit reduced enrollment status telemetry.
+   *
+   * @type {boolean| undefined}
+   */
+  #reducedTelemetryEnabled;
+
   constructor() {
     this.#initialized = false;
 
@@ -342,6 +350,23 @@ export class NimbusEnrollments {
 
     this.#pendingWrites = new PendingWrites();
     this.#syncTimestamps = null;
+    this.#reducedTelemetryEnabled = undefined;
+  }
+
+  /**
+   * Whether or not to submit reduced enrollment status telemetry.
+   *
+   * @returns {boolean}
+   */
+  get reducedTelemetryEnabled() {
+    if (typeof this.#reducedTelemetryEnabled === "undefined") {
+      this.#reducedTelemetryEnabled =
+        lazy.NimbusFeatures.nimbusTelemetry.getVariable(
+          "reducedEnrollmentStatusTelemetryEnabled"
+        ) ?? false;
+    }
+
+    return this.#reducedTelemetryEnabled;
   }
 
   async init() {
@@ -458,9 +483,15 @@ export class NimbusEnrollments {
       this.#latestEnrollmentStatuses.set(slug, entry);
 
       this.#flushSoon();
+
+      if (this.reducedTelemetryEnabled) {
+        NimbusEnrollments.#recordEnrollmentStatusTelemetry(slug, status);
+      }
     }
 
-    NimbusEnrollments.#recordEnrollmentStatusTelemetry(slug, status);
+    if (!this.reducedTelemetryEnabled) {
+      NimbusEnrollments.#recordEnrollmentStatusTelemetry(slug, status);
+    }
   }
 
   /**

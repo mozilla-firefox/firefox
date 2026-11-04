@@ -484,10 +484,24 @@ add_task(async function testCollapseWrites() {
   await cleanup();
 });
 
-add_task(async function testStatuses() {
+async function doTestStatuses({ reducedTelemetry = false } = {}) {
   const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest({
     clearTelemetry: true,
   });
+
+  if (reducedTelemetry) {
+    await manager.enroll(
+      NimbusTestUtils.factories.recipe.withFeatureConfig("nimbus-telemetry", {
+        featureId: "nimbusTelemetry",
+        value: {
+          reducedEnrollmentStatusTelemetryEnabled: true,
+        },
+      }),
+      "test"
+    );
+    // Submit the enrollment status event from enrolling in the above recipe.
+    GleanPings.nimbusTargetingContext.submit();
+  }
 
   const db = manager.store._db;
 
@@ -584,26 +598,24 @@ add_task(async function testStatuses() {
 
   Assert.deepEqual(entries, expectedEntries);
 
-  const expectedTelemetry = expectedEntries
-    .flatMap(e => [e, e])
-    .map(
-      ({
-        status: { status, reason, branch, error, conflictSlugs, migration },
-      }) =>
-        Object.assign(
-          {
-            slug: "slug",
-            status,
-          },
-          typeof reason !== "undefined" ? { reason } : {},
-          typeof branch !== "undefined" ? { branch } : {},
-          typeof migration !== "undefined" ? { migration } : {},
-          typeof error !== "undefined" ? { error_string: error } : {},
-          typeof conflictSlugs !== "undefined"
-            ? { conflict_slug: conflictSlugs.join(",") }
-            : {}
-        )
-    );
+  const expectedTelemetry = (
+    reducedTelemetry ? expectedEntries : expectedEntries.flatMap(e => [e, e])
+  ).map(
+    ({ status: { status, reason, branch, error, conflictSlugs, migration } }) =>
+      Object.assign(
+        {
+          slug: "slug",
+          status,
+        },
+        typeof reason !== "undefined" ? { reason } : {},
+        typeof branch !== "undefined" ? { branch } : {},
+        typeof migration !== "undefined" ? { migration } : {},
+        typeof error !== "undefined" ? { error_string: error } : {},
+        typeof conflictSlugs !== "undefined"
+          ? { conflict_slug: conflictSlugs.join(",") }
+          : {}
+      )
+  );
 
   Assert.deepEqual(
     Glean.nimbusEvents.enrollmentStatus
@@ -626,7 +638,19 @@ add_task(async function testStatuses() {
     "Enrollment status entries removed from the database by a deletion"
   );
 
+  if (reducedTelemetry) {
+    await NimbusTestUtils.cleanupManager(["nimbus-telemetry"]);
+  }
+
   await cleanup();
+}
+
+add_task(function testStatusesNormalTelemetry() {
+  return doTestStatuses();
+});
+
+add_task(function testStatusesReducedTelemetry() {
+  return doTestStatuses({ reducedTelemetry: true });
 });
 
 add_task(async function testStatusNotSubmittedAfterDelete() {

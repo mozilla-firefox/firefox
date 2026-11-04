@@ -5154,6 +5154,12 @@ nimbusTelemetry:
         Configuration for the nimbus_targeting_environment telemetry category.
       type: json
 
+    reducedEnrollmentStatusTelemetryEnabled:
+      description: >
+        Whether or not the client should submit reduced enrollment status
+        telemetry.
+      type: boolean
+
   schema:
     uri: resource://nimbus/schemas/NimbusTelemetryFeature.schema.json
     path: toolkit/components/nimbus/schemas/NimbusTelemetryFeature.schema.json
