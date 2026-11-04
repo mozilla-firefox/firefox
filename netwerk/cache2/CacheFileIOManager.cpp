@@ -2377,10 +2377,10 @@ nsresult CacheFileIOManager::DoomFile(CacheFileHandle* aHandle,
     return NS_ERROR_NOT_INITIALIZED;
   }
 
+  // The doom must run before any open of the same file requested after this
+  // point, whatever that open's priority is.
   RefPtr<DoomFileEvent> ev = new DoomFileEvent(aHandle, aCallback);
-  rv = ioMan->mIOThread->Dispatch(ev, aHandle->IsPriority()
-                                          ? CacheIOThread::OPEN_PRIORITY
-                                          : CacheIOThread::OPEN);
+  rv = ioMan->mIOThread->Dispatch(ev, CacheIOThread::OPEN_PRIORITY);
   NS_ENSURE_SUCCESS(rv, rv);
 
   return NS_OK;
