@@ -1447,6 +1447,8 @@ run-if = [
 
 ["test_network_connectivity_service_idle_startup.js"]
 
+["test_network_id_match.js"]
+
 ["test_no_cookies_after_last_pb_exit.js"]
 
 ["test_no_vary_search_memory_only.js"]

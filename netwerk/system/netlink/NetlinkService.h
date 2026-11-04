@@ -52,6 +52,8 @@ class NetlinkService : public nsIRunnable {
   nsresult Init(NetlinkServiceListener* aListener);
   nsresult Shutdown();
   void GetNetworkID(nsACString& aNetworkID);
+  bool MatchNetworkID(const nsACString& aNetworkID, const nsACString& aSeed,
+                      nsACString& aMatchingNetworkID);
   void GetIsLinkUp(bool* aIsUp);
   nsresult GetDnsSuffixList(nsTArray<nsCString>& aDnsSuffixList);
   nsresult GetResolvers(nsTArray<NetAddr>& aResolvers);

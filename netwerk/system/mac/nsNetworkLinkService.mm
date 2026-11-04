@@ -133,6 +133,23 @@ nsNetworkLinkService::GetNetworkID(nsACString& aNetworkID) {
 }
 
 NS_IMETHODIMP
+nsNetworkLinkService::GetNetworkIDSeed(nsACString& aSeed) {
+  aSeed = GetNetworkIdSeed();
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsNetworkLinkService::MatchNetworkID(const nsACString& aNetworkID,
+                                     const nsACString& aSeed,
+                                     nsACString& aMatchingNetworkID,
+                                     bool* aResult) {
+  MutexAutoLock lock(mMutex);
+  *aResult = MatchNetworkId(aNetworkID, aSeed, mUnseededNetworkId, mNetworkId,
+                            aMatchingNetworkID);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsNetworkLinkService::GetPlatformDNSIndications(
     uint32_t* aPlatformDNSIndications) {
   return NS_ERROR_NOT_IMPLEMENTED;

@@ -117,6 +117,23 @@ nsNotifyAddrListener::GetNetworkID(nsACString& aNetworkID) {
 }
 
 NS_IMETHODIMP
+nsNotifyAddrListener::GetNetworkIDSeed(nsACString& aSeed) {
+  aSeed = GetNetworkIdSeed();
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsNotifyAddrListener::MatchNetworkID(const nsACString& aNetworkID,
+                                     const nsACString& aSeed,
+                                     nsACString& aMatchingNetworkID,
+                                     bool* aResult) {
+  MutexAutoLock lock(mMutex);
+  *aResult = MatchNetworkId(aNetworkID, aSeed, mUnseededNetworkId, mNetworkId,
+                            aMatchingNetworkID);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsNotifyAddrListener::GetDnsSuffixList(nsTArray<nsCString>& aDnsSuffixList) {
   aDnsSuffixList.Clear();
   MutexAutoLock lock(mMutex);

@@ -1895,6 +1895,14 @@ void NetlinkService::GetNetworkID(nsACString& aNetworkID) {
   aNetworkID = mNetworkId;
 }
 
+bool NetlinkService::MatchNetworkID(const nsACString& aNetworkID,
+                                    const nsACString& aSeed,
+                                    nsACString& aMatchingNetworkID) {
+  MutexAutoLock lock(mMutex);
+  return MatchNetworkId(aNetworkID, aSeed, mUnseededNetworkId, mNetworkId,
+                        aMatchingNetworkID);
+}
+
 nsresult NetlinkService::GetDnsSuffixList(nsTArray<nsCString>& aDnsSuffixList) {
 #if defined(HAVE_RES_NINIT)
   MutexAutoLock lock(mMutex);

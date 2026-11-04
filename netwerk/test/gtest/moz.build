@@ -64,6 +64,7 @@ SOURCES += [
     "TestHappyEyeballsConnectionAttempt.cpp",
     "TestHappyEyeballsNetAddrArray.cpp",
     "TestHttpAtom.cpp",
+    "TestLinkServiceCommon.cpp",
     "TestSOCKSProxyLookup.cpp",
 ]
 
@@ -92,6 +93,7 @@ LOCAL_INCLUDES += [
     "/netwerk/cookie",
     "/netwerk/dns",
     "/netwerk/protocol/http",
+    "/netwerk/system",
     "/toolkit/components/jsoncpp/include",
     "/xpcom/tests/gtest",
 ]
