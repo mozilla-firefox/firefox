@@ -8,7 +8,7 @@
 # documentation and how to modify this file.
 repo: mozilla-central
 created_at: '2021-10-14T12:50:40.073465'
-updated_at: '2026-10-29T10:12:06.396239+00:00'
+updated_at: '2026-11-04T21:14:12.168432+00:00'
 export:
   path: ./docs/mots/index.md
   format: md
@@ -1017,6 +1017,10 @@ people:
     bmo_id: 580428
     name: ''
     nick: prathiksha
+  - &ralkhulaidi
+    bmo_id: 790803
+    name: Rana Al-Khulaidi
+    nick: ralkhulaidi
   - &rbs
     bmo_id: 5630
     name: ''
@@ -3929,6 +3933,7 @@ modules:
           - *emcminn
           - *charlie
           - *aminomancer
+          - *ralkhulaidi
         machine_name: normandy
 
       - machine_name: firefox_view
@@ -5077,5 +5082,5 @@ modules:
         - Ryan Tilder
       group: dev-platform
 hashes:
-  config: 23cf4959245d8c94c03e9eecc16e421e26285243
-  export: 630300bb8cc32c5d7e66787a96618b5245c2d5dd
+  config: 6041448050373b763b07c29e782e847649d7ba6e
+  export: 6c8d1e88f8f578c7e97d090ded0e0950b384d38b
