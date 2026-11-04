@@ -564,7 +564,7 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
         }
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_tab_groups_strip).apply {
-            isVisible = Config.channel.isDebug
+            isVisible = Config.channel.isNightlyOrDebug
             isChecked = settings.tabGroupsStripEnabled
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
