@@ -29,6 +29,11 @@ Any data collection that meets the following criteria can use OHTTP:
     * This includes `client_id` and the Mozilla Accounts identifier.
       The `client_id` and other fingerprinting information are explicitly excluded
       from pings using OHTTP.
+* Your collection must [be tested][instrumentation-tests]
+  and/or you must make arrangements to manually ensure your data is correctly submitted,
+  uploaded, and received.
+    * Failure to test data collections submitted over OHTTP has resulted in data loss in the past.
+    * Any data sensitive enough to warrant the use of OHTTP is important enough to be tested.
 
 ## How can I use OHTTP for my Data?
 
