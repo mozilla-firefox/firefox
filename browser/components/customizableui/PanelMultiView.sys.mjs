@@ -1852,7 +1852,6 @@ export var PanelView = class extends AssociatedToNode {
    * undefined at any time.
    *
    * @type {DOMNode|null}
-   *   The selected element, or null if no element is selected.
    */
   get selectedElement() {
     return this._selectedElement && this._selectedElement.get();

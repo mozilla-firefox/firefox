@@ -2000,18 +2000,17 @@ export class UrlbarProvider {
   }
 
   /**
-   * @type {Query}
-   *   This can be used by the provider to check the query is still running
-   *   after executing async tasks:
+   * This can be used by the provider to check the query is still running
+   * after executing async tasks::
    *
-   * ```
    *   let instance = this.queryInstance;
    *   await ...
    *   if (instance != this.queryInstance) {
    *     // Query was canceled or a new one started.
    *     return;
    *   }
-   * ```
+   *
+   * @type {Query}
    */
   queryInstance;
 

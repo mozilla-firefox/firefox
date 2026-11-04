@@ -797,14 +797,16 @@ export class MerinoClient {
   // successful request.
   #cache = {
     /**
+     * The cached suggestions array.
+     *
      * @type {MerinoClientSuggestion[]}
-     *   The cached suggestions array.
      */
     suggestions: null,
     /**
+     * The cache key: the stringified request URL without session-related
+     * params (session ID and sequence number).
+     *
      * @type {string}
-     *   The cache key: the stringified request URL without session-related
-     *   params (session ID and sequence number).
      */
     key: null,
     /**

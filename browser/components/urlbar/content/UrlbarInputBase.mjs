@@ -253,9 +253,9 @@ ${
   }
 
   /**
-   * @type {DocumentFragment=}
-   *
    * The cached fragment.
+   *
+   * @type {DocumentFragment=}
    */
   static #fragment;
 
@@ -3053,12 +3053,12 @@ ${
    */
 
   /**
-   * @type {SearchModesObject|undefined}
-   *
    * The (lazily initialized) search mode object for the searchbar.
    * This is needed because the searchbar has one search mode per window that
    * shouldn't change when switching tabs. For the address bar, the search mode
    * is stored per browser in #browserStates and this is always undefined.
+   *
+   * @type {SearchModesObject|undefined}
    */
   #searchbarSearchModes;
 
@@ -3180,11 +3180,11 @@ ${
   }
 
   /**
-   * @type {Promise<void>}
-   *
    * Resolves once the search mode last assigned through the `searchMode`
    * setter has been applied. Applying it resolves the engine, which may have
    * to wait for the engine store.
+   *
+   * @type {Promise<void>}
    */
   #searchModeApplied = Promise.resolve();
 

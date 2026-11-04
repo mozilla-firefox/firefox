@@ -1650,8 +1650,9 @@ class Preferences {
   }
 
   /**
-   * @type {Map<string, ResultGroup>}
    * Result groups cached by search access point and params used to build them.
+   *
+   * @type {Map<string, ResultGroup>}
    */
   #cachedResultGroups = new Map();
   #getOrCacheResultGroups(key, builder) {

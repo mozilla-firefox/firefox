@@ -333,10 +333,10 @@ export class MozCachedOHTTPChannel {
   }
 
   /**
-   * Gets or sets the content length of the loaded resource.
+   * Gets or sets the content length of the loaded resource, in bytes, or -1
+   * if unknown.
    *
    * @type {number}
-   *   The content length in bytes, or -1 if unknown.
    */
   get contentLength() {
     return this.#contentLength;

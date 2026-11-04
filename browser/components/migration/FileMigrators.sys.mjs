@@ -58,10 +58,10 @@ export class FileMigratorBase {
   }
 
   /**
-   * Returns true if the migrator is configured to be enabled.
+   * Returns true if the migrator is configured to be enabled, that is, if it
+   * should be shown in the migration wizard.
    *
    * @type {boolean}
-   *   true if the migrator should be shown in the migration wizard.
    */
   get enabled() {
     throw new Error("FileMigrator.enabled must be overridden.");
@@ -123,11 +123,10 @@ export class FileMigratorBase {
    * Returns a list of one or more resource types that should appear to be
    * in progress of migrating while the file migration occurs. Notably,
    * this does not need to match the resource types that are returned by
-   * `FileMigratorBase.migrate`.
+   * `FileMigratorBase.migrate`. The resource types come from the
+   * MigrationWizardConstants.DISPLAYED_RESOURCE_TYPES set.
    *
    * @type {string[]}
-   *   An array of resource types from the
-   *   MigrationWizardConstants.DISPLAYED_RESOURCE_TYPES set.
    */
   get displayedResourceTypes() {
     throw new Error("FileMigrator.displayedResourceTypes must be overridden");

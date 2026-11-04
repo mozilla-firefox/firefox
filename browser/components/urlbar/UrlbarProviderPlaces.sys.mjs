@@ -769,8 +769,9 @@ class Search {
   }, /** @type {Record<Values<typeof MATCH_TYPE>, number>} */ ({}));
 
   /**
+   * The default behaviour for this search. This may be a mixture of behaviors.
+   *
    * @type {number}
-   *   The default behaviour for this search. This may be a mixture of behaviors.
    */
   #behavior;
   #matchBehavior = Ci.mozIPlacesAutoComplete.MATCH_BOUNDARY;
@@ -792,8 +793,9 @@ class Search {
   #heuristicToken;
   #inPrivateWindow;
   /**
+   * Used to interrupt running queries.
+   *
    * @type {?() => void}
-   *   Used to interrupt running queries.
    */
   #interrupt;
   #leadingRestrictionToken;

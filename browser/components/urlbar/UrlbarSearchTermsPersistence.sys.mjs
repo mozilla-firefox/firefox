@@ -47,14 +47,16 @@ class _UrlbarSearchTermsPersistence {
   #originalProviderInfo = [];
 
   /**
+   * The current search provider info.
+   *
    * @type {PersistedTermsProviderInfo[]}
-   *  The current search provider info.
    */
   #searchProviderInfo = [];
 
   /**
-   * @type {RemoteSettingsClient}
    * An instance of remote settings that is used to access the provider info.
+   *
+   * @type {RemoteSettingsClient}
    */
   #urlbarSearchTermsPersistenceSettings;
 
