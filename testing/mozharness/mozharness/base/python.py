@@ -11,7 +11,9 @@ import shutil
 import site
 import socket
 import sys
+import time
 import traceback
+from contextlib import contextmanager
 from pathlib import Path
 
 try:
@@ -74,6 +76,25 @@ def pip_command(*, python_executable, subcommand=None, args=None, non_uv_args=No
         full_command = command + (non_uv_args or []) + (args or [])
 
     return full_command
+
+
+@contextmanager
+def resource_marker(script, name, text):
+    """Record the time the block takes as a marker, if the script's resource
+    monitor is running."""
+    start = time.monotonic()
+    try:
+        yield
+    finally:
+        if monitor := getattr(script, "_resource_monitor", None):
+            monitor.record_marker(
+                name, start, time.monotonic(), {"type": "Text", "text": text}
+            )
+
+
+def pip_install_marker(script, args):
+    name = "uv pip install" if get_uv_executable() else "pip install"
+    return resource_marker(script, name, " ".join(args))
 
 
 def get_tlsv1_post():
@@ -433,24 +454,25 @@ class VirtualenvMixin:
 
         # Allow for errors while building modules, but require a
         # return status of 0.
-        self.retry(
-            self.run_command,
-            # None will cause default value to be used
-            attempts=1 if optional else None,
-            good_statuses=(0,),
-            error_level=WARNING if optional else FATAL,
-            error_message="Could not install python package: failed all attempts.",
-            args=pip_install_command,
-            kwargs={
-                "error_list": VirtualenvErrorList,
-                "cwd": cwd,
-                "env": env,
-                # WARNING only since retry will raise final FATAL if all
-                # retry attempts are unsuccessful - and we only want
-                # an ERROR of FATAL if *no* retry attempt works
-                "error_level": WARNING,
-            },
-        )
+        with pip_install_marker(self, pip_command_args):
+            self.retry(
+                self.run_command,
+                # None will cause default value to be used
+                attempts=1 if optional else None,
+                good_statuses=(0,),
+                error_level=WARNING if optional else FATAL,
+                error_message="Could not install python package: failed all attempts.",
+                args=pip_install_command,
+                kwargs={
+                    "error_list": VirtualenvErrorList,
+                    "cwd": cwd,
+                    "env": env,
+                    # WARNING only since retry will raise final FATAL if all
+                    # retry attempts are unsuccessful - and we only want
+                    # an ERROR of FATAL if *no* retry attempt works
+                    "error_level": WARNING,
+                },
+            )
 
     def create_virtualenv(self, modules=(), requirements=()):
         """
@@ -565,78 +587,81 @@ class VirtualenvMixin:
                 "skipping virtualenv creation." % self.query_python_path()
             )
         else:
-            self.run_command(
-                [sys.executable, "--version"],
-            )
-
-            if uv_executable := get_uv_executable():
-                self.run_command([uv_executable, "--version"])
-
-                uv_venv_creation_command = ["uv", "venv", venv_path]
-                # `uv venv --relocatable` rewrites console-script shebangs into
-                # a /bin/sh trampoline that shells out to `realpath` to locate
-                # the venv. macOS workers (10.15) don't ship `realpath`, so
-                # those scripts fail to run there. Their task paths are short
-                # enough that plain absolute-path shebangs stay well under the
-                # length limit, whereas the long device-pool paths on other
-                # platforms overflow it and genuinely need a relative shebang.
-                if not self._is_darwin():
-                    uv_venv_creation_command.append("--relocatable")
-                uv_venv_creation_command += [
-                    f"--python={sys.executable}",
-                    "--no-project",
-                ]
+            with resource_marker(self, "virtualenv", f"create {venv_path}"):
                 self.run_command(
-                    uv_venv_creation_command,
-                    cwd=dirs["abs_work_dir"],
-                    error_list=VirtualenvErrorList,
-                    halt_on_failure=True,
-                )
-            else:
-                venv_creation_flags = ["-m", "venv", venv_path]
-
-                if self._is_windows():
-                    # To workaround an issue on Windows10 jobs in CI we have to
-                    # explicitly install the default pip separately. Ideally we
-                    # could just remove the "--without-pip" above and get the same
-                    # result, but that's apparently not always the case.
-                    venv_creation_flags = venv_creation_flags + ["--without-pip"]
-
-                self.run_command(
-                    [sys.executable] + venv_creation_flags,
-                    cwd=dirs["abs_work_dir"],
-                    error_list=VirtualenvErrorList,
-                    halt_on_failure=True,
+                    [sys.executable, "--version"],
                 )
 
-                if self._is_windows():
+                if uv_executable := get_uv_executable():
+                    self.run_command([uv_executable, "--version"])
+
+                    uv_venv_creation_command = ["uv", "venv", venv_path]
+                    # `uv venv --relocatable` rewrites console-script shebangs into
+                    # a /bin/sh trampoline that shells out to `realpath` to locate
+                    # the venv. macOS workers (10.15) don't ship `realpath`, so
+                    # those scripts fail to run there. Their task paths are short
+                    # enough that plain absolute-path shebangs stay well under the
+                    # length limit, whereas the long device-pool paths on other
+                    # platforms overflow it and genuinely need a relative shebang.
+                    if not self._is_darwin():
+                        uv_venv_creation_command.append("--relocatable")
+                    uv_venv_creation_command += [
+                        f"--python={sys.executable}",
+                        "--no-project",
+                    ]
                     self.run_command(
-                        [str(venv_python_bin), "-m", "ensurepip", "--default-pip"],
+                        uv_venv_creation_command,
                         cwd=dirs["abs_work_dir"],
+                        error_list=VirtualenvErrorList,
+                        halt_on_failure=True,
+                    )
+                else:
+                    venv_creation_flags = ["-m", "venv", venv_path]
+
+                    if self._is_windows():
+                        # To workaround an issue on Windows10 jobs in CI we have to
+                        # explicitly install the default pip separately. Ideally we
+                        # could just remove the "--without-pip" above and get the same
+                        # result, but that's apparently not always the case.
+                        venv_creation_flags = venv_creation_flags + ["--without-pip"]
+
+                    self.run_command(
+                        [sys.executable] + venv_creation_flags,
+                        cwd=dirs["abs_work_dir"],
+                        error_list=VirtualenvErrorList,
                         halt_on_failure=True,
                     )
 
-            self._ensure_python_exe(venv_python_bin.parent)
+                    if self._is_windows():
+                        self.run_command(
+                            [str(venv_python_bin), "-m", "ensurepip", "--default-pip"],
+                            cwd=dirs["abs_work_dir"],
+                            halt_on_failure=True,
+                        )
 
-            pip_install_command = pip_command(
-                python_executable=str(venv_python_bin),
-                subcommand="install",
-                args=[
+                self._ensure_python_exe(venv_python_bin.parent)
+
+                wheel_args = [
                     "--only-binary",
                     ":all:",
                     "--disable-pip-version-check",
                     str(wheels["pip"]),
                     str(wheels["setuptools"]),
                     str(wheels["wheel"]),
-                ],
-            )
+                ]
+                pip_install_command = pip_command(
+                    python_executable=str(venv_python_bin),
+                    subcommand="install",
+                    args=wheel_args,
+                )
 
-            self.run_command(
-                pip_install_command,
-                cwd=dirs["abs_work_dir"],
-                error_list=VirtualenvErrorList,
-                halt_on_failure=True,
-            )
+                with pip_install_marker(self, wheel_args):
+                    self.run_command(
+                        pip_install_command,
+                        cwd=dirs["abs_work_dir"],
+                        error_list=VirtualenvErrorList,
+                        halt_on_failure=True,
+                    )
 
         if not modules:
             modules = c.get("virtualenv_modules", [])
