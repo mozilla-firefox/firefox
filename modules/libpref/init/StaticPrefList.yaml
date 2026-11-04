@@ -11486,7 +11486,7 @@
 
 - name: layout.css.prefers-color-scheme.meta-tag.enabled
   type: RelaxedAtomicBool
-  value: true
+  value: @IS_NIGHTLY_OR_DEV_EDITION@
   mirror: always
 
 # An override for prefers-color-scheme for content documents.
