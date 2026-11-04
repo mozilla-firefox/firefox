@@ -312,6 +312,6 @@ LoginManagerCrypto_SDR.prototype = {
 }; // end of nsLoginManagerCrypto_SDR implementation
 
 ChromeUtils.defineLazyGetter(LoginManagerCrypto_SDR.prototype, "log", () => {
-  let logger = lazy.LoginHelper.createLogger("Login crypto");
+  let logger = lazy.LoginHelper.createLogger("LoginCrypto");
   return logger.log.bind(logger);
 });

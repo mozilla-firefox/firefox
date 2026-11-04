@@ -268,6 +268,6 @@ export class LoginManagerStorage extends LoginManagerStorage_json {
 }
 
 ChromeUtils.defineLazyGetter(LoginManagerStorage.prototype, "log", () => {
-  let logger = lazy.LoginHelper.createLogger("Login storage");
+  let logger = lazy.LoginHelper.createLogger("LoginStorage");
   return logger.log.bind(logger);
 });
