@@ -916,7 +916,6 @@ split-view-footer {
 @media -moz-pref("browser.highlightToSearch.featureGate") {
   #selection-shortcut-action-panel {
     --selection-button-size: 36px;
-    --selection-ai-button-extra-width: 15px;
     --panel-subview-body-padding: 1px;
 
     moz-button {
@@ -924,8 +923,8 @@ split-view-footer {
       --button-size-icon: var(--selection-button-size);
     }
 
-    #ai-action-button::part(button) {
-      width: calc(var(--selection-button-size) + var(--selection-ai-button-extra-width));
+    #ai-action-button::part(button)::after {
+      margin-inline-start: var(--space-xsmall);
     }
 
     .copy-action-confirmation {
@@ -945,6 +944,9 @@ split-view-footer {
 }
 
 #selection-more-actions-panel {
+  --selection-row-icon-inset: calc((var(--size-item-large) - var(--icon-size)) / 2);
+  --selection-row-switch-inset: calc((var(--size-item-large) - var(--size-item-small)) / 2);
+
   &::part(content) {
     padding: var(--space-small);
   }
@@ -959,8 +961,9 @@ split-view-footer {
     flex-direction: column;
     justify-content: center;
     min-height: var(--size-item-large);
-    padding-inline: var(--space-small);
+    padding-inline: var(--selection-row-icon-inset) var(--selection-row-switch-inset);
     border-radius: var(--button-border-radius);
+    --space-small: var(--selection-row-icon-inset);
 
     &:hover {
       background-color: var(--button-background-color-ghost-hover);
@@ -970,7 +973,15 @@ split-view-footer {
 }
 
 #more-actions-manage-settings {
-  --button-padding: var(--space-xsmall) var(--space-small);
+  --manage-settings-start: calc(var(--selection-row-icon-inset) - var(--border-width));
+  --manage-settings-end: calc(var(--selection-row-switch-inset) + var(--size-item-large) + var(--space-medium));
+  --button-padding: var(--space-xsmall) var(--manage-settings-end) var(--space-xsmall) var(--manage-settings-start);
+  --button-font-weight: normal;
+  --space-small: var(--selection-row-icon-inset);
+
+  &:dir(rtl) {
+    --button-padding: var(--space-xsmall) var(--manage-settings-start) var(--space-xsmall) var(--manage-settings-end);
+  }
 }
 
 .more-actions-notice {
