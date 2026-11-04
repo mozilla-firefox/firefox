@@ -2392,9 +2392,10 @@ bool DCSurfaceVideo::CalculateSwapChainSize(gfx::Matrix& aTransform) {
   if (profiler_thread_is_being_profiled_for_markers()) {
     nsPrintfCString str(
         "useVpAutoHDR %d gfxVars %d contentIsHDR %d monitor %d driver %d "
-        "charging %d failed %d",
+        "charging %d failed %d isDRM %d",
         useVpAutoHDR, gfx::gfxVars::WebRenderOverlayVpAutoHDR(), contentIsHDR,
-        monitorIsHDR, driverSupportsAutoHDR, powerIsCharging, mVpAutoHDRFailed);
+        monitorIsHDR, driverSupportsAutoHDR, powerIsCharging, mVpAutoHDRFailed,
+        isDRM);
     PROFILER_MARKER_TEXT("DCSurfaceVideo", GRAPHICS, {}, str);
   }
 
