@@ -73,3 +73,42 @@ add_task(async function test_reader_mode() {
     "Reader Mode URL without an article should be blocked"
   );
 });
+
+add_task(async function test_path_normalization() {
+  await setupPolicyEngineWithJson({
+    policies: {
+      WebsiteFilter: {
+        Block: [
+          "https://example.com/admin*",
+          "https://example.com/*?action=delete*",
+          "https://example.org/*",
+        ],
+        Exceptions: ["https://example.org/public/*"],
+      },
+    },
+  });
+
+  for (let url of [
+    "https://example.com/ad%6din.html",
+    "https://example.com/%41DMIN.html",
+    "https://example.com//admin.html",
+    "https://example.com/%2Fadmin.html",
+    "https://example.com/x/..%2Fadmin.html",
+    "https://example.com/x%5C..%5Cadmin.html",
+    "https://example.com/page?action=d%65lete",
+    "https://example.org/public/..%2Fprivate",
+    "https://example.com/ad%6din%FF.html",
+    "https://example.com/%E2%82/..%2Fad%6din.html",
+  ]) {
+    ok(!WebsiteFilter.isAllowed(url), `${url} should be blocked`);
+  }
+
+  for (let url of [
+    "https://example.com/",
+    "https://example.com/x%3Fadmin",
+    "https://example.com/page?action=view",
+    "https://example.org/public/p%61ge",
+  ]) {
+    ok(WebsiteFilter.isAllowed(url), `${url} should be allowed`);
+  }
+});

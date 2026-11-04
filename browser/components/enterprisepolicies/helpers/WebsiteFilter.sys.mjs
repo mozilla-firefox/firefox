@@ -241,6 +241,39 @@ export let WebsiteFilter = {
       return null;
     }
     parsed.hostname = lazy.SitePolicyUtils.stripTrailingDots(parsed.hostname);
+    // Match the path a server would resolve: escapes decoded and slashes
+    // merged, re-parsed so dot segments collapse and delimiters stay escaped.
+    // We don't use decodeURIComponent because it throws on escapes that aren't
+    // valid UTF-8, so a stray "%FF" would skip normalization, and it can't
+    // limit decoding to the characters that are safe in each part of the URL.
+    let path = decodeEscapes(
+      parsed.pathname,
+      c => c >= " " && c <= "~"
+    ).replace(/[\/\\]+/g, "/");
+    if (path != parsed.pathname) {
+      parsed.pathname = path;
+    }
+    let search = decodeEscapes(parsed.search, c => /[\w.~-]/.test(c));
+    if (search != parsed.search) {
+      parsed.search = search;
+    }
     return parsed.href.toLowerCase();
   },
 };
+
+/**
+ * Decodes the percent-escapes in a string that encode an ASCII character,
+ * leaving every other escape as is. Never throws, so any URL can be
+ * normalized whatever bytes its escapes encode.
+ *
+ * @param {string} str The string to decode.
+ * @param {Function} shouldDecode Called with each encoded character; only
+ *   escapes it returns true for are decoded.
+ * @returns {string}
+ */
+function decodeEscapes(str, shouldDecode) {
+  return str.replace(/%[0-7][0-9a-f]/gi, encoded => {
+    let c = String.fromCharCode(parseInt(encoded.substring(1), 16));
+    return shouldDecode(c) ? c : encoded;
+  });
+}
