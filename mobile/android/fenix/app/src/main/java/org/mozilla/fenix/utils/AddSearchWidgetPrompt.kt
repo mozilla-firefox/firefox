@@ -8,7 +8,7 @@ import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
-import org.mozilla.gecko.search.SearchWidgetProvider
+import org.mozilla.fenix.widget.glance.SearchBarWithLensWidgetReceiver
 
 /**
  * Displays the "add search widget" prompt for capable devices.
@@ -20,7 +20,7 @@ fun maybeShowAddSearchWidgetPrompt(activity: Activity) {
 
     // We don't use canShowAddSearchWidgetPrompt here directly as lint does not pick on the version check.
     if (appWidgetManager.isRequestPinAppWidgetSupported) {
-        val searchWidgetProvider = ComponentName(activity, SearchWidgetProvider::class.java)
+        val searchWidgetProvider = ComponentName(activity, SearchBarWithLensWidgetReceiver::class.java)
         appWidgetManager.requestPinAppWidget(searchWidgetProvider, null, null)
     }
 }
@@ -41,7 +41,7 @@ fun showAddSearchWidgetPromptIfSupported(context: Context) {
         val searchWidgetProvider =
             ComponentName(
                 packageName,
-                SearchWidgetProvider::class.java.name,
+                SearchBarWithLensWidgetReceiver::class.java.name,
             )
         appWidgetManager.requestPinAppWidget(searchWidgetProvider, null, null)
     }

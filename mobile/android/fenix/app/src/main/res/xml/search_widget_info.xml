@@ -4,6 +4,7 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:description="@string/widget_picket_description"
     android:minWidth="320dp"
     android:minHeight="40dp"
@@ -12,5 +13,7 @@
     android:previewImage="@drawable/fenix_search_widget"
     android:updatePeriodMillis="3600000"
     android:initialLayout="@layout/search_widget_large"
-    android:widgetCategory="home_screen">
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="hide_from_picker"
+    tools:targetApi="p">
 </appwidget-provider>
