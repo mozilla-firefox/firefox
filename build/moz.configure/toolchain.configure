@@ -1315,16 +1315,20 @@ host_multiarch_dir = multiarch_dir(host)
     target_sysroot.path,
     valid_windows_sdk_dir,
     vc_path,
-    when=using_sccache,
+    when=using_sccache & moz_automation,
 )
 @imports("os")
 def default_sccache_basedirs(build_env, sysroot_path, windows_sdk_dir, vc_path):
     # sccache rewrites paths under these base directories to be relative
-    # before computing cache keys, so builds in different worktrees (or in
-    # automation versus locally) hit the same cache entries instead of
-    # missing on differing absolute paths. These are the same directories as
-    # the path remapping below: the object and source directories, plus the
-    # sysroot and SDKs.
+    # before computing cache keys, so builds in different checkouts hit the
+    # same cache entries instead of missing on differing absolute paths. These
+    # are the same directories as the path remapping below: the object and
+    # source directories, plus the sysroot and SDKs.
+    #
+    # This is limited to automation, whose remote cache doesn't use
+    # preprocessor cache mode. Combined with the local disk cache, it can hand
+    # one checkout's object file to another whose headers differ:
+    # https://github.com/mozilla/sccache/issues/2863
     basedirs = [build_env.topobjdir, build_env.topsrcdir]
     if sysroot_path:
         basedirs.append(sysroot_path)
