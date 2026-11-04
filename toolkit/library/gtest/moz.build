@@ -2,7 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-FINAL_TARGET = "dist/bin/gtest"
+# Use DIST_SUBDIR rather than FINAL_TARGET so that, on Windows, the import
+# library for this "xul" DLL is installed to dist/lib/gtest instead of
+# racing with (and clobbering) the real libxul import library in dist/lib.
+DIST_SUBDIR = "gtest"
 
 USE_LIBS += [
     "gkrust-gtest",
