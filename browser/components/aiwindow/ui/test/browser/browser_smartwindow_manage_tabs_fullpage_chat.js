@@ -31,6 +31,28 @@ add_setup(async function () {
 });
 
 /**
+ * Resolves with the next chat request or rejects if generation ends first.
+ *
+ * @param {MockEngineManager} mockEngineManager
+ * @param {MozBrowser} browser
+ */
+async function captureFollowUpRequest(mockEngineManager, browser) {
+  const inputCta = browser.contentDocument
+    .querySelector("ai-window")
+    .shadowRoot.querySelector("#ai-window-smartbar input-cta");
+  return Promise.race([
+    mockEngineManager.captureRequest({ purpose: "chat" }),
+    BrowserTestUtils.waitForMutationCondition(
+      inputCta,
+      { attributeFilter: ["action"] },
+      () => inputCta.getAttribute("action") !== "stop"
+    ).then(() => {
+      throw new Error("Generation ended without a follow-up request");
+    }),
+  ]);
+}
+
+/**
  * Without a card nobody can choose the chat tab, so grouping one tab must leave
  * it out.
  */
@@ -227,6 +249,227 @@ add_task(async function test_group_tabs_card_offers_the_chat_tab_unticked() {
     await mockEngineManager.rejectAllRequests();
     mockEngineManager.cleanupMocks();
     await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+  }
+});
+
+/**
+ * If a manage_tabs call fails we show no card. Let the model reply with what
+ * went wrong.
+ */
+add_task(async function test_failed_manage_tabs_lets_the_model_reply() {
+  const mockEngineManager = new MockEngineManager();
+  const win = await openAIWindow();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+  const chatTab = win.gBrowser.selectedTab;
+
+  try {
+    const requested = await server.openTab({ title: "Requested tab" });
+    win.gBrowser.selectedTab = chatTab;
+
+    const browser = chatTab.linkedBrowser;
+    await typeInSmartbar(browser, "hello");
+    await submitSmartbar(browser);
+    const conversation =
+      browser.contentDocument.querySelector("ai-window").conversation;
+    await triggerGetOpenTabsToolCall({
+      mockEngineManager,
+      conversation,
+      callId: "call_get_open_tabs",
+    });
+
+    const { respond } = await mockEngineManager.captureRequest({
+      purpose: "chat",
+    });
+    const requestedToken = conversation.urlToToken.get(requested.url);
+    // Tab was closed after submission, but before a reply.
+    BrowserTestUtils.removeTab(requested.tab);
+    respond({
+      text: "",
+      tokens: null,
+      isPrompt: false,
+      toolCalls: [
+        {
+          id: "call_close_tabs",
+          function: {
+            name: "manage_tabs",
+            arguments: JSON.stringify({
+              action: "close_tabs",
+              ask_confirmation: true,
+              url_tokens: [`§url_token: ${requestedToken}§`],
+            }),
+          },
+        },
+      ],
+    });
+
+    const followUp = await captureFollowUpRequest(mockEngineManager, browser);
+    Assert.ok(
+      JSON.stringify(followUp.request.args).includes(
+        "None of the provided URL tokens match an open tab"
+      ),
+      "The model is told no tab matched"
+    );
+    const reply = "Reply from mock.";
+    followUp.respond(reply);
+
+    await TestUtils.waitForCondition(
+      async () =>
+        (await getSidebarChatMessages(browser)).some(
+          ({ role, message, hasRendered }) =>
+            role === "assistant" && message === reply && hasRendered
+        ),
+      "The reply is shown in the chat"
+    );
+  } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
+    await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+  }
+});
+
+add_task(async function test_card_ends_the_turn_without_a_follow_up() {
+  const mockEngineManager = new MockEngineManager();
+  const win = await openAIWindow();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+  const chatTab = win.gBrowser.selectedTab;
+
+  try {
+    const requested = await server.openTab({ title: "Requested tab" });
+    win.gBrowser.selectedTab = chatTab;
+
+    const browser = chatTab.linkedBrowser;
+    await typeInSmartbar(browser, "hello");
+    await submitSmartbar(browser);
+    const conversation =
+      browser.contentDocument.querySelector("ai-window").conversation;
+    await triggerGetOpenTabsToolCall({
+      mockEngineManager,
+      conversation,
+      callId: "call_get_open_tabs",
+    });
+
+    const { respond } = await mockEngineManager.captureRequest({
+      purpose: "chat",
+    });
+    const requestedToken = conversation.urlToToken.get(requested.url);
+    respond({
+      text: "",
+      tokens: null,
+      isPrompt: false,
+      toolCalls: [
+        {
+          id: "call_close_tabs",
+          function: {
+            name: "manage_tabs",
+            arguments: JSON.stringify({
+              action: "close_tabs",
+              ask_confirmation: true,
+              url_tokens: [`§url_token: ${requestedToken}§`],
+            }),
+          },
+        },
+      ],
+    });
+
+    await Assert.rejects(
+      captureFollowUpRequest(mockEngineManager, browser),
+      /Generation ended without a follow-up request/,
+      "The model gets no further turn while the card is shown"
+    );
+  } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
+    await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+  }
+});
+
+/**
+ * The model did not receive any context for the current tab and asking to close
+ * it fails: The user should still receive a reply.
+ */
+add_task(async function test_closing_the_fullpage_chat_tab_gets_a_reply() {
+  const mockEngineManager = new MockEngineManager();
+  const win = await openAIWindow();
+  const chatTab = win.gBrowser.selectedTab;
+
+  try {
+    Assert.deepEqual(win.gBrowser.tabs, [chatTab], "Only the chat tab is open");
+
+    const browser = chatTab.linkedBrowser;
+    await typeInSmartbar(browser, "hello");
+    await submitSmartbar(browser);
+    const conversation =
+      browser.contentDocument.querySelector("ai-window").conversation;
+    const openTabsResult = await triggerGetOpenTabsToolCall({
+      mockEngineManager,
+      conversation,
+      callId: "call_get_open_tabs",
+    });
+    Assert.deepEqual(
+      openTabsResult.content.body,
+      [],
+      "get_open_tabs leaves the chat tab out"
+    );
+
+    const { request, respond } = await mockEngineManager.captureRequest({
+      purpose: "chat",
+    });
+    Assert.ok(
+      !JSON.stringify(request.args).includes(AIWINDOW_URL) &&
+        !conversation.urlToToken.size,
+      "The model receives no URL or token for the chat tab"
+    );
+    respond({
+      text: "",
+      tokens: null,
+      isPrompt: false,
+      toolCalls: [
+        {
+          id: "call_close_active_tab",
+          function: {
+            name: "manage_tabs",
+            arguments: JSON.stringify({
+              action: "close_tabs",
+              ask_confirmation: true,
+              url_tokens: ["§url_token: ACTIVE_TAB§"],
+            }),
+          },
+        },
+      ],
+    });
+
+    const followUp = await captureFollowUpRequest(mockEngineManager, browser);
+    Assert.ok(
+      JSON.stringify(followUp.request.args).includes(
+        "No valid URLs were provided to manage_tabs"
+      ),
+      "The model is told why nothing was closed"
+    );
+    const reply = "Reply from mock.";
+    followUp.respond(reply);
+
+    await TestUtils.waitForCondition(
+      async () =>
+        (await getSidebarChatMessages(browser)).some(
+          ({ role, message, hasRendered }) =>
+            role === "assistant" && message === reply && hasRendered
+        ),
+      "The reply is shown in the chat"
+    );
+    Assert.ok(
+      win.gBrowser.tabs.includes(chatTab) && !chatTab.closing,
+      "The chat tab stays open"
+    );
+  } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     await BrowserTestUtils.closeWindow(win);
   }
 });

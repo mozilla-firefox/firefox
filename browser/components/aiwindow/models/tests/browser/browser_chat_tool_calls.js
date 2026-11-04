@@ -270,7 +270,11 @@ add_task(async function test_terminal_tool_skips_remaining_calls() {
           makeToolCall(
             "call_manage",
             MANAGE_TABS,
-            JSON.stringify({ action: "unsupported", url_tokens: [] })
+            JSON.stringify({
+              action: "close_tabs",
+              ask_confirmation: true,
+              url_tokens: [URL_TOKEN],
+            })
           ),
           pageCall(),
         ];
@@ -291,10 +295,8 @@ add_task(async function test_terminal_tool_skips_remaining_calls() {
           "Tool results stay in tool_calls order when a terminal tool ends the turn"
         );
         Assert.ok(
-          String(
-            toolMessages.find(m => m.content.tool_call_id === "call_manage")
-              ?.content.body
-          ).startsWith("Error: Unsupported manage_tabs action"),
+          toolMessages.find(m => m.content.tool_call_id === "call_manage")
+            .content.body.pending,
           "The terminal tool's own result is recorded"
         );
         Assert.deepEqual(
