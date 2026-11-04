@@ -10,16 +10,23 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction
 
-/** A [LifecycleAwareFeature] which tries to evaluate if message is available for the provided [surface]. */
+/**
+ * A [LifecycleAwareFeature] which tries to evaluate if a message is available for the provided [surface].
+ *
+ * @property appStore [AppStore] to dispatch the evaluation to.
+ * @property surface The surface to evaluate messages for.
+ * @property makeTriggerContext Return an optional trigger context with which to evaluate the message triggers.
+ */
 class MessagingFeature(
     val appStore: AppStore,
     val surface: MessageSurfaceId,
+    val makeTriggerContext: () -> Map<String, Any?>? = { null },
 ) : LifecycleAwareFeature {
 
     override fun start() = Unit
 
     override fun onResume(owner: LifecycleOwner) {
-        appStore.dispatch(MessagingAction.Evaluate(surface))
+        appStore.dispatch(MessagingAction.Evaluate(surface, makeTriggerContext()))
     }
 
     override fun stop() = Unit

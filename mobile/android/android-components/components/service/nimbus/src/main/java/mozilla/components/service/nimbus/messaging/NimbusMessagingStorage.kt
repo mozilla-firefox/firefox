@@ -51,8 +51,15 @@ class NimbusMessagingStorage(
      */
     @VisibleForTesting val malFormedMap = mutableMapOf<String, String>()
     private val logger = Logger("MessagingStorage")
-    private val customAttributes: JSONObject
-        get() = attributeProvider?.getCustomAttributes(context) ?: JSONObject()
+
+    /**
+     * Returns the custom attributes, with the entries of [triggerContext], if any, nested under the key
+     * `triggerContext`.
+     */
+    private fun customAttributes(triggerContext: Map<String, Any?>?): JSONObject =
+        (attributeProvider?.getCustomAttributes(context) ?: JSONObject()).apply {
+            triggerContext?.let { put("triggerContext", JSONObject.wrap(it)) }
+        }
 
     /**
      * Attempts to create and return a Nimbus message helper for evaluating JEXL expressions.
@@ -63,11 +70,13 @@ class NimbusMessagingStorage(
      * The JEXL context is time-sensitive, so this should be created new for each set of evaluations.
      *
      * Since it has a native peer, it should be destroyed after finishing the set of evaluations.
+     *
+     * @param triggerContext Values added to the custom attributes under the key `triggerContext` for these evaluations.
      */
-    fun createMessagingHelper(): NimbusMessagingHelperInterface {
+    fun createMessagingHelper(triggerContext: Map<String, Any?>? = null): NimbusMessagingHelperInterface {
         repeat(MAX_RETRY_ATTEMPTS) { attempt ->
             try {
-                return nimbus.createMessageHelper(customAttributes)
+                return nimbus.createMessageHelper(customAttributes(triggerContext))
             } catch (e: NimbusException) {
                 logger.error(
                     "Attempt ${attempt + 1} of $MAX_RETRY_ATTEMPTS to create Nimbus message helper failed",
@@ -161,12 +170,19 @@ class NimbusMessagingStorage(
      * - the message's surface,
      * - how many times the message has been displayed already
      * - whether or not the user has interacted with the message already.
-     * - the message eligibility, via JEXL triggers.
+     * - the message eligibility, via JEXL triggers (including global attributes and local trigger context).
      *
      * If more than one message for this surface is eligible to be shown, then the first one to be encountered in
      * [messages] list is returned.
+     *
+     * The values in [triggerContext] are added to the custom attributes under the key `triggerContext` when the JEXL
+     * triggers are evaluated.
      */
-    fun getNextMessage(surface: MessageSurfaceId, messages: List<Message>): Message? {
+    fun getNextMessage(
+        surface: MessageSurfaceId,
+        messages: List<Message>,
+        triggerContext: Map<String, Any?>? = null,
+    ): Message? {
         val availableMessages =
             messages
                 .filter {
@@ -175,7 +191,7 @@ class NimbusMessagingStorage(
                 .filter {
                     !it.isExpired && !it.metadata.dismissed && !it.metadata.pressed
                 }
-        return createMessagingHelper().use {
+        return createMessagingHelper(triggerContext).use {
             getNextMessage(
                 surface,
                 availableMessages,

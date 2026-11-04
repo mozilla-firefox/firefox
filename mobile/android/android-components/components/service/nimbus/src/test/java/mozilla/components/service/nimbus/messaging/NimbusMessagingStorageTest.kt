@@ -4,6 +4,7 @@
 
 package mozilla.components.service.nimbus.messaging
 
+import android.content.Context
 import android.net.Uri
 import java.util.UUID
 import kotlin.test.assertNotNull
@@ -11,8 +12,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import mozilla.components.service.nimbus.messaging.ControlMessageBehavior.SHOW_NEXT_MESSAGE
 import mozilla.components.support.test.any
+import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -96,6 +99,52 @@ class NimbusMessagingStorageTest {
         malformedWasReported = false
         malformedMessageIds.clear()
     }
+
+    @Test
+    fun `WHEN creating a messaging helper without trigger context THEN the custom attributes are used`() {
+        val storage = createStorageWithCustomAttributes("""{"a":1,"b":{"c":true}}""")
+
+        storage.createMessagingHelper()
+
+        val captor = argumentCaptor<JSONObject>()
+        verify(nimbus).createMessageHelper(captor.capture())
+        assertEquals("""{"a":1,"b":{"c":true}}""", captor.value.toString())
+    }
+
+    @Test
+    fun `WHEN creating a messaging helper with trigger context THEN it is nested under the triggerContext key`() {
+        val storage = createStorageWithCustomAttributes("""{"a":1,"b":{"c":true}}""")
+
+        storage.createMessagingHelper(mapOf("b" to mapOf("d" to "x"), "e" to "y"))
+
+        val captor = argumentCaptor<JSONObject>()
+        verify(nimbus).createMessageHelper(captor.capture())
+        assertEquals("""{"a":1,"b":{"c":true},"triggerContext":{"b":{"d":"x"},"e":"y"}}""", captor.value.toString())
+    }
+
+    @Test
+    fun `WHEN getting the next message with trigger context THEN the triggers are evaluated with it`() {
+        val storage = createStorageWithCustomAttributes("""{"a":1}""")
+
+        storage.getNextMessage(HOMESCREEN, listOf(), mapOf("e" to "y"))
+
+        val captor = argumentCaptor<JSONObject>()
+        verify(nimbus).createMessageHelper(captor.capture())
+        assertEquals("""{"a":1,"triggerContext":{"e":"y"}}""", captor.value.toString())
+    }
+
+    private fun createStorageWithCustomAttributes(customAttributes: String) =
+        NimbusMessagingStorage(
+            testContext,
+            metadataStorage,
+            reportMalformedMessage,
+            nimbus,
+            messagingFeature,
+            attributeProvider =
+                object : JexlAttributeProvider {
+                    override fun getCustomAttributes(context: Context) = JSONObject(customAttributes)
+                },
+        )
 
     @Test
     fun `WHEN calling getCoenrollingFeatureIds THEN messaging is in that list`() {

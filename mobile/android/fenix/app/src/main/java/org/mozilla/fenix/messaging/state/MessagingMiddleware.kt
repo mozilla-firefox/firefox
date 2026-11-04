@@ -47,6 +47,7 @@ class MessagingMiddleware(
                     controller.getNextMessage(
                         action.surface,
                         store.state.messaging.messages,
+                        action.triggerContext,
                     )
                 if (message != null) {
                     store.dispatch(UpdateMessageToShow(message))

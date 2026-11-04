@@ -167,8 +167,20 @@ sealed class AppAction : Action {
         /** Restores the [Message] state from the storage. */
         object Restore : MessagingAction()
 
-        /** Evaluates if a new messages should be shown to users. */
-        data class Evaluate(val surface: MessageSurfaceId) : MessagingAction()
+        /**
+         * Evaluates if a new messages should be shown to users.
+         *
+         * For example, `Evaluate(FenixMessageSurfaceId.HOMESCREEN, mapOf("source" to "launcher"))` allows messages to
+         * trigger based on local trigger context (beyond global custom attributes).
+         *
+         * @property surface The surface to evaluate messages for.
+         * @property triggerContext Optional values added to the custom attributes under the key `triggerContext` when
+         *   the message triggers are evaluated.
+         */
+        data class Evaluate(
+            val surface: MessageSurfaceId,
+            val triggerContext: Map<String, Any?>? = null,
+        ) : MessagingAction()
 
         /** Updates [MessagingState.messageToShow] with the given [message]. */
         data class UpdateMessageToShow(val message: Message) : MessagingAction()

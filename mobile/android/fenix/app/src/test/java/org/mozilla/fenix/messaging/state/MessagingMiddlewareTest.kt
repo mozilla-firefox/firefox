@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import mozilla.components.service.nimbus.messaging.Message
 import mozilla.components.service.nimbus.messaging.MessageData
@@ -77,6 +78,21 @@ class MessagingMiddlewareTest {
 
         // UpdateMessageToShow to causes messageToShow to append
         assertEquals(1, store.state.messaging.messageToShow.size)
+    }
+
+    @Test
+    fun `WHEN Evaluate with trigger context THEN getNextMessage is called with the trigger context`() = runTest {
+        val message = createMessage()
+        val store =
+            AppStore(
+                AppState(messaging = MessagingState(messages = listOf(message))),
+                listOf(MessagingMiddleware(controller, this)),
+            )
+        val triggerContext = mapOf("test" to mapOf("internal" to "value"))
+
+        store.dispatch(Evaluate(FenixMessageSurfaceId.HOMESCREEN, triggerContext))
+
+        verify { controller.getNextMessage(FenixMessageSurfaceId.HOMESCREEN, listOf(message), triggerContext) }
     }
 
     @Test

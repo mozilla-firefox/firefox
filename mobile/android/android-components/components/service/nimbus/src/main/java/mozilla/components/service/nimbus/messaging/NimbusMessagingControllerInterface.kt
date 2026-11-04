@@ -21,8 +21,17 @@ interface NimbusMessagingControllerInterface {
     /** Get all messages currently on the system. This includes any that have expired, dismissed or clicked upon. */
     suspend fun getMessages(): List<Message>
 
-    /** Selects the next available message for the given surface from the given list of messages. */
-    fun getNextMessage(surfaceId: MessageSurfaceId, messages: List<Message>): Message?
+    /**
+     * Selects the next available message for the given surface from the given list of messages.
+     *
+     * The values in [triggerContext] are added to the custom attributes under the key `triggerContext` when the JEXL
+     * triggers are evaluated.
+     */
+    fun getNextMessage(
+        surfaceId: MessageSurfaceId,
+        messages: List<Message>,
+        triggerContext: Map<String, Any?>? = null,
+    ): Message?
 
     /** A convenience method for `getNextMessage(surfaceId, getMessages())`. */
     suspend fun getNextMessage(surfaceId: MessageSurfaceId): Message?

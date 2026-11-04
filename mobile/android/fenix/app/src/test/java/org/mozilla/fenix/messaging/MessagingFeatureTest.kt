@@ -6,6 +6,7 @@ package org.mozilla.fenix.messaging
 
 import io.mockk.spyk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import org.mozilla.fenix.components.AppStore
@@ -28,5 +29,37 @@ class MessagingFeatureTest {
         testScheduler.advanceUntilIdle()
 
         verify { appStore.dispatch(MessagingAction.Evaluate(FenixMessageSurfaceId.HOMESCREEN)) }
+    }
+
+    @Test
+    fun `GIVEN a trigger context WHEN onResume is called THEN make a new trigger context each time`() = runTest {
+        val appStore: AppStore = spyk(AppStore())
+        val lifecycleOwner = TestLifecycleOwner()
+        var count = 0
+        val binding =
+            MessagingFeature(
+                appStore = appStore,
+                surface = FenixMessageSurfaceId.HOMESCREEN,
+                makeTriggerContext = { mapOf("id" to "test", "count" to ++count) },
+            )
+
+        binding.onResume(lifecycleOwner)
+        binding.onResume(lifecycleOwner)
+        testScheduler.advanceUntilIdle()
+
+        verifyOrder {
+            appStore.dispatch(
+                MessagingAction.Evaluate(
+                    FenixMessageSurfaceId.HOMESCREEN,
+                    mapOf("id" to "test", "count" to 1),
+                )
+            )
+            appStore.dispatch(
+                MessagingAction.Evaluate(
+                    FenixMessageSurfaceId.HOMESCREEN,
+                    mapOf("id" to "test", "count" to 2),
+                )
+            )
+        }
     }
 }

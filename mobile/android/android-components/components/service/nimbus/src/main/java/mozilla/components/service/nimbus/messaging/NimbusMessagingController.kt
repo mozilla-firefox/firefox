@@ -142,6 +142,9 @@ open class NimbusMessagingController(
 
     override suspend fun getNextMessage(surfaceId: MessageSurfaceId) = getNextMessage(surfaceId, getMessages())
 
-    override fun getNextMessage(surfaceId: MessageSurfaceId, messages: List<Message>) =
-        messagingStorage.getNextMessage(surfaceId, messages)
+    override fun getNextMessage(
+        surfaceId: MessageSurfaceId,
+        messages: List<Message>,
+        triggerContext: Map<String, Any?>?,
+    ) = messagingStorage.getNextMessage(surfaceId, messages, triggerContext)
 }
