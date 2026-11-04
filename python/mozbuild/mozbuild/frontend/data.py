@@ -949,17 +949,20 @@ class SharedLibrary(Library):
 
     @property
     def dso_link_flags(self):
-        if self.config.substs.get("OS_ARCH") != "Darwin":
-            return []
-        return [
-            "-dynamiclib",
-            "-install_name",
-            f"@rpath/{self.lib_name}",
-            "-compatibility_version",
-            "1",
-            "-current_version",
-            "1",
-        ]
+        substs = self.config.substs
+        if substs.get("OS_ARCH") == "Darwin":
+            return [
+                "-dynamiclib",
+                "-install_name",
+                f"@rpath/{self.lib_name}",
+                "-compatibility_version",
+                "1",
+                "-current_version",
+                "1",
+            ]
+        if substs.get("OS_ARCH") == "WINNT" and substs.get("CC_TYPE") != "clang-cl":
+            return ["-Wl,--out-implib", f"-Wl,{self.import_name}"]
+        return []
 
 
 class HostSharedLibrary(HostMixin, Library):

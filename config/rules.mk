@@ -210,15 +210,6 @@ endif
 #
 TAG_PROGRAM		= xargs etags -a
 
-#
-# MINGW32
-#
-ifeq ($(OS_ARCH),WINNT)
-ifneq ($(CC_TYPE),clang-cl)
-DSO_LDOPTS += -Wl,--out-implib -Wl,$(IMPORT_LIBRARY)
-endif
-endif
-
 ifeq ($(USE_TVFS),1)
 IFLAGS1 = -rb
 IFLAGS2 = -rb
