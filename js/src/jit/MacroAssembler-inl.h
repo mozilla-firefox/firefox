@@ -334,6 +334,24 @@ void MacroAssembler::branchIfNotActivationEntryFrame(Register scratch,
   load32(Address(FramePointer, CommonFrameLayout::offsetOfDescriptor()),
          scratch);
   and32(Imm32(FrameDescriptor::TypeMask), scratch);
+  if (JitOptions.emitInterpreterEntryTrampoline) {
+    // A frame entered through a per-script entry trampoline is still the
+    // activation's entry frame if the trampoline frame is.
+    Label isEntryFrame;
+    branch32(Assembler::Equal, scratch, Imm32(uint32_t(FrameType::CppToJSJit)),
+             &isEntryFrame);
+    branch32(Assembler::NotEqual, scratch,
+             Imm32(uint32_t(FrameType::BaselineInterpreterEntry)),
+             notEntryFrame);
+    loadPtr(Address(FramePointer, CommonFrameLayout::offsetOfCallerFramePtr()),
+            scratch);
+    load32(Address(scratch, CommonFrameLayout::offsetOfDescriptor()), scratch);
+    and32(Imm32(FrameDescriptor::TypeMask), scratch);
+    branch32(Assembler::NotEqual, scratch,
+             Imm32(uint32_t(FrameType::CppToJSJit)), notEntryFrame);
+    bind(&isEntryFrame);
+    return;
+  }
   branch32(Assembler::NotEqual, scratch, Imm32(uint32_t(FrameType::CppToJSJit)),
            notEntryFrame);
 }
