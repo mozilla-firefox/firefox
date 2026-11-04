@@ -17,12 +17,8 @@ const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 
-const { GET_OPEN_TABS, MAX_TABS } = ChromeUtils.importESModule(
+const { MAX_TABS } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/Tools.sys.mjs"
-);
-
-const { MESSAGE_ROLE } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/ui/modules/ChatEnums.sys.mjs"
 );
 
 /**
@@ -42,51 +38,6 @@ function pinLastAccessed(tabsOldestFirst) {
   tabsOldestFirst.forEach((tab, index) => {
     tab._lastAccessed = index + 1;
   });
-}
-
-/**
- * @param {ChatConversation} conversation
- */
-async function waitForGetOpenTabsResult(conversation) {
-  return TestUtils.waitForCondition(
-    () =>
-      conversation.messages.find(
-        m => m.role === MESSAGE_ROLE.TOOL && m.content?.name === GET_OPEN_TABS
-      ),
-    "A tool result for get_open_tabs should be added to the conversation."
-  );
-}
-
-/**
- * Drive one chat turn whose mocked model emits a get_open_tabs tool_call, so the
- * real Chat -> Tools path executes getOpenTabs. Returns the tool result message.
- *
- * @param {object} options
- * @param {MockEngineManager} options.mockEngineManager
- * @param {ChatConversation} options.conversation
- * @param {string} options.callId
- */
-async function triggerGetOpenTabsToolCall({
-  mockEngineManager,
-  conversation,
-  callId,
-}) {
-  await mockEngineManager.respondTo({
-    purpose: "chat",
-    response: {
-      text: "",
-      tokens: null,
-      isPrompt: false,
-      toolCalls: [
-        {
-          id: callId,
-          function: { name: GET_OPEN_TABS, arguments: "{}" },
-        },
-      ],
-    },
-  });
-
-  return waitForGetOpenTabsResult(conversation);
 }
 
 /**
