@@ -131,6 +131,7 @@ def main(args=sys.argv[1:]):
             screenshot_on_failure=args.screenshot_on_failure,
             power_test=args.power_test,
             simpleperf=args.simpleperf,
+            test_names=raptor_test_names,
         )
     except Exception:
         traceback.print_exc()
@@ -140,7 +141,7 @@ def main(args=sys.argv[1:]):
         os.sys.exit(1)
 
     raptor.results_handler.use_existing_results(args.browsertime_existing_results)
-    success = raptor.run_tests(raptor_test_list, raptor_test_names)
+    success = raptor.run_tests(raptor_test_list)
 
     if not success:
         # if we have results but one test page timed out (i.e. one tp6 test page didn't load

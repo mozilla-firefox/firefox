@@ -119,9 +119,11 @@ class Perftest(metaclass=ABCMeta):
         screenshot_on_failure=False,
         power_test=False,
         install_extensions=None,
+        test_names=None,
         **kwargs,
     ):
         self._remote_test_root = None
+        self._test_names = test_names or []
         self._dirs_to_remove = []
         self.verbose = verbose
         self.page_count = []
@@ -586,7 +588,7 @@ class Perftest(metaclass=ABCMeta):
     def get_browser_meta(self):
         pass
 
-    def run_tests(self, tests, test_names):
+    def run_tests(self, tests):
         tests_to_run = tests
         if self.results_handler.existing_results:
             tests_to_run = []
@@ -602,7 +604,7 @@ class Perftest(metaclass=ABCMeta):
                     os.sys.exit(1)
                 finally:
                     self.run_test_teardown(test)
-            return self.process_results(tests, test_names)
+            return self.process_results(tests)
         finally:
             self.clean_up()
 
@@ -614,7 +616,7 @@ class Perftest(metaclass=ABCMeta):
     def run_test_teardown(self, test):
         self.check_for_crashes()
 
-    def process_results(self, tests, test_names):
+    def process_results(self, tests):
         # when running locally output results in build/raptor.json; when running
         # in production output to a local.json to be turned into tc job artifact
         raptor_json_path = os.path.join(self.artifact_dir, "raptor.json")
@@ -624,7 +626,9 @@ class Perftest(metaclass=ABCMeta):
         self.config["raptor_json_path"] = raptor_json_path
         self.config["artifact_dir"] = self.artifact_dir
         self.config["page_count"] = self.page_count
-        res = self.results_handler.summarize_and_output(self.config, tests, test_names)
+        res = self.results_handler.summarize_and_output(
+            self.config, tests, self._test_names
+        )
 
         # Gecko profiling symbolication
         # We enable the gecko profiler either when the profiler is enabled with

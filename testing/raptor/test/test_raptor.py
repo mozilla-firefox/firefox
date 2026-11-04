@@ -24,11 +24,10 @@ DEFAULT_TIMEOUT = 125
 
 
 class TestBrowserThread(threading.Thread):
-    def __init__(self, raptor_instance, tests, names):
+    def __init__(self, raptor_instance, tests):
         super().__init__()
         self.raptor_instance = raptor_instance
         self.tests = tests
-        self.names = names
         self.exc = None
 
     def print_error(self):
@@ -39,7 +38,7 @@ class TestBrowserThread(threading.Thread):
 
     def run(self):
         try:
-            self.raptor_instance.run_tests(self.tests, self.names)
+            self.raptor_instance.run_tests(self.tests)
         except BaseException:
             self.exc = sys.exc_info()
 
