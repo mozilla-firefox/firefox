@@ -64,7 +64,9 @@ UNIFIED_SOURCES += [
 ]
 
 MOZ_SRC_FILES += [
+    "NetworkGeolocationCache.sys.mjs",
     "NetworkGeolocationProvider.sys.mjs",
+    "NetworkGeoPosition.sys.mjs",
 ]
 
 XPCOM_MANIFESTS += [
