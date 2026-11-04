@@ -184,6 +184,66 @@ TEST_F(Pkcs11Pbkdf2Test, KeyLenSizes) {
   KeySizes(SEC_OID_HMAC_SHA256);
 }
 
+struct LongPasswordVector {
+  SECOidTag prf;
+  size_t pass_len;
+  std::string expected_hex;
+};
+
+class Pkcs11Pbkdf2LongPasswordTest
+    : public ::testing::TestWithParam<LongPasswordVector> {};
+
+// Passwords longer than the HMAC block size, including ones longer than
+// CK_PKCS5_PBKD2_PARAMS_PTR_BOUNDARY.
+TEST_P(Pkcs11Pbkdf2LongPasswordTest, Derive) {
+  const LongPasswordVector& v = GetParam();
+  std::vector<uint8_t> pass(v.pass_len);
+  for (size_t i = 0; i < pass.size(); i++) {
+    pass[i] = static_cast<uint8_t>(i * 7 + 1);
+  }
+  std::string salt("saltSALTsaltSALT");
+  SECItem pass_item = {siBuffer, pass.data(),
+                       static_cast<unsigned int>(pass.size())};
+  SECItem salt_item = {siBuffer, ToUcharPtr(salt),
+                       static_cast<unsigned int>(salt.length())};
+
+  ScopedSECAlgorithmID alg_id(PK11_CreatePBEV2AlgorithmID(
+      SEC_OID_PKCS5_PBKDF2, v.prf, v.prf, 32, 2, &salt_item));
+  ASSERT_TRUE(alg_id);
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ScopedPK11SymKey sym_key(
+      PK11_PBEKeyGen(slot.get(), alg_id.get(), &pass_item, false, nullptr));
+  ASSERT_TRUE(sym_key);
+  ASSERT_EQ(SECSuccess, PK11_ExtractKeyValue(sym_key.get()));
+  SECItem* key_data = PK11_GetKeyData(sym_key.get());
+  ASSERT_TRUE(key_data);
+
+  std::vector<uint8_t> expected;
+  for (size_t i = 0; i < v.expected_hex.size(); i += 2) {
+    expected.push_back(static_cast<uint8_t>(
+        std::stoul(v.expected_hex.substr(i, 2), nullptr, 16)));
+  }
+  EXPECT_EQ(expected, std::vector<uint8_t>(key_data->data,
+                                           key_data->data + key_data->len));
+}
+
+// Generated with Python's hashlib.pbkdf2_hmac(prf, pass, salt, 2, 32).
+static const LongPasswordVector kLongPasswordVectors[] = {
+    {SEC_OID_HMAC_SHA1, 65,
+     "d4b73678eb985b634ac5dc5d4f284c2001baaca72b244e909f41b4a79d78824f"},
+    {SEC_OID_HMAC_SHA256, 8193,
+     "fad1775f2f741f06e5e2fc2cbd2ff4f9b08b53a38737dccbc1802394b31795f4"},
+    {SEC_OID_HMAC_SHA256, 20000,
+     "a180f9b10caa259868f365636916ef8bcf1c9bd2f593189c8783f745f878ddbc"},
+    {SEC_OID_HMAC_SHA512, 129,
+     "dc89f536a723b266903ed61219214072786537a09edd88398d744ac89af90fb7"},
+    {SEC_OID_HMAC_SHA512, 8193,
+     "63a0c6bbbba3474105d15713896edee4229d189929115c40e3a3909e164f2635"},
+};
+
+INSTANTIATE_TEST_SUITE_P(LongPasswords, Pkcs11Pbkdf2LongPasswordTest,
+                         ::testing::ValuesIn(kLongPasswordVectors));
+
 // Helper: build a SECAlgorithmID for PBKDF2 from raw DER-encoded parameters.
 // The returned algid references the input buffer (no copy), so params must
 // outlive any use of the algid.

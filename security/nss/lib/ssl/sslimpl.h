@@ -315,6 +315,7 @@ typedef struct sslOptionsStr {
     unsigned int enableGrease : 1;
     unsigned int enableChXtnPermutation : 1;
     unsigned int dbLoadCertChain : 1;
+    unsigned int enablePlaintextResumptionExport : 1;
 } sslOptions;
 
 typedef enum { sslHandshakingUndetermined = 0,
@@ -605,7 +606,7 @@ typedef struct DTLSQueuedMessageStr {
     ssl3CipherSpec *cwSpec; /* The cipher spec to use, null for none */
     SSLContentType type;    /* The message type */
     unsigned char *data;    /* The data */
-    PRUint16 len;           /* The data length */
+    PRUint32 len;           /* The data length */
 } DTLSQueuedMessage;
 
 struct TLS13KeyShareEntryStr {
@@ -1912,7 +1913,8 @@ PRBool ssl_AlpnTagAllowed(const sslSocket *ss, const SECItem *tag);
 void ssl_Trace(const char *format, ...);
 
 void ssl_CacheExternalToken(sslSocket *ss);
-SECStatus ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedTicket,
+SECStatus ssl_DecodeResumptionToken(sslSocket *ss, sslSessionID *sid,
+                                    const PRUint8 *encodedTicket,
                                     PRUint32 encodedTicketLen);
 PRBool ssl_IsResumptionTokenUsable(sslSocket *ss, sslSessionID *sid);
 
@@ -1934,6 +1936,7 @@ SECStatus SSLExp_SetResumptionTokenCallback(PRFileDesc *fd,
                                             void *ctx);
 SECStatus SSLExp_SetResumptionToken(PRFileDesc *fd, const PRUint8 *token,
                                     unsigned int len);
+SECStatus SSLExp_EnablePlaintextResumptionExport(PRFileDesc *fd, PRBool enabled);
 
 SECStatus SSLExp_GetResumptionTokenInfo(const PRUint8 *tokenData, unsigned int tokenLen,
                                         SSLResumptionTokenInfo *token, unsigned int version);
@@ -1951,7 +1954,10 @@ SECStatus SSLExp_RecordLayerData(PRFileDesc *fd, PRUint16 epoch,
 SECStatus SSLExp_GetCurrentEpoch(PRFileDesc *fd, PRUint16 *readEpoch,
                                  PRUint16 *writeEpoch);
 
-#define SSLResumptionTokenVersion 2
+#define SSLResumptionTokenVersion 3
+#define SSLResumptionTokenFeatureRawMS 0x01
+/* 0x80 is reserved to signal a longer feature field. */
+#define SSLResumptionTokenSupportedFeatures SSLResumptionTokenFeatureRawMS
 
 SECStatus SSLExp_MakeAead(PRUint16 version, PRUint16 cipherSuite, PK11SymKey *secret,
                           const char *labelPrefix, unsigned int labelPrefixLen,

@@ -135,10 +135,16 @@ def main():
         if not api_key:
             raise SystemExit("error: no API key provided.")
 
-    print(f"Extracting bug list for NSS {version} from hg...")
-    bug_lines = get_bug_list_for_version(version)
-    hg_ids = set(extract_bug_ids(bug_lines))
-    print(f"  {len(hg_ids)} bug(s) in the release.")
+    # Point releases share cf_status_nss with the base release.
+    versions = [bz_version]
+    if len(parts) > 2:
+        versions += [f"{bz_version}.{p}" for p in range(1, int(parts[2]) + 1)]
+
+    hg_ids = set()
+    for v in versions:
+        print(f"Extracting bug list for NSS {v} from hg...")
+        hg_ids |= set(extract_bug_ids(get_bug_list_for_version(v)))
+    print(f"  {len(hg_ids)} bug(s) in {bz_version}.x.")
 
     print(f"Querying Bugzilla for bugs with {FIELD} = {bz_version!r}...")
     bz_ids = search_marked_bugs(bz_version, api_key)

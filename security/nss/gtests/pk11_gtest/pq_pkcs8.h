@@ -42,17 +42,11 @@ inline void DerTlv(std::vector<uint8_t>* out, uint8_t tag, const uint8_t* value,
   out->insert(out->end(), value, value + len);
 }
 
-/* Wrap an already encoded private key CHOICE in a OneAsymmetricKey:
- *
- *   SEQUENCE {
- *     INTEGER 0,
- *     SEQUENCE { OBJECT IDENTIFIER <alg> },
- *     OCTET STRING { <choice> }
- *   }
- *
- * Build the CHOICE with PqSeedChoice, PqExpandedKeyChoice or PqBothChoice. */
-inline std::vector<uint8_t> BuildPqPkcs8(SECOidTag oid,
-                                         const std::vector<uint8_t>& choice) {
+// The contents of an AlgorithmIdentifier: the OID, then |parameters| as raw
+// DER. RFC 9881 (ML-DSA) and RFC 9935 (ML-KEM) require the parameters to be
+// absent, so non-empty |parameters| build an invalid key.
+inline std::vector<uint8_t> PqAlgorithmIdentifier(
+    SECOidTag oid, const std::vector<uint8_t>& parameters) {
   SECOidData* oidData = SECOID_FindOIDByTag(oid);
   EXPECT_TRUE(oidData);
   if (!oidData) {
@@ -61,6 +55,27 @@ inline std::vector<uint8_t> BuildPqPkcs8(SECOidTag oid,
 
   std::vector<uint8_t> algorithm;
   DerTlv(&algorithm, SEC_ASN1_OBJECT_ID, oidData->oid.data, oidData->oid.len);
+  algorithm.insert(algorithm.end(), parameters.begin(), parameters.end());
+  return algorithm;
+}
+
+/* Wrap an already encoded private key CHOICE in a OneAsymmetricKey:
+ *
+ *   SEQUENCE {
+ *     INTEGER 0,
+ *     SEQUENCE { OBJECT IDENTIFIER <alg>, <parameters> },
+ *     OCTET STRING { <choice> }
+ *   }
+ *
+ * Build the CHOICE with PqSeedChoice, PqExpandedKeyChoice or PqBothChoice.
+ * `parameters` is raw DER and is empty for a valid key. */
+inline std::vector<uint8_t> BuildPqPkcs8(
+    SECOidTag oid, const std::vector<uint8_t>& choice,
+    const std::vector<uint8_t>& parameters = {}) {
+  std::vector<uint8_t> algorithm = PqAlgorithmIdentifier(oid, parameters);
+  if (algorithm.empty()) {
+    return std::vector<uint8_t>();
+  }
 
   std::vector<uint8_t> body;
   const uint8_t version = 0;
@@ -73,6 +88,29 @@ inline std::vector<uint8_t> BuildPqPkcs8(SECOidTag oid,
   DerTlv(&pkcs8, SEC_ASN1_CONSTRUCTED | SEC_ASN1_SEQUENCE, body.data(),
          body.size());
   return pkcs8;
+}
+
+// SEQUENCE { AlgorithmIdentifier, BIT STRING { <publicKey> } }
+inline std::vector<uint8_t> BuildPqSpki(
+    SECOidTag oid, const std::vector<uint8_t>& publicKey,
+    const std::vector<uint8_t>& parameters = {}) {
+  std::vector<uint8_t> algorithm = PqAlgorithmIdentifier(oid, parameters);
+  if (algorithm.empty()) {
+    return std::vector<uint8_t>();
+  }
+
+  std::vector<uint8_t> bits(1, 0);  // no unused bits
+  bits.insert(bits.end(), publicKey.begin(), publicKey.end());
+
+  std::vector<uint8_t> body;
+  DerTlv(&body, SEC_ASN1_CONSTRUCTED | SEC_ASN1_SEQUENCE, algorithm.data(),
+         algorithm.size());
+  DerTlv(&body, SEC_ASN1_BIT_STRING, bits.data(), bits.size());
+
+  std::vector<uint8_t> spki;
+  DerTlv(&spki, SEC_ASN1_CONSTRUCTED | SEC_ASN1_SEQUENCE, body.data(),
+         body.size());
+  return spki;
 }
 
 // seed [0] IMPLICIT OCTET STRING

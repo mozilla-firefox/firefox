@@ -26,6 +26,18 @@
 // 128bit-vectorized version will be used. In all other cases the
 // scalar version of the HACL* code will be used.
 
+// On aarch64, HACL's Vec128 Poly1305 precomputes r, r^2, r^3, r^4 to enable
+// 4-way SIMD batching. That fixed cost dominates for tiny messages; below
+// this threshold the scalar Hacl_Chacha20Poly1305_32 path is faster.
+// Measured crossover on Apple M5 Max is ~384-512 bytes.
+#define NSS_AARCH64_CHACHA20POLY1305_VEC128_MIN 512
+
+// HACL's Vec128 ChaCha20 always computes four blocks (256 bytes) at a time,
+// which makes it slower than the scalar code for shorter inputs such as the
+// 5-byte masks used in QUIC header protection.
+// Measured crossover on Apple M3 Pro is ~160 bytes.
+#define NSS_AARCH64_CHACHA20_VEC128_MIN 256
+
 // Instead of including the headers (they bring other things we don't want),
 // we declare the functions here.
 // Usage is guarded by runtime checks of required hardware features.
@@ -232,6 +244,11 @@ ChaCha20Xor(uint8_t *output, uint8_t *block, uint32_t len, uint8_t *k,
         chacha20vsx(len, output, block, k, nonce, ctr);
         return;
     }
+#elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(HACL_CAN_COMPILE_VEC128)
+    if (arm_neon_support() && len >= NSS_AARCH64_CHACHA20_VEC128_MIN) {
+        Hacl_Chacha20_Vec128_chacha20_encrypt_128(len, output, block, k, nonce, ctr);
+        return;
+    }
 #endif
     {
         Hacl_Chacha20_chacha20_encrypt(len, output, block, k, nonce, ctr);
@@ -316,6 +333,14 @@ ChaCha20Poly1305_Seal(const ChaCha20Poly1305Context *ctx, unsigned char *output,
             (uint8_t *)input, output, output + inputLen);
         goto finish;
     }
+#elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(HACL_CAN_COMPILE_VEC128)
+    if (arm_neon_support() &&
+        inputLen >= NSS_AARCH64_CHACHA20POLY1305_VEC128_MIN) {
+        Hacl_Chacha20Poly1305_128_aead_encrypt(
+            (uint8_t *)ctx->key, (uint8_t *)nonce, adLen, (uint8_t *)ad, inputLen,
+            (uint8_t *)input, output, output + inputLen);
+        goto finish;
+    }
 #endif
     {
         Hacl_Chacha20Poly1305_32_aead_encrypt(
@@ -385,6 +410,14 @@ ChaCha20Poly1305_Open(const ChaCha20Poly1305Context *ctx, unsigned char *output,
     !defined(NSS_DISABLE_ALTIVEC) && !defined(NSS_DISABLE_CRYPTO_VSX)
     if (ppc_crypto_support()) {
         res = Chacha20Poly1305_vsx_aead_decrypt(
+            (uint8_t *)ctx->key, (uint8_t *)nonce, adLen, (uint8_t *)ad, ciphertextLen,
+            (uint8_t *)output, (uint8_t *)input, (uint8_t *)input + ciphertextLen);
+        goto finish;
+    }
+#elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(HACL_CAN_COMPILE_VEC128)
+    if (arm_neon_support() &&
+        ciphertextLen >= NSS_AARCH64_CHACHA20POLY1305_VEC128_MIN) {
+        res = Hacl_Chacha20Poly1305_128_aead_decrypt(
             (uint8_t *)ctx->key, (uint8_t *)nonce, adLen, (uint8_t *)ad, ciphertextLen,
             (uint8_t *)output, (uint8_t *)input, (uint8_t *)input + ciphertextLen);
         goto finish;
@@ -463,6 +496,14 @@ ChaCha20Poly1305_Encrypt(const ChaCha20Poly1305Context *ctx,
             (uint8_t *)input, output, outTag);
         goto finish;
     }
+#elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(HACL_CAN_COMPILE_VEC128)
+    if (arm_neon_support() &&
+        inputLen >= NSS_AARCH64_CHACHA20POLY1305_VEC128_MIN) {
+        Hacl_Chacha20Poly1305_128_aead_encrypt(
+            (uint8_t *)ctx->key, (uint8_t *)nonce, adLen, (uint8_t *)ad, inputLen,
+            (uint8_t *)input, output, outTag);
+        goto finish;
+    }
 #endif
     {
         Hacl_Chacha20Poly1305_32_aead_encrypt(
@@ -532,6 +573,14 @@ ChaCha20Poly1305_Decrypt(const ChaCha20Poly1305Context *ctx,
     !defined(NSS_DISABLE_ALTIVEC) && !defined(NSS_DISABLE_CRYPTO_VSX)
     if (ppc_crypto_support()) {
         res = Chacha20Poly1305_vsx_aead_decrypt(
+            (uint8_t *)ctx->key, (uint8_t *)nonce, adLen, (uint8_t *)ad, ciphertextLen,
+            (uint8_t *)output, (uint8_t *)input, (uint8_t *)tagIn);
+        goto finish;
+    }
+#elif (defined(__aarch64__) || defined(_M_ARM64)) && defined(HACL_CAN_COMPILE_VEC128)
+    if (arm_neon_support() &&
+        ciphertextLen >= NSS_AARCH64_CHACHA20POLY1305_VEC128_MIN) {
+        res = Hacl_Chacha20Poly1305_128_aead_decrypt(
             (uint8_t *)ctx->key, (uint8_t *)nonce, adLen, (uint8_t *)ad, ciphertextLen,
             (uint8_t *)output, (uint8_t *)input, (uint8_t *)tagIn);
         goto finish;

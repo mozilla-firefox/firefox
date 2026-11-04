@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <climits>
 #include <memory>
+#include "keyhi.h"
 #include "nss.h"
 #include "pk11pub.h"
 #include "secutil.h"
@@ -430,6 +431,135 @@ TEST_F(DERPrivateKeyImportTest, ImportEd25519WithNonEmptyAlgorithmParams) {
   EXPECT_FALSE(ParsePrivateKey(kEd25519WithNonEmptyAlgorithmParams, false));
   EXPECT_EQ(PORT_GetError(), SEC_ERROR_UNSUPPORTED_KEYALG);
 }
+
+struct PqAlgorithm {
+  const char* name;
+  SECOidTag oid;
+  KeyType keyType;
+  size_t seedLen;
+  size_t publicKeyLen;
+};
+
+// NULL, an empty OCTET STRING and an empty SEQUENCE: any parameters at all
+// have to be rejected, not only NULL.
+static const std::vector<std::vector<uint8_t>> kPresentParameters = {
+    {0x05, 0x00}, {0x04, 0x00}, {0x30, 0x00}};
+
+class PqAlgorithmParametersTest
+    : public DERPrivateKeyImportTest,
+      public ::testing::WithParamInterface<PqAlgorithm> {
+ protected:
+  std::vector<uint8_t> Pkcs8(const std::vector<uint8_t>& parameters) {
+    std::vector<uint8_t> seed(GetParam().seedLen, 0x2a);
+    return BuildPqPkcs8(GetParam().oid, PqSeedChoice(seed), parameters);
+  }
+
+  ScopedSECKEYPublicKey ExtractPublicKey(
+      size_t publicKeyLen, const std::vector<uint8_t>& parameters) {
+    std::vector<uint8_t> publicKey(publicKeyLen, 0x2a);
+    std::vector<uint8_t> der =
+        BuildPqSpki(GetParam().oid, publicKey, parameters);
+    SECItem item = {siBuffer, der.data(),
+                    static_cast<unsigned int>(der.size())};
+    ScopedCERTSubjectPublicKeyInfo spki(
+        SECKEY_DecodeDERSubjectPublicKeyInfo(&item));
+    EXPECT_TRUE(spki) << PORT_ErrorToString(PORT_GetError());
+    if (!spki) {
+      return nullptr;
+    }
+    PORT_SetError(0);
+    return ScopedSECKEYPublicKey(SECKEY_ExtractPublicKey(spki.get()));
+  }
+
+  void SetUp() override {
+    slot_.reset(PK11_GetInternalSlot());
+    ASSERT_TRUE(slot_);
+    kek_.reset(PK11_KeyGen(slot_.get(), CKM_AES_CBC, nullptr, 16, nullptr));
+    ASSERT_TRUE(kek_);
+    param_.reset(PK11_ParamFromIV(CKM_NSS_AES_KEY_WRAP_PAD, nullptr));
+    ASSERT_TRUE(param_);
+  }
+
+  // Encrypts |pkcs8| as is and unwraps it, which takes softoken's own PKCS#8
+  // decoder rather than pk11wrap's.
+  ScopedSECKEYPrivateKey Unwrap(const std::vector<uint8_t>& pkcs8) {
+    std::vector<uint8_t> wrapped(pkcs8.size() + 16);
+    unsigned int wrappedLen = 0;
+    SECStatus rv = PK11_Encrypt(
+        kek_.get(), CKM_NSS_AES_KEY_WRAP_PAD, param_.get(), wrapped.data(),
+        &wrappedLen, static_cast<unsigned int>(wrapped.size()), pkcs8.data(),
+        static_cast<unsigned int>(pkcs8.size()));
+    EXPECT_EQ(SECSuccess, rv) << PORT_ErrorToString(PORT_GetError());
+    if (rv != SECSuccess) {
+      return nullptr;
+    }
+    SECItem wrappedItem = {siBuffer, wrapped.data(), wrappedLen};
+
+    // Only used for the CKA_ID of the unwrapped key.
+    std::vector<uint8_t> id(32, 0x2a);
+    SECItem idItem = {siBuffer, id.data(),
+                      static_cast<unsigned int>(id.size())};
+    return ScopedSECKEYPrivateKey(PK11_UnwrapPrivKeyByKeyType(
+        slot_.get(), kek_.get(), CKM_NSS_AES_KEY_WRAP_PAD, param_.get(),
+        &wrappedItem, nullptr, &idItem, PR_FALSE, PK11_IsFIPS(),
+        GetParam().keyType, KU_ALL, nullptr));
+  }
+
+  ScopedPK11SlotInfo slot_;
+  ScopedPK11SymKey kek_;
+  ScopedSECItem param_;
+};
+
+TEST_P(PqAlgorithmParametersTest, Pkcs8RejectsParameters) {
+  ASSERT_TRUE(ParsePrivateKey(Pkcs8({}), true));
+
+  for (const auto& parameters : kPresentParameters) {
+    SCOPED_TRACE(::testing::PrintToString(parameters));
+    EXPECT_FALSE(ParsePrivateKey(Pkcs8(parameters), false));
+    EXPECT_EQ(PORT_GetError(), SEC_ERROR_INVALID_ALGORITHM);
+  }
+}
+
+TEST_P(PqAlgorithmParametersTest, UnwrapRejectsParameters) {
+  ScopedSECKEYPrivateKey key = Unwrap(Pkcs8({}));
+  ASSERT_TRUE(key) << PORT_ErrorToString(PORT_GetError());
+  EXPECT_EQ(GetParam().keyType, key->keyType);
+
+  for (const auto& parameters : kPresentParameters) {
+    SCOPED_TRACE(::testing::PrintToString(parameters));
+    EXPECT_FALSE(Unwrap(Pkcs8(parameters)));
+  }
+}
+
+TEST_P(PqAlgorithmParametersTest, SpkiRejectsParameters) {
+  ScopedSECKEYPublicKey key = ExtractPublicKey(GetParam().publicKeyLen, {});
+  ASSERT_TRUE(key) << PORT_ErrorToString(PORT_GetError());
+  EXPECT_EQ(GetParam().keyType, key->keyType);
+
+  for (const auto& parameters : kPresentParameters) {
+    SCOPED_TRACE(::testing::PrintToString(parameters));
+    EXPECT_FALSE(ExtractPublicKey(GetParam().publicKeyLen, parameters));
+    EXPECT_EQ(PORT_GetError(), SEC_ERROR_INVALID_ALGORITHM);
+  }
+}
+
+TEST_P(PqAlgorithmParametersTest, SpkiRejectsEmptyPublicKey) {
+  EXPECT_FALSE(ExtractPublicKey(0, {}));
+  EXPECT_EQ(PORT_GetError(), SEC_ERROR_INPUT_LEN);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PqAlgorithms, PqAlgorithmParametersTest,
+    ::testing::Values(
+        PqAlgorithm{"ML_DSA_44", SEC_OID_ML_DSA_44, mldsaKey, 32, 1312},
+        PqAlgorithm{"ML_DSA_65", SEC_OID_ML_DSA_65, mldsaKey, 32, 1952},
+        PqAlgorithm{"ML_DSA_87", SEC_OID_ML_DSA_87, mldsaKey, 32, 2592},
+        PqAlgorithm{"ML_KEM_512", SEC_OID_ML_KEM_512, kyberKey, 64, 800},
+        PqAlgorithm{"ML_KEM_768", SEC_OID_ML_KEM_768, kyberKey, 64, 1184},
+        PqAlgorithm{"ML_KEM_1024", SEC_OID_ML_KEM_1024, kyberKey, 64, 1568}),
+    [](const ::testing::TestParamInfo<PqAlgorithm>& i) {
+      return std::string(i.param.name);
+    });
 
 // An imported private key needs a CKA_ID, or it can never be found again.
 // PK11_ImportAndReturnPrivateKey builds one from the public value when it has

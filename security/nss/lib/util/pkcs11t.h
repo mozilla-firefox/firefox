@@ -2756,7 +2756,7 @@ typedef CK_PKCS5_PBKD2_PARAMS2 CK_PTR CK_PKCS5_PBKD2_PARAMS2_PTR;
 /* The following value is used to determines if a parameter is of type PARAMS or PARAMS2
  * based on the value of ulPasswordLen. If ulPasswordLen is greater that the value below,
  * it is most likely a memory address i.e. a pointer (PARAMS). Otherwise, it is considered
- * a length value (PARAMS2). This is ignored if NSS_USE_PKCS5_PBKD2_PARAMS2_ONLY is defined.
+ * a length value (PARAMS2). This is ignored if SOFTOKEN_USE_PKCS5_PBKD2_PARAMS2_ONLY is defined.
  */
 #define CK_PKCS5_PBKD2_PARAMS_PTR_BOUNDARY 8192
 

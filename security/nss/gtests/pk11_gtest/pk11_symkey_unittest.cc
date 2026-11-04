@@ -170,4 +170,39 @@ TEST_F(Pkcs11SymKeyTest, CrossSlotConcatSymKeyTest) {
   CheckKeyData(kFull, key.get());
 }
 
+// Attribute values move between inline storage and the heap as they are
+// rewritten; every transition must survive reads and object destruction.
+TEST_F(Pkcs11SymKeyTest, AttributeValueResize) {
+  ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+  ASSERT_NE(nullptr, slot);
+
+  uint8_t longKey[64];
+  for (size_t i = 0; i < sizeof(longKey); i++) {
+    longKey[i] = static_cast<uint8_t>(i);
+  }
+  SECItem longKeyItem = {siBuffer, longKey, sizeof(longKey)};
+
+  uint8_t label[300];
+  for (size_t i = 0; i < sizeof(label); i++) {
+    label[i] = static_cast<uint8_t>('a' + i % 26);
+  }
+  for (SECItem* keyData : {&kFull, &longKeyItem}) {
+    ScopedPK11SymKey key(ImportSymKey(slot.get(), keyData));
+    ASSERT_NE(nullptr, key);
+    for (unsigned int len : {1, 50, 51, 300, 50, 1, 0, 300, 0, 51}) {
+      SECItem value = {siBuffer, label, len};
+      ASSERT_EQ(SECSuccess, PK11_WriteRawAttribute(PK11_TypeSymKey, key.get(),
+                                                   CKA_LABEL, &value));
+      StackSECItem readBack;
+      ASSERT_EQ(SECSuccess, PK11_ReadRawAttribute(PK11_TypeSymKey, key.get(),
+                                                  CKA_LABEL, &readBack));
+      ASSERT_EQ(len, readBack.len);
+      if (len) {
+        EXPECT_EQ(0, memcmp(label, readBack.data, len));
+      }
+    }
+    CheckKeyData(*keyData, key.get());
+  }
+}
+
 }  // namespace nss_test

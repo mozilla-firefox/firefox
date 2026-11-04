@@ -2369,9 +2369,6 @@ sftk_doMACInit(CK_MECHANISM_TYPE mech, SFTKSessionContext *session,
         return crv;
     }
 
-    session->hashInfo = context;
-    session->multi = PR_TRUE;
-
     /* Required by FIPS 198 Section 4. Delay this check until after the MAC
      * has been initialized to steal the output size of the MAC. */
     if (isFIPS && (mac_size < 4 || mac_size < context->mac_size / 2)) {
@@ -2379,19 +2376,22 @@ sftk_doMACInit(CK_MECHANISM_TYPE mech, SFTKSessionContext *session,
         return CKR_BUFFER_TOO_SMALL;
     }
 
-    /* Configure our helper functions appropriately. Note that these casts
-     * ignore the return values. */
-    session->hashUpdate = SFTKHash_sftk_MAC_Update;
-    session->end = SFTKHash_sftk_MAC_End;
-    session->hashdestroy = SFTKHash_sftk_MAC_DestroyContext;
-
     intpointer = PORT_New(CK_ULONG);
     if (intpointer == NULL) {
         sftk_MAC_DestroyContext(context, PR_TRUE);
         return CKR_HOST_MEMORY;
     }
     *intpointer = mac_size;
+
     session->cipherInfo = intpointer;
+    session->hashInfo = context;
+    session->multi = PR_TRUE;
+
+    /* Configure our helper functions appropriately. Note that these casts
+     * ignore the return values. */
+    session->hashUpdate = SFTKHash_sftk_MAC_Update;
+    session->end = SFTKHash_sftk_MAC_End;
+    session->hashdestroy = SFTKHash_sftk_MAC_DestroyContext;
 
     /* Since we're only "hashing", copy the result from session->end to the
      * caller using sftk_SignCopy. */
@@ -7583,6 +7583,11 @@ sftk_unwrapPrivateKey(SFTKObject *key, SECItem *bpki)
         mldsa_next:
             lpk->keyType = NSSLOWKEYMLDSAKey;
         pq_next:
+            /* RFC 9881 and RFC 9935: the parameters MUST be absent. */
+            if (pki->algorithm.parameters.len != 0) {
+                PORT_SetError(SEC_ERROR_INVALID_ALGORITHM);
+                goto loser;
+            }
             if (pki->privateKey.data == NULL || pki->privateKey.len == 0) {
                 PORT_SetError(SEC_ERROR_BAD_KEY);
                 goto loser;

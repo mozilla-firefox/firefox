@@ -683,13 +683,21 @@ dtls_FragmentHandshake(sslSocket *ss, DTLSQueuedMessage *msg)
     PRUint8 *fragment;
     PRUint32 fragmentOffset = 0;
     PRUint32 fragmentLen;
-    const PRUint8 *content = msg->data + DTLS_HS_HDR_LEN;
-    PRUint32 contentLen = msg->len - DTLS_HS_HDR_LEN;
+    const PRUint8 *content;
+    PRUint32 contentLen;
     SECStatus rv;
 
     /* The headers consume 12 bytes so the smallest possible message (i.e., an
-     * empty one) is 12 bytes. */
-    PORT_Assert(msg->len >= DTLS_HS_HDR_LEN);
+     * empty one) is 12 bytes.  A shorter message would underflow contentLen
+     * and cause an out-of-bounds read, so reject it. */
+    if (msg->len < DTLS_HS_HDR_LEN) {
+        PORT_Assert(0);
+        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+
+    content = msg->data + DTLS_HS_HDR_LEN;
+    contentLen = msg->len - DTLS_HS_HDR_LEN;
 
     /* DTLS only supports fragmenting handshaking messages. */
     PORT_Assert(msg->type == ssl_ct_handshake);

@@ -8,6 +8,7 @@
 
 #include "cert.h"
 #include "pk11pub.h"
+#include "secmod.h"
 #include "secitem.h"
 #include "ssl.h"
 #include "nss.h"
@@ -505,7 +506,8 @@ ReadVariableFromBuffer(sslReader *reader, sslReadBuffer *readerBuffer,
  * We don't care about locks here as this cache entry is externally stored.
  */
 SECStatus
-ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
+ssl_DecodeResumptionToken(sslSocket *ss, sslSessionID *sid,
+                          const PRUint8 *encodedToken,
                           PRUint32 encodedTokenLen)
 {
     PORT_Assert(encodedTokenLen);
@@ -522,16 +524,20 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         return SECFailure;
     }
 
-    /* These variables are used across macros. Don't use them outside. */
     sslReader reader = SSL_READER(encodedToken, encodedTokenLen);
     reader.offset += 1; // We read the version already. Skip the first byte.
     sslReadBuffer readerBuffer = { 0 };
     PRUint64 tmpInt = 0;
 
-    if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
+    /* Reject a truncated token, or one claiming a feature we don't
+     * implement. */
+    if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess ||
+        (tmpInt & ~((PRUint64)SSLResumptionTokenSupportedFeatures))) {
+        PORT_SetError(SSL_ERROR_BAD_RESUMPTION_TOKEN_ERROR);
         return SECFailure;
     }
-    sid->lastAccessTime = (PRTime)tmpInt;
+    PRUint8 tokenFeatures = (PRUint8)tmpInt;
+
     if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
         return SECFailure;
     }
@@ -562,19 +568,22 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
-    if (readerBuffer.len) {
-        PORT_Assert(!sid->peerCertDER.data);
-        SECItem tempItem = { siBuffer, (unsigned char *)readerBuffer.buf,
+    if (!readerBuffer.len) {
+        PORT_SetError(SEC_ERROR_INVALID_ARGS);
+        return SECFailure;
+    }
+    PORT_Assert(!sid->peerCertDER.data);
+    SECItem peerCertItem = { siBuffer, (unsigned char *)readerBuffer.buf,
                              readerBuffer.len };
-        if (SECITEM_CopyItem(NULL, &sid->peerCertDER, &tempItem) != SECSuccess) {
-            return SECFailure;
-        }
+    if (SECITEM_CopyItem(NULL, &sid->peerCertDER, &peerCertItem) != SECSuccess) {
+        return SECFailure;
     }
 
     if (sslRead_ReadVariable(&reader, 2, &readerBuffer) != SECSuccess) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
+    PORT_Assert(!sid->peerCertStatus.items);
     if (readerBuffer.len) {
         SECITEM_AllocArray(NULL, &sid->peerCertStatus, 1);
         if (!sid->peerCertStatus.items) {
@@ -591,33 +600,19 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
-    if (readerBuffer.len) {
-        PORT_Assert(readerBuffer.buf);
-        if (sid->peerID) {
-            PORT_Free((void *)sid->peerID);
-        }
-        sid->peerID = PORT_ZAlloc(readerBuffer.len + 1);
-        if (!sid->peerID) {
-            return SECFailure;
-        }
-        PORT_Memcpy((void *)sid->peerID, readerBuffer.buf, readerBuffer.len);
-    }
-
-    if (sslRead_ReadVariable(&reader, 1, &readerBuffer) != SECSuccess) {
+    if (!readerBuffer.len) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
-    if (readerBuffer.len) {
-        if (sid->urlSvrName) {
-            PORT_Free((void *)sid->urlSvrName);
-        }
-        PORT_Assert(readerBuffer.buf);
-        sid->urlSvrName = PORT_ZAlloc(readerBuffer.len + 1);
-        if (!sid->urlSvrName) {
-            return SECFailure;
-        }
-        PORT_Memcpy((void *)sid->urlSvrName, readerBuffer.buf, readerBuffer.len);
+    if (sid->urlSvrName) {
+        PORT_Free((void *)sid->urlSvrName);
     }
+    PORT_Assert(readerBuffer.buf);
+    sid->urlSvrName = PORT_ZAlloc(readerBuffer.len + 1);
+    if (!sid->urlSvrName) {
+        return SECFailure;
+    }
+    PORT_Memcpy((void *)sid->urlSvrName, readerBuffer.buf, readerBuffer.len);
 
     if (sslRead_ReadVariable(&reader, 3, &readerBuffer) != SECSuccess) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
@@ -635,17 +630,6 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
         }
     }
 
-    if (sslRead_ReadNumber(&reader, 8, &sid->addr.pr_s6_addr64[0]) != SECSuccess) {
-        return SECFailure;
-    }
-    if (sslRead_ReadNumber(&reader, 8, &sid->addr.pr_s6_addr64[1]) != SECSuccess) {
-        return SECFailure;
-    }
-
-    if (sslRead_ReadNumber(&reader, 2, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->port = (PRUint16)tmpInt;
     if (sslRead_ReadNumber(&reader, 2, &tmpInt) != SECSuccess) {
         return SECFailure;
     }
@@ -682,90 +666,89 @@ ssl_DecodeResumptionToken(sslSessionID *sid, const PRUint8 *encodedToken,
     }
     sid->sigScheme = (SSLSignatureScheme)tmpInt;
 
-    if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.sessionIDLength = (PRUint8)tmpInt;
-
-    if (sslRead_ReadVariable(&reader, 1, &readerBuffer) != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    if (readerBuffer.len) {
-        PORT_Assert(readerBuffer.buf);
-        if (readerBuffer.len > SSL3_SESSIONID_BYTES) {
-            PORT_SetError(SEC_ERROR_INVALID_ARGS);
-            return SECFailure;
-        }
-        PORT_Memcpy(sid->u.ssl3.sessionID, readerBuffer.buf, readerBuffer.len);
-    }
-
     if (sslRead_ReadNumber(&reader, 2, &tmpInt) != SECSuccess) {
         return SECFailure;
     }
     sid->u.ssl3.cipherSuite = (PRUint16)tmpInt;
-    if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.policy = (PRUint8)tmpInt;
 
-    if (sslRead_ReadVariable(&reader, 1, &readerBuffer) != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    PORT_Assert(readerBuffer.len == WRAPPED_MASTER_SECRET_SIZE);
-    if (readerBuffer.len != WRAPPED_MASTER_SECRET_SIZE) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    PORT_Assert(readerBuffer.buf);
-    PORT_Memcpy(sid->u.ssl3.keys.wrapped_master_secret, readerBuffer.buf,
-                readerBuffer.len);
-
-    if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    if (tmpInt > WRAPPED_MASTER_SECRET_SIZE) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    sid->u.ssl3.keys.wrapped_master_secret_len = (PRUint8)tmpInt;
     if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess) {
         return SECFailure;
     }
     sid->u.ssl3.keys.extendedMasterSecretUsed = (PRUint8)tmpInt;
 
-    if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.masterWrapMech = (unsigned long)tmpInt;
-    if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.masterModuleID = (unsigned long)tmpInt;
-    if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.masterSlotID = (unsigned long)tmpInt;
+    if (tokenFeatures & SSLResumptionTokenFeatureRawMS) {
+        if (sslRead_ReadVariable(&reader, 1, &readerBuffer) != SECSuccess) {
+            PORT_SetError(SEC_ERROR_INVALID_ARGS);
+            return SECFailure;
+        }
+        if (readerBuffer.len == 0 ||
+            readerBuffer.len > SSL3_MASTER_SECRET_LENGTH) {
+            PORT_SetError(SSL_ERROR_BAD_RESUMPTION_TOKEN_ERROR);
+            return SECFailure;
+        }
+        if (ss) {
+            PK11SlotInfo *slot = PK11_GetInternalSlot();
+            if (!slot) {
+                return SECFailure;
+            }
+            SECItem rawMs = { siBuffer, (unsigned char *)readerBuffer.buf,
+                              (unsigned int)readerBuffer.len };
+            PK11SymKey *msKey = PK11_ImportSymKey(
+                slot, CKM_SSL3_MASTER_KEY_DERIVE, PK11_OriginUnwrap, CKA_DERIVE,
+                &rawMs, ss->pkcs11PinArg);
+            PK11_FreeSlot(slot);
+            if (!msKey) {
+                return SECFailure;
+            }
+            SECStatus rv = ssl3_CacheWrappedSecret(ss, sid, msKey);
+            PK11_FreeSymKey(msKey);
+            if (rv != SECSuccess) {
+                return SECFailure;
+            }
+        }
+    } else {
+        if (sslRead_Read(&reader, WRAPPED_MASTER_SECRET_SIZE, &readerBuffer) !=
+            SECSuccess) {
+            return SECFailure;
+        }
+        PORT_Memcpy(sid->u.ssl3.keys.wrapped_master_secret, readerBuffer.buf,
+                    WRAPPED_MASTER_SECRET_SIZE);
 
-    if (sslRead_ReadNumber(&reader, 4, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.masterWrapIndex = (PRUint32)tmpInt;
-    if (sslRead_ReadNumber(&reader, 2, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.masterWrapSeries = (PRUint16)tmpInt;
+        if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess) {
+            return SECFailure;
+        }
+        if (tmpInt > WRAPPED_MASTER_SECRET_SIZE) {
+            PORT_SetError(SEC_ERROR_INVALID_ARGS);
+            return SECFailure;
+        }
+        sid->u.ssl3.keys.wrapped_master_secret_len = (PRUint8)tmpInt;
 
-    if (sslRead_ReadNumber(&reader, 1, &tmpInt) != SECSuccess) {
-        return SECFailure;
-    }
-    sid->u.ssl3.masterValid = (char)tmpInt;
+        if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
+            return SECFailure;
+        }
+        sid->u.ssl3.masterWrapMech = (unsigned long)tmpInt;
+        if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
+            return SECFailure;
+        }
+        sid->u.ssl3.masterModuleID = (unsigned long)tmpInt;
+        if (sslRead_ReadNumber(&reader, 8, &tmpInt) != SECSuccess) {
+            return SECFailure;
+        }
+        sid->u.ssl3.masterSlotID = (unsigned long)tmpInt;
 
-    if (ReadVariableFromBuffer(&reader, &readerBuffer, 1,
-                               &sid->u.ssl3.srvName) != SECSuccess) {
-        return SECFailure;
+        if (sslRead_ReadNumber(&reader, 4, &tmpInt) != SECSuccess) {
+            return SECFailure;
+        }
+        sid->u.ssl3.masterWrapIndex = (PRUint32)tmpInt;
+        if (sslRead_ReadNumber(&reader, 2, &tmpInt) != SECSuccess) {
+            return SECFailure;
+        }
+        sid->u.ssl3.masterWrapSeries = (PRUint16)tmpInt;
     }
+
+    sid->u.ssl3.masterValid =
+        (char)(sid->u.ssl3.keys.wrapped_master_secret_len > 0);
+
     if (ReadVariableFromBuffer(&reader, &readerBuffer, 2,
                                &sid->u.ssl3.signedCertTimestamps) != SECSuccess) {
         return SECFailure;
@@ -829,313 +812,241 @@ ssl_IsResumptionTokenUsable(sslSocket *ss, sslSessionID *sid)
     return PR_TRUE;
 }
 
-/* Encode a session ticket into a byte array that can be handed out to a cache.
- * Needed memory in encodedToken has to be allocated according to
- * *encodedTokenLen. */
+#define SSL_BUFFER_APPEND_NUMBER(buf, val, size)                        \
+    do {                                                                \
+        if (sslBuffer_AppendNumber(buf, (val), (size)) != SECSuccess) { \
+            goto loser; /* Code already set. */                         \
+        }                                                               \
+    } while (0)
+
+#define SSL_BUFFER_APPEND_VARIABLE(buf, data, len, size)            \
+    do {                                                            \
+        if (sslBuffer_AppendVariable(buf, (data), (len), (size)) != \
+            SECSuccess) {                                           \
+            goto loser; /* Code already set. */                     \
+        }                                                           \
+    } while (0)
+
 static SECStatus
-ssl_EncodeResumptionToken(sslSessionID *sid, sslBuffer *encodedTokenBuf)
+ssl_TryExtractResumptionSecret(sslSocket *ss, sslSessionID *sid, PRUint8 *out,
+                               unsigned int *outLen)
+{
+    *outLen = 0;
+
+    PK11SlotInfo *slot = SECMOD_LookupSlot(sid->u.ssl3.masterModuleID,
+                                           sid->u.ssl3.masterSlotID);
+    if (!slot) {
+        return SECFailure;
+    }
+    PK11SymKey *wrapKey = PK11_GetWrapKey(slot,
+                                          sid->u.ssl3.masterWrapIndex,
+                                          sid->u.ssl3.masterWrapMech,
+                                          sid->u.ssl3.masterWrapSeries,
+                                          ss->pkcs11PinArg);
+    PK11_FreeSlot(slot);
+    if (!wrapKey) {
+        return SECFailure;
+    }
+    SECItem wrappedMS = { siBuffer,
+                          sid->u.ssl3.keys.wrapped_master_secret,
+                          sid->u.ssl3.keys.wrapped_master_secret_len };
+    int keySize = SSL3_MASTER_SECRET_LENGTH;
+    if (sid->version >= SSL_LIBRARY_VERSION_TLS_1_3) {
+        keySize = (int)tls13_GetHashSizeForHash(
+            tls13_GetHashForCipherSuite(sid->u.ssl3.cipherSuite));
+    }
+    /* Unwrap into a generic secret so we can extract the raw bytes.
+     * Unwrapping as CKM_SSL3_MASTER_KEY_DERIVE produces a sensitive,
+     * non-extractable key on the softoken. */
+    PK11SymKey *msKey = ssl_unwrapSymKey(
+        wrapKey, sid->u.ssl3.masterWrapMech, NULL, &wrappedMS,
+        CKM_GENERIC_SECRET_KEY_GEN, CKA_SIGN, keySize, 0, ss->pkcs11PinArg);
+    PK11_FreeSymKey(wrapKey);
+    if (!msKey) {
+        return SECFailure;
+    }
+    if (PK11_ExtractKeyValue(msKey) != SECSuccess) {
+        PK11_FreeSymKey(msKey);
+        return SECFailure;
+    }
+    SECItem *value = PK11_GetKeyData(msKey);
+    if (!value || !value->data || value->len == 0 ||
+        value->len > SSL3_MASTER_SECRET_LENGTH) {
+        PK11_FreeSymKey(msKey);
+        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
+        return SECFailure;
+    }
+    PORT_Memcpy(out, value->data, value->len);
+    *outLen = value->len;
+    PK11_FreeSymKey(msKey);
+    return SECSuccess;
+}
+
+/* Encode a session ticket into a byte array that can be handed out to a cache.
+ *
+ * V3 wire format (all integers big-endian):
+ *   version(1)                                [= SSLResumptionTokenVersion = 3]
+ *   features(1)
+ *   expirationTime(8)
+ *   received_timestamp(8), ticket_lifetime_hint(4), flags(4),
+ *   ticket_age_add(4), max_early_data_size(4)
+ *   peerCert(3-byte length prefix, as in TLS; certs may exceed 64 KiB)
+ *   peerCertStatus(2-byte length prefix, 0 if absent)
+ *   urlSvrName(1-byte length prefix)
+ *   localCert(3-byte length prefix, 0 if absent)
+ *   version(2), creationTime(8), authType(2), authKeyBits(4),
+ *   keaType(2), keaKeyBits(4), keaGroup(3), sigScheme(3),
+ *   cipherSuite(2), extendedMasterSecretUsed(1)
+ *   if RawMS is set:
+ *     master_secret(1-byte length prefix)
+ *   if RawMS is clear:
+ *     wrapped_master_secret(48 raw bytes), wrapped_master_secret_len(1),
+ *     masterWrapMech(8), masterModuleID(8), masterSlotID(8),
+ *     masterWrapIndex(4), masterWrapSeries(2)
+ *   signedCertTimestamps(2-byte length prefix, 0 if absent)
+ *   alpnSelection(1-byte length prefix, 0 if absent)
+ *   sessionTicket.ticket(2-byte length prefix)
+ */
+static SECStatus
+ssl_EncodeResumptionToken(sslSocket *ss, sslSessionID *sid,
+                          sslBuffer *encodedTokenBuf)
 {
     PORT_Assert(encodedTokenBuf);
     PORT_Assert(sid);
+    PORT_Assert(ss);
     if (!sid || !sid->u.ssl3.locked.sessionTicket.ticket.len ||
-        !encodedTokenBuf || !sid->u.ssl3.keys.resumable || !sid->urlSvrName) {
+        !encodedTokenBuf || !sid->u.ssl3.keys.resumable || !sid->urlSvrName ||
+        !ss) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
 
+    SECStatus rv = SECFailure;
+    PRUint8 rawMs[SSL3_MASTER_SECRET_LENGTH];
+    unsigned int rawMsLen = 0;
+    SECStatus extracted = SECFailure;
+
+    if (ss->opt.enablePlaintextResumptionExport) {
+        extracted = ssl_TryExtractResumptionSecret(ss, sid, rawMs, &rawMsLen);
+    }
+    PRBool plaintext = extracted == SECSuccess && rawMsLen > 0;
+
     /* Encoding format:
      * 0-byte: version
+     * 1-byte: feature bitfield
      * Integers are encoded according to their length.
      * SECItems are prepended with a 64-bit length field followed by the bytes.
      * Optional bytes are encoded as a 0-length item if not present.
      */
-    SECStatus rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                          SSLResumptionTokenVersion, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, SSLResumptionTokenVersion, 1);
+    SSL_BUFFER_APPEND_NUMBER(
+        encodedTokenBuf, plaintext ? SSLResumptionTokenFeatureRawMS : 0, 1);
 
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->lastAccessTime, 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->expirationTime, 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->expirationTime, 8);
 
     // session ticket
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.locked.sessionTicket.received_timestamp,
-                                8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.locked.sessionTicket.ticket_lifetime_hint,
-                                4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.locked.sessionTicket.flags,
-                                4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.locked.sessionTicket.ticket_age_add,
-                                4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.locked.sessionTicket.max_early_data_size,
-                                4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_NUMBER(
+        encodedTokenBuf, sid->u.ssl3.locked.sessionTicket.received_timestamp, 8);
+    SSL_BUFFER_APPEND_NUMBER(
+        encodedTokenBuf, sid->u.ssl3.locked.sessionTicket.ticket_lifetime_hint,
+        4);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf,
+                             sid->u.ssl3.locked.sessionTicket.flags, 4);
+    SSL_BUFFER_APPEND_NUMBER(
+        encodedTokenBuf, sid->u.ssl3.locked.sessionTicket.ticket_age_add, 4);
+    SSL_BUFFER_APPEND_NUMBER(
+        encodedTokenBuf, sid->u.ssl3.locked.sessionTicket.max_early_data_size,
+        4);
 
-    rv = sslBuffer_AppendVariable(encodedTokenBuf, sid->peerCertDER.data,
-                                  sid->peerCertDER.len, 3);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf, sid->peerCertDER.data,
+                               sid->peerCertDER.len, 3);
 
+    PORT_Assert(sid->peerCertStatus.len <= 1);
     if (sid->peerCertStatus.len > 1) {
         /* This is not implemented so it shouldn't happen.
          * If it gets implemented, this has to change.
          */
-        PORT_Assert(0);
         PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
-        return SECFailure;
+        goto loser;
     }
 
     if (sid->peerCertStatus.len == 1 && sid->peerCertStatus.items[0].len) {
-        rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                      sid->peerCertStatus.items[0].data,
-                                      sid->peerCertStatus.items[0].len, 2);
-        if (rv != SECSuccess) {
-            return SECFailure;
-        }
+        SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf,
+                                   sid->peerCertStatus.items[0].data,
+                                   sid->peerCertStatus.items[0].len, 2);
     } else {
-        rv = sslBuffer_AppendVariable(encodedTokenBuf, NULL, 0, 2);
-        if (rv != SECSuccess) {
-            return SECFailure;
-        }
+        SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf, NULL, 0, 2);
     }
 
-    PRUint64 len = sid->peerID ? strlen(sid->peerID) : 0;
-    if (len > PR_UINT8_MAX) {
-        // This string really shouldn't be that long.
-        PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                  (const unsigned char *)sid->peerID, len, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
-
-    len = sid->urlSvrName ? strlen(sid->urlSvrName) : 0;
+    PRUint64 len = sid->urlSvrName ? strlen(sid->urlSvrName) : 0;
     if (!len) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
+        goto loser;
     }
     if (len > PR_UINT8_MAX) {
         // This string really shouldn't be that long.
         PORT_SetError(SEC_ERROR_LIBRARY_FAILURE);
-        return SECFailure;
+        goto loser;
     }
-    rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                  (const unsigned char *)sid->urlSvrName,
-                                  len, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf,
+                               (const unsigned char *)sid->urlSvrName,
+                               (unsigned int)len, 1);
 
     if (sid->localCert) {
-        rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                      sid->localCert->derCert.data,
-                                      sid->localCert->derCert.len, 3);
-        if (rv != SECSuccess) {
-            return SECFailure;
-        }
+        SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf,
+                                   sid->localCert->derCert.data,
+                                   sid->localCert->derCert.len, 3);
     } else {
-        rv = sslBuffer_AppendVariable(encodedTokenBuf, NULL, 0, 3);
-        if (rv != SECSuccess) {
-            return SECFailure;
+        SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf, NULL, 0, 3);
+    }
+
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->version, 2);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->creationTime, 8);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->authType, 2);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->authKeyBits, 4);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->keaType, 2);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->keaKeyBits, 4);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->keaGroup, 3);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->sigScheme, 3);
+
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->u.ssl3.cipherSuite, 2);
+    SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf,
+                             sid->u.ssl3.keys.extendedMasterSecretUsed, 1);
+
+    if (plaintext) {
+        SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf, rawMs, rawMsLen, 1);
+    } else {
+        if (sslBuffer_Append(encodedTokenBuf,
+                             sid->u.ssl3.keys.wrapped_master_secret,
+                             WRAPPED_MASTER_SECRET_SIZE) != SECSuccess) {
+            goto loser;
         }
+        SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf,
+                                 sid->u.ssl3.keys.wrapped_master_secret_len, 1);
+        SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->u.ssl3.masterWrapMech, 8);
+        SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->u.ssl3.masterModuleID, 8);
+        SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->u.ssl3.masterSlotID, 8);
+        SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->u.ssl3.masterWrapIndex, 4);
+        SSL_BUFFER_APPEND_NUMBER(encodedTokenBuf, sid->u.ssl3.masterWrapSeries, 2);
     }
 
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->addr.pr_s6_addr64[0], 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->addr.pr_s6_addr64[1], 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->port, 2);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->version, 2);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->creationTime, 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->authType, 2);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->authKeyBits, 4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->keaType, 2);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->keaKeyBits, 4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->keaGroup, 3);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->sigScheme, 3);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf,
+                               sid->u.ssl3.signedCertTimestamps.data,
+                               sid->u.ssl3.signedCertTimestamps.len, 2);
 
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.sessionIDLength, 1);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendVariable(encodedTokenBuf, sid->u.ssl3.sessionID,
-                                  SSL3_SESSIONID_BYTES, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.cipherSuite, 2);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.policy, 1);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                  sid->u.ssl3.keys.wrapped_master_secret,
-                                  WRAPPED_MASTER_SECRET_SIZE, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.keys.wrapped_master_secret_len,
-                                1);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf,
-                                sid->u.ssl3.keys.extendedMasterSecretUsed,
-                                1);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.masterWrapMech, 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.masterModuleID, 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.masterSlotID, 8);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.masterWrapIndex, 4);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.masterWrapSeries, 2);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendNumber(encodedTokenBuf, sid->u.ssl3.masterValid, 1);
-    if (rv != SECSuccess) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendVariable(encodedTokenBuf, sid->u.ssl3.srvName.data,
-                                  sid->u.ssl3.srvName.len, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
-    rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                  sid->u.ssl3.signedCertTimestamps.data,
-                                  sid->u.ssl3.signedCertTimestamps.len, 2);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
-
-    rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                  sid->u.ssl3.alpnSelection.data,
-                                  sid->u.ssl3.alpnSelection.len, 1);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf, sid->u.ssl3.alpnSelection.data,
+                               sid->u.ssl3.alpnSelection.len, 1);
 
     PORT_Assert(sid->u.ssl3.locked.sessionTicket.ticket.len > 1);
-    rv = sslBuffer_AppendVariable(encodedTokenBuf,
-                                  sid->u.ssl3.locked.sessionTicket.ticket.data,
-                                  sid->u.ssl3.locked.sessionTicket.ticket.len,
-                                  2);
-    if (rv != SECSuccess) {
-        return SECFailure;
-    }
+    SSL_BUFFER_APPEND_VARIABLE(encodedTokenBuf,
+                               sid->u.ssl3.locked.sessionTicket.ticket.data,
+                               sid->u.ssl3.locked.sessionTicket.ticket.len, 2);
 
-    return SECSuccess;
+    rv = SECSuccess;
+
+loser:
+    PORT_SafeZero(rawMs, sizeof(rawMs));
+    return rv;
 }
 
 void
@@ -1176,12 +1087,12 @@ ssl_CacheExternalToken(sslSocket *ss)
 
     sslBuffer encodedToken = SSL_BUFFER_EMPTY;
 
-    if (ssl_EncodeResumptionToken(sid, &encodedToken) != SECSuccess) {
+    if (ssl_EncodeResumptionToken(ss, sid, &encodedToken) != SECSuccess) {
         SSL_TRC(3, ("SSL [%d]: encoding resumption token failed", ss->fd));
-        return;
+        goto done;
     }
     PORT_Assert(SSL_BUFFER_LEN(&encodedToken) > 0);
-    PRINT_BUF(40, (ss, "SSL: encoded resumption token",
+    PRINT_BUF(50, (ss, "SSL: encoded resumption token",
                    SSL_BUFFER_BASE(&encodedToken),
                    SSL_BUFFER_LEN(&encodedToken)));
     SECStatus rv = ss->resumptionTokenCallback(
@@ -1190,7 +1101,10 @@ ssl_CacheExternalToken(sslSocket *ss)
     if (rv == SECSuccess) {
         sid->cached = in_external_cache;
     }
-    sslBuffer_Clear(&encodedToken);
+
+done:
+    /* The token may contain a raw master secret. */
+    sslBuffer_ZeroClear(&encodedToken);
 }
 
 void
@@ -1201,6 +1115,13 @@ ssl_CacheSessionID(sslSocket *ss)
     PORT_Assert(sec->ci.sid->cached == never_cached);
 
     if (sec->ci.sid && !sec->ci.sid->u.ssl3.keys.resumable) {
+        return;
+    }
+
+    /* A client whose ECH offer was rejected has authenticated the server only
+     * against the ECHConfig public name, so the session must not be reusable
+     * for the real host name. */
+    if (!sec->isServer && ss->ssl3.hs.echHpkeCtx && !ss->ssl3.hs.echAccepted) {
         return;
     }
 

@@ -966,8 +966,14 @@ seckey_ExtractPublicKey(const CERTSubjectPublicKeyInfo *spki)
             case SEC_OID_ML_DSA_65_PUBLIC_KEY:
             case SEC_OID_ML_DSA_87_PUBLIC_KEY:
                 /* A basic consistency check on inputs. */
-                if (spki->algorithm.parameters.len != 0 && newOs.len == 0) {
+                if (newOs.len == 0) {
                     PORT_SetError(SEC_ERROR_INPUT_LEN);
+                    break;
+                }
+
+                /* RFC 9881: the parameters MUST be absent. */
+                if (spki->algorithm.parameters.len != 0) {
+                    PORT_SetError(SEC_ERROR_INVALID_ALGORITHM);
                     break;
                 }
 
@@ -981,8 +987,14 @@ seckey_ExtractPublicKey(const CERTSubjectPublicKeyInfo *spki)
             case SEC_OID_ML_KEM_768:
             case SEC_OID_ML_KEM_1024:
                 /* A basic consistency check on inputs. */
-                if (spki->algorithm.parameters.len != 0 && newOs.len == 0) {
+                if (newOs.len == 0) {
                     PORT_SetError(SEC_ERROR_INPUT_LEN);
+                    break;
+                }
+
+                /* RFC 9935: the parameters MUST be absent. */
+                if (spki->algorithm.parameters.len != 0) {
+                    PORT_SetError(SEC_ERROR_INVALID_ALGORITHM);
                     break;
                 }
 

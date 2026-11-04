@@ -786,6 +786,9 @@ INSTANTIATE_TEST_SUITE_P(
                        TlsConnectTestBase::kTlsV11Plus,
                        ::testing::Values(true, false)));
 
+static const ::testing::internal::ParamGenerator<TokenShape> kTokenShapes =
+    ::testing::Values(TokenShape::kWrapped, TokenShape::kPlaintext);
+
 INSTANTIATE_TEST_SUITE_P(
     GenericStream, TlsConnectGenericResumptionToken,
     ::testing::Combine(TlsConnectTestBase::kTlsVariantsStream,
@@ -795,7 +798,20 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Combine(TlsConnectTestBase::kTlsVariantsDatagram,
                        TlsConnectTestBase::kTlsV11Plus));
 
+INSTANTIATE_TEST_SUITE_P(
+    GenericStream, TlsConnectResumptionTokenShape,
+    ::testing::Combine(TlsConnectTestBase::kTlsVariantsStream,
+                       TlsConnectTestBase::kTlsVAll, kTokenShapes));
+INSTANTIATE_TEST_SUITE_P(
+    GenericDatagram, TlsConnectResumptionTokenShape,
+    ::testing::Combine(TlsConnectTestBase::kTlsVariantsDatagram,
+                       TlsConnectTestBase::kTlsV11Plus, kTokenShapes));
+
 INSTANTIATE_TEST_SUITE_P(GenericDatagram, TlsConnectTls13ResumptionToken,
-                         TlsConnectTestBase::kTlsVariantsAll);
+                         ::testing::Combine(TlsConnectTestBase::kTlsVariantsAll,
+                                            kTokenShapes));
+
+INSTANTIATE_TEST_SUITE_P(StreamTls13, TlsConnectStreamTls13TokenHeader,
+                         kTokenShapes);
 
 }  // namespace nss_test

@@ -100,6 +100,7 @@ static sslOptions ssl_defaults = {
     .enableGrease = PR_FALSE,
     .enableChXtnPermutation = PR_FALSE,
     .dbLoadCertChain = PR_TRUE,
+    .enablePlaintextResumptionExport = PR_FALSE,
 };
 
 /*
@@ -4432,6 +4433,7 @@ struct {
     EXP(DestroyAead),
     EXP(DestroyMaskingContext),
     EXP(DestroyResumptionTokenInfo),
+    EXP(EnablePlaintextResumptionExport),
     EXP(EnableTls13BackendEch),
     EXP(EnableTls13GreaseEch),
     EXP(SetTls13GreaseEchSize),
@@ -4606,6 +4608,26 @@ SSLExp_SetResumptionTokenCallback(PRFileDesc *fd,
 }
 
 SECStatus
+SSLExp_EnablePlaintextResumptionExport(PRFileDesc *fd, PRBool enabled)
+{
+    sslSocket *ss = ssl_FindSocket(fd);
+
+    if (!ss) {
+        SSL_DBG(("%d: SSL[%d]: bad socket in SSL_EnablePlaintextResumptionExport",
+                 SSL_GETPID(), fd));
+        return SECFailure;
+    }
+
+    ssl_Get1stHandshakeLock(ss);
+    ssl_GetSSL3HandshakeLock(ss);
+    ss->opt.enablePlaintextResumptionExport = enabled;
+    ssl_ReleaseSSL3HandshakeLock(ss);
+    ssl_Release1stHandshakeLock(ss);
+
+    return SECSuccess;
+}
+
+SECStatus
 SSLExp_SetResumptionToken(PRFileDesc *fd, const PRUint8 *token,
                           unsigned int len)
 {
@@ -4640,7 +4662,7 @@ SSLExp_SetResumptionToken(PRFileDesc *fd, const PRUint8 *token,
     }
 
     /* Populate NewSessionTicket values */
-    SECStatus rv = ssl_DecodeResumptionToken(sid, token, len);
+    SECStatus rv = ssl_DecodeResumptionToken(ss, sid, token, len);
     if (rv != SECSuccess) {
         // If decoding fails, we assume the token is bad.
         PORT_SetError(SSL_ERROR_BAD_RESUMPTION_TOKEN_ERROR);
@@ -4706,8 +4728,9 @@ SSLExp_GetResumptionTokenInfo(const PRUint8 *tokenData, unsigned int tokenLen,
     SSLResumptionTokenInfo token;
 
     /* Populate sid values */
-    if (ssl_DecodeResumptionToken(&sid, tokenData, tokenLen) != SECSuccess) {
+    if (ssl_DecodeResumptionToken(NULL, &sid, tokenData, tokenLen) != SECSuccess) {
         // If decoding fails, we assume the token is bad.
+        ssl_DestroySID(&sid, PR_FALSE);
         PORT_SetError(SSL_ERROR_BAD_RESUMPTION_TOKEN_ERROR);
         return SECFailure;
     }

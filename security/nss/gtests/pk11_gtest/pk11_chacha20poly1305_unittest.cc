@@ -15,6 +15,7 @@
 #include "json_reader.h"
 #include "nss_scoped_ptrs.h"
 
+#include "testvectors/chachapoly-long-vectors.h"
 #include "testvectors_base/test-structs.h"
 #include "testvectors_base/chachapoly-vectors_base.h"
 #include "gtest/gtest.h"
@@ -42,6 +43,8 @@ static const uint8_t kExpectedXor[sizeof(kData)] = {
     0xd8, 0x15, 0xd3, 0xb3, 0xe9, 0x34, 0x3b, 0x7a,
     0x24, 0xf6, 0x5f, 0xd7, 0x95, 0x3d, 0xd3, 0x51};
 static const size_t kTagLen = 16;
+// Above the sizes from which freebl switches to vectorized implementations.
+static const size_t kLongDataLen = 1000;
 
 struct ChaChaWycheproofTestVector {
   uint64_t id;
@@ -241,10 +244,50 @@ class Pkcs11ChaCha20Poly1305Test
                    testvector.aad.data(), testvector.aad.size(),
                    testvector.iv.data(), testvector.iv.size(),
                    testvector.ciphertext.data(), testvector.ciphertext.size());
+    XorMatchesAead(testvector);
+  }
+
+  // ChaCha20-Poly1305 encrypts with the ChaCha20 keystream starting at block
+  // counter 1, so CKM_CHACHA20 has to reproduce the AEAD ciphertext.
+  void XorMatchesAead(const ChaChaTestVector& testvector) {
+    if (testvector.invalid_iv || testvector.plaintext.empty()) {
+      return;
+    }
+
+    ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
+    SECItem key_item = {siBuffer, toUcharPtr(testvector.key.data()),
+                        static_cast<unsigned int>(testvector.key.size())};
+    ScopedPK11SymKey key(nss_test::ImportSymKey(slot.get(), kMechXor,
+                                                PK11_OriginUnwrap, CKA_ENCRYPT,
+                                                &key_item, nullptr));
+    ASSERT_TRUE(!!key);
+
+    uint8_t counter[4] = {1, 0, 0, 0};
+    std::vector<uint8_t> nonce(testvector.iv);
+    CK_CHACHA20_PARAMS chacha_params;
+    chacha_params.pBlockCounter = counter;
+    chacha_params.blockCounterBits = sizeof(counter) * 8;
+    chacha_params.pNonce = nonce.data();
+    chacha_params.ulNonceBits = static_cast<CK_ULONG>(nonce.size() * 8);
+    SECItem params = {siBuffer,
+                      reinterpret_cast<unsigned char*>(&chacha_params),
+                      sizeof(chacha_params)};
+
+    unsigned int len = static_cast<unsigned int>(testvector.plaintext.size());
+    std::vector<uint8_t> encrypted(len);
+    unsigned int encrypted_len = 0;
+    ASSERT_EQ(SECSuccess, PK11_Encrypt(key.get(), kMechXor, &params,
+                                       encrypted.data(), &encrypted_len, len,
+                                       testvector.plaintext.data(), len));
+    ASSERT_EQ(len, encrypted_len);
+    ASSERT_GE(testvector.ciphertext.size(), len);
+    std::vector<uint8_t> expected(testvector.ciphertext.data(),
+                                  testvector.ciphertext.data() + len);
+    EXPECT_EQ(expected, encrypted);
   }
 
   void MessageInterfaceTest(CK_MECHANISM_TYPE mech, int iterations,
-                            PRBool separateTag) {
+                            PRBool separateTag, size_t data_len) {
     // Generate a random key.
     ScopedPK11SlotInfo slot(PK11_GetInternalSlot());
     ASSERT_NE(nullptr, slot);
@@ -258,14 +301,14 @@ class Pkcs11ChaCha20Poly1305Test
     int output_len_simulated = 0;
     unsigned int output_len_v24 = 0;
 
-    std::vector<uint8_t> plainIn(17);
-    std::vector<uint8_t> plainOut_message(17);
-    std::vector<uint8_t> plainOut_simulated(17);
-    std::vector<uint8_t> plainOut_v24(17);
+    std::vector<uint8_t> plainIn(data_len);
+    std::vector<uint8_t> plainOut_message(data_len);
+    std::vector<uint8_t> plainOut_simulated(data_len);
+    std::vector<uint8_t> plainOut_v24(data_len);
     std::vector<uint8_t> nonce(12);
-    std::vector<uint8_t> cipher_message(33);
-    std::vector<uint8_t> cipher_simulated(33);
-    std::vector<uint8_t> cipher_v24(33);
+    std::vector<uint8_t> cipher_message(data_len + kTagLen);
+    std::vector<uint8_t> cipher_simulated(data_len + kTagLen);
+    std::vector<uint8_t> cipher_v24(data_len + kTagLen);
     std::vector<uint8_t> aad(16);
     std::vector<uint8_t> tag_message(kTagLen);
     std::vector<uint8_t> tag_simulated(kTagLen);
@@ -671,11 +714,18 @@ TEST_P(Pkcs11ChaCha20Poly1305Test, TestVectors) { EncryptDecrypt(GetParam()); }
 INSTANTIATE_TEST_SUITE_P(NSSTestVector, Pkcs11ChaCha20Poly1305Test,
                          ::testing::ValuesIn(kChaCha20Vectors));
 
+INSTANTIATE_TEST_SUITE_P(LongTestVector, Pkcs11ChaCha20Poly1305Test,
+                         ::testing::ValuesIn(kChaCha20LongVectors));
+
 TEST_F(Pkcs11ChaCha20Poly1305Test, WycheproofVectors) { RunWycheproof(); }
 
 // basic message interface it's the most common configuration
 TEST_F(Pkcs11ChaCha20Poly1305Test, ChaCha201305MessageInterfaceBasic) {
-  MessageInterfaceTest(CKM_CHACHA20_POLY1305, 16, PR_FALSE);
+  MessageInterfaceTest(CKM_CHACHA20_POLY1305, 16, PR_FALSE, 17);
+}
+
+TEST_F(Pkcs11ChaCha20Poly1305Test, ChaCha20Poly1305MessageInterfaceLong) {
+  MessageInterfaceTest(CKM_CHACHA20_POLY1305, 16, PR_FALSE, kLongDataLen);
 }
 
 // basic interface, but return the tags in a separate buffer. This triggers
@@ -683,7 +733,12 @@ TEST_F(Pkcs11ChaCha20Poly1305Test, ChaCha201305MessageInterfaceBasic) {
 // intermediate values in a separate buffer.
 TEST_F(Pkcs11ChaCha20Poly1305Test,
        ChaCha20Poly1305MessageInterfaceSeparateTags) {
-  MessageInterfaceTest(CKM_CHACHA20_POLY1305, 16, PR_TRUE);
+  MessageInterfaceTest(CKM_CHACHA20_POLY1305, 16, PR_TRUE, 17);
+}
+
+TEST_F(Pkcs11ChaCha20Poly1305Test,
+       ChaCha20Poly1305MessageInterfaceSeparateTagsLong) {
+  MessageInterfaceTest(CKM_CHACHA20_POLY1305, 16, PR_TRUE, kLongDataLen);
 }
 
 // PK11_AEADOp must reject ChaCha20-Poly1305 tags that are not 16 bytes long,

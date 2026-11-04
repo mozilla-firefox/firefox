@@ -197,6 +197,34 @@ sftk_NewAttribute(SFTKObject *object,
 }
 
 /*
+ * Return whether a non-NULL attribute value must be passed to PORT_Free,
+ * judged by where pValue points; abort if freeData disagrees. Freeing an
+ * inline value would hand the allocator a pointer into a live structure,
+ * which it may treat as freeing the whole structure. If so is not NULL, a
+ * heap value must also lie outside its attrList.
+ */
+static PRBool
+sftk_attributeOwnsHeapValue(const SFTKSessionObject *so,
+                            const SFTKAttribute *attribute)
+{
+    uintptr_t value = (uintptr_t)attribute->attrib.pValue;
+    PRBool freeData = attribute->freeData;
+
+    if (value == (uintptr_t)attribute->space) {
+        PORT_ReleaseAssert(freeData == PR_FALSE &&
+                           attribute->attrib.ulValueLen <= ATTR_SPACE);
+        return PR_FALSE;
+    }
+    PORT_ReleaseAssert(freeData == PR_TRUE);
+    if (so) {
+        uintptr_t start = (uintptr_t)so->attrList;
+        PORT_ReleaseAssert(value < start ||
+                           value >= start + sizeof(so->attrList));
+    }
+    return PR_TRUE;
+}
+
+/*
  * Free up all the memory associated with an attribute. Reference count
  * must be zero to call this.
  */
@@ -204,10 +232,11 @@ static void
 sftk_DestroyAttribute(SFTKAttribute *attribute)
 {
     if (attribute->attrib.pValue) {
+        PRBool ownsHeapValue = sftk_attributeOwnsHeapValue(NULL, attribute);
         /* clear out the data in the attribute value... it may have been
          * sensitive data */
         PORT_Memset(attribute->attrib.pValue, 0, attribute->attrib.ulValueLen);
-        if (attribute->freeData) {
+        if (ownsHeapValue) {
             PORT_Free(attribute->attrib.pValue);
             attribute->attrib.pValue = NULL;
             attribute->freeData = PR_FALSE;
@@ -750,6 +779,7 @@ sftk_forceAttribute(SFTKObject *object, CK_ATTRIBUTE_TYPE type,
     SFTKAttribute *attribute;
     void *att_val = NULL;
     PRBool freeData = PR_FALSE;
+    PRBool oldOwnsHeapValue;
 
     PORT_Assert(object);
     PORT_Assert(object->refCount);
@@ -795,6 +825,8 @@ sftk_forceAttribute(SFTKObject *object, CK_ATTRIBUTE_TYPE type,
         PR_Unlock(sessObject->attributeLock);
         return sftk_AddAttributeType(object, type, value, len);
     }
+    oldOwnsHeapValue = attribute->attrib.pValue != NULL &&
+                       sftk_attributeOwnsHeapValue(sessObject, attribute);
 
     if (value) {
         if (len <= ATTR_SPACE) {
@@ -818,7 +850,7 @@ sftk_forceAttribute(SFTKObject *object, CK_ATTRIBUTE_TYPE type,
             PORT_Memset(attribute->attrib.pValue, 0,
                         attribute->attrib.ulValueLen);
         }
-        if (attribute->freeData) {
+        if (oldOwnsHeapValue) {
             PORT_ReleaseAssert(attribute->attrib.pValue != att_val);
             PORT_Free(attribute->attrib.pValue);
         }
@@ -1366,23 +1398,20 @@ sftk_DestroySessionObjectData(SFTKSessionObject *so)
     int i;
 
     for (i = 0; i < MAX_OBJS_ATTRS; i++) {
-        unsigned char *value = so->attrList[i].attrib.pValue;
+        SFTKAttribute *attribute = &so->attrList[i];
+        unsigned char *value = attribute->attrib.pValue;
         if (value) {
-            /* An attribute value lives in the attribute's inline space
-             * unless the attribute owns a heap allocation for it. Anything
-             * else means this object was already destroyed and its memory
-             * reused; abort rather than zeroize through a wild pointer. */
-            PRBool freeData = so->attrList[i].freeData;
-            PORT_ReleaseAssert(freeData == PR_TRUE ||
-                               (freeData == PR_FALSE && value == so->attrList[i].space &&
-                                so->attrList[i].attrib.ulValueLen <= ATTR_SPACE));
-            PORT_Memset(value, 0, so->attrList[i].attrib.ulValueLen);
-            if (freeData) {
+            /* Aborts rather than zeroize or free through a wild pointer if
+             * this object's memory was already destroyed and reused, or has
+             * been corrupted. */
+            PRBool ownsHeapValue = sftk_attributeOwnsHeapValue(so, attribute);
+            PORT_Memset(value, 0, attribute->attrib.ulValueLen);
+            if (ownsHeapValue) {
                 PORT_Free(value);
             }
-            so->attrList[i].attrib.pValue = NULL;
-            so->attrList[i].attrib.ulValueLen = 0;
-            so->attrList[i].freeData = PR_FALSE;
+            attribute->attrib.pValue = NULL;
+            attribute->attrib.ulValueLen = 0;
+            attribute->freeData = PR_FALSE;
         }
     }
     /*  PR_DestroyLock(so->attributeLock);*/

@@ -495,6 +495,22 @@ typedef SECStatus(PR_CALLBACK *SSLResumptionTokenCallback)(
         (PRFileDesc * _fd, const PRUint8 *_token, const unsigned int _len), \
         (fd, token, len))
 
+/*
+ * Selects how the resumption master secret is encoded in tokens delivered to
+ * the SSLResumptionTokenCallback. When |enabled| is PR_FALSE (the default), it
+ * is wrapped. When |enabled| is PR_TRUE, it is written in cleartext; the
+ * embedder is responsible for the confidentiality of the token.
+ *
+ * If the secret can't be extracted (e.g. in FIPS mode), the wrapped form is
+ * used regardless of this setting. The token records which form was written.
+ *
+ * SSL_GetResumptionTokenInfo and SSL_SetResumptionToken accept either form,
+ * except that SSL_SetResumptionToken rejects cleartext tokens in FIPS mode.
+ */
+#define SSL_EnablePlaintextResumptionExport(fd, enabled)        \
+    SSL_EXPERIMENTAL_API("SSL_EnablePlaintextResumptionExport", \
+                         (PRFileDesc * _fd, PRBool _enabled), (fd, enabled))
+
 /* TLS 1.3 allows a server to set a limit on the number of bytes of early data
  * that can be received. This allows that limit to be set. This function has no
  * effect on a client. */

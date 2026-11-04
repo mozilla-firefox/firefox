@@ -233,6 +233,7 @@ sftk_MAC_Create(CK_MECHANISM_TYPE mech, SFTKObject *key, sftk_MACCtx **ret_ctx)
     ret = sftk_MAC_Init(*ret_ctx, mech, key);
     if (ret != CKR_OK) {
         sftk_MAC_DestroyContext(*ret_ctx, PR_TRUE);
+        *ret_ctx = NULL;
     }
 
     return ret;
@@ -244,6 +245,9 @@ sftk_MAC_Init(sftk_MACCtx *ctx, CK_MECHANISM_TYPE mech, SFTKObject *key)
     SFTKAttribute *keyval = NULL;
     PRBool isFIPS = sftk_isFIPS(key->slot->slotID);
     CK_RV ret = CKR_OK;
+
+    /* Clear the context before use. */
+    PORT_Memset(ctx, 0, sizeof(*ctx));
 
     /* Find the actual value of the key. */
     keyval = sftk_FindAttribute(key, CKA_VALUE);

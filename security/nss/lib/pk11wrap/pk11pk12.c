@@ -976,6 +976,11 @@ PK11_ImportPrivateKeyInfoAndReturnKey(PK11SlotInfo *slot,
             lpk->keyType = kyberKey;
             lpk->u.mlkem.params = algTag;
         handlePQKey:
+            /* RFC 9881 and RFC 9935: the parameters MUST be absent. */
+            if (pki->algorithm.parameters.len != 0) {
+                PORT_SetError(SEC_ERROR_INVALID_ALGORITHM);
+                goto loser;
+            }
             if (pki->privateKey.data == NULL || pki->privateKey.len == 0) {
                 PORT_SetError(SEC_ERROR_BAD_KEY);
                 goto loser;
