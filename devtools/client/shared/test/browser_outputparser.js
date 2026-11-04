@@ -3394,6 +3394,24 @@ function testParseForCssExplainers(doc, parser) {
         `<span data-length-expression="30em">30em</span> ` +
         `<span data-length-expression="40lh">40lh</span>`,
     },
+    {
+      message: "attr() with type()",
+      propertyName: "width",
+      propertyValue: "attr(data-x type(<length>))",
+      cssExplainersEnabled: true,
+      attributes: { "data-x": "42em" },
+      // prettier-ignore
+      expected:
+        `<span data-function-expression="attr(data-x type(&lt;length&gt;))">` +
+          `<span class="css-explainers-function-name">attr</span>` +
+          `(` +
+          `<span class="inspector-attr-param">` +
+            `<span class="inspector-attr-name" data-attribute="&quot;42em&quot;">data-x</span>` +
+            ` type(&lt;length&gt;)` +
+          `</span>` +
+          `)` +
+        `</span>`,
+    },
   ];
 
   const target = doc.querySelector("div");

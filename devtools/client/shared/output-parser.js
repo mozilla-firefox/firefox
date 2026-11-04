@@ -612,8 +612,13 @@ class OutputParser {
     if (
       options.cssExplainersEnabled &&
       CSS_EXPLAINERS_SUPPORTED_FUNCTIONS.has(lowerCaseFunctionName) &&
-      stackEntry.nestedFunctions.every(fn =>
-        CSS_EXPLAINERS_SUPPORTED_FUNCTIONS.has(fn)
+      stackEntry.nestedFunctions.every(
+        fn =>
+          CSS_EXPLAINERS_SUPPORTED_FUNCTIONS.has(fn) ||
+          // type() isn't directly supported for explainers (i.e. we won't have it underlined)
+          // but it shouldn't prevent functions using it to have explainers
+          // (e.g. in `attr(x type(*))`, `attr` should be underlined).
+          fn === "type"
       )
     ) {
       const functionNode = this.#createNode("span", {
