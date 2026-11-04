@@ -15479,11 +15479,7 @@
 # replayable buffer. Clamped to [4096, 2^31] and rounded up to a power of two.
 - name: network.http.upload_copy_max_segment_size
   type: RelaxedAtomicUint32
-#ifdef NIGHTLY_BUILD
   value: 65536
-#else
-  value: 4096
-#endif
   mirror: always
 
 # When true (default), decode Content-Encoding (e.g. gzip) when saving to disk
