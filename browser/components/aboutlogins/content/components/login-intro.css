@@ -15,7 +15,7 @@ section {
 
 .description {
   font-weight: var(--font-weight-semibold);
-  margin-bottom: 0;
+  margin-block-end: 0;
 }
 
 .illustration {

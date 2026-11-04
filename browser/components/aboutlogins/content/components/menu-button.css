@@ -63,7 +63,7 @@
 }
 
 .menuitem-separator {
-  border-top-width: 1px;
+  border-block-start-width: 1px;
   margin-block: 5px;
   width: 100%;
 }

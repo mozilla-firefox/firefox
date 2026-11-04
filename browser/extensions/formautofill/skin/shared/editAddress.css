@@ -10,7 +10,7 @@
 
   .container {
     /* !important is needed to override preferences.css's generic label rule. */
-    margin-top: var(--grid-column-row-gap) !important;
+    margin-block-start: var(--grid-column-row-gap) !important;
     margin-inline: calc(var(--grid-column-row-gap) / 2);
     flex-grow: 1;
 

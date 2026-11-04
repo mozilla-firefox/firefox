@@ -34,7 +34,7 @@
 }
 
 .summary > a {
-  margin-top: 12px;
+  margin-block-start: 12px;
 }
 
 .new-logins,
@@ -50,7 +50,7 @@
 }
 
 .count-details {
-  margin-top: 8px;
+  margin-block-start: 8px;
   text-align: center;
 }
 
@@ -84,7 +84,7 @@
   grid-row-start: 3;
   display: grid;
   grid-template-columns: auto 1fr;
-  border-top: 1px solid var(--border-color);
+  border-block-start: 1px solid var(--border-color);
   grid-auto-rows: 28px;
   overflow-y: auto;
 }

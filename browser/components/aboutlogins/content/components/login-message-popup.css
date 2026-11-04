@@ -7,7 +7,7 @@
   inset-inline-start: 315px;
   width: 232px;
   box-shadow: 2px 2px 10px 1px rgba(0, 0, 0, 0.18);
-  top: 0;
+  inset-block-start: 0;
 }
 
 :host .tooltip-message {
@@ -26,7 +26,7 @@
 :host .arrow-box::before,
 :host .arrow-box::after {
   inset-inline-end: 100%;
-  top: 40px; /* This allows the arrow to stay in the correct position, even if the text length is changed */
+  inset-block-start: 40px; /* This allows the arrow to stay in the correct position, even if the text length is changed */
   border: solid transparent;
   content: "";
   height: 0;
@@ -38,12 +38,12 @@
 :host .arrow-box::after {
   border-inline-end-color: var(--background-color-box);
   border-width: 10px;
-  margin-top: -10px;
+  margin-block-start: -10px;
 }
 :host .arrow-box::before {
   border-inline-end-color: var(--border-color);
   border-width: 11px;
-  margin-top: -11px;
+  margin-block-start: -11px;
 }
 
 :host([arrowDirection="down"]) {
@@ -53,9 +53,16 @@
 
   .arrow-box::after,
   .arrow-box::before {
-    top: 100%;
-    left: 50%;
+    inset-block-start: 100%;
+    inset-inline-start: 50%;
     transform: translateX(-50%) rotate(270deg);
-    margin-top: 0;
+    margin-block-start: 0;
+  }
+}
+
+:host(:dir(rtl)[arrowDirection="down"]) {
+  .arrow-box::after,
+  .arrow-box::before {
+    transform: translateX(50%) rotate(90deg);
   }
 }

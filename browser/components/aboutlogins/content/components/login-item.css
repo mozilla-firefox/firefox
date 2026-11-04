@@ -105,8 +105,7 @@ input[name="password"] {
 .header {
   display: flex;
   align-items: center;
-  margin-bottom: 40px;
-  margin-top: 5px;
+  margin-block: 5px 40px;
 }
 
 .title {
@@ -173,7 +172,7 @@ input[name="password"]:focus ~ password-warning {
 
 .detail-grid,
 .detail-row {
-  margin-bottom: 40px;
+  margin-block-end: 40px;
 }
 
 .detail-cell {
@@ -183,7 +182,7 @@ input[name="password"]:focus ~ password-warning {
 
 .field-label {
   display: block;
-  margin-bottom: 8px;
+  margin-block-end: 8px;
 }
 
 moz-button-group,
@@ -195,7 +194,7 @@ moz-button-group,
 
 .copy-button,
 .copied-button {
-  margin-bottom: 0; /* Align button at the bottom of the row */
+  margin-block-end: 0; /* Align button at the bottom of the row */
 }
 
 .copied-button[data-copied]:focus-visible {
@@ -304,7 +303,7 @@ login-command-button {
   background-position: left 10px center;
   -moz-context-properties: fill;
   fill: currentColor;
-  margin-bottom: 38px;
+  margin-block-end: 38px;
 }
 
 .error-message:dir(rtl) {

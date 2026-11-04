@@ -47,15 +47,15 @@
 ::slotted([slot="content"]) {
   grid-column-start: 2;
   align-self: baseline;
-  margin-top: 16px;
+  margin-block-start: 16px;
   line-height: 1.4em;
 }
 
 ::slotted([slot="buttons"]) {
   grid-column: 1 / 4;
   grid-row-start: 3;
-  border-top: 1px solid var(--border-color);
-  padding-top: 12px;
+  border-block-start: 1px solid var(--border-color);
+  padding-block-start: 12px;
 }
 
 .dialog-body {

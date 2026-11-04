@@ -38,12 +38,12 @@
 
 .message {
   color: var(--text-color-deemphasized);
-  margin-bottom: 0;
+  margin-block-end: 0;
 }
 
 .dismiss-button {
   position: absolute;
-  top: 0;
+  inset-block-start: 0;
   inset-inline-end: 0;
   min-width: 20px;
   min-height: 20px;

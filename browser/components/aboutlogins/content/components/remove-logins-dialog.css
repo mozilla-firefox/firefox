@@ -44,7 +44,7 @@
 
 .dismiss-button {
   position: absolute;
-  top: 0;
+  inset-block-start: 0;
   inset-inline-end: 0;
   min-width: 20px;
   min-height: 20px;
@@ -69,7 +69,7 @@
 .content,
 .buttons {
   padding: 36px 48px;
-  padding-bottom: 24px;
+  padding-block-end: 24px;
 }
 
 .content {
@@ -97,6 +97,6 @@
 .buttons {
   padding-block: 16px 32px;
   padding-inline: 48px 0;
-  border-top: 1px solid var(--border-color);
+  border-block-start: 1px solid var(--border-color);
   margin-inline: 48px;
 }
