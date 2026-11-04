@@ -13,6 +13,7 @@
 #include "WebGLTransformFeedback.h"
 #include "WebGLValidateStrings.h"
 #include "WebGLVertexArray.h"
+#include "fmt/format.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/dom/WebGL2RenderingContextBinding.h"
@@ -675,6 +676,7 @@ webgl::LinkedProgramInfo::GetDrawFetchLimits() const {
           fetchLimits.maxVerts = std::min(fetchLimits.maxVerts, availElems);
         }
       } else {
+        MOZ_ASSERT(usedLoc < webgl->mGenericVertexAttribTypes.size());
         attribDataBaseType = webgl->mGenericVertexAttribTypes[usedLoc];
       }
 
@@ -854,17 +856,15 @@ bool WebGLProgram::ValidateForLink() {
     return false;
   }
 
-  const auto& gl = mContext->gl;
-
-  if (gl->WorkAroundDriverBugs() && mContext->mIsMesa) {
-    // Bug 1203135: Mesa crashes internally if we exceed the reported maximum
-    // attribute count.
-    if (mVertShader->NumAttributes() > mContext->MaxVertexAttribs()) {
-      mLinkLog =
-          "Number of attributes exceeds Mesa's reported max"
-          " attribute count.";
-      return false;
-    }
+  // validate that the number of attributes don't exceed what the context
+  // supports
+  if (mVertShader->NumAttributes() > mContext->MaxVertexAttribs()) {
+    mLinkLog = fmt::format(
+        "Too many attributes: {}. "
+        "This exceeds the reported max attribute count supported by the "
+        "context: {}.",
+        mVertShader->NumAttributes(), mContext->MaxVertexAttribs());
+    return false;
   }
 
   return true;
