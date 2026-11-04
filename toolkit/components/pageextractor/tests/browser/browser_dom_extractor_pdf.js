@@ -20,3 +20,25 @@ add_task(async function test_dom_extractor_pdf() {
 
   return cleanup();
 });
+
+add_task(async function test_dom_extractor_pdf_tab_closed() {
+  const { cleanup, getPageExtractor } = await openSupportFile("page.pdf");
+
+  // Block the viewer's handler so extraction stays pending until tab closure.
+  await SpecialPowers.spawn(gBrowser.selectedBrowser, [], () => {
+    content.addEventListener(
+      "requestTextContent",
+      event => event.stopImmediatePropagation(),
+      { capture: true }
+    );
+  });
+
+  const textPromise = getPageExtractor().getText();
+  await cleanup();
+
+  await Assert.rejects(
+    textPromise,
+    error => error.name === "AbortError",
+    "Closing the tab rejects the pending text extraction."
+  );
+});
