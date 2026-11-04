@@ -137,6 +137,34 @@ netwerk:
       - necko@mozilla.com
     expires: never
 
+  happy_eyeballs_dns_answer_spread_v2:
+    type: labeled_timing_distribution
+    time_unit: nanosecond
+    description: >
+      Happy Eyeballs: time between the first and the last positive DNS answer
+      of a single algorithm run, across the A, AAAA and HTTPS queries (a
+      positive answer is one that carried at least one address or service
+      info). Used to tune the resolution delay
+      (network.http.happy_eyeballs_resolution_delay). A run with a single
+      positive answer records 0, which Glean stores in the lowest (1 ns)
+      bucket; any real spread, even below 1 ms, lands in a higher bucket.
+      Every run with a positive answer records one sample per label.
+
+      Labels:
+      - until_first_attempt: Only answers received before the first
+        connection attempt, i.e. while the resolution delay applies.
+      - until_end: All answers received during the run.
+    labels:
+      - until_first_attempt
+      - until_end
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088678
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088678
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
   happy_eyeballs_last_answer_to_attempt:
     type: labeled_custom_distribution
     description: >
