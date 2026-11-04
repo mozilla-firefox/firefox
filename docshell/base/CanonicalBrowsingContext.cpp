@@ -841,6 +841,7 @@ void CanonicalBrowsingContext::GetContiguousEntriesForLoad(
   NavigationType navigationType =
       aLoadingInfo.mTriggeringNavigationType.valueOr(NavigationType::Push);
   bool found = false;
+  bool replaced = false;
   if (sameOrigin || !aEntry->ForInitialLoad()) {
     RefPtr<SessionHistoryEntry> entry =
         !aEntry->ForInitialLoad() ? aEntry : mActiveEntry;
@@ -849,15 +850,19 @@ void CanonicalBrowsingContext::GetContiguousEntriesForLoad(
       nsSHistory::WalkContiguousEntriesInOrder(
           entry, [activeEntry = entry, targetEntry = aEntry,
                   entries = &aLoadingInfo.mContiguousEntries, navigationType,
-                  &found](auto* aEntry) {
+                  &found, &replaced](auto* aEntry) {
             nsCOMPtr<SessionHistoryEntry> entry = do_QueryObject(aEntry);
             found = found || targetEntry->GetID() == entry->GetID();
             MOZ_ASSERT(entry);
             if (navigationType == NavigationType::Replace &&
                 entry->GetID() == activeEntry->GetID()) {
-              // In the case of a replace navigation, we end up dropping the
-              // active entry and all following entries.
-              return false;
+              // https://html.spec.whatwg.org/#finalize-a-cross-document-navigation
+              // In the case of a replace navigation, the target entry takes
+              // the place of the active entry and all following entries are
+              // kept.
+              entries->AppendElement(targetEntry->Info());
+              replaced = true;
+              return true;
             }
 
             entries->AppendElement(entry->Info());
@@ -877,7 +882,7 @@ void CanonicalBrowsingContext::GetContiguousEntriesForLoad(
     }
   }
 
-  if (aEntry->ForInitialLoad() || !found) {
+  if (!replaced && (aEntry->ForInitialLoad() || !found)) {
     aLoadingInfo.mContiguousEntries.AppendElement(aEntry->Info());
   }
 }
