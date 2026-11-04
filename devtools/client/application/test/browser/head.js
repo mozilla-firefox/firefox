@@ -75,7 +75,7 @@ async function unregisterAllWorkers(client, doc) {
   await unregisterAllServiceWorkers(client);
 
   info("Wait for service workers to disappear from the UI");
-  waitUntil(() => getWorkerContainers(doc).length === 0);
+  await waitUntil(() => getWorkerContainers(doc).length === 0);
 }
 
 async function waitForWorkerRegistration(swTab) {

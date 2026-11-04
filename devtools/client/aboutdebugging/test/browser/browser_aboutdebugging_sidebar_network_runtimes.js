@@ -19,7 +19,7 @@ add_task(async function () {
   networkLocationsModule.addNetworkLocation("localhost:6080");
 
   info("Wait for 'no devices' element to disappear");
-  waitUntil(() => !document.querySelector(".qa-sidebar-no-devices"));
+  await waitUntil(() => !document.querySelector(".qa-sidebar-no-devices"));
   ok(
     findSidebarItemByText("localhost:6080", document),
     "Found a sidebar item for localhost:6080"
@@ -29,7 +29,7 @@ add_task(async function () {
   networkLocationsModule.removeNetworkLocation("localhost:6080");
 
   info("Wait for 'no devices' element to reappear");
-  waitUntil(() => document.querySelector(".qa-sidebar-no-devices"));
+  await waitUntil(() => document.querySelector(".qa-sidebar-no-devices"));
   ok(
     !findSidebarItemByText("localhost:6080", document),
     "Sidebar item for localhost:6080 removed"
