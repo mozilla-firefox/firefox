@@ -252,9 +252,8 @@ class EMEDecryptor final : public MediaDataDecoder,
     mIsShutdown = true;
     mSamplesWaitingForKey->BreakCycles();
     mSamplesWaitingForKey = nullptr;
-    RefPtr<MediaDataDecoder> decoder = std::move(mDecoder);
     mProxy = nullptr;
-    return decoder->Shutdown();
+    return mDecoder->Shutdown();
   }
 
   nsCString GetProcessName() const override {
@@ -274,7 +273,7 @@ class EMEDecryptor final : public MediaDataDecoder,
  private:
   ~EMEDecryptor() = default;
 
-  RefPtr<MediaDataDecoder> mDecoder;
+  const RefPtr<MediaDataDecoder> mDecoder;
   nsCOMPtr<nsISerialEventTarget> mThread;
   RefPtr<CDMProxy> mProxy;
   nsClassHashtable<nsRefPtrHashKey<MediaRawData>, DecryptPromiseRequestHolder>
