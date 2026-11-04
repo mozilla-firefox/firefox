@@ -9,6 +9,7 @@ channels:
   - beta
   - nightly
   - developer
+# Keep `nimbus.manifestDependencies` in `build.gradle` in sync when changing `includes` or `import`.
 includes:
   - onboarding.fml.yaml
   - messaging-fenix.fml.yaml

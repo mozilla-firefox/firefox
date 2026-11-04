@@ -456,6 +456,15 @@ apply plugin: "org.mozilla.telemetry.glean-gradle-plugin"
 nimbus {
     // The path to the Nimbus feature manifest file
     manifestFile = "nimbus.fml.yaml"
+    // All the .fml.yaml files that `manifestFile` loads transitively using `includes` or `import`.
+    // Add new files here so `FxNimbus` is regenerated when they change.
+    manifestDependencies = [
+            "onboarding.fml.yaml",
+            "messaging-fenix.fml.yaml",
+            "messaging-evergreen-messages.fml.yaml",
+            "../../android-components/components/browser/engine-gecko/geckoview.fml.yaml",
+            "../../android-components/components/service/nimbus/messaging.fml.yaml",
+    ]
     // The fully qualified class name for the generated features.
     // Map from the variant name to the channel as experimenter and nimbus understand it.
     // If nimbus's channels were accurately set up well for this project, then this

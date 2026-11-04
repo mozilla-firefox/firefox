@@ -24,6 +24,14 @@ abstract class NimbusFeaturesTask : NimbusFmlCommandTask(), NimbusTask {
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract override val inputFile: RegularFileProperty
 
+    /**
+     * The .fml.yaml files that the manifest loads transitively. Gradle uses this list to know when to run the task
+     * again. It is not passed to `nimbus-fml`.
+     */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val manifestDependencies: ConfigurableFileCollection
+
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract override val repoFiles: ConfigurableFileCollection
