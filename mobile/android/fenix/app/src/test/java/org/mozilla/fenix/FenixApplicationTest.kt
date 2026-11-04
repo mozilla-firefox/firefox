@@ -8,7 +8,9 @@ import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.UserManager
 import androidx.test.core.app.ApplicationProvider
+import androidx.work.testing.WorkManagerTestInitHelper
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -34,6 +36,7 @@ import mozilla.components.support.utils.BrowsersCache
 import mozilla.components.support.utils.ext.packageManagerWrapper
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -367,5 +370,20 @@ class FenixApplicationTest {
         application.setupRefreshingSearchEngines(listOf("search-config-icons"), browserStore)
 
         assertTrue(browserStore.state.search.isNewSearchConfigurationAvailable)
+    }
+
+    @Test
+    fun `GIVEN the user is locked WHEN WorkManager initializes THEN it does not throw`() {
+        shadowOf(testContext.getSystemService(UserManager::class.java)).setUserUnlocked(false)
+        WorkManagerTestInitHelper.closeWorkDatabase()
+
+        WorkManagerTestInitHelper.initializeTestWorkManager(testContext, application.workManagerConfiguration)
+    }
+
+    @Test
+    fun `GIVEN the user is unlocked WHEN WorkManager fails to initialize THEN the error is rethrown`() {
+        val handler = application.workManagerConfiguration.initializationExceptionHandler!!
+
+        assertThrows(IllegalStateException::class.java) { handler.accept(IllegalStateException()) }
     }
 }
