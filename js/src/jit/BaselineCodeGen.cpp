@@ -7574,6 +7574,8 @@ JitCode* JitRuntime::generateDebugTrapHandler(JSContext* cx,
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitRuntime::generateDebugTrapHandler");
 
+  masm.indirectTarget(TargetKind::Call);
+
   AllocatableGeneralRegisterSet regs(GeneralRegisterSet::All());
   MOZ_ASSERT(!regs.has(FramePointer));
   regs.takeUnchecked(ICStubReg);

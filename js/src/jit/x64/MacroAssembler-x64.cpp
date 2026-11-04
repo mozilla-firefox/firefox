@@ -720,7 +720,7 @@ void MacroAssemblerX64::handleFailureWithHandlerTail(
   asMasm().callWithABI<Fn, HandleException>(
       ABIType::General, CheckUnsafeCallWithABI::DontCheckHasExitFrame);
 
-  *returnValueCheckOffset = asMasm().currentOffset();
+  *returnValueCheckOffset = asMasm().indirectTarget(TargetKind::Jump).offset();
 
 #ifdef JS_HW_SHADOW_STACK
   // HandleException replaces the shadow stack pointer read above on entry with
