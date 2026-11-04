@@ -31,10 +31,9 @@ void JitRuntime::generateEnterJIT(JSContext* cx, MacroAssembler& masm,
   AutoCreatedBy acb(masm, "JitRuntime::generateEnterJIT");
 
   if (mode == EnterJitMode::GeneratorResume) {
-    enterJITGeneratorResumeOffset_ =
-        startTrampolineCode(masm, TargetKind::Call);
+    enterJITGeneratorResumeOffset_ = startTrampolineCode(masm);
   } else {
-    enterJITOffset_ = startTrampolineCode(masm, TargetKind::Call);
+    enterJITOffset_ = startTrampolineCode(masm);
   }
 
   const Register reg_code = IntArgReg0;      // EnterJitData::jitcode.
@@ -466,7 +465,7 @@ static void PushRegisterDump(MacroAssembler& masm) {
 void JitRuntime::generateInvalidator(MacroAssembler& masm, Label* bailoutTail) {
   AutoCreatedBy acb(masm, "JitRuntime::generateInvalidator");
 
-  invalidatorOffset_ = startTrampolineCode(masm, TargetKind::Jump);
+  invalidatorOffset_ = startTrampolineCode(masm);
 
   // The InvalidationBailoutStack saved in r0 must be:
   // - osiPointReturnAddress_
@@ -541,7 +540,7 @@ void JitRuntime::generateBailoutHandler(MacroAssembler& masm,
                                         Label* bailoutTail) {
   AutoCreatedBy acb(masm, "JitRuntime::generateBailoutHandler");
 
-  bailoutHandlerOffset_ = startTrampolineCode(masm, TargetKind::Jump);
+  bailoutHandlerOffset_ = startTrampolineCode(masm);
 
   GenerateBailoutThunk(masm, bailoutTail);
 }
@@ -551,7 +550,7 @@ bool JitRuntime::generateVMWrapper(JSContext* cx, MacroAssembler& masm,
                                    DynFn nativeFun, uint32_t* wrapperOffset) {
   AutoCreatedBy acb(masm, "JitRuntime::generateVMWrapper");
 
-  *wrapperOffset = startTrampolineCode(masm, TargetKind::Call);
+  *wrapperOffset = startTrampolineCode(masm);
 
   // Avoid conflicts with argument registers while discarding the result after
   // the function call.
@@ -743,7 +742,7 @@ uint32_t JitRuntime::generatePreBarrier(JSContext* cx, MacroAssembler& masm,
                                         MIRType type) {
   AutoCreatedBy acb(masm, "JitRuntime::generatePreBarrier");
 
-  uint32_t offset = startTrampolineCode(masm, TargetKind::Call);
+  uint32_t offset = startTrampolineCode(masm);
 
   static_assert(PreBarrierReg == r1);
   Register temp1 = r2;

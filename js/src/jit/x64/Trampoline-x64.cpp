@@ -79,10 +79,9 @@ void JitRuntime::generateEnterJIT(JSContext* cx, MacroAssembler& masm,
   AutoCreatedBy acb(masm, "JitRuntime::generateEnterJIT");
 
   if (mode == EnterJitMode::GeneratorResume) {
-    enterJITGeneratorResumeOffset_ =
-        startTrampolineCode(masm, TargetKind::Call);
+    enterJITGeneratorResumeOffset_ = startTrampolineCode(masm);
   } else {
-    enterJITOffset_ = startTrampolineCode(masm, TargetKind::Call);
+    enterJITOffset_ = startTrampolineCode(masm);
   }
 
   masm.assertStackAlignment(ABIStackAlignment,
@@ -533,11 +532,7 @@ uint32_t JitRuntime::generatePreBarrier(JSContext* cx, MacroAssembler& masm,
                                         MIRType type) {
   AutoCreatedBy acb(masm, "JitRuntime::generatePreBarrier");
 
-  // WASM stores the address of the pre-barrier in the Instance and performs
-  // an indirect call.
-  TargetKind targetKind =
-      type == MIRType::WasmAnyRef ? TargetKind::Call : TargetKind::None;
-  uint32_t offset = startTrampolineCode(masm, targetKind);
+  uint32_t offset = startTrampolineCode(masm);
 
   static_assert(PreBarrierReg == rdx);
   Register temp1 = rax;

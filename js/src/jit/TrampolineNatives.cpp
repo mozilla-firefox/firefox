@@ -45,7 +45,7 @@ uint32_t JitRuntime::generateArraySortTrampoline(MacroAssembler& masm,
                                                  ArraySortKind kind) {
   AutoCreatedBy acb(masm, "JitRuntime::generateArraySortTrampoline");
 
-  const uint32_t offset = startTrampolineCode(masm, TargetKind::Call);
+  const uint32_t offset = startTrampolineCode(masm);
 
   // The stack for the trampoline frame will look like this:
   //

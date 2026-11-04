@@ -344,7 +344,7 @@ void MacroAssemblerCompat::handleFailureWithHandlerTail(
   asMasm().callWithABI<Fn, HandleException>(
       ABIType::General, CheckUnsafeCallWithABI::DontCheckHasExitFrame);
 
-  *returnValueCheckOffset = asMasm().indirectTarget(TargetKind::Jump).offset();
+  *returnValueCheckOffset = asMasm().currentOffset();
 
   Label entryFrame;
   Label catch_;

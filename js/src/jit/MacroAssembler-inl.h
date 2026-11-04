@@ -118,23 +118,6 @@ void MacroAssembler::PopRegs(const Regs&... regs) {
 }
 
 // ===============================================================
-// Indirect call/jump targets.
-
-CodeOffset MacroAssembler::indirectTarget(TargetKind kind) {
-  return CodeOffset(currentOffset());
-}
-
-void MacroAssembler::bindIndirectTarget(Label* label, TargetKind kind) {
-  CodeOffset offset = indirectTarget(kind);
-  bind(label, BufferOffset(offset.offset()));
-}
-
-void MacroAssembler::bindIndirectTarget(CodeLabel* label, TargetKind kind) {
-  CodeOffset offset = indirectTarget(kind);
-  label->target()->bind(offset.offset());
-}
-
-// ===============================================================
 // Simple call functions.
 
 void MacroAssembler::call(TrampolinePtr code) { call(ImmPtr(code.value)); }

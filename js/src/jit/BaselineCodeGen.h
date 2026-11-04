@@ -145,8 +145,6 @@ class BaselineCodeGen {
   void prepareVMCall();
 
   void ensureDebugModeOSRPointSpace();
-  void emitDebugModeOSRResumeTarget(RetAddrEntry::Kind kind,
-                                    uint32_t returnOffset);
 
   void storeFrameSizeAndPushDescriptor(uint32_t argSize, Register scratch);
 
@@ -351,7 +349,6 @@ class BaselineCompilerHandler {
   uint32_t baseWarmUpThreshold_;
 
   bool compileDebugInstrumentation_;
-  bool compileDebugModeOSRResumeTargets_;
   bool ionCompileable_;
 
   bool compilingOffThread_ = false;
@@ -409,11 +406,6 @@ class BaselineCompilerHandler {
 
   bool compileDebugInstrumentation() const {
     return compileDebugInstrumentation_;
-  }
-
-  bool shouldEmitDebugModeOSRResumeTarget(RetAddrEntry::Kind kind) const {
-    return compileDebugModeOSRResumeTargets_ &&
-           CanResumeBaselineScriptAfterDebugModeOSR(kind);
   }
 
   bool maybeIonCompileable() const { return ionCompileable_; }
@@ -609,10 +601,6 @@ class BaselineInterpreterHandler {
 
   const BaselineInterpreter::CallVMOffsets& callVMOffsets() const {
     return callVMOffsets_;
-  }
-
-  bool shouldEmitDebugModeOSRResumeTarget(RetAddrEntry::Kind kind) const {
-    return CanResumeBaselineInterpreterAfterDebugModeOSR(kind);
   }
 
   [[nodiscard]] bool recordCallRetAddr(RetAddrEntry::Kind kind,

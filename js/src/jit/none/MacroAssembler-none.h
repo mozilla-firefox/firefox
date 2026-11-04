@@ -78,7 +78,6 @@ class MacroAssemblerNone : public Assembler {
   void bind(T) {
     MOZ_CRASH();
   }
-  void bind(Label*, BufferOffset) { MOZ_CRASH(); }
   template <typename T>
   void j(Condition, T) {
     MOZ_CRASH();

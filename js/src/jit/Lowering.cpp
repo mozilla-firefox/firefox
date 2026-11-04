@@ -107,22 +107,16 @@ void LIRGenerator::visitTableSwitch(MTableSwitch* tableswitch) {
     return;
   }
 
-  // Case indices are numeric, so types known to be non-numeric will always go
-  // to the default case.
-  if (opd->type() != MIRType::Value && opd->type() != MIRType::Int32 &&
-      opd->type() != MIRType::Double) {
-    add(new (alloc()) LGoto(tableswitch->getDefault()));
-    return;
-  }
-
-  // Switch table dispatch to the case blocks uses an indirect jump.
-  for (size_t i = 0; i < tableswitch->numCases(); i++) {
-    tableswitch->getCase(i)->lir()->setIsIndirectJumpTarget();
-  }
-
   // If we don't know the type.
   if (opd->type() == MIRType::Value) {
     add(newLTableSwitchV(useBox(opd)), tableswitch);
+    return;
+  }
+
+  // Case indices are numeric, so other types will always go to the default
+  // case.
+  if (opd->type() != MIRType::Int32 && opd->type() != MIRType::Double) {
+    add(new (alloc()) LGoto(tableswitch->getDefault()));
     return;
   }
 

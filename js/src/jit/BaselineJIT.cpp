@@ -353,8 +353,7 @@ static bool DispatchOffThreadBaselineBatchImpl(JSContext* cx, bool isEager) {
 
     auto* offThreadSnapshot = alloc->new_<OffThreadBaselineSnapshot>(
         script, globalLexical, globalThis, baseWarmUpThreshold,
-        isIonCompileable, compileDebugInstrumentation,
-        /* compileDebugModeOSRResumeTargets = */ false);
+        isIonCompileable, compileDebugInstrumentation);
     if (!offThreadSnapshot) {
       ReportOutOfMemory(cx);
       return false;
@@ -408,8 +407,6 @@ MethodStatus jit::BaselineCompile(JSContext* cx, JSScript* script,
   bool compileDebugInstrumentation =
       script->isDebuggee() ||
       options.hasFlag(BaselineOption::ForceDebugInstrumentation);
-  bool compileDebugModeOSRResumeTargets =
-      options.hasFlag(BaselineOption::CompileDebugModeOSRResumeTargets);
   bool forceMainThread =
       compileDebugInstrumentation ||
       options.hasFlag(BaselineOption::ForceMainThreadCompilation);
@@ -432,9 +429,9 @@ MethodStatus jit::BaselineCompile(JSContext* cx, JSScript* script,
       OptimizationInfo::baseWarmUpThresholdForScript(cx, script);
   bool isIonCompileable = IsIonEnabled(cx) && CanIonCompileScript(cx, script);
 
-  BaselineSnapshot snapshot(
-      script, globalLexical, globalThis, baseWarmUpThreshold, isIonCompileable,
-      compileDebugInstrumentation, compileDebugModeOSRResumeTargets);
+  BaselineSnapshot snapshot(script, globalLexical, globalThis,
+                            baseWarmUpThreshold, isIonCompileable,
+                            compileDebugInstrumentation);
 
   if (BaselineCompileTask::OffThreadBaselineCompilationAvailable(cx, script) &&
       !forceMainThread) {

@@ -4174,7 +4174,7 @@ void MacroAssembler::generateBailoutTail(Register scratch,
     jump(&copyFrame);
 #endif
 
-    bindIndirectTarget(&bailoutStubHandler, TargetKind::Call);
+    bind(&bailoutStubHandler);
     addCodeLabel(bailoutStubHandler);
 
 #ifdef JS_USE_LINK_REGISTER

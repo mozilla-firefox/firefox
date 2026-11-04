@@ -363,7 +363,6 @@ static void PatchBaselineFramesForDebugMode(
             // For CallVM (case B) the assumption is that all callVMs which can
             // trigger debug mode OSR are the *only* callVMs generated for their
             // respective pc locations in the Baseline JIT code.
-            MOZ_ASSERT(CanResumeBaselineScriptAfterDebugModeOSR(kind));
             const RetAddrEntry* retAddrEntry = nullptr;
             switch (kind) {
               case RetAddrEntry::Kind::IC:
@@ -391,7 +390,6 @@ static void PatchBaselineFramesForDebugMode(
             // Resume in the Baseline Interpreter because these callVMs are not
             // present in the new BaselineScript if we recompiled without debug
             // instrumentation.
-            MOZ_ASSERT(CanResumeBaselineInterpreterAfterDebugModeOSR(kind));
             if (kind == RetAddrEntry::Kind::DebugPrologue) {
               frame.baselineFrame()->switchFromJitToInterpreterAtPrologue(cx);
             } else {
@@ -520,8 +518,7 @@ bool js::jit::RecompileBaselineScriptForDebugMode(
   BaselineScript* oldBaselineScript =
       script->jitScript()->clearBaselineScript(cx->gcContext(), script);
 
-  BaselineOptions options({BaselineOption::ForceMainThreadCompilation,
-                           BaselineOption::CompileDebugModeOSRResumeTargets});
+  BaselineOptions options({BaselineOption::ForceMainThreadCompilation});
   if (observing) {
     options.setFlag(BaselineOption::ForceDebugInstrumentation);
   }

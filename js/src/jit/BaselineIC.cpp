@@ -648,8 +648,7 @@ void FallbackICCodeCompiler::enterStubFrame(MacroAssembler& masm,
 }
 
 void FallbackICCodeCompiler::emitBailoutStub(BailoutReturnKind kind) {
-  uint32_t offset = masm.indirectTarget(TargetKind::Jump).offset();
-  code.initBailoutStubOffset(kind, offset);
+  code.initBailoutStubOffset(kind, masm.currentOffset());
   // The bailoutTail jumps here when performing bailout stack
   // reconstruction. The BaselineStub frame has been rebuilt.
   // Only the return address remains to be pushed.
@@ -2732,7 +2731,7 @@ bool JitRuntime::generateBaselineICFallbackCode(JSContext* cx) {
 #define EMIT_CODE(kind)                                            \
   {                                                                \
     AutoCreatedBy acb(masm, "kind=" #kind);                        \
-    uint32_t offset = startTrampolineCode(masm, TargetKind::Call); \
+    uint32_t offset = startTrampolineCode(masm);                   \
     InitMacroAssemblerForICStub(masm);                             \
     if (!compiler.emit_##kind()) {                                 \
       return false;                                                \

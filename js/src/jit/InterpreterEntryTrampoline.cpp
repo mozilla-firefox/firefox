@@ -30,8 +30,6 @@ void JitRuntime::generateBaselineInterpreterEntryTrampoline(
   AutoCreatedBy acb(masm,
                     "JitRuntime::generateBaselineInterpreterEntryTrampoline");
 
-  masm.indirectTarget(TargetKind::Call);
-
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
 #else
@@ -190,7 +188,7 @@ void JitRuntime::generateInterpreterEntryTrampoline(MacroAssembler& masm) {
 
   // If BLI is disabled, we don't need an offset.
   if (IsBaselineInterpreterEnabled()) {
-    uint32_t offset = startTrampolineCode(masm, TargetKind::Call);
+    uint32_t offset = startTrampolineCode(masm);
     if (!masm.oom()) {
       // The offset is shared by all per-script trampolines.
       if (!vmInterpreterEntryOffset_) {
@@ -198,8 +196,6 @@ void JitRuntime::generateInterpreterEntryTrampoline(MacroAssembler& masm) {
       }
       MOZ_RELEASE_ASSERT(vmInterpreterEntryOffset_ == offset);
     }
-  } else {
-    masm.indirectTarget(TargetKind::Call);
   }
 
 #ifdef JS_CODEGEN_ARM64

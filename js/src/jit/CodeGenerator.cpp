@@ -618,7 +618,7 @@ void CodeGeneratorShared::addIC(LInstruction* lir, size_t cacheIndex) {
       new (alloc()) OutOfLineICFallback(lir, cacheIndex, icInfo_.length() - 1);
   addOutOfLineCode(ool, mir);
 
-  masm.bindIndirectTarget(ool->rejoin(), TargetKind::ImmJump);
+  masm.bind(ool->rejoin());
   cache->setRejoinOffset(CodeOffset(ool->rejoin()->offset()));
 }
 
@@ -630,7 +630,7 @@ void CodeGenerator::visitOutOfLineICFallback(OutOfLineICFallback* ool) {
   DataPtr<IonIC> ic(this, cacheIndex);
 
   // Register the location of the OOL path in the IC.
-  ic->setFallbackOffset(masm.indirectTarget(TargetKind::Jump));
+  ic->setFallbackOffset(CodeOffset(masm.currentOffset()));
 
   switch (ic->kind()) {
     case CacheKind::GetProp:
@@ -2999,8 +2999,6 @@ static JitCode* GenerateRegExpMatchStubShared(JSContext* cx,
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "GenerateRegExpMatchStubShared");
 
-  masm.indirectTarget(TargetKind::Call);
-
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
 #else
@@ -3442,8 +3440,6 @@ JitCode* JitZone::generateRegExpSearcherStub(JSContext* cx) {
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitZone::generateRegExpSearcherStub");
 
-  masm.indirectTarget(TargetKind::Call);
-
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
 #else
@@ -3565,8 +3561,6 @@ JitCode* JitZone::generateRegExpExecTestStub(JSContext* cx) {
   JitContext jcx(cx);
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitZone::generateRegExpExecTestStub");
-
-  masm.indirectTarget(TargetKind::Call);
 
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
@@ -4157,7 +4151,7 @@ void CodeGenerator::visitOsrEntry(LOsrEntry* lir) {
 
   // Remember the OSR entry offset into the code buffer.
   masm.flushBuffer();
-  setOsrEntryOffset(masm.indirectTarget(TargetKind::Jump).offset());
+  setOsrEntryOffset(masm.size());
 
   // Allocate the full frame for this function
   // Note we have a new entry here. So we reset MacroAssembler::framePushed()
@@ -6711,8 +6705,7 @@ void JitRuntime::generateIonGenericCallArgumentsShift(
 void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
                                             IonGenericCallKind kind) {
   AutoCreatedBy acb(masm, "JitRuntime::generateIonGenericCallStub");
-  ionGenericCallStubOffset_[kind] =
-      startTrampolineCode(masm, TargetKind::ImmCall);
+  ionGenericCallStubOffset_[kind] = startTrampolineCode(masm);
 
   // This code is tightly coupled with visitCallGeneric.
   //
@@ -6851,7 +6844,7 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
 
 void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStub");
-  megamorphicLoadStubOffset_ = startTrampolineCode(masm, TargetKind::ImmCall);
+  megamorphicLoadStubOffset_ = startTrampolineCode(masm);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -6883,8 +6876,7 @@ void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
 
 void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStubPermissive");
-  megamorphicLoadStubPermissiveOffset_ =
-      startTrampolineCode(masm, TargetKind::ImmCall);
+  megamorphicLoadStubPermissiveOffset_ = startTrampolineCode(masm);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -8874,11 +8866,7 @@ bool CodeGenerator::generateBlock(LBlock* current, size_t blockNumber,
     masm.nopAlign(CodeAlignment);
   }
 
-  if (current->isIndirectJumpTarget()) {
-    masm.bindIndirectTarget(current->label(), TargetKind::Jump);
-  } else {
-    masm.bind(current->label());
-  }
+  masm.bind(current->label());
 
   mozilla::Maybe<ScriptCountBlockState> blockCounts;
   if (counts) {
@@ -14491,8 +14479,6 @@ JitCode* JitZone::generateStringConcatStub(JSContext* cx) {
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitZone::generateStringConcatStub");
 
-  masm.indirectTarget(TargetKind::Call);
-
   Register lhs = CallTempReg0;
   Register rhs = CallTempReg1;
   Register temp1 = CallTempReg2;
@@ -14607,7 +14593,7 @@ JitCode* JitZone::generateStringConcatStub(JSContext* cx) {
 void JitRuntime::generateLazyLinkStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateLazyLinkStub");
 
-  lazyLinkStubOffset_ = startTrampolineCode(masm, TargetKind::Call);
+  lazyLinkStubOffset_ = startTrampolineCode(masm);
 
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
@@ -14648,7 +14634,7 @@ void JitRuntime::generateLazyLinkStub(MacroAssembler& masm) {
 void JitRuntime::generateInterpreterStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateInterpreterStub");
 
-  interpreterStubOffset_ = startTrampolineCode(masm, TargetKind::Call);
+  interpreterStubOffset_ = startTrampolineCode(masm);
 
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
@@ -14691,8 +14677,7 @@ void JitRuntime::generateInterpreterStub(MacroAssembler& masm) {
 
 void JitRuntime::generateDoubleToInt32ValueStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateDoubleToInt32ValueStub");
-  doubleToInt32ValueStubOffset_ =
-      startTrampolineCode(masm, TargetKind::ImmCall);
+  doubleToInt32ValueStubOffset_ = startTrampolineCode(masm);
 
   Label done;
   masm.branchTestDouble(Assembler::NotEqual, R0, &done);

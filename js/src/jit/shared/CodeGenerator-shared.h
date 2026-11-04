@@ -252,7 +252,12 @@ class CodeGeneratorShared : public LElementVisitor {
   // given block, and it's trivial, return the ultimate block we should
   // actually branch directly to.
   MBasicBlock* skipTrivialBlocks(MBasicBlock* block) {
-    return block->lir()->skipTrivialBlocks()->mir();
+    while (block->lir()->isTrivial()) {
+      LGoto* ins = block->lir()->rbegin()->toGoto();
+      MOZ_ASSERT(ins->numSuccessors() == 1);
+      block = ins->getSuccessor(0);
+    }
+    return block;
   }
 
   // Test whether the given block can be reached via fallthrough from the
