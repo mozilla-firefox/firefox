@@ -492,6 +492,7 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "wrexhamAFCVisible",
     widgetsSettingsEnabledKey: "wrexhamAFCEnabled",
     trainhopNamespace: "widgetWrexhamAFC",
+    framed: true,
     card: "FramedWidgetCard",
     icon: "chrome://activity-stream/content/data/content/tippytop/images/wrexham@2x.png",
     l10nId: "newtab-custom-widget-wrexhamafc",

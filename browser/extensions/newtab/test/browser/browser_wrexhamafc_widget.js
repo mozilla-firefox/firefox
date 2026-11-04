@@ -13,7 +13,36 @@ if (Services.vc.compare(Services.appinfo.version, "160.0a1") < 0) {
 } else {
   test_newtab({
     async before({ pushPrefs }) {
+      // Serve a manifest entry for Wrexham instead of fetching from Merino.
+      const feed = AboutNewTab.activityStream.store.feeds.get(
+        "feeds.framedwidgetsfeed"
+      );
+      const sandbox = sinon.createSandbox();
+      const { manifest, loaded } = feed;
+      registerCleanupFunction(() => {
+        sandbox.restore();
+        feed.manifest = manifest;
+        feed.loaded = loaded;
+        feed.update();
+      });
+      sandbox.stub(feed, "loadFrames").callsFake(async () => {
+        feed.manifest = {
+          widgets: [
+            {
+              id: "wrexhamAFC",
+              enabled: true,
+              url: "https://example.com/browser/browser/extensions/newtab/test/browser/blue_page.html",
+            },
+          ],
+        };
+        feed.update();
+        feed.loaded = true;
+      });
       await pushPrefs(
+        [
+          "browser.newtabpage.activity-stream.widgets.framed.allowedHostSuffixes",
+          "example.com",
+        ],
         [
           "browser.newtabpage.activity-stream.discoverystream.config",
           JSON.stringify({ collapsible: true, enabled: true }),
@@ -28,6 +57,7 @@ if (Services.vc.compare(Services.appinfo.version, "160.0a1") < 0) {
         ],
         ["browser.newtabpage.activity-stream.widgets.wrexhamAFC.enabled", true]
       );
+      await feed.loadFrames();
     },
 
     test: async function test_wrexhamafc_widget_shell() {
@@ -35,6 +65,11 @@ if (Services.vc.compare(Services.appinfo.version, "160.0a1") < 0) {
         () =>
           content.document.querySelector('moz-widget[widget-id="wrexhamAFC"]'),
         "Wait for the Wrexham AFC card"
+      );
+
+      Assert.ok(
+        card.getAttribute("src").split("#")[0].endsWith("/blue_page.html"),
+        "The card loads the manifest's URL for Wrexham"
       );
 
       const header = card.querySelector(":scope > moz-widget-header");
