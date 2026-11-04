@@ -10,7 +10,6 @@
         "revert-llvmorg-16-init-11301-g163bb6d64e5f_clang_24.patch",
         "revert-llvmorg-15-init-13446-g7524fe962e47.patch",
         "android-hardware-buffer-header-workaround_clang_21.patch",
-        "arm64e-hack.patch",
         "filter-symbols_clang_23.patch",
         "no-no-rosegment.patch",
         "sanitizer_deadlock_suppression_clang_22.patch",
