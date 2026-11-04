@@ -49,7 +49,6 @@ add_task(async function test_recordEvent_sanitizes_and_buffers() {
   // event.
   let sanitizedFields = {
     newtab_visit_id: "some visit id",
-    tile_id: "some tile id",
     matches_selected_topic: "not-set",
     recommended_at: "1748877997039",
     received_rank: 0,

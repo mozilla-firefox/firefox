@@ -379,12 +379,6 @@ export class NewTabContentPing {
    */
   sanitizeEventData(eventName, eventDataDict) {
     const {
-      // @backward-compat { version 159 }
-      // We can remove tile_id from this list once 159 hits release, since at that point,
-      // tile_id will have been removed from the newtab-content ping within metrics.yaml, and
-      // there will no longer be a chance of it accidentally slipping through extra_keys.
-      // eslint-disable-next-line no-unused-vars
-      tile_id,
       // eslint-disable-next-line no-unused-vars
       newtab_visit_id,
       // eslint-disable-next-line no-unused-vars
