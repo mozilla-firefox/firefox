@@ -12,7 +12,7 @@ task-defaults:
         by-platform:
             linux2404-64.*: t-linux-docker-amd
             macosx1470-64.*: t-osx-1400-r8
-            macosx1500-aarch64.*: t-osx-1500-m4
+            macosx1500-aarch64-vms.*: t-osx-1500-m-vms
             windows11-64.*: win11-64-25h2-source
     worker:
         by-platform:
@@ -329,6 +329,7 @@ raptor:
     platform:
         - linux2404-64/opt
         - macosx1470-64/opt
+        - macosx1500-aarch64-vms/opt
         - windows11-64/opt
     treeherder:
         symbol: rap
@@ -499,7 +500,7 @@ mozperftest:
     platform:
         - linux2404-64/opt
         - macosx1470-64/opt
-        - macosx1500-aarch64/opt
+        - macosx1500-aarch64-vms/opt
         - windows11-64/opt
     treeherder:
         symbol: mpu
@@ -514,7 +515,7 @@ mozperftest:
                 macosx1470-64/opt:
                     - macosx64-node
                     - browsertime
-                macosx1500-aarch64/opt:
+                macosx1500-aarch64-vms/opt:
                     - macosx64-aarch64-node
                     - browsertime
                 windows11-64/opt:
