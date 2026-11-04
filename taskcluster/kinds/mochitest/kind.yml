@@ -499,6 +499,7 @@ tasks:
                         linux.*/opt: 5400
                         windows.*-ccov.*/.*: 10800
                         windows.*-asan.*/opt: 5400
+                        macosx1500-aarch64-vms.*/opt: 5400
                         .*/debug: 5400
                         default: 3600
         mozharness:
