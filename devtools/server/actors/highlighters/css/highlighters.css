@@ -597,6 +597,11 @@
   border-radius: 50%;
   box-shadow: 0 0 0 3px var(--background-color);
   display: block;
+  transition: opacity 0.1s ease-in-out;
+}
+
+.eye-dropper-root[scrolling] .eye-dropper-canvas {
+  opacity: 0.75;
 }
 
 .eye-dropper-color-container {
@@ -614,12 +619,17 @@
   /* By default the color label container sits below the canvas.
      Here we just center it horizontally */
   transform: var(--label-horizontal-center);
-  transition: transform 0.1s ease-in-out;
+  transition:
+    transform 0.1s ease-in-out,
+    opacity 0.1s ease-in-out;
 }
 
 /* If there isn't enough space below the canvas, we move the label container to the top */
 .eye-dropper-root[top] .eye-dropper-color-container {
   transform: var(--label-horizontal-center) var(--label-vertical-top);
+}
+.eye-dropper-root[scrolling] .eye-dropper-color-container {
+  opacity: 0;
 }
 
 /* If there isn't enough space right of the canvas to horizontally center the label

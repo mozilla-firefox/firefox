@@ -49,6 +49,7 @@ const CLOSE_DELAY = 750;
 class EyeDropper extends EventEmitter {
   #pageEventListenersAbortController;
   #debouncedUpdateScreenshot;
+  #scrolling = false;
   constructor(highlighterEnv) {
     super();
 
@@ -173,7 +174,11 @@ class EyeDropper extends EventEmitter {
       useCapture: true,
     });
     pageListenerTarget.addEventListener("keydown", this, { signal });
-    pageListenerTarget.addEventListener("DOMMouseScroll", this, { signal });
+    pageListenerTarget.addEventListener("scroll", this, {
+      signal,
+      useCapture: true,
+    });
+    pageListenerTarget.addEventListener("scrollend", this, { signal });
     pageListenerTarget.addEventListener("FullZoomChange", this, { signal });
     pageListenerTarget.addEventListener("resize", this, { signal });
 
@@ -213,6 +218,8 @@ class EyeDropper extends EventEmitter {
       const rootElement = this.getElement("eye-dropper-root");
       rootElement.setAttribute("hidden", "true");
       rootElement.removeAttribute("drawn");
+      rootElement.removeAttribute("scrolling");
+      this.#scrolling = false;
 
       this.emit("hidden");
 
@@ -328,24 +335,30 @@ class EyeDropper extends EventEmitter {
     const sw = zoomedWidth;
     const sh = zoomedHeight;
 
-    this.ctx.drawImage(this.pageImage, sx, sy, sw, sh, 0, 0, width, height);
+    if (this.#scrolling) {
+      this.ctx.clearRect(0, 0, width, height);
+    } else {
+      this.ctx.drawImage(this.pageImage, sx, sy, sw, sh, 0, 0, width, height);
 
-    // Draw the grid on top, but only at 3x or more, otherwise it's too busy.
-    if (this.eyeDropperZoomLevel > 2) {
-      this.drawGrid();
+      // Draw the grid on top, but only at 3x or more, otherwise it's too busy.
+      if (this.eyeDropperZoomLevel > 2) {
+        this.drawGrid();
+      }
     }
 
     this.drawCrosshair();
 
-    // Update the color preview and value.
-    const rgb = this.centerColor;
-    this.getElement("eye-dropper-color-preview").setAttribute(
-      "style",
-      `background-color:${toColorString(rgb, "rgb")};`
-    );
-    this.getElement("eye-dropper-color-value").setTextContent(
-      toColorString(rgb, this.format)
-    );
+    if (!this.#scrolling) {
+      // Update the color preview and value.
+      const rgb = this.centerColor;
+      this.getElement("eye-dropper-color-preview").setAttribute(
+        "style",
+        `background-color:${toColorString(rgb, "rgb")};`
+      );
+      this.getElement("eye-dropper-color-value").setTextContent(
+        toColorString(rgb, this.format)
+      );
+    }
   }
 
   /**
@@ -415,12 +428,18 @@ class EyeDropper extends EventEmitter {
       case "keydown":
         this.handleKeyDown(e);
         break;
-      case "DOMMouseScroll":
-        // Prevent scrolling. That's because we only took a screenshot of the viewport, so
-        // scrolling out of the viewport wouldn't draw the expected things. In the future
-        // we can take the screenshot again on scroll, but for now it doesn't seem
-        // important.
-        e.preventDefault();
+      case "scroll":
+        if (!this.#scrolling) {
+          this.#scrolling = true;
+          this.getElement("eye-dropper-root").setAttribute("scrolling", "");
+          this.draw();
+        }
+        break;
+      case "scrollend":
+        this.#scrolling = false;
+        this.getElement("eye-dropper-root").removeAttribute("scrolling");
+        this.getElement("eye-dropper-root").removeAttribute("drawn");
+        this.updateScreenshot();
         break;
       case "FullZoomChange":
         this.hide();
@@ -460,6 +479,10 @@ class EyeDropper extends EventEmitter {
    * selecting might mean copying to the clipboard and closing the
    */
   selectColor() {
+    if (this.#scrolling) {
+      return;
+    }
+
     let onColorSelected = Promise.resolve();
     if (this.options.copyOnSelect) {
       onColorSelected = this.copyColor();
@@ -479,7 +502,6 @@ class EyeDropper extends EventEmitter {
     if (e.metaKey || e.ctrlKey || e.altKey) {
       return;
     }
-
     if (e.keyCode === e.DOM_VK_RETURN) {
       this.selectColor();
       e.preventDefault();

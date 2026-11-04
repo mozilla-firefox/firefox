@@ -113,6 +113,8 @@ support-files = [
 
 ["browser_inspector_highlighter-eyedropper-show-hide.js"]
 
+["browser_inspector_highlighter-eyedropper-scroll.js"]
+
 ["browser_inspector_highlighter-eyedropper-xul.js"]
 
 ["browser_inspector_highlighter-eyedropper-zoom.js"]
