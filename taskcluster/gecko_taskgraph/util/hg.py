@@ -9,6 +9,7 @@ import logging
 import subprocess
 
 import requests
+from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
 from redo import retry
 
 logger = logging.getLogger(__name__)
@@ -22,13 +23,17 @@ PUSHLOG_PUSHES_TMPL = (
 
 
 def _query_pushlog(url):
-    response = retry(
-        requests.get,
-        attempts=5,
-        sleeptime=10,
-        args=(url,),
-        kwargs={"timeout": 60, "headers": {"User-Agent": "TaskCluster"}},
-    )
+    SystemResourceMonitor.begin_marker("hg", url)
+    try:
+        response = retry(
+            requests.get,
+            attempts=5,
+            sleeptime=10,
+            args=(url,),
+            kwargs={"timeout": 60, "headers": {"User-Agent": "TaskCluster"}},
+        )
+    finally:
+        SystemResourceMonitor.end_marker("hg", url)
 
     return response.json()["pushes"]
 
@@ -104,7 +109,11 @@ def get_json_pushchangedfiles(repository, revision):
         response.raise_for_status()
         return response.json()
 
-    return retry(get_pushchangedfiles, attempts=10, sleeptime=10)
+    SystemResourceMonitor.begin_marker("hg", url)
+    try:
+        return retry(get_pushchangedfiles, attempts=10, sleeptime=10)
+    finally:
+        SystemResourceMonitor.end_marker("hg", url)
 
 
 def get_hg_revision_metadata(root, revision):
