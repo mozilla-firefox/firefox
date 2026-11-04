@@ -754,7 +754,7 @@ class DLIterateState {
 
 #if defined(GP_OS_linux)
   DLIterateState(SharedLibraryInfo& aInfo, std::string&& aExeName)
-      : mInfo(aInfo), mExeName(aExeName) {}
+      : mInfo(aInfo), mExeName(std::move(aExeName)) {}
 #else
   explicit DLIterateState(SharedLibraryInfo& aInfo) : mInfo(aInfo) {}
 #endif
@@ -846,7 +846,7 @@ class DLIterateState {
 #endif
 
     mInfo.AddSharedLibrary(SharedLibraryAtPath(
-        libName, firstMappingStart, lastMappingEnd,
+        std::move(libName), firstMappingStart, lastMappingEnd,
         firstMappingStart - baseAddress, optionalElfFileId));
 
     return 0;
