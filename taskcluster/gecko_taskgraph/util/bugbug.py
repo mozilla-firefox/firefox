@@ -26,7 +26,7 @@ except ImportError:
 
 BUGBUG_BASE_URL = "https://bugbug.moz.tools"
 RETRY_TIMEOUT = 9 * 60  # seconds
-RETRY_INTERVAL = 10  # seconds
+RETRY_INTERVAL = 2  # seconds
 
 # Preset confidence thresholds.
 CT_LOW = 0.7
