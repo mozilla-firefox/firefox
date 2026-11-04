@@ -1124,8 +1124,8 @@ RefPtr<ShutdownPromise> MediaChangeMonitor::ShutdownDecoder() {
 
 bool MediaChangeMonitor::IsHardwareAccelerated(
     nsACString& aFailureReason) const {
-  if (mDecoder) {
-    return mDecoder->IsHardwareAccelerated(aFailureReason);
+  if (RefPtr<MediaDataDecoder> decoder = GetDecoderOnNonOwnerThread()) {
+    return decoder->IsHardwareAccelerated(aFailureReason);
   }
   MOZ_ASSERT(!mParams.mOptions.contains(
                  CreateDecoderParams::Option::AssertCanInstantiate),
@@ -1439,7 +1439,8 @@ void MediaChangeMonitor::FlushThenShutdownDecoder(
       ->Track(mFlushRequest);
 }
 
-MediaDataDecoder* MediaChangeMonitor::GetDecoderOnNonOwnerThread() const {
+RefPtr<MediaDataDecoder> MediaChangeMonitor::GetDecoderOnNonOwnerThread()
+    const {
   MutexAutoLock lock(mMutex);
   return mDecoder;
 }

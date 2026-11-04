@@ -112,7 +112,7 @@ class MediaChangeMonitor final
   }
 
   // This is used for getting decoder debug info on other threads. Thread-safe.
-  MediaDataDecoder* GetDecoderOnNonOwnerThread() const;
+  RefPtr<MediaDataDecoder> GetDecoderOnNonOwnerThread() const;
 
   bool CanRecycleDecoder() const;
 
