@@ -223,6 +223,7 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
   MOZ_ASSERT(mURI);
   ModuleLoadRequest* request = moduleLoader->GetRequest(mURI, mModuleType);
   MOZ_ASSERT(request);
+  request->SetBaseURL(mURI);
 
 #ifdef NIGHTLY_BUILD
   // https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-single-module-script
@@ -233,9 +234,8 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
     request->SetWasmBytes();
     if (mScriptBuffer &&
         !request->WasmBytes().append(mScriptBuffer.get(), mScriptLength)) {
-      return NS_ERROR_OUT_OF_MEMORY;
+      mResult = NS_ERROR_OUT_OF_MEMORY;
     }
-    request->SetBaseURL(mURI);
     request->OnFetchComplete(mResult);
     moduleLoader->RemoveRequest(mURI, mModuleType);
     return NS_OK;
@@ -245,16 +245,12 @@ NS_IMETHODIMP FetchCompleteRunnable::RunOnWorkletThread() {
   // Set the Source type to "text" for decoding.
   request->SetTextSource(request->mLoadContext.get());
 
-  nsresult rv;
   if (mScriptBuffer) {
     auto decoder = std::make_unique<ScriptDecoder>(
         UTF_8_ENCODING, ScriptDecoder::BOMHandling::Remove);
-    rv = decoder->DecodeRawData(request, mScriptBuffer.get(), mScriptLength,
-                                true);
-    NS_ENSURE_SUCCESS(rv, rv);
+    mResult = decoder->DecodeRawData(request, mScriptBuffer.get(),
+                                     mScriptLength, true);
   }
-
-  request->SetBaseURL(mURI);
   request->OnFetchComplete(mResult);
   moduleLoader->RemoveRequest(mURI, mModuleType);
   return NS_OK;
