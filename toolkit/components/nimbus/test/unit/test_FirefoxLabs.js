@@ -192,7 +192,10 @@ add_task(async function test_enroll() {
 
   await labs.enroll(recipe.slug, recipe.branches[0].slug);
   Assert.ok(
-    enrollSpy.calledOnceWith(recipe, "rs-loader", { branchSlug: "control" }),
+    enrollSpy.calledOnceWithExactly(recipe, "rs-loader", {
+      branchSlug: "control",
+      originalPrefValues: undefined,
+    }),
     "ExperimentManager.enroll called"
   );
 

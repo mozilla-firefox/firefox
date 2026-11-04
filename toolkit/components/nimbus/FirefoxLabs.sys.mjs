@@ -60,8 +60,10 @@ export class FirefoxLabs {
    *
    * @param {string} slug The slug of the opt-in to enroll.
    * @param {string} branchSlug The slug of the branch to enroll in.
+   * @param {object} options
+   * @param {Map<string, unknown> | undefined} options.originalPrefValues
    */
-  async enroll(slug, branchSlug) {
+  async enroll(slug, branchSlug, { originalPrefValues } = {}) {
     if (!slug || !branchSlug) {
       throw new TypeError("enroll: slug and branchSlug are required");
     }
@@ -84,6 +86,7 @@ export class FirefoxLabs {
     try {
       await lazy.ExperimentAPI.manager.enroll(recipe, source, {
         branchSlug,
+        originalPrefValues,
       });
     } catch (e) {
       lazy.log.error(`Failed to enroll in ${slug} (branch ${branchSlug})`, e);

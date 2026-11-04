@@ -670,25 +670,37 @@ export class ExperimentManager {
    * Start a new experiment by enrolling the users
    *
    * @param {object} recipe
-   *                 The recipe to enroll in.
+   * The recipe to enroll in.
+   *
    * @param {string} source
-   *                 The source of the experiment (e.g., "rs-loader" for recipes
-   *                 from Remote Settings).
+   * The source of the experiment (e.g., "rs-loader" for recipes from Remote
+   * Settings).
+   *
    * @param {object} options
+   *
    * @param {boolean} options.reenroll
-   *                  Allow re-enrollment. Only supported for rollouts.
+   * Allow re-enrollment. Only supported for rollouts.
+   *
    * @param {string} options.branchSlug
-   *                 If enrolling in a Firefox Labs opt-in experiment, this
-   *                 option is required and will dictate which branch to enroll
-   *                 in.
+   * If enrolling in a Firefox Labs opt-in, this option is required and will
+   * dictate which branch to enroll in.
+   *
+   * @param {Map<string, unknown> | undefined} options.originalPrefValues
+   * If enrolling in a Firefox labs opt-in, this option allows Labs to specify
+   * original values for prefs.
    *
    * @returns {Promise<Enrollment>}
-   *          The experiment object stored in the data store.
+   * The experiment object stored in the data store.
    *
-   * @throws {Error} If a recipe already exists in the store with the same slug
-   *                 as `recipe` and re-enrollment is prevented.
+   * @throws {Error}
+   * If a recipe already exists in the store with the same slug as `recipe` and
+   * re-enrollment is prevented.
    */
-  async enroll(recipe, source, { reenroll = false, branchSlug } = {}) {
+  async enroll(
+    recipe,
+    source,
+    { reenroll = false, branchSlug, originalPrefValues } = {}
+  ) {
     if (typeof source !== "string") {
       throw new Error("source is required");
     }
@@ -776,7 +788,12 @@ export class ExperimentManager {
       }
     }
 
-    return this._enroll(recipe, branch.slug, source);
+    return this._enroll(
+      recipe,
+      branch.slug,
+      source,
+      recipe.isFirefoxLabsOptIn ? originalPrefValues : undefined
+    );
   }
 
   /**
@@ -791,14 +808,20 @@ export class ExperimentManager {
    * @param {string} source
    * The source associated with the enrollment.
    *
+   * @param {Map<string, unknown> | undefined} originalPrefValues
+   * If enrolling in a Firefox labs opt-in, this option allows Labs to specify
+   * original values for prefs.
+   *
    * @returns {object} The computed enrollment.
    */
-  _enroll(recipe, branchSlug, source) {
+  _enroll(recipe, branchSlug, source, originalPrefValues = undefined) {
     const { slug, isRollout } = recipe;
     const { enrollment, prefsToSet } = this.createEnrollment(
       recipe,
       branchSlug,
-      source
+      source,
+      undefined,
+      originalPrefValues
     );
 
     // Unenroll in any conflicting prefFlips enrollments.
@@ -850,13 +873,23 @@ export class ExperimentManager {
    * @param {object} extra
    * Additional properties to set on the enrollment.
    *
+   * @param {Map<string, unknown> | undefined} originalPrefValues
+   * When creating a Firefox labs opt-in, this option allows Labs to specify
+   * original values for prefs.
+   *
    * @returns {CreateEnrollmentResult}
    * The resulting enrollment and the prefs that should be set.
    *
    * @throws {Error}
    * If the branch does not exist.
    */
-  createEnrollment(recipe, branchSlug, source, extra = {}) {
+  createEnrollment(
+    recipe,
+    branchSlug,
+    source,
+    extra = {},
+    originalPrefValues = undefined
+  ) {
     const enrollment = ExperimentManager.createIncompleteEnrollment(
       recipe,
       branchSlug,
@@ -870,7 +903,8 @@ export class ExperimentManager {
 
       const result = this._getPrefsForBranch(
         enrollment.branch,
-        recipe.isRollout
+        recipe.isRollout,
+        originalPrefValues
       );
 
       enrollment.prefs = result.prefs;
@@ -1530,12 +1564,23 @@ export class ExperimentManager {
   /**
    * Generate the list of prefs a recipe will set.
    *
-   * @param {object} branch The recipe branch that will be enrolled.
-   * @param {boolean} isRollout Whether or not this recipe is a rollout.
+   * @param {object} branch
+   * The recipe branch that will be enrolled.
+   *
+   * @param {boolean} isRollout
+   * Whether or not this recipe is a rollout.
+   *
+   * @param {Map<string, unknown> | undefined} originalPrefValues
+   * If provided, this will be queried for the original values of prefs before
+   * any other source (existing enrollments, actual pref values).
    *
    * @returns {PrefsForBranch}
    */
-  _getPrefsForBranch(branch, isRollout = false) {
+  _getPrefsForBranch(
+    branch,
+    isRollout = false,
+    originalPrefValues = undefined
+  ) {
     const prefs = [];
     const prefsToSet = [];
 
@@ -1559,28 +1604,34 @@ export class ExperimentManager {
           const { pref: prefName, branch: prefBranch } = setPref;
 
           let originalValue;
-          const conflictingPref = conflictingEnrollment?.prefs?.find(
-            p => p.name === prefName
-          );
+          let conflictingPref = undefined;
 
-          if (conflictingPref) {
-            // If there is another enrollment that has already set the pref we
-            // care about, we use its stored originalValue.
-            originalValue = conflictingPref.originalValue;
+          if (originalPrefValues?.has(prefName)) {
+            originalValue = originalPrefValues.get(prefName);
           } else {
-            // If there is an active prefFlips experiment for this pref on this
-            // branch, we must use its originalValue.
-            const prefFlipValue = this._prefFlips._getOriginalValue(
-              prefName,
-              prefBranch
+            conflictingPref = conflictingEnrollment?.prefs?.find(
+              p => p.name === prefName
             );
-            if (typeof prefFlipValue !== "undefined") {
-              originalValue = prefFlipValue;
+
+            if (conflictingPref) {
+              // If there is another enrollment that has already set the pref we
+              // care about, we use its stored originalValue.
+              originalValue = conflictingPref.originalValue;
             } else {
-              originalValue = lazy.PrefUtils.getPrefStrict(
+              // If there is an active prefFlips experiment for this pref on this
+              // branch, we must use its originalValue.
+              const prefFlipValue = this._prefFlips._getOriginalValue(
                 prefName,
                 prefBranch
               );
+              if (typeof prefFlipValue !== "undefined") {
+                originalValue = prefFlipValue;
+              } else {
+                originalValue = lazy.PrefUtils.getPrefStrict(
+                  prefName,
+                  prefBranch
+                );
+              }
             }
           }
 

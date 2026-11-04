@@ -496,44 +496,15 @@ async function migrateFirefoxLabsEnrollments() {
           continue;
         }
 
-        await labs.enroll(slug, "control");
-
-        // We need to overwrite the original pref value stored in the
-        // ExperimentStore so that unenrolling will disable the feature.
-        const enrollment = lazy.ExperimentAPI.manager.store.get(slug);
-        if (!enrollment) {
-          lazy.log.error(`Enrollment with ${slug} should exist but does not`);
-          continue;
-        }
-        if (!enrollment.active) {
-          lazy.log.error(
-            `Enrollment with slug ${slug} should be active but is not.`
-          );
-          continue;
-        }
-
-        const prefEntry = enrollment.prefs?.find(entry => entry.name === pref);
-        if (!prefEntry) {
-          lazy.log.error(
-            `Enrollment with slug ${slug} does not set pref ${pref}`
-          );
-          continue;
-        }
-
         // Set the original value to `null` instead of `false` so that it will
         // restore by removing the user branch value instead of setting it to
         // false if the default branch value changes.
-        prefEntry.originalValue = null;
-
-        // Trigger a save of the ExperimentStore since we've updated the
-        // enrollment.
         //
-        // The changes due to enroll() probably haven't been flushed, but this
-        // will ensure that they do not get lost.
-        //
-        // We do not have to sync these changes to child processes because the
-        // data is only used in the parent process.
-        lazy.ExperimentAPI.manager.store._db?.updateEnrollment(slug);
+        // TODO(bug 2086737): Remove support for originalPrefValues in
+        // the entire enrollment pipeline.
+        await labs.enroll(slug, "control", {
+          originalPrefValues: new Map([[pref, null]]),
+        });
       }
     },
     { mode: "shared" }
