@@ -126,27 +126,51 @@ class TabsTrayTelemetryMiddleware(private val nimbusEventStore: NimbusEventStore
                 }
             }
 
-            is TabsTrayAction.TabDragStart -> {
-                val itemType =
-                    when (store.state.normalTabsState.items.find { it.id == action.sourceId }) {
-                        is TabsTrayItem.TabGroup -> TabItemType.TAB_GROUP.telemetryId
-                        is TabsTrayItem.Tab -> TabItemType.TAB.telemetryId
-                        null -> TabItemType.UNKNOWN.telemetryId
-                    }
-                TabsTray.tabLongPressDrag.record(TabsTray.TabLongPressDragExtra(itemType = itemType))
-            }
+            is TabsTrayAction.TabDragStart -> handleTabDragStart(store, action)
 
-            is TabsTrayAction.ReorderTabsTrayItem -> {
-                val isTabGroup =
-                    store.state.normalTabsState.items.find { it.id == action.sourceId } is TabsTrayItem.TabGroup
-                if (!isTabGroup) {
-                    TabsTray.tabLongPressDragRearrangedPosition.record(NoExtras())
-                }
-            }
+            is TabsTrayAction.ReorderTabsTrayItem -> handleReorderTabsTrayItem(store, action)
 
-            else -> {
-                // no-op
+            TabsTrayAction.InitAction,
+            is TabsTrayAction.PersistedUiStateUpdateReceived,
+            TabsTrayAction.ExitSelectMode,
+            is TabsTrayAction.RemoveSelectTab,
+            TabsTrayAction.SyncNow,
+            TabsTrayAction.SyncCompleted,
+            is TabsTrayAction.UpdateInactiveExpanded,
+            is TabsTrayAction.UpdateSyncedTabs,
+            is TabsTrayAction.UpdateSelectedTabId,
+            is TabsTrayAction.SyncedTabsHeaderToggled,
+            TabsTrayAction.NavigateBackInvoked,
+            is TabsTrayAction.UpdatePbmLockStatus,
+            TabsTrayAction.DismissInactiveTabsCFR,
+            TabsTrayAction.DismissInactiveTabsAutoCloseDialog,
+            TabsTrayAction.TabDragCancel,
+            is TabsTrayAction.TabItemLongClicked,
+            is TabGroupAction,
+            is TabSearchAction -> {}
+        }
+    }
+
+    private fun handleTabDragStart(
+        store: Store<TabsTrayState, TabsTrayAction>,
+        action: TabsTrayAction.TabDragStart,
+    ) {
+        val itemType =
+            when (store.state.normalTabsState.items.find { it.id == action.sourceId }) {
+                is TabsTrayItem.TabGroup -> TabItemType.TAB_GROUP.telemetryId
+                is TabsTrayItem.Tab -> TabItemType.TAB.telemetryId
+                null -> TabItemType.UNKNOWN.telemetryId
             }
+        TabsTray.tabLongPressDrag.record(TabsTray.TabLongPressDragExtra(itemType = itemType))
+    }
+
+    private fun handleReorderTabsTrayItem(
+        store: Store<TabsTrayState, TabsTrayAction>,
+        action: TabsTrayAction.ReorderTabsTrayItem,
+    ) {
+        val isTabGroup = store.state.normalTabsState.items.find { it.id == action.sourceId } is TabsTrayItem.TabGroup
+        if (!isTabGroup) {
+            TabsTray.tabLongPressDragRearrangedPosition.record(NoExtras())
         }
     }
 
