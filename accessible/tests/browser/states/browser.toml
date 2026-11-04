@@ -25,6 +25,9 @@ https_first_disabled = true
 ["browser_test_readonly_inputs.js"]
 https_first_disabled = true
 
+["browser_test_select_visibility.js"]
+https_first_disabled = true
+
 ["browser_test_selection.js"]
 https_first_disabled = true
 

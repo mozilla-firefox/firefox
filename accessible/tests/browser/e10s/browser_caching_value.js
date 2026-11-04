@@ -378,7 +378,16 @@ addAccessibleTask(
     await invokeFocus(browser, "select");
 
     // Select the second option (drop-down collapsed).
-    let p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, "select");
+    let p = waitForEvents({
+      expected: [
+        [EVENT_SELECTION, "second_option"],
+        [EVENT_TEXT_VALUE_CHANGE, "select"],
+      ],
+      unexpected: [
+        stateChangeEventArgs("second_option", EXT_STATE_ACTIVE, true, true),
+        stateChangeEventArgs("first_option", EXT_STATE_ACTIVE, false, true),
+      ],
+    });
     await invokeContentTask(browser, [], () => {
       content.document.getElementById("select").selectedIndex = 1;
     });
@@ -395,6 +404,7 @@ addAccessibleTask(
 
     p = waitForEvents({
       expected: [
+        [EVENT_SELECTION, "first_option"],
         [EVENT_TEXT_VALUE_CHANGE, "select"],
         [EVENT_HIDE, "ContentSelectDropdown"],
       ],

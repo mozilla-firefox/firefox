@@ -29,7 +29,11 @@
       await focused;
       testStates(getAccessible("combobox"), STATE_FOCUSED);
 
-      let p = waitForEvent(EVENT_TEXT_VALUE_CHANGE, "combobox");
+      let p = waitForEvents([
+        stateChangeEventArgs("cb1_item1", STATE_SELECTED, false),
+        stateChangeEventArgs("cb1_item2", STATE_SELECTED, true),
+        [EVENT_SELECTION, "cb1_item2"],
+      ]);
       synthesizeKey("KEY_ArrowDown", {});
       await p;
 

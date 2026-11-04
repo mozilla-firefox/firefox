@@ -31,9 +31,11 @@
       await reordered;
 
       let tree =
-        { LISTBOX: [
-          { OPTION: [{ TEXT_LEAF: [] }] },
-          { OPTION: [{ TEXT_LEAF: [] }] },
+        { COMBOBOX: [
+          { COMBOBOX_LIST: [
+            { COMBOBOX_OPTION: [] },
+            { COMBOBOX_OPTION: [] },
+          ] },
         ] };
       testAccessibleTree(select, tree);
 
@@ -44,8 +46,44 @@
       await reordered;
 
       tree =
-        { LISTBOX: [] };
+        { COMBOBOX: [
+          { COMBOBOX_LIST: [] },
+        ] };
       testAccessibleTree(select, tree);
+
+      let p = waitForEvents([[EVENT_HIDE, "s2_o"], [EVENT_SHOW, "s2_o"]]);
+      getNode("s2_o").setAttribute("role", "option");
+      await p;
+
+      tree =
+        { COMBOBOX: [
+          { COMBOBOX_LIST: [
+            { COMBOBOX_OPTION: [] },
+          ] },
+        ] };
+      testAccessibleTree("s2", tree);
+
+      p = waitForEvents([[EVENT_HIDE, "s3"], [EVENT_SHOW, "s3"]]);
+      getNode("s3").multiple = true;
+      await p;
+
+      tree =
+        { LISTBOX: [
+          { OPTION: [] },
+        ] };
+      testAccessibleTree("s3", tree);
+
+      p = waitForEvents([[EVENT_HIDE, "s4"], [EVENT_SHOW, "s4"]]);
+      getNode("s4").removeAttribute("size");
+      await p;
+
+      tree =
+        { COMBOBOX: [
+          { COMBOBOX_LIST: [
+            { COMBOBOX_OPTION: [] },
+          ] },
+        ] };
+      testAccessibleTree("s4", tree);
 
       SimpleTest.finish();
     }
@@ -60,6 +98,9 @@
   <pre id="test">
   </pre>
 
-  <select id="select" size="4"></select>
+  <select id="select"></select>
+  <select id="s2"><option id="s2_o"></option></select>
+  <select id="s3"><option></option></select>
+  <select id="s4" size="3"><option></option></select>
 </body>
 </html>

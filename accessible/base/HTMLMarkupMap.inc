@@ -87,15 +87,9 @@ MARKUPMAP(dialog, New_HyperText, roles::DIALOG)
 MARKUPMAP(
     div,
     [](Element* aElement, LocalAccessible* aContext) -> already_AddRefed<LocalAccessible> {
-      // Don't create an accessible if we're part of an anonymous
-      // subtree...
+      // Never create an accessible if we're part of an anonymous
+      // subtree.
       if (aElement->IsInNativeAnonymousSubtree()) {
-        // ...unless it is a select picker. This is only relevant for base-appearance select
-        // elements. Otherwise the picker is rendered in the top-level process.
-        if (aElement->GetPseudoElementType() == PseudoStyleType::Picker) {
-          return MakeAndAddRef<HTMLComboboxListAccessible>(
-              aElement, aContext->Document());
-        }
         return nullptr;
       }
       // Always create an accessible if the div has an id.
