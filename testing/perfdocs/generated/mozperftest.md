@@ -1027,6 +1027,48 @@ browser_pdfjs_alttext_perf.js
 **User-perceived latency and inference memory for PDF.js alt-text generation, driven through the production image-adding flow**
 
 
+## toolkit/components/pdfjs/test/perf
+
+Performance tests for the PDF.js viewer UI on Firefox Desktop, using PDFs with empty pages
+
+browser_pdfjs_ui_interaction_perf.js
+====================================
+
+:owner: PDF.js Team
+:name: browser_pdfjs_ui_interaction_perf.js
+:Default options:
+
+::
+
+ --extra-args setpref=layout.frame_rate=0, setpref=docshell.event_starvation_delay_hint=1
+ --perfherder
+ --perfherder-metrics name:PDFJS-UI-scroll-100p,unit:ms,shouldAlert:True, name:PDFJS-UI-zoom-100p,unit:ms,shouldAlert:True, name:PDFJS-UI-goto-1000p,unit:ms,shouldAlert:True
+ --verbose
+ --manifest perftest.toml
+ --manifest-flavor browser-chrome
+ --try-platform linux, mac, win
+
+**Time for the PDF.js viewer to scroll, zoom and go to pages in PDFs with 100 and 1000 empty pages**
+
+browser_pdfjs_ui_open_perf.js
+=============================
+
+:owner: PDF.js Team
+:name: browser_pdfjs_ui_open_perf.js
+:Default options:
+
+::
+
+ --perfherder
+ --perfherder-metrics name:PDFJS-UI-first-open-pagesinit,unit:ms,shouldAlert:False, name:PDFJS-UI-first-open-pagerendered,unit:ms,shouldAlert:False, name:PDFJS-UI-open-1p-pagesinit,unit:ms,shouldAlert:True, name:PDFJS-UI-open-1p-pagerendered,unit:ms,shouldAlert:True, name:PDFJS-UI-open-1p-render-delay,unit:ms,shouldAlert:False, name:PDFJS-UI-open-1000p-pagesinit,unit:ms,shouldAlert:True, name:PDFJS-UI-open-1000p-pagerendered,unit:ms,shouldAlert:True, name:PDFJS-UI-open-1000p-pagesloaded,unit:ms,shouldAlert:True
+ --verbose
+ --manifest perftest.toml
+ --manifest-flavor browser-chrome
+ --try-platform linux, mac, win
+
+**Time for the PDF.js viewer to open PDFs with 1 and 1000 empty pages, from the navigation start**
+
+
 ## toolkit/components/places/tests/browser/performance
 
 Performance tests for Toolkit: Places

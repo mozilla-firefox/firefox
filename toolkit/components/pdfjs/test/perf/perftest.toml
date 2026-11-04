@@ -1,0 +1,18 @@
+[DEFAULT]
+support-files = [
+  "file_pdfjs_empty_1.pdf",
+  "file_pdfjs_empty_100.pdf",
+  "file_pdfjs_empty_1000.pdf",
+  "head.js",
+]
+prefs = [
+  "pdfjs.featuresNotificationImpressionCount=99",
+  "pdfjs.sidebarViewOnLoad=0",
+  "pdfjs.viewOnLoad=1",
+]
+
+["browser_pdfjs_ui_interaction_perf.js"]
+disabled = "Run only with mozperftest."
+
+["browser_pdfjs_ui_open_perf.js"]
+disabled = "Run only with mozperftest."

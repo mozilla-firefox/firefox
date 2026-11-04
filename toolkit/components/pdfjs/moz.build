@@ -7,6 +7,7 @@ with Files("**"):
 
 BROWSER_CHROME_MANIFESTS += [
     "test/browser.toml",
+    "test/perf/perftest.toml",
     "test/perftest.toml",
 ]
 MOCHITEST_MANIFESTS += ["test/mochitest.toml"]
