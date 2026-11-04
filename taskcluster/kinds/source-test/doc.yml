@@ -69,7 +69,10 @@ upload:
         kind: test
         tier: 2
     run-on-projects: [mozilla-central-only]
-    worker-type: b-linux-medium
+    # Review bot waits for this task, and it is in the long tail that often
+    # finishes last. The docs build reads the sources in parallel, so a 30 core
+    # worker shortens the end to end time.
+    worker-type: b-linux-docker-large-amd
     worker:
         docker-image: {in-tree: "lint"}
         max-run-time: 2400
