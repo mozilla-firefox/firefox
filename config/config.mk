@@ -100,32 +100,7 @@ MKDIR ?= mkdir
 SLEEP ?= sleep
 TOUCH ?= touch
 
-# Don't build SIMPLE_PROGRAMS with PGO, since they don't need it anyway,
-# and we don't have the same build logic to re-link them in the second pass.
-ifdef SIMPLE_PROGRAMS
-NO_PROFILE_GUIDED_OPTIMIZE = 1
-endif
-
-# No sense in profiling unit tests
-ifdef CPP_UNIT_TESTS
-NO_PROFILE_GUIDED_OPTIMIZE = 1
-endif
-
-# Enable profile-based feedback
-ifdef MOZ_PROFILE_GENERATE
-ifneq (1,$(NO_PROFILE_GUIDED_OPTIMIZE))
-PGO_CFLAGS += -DNS_FREE_PERMANENT_DATA=1
-PGO_CFLAGS += $(if $(filter $(notdir $<),$(notdir $(NO_PROFILE_GUIDED_OPTIMIZE))),,$(PROFILE_GEN_CFLAGS))
-endif # NO_PROFILE_GUIDED_OPTIMIZE
-PGO_LDFLAGS += $(PROFILE_GEN_LDFLAGS)
-endif # MOZ_PROFILE_GENERATE
-
-ifdef MOZ_PROFILE_USE
-ifneq (1,$(NO_PROFILE_GUIDED_OPTIMIZE))
-PGO_CFLAGS += $(if $(filter $(notdir $<),$(notdir $(NO_PROFILE_GUIDED_OPTIMIZE))),,$(PROFILE_USE_CFLAGS))
-endif # NO_PROFILE_GUIDED_OPTIMIZE
-PGO_LDFLAGS += $(PROFILE_USE_LDFLAGS)
-endif # MOZ_PROFILE_USE
+PGO_CFLAGS = $(if $(filter $(notdir $<),$(notdir $(NO_PROFILE_GUIDED_OPTIMIZE))),,$(COMPUTED_PGO_CFLAGS))
 
 # Overloaded by comm builds to refer to $(commtopsrcdir), so that
 # `mail` resolves in en-US builds and in repacks.
@@ -147,7 +122,7 @@ INCLUDES = \
 
 include $(MOZILLA_DIR)/config/static-checking-config.mk
 
-LDFLAGS		= $(COMPUTED_LDFLAGS) $(PGO_LDFLAGS)
+LDFLAGS		= $(COMPUTED_LDFLAGS)
 
 COMPILE_CFLAGS	= $(COMPUTED_CFLAGS) $(PGO_CFLAGS) $(_DEPEND_CFLAGS)
 COMPILE_CXXFLAGS = $(COMPUTED_CXXFLAGS) $(PGO_CFLAGS) $(_DEPEND_CFLAGS)

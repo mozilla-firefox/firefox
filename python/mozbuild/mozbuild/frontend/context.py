@@ -481,6 +481,7 @@ class LinkFlags(BaseCompileFlags):
                 ),
                 ("LDFLAGS",),
             ),
+            ("PGO", self._pgo_ldflags(), ("LDFLAGS",)),
             (
                 "WIN32_EXE_DEFAULT",
                 context.config.substs.get("WIN32_EXE_DEFAULT_LDFLAGS"),
@@ -503,6 +504,14 @@ class LinkFlags(BaseCompileFlags):
             ),
         )
         BaseCompileFlags.__init__(self, context)
+
+    def _pgo_ldflags(self):
+        substs = self._context.config.substs
+        if substs.get("MOZ_PROFILE_GENERATE"):
+            return substs.get("PROFILE_GEN_LDFLAGS") or []
+        if substs.get("MOZ_PROFILE_USE"):
+            return substs.get("PROFILE_USE_LDFLAGS") or []
+        return []
 
     def _os_ldflags(self):
         flags = self._context.config.substs.get("OS_LDFLAGS", [])[:]
@@ -739,9 +748,24 @@ class CompileFlags(TargetCompileFlags):
                 + ["-ffp-contract=off"],
                 ("CXXFLAGS", "CFLAGS"),
             ),
+            ("PGO_DEFINES", self._pgo_defines(), ("CXXFLAGS", "CFLAGS")),
+            ("PGO", self._pgo_flags(), ("PGO_CFLAGS",)),
         )
 
         TargetCompileFlags.__init__(self, context)
+
+    def _pgo_defines(self):
+        if self._context.config.substs.get("MOZ_PROFILE_GENERATE"):
+            return ["-DNS_FREE_PERMANENT_DATA=1"]
+        return []
+
+    def _pgo_flags(self):
+        substs = self._context.config.substs
+        if substs.get("MOZ_PROFILE_GENERATE"):
+            return substs.get("PROFILE_GEN_CFLAGS") or []
+        if substs.get("MOZ_PROFILE_USE"):
+            return substs.get("PROFILE_USE_CFLAGS") or []
+        return []
 
 
 class WasmFlags(TargetCompileFlags):

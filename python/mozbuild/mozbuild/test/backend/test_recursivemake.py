@@ -1426,14 +1426,8 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertIn("-DMOZ_RUST_SPEC_HOST_CFLAG", edge["computed_host_cxxflags"])
         self.assertIn("-Wl,--moz-rust-spec-ldflag", edge["link_flags"])
 
-    def test_rust_library_command_spec_computed_flags_lto(self):
-        env = self._get_environment(
-            "rust-library-flags",
-            substs={
-                "MOZ_LTO_CFLAGS": ["-flto=thin"],
-                "MOZ_LTO_LDFLAGS": ["-flto=thin"],
-            },
-        )
+    def _assert_rust_library_spec_flags(self, substs):
+        env = self._get_environment("rust-library-flags", substs=substs)
         self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
 
         edge = self._cargo_spec(env, ".cargo-library-spec.json")["edge"]
@@ -1449,6 +1443,33 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertEqual(edge["computed_cflags"], cflags)
         self.assertEqual(edge["computed_cxxflags"], cflags)
         self.assertEqual(edge["link_flags"], ["-Wl,--moz-rust-spec-ldflag"])
+
+    def test_rust_library_command_spec_computed_flags_lto(self):
+        self._assert_rust_library_spec_flags({
+            "MOZ_LTO_CFLAGS": ["-flto=thin"],
+            "MOZ_LTO_LDFLAGS": ["-flto=thin"],
+        })
+
+    def test_rust_library_command_spec_computed_flags_pgo(self):
+        self._assert_rust_library_spec_flags({
+            "MOZ_PROFILE_GENERATE": "1",
+            "PROFILE_GEN_CFLAGS": ["-fprofile-generate"],
+            "PROFILE_GEN_LDFLAGS": ["-fprofile-generate"],
+        })
+
+    def test_computed_pgo_cflags(self):
+        env = self._get_environment(
+            "rust-library-flags",
+            substs={
+                "MOZ_PROFILE_GENERATE": "1",
+                "PROFILE_GEN_CFLAGS": ["-fprofile-generate"],
+            },
+        )
+        self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
+
+        with open(mozpath.join(env.topobjdir, "backend.mk")) as fh:
+            lines = [l.strip() for l in fh if l.startswith("COMPUTED_PGO_CFLAGS")]
+        self.assertEqual(lines, ["COMPUTED_PGO_CFLAGS += -fprofile-generate"])
 
     def test_host_rust_library(self):
         """Test that a Rust library is written to backend.mk correctly."""

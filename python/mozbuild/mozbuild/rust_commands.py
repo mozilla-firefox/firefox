@@ -146,9 +146,9 @@ CARGO_SPEC_FILES = {
     "test": ".cargo-tests-spec.json",
 }
 
-# The Cargo environment adds its own LTO flags around the computed flags, so
-# these categories are left out of the flags passed to Cargo.
-RUST_EXCLUDED_FLAG_CATEGORIES = ("LTO",)
+# The Cargo environment adds its own LTO and PGO flags around the computed
+# flags, so these categories are left out of the flags passed to Cargo.
+RUST_EXCLUDED_FLAG_CATEGORIES = ("LTO", "PGO", "PGO_DEFINES")
 
 
 @dataclass

@@ -8,7 +8,7 @@ import unittest
 import mozpack.path as mozpath
 from mozunit import main
 
-from mozbuild.frontend.context import ObjDirPath, SourcePath
+from mozbuild.frontend.context import CompileFlags, LinkFlags, ObjDirPath, SourcePath
 from mozbuild.frontend.data import (
     ComputedFlags,
     ConfigFileSubstitution,
@@ -270,6 +270,67 @@ class TestEmitterBasic(unittest.TestCase):
         reader = self.reader("compile-flags")
         sources, ldflags, lib, flags = self.read_topsrcdir(reader)
         self.assertEqual(ldflags.flags["MACOS_RPATH"], [])
+
+    def test_pgo_flags(self):
+        reader = self.reader(
+            "compile-flags",
+            extra_substs={
+                "MOZ_PROFILE_GENERATE": "1",
+                "PROFILE_GEN_CFLAGS": ["-fprofile-generate"],
+                "PROFILE_GEN_LDFLAGS": ["-fprofile-generate"],
+            },
+        )
+        sources, ldflags, lib, flags = self.read_topsrcdir(reader)
+        self.assertEqual(flags.flags["PGO"], ["-fprofile-generate"])
+        self.assertEqual(flags.flags["PGO_DEFINES"], ["-DNS_FREE_PERMANENT_DATA=1"])
+        self.assertEqual(ldflags.flags["PGO"], ["-fprofile-generate"])
+
+    def test_pgo_flags_profile_use(self):
+        reader = self.reader(
+            "compile-flags",
+            extra_substs={
+                "MOZ_PROFILE_USE": "1",
+                "PROFILE_USE_CFLAGS": ["-fprofile-use"],
+                "PROFILE_USE_LDFLAGS": ["-fprofile-use"],
+            },
+        )
+        sources, ldflags, lib, flags = self.read_topsrcdir(reader)
+        self.assertEqual(flags.flags["PGO"], ["-fprofile-use"])
+        self.assertEqual(flags.flags["PGO_DEFINES"], [])
+        self.assertEqual(ldflags.flags["PGO"], ["-fprofile-use"])
+
+    def test_pgo_flags_off(self):
+        reader = self.reader("compile-flags")
+        sources, ldflags, lib, flags = self.read_topsrcdir(reader)
+        self.assertEqual(flags.flags["PGO"], [])
+        self.assertEqual(flags.flags["PGO_DEFINES"], [])
+        self.assertEqual(ldflags.flags["PGO"], [])
+
+    def _assert_pgo_compile_flags_skipped(self, name):
+        reader = self.reader(
+            name,
+            extra_substs={
+                "MOZ_PROFILE_GENERATE": "1",
+                "PROFILE_GEN_CFLAGS": ["-fprofile-generate"],
+                "PROFILE_GEN_LDFLAGS": ["-fprofile-generate"],
+            },
+        )
+        objs = self.read_topsrcdir(reader)
+        computed = [o.flags for o in objs if isinstance(o, ComputedFlags)]
+        (compile_flags,) = [f for f in computed if isinstance(f, CompileFlags)]
+        (link_flags,) = [f for f in computed if isinstance(f, LinkFlags)]
+        self.assertEqual(compile_flags["PGO"], [])
+        self.assertEqual(compile_flags["PGO_DEFINES"], [])
+        self.assertEqual(link_flags["PGO"], ["-fprofile-generate"])
+
+    def test_pgo_flags_simple_programs(self):
+        self._assert_pgo_compile_flags_skipped("program")
+
+    def test_pgo_flags_cpp_unit_tests(self):
+        self._assert_pgo_compile_flags_skipped("pgo-cpp-unit-tests")
+
+    def test_pgo_flags_no_pgo(self):
+        self._assert_pgo_compile_flags_skipped("pgo-no-pgo")
 
     def test_per_source_object_deps(self):
         reader = self.reader("per-source-object-deps")
