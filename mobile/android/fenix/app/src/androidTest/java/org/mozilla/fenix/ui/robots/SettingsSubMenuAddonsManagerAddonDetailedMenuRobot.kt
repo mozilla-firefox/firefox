@@ -23,6 +23,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.addons.AddonsTestTag
 import org.mozilla.fenix.helpers.AppAndSystemHelper.registerAndCleanupIdlingResources
 import org.mozilla.fenix.helpers.Constants.TAG
+import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectExists
 import org.mozilla.fenix.helpers.MatcherHelper.assertUIObjectIsGone
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.TestHelper.packageName
@@ -80,6 +81,9 @@ class SettingsSubMenuAddonsManagerAddonDetailedMenuRobot {
             Log.i(TAG, "removeAddon: Waiting for the add-on detail screen to be dismissed")
             assertUIObjectIsGone(itemWithResId("$packageName:id/remove_add_on"))
             Log.i(TAG, "removeAddon: Add-on detail screen dismissed")
+            Log.i(TAG, "removeAddon: Waiting for the add-ons manager list to be displayed")
+            assertUIObjectExists(itemWithResId("$packageName:id/add_ons_list"))
+            Log.i(TAG, "removeAddon: Add-ons manager list displayed")
 
             SettingsSubMenuAddonsManagerRobot(composeTestRule).interact()
             return SettingsSubMenuAddonsManagerRobot.Transition(composeTestRule)
