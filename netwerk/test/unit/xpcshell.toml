@@ -773,6 +773,12 @@ skip-if = [
 
 ["test_gre_resources.js"]
 
+["test_h2_0rtt_early_data_limit.js"]
+run-sequentially = ["true"] # TlsServer listens to the same port
+skip-if = [
+  "os == 'win' && msix", # Bug 1808049
+]
+
 ["test_h2_unclean_shutdown_retry.js"]
 prefs = ["network.http.speculative-parallel-limit=0"]
 

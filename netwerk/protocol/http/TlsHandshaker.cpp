@@ -257,6 +257,7 @@ void TlsHandshaker::FinishNPNSetup(bool handshakeSucceeded,
   }
 
   mNPNComplete = true;
+  mEarlyDataLimitReached = false;
 
   mOwner->PostProcessNPNSetup(handshakeSucceeded, hasSecurityInfo,
                               EarlyDataUsed());

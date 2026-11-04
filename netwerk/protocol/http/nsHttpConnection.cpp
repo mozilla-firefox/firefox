@@ -1759,6 +1759,16 @@ nsresult nsHttpConnection::OnReadSegment(const char* buf, uint32_t count,
   nsresult rv = mSocketOut->Write(buf, count, countRead);
   if (NS_FAILED(rv)) {
     mSocketOutCondition = rv;
+  } else if (*countRead == 0 && mTlsHandshaker->EarlyDataUsed() &&
+             !mTlsHandshaker->NPNComplete()) {
+    // NSS accepts no more early data once the allowance of the session ticket
+    // is used up. The rest is sent after the handshake completes.
+    LOG(
+        ("nsHttpConnection::OnReadSegment [this=%p] early data limit reached, "
+         "waiting for the handshake",
+         this));
+    mTlsHandshaker->SetEarlyDataLimitReached();
+    mSocketOutCondition = NS_BASE_STREAM_WOULD_BLOCK;
   } else if (*countRead == 0) {
     mSocketOutCondition = NS_BASE_STREAM_CLOSED;
   } else {
@@ -1829,9 +1839,10 @@ nsresult nsHttpConnection::OnSocketWritable() {
         // etc.. and that is negotiated with NPN/ALPN in the SSL handshake.
         if (!mTlsHandshaker->EnsureNPNComplete() &&
             (!mTlsHandshaker->EarlyDataUsed() ||
-             mTlsHandshaker->TlsHandshakeComplitionPending())) {
-          // The handshake is not done and we cannot write 0RTT data or nss has
-          // already finished 0RTT data.
+             mTlsHandshaker->TlsHandshakeComplitionPending() ||
+             mTlsHandshaker->EarlyDataLimitReached())) {
+          // The handshake is not done and we cannot write 0RTT data, nss has
+          // already finished 0RTT data, or the early data limit is reached.
           mSocketOutCondition = NS_BASE_STREAM_WOULD_BLOCK;
         } else if (!mTransaction) {
           rv = NS_ERROR_FAILURE;
@@ -1886,7 +1897,11 @@ nsresult nsHttpConnection::OnSocketWritable() {
       again = false;
     } else if (NS_FAILED(mSocketOutCondition)) {
       if (mSocketOutCondition == NS_BASE_STREAM_WOULD_BLOCK) {
-        if (!mTlsHandshaker->EarlyDataCanNotBeUsed()) {
+        if (mTlsHandshaker->EarlyDataLimitReached()) {
+          // Polling for write would busy wait until the handshake completes;
+          // reading drives the handshake instead.
+          rv = ResumeRecv();
+        } else if (!mTlsHandshaker->EarlyDataCanNotBeUsed()) {
           // continue writing
           // We are not going to poll for write if the handshake is in progress,
           // but early data cannot be used.

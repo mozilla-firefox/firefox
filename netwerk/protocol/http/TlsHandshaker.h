@@ -45,6 +45,10 @@ class TlsHandshaker : public nsITlsHandshakeCallbackListener {
     return mEarlyDataState == EarlyData::CANNOT_BE_USED;
   }
   void EarlyDataDone();
+  // The early data allowance of the session ticket is used up, so nothing more
+  // can be written until the handshake completes.
+  bool EarlyDataLimitReached() const { return mEarlyDataLimitReached; }
+  void SetEarlyDataLimitReached() { mEarlyDataLimitReached = true; }
 
 #ifndef ANDROID
   void EarlyDataTelemetry(int16_t tlsVersion, bool earlyDataAccepted,
@@ -72,6 +76,7 @@ class TlsHandshaker : public nsITlsHandshakeCallbackListener {
 
   bool mSecureConnectionStartReported{false};
   bool mTlsHandshakeComplitionPending{false};
+  bool mEarlyDataLimitReached{false};
   // Helper variable for 0RTT handshake;
   // Possible 0RTT has been checked.
   bool m0RTTChecked{false};

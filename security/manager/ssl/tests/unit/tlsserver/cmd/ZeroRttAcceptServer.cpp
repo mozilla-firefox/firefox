@@ -42,6 +42,10 @@
 // MOZ_ZERORTT_ACCEPT_CALLBACK_PORT at path "/callback/request" so the
 // test can count exactly how many request bursts reached the HTTP
 // layer.
+//
+// When MOZ_ZERORTT_MAX_EARLY_DATA is set, the session tickets this server
+// issues allow only that many bytes of early data, so a large enough request
+// exhausts the allowance before the handshake completes.
 
 #include <stdio.h>
 #include <string.h>
@@ -629,6 +633,13 @@ SECStatus ConfigureServer(PRFileDesc* aFd) {
       SECSuccess) {
     PrintPRError("SSL_SetNextProtoNego failed");
     return SECFailure;
+  }
+
+  if (const char* maxEarlyData = PR_GetEnv("MOZ_ZERORTT_MAX_EARLY_DATA")) {
+    if (SSL_SetMaxEarlyDataSize(aFd, atoi(maxEarlyData)) != SECSuccess) {
+      PrintPRError("SSL_SetMaxEarlyDataSize failed");
+      return SECFailure;
+    }
   }
   return SECSuccess;
 }
