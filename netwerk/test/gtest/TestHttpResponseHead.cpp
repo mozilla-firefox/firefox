@@ -231,5 +231,98 @@ TEST(TestHttpResponseHead, MultipleCacheControl)
   ASSERT_EQ(originalHead.NoCache(), true);
 }
 
+TEST(TestHttpResponseHead, ContentTypePreservedOn304)
+{
+  nsHttpResponseHead original200Head;
+  (void)original200Head.ParseStatusLine("HTTP/1.0 200 OK"_ns);
+  (void)original200Head.ParseHeaderLine(
+      "Server: SimpleHTTP/0.6 Python/3.13.7"_ns);
+  (void)original200Head.ParseHeaderLine(
+      "Date: Mon, 08 Dec 2025 08:22:42 GMT"_ns);
+  (void)original200Head.ParseHeaderLine("Content-type: application/xml"_ns);
+  (void)original200Head.ParseHeaderLine("Content-Length: 185"_ns);
+  (void)original200Head.ParseHeaderLine(
+      "Last-Modified: Mon, 08 Dec 2025 08:16:37 GMT"_ns);
+  (void)original200Head.ParseHeaderLine("Content-Type: text/plain"_ns);
+  (void)original200Head.ParseHeaderLine("X-Content-Type-Options: nosniff"_ns);
+
+  nsCString headerValue;
+  ASSERT_EQ(original200Head.GetHeader(nsHttp::Content_Type, headerValue),
+            NS_OK);
+  ASSERT_EQ(headerValue, "application/xml,text/plain"_ns);
+
+  nsCString contentType200;
+  original200Head.ContentType(contentType200);
+  ASSERT_EQ(contentType200, "text/plain"_ns);
+
+  nsAutoCString flattenedHead;
+  original200Head.Flatten(flattenedHead, true);
+
+  nsAutoCString flattenedOriginal;
+  original200Head.FlattenNetworkOriginalHeaders(flattenedOriginal);
+
+  nsHttpResponseHead cachedResponseHead;
+  nsresult rv;
+
+  // Simlar to nsHttp::GetHttpResponseHeadFromCacheEntry
+  rv = cachedResponseHead.ParseCachedOriginalHeaders(
+      (char*)flattenedOriginal.get());
+  ASSERT_EQ(rv, NS_OK);
+
+  rv = cachedResponseHead.ParseCachedHead(flattenedHead.get());
+  ASSERT_EQ(rv, NS_OK);
+
+  nsCString cachedContentType;
+  cachedResponseHead.ContentType(cachedContentType);
+  ASSERT_EQ(cachedContentType, "text/plain"_ns);
+
+  nsHttpResponseHead response304Head;
+  (void)response304Head.ParseStatusLine("HTTP/1.0 304 Not Modified"_ns);
+  (void)response304Head.ParseHeaderLine(
+      "Date: Mon, 08 Dec 2025 08:23:00 GMT"_ns);
+  cachedResponseHead.UpdateHeaders(&response304Head);
+
+  nsCString contentTypeAfter304;
+  cachedResponseHead.ContentType(contentTypeAfter304);
+  ASSERT_EQ(contentTypeAfter304, "text/plain"_ns);
+  ASSERT_EQ(contentType200, contentTypeAfter304);
+}
+
+TEST(TestHttpResponseHead, ParseCachedHead)
+{
+  nsAutoCString flattenedOriginal(
+      "Server: SimpleHTTP/0.6 Python/3.13.7\r\n"
+      "Date: Mon, 08 Dec 2025 08:22:42 GMT\r\n"
+      "Content-type: application/xml\r\n"
+      "Content-Length: 185\r\n"
+      "Last-Modified: Mon, 08 Dec 2025 08:16:37 GMT\r\n"
+      "Content-Type: text/plain\r\n"
+      "X-Content-Type-Options: nosniff\r\n");
+
+  // Incorrectly parsed content type.
+  nsAutoCString flattenedHead(
+      "HTTP/1.0 200 OK\r\n"
+      "Server: SimpleHTTP/0.6 Python/3.13.7\r\n"
+      "Date: Mon, 08 Dec 2025 08:22:42 GMT\r\n"
+      "Content-type: application/xml\r\n"
+      "Content-Length: 185\r\n"
+      "Last-Modified: Mon, 08 Dec 2025 08:16:37 GMT\r\n"
+      "X-Content-Type-Options: nosniff\r\n");
+
+  nsHttpResponseHead cachedResponseHead;
+  nsresult rv;
+
+  rv = cachedResponseHead.ParseCachedOriginalHeaders(
+      (char*)flattenedOriginal.get());
+  ASSERT_EQ(rv, NS_OK);
+
+  rv = cachedResponseHead.ParseCachedHead(flattenedHead.get());
+  ASSERT_EQ(rv, NS_OK);
+
+  nsCString cachedContentType;
+  cachedResponseHead.ContentType(cachedContentType);
+  ASSERT_EQ(cachedContentType, "text/plain"_ns);
+}
+
 }  // namespace net
 }  // namespace mozilla
