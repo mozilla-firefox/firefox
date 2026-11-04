@@ -632,7 +632,7 @@ nsresult BounceTrackingState::OnBFCacheRestored() {
     NS_ENSURE_SUCCESS(rv, rv);
 
     if (!siteHost.IsEmpty()) {
-      rv = OnResponseReceived(AutoTArray<nsCString, 1>{siteHost});
+      rv = OnResponseReceived(AutoTArray<nsCString, 1>{std::move(siteHost)});
       NS_ENSURE_SUCCESS(rv, rv);
     }
   }
