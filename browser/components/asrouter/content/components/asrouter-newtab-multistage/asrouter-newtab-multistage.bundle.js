@@ -6993,6 +6993,7 @@ function MultistageWithDismiss({
     message_id: config.id,
     transitions: transitions,
     backdrop: config.backdrop,
+    ariaRole: "dialog",
     startScreen: 0,
     updateHistory: false
   }));
