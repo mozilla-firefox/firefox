@@ -13,7 +13,7 @@ namespace mozilla::dom {
 
 // The body of a `connection-allowlist` report. The specification calls this
 // dictionary ConnectionAllowlistViolationReport.
-// https://wicg.github.io/connection-allowlists/#reporting
+// https://w3c.github.io/connection-allowlists/#reporting
 class ConnectionAllowlistViolationReportBody final : public ReportBody {
  public:
   ConnectionAllowlistViolationReportBody(

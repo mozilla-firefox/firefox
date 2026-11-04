@@ -100,7 +100,7 @@ class PolicyContainer : public nsIPolicyContainer {
       const nsIPolicyContainer* aPolicyContainer);
 
   // == Connection Allowlists ==
-  // https://wicg.github.io/connection-allowlists/
+  // https://w3c.github.io/connection-allowlists/
   mozilla::dom::ConnectionAllowlists* GetConnectionAllowlists() const;
   void SetConnectionAllowlists(mozilla::dom::ConnectionAllowlists* aAllowlists);
   static mozilla::dom::ConnectionAllowlists* GetConnectionAllowlists(

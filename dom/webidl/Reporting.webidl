@@ -111,7 +111,7 @@ interface IntegrityViolationReportBody : ReportBody {
 enum ConnectionAllowlistDisposition { "enforce", "report" };
 
 // The specification calls this dictionary ConnectionAllowlistViolationReport.
-// https://wicg.github.io/connection-allowlists/#reporting
+// https://w3c.github.io/connection-allowlists/#reporting
 [Exposed=Window, Pref="security.connection_allowlists.enabled"]
 interface ConnectionAllowlistViolationReportBody : ReportBody {
   [Default] object toJSON();

@@ -14,7 +14,7 @@ class nsIURI;
 namespace mozilla::dom {
 
 // Content policy enforcing connection allowlists.
-// https://wicg.github.io/connection-allowlists/
+// https://w3c.github.io/connection-allowlists/
 class ConnectionAllowlistsService final : public nsIContentPolicy {
  public:
   NS_DECL_ISUPPORTS

@@ -45,7 +45,7 @@ void ConnectionAllowlists::Allowlist::AppendPattern(
   mSerializedPatterns.AppendElement(aSerializedPattern);
 }
 
-// https://wicg.github.io/connection-allowlists/#abstract-opdef-parse-a-connection-allowlist-header
+// https://w3c.github.io/connection-allowlists/#abstract-opdef-parse-a-connection-allowlist-header
 /* static */
 Maybe<ConnectionAllowlists::Allowlist>
 ConnectionAllowlists::ParseConnectionAllowlistHeader(const nsACString& aHeader,
@@ -232,7 +232,7 @@ bool ConnectionAllowlists::ShouldLoad(nsIURI* aURI,
   return !ShouldBlockURL(uri, aLoadInfo);
 }
 
-// https://wicg.github.io/connection-allowlists/#abstract-opdef-match-a-url-to-a-connection-allowlist
+// https://w3c.github.io/connection-allowlists/#abstract-opdef-match-a-url-to-a-connection-allowlist
 bool ConnectionAllowlists::MatchURL(nsIURI* aURI,
                                     const Allowlist& aAllowlist) const {
   // 1. If url is local, return success.
@@ -270,7 +270,7 @@ bool ConnectionAllowlists::MatchURL(nsIURI* aURI,
   return false;
 }
 
-// https://wicg.github.io/connection-allowlists/#abstract-opdef-should-url-be-blocked-by-connection-allowlists
+// https://w3c.github.io/connection-allowlists/#abstract-opdef-should-url-be-blocked-by-connection-allowlists
 bool ConnectionAllowlists::ShouldBlockURL(nsIURI* aURI,
                                           nsILoadInfo* aLoadInfo) const {
   // 1. For each connection allowlist in connection allowlists:
@@ -333,19 +333,19 @@ bool ConnectionAllowlists::ShouldBlockRedirect(nsIURI* aOriginalURI,
   return false;
 }
 
-// https://wicg.github.io/connection-allowlists/#abstract-opdef-should-webrtc-be-blocked-by-connection-allowlists
+// https://w3c.github.io/connection-allowlists/#abstract-opdef-should-webrtc-be-blocked-by-connection-allowlists
 bool ConnectionAllowlists::ShouldBlockWebRTC(
     nsPIDOMWindowInner* aWindow) const {
   // 1. Let allowlists be environment’s policy container’s connection
   // allowlists.
-  // 2. For each connection allowlist in allowlists:
+  // 2. For each allowlist in allowlists:
   for (const Maybe<Allowlist>& allowlist :
        {std::cref(mEnforcement), std::cref(mReportOnly)}) {
     if (allowlist.isNothing()) {
       continue;
     }
 
-    // 2.1. If connection allowlist’s webrtc is allow, continue.
+    // 2.1. If allowlist’s webrtc is allow, continue.
     if (allowlist->mWebRTC == WebRTC::Allow) {
       continue;
     }
@@ -354,11 +354,10 @@ bool ConnectionAllowlists::ShouldBlockWebRTC(
     Resource resource{nsCString("webrtc"_ns)};
     ReportToConsole(resource, aWindow->WindowID(), *allowlist);
 
-    // 2.2. Report a violation given "webrtc", environment, and connection
-    // allowlist.
+    // 2.2. Report a violation given "webrtc", environment, and allowlist.
     ReportViolation(resource, aWindow, *allowlist);
 
-    // 2.3. If connection allowlist’s disposition is enforce, return blocked.
+    // 2.3. If allowlist’s disposition is enforce, return blocked.
     if (allowlist->mDisposition == Disposition::Enforce) {
       LOG("Blocking WebRTC");
       return true;
@@ -388,7 +387,7 @@ void ConnectionAllowlists::ReportBlockedRequest(nsIURI* aURI,
   ReportViolation(resource, window, aAllowlist);
 }
 
-// https://wicg.github.io/connection-allowlists/#abstract-opdef-report-a-violation
+// https://w3c.github.io/connection-allowlists/#abstract-opdef-report-a-violation
 /* static */
 void ConnectionAllowlists::ReportViolation(const Resource& aResource,
                                            nsPIDOMWindowInner* aWindow,

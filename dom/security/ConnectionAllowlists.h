@@ -31,7 +31,7 @@ namespace mozilla::dom {
 // A parsed connection allowlist, holding the enforced and report-only
 // allowlists delivered by the `Connection-Allowlist` and
 // `Connection-Allowlist-Report-Only` response headers.
-// https://wicg.github.io/connection-allowlists/
+// https://w3c.github.io/connection-allowlists/
 class ConnectionAllowlists final {
  public:
   NS_INLINE_DECL_REFCOUNTING(ConnectionAllowlists)
@@ -79,7 +79,7 @@ class ConnectionAllowlists final {
       std::unique_ptr<std::remove_pointer_t<UrlPatternGlue>, UrlPatternDeleter>;
 
   // A single parsed "connection allowlist" struct.
-  // https://wicg.github.io/connection-allowlists/#connection-allowlist
+  // https://w3c.github.io/connection-allowlists/#connection-allowlist
   struct Allowlist {
     // Parses |aSerializedPattern| and if successful appends it to
     // |aAllowlist|.
