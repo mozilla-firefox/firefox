@@ -3,7 +3,6 @@
 
 
 import json
-import time
 from datetime import datetime
 from time import mktime
 
@@ -453,7 +452,7 @@ def test_bugbug_timeout(monkeypatch, responses, params):
     )
 
     # Make sure the test runs fast.
-    monkeypatch.setattr(time, "sleep", lambda i: None)
+    monkeypatch.setattr("gecko_taskgraph.util.bugbug.RETRY_TIMEOUT", 0)
 
     opt = BugBugPushSchedules(0.5)
     with pytest.raises(BugbugTimeoutException):
@@ -473,7 +472,7 @@ def test_bugbug_fallback(monkeypatch, responses, params):
     opt = BugBugPushSchedules(0.5, fallback=FALLBACK)
 
     # Make sure the test runs fast.
-    monkeypatch.setattr(time, "sleep", lambda i: None)
+    monkeypatch.setattr("gecko_taskgraph.util.bugbug.RETRY_TIMEOUT", 0)
 
     def fake_should_remove_task(task, params, _):
         return task.label == default_tasks[0].label
