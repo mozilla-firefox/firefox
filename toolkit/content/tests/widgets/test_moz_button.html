@@ -59,6 +59,7 @@
 
         // Move mouse to the bottom of the test frame to prevent hover on buttons.
         let mouseTrap = document.getElementById("mouse-trap");
+        mouseTrap.scrollIntoView();
         await synthesizeMouseAtCenter(mouseTrap, { type: "mousemove" });
         ok(mouseTrap.matches(":hover"), "The mouse trap is hovered");
       });
@@ -377,8 +378,17 @@
       add_task(async function testAccesskey() {
         let firstButton = document.querySelector(".one");
         let secondButton = document.querySelector(".two");
-        let accesskey = "t";
+        let accesskey = "j";
         let seenEvents = [];
+
+        function performAccessKey(aKey) {
+          synthesizeKey(
+            aKey,
+            navigator.platform.includes("Mac")
+              ? { altKey: true, ctrlKey: true }
+              : { altKey: true, shiftKey: true }
+          );
+        }
 
         function trackEvent(event) {
           seenEvents.push(event.type);
@@ -395,63 +405,155 @@
         isnot(
           document.activeElement,
           firstButton,
-          "First button is not focused."
+          "First button is not focused"
         );
         isnot(
           firstButton.shadowRoot.activeElement,
           firstButton.buttonEl,
-          "Inner button element is not focused."
+          "Inner button element is not focused"
         );
 
-        synthesizeKey(
-          accesskey,
-          navigator.platform.includes("Mac")
-            ? { altKey: true, ctrlKey: true }
-            : { altKey: true, shiftKey: true }
-        );
+        performAccessKey(accesskey);
 
         is(
           document.activeElement,
           firstButton,
-          "First button receives focus after accesskey is pressed."
+          "First button receives focus after accesskey is pressed"
         );
         is(
           firstButton.shadowRoot.activeElement,
           firstButton.buttonEl,
-          "Inner button input element is focused after accesskey is pressed."
+          "Inner button input element is focused after accesskey is pressed"
         );
-        is(seenEvents.length, 1, "One event was triggered.");
-        is(seenEvents[0], "click", "The first button was clicked.");
+        is(seenEvents.length, 1, "One event was triggered");
+        is(seenEvents[0], "click", "The first button was clicked");
 
         secondButton.setAttribute("accesskey", accesskey);
         await secondButton.updateComplete;
 
-        synthesizeKey(
-          accesskey,
-          navigator.platform.includes("Mac")
-            ? { altKey: true, ctrlKey: true }
-            : { altKey: true, shiftKey: true }
-        );
+        performAccessKey(accesskey);
 
         is(
           document.activeElement,
           secondButton,
-          "Focus cycles between buttons with the same accesskey."
+          "Focus cycles between buttons with the same accesskey"
         );
 
-        synthesizeKey(
-          accesskey,
-          navigator.platform.includes("Mac")
-            ? { altKey: true, ctrlKey: true }
-            : { altKey: true, shiftKey: true }
-        );
+        performAccessKey(accesskey);
 
         is(
           document.activeElement,
           firstButton,
-          "Focus cycles between buttons with the same accesskey."
+          "Focus cycles between buttons with the same accesskey"
         );
-        is(seenEvents.length, 1, "No additional click events were triggered.");
+        is(seenEvents.length, 1, "No additional click events were triggered");
+
+        // Verify behavior of accesskeys on hidden elements.
+        let thirdButton = document.querySelector(".three");
+        let secondAccesskey = "l";
+        let thirdAccesskey = "m";
+
+        secondButton.setAttribute("accesskey", secondAccesskey);
+        thirdButton.setAttribute("accesskey", thirdAccesskey);
+        await Promise.all([
+          secondButton.updateComplete,
+          thirdButton.updateComplete,
+        ]);
+
+        thirdButton.addEventListener("click", trackEvent);
+
+        secondButton.style.visibility = "hidden";
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        performAccessKey(secondAccesskey);
+
+        is(seenEvents.length, 1, "Hidden button was not clicked");
+        isnot(
+          document.activeElement,
+          secondButton,
+          "Hidden button did not receive focus"
+        );
+
+        performAccessKey(thirdAccesskey);
+
+        is(seenEvents.length, 2, "Third button was clicked");
+        is(seenEvents[1], "click", "Third button received click event");
+        is(document.activeElement, thirdButton, "Third button has focus");
+
+        secondButton.style.visibility = "";
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        performAccessKey(secondAccesskey);
+
+        is(seenEvents.length, 3, "Previously hidden button was clicked");
+        is(seenEvents[2], "click", "Second button received click event");
+        is(
+          document.activeElement,
+          secondButton,
+          "Previously hidden button has focus"
+        );
+
+        thirdButton.style.display = "none";
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        performAccessKey(thirdAccesskey);
+
+        is(seenEvents.length, 3, "Hidden button was not clicked");
+        is(
+          document.activeElement,
+          secondButton,
+          "Hidden button did not receive focus"
+        );
+
+        thirdButton.style.display = "";
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        performAccessKey(thirdAccesskey);
+
+        is(seenEvents.length, 4, "Previously hidden button was clicked");
+        is(seenEvents[3], "click", "Third button received click event");
+        is(
+          document.activeElement,
+          thirdButton,
+          "Previously hidden button has focus"
+        );
+
+        secondButton.hidden = true;
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        performAccessKey(secondAccesskey);
+
+        is(seenEvents.length, 4, "Hidden button was not clicked");
+        is(
+          document.activeElement,
+          thirdButton,
+          "Hidden button did not receive focus"
+        );
+
+        secondButton.hidden = false;
+        await new Promise(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        );
+
+        performAccessKey(secondAccesskey);
+
+        is(seenEvents.length, 5, "Previously hidden button was clicked");
+        is(seenEvents[4], "click", "Second button received click event");
+        is(
+          document.activeElement,
+          secondButton,
+          "Previously hidden button has focus"
+        );
       });
 
       add_task(async function testToolbarPaddingEvent() {
@@ -1208,8 +1310,8 @@
     </style>
     <div class="wrapper">
       <div>
-        <moz-button class="one">Test button</moz-button>
-        <moz-button class="two" label="Test button"></moz-button>
+        <moz-button class="one" id="one">Test button</moz-button>
+        <moz-button class="two" id="two" label="Test button"></moz-button>
         <moz-button class="three" type="primary">Test button</moz-button>
         <moz-button class="four" type="icon"></moz-button>
         <moz-button class="five" type="icon ghost"></moz-button>

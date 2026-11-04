@@ -10,6 +10,10 @@ loadScripts({ name: "role.js", dir: MOCHITESTS_DIR });
 // XUL alert is closed or opened. Mac expects both notifications to
 // properly communicate live region changes.
 async function runTests(browser) {
+  // Enable accesskey underlining on all platforms for consistent test behavior.
+  await SpecialPowers.pushPrefEnv({
+    set: [["ui.key.menuAccessKey", 1]],
+  });
   ok(PopupNotifications, "PopupNotifications object exists");
   ok(PopupNotifications.panel, "PopupNotifications panel exists");
 
@@ -48,7 +52,9 @@ async function runTests(browser) {
       {
         TEXT_CONTAINER: [
           {
-            PUSHBUTTON: [{ LABEL: [{ TEXT_LEAF: [] }] }],
+            // The primary button label has two text leaves because of the
+            // accesskey underlining.
+            PUSHBUTTON: [{ LABEL: [{ TEXT_LEAF: [] }, { TEXT_LEAF: [] }] }],
           },
         ],
       },
