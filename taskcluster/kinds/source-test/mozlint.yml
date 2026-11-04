@@ -282,7 +282,6 @@ typescript:
             - 'browser/components/urlbar/**/*.ts'
             - 'browser/extensions/newtab/**/*.*js'
             - 'browser/extensions/newtab/**/*.ts'
-            - 'browser/extensions/newtab/tsconfig.json'
             - 'devtools/client/settings/**/*.*js'
             - 'devtools/client/settings/**/*.ts'
             - 'toolkit/components/extensions/**/*.*js'
@@ -292,6 +291,7 @@ typescript:
             - 'toolkit/components/search/**/*.*js'
             - 'toolkit/components/search/**/*.ts'
             # Support Files
+            - '**/tsconfig.json'
             - 'tools/@types/**'
             - 'tools/lint/typescript.yml'
             - 'tools/lint/typescript/**'
