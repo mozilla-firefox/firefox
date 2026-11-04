@@ -308,7 +308,8 @@ class JitRuntime {
   bool generateVMWrappers(JSContext* cx, MacroAssembler& masm,
                           PerfSpewerRangeRecorder& rangeRecorder);
 
-  uint32_t startTrampolineCode(MacroAssembler& masm);
+  uint32_t startTrampolineCode(MacroAssembler& masm,
+                               TargetKind kind = TargetKind::None);
 
   TrampolinePtr trampolineCode(uint32_t offset) const {
     MOZ_ASSERT(offset > 0);

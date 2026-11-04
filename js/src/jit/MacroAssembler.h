@@ -594,6 +594,17 @@ class MacroAssembler : public MacroAssemblerSpecific {
 
  public:
   // ===============================================================
+  // Indirect call/jump targets.
+
+  // Emit an indirect call or jump target of the specified kind. These ops may
+  // emit additional instructions before/after the actual target location. The
+  // returned CodeOffset and bound label identify the first instruction executed
+  // at the target.
+  inline CodeOffset indirectTarget(TargetKind kind);
+  inline void bindIndirectTarget(Label* label, TargetKind kind);
+  inline void bindIndirectTarget(CodeLabel* label, TargetKind kind);
+
+  // ===============================================================
   // Simple call functions.
 
   // The returned CodeOffset is the assembler offset for the instruction
