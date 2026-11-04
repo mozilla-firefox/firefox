@@ -63,10 +63,6 @@ void nsPrimitiveHelpers ::CreatePrimitiveForData(const nsACString& aFlavor,
       if (aDataLen % 2) {
         // Account for odd number of bytes.
         auto buffer = std::make_unique<char[]>(aDataLen + 1);
-        if (!MOZ_LIKELY(buffer)) {
-          return;
-        }
-
         memcpy(buffer.get(), aDataBuff, aDataLen);
         buffer[aDataLen] = 0;
 

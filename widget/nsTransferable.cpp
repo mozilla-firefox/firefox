@@ -163,9 +163,6 @@ nsresult DataStruct::ReadCache(nsISupports** aData) {
   uint32_t fileSize = fileInfo.size;
 
   auto data = std::make_unique<char[]>(fileSize);
-  if (!data) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
 
   uint32_t actual = PR_Read(mCacheFD, data.get(), fileSize);
   if (actual != fileSize) {
