@@ -1,0 +1,69 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test the selection scroll queued by focusing a text control after it loses focus</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+  <style>
+    #scroller { height: 100px; overflow: auto; position: relative; }
+    #spacer { height: 5000px; }
+    #input { position: absolute; top: 2000px; width: 50px; }
+  </style>
+</head>
+<body>
+<div id="scroller">
+  <div id="spacer"></div>
+  <input id="input" value="A long enough value to overflow the input">
+</div>
+<script>
+const scroller = document.getElementById("scroller");
+const input = document.getElementById("input");
+
+function waitForRefreshTick() {
+  return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
+async function reset() {
+  input.blur();
+  input.setSelectionRange(0, 0);
+  await waitForRefreshTick();
+  scroller.scrollTop = 0;
+  input.scrollLeft = 0;
+  await waitForRefreshTick();
+}
+
+add_task(async function blur_stops_scrolling_ancestors() {
+  await reset();
+  input.focus();
+  isnot(scroller.scrollTop, 0, "focus() scrolls the input into view");
+  input.blur();
+  scroller.scrollTop = 0;
+  await waitForRefreshTick();
+  is(scroller.scrollTop, 0,
+     "The selection scroll queued by focus() doesn't scroll ancestors after blur()");
+});
+
+add_task(async function refocus_scrolls_ancestors_again() {
+  await reset();
+  input.focus();
+  input.blur();
+  input.focus();
+  scroller.scrollTop = 0;
+  await waitForRefreshTick();
+  isnot(scroller.scrollTop, 0,
+        "focus() after blur() queues a selection scroll that scrolls ancestors");
+});
+
+// Rules out revoking the pending scroll on blur.
+add_task(async function blur_keeps_caret_scroll_inside_control() {
+  await reset();
+  input.focus();
+  input.setSelectionRange(input.value.length, input.value.length);
+  input.blur();
+  await waitForRefreshTick();
+  isnot(input.scrollLeft, 0,
+        "The caret is still scrolled into view inside the input after blur()");
+});
+</script>
+</body>
+</html>

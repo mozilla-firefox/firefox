@@ -251,6 +251,10 @@ class Selection final : public nsSupportsWeakReference,
                                             AxisScrollParams aVertical,
                                             AxisScrollParams aHorizontal);
 
+  // Restricts a pending asynchronous scroll into view to the nearest scrollable
+  // ancestor of the selection.
+  void LimitPendingScrollToFirstAncestor();
+
   MOZ_CAN_RUN_SCRIPT nsresult ScrollIntoView(
       SelectionRegion, AxisScrollParams aVertical = AxisScrollParams(),
       AxisScrollParams aHorizontal = AxisScrollParams(),
@@ -964,6 +968,9 @@ class Selection final : public nsSupportsWeakReference,
       NS_ASSERTION(aSelection, "null parameter");
     }
     void Revoke() { mSelection = nullptr; }
+    void LimitScrollTargetToFirstAncestor() {
+      mFlags |= ScrollFlags::ScrollFirstAncestorOnly;
+    }
 
    private:
     Selection* mSelection;

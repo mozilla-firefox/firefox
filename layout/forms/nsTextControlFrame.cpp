@@ -296,6 +296,15 @@ void nsTextControlFrame::ElementStateChanged(dom::ElementState aStates) {
                                     dom::ElementState::DISABLED)) {
     HandleReadonlyOrDisabledChange();
   }
+  // When the control loses focus, do not let a pending selection scroll scroll
+  // the ancestors. Do not revoke it, because it can also scroll the caret into
+  // view inside the control.
+  if (aStates.HasState(dom::ElementState::FOCUS) &&
+      !ControlElement()->State().HasState(dom::ElementState::FOCUS)) {
+    if (nsFrameSelection* frameSelection = GetOwnedFrameSelection()) {
+      frameSelection->NormalSelection().LimitPendingScrollToFirstAncestor();
+    }
+  }
   return ScrollContainerFrame::ElementStateChanged(aStates);
 }
 

@@ -3999,6 +3999,12 @@ nsresult Selection::PostScrollSelectionIntoViewEvent(
   return NS_OK;
 }
 
+void Selection::LimitPendingScrollToFirstAncestor() {
+  if (mScrollEvent.IsPending()) {
+    mScrollEvent.get()->LimitScrollTargetToFirstAncestor();
+  }
+}
+
 nsresult Selection::ScrollIntoView(SelectionRegion aRegion,
                                    AxisScrollParams aVertical,
                                    AxisScrollParams aHorizontal,

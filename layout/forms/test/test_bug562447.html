@@ -31,7 +31,8 @@ addLoadEvent(function() {
     input.blur();
     window.scrollTo(0, 0);
 
-    setTimeout(function() {
+    // Wait for a refresh driver tick, which runs pending selection scrolls.
+    requestAnimationFrame(function() {
       is(window.pageYOffset, 0, "Make sure we're scrolled back up correctly");
 
       // Scroll back up
@@ -50,7 +51,7 @@ addLoadEvent(function() {
           SimpleTest.finish();
         }, 0);
       }, 0);
-    }, 0);
+    });
   }, 0);
 });
 
