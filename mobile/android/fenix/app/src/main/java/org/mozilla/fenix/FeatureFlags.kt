@@ -29,4 +29,7 @@ object FeatureFlags {
 
     /** Enables haptic feedback during onboarding. */
     val onboardingHapticsEnabled = Config.channel.isNightlyOrDebug
+
+    /** Shows the animated kit illustration instead of the static one on the onboarding terms of use page. */
+    val onboardingKitAnimationEnabled = Config.channel.isNightlyOrDebug
 }

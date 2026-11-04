@@ -8,9 +8,16 @@ import android.content.Context
 import android.provider.Settings
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -99,5 +106,43 @@ class AnimatedIllustrationTest {
 
         composeTestRule.onNodeWithTag(AnimatedIllustrationTestTag.ANIMATION).assertIsDisplayed()
         composeTestRule.onNodeWithTag(AnimatedIllustrationTestTag.STATIC).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN replay on click WHEN the animation is clicked THEN it stays displayed`() {
+        val composition = LottieCompositionFactory.fromJsonStringSync(MINIMAL_LOTTIE_JSON, null).value
+        assertNotNull(composition)
+
+        composeTestRule.setContent {
+            AnimatedIllustration(
+                composition = composition,
+                staticDrawableResource = android.R.drawable.ic_menu_help,
+                iterations = 1,
+                replayOnClick = true,
+                modifier = Modifier.size(100.dp),
+            )
+        }
+
+        val animation = composeTestRule.onNodeWithTag(AnimatedIllustrationTestTag.ANIMATION)
+        animation.assertHasClickAction()
+        animation.assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+        animation.performClick()
+        animation.assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN replay on click is disabled WHEN the animation is shown THEN it has no click action`() {
+        val composition = LottieCompositionFactory.fromJsonStringSync(MINIMAL_LOTTIE_JSON, null).value
+        assertNotNull(composition)
+
+        composeTestRule.setContent {
+            AnimatedIllustration(
+                composition = composition,
+                staticDrawableResource = android.R.drawable.ic_menu_help,
+                modifier = Modifier.size(100.dp),
+            )
+        }
+
+        composeTestRule.onNodeWithTag(AnimatedIllustrationTestTag.ANIMATION).assertHasNoClickAction()
     }
 }
