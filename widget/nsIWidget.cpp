@@ -1501,10 +1501,26 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
         // Process as well, because events such as touchmove have to be fired
         // even during swipe-to-nav on touchscreen.
         if (touchSwipeEnabled) {
-          if (mTouchSwipeState.phase == TouchSwipeState::Phase::Tracking) {
-            HandleTouchInputAsSwipe(aInput);
-          } else {
-            MayStartSwipeForTouchInput(aInput, result);
+          // NOTE: This is a temporal fix for bug 2089005. If the user lifts a
+          // finger and puts another finger down in the same WM_TOUCH,
+          // nsWindow::OnTouch dispatches MULTITOUCH_START for the new finger
+          // first and then MULTITOUCH_END for the lifted finger. As a result,
+          // the touch count gets 0 and TOUCH_END resets the phase, even though
+          // the finger is still on the screen. Ignore these gestures. See bug
+          // 2088553.
+          const uint32_t count =
+              mTouchSwipeState.touchCounter.GetActiveTouchCount();
+          const bool ignoreForSwipe =
+              mTouchSwipeState.phase == TouchSwipeState::Phase::Idle
+                  ? aInput.mType != MultiTouchInput::MULTITOUCH_START
+                  : aInput.mType == MultiTouchInput::MULTITOUCH_START &&
+                        count == 1;
+          if (!ignoreForSwipe) {
+            if (mTouchSwipeState.phase == TouchSwipeState::Phase::Tracking) {
+              HandleTouchInputAsSwipe(aInput);
+            } else {
+              MayStartSwipeForTouchInput(aInput, result);
+            }
           }
         }
 
