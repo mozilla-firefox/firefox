@@ -1482,7 +1482,11 @@ var FullPageTranslationsPanel = new (class {
       return;
     }
 
-    if (TranslationsParent.isFullPageTranslationsRestrictedForPage(gBrowser)) {
+    if (
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(
+        gBrowser.selectedBrowser
+      )
+    ) {
       this.buttonElements.button.hidden = true;
     } else if (!TranslationsFeature.isEnabled) {
       // When the Translations feature is disabled, no actor instance is created, therefore no

@@ -2231,12 +2231,12 @@ export class TranslationsParent extends JSWindowActorParent {
   /**
    * Restrict full-page translation offers to only top-level pages with supported schemes.
    *
-   * @param {object} gBrowser
+   * @param {MozBrowser} browser
    * @returns {boolean}
    */
-  static isFullPageTranslationsRestrictedForPage(gBrowser) {
-    const contentType = gBrowser.selectedBrowser.documentContentType;
-    const scheme = gBrowser.currentURI.scheme;
+  static isFullPageTranslationsRestrictedForPage(browser) {
+    const contentType = browser.documentContentType;
+    const scheme = browser.currentURI.scheme;
 
     if (contentType === "application/pdf") {
       return true;

@@ -4042,7 +4042,9 @@ class SelectTranslationsTestUtils {
       "The textarea should not have the translating class."
     );
     const isFullPageTranslationsRestrictedForPage =
-      TranslationsParent.isFullPageTranslationsRestrictedForPage(gBrowser);
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(
+        gBrowser.selectedBrowser
+      );
     SelectTranslationsTestUtils.#assertPanelElementVisibility({
       copyButton: true,
       doneButtonPrimary: true,
@@ -4297,7 +4299,9 @@ class SelectTranslationsTestUtils {
   static async assertPanelViewActivelyTranslating() {
     const { textArea } = SelectTranslationsPanel.elements;
     const isFullPageTranslationsRestrictedForPage =
-      TranslationsParent.isFullPageTranslationsRestrictedForPage(gBrowser);
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(
+        gBrowser.selectedBrowser
+      );
     await SelectTranslationsTestUtils.waitForPanelState("translating");
     ok(
       textArea.classList.contains("translating"),
@@ -4333,7 +4337,9 @@ class SelectTranslationsTestUtils {
       "select-translations-panel-translating-placeholder-text"
     );
     const isFullPageTranslationsRestrictedForPage =
-      TranslationsParent.isFullPageTranslationsRestrictedForPage(gBrowser);
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(
+        gBrowser.selectedBrowser
+      );
     is(
       textArea.value,
       expected,
@@ -4361,7 +4367,9 @@ class SelectTranslationsTestUtils {
     const fromLanguage = fromMenuList.value;
     const toLanguage = toMenuList.value;
     const isFullPageTranslationsRestrictedForPage =
-      TranslationsParent.isFullPageTranslationsRestrictedForPage(gBrowser);
+      TranslationsParent.isFullPageTranslationsRestrictedForPage(
+        gBrowser.selectedBrowser
+      );
 
     SelectTranslationsTestUtils.#assertPanelTextAreaDirection(toLanguage);
     SelectTranslationsTestUtils.#assertConditionalUIEnabled({
