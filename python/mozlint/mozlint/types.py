@@ -84,17 +84,15 @@ class BaseType:
         return errors
 
     def _lint_dir(self, path, config, **lintargs):
-        if not config.get("extensions"):
-            patterns = ["**"]
-        else:
-            patterns = [f"**/*.{e}" for e in config["extensions"]]
-
+        extensions = tuple(f".{e}" for e in config.get("extensions", []))
         exclude = [os.path.relpath(e, path) for e in config.get("exclude", [])]
         finder = FileFinder(path, ignore=exclude)
 
         errors = []
-        for pattern in patterns:
-            for p, f in finder.find(pattern):
+        for p in finder.walk_unfiltered(""):
+            if extensions and not p.endswith(extensions):
+                continue
+            if finder.get(p, known_to_exist=True):
                 errors.extend(self._lint(os.path.join(path, p), config, **lintargs))
         return errors
 
