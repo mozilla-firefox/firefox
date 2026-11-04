@@ -432,8 +432,12 @@ def expand_exclusions(paths, config, root):
             if mozpath.commonprefix((path, e)) == path
         ]
 
+        if not os.path.isdir(path):
+            continue
+
         finder = FileFinder(path, ignore=ignore, find_dotfiles=find_dotfiles)
-        for p, f in finder.find("**"):
+        for p in finder.walk_unfiltered(""):
             if extensions and os.path.splitext(p)[1] not in extensions:
                 continue
-            yield os.path.join(path, p)
+            if finder.get(p, known_to_exist=True):
+                yield os.path.join(path, p)

@@ -219,6 +219,14 @@ def test_filterpaths(test):
             },
             id="A file with no extension survives exclude_extensions.",
         ),
+        pytest.param(
+            {
+                "paths": ["missing"],
+                "config": {},
+                "expected": [],
+            },
+            id="A path that does not exist expands to nothing.",
+        ),
     ),
 )
 def test_expand_exclusions(test):
