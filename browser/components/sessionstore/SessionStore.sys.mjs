@@ -101,14 +101,10 @@
  * @typedef {object} ClosedTabsOptions
  *   Selects the windows to include closed tabs from.
  * @property {BrowserWindow} [sourceWindow]
- *   The window to include closed tabs from when `closedTabsFromAllWindows` is
- *   false. When `private` is not set, this window's privateness is used.
- *   Defaults to the top window.
- * @property {boolean} [private]
- *   Restricts the query to private windows (true) or to non-private windows
- *   (false). Defaults to the privateness of `sourceWindow`.
- * @property {boolean} [closedTabsFromAllWindows]
- *   Overrides the `browser.sessionstore.closedTabsFromAllWindows` pref.
+ *   The window to include closed tabs from when the
+ *   `browser.sessionstore.closedTabsFromAllWindows` pref is false. Its
+ *   privateness selects private or non-private windows. Defaults to the top
+ *   window.
  * @property {boolean} [closedTabsFromClosedWindows]
  *   Overrides the `browser.sessionstore.closedTabsFromClosedWindows` pref.
  */
@@ -4279,30 +4275,25 @@ class _SessionStore {
 
   /**
    * @param {ClosedTabsOptions} [aOptions]
-   * @returns {ClosedTabsOptions}
+   * @returns {Required<ClosedTabsOptions> &
+   *   {private: boolean, closedTabsFromAllWindows: boolean}}
    *   The options with every property filled in.
    */
   #prepareClosedTabOptions(aOptions = {}) {
-    const sourceOptions = Object.assign(
-      {
-        closedTabsFromAllWindows: this.#closedTabsFromAllWindowsEnabled,
-        closedTabsFromClosedWindows: this.#closedTabsFromClosedWindowsEnabled,
-        sourceWindow: null,
-      },
-      aOptions
-    );
-    if (!sourceOptions.sourceWindow) {
-      sourceOptions.sourceWindow = this.#getTopWindow(sourceOptions.private);
-    }
+    const sourceOptions = {
+      closedTabsFromAllWindows: this.#closedTabsFromAllWindowsEnabled,
+      closedTabsFromClosedWindows:
+        aOptions.closedTabsFromClosedWindows ??
+        this.#closedTabsFromClosedWindowsEnabled,
+      sourceWindow: aOptions.sourceWindow || this.#getTopWindow(),
+      private: false,
+    };
     /*
     _getTopWindow may return null on MacOS when the last window has been closed.
     Since private browsing windows are irrelevant after they have been closed we
     don't need to check if it was a private browsing window.
     */
-    if (!sourceOptions.sourceWindow) {
-      sourceOptions.private = false;
-    }
-    if (!sourceOptions.hasOwnProperty("private")) {
+    if (sourceOptions.sourceWindow) {
       sourceOptions.private = PrivateBrowsingUtils.isWindowPrivate(
         sourceOptions.sourceWindow
       );
