@@ -15,6 +15,7 @@ registerCleanupFunction(async () => {
   Services.prefs.clearUserPref("network.trr.async_connInfo");
   Services.prefs.clearUserPref("network.dns.disableIPv6");
   Services.prefs.clearUserPref("network.trr.preconnect_allow_rfc1918");
+  Services.prefs.clearUserPref("network.http.speculative-parallel-limit");
 });
 
 const LOOKUP_HOST = "after.example.com";
@@ -116,6 +117,7 @@ add_task(async function setup() {
   Services.prefs.setBoolPref("network.http.debug-observations", true);
   Services.prefs.setBoolPref("network.dns.disableIPv6", true);
   Services.prefs.setBoolPref("network.trr.preconnect_allow_rfc1918", true);
+  Services.prefs.setIntPref("network.http.speculative-parallel-limit", 6);
 });
 
 add_task(async function test_preconnect_on_foreground_without_async_connInfo() {
