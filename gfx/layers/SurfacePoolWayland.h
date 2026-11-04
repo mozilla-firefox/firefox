@@ -31,10 +31,10 @@ class SurfacePoolWayland final : public SurfacePool {
   explicit SurfacePoolWayland(size_t aPoolSizeLimit);
 
   RefPtr<widget::WaylandBuffer> ObtainBufferFromPool(
-      const widget::WaylandSurfaceLock* aWaylandSurfaceLock,
+      const widget::WaylandSurfaceLock& aWaylandSurfaceLock,
       const gfx::IntSize& aSize, gl::GLContext* aGL,
       RefPtr<widget::DRMFormat> aFormat);
-  void ReturnBufferToPool(const widget::WaylandSurfaceLock* aWaylandSurfaceLock,
+  void ReturnBufferToPool(const widget::WaylandSurfaceLock& aWaylandSurfaceLock,
                           const RefPtr<widget::WaylandBuffer>& aBuffer);
   void EnforcePoolSizeLimit();
   void CollectPendingSurfaces();
@@ -48,18 +48,17 @@ class SurfacePoolWayland final : public SurfacePool {
   };
 
   // Keep mWaylandSurface / mWaylandBuffer in pair as we don't share
-  // mWaylandBuffer among WaylandSurfaces. mWaylandSurface is null for buffers
-  // which are presented by another process.
+  // mWaylandBuffer among WaylandSurfaces.
   struct SurfacePoolEntry final {
     const gfx::IntSize mSize;
-    const RefPtr<widget::WaylandSurface> mWaylandSurface;
-    const RefPtr<widget::WaylandBuffer> mWaylandBuffer;  // non-null
+    const RefPtr<widget::WaylandSurface> mWaylandSurface;  // non-null
+    const RefPtr<widget::WaylandBuffer> mWaylandBuffer;    // non-null
     Maybe<GLResourcesForBuffer> mGLResources;
   };
 
   bool CanRecycleSurfaceForRequest(
       const MutexAutoLock& aProofOfLock, const SurfacePoolEntry& aEntry,
-      const widget::WaylandSurfaceLock* aWaylandSurfaceLock,
+      const widget::WaylandSurfaceLock& aWaylandSurfaceLock,
       const gfx::IntSize& aSize, gl::GLContext* aGL);
 
   RefPtr<gl::DepthAndStencilBuffer> GetDepthBufferForSharing(
@@ -77,8 +76,8 @@ class SurfacePoolWayland final : public SurfacePool {
   std::unordered_map<widget::WaylandBuffer*, SurfacePoolEntry> mInUseEntries;
 
   // Stores entries which are no longer in use by NativeLayerWayland but are
-  // still in use by the window server or by another process, i.e. for which
-  // IsBufferInUse() still returns true.
+  // still in use by the window server, i.e. for which
+  // WaylandBuffer::IsAttached() still returns true.
   // These entries are checked once per frame inside
   // CollectPendingSurfaces(), and returned to mAvailableEntries once the
   // window server is done.
@@ -109,23 +108,14 @@ class SurfacePoolHandleWayland final : public SurfacePoolHandle {
     return this;
   }
 
-  // aWaylandSurfaceLock is null when the buffers are not attached to a
-  // WaylandSurface by this process, e.g. in the GPU process. Such buffers
-  // track their usage with the DMABuf global reference counter instead.
   RefPtr<widget::WaylandBuffer> ObtainBufferFromPool(
-      const widget::WaylandSurfaceLock* aWaylandSurfaceLock,
+      const widget::WaylandSurfaceLock& aWaylandSurfaceLock,
       const gfx::IntSize& aSize, RefPtr<widget::DRMFormat> aFormat);
-  void ReturnBufferToPool(const widget::WaylandSurfaceLock* aWaylandSurfaceLock,
+  void ReturnBufferToPool(const widget::WaylandSurfaceLock& aWaylandSurfaceLock,
                           const RefPtr<widget::WaylandBuffer>& aBuffer);
   Maybe<GLuint> GetFramebufferForBuffer(
       const RefPtr<widget::WaylandBuffer>& aBuffer, bool aNeedsDepthBuffer);
   const auto& gl() { return mGL; }
-
-  // Returns true if aBuffer is still used by the Wayland compositor, or by
-  // another process when aWaylandSurfaceLock is null.
-  static bool IsBufferInUse(
-      widget::WaylandBuffer* aBuffer,
-      const widget::WaylandSurfaceLock* aWaylandSurfaceLock);
 
   RefPtr<SurfacePool> Pool() override { return mPool; }
   void OnBeginFrame() override;
