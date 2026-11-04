@@ -1000,3 +1000,84 @@ add_task(async function test_no_site_rule_status_without_a_rule() {
   BrowserTestUtils.removeTab(tab);
   await SpecialPowers.popPrefEnv();
 });
+
+/**
+ * Tests that the status card follows the selected tab while the panel is open,
+ * when the VPN only carries included sites.
+ */
+add_task(async function test_site_rule_status_updates_on_tab_switch() {
+  await pushInclusionsPref(true);
+  const sandbox = sinon.createSandbox();
+
+  setupService({
+    isReady: true,
+  });
+
+  sandbox.stub(IPPProxyManager, "state").value(IPPProxyStates.ACTIVE);
+  sandbox.stub(IPPProxyManager, "mode").value(IPPMode.MODE_INCLUSION);
+
+  const DEFAULT_SITE = "https://example.com";
+  const INCLUDED_SITE = "https://example.org";
+
+  Services.perms.addFromPrincipal(
+    Services.scriptSecurityManager.createContentPrincipalFromOrigin(
+      INCLUDED_SITE
+    ),
+    "ipp-vpn",
+    Ci.nsIPermissionManager.ALLOW_ACTION
+  );
+
+  let defaultTab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    DEFAULT_SITE
+  );
+  let includedTab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    INCLUDED_SITE
+  );
+  await BrowserTestUtils.switchTab(gBrowser, defaultTab);
+
+  let content = await openPanel({
+    isProtectionEnabled: false,
+    isActive: true,
+  });
+
+  Assert.ok(
+    !getSiteRuleStatus(content),
+    "Site rule status card should be hidden for a site without a rule"
+  );
+
+  let statusShownPromise = BrowserTestUtils.waitForMutationCondition(
+    content.shadowRoot,
+    { childList: true, subtree: true },
+    () => getSiteRuleStatus(content)
+  );
+  await BrowserTestUtils.switchTab(gBrowser, includedTab);
+  await Promise.all([content.updateComplete, statusShownPromise]);
+
+  await checkSiteRuleStatus(
+    content,
+    INCLUSION_DESCRIPTION_L10N_ID,
+    VPN_ON_ICON
+  );
+
+  let statusHiddenPromise = BrowserTestUtils.waitForMutationCondition(
+    content.shadowRoot,
+    { childList: true, subtree: true },
+    () => !getSiteRuleStatus(content)
+  );
+  await BrowserTestUtils.switchTab(gBrowser, defaultTab);
+  await Promise.all([content.updateComplete, statusHiddenPromise]);
+
+  Assert.ok(
+    !getSiteRuleStatus(content),
+    "Site rule status card should be hidden after switching back"
+  );
+
+  await closePanel();
+  BrowserTestUtils.removeTab(includedTab);
+  BrowserTestUtils.removeTab(defaultTab);
+  sandbox.restore();
+  Services.perms.removeByType("ipp-vpn");
+  await SpecialPowers.popPrefEnv();
+});

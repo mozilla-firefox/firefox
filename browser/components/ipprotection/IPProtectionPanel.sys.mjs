@@ -1090,12 +1090,20 @@ export class IPProtectionPanel {
   #addProgressListener() {
     if (this.gBrowser) {
       this.gBrowser.addTabsProgressListener(this.progressListener);
+      this.gBrowser.tabContainer.addEventListener(
+        "TabSelect",
+        this.handleEvent
+      );
     }
   }
 
   #removeProgressListener() {
     if (this.gBrowser) {
       this.gBrowser.removeTabsProgressListener(this.progressListener);
+      this.gBrowser.tabContainer.removeEventListener(
+        "TabSelect",
+        this.handleEvent
+      );
     }
   }
 
@@ -1161,7 +1169,10 @@ export class IPProtectionPanel {
     if (!principal || !lazy.IPPSiteRuleManager.canManage(principal)) {
       return null;
     }
-    const rule = lazy.IPPSiteRuleManager.getRule(principal);
+    const rule = lazy.IPPSiteRuleManager.getRule(
+      principal,
+      this.gBrowser.selectedBrowser.browserId
+    );
     const isExclusion = rule === lazy.IPPPrincipalRules.EXCLUDED;
     const isInclusion = rule === lazy.IPPPrincipalRules.INCLUDED;
     const hasSiteRule = rule !== lazy.IPPPrincipalRules.DEFAULT;
@@ -1323,7 +1334,10 @@ export class IPProtectionPanel {
         showSiteInclusionPrompt:
           this.state.showSiteInclusionPrompt && !errorType && !paused,
       });
-    } else if (event.type == "SiteRuleManager:RuleChanged") {
+    } else if (
+      event.type == "SiteRuleManager:RuleChanged" ||
+      event.type == "TabSelect"
+    ) {
       this.#updateSiteData();
       this.#updateProxyError();
     } else if (event.type == "IPProtectionServerlist:ListChanged") {
