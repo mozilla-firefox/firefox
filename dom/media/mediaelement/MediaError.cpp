@@ -28,6 +28,10 @@ MediaError::MediaError(HTMLMediaElement* aParent, uint16_t aCode,
                        const nsACString& aMessage)
     : mParent(aParent), mCode(aCode), mMessage(aMessage) {}
 
+nsISupports* MediaError::GetParentObject() const {
+  return static_cast<EventTarget*>(mParent);
+}
+
 void MediaError::GetMessage(nsAString& aResult) const {
   // When fingerprinting resistance is enabled, only messages in this list
   // can be returned to content script.
