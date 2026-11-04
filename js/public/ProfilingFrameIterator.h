@@ -327,7 +327,7 @@ class ProfiledFrameRange {
   // We can't use InlineScriptTree::MaxDepth directly here because this is a
   // public header and InlineScriptTree.h is private.
   static constexpr uint32_t MaxInliningDepth = 8;
-  js::jit::CallStackFrameInfo frames_[MaxInliningDepth];
+  js::jit::CallStackFrameInfo frames_[MaxInliningDepth] = {};
   uint32_t depth_;
 };
 
