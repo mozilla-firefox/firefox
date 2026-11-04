@@ -579,6 +579,7 @@ HTMLEditor::HTMLWithContextInserter::GetNewCaretPointAfterInsertingHTML(
       return EditorRawDOMPoint::AtEndOf(*lastLeaf);
     }
     return !HTMLEditUtils::IsContainerNode(*lastLeaf) ||
+                   !HTMLEditUtils::IsSimplyEditableNode(*lastLeaf) ||
                    HTMLEditUtils::IsReplacedElement(*lastLeaf)
                ? EditorRawDOMPoint::After(*lastLeaf)
                : EditorRawDOMPoint::AtEndOf(*lastLeaf);
