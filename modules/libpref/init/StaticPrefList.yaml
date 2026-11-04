@@ -14930,7 +14930,7 @@
 # whether to redirect the channel for auth redirects. See Bug 1820807
 - name: network.auth.use_redirect_for_retries
   type: RelaxedAtomicBool
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # When true, authentication challenges will be sorted even if
@@ -16336,7 +16336,7 @@
 - name: network.proxy.detect_system_proxy_changes
   type: RelaxedAtomicBool
 #ifdef XP_WIN
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
 #else
   value: false
 #endif
@@ -16686,7 +16686,7 @@
 # Whether to use the connection info that is generated asynchronously.
 - name: network.trr.async_connInfo
   type: RelaxedAtomicBool
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # If true, a failed TRR request that contains an extended DNS error
@@ -17187,7 +17187,7 @@
 # When a Http/3 connection failed, whether to retry with a different IP address.
 - name: network.http.http3.retry_different_ip_family
   type: RelaxedAtomicBool
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # This is for testing purpose. When true, nsUDPSocket::SendWithAddress and
@@ -17557,7 +17557,7 @@
 # Whether to record the telemetry event when a JAR channel is failed to load.
 - name: network.jar.record_failure_reason
   type: RelaxedAtomicBool
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # nsJARInputStream::Available returns the size indicated by the archived entry
@@ -17617,7 +17617,7 @@
 # connecting, retry with the remaining one
 - name: network.http.retry_with_another_half_open
   type: RelaxedAtomicBool
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 - name: network.http.basic_http_auth.enabled
