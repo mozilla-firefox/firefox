@@ -35,15 +35,13 @@ add_task(async function test_experiment_messaging_system_dismiss() {
     targeting: "true",
   });
 
-  const selectors = getPromoSelectors();
-
   let { win: win1, tab: tab1 } = await openTabAndWaitForRender();
 
   await clickPromoDismissButton(tab1);
 
   let { win: win2, tab: tab2 } = await openTabAndWaitForRender();
 
-  await SpecialPowers.spawn(tab2, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab2, [PROMO_SELECTORS], async function (promo) {
     is(
       content.document.querySelector(promo.container),
       null,

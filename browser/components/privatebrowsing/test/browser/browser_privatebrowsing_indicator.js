@@ -7,19 +7,12 @@
 const LABELED_INDICATOR_SELECTOR = ".private-browsing-indicator-with-label";
 const BUTTON_INDICATOR_SELECTOR = ".private-browsing-indicator-button";
 
-// The private browsing indicator lives in two possible spots:
-// - Inside #TabsToolbar (shown with icon + label, for horizontal tabs)
-// - Inside #nav-bar (shown with icon only, for vertical tabs)
+// The private browsing indicator button lives in two possible spots:
+// - Inside #TabsToolbar (for horizontal tabs)
+// - Inside #nav-bar (for vertical tabs)
 //
-// Nova replaces the labeled indicator with the icon-only button, but both use
-// the same placement rules, so the layout tests below assert against whichever
-// variant is active. They make sure at least one copy is always visible in a
+// The layout tests below make sure at least one copy is always visible in a
 // private window, no matter the tabs/titlebar/menubar layout.
-function getIndicatorSelector() {
-  return isNovaEnabled()
-    ? BUTTON_INDICATOR_SELECTOR
-    : LABELED_INDICATOR_SELECTOR;
-}
 
 add_task(async function test_indicator_horizontal_tabs() {
   await SpecialPowers.pushPrefEnv({
@@ -30,12 +23,13 @@ add_task(async function test_indicator_horizontal_tabs() {
   });
 
   const win = await BrowserTestUtils.openNewBrowserWindow({ private: true });
-  const selector = getIndicatorSelector();
 
   const tabsToolbarIndicator = win.document.querySelector(
-    `#TabsToolbar ${selector}`
+    `#TabsToolbar ${BUTTON_INDICATOR_SELECTOR}`
   );
-  const navBarIndicator = win.document.querySelector(`#nav-bar ${selector}`);
+  const navBarIndicator = win.document.querySelector(
+    `#nav-bar ${BUTTON_INDICATOR_SELECTOR}`
+  );
 
   ok(
     BrowserTestUtils.isVisible(tabsToolbarIndicator),
@@ -59,12 +53,13 @@ add_task(async function test_indicator_vertical_tabs() {
   });
 
   const win = await BrowserTestUtils.openNewBrowserWindow({ private: true });
-  const selector = getIndicatorSelector();
 
   const tabsToolbarIndicator = win.document.querySelector(
-    `#TabsToolbar ${selector}`
+    `#TabsToolbar ${BUTTON_INDICATOR_SELECTOR}`
   );
-  const navBarIndicator = win.document.querySelector(`#nav-bar ${selector}`);
+  const navBarIndicator = win.document.querySelector(
+    `#nav-bar ${BUTTON_INDICATOR_SELECTOR}`
+  );
 
   ok(
     BrowserTestUtils.isHidden(tabsToolbarIndicator),
@@ -85,12 +80,13 @@ add_task(async function test_indicator_tabs_in_titlebar() {
   });
 
   const win = await BrowserTestUtils.openNewBrowserWindow({ private: true });
-  const selector = getIndicatorSelector();
 
   const tabsToolbarIndicator = win.document.querySelector(
-    `#TabsToolbar ${selector}`
+    `#TabsToolbar ${BUTTON_INDICATOR_SELECTOR}`
   );
-  const navBarIndicator = win.document.querySelector(`#nav-bar ${selector}`);
+  const navBarIndicator = win.document.querySelector(
+    `#nav-bar ${BUTTON_INDICATOR_SELECTOR}`
+  );
 
   ok(
     BrowserTestUtils.isVisible(tabsToolbarIndicator) ||
@@ -106,12 +102,13 @@ add_task(async function test_indicator_with_menubar_shown() {
   CustomizableUI.setToolbarVisibility("toolbar-menubar", true);
 
   const win = await BrowserTestUtils.openNewBrowserWindow({ private: true });
-  const selector = getIndicatorSelector();
 
   const tabsToolbarIndicator = win.document.querySelector(
-    `#TabsToolbar ${selector}`
+    `#TabsToolbar ${BUTTON_INDICATOR_SELECTOR}`
   );
-  const navBarIndicator = win.document.querySelector(`#nav-bar ${selector}`);
+  const navBarIndicator = win.document.querySelector(
+    `#nav-bar ${BUTTON_INDICATOR_SELECTOR}`
+  );
 
   ok(
     BrowserTestUtils.isVisible(tabsToolbarIndicator) ||
@@ -258,18 +255,5 @@ add_task(async function test_indicator_button_not_in_regular_window() {
     !getVisibleIndicatorButton(window),
     "No indicator button in a regular window"
   );
-  await SpecialPowers.popPrefEnv();
-});
-
-// The indicator button is not shown when the pref is off (the classic labeled
-// indicator is used instead).
-add_task(async function test_indicator_button_hidden_when_pref_off() {
-  await SpecialPowers.pushPrefEnv({ set: [[NOVA_PREF, false]] });
-  let win = await BrowserTestUtils.openNewBrowserWindow({ private: true });
-  Assert.ok(
-    !getVisibleIndicatorButton(win),
-    "No indicator button in a private window when the pref is off"
-  );
-  await BrowserTestUtils.closeWindow(win);
   await SpecialPowers.popPrefEnv();
 });

@@ -14,7 +14,6 @@ add_setup(async function () {
     set: [
       ["browser.promo.pin.enabled", true],
       ["browser.privateWindowRedesign.enabled", false],
-      ["browser.nova.enabled", false],
     ],
   });
   await ASRouter.onPrefChange();
@@ -27,11 +26,9 @@ add_setup(async function () {
 });
 
 add_task(async function test_pin_promo() {
-  const selectors = getPromoSelectors();
-
   let { win: win1, tab: tab1 } = await openTabAndWaitForRender();
 
-  await SpecialPowers.spawn(tab1, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab1, [PROMO_SELECTORS], async function (promo) {
     const promoContainer = content.document.querySelector(promo.container);
     ok(promoContainer, "Pin promo is shown");
   });

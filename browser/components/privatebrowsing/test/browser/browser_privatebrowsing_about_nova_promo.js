@@ -348,31 +348,3 @@ add_task(async function test_nova_promo_is_hidden_until_it_has_content() {
   await doExperimentCleanup();
   await SpecialPowers.popPrefEnv();
 });
-
-add_task(async function test_nova_disabled_uses_legacy_promo() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.nova.enabled", false]],
-  });
-  let doExperimentCleanup =
-    await setupMSExperimentWithMessage(novaPromoMessage());
-
-  let { win, tab } = await openTabAndWaitForRender();
-
-  await SpecialPowers.spawn(tab, [], async function () {
-    const promo = content.document.querySelector(".promo");
-    ok(promo, "Legacy promo markup is used when Nova is disabled");
-    ok(
-      ContentTaskUtils.isVisible(promo),
-      "Legacy promo is visible when Nova is disabled"
-    );
-    is(
-      content.document.getElementById("nova-promo"),
-      null,
-      "Nova moz-promo element is not used when Nova is disabled"
-    );
-  });
-
-  await BrowserTestUtils.closeWindow(win);
-  await doExperimentCleanup();
-  await SpecialPowers.popPrefEnv();
-});

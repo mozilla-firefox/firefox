@@ -95,11 +95,9 @@ add_task(async function test_remove_promo_from_prerendered_tab_if_blocked() {
   await resetState();
   const doExperimentCleanup = await enrollPromoMessage();
 
-  const selectors = getPromoSelectors();
-
   const { win, tab: tab1 } = await openTabAndWaitForRender();
 
-  await SpecialPowers.spawn(tab1, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab1, [PROMO_SELECTORS], async function (promo) {
     // container which is present if promo message is not blocked
     const promoContainer = content.document.querySelector(promo.container);
     ok(promoContainer, "Promo is shown in tab 1");
@@ -110,7 +108,7 @@ add_task(async function test_remove_promo_from_prerendered_tab_if_blocked() {
 
   // Block the promo in tab 1
   await clickPromoDismissButton(tab1);
-  await SpecialPowers.spawn(tab1, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab1, [PROMO_SELECTORS], async function (promo) {
     await ContentTaskUtils.waitForCondition(() => {
       return !content.document.querySelector(promo.container);
     }, "The promo container is removed.");
@@ -123,7 +121,7 @@ add_task(async function test_remove_promo_from_prerendered_tab_if_blocked() {
   // Verify that the promo has now been removed from tab 2
   await SpecialPowers.spawn(
     win.gBrowser.tabs[1].linkedBrowser,
-    [selectors],
+    [PROMO_SELECTORS],
     // The timing may be weird in Chaos Mode, so wait for it to be removed
     // instead of a single assertion.
     async function (promo) {
@@ -165,16 +163,13 @@ add_task(async function test_default_content_deferred_message_load() {
   const { win, tab } = await openAboutPrivateBrowsing();
   await messageRequestedPromise;
 
-  const selectors = getPromoSelectors();
-  const infoL10n = getInfoL10n();
-
   await SpecialPowers.spawn(
     tab,
-    [{ selectors, infoL10n }],
-    async function ({ selectors: promo, infoL10n: info }) {
+    [PROMO_SELECTORS, INFO_L10N],
+    async function (promo, info) {
       const promoContainer = content.document.querySelector(promo.container);
-      // Both layouts build the promo while it is hidden and only reveal it once
-      // populated, so it should be present but not yet visible.
+      // The promo is built while hidden and only revealed once populated, so it
+      // should be present but not yet visible.
       ok(
         promoContainer && ContentTaskUtils.isHidden(promoContainer),
         "Promo is hidden but not removed"
@@ -182,11 +177,7 @@ add_task(async function test_default_content_deferred_message_load() {
       const infoContainer = content.document.querySelector(".info");
       ok(infoContainer && !infoContainer.hidden, "Info container is shown");
       const infoTitle = content.document.getElementById("info-title");
-      is(
-        infoTitle.hidden,
-        info.titleHidden,
-        "Info title visibility matches the layout"
-      );
+      ok(infoTitle.hidden, "Info title is hidden");
       const infoBody = content.document.getElementById("info-body");
       ok(infoBody, "Info body is shown");
       is(
@@ -217,7 +208,7 @@ add_task(async function test_default_content_deferred_message_load() {
   messageReadyPromiseResolver();
   await messageReadyPromise;
 
-  await SpecialPowers.spawn(tab, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab, [PROMO_SELECTORS], async function (promo) {
     await ContentTaskUtils.waitForCondition(() => {
       const promoContainer = content.document.querySelector(promo.container);
       return promoContainer && ContentTaskUtils.isVisible(promoContainer);

@@ -41,11 +41,9 @@ add_task(async function test_experiment_messaging_system_impressions() {
 
   Services.telemetry.clearEvents();
 
-  const selectors = getPromoSelectors();
-
   let { win: win1, tab: tab1 } = await openTabAndWaitForRender();
 
-  await SpecialPowers.spawn(tab1, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab1, [PROMO_SELECTORS], async function (promo) {
     ok(
       content.document.querySelector(promo.container),
       "should render the promo on the first impression"
@@ -67,7 +65,7 @@ add_task(async function test_experiment_messaging_system_impressions() {
 
   let { win: win2, tab: tab2 } = await openTabAndWaitForRender();
 
-  await SpecialPowers.spawn(tab2, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab2, [PROMO_SELECTORS], async function (promo) {
     ok(
       content.document.querySelector(promo.container),
       "should render the promo on the second impression"
@@ -89,7 +87,7 @@ add_task(async function test_experiment_messaging_system_impressions() {
 
   let { win: win3, tab: tab3 } = await openTabAndWaitForRender();
 
-  await SpecialPowers.spawn(tab3, [selectors], async function (promo) {
+  await SpecialPowers.spawn(tab3, [PROMO_SELECTORS], async function (promo) {
     is(
       content.document.querySelector(promo.container),
       null,
