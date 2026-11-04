@@ -339,10 +339,19 @@ export class Tabbrowser {
     ALL_DUPLICATES: 7,
   };
 
-  /** @type {WeakMap<MozTabbrowserTab, TabProgressListener>} */
+  /**
+   * Static because swapping browsers between windows reads the other window's
+   * entries.
+   *
+   * @type {WeakMap<MozTabbrowserTab, TabProgressListener>}
+   */
   static #tabListeners = new WeakMap();
 
-  /** @type {WeakMap<MozTabbrowserTab, BrowserStatusFilter>} */
+  /**
+   * Static for the same reason as #tabListeners.
+   *
+   * @type {WeakMap<MozTabbrowserTab, BrowserStatusFilter>}
+   */
   static #tabFilters = new WeakMap();
 
   /** @type {WeakMap<MozTabbrowserTab, [boolean, boolean]>} */
@@ -410,7 +419,8 @@ export class Tabbrowser {
   _tabLayerCache = [];
 
   /**
-   * Binding from browser to tab
+   * Binding from browser to tab. Per window, because callers of
+   * getTabForBrowser treat a miss as the browser belonging to another window.
    */
   #tabForBrowser = new WeakMap();
 
@@ -1564,6 +1574,9 @@ export class Tabbrowser {
   }
 
   getTabDialogBox(aBrowser) {
+    // Must not use `this`: ContentDispatchChooser reads this method off
+    // window.gBrowser and calls it without a receiver.
+
     if (!aBrowser) {
       throw new Error("aBrowser is required");
     }
