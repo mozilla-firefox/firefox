@@ -606,7 +606,7 @@ suites:
                 - contact: :calixte and CI and Quality Tools team
                 - source:
                 - type: [Page load]
-                - reporting: time from *performance.timing.navigationStart* to *pagerendered* event in ms (lower is better)
+                - reporting: time taken by *PDFPageProxy.render* for the first page in ms (lower is better)
                 - data: loads each PDF 15 times
                 - description:
                       | Runs PDFs marked with "talos": true in the pdf.js test manifest, fetched through
@@ -616,6 +616,28 @@ suites:
                         artifact from the toolchain task in CI needs to be downloaded and installed manually
                         to run this test. Running the test locally with outdated/non-existent PDFs will
                         provide a link to the latest artifact that needs to be downloaded and installed.
+                        Times PDFPageProxy.render for the first page after loading the document and
+                        initializing the renderer worker. Requests worker rendering and canvas
+                        acceleration (pdfjs.disableWorkerRendering=false, pdfjs.enableHWA=true).
+            pdfpaint_main_hwa: >
+                - contact: :calixte and CI and Quality Tools team
+                - source:
+                - type: [Page load]
+                - reporting: time taken by *PDFPageProxy.render* for the first page in ms (lower is better)
+                - data: loads each PDF 15 times
+                - description:
+                      | Same as pdfpaint, with main-thread rendering and canvas acceleration enabled
+                        (pdfjs.disableWorkerRendering=true, pdfjs.enableHWA=true).
+                        Acceleration depends on platform support.
+            pdfpaint_main_sw: >
+                - contact: :calixte and CI and Quality Tools team
+                - source:
+                - type: [Page load]
+                - reporting: time taken by *PDFPageProxy.render* for the first page in ms (lower is better)
+                - data: loads each PDF 15 times
+                - description:
+                      | Same as pdfpaint, with main-thread rendering and a software canvas
+                        (pdfjs.disableWorkerRendering=true, pdfjs.enableHWA=false).
             perf_reftest: >
                 - contact: :emilio and css/layout team
                 - source: [perf-reftest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/perf-reftest)

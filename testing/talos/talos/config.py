@@ -7,6 +7,7 @@ import os
 import pathlib
 import re
 import sys
+import urllib.parse
 
 from mozlog.commandline import setup_logging
 
@@ -251,10 +252,15 @@ def setup_pdfpaint_test(config, test_instance):
             f"{int((len(pdf_files) - 1) / pdfs_per_chunk) + 1}."
         )
 
+    # lh_pdfpaint.js renders the PDF named by the placeholder's `file` parameter.
     with pdfpaint_manifest_path.open("w") as f:
         for pdf_file in sorted(list(pdf_files))[start_ind:end_ind]:
-            print(f"http://localhost/tests/pdfpaint/pdfs/{pdf_file}{os.linesep}")
-            f.write(f"http://localhost/tests/pdfpaint/pdfs/{pdf_file}{os.linesep}")
+            file_param = urllib.parse.quote(
+                f"/tests/pdfpaint/pdfs/{pdf_file}", safe="/"
+            )
+            url = f"http://localhost/tests/pdfpaint/empty.pdf?file={file_param}"
+            print(f"{url}{os.linesep}")
+            f.write(f"{url}{os.linesep}")
 
     # Make a symbolic link to the mozbuild pdf folder since the talos
     # webserver depends on having the doc root as the talos folder for getInfo.html

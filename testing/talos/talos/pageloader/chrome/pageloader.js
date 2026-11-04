@@ -148,6 +148,20 @@ async function plInit() {
     useBrowserChrome = Services.prefs.getBoolPref("talos.tpchrome", false);
     useA11y = Services.prefs.getBoolPref("talos.a11y", false);
 
+    if (usePDFPaint) {
+      const workerRendering = !Services.prefs.getBoolPref(
+        "pdfjs.disableWorkerRendering",
+        true
+      );
+      const enableHWA = Services.prefs.getBoolPref("pdfjs.enableHWA", false);
+      const { usingAcceleratedCanvas } = Cc[
+        "@mozilla.org/gfx/info;1"
+      ].getService(Ci.nsIGfxInfo);
+      dumpLine(
+        `pdfpaint: worker rendering ${workerRendering}, enableHWA ${enableHWA}, accelerated canvas ${usingAcceleratedCanvas}`
+      );
+    }
+
     // for pageloader tests the profiling info is found in an env variable
     // because it is not available early enough to set it as a browser pref
     if (Services.env.exists("TPPROFILINGINFO")) {
@@ -420,6 +434,10 @@ function getCurrentPageShortName() {
   // this is also used by gecko profiling for the profile
   // file name; so ensure it is valid on Windows/Linux/OSX
   var pageName = pages[pageIndex].url.spec;
+  if (usePDFPaint) {
+    // Use the tested PDF's name instead of the placeholder's.
+    return new URL(pageName).searchParams.get("file").split("/").pop();
+  }
   let parts = pageName.split("/");
   if (parts.length > 5) {
     // Tear off the first parts and concatenate the rest into a name.
@@ -794,8 +812,7 @@ function _loadHandler(paint_time = 0) {
 
   var duration;
   if (usePDFPaint) {
-    // PDF paint uses performance.now(), so the time does not need to be
-    // adjusted from the start time.
+    // PDF paint reports a duration.
     duration = end_time;
   } else {
     duration = end_time - start_time;

@@ -411,10 +411,7 @@ class twinopen(PageloaderTest):
 
 @register_test()
 class pdfpaint(PageloaderTest):
-    """
-    Tests the amount of time it takes for the the first page of a PDF to
-    be rendered.
-    """
+    """Time first-page rendering with worker rendering enabled."""
 
     alert_threshold = 6.0
     tpmanifest = "${talos}/tests/pdfpaint/pdfpaint.manifest"
@@ -424,6 +421,30 @@ class pdfpaint(PageloaderTest):
     pdfpaint = True
     unit = "ms"
     subtest_alerts = True
+    preferences = {
+        "pdfjs.disableWorkerRendering": False,
+        "pdfjs.enableHWA": True,
+    }
+
+
+@register_test()
+class pdfpaint_main_hwa(pdfpaint):
+    """Time first-page rendering on the main thread with canvas HWA enabled."""
+
+    preferences = {
+        "pdfjs.disableWorkerRendering": True,
+        "pdfjs.enableHWA": True,
+    }
+
+
+@register_test()
+class pdfpaint_main_sw(pdfpaint):
+    """Time first-page rendering on the main thread with a software canvas."""
+
+    preferences = {
+        "pdfjs.disableWorkerRendering": True,
+        "pdfjs.enableHWA": False,
+    }
 
 
 @register_test()

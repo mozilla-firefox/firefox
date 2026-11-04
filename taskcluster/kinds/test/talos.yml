@@ -756,26 +756,16 @@ talos-pdfpaint:
     description: Talos pdfpaint
     try-name: pdfpaint
     treeherder-symbol: T(pdfpaint)
-    variants:
-        - webrender-sw
-    run-on-projects:
-        by-variant:
-            webrender-sw:
-                by-test-platform:
-                    linux2404-64-shippable/opt: [trunk]
-                    macosx.*-64-shippable(-qr)?/opt: [trunk]
-                    windows.*-shippable(-qr)?/opt: [trunk]
-                    default: []
-            default:
-                by-test-platform:
-                    linux(?!.*shippable).*: []
-                    macosx(?!.*shippable).*: []
-                    windows(?!.*shippable).*: []
-                    default: [trunk]
+    run-on-projects: &pdfpaint-projects
+        by-test-platform:
+            linux(?!.*shippable).*: []
+            macosx(?!.*shippable).*: []
+            windows(?!.*shippable).*: []
+            default: [trunk]
     mozharness:
         extra-options:
             - --suite=pdfpaint
-    fetches:
+    fetches: &pdfpaint-fetches
         toolchain:
             by-test-platform:
                 win.*:
@@ -794,3 +784,23 @@ talos-pdfpaint:
                     - linux64-minidump-stackwalk
                     - linux64-fix-stacks
                     - talos-pdfs
+
+talos-pdfpaint-main-hwa:
+    description: Talos pdfpaint, main thread with an accelerated canvas
+    try-name: pdfpaint-main-hwa
+    treeherder-symbol: T(pdfpaint-main-hwa)
+    run-on-projects: *pdfpaint-projects
+    mozharness:
+        extra-options:
+            - --suite=pdfpaint-main-hwa
+    fetches: *pdfpaint-fetches
+
+talos-pdfpaint-main-sw:
+    description: Talos pdfpaint, main thread with a software canvas
+    try-name: pdfpaint-main-sw
+    treeherder-symbol: T(pdfpaint-main-sw)
+    run-on-projects: *pdfpaint-projects
+    mozharness:
+        extra-options:
+            - --suite=pdfpaint-main-sw
+    fetches: *pdfpaint-fetches

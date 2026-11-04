@@ -134,7 +134,7 @@ TALOS_PDFS_ARTIFACT = "project/gecko/talos-pdfs/talos-pdfs.tar.zst"
 
 
 def setup_toolchain_artifacts(args, command_context):
-    if not any(arg.lower() == "pdfpaint" for arg in args):
+    if not any(arg.lower().startswith("pdfpaint") for arg in args):
         return
 
     from mozbuild.util import (

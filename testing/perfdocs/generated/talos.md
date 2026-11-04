@@ -4894,7 +4894,7 @@ For the sample commands found below, note that the capitalization used is import
 * contact: :calixte and CI and Quality Tools team
 * source:
 * type: [Page load]
-* reporting: time from *performance.timing.navigationStart* to *pagerendered* event in ms (lower is better)
+* reporting: time taken by *PDFPageProxy.render* for the first page in ms (lower is better)
 * data: loads each PDF 15 times
 * description:
       | Runs PDFs marked with "talos": true in the pdf.js test manifest, fetched through
@@ -4904,8 +4904,12 @@ For the sample commands found below, note that the capitalization used is import
         artifact from the toolchain task in CI needs to be downloaded and installed manually
         to run this test. Running the test locally with outdated/non-existent PDFs will
         provide a link to the latest artifact that needs to be downloaded and installed.
+        Times PDFPageProxy.render for the first page after loading the document and
+        initializing the renderer worker. Requests worker rendering and canvas
+        acceleration (pdfjs.disableWorkerRendering=false, pdfjs.enableHWA=true).
 * alert_threshold: 6.0
 * pdfpaint: True
+* preferences: {'pdfjs.disableWorkerRendering': False, 'pdfjs.enableHWA': True}
 * subtest_alerts: True
 * timeout: 2000
 * tpmanifest: ${talos}/tests/pdfpaint/pdfpaint.manifest
@@ -4928,11 +4932,6 @@ For the sample commands found below, note that the capitalization used is import
   - ✅
   - ❌
   - ❌
-* - **talos-pdfpaint-swr**
-  - ✅
-  - ✅
-  - ❌
-  - ❌
 :::
 
 
@@ -4946,11 +4945,6 @@ For the sample commands found below, note that the capitalization used is import
   - mozilla-release
   - mozilla-beta
 * - **talos-pdfpaint**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **talos-pdfpaint-swr**
   - ❌
   - ❌
   - ❌
@@ -4972,11 +4966,6 @@ For the sample commands found below, note that the capitalization used is import
   - ✅
   - ❌
   - ❌
-* - **talos-pdfpaint-swr**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
 :::
 
 
@@ -4990,11 +4979,6 @@ For the sample commands found below, note that the capitalization used is import
   - mozilla-release
   - mozilla-beta
 * - **talos-pdfpaint**
-  - ✅
-  - ✅
-  - ❌
-  - ❌
-* - **talos-pdfpaint-swr**
   - ✅
   - ✅
   - ❌
@@ -5016,7 +5000,221 @@ For the sample commands found below, note that the capitalization used is import
   - ❌
   - ❌
   - ❌
-* - **talos-pdfpaint-swr**
+:::
+
+
+::::
+
+(pdfpaint_main_hwa)=
+
+::::{dropdown} pdfpaint_main_hwa
+:class-container: anchor-id-pdfpaint_main_hwa
+
+* **Command to Run Locally**
+
+  ```
+  ./mach talos-test -a pdfpaint_main_hwa
+  ```
+
+* contact: :calixte and CI and Quality Tools team
+* source:
+* type: [Page load]
+* reporting: time taken by *PDFPageProxy.render* for the first page in ms (lower is better)
+* data: loads each PDF 15 times
+* description:
+      | Same as pdfpaint, with main-thread rendering and canvas acceleration enabled
+        (pdfjs.disableWorkerRendering=true, pdfjs.enableHWA=true).
+        Acceleration depends on platform support.
+* preferences: {'pdfjs.disableWorkerRendering': True, 'pdfjs.enableHWA': True}
+* **Test Task**:
+
+:::{list-table} **{ref}`test-linux2404-64-shippable/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-hwa**
+  - ✅
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-hwa**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-hwa**
+  - ✅
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-shippable/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-hwa**
+  - ✅
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-hwa**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+::::
+
+(pdfpaint_main_sw)=
+
+::::{dropdown} pdfpaint_main_sw
+:class-container: anchor-id-pdfpaint_main_sw
+
+* **Command to Run Locally**
+
+  ```
+  ./mach talos-test -a pdfpaint_main_sw
+  ```
+
+* contact: :calixte and CI and Quality Tools team
+* source:
+* type: [Page load]
+* reporting: time taken by *PDFPageProxy.render* for the first page in ms (lower is better)
+* data: loads each PDF 15 times
+* description:
+      | Same as pdfpaint, with main-thread rendering and a software canvas
+        (pdfjs.disableWorkerRendering=true, pdfjs.enableHWA=false).
+* preferences: {'pdfjs.disableWorkerRendering': True, 'pdfjs.enableHWA': False}
+* **Test Task**:
+
+:::{list-table} **{ref}`test-linux2404-64-shippable/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-sw**
+  - ✅
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-sw**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-sw**
+  - ✅
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-shippable/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-sw**
+  - ✅
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **talos-pdfpaint-main-sw**
   - ❌
   - ❌
   - ❌
