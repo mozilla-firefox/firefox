@@ -174,8 +174,7 @@ class SurfaceFilter {
   template <typename PixelType, typename Func>
   WriteState WritePixels(Func&& aFunc) {
     Maybe<WriteState> result;
-    while (
-        !(result = DoWritePixelsToRow<PixelType>(std::forward<Func>(aFunc)))) {
+    while (!(result = DoWritePixelsToRow<PixelType>(aFunc))) {
     }
 
     return *result;
@@ -212,8 +211,7 @@ class SurfaceFilter {
   template <typename PixelType, typename Func>
   WriteState WritePixelBlocks(Func&& aFunc) {
     Maybe<WriteState> result;
-    while (!(result = DoWritePixelBlockToRow<PixelType>(
-                 std::forward<Func>(aFunc)))) {
+    while (!(result = DoWritePixelBlockToRow<PixelType>(aFunc))) {
     }
 
     return *result;
@@ -250,8 +248,8 @@ class SurfaceFilter {
    */
   template <typename PixelType, typename Func>
   WriteState WritePixelsToRow(Func&& aFunc) {
-    return DoWritePixelsToRow<PixelType>(std::forward<Func>(aFunc))
-        .valueOr(WriteState::NEED_MORE_DATA);
+    return DoWritePixelsToRow<PixelType>(aFunc).valueOr(
+        WriteState::NEED_MORE_DATA);
   }
 
   /**
@@ -531,7 +529,7 @@ class SurfaceFilter {
    * possible.
    */
   template <typename PixelType, typename Func>
-  Maybe<WriteState> DoWritePixelBlockToRow(Func aFunc) {
+  Maybe<WriteState> DoWritePixelBlockToRow(Func& aFunc) {
     MOZ_ASSERT(mPixelSize == 1 || mPixelSize == 4);
     MOZ_ASSERT_IF(mPixelSize == 1, sizeof(PixelType) == sizeof(uint8_t));
     MOZ_ASSERT_IF(mPixelSize == 4, sizeof(PixelType) == sizeof(uint32_t));
@@ -573,7 +571,7 @@ class SurfaceFilter {
    * WritePixelsToRow() to implement their respective behaviors.
    */
   template <typename PixelType, typename Func>
-  Maybe<WriteState> DoWritePixelsToRow(Func aFunc) {
+  Maybe<WriteState> DoWritePixelsToRow(Func& aFunc) {
     MOZ_ASSERT(mPixelSize == 1 || mPixelSize == 4);
     MOZ_ASSERT_IF(mPixelSize == 1, sizeof(PixelType) == sizeof(uint8_t));
     MOZ_ASSERT_IF(mPixelSize == 4, sizeof(PixelType) == sizeof(uint32_t));
