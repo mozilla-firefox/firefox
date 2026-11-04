@@ -56,6 +56,7 @@ declare namespace BrowserWindow {
     import("moz-src:///browser/components/sidebar/SidebarState.sys.mjs").SidebarStateProps;
 
   var SidebarController: {
+    readonly _positionStart: boolean;
     getUIState(): SidebarStateProps;
     markSessionRestoreStateReceived(): void;
     updateUIState(state?: SidebarStateProps): Promise<void>;
