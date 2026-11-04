@@ -708,6 +708,20 @@ TEST(ECMASet, MoveAddDuplicateDoesNotConsume)
   EXPECT_FALSE(str.IsEmpty());
 }
 
+TEST(ECMASet, PointerKeys)
+{
+  int a = 0;
+  int b = 0;
+  int* const constA = &a;
+  TestSet<int*> set;
+  EXPECT_TRUE(set.Add(constA));
+  EXPECT_TRUE(set.Add(&b));
+  EXPECT_FALSE(set.Add(&a));
+  EXPECT_EQ(set.Size(), 2u);
+  EXPECT_TRUE(set.Has(&a));
+  EXPECT_TRUE(set.Has(&b));
+}
+
 // ==========================================================================
 // ECMAMap -- basic operations
 // ==========================================================================
@@ -1258,6 +1272,23 @@ TEST(ECMAMap, MoveSetUpdateDoesNotConsumeKey)
   EXPECT_FALSE(key.IsEmpty());
   EXPECT_TRUE(val.IsEmpty());
   EXPECT_EQ(*map.Get(u"key"_ns), u"new"_ns);
+}
+
+TEST(ECMAMap, PointerKeys)
+{
+  int a = 0;
+  int b = 0;
+  int* const constA = &a;
+  const int value = 1;
+  TestMap<int*, int> map;
+  EXPECT_TRUE(map.Set(constA, value));
+  EXPECT_TRUE(map.Set(&b, 2));
+  EXPECT_FALSE(map.Set(constA, 3));
+  EXPECT_EQ(map.Size(), 2u);
+  ASSERT_NE(map.Get(&a), nullptr);
+  EXPECT_EQ(*map.Get(&a), 3);
+  ASSERT_NE(map.Get(&b), nullptr);
+  EXPECT_EQ(*map.Get(&b), 2);
 }
 
 // ==========================================================================

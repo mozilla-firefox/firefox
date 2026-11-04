@@ -525,7 +525,6 @@ class ECMASet
   using Base =
       binding_detail::ECMACollectionBase<binding_detail::ECMASetEntry<T>,
                                          HashKeyT>;
-  using Entry = binding_detail::ECMASetEntry<T>;
   using ArgTraits = binding_detail::ECMAArgTraits<T>;
 
  public:
@@ -594,7 +593,7 @@ class ECMASet
         return false;
       }
       entry.Insert(this->mEntries.Length());
-      this->mEntries.AppendElement(Some(Entry{aMakeKeyFunc()}));
+      this->mEntries.AppendElement()->emplace(aMakeKeyFunc());
       return true;
     });
   }
@@ -708,8 +707,8 @@ class ECMAMap : public binding_detail::ECMACollectionBase<
         return false;
       }
       entry.Insert(this->mEntries.Length());
-      this->mEntries.AppendElement(
-          Some(Entry{aMakeKeyFunc(), std::forward<ValueArg>(aValue)}));
+      this->mEntries.AppendElement()->emplace(aMakeKeyFunc(),
+                                              std::forward<ValueArg>(aValue));
       return true;
     });
   }
