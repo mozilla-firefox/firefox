@@ -4968,6 +4968,16 @@ class _SessionStore {
     this.#windows[this.#windowIds.get(aWindow)]._maybeDontRestoreTabs = true;
   }
 
+  /**
+   * Removes the mark that maybeDontRestoreTabs puts on a window.
+   *
+   * @param {BrowserWindow} aWindow
+   *        Window reference
+   */
+  clearMaybeDontRestoreTabs(aWindow) {
+    delete this.#windows[this.#windowIds.get(aWindow)]._maybeDontRestoreTabs;
+  }
+
   #isLastRestorableWindow() {
     return (
       Object.values(this.#windows).filter(

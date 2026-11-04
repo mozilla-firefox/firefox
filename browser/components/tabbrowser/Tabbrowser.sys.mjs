@@ -6312,12 +6312,10 @@ export class Tabbrowser {
       (closeWindowWithLastTab ??
         Services.prefs.getBoolPref("browser.tabs.closeWindowWithLastTab"))
     ) {
-      this.documentGlobal.closeWindow(
-        true,
+      this.#closeWindowForLastTabs(
         suppressWarnAboutClosingWindow
           ? null
-          : this.documentGlobal.warnAboutClosingWindow,
-        "close-last-tab"
+          : this.documentGlobal.warnAboutClosingWindow
       );
       return;
     }
@@ -6678,6 +6676,29 @@ export class Tabbrowser {
     return true;
   }
 
+  /**
+   * Closes the window because the user closed its last tabs.
+   *
+   * @param {Function|null} promptFunction
+   *   Passed to closeWindow() to warn about closing the window.
+   * @returns {boolean}
+   *   `true` if the window closed.
+   */
+  #closeWindowForLastTabs(promptFunction) {
+    let win = this.documentGlobal;
+    // If the user explicitly closes the last tabs in the window close remaining tabs. Bug 490136
+    // Closing the last window doesn't quit the application on OS X.
+    let dontRestoreTabs = AppConstants.platform != "macosx";
+    if (dontRestoreTabs) {
+      lazy.SessionStore.maybeDontRestoreTabs(win);
+    }
+    let closed = win.closeWindow(true, promptFunction, "close-last-tab");
+    if (dontRestoreTabs && !closed) {
+      lazy.SessionStore.clearMaybeDontRestoreTabs(win);
+    }
+    return closed;
+  }
+
   static #hasBeforeUnload(aTab) {
     let browser = aTab.linkedBrowser;
     if (browser.isRemoteBrowser && browser.frameLoader) {
@@ -6806,10 +6827,8 @@ export class Tabbrowser {
       if (closeWindow && closeWindowFastpath && !this._removingTabs.size) {
         // This call actually closes the window, unless the user
         // cancels the operation.  We are finished here in both cases.
-        this.#windowIsClosing = this.documentGlobal.closeWindow(
-          true,
-          this.documentGlobal.warnAboutClosingWindow,
-          "close-last-tab"
+        this.#windowIsClosing = this.#closeWindowForLastTabs(
+          this.documentGlobal.warnAboutClosingWindow
         );
         return false;
       }
@@ -7085,10 +7104,8 @@ export class Tabbrowser {
     }
 
     if (aCloseWindow) {
-      this.#windowIsClosing = this.documentGlobal.closeWindow(
-        true,
-        this.documentGlobal.warnAboutClosingWindow,
-        "close-last-tab"
+      this.#windowIsClosing = this.#closeWindowForLastTabs(
+        this.documentGlobal.warnAboutClosingWindow
       );
     }
   }
