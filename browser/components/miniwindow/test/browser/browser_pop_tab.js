@@ -224,7 +224,7 @@ add_task(async function test_popRegion_breaks_a_split_view() {
     "only the cropped tab moves to a mini window"
   );
   ok(!tabs[1].splitview, "the other half is no longer in a split view");
-  is(tabs[1].ownerGlobal, window, "the other half stays in the window");
+  is(tabs[1].documentGlobal, window, "the other half stays in the window");
   let ended = Glean.splitview.end.testGetValue() ?? [];
   ok(
     ended.some(event => event.extra.trigger === "mini_window"),
@@ -245,7 +245,7 @@ add_task(async function test_menu_label_counts_tabs() {
       )
     );
   }
-  gBrowser.addToMultiSelectedTabs(tabs[1]);
+  gBrowser.addToMultiSelectedTabs(tabs[0]);
 
   let menu = document.getElementById("tabContextMenu");
   let shown = BrowserTestUtils.waitForPopupEvent(menu, "shown");
@@ -283,11 +283,22 @@ add_task(async function test_popTab_moves_a_discarded_tab() {
   ok(tab.hasAttribute("pending"), "the tab is pending");
   let tabCount = gBrowser.tabs.length;
 
-  let miniWin = await popWholeTabForTest(tab);
+  let opened = BrowserTestUtils.domWindowOpenedAndLoaded(null);
+  let tabPopped = MiniWindowManager.popTab(tab);
+  let miniWin = await opened;
+  // Closing while SessionStore is still restoring the tab leaves its pending
+  // restore promise holding the mini window's browser, leaking the window.
+  let tabRestored = BrowserTestUtils.waitForEvent(
+    miniWin.gBrowser.tabContainer,
+    "SSTabRestored"
+  );
+  await tabPopped;
+  await tabRestored;
 
   let mini = [...MiniWindowManager._miniwindows][0];
-  await TestUtils.waitForCondition(
-    () => mini.browser.currentURI.spec === url,
+  is(
+    mini.browser.currentURI.spec,
+    url,
     "the mini window shows the moved tab's page"
   );
   is(gBrowser.tabs.length, tabCount - 1, "the tab left the origin window");
