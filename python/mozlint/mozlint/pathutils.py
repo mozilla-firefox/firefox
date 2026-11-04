@@ -18,6 +18,7 @@ class FilterPath:
     def __init__(self, path):
         self.path = os.path.normpath(path)
         self._finder = None
+        self._parts = None
 
     @property
     def finder(self):
@@ -55,30 +56,22 @@ class FilterPath:
                 return True
         return False
 
+    def parts(self):
+        if self._parts is None:
+            parts = os.path.abspath(self.path).split(os.sep)
+            if _is_windows and parts[0].endswith(":"):
+                # Normalize case of drive letters, without invoking the file system.
+                parts[0] = parts[0].upper()
+            self._parts = parts
+        return self._parts
+
     def contains(self, other):
         """Return True if other is a subdirectory of self or equals self."""
-        if isinstance(other, FilterPath):
-            other = other.path
-        a = os.path.abspath(self.path)
-        b = os.path.normpath(os.path.abspath(other))
-
-        parts_a = a.split(os.sep)
-        parts_b = b.split(os.sep)
-
-        if len(parts_a) > len(parts_b):
-            return False
-
-        if _is_windows and parts_a:
-            # Normalize case of drive letters, without invoking the file system.
-            if parts_a[0].endswith(":"):
-                parts_a[0] = parts_a[0].upper()
-            if parts_b[0].endswith(":"):
-                parts_b[0] = parts_b[0].upper()
-
-        for i, part in enumerate(parts_a):
-            if part != parts_b[i]:
-                return False
-        return True
+        if not isinstance(other, FilterPath):
+            other = FilterPath(other)
+        parts_a = self.parts()
+        parts_b = other.parts()
+        return len(parts_a) <= len(parts_b) and parts_b[: len(parts_a)] == parts_a
 
     def __repr__(self):
         return repr(self.path)
@@ -227,6 +220,12 @@ def filterpaths(
     excludedirs = {p.path for p in prunable if p.isdir}
     findglobs = [p for p in excludeglobs if "*" in p]
 
+    # Only excludes that are subdirectories of the include
+    # path matter.
+    include_excludes = [
+        (inc, [e for e in excludepaths if inc.contains(e)]) for inc in include
+    ]
+
     keep = set()
     discard = set()
     for path in list(map(normalize, paths)):
@@ -241,16 +240,12 @@ def filterpaths(
 
         # First handle include/exclude directives
         # that exist (i.e don't have globs)
-        for inc in include:
+        for inc, excs in include_excludes:
             # If the include directive is a file and we're specifically linting
             # it, keep it.
             if inc.isfile and path.path == inc.path:
                 keep.add(inc)
                 continue
-
-            # Only excludes that are subdirectories of the include
-            # path matter.
-            excs = [e for e in excludepaths if inc.contains(e)]
 
             if path.contains(inc):
                 # If specified path is an ancestor of include path,
