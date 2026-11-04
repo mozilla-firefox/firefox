@@ -26,12 +26,16 @@ Services.scriptloader.loadSubScript(
 add_task(async function () {
   // Needed for the invokeInTab() function below
   await pushPref("security.allow_parent_unrestricted_js_loads", true);
+  await pushPref("devtools.browsertoolbox.scope", "everything");
 
   await addTab(TEST_URI);
   const ToolboxTask = await initBrowserToolboxTask();
   await ToolboxTask.importFunctions({
     findMessagesVirtualized,
     findMessageVirtualizedByType,
+    findMessagesVirtualizedByType,
+    gInFindMessagesVirtualized: false,
+    gFindMessagesVirtualizedStack: null,
     waitUntil,
   });
 
