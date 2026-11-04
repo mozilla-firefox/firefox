@@ -46,7 +46,7 @@
 
 pref("pdfjs.enableOptimizedPartialRendering", true);
 
-#ifdef EARLY_BETA_OR_EARLIER
+#if defined(NIGHTLY_BUILD) || defined(MOZ_DEV_EDITION)
   pref("pdfjs.disableWorkerRendering", false);
 #endif
 
