@@ -2,46 +2,50 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-download-ui-confirm-title = Cancel All Downloads?
-
 ## Variables:
 ##   $downloadsCount (Number): The current downloads count.
 
-download-ui-confirm-quit-cancel-downloads =
-    { $downloadsCount ->
-        [1] If you exit now, 1 download will be canceled. Are you sure you want to exit?
-       *[other] If you exit now, { $downloadsCount } downloads will be canceled. Are you sure you want to exit?
-    }
-download-ui-confirm-quit-cancel-downloads-mac =
-    { $downloadsCount ->
-        [1] If you quit now, 1 download will be canceled. Are you sure you want to quit?
-       *[other] If you quit now, { $downloadsCount } downloads will be canceled. Are you sure you want to quit?
-    }
-download-ui-dont-quit-button =
+download-ui-confirm-cancel-button = Cancel
+
+download-ui-confirm-quit-title =
     { PLATFORM() ->
-        [mac] Don’t Quit
-       *[other] Don’t Exit
+        [windows]
+            { $downloadsCount ->
+                [1] Stop 1 download and exit { -brand-short-name }?
+               *[other] Stop { $downloadsCount } downloads and exit { -brand-short-name }?
+            }
+       *[other]
+            { $downloadsCount ->
+                [1] Stop 1 download and quit { -brand-short-name }?
+               *[other] Stop { $downloadsCount } downloads and quit { -brand-short-name }?
+            }
+    }
+download-ui-confirm-quit-message = { -brand-short-name } will try to resume downloads when it reopens, but progress may be lost.
+download-ui-confirm-quit-button =
+    { PLATFORM() ->
+        [windows] Exit { -brand-short-name }
+       *[other] Quit { -brand-short-name }
     }
 
-download-ui-confirm-offline-cancel-downloads =
+download-ui-confirm-offline-title =
     { $downloadsCount ->
-        [1] If you go offline now, 1 download will be canceled. Are you sure you want to go offline?
-       *[other] If you go offline now, { $downloadsCount } downloads will be canceled. Are you sure you want to go offline?
+        [1] Stop 1 download and go offline?
+       *[other] Stop { $downloadsCount } downloads and go offline?
     }
-download-ui-dont-go-offline-button = Stay Online
+download-ui-confirm-offline-message = { -brand-short-name } will try to resume downloads when you’re back online, but progress may be lost.
+download-ui-confirm-offline-button = Go offline
 
-download-ui-confirm-leave-private-browsing-windows-cancel-downloads =
+download-ui-confirm-private-browsing-title =
     { $downloadsCount ->
-        [1] If you close all Private Browsing windows now, 1 download will be canceled. Are you sure you want to leave Private Browsing?
-       *[other] If you close all Private Browsing windows now, { $downloadsCount } downloads will be canceled. Are you sure you want to leave Private Browsing?
+        [1] Stop 1 download and close this Private Window?
+       *[other] Stop { $downloadsCount } downloads and close this Private Window?
     }
-download-ui-dont-leave-private-browsing-button = Stay in Private Browsing
-
-download-ui-cancel-downloads-ok =
+download-ui-confirm-private-browsing-message =
     { $downloadsCount ->
-        [1] Cancel 1 Download
-       *[other] Cancel { $downloadsCount } Downloads
+        [1] You won’t be able to resume this download.
+       *[other] You won’t be able to resume these downloads.
     }
+download-ui-confirm-private-browsing-button = Close window
 
 ##
 

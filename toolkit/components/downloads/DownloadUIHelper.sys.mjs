@@ -19,7 +19,11 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(
   lazy,
   "l10n",
-  () => new Localization(["toolkit/downloads/downloadUI.ftl"], true)
+  () =>
+    new Localization(
+      ["toolkit/downloads/downloadUI.ftl", "toolkit/branding/brandings.ftl"],
+      true
+    )
 );
 
 /**
@@ -223,26 +227,26 @@ DownloadPrompter.prototype = {
       return false;
     }
 
-    let message, cancelButton;
+    let title, message, okButton;
+    let cancelButton = "download-ui-confirm-cancel-button";
 
     switch (aPromptType) {
       case this.ON_QUIT:
-        message =
-          AppConstants.platform == "macosx"
-            ? "download-ui-confirm-quit-cancel-downloads-mac"
-            : "download-ui-confirm-quit-cancel-downloads";
-        cancelButton = "download-ui-dont-quit-button";
+        title = "download-ui-confirm-quit-title";
+        message = "download-ui-confirm-quit-message";
+        okButton = "download-ui-confirm-quit-button";
         break;
 
       case this.ON_OFFLINE:
-        message = "download-ui-confirm-offline-cancel-downloads";
-        cancelButton = "download-ui-dont-go-offline-button";
+        title = "download-ui-confirm-offline-title";
+        message = "download-ui-confirm-offline-message";
+        okButton = "download-ui-confirm-offline-button";
         break;
 
       case this.ON_LEAVE_PRIVATE_BROWSING:
-        message =
-          "download-ui-confirm-leave-private-browsing-windows-cancel-downloads";
-        cancelButton = "download-ui-dont-leave-private-browsing-button";
+        title = "download-ui-confirm-private-browsing-title";
+        message = "download-ui-confirm-private-browsing-message";
+        okButton = "download-ui-confirm-private-browsing-button";
         break;
     }
 
@@ -250,13 +254,12 @@ DownloadPrompter.prototype = {
       Ci.nsIPrompt.BUTTON_TITLE_IS_STRING * Ci.nsIPrompt.BUTTON_POS_0 +
       Ci.nsIPrompt.BUTTON_TITLE_IS_STRING * Ci.nsIPrompt.BUTTON_POS_1;
 
+    let l10nArgs = { downloadsCount: aDownloadsCount };
     let rv = this._prompter.confirmEx(
-      lazy.l10n.formatValueSync("download-ui-confirm-title"),
-      lazy.l10n.formatValueSync(message, { downloadsCount: aDownloadsCount }),
+      lazy.l10n.formatValueSync(title, l10nArgs),
+      lazy.l10n.formatValueSync(message, l10nArgs),
       buttonFlags,
-      lazy.l10n.formatValueSync("download-ui-cancel-downloads-ok", {
-        downloadsCount: aDownloadsCount,
-      }),
+      lazy.l10n.formatValueSync(okButton, l10nArgs),
       lazy.l10n.formatValueSync(cancelButton),
       null,
       null,
