@@ -1278,13 +1278,13 @@ RefPtr<DrawTarget> NativeLayerWaylandRender::NextSurfaceAsDrawTarget(
         "NativeLayerWaylandRender::NextSurfaceAsDrawTarget(): use progress "
         "buffer for rendering");
     mInProgressBuffer = mSurfacePoolHandle->ObtainBufferFromPool(
-        lock, mSize, mRootLayer->GetDRMFormat());
+        &lock, mSize, mRootLayer->GetDRMFormat());
     if (mFrontBuffer) {
       LOGVERBOSE(
           "NativeLayerWaylandRender::NextSurfaceAsDrawTarget(): read-back from "
           "front buffer");
       ReadBackFrontBuffer(lock);
-      mSurfacePoolHandle->ReturnBufferToPool(lock, mFrontBuffer);
+      mSurfacePoolHandle->ReturnBufferToPool(&lock, mFrontBuffer);
       mFrontBuffer = nullptr;
     }
   }
@@ -1327,7 +1327,7 @@ Maybe<GLuint> NativeLayerWaylandRender::NextSurfaceAsFramebuffer(
         "NativeLayerWaylandRender::NextSurfaceAsFramebuffer(): use progress "
         "buffer for rendering");
     mInProgressBuffer = mSurfacePoolHandle->ObtainBufferFromPool(
-        lock, mSize, mRootLayer->GetDRMFormat());
+        &lock, mSize, mRootLayer->GetDRMFormat());
   }
 
   MOZ_DIAGNOSTIC_ASSERT(mInProgressBuffer,
@@ -1354,7 +1354,7 @@ Maybe<GLuint> NativeLayerWaylandRender::NextSurfaceAsFramebuffer(
         "NativeLayerWaylandRender::NextSurfaceAsFramebuffer(): read-back from "
         "front buffer");
     ReadBackFrontBuffer(lock);
-    mSurfacePoolHandle->ReturnBufferToPool(lock, mFrontBuffer);
+    mSurfacePoolHandle->ReturnBufferToPool(&lock, mFrontBuffer);
     mFrontBuffer = nullptr;
   }
 
@@ -1490,11 +1490,11 @@ void NativeLayerWaylandRender::DiscardBackbuffersLocked(
       aForce, mInProgressBuffer.get(), mFrontBuffer.get());
   if (mInProgressBuffer &&
       (!mInProgressBuffer->IsAttached(aProofOfLock) || aForce)) {
-    mSurfacePoolHandle->ReturnBufferToPool(aProofOfLock, mInProgressBuffer);
+    mSurfacePoolHandle->ReturnBufferToPool(&aProofOfLock, mInProgressBuffer);
     mInProgressBuffer = nullptr;
   }
   if (mFrontBuffer && (!mFrontBuffer->IsAttached(aProofOfLock) || aForce)) {
-    mSurfacePoolHandle->ReturnBufferToPool(aProofOfLock, mFrontBuffer);
+    mSurfacePoolHandle->ReturnBufferToPool(&aProofOfLock, mFrontBuffer);
     mFrontBuffer = nullptr;
   }
 }
