@@ -546,6 +546,9 @@ tasks:
                                             TASKCLUSTER_VOLUMES: /builds/worker/artifacts
                                             MOZ_UPLOAD_DIR: /builds/worker/artifacts
                                             MOZ_AUTOMATION: '1'
+                                            RUN_TASK_STARTUP_HOOK: /builds/worker/bin/run_task_resource_monitor.py
+                                            RUN_TASK_RESOURCE_USAGE: /builds/worker/artifacts/profile_run-task-resource-usage.json
+                                            RUN_TASK_RESOURCE_USAGE_NAME: "Decision Task (${tasks_for})"
                                             # mach generates pyc files when reading `mach_commands.py`
                                             # This causes cached_task digest generation to be random for
                                             # some tasks. Disable bytecode generation to work around that.
@@ -565,10 +568,10 @@ tasks:
                                       taskclusterProxy: true
                                       chainOfTrust: true
 
-                                  image: mozillareleases/taskgraph:run-task-latest
+                                  image: 'mozillareleases/gecko_decision:6.0.0@sha256:e17e2b35c915d7059de5ccb0295d53b04cdc1c4970c8a69d34a079abe3a47729'
                                   maxRunTime: 1800
                                   command:
-                                      - run-task
+                                      - /builds/worker/bin/run-task-git
                                       - '--gecko-checkout=/builds/worker/checkouts/gecko'
                                       - '--gecko-shallow-clone'
                                       - '--'
