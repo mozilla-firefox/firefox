@@ -1414,6 +1414,91 @@
         "targeting"
       ]
     },
+    "UrlbarAction": {
+      "$schema": "https://json-schema.org/draft/2019-09/schema",
+      "$id": "file:///UrlbarAction.schema.json",
+      "title": "UrlbarAction",
+      "description": "A template for messages that add a quick action button to the address bar, shown when the user types one of its keywords. Frequency caps are not currently supported, and no impressions, exposure or messaging telemetry are recorded; use the urlbar engagement telemetry, where actions appear as `fxms_<key>`.",
+      "allOf": [
+        {
+          "$ref": "chrome://browser/content/asrouter/schemas/MessagingExperiment.schema.json#/$defs/Message"
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "template": {
+          "type": "string",
+          "const": "urlbar_action"
+        },
+        "content": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]{1,24}$",
+              "description": "Unique identifier for the action. Firefox registers it as `fxms_<key>`, which is how it appears in urlbar telemetry."
+            },
+            "keywords": {
+              "type": "array",
+              "items": {
+                "$ref": "chrome://browser/content/asrouter/schemas/MessagingExperiment.schema.json#/$defs/localizableText"
+              },
+              "minItems": 1,
+              "description": "Typed text that shows the action. A localized string may hold several comma separated keywords."
+            },
+            "label": {
+              "$ref": "chrome://browser/content/asrouter/schemas/MessagingExperiment.schema.json#/$defs/localizableText",
+              "description": "Text displayed on the action button."
+            },
+            "icon": {
+              "type": "string",
+              "pattern": "^(chrome|resource)://",
+              "description": "A chrome:// or resource:// URL of an icon that ships with Firefox."
+            },
+            "action": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "SHOW_SPOTLIGHT",
+                    "OPEN_ABOUT_PAGE",
+                    "OPEN_PREFERENCES_PAGE",
+                    "OPEN_SUPPORT_PAGE",
+                    "SELECT_AND_MARK_MENU_ITEM"
+                  ],
+                  "description": "The special message action run when the action is picked."
+                },
+                "data": {
+                  "type": "object",
+                  "description": "Data for the action."
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "key",
+            "keywords",
+            "label",
+            "icon",
+            "action"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "not": {
+        "required": [
+          "trigger"
+        ]
+      },
+      "required": [
+        "targeting"
+      ]
+    },
     "Message": {
       "type": "object",
       "properties": {
@@ -1445,7 +1530,8 @@
             "feature_callout",
             "toast_notification",
             "toolbar_badge",
-            "update_action"
+            "update_action",
+            "urlbar_action"
           ]
         },
         "frequency": {
@@ -1809,6 +1895,25 @@
           },
           "then": {
             "$ref": "chrome://browser/content/asrouter/schemas/MessagingExperiment.schema.json#/$defs/UpdateAction"
+          }
+        },
+        {
+          "if": {
+            "type": "object",
+            "properties": {
+              "template": {
+                "type": "string",
+                "enum": [
+                  "urlbar_action"
+                ]
+              }
+            },
+            "required": [
+              "template"
+            ]
+          },
+          "then": {
+            "$ref": "chrome://browser/content/asrouter/schemas/MessagingExperiment.schema.json#/$defs/UrlbarAction"
           }
         }
       ]

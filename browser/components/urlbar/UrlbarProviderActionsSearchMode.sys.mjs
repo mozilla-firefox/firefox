@@ -137,9 +137,9 @@ export class UrlbarProviderActionsSearchMode extends UrlbarProvider {
     let action = lazy.ActionsProviderQuickActions.getAction(result.payload.key);
 
     return {
-      label: {
-        l10n: { id: action.label },
-      },
+      label: action.label
+        ? { l10n: { id: action.label } }
+        : { textContent: action.labelText ?? "" },
     };
   }
 }

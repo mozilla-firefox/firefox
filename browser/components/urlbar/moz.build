@@ -18,6 +18,7 @@ MOZ_SRC_FILES += [
     "actors/UrlbarParent.sys.mjs",
     "MerinoClient.sys.mjs",
     "QuickActionsLoaderDefault.sys.mjs",
+    "QuickActionsLoaderMessaging.sys.mjs",
     "QuickSuggest.sys.mjs",
     "SmartbarMentionsPanelSearch.sys.mjs",
     "UrlbarMuxerStandard.sys.mjs",

@@ -116,6 +116,8 @@ const JEXL_PROVIDER_CACHE = new Set();
 // To observe the app locale change notification.
 const TOPIC_INTL_LOCALE_CHANGED = "intl:app-locales-changed";
 const TOPIC_EXPERIMENT_ENROLLMENT_CHANGED = "nimbus:enrollments-updated";
+// Notified after messages have been reloaded from at least one provider.
+const TOPIC_MESSAGES_LOADED = "asrouter:messages-loaded";
 // To observe the pref that controls if ASRouter should use the remote Fluent files for l10n.
 const USE_REMOTE_L10N_PREF =
   "browser.newtabpage.activity-stream.asrouter.useRemoteL10n";
@@ -1117,6 +1119,7 @@ export class _ASRouter {
 
       await this.setState(newState);
       await this.cleanupImpressions();
+      Services.obs.notifyObservers(null, TOPIC_MESSAGES_LOADED);
     }
 
     await this._fireMessagesLoadedTrigger();

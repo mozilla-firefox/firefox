@@ -113,6 +113,30 @@ Example:
 }
 ```
 
+### `OPEN_SUPPORT_PAGE`
+
+* args:
+```ts
+{
+  args: string, // support page slug, e.g. "firefox-backup"
+  where?: "current" | "save" | "tab" | "tabshifted" | "window", // defaults to "current"
+}
+```
+
+Opens a support.mozilla.org article. `args` is the article's slug, resolved against
+the `app.support.baseURL` pref, so the link always points to the support site for
+the user's version, OS and locale. The page must resolve to a URL under
+`app.support.baseURL`; other URLs throw an error.
+
+Example:
+
+```json
+"action": {
+  "type": "OPEN_SUPPORT_PAGE",
+  "data": { "args": "firefox-backup", "where": "current" }
+}
+```
+
 ### `SHOW_FIREFOX_ACCOUNTS`
 
 * args: (none)

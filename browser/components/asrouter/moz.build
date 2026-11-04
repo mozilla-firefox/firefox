@@ -69,6 +69,7 @@ TESTING_JS_MODULES += [
     "content-src/templates/OnboardingMessage/Spotlight.schema.json",
     "content-src/templates/OnboardingMessage/ToolbarBadgeMessage.schema.json",
     "content-src/templates/OnboardingMessage/UpdateAction.schema.json",
+    "content-src/templates/OnboardingMessage/UrlbarAction.schema.json",
     "content-src/templates/PBNewtab/NewtabPromoMessage.schema.json",
     "content-src/templates/ToastNotification/ToastNotification.schema.json",
     "tests/InflightAssetsMessageProvider.sys.mjs",
