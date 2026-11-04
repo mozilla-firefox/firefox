@@ -32,6 +32,9 @@ add_task(async function () {
   info("Back to the console, still paused in inner()");
   await toolbox.selectTool("webconsole");
 
+  // Wait for the console to reflect the paused frame before evaluating.
+  await waitFor(() => hud.getSelectedFrameActorID() != null);
+
   info(
     "A `let` declaration in the frame shadows the outer binding, so " +
       "readOuterX() still sees the outer value"
