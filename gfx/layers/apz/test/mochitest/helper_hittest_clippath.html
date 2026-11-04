@@ -73,9 +73,8 @@ async function test() {
       layersId,
       `(simple) point inside the clip shape of the overlaying div`);
 
-  // Now we turn the "simple" clip-path that WR can handle into a more complex
-  // one that needs a mask. Then run the checks again; the expected results for
-  // WR are slightly different
+  // Now we turn the clip-path into a polygon, which WR renders as a path clip,
+  // and run the checks again.
   document.getElementById("clipped").style.clipPath = "polygon(" +
     "50px 200px, 75px 75px, 200px 50px, 205px 55px, 210px 50px, " +
     "215px 55px, 220px 50px, 225px 55px, 230px 50px, 235px 55px, " +
@@ -106,7 +105,7 @@ async function test() {
       `(complex) point in the iframe behind overlaying div, inside the bounding box of the clip path, but outside the actual clip shape`);
   checkHitResult(hitTest({ x: 300, y: 200 }),
       APZHitResultFlags.VISIBLE,
-      iframeViewId,
+      rootViewId,
       layersId,
       `(complex) point inside the clip shape of the overlaying div`);
 }
