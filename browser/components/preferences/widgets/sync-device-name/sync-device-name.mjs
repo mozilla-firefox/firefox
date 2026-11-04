@@ -93,7 +93,6 @@ class SyncDeviceName extends MozLitElement {
     return html`<moz-button
       id="fxaChangeDeviceName"
       data-l10n-id="sync-device-name-change-2"
-      data-l10n-attrs="accesskey"
       slot="actions"
       @click=${this.onDeviceNameChange}
       ?disabled=${this.disabled}
@@ -111,14 +110,12 @@ class SyncDeviceName extends MozLitElement {
       <moz-button
         id="fxaCancelChangeDeviceName"
         data-l10n-id="sync-device-name-cancel"
-        data-l10n-attrs="accesskey"
         slot="actions"
         @click=${this.onDeviceNameCancel}
       ></moz-button>
       <moz-button
         id="fxaSaveChangeDeviceName"
         data-l10n-id="sync-device-name-save"
-        data-l10n-attrs="accesskey"
         slot="actions"
         @click=${this.onDeviceNameSave}
       ></moz-button>`;
