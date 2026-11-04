@@ -96,9 +96,7 @@ internal fun MiddleSearchHomepage(
                                 onMiddleSearchBarVisibilityChanged(false)
                             }
 
-                            Box(modifier = Modifier.padding(horizontal = horizontalMargin)) {
-                                PrivateBrowsingDescription(onLearnMoreClick = interactor::onLearnMoreClicked)
-                            }
+                            PrivateBrowsingDescription(onLearnMoreClick = interactor::onLearnMoreClicked)
                         }
 
                         is HomepageState.Normal -> {

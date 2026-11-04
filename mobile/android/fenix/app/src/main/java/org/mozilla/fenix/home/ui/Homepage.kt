@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.support.ktx.android.net.hostWithoutCommonPrefixes
@@ -186,6 +188,13 @@ internal fun Homepage(
                             Image(
                                 painter = painterResource(id = iconsR.drawable.mozac_ic_private_mode_circle_fill_72),
                                 contentDescription = null,
+                                modifier =
+                                    Modifier.thenConditional(
+                                            Modifier.padding(vertical = FirefoxTheme.layout.space.static50)
+                                        ) {
+                                            middleSearchState.isShown
+                                        }
+                                        .size(40.dp),
                             )
 
                             if (middleSearchState.isShown) {
@@ -198,7 +207,7 @@ internal fun Homepage(
 
                                 Spacer(Modifier.height(FirefoxTheme.layout.space.static400))
                             } else {
-                                Spacer(Modifier.height(FirefoxTheme.layout.space.static300))
+                                Spacer(Modifier.height(FirefoxTheme.layout.space.static500))
                             }
 
                             PrivateBrowsingDescription(onLearnMoreClick = interactor::onLearnMoreClicked)

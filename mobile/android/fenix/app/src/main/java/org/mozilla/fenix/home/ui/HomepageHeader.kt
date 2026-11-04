@@ -31,6 +31,7 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import mozilla.components.compose.base.button.IconButton
+import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.ui.icons.R as iconsR
@@ -77,10 +78,10 @@ fun HomepageHeader(
         modifier =
             Modifier.fillMaxWidth()
                 .wrapContentHeight()
-                .padding(
-                    bottom = FirefoxTheme.layout.space.static500,
-                    top = FirefoxTheme.layout.space.static100,
-                )
+                .padding(top = FirefoxTheme.layout.space.static100)
+                .thenConditional(Modifier.padding(bottom = FirefoxTheme.layout.space.static500)) {
+                    !browsingMode.isPrivate
+                }
                 .padding(horizontal = FirefoxTheme.layout.space.static100),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -170,6 +171,22 @@ private fun HomepageHeaderPreview(@PreviewParameter(PreviewThemeProvider::class)
             HomepageHeader(
                 browsingMode = BrowsingMode.Normal,
                 showStoriesButton = true,
+                showButtons = true,
+                browsingModeChanged = {},
+                onStoriesTapped = {},
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+private fun HomepageHeaderPrivatePreview() {
+    FirefoxTheme(theme = Theme.Private) {
+        Surface {
+            HomepageHeader(
+                browsingMode = BrowsingMode.Private,
+                showStoriesButton = false,
                 showButtons = true,
                 browsingModeChanged = {},
                 onStoriesTapped = {},
