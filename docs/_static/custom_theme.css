@@ -127,6 +127,12 @@ pre.mermaid {
       filter: invert(1) hue-rotate(180deg);
     }
   }
+
+  /* ZenUML draws a message's step number in a gray that falls short of 4.5:1;
+     this is the color of its message labels. */
+  & > svg[aria-roledescription="zenuml"] .seq-number {
+    fill: #222;
+  }
 }
 
 /* The extension wraps each diagram in this flex container to hold its
