@@ -125,6 +125,11 @@ async function testBookmarkTitleRendering(bookmarkInfo, title, message) {
   const { component } = await showBookmarksSidebar(window);
   const row = await getBookmarkRow(component.bookmarkList, bookmark);
   Assert.equal(row.title, title, message);
+  await assertRowTooltip(
+    row,
+    `${title}\n${bookmark.url.href}`,
+    "Tooltip shows the title and URL."
+  );
 
   await PlacesUtils.bookmarks.remove(bookmark);
   SidebarTestUtils.closePanel(window);

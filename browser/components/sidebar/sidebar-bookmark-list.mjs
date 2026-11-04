@@ -301,8 +301,6 @@ export class SidebarBookmarkList extends SidebarTabList {
         .guid=${ifDefined(tabItem.guid)}
         .hasPopup=${this.hasPopup}
         .indicators=${tabItem.indicators}
-        .primaryL10nArgs=${ifDefined(tabItem.primaryL10nArgs)}
-        .primaryL10nId=${tabItem.primaryL10nId}
         role="treeitem"
         aria-level=${this.level}
         aria-posinset=${i + 1}
@@ -846,9 +844,5 @@ export class SidebarBookmarkList extends SidebarTabList {
 }
 customElements.define("sidebar-bookmark-list", SidebarBookmarkList);
 
-export class SidebarBookmarkRow extends SidebarTabRow {
-  get tooltipText() {
-    return this.url ? `${this.title}\n${this.url}` : null;
-  }
-}
+export class SidebarBookmarkRow extends SidebarTabRow {}
 customElements.define("sidebar-bookmark-row", SidebarBookmarkRow);

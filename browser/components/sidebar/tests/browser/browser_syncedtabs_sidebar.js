@@ -177,6 +177,11 @@ add_task(async function test_tabs() {
       const tabData = client.tabs[j];
       Assert.equal(row.title, tabData.title, `Tab ${j + 1} has correct title.`);
       Assert.equal(row.url, tabData.url, `Tab ${j + 1} has correct URL.`);
+      await assertRowTooltip(
+        row,
+        `${tabData.title}\n${tabData.url}`,
+        `Tab ${j + 1} tooltip shows the title and URL.`
+      );
 
       // We need to wait for the document to flush to ensure it's completely opened
       await content.promiseDocumentFlushed(() => {});

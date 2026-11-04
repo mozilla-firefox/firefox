@@ -180,6 +180,47 @@ add_task(async function test_history_cards_created() {
   SidebarController.hide();
 });
 
+add_task(async function test_history_row_tooltips() {
+  const untitledURL = "https://example.com/untitled";
+  await PlacesUtils.history.insert({
+    url: untitledURL,
+    visits: [{ date: new Date() }],
+  });
+
+  const { component } = await showHistorySidebar();
+  const { lists } = component;
+  await BrowserTestUtils.waitForMutationCondition(
+    lists[0].shadowRoot,
+    { subtree: true, childList: true },
+    () => lists[0].rowEls.length === URLs.length + 1
+  );
+
+  for (const row of lists[0].rowEls) {
+    if (row.url === untitledURL) {
+      await assertRowTooltip(
+        row,
+        untitledURL,
+        "Tooltip shows only the URL when the visit has no title."
+      );
+    } else {
+      await assertRowTooltip(
+        row,
+        `Example Domain ${URLs.indexOf(row.url)}\n${row.url}`,
+        `Tooltip shows the title and URL for ${row.url}.`
+      );
+    }
+  }
+
+  await PlacesUtils.history.remove(untitledURL);
+  await BrowserTestUtils.waitForMutationCondition(
+    lists[0].shadowRoot,
+    { subtree: true, childList: true },
+    () => lists[0].rowEls.length === URLs.length,
+    { msg: "The untitled visit is removed." }
+  );
+  SidebarController.hide();
+});
+
 add_task(async function test_history_searchbox_focus_and_context_menu() {
   const { component, contentWindow } = await showHistorySidebar();
   const { searchTextbox } = component;

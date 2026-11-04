@@ -265,10 +265,6 @@ export class HistoryController {
         : visit.pageGuid;
     visit.title = visit.title || visit.url;
     visit.icon = `page-icon:${visit.url}`;
-    visit.primaryL10nId = "fxviewtabrow-tabs-list-tab";
-    visit.primaryL10nArgs = JSON.stringify({
-      targetURI: visit.url,
-    });
     visit.secondaryL10nId = "fxviewtabrow-options-menu-button";
     visit.secondaryL10nArgs = JSON.stringify({
       tabTitle: visit.title || visit.url,

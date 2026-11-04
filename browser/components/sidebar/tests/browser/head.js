@@ -214,6 +214,24 @@ async function waitForRepaint() {
   );
 }
 
+/**
+ * Asserts the tooltip of a sidebar row once Fluent has translated it, so that
+ * a localized title would have replaced the expected one.
+ *
+ * @param {SidebarTabRow} row
+ * @param {string} expected
+ * @param {string} message
+ */
+async function assertRowTooltip(row, expected, message) {
+  await row.updateComplete;
+  await row.ownerDocument.l10n.translateFragment(row.mainEl);
+  Assert.ok(
+    !row.mainEl.hasAttribute("data-l10n-id"),
+    "Row link has no Fluent ID that could override its tooltip."
+  );
+  Assert.equal(row.mainEl.title, expected, message);
+}
+
 function cleanUpExtraTabs() {
   while (window.gBrowser.tabs.length > 1) {
     BrowserTestUtils.removeTab(window.gBrowser.tabs.at(-1));

@@ -142,8 +142,6 @@ export class SidebarTabList extends FxviewTabListBase {
         .indicators=${tabItem.indicators}
         .mediumView=${this.mediumView}
         .inactiveWindow=${this.inactiveWindow}
-        .primaryL10nArgs=${ifDefined(tabItem.primaryL10nArgs)}
-        .primaryL10nId=${tabItem.primaryL10nId}
         role=${this.inTree ? "treeitem" : "listitem"}
         aria-level=${ifDefined(this.inTree ? this.level : undefined)}
         aria-posinset=${ifDefined(this.inTree ? i + 1 : undefined)}
@@ -272,7 +270,13 @@ export class SidebarTabRow extends FxviewTabRowBase {
   }
 
   get tooltipText() {
-    return !this.primaryL10nId ? this.url : null;
+    if (!this.url) {
+      return null;
+    }
+    if (!this.title || this.title == this.url) {
+      return this.url;
+    }
+    return `${this.title}\n${this.url}`;
   }
 
   /**
@@ -372,8 +376,6 @@ export class SidebarTabRow extends FxviewTabRowBase {
           ),
         })}
         ?disabled=${this.closeRequested}
-        data-l10n-args=${ifDefined(this.primaryL10nArgs)}
-        data-l10n-id=${ifDefined(this.primaryL10nId)}
         href=${ifDefined(this.url)}
         id="fxview-tab-row-main"
         tabindex="-1"

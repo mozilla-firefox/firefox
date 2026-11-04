@@ -373,8 +373,6 @@ export class SyncedTabsController {
           time: tab.lastUsed * 1000,
           url: tab.url,
           fxaDeviceId: tab.fxaDeviceId,
-          primaryL10nId: "firefoxview-tabs-list-tab-button",
-          primaryL10nArgs: JSON.stringify({ targetURI: tab.url }),
           secondaryL10nId: this.contextMenu
             ? "fxviewtabrow-options-menu-button"
             : undefined,

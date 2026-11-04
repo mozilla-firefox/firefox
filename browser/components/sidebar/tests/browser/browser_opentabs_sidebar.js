@@ -58,6 +58,28 @@ add_task(async function test_opentabs_lists_current_window_tabs() {
   SidebarTestUtils.closePanel(window);
 });
 
+add_task(async function test_opentabs_row_tooltip() {
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "data:text/html,<title>Tooltip Test</title>"
+  );
+  const url = tab.linkedBrowser.currentURI.spec;
+
+  const component = await showOpenTabsPanel();
+  const tabList = getTabList(component);
+  await waitForRowCount(tabList, getVisibleTabCount());
+
+  const row = [...tabList.rowEls].find(rowEl => rowEl.tabElement === tab);
+  await assertRowTooltip(
+    row,
+    `Tooltip Test\n${url}`,
+    "Tooltip shows the tab title and URL."
+  );
+
+  BrowserTestUtils.removeTab(tab);
+  SidebarTestUtils.closePanel(window);
+});
+
 add_task(async function test_clicking_row_selects_tab() {
   const tab = await BrowserTestUtils.openNewForegroundTab(
     gBrowser,
