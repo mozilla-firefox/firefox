@@ -25,7 +25,7 @@ sequenceDiagram
     C->>FC: Launch browser
     destroy FC
     FC->>FH: Redirect command line
-    rect grey
+    rect rgba(128, 128, 128, 0.2)
     Note left of C: Pipe IPC
     FH->>C: Request foreground privilege
     C->>FH: Success or failure of AllowSetForegroundWindow
@@ -55,7 +55,7 @@ sequenceDiagram
     Note right of C: Named pipe created
     create participant FN as Firefox<br/>(new session)
     C->>FN: Launch browser
-    rect grey
+    rect rgba(128, 128, 128, 0.2)
     Note right of C: Pipe IPC
     FN->>C: Request foreground privilege
     C->>FN: Success or failure of<br/>AllowSetForegroundWindow
@@ -84,7 +84,7 @@ sequenceDiagram
     C->>FC: Launch browser
     destroy FC
     FC->>FS: Redirect command line
-    rect grey
+    rect rgba(128, 128, 128, 0.2)
     Note left of C: Pipe IPC
     FS->>C: Request foreground privilege
     C->>FS: Success or failure of<br/>AllowSetForegroundWindow
