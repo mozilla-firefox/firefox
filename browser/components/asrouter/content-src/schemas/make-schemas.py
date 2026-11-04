@@ -97,9 +97,6 @@ SCHEMAS = [
             "UpdateAction": (
                 SCHEMA_DIR / "OnboardingMessage" / "UpdateAction.schema.json"
             ),
-            "UrlbarAction": (
-                SCHEMA_DIR / "OnboardingMessage" / "UrlbarAction.schema.json"
-            ),
         },
         bundle_common=True,
         test_corpus={

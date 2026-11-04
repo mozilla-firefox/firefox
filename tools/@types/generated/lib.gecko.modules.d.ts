@@ -520,7 +520,6 @@ export interface Modules {
   "moz-src:///browser/components/urlbar/ActionsProviderQuickActions.sys.mjs": typeof import("moz-src:///browser/components/urlbar/ActionsProviderQuickActions.sys.mjs"),
   "moz-src:///browser/components/urlbar/MerinoClient.sys.mjs": typeof import("moz-src:///browser/components/urlbar/MerinoClient.sys.mjs"),
   "moz-src:///browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs": typeof import("moz-src:///browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs"),
-  "moz-src:///browser/components/urlbar/QuickActionsLoaderMessaging.sys.mjs": typeof import("moz-src:///browser/components/urlbar/QuickActionsLoaderMessaging.sys.mjs"),
   "moz-src:///browser/components/urlbar/QuickSuggest.sys.mjs": typeof import("moz-src:///browser/components/urlbar/QuickSuggest.sys.mjs"),
   "moz-src:///browser/components/urlbar/SmartbarMentionsPanelSearch.sys.mjs": typeof import("moz-src:///browser/components/urlbar/SmartbarMentionsPanelSearch.sys.mjs"),
   "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs"),

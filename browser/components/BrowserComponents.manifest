@@ -205,7 +205,6 @@ category browser-idle-startup moz-src:///browser/components/tabbrowser/TabUnload
 category browser-idle-startup moz-src:///browser/components/tabbrowser/TabGroupsToolbarButton.sys.mjs TabGroupsToolbarButton.init
 category browser-idle-startup moz-src:///browser/components/genai/GenAI.sys.mjs GenAI.init
 category browser-idle-startup moz-src:///browser/components/urlbar/QuickSuggest.sys.mjs QuickSuggest.init
-category browser-idle-startup moz-src:///browser/components/urlbar/QuickActionsLoaderMessaging.sys.mjs QuickActionsLoaderMessaging.init
 category browser-idle-startup moz-src:///browser/components/urlbar/UrlbarSearchTermsPersistence.sys.mjs UrlbarSearchTermsPersistence.init
 category browser-idle-startup moz-src:///browser/components/search/SERPCategorization.sys.mjs SERPCategorization.init
 category browser-idle-startup resource://gre/modules/ContentRelevancyManager.sys.mjs ContentRelevancyManager.init

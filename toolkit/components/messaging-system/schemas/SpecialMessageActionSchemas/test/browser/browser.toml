@@ -71,8 +71,6 @@ run-if = [
 
 ["browser_sma_open_spotlight_dialog.js"]
 
-["browser_sma_open_support_page.js"]
-
 ["browser_sma_open_tab_in_splitview.js"]
 
 ["browser_sma_open_url.js"]

@@ -968,27 +968,6 @@ export const SpecialMessageActions = {
           }
         );
         break;
-      case "OPEN_SUPPORT_PAGE": {
-        let baseURL = new URL(
-          Services.urlFormatter.formatURLPref("app.support.baseURL")
-        );
-        let supportPageURL = new URL(action.data.args, baseURL);
-        // The page must resolve to a URL under the support base URL.
-        if (
-          supportPageURL.origin !== baseURL.origin ||
-          !supportPageURL.pathname.startsWith(baseURL.pathname)
-        ) {
-          throw new Error(
-            `SpecialMessageActions: OPEN_SUPPORT_PAGE disallows ${action.data.args}`
-          );
-        }
-        window.openLinkIn(supportPageURL.href, action.data.where || "current", {
-          private: false,
-          triggeringPrincipal:
-            Services.scriptSecurityManager.createNullPrincipal({}),
-        });
-        break;
-      }
       case "OPEN_APPLICATIONS_MENU":
         lazy.UITour.showMenu(window, action.data.args);
         break;

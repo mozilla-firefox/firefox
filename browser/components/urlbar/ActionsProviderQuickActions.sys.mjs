@@ -12,8 +12,6 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = XPCOMUtils.declareLazy({
   QuickActionsLoaderDefault:
     "moz-src:///browser/components/urlbar/QuickActionsLoaderDefault.sys.mjs",
-  QuickActionsLoaderMessaging:
-    "moz-src:///browser/components/urlbar/QuickActionsLoaderMessaging.sys.mjs",
   UrlbarPrefs: "moz-src:///browser/components/urlbar/UrlbarPrefs.sys.mjs",
 });
 
@@ -28,10 +26,8 @@ const MIN_SEARCH_PREF = "quickactions.minimumSearchString";
  *   The possible typed entries that this command will be displayed for.
  * @property {string} icon
  *   The URI of the icon associated with this command.
- * @property {string} [label]
+ * @property {string} label
  *   The id of the label for the result element.
- * @property {string} [labelText]
- *   Plain text for the label, used when there's no `label` l10n id.
  * @property {() => boolean} [isUnsupported]
  *   Called to check whether this action's underlying feature or capability is
  *   unavailable, e.g. disabled by a pref or policy, or missing on this build.
@@ -107,7 +103,6 @@ class ProviderQuickActions extends ActionsProvider {
         providerName: this.name,
         key,
         l10nId: action.label,
-        labelText: action.labelText,
         icon: action.icon,
         dataset: {
           action: key,
@@ -150,12 +145,6 @@ class ProviderQuickActions extends ActionsProvider {
     if (options?.focusContent) {
       controller.browserWindow.gBrowser.selectedBrowser.focus();
     }
-  }
-
-  onSearchSessionEnd(_queryContext, _controller, _details) {
-    // Refresh actions from messages, whose targeting may depend on state that
-    // changed, e.g. whether backups are enabled.
-    lazy.QuickActionsLoaderMessaging.reload();
   }
 
   /**

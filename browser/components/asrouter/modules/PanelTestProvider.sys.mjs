@@ -952,22 +952,6 @@ const MESSAGES = () => [
     targeting: "true",
   },
   {
-    id: "TEST_URLBAR_ACTION",
-    groups: [],
-    template: "urlbar_action",
-    content: {
-      key: "test",
-      keywords: ["fxmstest", "fxms test"],
-      label: "Open about:robots",
-      icon: "chrome://global/skin/icons/info.svg",
-      action: {
-        type: "OPEN_ABOUT_PAGE",
-        data: { args: "robots", where: "tab" },
-      },
-    },
-    targeting: "true",
-  },
-  {
     id: "MULTISTAGE_SPOTLIGHT_MESSAGE",
     groups: ["panel-test-provider"],
     template: "spotlight",
