@@ -27,7 +27,6 @@ describe("ASRouterChild", () => {
         msg.IMPRESSION,
         msg.RESET_PROVIDER_PREF,
         msg.SET_PROVIDER_USER_PREF,
-        msg.USER_ACTION,
       ].forEach(type => {
         it(`type ${type}`, () => {
           asRouterChild.asRouterMessage({
@@ -41,6 +40,16 @@ describe("ASRouterChild", () => {
             something: 1,
           });
         });
+      });
+    });
+    it("uses sendQuery for USER_ACTION so callers can await the result", () => {
+      asRouterChild.asRouterMessage({
+        type: msg.USER_ACTION,
+        data: { something: 1 },
+      });
+      sandbox.assert.notCalled(asRouterChild.sendAsyncMessage);
+      sandbox.assert.calledWith(asRouterChild.sendQuery, msg.USER_ACTION, {
+        something: 1,
       });
     });
     // Some legacy privileged extensions still send this legacy NEWTAB_MESSAGE_REQUEST

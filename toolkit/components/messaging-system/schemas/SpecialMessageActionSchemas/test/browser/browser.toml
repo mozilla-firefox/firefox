@@ -116,6 +116,8 @@ run-if = [
 
 ["browser_sma_show_migration_wizard.js"]
 
+["browser_sma_show_qr_code.js"]
+
 ["browser_sma_submit_onboarding_opt_out_ping.js"]
 
 ["browser_sma_submit_smartwindow_prompt.js"]

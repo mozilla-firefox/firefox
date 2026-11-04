@@ -186,13 +186,16 @@ class SharingUtilsCls {
       qrCodeDataURI,
     };
 
-    win.gBrowser
+    let { closedPromise, dialog } = win.gBrowser
       .getTabDialogBox(browser)
       .open(
         "chrome://browser/content/qrcode/qrcode-dialog.html",
         { features: "resizable=no", allowDuplicateDialogs: false },
         params
       );
+    if (dialog) {
+      await closedPromise;
+    }
   }
 
   #waitForTabRestored(tab) {

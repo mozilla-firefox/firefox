@@ -167,3 +167,89 @@ add_task(async function test_card_stack_paint_order_ltr() {
 add_task(async function test_card_stack_paint_order_rtl() {
   await checkCardStackPaintOrder("rtl");
 });
+
+add_task(async function test_card_stack_needsAwait_waits_for_qr_dialog() {
+  let sandbox = sinon.createSandbox();
+  const [firstScreen, ...otherScreens] = gCardStackMessage.content.screens;
+  const message = {
+    ...gCardStackMessage,
+    content: {
+      ...gCardStackMessage.content,
+      screens: [
+        {
+          ...firstScreen,
+          content: {
+            ...firstScreen.content,
+            primary_button: {
+              ...firstScreen.content.primary_button,
+              action: {
+                type: "SHOW_QR_CODE",
+                data: { args: "https://example.com/" },
+                needsAwait: true,
+                navigate: true,
+              },
+            },
+          },
+        },
+        ...otherScreens,
+      ],
+    },
+  };
+
+  await withTestMessage(sandbox, message, async () => {
+    let tab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      "about:newtab"
+    );
+    let manager = gBrowser
+      .getTabDialogBox(tab.linkedBrowser)
+      .getTabDialogManager();
+
+    const screenIsShowing = screenId =>
+      SpecialPowers.spawn(tab.linkedBrowser, [screenId], async id => {
+        const host = await ContentTaskUtils.waitForCondition(() =>
+          content.document.querySelector(".asrouter-multistage-message-wrapper")
+        );
+        const shadow = Cu.waiveXrays(host).shadowRoot;
+        await ContentTaskUtils.waitForCondition(
+          () => shadow?.querySelector(`.screen.${id}`),
+          `Waiting for ${id}`
+        );
+      });
+
+    await screenIsShowing(firstScreen.id);
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      const host = content.document.querySelector(
+        ".asrouter-multistage-message-wrapper"
+      );
+      Cu.waiveXrays(host).shadowRoot.querySelector("button.primary").click();
+    });
+
+    await TestUtils.waitForCondition(
+      () => manager._dialogs.length,
+      "Waiting for the QR code dialog to open"
+    );
+    let [dialog] = manager._dialogs;
+    await dialog._dialogReady;
+
+    let stillOnFirstScreen = await SpecialPowers.spawn(
+      tab.linkedBrowser,
+      [firstScreen.id],
+      id =>
+        !!Cu.waiveXrays(
+          content.document.querySelector(".asrouter-multistage-message-wrapper")
+        ).shadowRoot.querySelector(`.screen.${id}`)
+    );
+    Assert.ok(
+      stillOnFirstScreen,
+      "The card stack stays on the first card while the dialog is open"
+    );
+
+    dialog.close();
+    await screenIsShowing(otherScreens[0].id);
+    Assert.ok(true, "The card stack advanced after the dialog closed");
+
+    BrowserTestUtils.removeTab(tab);
+  });
+  sandbox.restore();
+});

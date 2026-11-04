@@ -173,6 +173,21 @@ window or tab closed before sign-in could be completed.
 }
 ```
 
+### `SHOW_QR_CODE`
+
+* args: `string` (a url)
+
+Shows a QR code for the given url in a dialog over the current tab. Resolves once the dialog is closed.
+
+Example:
+
+```json
+"action": {
+  "type": "SHOW_QR_CODE",
+  "data": { "args": "https://www.mozilla.org/firefox/mobile/" }
+}
+```
+
 ### `SHOW_MIGRATION_WIZARD`
 
 * args:

@@ -103,8 +103,7 @@ export class ASRouterChild extends JSWindowActorChild {
         case msg.FORCE_PRIVATE_BROWSING_WINDOW:
         case msg.IMPRESSION:
         case msg.RESET_PROVIDER_PREF:
-        case msg.SET_PROVIDER_USER_PREF:
-        case msg.USER_ACTION: {
+        case msg.SET_PROVIDER_USER_PREF: {
           return this.sendAsyncMessage(type, data);
         }
         default: {

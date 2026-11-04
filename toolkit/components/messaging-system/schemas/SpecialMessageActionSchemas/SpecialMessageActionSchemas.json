@@ -323,6 +323,29 @@
           "properties": {
             "type": {
               "type": "string",
+              "enum": ["SHOW_QR_CODE"]
+            },
+            "data": {
+              "type": "object",
+              "properties": {
+                "args": {
+                  "type": "string",
+                  "description": "URL to encode in the QR code"
+                }
+              },
+              "required": ["args"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["data", "type"],
+          "additionalProperties": false,
+          "description": "Shows a QR code for the given URL in a dialog over the current tab"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "enum": ["PIN_CURRENT_TAB"]
             }
           },

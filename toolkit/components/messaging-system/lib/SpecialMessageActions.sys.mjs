@@ -73,6 +73,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   SessionStore:
     "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
+  SharingUtils: "moz-src:///browser/components/sharing/SharingUtils.sys.mjs",
+  // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
   Spotlight: "resource:///modules/asrouter/Spotlight.sys.mjs",
   // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
   TaskbarTabs: "moz-src:///browser/components/taskbartabs/TaskbarTabs.sys.mjs",
@@ -922,6 +924,17 @@ export const SpecialMessageActions = {
           }
         );
         break;
+      case "SHOW_QR_CODE": {
+        const { gBrowser } = window.top;
+        await lazy.SharingUtils.showQRCodePanel(
+          window.top,
+          gBrowser.getTabForBrowser(browser)
+            ? browser
+            : gBrowser.selectedBrowser,
+          Services.urlFormatter.formatURL(action.data.args)
+        );
+        break;
+      }
       case "OPEN_ABOUT_PAGE": {
         let aboutPageURL = new URL(`about:${action.data.args}`);
         if (!ALLOWED_ABOUT_PAGES.has(aboutPageURL.pathname)) {
