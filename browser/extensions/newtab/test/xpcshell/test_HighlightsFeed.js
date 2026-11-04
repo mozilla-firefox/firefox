@@ -13,6 +13,8 @@ ChromeUtils.defineESModuleGetters(this, {
   HighlightsFeed: "resource://newtab/lib/HighlightsFeed.sys.mjs",
   NewTabUtils: "resource://gre/modules/NewTabUtils.sys.mjs",
   PageThumbs: "resource://gre/modules/PageThumbs.sys.mjs",
+  PlacesTestUtils: "resource://testing-common/PlacesTestUtils.sys.mjs",
+  PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
   Screenshots: "resource://newtab/lib/Screenshots.sys.mjs",
   SectionsManager: "resource://newtab/lib/SectionsManager.sys.mjs",
@@ -1341,4 +1343,30 @@ add_task(function test_orderHighlights_sorts_by_date_added_descending() {
   );
 
   sandbox.restore();
+});
+
+add_task(async function test_addLastVisitDates() {
+  info("_addLastVisitDates should set the Places last visit date on pages");
+  // Normalized like the URLs highlights read from Places
+  const url = "https://example.com/page";
+  const visitDate = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+  await PlacesTestUtils.addVisits({ uri: url, visitDate });
+
+  const highlights = [
+    { url, type: "history" },
+    { url: "https://example.com/file.pdf", type: "download", date_added: 1 },
+  ];
+  await new HighlightsFeed()._addLastVisitDates(highlights);
+
+  Assert.equal(
+    highlights[0].lastVisitDate,
+    visitDate.getTime(),
+    "History page gets its last visit date in ms"
+  );
+  Assert.ok(
+    !("lastVisitDate" in highlights[1]),
+    "Downloads keep only date_added"
+  );
+
+  await PlacesUtils.history.clear();
 });

@@ -8,6 +8,7 @@ import { stubGlobals } from "test/jest/test-utils";
 import { SpaceActiveContext } from "content-src/lib/SpaceActiveContext";
 import {
   focusOnceRendered,
+  formatRelativeDate,
   useIntersectionObserver,
   getActiveCardSize,
   getActiveColumnLayout,
@@ -426,5 +427,26 @@ describe("focusOnceRendered", () => {
     focusOnceRendered({ focus });
     expect(focus).toHaveBeenCalledTimes(1);
     expect(() => focusOnceRendered(null)).not.toThrow();
+  });
+});
+
+describe("formatRelativeDate", () => {
+  const now = new Date(2026, 10, 2, 9);
+  const daysAgo = days => new Date(2026, 10, 2 - days, 23).getTime();
+
+  it("should use calendar-day, week and month buckets", () => {
+    expect(formatRelativeDate(daysAgo(0), "en-US", now)).toBe("Today");
+    expect(formatRelativeDate(daysAgo(1), "en-US", now)).toBe("Yesterday");
+    expect(formatRelativeDate(daysAgo(6), "en-US", now)).toBe("6 days ago");
+    expect(formatRelativeDate(daysAgo(20), "en-US", now)).toBe("2 weeks ago");
+    expect(formatRelativeDate(daysAgo(60), "en-US", now)).toBe("2 months ago");
+  });
+
+  it("should fall back to an absolute date after 11 months", () => {
+    expect(formatRelativeDate(daysAgo(400), "en-US", now)).toMatch(/2025/);
+  });
+
+  it("should not throw before the app locale is known", () => {
+    expect(formatRelativeDate(daysAgo(0), "", now)).toBeTruthy();
   });
 });

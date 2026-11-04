@@ -567,3 +567,35 @@ describe("<PlaceholderCard />", () => {
     expect(container.querySelector(".card-outer")).toHaveClass("placeholder");
   });
 });
+
+describe("<Card> with Nova enabled", () => {
+  function mountNovaCard() {
+    return mountCardWithProps({
+      ...DEFAULT_PROPS,
+      novaEnabled: true,
+      link: { ...DEFAULT_PROPS.link, lastVisitDate: Date.now() },
+    });
+  }
+
+  it("should render the domain, last visited date and a panel-list menu", () => {
+    const { container } = mountNovaCard();
+    expect(container.querySelector(".card-host-name")).toHaveTextContent("foo");
+    expect(container.querySelector(".card-context-label")).toHaveTextContent(
+      "Today"
+    );
+    const panelList = container.querySelector("panel-list");
+    expect(container.querySelector("moz-button").getAttribute("menuid")).toBe(
+      panelList.id
+    );
+  });
+
+  it("should be active while its menu is open", () => {
+    const { container } = mountNovaCard();
+    const card = container.querySelector(".card-outer");
+    const panelList = container.querySelector("panel-list");
+    act(() => panelList.dispatchEvent(new Event("shown")));
+    expect(card).toHaveClass("active");
+    act(() => panelList.dispatchEvent(new Event("hidden")));
+    expect(card).not.toHaveClass("active");
+  });
+});

@@ -1058,7 +1058,7 @@ export const PREFS_CONFIG = new Map([
     "section.highlights.rows",
     {
       title: "Number of rows of Highlights to display",
-      value: 1,
+      value: 2,
     },
   ],
   [

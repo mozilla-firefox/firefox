@@ -2,7 +2,10 @@
 
 /* stylelint-disable max-nesting-depth */
 
-.card-outer {
+// @nova-cleanup(remove-styles): Remove the classic card styles. In Nova, Card
+// is only rendered by Highlights, so its styles live in
+// DiscoveryStreamComponents/Highlights/_Highlights.scss.
+.classic-enabled .card-outer {
   @include context-menu-button;
 
   background: var(--newtab-background-color-secondary);
@@ -189,7 +192,7 @@
   }
 }
 
-.normal-cards {
+.classic-enabled .normal-cards {
   .card-outer {
     // Wide layout styles
     @media (min-width: $break-point-widest) {
@@ -240,7 +243,7 @@
   }
 }
 
-.compact-cards {
+.classic-enabled .compact-cards {
   $card-detail-vertical-spacing: 12px;
 
   .card-outer {

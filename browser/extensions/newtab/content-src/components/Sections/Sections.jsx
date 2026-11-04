@@ -16,6 +16,9 @@ const VISIBLE = "visible";
 const VISIBILITY_CHANGE_EVENT = "visibilitychange";
 const CARDS_PER_ROW_DEFAULT = 3;
 const CARDS_PER_ROW_COMPACT_WIDE = 4;
+// @nova-cleanup(remove-pref): Remove PREF_NOVA_ENABLED
+const PREF_NOVA_ENABLED = "nova.enabled";
+const NOVA_HIGHLIGHTS_MAX_CARDS_PER_ROW = 4;
 
 export class Section extends React.PureComponent {
   get numRows() {
@@ -178,7 +181,12 @@ export class Section extends React.PureComponent {
       ? CARDS_PER_ROW_COMPACT_WIDE
       : CARDS_PER_ROW_DEFAULT;
     const { numRows } = this;
-    const maxCards = maxCardsPerRow * numRows;
+    // @nova-cleanup(remove-conditional): Keep only the Nova branch for highlights
+    const isNovaHighlights =
+      id === "highlights" && this.props.Prefs.values[PREF_NOVA_ENABLED];
+    const maxCards =
+      (isNovaHighlights ? NOVA_HIGHLIGHTS_MAX_CARDS_PER_ROW : maxCardsPerRow) *
+      numRows;
     const maxCardsOnNarrow = CARDS_PER_ROW_DEFAULT * numRows;
     const shouldShowReadMore = read_more_endpoint;
 
@@ -190,11 +198,23 @@ export class Section extends React.PureComponent {
 
     const cards = [];
     if (!shouldShowEmptyState) {
-      for (let i = 0; i < maxCards; i++) {
+      const cardCount =
+        isNovaHighlights && initialized ? realRows.length : maxCards;
+      for (let i = 0; i < cardCount; i++) {
         const link = realRows[i];
         // On narrow viewports, we only show 3 cards per row. We'll mark the rest as
         // .hide-for-narrow to hide in CSS via @media query.
-        const className = i >= maxCardsOnNarrow ? "hide-for-narrow" : "";
+        let className = i >= maxCardsOnNarrow ? "hide-for-narrow" : "";
+        // Nova shows numRows rows at each width, except 1 column, which
+        // shows the same cards as 2 columns.
+        if (isNovaHighlights) {
+          className = [
+            i >= 2 * numRows && "nova-hide-below-3",
+            i >= 3 * numRows && "nova-hide-below-4",
+          ]
+            .filter(Boolean)
+            .join(" ");
+        }
         let usePlaceholder = !link;
         // If we are in the third card and waiting for spoc,
         // use the placeholder.
