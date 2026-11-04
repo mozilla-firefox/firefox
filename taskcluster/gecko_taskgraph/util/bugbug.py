@@ -13,6 +13,7 @@ import time
 from concurrent.futures import Future
 
 import requests
+from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
 from taskgraph import create
 from taskgraph.util import json
 from taskgraph.util.taskcluster import requests_retry_session
@@ -144,16 +145,21 @@ def _fetch_push_schedules(branch, rev, session, *, write_perfherder_data=True):
 
     attempts = timeout / RETRY_INTERVAL
     i = 0
-    while i < attempts:
-        r = session.get(url)
-        r.raise_for_status()
+    try:
+        while i < attempts:
+            r = session.get(url)
+            r.raise_for_status()
 
-        if r.status_code != 202:
-            break
+            if r.status_code != 202:
+                break
 
-        time.sleep(RETRY_INTERVAL)
-        i += 1
-    end = monotonic()
+            time.sleep(RETRY_INTERVAL)
+            i += 1
+    finally:
+        end = monotonic()
+        SystemResourceMonitor.record_marker(
+            "bugbug", start, end, {"type": "Text", "text": url}
+        )
 
     if write_perfherder_data:
         _write_perfherder_data(
