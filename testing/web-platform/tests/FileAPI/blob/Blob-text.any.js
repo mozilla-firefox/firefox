@@ -52,6 +52,30 @@ promise_test(async () => {
 }, "Blob.text() invalid utf-8 input")
 
 promise_test(async () => {
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF, 0x50, 0x41, 0x53, 0x53])]);
+  const text = await blob.text();
+  assert_equals(text, "PASS");
+}, "Blob.text() strips a UTF-8 byte order mark")
+
+promise_test(async () => {
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF, 0xEF, 0xBB, 0xBF, 0x50])]);
+  const text = await blob.text();
+  assert_equals(text, "\ufeffP");
+}, "Blob.text() strips only one UTF-8 byte order mark")
+
+promise_test(async () => {
+  const blob = new Blob([new Uint8Array([0xFF, 0xFE, 0x50, 0x00])]);
+  const text = await blob.text();
+  assert_equals(text, "\ufffd\ufffdP\u0000");
+}, "Blob.text() does not sniff a UTF-16LE byte order mark")
+
+promise_test(async () => {
+  const blob = new Blob([new Uint8Array([0xFE, 0xFF, 0x00, 0x50])]);
+  const text = await blob.text();
+  assert_equals(text, "\ufffd\ufffd\u0000P");
+}, "Blob.text() does not sniff a UTF-16BE byte order mark")
+
+promise_test(async () => {
   const input_arr = new Uint8Array([192, 193, 245, 246, 247, 248, 249, 250, 251,
       252, 253, 254, 255]);
   const blob = new Blob([input_arr]);
