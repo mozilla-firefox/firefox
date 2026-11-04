@@ -847,6 +847,19 @@ class MOZ_GSL_POINTER Span {
     return index_type(it - begin);
   }
 
+  // Returns the index of the last occurrence of the given element in the span,
+  // or `npos` otherwise.
+  template <typename Item>
+  constexpr index_type LastIndexOf(const Item& aItem) const {
+    auto begin = this->rbegin();
+    auto end = this->rend();
+    auto it = std::find(begin, end, aItem);
+    if (it == end) {
+      return npos;
+    }
+    return index_type(end - it - 1);
+  }
+
   // Returns whether the element is somewhere in the span.
   template <typename Item>
   constexpr bool Contains(const Item& aItem) const {

@@ -102,6 +102,16 @@ class FastFrontRemovableArray {
 
   template <typename Item>
   bool RemoveElement(const Item& aItem) {
+    const auto len = Length();
+    if (!len) {
+      return false;
+    }
+    if (LastElement() == aItem) {
+      // Removing the last element is common (and removing the first one is
+      // already fast via IndexOf), so avoid the linear search in that case.
+      RemoveElementAt(len - 1);
+      return true;
+    }
     auto i = IndexOf(aItem);
     if (i == NoIndex) {
       return false;

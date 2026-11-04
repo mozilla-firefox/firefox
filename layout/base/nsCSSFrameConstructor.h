@@ -88,6 +88,10 @@ class nsCSSFrameConstructor final : public nsFrameManager {
     Async,
   };
 
+  // Whether the caller of ContentRangeInserted knows that all the children in
+  // the range share the same insertion point.
+  enum class SameInsertionPoint : bool { No, Yes };
+
   mozilla::RestyleManager* RestyleManager() const;
 
   mozilla::ViewportFrame* ConstructRootFrame();
@@ -104,34 +108,38 @@ class nsCSSFrameConstructor final : public nsFrameManager {
   void CheckBitsForLazyFrameConstruction(nsIContent*) {}
 #endif
 
-  // Issues a single ContentInserted for each child in the range
-  // [aStartChild, aEndChild).
-  void IssueSingleInsertNofications(nsIContent* aStartChild,
-                                    nsIContent* aEndChild, InsertionKind);
+  // Issues ContentRangeInserted calls for the children of a shadow host in the
+  // range [aStartChild, aEndChild), batching runs of consecutive siblings that
+  // share the same insertion point.
+  void IssueShadowHostChildrenInsertNotifications(
+      const mozilla::dom::ShadowRoot&, nsIContent* aStartChild,
+      nsIContent* aEndChild, InsertionKind);
 
   /**
    * Data that represents an insertion point for some child content.
    */
   struct InsertionPoint {
-    InsertionPoint() : mParentFrame(nullptr), mContainer(nullptr) {}
+    InsertionPoint() = default;
 
     InsertionPoint(nsContainerFrame* aParentFrame, nsIContent* aContainer)
         : mParentFrame(aParentFrame), mContainer(aContainer) {}
+
+    bool operator==(const InsertionPoint&) const = default;
 
     /**
      * The parent frame to use if the inserted children needs to create
      * frame(s).  May be null, which signals that  we shouldn't try to
      * create frames for the inserted children; either because there are
      * no parent frame or because there are multiple insertion points and
-     * we will call IssueSingleInsertNofications for each child instead.
+     * we will call ContentRangeInserted for each subrange instead.
      * mContainer should not be used when mParentFrame is null.
      */
-    nsContainerFrame* mParentFrame;
+    nsContainerFrame* mParentFrame = nullptr;
     /**
      * The flattened tree parent for the inserted children.
      * It's undefined if mParentFrame is null.
      */
-    nsIContent* mContainer;
+    nsIContent* mContainer = nullptr;
   };
 
   /**
@@ -139,8 +147,8 @@ class nsCSSFrameConstructor final : public nsFrameManager {
    * inserted/appended to one insertion point together.
    *
    * If so, returns that insertion point. If not, returns with
-   * InsertionPoint.mFrame == nullptr and issues single ContentInserted calls
-   * for each child.
+   * InsertionPoint.mFrame == nullptr and issues ContentRangeInserted calls
+   * for each subrange that shares an insertion point.
    *
    * aEndChild = nullptr indicates that we are dealing with an append.
    */
@@ -211,11 +219,11 @@ class nsCSSFrameConstructor final : public nsFrameManager {
   // [aStartChild, aEndChild).  aStartChild must be non-null.  aEndChild may be
   // null to indicate the range includes all kids after aStartChild.
   //
-  // If aInsertionKind is Async then frame construction of the new children can
-  // be done lazily. It is only allowed to be Async when inserting a single
-  // node.
+  // For InsertionKind::Async, frame construction of the new children can
+  // be done lazily.
   void ContentRangeInserted(nsIContent* aStartChild, nsIContent* aEndChild,
-                            InsertionKind aInsertionKind);
+                            InsertionKind,
+                            SameInsertionPoint = SameInsertionPoint::No);
 
   // The kind of removal we're dealing with.
   enum class RemovalKind : uint8_t {

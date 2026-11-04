@@ -51,6 +51,7 @@
 #include "mozilla/dom/HTMLSelectElement.h"
 #include "mozilla/dom/HTMLSharedListElement.h"
 #include "mozilla/dom/HTMLSummaryElement.h"
+#include "mozilla/dom/ShadowRoot.h"
 #include "mozilla/intl/LocaleService.h"
 #include "nsAtom.h"
 #include "nsAutoLayoutPhase.h"
@@ -5930,7 +5931,7 @@ void nsCSSFrameConstructor::CheckBitsForLazyFrameConstruction(
 //
 // NOTE(emilio): This function assumes that the flattened tree
 // parent of all the appended children is the same, which holds because this
-// gets called after GetRangeInsertionPoint which notifies individually.
+// gets called after GetRangeInsertionPoint which otherwise splits the range.
 void nsCSSFrameConstructor::ConstructLazily(nsIContent* aStartChild,
                                             nsIContent* aEndChild) {
   MOZ_ASSERT(aStartChild->GetParent());
@@ -5964,16 +5965,25 @@ void nsCSSFrameConstructor::ConstructLazily(nsIContent* aStartChild,
   parent->NoteDescendantsNeedFramesForServo();
 }
 
-void nsCSSFrameConstructor::IssueSingleInsertNofications(
-    nsIContent* aStartChild, nsIContent* aEndChild,
+void nsCSSFrameConstructor::IssueShadowHostChildrenInsertNotifications(
+    const ShadowRoot& aShadow, nsIContent* aStartChild, nsIContent* aEndChild,
     InsertionKind aInsertionKind) {
-  for (nsIContent* child = aStartChild; child != aEndChild;
-       child = child->GetNextSibling()) {
-    MOZ_ASSERT(!child->GetPrimaryFrame());
-
-    // Call ContentRangeInserted with this node.
-    ContentRangeInserted(child, child->GetNextSibling(), aInsertionKind);
-  }
+  // When slots are named we're guaranteed that siblings in the DOM tree are
+  // also siblings in the flat tree as long as they share the slot.
+  const bool namedSlots = aShadow.SlotAssignment() == SlotAssignmentMode::Named;
+  nsIContent* runStart = aStartChild;
+  do {
+    nsIContent* runEnd = runStart->GetNextSibling();
+    auto* slot = runStart->GetAssignedSlot();
+    if (!slot || namedSlots) {
+      while (runEnd != aEndChild && runEnd->GetAssignedSlot() == slot) {
+        runEnd = runEnd->GetNextSibling();
+      }
+    }
+    ContentRangeInserted(runStart, runEnd, aInsertionKind,
+                         SameInsertionPoint::Yes);
+    runStart = runEnd;
+  } while (runStart != aEndChild);
 }
 
 nsCSSFrameConstructor::InsertionPoint
@@ -5983,11 +5993,11 @@ nsCSSFrameConstructor::GetRangeInsertionPoint(nsIContent* aStartChild,
   MOZ_ASSERT(aStartChild);
   MOZ_ASSERT(aStartChild->GetParentNode());
 
-  // If the children of the container may be distributed to different insertion
-  // points, insert them separately and bail out, letting ContentInserted handle
-  // the mess.
-  if (aStartChild->GetParentNode()->GetShadowRoot()) {
-    IssueSingleInsertNofications(aStartChild, aEndChild, aInsertionKind);
+  if (auto* shadow = aStartChild->GetParentNode()->GetShadowRoot()) {
+    // If the children of the container may be distributed to different
+    // insertion points, insert them in separate batches and bail out.
+    IssueShadowHostChildrenInsertNotifications(*shadow, aStartChild, aEndChild,
+                                               aInsertionKind);
     return {};
   }
 
@@ -6132,9 +6142,9 @@ static nsIFrame* FindCaptionPrevSibling(nsTableWrapperFrame* aTable,
 // suitable to have its frames constructed all at once they must meet the same
 // conditions that ContentAppended imposes (GetRangeInsertionPoint checks
 // these), plus more.
-void nsCSSFrameConstructor::ContentRangeInserted(nsIContent* aStartChild,
-                                                 nsIContent* aEndChild,
-                                                 InsertionKind aInsertionKind) {
+void nsCSSFrameConstructor::ContentRangeInserted(
+    nsIContent* aStartChild, nsIContent* aEndChild,
+    InsertionKind aInsertionKind, SameInsertionPoint aSameInsertionPoint) {
   AUTO_PROFILER_LABEL_HOT("nsCSSFrameConstructor::ContentRangeInserted",
                           LAYOUT_FrameConstruction);
   AUTO_LAYOUT_PHASE_ENTRY_POINT(mPresShell->GetPresContext(), FrameC);
@@ -6215,11 +6225,18 @@ void nsCSSFrameConstructor::ContentRangeInserted(nsIContent* aStartChild,
 
   const bool isSingleInsert = aStartChild->GetNextSibling() == aEndChild;
   InsertionPoint insertion;
-  if (isSingleInsert) {
+  if (isSingleInsert || aSameInsertionPoint == SameInsertionPoint::Yes) {
     // See if we have a Shadow DOM insertion point. If so, then that's our real
     // parent frame; if not, then the frame hasn't been built yet and we just
     // bail.
     insertion = GetInsertionPoint(aStartChild);
+#ifdef DEBUG
+    for (nsIContent* child = aStartChild->GetNextSibling(); child != aEndChild;
+         child = child->GetNextSibling()) {
+      MOZ_ASSERT(GetInsertionPoint(child) == insertion,
+                 "Caller lied, not the same insertion point");
+    }
+#endif
   } else {
     // Get our insertion point. If we need to issue single ContentInserteds
     // GetRangeInsertionPoint will take care of that for us.
