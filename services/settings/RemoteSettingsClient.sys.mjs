@@ -580,6 +580,11 @@ export class RemoteSettingsClient extends EventEmitter {
       ) {
         // If consumer requested an empty list fallback, no need to raise attention if no data in DB.
         lazy.console.debug(e);
+      } else if (Services.startup.shuttingDown) {
+        lazy.console.debug(
+          `${this.identifier} read interrupted by shutdown`,
+          e
+        );
       } else {
         // Report error, and continue with trying to load the binary dump.
         lazy.console.error(e);
