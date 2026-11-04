@@ -275,7 +275,8 @@ void JSStackFrame::UnregisterAndClear() {
     return;
   }
 
-  xpc::UnregisterJSStackFrame(js::GetNonCCWObjectRealm(mStack), this);
+  xpc::UnregisterJSStackFrame(js::GetNonCCWObjectRealm(mStack.unbarrieredGet()),
+                              this);
   Clear();
 }
 
