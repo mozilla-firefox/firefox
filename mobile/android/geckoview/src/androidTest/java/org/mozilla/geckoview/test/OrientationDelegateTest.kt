@@ -110,17 +110,12 @@ class OrientationDelegateTest : BaseSessionTest() {
         )
     }
 
-    private fun lockPortrait() {
-        val promise = mainSession.evaluatePromiseJS("screen.orientation.lock('portrait-primary')")
+    private fun lock(type: String, expected: Int, configuration: Int, orientation: String = "screen.orientation") {
         sessionRule.delegateDuringNextWait(
             object : OrientationController.OrientationDelegate {
                 @AssertCalled(count = 1)
                 override fun onOrientationLock(aOrientation: Int): GeckoResult<AllowOrDeny> {
-                    assertThat(
-                        "The orientation should be portrait",
-                        aOrientation,
-                        equalTo(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT),
-                    )
+                    assertThat("The orientation should be $type", aOrientation, equalTo(expected))
                     activityRule.scenario.onActivity { activity ->
                         activity.requestedOrientation = aOrientation
                     }
@@ -128,35 +123,22 @@ class OrientationDelegateTest : BaseSessionTest() {
                 }
             }
         )
-        sessionRule.runtime.orientationChanged(Configuration.ORIENTATION_PORTRAIT)
+        val promise = mainSession.evaluatePromiseJS("$orientation.lock('$type')")
+        sessionRule.waitUntilCalled(OrientationController.OrientationDelegate::class, "onOrientationLock")
+        sessionRule.runtime.orientationChanged(configuration)
         promise.value
-        // Remove previous delegate
-        mainSession.waitForRoundTrip()
     }
 
-    private fun lockLandscape(orientation: String = "screen.orientation") {
-        val promise = mainSession.evaluatePromiseJS("$orientation.lock('landscape-primary')")
-        sessionRule.delegateDuringNextWait(
-            object : OrientationController.OrientationDelegate {
-                @AssertCalled(count = 1)
-                override fun onOrientationLock(aOrientation: Int): GeckoResult<AllowOrDeny> {
-                    assertThat(
-                        "The orientation should be landscape",
-                        aOrientation,
-                        equalTo(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE),
-                    )
-                    activityRule.scenario.onActivity { activity ->
-                        activity.requestedOrientation = aOrientation
-                    }
-                    return GeckoResult.allow()
-                }
-            }
+    private fun lockPortrait() =
+        lock("portrait-primary", ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, Configuration.ORIENTATION_PORTRAIT)
+
+    private fun lockLandscape(orientation: String = "screen.orientation") =
+        lock(
+            "landscape-primary",
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
+            Configuration.ORIENTATION_LANDSCAPE,
+            orientation,
         )
-        sessionRule.runtime.orientationChanged(Configuration.ORIENTATION_LANDSCAPE)
-        promise.value
-        // Remove previous delegate
-        mainSession.waitForRoundTrip()
-    }
 
     @Test
     fun orientationLock() {
@@ -164,9 +146,9 @@ class OrientationDelegateTest : BaseSessionTest() {
         activityRule.scenario.onActivity { activity ->
             // If the orientation is landscape, lock to portrait and wait for delegate. If portrait, lock to landscape
             // instead.
-            if (activity.resources.configuration.orientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            if (activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 lockPortrait()
-            } else if (activity.resources.configuration.orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+            } else if (activity.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 lockLandscape()
             }
         }
@@ -229,27 +211,7 @@ class OrientationDelegateTest : BaseSessionTest() {
     fun orientationLockUnlock() {
         goFullscreen()
 
-        val promise = mainSession.evaluatePromiseJS("screen.orientation.lock('landscape-primary')")
-        sessionRule.delegateDuringNextWait(
-            object : OrientationController.OrientationDelegate {
-                @AssertCalled(count = 1)
-                override fun onOrientationLock(aOrientation: Int): GeckoResult<AllowOrDeny> {
-                    assertThat(
-                        "The orientation value is as expected",
-                        aOrientation,
-                        equalTo(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE),
-                    )
-                    activityRule.scenario.onActivity { activity ->
-                        activity.requestedOrientation = aOrientation
-                    }
-                    return GeckoResult.allow()
-                }
-            }
-        )
-        sessionRule.runtime.orientationChanged(Configuration.ORIENTATION_LANDSCAPE)
-        promise.value
-        // Remove previous delegate
-        mainSession.waitForRoundTrip()
+        lockLandscape()
 
         // after locking to orientation landscape, unlock to default
         mainSession.evaluateJS("screen.orientation.unlock()")
@@ -314,9 +276,9 @@ class OrientationDelegateTest : BaseSessionTest() {
         activityRule.scenario.onActivity { activity ->
             // If the orientation is landscape, lock to portrait and wait for delegate. If portrait, lock to landscape
             // instead.
-            if (activity.resources.configuration.orientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            if (activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 lockPortrait()
-            } else if (activity.resources.configuration.orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
+            } else if (activity.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
                 lockLandscape()
             }
         }
