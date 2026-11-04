@@ -14,6 +14,7 @@ import mozilla.components.feature.search.ext.waitForSelectedOrDefaultSearchEngin
 import org.mozilla.fenix.BrowserDirection
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.components.metrics.MetricsUtils
+import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.widget.VoiceSearchActivity.Companion.SPEECH_PROCESSING
@@ -66,6 +67,7 @@ class SpeechProcessingIntentProcessor(
             from = BrowserDirection.FromGlobal,
             engine = searchEngine,
             forceSearch = true,
+            accessPoint = MetricsUtils.Source.WIDGET.toSearchAccessPoint(),
         )
     }
 }

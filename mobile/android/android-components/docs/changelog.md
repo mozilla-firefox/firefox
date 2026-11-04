@@ -11,6 +11,8 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: Added `MediaSessionDelegate.handleMediaUpdated`, which `MediaSessionFeature` calls instead of the playing, paused or stopped handler when only the media tab's title, URL or icon changed. [Bug 2085570](https://bugzilla.mozilla.org/show_bug.cgi?id=2085570)
 * **lib-installation-blockstore**
     * New component that checks for app reinstalls. [Bug 2084343](https://bugzilla.mozilla.org/show_bug.cgi?id=2084343)
+* **browser-state**, **feature-search**
+    * 🆕 Added `SearchEngine.accessPoints`, the per search access point URLs and telemetry suffixes a search-config-v3 engine defines, along with the `SearchEngine.accessPoint` extension that resolves one with a fallback to `default`, and `buildSearchUrl` and `buildSuggestionsURL` overloads that take an access point. Engines from a configuration that does not vary by access point are unaffected. [Bug 2075348](https://bugzilla.mozilla.org/show_bug.cgi?id=2075348)
 * **support-ktx**
     * Added `String.toSnakeCase`, which returns a camelCase or PascalCase string in snake_case. [Bug 2084683](https://bugzilla.mozilla.org/show_bug.cgi?id=2084683)
 * **feature-app-links**

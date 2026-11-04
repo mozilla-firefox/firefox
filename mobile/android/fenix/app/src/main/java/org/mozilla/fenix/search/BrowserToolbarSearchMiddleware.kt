@@ -95,6 +95,7 @@ import org.mozilla.fenix.components.appstate.VoiceSearchAction.VoiceInputRequest
 import org.mozilla.fenix.components.appstate.VoiceSearchAction.VoiceInputRequested
 import org.mozilla.fenix.components.lens.CameraMode
 import org.mozilla.fenix.components.metrics.MetricsUtils
+import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.search.BOOKMARKS_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.HISTORY_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.TABS_SEARCH_ENGINE_ID
@@ -342,23 +343,24 @@ class BrowserToolbarSearchMiddleware(
 
         navController.navigate(NavGraphDirections.actionGlobalBrowser())
 
+        val searchAccessPoint =
+            when (appStore.state.searchState.searchAccessPoint) {
+                MetricsUtils.Source.NONE -> MetricsUtils.Source.ACTION
+                else -> appStore.state.searchState.searchAccessPoint
+            }
+
         components.useCases.fenixBrowserUseCases.loadUrlOrSearch(
             searchTermOrURL = text,
             newTab = newTab,
             forceSearch = !isDefaultEngine,
             private = browsingModeManager.mode.isPrivate,
             searchEngine = searchEngine,
+            accessPoint = searchAccessPoint.toSearchAccessPoint(),
         )
 
         if (text.isUrl() || searchEngine == null) {
             Events.enteredUrl.record(Events.EnteredUrlExtra(autocomplete = false))
         } else {
-            val searchAccessPoint =
-                when (appStore.state.searchState.searchAccessPoint) {
-                    MetricsUtils.Source.NONE -> MetricsUtils.Source.ACTION
-                    else -> appStore.state.searchState.searchAccessPoint
-                }
-
             MetricsUtils.recordSearchMetrics(
                 searchEngine,
                 isDefaultEngine,

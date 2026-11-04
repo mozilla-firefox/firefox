@@ -11,6 +11,36 @@ import androidx.core.net.toUri
 // OpenSearch parameter for search terms.
 const val OS_SEARCH_ENGINE_TERMS_PARAM = "{" + "searchTerms" + "}"
 
+/** The key of the [SearchEngineAccessPoint] a search engine falls back to for any access point it does not define. */
+const val DEFAULT_SEARCH_ACCESS_POINT = "default"
+
+/**
+ * The URLs and telemetry suffix a search engine uses at one search access point.
+ *
+ * An access point present on a [SearchEngine] is used exactly as the configuration specifies it. In particular its URLs
+ * already omit the partner code parameter when the access point has no partner code, rather than carrying it empty. An
+ * access point that is absent falls back to [DEFAULT_SEARCH_ACCESS_POINT] as a whole, not field by field.
+ *
+ * @property resultUrls the search results urls, best first, as [SearchEngine.resultUrls].
+ * @property suggestUrl the search suggestion url.
+ * @property trendingUrl the trending search url.
+ * @property telemetrySuffix the telemetry suffix for this access point.
+ */
+data class SearchEngineAccessPoint(
+    val resultUrls: List<String> = emptyList(),
+    val suggestUrl: String? = null,
+    val trendingUrl: String? = null,
+    val telemetrySuffix: String? = null,
+)
+
+/**
+ * Returns the [SearchEngineAccessPoint] named [accessPoint], or the one named [DEFAULT_SEARCH_ACCESS_POINT] when this
+ * engine does not define [accessPoint]. Returns `null` when the engine defines no access points at all, which is the
+ * case for every engine not configured per access point.
+ */
+fun SearchEngine.accessPoint(accessPoint: String): SearchEngineAccessPoint? =
+    accessPoints[accessPoint] ?: accessPoints[DEFAULT_SEARCH_ACCESS_POINT]
+
 /**
  * A data class representing a search engine.
  *
@@ -24,7 +54,10 @@ const val OS_SEARCH_ENGINE_TERMS_PARAM = "{" + "searchTerms" + "}"
  * @property trendingUrl the trending search url.
  * @property isGeneral whether the search engine is a general search engine.
  * @property isOptional whether the search engine is an additional engine not included in the default list.
- * @property telemetrySuffix the telemetry suffix of this search engine.
+ * @property telemetrySuffix the telemetry suffix of this search engine, for the default search access point.
+ * @property accessPoints the per search access point URLs and telemetry suffixes, keyed by access point name. Empty for
+ *   engines from a configuration that does not vary them, in which case the single-valued properties above apply
+ *   everywhere.
  */
 data class SearchEngine(
     val id: String,
@@ -38,6 +71,7 @@ data class SearchEngine(
     val isGeneral: Boolean = false,
     val isOptional: Boolean = false,
     val telemetrySuffix: String? = null,
+    val accessPoints: Map<String, SearchEngineAccessPoint> = emptyMap(),
 ) {
     /** A enum class representing a search engine type. */
     enum class Type {

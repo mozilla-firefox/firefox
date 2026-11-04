@@ -118,6 +118,7 @@ import org.mozilla.fenix.components.appstate.SupportedMenuNotifications.NotDefau
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.metrics.MetricsUtils
+import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.share.ShareSource
 import org.mozilla.fenix.components.toolbar.BrowserToolbarTestTags.SITE_INFO_INSECURE_CONNECTION
 import org.mozilla.fenix.components.toolbar.BrowserToolbarTestTags.SITE_INFO_LOCAL_FILE
@@ -473,6 +474,7 @@ class BrowserToolbarMiddleware(
                 clipboard.extractURL()?.let {
                     val searchEngine = reconcileSelectedEngine()
                     val selectedTabId = browserStore.state.selectedTabId ?: return
+                    val searchAccessPoint = MetricsUtils.Source.ACTION
                     if (it.isUrl() || searchEngine == null) {
                         browserStore.dispatch(
                             ContentAction.UpdateSearchTermsAction(
@@ -488,7 +490,6 @@ class BrowserToolbarMiddleware(
                                 it,
                             )
                         )
-                        val searchAccessPoint = MetricsUtils.Source.ACTION
                         MetricsUtils.recordSearchMetrics(
                             engine = searchEngine,
                             isDefault = true,
@@ -502,6 +503,7 @@ class BrowserToolbarMiddleware(
                         newTab = false,
                         searchEngine = searchEngine,
                         private = browsingModeManager.mode == Private,
+                        accessPoint = searchAccessPoint.toSearchAccessPoint(),
                     )
                 }
                     ?: run {

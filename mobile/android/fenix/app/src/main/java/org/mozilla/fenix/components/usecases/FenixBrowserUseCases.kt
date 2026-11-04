@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.components.usecases
 
+import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.base.profiler.Profiler
@@ -46,6 +47,8 @@ class FenixBrowserUseCases(
      * @param flags Flags that will be used when loading the URL (not applied to searches).
      * @param historyMetadata The [HistoryMetadataKey] of the new tab in case this tab was opened from history.
      * @param additionalHeaders The extra headers to use when loading the URL.
+     * @param accessPoint The search access point the search is performed from, which selects the partner code to put in
+     *   the search URL. Only applies when a search is performed.
      */
     @Suppress("CognitiveComplexMethod")
     fun loadUrlOrSearch(
@@ -57,6 +60,7 @@ class FenixBrowserUseCases(
         flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none(),
         historyMetadata: HistoryMetadataKey? = null,
         additionalHeaders: Map<String, String>? = null,
+        accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
     ) {
         val startTime = profiler?.getProfilerTime()
 
@@ -96,6 +100,7 @@ class FenixBrowserUseCases(
                     searchEngine = searchEngine,
                     flags = flags,
                     additionalHeaders = additionalHeaders,
+                    accessPoint = accessPoint,
                 )
             } else {
                 searchUseCases.defaultSearch.invoke(
@@ -103,6 +108,7 @@ class FenixBrowserUseCases(
                     searchEngine = searchEngine,
                     flags = flags,
                     additionalHeaders = additionalHeaders,
+                    accessPoint = accessPoint,
                 )
             }
         }

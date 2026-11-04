@@ -109,6 +109,7 @@ class SpeechProcessingIntentProcessorTest {
                 from = BrowserDirection.FromGlobal,
                 forceSearch = true,
                 engine = searchEngine,
+                accessPoint = "widget",
             )
         }
     }

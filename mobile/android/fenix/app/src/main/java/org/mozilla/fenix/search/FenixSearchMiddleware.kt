@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.AwesomeBarAction
 import mozilla.components.browser.state.ext.getUrl
+import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.DefaultSearchEngineProvider
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.findTab
@@ -57,6 +58,7 @@ import org.mozilla.fenix.components.UseCases
 import org.mozilla.fenix.components.appstate.AppAction.SearchAction.SearchEngineSelected
 import org.mozilla.fenix.components.appstate.AppAction.URLCopiedToClipboard
 import org.mozilla.fenix.components.metrics.MetricsUtils
+import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.search.BOOKMARKS_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.HISTORY_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.TABS_SEARCH_ENGINE_ID
@@ -385,6 +387,12 @@ class FenixSearchMiddleware(
             ) {
                 val searchEngine = store.state.searchEngineSource.searchEngine
 
+                val searchAccessPoint =
+                    when (store.state.searchAccessPoint) {
+                        MetricsUtils.Source.NONE -> MetricsUtils.Source.SUGGESTION
+                        else -> store.state.searchAccessPoint
+                    }
+
                 openToBrowserAndLoad(
                     url = searchTerms,
                     createNewTab =
@@ -396,13 +404,8 @@ class FenixSearchMiddleware(
                     usePrivateMode = browsingModeManager.mode.isPrivate,
                     forceSearch = true,
                     searchEngine = searchEngine,
+                    accessPoint = searchAccessPoint.toSearchAccessPoint(),
                 )
-
-                val searchAccessPoint =
-                    when (store.state.searchAccessPoint) {
-                        MetricsUtils.Source.NONE -> MetricsUtils.Source.SUGGESTION
-                        else -> store.state.searchAccessPoint
-                    }
 
                 if (searchEngine != null) {
                     MetricsUtils.recordSearchMetrics(
@@ -436,6 +439,7 @@ class FenixSearchMiddleware(
         forceSearch: Boolean = false,
         searchEngine: SearchEngine? = null,
         flags: LoadUrlFlags = LoadUrlFlags.none(),
+        accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
     ) {
         navController.navigate(R.id.browserFragment)
         useCases.fenixBrowserUseCases.loadUrlOrSearch(
@@ -445,6 +449,7 @@ class FenixSearchMiddleware(
             forceSearch = forceSearch,
             searchEngine = searchEngine,
             flags = flags,
+            accessPoint = accessPoint,
         )
     }
 

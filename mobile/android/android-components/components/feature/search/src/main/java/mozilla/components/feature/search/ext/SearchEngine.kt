@@ -13,6 +13,7 @@ import java.io.InputStream
 import java.util.UUID
 import mozilla.components.browser.state.search.OS_SEARCH_ENGINE_TERMS_PARAM
 import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.browser.state.search.accessPoint
 import mozilla.components.browser.state.state.SearchState
 import mozilla.components.browser.state.state.searchEngines
 import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
@@ -93,6 +94,33 @@ fun SearchEngine.buildSearchUrl(searchTerm: String): String {
     val builder = SearchUrlBuilder(this)
     return builder.buildSearchUrl(searchTerm)
 }
+
+/**
+ * Builds a URL to search for [searchTerm] with this search engine, from [accessPoint].
+ *
+ * Engines whose configuration does not vary by search access point are unaffected, and produce the same URL as the
+ * single-argument `buildSearchUrl`.
+ */
+fun SearchEngine.buildSearchUrl(searchTerm: String, accessPoint: String): String =
+    atAccessPoint(accessPoint).buildSearchUrl(searchTerm)
+
+/**
+ * Creates an URL to retrieve search suggestions for the provided [query], from [accessPoint].
+ *
+ * Engines whose configuration does not vary by search access point are unaffected, and produce the same URL as the
+ * single-argument `buildSuggestionsURL`.
+ */
+fun SearchEngine.buildSuggestionsURL(query: String, accessPoint: String): String? =
+    atAccessPoint(accessPoint).buildSuggestionsURL(query)
+
+/**
+ * Returns this engine with the URLs of [accessPoint] in place of its default ones, or unchanged when it defines no
+ * access points.
+ */
+private fun SearchEngine.atAccessPoint(accessPoint: String): SearchEngine =
+    this.accessPoint(accessPoint)?.let {
+        copy(resultUrls = it.resultUrls, suggestUrl = it.suggestUrl, trendingUrl = it.trendingUrl)
+    } ?: this
 
 /** Parses a [SearchEngine] from the given [stream]. */
 @Deprecated("Only for migrating legacy search engines. Will eventually be removed.")

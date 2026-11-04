@@ -8,7 +8,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.assertNotNull
+import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.browser.state.search.SearchEngineAccessPoint
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.telemetry.glean.testing.GleanTestRule
 import org.junit.Assert.assertEquals
@@ -331,6 +333,66 @@ class MetricsUtilsTestRobolectric {
 
         assertNotNull(Metrics.searchCount["$searchEngineId.shortcut"].testGetValue())
         verify { nimbusEventStore.recordEvent("performed_search") }
+    }
+
+    @Test
+    fun `given an engine with per access point suffixes, when recording a search then the access point suffix is used`() {
+        val searchEngineId = "engine-id"
+        assertNull(Metrics.searchCount["$searchEngineId-b-w.widget"].testGetValue())
+
+        val engine: SearchEngine = mockk(relaxed = true)
+        val nimbusEventStore: NimbusEventStore = mockk(relaxed = true)
+
+        every { engine.id } returns searchEngineId
+        every { engine.type } returns SearchEngine.Type.BUNDLED
+        every { engine.telemetrySuffix } returns "b-m"
+        every { engine.accessPoints } returns
+            mapOf(
+                DEFAULT_SEARCH_ACCESS_POINT to SearchEngineAccessPoint(telemetrySuffix = "b-m"),
+                "widget" to SearchEngineAccessPoint(telemetrySuffix = "b-w"),
+            )
+
+        MetricsUtils.recordSearchMetrics(engine, false, MetricsUtils.Source.WIDGET, nimbusEventStore)
+
+        assertNotNull(Metrics.searchCount["$searchEngineId-b-w.widget"].testGetValue())
+        assertNull(Metrics.searchCount["$searchEngineId-b-m.widget"].testGetValue())
+    }
+
+    @Test
+    fun `given an access point the engine does not define, when recording a search then the default suffix is used`() {
+        val searchEngineId = "engine-id"
+        assertNull(Metrics.searchCount["$searchEngineId-b-m.topsite"].testGetValue())
+
+        val engine: SearchEngine = mockk(relaxed = true)
+        val nimbusEventStore: NimbusEventStore = mockk(relaxed = true)
+
+        every { engine.id } returns searchEngineId
+        every { engine.type } returns SearchEngine.Type.BUNDLED
+        every { engine.telemetrySuffix } returns "b-m"
+        every { engine.accessPoints } returns
+            mapOf(DEFAULT_SEARCH_ACCESS_POINT to SearchEngineAccessPoint(telemetrySuffix = "b-m"))
+
+        MetricsUtils.recordSearchMetrics(engine, false, MetricsUtils.Source.TOPSITE, nimbusEventStore)
+
+        assertNotNull(Metrics.searchCount["$searchEngineId-b-m.topsite"].testGetValue())
+    }
+
+    @Test
+    fun `given an engine with no access points, when recording a search then the engine suffix is used`() {
+        val searchEngineId = "engine-id"
+        assertNull(Metrics.searchCount["$searchEngineId-b-m.topsite"].testGetValue())
+
+        val engine: SearchEngine = mockk(relaxed = true)
+        val nimbusEventStore: NimbusEventStore = mockk(relaxed = true)
+
+        every { engine.id } returns searchEngineId
+        every { engine.type } returns SearchEngine.Type.BUNDLED
+        every { engine.telemetrySuffix } returns "b-m"
+        every { engine.accessPoints } returns emptyMap()
+
+        MetricsUtils.recordSearchMetrics(engine, false, MetricsUtils.Source.TOPSITE, nimbusEventStore)
+
+        assertNotNull(Metrics.searchCount["$searchEngineId-b-m.topsite"].testGetValue())
     }
 
     @Test

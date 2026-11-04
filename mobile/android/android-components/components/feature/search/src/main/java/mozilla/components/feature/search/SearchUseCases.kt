@@ -7,6 +7,7 @@ package mozilla.components.feature.search
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.action.SearchAction
+import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.selector.findTabOrCustomTab
@@ -58,6 +59,8 @@ class SearchUseCases(
          * @param searchEngine Search Engine to use, or the default search engine if none is provided
          * @param flags Flags that will be used when loading the URL.
          * @param additionalHeaders The extra headers to use when loading the URL.
+         * @param accessPoint The search access point the search is performed from, which selects the partner code to
+         *   put in the search URL.
          */
         operator fun invoke(
             searchTerms: String,
@@ -65,13 +68,14 @@ class SearchUseCases(
             searchEngine: SearchEngine? = null,
             flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none(),
             additionalHeaders: Map<String, String>? = null,
+            accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
         ) {
             val isTabPrivate =
                 (sessionId ?: store.state.selectedTabId)?.let {
                     store.state.findTab(it)?.content?.private
                 } ?: false
             val resolvedEngine = searchEngine ?: store.state.search.selectedOrDefaultSearchEngine(isTabPrivate)
-            val searchUrl = resolvedEngine?.buildSearchUrl(searchTerms)
+            val searchUrl = resolvedEngine?.buildSearchUrl(searchTerms, accessPoint)
 
             if (searchUrl == null) {
                 logger.warn("No default search engine available to perform search")
@@ -149,6 +153,8 @@ class SearchUseCases(
          * @param parentSessionId optional parent session to attach this new search session to
          * @param flags Flags that will be used when loading the URL.
          * @param additionalHeaders The extra headers to use when loading the URL.
+         * @param accessPoint The search access point the search is performed from, which selects the partner code to
+         *   put in the search URL.
          */
         operator fun invoke(
             searchTerms: String,
@@ -158,9 +164,10 @@ class SearchUseCases(
             parentSessionId: String? = null,
             flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none(),
             additionalHeaders: Map<String, String>? = null,
+            accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
         ) {
             val resolvedEngine = searchEngine ?: store.state.search.selectedOrDefaultSearchEngine(isPrivate)
-            val searchUrl = resolvedEngine?.buildSearchUrl(searchTerms)
+            val searchUrl = resolvedEngine?.buildSearchUrl(searchTerms, accessPoint)
 
             if (searchUrl == null) {
                 logger.warn("No default search engine available to perform search")
