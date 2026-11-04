@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -38,9 +39,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.paint
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -51,6 +54,7 @@ import mozilla.components.compose.base.PagerIndicator
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.support.base.log.logger.Logger
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.components
 import org.mozilla.fenix.theme.FirefoxTheme
@@ -122,6 +126,10 @@ fun OnboardingScreen(
                 currentIndex(page)
                 lastSettledPage = page
             }
+    }
+
+    if (FeatureFlags.onboardingHapticsEnabled) {
+        OnboardingPagerHaptics(pagerState)
     }
 
     BackHandler(enabled = pagerState.currentPage > 0) {
@@ -229,6 +237,39 @@ internal fun resumedPageIndex(pageIndex: Int, pageCount: Int): Int {
     val lastPageIndex = maxOf(0, pageCount - 1)
     // Bound the saved index to the available pages so a stale value can't point past the last page.
     return pageIndex.coerceIn(0, lastPageIndex)
+}
+
+@Composable
+private fun OnboardingPagerHaptics(pagerState: PagerState) {
+    val haptic = LocalHapticFeedback.current
+
+    LaunchedEffect(pagerState, haptic) {
+        var userDragged = false
+        var previousPage = pagerState.settledPage
+
+        launch {
+            pagerState.interactionSource.interactions.collect { interaction ->
+                when (interaction) {
+                    is DragInteraction.Start -> userDragged = true
+                    is DragInteraction.Cancel -> userDragged = false
+                }
+            }
+        }
+
+        snapshotFlow {
+            pagerState.isScrollInProgress to pagerState.settledPage
+        }
+            .collect { (isScrolling, settledPage) ->
+                if (!isScrolling) {
+                    if (userDragged && settledPage != previousPage) {
+                        haptic.performHapticFeedback(HapticFeedbackType.GestureEnd)
+                    }
+
+                    previousPage = settledPage
+                    userDragged = false
+                }
+            }
+    }
 }
 
 private fun setToDefaultClick(

@@ -122,7 +122,7 @@ fun TermsOfServiceOnboardingPage(
                         .semantics {
                             testTag = pageState.title + "onboarding_card.positive_button"
                         },
-                onClick = pageState.primaryButton.onClick,
+                onClick = hapticOnClick(pageState.primaryButton.onClick),
             )
         }
     }
@@ -202,7 +202,7 @@ private fun BodyText(
                 LinkTextState(
                     text = lineOneLinkText,
                     url = lineOneLinkUrl,
-                    onClick = eventHandler::onTermsOfServiceLinkClicked,
+                    onClick = hapticOnLinkClick(eventHandler::onTermsOfServiceLinkClicked),
                 )
             BodyLinkText(
                 lineOneText.updateFirstPlaceholder(lineOneLinkText),
@@ -213,7 +213,7 @@ private fun BodyText(
                 LinkTextState(
                     text = lineTwoLinkText,
                     url = lineTwoLinkUrl,
-                    onClick = eventHandler::onPrivacyNoticeLinkClicked,
+                    onClick = hapticOnLinkClick(eventHandler::onPrivacyNoticeLinkClicked),
                 )
             BodyLinkText(
                 lineTwoText.updateFirstPlaceholder(lineTwoLinkText),
@@ -224,7 +224,7 @@ private fun BodyText(
                 LinkTextState(
                     text = lineThreeLinkText,
                     url = "", // No URL
-                    onClick = { _ -> eventHandler.onManagePrivacyPreferencesLinkClicked() },
+                    onClick = hapticOnLinkClick { eventHandler.onManagePrivacyPreferencesLinkClicked() },
                 )
             BodyLinkText(
                 lineThreeText.updateFirstPlaceholder(lineThreeLinkText),
