@@ -274,6 +274,7 @@ export class NetworkRequest {
         "@mozilla.org/io/string-input-stream;1"
       ].createInstance(Ci.nsIStringInputStream);
       bodyStream.setByteStringData(body);
+      this.clearRequestHeader("Content-Length");
       this.#channel.explicitSetUploadStream(
         bodyStream,
         null,
