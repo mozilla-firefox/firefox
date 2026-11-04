@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/** @import { EnrollmentStatus } from "./Telemetry.sys.mjs" */
 /** @import { DeferredTask } from "../../../modules/DeferredTask.sys.mjs" */
 /** @import { OpenedConnection, Sqlite } from "../../../modules/Sqlite.sys.mjs" */
 
@@ -82,6 +83,24 @@ const PendingWriteKind = Object.freeze({
  * A pending write to the `NimbusEnrollments` database.
  */
 
+/**
+ * @typedef {object} EnrollmentStatusEntry
+ * A database entry for an enrollment status that occurred in the past.
+ *
+ * @property {EnrollmentStatus} status
+ * The enrollment status event payload.
+ *
+ * @property {Date} timestamp
+ * The timestamp when the enrollment status event was recorded.
+ *
+ * @property {number} index
+ * A per-slug monotonically increasing identifier.
+ *
+ * This field is used to determine which enrollment status entry is the latest
+ * so that we do not have to deal with time-specific issues (e.g., clock drift),
+ * or the reuse of `rowid`s.
+ */
+
 export class PendingWrites {
   static Kind = PendingWriteKind;
 
@@ -104,6 +123,13 @@ export class PendingWrites {
      * @type {Map<string, object | null>}
      */
     this.syncTimestamps = new Map(other?.syncTimestamps.entries() ?? []);
+
+    /**
+     * @type {Map<string, EnrollmentStatusEntry[]>}
+     */
+    this.enrollmentStatuses = new Map(
+      other?.enrollmentStatuses.entries() ?? []
+    );
   }
 
   /**
@@ -112,7 +138,11 @@ export class PendingWrites {
    * @returns {boolean}
    */
   get hasPendingWrites() {
-    return this.enrollments.size > 0 || this.syncTimestamps.size > 0;
+    return (
+      this.enrollments.size > 0 ||
+      this.syncTimestamps.size > 0 ||
+      this.enrollmentStatuses.size > 0
+    );
   }
 
   /**
@@ -158,7 +188,7 @@ export class PendingWrites {
   }
 
   /**
-   * Delete an enrollmment.
+   * Delete an enrollmment and all its enrollment statuses.
    *
    * This only happens when garbage collecting old enrollments.
    *
@@ -166,6 +196,20 @@ export class PendingWrites {
    */
   deleteEnrollment(slug) {
     this.enrollments.set(slug, { kind: PendingWriteKind.DELETE });
+    this.enrollmentStatuses.delete(slug);
+  }
+
+  /**
+   * Record an enrollment status entry.
+   *
+   * @param {string} slug
+   * The slug of enrollment whose status is being updated.
+   *
+   * @param {EnrollmentStatusEntry} entry
+   * The enrollment status entry to record.
+   */
+  recordEnrollmentStatus(slug, entry) {
+    this.enrollmentStatuses.getOrInsertComputed(slug, () => []).push(entry);
   }
 
   /**
@@ -185,6 +229,17 @@ export class PendingWrites {
     }
 
     const merged = new PendingWrites(first);
+
+    // `deleteEnrollment` also deletes the corresponding enrollment statuses.
+    // Merge the enrollment statuses first so that we do not end up with
+    // dangling statuses, e.g., if `first` contains an enrollment and `second`
+    // contains a delete.
+    for (const [slug, entries] of second.enrollmentStatuses.entries()) {
+      merged.enrollmentStatuses
+        .getOrInsertComputed(slug, () => [])
+        .push(...entries);
+    }
+
     for (const [slug, pendingWrite] of second.enrollments.entries()) {
       switch (pendingWrite.kind) {
         case PendingWriteKind.INSERT:
@@ -200,6 +255,7 @@ export class PendingWrites {
           break;
       }
     }
+
     for (const [collection, lastModified] of second.syncTimestamps.entries()) {
       merged.syncTimestamps.set(collection, lastModified);
     }
@@ -259,6 +315,16 @@ export class NimbusEnrollments {
    */
   #syncTimestamps;
 
+  /**
+   * The most recent enrollment status entry for each slug.
+   *
+   * Recency is determined by the {@link EnrollmentStatusEntry.index index}
+   * field.
+   *
+   * @type {Map<string, EnrollmentStatusEntry>}
+   */
+  #latestEnrollmentStatuses;
+
   constructor() {
     this.#initialized = false;
 
@@ -289,6 +355,8 @@ export class NimbusEnrollments {
     return conn.executeTransaction(async txn => {
       const enrollments = await NimbusEnrollments.loadEnrollments(txn);
       this.#syncTimestamps = await NimbusEnrollments.loadSyncTimestamps(txn);
+      this.#latestEnrollmentStatuses =
+        await NimbusEnrollments.loadEnrollmentStatuses(txn);
 
       return enrollments;
     });
@@ -360,10 +428,52 @@ export class NimbusEnrollments {
 
     for (const slug of slugs) {
       this.#pendingWrites.deleteEnrollment(slug);
+      this.#latestEnrollmentStatuses.delete(slug);
     }
     this.#flushSoon();
 
     lazy.log.debug(`Queued removal for ${slugs.length} enrollments`);
+  }
+
+  /**
+   * @param {string} slug
+   * @param {EnrollmentStatus} status
+   */
+  recordEnrollmentStatus(slug, status) {
+    const lastEnrollmentStatus = this.#latestEnrollmentStatuses.get(slug);
+
+    if (
+      !lastEnrollmentStatus ||
+      !NimbusEnrollments.enrollmentStatusEqual(
+        lastEnrollmentStatus.status,
+        status
+      )
+    ) {
+      const entry = {
+        index: (lastEnrollmentStatus?.index ?? 0) + 1,
+        status,
+        timestamp: NimbusEnrollments.now(),
+      };
+      this.#pendingWrites.recordEnrollmentStatus(slug, entry);
+      this.#latestEnrollmentStatuses.set(slug, entry);
+
+      this.#flushSoon();
+    }
+
+    NimbusEnrollments.#recordEnrollmentStatusTelemetry(slug, status);
+  }
+
+  /**
+   * Return a copy of the the latest enrollment status entry for the given slug.
+   *
+   * @param {string} slug The slug whose enrollment status is to be returned.
+   *
+   * @returns {EnrollmentStatusEntry | null}
+   * The latest enrollment status entry for the given slug, or `null` if one
+   * does not exist.
+   */
+  getLatestEnrollmentStatus(slug) {
+    return structuredClone(this.#latestEnrollmentStatuses.get(slug));
   }
 
   /**
@@ -476,7 +586,7 @@ export class NimbusEnrollments {
     this.#pendingWrites = new PendingWrites();
 
     lazy.log.debug(
-      `Flushing ${pendingWrites.enrollments.size} enrollments, ${pendingWrites.syncTimestamps.size} timestamps to database`
+      `Flushing ${pendingWrites.enrollments.size} enrollments, ${pendingWrites.syncTimestamps.size} timestamps, ${pendingWrites.enrollmentStatuses.size} enrollment statuses to database`
     );
 
     let success = true;
@@ -496,6 +606,7 @@ export class NimbusEnrollments {
       }
 
       await conn.executeTransaction(async txn => {
+        const deletedEnrollmentSlugs = new Set();
         for (const [
           slug,
           pendingWrite,
@@ -518,6 +629,7 @@ export class NimbusEnrollments {
 
             case PendingWriteKind.DELETE:
               await NimbusEnrollments.#deleteEnrollment(txn, slug);
+              deletedEnrollmentSlugs.add(slug);
               break;
           }
         }
@@ -525,6 +637,12 @@ export class NimbusEnrollments {
         await NimbusEnrollments.#flushSyncTimestamps(
           txn,
           pendingWrites.syncTimestamps
+        );
+
+        await NimbusEnrollments.#flushEnrollmentStatuses(
+          txn,
+          pendingWrites.enrollmentStatuses,
+          deletedEnrollmentSlugs
         );
       });
     } catch (e) {
@@ -569,7 +687,7 @@ export class NimbusEnrollments {
   }
 
   /**
-   * Record an enrollment.
+   * Record an enrollment or re-enrollment to the database.
    *
    * If a previous enrollment exists it will be overwritten.
    *
@@ -679,7 +797,9 @@ export class NimbusEnrollments {
   }
 
   /**
-   * Remove an expired enrollment from the NimbusEnrollments table.
+   * Remove an expired enrollment from the `NimbusEnrollments` table.
+   *
+   * This will also remove all `NimbusEnrollmentStatuses` rows for that slug.
    *
    * @param {OpenedConnection} conn The connection to the database.
    * @param {string} slug The slug of the enrollment to delete.
@@ -696,6 +816,16 @@ export class NimbusEnrollments {
         profileId: lazy.ExperimentAPI.profileId,
         slug,
       }
+    );
+
+    await conn.execute(
+      `
+        DELETE FROM NimbusEnrollmentStatuses
+        WHERE
+          profileId = :profileId AND
+          slug = :slug;
+      `,
+      { profileId: lazy.ExperimentAPI.profileId, slug }
     );
 
     lazy.log.debug(`Deleted expired enrollment ${slug}`);
@@ -723,6 +853,15 @@ export class NimbusEnrollments {
     this.#shutdownBlocker = null;
   }
 
+  /**
+   * Flush the sync timestamps to the database.
+   *
+   * @param {OpenedConnection} conn
+   * The database connection.
+   *
+   * @param {Map<string, number>} timestamps
+   * The sync timestamps.
+   */
   static async #flushSyncTimestamps(conn, timestamps) {
     for (const [collection, lastModified] of timestamps) {
       await conn.executeCached(
@@ -748,6 +887,75 @@ export class NimbusEnrollments {
         }
       );
     }
+  }
+
+  /**
+   * Flush all pending enrollment status entries to the database.
+   *
+   * @param {OpenedConnection} conn
+   * The database connection.
+   *
+   * @param {Map<string, EnrollmentStatusEntry[]>} entries
+   * The entries to write to the database.
+   */
+  static async #flushEnrollmentStatuses(conn, statuses) {
+    for (const [slug, entries] of statuses.entries()) {
+      for (const entry of entries) {
+        await conn.executeCached(
+          `
+          INSERT INTO NimbusEnrollmentStatuses(
+            profileId,
+            slug,
+            timestamp,
+            entryIndex,
+            status
+          )
+          VALUES(
+            :profileId,
+            :slug,
+            :timestamp,
+            :entryIndex,
+            jsonb(:status)
+          );
+          `,
+          {
+            profileId: lazy.ExperimentAPI.profileId,
+            slug,
+            timestamp: entry.timestamp.toISOString(),
+            entryIndex: entry.index,
+            status: JSON.stringify(entry.status),
+          }
+        );
+      }
+    }
+  }
+
+  /**
+   * @param {string} slug
+   * @param {EnrollmentStatus} enrollmentStatus
+   */
+  static #recordEnrollmentStatusTelemetry(slug, enrollmentStatus) {
+    const { status, reason, branch, error, conflictSlugs, migration } =
+      enrollmentStatus;
+
+    // Do not record unsupported feature telemetry.
+    if (
+      reason === lazy.NimbusTelemetry.EnrollmentStatusReason.ERROR &&
+      error ===
+        lazy.NimbusTelemetry.ValidationFailureReason.UNSUPPORTED_FEATURES
+    ) {
+      return;
+    }
+
+    Glean.nimbusEvents.enrollmentStatus.record({
+      slug,
+      status,
+      reason,
+      branch,
+      error_string: error,
+      conflict_slug: conflictSlugs?.join(","),
+      migration,
+    });
   }
 
   /**
@@ -935,6 +1143,58 @@ export class NimbusEnrollments {
   }
 
   /**
+   *
+   */
+  static async loadEnrollmentStatuses(txn) {
+    function processRow(row) {
+      const slug = row.getResultByName("slug");
+      const index = row.getResultByName("entryIndex");
+      const timestamp = new Date(row.getResultByName("timestamp"));
+      const status = JSON.parse(row.getResultByName("status"));
+
+      return [
+        slug,
+        {
+          index,
+          timestamp,
+          status,
+        },
+      ];
+    }
+
+    const conn = txn ?? (await lazy.ProfilesDatastoreService.getConnection());
+    const rows = await conn.execute(
+      `
+        SELECT
+          slug,
+          entryIndex,
+          timestamp,
+          status
+        FROM
+          (
+            SELECT
+              slug,
+              entryIndex,
+              timestamp,
+              json(status) AS status,
+              RANK() OVER window AS entryRank
+            FROM NimbusEnrollmentStatuses
+            WHERE
+              profileId = :profileId
+            WINDOW window AS (PARTITION BY slug ORDER BY entryIndex DESC)
+          )
+        WHERE
+          entryRank = 1;
+      `,
+      {
+        profileId: lazy.ExperimentAPI.profileId,
+      }
+    );
+
+    return new Map(rows.map(processRow));
+  }
+
+  /**
    * Load the slugs of all experiments from other profiles that have unenrolled.
    *
    * @returns {Promise<Set<string>>} The slugs of the experiments.
@@ -957,5 +1217,41 @@ export class NimbusEnrollments {
     );
 
     return new Set(rows.map(row => row.getResultByName("slug")));
+  }
+
+  /**
+   * Return whether two enrollment statuses are equal.
+   *
+   * @param {EnrollmentStatus} prev
+   * The most recent recorded enrollment status.
+   *
+   * @param {EnrollmentStatus} next
+   * The new enrollment status.
+   *
+   * @returns {boolean}
+   * Whether the enrollment statuses are equal
+   */
+  static enrollmentStatusEqual(prev, next) {
+    return (
+      prev.status === next.status &&
+      prev.reason === next.reason &&
+      prev.branch === next.branch &&
+      prev.error === next.error &&
+      ((prev.conflictSlugs === undefined && next.conflictSlugs === undefined) ||
+        (prev.conflictSlugs.length === next.conflictSlugs.length &&
+          prev.conflictSlugs.every(
+            (slug, i) => slug === next.conflictSlugs[i]
+          ))) &&
+      prev.migration === next.migration
+    );
+  }
+
+  /**
+   * Return the next timestamp for an {@link EnrollmentStatusEntry}.
+   *
+   * N.B.: This function only exists to allow mocking in tests.
+   */
+  static now() {
+    return new Date();
   }
 }

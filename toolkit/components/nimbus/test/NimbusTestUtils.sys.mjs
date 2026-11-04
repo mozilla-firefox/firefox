@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/** @import { NimbusEnrollments } from "../lib/Enrollments.sys.mjs" */
+/** @import { EnrollmentStatusEntry, NimbusEnrollments } from "../lib/Enrollments.sys.mjs" */
 /** @import { _ExperimentFeature } from "../ExperimentAPI.sys.mjs" */
 /** @import { Phase } from "../lib/Migrations.sys.mjs" */
 
@@ -220,14 +220,24 @@ export const NimbusTestUtils = {
         await NimbusTestUtils.cleanupEnrollmentDatabase(experimentStore?._db);
         if (allProfiles) {
           const conn = await lazy.ProfilesDatastoreService.getConnection();
-          const count = await conn
+          const enrollmentsCount = await conn
             .execute("SELECT COUNT(*) AS count FROM NimbusEnrollments;")
             .then(([row]) => row.getResultByName("count"));
 
           NimbusTestUtils.Assert.equal(
-            count,
+            enrollmentsCount,
             0,
             "There should be zero enrollments in the NimbusEnrollments table"
+          );
+
+          const statusesCount = await conn
+            .execute("SELECT COUNT(*) AS count from NimbusEnrollmentStatuses;")
+            .then(([row]) => row.getResultByName("count"));
+
+          NimbusTestUtils.Assert.equal(
+            statusesCount,
+            0,
+            "There should be no entries in the NimbusEnrollmentStatusesTable"
           );
         }
       }
@@ -958,6 +968,15 @@ export const NimbusTestUtils = {
       `,
       { profileId }
     );
+
+    await conn.execute(
+      `
+        DELETE FROM NimbusEnrollmentStatuses
+        WHERE
+          profileId = :profileId;
+      `,
+      { profileId }
+    );
   },
 
   /**
@@ -1567,5 +1586,83 @@ export const NimbusTestUtils = {
         client.verifySignature = originalValues[key];
       }
     };
+  },
+
+  /**
+   * Return all enrollment status entries
+   *
+   * @see {@link NimbusTestUtils.loadEnrollmentStatusEntriesForSlug}
+   *
+   * @param {string} filterSlug The slug to filter by.
+   *
+   * @returns {Promise<Map<string, EnrollmentStatusEntry[]>>}
+   * A map mapping of slugs to their enrollment status entries, sorted by
+   * {@link EnrollmentStatusEntry.index index}.
+   */
+  async loadEnrollmentStatusEntries(filterSlug = undefined) {
+    const conn = await lazy.ProfilesDatastoreService.getConnection();
+
+    let query = `
+      SELECT
+        slug,
+        entryIndex,
+        timestamp,
+        json(status) AS status
+      FROM NimbusEnrollmentStatuses
+      WHERE
+        profileId = :profileId
+    `;
+
+    if (filterSlug) {
+      query += `
+        AND slug = :slug
+      `;
+    }
+
+    query += `
+      ORDER BY entryIndex ASC;
+    `;
+
+    const rows = await conn.execute(query, {
+      profileId: ExperimentAPI.profileId,
+      slug: filterSlug,
+    });
+
+    const enrollmentStatuses = new Map();
+    for (const row of rows) {
+      const slug = row.getResultByName("slug");
+      const timestamp = new Date(row.getResultByName("timestamp"));
+      const index = row.getResultByName("entryIndex");
+      const status = JSON.parse(row.getResultByName("status"));
+
+      enrollmentStatuses
+        .getOrInsertComputed(slug, () => [])
+        .push({
+          timestamp,
+          index,
+          status,
+        });
+    }
+
+    return enrollmentStatuses;
+  },
+
+  /**
+   * Return all enrollment status entries for the given slug.
+   *
+   * @param {string} slug The slug to filter by.
+   *
+   * @returns {Promise<EnrollmentStatusEntry[]>}
+   * An array of all enrollment status entries for the given slug, sorted by
+   * {@link EnrollmentStatusEntry.index index}.
+   */
+  async loadEnrollmentStatusEntriesForSlug(slug) {
+    if (!slug) {
+      throw new TypeError("slug is required");
+    }
+
+    const entryMap = await NimbusTestUtils.loadEnrollmentStatusEntries(slug);
+
+    return entryMap.get(slug) ?? [];
   },
 };

@@ -420,12 +420,12 @@ export class ExperimentManager {
     }
 
     if (!result.ok) {
-      lazy.NimbusTelemetry.recordEnrollmentStatus({
-        slug: recipe.slug,
+      this.store._db?.recordEnrollmentStatus(recipe.slug, {
         status: EnrollmentStatus.DISQUALIFIED,
         reason: EnrollmentStatusReason.ERROR,
-        error_string: result.reason,
+        error: result.reason,
       });
+
       return;
     }
 
@@ -444,40 +444,35 @@ export class ExperimentManager {
 
     switch (result.status) {
       case lazy.MatchStatus.DISABLED:
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: recipe.slug,
+        this.store._db?.recordEnrollmentStatus(recipe.slug, {
           status: EnrollmentStatus.NOT_ENROLLED,
           reason: EnrollmentStatusReason.OPT_OUT,
         });
         break;
 
       case lazy.MatchStatus.ENROLLMENT_PAUSED:
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: recipe.slug,
+        this.store._db?.recordEnrollmentStatus(recipe.slug, {
           status: EnrollmentStatus.NOT_ENROLLED,
           reason: EnrollmentStatusReason.ENROLLMENTS_PAUSED,
         });
         break;
 
       case lazy.MatchStatus.NO_MATCH:
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: recipe.slug,
+        this.store._db?.recordEnrollmentStatus(recipe.slug, {
           status: EnrollmentStatus.NOT_ENROLLED,
           reason: EnrollmentStatusReason.NOT_TARGETED,
         });
         break;
 
       case lazy.MatchStatus.TARGETING_ONLY:
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: recipe.slug,
+        this.store._db?.recordEnrollmentStatus(recipe.slug, {
           status: EnrollmentStatus.NOT_ENROLLED,
           reason: EnrollmentStatusReason.NOT_SELECTED,
         });
         break;
 
       case lazy.MatchStatus.UNENROLLED_IN_ANOTHER_PROFILE:
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: recipe.slug,
+        this.store._db?.recordEnrollmentStatus(recipe.slug, {
           status: EnrollmentStatus.NOT_ENROLLED,
           reason: EnrollmentStatusReason.UNENROLLED_IN_ANOTHER_PROFILE,
         });
@@ -718,8 +713,7 @@ export class ExperimentManager {
         slug,
         lazy.NimbusTelemetry.EnrollmentFailureReason.NAME_CONFLICT
       );
-      lazy.NimbusTelemetry.recordEnrollmentStatus({
-        slug,
+      this.store._db?.recordEnrollmentStatus(slug, {
         status: lazy.NimbusTelemetry.EnrollmentStatus.NOT_ENROLLED,
         reason: lazy.NimbusTelemetry.EnrollmentStatusReason.NAME_CONFLICT,
       });
@@ -777,12 +771,11 @@ export class ExperimentManager {
             slug,
             lazy.NimbusTelemetry.EnrollmentFailureReason.FEATURE_CONFLICT
           );
-          lazy.NimbusTelemetry.recordEnrollmentStatus({
-            slug,
+          this.store._db?.recordEnrollmentStatus(slug, {
             status: lazy.NimbusTelemetry.EnrollmentStatus.NOT_ENROLLED,
             reason:
               lazy.NimbusTelemetry.EnrollmentStatusReason.FEATURE_CONFLICT,
-            conflict_slug: Array.from(result.conflictingEnrollments).join(","),
+            conflictSlugs: Array.from(result.conflictingEnrollments).sort(),
           });
           return null;
       }
@@ -837,7 +830,8 @@ export class ExperimentManager {
     this._setEnrollmentPrefs(prefsToSet);
     this._updatePrefObservers(enrollment);
 
-    lazy.NimbusTelemetry.recordEnrollment(enrollment);
+    const enrollmentStatus = lazy.NimbusTelemetry.recordEnrollment(enrollment);
+    this.store._db?.recordEnrollmentStatus(enrollment.slug, enrollmentStatus);
 
     lazy.log.debug(
       `New ${isRollout ? "rollout" : "experiment"} started: ${slug}, ${
@@ -1144,8 +1138,7 @@ export class ExperimentManager {
       // Unenrollment due to studies or rollouts becoming disabled are handled in
       // `_handleStudiesOptOut` or `_handleRolloutsOptOut` respectively.
       if (result.status === lazy.MatchStatus.DISABLED) {
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: recipe.slug,
+        this.store._db?.recordEnrollmentStatus(recipe.slug, {
           status: EnrollmentStatus.NOT_ENROLLED,
           reason: EnrollmentStatusReason.OPT_OUT,
         });
@@ -1234,8 +1227,7 @@ export class ExperimentManager {
       }
 
       if (result.status === lazy.MatchStatus.TARGETING_AND_BUCKETING) {
-        lazy.NimbusTelemetry.recordEnrollmentStatus({
-          slug: enrollment.slug,
+        this.store._db?.recordEnrollmentStatus(enrollment.slug, {
           branch: enrollment.branch.slug,
           status: EnrollmentStatus.ENROLLED,
           reason: EnrollmentStatusReason.QUALIFIED,
@@ -1342,7 +1334,11 @@ export class ExperimentManager {
 
     this.store.deactivateEnrollment(slug, cause.reason);
 
-    lazy.NimbusTelemetry.recordUnenrollment(enrollment, cause);
+    const enrollmentStatus = lazy.NimbusTelemetry.recordUnenrollment(
+      enrollment,
+      cause
+    );
+    this.store._db?.recordEnrollmentStatus(enrollment.slug, enrollmentStatus);
 
     if (unsetEnrollmentPrefs) {
       this._unsetEnrollmentPrefs(enrollment, cause, { duringRestore });

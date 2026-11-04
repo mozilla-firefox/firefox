@@ -107,6 +107,33 @@ const UnenrollReason = Object.freeze({
 const EXPERIMENT_TYPE_ROLLOUT = "rollout";
 const EXPERIMENT_TYPE_NIMBUS = "nimbus";
 
+/**
+ * @typedef {object} EnrollmentStatus
+ * An enrollment status event without the slug.
+ *
+ * @property {keyof typeof EnrollmentStatus} status
+ * The kind of enrollment status event.
+ *
+ * @property {keyof typeof EnrollmentStatusReason | undefined} reason
+ * The reason this enrollment status occurred, if applicable.
+ *
+ * @property {string | undefined} branch
+ * The branch that was enrolled, if applicable.
+ *
+ * @property {string | undefined} error
+ * What error triggered this enrollment status, if applicable.
+ *
+ * This corresponds to the `error_string` field on the enrollment status metric.
+ *
+ * @property {string[] | undefined} conflictSlugs
+ *
+ * This corresponds to the `conflict_slug` field on the enrollment status
+ * metric.
+ *
+ * @property {string | undefined} migration
+ * A migration that caused the enrollment status event to occur.
+ */
+
 export const NimbusTelemetry = {
   EnrollmentFailureReason,
   EnrollmentSource,
@@ -117,6 +144,15 @@ export const NimbusTelemetry = {
   UnenrollmentFailureReason,
   ValidationFailureReason,
 
+  /**
+   * Record an enrollment event.
+   *
+   * @property {object} enrollment
+   * The enrollment that enrolled.
+   *
+   * @returns {EnrollmentStatus}
+   * An enrollment status event to also be submitted.
+   */
   recordEnrollment(enrollment) {
     this.setExperimentActive(enrollment);
 
@@ -135,8 +171,7 @@ export const NimbusTelemetry = {
       experiment_type: experimentType,
     });
 
-    this.recordEnrollmentStatus({
-      slug: enrollment.slug,
+    return {
       branch: enrollment.branch.slug,
       status: EnrollmentStatus.ENROLLED,
       reason:
@@ -144,7 +179,7 @@ export const NimbusTelemetry = {
         enrollment.source === EnrollmentSource.FORCE_ENROLLMENT
           ? EnrollmentStatusReason.OPT_IN
           : EnrollmentStatusReason.QUALIFIED,
-    });
+    };
   },
 
   recordEnrollmentFailure(slug, reason) {
@@ -155,34 +190,6 @@ export const NimbusTelemetry = {
     Glean.nimbusEvents.enrollFailed.record({
       experiment: slug,
       reason,
-    });
-  },
-
-  recordEnrollmentStatus({
-    slug,
-    status,
-    reason,
-    branch,
-    error_string,
-    conflict_slug,
-    migration,
-  }) {
-    // Do not record unsupported feature telemetry.
-    if (
-      reason === EnrollmentStatusReason.ERROR &&
-      error_string === ValidationFailureReason.UNSUPPORTED_FEATURES
-    ) {
-      return;
-    }
-
-    Glean.nimbusEvents.enrollmentStatus.record({
-      slug,
-      status,
-      reason,
-      branch,
-      error_string,
-      conflict_slug,
-      migration,
     });
   },
 
@@ -248,6 +255,18 @@ export const NimbusTelemetry = {
     Glean.nimbusEvents.remoteSettingsSyncError.record(event);
   },
 
+  /**
+   * Record an unenrollment event.
+   *
+   * @property {object} enrollment
+   * The enrollment that unenrolled.
+   *
+   * @property {object} cause
+   * The cause for unenrollment.
+   *
+   * @returns {EnrollmentStatus}
+   * An enrollment status event to also be submitted.
+   */
   recordUnenrollment(enrollment, cause) {
     lazy.TelemetryEnvironment.setExperimentInactive(enrollment.slug);
     Services.fog.setExperimentInactive(enrollment.slug);
@@ -299,8 +318,8 @@ export const NimbusTelemetry = {
     Glean.normandy.unenrollNimbusExperiment.record(legacyEvent);
     Glean.nimbusEvents.unenrollment.record(gleanEvent);
 
+    /** @type {EnrollmentStatus} */
     const enrollmentStatus = {
-      slug: enrollment.slug,
       branch: enrollment.branch.slug,
     };
 
@@ -340,7 +359,7 @@ export const NimbusTelemetry = {
       case UnenrollReason.PREF_FLIPS_CONFLICT:
         enrollmentStatus.status = EnrollmentStatus.DISQUALIFIED;
         enrollmentStatus.reason = EnrollmentStatusReason.PREF_FLIPS_CONFLICT;
-        enrollmentStatus.conflict_slug = cause.conflictingSlug;
+        enrollmentStatus.conflictSlugs = [cause.conflictingSlug];
         break;
 
       case UnenrollReason.UNENROLLED_IN_ANOTHER_PROFILE:
@@ -358,10 +377,10 @@ export const NimbusTelemetry = {
       default:
         enrollmentStatus.status = EnrollmentStatus.DISQUALIFIED;
         enrollmentStatus.reason = EnrollmentStatusReason.ERROR;
-        enrollmentStatus.error_string = cause.reason;
+        enrollmentStatus.error = cause.reason;
     }
 
-    this.recordEnrollmentStatus(enrollmentStatus);
+    return enrollmentStatus;
   },
 
   recordUnenrollmentFailure(slug, reason) {

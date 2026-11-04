@@ -6,6 +6,9 @@
 const { PendingWrites } = ChromeUtils.importESModule(
   "resource://nimbus/lib/Enrollments.sys.mjs"
 );
+const {
+  NimbusTelemetry: { EnrollmentStatus, EnrollmentStatusReason, UnenrollReason },
+} = ChromeUtils.importESModule("resource://nimbus/lib/Telemetry.sys.mjs");
 
 // PendingWrites does not need any actual detail in the recipes
 // and it only needs the slug in the enrollment.
@@ -140,6 +143,32 @@ add_task(async function testPendingWritesEnrollments() {
       "enrollment is a different object"
     );
   }
+});
+
+add_task(async function testPendingWritesEnrollmentStatuses() {
+  const pendingWrites = new PendingWrites();
+
+  Assert.ok(!pendingWrites.hasPendingWrites);
+
+  pendingWrites.recordEnrollmentStatus("foo", { sentinel: 1 });
+
+  Assert.ok(pendingWrites.hasPendingWrites);
+
+  pendingWrites.recordEnrollmentStatus("foo", { sentinel: 2 });
+  pendingWrites.recordEnrollmentStatus("foo", { sentinel: 3 });
+  pendingWrites.recordEnrollmentStatus("bar", { sentinel: 4 });
+
+  Assert.deepEqual(pendingWrites.enrollmentStatuses.get("foo"), [
+    { sentinel: 1 },
+    { sentinel: 2 },
+    { sentinel: 3 },
+  ]);
+  Assert.deepEqual(pendingWrites.enrollmentStatuses.get("bar"), [
+    { sentinel: 4 },
+  ]);
+
+  pendingWrites.deleteEnrollment("foo");
+  Assert.ok(!pendingWrites.enrollmentStatuses.has("foo"));
 });
 
 add_task(async function testPendingWritesMergeEnrollments() {
@@ -277,7 +306,7 @@ add_task(async function testPendingWritesMergeEnrollments() {
   });
 });
 
-add_task(async function testPendingEnrollmentsMergeTimestamps() {
+add_task(async function testPendingWritesMergeTimestamps() {
   const a = new PendingWrites();
   a.syncTimestamps.set("a", 1);
   a.syncTimestamps.set("b", 1);
@@ -293,8 +322,43 @@ add_task(async function testPendingEnrollmentsMergeTimestamps() {
   Assert.deepEqual(merged.syncTimestamps.get("c"), 3);
 });
 
+add_task(async function testPendingWritesMergeStatuses() {
+  const a = new PendingWrites();
+  a.recordEnrollmentStatus("foo", { foo: 1 });
+  a.recordEnrollmentStatus("foo", { foo: 2 });
+  a.recordEnrollmentStatus("bar", { bar: 1 });
+  a.recordEnrollmentStatus("baz", { baz: 1 });
+  a.deleteEnrollment("qux");
+
+  const b = new PendingWrites();
+  b.recordEnrollmentStatus("foo", { foo: 3 });
+  b.recordEnrollmentStatus("bar", { bar: 2 });
+  b.recordEnrollmentStatus("bar", { bar: 3 });
+  b.deleteEnrollment("baz");
+  b.recordEnrollmentStatus("qux", { qux: 1 });
+
+  const merged = PendingWrites.merge(a, b);
+
+  Assert.deepEqual(merged.enrollmentStatuses.get("foo"), [
+    { foo: 1 },
+    { foo: 2 },
+    { foo: 3 },
+  ]);
+
+  Assert.deepEqual(merged.enrollmentStatuses.get("bar"), [
+    { bar: 1 },
+    { bar: 2 },
+    { bar: 3 },
+  ]);
+
+  Assert.ok(!merged.enrollmentStatuses.has("baz"));
+  Assert.deepEqual(merged.enrollmentStatuses.get("qux"), [{ qux: 1 }]);
+});
+
 add_task(async function testEnrollments() {
-  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest();
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest({
+    clearTelemetry: true,
+  });
   const db = manager.store._db;
   sandbox.spy(db, "recordEnrollment");
   sandbox.spy(db, "recordUnenrollment");
@@ -395,7 +459,9 @@ add_task(async function testEnrollments() {
 });
 
 add_task(async function testCollapseWrites() {
-  const { manager, cleanup } = await NimbusTestUtils.setupTest();
+  const { manager, cleanup } = await NimbusTestUtils.setupTest({
+    clearTelemetry: true,
+  });
   const db = manager.store._db;
 
   const recipe = NimbusTestUtils.factories.recipe("unenroll-immediately");
@@ -414,6 +480,195 @@ add_task(async function testCollapseWrites() {
   Assert.notEqual(dbEnrollment, null, "Enrollment exists in database");
   Assert.ok(!dbEnrollment.active, "Enrollment is not active");
   Assert.equal(dbEnrollment.unenrollReason, "some reason");
+
+  await cleanup();
+});
+
+add_task(async function testStatuses() {
+  const { sandbox, manager, cleanup } = await NimbusTestUtils.setupTest({
+    clearTelemetry: true,
+  });
+
+  const db = manager.store._db;
+
+  const statuses = [
+    {
+      status: EnrollmentStatus.NOT_ENROLLED,
+      reason: EnrollmentStatusReason.ERROR,
+      error: "uh-oh",
+    },
+    {
+      status: EnrollmentStatus.NOT_ENROLLED,
+      reason: EnrollmentStatusReason.ERROR,
+      error: "another error",
+    },
+    {
+      status: EnrollmentStatus.NOT_ENROLLED,
+      reason: EnrollmentStatusReason.NOT_SELECTED,
+    },
+    {
+      status: EnrollmentStatus.NOT_ENROLLED,
+      reason: EnrollmentStatusReason.NOT_TARGETED,
+    },
+    {
+      status: EnrollmentStatus.NOT_ENROLLED,
+      reason: EnrollmentStatusReason.FEATURE_CONFLICT,
+      conflictSlugs: ["foo", "baz"].toSorted(),
+    },
+    {
+      status: EnrollmentStatus.NOT_ENROLLED,
+      reason: EnrollmentStatusReason.FEATURE_CONFLICT,
+      conflictSlugs: ["foo", "bar"].toSorted(),
+    },
+    {
+      status: EnrollmentStatus.ENROLLED,
+      reason: EnrollmentStatusReason.QUALIFIED,
+      branch: "control",
+    },
+    {
+      status: EnrollmentStatus.ENROLLED,
+      reason: EnrollmentStatusReason.QUALIFIED,
+      branch: "treatment",
+    },
+    {
+      status: EnrollmentStatus.DISQUALIFIED,
+      reason: EnrollmentStatusReason.MIGRATION,
+      migration: "foo",
+      branch: "treatment",
+    },
+    {
+      status: EnrollmentStatus.DISQUALIFIED,
+      reason: EnrollmentStatusReason.MIGRATION,
+      migration: "bar",
+      branch: "treatment",
+    },
+    {
+      status: EnrollmentStatus.WAS_ENROLLED,
+    },
+  ];
+
+  {
+    let i = 1;
+    sandbox.stub(NimbusEnrollments, "now").callsFake(() => new Date(i++));
+  }
+
+  for (const [idx, status] of statuses.entries()) {
+    // Recording the same status twice should only result in a single entry.
+    db.recordEnrollmentStatus("slug", status);
+    db.recordEnrollmentStatus("slug", status);
+
+    await NimbusTestUtils.saveStore(manager.store);
+
+    const latestEntry = await NimbusEnrollments.loadEnrollmentStatuses().then(
+      statuses => statuses.get("slug")
+    );
+
+    const expectedEntry = {
+      index: idx + 1,
+      timestamp: new Date(idx + 1),
+      status,
+    };
+
+    Assert.deepEqual(expectedEntry, db.getLatestEnrollmentStatus("slug"));
+    Assert.deepEqual(expectedEntry, latestEntry);
+  }
+
+  const entries =
+    await NimbusTestUtils.loadEnrollmentStatusEntriesForSlug("slug");
+
+  const expectedEntries = statuses.map((status, idx) => ({
+    timestamp: new Date(idx + 1),
+    index: idx + 1,
+    status,
+  }));
+
+  Assert.deepEqual(entries, expectedEntries);
+
+  const expectedTelemetry = expectedEntries
+    .flatMap(e => [e, e])
+    .map(
+      ({
+        status: { status, reason, branch, error, conflictSlugs, migration },
+      }) =>
+        Object.assign(
+          {
+            slug: "slug",
+            status,
+          },
+          typeof reason !== "undefined" ? { reason } : {},
+          typeof branch !== "undefined" ? { branch } : {},
+          typeof migration !== "undefined" ? { migration } : {},
+          typeof error !== "undefined" ? { error_string: error } : {},
+          typeof conflictSlugs !== "undefined"
+            ? { conflict_slug: conflictSlugs.join(",") }
+            : {}
+        )
+    );
+
+  Assert.deepEqual(
+    Glean.nimbusEvents.enrollmentStatus
+      .testGetValue("nimbus-targeting-context")
+      ?.map(ev => ev.extra) ?? [],
+    expectedTelemetry
+  );
+
+  db.deleteEnrollments(["slug"]);
+  Assert.equal(
+    db.getLatestEnrollmentStatus("slug"),
+    undefined,
+    "Enrollment status removed from in-memory store immediately"
+  );
+  await NimbusTestUtils.saveStore(manager.store);
+
+  Assert.deepEqual(
+    await NimbusTestUtils.loadEnrollmentStatusEntriesForSlug("slug"),
+    [],
+    "Enrollment status entries removed from the database by a deletion"
+  );
+
+  await cleanup();
+});
+
+add_task(async function testStatusNotSubmittedAfterDelete() {
+  const { manager, cleanup } = await NimbusTestUtils.setupTest();
+
+  const db = manager.store._db;
+
+  await manager.enroll(
+    NimbusTestUtils.factories.recipe.withFeatureConfig("slug", {
+      featureId: "no-feature-firefox-desktop",
+    }),
+    "rs-loader"
+  );
+
+  Assert.deepEqual(db.getLatestEnrollmentStatus("slug")?.status, {
+    status: EnrollmentStatus.ENROLLED,
+    reason: EnrollmentStatusReason.QUALIFIED,
+    branch: "control",
+  });
+  Assert.equal(db.pendingWrites, 1);
+
+  manager.unenroll("slug", { reason: UnenrollReason.INDIVIDUAL_OPT_OUT });
+  Assert.deepEqual(db.getLatestEnrollmentStatus("slug")?.status, {
+    status: EnrollmentStatus.DISQUALIFIED,
+    reason: EnrollmentStatusReason.OPT_OUT,
+    branch: "control",
+  });
+  Assert.equal(db.pendingWrites, 1);
+
+  manager.store._deleteForTests("slug");
+  Assert.equal(
+    db.getLatestEnrollmentStatus("slug"),
+    null,
+    "No enrollment status"
+  );
+
+  // A delete still counts as a write.
+  Assert.equal(db.pendingWrites, 1);
+
+  await NimbusTestUtils.saveStore(manager.store);
+
+  // The store is now empty.
 
   await cleanup();
 });
