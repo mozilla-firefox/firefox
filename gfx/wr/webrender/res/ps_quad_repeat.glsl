@@ -7,8 +7,8 @@
 #include ps_quad
 
 varying highp vec2 v_uv;
-flat varying mediump vec4 v_uv_sample_bounds;
-flat varying mediump vec4 v_uv_bounds;
+flat varying highp vec4 v_uv_sample_bounds;
+flat varying highp vec4 v_uv_bounds;
 flat varying highp vec4 v_repetitions_and_spacing_threshold;
 #define v_repetitions v_repetitions_and_spacing_threshold.xy
 #define v_spacing_threshold v_repetitions_and_spacing_threshold.zw

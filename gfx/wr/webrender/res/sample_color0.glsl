@@ -6,7 +6,7 @@
 
 #include shared
 
-flat varying mediump vec4 v_uv0_sample_bounds;
+flat varying highp vec4 v_uv0_sample_bounds;
 varying highp vec2 v_uv0;
 
 #ifdef WR_VERTEX_SHADER
