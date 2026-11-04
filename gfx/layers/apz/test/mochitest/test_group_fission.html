@@ -72,7 +72,9 @@
       },
       {
         "file": "helper_fission_irregular_areas.html",
-        "prefs": hit_test_prefs
+        // Polygon clip-paths are only irregular areas without WebRender paths.
+        "prefs": [...hit_test_prefs, ["gfx.webrender.paths", false],
+                  ["gfx.webrender.paths.swgl", false]]
       },
       {
         "file": "helper_fission_empty_clip.html",

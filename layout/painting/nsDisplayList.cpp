@@ -8573,6 +8573,21 @@ class WrPathRecorder final : public gfx::PathBuilder {
   bool mInSubPath = false;
 };
 
+// Offset from the clip path's user space to the reference frame, snapped like
+// the mask image for non-SVG frames, see ComputeEffectOffset.
+static nsPoint ClipPathToUserSpaceOffset(nsIFrame* aFrame,
+                                         const nsPoint& aToReferenceFrame) {
+  if (aFrame->IsSVGFrame()) {
+    return aToReferenceFrame;
+  }
+  const nsPoint toBoundingBox =
+      SVGIntegrationUtils::GetOffsetToBoundingBox(aFrame);
+  const nsPoint p = aToReferenceFrame - toBoundingBox;
+  return nsPoint(aFrame->PresContext()->RoundAppUnitsToNearestDevPixels(p.x),
+                 aFrame->PresContext()->RoundAppUnitsToNearestDevPixels(p.y)) +
+         toBoundingBox;
+}
+
 static Maybe<wr::WrClipChainId> CreateSimpleClipRegion(
     const nsDisplayMasksAndClipPaths& aDisplayItem,
     wr::DisplayListBuilder& aBuilder) {
@@ -8705,23 +8720,27 @@ static Maybe<wr::WrClipChainId> CreateSimpleClipRegion(
 
       break;
     }
+    case StyleBasicShape::Tag::Polygon: {
+      // Same as CSSClipPathInstance::CreateClipPathPolygon, positioned in the
+      // reference frame.
+      RefPtr<WrPathRecorder> recorder = MakeRefPtr<WrPathRecorder>();
+      const nsPoint toUserSpace =
+          ClipPathToUserSpaceOffset(frame, toReferenceFrame);
+      RefPtr<gfx::Path> unused = ShapeUtils::BuildPolygonPath(
+          shape, refBox + toUserSpace, appUnitsPerDevPixel, recorder);
+      clipId = recorder->DefineClip(
+          aBuilder, shape.AsPolygon().fill == StyleFillRule::Nonzero
+                        ? wr::FillRule::Nonzero
+                        : wr::FillRule::Evenodd);
+      break;
+    }
     case StyleBasicShape::Tag::PathOrShape: {
       // Same as CSSClipPathInstance::CreateClipPathPath and
       // CSSClipPathInstance::CreateClipPathShape, positioned in the reference
       // frame.
       RefPtr<WrPathRecorder> recorder = MakeRefPtr<WrPathRecorder>();
-      nsPoint toUserSpace = toReferenceFrame;
-      if (!frame->IsSVGFrame()) {
-        // Snapped like the mask image, see ComputeEffectOffset.
-        const nsPoint toBoundingBox =
-            SVGIntegrationUtils::GetOffsetToBoundingBox(frame);
-        const nsPoint p = toReferenceFrame - toBoundingBox;
-        toUserSpace =
-            nsPoint(
-                frame->PresContext()->RoundAppUnitsToNearestDevPixels(p.x),
-                frame->PresContext()->RoundAppUnitsToNearestDevPixels(p.y)) +
-            toBoundingBox;
-      }
+      const nsPoint toUserSpace =
+          ClipPathToUserSpaceOffset(frame, toReferenceFrame);
       const gfx::Point offset =
           LayoutDevicePoint::FromAppUnits(refBox.TopLeft() + toUserSpace,
                                           appUnitsPerDevPixel)

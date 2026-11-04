@@ -11,6 +11,9 @@
 
 var isWindows = getPlatform() == "windows";
 
+const noWebRenderPaths = [["gfx.webrender.paths", false],
+                          ["gfx.webrender.paths.swgl", false]];
+
 var subtests = [
   {"file": "helper_bug1839095.html",
    "prefs": [...getPrefs("TOUCH_EVENTS:PAN"),
@@ -21,15 +24,19 @@ var subtests = [
   {"file": "helper_bug2041154-static.html",
    "prefs": [...getPrefs("TOUCH_EVENTS:PAN"),
              ["apz.fastpath_apz_aware_listener.enabled", true]]},
+  // Polygon clip-paths are only irregular areas without WebRender paths.
   {"file": "helper_bug2041154-irregular.html",
    "prefs": [...getPrefs("TOUCH_EVENTS:PAN"),
-             ["apz.fastpath_apz_aware_listener.enabled", true]]},
+             ["apz.fastpath_apz_aware_listener.enabled", true],
+             ...noWebRenderPaths]},
   {"file": "helper_bug2041154-irregular-dynamic.html",
    "prefs": [...getPrefs("TOUCH_EVENTS:PAN"),
-             ["apz.fastpath_apz_aware_listener.enabled", true]]},
+             ["apz.fastpath_apz_aware_listener.enabled", true],
+             ...noWebRenderPaths]},
   {"file": "helper_bug2041154-irregular-static.html",
    "prefs": [...getPrefs("TOUCH_EVENTS:PAN"),
-             ["apz.fastpath_apz_aware_listener.enabled", true]]},
+             ["apz.fastpath_apz_aware_listener.enabled", true],
+             ...noWebRenderPaths]},
   {"file": "helper_bug2052759.html",
    "prefs": [...getPrefs("TOUCH_EVENTS:PAN"),
              ["apz.fastpath_apz_aware_listener.enabled", true]]},
