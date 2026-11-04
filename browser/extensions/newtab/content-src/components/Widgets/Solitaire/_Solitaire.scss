@@ -69,3 +69,11 @@
   gap: var(--space-small);
   min-height: 0;
 }
+
+.solitaire-frame {
+  flex: 1;
+  min-block-size: 0;
+  width: 100%;
+  border: none;
+  border-radius: var(--border-radius-medium);
+}

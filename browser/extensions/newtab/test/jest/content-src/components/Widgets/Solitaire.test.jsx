@@ -21,6 +21,11 @@ const mockState = {
       "widgets.solitaire.interaction": false,
     },
   },
+  FramedWidgets: {
+    solitaire: {
+      url: "https://prod-widgets-yahoo-solitaire.merino.prod.webservices.mozgcp.net/1.0.20261030214548/index.html",
+    },
+  },
 };
 
 const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
@@ -40,6 +45,29 @@ const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
 };
 
 describe("Solitaire widget", () => {
+  it("loads the manifest url in a sandboxed iframe labelled by the title", () => {
+    const { container } = renderWidget();
+    const frame = container.querySelector("iframe.solitaire-frame");
+    expect(frame).toHaveAttribute("src", mockState.FramedWidgets.solitaire.url);
+    expect(frame).toHaveAttribute("aria-labelledby", "solitaire-widget-label");
+    expect(frame).toHaveAttribute(
+      "sandbox",
+      "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+    );
+  });
+
+  it("renders nothing without a manifest entry", () => {
+    const { container } = renderWidget(
+      jest.fn(),
+      {},
+      {
+        ...mockState,
+        FramedWidgets: {},
+      }
+    );
+    expect(container.querySelector("article.solitaire")).toBeNull();
+  });
+
   it("renders the widget at the resolved size", () => {
     const { container } = renderWidget();
     const root = container.querySelector("article.solitaire");
@@ -63,13 +91,6 @@ describe("Solitaire widget", () => {
         ".solitaire-context-menu-button[data-l10n-id='newtab-solitaire-widget-open-menu-button']"
       )
     ).toBeTruthy();
-  });
-
-  it("renders an empty body with no rows", () => {
-    const { container } = renderWidget();
-    const body = container.querySelector(".solitaire-body");
-    expect(body).toBeTruthy();
-    expect(body.children.length).toBe(0);
   });
 
   it("shows the New badge until the widget has been interacted with", () => {

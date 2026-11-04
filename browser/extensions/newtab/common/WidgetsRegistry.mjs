@@ -473,6 +473,7 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "solitaireVisible",
     widgetsSettingsEnabledKey: "solitaireEnabled",
     trainhopNamespace: "widgetSolitaire",
+    framed: true,
   },
   {
     id: "wrexhamAFC",

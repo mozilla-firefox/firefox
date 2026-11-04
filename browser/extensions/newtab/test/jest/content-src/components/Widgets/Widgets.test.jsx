@@ -215,12 +215,21 @@ describe("<Widgets>", () => {
   });
 
   it("should render <Solitaire> if solitaire prefs are enabled", () => {
-    const state = widgetsState({
-      "nova.enabled": true,
-      [PREF_WIDGETS_ENABLED]: true,
-      [PREF_WIDGETS_SOLITAIRE_ENABLED]: true,
-      "widgets.system.solitaire.enabled": true,
-    });
+    const state = widgetsState(
+      {
+        "nova.enabled": true,
+        [PREF_WIDGETS_ENABLED]: true,
+        [PREF_WIDGETS_SOLITAIRE_ENABLED]: true,
+        "widgets.system.solitaire.enabled": true,
+      },
+      {
+        FramedWidgets: {
+          solitaire: {
+            url: "https://prod-widgets-yahoo-solitaire.merino.prod.webservices.mozgcp.net/1.0.20261030214548/index.html",
+          },
+        },
+      }
+    );
     const { container } = renderWidgets(state);
     expect(
       container.querySelector("article.solitaire.widget")
