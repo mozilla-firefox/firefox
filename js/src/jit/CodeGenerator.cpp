@@ -2999,6 +2999,8 @@ static JitCode* GenerateRegExpMatchStubShared(JSContext* cx,
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "GenerateRegExpMatchStubShared");
 
+  masm.indirectTarget(TargetKind::Call);
+
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
 #else
@@ -3440,6 +3442,8 @@ JitCode* JitZone::generateRegExpSearcherStub(JSContext* cx) {
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitZone::generateRegExpSearcherStub");
 
+  masm.indirectTarget(TargetKind::Call);
+
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
 #else
@@ -3561,6 +3565,8 @@ JitCode* JitZone::generateRegExpExecTestStub(JSContext* cx) {
   JitContext jcx(cx);
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitZone::generateRegExpExecTestStub");
+
+  masm.indirectTarget(TargetKind::Call);
 
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
@@ -6705,7 +6711,8 @@ void JitRuntime::generateIonGenericCallArgumentsShift(
 void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
                                             IonGenericCallKind kind) {
   AutoCreatedBy acb(masm, "JitRuntime::generateIonGenericCallStub");
-  ionGenericCallStubOffset_[kind] = startTrampolineCode(masm);
+  ionGenericCallStubOffset_[kind] =
+      startTrampolineCode(masm, TargetKind::ImmCall);
 
   // This code is tightly coupled with visitCallGeneric.
   //
@@ -6844,7 +6851,7 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
 
 void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStub");
-  megamorphicLoadStubOffset_ = startTrampolineCode(masm);
+  megamorphicLoadStubOffset_ = startTrampolineCode(masm, TargetKind::ImmCall);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -6876,7 +6883,8 @@ void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
 
 void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStubPermissive");
-  megamorphicLoadStubPermissiveOffset_ = startTrampolineCode(masm);
+  megamorphicLoadStubPermissiveOffset_ =
+      startTrampolineCode(masm, TargetKind::ImmCall);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -14483,6 +14491,8 @@ JitCode* JitZone::generateStringConcatStub(JSContext* cx) {
   StackMacroAssembler masm(cx, temp);
   AutoCreatedBy acb(masm, "JitZone::generateStringConcatStub");
 
+  masm.indirectTarget(TargetKind::Call);
+
   Register lhs = CallTempReg0;
   Register rhs = CallTempReg1;
   Register temp1 = CallTempReg2;
@@ -14597,7 +14607,7 @@ JitCode* JitZone::generateStringConcatStub(JSContext* cx) {
 void JitRuntime::generateLazyLinkStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateLazyLinkStub");
 
-  lazyLinkStubOffset_ = startTrampolineCode(masm);
+  lazyLinkStubOffset_ = startTrampolineCode(masm, TargetKind::Call);
 
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
@@ -14638,7 +14648,7 @@ void JitRuntime::generateLazyLinkStub(MacroAssembler& masm) {
 void JitRuntime::generateInterpreterStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateInterpreterStub");
 
-  interpreterStubOffset_ = startTrampolineCode(masm);
+  interpreterStubOffset_ = startTrampolineCode(masm, TargetKind::Call);
 
 #ifdef JS_USE_LINK_REGISTER
   masm.pushRegs(LinkRegister, FramePointer);
@@ -14681,7 +14691,8 @@ void JitRuntime::generateInterpreterStub(MacroAssembler& masm) {
 
 void JitRuntime::generateDoubleToInt32ValueStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateDoubleToInt32ValueStub");
-  doubleToInt32ValueStubOffset_ = startTrampolineCode(masm);
+  doubleToInt32ValueStubOffset_ =
+      startTrampolineCode(masm, TargetKind::ImmCall);
 
   Label done;
   masm.branchTestDouble(Assembler::NotEqual, R0, &done);

@@ -123,6 +123,7 @@ class SMRegExpMacroAssembler final : public NativeRegExpMacroAssembler {
 
   virtual void Backtrack();
   virtual void Bind(Label* label);
+  virtual void BindJumpTarget(Label* label);
   virtual void GoTo(Label* label);
   virtual void PushBacktrack(Label* label);
 

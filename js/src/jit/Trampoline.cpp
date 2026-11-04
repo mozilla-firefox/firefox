@@ -23,10 +23,10 @@ void JitRuntime::generateExceptionTailStub(MacroAssembler& masm,
                                            Label* bailoutTail) {
   AutoCreatedBy acb(masm, "JitRuntime::generateExceptionTailStub");
 
-  exceptionTailOffset_ = startTrampolineCode(masm);
+  exceptionTailOffset_ = startTrampolineCode(masm, TargetKind::Jump);
 
   uint32_t returnValueCheckOffset = 0;
-  masm.bind(masm.failureLabel());
+  masm.bind(masm.failureLabel(), BufferOffset(exceptionTailOffset_));
   masm.handleFailureWithHandlerTail(profilerExitTail, bailoutTail,
                                     &returnValueCheckOffset);
 
@@ -37,8 +37,8 @@ void JitRuntime::generateProfilerExitFrameTailStub(MacroAssembler& masm,
                                                    Label* profilerExitTail) {
   AutoCreatedBy acb(masm, "JitRuntime::generateProfilerExitFrameTailStub");
 
-  profilerExitFrameTailOffset_ = startTrampolineCode(masm);
-  masm.bind(profilerExitTail);
+  profilerExitFrameTailOffset_ = startTrampolineCode(masm, TargetKind::ImmJump);
+  masm.bind(profilerExitTail, BufferOffset(profilerExitFrameTailOffset_));
 
   static constexpr size_t CallerFPOffset =
       CommonFrameLayout::offsetOfCallerFramePtr();
@@ -454,7 +454,8 @@ void JitRuntime::generateEnterJitResumeShared(MacroAssembler& masm,
 void JitRuntime::generateBaselineDebugModeOSRHandler(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateBaselineDebugModeOSRHandler");
 
-  baselineDebugModeOSRHandlerOffset_ = startTrampolineCode(masm);
+  baselineDebugModeOSRHandlerOffset_ =
+      startTrampolineCode(masm, TargetKind::ImmJump);
 
   LiveRegisterSet regs(RegisterSet::Volatile());
   masm.PushRegsInMask(regs);
