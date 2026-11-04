@@ -616,6 +616,10 @@ APZEventResult InputQueue::ReceivePanGestureInput(
     terminator.mLocalPanDisplacement = ParentLayerPoint{};
     mQueuedInputs.AppendElement(
         std::make_unique<QueuedInput>(terminator, *block));
+    // The gesture is over, so momentum events that follow belong to the
+    // interrupted gesture and should be discarded rather than added to this
+    // block.
+    mActivePanGestureBlock = nullptr;
   }
   ProcessQueue();
 
