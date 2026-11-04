@@ -1049,23 +1049,8 @@ class FileFinder(BaseFinder):
         self.find_dotfiles = find_dotfiles
         self.find_executables = find_executables
         self.ignore = tuple(mozpath.normsep(path) for path in ignore)
-        # Matching a path against hundreds of patterns dominates a walk of the
-        # tree, so the ones without a glob are looked up instead.
-        self._ignore_paths = frozenset(p for p in self.ignore if p and "*" not in p)
-        self._ignore_globs = tuple(p for p in self.ignore if not p or "*" in p)
+        self._ignored = mozpath.matcher(self.ignore)
         self.ignore_broken_symlinks = ignore_broken_symlinks
-
-    def _ignored(self, path):
-        """Whether `path` matches one of the ``ignore`` patterns, the way
-        ``mozpath.match()`` would."""
-        if path in self._ignore_paths:
-            return True
-        slash = path.find("/")
-        while slash != -1:
-            if path[:slash] in self._ignore_paths:
-                return True
-            slash = path.find("/", slash + 1)
-        return any(mozpath.match(path, p) for p in self._ignore_globs)
 
     def _find(self, pattern):
         """
