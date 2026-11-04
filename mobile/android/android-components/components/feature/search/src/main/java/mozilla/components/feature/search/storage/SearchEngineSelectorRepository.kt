@@ -136,10 +136,12 @@ class SearchEngineSelectorRepository(
     private fun loadV3(region: RegionState, locale: Locale, distribution: String?): Bundle {
         val config = buildEnvironmentV3(region, locale, distribution)
         val searchConfig = selector.filterEngineConfigurationV3(config)
+        // An engine the configuration has deprecated is not offered to the user, and so cannot be the default either.
+        val engines = searchConfig.engines.filterNot { it.deprecated }
         val iconsList = searchConfigIconsUpdateService.fetchIconsRecords(searchEngineSelectorConfig.service)
         val searchEngineList =
             buildSearchEngineList(
-                engines = searchConfig.engines,
+                engines = engines,
                 iconsList = iconsList,
                 identifierOf = { it.identifier },
                 readEngine = { engine, attachmentModel, mimetype ->
@@ -154,7 +156,9 @@ class SearchEngineSelectorRepository(
 
         return Bundle(
             list = searchEngineList,
-            defaultSearchEngineId = searchConfig.appDefaultEngineId ?: searchConfig.engines.first().identifier,
+            defaultSearchEngineId =
+                searchConfig.appDefaultEngineId?.takeIf { id -> engines.any { it.identifier == id } }
+                    ?: engines.first().identifier,
             searchEnvironmentId = config.hashCode(),
         )
     }
