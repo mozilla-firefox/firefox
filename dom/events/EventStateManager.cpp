@@ -81,7 +81,6 @@
 #include "nsCOMPtr.h"
 #include "nsComboboxControlFrame.h"
 #include "nsCommandParams.h"
-#include "nsComputedDOMStyle.h"
 #include "nsContentAreaDragDrop.h"
 #include "nsContentUtils.h"
 #include "nsCopySupport.h"
@@ -1836,12 +1835,11 @@ static bool IsAccessKeyTarget(Element* aElement, nsAString& aKey) {
     return false;
   }
 
-  if (!aElement->IsXULElement() &&
-      !nsContentUtils::IsChromeDoc(aElement->OwnerDoc())) {
+  if (!aElement->IsXULElement()) {
     return true;
   }
 
-  // For XUL and chrome docs we do visibility checks.
+  // For XUL we do visibility checks.
   nsIFrame* frame = aElement->GetPrimaryFrame();
   if (!frame) {
     return false;
@@ -1861,10 +1859,9 @@ static bool IsAccessKeyTarget(Element* aElement, nsAString& aKey) {
     return true;
   }
 
-  // label elements are never focusable, so we need to check for them
+  // XUL label elements are never focusable, so we need to check for them
   // explicitly before giving up.
-  if (aElement->IsXULElement(nsGkAtoms::label) ||
-      aElement->IsHTMLElement(nsGkAtoms::label)) {
+  if (aElement->IsXULElement(nsGkAtoms::label)) {
     return true;
   }
 

@@ -82,6 +82,7 @@ const Template = ({
   <moz-button
     @click=${clickHandler}
     data-l10n-id=${l10nId}
+    data-l10n-attrs="label"
     type=${type}
     size=${size}
     ?disabled=${disabled}
