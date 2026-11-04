@@ -1200,6 +1200,7 @@ export class MLEngine {
         `The inference process was shutdown (pid=${pid}), childId=${childID}`
       );
       this.setEngineStatus("crashed");
+      this.#rejectRequests(err);
       throw err;
     }
   }
@@ -1485,6 +1486,9 @@ export class MLEngine {
         newPortResolvers?.reject(
           new Error("Engine was terminated before initialization completed.")
         );
+        this.#rejectRequests(
+          new Error("Engine was terminated before the request completed.")
+        );
 
         this.discardPort();
         break;
@@ -1523,6 +1527,18 @@ export class MLEngine {
   };
 
   /**
+   * Rejects every request still waiting for a response.
+   *
+   * @param {Error} error
+   */
+  #rejectRequests(error) {
+    for (const request of this.#requests.values()) {
+      request.reject(error);
+    }
+    this.#requests.clear();
+  }
+
+  /**
    * Discards the current port and closes the connection.
    */
   discardPort() {
@@ -1549,7 +1565,14 @@ export class MLEngine {
         shutdown,
         replacement,
       });
-      await this.#waitForStatus("closed");
+      try {
+        await this.#waitForStatus("closed");
+      } catch (error) {
+        this.#rejectRequests(
+          new Error("Engine was terminated before the request completed.")
+        );
+        throw error;
+      }
     }
   }
 
@@ -1600,6 +1623,11 @@ export class MLEngine {
    */
   async run(request, { signal } = {}) {
     signal?.throwIfAborted();
+    // If the port is null maybe the inference process has shut down
+    if (this.#port === null) {
+      throw new Error("Port does not exist");
+    }
+
     /** @type {PromiseWithResolvers<EngineResponses[FeatureID]>} */
     const resolvers = Promise.withResolvers();
     const requestId = this.#nextRequestId++;
@@ -1612,11 +1640,6 @@ export class MLEngine {
       request.data instanceof ArrayBuffer
     ) {
       transferables.push(request.data);
-    }
-
-    // If the port is null maybe the inference process has shut down
-    if (this.#port === null) {
-      throw new Error("Port does not exist");
     }
 
     const beforeRun = ChromeUtils.now();
@@ -1673,6 +1696,11 @@ export class MLEngine {
     lazy.console.debug(`runWithGenerator called for request ${request}`);
     const startTime = ChromeUtils.now();
 
+    // If the port is null maybe the inference process has shut down
+    if (this.#port === null) {
+      throw new Error("The port is null");
+    }
+
     // Create a promise to track when the engine has fully completed all runs
     const responseChunkResolvers = new ResponseOrChunkResolvers();
 
@@ -1702,11 +1730,6 @@ export class MLEngine {
       request.data instanceof ArrayBuffer
     ) {
       transferables.push(request.data);
-    }
-
-    // If the port is null maybe the inference process has shut down
-    if (this.#port === null) {
-      throw new Error("The port is null");
     }
 
     // Send the request to the engine via postMessage with optional transferables

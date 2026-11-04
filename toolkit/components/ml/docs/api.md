@@ -63,7 +63,7 @@ Below are the options available:
 - **taskName**: The name of the task the pipeline is configured for.
 - **featureId**: The identifier for the feature to be used by the pipeline.
 - **engineId**: The identifier for the engine to be used by the pipeline.
-- **timeoutMS**: The maximum amount of time in milliseconds the worker will run (-1 to never expire).
+- **timeoutMS**: How long in milliseconds an idle engine stays alive before it shuts down (-1 keeps it alive).
 - **modelHub**: The model hub to use, can be `huggingface` or `mozilla`. When used, `modelHubRootUrl` and `modelHubUrlTemplate` are ignored.
 - **modelHubRootUrl**: The root URL of the model hub where models are hosted.
 - **modelHubUrlTemplate**: A template URL for building the full URL for the model.

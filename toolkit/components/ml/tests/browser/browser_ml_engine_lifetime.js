@@ -168,6 +168,43 @@ add_task(async function test_canceled_run_ignores_late_backend_error() {
   );
 });
 
+async function waitForEngineStatus(engineInstance, status) {
+  await TestUtils.waitForCondition(async () => {
+    let statusByEngineId = new Map(
+      await engineInstance.mlEngineParent.getStatusByEngineId()
+    );
+    return statusByEngineId.get(engineInstance.engineId)?.status == status;
+  }, `Engine is ${status}`);
+}
+
+async function killInferenceProcess() {
+  let { osPid } = ChromeUtils.getAllDOMProcesses().find(
+    process => process.remoteType == "inference"
+  );
+  let mm;
+  for (let i = 0; i < Services.ppmm.childCount; i++) {
+    if (Services.ppmm.getChildAt(i).osPid == osPid) {
+      mm = Services.ppmm.getChildAt(i);
+      break;
+    }
+  }
+  Assert.ok(mm, "Inference process message manager");
+  await new Promise(resolve => {
+    mm.addMessageListener("MLTest:IntentionalCrash", function listener() {
+      mm.removeMessageListener("MLTest:IntentionalCrash", listener);
+      resolve();
+    });
+    mm.loadProcessScript(
+      "data:,ChromeUtils.privateNoteIntentionalCrash();" +
+        "sendAsyncMessage('MLTest:IntentionalCrash');",
+      false
+    );
+  });
+  Cc["@mozilla.org/processtools-service;1"]
+    .getService(Ci.nsIProcessToolsService)
+    .kill(osPid);
+}
+
 /**
  * Performing a basic engine initialization and run.
  */
@@ -640,6 +677,115 @@ add_task(async function test_ml_engine_infinite_worker() {
 
   await EngineProcess.destroyMLEngine();
 
+  await cleanup();
+});
+
+/**
+ * Tests that a run lasting longer than the keep alive timeout completes.
+ */
+add_task(async function test_ml_engine_run_outlasts_timeout() {
+  const { cleanup, remoteClients } = await setup();
+
+  const engineInstance = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 100,
+  });
+  const inferencePromise = engineInstance.run({
+    data: "This gets echoed.",
+    sleepTime: 1000,
+  });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+
+  Assert.equal(
+    (await inferencePromise).output.echo,
+    "This gets echoed.",
+    "Echo"
+  );
+
+  await TestUtils.waitForCondition(
+    () => EngineProcess.areAllEnginesTerminated(),
+    "Idle engine terminated"
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+/**
+ * Tests that overlapping runs both complete when they outlast the keep alive timeout.
+ */
+add_task(async function test_ml_engine_overlapping_runs_outlast_timeout() {
+  let { cleanup, remoteClients } = await setup();
+
+  let engineInstance = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 100,
+  });
+  let sleepTimes = [200, 1000];
+  let runs = sleepTimes.map(sleepTime =>
+    engineInstance.run({
+      data: `${sleepTime} - This gets echoed.`,
+      sleepTime,
+    })
+  );
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+
+  let results = await Promise.all(runs);
+  for (let [index, sleepTime] of sleepTimes.entries()) {
+    Assert.equal(
+      results[index].output.echo,
+      `${sleepTime} - This gets echoed.`,
+      `Echo ${sleepTime}`
+    );
+  }
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+/**
+ * Tests that terminating an engine rejects the runs in progress.
+ */
+add_task(async function test_ml_engine_terminate_rejects_runs() {
+  let { cleanup, remoteClients } = await setup();
+
+  let engineInstance = await createEngine(MOZ_ECHO_OPTIONS_RAW);
+  let inferencePromise = engineInstance.run({
+    data: "This gets echoed.",
+    sleepTime: 5000,
+  });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await waitForEngineStatus(engineInstance, "RUNNING");
+
+  await engineInstance.terminate();
+  await Assert.rejects(inferencePromise, /terminated/, "Terminated run");
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+/**
+ * Tests that an inference process crash rejects the runs in progress.
+ */
+add_task(async function test_ml_engine_crash_rejects_runs() {
+  let { cleanup, remoteClients } = await setup();
+
+  let engineInstance = await createEngine(MOZ_ECHO_OPTIONS_RAW);
+  let inferencePromise = engineInstance.run({
+    data: "This gets echoed.",
+    sleepTime: 5000,
+  });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await waitForEngineStatus(engineInstance, "RUNNING");
+
+  await killInferenceProcess();
+  await Assert.rejects(
+    inferencePromise,
+    /inference process was shutdown/,
+    "Crashed run"
+  );
+
+  await EngineProcess.destroyMLEngine();
   await cleanup();
 });
 
