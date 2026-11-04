@@ -21,7 +21,7 @@ import mozilla.appservices.search.SearchEnginePartnerDetails
 import mozilla.appservices.search.SearchEngineUrl
 import mozilla.appservices.search.SearchEngineUrls
 import mozilla.appservices.search.SearchUrlParam
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.search.accessPoint
 import mozilla.components.feature.search.icons.AttachmentModel
@@ -502,8 +502,7 @@ class SearchEngineReaderTest {
         val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
         searchEngineDefinition.partner =
             mapOf(
-                DEFAULT_SEARCH_ACCESS_POINT to
-                    SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
+                SearchAccessPoint.DEFAULT to SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
                 "newtab" to SearchEnginePartnerDetails(code = "firefox-b-n", telemetrySuffix = "b-n"),
             )
         searchEngineDefinition.urls.search.params +=
@@ -564,7 +563,7 @@ class SearchEngineReaderTest {
         val reader = SearchEngineReader(context = testContext, type = SearchEngine.Type.BUNDLED)
         val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
         searchEngineDefinition.partner =
-            mapOf(DEFAULT_SEARCH_ACCESS_POINT to SearchEnginePartnerDetails(code = "", telemetrySuffix = "b-m"))
+            mapOf(SearchAccessPoint.DEFAULT to SearchEnginePartnerDetails(code = "", telemetrySuffix = "b-m"))
         searchEngineDefinition.urls.search.params +=
             SearchUrlParam(
                 name = "client",
@@ -684,8 +683,7 @@ class SearchEngineReaderTest {
         val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
         searchEngineDefinition.partner =
             mapOf(
-                DEFAULT_SEARCH_ACCESS_POINT to
-                    SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
+                SearchAccessPoint.DEFAULT to SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
                 "widget" to SearchEnginePartnerDetails(code = "firefox-b-w", telemetrySuffix = "b-w"),
                 "topsite" to SearchEnginePartnerDetails(code = null, telemetrySuffix = "b-t"),
             )
@@ -701,7 +699,7 @@ class SearchEngineReaderTest {
 
         assertEquals(
             "https://www.google.com/search?client=firefox-b-m",
-            searchEngine.accessPoint(DEFAULT_SEARCH_ACCESS_POINT)?.resultUrls?.first(),
+            searchEngine.accessPoint(SearchAccessPoint.DEFAULT)?.resultUrls?.first(),
         )
         assertEquals(
             "https://www.google.com/search?client=firefox-b-w",
@@ -713,7 +711,7 @@ class SearchEngineReaderTest {
             searchEngine.accessPoint("topsite")?.resultUrls?.first(),
         )
 
-        assertEquals("b-m", searchEngine.accessPoint(DEFAULT_SEARCH_ACCESS_POINT)?.telemetrySuffix)
+        assertEquals("b-m", searchEngine.accessPoint(SearchAccessPoint.DEFAULT)?.telemetrySuffix)
         assertEquals("b-w", searchEngine.accessPoint("widget")?.telemetrySuffix)
         assertEquals("b-t", searchEngine.accessPoint("topsite")?.telemetrySuffix)
     }
@@ -724,8 +722,7 @@ class SearchEngineReaderTest {
         val searchEngineDefinition = sampleSearchEngineDefinitionDataV3()
         searchEngineDefinition.partner =
             mapOf(
-                DEFAULT_SEARCH_ACCESS_POINT to
-                    SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
+                SearchAccessPoint.DEFAULT to SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m"),
                 "widget" to SearchEnginePartnerDetails(code = "firefox-b-w", telemetrySuffix = "b-w"),
                 "topsite" to SearchEnginePartnerDetails(code = null, telemetrySuffix = "b-t"),
                 "context" to SearchEnginePartnerDetails(code = "", telemetrySuffix = "b-c"),
@@ -733,7 +730,7 @@ class SearchEngineReaderTest {
 
         val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
 
-        assertEquals("firefox-b-m", searchEngine.accessPoint(DEFAULT_SEARCH_ACCESS_POINT)?.partnerCode)
+        assertEquals("firefox-b-m", searchEngine.accessPoint(SearchAccessPoint.DEFAULT)?.partnerCode)
         assertEquals("firefox-b-w", searchEngine.accessPoint("widget")?.partnerCode)
         // An access point with no code, or an empty one, exposes null rather than an empty string.
         assertNull(searchEngine.accessPoint("topsite")?.partnerCode)
@@ -755,7 +752,7 @@ class SearchEngineReaderTest {
         val searchEngine = reader.loadStreamAPIV3(searchEngineDefinition, emptyByteArray, validMimeType, mock())
 
         assertEquals(
-            searchEngine.accessPoint(DEFAULT_SEARCH_ACCESS_POINT),
+            searchEngine.accessPoint(SearchAccessPoint.DEFAULT),
             searchEngine.accessPoint("widget"),
         )
     }
@@ -768,7 +765,7 @@ class SearchEngineReaderTest {
             reader.loadStreamAPI(sampleSearchEngineDefinitionData(), emptyByteArray, validMimeType, mock())
 
         assertTrue(searchEngine.accessPoints.isEmpty())
-        assertNull(searchEngine.accessPoint(DEFAULT_SEARCH_ACCESS_POINT))
+        assertNull(searchEngine.accessPoint(SearchAccessPoint.DEFAULT))
     }
 
     private fun sampleSearchEngineDefinitionDataV3(): SearchEngineDefinitionV3 {
@@ -782,7 +779,7 @@ class SearchEngineReaderTest {
             optional = false,
             partner =
                 mapOf(
-                    DEFAULT_SEARCH_ACCESS_POINT to
+                    SearchAccessPoint.DEFAULT to
                         SearchEnginePartnerDetails(code = "firefox-b-m", telemetrySuffix = "b-m")
                 ),
             urls =

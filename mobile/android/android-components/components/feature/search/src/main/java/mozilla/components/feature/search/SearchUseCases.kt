@@ -7,7 +7,7 @@ package mozilla.components.feature.search
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.action.SearchAction
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.selector.findTabOrCustomTab
@@ -68,7 +68,7 @@ class SearchUseCases(
             searchEngine: SearchEngine? = null,
             flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none(),
             additionalHeaders: Map<String, String>? = null,
-            accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
+            accessPoint: String = SearchAccessPoint.DEFAULT,
         ) {
             val isTabPrivate =
                 (sessionId ?: store.state.selectedTabId)?.let {
@@ -164,7 +164,7 @@ class SearchUseCases(
             parentSessionId: String? = null,
             flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none(),
             additionalHeaders: Map<String, String>? = null,
-            accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
+            accessPoint: String = SearchAccessPoint.DEFAULT,
         ) {
             val resolvedEngine = searchEngine ?: store.state.search.selectedOrDefaultSearchEngine(isPrivate)
             val searchUrl = resolvedEngine?.buildSearchUrl(searchTerms, accessPoint)

@@ -11,21 +11,32 @@ import androidx.core.net.toUri
 // OpenSearch parameter for search terms.
 const val OS_SEARCH_ENGINE_TERMS_PARAM = "{" + "searchTerms" + "}"
 
-/** The key of the [SearchEngineAccessPoint] a search engine falls back to for any access point it does not define. */
-const val DEFAULT_SEARCH_ACCESS_POINT = "default"
+/**
+ * The search access points a [SearchEngine] can be configured for, naming the keys of [SearchEngine.accessPoints].
+ *
+ * The configuration may name access points that are not listed here, so these are named values rather than the full
+ * set.
+ */
+object SearchAccessPoint {
+    /** The access point a search engine falls back to for any access point it does not define. */
+    const val DEFAULT = "default"
 
-/** The search access point for a search started from a top site. */
-const val TOPSITE_SEARCH_ACCESS_POINT = "topsite"
+    /** A search started from selected text on a page. */
+    const val CONTEXT = "context"
 
-/** The search access point for a search started from the search widget. */
-const val WIDGET_SEARCH_ACCESS_POINT = "widget"
+    /** A search started from a top site. */
+    const val TOPSITE = "topsite"
+
+    /** A search started from the search widget. */
+    const val WIDGET = "widget"
+}
 
 /**
  * The URLs and telemetry suffix a search engine uses at one search access point.
  *
  * An access point present on a [SearchEngine] is used exactly as the configuration specifies it. In particular its URLs
  * already omit the partner code parameter when the access point has no partner code, rather than carrying it empty. An
- * access point that is absent falls back to [DEFAULT_SEARCH_ACCESS_POINT] as a whole, not field by field.
+ * access point that is absent falls back to [SearchAccessPoint.DEFAULT] as a whole, not field by field.
  *
  * @property resultUrls the search results urls, best first, as [SearchEngine.resultUrls].
  * @property suggestUrl the search suggestion url.
@@ -43,12 +54,12 @@ data class SearchEngineAccessPoint(
 )
 
 /**
- * Returns the [SearchEngineAccessPoint] named [accessPoint], or the one named [DEFAULT_SEARCH_ACCESS_POINT] when this
+ * Returns the [SearchEngineAccessPoint] named [accessPoint], or the one named [SearchAccessPoint.DEFAULT] when this
  * engine does not define [accessPoint]. Returns `null` when the engine defines no access points at all, which is the
  * case for every engine not configured per access point.
  */
 fun SearchEngine.accessPoint(accessPoint: String): SearchEngineAccessPoint? =
-    accessPoints[accessPoint] ?: accessPoints[DEFAULT_SEARCH_ACCESS_POINT]
+    accessPoints[accessPoint] ?: accessPoints[SearchAccessPoint.DEFAULT]
 
 /**
  * A data class representing a search engine.

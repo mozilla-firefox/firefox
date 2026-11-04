@@ -20,8 +20,8 @@ import com.google.android.material.textfield.TextInputLayout
 import java.lang.ref.WeakReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
-import mozilla.components.browser.state.search.TOPSITE_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.accessPoint
 import mozilla.components.browser.state.state.availableSearchEngines
 import mozilla.components.browser.state.state.searchEngines
@@ -461,7 +461,7 @@ class DefaultTopSiteController(
 
         getAvailableSearchEngines()
             .firstOrNull { engine -> engine.resultUrls.any { it.startsWith(SupportUtils.GOOGLE_URL) } }
-            ?.accessPoint(TOPSITE_SEARCH_ACCESS_POINT)
+            ?.accessPoint(SearchAccessPoint.TOPSITE)
             ?.partnerCode
             ?.let {
                 return googleTopSiteUrl(partnerCode = it)

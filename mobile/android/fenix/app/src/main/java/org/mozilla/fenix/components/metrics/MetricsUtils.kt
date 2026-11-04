@@ -15,10 +15,8 @@ import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
-import mozilla.components.browser.state.search.TOPSITE_SEARCH_ACCESS_POINT
-import mozilla.components.browser.state.search.WIDGET_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.accessPoint
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.experiments.nimbus.NimbusEventStore
@@ -49,6 +47,7 @@ object MetricsUtils {
         SUGGESTION,
         TOPSITE,
         WIDGET,
+        CONTEXT,
         DIGITAL_ASSISTANT,
         NONE,
     }
@@ -269,16 +268,16 @@ object MetricsUtils {
  * Maps a [MetricsUtils.Source] onto a search-config-v3 search access point name, for selecting the partner code and
  * telemetry suffix that apply to a search from that source.
  *
- * `context` has no [MetricsUtils.Source] at all, because text selection searches record no search telemetry; bug
- * 2086263 covers giving them some. [MetricsUtils.Source.DIGITAL_ASSISTANT] has no access point of its own either.
+ * [MetricsUtils.Source.DIGITAL_ASSISTANT] has no access point of its own, so it takes the default one.
  */
 fun MetricsUtils.Source.toSearchAccessPoint(): String =
     when (this) {
-        MetricsUtils.Source.TOPSITE -> TOPSITE_SEARCH_ACCESS_POINT
-        MetricsUtils.Source.WIDGET -> WIDGET_SEARCH_ACCESS_POINT
+        MetricsUtils.Source.CONTEXT -> SearchAccessPoint.CONTEXT
+        MetricsUtils.Source.TOPSITE -> SearchAccessPoint.TOPSITE
+        MetricsUtils.Source.WIDGET -> SearchAccessPoint.WIDGET
         MetricsUtils.Source.ACTION,
         MetricsUtils.Source.SHORTCUT,
         MetricsUtils.Source.SUGGESTION,
         MetricsUtils.Source.DIGITAL_ASSISTANT,
-        MetricsUtils.Source.NONE -> DEFAULT_SEARCH_ACCESS_POINT
+        MetricsUtils.Source.NONE -> SearchAccessPoint.DEFAULT
     }

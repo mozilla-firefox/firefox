@@ -58,6 +58,7 @@ events:
       - https://github.com/mozilla-mobile/fenix/pull/18143
       - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
       - https://github.com/mozilla-mobile/fenix/pull/21038#issuecomment-906757301
+      - https://phabricator.services.mozilla.com/D338354
     data_sensitivity:
       - interaction
     notification_emails:
@@ -3335,9 +3336,10 @@ metrics:
       https://github.com/mozilla-mobile/fenix/issues/1607) the value will be
       `custom`.
 
-      `source` will be: `action`, `suggestion`, `widget`, `shortcut`, `topsite`
-      (depending on the source from which the search started). Also added the
-      `other` option for the source but it should never enter on this case.
+      `source` will be: `action`, `suggestion`, `widget`, `shortcut`, `topsite`,
+      `context` (depending on the source from which the search started). Also
+      added the `other` option for the source but it should never enter on this
+      case.
     send_in_pings:
       - metrics
       - baseline

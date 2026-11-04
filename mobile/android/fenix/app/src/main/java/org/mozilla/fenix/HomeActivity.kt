@@ -58,7 +58,7 @@ import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.browser.state.action.MediaSessionAction
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.action.WebExtensionAction
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
 import mozilla.components.browser.state.selector.selectedTab
@@ -1568,7 +1568,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
         flags: EngineSession.LoadUrlFlags = EngineSession.LoadUrlFlags.none(),
         historyMetadata: HistoryMetadataKey? = null,
         additionalHeaders: Map<String, String>? = null,
-        accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
+        accessPoint: String = SearchAccessPoint.DEFAULT,
     ) {
         openToBrowser(from, customTabSessionId)
 

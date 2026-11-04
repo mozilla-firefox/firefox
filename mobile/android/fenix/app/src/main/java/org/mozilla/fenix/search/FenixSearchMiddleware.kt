@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.AwesomeBarAction
 import mozilla.components.browser.state.ext.getUrl
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.search.DefaultSearchEngineProvider
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.store.BrowserStore
@@ -439,7 +439,7 @@ class FenixSearchMiddleware(
         forceSearch: Boolean = false,
         searchEngine: SearchEngine? = null,
         flags: LoadUrlFlags = LoadUrlFlags.none(),
-        accessPoint: String = DEFAULT_SEARCH_ACCESS_POINT,
+        accessPoint: String = SearchAccessPoint.DEFAULT,
     ) {
         navController.navigate(R.id.browserFragment)
         useCases.fenixBrowserUseCases.loadUrlOrSearch(

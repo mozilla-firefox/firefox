@@ -8,7 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlin.test.assertNotNull
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.search.SearchEngineAccessPoint
 import mozilla.components.support.test.robolectric.testContext
@@ -348,7 +348,7 @@ class MetricsUtilsTestRobolectric {
         every { engine.telemetrySuffix } returns "b-m"
         every { engine.accessPoints } returns
             mapOf(
-                DEFAULT_SEARCH_ACCESS_POINT to SearchEngineAccessPoint(telemetrySuffix = "b-m"),
+                SearchAccessPoint.DEFAULT to SearchEngineAccessPoint(telemetrySuffix = "b-m"),
                 "widget" to SearchEngineAccessPoint(telemetrySuffix = "b-w"),
             )
 
@@ -370,7 +370,7 @@ class MetricsUtilsTestRobolectric {
         every { engine.type } returns SearchEngine.Type.BUNDLED
         every { engine.telemetrySuffix } returns "b-m"
         every { engine.accessPoints } returns
-            mapOf(DEFAULT_SEARCH_ACCESS_POINT to SearchEngineAccessPoint(telemetrySuffix = "b-m"))
+            mapOf(SearchAccessPoint.DEFAULT to SearchEngineAccessPoint(telemetrySuffix = "b-m"))
 
         MetricsUtils.recordSearchMetrics(engine, false, MetricsUtils.Source.TOPSITE, nimbusEventStore)
 

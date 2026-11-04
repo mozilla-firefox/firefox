@@ -68,6 +68,7 @@ import mozilla.components.browser.state.state.CustomTabSessionState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.content.DownloadState
+import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.browser.thumbnails.BrowserThumbnails
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
@@ -197,6 +198,8 @@ import org.mozilla.fenix.components.FindInPageIntegration
 import org.mozilla.fenix.components.accounts.FxaWebChannelIntegration
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MicrosurveyAction
+import org.mozilla.fenix.components.metrics.MetricsUtils
+import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.share.ShareSource
 import org.mozilla.fenix.components.toolbar.BottomToolbarContainerIntegration
 import org.mozilla.fenix.components.toolbar.BottomToolbarContainerView
@@ -1335,11 +1338,32 @@ abstract class BaseBrowserFragment :
                             requireComponents.useCases.searchUseCases.newTabSearch
                         }
 
+                    store.state.search.selectedOrDefaultSearchEngine(request.isPrivate)?.let { searchEngine ->
+                        MetricsUtils.recordSearchMetrics(
+                            engine = searchEngine,
+                            // The context menu offers no engine to choose, so this is always the default for the
+                            // current browsing mode.
+                            isDefault = true,
+                            searchAccessPoint = MetricsUtils.Source.CONTEXT,
+                            nimbusEventStore = requireComponents.nimbus.events,
+                        )
+                    }
+
+                    val accessPoint = MetricsUtils.Source.CONTEXT.toSearchAccessPoint()
                     if (parentSession is CustomTabSessionState) {
-                        useCase.invoke(request.query)
+                        useCase.invoke(
+                            searchTerms = request.query,
+                            source = SessionState.Source.Internal.None,
+                            accessPoint = accessPoint,
+                        )
                         requireActivity().startActivity(openInFenixIntent)
                     } else {
-                        useCase.invoke(request.query, parentSessionId = parentSession?.id)
+                        useCase.invoke(
+                            searchTerms = request.query,
+                            source = SessionState.Source.Internal.None,
+                            parentSessionId = parentSession?.id,
+                            accessPoint = accessPoint,
+                        )
                     }
                 },
             owner = this,

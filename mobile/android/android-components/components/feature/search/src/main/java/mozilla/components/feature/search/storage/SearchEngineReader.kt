@@ -23,7 +23,7 @@ import mozilla.appservices.search.SearchEngineUrls
 import mozilla.appservices.search.SearchUrlParam
 import mozilla.components.browser.icons.decoder.ICOIconDecoder
 import mozilla.components.browser.icons.decoder.SvgIconDecoder
-import mozilla.components.browser.state.search.DEFAULT_SEARCH_ACCESS_POINT
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.search.SearchEngineAccessPoint
 import mozilla.components.feature.search.middleware.SearchExtraParams
@@ -307,8 +307,8 @@ internal class SearchEngineReader(
     /**
      * Loads a <code>SearchEngine</code> from a search-config-v3 <code>engineDefinition</code>.
      *
-     * The partner details of the [DEFAULT_SEARCH_ACCESS_POINT] access point supply the partner code and telemetry
-     * suffix, which search-config-v2 defines once per engine.
+     * The partner details of the [SearchAccessPoint.DEFAULT] access point supply the partner code and telemetry suffix,
+     * which search-config-v2 defines once per engine.
      */
     @Throws(IllegalArgumentException::class)
     fun loadStreamAPIV3(
@@ -321,7 +321,7 @@ internal class SearchEngineReader(
         require(engineDefinition.charset.isNotBlank()) { "Search engine charset cannot be empty" }
         require(engineDefinition.identifier.isNotBlank()) { "Search engine identifier cannot be empty" }
 
-        val partner = engineDefinition.partner?.get(DEFAULT_SEARCH_ACCESS_POINT)
+        val partner = engineDefinition.partner?.get(SearchAccessPoint.DEFAULT)
         val builder =
             SearchEngineBuilder(
                 type,
@@ -346,7 +346,7 @@ internal class SearchEngineReader(
         // entry rather than building the same URLs a second time. An engine with no default entry builds them with no
         // partner code.
         applyUrls(
-            accessPoints[DEFAULT_SEARCH_ACCESS_POINT]
+            accessPoints[SearchAccessPoint.DEFAULT]
                 ?: readAccessPoint(engineDefinition.urls, partnerCode = null, engineName = engineDefinition.name),
             builder,
         )

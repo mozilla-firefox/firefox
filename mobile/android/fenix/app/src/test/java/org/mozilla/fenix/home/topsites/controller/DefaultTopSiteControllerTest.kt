@@ -19,9 +19,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.SearchAction
 import mozilla.components.browser.state.search.RegionState
+import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.search.SearchEngineAccessPoint
-import mozilla.components.browser.state.search.TOPSITE_SEARCH_ACCESS_POINT
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SearchState
 import mozilla.components.browser.state.state.createTab
@@ -98,7 +98,7 @@ class DefaultTopSiteControllerTest {
         googleSearchEngine.copy(
             accessPoints =
                 mapOf(
-                    TOPSITE_SEARCH_ACCESS_POINT to
+                    SearchAccessPoint.TOPSITE to
                         SearchEngineAccessPoint(
                             resultUrls = listOf("https://www.google.com/?q={searchTerms}"),
                             partnerCode = "firefox-b-t",
