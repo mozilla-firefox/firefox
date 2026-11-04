@@ -3,7 +3,7 @@
 
 /* eslint-disable mozilla/no-arbitrary-setTimeout */
 
-const { setTimeout } = ChromeUtils.importESModule(
+const { clearInterval, setInterval, setTimeout } = ChromeUtils.importESModule(
   "resource://gre/modules/Timer.sys.mjs"
 );
 
@@ -194,6 +194,129 @@ add_task(async function test_retry_on_busy() {
   ]) {
     stmt.finalize();
   }
+  await promiseClose(db1);
+  await promiseClose(db2);
+});
+
+async function execute(db, sql) {
+  let stmt = db.createAsyncStatement(sql);
+  try {
+    return await promiseExecuteStatement(stmt);
+  } finally {
+    stmt.finalize();
+  }
+}
+
+function promiseExecuteStatementOutcome(statement) {
+  let error = null;
+  let { promise, resolve } = Promise.withResolvers();
+  statement.executeAsync({
+    handleResult() {},
+    handleError(e) {
+      error = e;
+    },
+    handleCompletion(reason) {
+      resolve({ reason, error });
+    },
+  });
+  return promise;
+}
+
+async function getBusyTimeout(db) {
+  let rows = await execute(db, "PRAGMA busy_timeout");
+  return rows[0].getResultByIndex(0);
+}
+
+add_task(async function test_async_connections_default_busy_timeout() {
+  let db = await promiseAsyncDatabase("default-busy-timeout.sqlite");
+  Assert.equal(await getBusyTimeout(db), 100, "Async connection has default");
+
+  let readOnlyClone = await promiseClone(db, true);
+  Assert.equal(
+    await getBusyTimeout(readOnlyClone),
+    100,
+    "Read-only async clone has default"
+  );
+
+  await execute(db, "PRAGMA busy_timeout = 0");
+  Assert.equal(await getBusyTimeout(db), 0, "Consumers can disable it");
+  let clone = await promiseClone(db);
+  Assert.equal(
+    await getBusyTimeout(clone),
+    100,
+    "A disabled timeout is not copied to async clones"
+  );
+
+  await execute(db, "PRAGMA busy_timeout = 50");
+  let clone2 = await promiseClone(db);
+  Assert.equal(
+    await getBusyTimeout(clone2),
+    100,
+    "A set timeout is not copied to async clones"
+  );
+
+  let syncDb = Services.storage.openUnsharedDatabase(
+    getProfileFile("default-busy-timeout.sqlite")
+  );
+  let stmt = syncDb.createStatement("PRAGMA busy_timeout");
+  Assert.ok(stmt.executeStep());
+  Assert.equal(stmt.getInt32(0), 0, "Sync connections have no default");
+  stmt.finalize();
+  syncDb.close();
+
+  for (let conn of [clone2, clone, readOnlyClone, db]) {
+    await promiseClose(conn);
+  }
+});
+
+add_task(async function test_interrupt_busy_wait() {
+  let db1 = await promiseAsyncDatabase("interrupt-busy.sqlite");
+  await execute(db1, "PRAGMA journal_mode = WAL");
+  await execute(db1, "CREATE TABLE t(id INTEGER PRIMARY KEY)");
+  let db2 = await promiseClone(db1);
+  await execute(db2, "BEGIN IMMEDIATE");
+
+  let insert = db1.createAsyncStatement("INSERT INTO t DEFAULT VALUES");
+  let promise = promiseExecuteStatementOutcome(insert);
+  // An interrupt arriving before the statement starts executing is discarded,
+  // so keep interrupting until it completes.
+  let interval = setInterval(() => db1.interrupt(), 100);
+  let { reason } = await promise;
+  clearInterval(interval);
+  Assert.equal(
+    reason,
+    Ci.mozIStorageStatementCallback.REASON_CANCELED,
+    "Interrupt stops a statement waiting for a lock"
+  );
+  insert.finalize();
+
+  await execute(db2, "ROLLBACK");
+  await promiseClose(db1);
+  await promiseClose(db2);
+});
+
+add_task(async function test_stale_snapshot_is_not_retried() {
+  let db1 = await promiseAsyncDatabase("stale-snapshot.sqlite");
+  await execute(db1, "PRAGMA journal_mode = WAL");
+  await execute(db1, "CREATE TABLE t(id INTEGER PRIMARY KEY)");
+  let db2 = await promiseClone(db1);
+
+  info("Start a read transaction, then write from another connection");
+  await execute(db1, "BEGIN DEFERRED");
+  await execute(db1, "SELECT * FROM t");
+  await execute(db2, "INSERT INTO t DEFAULT VALUES");
+
+  info("Writing on the stale snapshot must fail instead of retrying");
+  let insert = db1.createAsyncStatement("INSERT INTO t DEFAULT VALUES");
+  let { reason, error } = await promiseExecuteStatementOutcome(insert);
+  Assert.equal(reason, Ci.mozIStorageStatementCallback.REASON_ERROR);
+  Assert.equal(error.result, Ci.mozIStorageError.BUSY);
+  insert.finalize();
+
+  await execute(db1, "ROLLBACK");
+  let rows = await execute(db1, "SELECT count(*) FROM t");
+  Assert.equal(rows[0].getResultByIndex(0), 1, "Only the other write landed");
+
   await promiseClose(db1);
   await promiseClose(db2);
 });

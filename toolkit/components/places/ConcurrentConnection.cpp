@@ -160,9 +160,10 @@ void ConcurrentConnection::InitializeOnMainThread() {
   }
 
   mState = AWAITING_DATABASE_READY;
-  // Opening concurrently with EnsureConnection() may cause WAL-mode lock
-  // contention, returning SQLITE_LOCKED or SQLITE_IOERR depending on the
-  // filesystem (busy_timeout does not apply to same-process conflicts).
+  // Opening concurrently with EnsureConnection() may cause lock contention
+  // while the main connection sets up the database (for example changing its
+  // journal mode), returning SQLITE_BUSY or SQLITE_IOERR depending on the
+  // filesystem.
   // Defer our open until TOPIC_PLACES_INIT_COMPLETE, which fires only after
   // EnsureConnection() has succeeded and the main connection is established.
   // If the connection is already open (CC started after Places initialized),
@@ -297,14 +298,6 @@ ConcurrentConnection::Complete(nsresult aRv, nsISupports* aData) {
   // Assign and setup connection.
   mConn = do_QueryInterface(aData);
   mIsOpening = false;
-
-  // In some rare conditions WAL may return SQLITE_BUSY when the same database
-  // is used across multiple threads, we must handle that.
-  nsAutoCString busyTimeoutPragma("PRAGMA busy_timeout = ");
-  busyTimeoutPragma.AppendInt(DATABASE_BUSY_TIMEOUT_MS);
-  nsCOMPtr<mozIStoragePendingStatement> busyPs;
-  (void)mConn->ExecuteSimpleSQLAsync(busyTimeoutPragma, nullptr,
-                                     getter_AddRefs(busyPs));
 
   // Verify the schema version. If outdated, wait for Places to finish
   // initializing.

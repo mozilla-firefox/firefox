@@ -62,6 +62,9 @@
 // Maximum size of the pages cache per connection.
 #define MAX_CACHE_SIZE_KIBIBYTES 2048  // 2 MiB
 
+// Default busy timeout for asynchronous connections.
+#define DEFAULT_ASYNC_BUSY_TIMEOUT_MS 100
+
 mozilla::LazyLogModule gStorageLog("mozStorage");
 
 // Checks that the protected code is running on the main-thread only if the
@@ -1478,6 +1481,14 @@ nsresult Connection::initializeInternal() {
   (void)ExecuteSimpleSQL("PRAGMA synchronous = NORMAL;"_ns);
 #endif
 
+  // Asynchronous connections never execute statements on the main thread, so
+  // they can wait for locks held by other connections, rather than failing
+  // with SQLITE_BUSY. Consumers can still change this through
+  // PRAGMA busy_timeout.
+  if (mSupportedOperations == ASYNCHRONOUS) {
+    (void)::sqlite3_busy_timeout(mDBConn, DEFAULT_ASYNC_BUSY_TIMEOUT_MS);
+  }
+
   // Initialization succeeded, we can stop guarding for failures.
   guard.release();
   return NS_OK;
@@ -2242,9 +2253,12 @@ nsresult Connection::initializeClone(Connection* aClone, bool aReadOnly) {
   // LIMITATION WARNING!  Many of these pragmas are actually scoped to the
   // schema ("main" and any other attached databases), and this implmentation
   // fails to propagate them.  This is being addressed on trunk.
-  static const char* pragmas[] = {
-      "cache_size",  "temp_store",         "foreign_keys", "journal_size_limit",
-      "synchronous", "wal_autocheckpoint", "busy_timeout"};
+  // Don't add busy_timeout: asynchronous clones get the default busy timeout
+  // from initializeInternal(), consumers needing a different value must set
+  // it explicitly after cloning.
+  static const char* pragmas[] = {"cache_size",   "temp_store",
+                                  "foreign_keys", "journal_size_limit",
+                                  "synchronous",  "wal_autocheckpoint"};
   for (auto& pragma : pragmas) {
     // Read-only connections just need cache_size and temp_store pragmas.
     if (aReadOnly && ::strcmp(pragma, "cache_size") != 0 &&

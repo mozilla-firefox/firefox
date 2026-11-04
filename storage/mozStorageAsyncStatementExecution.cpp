@@ -225,8 +225,6 @@ bool AsyncExecuteStatements::executeStatement(StatementData& aData) {
   bool busyRetry = false;
   while (true) {
     if (busyRetry) {
-      busyRetry = false;
-
       // Yield, and try again
       (void)PR_Sleep(PR_INTERVAL_NO_WAIT);
 
@@ -243,10 +241,19 @@ bool AsyncExecuteStatements::executeStatement(StatementData& aData) {
     // lock the sqlite mutex so sqlite3_errmsg cannot change
     SQLiteMutexAutoLock lockedScope(mDBMutex);
 
+    // Stepping clears an interrupt requested while we were retrying, so check
+    // for it before retrying.
+    if (busyRetry && ::sqlite3_is_interrupted(mNativeConnection)) {
+      mState = CANCELED;
+      return false;
+    }
+
     int rc = mConnection->stepStatement(mNativeConnection, aStatement);
 
-    // Some errors are not fatal, and we can handle them and continue.
-    if (rc == SQLITE_BUSY) {
+    // Retry on SQLITE_BUSY, unless the transaction snapshot is stale. In that
+    // case retrying can never succeed, and the transaction must be rolled back.
+    if (rc == SQLITE_BUSY &&
+        ::sqlite3_extended_errcode(mNativeConnection) != SQLITE_BUSY_SNAPSHOT) {
       ::sqlite3_reset(aStatement);
       busyRetry = true;
       continue;

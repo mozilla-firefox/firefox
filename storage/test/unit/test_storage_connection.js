@@ -637,7 +637,7 @@ add_task(async function test_clone_copies_pragmas() {
     { name: "journal_size_limit", value: 524288, copied: true },
     { name: "synchronous", value: 2, copied: true },
     { name: "wal_autocheckpoint", value: 16, copied: true },
-    { name: "busy_timeout", value: 50, copied: true },
+    { name: "busy_timeout", value: 50, copied: false },
     { name: "ignore_check_constraints", value: 1, copied: false },
   ];
 
