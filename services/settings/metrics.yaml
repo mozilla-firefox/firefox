@@ -25,6 +25,7 @@ uptake.remotecontent.result:
       - https://bugzil.la/1517469
       - https://bugzil.la/1617133
       - https://bugzil.la/2028765
+      - https://bugzil.la/2084939
     data_reviews: *uptake_remotecontent_result_uptake_bugs
     notification_emails:
       - mleplatre@mozilla.com

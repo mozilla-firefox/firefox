@@ -466,6 +466,21 @@ export var Utils = {
   },
 
   /**
+   * Compute the current server time from the response headers.
+   *
+   * @param {Headers} headers response headers
+   * @returns {number} server time in milliseconds
+   */
+  serverTimeMillis(headers) {
+    const serverTimeMillis = Date.parse(headers.get("Date"));
+    // Since the response is served via a CDN, the Date header value could have been cached.
+    const cacheAgeSeconds = headers.has("Age")
+      ? parseInt(headers.get("Age"), 10)
+      : 0;
+    return serverTimeMillis + cacheAgeSeconds * 1000;
+  },
+
+  /**
    * Fetch the list of remote collections and their timestamp.
    * ```
    *   {
@@ -546,12 +561,7 @@ export var Utils = {
 
     const { changes = [], timestamp } = payload;
 
-    let serverTimeMillis = Date.parse(response.headers.get("Date"));
-    // Since the response is served via a CDN, the Date header value could have been cached.
-    const cacheAgeSeconds = response.headers.has("Age")
-      ? parseInt(response.headers.get("Age"), 10)
-      : 0;
-    serverTimeMillis += cacheAgeSeconds * 1000;
+    const serverTimeMillis = Utils.serverTimeMillis(response.headers);
 
     // Age of data (time between publication and now).
     const ageSeconds = (serverTimeMillis - timestamp) / 1000;
