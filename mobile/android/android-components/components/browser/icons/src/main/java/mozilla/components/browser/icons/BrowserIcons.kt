@@ -428,17 +428,21 @@ private fun load(
     decoders: List<ImageDecoder>,
     desiredSize: DesiredSize,
 ): Pair<Icon, IconRequest.Resource>? {
-    request.resources.asSequence().distinct().sortedWith(IconResourceComparator).forEach { resource ->
-        loaders.forEach { loader ->
-            val result = loader.load(context, request, resource)
+    request.resources
+        .asSequence()
+        .sortedWith(IconResourceComparator)
+        .distinctBy { it.url }
+        .forEach { resource ->
+            loaders.forEach { loader ->
+                val result = loader.load(context, request, resource)
 
-            val icon = decodeIconLoaderResult(result, decoders, desiredSize)
+                val icon = decodeIconLoaderResult(result, decoders, desiredSize)
 
-            if (icon != null) {
-                return Pair(icon, resource)
+                if (icon != null) {
+                    return Pair(icon, resource)
+                }
             }
         }
-    }
 
     return null
 }
