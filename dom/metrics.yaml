@@ -1251,3 +1251,43 @@ dom:
     notification_emails:
       - amarchesini@mozilla.com
     expires: never
+
+speculation_rules:
+  prefetch_transfer_size:
+    type: labeled_memory_distribution
+    memory_unit: byte
+    labels:
+      - used
+      - unused
+      - incomplete
+    description: >
+      Bytes a Speculation Rules prefetch read from the network, summed over its
+      redirect chain. Recorded once per prefetch record when the record is
+      discarded, which is the first point that knows whether a navigation ever
+      came for it, so each label's sample count is also the number of records
+      that ended with that outcome.
+
+      used: a navigation activated the record.
+      unused: the prefetch completed, but no navigation activated it. Includes
+      a record that a later prefetch of the same URL superseded.
+      incomplete: the fetch started but never completed, because the document
+      cancelled it, it exceeded the body cap, or it failed.
+
+      The value is nsIHttpChannel.transferSize: response header fields plus the
+      encoded response body. It excludes the request, and it is zero when the
+      prefetch was itself served from the HTTP cache. A navigation that reuses a
+      prefetched cache entry transfers nothing of its own, so prefetched bytes
+      are counted here and only here.
+
+      A candidate rejected before its request was sent, a cross-origin one for
+      instance, cost no data and is not recorded at all. A prefetch still in
+      flight when its record is discarded records zero bytes, so the incomplete
+      label's sum is a lower bound while its count is exact.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2072656
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2072656
+    notification_emails:
+      - sning@mozilla.com
+      - acreskey@mozilla.com
+    expires: never

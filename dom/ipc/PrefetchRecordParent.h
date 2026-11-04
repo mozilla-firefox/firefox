@@ -85,6 +85,9 @@ class PrefetchRecordParent final : public PPrefetchRecordParent,
   // Called by RecvCancel and WindowGlobalParent::DedupePrefetchRecords.
   void MarkCanceled();
 
+  // Called when a navigation activates this record.
+  void MarkActivated() { mOutcome = Outcome::Used; }
+
   // Implements "prefetch record matches a URL" using the completed response's
   // No-Vary-Search header.
   // Spec:
@@ -116,6 +119,8 @@ class PrefetchRecordParent final : public PPrefetchRecordParent,
   bool IsReferrerPolicySufficientlyStrict() const;
   void ReleaseCacheToken();
   bool MatchesNoVarySearchHint(nsIURI* aURL) const;
+  void AccumulateTransferSize(nsIRequest* aRequest);
+  void RecordDataUsage();
 
   // Prefetch record fields:
   // https://wicg.github.io/nav-speculation/prefetch.html#prefetch-record
@@ -140,8 +145,15 @@ class PrefetchRecordParent final : public PPrefetchRecordParent,
   bool mHadConflictingCredentials = false;
   bool mIsEligibleForPrefetch = false;
 
+  // Only moves forward, and unlike mState it survives a later MarkCanceled.
+  enum class Outcome : uint8_t { NotStarted, Incomplete, Unused, Used };
+  Outcome mOutcome = Outcome::NotStarted;
+
   // Tracks incoming body bytes for the body cap.
   uint64_t mBytesReceived = 0;
+
+  // On-the-wire bytes, summed over the redirect chain.
+  uint64_t mTransferSize = 0;
 
  protected:
   ~PrefetchRecordParent() = default;

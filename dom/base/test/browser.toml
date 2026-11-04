@@ -179,6 +179,14 @@ skip-if = [
   "true", # this tests non-e10s behavior.
 ]
 
+["browser_prefetch_data_usage.js"]
+# All channels: the test enables the prefs it needs.
+support-files = [
+  "file_pageload_prefetch_plain.html",
+  "file_pageload_prefetch_source.html",
+  "file_pageload_prefetch_target.sjs",
+]
+
 ["browser_promiseDocumentFlushed.js"]
 
 ["browser_refresh_content.js"]

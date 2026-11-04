@@ -11,6 +11,7 @@
 #include "mozilla/dom/PrefetchLog.h"
 #include "mozilla/dom/ReferrerInfo.h"
 #include "mozilla/dom/WindowGlobalParent.h"
+#include "mozilla/glean/DomMetrics.h"
 #include "mozilla/net/NoVarySearchUtils.h"
 #include "nsContentPolicyUtils.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
@@ -170,7 +171,10 @@ void PrefetchRecordParent::Init(WindowGlobalParent* aWGP,
          this, static_cast<uint32_t>(rv)));
     mState = PrefetchState::Canceled;
     mChannel = nullptr;
+    return;
   }
+
+  mOutcome = Outcome::Incomplete;
 }
 
 bool PrefetchRecordParent::IsCrossOriginToDocument(nsIURI* aURI) const {
@@ -392,6 +396,8 @@ PrefetchRecordParent::OnDataAvailable(nsIRequest* aRequest,
 
 NS_IMETHODIMP
 PrefetchRecordParent::OnStopRequest(nsIRequest* aRequest, nsresult aStatus) {
+  // aRequest, not mChannel: a redirected prefetch ends on the last hop.
+  AccumulateTransferSize(aRequest);
   mChannel = nullptr;
 
   if (NS_FAILED(aStatus)) {
@@ -442,6 +448,7 @@ PrefetchRecordParent::OnStopRequest(nsIRequest* aRequest, nsresult aStatus) {
   wgp->DedupePrefetchRecords(this);
   // Step 5: set state to "completed".
   mState = PrefetchState::Completed;
+  mOutcome = Outcome::Unused;
   // Step 6: trigger a prefetch status updated event ("ready").
   FirePrefetchStatusUpdated(true);
   wgp->NotifyPrefetchStateChanged(this);
@@ -473,6 +480,7 @@ PrefetchRecordParent::AsyncOnChannelRedirect(
       ("PrefetchRecordParent::AsyncOnChannelRedirect: this=%p flags=%u", this,
        aFlags));
   FillResponseOnLastEntry(aOldChannel);
+  AccumulateTransferSize(aOldChannel);
 
   // Validate the partition key on a cross-site redirect. Per "create
   // navigation params by fetching"
@@ -572,6 +580,40 @@ void PrefetchRecordParent::ActorDestroy(ActorDestroyReason aReason) {
     mChannel = nullptr;
   }
   ReleaseCacheToken();
+
+  RecordDataUsage();
+}
+
+void PrefetchRecordParent::AccumulateTransferSize(nsIRequest* aRequest) {
+  nsCOMPtr<nsIHttpChannel> http = do_QueryInterface(aRequest);
+  if (!http) {
+    return;
+  }
+  uint64_t size = 0;
+  if (NS_SUCCEEDED(http->GetTransferSize(&size))) {
+    mTransferSize += size;
+  }
+}
+
+void PrefetchRecordParent::RecordDataUsage() {
+  nsAutoCString label;
+  switch (mOutcome) {
+    // A candidate rejected before AsyncOpen cost no data.
+    case Outcome::NotStarted:
+      return;
+    case Outcome::Incomplete:
+      label.AssignLiteral("incomplete");
+      break;
+    case Outcome::Unused:
+      label.AssignLiteral("unused");
+      break;
+    case Outcome::Used:
+      label.AssignLiteral("used");
+      break;
+  }
+
+  glean::speculation_rules::prefetch_transfer_size.Get(label).Accumulate(
+      mTransferSize);
 }
 
 }  // namespace mozilla::dom
