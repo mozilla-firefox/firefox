@@ -165,12 +165,6 @@ recurse:
 
 ifeq (.,$(DEPTH))
 
-# This is required so that the pre-export tier sees the rules in
-# mobile/android
-ifeq ($(MOZ_WIDGET_TOOLKIT),android)
-recurse_pre-export: mobile/android/pre-export
-endif
-
 ifdef ENABLE_CLANG_PLUGIN
 # Only target rules use the clang plugin.
 $(filter %/target %/target-objects,$(filter-out config/export config/host build/unix/stdc++compat/% build/clang-plugin/%,$(compile_targets))) security/rlbox/pre-compile media/libsoundtouch/src/pre-compile: build/clang-plugin/host build/clang-plugin/tests/target-objects

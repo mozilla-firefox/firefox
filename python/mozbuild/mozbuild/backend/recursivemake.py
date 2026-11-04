@@ -807,6 +807,14 @@ class RecursiveMakeBackend(MakeBackend):
         rule = root_deps_mk.create_rule(["recurse_pre-compile"])
         rule.add_dependencies("%s/pre-compile" % d for d in sorted(self._pre_compile))
 
+        # This is required so that the pre-export tier sees the rules in
+        # the directories that have one.
+        if self._no_skip["pre-export"]:
+            rule = root_deps_mk.create_rule(["recurse_pre-export"])
+            rule.add_dependencies(
+                f"{d}/pre-export" for d in sorted(self._no_skip["pre-export"])
+            )
+
         targets_with_pre_compile = sorted(
             t for t in self._compile_graph if mozpath.dirname(t) in self._pre_compile
         )

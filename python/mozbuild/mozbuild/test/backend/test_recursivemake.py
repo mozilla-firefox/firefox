@@ -607,6 +607,28 @@ class TestRecursiveMakeBackend(BackendTester):
         targets = RecursiveMakeBackend.TARGETS
         self.assertEqual(list(targets), sorted(targets))
 
+    def test_generated_files_pre_export(self):
+        env = self._get_environment(
+            "generated-files-pre-export", substs={"MOZ_WIDGET_TOOLKIT": "android"}
+        )
+        self._consume("generated-files-pre-export", RecursiveMakeBackend, env=env)
+
+        backend_path = mozpath.join(env.topobjdir, "backend.mk")
+        with open(backend_path) as fh:
+            lines = [l.strip() for l in fh.readlines()]
+        self.assertIn("app/pre-export: app/$(MDDEPDIR)/Generated.java.stub", lines)
+
+        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
+        with open(root_deps_path) as fh:
+            lines = [l.strip() for l in fh.readlines()]
+        self.assertIn("recurse_pre-export: app/pre-export", lines)
+
+        env = self._consume("generated-files-pre-export", RecursiveMakeBackend)
+
+        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
+        with open(root_deps_path) as fh:
+            self.assertNotIn("recurse_pre-export", fh.read())
+
     def test_generated_files_force(self):
         """Ensure GENERATED_FILES with .force is handled properly."""
         env = self._consume("generated-files-force", RecursiveMakeBackend)
