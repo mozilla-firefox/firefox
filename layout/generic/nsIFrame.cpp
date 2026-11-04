@@ -5606,28 +5606,6 @@ nsresult nsIFrame::SelectWordOrLinkAtPoint(
       CaretAssociationHint::After);
 }
 
-nsIFrame::ContentOffsets nsIFrame::GetContentOffsetsFromPointForSelection(
-    const nsPoint& aPoint) {
-  // A text control's own frames use its independent selection, where its
-  // editor's anonymous content belongs.
-  const nsFrameSelection* const frameSelection = GetConstFrameSelection();
-  const Element* const independentSelectionRoot =
-      frameSelection ? frameSelection->GetIndependentSelectionRootElement()
-                     : nullptr;
-  ContentOffsets offsets = GetContentOffsetsFromPoint(
-      aPoint, independentSelectionRoot
-                  ? SKIP_HIDDEN
-                  : SKIP_HIDDEN | IGNORE_NATIVE_ANONYMOUS_SUBTREE);
-  if (offsets.content && independentSelectionRoot &&
-      !independentSelectionRoot->Contains(offsets.content)) {
-    // The text control's independent selection cannot use offsets outside
-    // its editor, e.g. if a press on its padding resolves to an ancestor
-    // with `user-select: all`.
-    return ContentOffsets();
-  }
-  return offsets;
-}
-
 nsresult nsIFrame::SelectByTypeAtPoint(const nsPoint& aPoint,
                                        nsSelectionAmount aBeginAmountType,
                                        nsSelectionAmount aEndAmountType,
@@ -5637,7 +5615,8 @@ nsresult nsIFrame::SelectByTypeAtPoint(const nsPoint& aPoint,
     return NS_OK;
   }
 
-  ContentOffsets offsets = GetContentOffsetsFromPointForSelection(aPoint);
+  ContentOffsets offsets = GetContentOffsetsFromPoint(
+      aPoint, SKIP_HIDDEN | IGNORE_NATIVE_ANONYMOUS_SUBTREE);
   if (!offsets.content) {
     return NS_ERROR_FAILURE;
   }
