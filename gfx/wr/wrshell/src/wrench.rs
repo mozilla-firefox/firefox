@@ -364,10 +364,11 @@ impl YamlWriter {
                     DisplayItem::Text(info) => {
                         self.write_line("- type: rect");
                         self.push_level();
-                        self.write_spatial_id(info.common.spatial_id);
-                        self.write_clip_chain_id(info.common.clip_chain_id);
-                        self.write_bounds(info.bounds);
-                        self.maybe_write_clip_rect(info.bounds, info.common.clip_rect);
+                        self.write_spatial_id(info.spatial_id);
+                        self.write_clip_chain_id(info.clip_chain_id);
+                        // The run's bounds live in the content builder's
+                        // interner; write placeholders.
+                        self.write_bounds(LayoutRect::zero());
                         self.write_color(ColorF::new(1.0, 0.0, 0.0, 0.5));
                         self.pop_level();
                     }

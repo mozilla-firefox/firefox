@@ -48,6 +48,7 @@ macro_rules! enumerate_dl_stores {
             conic_gradients: api::interned_prims::ConicGradientKey => crate::prim_store::gradient::ConicGradientTemplate, INTERNED_CONIC_GRADIENTS, conic_grad,
             normal_borders: api::interned_prims::NormalBorderKey => crate::prim_store::borders::NormalBorderTemplate, INTERNED_NORMAL_BORDERS, normal_border,
             image_borders: api::interned_prims::ImageBorderKey => crate::prim_store::borders::ImageBorderTemplate, INTERNED_IMAGE_BORDERS, image_border,
+            text_runs: api::interned_prims::TextRunKey => crate::prim_store::text_run::TextRunTemplate, INTERNED_TEXT_RUNS, text_run,
         }
     }
 }
@@ -72,13 +73,12 @@ macro_rules! enumerate_scene_dl_stores {
             conic_gradients: api::interned_prims::ConicGradientKey => crate::prim_store::PrimPlacement, conic_grad,
             normal_borders: api::interned_prims::NormalBorderKey => crate::prim_store::PrimPlacement, normal_border,
             image_borders: api::interned_prims::ImageBorderKey => crate::prim_store::PrimPlacement, image_border,
+            text_runs: api::interned_prims::TextRunKey => crate::prim_store::PrimPlacement, text_run,
         }
     }
 }
 
 /// What a store needs to turn a content key into the value it holds.
-// Rectangles resolve from the key alone; the fields are for fonts and images.
-#[allow(dead_code)]
 pub struct DlResolveContext<'a> {
     /// The id namespace the display list carrying the delta was submitted
     /// with, for validating any resource key the interned item names.

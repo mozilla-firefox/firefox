@@ -23,7 +23,6 @@ use crate::internal_types::{FastHashMap, FastHashSet};
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
 use crate::prim_store::picture::Picture;
-use crate::prim_store::text_run::TextRun;
 use crate::profiler::{self, TransactionProfile};
 use crate::render_backend::SceneView;
 use crate::renderer::{FullFrameStats, PipelineInfo};
@@ -83,7 +82,6 @@ pub struct OffscreenBuiltScene {
 pub struct LoadScene {
     pub document_id: DocumentId,
     pub scene: Scene,
-    pub fonts: SharedFontResources,
     pub view: SceneView,
     pub config: FrameBuilderConfig,
     pub build_frame: bool,
@@ -716,7 +714,6 @@ impl SceneBuilderThread {
                     None,
                     self.dl_builders.document(item.document_id),
                     &self.scene_stores,
-                    item.fonts,
                     &item.view,
                     &self.config,
                     &mut item.interners,
@@ -952,7 +949,6 @@ impl SceneBuilderThread {
                         Some(pipeline_id),
                         self.dl_builders.document(txn.document_id),
                         &self.scene_stores,
-                        self.fonts.clone(),
                         &doc.view,
                         &config,
                         &mut doc.interners,
@@ -1020,7 +1016,6 @@ impl SceneBuilderThread {
                 None,
                 self.dl_builders.document(txn.document_id),
                 &self.scene_stores,
-                self.fonts.clone(),
                 &doc.view,
                 &config,
                 &mut doc.interners,

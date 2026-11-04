@@ -1013,11 +1013,16 @@ impl BatchBuilder {
         let prim_instance = &prim_instances[prim_info.prim_instance_index.0 as usize];
 
         match prim_instance.kind {
-            PrimitiveKind::TextRun { data_handle, .. } => {
+            PrimitiveKind::TextRun { handle } => {
                 let text_run_scratch_handle = prim_info.kind_scratch.unwrap_text_run();
                 let run_scratch = &ctx.scratch.frame.text_runs[text_run_scratch_handle];
                 let subpx_dir = run_scratch.used_font.get_subpx_dir();
-                let prim_data = &ctx.data_stores.text_run[data_handle].kind;
+                // A run that resolved to nothing never made it here: `prepare`
+                // pushes no kind scratch for it, so it has no draw to batch.
+                let prim_data = ctx.dl_stores.text_runs[handle]
+                    .kind
+                    .as_ref()
+                    .expect("bug: batching a text run that resolved to nothing");
 
                 let glyph_keys = &ctx.scratch.frame.glyph_keys[run_scratch.glyph_keys_range];
 

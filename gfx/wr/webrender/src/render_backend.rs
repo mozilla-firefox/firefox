@@ -376,9 +376,8 @@ impl DataStores {
             PrimitiveKind::ConicGradient { handle } => {
                 &dl_stores.conic_gradients[handle].common
             }
-            PrimitiveKind::TextRun { data_handle, .. }  => {
-                let prim_data = &self.text_run[data_handle];
-                &prim_data.common
+            PrimitiveKind::TextRun { handle } => {
+                &dl_stores.text_runs[handle].common
             }
             PrimitiveKind::YuvImage { handle } => {
                 &dl_stores.yuv_images[handle].common
@@ -2766,7 +2765,6 @@ impl RenderBackend {
                 scene,
                 view: view.scene.clone(),
                 config: win.frame_config.clone(),
-                fonts: win.resource_cache.get_fonts(),
                 build_frame,
                 interners,
                 spatial_tree: scene_spatial_tree,

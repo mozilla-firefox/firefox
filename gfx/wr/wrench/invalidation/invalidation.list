@@ -44,10 +44,11 @@
 != anim_text_b.yaml anim_text_c.yaml
 
 # The same again, but the second list comes from a fresh display list builder,
-# as it would from a replaced content process. Text is still interned on the
-# scene builder, which sees identical content, so this must not invalidate.
-# (It will once text moves into the builder; see the rectangle case below.)
-== anim_text_b.yaml anim_text_b.yaml new-builder
+# as it would from a replaced content process. Its interning slot numbering
+# restarts, so the receiver drops what the first builder interned and applies
+# the new list from scratch (DeltaAction::Reset): the re-interned run gets a
+# fresh uid and the tile invalidates, as for the rectangle case below.
+!= anim_text_b.yaml anim_text_b.yaml new-builder
 
 # Re-rendering an unchanged rectangle from the same builder does not churn the
 # tile: the builder keeps its interned entry and the uid with it.

@@ -487,10 +487,16 @@ fn prepare_prim_for_render(
 
             return;
         }
-        PrimitiveKind::TextRun { data_handle } => {
+        PrimitiveKind::TextRun { handle } => {
             tracy_rs::profile_scope!("TextRun");
 
-            let prim_data = &data_stores.text_run[*data_handle];
+            // A run whose font could not be resolved draws nothing. Leaving the
+            // draw without kind scratch is what keeps it out of batching.
+            let prim_template = &dl_stores.text_runs[*handle];
+            let prim_data = match prim_template.kind {
+                Some(ref run) => run,
+                None => return,
+            };
 
             // The transform has to match the prim -> raster transform applied
             // by "ps_text_run" via `transform.m` + `device_pixel_scale`.
@@ -507,7 +513,7 @@ fn prepare_prim_for_render(
             // positions in the template are stored relative to it. Use the
             // unsnapped rect so the anchor matches what the shader receives in
             // `PrimitiveHeader.local_rect`.
-            let pattern_rect = prim_data.common.prim_rect;
+            let pattern_rect = prim_template.common.prim_rect;
 
             let surface = &frame_state.surfaces[pic_context.surface_index.0];
 
@@ -540,7 +546,7 @@ fn prepare_prim_for_render(
                 }
             };
 
-            let text_run_handle = prim_data.kind.request_resources(
+            let text_run_handle = prim_data.request_resources(
                 pattern_rect,
                 prim_info.clip_chain.local_clip_rect,
                 &transform.to_transform().with_destination::<_>(),

@@ -457,6 +457,7 @@ macro_rules! enumerate_dl_interned_types {
             conic_gradients: $crate::interned_prims::ConicGradientKey,
             normal_borders: $crate::interned_prims::NormalBorderKey,
             image_borders: $crate::interned_prims::ImageBorderKey,
+            text_runs: $crate::interned_prims::TextRunKey,
         }
     }
 }

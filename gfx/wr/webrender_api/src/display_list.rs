@@ -26,13 +26,13 @@ use crate::image::{ColorDepth, ImageKey};
 use crate::interned_prims::{
     BoxShadow, BoxShadowKey, ConicGradientKey, Image, ImageBorder, ImageBorderKey, ImagePrimKey,
     LineDecoration, LineDecorationKey, LinearGradientKey, NormalBorderKey, NormalBorderPrim,
-    RadialGradientKey, RectangleKey, RectanglePrim, YuvImage, YuvImagePrimKey,
+    RadialGradientKey, RectangleKey, RectanglePrim, TextRunKey, YuvImage, YuvImagePrimKey,
 };
 use crate::interning::{self, DlDelta};
 use crate::path::Path;
 use crate::key_types::{
-    EdgeMask, GradientStopKey, NinePatchDescriptor, PointKey, PrimKeyCommonData, StretchSizeKey,
-    SubRectKey,
+    EdgeMask, GlyphInstanceAu, GradientStopKey, NinePatchDescriptor, PointKey, PrimKeyCommonData,
+    StretchSizeKey, SubRectKey,
 };
 use crate::prim_geometry::{
     apply_gradient_local_clip, conic_gradient_prim, image_stretch_size, linear_gradient_prim,
@@ -330,10 +330,7 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                     DisplayListBuilder::push_iter_impl(&mut temp, clip_chain_ids);
                     Real::ClipChain(v)
                 }
-                Debug::Text(v, glyphs) => {
-                    DisplayListBuilder::push_iter_impl(&mut temp, glyphs);
-                    Real::Text(v)
-                },
+                Debug::Text(v) => Real::Text(v),
                 Debug::Iframe(v) => {
                     Real::Iframe(v)
                 }
@@ -427,7 +424,6 @@ pub struct BuiltDisplayListIter<'a> {
     parse_context: DlParseContext,
     cur_item: di::DisplayItem,
     cur_stops: ItemRange<'a, di::GradientStop>,
-    cur_glyphs: ItemRange<'a, GlyphInstance>,
     cur_filters: ItemRange<'a, di::FilterOp>,
     cur_filter_data: Vec<TempFilterData<'a>>,
     cur_clip_chain_items: ItemRange<'a, di::ClipId>,
@@ -523,10 +519,6 @@ impl<'a, 'b> DisplayItemRef<'a, 'b> {
 
     pub fn points(&self) -> ItemRange<LayoutPoint> {
         self.iter.cur_points
-    }
-
-    pub fn glyphs(&self) -> ItemRange<GlyphInstance> {
-        self.iter.glyphs()
     }
 
     pub fn gradient_stops(&self) -> ItemRange<di::GradientStop> {
@@ -673,10 +665,7 @@ impl BuiltDisplayList {
                     v,
                     item.iter.cur_clip_chain_items.iter().collect()
                 ),
-                Real::Text(v) => Debug::Text(
-                    v,
-                    item.iter.cur_glyphs.iter().collect()
-                ),
+                Real::Text(v) => Debug::Text(v),
                 Real::SetFilterOps => Debug::SetFilterOps(
                     item.iter.cur_filters.iter().collect()
                 ),
@@ -746,7 +735,6 @@ impl<'a> BuiltDisplayListIter<'a> {
             parse_context: DlParseContext::default(),
             cur_item: di::DisplayItem::PopStackingContext,
             cur_stops: ItemRange::default(),
-            cur_glyphs: ItemRange::default(),
             cur_filters: ItemRange::default(),
             cur_filter_data: Vec::new(),
             cur_clip_chain_items: ItemRange::default(),
@@ -769,10 +757,6 @@ impl<'a> BuiltDisplayListIter<'a> {
 
     pub fn current_item(&self) -> &di::DisplayItem {
         &self.cur_item
-    }
-
-    pub fn glyphs(&self) -> ItemRange<GlyphInstance> {
-        self.cur_glyphs
     }
 
     pub fn gradient_stops(&self) -> ItemRange<di::GradientStop> {
@@ -867,10 +851,6 @@ impl<'a> BuiltDisplayListIter<'a> {
             ClipChain(_) => {
                 self.cur_clip_chain_items = self.skip_slice("clip_chain.clip_ids");
                 self.debug_stats.log_slice("clip_chain.clip_ids", &self.cur_clip_chain_items);
-            }
-            Text(_) => {
-                self.cur_glyphs = self.skip_slice("text.glyphs");
-                self.debug_stats.log_slice("text.glyphs", &self.cur_glyphs);
             }
             _ => { /* do nothing */ }
         }
@@ -1008,6 +988,14 @@ impl<'a, T: Copy + peek_poke::Peek> Iterator for AuxIter<'a, T> {
 }
 
 impl<'a, T: Copy + peek_poke::Peek> ::std::iter::ExactSizeIterator for AuxIter<'a, T> {}
+
+/// A text run as `push_text` was handed it, glyphs already relative to the
+/// run's bounds origin.
+struct CapturedTextRun {
+    font_key: FontInstanceKey,
+    glyph_options: Option<GlyphOptions>,
+    glyphs: Vec<GlyphInstance>,
+}
 
 #[derive(Clone, Debug)]
 pub struct SaveState {
@@ -1248,6 +1236,7 @@ enum CapturedKey {
     Image(Image),
     /// Radii already clamped to the border box.
     NormalBorder { border: di::NormalBorder, widths: LayoutSideOffsets },
+    Text(CapturedTextRun),
 }
 
 #[repr(C)]
@@ -1904,19 +1893,13 @@ impl DisplayListBuilder {
         // `color: transparent` with a `text-shadow`), so the item is still
         // captured for `pop_all_shadows` to copy; the original re-emission
         // there drops it.
-        if !color_is_visible(color) && self.pending_shadows.is_empty() {
+        let visible = color_is_visible(color);
+        if !visible && self.pending_shadows.is_empty() {
             return;
         }
 
         let (common, offset) = self.normalize_common(common);
-        let item = di::DisplayItem::Text(di::TextDisplayItem {
-            common,
-            bounds: self.shift_rect(bounds, offset),
-            color,
-            font_key,
-            glyph_options,
-            shadow: di::GlyphShadowMode::None,
-        });
+        let run_bounds = self.shift_rect(bounds, offset);
 
         // Store glyph pen positions relative to the (pre-normalization) bounds
         // origin. This difference is scroll-invariant - both the glyph points
@@ -1924,24 +1907,89 @@ impl DisplayListBuilder {
         // external scroll offset removal that `normalize_common` applies to
         // other coordinates, and it lets a shadow copy be produced by
         // translating just the bounds (the glyphs follow the prim origin at
-        // build time). The scene builder previously did this relativization; it
-        // now happens here at record time.
+        // build time).
         let bounds_origin = bounds.min.to_vector();
 
         // Take the scratch buffer out so we can hold it while also borrowing
-        // `self` mutably for `push_item`/`push_iter`; put it back afterwards to
-        // retain its capacity across text runs.
+        // `self` mutably; put it back afterwards to retain its capacity across
+        // text runs.
         let mut scratch = mem::take(&mut self.glyph_scratch);
         for split_glyphs in glyphs.chunks(MAX_TEXT_RUN_LENGTH) {
-            self.push_item(&item);
             scratch.clear();
             scratch.extend(split_glyphs.iter().map(|g| GlyphInstance {
                 index: g.index,
                 point: g.point - bounds_origin,
             }));
-            self.push_iter(&scratch);
+
+            // One interned run per chunk, since each chunk becomes its own
+            // primitive with its own glyph list.
+            let text_run = if visible {
+                self.intern_text_run(
+                    &scratch,
+                    run_bounds,
+                    &common,
+                    font_key,
+                    color,
+                    glyph_options,
+                    di::GlyphShadowMode::None,
+                )
+            } else {
+                interning::Handle::INVALID
+            };
+
+            if !self.pending_shadows.is_empty() {
+                let text = CapturedTextRun { font_key, glyph_options, glyphs: scratch.clone() };
+                self.capture_prim(&common, run_bounds, CapturedKey::Text(text));
+            }
+
+            self.push_item(&di::DisplayItem::Text(di::TextDisplayItem {
+                spatial_id: common.spatial_id,
+                clip_chain_id: common.clip_chain_id,
+                text_run,
+            }));
         }
         self.glyph_scratch = scratch;
+    }
+
+    /// Intern one run of glyphs and return the handle to record on its display
+    /// item. `glyphs` are already relative to the run's bounds origin.
+    fn intern_text_run(
+        &mut self,
+        glyphs: &[GlyphInstance],
+        bounds: LayoutRect,
+        common: &di::CommonItemProperties,
+        font_key: FontInstanceKey,
+        color: ColorF,
+        glyph_options: Option<GlyphOptions>,
+        shadow: di::GlyphShadowMode,
+    ) -> interning::Handle<TextRunKey> {
+        // A blurred shadow is rasterized in local space whatever the enclosing
+        // stacking contexts asked for; everything else takes the resolved
+        // raster space.
+        let requested_raster_space = match shadow {
+            di::GlyphShadowMode::Blurred => di::RasterSpace::Local(1.0),
+            di::GlyphShadowMode::None | di::GlyphShadowMode::Unblurred => {
+                *self.raster_space_stack.last().unwrap()
+            }
+        };
+
+        let key = TextRunKey {
+            common: prim_key_common(common, bounds, EdgeMask::all()),
+            font_key,
+            color: color.into(),
+            glyph_options,
+            glyphs: glyphs
+                .iter()
+                .map(|glyph| GlyphInstanceAu {
+                    index: glyph.index,
+                    point: glyph.point.to_au(),
+                })
+                .collect(),
+            shadow,
+            requested_raster_space,
+        };
+
+        self.interners.intern(&key)
     }
 
     /// Normalize `stops` and describe the gradient they make.
@@ -3335,13 +3383,10 @@ impl DisplayListBuilder {
     /// `SubpixelMode::Deny`, so the stacking context keeps `RasterSpace::Screen`
     /// like the scene builder's shadow picture did.
     fn desugar_shadow_scope(&mut self) {
-        // A shadowable/drawable item plus its aux (only text carries glyphs)
-        // and, for an interned primitive, what its key was built from.
+        // A drawable item plus, for a primitive that casts a shadow, what its
+        // key was built from, which its item does not carry.
         struct DrawEntry {
             item: di::DisplayItem,
-            glyphs: Vec<GlyphInstance>,
-            /// What an interned primitive's key was built from, which its item
-            /// does not carry.
             key: Option<CapturedPrim>,
         }
         enum Parsed {
@@ -3383,16 +3428,13 @@ impl DisplayListBuilder {
                     },
                     draw => Parsed::Draw(DrawEntry {
                         item: *draw,
-                        glyphs: match draw {
-                            di::DisplayItem::Text(..) => item.glyphs().iter().collect(),
-                            _ => Vec::new(),
-                        },
-                        // One entry per captured interned primitive, in capture
-                        // order.
+                        // One entry per captured primitive that casts a shadow,
+                        // in capture order.
                         key: match draw {
                             di::DisplayItem::Rectangle(..)
                             | di::DisplayItem::Line(..)
-                            | di::DisplayItem::Image(..) => Some(
+                            | di::DisplayItem::Image(..)
+                            | di::DisplayItem::Text(..) => Some(
                                 captured_keys.next().expect("primitive item without its captured key"),
                             ),
                             di::DisplayItem::Border(info)
@@ -3480,21 +3522,11 @@ impl DisplayListBuilder {
                     {
                         continue;
                     }
+                    // Every other kind is dropped from the shadow, as the scene
+                    // builder's old `CreateShadow` impls did.
                     if let Some(ref captured) = entry.key {
-                        let copy = self.intern_shadow_copy(captured, s.offset, s.color);
+                        let copy = self.intern_shadow_copy(captured, s.offset, s.color, shadow_mode);
                         self.push_item(&copy);
-                        continue;
-                    }
-                    if let Some(copy) = Self::shadow_copy_of_item(
-                        &entry.item,
-                        s.offset,
-                        s.color,
-                        shadow_mode,
-                    ) {
-                        self.push_item(&copy);
-                        if matches!(copy, di::DisplayItem::Text(..)) {
-                            self.push_iter(&entry.glyphs);
-                        }
                     }
                 }
             }
@@ -3508,7 +3540,7 @@ impl DisplayListBuilder {
         for p in &parsed {
             if let Parsed::Draw(entry) = p {
                 let visible = match entry.item {
-                    di::DisplayItem::Text(ref info) => color_is_visible(info.color),
+                    di::DisplayItem::Text(ref info) => info.text_run != interning::Handle::INVALID,
                     di::DisplayItem::Rectangle(ref info) => info.rect != interning::Handle::INVALID,
                     di::DisplayItem::Line(ref info) => info.line != interning::Handle::INVALID,
                     _ => true,
@@ -3518,9 +3550,6 @@ impl DisplayListBuilder {
                 }
 
                 self.push_item(&entry.item);
-                if matches!(entry.item, di::DisplayItem::Text(..)) {
-                    self.push_iter(&entry.glyphs);
-                }
             }
         }
 
@@ -3532,13 +3561,18 @@ impl DisplayListBuilder {
     }
 
     /// Intern the shadow copy of a captured primitive: geometry translated by
-    /// `offset`, clip chain dropped and colour replaced by `color`, as
-    /// `shadow_copy_of_item` does for the items that still carry their fields.
+    /// `offset`, clip chain dropped and colour replaced by `color`. The clip
+    /// chain goes because the shadow's clip is applied to the enclosing blur
+    /// picture, so the copy inside must be unclipped, as the old scene builder
+    /// rasterized shadowed primitives unclipped and clipped the composited
+    /// picture. A text copy also takes the shadow mode, and its glyphs, being
+    /// relative to the bounds origin, follow the translated bounds.
     fn intern_shadow_copy(
         &mut self,
         captured: &CapturedPrim,
         offset: LayoutVector2D,
         color: ColorF,
+        shadow_mode: di::GlyphShadowMode,
     ) -> di::DisplayItem {
         let common = shadow_copy_common(captured.common, offset);
         let bounds = captured.bounds.translate(offset);
@@ -3581,6 +3615,22 @@ impl DisplayListBuilder {
                     details: di::BorderKind::Normal(handle),
                 })
             }
+            CapturedKey::Text(ref text) => {
+                let text_run = self.intern_text_run(
+                    &text.glyphs,
+                    bounds,
+                    &common,
+                    text.font_key,
+                    color,
+                    text.glyph_options,
+                    shadow_mode,
+                );
+                di::DisplayItem::Text(di::TextDisplayItem {
+                    spatial_id: common.spatial_id,
+                    clip_chain_id: common.clip_chain_id,
+                    text_run,
+                })
+            }
             CapturedKey::Line(ref decoration) => {
                 let line = self.intern_line(
                     &LineDecoration { color: color.into(), ..decoration.clone() },
@@ -3594,48 +3644,6 @@ impl DisplayListBuilder {
                 })
             }
         }
-    }
-
-    /// Produce the shadow copy of a shadowable display item: geometry
-    /// translated by `offset` and color replaced by `color`. Returns `None` for
-    /// item types that cannot cast a shadow (they are dropped from the shadow),
-    /// mirroring the scene builder's `CreateShadow` impls.
-    ///
-    /// Aux data (e.g. text glyphs) is unchanged and re-emitted separately: text
-    /// glyphs are stored relative to the bounds origin (see `push_text`), so
-    /// they follow the translated bounds without needing to be rewritten here.
-    fn shadow_copy_of_item(
-        item: &di::DisplayItem,
-        offset: LayoutVector2D,
-        color: ColorF,
-        shadow_mode: di::GlyphShadowMode,
-    ) -> Option<di::DisplayItem> {
-        use di::DisplayItem::*;
-
-        // Translate the copy by the shadow offset and drop its clip chain (see
-        // `desugar_shadow_scope`): the shadow's clip is applied to the enclosing
-        // blur picture, so the copy inside must be unclipped, matching the old
-        // scene builder (which rasterized the shadowed primitives unclipped and
-        // clipped the composited picture).
-        let shift = |common| shadow_copy_common(common, offset);
-
-        Some(match item {
-            // Interned from their captured keys, see `intern_shadow_copy`.
-            Rectangle(..) | Line(..) | Image(..) => unreachable!("shadow copy of a primitive with a captured key"),
-            Text(info) => Text(di::TextDisplayItem {
-                common: shift(info.common),
-                bounds: info.bounds.translate(offset),
-                color,
-                shadow: shadow_mode,
-                ..*info
-            }),
-            // Only a normal border casts a shadow, interned from its captured
-            // key like the kinds above.
-            Border(info) if matches!(info.details, di::BorderKind::Normal(..)) => {
-                unreachable!("shadow copy of a primitive with a captured key")
-            }
-            _ => return None,
-        })
     }
 
     /// Start a display list. `au_per_dev_px` is the caller's app-units-per-device
@@ -4915,6 +4923,245 @@ mod border_interning_tests {
         let kinds = border_kinds(&dl);
         assert_eq!(kinds.len(), 3);
         assert!(matches!(kinds[0], di::BorderKind::NinePatchImage(handle) if handle.slot() == adds[0].slot));
+    }
+}
+
+#[cfg(test)]
+mod text_interning_tests {
+    use super::*;
+    use crate::IdNamespace;
+
+    fn glyph(index: u32, x: f32) -> GlyphInstance {
+        GlyphInstance { index, point: LayoutPoint::new(x, 10.0) }
+    }
+
+    fn push_run(builder: &mut DisplayListBuilder, glyphs: &[GlyphInstance], color: ColorF) {
+        push_run_with_flags(builder, glyphs, color, di::PrimitiveFlags::default());
+    }
+
+    fn push_run_with_flags(
+        builder: &mut DisplayListBuilder,
+        glyphs: &[GlyphInstance],
+        color: ColorF,
+        flags: di::PrimitiveFlags,
+    ) {
+        let pipeline_id = PipelineId::dummy();
+        let rect = LayoutRect::from_size(LayoutSize::new(100.0, 100.0));
+        let common = di::CommonItemProperties {
+            clip_rect: rect,
+            clip_chain_id: di::ClipChainId::INVALID,
+            spatial_id: di::SpatialId::root_scroll_node(pipeline_id),
+            flags,
+        };
+
+        builder.push_text(
+            &common,
+            rect,
+            glyphs,
+            FontInstanceKey::new(IdNamespace(1), 1),
+            color,
+            None,
+        );
+    }
+
+    fn text_items(dl: &BuiltDisplayList) -> Vec<di::TextDisplayItem> {
+        let mut items = Vec::new();
+        let mut iter = dl.iter();
+        while let Some(item) = iter.next() {
+            if let di::DisplayItem::Text(info) = item.item() {
+                items.push(*info);
+            }
+        }
+        items
+    }
+
+    fn push_shadow(builder: &mut DisplayListBuilder, color: ColorF, blur_radius: f32) {
+        let pipeline_id = PipelineId::dummy();
+        builder.push_shadow(
+            &di::SpaceAndClipInfo {
+                spatial_id: di::SpatialId::root_scroll_node(pipeline_id),
+                clip_chain_id: di::ClipChainId::INVALID,
+            },
+            di::Shadow {
+                offset: LayoutVector2D::new(2.0, 2.0),
+                color,
+                blur_radius,
+            },
+            true,
+        );
+    }
+
+    #[test]
+    fn identical_runs_in_one_list_intern_once() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let glyphs = [glyph(1, 0.0), glyph(2, 8.0)];
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+        push_run(&mut builder, &glyphs, ColorF::WHITE);
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().text_runs.adds.len(), 2, "colour is part of the key, repetition is not");
+        assert!(dl.delta().text_runs.removes.is_empty());
+        assert_eq!(dl.delta().text_runs.adds[0].key.glyphs.len(), 2);
+        let items = text_items(&dl);
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0].text_run, items[1].text_run);
+    }
+
+    #[test]
+    fn an_unchanged_run_is_not_re_sent_next_build() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        let glyphs = [glyph(1, 0.0)];
+
+        builder.begin(60.0);
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+        let (_, first) = builder.end();
+        assert_eq!(first.delta().text_runs.adds.len(), 1);
+
+        // The same run in the next list: the builder is retained, so it stays
+        // interned and nothing about it goes on the wire again.
+        builder.begin(60.0);
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+        let (_, second) = builder.end();
+        assert!(second.delta().text_runs.is_empty());
+    }
+
+    #[test]
+    fn primitive_flags_are_part_of_the_key() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let glyphs = [glyph(1, 0.0)];
+        push_run_with_flags(&mut builder, &glyphs, ColorF::BLACK, di::PrimitiveFlags::default());
+        push_run_with_flags(&mut builder, &glyphs, ColorF::BLACK, di::PrimitiveFlags::empty());
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().text_runs.adds.len(), 2);
+    }
+
+    #[test]
+    fn raster_space_is_part_of_the_key() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let glyphs = [glyph(1, 0.0)];
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+
+        // Same run again, but under a stacking context that changes the raster
+        // space it will be rasterized in.
+        builder.push_stacking_context(
+            di::SpatialId::root_scroll_node(PipelineId::dummy()),
+            di::PrimitiveFlags::default(),
+            None,
+            di::TransformStyle::Flat,
+            di::MixBlendMode::Normal,
+            &[],
+            &[],
+            di::RasterSpace::Local(2.0),
+            di::StackingContextFlags::empty(),
+            None,
+        );
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+        builder.pop_stacking_context();
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().text_runs.adds.len(), 2);
+    }
+
+    #[test]
+    fn a_run_dropped_from_the_list_is_collected() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        let glyphs = [glyph(1, 0.0)];
+
+        builder.begin(60.0);
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+        let (_, dl) = builder.end();
+        let slot = dl.delta().text_runs.adds[0].slot;
+
+        // Build empty lists until the run falls out of the retain window.
+        for _ in 0..interning::RETAIN_BUILDS - 1 {
+            builder.begin(60.0);
+            let (_, dl) = builder.end();
+            assert!(dl.delta().text_runs.is_empty());
+        }
+
+        builder.begin(60.0);
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().text_runs.removes, vec![slot]);
+    }
+
+    #[test]
+    fn transparent_text_is_not_emitted() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push_run(&mut builder, &[glyph(1, 0.0)], ColorF::TRANSPARENT);
+
+        let (_, dl) = builder.end();
+        assert!(text_items(&dl).is_empty(), "invisible text reaches the scene builder");
+        assert!(dl.delta().text_runs.is_empty(), "invisible text was interned");
+    }
+
+    #[test]
+    fn transparent_text_still_casts_a_shadow() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // `color: transparent` + `text-shadow`: the original draws nothing but
+        // the shadow copy is opaque and must survive.
+        push_shadow(&mut builder, ColorF::BLACK, 3.0);
+        push_run(&mut builder, &[glyph(1, 0.0)], ColorF::TRANSPARENT);
+        builder.pop_all_shadows();
+
+        let (_, dl) = builder.end();
+        let items = text_items(&dl);
+        assert_eq!(items.len(), 1, "expected only the shadow copy");
+        assert_ne!(items[0].text_run, interning::Handle::INVALID);
+
+        // Colour and shadow mode reach the scene builder through the key, so
+        // that is where they are checked.
+        let adds = &dl.delta().text_runs.adds;
+        assert_eq!(adds.len(), 1);
+        assert_eq!(adds[0].key.color, ColorF::BLACK.into());
+        assert_eq!(adds[0].key.shadow, di::GlyphShadowMode::Blurred);
+        assert_eq!(adds[0].key.requested_raster_space, di::RasterSpace::Local(1.0));
+    }
+
+    #[test]
+    fn a_transparent_shadow_casts_nothing() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        push_shadow(&mut builder, ColorF::TRANSPARENT, 3.0);
+        push_run(&mut builder, &[glyph(1, 0.0)], ColorF::BLACK);
+        builder.pop_all_shadows();
+
+        let (_, dl) = builder.end();
+        let items = text_items(&dl);
+        assert_eq!(items.len(), 1, "expected only the original");
+
+        let adds = &dl.delta().text_runs.adds;
+        assert_eq!(adds.len(), 1);
+        assert_eq!(adds[0].key.color, ColorF::BLACK.into());
+        assert_eq!(adds[0].key.shadow, di::GlyphShadowMode::None);
+    }
+
+    #[test]
+    fn a_long_run_is_split_and_interned_per_chunk() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // Each chunk becomes its own primitive, so each needs its own entry.
+        let glyphs: Vec<GlyphInstance> = (0..MAX_TEXT_RUN_LENGTH as u32 + 1)
+            .map(|i| glyph(i, i as f32))
+            .collect();
+        push_run(&mut builder, &glyphs, ColorF::BLACK);
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().text_runs.adds.len(), 2);
+        assert_eq!(text_items(&dl).len(), 2);
     }
 }
 

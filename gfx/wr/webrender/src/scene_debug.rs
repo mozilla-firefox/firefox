@@ -255,10 +255,15 @@ impl<'a> TreeWalker<'a> {
                 Some(pic_index),
                 self.picture_children(pic_index),
             ),
-            PrimitiveKind::TextRun { data_handle } => {
-                let data = &data_stores.text_run[data_handle].kind;
-                color = Some(data.font.color.into());
-                ("TextRun", format!("{} glyphs", data.glyphs.len()), None, Vec::new())
+            PrimitiveKind::TextRun { handle } => {
+                let data = &dl_stores.text_runs[handle];
+                match data.kind {
+                    Some(ref run) => {
+                        color = Some(run.font.color.into());
+                        ("TextRun", format!("{} glyphs", run.glyphs.len()), None, Vec::new())
+                    }
+                    None => ("TextRun", "unresolved font".to_string(), None, Vec::new()),
+                }
             }
             PrimitiveKind::Rectangle { handle } => {
                 let data = &dl_stores.rectangles[handle];

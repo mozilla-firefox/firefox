@@ -2,98 +2,98 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use api::{ColorF, FontInstanceFlags, GlyphInstance, RasterSpace};
+use api::{ColorF, FontInstanceFlags, FontSize, GlyphInstance, GlyphShadowMode, RasterSpace};
+use api::interned_prims::TextRunKey;
 use api::units::LayoutToWorldTransform;
 use api::units::*;
+use crate::dl_interner::{DlResolve, DlResolveContext};
 use crate::space::SpaceSnapper;
+use crate::scene_building::validate_font_instance_key;
 use glyph_rasterizer::{FontInstance, FontTransform, GlyphKey, SubpixelDirection, FONT_SIZE_LIMIT};
-use crate::intern;
-use crate::internal_types::LayoutPrimitiveInfo;
 use crate::surface::SurfaceInfo;
 use crate::prim_store::PrimitiveScratchBuffer;
-use crate::prim_store::{PrimitiveStore, PrimKeyCommonData, PrimTemplate, PrimTemplateCommonData};
+use crate::prim_store::{PrimTemplate, PrimTemplateCommonData};
 use crate::renderer::{GpuBufferAddress, GpuBufferBuilderF, MAX_VERTEX_TEXTURE_WIDTH};
 use crate::resource_cache::ResourceCache;
 use crate::util::MatrixHelpers;
-use crate::prim_store::{InternablePrimitive, PrimitiveKind};
 use crate::spatial_tree::{SpatialTree, SpatialNodeIndex};
 
 use super::storage;
 
-// `GlyphInstanceAu` now lives in `webrender_api::key_types` so builder-side
-// interning keys can reference it. Re-exported to keep existing references
-// working.
-pub use api::key_types::GlyphInstanceAu;
+/// What a follower store holds per text run interned by content: the run
+/// resolved against this backend's font resources, plus the common primitive
+/// data the key carried.
+///
+/// `kind` is `None` for a run that resolves to nothing: a font instance key
+/// from a foreign id namespace, an unknown one, or an instance whose size is
+/// zero. The display item carries a handle that has to point at something, so
+/// the entry records that it draws nothing and the consumers skip it; the scene
+/// builder used to drop the item instead. The common data is kept either way,
+/// since a lookup for it cannot fail.
+pub type TextRunTemplate = PrimTemplate<Option<TextRun>>;
 
-/// A run of glyphs, with associated font information.
-#[cfg_attr(feature = "capture", derive(Serialize))]
-#[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(Debug, Clone, Eq, MallocSizeOf, PartialEq, Hash)]
-pub struct TextRunKey {
-    pub common: PrimKeyCommonData,
-    pub font: FontInstance,
-    /// Glyph pen positions, each relative to the *normalized* prim rect
-    /// origin (`prim_info.rect.min`). Storing relative to the normalized
-    /// origin keeps the intern key stable across pre-scroll offset changes,
-    /// since the external scroll offset cancels: both the glyph position and
-    /// the prim origin are normalized the same way (see `add_text`).
-    pub glyphs: Vec<GlyphInstanceAu>,
-    pub shadow: bool,
-    pub requested_raster_space: RasterSpace,
-}
-
-impl TextRunKey {
-    pub fn new(
-        info: &LayoutPrimitiveInfo,
-        text_run: TextRun,
-    ) -> Self {
-        let glyphs = text_run
-            .glyphs
-            .iter()
-            .map(|glyph| {
-                GlyphInstanceAu {
-                    index: glyph.index,
-                    point: glyph.point.to_au(),
-                }
-            })
-            .collect();
-
-        TextRunKey {
-            common: info.into(),
-            font: text_run.font,
-            glyphs,
-            shadow: text_run.shadow,
-            requested_raster_space: text_run.requested_raster_space,
-        }
+/// Resolved where the delta is applied, so once per interned entry rather than
+/// once per scene build. Safe because a font instance's data never changes
+/// underneath us: it is registered before the scene builder sees the
+/// transaction it is used in, deleted only after a scene swap, and never
+/// updated in place.
+impl crate::prim_store::PrimKeyCommon for TextRunKey {
+    fn key_common(&self) -> &crate::prim_store::PrimKeyCommonData {
+        &self.common
     }
 }
 
-impl intern::InternDebug for TextRunKey {}
+impl DlResolve<TextRunKey> for TextRunTemplate {
+    fn resolve(key: &TextRunKey, ctx: &DlResolveContext) -> Self {
+        let common = PrimTemplateCommonData::with_key_common(key.common);
 
-pub type TextRunTemplate = PrimTemplate<TextRun>;
+        if !validate_font_instance_key(key.font_key, ctx.id_namespace) {
+            return PrimTemplate { common, kind: None };
+        }
 
-impl From<TextRunKey> for TextRunTemplate {
-    fn from(item: TextRunKey) -> Self {
-        let common = PrimTemplateCommonData::with_key_common(item.common);
-        let glyphs = item
+        let shared_key = ctx.fonts.instance_keys.map_key(&key.font_key);
+        let base = match ctx.fonts.instances.get_font_instance(shared_key) {
+            Some(instance) => instance,
+            None => {
+                warn!("Unknown font instance key");
+                debug!("key={:?} shared={:?}", key.font_key, shared_key);
+                return PrimTemplate { common, kind: None };
+            }
+        };
+
+        if base.size <= FontSize::zero() {
+            return PrimTemplate { common, kind: None };
+        }
+
+        // TODO(gw): Use a proper algorithm to select
+        // whether this item should be rendered with
+        // subpixel AA!
+        let mut render_mode = ctx.default_font_render_mode.limit_by(base.render_mode);
+        let mut flags = base.flags;
+        if let Some(options) = key.glyph_options {
+            render_mode = render_mode.limit_by(options.render_mode);
+            flags |= options.flags;
+        }
+
+        let font = FontInstance::new(base, key.color, render_mode, flags);
+
+        let glyphs = key
             .glyphs
             .iter()
-            .map(|glyph| {
-                GlyphInstance {
-                    index: glyph.index,
-                    point: LayoutPoint::from_au(glyph.point),
-                }
+            .map(|glyph| GlyphInstance {
+                index: glyph.index,
+                point: LayoutPoint::from_au(glyph.point),
             })
             .collect();
 
         PrimTemplate {
             common,
-            kind: TextRun {
-                font: item.font,
+            kind: Some(TextRun {
+                font,
                 glyphs,
-                shadow: item.shadow,
-                requested_raster_space: item.requested_raster_space,
-            },
+                shadow: key.shadow != GlyphShadowMode::None,
+                requested_raster_space: key.requested_raster_space,
+            }),
         }
     }
 }
@@ -137,50 +137,20 @@ impl TextRun {
     }
 }
 
-pub type TextRunDataHandle = intern::Handle<TextRun>;
-
-#[derive(Debug, MallocSizeOf)]
+#[derive(Debug, MallocSizeOf, Clone)]
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
 pub struct TextRun {
     pub font: FontInstance,
-    /// Glyph pen positions, each relative to the normalized prim rect origin.
-    /// See [`TextRunKey::glyphs`]. At frame time the normalized local glyph
-    /// position is `prim_rect.min + glyph.point`; `request_resources` then
-    /// transforms and device-snaps each glyph to produce the device-space
-    /// offsets handed to the shader.
+    /// Glyph pen positions, each relative to the normalized prim rect origin
+    /// (`prim_rect.min`), as the display list builder recorded them in the
+    /// key. At frame time the normalized local glyph position is
+    /// `prim_rect.min + glyph.point`; `request_resources` then transforms and
+    /// device-snaps each glyph to produce the device-space offsets handed to
+    /// the shader.
     pub glyphs: Vec<GlyphInstance>,
     pub shadow: bool,
     pub requested_raster_space: RasterSpace,
-}
-
-impl intern::Internable for TextRun {
-    type Key = TextRunKey;
-    type StoreData = TextRunTemplate;
-    type InternData = ();
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_TEXT_RUNS;
-}
-
-impl InternablePrimitive for TextRun {
-    fn into_key(
-        self,
-        info: &LayoutPrimitiveInfo,
-    ) -> TextRunKey {
-        TextRunKey::new(
-            info,
-            self,
-        )
-    }
-
-    fn make_instance_kind(
-        _key: TextRunKey,
-        data_handle: TextRunDataHandle,
-        _prim_store: &mut PrimitiveStore,
-    ) -> PrimitiveKind {
-        PrimitiveKind::TextRun {
-            data_handle,
-        }
-    }
 }
 
 /// Per-frame scratch data for a TextRun primitive. Holds the snapshot
@@ -652,6 +622,4 @@ fn test_struct_sizes() {
     // (b) You made a structure larger. This is not necessarily a problem, but should only
     //     be done with care, and after checking if talos performance regresses badly.
     assert_eq!(mem::size_of::<TextRun>(), 80, "TextRun size changed");
-    assert_eq!(mem::size_of::<TextRunTemplate>(), 120, "TextRunTemplate size changed");
-    assert_eq!(mem::size_of::<TextRunKey>(), 112, "TextRunKey size changed");
 }

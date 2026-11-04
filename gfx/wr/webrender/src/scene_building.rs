@@ -36,9 +36,9 @@
 //!
 
 use api::{BorderKind, BuiltDisplayList, BuiltDisplayListIter, PrimitiveFlags, SnapshotInfo};
-use api::{ClipId, ColorF, CommonItemProperties, ComplexClipRegion, ComponentTransferFuncType, RasterSpace};
+use api::{ClipId, CommonItemProperties, ComplexClipRegion, ComponentTransferFuncType, RasterSpace};
 use api::{DebugFlags, DisplayItem, DisplayItemRef, DlParseContext, ExternalScrollId, FilterData};
-use api::{FilterOp, FontInstanceKey, FontSize, GlyphInstance, GlyphOptions, GlyphShadowMode};
+use api::{FilterOp, FontInstanceKey};
 use api::{IdNamespace, IframeDisplayItem, ImageKey, ItemRange, QualitySettings};
 use api::{PipelineId, MixBlendMode, StackingContextFlags};
 use api::{PropertyBinding, ReferenceFrameKind, ScrollFrameDescriptor};
@@ -58,7 +58,6 @@ use crate::gpu_types::BlurEdgeMode;
 use crate::segment::EdgeMask;
 use crate::spatial_tree::{SceneSpatialTree, SpatialNodeContainer, SpatialNodeIndex};
 use crate::frame_builder::FrameBuilderConfig;
-use glyph_rasterizer::{FontInstance, SharedFontResources};
 use crate::hit_test::HitTestingScene;
 use crate::intern::Interner;
 use crate::internal_types::{FastHashMap, LayoutPrimitiveInfo, Filter, PlaneSplitterIndex};
@@ -74,7 +73,6 @@ use crate::prim_store::PolygonKey;
 use crate::prim_store::backdrop::{BackdropCapture, BackdropRender};
 use crate::prim_store::picture::{Picture, PictureKey};
 use crate::picture_composite_mode::{PictureCompositeKey, PictureCompositeMode};
-use crate::prim_store::text_run::TextRun;
 use crate::render_backend::SceneView;
 use crate::scene::{BackdropChain, BuiltScene, Scene, ScenePipeline, SceneStats, StackingContextHelpers};
 use crate::scene_builder_thread::{Interners, SceneDlStores};
@@ -406,9 +404,6 @@ pub struct SceneBuilder<'a> {
     /// primitive. Iframe descent swaps it and the pop restores it.
     dl_namespace: (DlNamespace, u32),
 
-    /// The map of all font instances.
-    fonts: SharedFontResources,
-
     /// The data structure that converts between ClipId/SpatialId and the various
     /// index types that the SpatialTree uses.
     id_to_index_mapper_stack: Vec<NodeIdToIndexMapper>,
@@ -517,7 +512,6 @@ impl<'a> SceneBuilder<'a> {
         root_pipeline: Option<PipelineId>,
         dl_builders: DlDocumentBuilders,
         scene_stores: &SceneDlStores,
-        fonts: SharedFontResources,
         view: &SceneView,
         frame_builder_config: &FrameBuilderConfig,
         interners: &mut Interners,
@@ -543,7 +537,6 @@ impl<'a> SceneBuilder<'a> {
             dl_builders,
             scene_stores,
             dl_namespace: dl_builders.expect(root_pipeline_id),
-            fonts,
             config: *frame_builder_config,
             id_to_index_mapper_stack: mem::take(&mut recycler.id_to_index_mapper_stack),
             hit_testing_scene: recycler.hit_testing_scene.take().unwrap_or_else(|| HitTestingScene::new(&stats.hit_test_stats)),
@@ -1338,17 +1331,6 @@ impl<'a> SceneBuilder<'a> {
         (layout, spatial_node_index, clip_node_id)
     }
 
-    fn process_common_properties_with_bounds(
-        &mut self,
-        common: &CommonItemProperties,
-        bounds: LayoutRect,
-    ) -> (LayoutPrimitiveInfo, SpatialNodeIndex, ClipNodeId) {
-        self.process_common_properties(
-            common,
-            Some(bounds),
-        )
-    }
-
     /// `namespace` is the id namespace this display list is allowed to reference
     /// resources from; items referencing anything else are dropped. See
     /// `validate_resource_namespace`.
@@ -1387,30 +1369,16 @@ impl<'a> SceneBuilder<'a> {
             DisplayItem::Text(ref info) => {
                 tracy_rs::profile_scope!("text");
 
-                if !validate_font_instance_key(info.font_key, namespace) {
-                    return;
-                }
-
-                // TODO(aosmond): Snapping text primitives does not make much sense, given the
-                // primitive bounds and clip are supposed to be conservative, not definitive.
-                // E.g. they should be able to grow and not impact the output. However there
-                // are subtle interactions between the primitive origin and the glyph offset
-                // which appear to be significant (presumably due to some sort of accumulated
-                // error throughout the layers). We should fix this at some point.
-                let (layout, spatial_node_index, clip_node_id) = self.process_common_properties_with_bounds(
-                    &info.common,
-                    info.bounds,
-                );
-
-                self.add_text(
-                    spatial_node_index,
-                    clip_node_id,
-                    &layout,
-                    &info.font_key,
-                    &info.color,
-                    item.glyphs(),
-                    info.glyph_options,
-                    info.shadow,
+                // The font instance key travels in the interned run rather than
+                // the display item, so its namespace is checked once per
+                // interned entry where the run is resolved.
+                let stores = self.scene_stores;
+                self.add_dl_prim(
+                    info.spatial_id,
+                    info.clip_chain_id,
+                    &stores.text_runs,
+                    info.text_run,
+                    |handle| PrimitiveKind::TextRun { handle },
                 );
             }
             DisplayItem::Rectangle(ref info) => {
@@ -1815,55 +1783,6 @@ impl<'a> SceneBuilder<'a> {
                 );
             }
         }
-    }
-
-    /// Convenience interface that creates a primitive entry and adds it
-    /// to the draw list.
-    pub fn add_primitive<P>(
-        &mut self,
-        spatial_node_index: SpatialNodeIndex,
-        clip_node_id: ClipNodeId,
-        info: &LayoutPrimitiveInfo,
-        prim: P,
-    )
-    where
-        P: InternablePrimitive,
-        Interners: AsMut<Interner<P>>,
-    {
-        self.clip_tree_builder.debug_check_clip_stack(clip_node_id);
-
-        self.add_prim_to_draw_list(
-            info,
-            spatial_node_index,
-            clip_node_id,
-            prim,
-        );
-    }
-
-
-    fn add_prim_to_draw_list<P>(
-        &mut self,
-        info: &LayoutPrimitiveInfo,
-        spatial_node_index: SpatialNodeIndex,
-        clip_node_id: ClipNodeId,
-        prim: P,
-    )
-    where
-        P: InternablePrimitive,
-        Interners: AsMut<Interner<P>>,
-    {
-        let prim_instance = self.create_primitive(
-            info,
-            clip_node_id,
-            prim,
-        );
-        self.add_primitive_to_draw_list(
-            prim_instance,
-            info.rect,
-            info.clip_rect,
-            spatial_node_index,
-            info.flags,
-        );
     }
 
     /// Add the instance of an item that refers to a primitive interned by the
@@ -2761,92 +2680,6 @@ impl<'a> SceneBuilder<'a> {
         self.id_to_index_mapper_stack.last_mut().unwrap().add_spatial_node(new_node_id, node_index);
         node_index
     }
-
-    pub fn add_text(
-        &mut self,
-        spatial_node_index: SpatialNodeIndex,
-        clip_node_id: ClipNodeId,
-        prim_info: &LayoutPrimitiveInfo,
-        font_instance_key: &FontInstanceKey,
-        text_color: &ColorF,
-        glyph_range: ItemRange<GlyphInstance>,
-        glyph_options: Option<GlyphOptions>,
-        shadow_mode: GlyphShadowMode,
-    ) {
-        let text_run = {
-            let shared_key = self.fonts.instance_keys.map_key(font_instance_key);
-            let font_instance = match self.fonts.instances.get_font_instance(shared_key) {
-                Some(instance) => instance,
-                None => {
-                    warn!("Unknown font instance key");
-                    debug!("key={:?} shared={:?}", font_instance_key, shared_key);
-                    return;
-                }
-            };
-
-            // Trivial early out checks
-            if font_instance.size <= FontSize::zero() {
-                return;
-            }
-
-            // TODO(gw): Use a proper algorithm to select
-            // whether this item should be rendered with
-            // subpixel AA!
-            let mut render_mode = self.config
-                .default_font_render_mode
-                .limit_by(font_instance.render_mode);
-            let mut flags = font_instance.flags;
-            if let Some(options) = glyph_options {
-                render_mode = render_mode.limit_by(options.render_mode);
-                flags |= options.flags;
-            }
-
-            let font = FontInstance::new(
-                font_instance,
-                (*text_color).into(),
-                render_mode,
-                flags,
-            );
-
-            // Glyph pen positions arrive already relative to the prim rect
-            // origin: the display-list builder relativizes them at record time
-            // (see `DisplayListBuilder::push_text`), which keeps the intern key
-            // stable across pre-scroll offset changes.
-            //
-            // TODO(gw): It'd be nice not to have to allocate here for creating
-            //           the primitive key, when the common case is that the
-            //           hash will match and we won't end up creating a new
-            //           primitive template.
-            let glyphs = glyph_range.iter().collect();
-
-            // Query the current requested raster space (stack handled by push/pop
-            // stacking context). A blurred shadow copy overrides this with
-            // `Local(1.0)`, matching the removed `TextRun::create_shadow`: the
-            // blur picture stays in screen space, but its shadow glyphs are
-            // rasterized in local space (with texture padding, no subpixel AA).
-            let requested_raster_space = match shadow_mode {
-                GlyphShadowMode::Blurred => RasterSpace::Local(1.0),
-                GlyphShadowMode::None | GlyphShadowMode::Unblurred => {
-                    self.raster_space_stack.last().cloned().unwrap()
-                }
-            };
-
-            TextRun {
-                glyphs,
-                font,
-                shadow: shadow_mode != GlyphShadowMode::None,
-                requested_raster_space,
-            }
-        };
-
-        self.add_primitive(
-            spatial_node_index,
-            clip_node_id,
-            prim_info,
-            text_run,
-        );
-    }
-
 
     fn add_primitive_instance_to_3d_root(
         &mut self,
@@ -3853,7 +3686,7 @@ pub(crate) fn validate_image_key(key: ImageKey, namespace: IdNamespace) -> bool 
 }
 
 
-fn validate_font_instance_key(key: FontInstanceKey, namespace: IdNamespace) -> bool {
+pub(crate) fn validate_font_instance_key(key: FontInstanceKey, namespace: IdNamespace) -> bool {
     validate_resource_namespace(key.0, namespace, "font instance key")
 }
 

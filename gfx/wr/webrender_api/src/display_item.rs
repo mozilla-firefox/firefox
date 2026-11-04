@@ -6,7 +6,7 @@ use euclid::{SideOffsets2D, Angle};
 use peek_poke::PeekPoke;
 use std::ops::Not;
 // local imports
-use crate::{font, SnapshotImageKey};
+use crate::SnapshotImageKey;
 use crate::{APZScrollGeneration, HasScrollLinkedEffect, PipelineId, PropertyBinding};
 use crate::serde::{Serialize, Deserialize};
 use crate::color::ColorF;
@@ -193,7 +193,7 @@ pub enum DisplayItem {
 pub enum DebugDisplayItem {
     Rectangle(RectangleDisplayItem),
     HitTest(HitTestDisplayItem),
-    Text(TextDisplayItem, Vec<font::GlyphInstance>),
+    Text(TextDisplayItem),
     Line(LineDisplayItem),
     Border(BorderDisplayItem),
     BoxShadow(BoxShadowDisplayItem),
@@ -430,22 +430,17 @@ pub enum GlyphShadowMode {
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Serialize, PeekPoke)]
 pub struct TextDisplayItem {
-    pub common: CommonItemProperties,
-    /// The area all the glyphs should be found in. Strictly speaking this isn't
-    /// necessarily needed, but layout engines should already "know" this, and we
-    /// use it cull and size things quickly before glyph layout is done. Currently
-    /// the glyphs *can* be outside these bounds, but that should imply they
-    /// can be cut off.
-    // FIXME: these are currently sometimes ignored to keep some old wrench tests
-    // working, but we should really just fix the tests!
-    pub bounds: LayoutRect,
-    pub font_key: font::FontInstanceKey,
-    pub color: ColorF,
-    pub glyph_options: Option<font::GlyphOptions>,
-    /// Set by the display-list builder's shadow desugaring on the offset copies
-    /// of shadowed text. `None` for ordinary text.
-    pub shadow: GlyphShadowMode,
-} // IMPLICIT: glyphs: Vec<font::GlyphInstance>
+    pub spatial_id: SpatialId,
+    pub clip_chain_id: ClipChainId,
+    /// The run's entry in the builder's interner, which holds the font, colour,
+    /// glyph options, pen positions, shadow mode and raster space. Everything
+    /// about the run other than where it sits reaches the receiver through
+    /// this, including the glyphs, which is the point: an unchanged run then
+    /// costs eight bytes rather than twelve per glyph. `Handle::INVALID` marks
+    /// a fully transparent run captured inside a shadow scope only so its copy
+    /// can be drawn.
+    pub text_run: crate::interning::Handle<crate::interned_prims::TextRunKey>,
+}
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, MallocSizeOf, PartialEq, Serialize, PeekPoke)]
 pub struct NormalBorder {

@@ -44,7 +44,8 @@ use line_dec::LineDecorationKey;
 use picture::PictureDataHandle;
 use rectangle::RectangleKey;
 use crate::dl_interner::DlHandle;
-use text_run::{TextRunDataHandle, TextRunScratch};
+use text_run::TextRunScratch;
+use api::interned_prims::TextRunKey;
 use crate::box_shadow::BoxShadowKey;
 
 #[cfg_attr(feature = "capture", derive(Serialize))]
@@ -247,8 +248,9 @@ pub enum PrimitiveKind {
     },
     /// A run of glyphs, with associated font parameters.
     TextRun {
-        /// Handle to the common interned data for this primitive.
-        data_handle: TextRunDataHandle,
+        /// Handle into the follower store fed by the content display list
+        /// builder.
+        handle: DlHandle<TextRunKey>,
     },
     /// A line decoration. cache_handle refers to a cached render
     /// task handle, if this line decoration is not a simple solid.
@@ -476,8 +478,8 @@ impl PrimitiveInstance {
             PrimitiveKind::ConicGradient { handle } => {
                 dl_stores.conic_gradients.uid(*handle)
             }
-            PrimitiveKind::TextRun { data_handle, .. } => {
-                data_handle.uid()
+            PrimitiveKind::TextRun { handle } => {
+                dl_stores.text_runs.uid(*handle)
             }
             PrimitiveKind::YuvImage { handle } => {
                 dl_stores.yuv_images.uid(*handle)
@@ -968,7 +970,9 @@ fn device_text_runs_do_not_snap_their_clips() {
     use crate::intern::Handle;
 
     assert!(
-        !PrimitiveKind::TextRun { data_handle: Handle::INVALID }.snaps(),
+        !PrimitiveKind::TextRun {
+            handle: DlHandle::new(crate::dl_interner::DlNamespace(0), 0, 0),
+        }.snaps(),
         "device-space text must not snap its clips (bug 2050692)",
     );
 
