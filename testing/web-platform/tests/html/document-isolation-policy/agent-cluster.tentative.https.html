@@ -130,13 +130,13 @@ function clickLinkScript(targetName, targetURL) {
   `;
 }
 
-async function createNamedFrameWithNavigateListener(t, name) {
+async function createNamedFrameWithNavigateListener(t, name, policy = dip_none) {
   const uuid = token();
   const frame = document.createElement("iframe");
   frame.name = name;
   t.add_cleanup(() => frame.remove());
   const loaded = new Promise(resolve => frame.onload = resolve);
-  frame.src = executorURL(dip_none, uuid);
+  frame.src = executorURL(policy, uuid);
   document.body.append(frame);
   await loaded;
   const reply = token();
@@ -173,15 +173,58 @@ promise_test(async t => {
   assert_equals(await receive(reply), "element");
 }, "A navigate event in a same-origin frame without a policy exposes a link of a document without one as its sourceElement");
 
+function navigateNamedFrameScript(how, targetName, targetURL) {
+  if (how === "link")
+    return clickLinkScript(targetName, targetURL);
+  if (how === "window.open()")
+    return `window.open(${JSON.stringify(targetURL)}, ${JSON.stringify(targetName)}); return "opened";`;
+  return `
+    const form = document.createElement("form");
+    form.method = "post";
+    form.target = ${JSON.stringify(targetName)};
+    // A 303 turns the POST into a GET of the destination, which only serves GET.
+    form.action = "/common/redirect.py?status=303&location=" + encodeURIComponent(${JSON.stringify(targetURL)});
+    const input = document.createElement("input");
+    input.name = "entry";
+    input.value = "value";
+    form.append(input);
+    document.body.append(form);
+    form.submit();
+    return "submitted";
+  `;
+}
+
+// A cross-document navigation only fires navigate when its initiator could access the navigated document. Across
+// agent clusters that's like a cross-origin initiator, so there's no event, and no sourceElement or formData either.
+// https://github.com/WICG/document-isolation-policy/issues/11
+for (const how of ["link", "window.open()", "form submission"]) {
+  for (const [listenerPolicy, initiatorPolicy, description] of [[dip_none, dip_require_corp, "without a policy for a navigation from a document with one"], [dip_require_corp, dip_none, "with a policy for a navigation from a document without one"]]) {
+    promise_test(async t => {
+      const name = token();
+      const { reply } = await createNamedFrameWithNavigateListener(t, name, listenerPolicy);
+      const uuid = token();
+      await createFrame(t, executorURL(initiatorPolicy, uuid));
+      const destination = token();
+      await runInContext(uuid, navigateNamedFrameScript(how, name, executorURL(listenerPolicy, destination)));
+      // Don't let a navigation that never arrives time out the remaining tests.
+      const result = await Promise.race([
+        runInContext(destination, `return sessionStorage.getItem("${reply}") ?? "no navigate event";`),
+        new Promise(resolve => t.step_timeout(() => resolve("destination did not load"), 10000)),
+      ]);
+      assert_equals(result, "no navigate event");
+    }, `A same-origin frame ${description} gets no cross-document navigate event (${how})`);
+  }
+}
+
 promise_test(async t => {
   const name = token();
   const { reply } = await createNamedFrameWithNavigateListener(t, name);
   const uuid = token();
-  await createFrame(t, executorURL(dip_require_corp, uuid));
+  await createFrame(t, executorURL(dip_none, uuid));
   const destination = token();
   await runInContext(uuid, clickLinkScript(name, executorURL(dip_none, destination)));
-  assert_equals(await runInContext(destination, `return sessionStorage.getItem("${reply}") ?? "no navigate event";`), "null");
-}, "A cross-document navigate event in a same-origin frame without a policy does not expose a link of a document with one as its sourceElement");
+  assert_equals(await runInContext(destination, `return sessionStorage.getItem("${reply}") ?? "no navigate event";`), "element");
+}, "A same-origin frame without a policy gets a cross-document navigate event for a link of a document without one");
 
 promise_test(async t => {
   const uuid = token();
