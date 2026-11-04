@@ -1588,11 +1588,11 @@ WebTransportSessionProxy::OnStatsAvailable(
       mCachedStats = *rawStats;
     }
     if (!mTarget->IsOnCurrentThread()) {
-      return mTarget->Dispatch(
-          NS_NewRunnableFunction("WebTransportSessionProxy::OnStatsAvailable",
-                                 [self = RefPtr{this}, stats]() {
-                                   self->OnStatsAvailableInternal(stats);
-                                 }));
+      return mTarget->Dispatch(NS_NewRunnableFunction(
+          "WebTransportSessionProxy::OnStatsAvailable",
+          [self = RefPtr{this}, stats = std::move(stats)]() {
+            self->OnStatsAvailableInternal(stats);
+          }));
     }
   }
 
