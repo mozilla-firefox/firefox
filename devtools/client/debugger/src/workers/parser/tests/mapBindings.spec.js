@@ -35,22 +35,12 @@ describe("mapExpressionBindings", () => {
     {
       name: "single declaration",
       expression: "const a = 2; let b = 3; var c = 4;",
-      newExpression: "self.a = 2; self.b = 3; self.c = 4;",
-    },
-    {
-      name: "multiple declarations",
-      expression: "const a = 2, b = 3",
-      newExpression: "self.a = 2; self.b = 3",
+      newExpression: "const a = 2; let b = 3; self.c = 4;",
     },
     {
       name: "declaration with separate assignment",
       expression: "let a; a = 2;",
-      newExpression: "self.a = void 0; self.a = 2;",
-    },
-    {
-      name: "multiple declarations with no assignment",
-      expression: "let a = 2, b;",
-      newExpression: "self.a = 2; self.b = void 0;",
+      newExpression: "let a; self.a = 2;",
     },
     {
       name: "local bindings become assignments",
@@ -69,11 +59,6 @@ describe("mapExpressionBindings", () => {
       newExpression: "self.a += 2;",
     },
     {
-      name: "destructuring (objects)",
-      expression: "const { a } = {}; ",
-      newExpression: "({ a: self.a } = {})",
-    },
-    {
       name: "destructuring (arrays)",
       expression: " var [a, ...foo] = [];",
       newExpression: "([self.a, ...self.foo] = [])",
@@ -88,7 +73,7 @@ describe("mapExpressionBindings", () => {
     {
       name: "destructuring & declaration",
       expression: "const { a } = {}; var b = 3",
-      newExpression: `({ a: self.a } = {});
+      newExpression: `const { a } = {};
         self.b = 3
       `,
     },
@@ -126,6 +111,15 @@ describe("mapExpressionBindings", () => {
     {
       name: "identifier",
       expression: "a",
+    },
+    { name: "multiple declarations", expression: "const a = 2, b = 3" },
+    {
+      name: "multiple declarations with no assignment",
+      expression: "let a = 2, b;",
+    },
+    {
+      name: "destructuring (objects)",
+      expression: "const { a } = {}; ",
     },
   ]);
 

@@ -40614,6 +40614,13 @@ Please specify the "importAttributesKeyword" generator option, whose value can b
           return;
         }
 
+        // Only `var` declarations are rewritten. `let`/`const` declarations
+        // must reach the engine unchanged so they create a frame-local shadow
+        // instead of mutating the outer binding.
+        if (node.kind !== "var") {
+          return;
+        }
+
         if (!libExports$2.isForStatement(parent.node)) {
           const newNodes = globalizeDeclaration(node, bindings);
           isMapped = true;

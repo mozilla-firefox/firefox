@@ -52,13 +52,17 @@ describe("mapExpression", () => {
     {
       name: "await (multiple statements)",
       expression: "const x = await a(); x + x",
-      newExpression: formatAwait("self.x = await a(); return x + x;"),
+      newExpression: `let x;
+        (async () => {
+          x = await a();
+          return x + x;
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
@@ -78,198 +82,229 @@ describe("mapExpression", () => {
     {
       name: "await (multiple awaits)",
       expression: "const x = await a(); await b(x)",
-      newExpression: formatAwait("self.x = await a(); return b(x);"),
+      newExpression: `let x;
+        (async () => {
+          x = await a();
+          return b(x);
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (assignment)",
       expression: "let x = await sleep(100, 2)",
-      newExpression: formatAwait("return (self.x = await sleep(100, 2))"),
+      newExpression: `let x;
+        (async () => {
+          return (x = await sleep(100, 2));
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (destructuring)",
       expression: "const { a, c: y } = await b()",
-      newExpression: formatAwait(
-        "return ({ a: self.a, c: self.y } = await b())"
-      ),
+      newExpression: `let a, y;
+        (async () => {
+          return ({ a, c: y } = await b());
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (array destructuring)",
       expression: "const [a, y] = await b();",
-      newExpression: formatAwait("return ([self.a, self.y] = await b())"),
+      newExpression: `let a, y;
+        (async () => {
+          return ([a, y] = await b());
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (mixed destructuring)",
       expression: "const [{ a }] = await b();",
-      newExpression: formatAwait("return ([{ a: self.a }] = await b())"),
+      newExpression: `let a;
+        (async () => {
+          return ([{ a }] = await b());
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (destructuring, multiple statements)",
       expression: "const { a, c: y } = await b(), { x } = await y()",
-      newExpression: formatAwait(`
-        ({ a: self.a, c: self.y } = await b())
-        return ({ x: self.x } = await y());
-      `),
+      newExpression: `let a, y, x;
+        (async () => {
+          ({ a, c: y } = await b());
+          return ({ x } = await y());
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (destructuring, bindings)",
       expression: "const { a, c: y } = await b();",
-      newExpression: formatAwait("return ({ a, c: y } = await b())"),
+      newExpression: `let a, y;
+        (async () => {
+          return ({ a, c: y } = await b());
+        })();`,
       bindings: ["a", "y"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (array destructuring, bindings)",
       expression: "const [a, y] = await b();",
-      newExpression: formatAwait("return ([a, y] = await b())"),
+      newExpression: `let a, y;
+        (async () => {
+          return ([a, y] = await b());
+        })();`,
       bindings: ["a", "y"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (mixed destructuring, bindings)",
       expression: "const [{ a }] = await b();",
-      newExpression: formatAwait("return ([{ a }] = await b())"),
+      newExpression: `let a;
+        (async () => {
+          return ([{ a }] = await b());
+        })();`,
       bindings: ["a"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (destructuring with defaults, bindings)",
       expression: "const { c, a = 5 } = await b();",
-      newExpression: formatAwait("return ({ c: self.c, a = 5 } = await b())"),
+      newExpression: `let c, a;
+        (async () => {
+          return ({ c, a = 5 } = await b());
+        })();`,
       bindings: ["a", "y"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (array destructuring with defaults, bindings)",
       expression: "const [a, y = 10] = await b();",
-      newExpression: formatAwait("return ([a, y = 10] = await b())"),
+      newExpression: `let a, y;
+        (async () => {
+          return ([a, y = 10] = await b());
+        })();`,
       bindings: ["a", "y"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (mixed destructuring with defaults, bindings)",
       expression: "const [{ c = 5 }, a = 5] = await b();",
-      newExpression: formatAwait(
-        "return ([ { c: self.c = 5 }, a = 5] = await b())"
-      ),
+      newExpression: `let c, a;
+        (async () => {
+          return ([{ c = 5 }, a = 5] = await b());
+        })();`,
       bindings: ["a"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (nested destructuring, bindings)",
       expression: "const { a, c: { y } } = await b();",
-      newExpression: formatAwait(`
-       return ({
-          a,
-          c: { y }
-        } = await b());
-    `),
+      newExpression: `let a, y;
+        (async () => {
+          return ({
+            a,
+            c: { y },
+          } = await b());
+        })();`,
       bindings: ["a", "y"],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
     {
       name: "await (nested destructuring with defaults)",
       expression: "const { a, c: { y = 5 } = {} } = await b();",
-      newExpression: formatAwait(`return ({
-        a: self.a,
-        c: { y: self.y = 5 } = {},
-      } = await b());
-    `),
+      newExpression: `let a, y;
+        (async () => {
+          return ({ a, c: { y = 5 } = {} } = await b());
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },
@@ -277,22 +312,23 @@ describe("mapExpression", () => {
       name: "await (very nested destructuring with defaults)",
       expression:
         "const { a, c: { y: { z = 10, b } = { b: 5 } } } = await b();",
-      newExpression: formatAwait(`
-        return ({
-          a: self.a,
-          c: {
-            y: { z: self.z = 10, b: self.b } = {
-              b: 5
-            }
-          }
-        } = await b());
-    `),
+      newExpression: `let a, z, b;
+        (async () => {
+          return ({
+            a,
+            c: {
+              y: { z = 10, b } = {
+                b: 5,
+              },
+            },
+          } = await b());
+        })();`,
       bindings: [],
       mappings: {},
       shouldMapBindings: true,
       expectedMapped: {
         await: true,
-        bindings: true,
+        bindings: false,
         originalExpression: false,
       },
     },

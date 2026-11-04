@@ -261,6 +261,8 @@ fail-if = [
 
 ["browser_jsterm_redeclare_let_const.js"]
 
+["browser_jsterm_redeclare_let_const_in_frame.js"]
+
 ["browser_jsterm_screenshot_command_clipboard.js"]
 
 ["browser_jsterm_screenshot_command_file.js"]
