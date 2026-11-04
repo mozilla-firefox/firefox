@@ -1301,7 +1301,7 @@ def test_pdfpaint_has_expected_attributes_no_chunk(pdfpaint_dir_info):
     assert len([line for line in manifest_lines if line]) == pdf_count
 
     assert test_config["tpcycles"] == 1
-    assert test_config["tppagecycles"] == 1
+    assert test_config["tppagecycles"] == 15
     assert test_config["tptimeout"] == 60000
     assert test_config["gecko_profile_entries"] == 16777216
     assert test_config["filters"] is not None

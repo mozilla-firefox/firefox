@@ -803,7 +803,7 @@ mozilla-pdf.js:
     fetch:
         type: git
         repo: https://github.com/mozilla/pdf.js
-        revision: 81cf42df470f85eb60150bdffca380e3eee79c08
+        revision: b9a3dfc3c2ff1fe7692b30da63a588d4890b4a72
 
 mozilla-pdf.js.pdfs:
     description: Mozilla pdf.js PDF corpus (private Github repo)
@@ -811,7 +811,7 @@ mozilla-pdf.js.pdfs:
     fetch:
         type: git
         repo: git@github.com:mozilla/pdf.js.pdfs.git
-        revision: 1b7840e9d7ce0b9019c9b3e24f364c186a1bf0cf
+        revision: 37b3f48ef90a73bd9a193a5007b0c10a04758efd
         path-prefix: pdf.js.pdfs
         artifact-name: pdf.js.pdfs.tar.zst
         ssh-key: project/perftest/gecko/level-{level}/pdfjs-pdfs-github-deploy-key

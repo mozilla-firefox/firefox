@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import copy
 import hashlib
 import re
 from typing import Literal, Optional
@@ -111,25 +110,6 @@ def setup_talos(config, tasks):
 
         if config.params.get("project", None):
             extra_options.append("--project=%s" % config.params["project"])
-
-        if "pdfpaint" in task["try-name"]:
-            max_chunks = 10
-            for chunk in range(1, max_chunks + 1):
-                new_task = copy.deepcopy(task)
-                new_task["mozharness"]["extra-options"].append(
-                    f"--pdfPaintChunk={chunk}"
-                )
-                new_task["test-name"] = task["test-name"].replace(
-                    "pdfpaint", f"pdfpaint-{chunk}"
-                )
-                new_task["try-name"] = task["try-name"].replace(
-                    "pdfpaint", f"pdfpaint-{chunk}"
-                )
-                new_task["treeherder-symbol"] = task["treeherder-symbol"].replace(
-                    "pdfpaint", f"pdfpaint-{chunk}"
-                )
-                yield new_task
-            continue
 
         yield task
 

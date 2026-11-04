@@ -40,7 +40,7 @@ def gather_talos_pdf(pdfs_folder, pdf_info, output_dir):
         found in the test/test_manifest.json file from the pdf.js repo.
     :param Path output_dir: The directory to copy the PDF to.
     """
-    if not pdf_info.get("talos", True):
+    if not pdf_info.get("talos", False):
         return
     pdf_name = pathlib.Path(pdf_info["file"]).name
     output_pdf_path = pathlib.Path(output_dir, pdf_name)

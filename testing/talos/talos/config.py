@@ -214,10 +214,8 @@ def setup_pdfpaint_test(config, test_instance):
 
     # If a pdfpaint test was specified, prevent any chunking
     chunk_number = config.get("pdfpaint_chunk", None)
-    pdfpaint_test = None
     if config.get("pdfpaint_name") is not None:
         chunk_number = None
-        pdfpaint_test = config["pdfpaint_name"]
 
     # Gather all the pdf files that can be used in the test, and write
     # all the pdfs to be tested to the manifest file
@@ -230,8 +228,7 @@ def setup_pdfpaint_test(config, test_instance):
 
     pdf_files = set()
     for pdf_info in test_manifest:
-        if not pdf_info.get("talos", True):
-            # Skip pdfs that are not meant to be tested
+        if not pdf_info.get("talos", False):
             continue
         if pdf_info.get("password", None) is not None:
             # PDFs that require passwords cause timeouts
@@ -265,12 +262,6 @@ def setup_pdfpaint_test(config, test_instance):
     symlink_dest.unlink(missing_ok=True)
     symlink_dest.symlink_to(pdfs_root, target_is_directory=True)
     test_instance.tpmanifest = str(pdfpaint_manifest_path)
-
-    # Increase the pagecycles for each pdf to 15 if we're running chunks, otherwise
-    # it can take a very long time to complete testing of all pdfs
-    if chunk_number is not None or pdfpaint_test is not None:
-        print("Setting pdfpaint tppagecycles to 15")
-        test_instance.tppagecycles = 15
 
 
 def get_test_host(manifest_line):

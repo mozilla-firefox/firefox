@@ -65,7 +65,9 @@ def pdfpaint_dir_info():
             pdf_count = 101
             pdf_manifest_json = []
             for i in range(pdf_count):
-                pdf_manifest_json.append({"file": str(i)})
+                pdf_manifest_json.append({"file": str(i), "talos": True})
+            pdf_manifest_json.append({"file": "not_marked"})
+            pdf_manifest_json.append({"file": "not_for_talos", "talos": False})
 
             pdf_manifest = talos_pdfs_dir / "test_manifest.json"
             with pdf_manifest.open("w", encoding="utf-8") as f:
