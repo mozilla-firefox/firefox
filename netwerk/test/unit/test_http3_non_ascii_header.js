@@ -73,10 +73,8 @@ add_setup(async function setup() {
   });
 });
 
-// Test non-ASCII header with HTTP/3 and HTTP/2 fallback
-// Http3Session::TryActivating fails to parse the non-utf8 headers
-// and returns NS_ERROR_HTTP2_FALLBACK_TO_HTTP1 so we fallback to h2.
-// When bug 1999659 is fixed we should instead succeed.
+// Test that requests with non-ASCII header values are sent over HTTP/3
+// (without falling back to HTTP/2) and that the header value is preserved.
 add_task(async function test_non_ascii_header() {
   // First request with non-ASCII header
   let chan1 = makeChan(`https://foo.example.com:${h2Port}/100`);
