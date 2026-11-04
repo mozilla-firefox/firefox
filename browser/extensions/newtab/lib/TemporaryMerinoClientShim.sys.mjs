@@ -680,19 +680,64 @@ export class TemporaryMerinoClientShim {
    *   (deliberate skip).
    */
   async fetchPictureOfTheDay({ source, endpointUrl, acceptLanguage }) {
+    return this.#fetchJSON("Picture of the day", {
+      source,
+      endpointUrl,
+      acceptLanguage,
+    });
+  }
+
+  /**
+   * Fetch the framed widgets manifest, which lists each framed widget's id,
+   * document URL and whether it is enabled.
+   *
+   * @param {object} options
+   *   Options object
+   * @param {string} options.source
+   *   The source that is requesting this fetch.
+   * @param {string} options.endpointUrl
+   *   The framed widgets endpoint URL.
+   * @param {string} [options.locale]
+   *   Optional BCP-47 locale sent as the `locale` query param and the
+   *   Accept-Language header. Merino defaults to en-US without it.
+   * @returns {Promise<{data: object|null, error: null | "invalid_url" | "load_error"}>}
+   *   Same contract as fetchPictureOfTheDay.
+   */
+  async fetchFramedWidgets({ source, endpointUrl, locale }) {
+    return this.#fetchJSON("Framed widgets", {
+      source,
+      endpointUrl,
+      acceptLanguage: locale,
+      params: locale ? { locale } : {},
+    });
+  }
+
+  /**
+   * GETs a Merino JSON endpoint with an optional `source` query param, extra
+   * query params and Accept-Language header.
+   *
+   * @param {string} label - name used in log messages
+   * @param {object} options - see fetchPictureOfTheDay; `params` holds extra
+   *   query params
+   * @returns {Promise<{data: object|null, error: null | "invalid_url" | "load_error"}>}
+   */
+  async #fetchJSON(
+    label,
+    { source, endpointUrl, acceptLanguage, params = {} }
+  ) {
     if (!endpointUrl) {
       return { data: null, error: null };
     }
     let url = URL.parse(endpointUrl);
     if (!url) {
-      this.#lazy.logger.error(
-        "Invalid picture-of-the-day endpoint URL",
-        endpointUrl
-      );
+      this.#lazy.logger.error(`Invalid ${label} endpoint URL`, endpointUrl);
       return { data: null, error: "invalid_url" };
     }
     if (source) {
       url.searchParams.set("source", source);
+    }
+    for (const [name, value] of Object.entries(params)) {
+      url.searchParams.set(name, value);
     }
     const fetchOptions = acceptLanguage
       ? { headers: { "Accept-Language": acceptLanguage } }
@@ -701,15 +746,15 @@ export class TemporaryMerinoClientShim {
       const response = await fetch(url, fetchOptions);
       if (!response.ok) {
         this.#lazy.logger.error(
-          `Picture of the day fetch failed with status ${response.status}`
+          `${label} fetch failed with status ${response.status}`
         );
         return { data: null, error: "load_error" };
       }
       const data = /** @type {any} */ (await response.json());
-      this.#lazy.logger.debug("fetchPictureOfTheDay response", data);
+      this.#lazy.logger.debug(`${label} response`, data);
       return { data, error: null };
     } catch (e) {
-      this.#lazy.logger.error("Picture of the day fetch error", e);
+      this.#lazy.logger.error(`${label} fetch error`, e);
       return { data: null, error: "load_error" };
     }
   }
