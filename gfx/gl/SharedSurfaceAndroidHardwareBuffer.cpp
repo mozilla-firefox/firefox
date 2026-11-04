@@ -145,12 +145,17 @@ void SharedSurface_AndroidHardwareBuffer::WaitForBufferOwnership() {
     return;
   }
 
+  bool success;
   if (egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)) {
-    egl->fWaitSync(sync, 0);
+    success = egl->fWaitSync(sync, 0) == LOCAL_EGL_TRUE;
   } else {
-    egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER);
+    success = egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER) ==
+              LOCAL_EGL_CONDITION_SATISFIED;
   }
   egl->fDestroySync(sync);
+  if (!success) {
+    gfxCriticalNote << "Failed to wait for AHB ownership fence";
+  }
 }
 
 /*static*/
