@@ -463,7 +463,9 @@ export class ToolUI {
 
     const confirmationMessage = {
       description: SELECTED_TABS_CONFIRMATION_DESCRIPTION,
-      selectedTabs: selectedTabs.map(({ url, title }) => ({ url, title })),
+      selectedTabs: selectedTabs
+        .filter(tab => !tab.isChatTab)
+        .map(({ url, title }) => ({ url, title })),
     };
 
     const pendingAction =

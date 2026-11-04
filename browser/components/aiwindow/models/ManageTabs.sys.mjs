@@ -108,18 +108,19 @@ async function runManageTabsFlow(state, toolHandler) {
     return gatheredResult.earlyResult;
   }
 
-  if (toolHandler.action === GROUP_TABS) {
-    offerChatTab(gatheredResult, state.conversation);
-  }
-
-  if (
+  const needsConfirmation =
     state.askConfirmation ||
     shouldRequireUserConfirmation(
       gatheredResult.matchedTabs,
       gatheredResult.topAIWin,
       state.conversation.securityProperties
-    )
-  ) {
+    );
+
+  if (toolHandler.action === GROUP_TABS && needsConfirmation) {
+    offerChatTab(gatheredResult, state.conversation, false);
+  }
+
+  if (needsConfirmation) {
     const uiType = UI_TYPE_BY_ACTION[toolHandler.action];
     if (!uiType) {
       throw new Error(`No UI mapping for action: ${toolHandler.action}`);
@@ -194,7 +195,7 @@ async function runManageTabsFlow(state, toolHandler) {
 
 /**
  * Adds the chat tab to the tabs the confirmation card offers, so the user can
- * see that it is going into the group and can untick it.
+ * see whether it is going into the group and change the selection.
  *
  * It is deliberately kept out of matchedTabs, which decides whether a card is
  * shown at all, and out of the summary sent to the model, which is never told
@@ -202,8 +203,9 @@ async function runManageTabsFlow(state, toolHandler) {
  *
  * @param {object} gathered - Result of gatherTabs, updated in place
  * @param {ChatConversation} conversation - Conversation the request came from
+ * @param {boolean} checked - Whether the chat tab starts ticked
  */
-function offerChatTab(gathered, conversation) {
+function offerChatTab(gathered, conversation, checked) {
   const chatTab = lazy.ToolUI.findChatTab(conversation?.id);
   if (!chatTab) {
     return;
@@ -219,9 +221,10 @@ function offerChatTab(gathered, conversation) {
     pinned: chatTab.pinned,
     selected: chatTab.documentGlobal?.gBrowser?.selectedTab === chatTab,
     iconSrc: "",
-    checked: true,
+    checked,
     // Lets createTabGroup tell this row apart from the tabs the user asked
-    // for, so it can avoid making a group out of the chat tab alone.
+    // for, so it can avoid making a group out of the chat tab alone and
+    // keeps it out of the result sent to the model.
     isChatTab: true,
   });
 }

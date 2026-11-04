@@ -339,8 +339,7 @@ add_task(async function test_manageTabsAction_direct_group_path() {
 });
 
 // When you type a grouping command in a fullpage chat, the chat tab is offered
-// as one of the tabs in the confirmation card, so the user can see it is going
-// into the group and can untick it (bug 2068714).
+// as one of the tabs in the confirmation card.
 add_task(async function test_manageTabsAction_offers_the_chat_tab() {
   const sb = sinon.createSandbox();
   try {
@@ -381,7 +380,7 @@ add_task(async function test_manageTabsAction_offers_the_chat_tab() {
       sanitizeUntrustedContent("Smart Window"),
       "The chat tab is the row that was added"
     );
-    Assert.ok(chatRow.checked, "The chat tab starts ticked");
+    Assert.ok(!chatRow.checked, "The chat tab starts unticked");
 
     const [, tokenToKey] = registerTabKeys.firstCall.args;
     Assert.equal(
@@ -394,8 +393,8 @@ add_task(async function test_manageTabsAction_offers_the_chat_tab() {
   }
 });
 
-// Without a card, the chat tab still goes into the group.
-add_task(async function test_manageTabsAction_direct_group_includes_chat_tab() {
+// Without a card, nobody can choose to add the chat tab.
+add_task(async function test_manageTabsAction_direct_group_skips_chat_tab() {
   const sb = sinon.createSandbox();
   try {
     const url1 = "https://example.com/a";
@@ -419,7 +418,7 @@ add_task(async function test_manageTabsAction_direct_group_includes_chat_tab() {
     const createTabGroup = sb.stub(ToolUI, "createTabGroup").resolves({
       operationId: "op-1",
       failedTabs: [],
-      group: { id: "op-1", label: "Bears", color: "blue", tabCount: 2 },
+      group: { id: "op-1", label: "Bears", color: "blue", tabCount: 1 },
     });
 
     await manageTabsAction(
@@ -433,10 +432,14 @@ add_task(async function test_manageTabsAction_direct_group_includes_chat_tab() {
     );
 
     const args = createTabGroup.firstCall.args[0];
-    Assert.equal(args.tabs.length, 2, "The chat tab is grouped as well");
+    Assert.deepEqual(
+      args.tabs.map(tab => tab.url),
+      [url1],
+      "Only the matched tab is grouped"
+    );
     Assert.ok(
-      [...args.tokenToKey.values()].includes(chatTab.permanentKey),
-      "The chat tab is resolvable by its token"
+      ![...args.tokenToKey.values()].includes(chatTab.permanentKey),
+      "The chat tab is not resolvable by any token"
     );
   } finally {
     sb.restore();

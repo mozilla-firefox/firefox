@@ -154,6 +154,8 @@ skip-if = [
   "debug && standalone", # Bug 2025711
 ]
 
+["browser_smartwindow_manage_tabs_fullpage_chat.js"]
+
 ["browser_smartwindow_manage_tabs_tool.js"]
 
 ["browser_smartwindow_manage_tabs_tool_telemetry.js"]
