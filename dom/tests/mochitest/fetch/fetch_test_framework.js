@@ -75,14 +75,6 @@ function testScript(script) {
   }
 
   function serviceWorkerTest() {
-    var isB2G =
-      !navigator.userAgent.includes("Android") &&
-      /Mobile|Tablet/.test(navigator.userAgent);
-    if (isB2G) {
-      // TODO B2G doesn't support running service workers for now due to bug 1137683.
-      dump("Skipping running the test in SW until bug 1137683 gets fixed.\n");
-      return Promise.resolve();
-    }
     return new Promise(function (resolve, reject) {
       function setupSW(registration) {
         var worker =
