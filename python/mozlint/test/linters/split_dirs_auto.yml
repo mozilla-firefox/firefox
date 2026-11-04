@@ -1,0 +1,6 @@
+---
+SplitDirsAutoLinter:
+    description: Splits directories by weight.
+    split-dirs: auto
+    type: string
+    payload: foobar

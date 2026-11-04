@@ -1,0 +1,7 @@
+---
+BadSplitIgnoreFilesLinter:
+    description: Has an invalid split-ignore-files directive.
+    split-ignore-files:
+        - files/does_not_exist
+    type: string
+    payload: foobar

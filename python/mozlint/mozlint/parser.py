@@ -45,7 +45,7 @@ class Parser:
         if linter["type"] not in supported_types:
             raise LinterParseError(relpath, "Invalid type '{}'".format(linter["type"]))
 
-        for attr in ("include", "exclude", "support-files"):
+        for attr in ("include", "exclude", "support-files", "split-ignore-files"):
             if attr not in linter:
                 continue
 
@@ -93,10 +93,13 @@ class Parser:
 
         if "split-dirs" in linter:
             depth = linter["split-dirs"]
-            if isinstance(depth, bool) or not isinstance(depth, int) or depth < 1:
+            if depth != "auto" and (
+                isinstance(depth, bool) or not isinstance(depth, int) or depth < 1
+            ):
                 raise LinterParseError(
                     relpath,
-                    f"The split-dirs directive must be a positive integer, not {depth!r}!",
+                    "The split-dirs directive must be a positive integer or 'auto', "
+                    f"not {depth!r}!",
                 )
             if linter["type"] == "global":
                 raise LinterParseError(
