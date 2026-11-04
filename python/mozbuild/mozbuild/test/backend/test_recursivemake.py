@@ -1466,6 +1466,18 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertEqual(edge["computed_cxxflags"], cflags)
         self.assertEqual(edge["link_flags"], ["-Wl,--moz-rust-spec-ldflag"])
 
+    def test_rust_library_command_spec_computed_flags_nspr(self):
+        env = self._get_environment(
+            "rust-library-flags", substs={"NSPR_CFLAGS": ["-I/obj/nspr"]}
+        )
+        self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
+
+        edge = self._cargo_spec(env, ".cargo-library-spec.json")["edge"]
+
+        self.assertIn("-DMOZ_RUST_SPEC_HOST_CFLAG", edge["computed_host_cflags"])
+        self.assertNotIn("-I/obj/nspr", edge["computed_host_cflags"])
+        self.assertNotIn("-I/obj/nspr", edge["computed_host_cxxflags"])
+
     def test_rust_library_command_spec_computed_flags_lto(self):
         self._assert_rust_library_spec_flags({
             "MOZ_LTO_CFLAGS": ["-flto=thin"],

@@ -390,6 +390,11 @@ class HostCompileFlags(BaseCompileFlags):
                 context.config.substs.get("WARNINGS_HOST_CXXFLAGS"),
                 ("HOST_CXXFLAGS",),
             ),
+            (
+                "NSPR",
+                context.config.substs.get("NSPR_CFLAGS"),
+                ("HOST_CFLAGS", "HOST_CXXFLAGS"),
+            ),
         )
         BaseCompileFlags.__init__(self, context)
 

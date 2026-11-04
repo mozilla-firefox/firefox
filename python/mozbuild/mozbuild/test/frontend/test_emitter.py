@@ -473,6 +473,17 @@ class TestEmitterBasic(unittest.TestCase):
         self.assertEqual(host_flags.flags["MOZBUILD_HOST_CXXFLAGS"], [])
         self.assertEqual(host_ldflags.flags["MOZBUILD"], ["-Wl,--gc-sections"])
 
+    def test_host_compile_flags_nspr(self):
+        reader = self.reader(
+            "host-compile-flags", extra_substs={"NSPR_CFLAGS": ["-I/obj/nspr"]}
+        )
+        sources, ldflags, host_flags, host_ldflags, lib, target_flags = (
+            self.read_topsrcdir(reader)
+        )
+        flags = dict(host_flags.get_flags())
+        self.assertEqual(flags["HOST_CFLAGS"][-1], "-I/obj/nspr")
+        self.assertEqual(flags["HOST_CXXFLAGS"][-1], "-I/obj/nspr")
+
     def test_host_no_optimize_flags(self):
         reader = self.reader(
             "host-compile-flags",
