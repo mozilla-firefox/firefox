@@ -1,7 +1,7 @@
 [DEFAULT]
 accept_zero_vismet = false
 alert_on = "SpeedIndex"
-alert_threshold = 5.0
+alert_threshold = 2.0
 apps = "firefox, chrome"
 browser_cycles = 5
 cold = "true"

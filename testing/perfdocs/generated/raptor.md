@@ -47941,7 +47941,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
 
 * **accept zero vismet**: false
 * **alert on**: [SpeedIndex](raptor-metrics.md#speed-index)
-* **alert threshold**: 5.0
+* **alert threshold**: 2.0
 * **apps**: firefox, chrome
 * **browser cycles**: 5
 * **browsertime visualmetrics**: true
