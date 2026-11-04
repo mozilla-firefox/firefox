@@ -2,29 +2,53 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const GRID_URI =
-  "resource://newtab/data/data/content/assets/location-interest-grid/";
+const lazy = {};
+ChromeUtils.defineESModuleGetters(lazy, {
+  RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
+});
+
+const COLLECTION = "newtab-location-interest-grid";
 
 export class LocationInterestGrid {
   #fetch;
+  #recordsPromise = null;
   #metadataPromise = null;
   #bandPromises = new Map();
 
   /** Creates a grid loader with the given resource fetcher. */
-  constructor({ fetch: fetchResource = fetch } = {}) {
+  constructor({
+    fetch: fetchResource = this.#fetchFromRemoteSettings.bind(this),
+  } = {}) {
     this.#fetch = fetchResource;
   }
 
-  /** Fetches a resource from the packaged location interest grid. */
+  /** Downloads files from one snapshot of the collection to keep metadata and bands consistent. */
+  async #fetchFromRemoteSettings(file) {
+    const client = lazy.RemoteSettings(COLLECTION);
+    this.#recordsPromise ??= client.get().catch(error => {
+      this.#recordsPromise = null;
+      throw error;
+    });
+    const record = (await this.#recordsPromise).find(
+      entry => entry.filename === file
+    );
+    if (!record) {
+      return new Response(null, { status: 404 });
+    }
+    const { buffer } = await client.attachments.download(record);
+    return new Response(buffer);
+  }
+
+  /** Fetches a file of the location interest grid. */
   async #fetchResource(file) {
-    const response = await this.#fetch(GRID_URI + file);
+    const response = await this.#fetch(file);
     if (!response.ok) {
       throw new Error(`Unable to load location interest grid: ${file}`);
     }
     return response;
   }
 
-  /** Loads and validates the packaged grid metadata. */
+  /** Loads and validates the grid metadata. */
   async #loadMetadata() {
     const response = await this.#fetchResource("topic_grid_bands.json");
     const metadata = /** @type {any} */ (await response.json());
@@ -84,6 +108,7 @@ export class LocationInterestGrid {
     // load grid metadata
     this.#metadataPromise ??= this.#loadMetadata().catch(error => {
       this.#metadataPromise = null;
+      this.#recordsPromise = null;
       throw error;
     });
     const metadata = await this.#metadataPromise;

@@ -6,6 +6,7 @@
 ChromeUtils.defineESModuleGetters(this, {
   LocationInterestGrid:
     "resource://newtab/lib/InferredModel/LocationInterestGrid.sys.mjs",
+  RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
 });
 
@@ -63,6 +64,8 @@ function makeGrid() {
   return {
     grid: new LocationInterestGrid({ fetch: fetchResource }),
     fetchResource,
+    metadata,
+    buffer,
   };
 }
 
@@ -164,4 +167,113 @@ add_task(async function test_loadingFailuresCanBeRetried() {
     /Invalid location interest grid size/
   );
   Assert.deepEqual(await grid.lookup(location), expectedVector("2002313"));
+});
+
+add_task(async function test_defaultFetchUsesRemoteSettings() {
+  const { metadata, buffer } = makeGrid();
+  const files = {
+    "topic_grid_bands.json": new TextEncoder().encode(JSON.stringify(metadata))
+      .buffer,
+    "topic_grid_25km.bin": buffer,
+    "topic_grid_1km.bin": buffer,
+  };
+  const records = Object.keys(files).map(filename => ({
+    id: filename,
+    filename,
+  }));
+  const client = RemoteSettings("newtab-location-interest-grid");
+  const sandbox = sinon.createSandbox();
+  const get = sandbox.stub(client, "get").resolves(records);
+  const download = sandbox
+    .stub(client.attachments, "download")
+    .callsFake(async record => ({ buffer: files[record.filename] }));
+  try {
+    const grid = new LocationInterestGrid();
+    Assert.ok(
+      get.notCalled,
+      "Constructing the grid does not read the collection"
+    );
+    const location = { latitude: 0.25, longitude: 0.25 };
+    await Promise.all([
+      grid
+        .lookup(location)
+        .then(result => Assert.deepEqual(result, expectedVector("2002313"))),
+      grid.lookup(location),
+    ]);
+    Assert.equal(
+      download.callCount,
+      2,
+      "Only metadata and the selected band download"
+    );
+    Assert.equal(download.firstCall.args[0].filename, "topic_grid_bands.json");
+    Assert.equal(download.secondCall.args[0].filename, "topic_grid_25km.bin");
+
+    get.resolves(
+      records.map(record => ({ ...record, id: `updated-${record.id}` }))
+    );
+    await grid.lookup({ ...location, radius: 1 });
+    Assert.equal(
+      get.callCount,
+      1,
+      "Later bands use the same collection snapshot"
+    );
+    Assert.equal(download.thirdCall.args[0], records[2]);
+    await Assert.rejects(
+      grid.lookup({ ...location, radius: 10 }),
+      /Unable to load location interest grid: topic_grid_10km.bin/,
+      "A missing record rejects so callers can fall back"
+    );
+    Assert.equal(download.callCount, 3, "Missing records do not download");
+  } finally {
+    sandbox.restore();
+  }
+});
+
+add_task(async function test_remoteSettingsFailuresCanBeRetried() {
+  const { metadata, buffer } = makeGrid();
+  const client = RemoteSettings("newtab-location-interest-grid");
+  const sandbox = sinon.createSandbox();
+  const records = ["topic_grid_bands.json", "topic_grid_25km.bin"].map(
+    filename => ({ id: filename, filename })
+  );
+  const get = sandbox.stub(client, "get").resolves(records);
+  get.onFirstCall().rejects(new Error("Collection unavailable"));
+  get.onCall(1).resolves([]);
+  const download = sandbox
+    .stub(client.attachments, "download")
+    .callsFake(async record => ({
+      buffer:
+        record.filename === "topic_grid_bands.json"
+          ? new TextEncoder().encode(JSON.stringify(metadata)).buffer
+          : buffer,
+    }));
+  download.onCall(1).rejects(new Error("Attachment unavailable"));
+  download.onCall(2).resolves({ buffer: new ArrayBuffer(2) });
+  try {
+    const grid = new LocationInterestGrid();
+    const location = { latitude: 0.25, longitude: 0.25 };
+    await Assert.rejects(grid.lookup(location), /Collection unavailable/);
+    await Assert.rejects(
+      grid.lookup(location),
+      /Unable to load location interest grid: topic_grid_bands.json/
+    );
+    await Assert.rejects(grid.lookup(location), /Attachment unavailable/);
+    await Assert.rejects(
+      grid.lookup(location),
+      /Invalid location interest grid size/
+    );
+    Assert.deepEqual(await grid.lookup(location), expectedVector("2002313"));
+    Assert.equal(
+      get.callCount,
+      3,
+      "Failed or empty collection reads can be retried"
+    );
+    Assert.equal(
+      download.callCount,
+      4,
+      "Band failures retry without reloading metadata"
+    );
+  } finally {
+    sandbox.restore();
+  }
 });
