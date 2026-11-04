@@ -7,10 +7,12 @@ import logging
 import os
 import subprocess
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed, thread
 
 import mozinfo
 from mach.decorators import Command, CommandArgument
+from mach.util import record_resource_marker, resource_marker
 from manifestparser import TestManifest
 from manifestparser import filters as mpf
 from mozbuild.util import cpu_count
@@ -161,9 +163,10 @@ def run_python_tests(
     if test_objects is None:
         from moztest.resolve import TestResolver
 
-        resolver = command_context._spawn(TestResolver)
-        # If we were given test paths, try to find tests matching them.
-        test_objects = resolver.resolve_tests(paths=tests, flavor="python")
+        with resource_marker("python-test", "resolve tests"):
+            resolver = command_context._spawn(TestResolver)
+            # If we were given test paths, try to find tests matching them.
+            test_objects = list(resolver.resolve_tests(paths=tests, flavor="python"))
     else:
         # We've received test_objects from |mach test|. We need to ignore
         # the subsuite because python-tests don't use this key like other
@@ -325,6 +328,7 @@ def _run_python_test(command_context, test, jobs, verbose):
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
+    start = time.monotonic()
     result = subprocess.run(
         cmd,
         check=False,
@@ -334,6 +338,7 @@ def _run_python_test(command_context, test, jobs, verbose):
         text=True,
         encoding="UTF-8",
     )
+    end = time.monotonic()
 
     return_code = result.returncode
 
@@ -357,6 +362,17 @@ def _run_python_test(command_context, test, jobs, verbose):
             "TEST-UNEXPECTED-FAIL | No test output (missing mozunit.main() "
             "call?): {}".format(test["path"])
         )
+
+    marker_data = {
+        "type": "Test",
+        "test": test["file_relpath"],
+        "name": os.path.basename(test["path"]),
+    }
+    if return_code:
+        marker_data.update(status="FAIL", expected="PASS", color="orange")
+    else:
+        marker_data.update(status="PASS", color="green")
+    record_resource_marker("test file", start, end, marker_data)
 
     if verbose:
         if return_code != 0:

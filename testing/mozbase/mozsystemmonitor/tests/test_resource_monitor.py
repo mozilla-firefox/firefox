@@ -37,9 +37,12 @@ UBSAN_LINES = [
     f"SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior {UBSAN_FILE}:7106:33",
 ]
 
+
 # Monitors created by the tests shouldn't forward to the one running the tests
 # in automation.
-os.environ.pop(FORWARD_ENV, None)
+@pytest.fixture(autouse=True)
+def no_forwarding(monkeypatch):
+    monkeypatch.delenv(FORWARD_ENV, raising=False)
 
 
 def _wait_for_measurement(monitor, timeout=30):
