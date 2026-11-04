@@ -1,5 +1,5 @@
 {
   "phabricator.uri" : "https://phabricator.services.mozilla.com/",
-  "repository.callsign": "FIREFOXBETA",
+  "repository.callsign": "FIREFOXRELEASE",
   "history.immutable": false
 }
