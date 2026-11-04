@@ -94,10 +94,10 @@ const LIST_PROPS = {
   Prefs: { values: {} },
 };
 
-function renderList(sites) {
+function renderList(sites, props = {}) {
   return render(
     <WrapWithProvider>
-      <TopSiteList {...LIST_PROPS} sites={sites} />
+      <TopSiteList {...LIST_PROPS} sites={sites} {...props} />
     </WrapWithProvider>
   );
 }
@@ -893,6 +893,23 @@ describe("<TopSiteList> Add button rendering", () => {
     const { container } = renderList(buildTopSitesList(makeRows(8), 1, 8));
     expect(container.querySelector(".add-button-hidden")).toBeInTheDocument();
     expect(container.querySelector(".add-button-tile")).not.toBeInTheDocument();
+  });
+
+  // Bug 2084671: When 2 rows are enabled, at 6 columns, the in-grid tile wraps to row 2
+  // and relies on .add-button-tile's min-height to reserve that row's height.
+  it("renders the in-grid add button and wraps when 2 rows are enabled and 6 shortcuts fill a narrow row", () => {
+    const { container } = renderList(buildTopSitesList(makeRows(6), 2, 8), {
+      TopSitesRows: 2,
+      Prefs: { values: { "nova.enabled": true } },
+    });
+    const addTile = container.querySelector(
+      ".top-sites-list > li.add-button-tile"
+    );
+    expect(addTile).toBeInTheDocument();
+    expect(addTile).not.toHaveClass("nova-hide-for-xs");
+    expect(
+      container.querySelector(".add-button-hidden")
+    ).not.toBeInTheDocument();
   });
 });
 

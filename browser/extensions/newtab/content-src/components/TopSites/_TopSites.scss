@@ -609,7 +609,7 @@ $calculated-max-width-twice-widest: $break-point-widest + 2 * $card-width;
     inset-block-start: calc(var(--col-width) - var(--size-item-large));
   }
 
-  .add-button-tile:only-child {
+  .add-button-tile {
     // Reserves the height of a shortcut tile (75px) + label (32px) + padding
     min-height: calc(107px + var(--space-small));
   }
