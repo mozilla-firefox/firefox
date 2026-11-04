@@ -82,6 +82,17 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
       "orient",
       this.getAttribute("orient")
     );
+    this._pinnedTabsMutationObserver = new MutationObserver(() => {
+      this.pinnedTabsContainer.toggleAttribute(
+        "hascontainertab",
+        Array.from(this.pinnedTabsContainer.children).some(child =>
+          child.hasAttribute("usercontextid")
+        )
+      );
+    });
+    this._pinnedTabsMutationObserver.observe(this.pinnedTabsContainer, {
+      childList: true,
+    });
 
     // Override arrowscrollbox.js method, since our scrollbox's children are
     // inherited from the scrollbox binding parent (this).

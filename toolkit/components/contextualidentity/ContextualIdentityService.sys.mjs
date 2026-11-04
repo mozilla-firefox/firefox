@@ -20,8 +20,8 @@ const CONTEXTUAL_IDENTITY_ENABLED_PREF = "privacy.userContext.enabled";
 // Each color carries two codes: `code` is the legacy value used when
 // `browser.nova.enabled` is off, `codeNova` is the refreshed value used when it
 // is on. getContainerColorCode() picks between them based on the pref. Under
-// nova `codeNova` is the design-system `--color-<name>-40` token, matching the
-// shade usercontext.css paints as the tab stroke (--identity-stroke-color).
+// nova `codeNova` matches the light-mode value of --identity-stroke-color in
+// usercontext.css.
 export const CONTAINER_COLORS = [
   {
     name: "gray",
@@ -32,7 +32,7 @@ export const CONTAINER_COLORS = [
   {
     name: "yellow",
     code: "#ffcb00",
-    codeNova: "#db820e",
+    codeNova: "#f3a81e",
     l10nId: "user-context-color-yellow",
   },
   {
@@ -62,13 +62,13 @@ export const CONTAINER_COLORS = [
   {
     name: "violet",
     code: "#764edd",
-    codeNova: "#9871ff",
+    codeNova: "#764edd",
     l10nId: "user-context-color-violet",
   },
   {
     name: "blue",
     code: "#37adff",
-    codeNova: "#5a87fd",
+    codeNova: "#455fe7",
     l10nId: "user-context-color-blue",
   },
   {
@@ -80,7 +80,7 @@ export const CONTAINER_COLORS = [
   {
     name: "green",
     code: "#51cd00",
-    codeNova: "#11ae84",
+    codeNova: "#008865",
     l10nId: "user-context-color-green",
   },
 ];

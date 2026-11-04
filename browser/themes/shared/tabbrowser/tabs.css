@@ -94,30 +94,11 @@
 
   /* Sizing and positioning of the container tab line. */
   @media -moz-pref("browser.nova.enabled") {
-    --tab-context-line-block-offset: 3px;
-    --tab-context-line-inline-offset: calc(var(--tab-padding-inline) + 2px);
-
-    /* We need a different block offset for split-view because there's less
-     * vertical space available there */
-    --tab-context-line-split-view-block-offset: 1px;
-
-    &[uidensity="compact"] {
-      --tab-context-line-block-offset: 1px;
-      --tab-context-line-split-view-block-offset: 0px;
-    }
-
-    @media -moz-pref("sidebar.verticalTabs") {
-      --tab-context-line-block-offset: 3px;
-      --tab-context-line-inline-offset: var(--tab-padding-inline);
-
-      --tab-context-line-split-view-block-offset: 3px;
-
-      &[uidensity="compact"] {
-        --tab-context-line-inline-offset: calc(var(--tab-padding-inline) + 1px);
-        --tab-context-line-block-offset: 2px;
-        --tab-context-line-split-view-block-offset: 1px;
-      }
-    }
+    --tab-context-line-thickness: 2px;
+    --tab-context-line-gap: 2px;
+    --tab-context-line-inline-offset: 8px;
+    --tab-context-line-short-length: 16px;
+    --tab-context-line-outer-offset: calc(-1 * (var(--tab-context-line-gap) + var(--tab-context-line-thickness)));
   }
 
   @media not -moz-pref("browser.nova.enabled") {
@@ -1226,33 +1207,102 @@ tab-split-view-wrapper[dragtarget] {
 }
 
 @media -moz-pref("browser.nova.enabled") {
-  .tabbrowser-tab[usercontextid] > .tab-stack > .tab-background > .tab-context-line {
-    height: 0;
-    /* border-block guarantees it's snapped to device pixels */
-    border-block: 1px solid transparent;
-    background: var(--identity-stroke-color) border-box border-box;
-    border-radius: var(--border-radius-xsmall);
-    margin-block-start: var(--tab-context-line-block-offset);
-    width: calc(100% - 2 * var(--tab-context-line-inline-offset));
-    margin-inline-start: var(--tab-context-line-inline-offset);
+  .tabbrowser-tab[usercontextid] {
+    .tab-context-line {
+      position: absolute;
+      margin: 0;
+      background: var(--identity-stroke-color) border-box border-box;
+    }
 
-    /* With expand on hover, size of the stroke is always the collapsed size */
-    :root[sidebar-expand-on-hover] & {
-      width: calc(var(--tab-collapsed-background-width) - 2 * var(--tab-context-line-inline-offset));
+    /* border-block guarantees it's snapped to device pixels */
+    #tabbrowser-tabs[orient="horizontal"] & .tab-context-line,
+    &[pinned] .tab-context-line {
+      height: 0;
+      border-block: calc(var(--tab-context-line-thickness) / 2) solid transparent;
+      border-radius: var(--tab-context-line-thickness) var(--tab-context-line-thickness) 0 0;
+    }
+
+    #tabbrowser-tabs[orient="horizontal"] &:not([pinned]) .tab-context-line {
+      inset-block-start: calc(var(--tab-margin-block) + var(--tab-context-line-outer-offset));
+      inset-inline: var(--tab-context-line-inline-offset);
+    }
+
+    #tabbrowser-tabs[orient="horizontal"] tab-split-view-wrapper &:not([pinned]) .tab-context-line {
+      inset-block-start: calc(var(--tab-margin-block) + var(--tab-context-line-outer-offset) - var(--split-view-tab-strip-inset));
+      inset-inline: calc(var(--split-view-tab-padding-inline) + var(--tab-context-line-inline-offset));
+    }
+
+    #tabbrowser-tabs[orient="vertical"] &:not([pinned]) .tab-context-line {
+      inset-block: 0;
+      inset-inline-end: calc(var(--tab-margin-inline-inner) + var(--tab-context-line-outer-offset));
+      width: 0;
+      height: var(--tab-context-line-short-length);
+      margin-block: auto;
+      border-block: none;
+      border-inline: calc(var(--tab-context-line-thickness) / 2) solid transparent;
+      border-radius: 0;
+      border-start-end-radius: var(--tab-context-line-thickness);
+      border-end-end-radius: var(--tab-context-line-thickness);
+    }
+
+    #tabbrowser-tabs[orient="vertical"]:not([expanded]) &:not([pinned], tab-split-view-wrapper *) .tab-context-line {
+      inset-inline: calc(var(--tab-margin-inline-inner) + var(--tab-collapsed-background-width) + var(--tab-context-line-gap)) auto;
+    }
+
+    #tabbrowser-tabs[orient="vertical"] tab-split-view-wrapper & {
+      overflow-clip-margin: calc(var(--split-view-wrapper-padding) - var(--tab-context-line-outer-offset));
+    }
+
+    #tabbrowser-tabs[orient="vertical"] tab-split-view-wrapper &:not([pinned]) .tab-context-line {
+      inset-inline: auto var(--tab-context-line-outer-offset);
+    }
+
+    @container vertical-tabs-container (min-width: 211px) {
+      :root:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded] tab-split-view-wrapper & .tab-context-line {
+        inset-block: calc(-1 * (var(--tab-context-line-thickness) + var(--split-view-wrapper-padding))) auto;
+        inset-inline: 0;
+        width: var(--tab-context-line-short-length);
+        height: 0;
+        margin-block: 0;
+        margin-inline: auto;
+        border-block: calc(var(--tab-context-line-thickness) / 2) solid transparent;
+        border-inline: none;
+        border-radius: var(--tab-context-line-thickness) var(--tab-context-line-thickness) 0 0;
+      }
+    }
+
+    &[pinned] .tab-context-line {
+      inset-block-start: calc(var(--tab-margin-block) + var(--tab-context-line-outer-offset));
+      inset-inline: 0;
+      width: var(--tab-context-line-short-length);
+      margin-inline: auto;
+    }
+
+    @media not (forced-colors) {
+      --tab-border-color-selected: var(--identity-stroke-color);
+      --tab-border-color-selected-leading: var(--identity-stroke-color);
+      --tab-border-color-selected-trailing: var(--identity-stroke-color);
+      --tab-border-color-accent: linear-gradient(96deg, var(--tab-border-color-selected-leading) 20.68%, var(--tab-border-color-selected-trailing) 79.34%);
+
+      > .tab-stack > .tab-background[multiselected] {
+        outline-color: var(--identity-stroke-color);
+      }
     }
   }
 
-  :is(#tabbrowser-tabs[orient="horizontal"], :root:not([sidebar-expand-on-hover]) #tabbrowser-tabs[orient="vertical"][expanded])
-    .tabbrowser-tab[usercontextid]:not([visuallyselected], [multiselected], [pinned])
-    > .tab-stack
-    > .tab-background
-    > .tab-context-line {
-    background-color: transparent;
-    background-image: linear-gradient(to left, transparent, var(--identity-stroke-color) var(--tab-label-mask-size));
+  #tabbrowser-tabs[orient="vertical"] tab-split-view-wrapper[hascontainertab] {
+    padding-inline-end: calc(var(--split-view-wrapper-padding) - var(--tab-context-line-outer-offset));
 
-    &:-moz-locale-dir(rtl) {
-      background-image: linear-gradient(to right, transparent, var(--identity-stroke-color) var(--tab-label-mask-size));
+    @container vertical-tabs-container (min-width: 211px) {
+      :root:not([sidebar-expand-on-hover]) #tabbrowser-tabs[expanded] & {
+        padding-inline-end: var(--split-view-wrapper-padding);
+      }
     }
+  }
+
+  :root[uidensity="compact"] #pinned-tabs-container[orient="vertical"][hascontainertab] {
+    --tab-padding-block-start: calc(-1 * (var(--tab-margin-block) + var(--tab-context-line-outer-offset)));
+    --tab-height-with-margin-padding: calc(var(--tab-padding-block-start) + var(--tab-padding-block-end) + var(--tab-min-height) + 2 * var(--tab-margin-block));
   }
 }
 
@@ -1534,7 +1584,6 @@ tab-group > tab-split-view-wrapper {
 
 /* Tabs in split-view-wrapper defaults */
 #tabbrowser-tabs tab-split-view-wrapper {
-  --tab-context-line-block-offset: var(--tab-context-line-split-view-block-offset);
   --split-view-wrapper-padding: round(var(--space-xsmall), env(hairline));
 
   display: grid;
@@ -3332,8 +3381,8 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
         width: 2px;
       }
 
-      /* Show the container icon in a round tinted background at the trailing
-         edge (next to the close button). */
+      /* Show the container icon at the trailing edge (next to the close
+         button). */
       @media -moz-pref("browser.nova.enabled") {
         /* Reserve room so the cropped label ends before the indicator. */
         padding-inline-end: calc(24px + var(--space-small));
@@ -3345,15 +3394,14 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
           width: 16px;
           height: 16px;
           padding: var(--space-xsmall);
-          border-radius: var(--border-radius-circle);
-          background-color: var(--identity-fill-tint);
+          background-color: transparent;
           background-image: var(--identity-icon);
           background-origin: content-box;
           background-repeat: no-repeat;
           background-position: center;
           background-size: 16px;
           -moz-context-properties: fill;
-          fill: var(--identity-fill-color);
+          fill: var(--identity-stroke-color);
         }
       }
     }

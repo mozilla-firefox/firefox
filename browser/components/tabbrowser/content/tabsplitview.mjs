@@ -159,6 +159,10 @@ export class MozTabSplitViewWrapper extends MozXULElement {
       this.#tabChangeObserver = new window.MutationObserver(mutations => {
         if (this.tabs.length) {
           this.hasActiveTab = this.tabs.some(tab => tab.selected);
+          this.toggleAttribute(
+            "hascontainertab",
+            this.tabs.some(tab => tab.hasAttribute("usercontextid"))
+          );
           this.tabs.forEach((tab, index) => {
             // Renumber tabs so that a11y tools can tell users that a given
             // tab is "1 of 2" in the split view, for example.

@@ -20,6 +20,7 @@ function resolveColor(className, spec) {
   if (className) {
     el.className = className;
   }
+  el.style.colorScheme = "light";
   el.style.color = spec;
   document.documentElement.appendChild(el);
   let computed = window.getComputedStyle(el).color;

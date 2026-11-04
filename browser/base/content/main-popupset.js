@@ -544,6 +544,16 @@ document.addEventListener(
         .openPopup(userContextIcons, "after_start", 0, 0, false, false, event);
     });
 
+    const userContextIndicatorMenu = document.getElementById(
+      "userContext-indicator-menu"
+    );
+    userContextIndicatorMenu.addEventListener("popupshowing", () => {
+      userContextIcons.setAttribute("open", "true");
+    });
+    userContextIndicatorMenu.addEventListener("popuphidden", () => {
+      userContextIcons.removeAttribute("open");
+    });
+
     const containerHistoryPopup = document.getElementById(
       "sidebar-history-context-menu-container-popup"
     );

@@ -70,12 +70,6 @@
   &[hidden] {
     display: none;
   }
-
-  @media -moz-pref("browser.nova.enabled") {
-    padding: var(--space-xxsmall) var(--space-small);
-    border-radius: var(--border-radius-circle);
-    background-color: var(--identity-fill-tint);
-  }
 }
 
 .tab-preview-container-icon {
@@ -91,7 +85,7 @@
   /* Non-nova shows name + icon; nova shows icon + name, matching the URL bar. */
   @media -moz-pref("browser.nova.enabled") {
     order: 1;
-    fill: var(--identity-fill-color);
+    fill: var(--identity-stroke-color);
   }
 }
 
@@ -103,7 +97,7 @@
 
   @media -moz-pref("browser.nova.enabled") {
     order: 2;
-    color: var(--identity-fill-color);
+    color: var(--identity-stroke-color);
   }
 }
 

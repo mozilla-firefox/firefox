@@ -753,10 +753,13 @@
       width: 14px;
       padding-inline: 4px;
       border-color: transparent;
-      background-color: var(--identity-fill-tint);
       background-image: var(--user-context-icon);
       background-size: 14px;
-      fill: var(--identity-fill-color);
+      fill: var(--identity-stroke-color);
+
+      .urlbarView-row[selected] & {
+        fill: currentColor;
+      }
 
       /* Chiclet height is determined by its text content. User-context chiclets
          don't have text, so use a nbsp. */

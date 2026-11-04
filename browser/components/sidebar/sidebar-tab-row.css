@@ -113,17 +113,8 @@
   fill: var(--identity-icon-color);
   margin-inline-end: 8px;
 
-  /* Match the container context-menu items: fill-color icon inside a round
-     15% tinted background. */
   @media -moz-pref("browser.nova.enabled") {
-    box-sizing: content-box;
-    padding: var(--identity-icon-inset);
-    border-radius: var(--border-radius-circle);
-    background-color: var(--identity-fill-tint);
-    background-origin: content-box;
-    background-repeat: no-repeat;
-    background-position: center;
-    fill: var(--identity-fill-color);
+    fill: var(--identity-stroke-color);
   }
 }
 

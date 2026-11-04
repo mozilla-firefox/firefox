@@ -28,6 +28,6 @@ panel-item::part(label) {
 @media -moz-pref("browser.nova.enabled") {
   .select-option-icon,
   panel-item[icon]::part(button) {
-    fill: var(--identity-fill-color);
+    fill: var(--identity-stroke-color);
   }
 }

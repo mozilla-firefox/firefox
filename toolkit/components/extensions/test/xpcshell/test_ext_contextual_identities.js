@@ -121,7 +121,7 @@ add_task(async function test_contextualIdentities_supported_colors_and_icons() {
     // Independent anchors with known values, so a totally broken source of
     // truth can't make the equality checks above trivially pass.
     browser.test.assertTrue(
-      colors.some(c => c.color === "blue" && c.colorCode === "#5a87fd"),
+      colors.some(c => c.color === "blue" && c.colorCode === "#455fe7"),
       "blue is exposed with its expected color code"
     );
     browser.test.assertTrue(
