@@ -56,19 +56,11 @@ function fuzzyCompareLength(actual, expected, message, tolerance, expectFn) {
 }
 
 add_task(async () => {
-  // MOZ_HEADLESS is set in content processes with GTK regardless of the
-  // headless state of the parent process.  Check the parent state.
-  const headless = await SpecialPowers.spawnChrome([], function get_headless() {
-    return Services.env.get("MOZ_HEADLESS");
-  });
   // LookAndFeel::TextScaleFactor::FloatID is implemented only for WINNT and
   // GTK.  ui.textScaleFactor happens to scale CSS pixels on other platforms
   // but system font integration has not been implemented.
   const expectSuccess = AppConstants.MOZ_WIDGET_TOOLKIT == "windows" ||
-         (AppConstants.MOZ_WIDGET_TOOLKIT == "gtk" &&
-          // Headless GTK doesn't get system font sizes from the system, but
-          // uses sizes fixed in CSS pixels.
-          !headless);
+         AppConstants.MOZ_WIDGET_TOOLKIT == "gtk";
 
   async function setScaleAndPromiseFontSize(scale, element) {
     const prefPromise = SpecialPowers.pushPrefEnv({
