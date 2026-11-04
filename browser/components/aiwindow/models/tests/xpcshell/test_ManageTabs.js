@@ -108,6 +108,7 @@ add_task(async function test_manageTabsAction_confirmation_path_matches_tabs() {
         title: sanitizeUntrustedContent("Example"),
         userContextId: undefined,
         pinned: false,
+        inGroup: false,
         selected: false,
         iconSrc: `page-icon:${url1}`,
         checked: true,
@@ -122,6 +123,7 @@ add_task(async function test_manageTabsAction_confirmation_path_matches_tabs() {
         title: sanitizeUntrustedContent("Mozilla"),
         userContextId: undefined,
         pinned: false,
+        inGroup: false,
         selected: false,
         iconSrc: `page-icon:${url2}`,
         checked: true,
@@ -226,6 +228,7 @@ add_task(async function test_manageTabsAction_direct_close_path() {
         title: sanitizeUntrustedContent("Example"),
         userContextId: undefined,
         pinned: false,
+        inGroup: false,
         selected: false,
         iconSrc: `page-icon:${url}`,
         checked: true,
@@ -464,6 +467,75 @@ add_task(async function test_manageTabsAction_direct_group_skips_chat_tab() {
   }
 });
 
+function setupWindowWithChatTab(sandbox, url, chatTabState) {
+  const targetTab = createFakeTab(url, "Example A");
+  const chatTab = createFakeTab(
+    "chrome://browser/content/aiwindow/aiWindow.html",
+    "Smart Window"
+  );
+  const win = createFakeWindow([chatTab, targetTab], { selectedTab: chatTab });
+  Object.assign(chatTab, chatTabState, { documentGlobal: win });
+  setupBrowserWindowTracker(sandbox, win);
+  sandbox.stub(ToolUI, "findChatTab").returns(chatTab);
+  sandbox.stub(ToolUI, "registerTabKeys");
+}
+
+function requestGroupTabs(url, options = {}) {
+  return manageTabsAction(
+    {
+      action: GROUP_TABS,
+      validUrls: new Set([url]),
+      ask_confirmation: false,
+      label: "L",
+      toolCallId: "tool-call-1",
+      ...options,
+    },
+    makeConversation()
+  );
+}
+
+add_task(
+  async function test_manageTabsAction_requires_confirmation_for_pinned_chat_tab() {
+    const url = "https://example.com/a";
+    const sb = sinon.createSandbox();
+    try {
+      setupWindowWithChatTab(sb, url, { pinned: true });
+
+      const { uiData } = await requestGroupTabs(url, {
+        include_chat_tab: true,
+      });
+      Assert.equal(
+        uiData.uiType,
+        "tab-group-confirmation",
+        "Including a pinned chat tab requires confirmation"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
+
+add_task(
+  async function test_manageTabsAction_requires_confirmation_for_grouped_chat_tab() {
+    const url = "https://example.com/a";
+    const sb = sinon.createSandbox();
+    try {
+      setupWindowWithChatTab(sb, url, { group: {} });
+
+      const { uiData } = await requestGroupTabs(url, {
+        include_chat_tab: true,
+      });
+      Assert.equal(
+        uiData.uiType,
+        "tab-group-confirmation",
+        "Including a grouped chat tab requires confirmation"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
+
 add_task(async function test_manageTabsAction_marks_failed_tabs() {
   const sb = sinon.createSandbox();
   try {
@@ -622,6 +694,97 @@ add_task(async function test_manageTabsAction_skips_non_ai_windows() {
     sb.restore();
   }
 });
+
+add_task(
+  async function test_manageTabsAction_requires_confirmation_for_grouped_tab() {
+    const url = "https://example.com/a";
+    const sb = sinon.createSandbox();
+    try {
+      const grouped = createFakeTab(url, "Grouped");
+      grouped.group = {};
+      const other = createFakeTab("https://example.com/keep", "Keep");
+      setupBrowserWindowTracker(
+        sb,
+        createFakeWindow([grouped, other], { selectedTab: other })
+      );
+      sb.stub(ToolUI, "findChatTab").returns(null);
+      sb.stub(ToolUI, "registerTabKeys");
+
+      const { uiData } = await requestGroupTabs(url);
+      Assert.equal(
+        uiData.uiType,
+        "tab-group-confirmation",
+        "Grouping an already grouped tab requires confirmation"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
+
+add_task(
+  async function test_manageTabsAction_closes_grouped_tab_without_confirmation() {
+    const url = "https://example.com/a";
+    const sb = sinon.createSandbox();
+    try {
+      const grouped = createFakeTab(url, "Grouped");
+      grouped.group = {};
+      const other = createFakeTab("https://example.com/keep", "Keep");
+      setupBrowserWindowTracker(
+        sb,
+        createFakeWindow([grouped, other], { selectedTab: other })
+      );
+      sb.stub(ToolUI, "closeSelectedTabs").resolves({
+        operationIds: ["op-1"],
+        failedTabs: [],
+      });
+
+      const { uiData } = await manageTabsAction(
+        {
+          action: CLOSE_TABS,
+          validUrls: new Set([url]),
+          ask_confirmation: false,
+        },
+        makeConversation()
+      );
+      Assert.equal(
+        uiData.uiType,
+        "ai-action-result",
+        "Closing a grouped tab does not require confirmation"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
+
+add_task(
+  async function test_manageTabsAction_requires_confirmation_for_grouped_tab_in_other_window() {
+    const url = "https://example.com/a";
+    const sb = sinon.createSandbox();
+    try {
+      const topTab = createFakeTab("https://example.com/top", "Top");
+      const grouped = createFakeTab(url, "Grouped");
+      grouped.group = {};
+      const other = createFakeTab("https://example.com/keep", "Keep");
+      setupBrowserWindowTracker(sb, [
+        createFakeWindow([topTab], { selectedTab: topTab }),
+        createFakeWindow([grouped, other], { selectedTab: other }),
+      ]);
+      sb.stub(ToolUI, "findChatTab").returns(null);
+      sb.stub(ToolUI, "registerTabKeys");
+
+      const { uiData } = await requestGroupTabs(url);
+      Assert.equal(
+        uiData.uiType,
+        "tab-group-confirmation",
+        "Grouping a grouped tab of another window requires confirmation"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
 
 add_task(async function test_manageTabsAction_forces_confirmation_overrides() {
   const url1 = "https://example.com/a";

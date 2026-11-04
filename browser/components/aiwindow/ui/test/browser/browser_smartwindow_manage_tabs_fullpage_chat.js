@@ -615,3 +615,277 @@ add_task(async function test_closing_the_fullpage_chat_tab_gets_a_reply() {
     await BrowserTestUtils.closeWindow(win);
   }
 });
+
+/**
+ * Pins a tab through the context menu.
+ *
+ * @param {ChromeWindow} win
+ * @param {MozTabbrowserTab} tab
+ */
+async function pinTabFromContextMenu(win, tab) {
+  const menu = win.document.getElementById("tabContextMenu");
+  const shown = BrowserTestUtils.waitForPopupEvent(menu, "shown");
+  EventUtils.synthesizeMouseAtCenter(
+    tab,
+    { type: "contextmenu", button: 2 },
+    win
+  );
+  await shown;
+  const hidden = BrowserTestUtils.waitForPopupEvent(menu, "hidden");
+  menu.activateItem(win.document.getElementById("context_pinTab"));
+  await hidden;
+  await BrowserTestUtils.waitForMutationCondition(
+    tab,
+    { attributeFilter: ["pinned"] },
+    () => tab.pinned
+  );
+}
+
+/**
+ * Send a tab group request from the chat tab.
+ *
+ * @param {object} options
+ * @param {MockEngineManager} options.mockEngineManager
+ * @param {MozTabbrowserTab} options.chatTab
+ * @param {Array<string>} options.urls
+ * @returns {Promise<MozBrowser>} The browser containing the chat
+ */
+async function requestGroupTabs({ mockEngineManager, chatTab, urls }) {
+  const browser = chatTab.linkedBrowser;
+  await typeInSmartbar(browser, "hello");
+  await submitSmartbar(browser);
+  const conversation =
+    browser.contentDocument.querySelector("ai-window").conversation;
+  await triggerGetOpenTabsToolCall({
+    mockEngineManager,
+    conversation,
+    callId: "call_get_open_tabs",
+  });
+
+  const { respond } = await mockEngineManager.captureRequest({
+    purpose: "chat",
+  });
+  respond({
+    text: "",
+    tokens: null,
+    isPrompt: false,
+    toolCalls: [
+      {
+        id: "call_group_tabs",
+        function: {
+          name: "manage_tabs",
+          arguments: JSON.stringify({
+            action: "group_tabs",
+            ask_confirmation: false,
+            url_tokens: urls.map(
+              url => `§url_token: ${conversation.urlToToken.get(url)}§`
+            ),
+            label: "Tabs",
+          }),
+        },
+      },
+    ],
+  });
+
+  return getAIChatBrowser(browser);
+}
+
+/**
+ * Wait for the tab group card and confirm it.
+ *
+ * @param {MozBrowser} aichatBrowser
+ * @param {object} [options]
+ * @param {MozTabbrowserTab} [options.chatTab] - Chat tab to tick
+ */
+async function confirmTabGroup(aichatBrowser, { chatTab = null } = {}) {
+  if (chatTab) {
+    const inputCta = chatTab.linkedBrowser.contentDocument
+      .querySelector("ai-window")
+      .shadowRoot.querySelector("#ai-window-smartbar input-cta");
+    await BrowserTestUtils.waitForMutationCondition(
+      inputCta,
+      { attributeFilter: ["action"] },
+      () => inputCta.getAttribute("action") !== "stop"
+    );
+  }
+  await SpecialPowers.spawn(
+    aichatBrowser,
+    [chatTab && AIWINDOW_URL],
+    async chatUrl => {
+      const { shadowRoot } = content.document.querySelector("ai-chat-content");
+      await ContentTaskUtils.waitForMutationCondition(
+        shadowRoot,
+        { childList: true, subtree: true },
+        () => shadowRoot.querySelector("ai-website-confirmation")
+      );
+      const card = shadowRoot.querySelector("ai-website-confirmation");
+      await card.updateComplete;
+      if (chatUrl) {
+        const chatRow = Array.from(
+          card.shadowRoot.querySelectorAll("ai-website-select")
+        ).find(row => row.wrappedJSObject.url === chatUrl);
+        chatRow.shadowRoot
+          .querySelector("moz-checkbox")
+          .shadowRoot.querySelector("input")
+          .click();
+        await ContentTaskUtils.waitForCondition(
+          () => chatRow.wrappedJSObject.checked,
+          "The chat tab is checked"
+        );
+        await card.updateComplete;
+      }
+      card.shadowRoot.querySelector("moz-button[type='primary']").click();
+    }
+  );
+}
+
+/**
+ * Wait for the undo button and click it.
+ *
+ * @param {MozBrowser} aichatBrowser
+ */
+async function undoTabGroup(aichatBrowser) {
+  await SpecialPowers.spawn(aichatBrowser, [], async () => {
+    const { shadowRoot } = content.document.querySelector("ai-chat-content");
+    await ContentTaskUtils.waitForMutationCondition(
+      shadowRoot,
+      { childList: true, subtree: true },
+      () => shadowRoot.querySelector("ai-action-confirmation")
+    );
+    const card = shadowRoot.querySelector("ai-action-confirmation");
+    await card.updateComplete;
+    card.shadowRoot.querySelector(".action-confirmation-undo").click();
+  });
+}
+
+add_task(async function test_grouping_unpins_tabs_and_undo_pins_them_again() {
+  const mockEngineManager = new MockEngineManager();
+  const win = await openAIWindow();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+  const chatTab = win.gBrowser.selectedTab;
+
+  try {
+    const first = await server.openTab({ title: "Pinned tab" });
+    const second = await server.openTab({ title: "Other pinned tab" });
+    for (const tab of [first.tab, second.tab, chatTab]) {
+      await pinTabFromContextMenu(win, tab);
+    }
+    win.gBrowser.selectedTab = chatTab;
+
+    const aichatBrowser = await requestGroupTabs({
+      mockEngineManager,
+      chatTab,
+      urls: [first.url, second.url],
+    });
+    await confirmTabGroup(aichatBrowser, { chatTab });
+
+    await TestUtils.waitForCondition(
+      () => first.tab.group,
+      "The pinned tabs are grouped"
+    );
+    const groupTabs = first.tab.group.tabs;
+    Assert.equal(groupTabs.length, 3, "The group holds three tabs");
+    Assert.ok(
+      groupTabs.includes(second.tab) && groupTabs.includes(chatTab),
+      "The group holds the pinned tabs and the checked chat tab"
+    );
+    Assert.ok(
+      !first.tab.pinned && !second.tab.pinned && !chatTab.pinned,
+      "The grouped tabs are unpinned"
+    );
+
+    await undoTabGroup(aichatBrowser);
+
+    await TestUtils.waitForCondition(
+      () => first.tab.pinned && second.tab.pinned && chatTab.pinned,
+      "Undo pins the tabs again"
+    );
+    Assert.ok(
+      !first.tab.group && !second.tab.group && !chatTab.group,
+      "Undo ungroups the tabs"
+    );
+  } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
+    await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+  }
+});
+
+add_task(async function test_grouping_moves_grouped_tabs_and_undo_moves_back() {
+  const mockEngineManager = new MockEngineManager();
+  const win = await openAIWindow();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+  const chatTab = win.gBrowser.selectedTab;
+  Services.fog.testResetFOG();
+
+  try {
+    const grouped = await server.openTab({ title: "Grouped tab" });
+    const ungrouped = await server.openTab({ title: "Ungrouped tab" });
+    const kept = await server.openTab({ title: "Kept tab" });
+    const lone = await server.openTab({ title: "Lone tab" });
+    const oldGroup = win.gBrowser.addTabGroup([grouped.tab, kept.tab], {
+      label: "Old group",
+    });
+    const loneGroup = win.gBrowser.addTabGroup([lone.tab], {
+      label: "Lone group",
+    });
+    win.gBrowser.selectedTab = chatTab;
+
+    const aichatBrowser = await requestGroupTabs({
+      mockEngineManager,
+      chatTab,
+      urls: [grouped.url, lone.url, ungrouped.url],
+    });
+    await confirmTabGroup(aichatBrowser);
+
+    await TestUtils.waitForCondition(
+      () => ungrouped.tab.group,
+      "The ungrouped tab is grouped"
+    );
+    const [prompt] = Glean.smartWindow.browserActionPrompt.testGetValue();
+    Assert.equal(
+      prompt.extra.reason,
+      "grouped_tab",
+      "The card was shown for the grouped tabs"
+    );
+    const newGroup = ungrouped.tab.group;
+    Assert.notEqual(newGroup, oldGroup, "A new group is created");
+    Assert.equal(newGroup.tabs.length, 3, "The new group holds three tabs");
+    Assert.ok(
+      newGroup.tabs.includes(grouped.tab) && newGroup.tabs.includes(lone.tab),
+      "The grouped tabs moved into the new group"
+    );
+    Assert.deepEqual(
+      oldGroup.tabs,
+      [kept.tab],
+      "The old group keeps its other tab"
+    );
+    await TestUtils.waitForCondition(
+      () => !loneGroup.isConnected,
+      "The emptied group is removed"
+    );
+
+    await undoTabGroup(aichatBrowser);
+
+    await TestUtils.waitForCondition(
+      () => !ungrouped.tab.group,
+      "Undo ungroups the new group"
+    );
+    Assert.equal(grouped.tab.group, oldGroup, "Undo moves a tab back");
+    Assert.deepEqual(
+      [lone.tab.group.id, lone.tab.group.label, lone.tab.group.color],
+      [loneGroup.id, loneGroup.label, loneGroup.color],
+      "Undo recreates the removed group"
+    );
+  } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
+    await server.cleanup();
+    await BrowserTestUtils.closeWindow(win);
+  }
+});

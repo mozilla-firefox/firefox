@@ -1894,9 +1894,11 @@ smart_window:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037203
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2061465
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2078565
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2037203
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2061465
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2078565
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -1913,7 +1915,7 @@ smart_window:
         description: Type of prompt shown - disambiguation, batch_preview, or safety_confirmation
       reason:
         type: string
-        description: Why the prompt was shown - multiple_matches, low_confidence, batch_action, pinned_tab, active_tab, last_tab, user_action
+        description: Why the prompt was shown - multiple_matches, low_confidence, batch_action, pinned_tab, grouped_tab, active_tab, last_tab, user_action
       candidates:
         type: quantity
         unit: count

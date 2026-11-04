@@ -172,9 +172,12 @@ export class ToolUI {
     this.#tabKeysByToolCall.delete(toolCallId);
   }
 
-  static #getConfirmationReason(tabs) {
+  static #getConfirmationReason(tabs, actionType) {
     if (tabs.some(t => t.pinned)) {
       return "pinned_tab";
+    }
+    if (actionType === "group_tabs" && tabs.some(t => t.inGroup)) {
+      return "grouped_tab";
     }
     if (tabs.some(t => t.selected)) {
       return "active_tab";
@@ -925,8 +928,8 @@ export class ToolUI {
    * A tab group can only hold tabs from one window, so we skip the chat tab
    * if the group is being made in a different window. We also skip it if it
    * is in a split view, because adding it would move the whole split view and
-   * pull in the other tab too. The rest of the rules (pinned, already in a
-   * group, closing) are checked by TabManagementService instead.
+   * pull in the other tab too. A pinned or grouped chat tab also stays where it
+   * is. Closing tabs are checked by TabManagementService instead.
    *
    * @param {MozTabbrowserTab} [originTab] - The chat tab
    * @param {Array<MozTabbrowserTab>} groupTabs - Tabs already going into the group
@@ -939,6 +942,8 @@ export class ToolUI {
       originTab &&
       originTab.documentGlobal === groupWindow &&
       !originTab.splitview &&
+      !originTab.pinned &&
+      !originTab.group &&
       !groupTabs.includes(originTab)
     );
   }
@@ -980,9 +985,9 @@ export class ToolUI {
    * Drops the chat tab when it is the only tab left that could be grouped.
    *
    * The user asked for their own tabs to be grouped, so if all of those turn
-   * out to be pinned or already in a group, a group holding nothing but the
-   * chat tab is not what they wanted. Leaving it out means createTabGroup
-   * finds nothing to group and reports the failure itself.
+   * out to be closing, a group holding nothing but the chat tab is not what
+   * they wanted. Leaving it out means createTabGroup finds nothing to group and
+   * reports the failure itself.
    *
    * A selection of just the chat tab is left alone, since that is a real
    * choice rather than everything else falling away.
@@ -1124,9 +1129,9 @@ export class ToolUI {
     // we have to add it ourselves.
     //
     // Only do that if one of the requested tabs can actually be grouped. If
-    // they are all pinned or already in a group, createTabGroup would drop
-    // them all and we would be left with a group holding just the chat tab,
-    // which is not what was asked for.
+    // they are all closing, createTabGroup would drop them all and we would
+    // be left with a group holding just the chat tab, which is not what was
+    // asked for.
     const canGroupARequestedTab = resolvedTabs.some(
       tab => !lazy.tabManagementService.getGroupingRejection(tab, win)
     );
@@ -1256,7 +1261,7 @@ export class ToolUI {
       return;
     }
     const tabs = toolUIData.properties?.tabs ?? [];
-    const reason = this.#getConfirmationReason(tabs);
+    const reason = this.#getConfirmationReason(tabs, actionType);
 
     lazy.ToolUITelemetry.recordBrowserActionPrompt({
       ...telemetryData,

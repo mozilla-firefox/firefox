@@ -795,22 +795,15 @@ add_task(async function test_create_tab_group_with_invalid_tabs() {
   });
 
   Assert.ok(result.success, "Should succeed with valid tabs");
-  Assert.equal(result.group.tabCount, 1, "Should only group the valid tab");
-  Assert.equal(result.failedTabs.length, 3, "Should have 3 failed tabs");
-
-  // Check failure reasons
-  const failureReasons = result.failedTabs.map(f => f.reason);
-  Assert.ok(
-    failureReasons.includes("pinned-tab"),
-    "Should have pinned-tab failure"
+  Assert.equal(
+    result.group.tabCount,
+    3,
+    "Should group the pinned and grouped tabs"
   );
-  Assert.ok(
-    failureReasons.includes("already-grouped"),
-    "Should have already-grouped failure"
-  );
-  Assert.ok(
-    failureReasons.includes("tab-closing"),
-    "Should have tab-closing failure"
+  Assert.deepEqual(
+    result.failedTabs.map(f => f.reason),
+    ["tab-closing"],
+    "Should only fail the closing tab"
   );
 });
 
@@ -820,18 +813,11 @@ add_task(async function test_create_tab_group_with_invalid_tabs() {
 add_task(async function test_create_tab_group_no_valid_tabs() {
   const mockWindow = createMockWindow();
 
-  const pinnedTab = createMockTab(
-    "https://pinned.com",
-    "Pinned",
-    0,
-    false,
-    null,
-    true
-  );
-  pinnedTab.documentGlobal = mockWindow;
+  const closingTab = createMockTab("https://closing.com", "Closing", 0, true);
+  closingTab.documentGlobal = mockWindow;
 
   const result = await tabManagementService.createTabGroup({
-    tabs: [pinnedTab],
+    tabs: [closingTab],
     window: mockWindow,
     label: "Invalid Group",
   });

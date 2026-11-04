@@ -60,19 +60,29 @@ function findMatchingAIWindowTabs(validUrls) {
 
 /**
  * Returns true if the matched tabs require user confirmation before acting
- * (pinned/selected tabs, current tab, all tabs of the top AI window, or
- * untrusted input).
+ * (pinned/selected tabs, grouped tabs when grouping, current tab, all tabs of
+ * the top AI window, or untrusted input).
  *
  * @param {Array<object>} tabs - list of tabs to check
  * @param {object} topAIWin - the top active AI window
  * @param {object} securityProperties - The security properties of the conversation.
+ * @param {string} action - The tab action to take
  * @returns {boolean}
  */
-function shouldRequireUserConfirmation(tabs, topAIWin, securityProperties) {
+function shouldRequireUserConfirmation(
+  tabs,
+  topAIWin,
+  securityProperties,
+  action
+) {
   if (securityProperties?.untrustedInput) {
     return true;
   }
-  if (tabs.some(({ tab }) => tab.pinned === true)) {
+  if (
+    tabs.some(
+      ({ tab }) => tab.pinned === true || (action === GROUP_TABS && tab.group)
+    )
+  ) {
     return true;
   }
   if (tabs.some(({ tab, win }) => win.gBrowser.selectedTab === tab)) {
@@ -108,12 +118,13 @@ async function runManageTabsFlow(state, toolHandler) {
     return gatheredResult.earlyResult;
   }
 
-  const needsConfirmation =
+  let needsConfirmation =
     state.askConfirmation ||
     shouldRequireUserConfirmation(
       gatheredResult.matchedTabs,
       gatheredResult.topAIWin,
-      state.conversation.securityProperties
+      state.conversation.securityProperties,
+      toolHandler.action
     );
 
   if (
@@ -121,6 +132,11 @@ async function runManageTabsFlow(state, toolHandler) {
     (needsConfirmation || state.includeChatTab)
   ) {
     offerChatTab(gatheredResult, state.conversation, state.includeChatTab);
+    // Moving a pinned or grouped chat tab needs confirmation
+    const chatTab = gatheredResult.tabs.find(tab => tab.isChatTab);
+    if (chatTab?.pinned || chatTab?.inGroup) {
+      needsConfirmation = true;
+    }
   }
 
   if (needsConfirmation) {
@@ -225,6 +241,7 @@ function offerChatTab(gathered, conversation, checked) {
     title: sanitizeUntrustedContent(chatTab.label),
     userContextId: chatTab.userContextId,
     pinned: chatTab.pinned,
+    inGroup: !!chatTab.group,
     selected: chatTab.documentGlobal?.gBrowser?.selectedTab === chatTab,
     iconSrc: "",
     checked,
@@ -265,6 +282,7 @@ async function gatherTabs(validUrls, baseTelemetryInfo) {
       title: sanitizeUntrustedContent(tab.label),
       userContextId: tab.userContextId,
       pinned: tab.pinned,
+      inGroup: !!tab.group,
       selected: win.gBrowser.selectedTab === tab,
       iconSrc: url ? `page-icon:${url}` : "",
       checked: true,
