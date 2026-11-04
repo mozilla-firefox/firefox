@@ -25,12 +25,14 @@ class BaselineSnapshot {
   uint32_t baseWarmUpThreshold_;
   bool isIonCompileable_;
   bool compileDebugInstrumentation_;
+  bool compileDebugModeOSRResumeTargets_;
 
  public:
   BaselineSnapshot(JSScript* script,
                    GlobalLexicalEnvironmentObject* globalLexical,
                    JSObject* globalThis, uint32_t baseWarmUpThreshold,
-                   bool isIonCompileable, bool compileDebugInstrumentation)
+                   bool isIonCompileable, bool compileDebugInstrumentation,
+                   bool compileDebugModeOSRResumeTargets)
       : script_(script),
         globalLexical_(globalLexical),
         globalThis_(globalThis),
@@ -39,7 +41,8 @@ class BaselineSnapshot {
         nargs_(script->function() ? script->function()->nargs() : 0),
         baseWarmUpThreshold_(baseWarmUpThreshold),
         isIonCompileable_(isIonCompileable),
-        compileDebugInstrumentation_(compileDebugInstrumentation) {
+        compileDebugInstrumentation_(compileDebugInstrumentation),
+        compileDebugModeOSRResumeTargets_(compileDebugModeOSRResumeTargets) {
     if (script->needsFunctionEnvironmentObjects()) {
       auto [callObjectTemplate, namedLambdaTemplate] =
           script->jitScript()->functionEnvironmentTemplates(script->function());
@@ -63,6 +66,9 @@ class BaselineSnapshot {
   bool compileDebugInstrumentation() const {
     return compileDebugInstrumentation_;
   }
+  bool compileDebugModeOSRResumeTargets() const {
+    return compileDebugModeOSRResumeTargets_;
+  }
   void trace(JSTracer* trc);
 };
 
@@ -74,9 +80,11 @@ class OffThreadBaselineSnapshot
                             GlobalLexicalEnvironmentObject* globalLexical,
                             JSObject* globalThis, uint32_t baseWarmUpThreshold,
                             bool isIonCompileable,
-                            bool compileDebugInstrumentation)
+                            bool compileDebugInstrumentation,
+                            bool compileDebugModeOSRResumeTargets)
       : BaselineSnapshot(script, globalLexical, globalThis, baseWarmUpThreshold,
-                         isIonCompileable, compileDebugInstrumentation) {}
+                         isIonCompileable, compileDebugInstrumentation,
+                         compileDebugModeOSRResumeTargets) {}
   explicit OffThreadBaselineSnapshot(BaselineSnapshot other)
       : BaselineSnapshot(other) {}
 
