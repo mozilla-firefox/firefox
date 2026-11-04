@@ -1673,7 +1673,7 @@ bool BaselineCompilerCodeGen::emitWarmUpCounterIncrement() {
   jsbytecode* pc = handler.pc();
   if (JSOp(*pc) == JSOp::LoopHead) {
     uint32_t pcOffset = script->pcToOffset(pc);
-    uint32_t nativeOffset = masm.currentOffset();
+    uint32_t nativeOffset = masm.indirectTarget(TargetKind::Jump).offset();
     if (!handler.osrEntries().emplaceBack(pcOffset, nativeOffset)) {
       return false;
     }
@@ -7018,6 +7018,7 @@ template <typename Handler>
 bool BaselineCodeGen<Handler>::emitPrologue() {
   AutoCreatedBy acb(masm, "BaselineCodeGen<Handler>::emitPrologue");
 
+  masm.indirectTarget(TargetKind::Call);
 #ifdef JS_USE_LINK_REGISTER
   // Push link register from generateEnterJIT()'s BLR.
   masm.pushRegs(LinkRegister, FramePointer);
@@ -7088,7 +7089,7 @@ bool BaselineCodeGen<Handler>::emitPrologue() {
     return false;
   }
 
-  warmUpCheckPrologueOffset_ = CodeOffset(masm.currentOffset());
+  warmUpCheckPrologueOffset_ = masm.indirectTarget(TargetKind::Jump);
 
   return true;
 }
@@ -7164,7 +7165,7 @@ bool BaselineCompiler::emitBody() {
     if (info->hasResumeOffset) {
       frame.assertSyncedStack();
       uint32_t pcOffset = script->pcToOffset(handler.pc());
-      uint32_t nativeOffset = masm.currentOffset();
+      uint32_t nativeOffset = masm.indirectTarget(TargetKind::Jump).offset();
       if (!resumeOffsetEntries_.emplaceBack(pcOffset, nativeOffset)) {
         return false;
       }
@@ -7218,7 +7219,7 @@ bool BaselineInterpreterGenerator::emitICBailoutStub() {
 
   Label icReturn;
   icReturn.bind(handler.takeICReturnOffset());
-  uint32_t offset = masm.currentOffset();
+  uint32_t offset = masm.indirectTarget(TargetKind::Jump).offset();
   // The bailoutTail jumps here when performing bailout stack
   // reconstruction. The Baseline frame has been rebuilt.
   // Only the return address remains to be pushed.
@@ -7317,23 +7318,23 @@ bool BaselineInterpreterGenerator::emitInterpreterLoop() {
 
   // Emit code for each bytecode op.
   Label opLabels[JSOP_LIMIT];
-#define EMIT_OP(OP, ...)                                           \
-  {                                                                \
-    AutoCreatedBy acb(masm, "op=" #OP);                            \
-    perfSpewer_.recordOffset(masm, JSOp::OP);                      \
-    masm.bind(&opLabels[uint8_t(JSOp::OP)]);                       \
-    handler.setCurrentOp(JSOp::OP);                                \
-    if (!this->emit_##OP()) {                                      \
-      return false;                                                \
-    }                                                              \
-    if (!opEpilogue(JSOp::OP, JSOpLength_##OP)) {                  \
-      return false;                                                \
-    }                                                              \
-    if (BytecodeOpHasIC(JSOp::OP) && IsIonInlinableOp(JSOp::OP) && \
-        !this->emitICBailoutStub()) {                              \
-      return false;                                                \
-    }                                                              \
-    handler.resetCurrentOp();                                      \
+#define EMIT_OP(OP, ...)                                                     \
+  {                                                                          \
+    AutoCreatedBy acb(masm, "op=" #OP);                                      \
+    perfSpewer_.recordOffset(masm, JSOp::OP);                                \
+    masm.bindIndirectTarget(&opLabels[uint8_t(JSOp::OP)], TargetKind::Jump); \
+    handler.setCurrentOp(JSOp::OP);                                          \
+    if (!this->emit_##OP()) {                                                \
+      return false;                                                          \
+    }                                                                        \
+    if (!opEpilogue(JSOp::OP, JSOpLength_##OP)) {                            \
+      return false;                                                          \
+    }                                                                        \
+    if (BytecodeOpHasIC(JSOp::OP) && IsIonInlinableOp(JSOp::OP) &&           \
+        !this->emitICBailoutStub()) {                                        \
+      return false;                                                          \
+    }                                                                        \
+    handler.resetCurrentOp();                                                \
   }
   FOR_EACH_OPCODE(EMIT_OP)
 #undef EMIT_OP
@@ -7341,24 +7342,25 @@ bool BaselineInterpreterGenerator::emitInterpreterLoop() {
   // External entry point to start interpreting bytecode ops. This is used for
   // things like exception handling and OSR. DebugModeOSR patches JIT frames to
   // return here from the DebugTrapHandler.
+  interpretOpOffset_ = masm.indirectTarget(TargetKind::Jump).offset();
   masm.bind(handler.interpretOpLabel());
-  interpretOpOffset_ = masm.currentOffset();
   restoreInterpreterPCReg();
   masm.jump(handler.interpretOpWithPCRegLabel());
 
   // Second external entry point: this skips the debug trap for the first op
   // and is used by OSR.
-  interpretOpNoDebugTrapOffset_ = masm.currentOffset();
+  interpretOpNoDebugTrapOffset_ =
+      masm.indirectTarget(TargetKind::Jump).offset();
   restoreInterpreterPCReg();
   masm.jump(&interpretOpAfterDebugTrap);
 
   // External entry point for Ion prologue bailouts.
-  bailoutPrologueOffset_ = CodeOffset(masm.currentOffset());
+  bailoutPrologueOffset_ = masm.indirectTarget(TargetKind::Jump);
   restoreInterpreterPCReg();
   masm.jump(&bailoutPrologue_);
 
   // External entry point for Ion resume prologue bailouts.
-  bailoutResumePrologueOffset_ = CodeOffset(masm.currentOffset());
+  bailoutResumePrologueOffset_ = masm.indirectTarget(TargetKind::Jump);
   restoreInterpreterPCReg();
   masm.moveToStackPtr(FramePointer);
   masm.subFromStackPtr(Imm32(BaselineFrame::Size()));
