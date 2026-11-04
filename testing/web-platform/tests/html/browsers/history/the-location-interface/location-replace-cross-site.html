@@ -155,4 +155,24 @@ promise_test(async t => {
   assert_equals(data.historyLength, historyLength + 1);
   assert_equals(data.navigationType, "push");
 }, "Setting location.href of a cross-site popup");
+
+promise_test(async t => {
+  const iframe = document.createElement("iframe");
+  const loading = new Promise(resolve => addEventListener("message", function listener(event) {
+    if (event.source !== iframe.contentWindow || event.data.type !== "report" || !event.data.loading)
+      return;
+    removeEventListener("message", listener);
+    resolve();
+  }));
+  iframe.src = uniqueURL(crossSiteHelper, "slow");
+  document.body.append(iframe);
+  t.add_cleanup(() => iframe.remove());
+  await loading;
+  const historyLength = history.length;
+  const url = uniqueURL(crossSiteHelper, "iframe-navigated-while-loading");
+  const report = reportOf(url);
+  iframe.contentWindow.location.href = url;
+  await report;
+  assert_equals(history.length, historyLength);
+}, "Setting location.href of a cross-site iframe that is not completely loaded");
 </script>
