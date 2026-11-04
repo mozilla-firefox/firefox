@@ -88,6 +88,8 @@ BaselineCompilerHandler::BaselineCompilerHandler(MacroAssembler& masm,
       icEntryIndex_(0),
       baseWarmUpThreshold_(snapshot->baseWarmUpThreshold()),
       compileDebugInstrumentation_(snapshot->compileDebugInstrumentation()),
+      compileDebugModeOSRResumeTargets_(
+          snapshot->compileDebugModeOSRResumeTargets()),
       ionCompileable_(snapshot->isIonCompileable()) {
 }
 
@@ -226,6 +228,16 @@ void BaselineCompilerCodeGen::ensureDebugModeOSRPointSpace() {
 
 template <>
 void BaselineInterpreterCodeGen::ensureDebugModeOSRPointSpace() {}
+
+template <typename Handler>
+void BaselineCodeGen<Handler>::emitDebugModeOSRResumeTarget(
+    RetAddrEntry::Kind kind, uint32_t returnOffset) {
+  if (handler.shouldEmitDebugModeOSRResumeTarget(kind)) {
+    mozilla::DebugOnly<uint32_t> targetOffset =
+        masm.indirectTarget(TargetKind::Jump).offset();
+    MOZ_ASSERT_IF(!masm.oom(), targetOffset == returnOffset);
+  }
+}
 
 bool BaselineInterpreterHandler::recordCallRetAddr(RetAddrEntry::Kind kind,
                                                    uint32_t retOffset) {
@@ -812,6 +824,7 @@ bool BaselineCompilerCodeGen::emitNextIC() {
 
   CodeOffset returnOffset;
   EmitCallIC(masm, &returnOffset);
+  emitDebugModeOSRResumeTarget(kind, returnOffset.offset());
 
   return handler.recordCallRetAddr(kind, returnOffset.offset());
 }
@@ -929,6 +942,7 @@ bool BaselineCodeGen<Handler>::callVMInternal(VMFunctionId id,
 
   // Perform the call.
   uint32_t callOffset = masm.callJit(code);
+  emitDebugModeOSRResumeTarget(kind, callOffset);
 
   // Pop arguments from framePushed.
   masm.implicitPop(argSize);
@@ -6759,6 +6773,7 @@ bool BaselineCodeGen<Handler>::emit_Resume() {
   // Call the callee's JIT code. Its prologue sees the descriptor bit and
   // dispatches to the resume point.
   uint32_t callOffset = masm.callJit(code);
+  emitDebugModeOSRResumeTarget(RetAddrEntry::Kind::IC, callOffset);
 
   // Record the return address so the return offset -> pc mapping works.
   if (!handler.recordCallRetAddr(RetAddrEntry::Kind::IC, callOffset)) {
