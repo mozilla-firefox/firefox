@@ -2,6 +2,9 @@ FROM  $DOCKER_IMAGE_PARENT
 LABEL maintainer="Andrew Halberstadt <ahal@mozilla.com>"
 
 VOLUME /builds/worker/artifacts
+VOLUME /builds/worker/.task-cache/uv
+
+COPY --from=docker.io/astral/uv:0.13.4 /uv /uvx /bin/
 
 RUN chown -R worker: /builds/worker
 

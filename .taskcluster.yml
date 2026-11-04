@@ -219,7 +219,8 @@ tasks:
                                 GECKO_HEAD_REF: '${push.revision}'
                                 GECKO_HEAD_REV: '${push.revision}'
                                 HG_STORE_PATH: /builds/worker/checkouts/hg-store
-                                TASKCLUSTER_CACHES: /builds/worker/checkouts
+                                UV_CACHE_DIR: /builds/worker/.task-cache/uv
+                                TASKCLUSTER_CACHES: /builds/worker/checkouts;/builds/worker/.task-cache/uv
                                 TASKCLUSTER_VOLUMES: /builds/worker/artifacts
                                 MOZ_UPLOAD_DIR: /builds/worker/artifacts
                                 MOZ_AUTOMATION: '1'
@@ -238,6 +239,7 @@ tasks:
 
                       cache:
                           "${trustDomain}-level-${repository.level}-checkouts-sparse-v4": /builds/worker/checkouts
+                          "${trustDomain}-level-${repository.level}-decision-uv-v1": /builds/worker/.task-cache/uv
 
                       features:
                           taskclusterProxy: true
