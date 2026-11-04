@@ -315,13 +315,13 @@ class RenderThread final {
   ///
   /// Can only be called from the render thread.
   WebRenderProgramCache* GetProgramCache() {
-    MOZ_ASSERT(IsInRenderThread());
+    MOZ_RELEASE_ASSERT(IsInRenderThread());
     return mProgramCache.get();
   }
 
   /// Can only be called from the render thread.
   WebRenderShaders* GetShaders() {
-    MOZ_ASSERT(IsInRenderThread());
+    MOZ_RELEASE_ASSERT(IsInRenderThread());
     return mShaders.get();
   }
 

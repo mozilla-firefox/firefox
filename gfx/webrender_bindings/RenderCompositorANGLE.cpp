@@ -180,7 +180,7 @@ HWND RenderCompositorANGLE::GetCompositorHwnd() {
     return mWidget->AsWindows()->GetCompositorHwnd();
   }
 
-  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_RELEASE_ASSERT(XRE_IsParentProcess());
   // When GPU process does not exist, we do not need to use compositor window.
   return mWidget->AsWindows()->GetHwnd();
 }

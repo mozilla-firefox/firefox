@@ -68,7 +68,7 @@ void OMTASampler::Sample(const wr::WrWindowId& aWindowId,
 }
 
 void OMTASampler::SetSampleTime(const TimeStamp& aSampleTime) {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
 
   const bool hasAnimations = HasAnimations();
 
@@ -82,14 +82,14 @@ void OMTASampler::SetSampleTime(const TimeStamp& aSampleTime) {
 }
 
 void OMTASampler::ResetPreviousSampleTime() {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   MutexAutoLock lock(mSampleTimeLock);
 
   mPreviousSampleTime = TimeStamp();
 }
 
 void OMTASampler::Sample(wr::TransactionWrapper& aTxn) {
-  MOZ_ASSERT(IsSamplerThread());
+  MOZ_RELEASE_ASSERT(IsSamplerThread());
 
   // If we are in test mode, don't sample with the current time stamp, it will
   // skew cached animation values.
@@ -119,7 +119,7 @@ void OMTASampler::Sample(wr::TransactionWrapper& aTxn) {
 
 WrAnimations OMTASampler::SampleAnimations(const TimeStamp& aPreviousSampleTime,
                                            const TimeStamp& aSampleTime) {
-  MOZ_ASSERT(IsSamplerThread());
+  MOZ_RELEASE_ASSERT(IsSamplerThread());
 
   MutexAutoLock lock(mStorageLock);
 
@@ -129,14 +129,14 @@ WrAnimations OMTASampler::SampleAnimations(const TimeStamp& aPreviousSampleTime,
 }
 
 OMTAValue OMTASampler::GetOMTAValue(const uint64_t& aId) const {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   MutexAutoLock lock(mStorageLock);
 
   return mAnimStorage->GetOMTAValue(aId);
 }
 
 void OMTASampler::SampleForTesting(const Maybe<TimeStamp>& aTestingSampleTime) {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
 
   TimeStamp sampleTime;
   TimeStamp previousSampleTime;
@@ -163,14 +163,14 @@ void OMTASampler::SampleForTesting(const Maybe<TimeStamp>& aTestingSampleTime) {
 void OMTASampler::SetAnimations(
     uint64_t aId, const LayersId& aLayersId,
     const nsTArray<layers::Animation>& aAnimations) {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   MutexAutoLock lock(mStorageLock);
   MutexAutoLock timeLock(mSampleTimeLock);
   mAnimStorage->SetAnimations(aId, aLayersId, aAnimations, mPreviousSampleTime);
 }
 
 bool OMTASampler::HasAnimations() const {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   MutexAutoLock lock(mStorageLock);
 
   return mAnimStorage->HasAnimations();
@@ -178,7 +178,7 @@ bool OMTASampler::HasAnimations() const {
 
 void OMTASampler::ClearActiveAnimations(
     std::unordered_map<uint64_t, wr::WrEpoch>& aActiveAnimations) {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   MutexAutoLock lock(mStorageLock);
   for (const auto& id : aActiveAnimations) {
     mAnimStorage->ClearById(id.first);
@@ -189,7 +189,7 @@ void OMTASampler::RemoveEpochDataPriorTo(
     std::queue<CompositorAnimationIdsForEpoch>& aCompositorAnimationsToDelete,
     std::unordered_map<uint64_t, wr::WrEpoch>& aActiveAnimations,
     const wr::WrEpoch& aRenderedEpoch) {
-  MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
   MutexAutoLock lock(mStorageLock);
 
   while (!aCompositorAnimationsToDelete.empty()) {

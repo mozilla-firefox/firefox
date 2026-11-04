@@ -35,7 +35,7 @@ RenderAndroidSurfaceTextureHost::RenderAndroidSurfaceTextureHost(
 }
 
 RenderAndroidSurfaceTextureHost::~RenderAndroidSurfaceTextureHost() {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
   MOZ_COUNT_DTOR_INHERITED(RenderAndroidSurfaceTextureHost, RenderTextureHost);
   // The SurfaceTexture gets destroyed when its use count reaches zero.
   if (mSurfTex) {
@@ -132,7 +132,7 @@ void RenderAndroidSurfaceTextureHost::PrepareForUse() {
   // than once, it causes hang on puglish side. And UpdateTexImage needs to
   // be called on render thread, since the SurfaceTexture is consumed on render
   // thread.
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
   MOZ_ASSERT(mPrepareStatus == STATUS_NONE);
 
   if (mContinuousUpdate || !mSurfTex) {
@@ -151,7 +151,7 @@ void RenderAndroidSurfaceTextureHost::PrepareForUse() {
 }
 
 void RenderAndroidSurfaceTextureHost::NotifyForUse() {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
 
   if (mPrepareStatus == STATUS_NONE) {
     // This happens either for RemoteTextureHost or when we lose a race to call
@@ -176,7 +176,7 @@ void RenderAndroidSurfaceTextureHost::NotifyForUse() {
 }
 
 void RenderAndroidSurfaceTextureHost::NotifyNotUsed() {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
 
   if (!mSurfTex) {
     MOZ_ASSERT(mPrepareStatus == STATUS_NONE);

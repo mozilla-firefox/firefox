@@ -174,7 +174,7 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
       RefPtr<nsIRunnable> runnable = NS_NewRunnableFunction(
           "WebRenderImageHost::UseRemoteTexture",
           [self = std::move(self), aInfo]() {
-            MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());
+            MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
 
             if (self->mPendingRemoteTextureWrappers.empty()) {
               return;

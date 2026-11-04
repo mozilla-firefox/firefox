@@ -137,7 +137,7 @@ bool WebRenderLayerManager::Initialize(
 void WebRenderLayerManager::Destroy() { DoDestroy(/* aIsSync */ false); }
 
 void WebRenderLayerManager::DoDestroy(bool aIsSync) {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   if (IsDestroyed()) {
     return;

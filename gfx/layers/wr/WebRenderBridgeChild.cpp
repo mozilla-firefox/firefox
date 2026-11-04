@@ -35,7 +35,7 @@ WebRenderBridgeChild::WebRenderBridgeChild(const wr::PipelineId& aPipelineId)
       mFontInstanceKeysDeleted(0) {}
 
 WebRenderBridgeChild::~WebRenderBridgeChild() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mDestroyed);
 }
 
@@ -527,7 +527,7 @@ void WebRenderBridgeChild::EndClearCachedResources() {
 void WebRenderBridgeChild::SetWebRenderLayerManager(
     WebRenderLayerManager* aManager) {
   MOZ_ASSERT(aManager && !mManager);
-  MOZ_ASSERT(NS_IsMainThread() || !XRE_IsContentProcess());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread() || !XRE_IsContentProcess());
   mManager = aManager;
 }
 
@@ -539,7 +539,7 @@ ipc::IShmemAllocator* WebRenderBridgeChild::GetShmemAllocator() {
 }
 
 RefPtr<KnowsCompositor> WebRenderBridgeChild::GetForMedia() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   // Ensure device initialization for video playback unless they are all remote.
   // The devices are lazily initialized with WebRender to reduce memory usage.

@@ -33,7 +33,7 @@ RenderRootStateManager::GetWebRenderUserDataTable() {
 }
 
 wr::IpcResourceUpdateQueue& RenderRootStateManager::AsyncResourceUpdates() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   if (!mAsyncResourceUpdates) {
     mAsyncResourceUpdates.emplace(WrBridge());
@@ -63,7 +63,7 @@ void RenderRootStateManager::Destroy() {
 }
 
 void RenderRootStateManager::FlushAsyncResourceUpdates() {
-  MOZ_ASSERT(NS_IsMainThread());
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
 
   if (!mAsyncResourceUpdates) {
     return;

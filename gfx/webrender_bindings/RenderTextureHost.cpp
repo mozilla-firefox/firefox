@@ -27,7 +27,7 @@ void ActivateBindAndTexParameteri(gl::GLContext* aGL, GLenum aActiveTexture,
 
 void RenderTextureHostUsageInfo::OnVideoPresent(int aFrameId,
                                                 uint32_t aDurationMs) {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
 
   const auto maxPresentWaitDurationMs = 2;
   const auto maxSlowPresentCount = 5;
@@ -55,7 +55,7 @@ void RenderTextureHostUsageInfo::OnVideoPresent(int aFrameId,
 
 void RenderTextureHostUsageInfo::OnCompositorEndFrame(int aFrameId,
                                                       uint32_t aDurationMs) {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
 
   const auto maxCommitWaitDurationMs = 20;
   const auto maxSlowCommitCount = 5;
@@ -87,7 +87,7 @@ RenderTextureHost::RenderTextureHost() : mIsFromDRMSource(false) {
 }
 
 RenderTextureHost::~RenderTextureHost() {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
   MOZ_COUNT_DTOR(RenderTextureHost);
   if (mDestroyedCallback) {
     mDestroyedCallback();
@@ -117,7 +117,7 @@ void RenderTextureHost::Destroy() {
 RefPtr<RenderTextureHostUsageInfo> RenderTextureHost::GetOrMergeUsageInfo(
     const MutexAutoLock& aProofOfMapLock,
     RefPtr<RenderTextureHostUsageInfo> aUsageInfo) {
-  MOZ_ASSERT(layers::CompositorThreadHolder::IsInCompositorThread());
+  MOZ_RELEASE_ASSERT(layers::CompositorThreadHolder::IsInCompositorThread());
 
   if (mRenderTextureHostUsageInfo && aUsageInfo) {
     if (mRenderTextureHostUsageInfo == aUsageInfo) {
@@ -163,7 +163,7 @@ RefPtr<RenderTextureHostUsageInfo> RenderTextureHost::GetOrMergeUsageInfo(
 
 RefPtr<RenderTextureHostUsageInfo> RenderTextureHost::GetTextureHostUsageInfo(
     const MutexAutoLock& aProofOfMapLock) {
-  MOZ_ASSERT(RenderThread::IsInRenderThread());
+  MOZ_RELEASE_ASSERT(RenderThread::IsInRenderThread());
 
   return mRenderTextureHostUsageInfo;
 }
