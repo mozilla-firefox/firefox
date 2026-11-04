@@ -10,6 +10,8 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   Downloads: "resource://gre/modules/Downloads.sys.mjs",
   ExtensionUtils: "resource://gre/modules/ExtensionUtils.sys.mjs",
+  NetworkGeolocationCache:
+    "moz-src:///dom/system/NetworkGeolocationCache.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   ServiceWorkerCleanUp: "resource://gre/modules/ServiceWorkerCleanUp.sys.mjs",
 });
@@ -1857,6 +1859,30 @@ const PreflightCacheCleaner = {
   },
 };
 
+const GeolocationCacheCleaner = {
+  async deleteByPrincipal(_aPrincipal, aIsUserRequest) {
+    if (!aIsUserRequest) {
+      return;
+    }
+    await this.deleteAll();
+  },
+
+  async deleteBySite(
+    _aSchemelessSite,
+    _aOriginAttributesPattern,
+    aIsUserRequest
+  ) {
+    if (!aIsUserRequest) {
+      return;
+    }
+    await this.deleteAll();
+  },
+
+  async deleteAll() {
+    lazy.NetworkGeolocationCache.clear();
+  },
+};
+
 const IdentityCredentialStorageCleaner = {
   async deleteAll() {
     if (
@@ -2257,6 +2283,11 @@ const FLAGS_MAP = [
   {
     flag: Ci.nsIClearDataService.CLEAR_PREFLIGHT_CACHE,
     cleaners: [PreflightCacheCleaner],
+  },
+
+  {
+    flag: Ci.nsIClearDataService.CLEAR_GEOLOCATION_CACHE,
+    cleaners: [GeolocationCacheCleaner],
   },
 
   {

@@ -33,6 +33,8 @@ requesttimeoutfactor = 4  # Slow on Linux condprof
 
 ["test_fingerprinting_protection_state.js"]
 
+["test_geolocation_cache.js"]
+
 ["test_identity_credential_storage.js"]
 
 ["test_network_cache.js"]

@@ -256,6 +256,11 @@ interface nsIClearDataService : nsISupports
   const uint32_t CLEAR_DOM_QUOTA = 1 << 7;
 
   /**
+   * The NetworkGeolocationProvider request cache.
+   */
+  const uint32_t CLEAR_GEOLOCATION_CACHE = 1 << 8;
+
+  /**
    * DOM Push notifications
    */
   const uint32_t CLEAR_DOM_PUSH_NOTIFICATIONS = 1 << 9;
@@ -381,7 +386,8 @@ interface nsIClearDataService : nsISupports
    * Delete all the possible caches.
    */
   const uint32_t CLEAR_ALL_CACHES = CLEAR_NETWORK_CACHE | CLEAR_IMAGE_CACHE |
-    CLEAR_JS_CACHE | CLEAR_CSS_CACHE | CLEAR_PREFLIGHT_CACHE | CLEAR_HSTS | CLEAR_BFCACHE;
+    CLEAR_JS_CACHE | CLEAR_CSS_CACHE | CLEAR_PREFLIGHT_CACHE | CLEAR_HSTS | CLEAR_BFCACHE |
+    CLEAR_GEOLOCATION_CACHE;
 
   /**
    * Delete all DOM storages

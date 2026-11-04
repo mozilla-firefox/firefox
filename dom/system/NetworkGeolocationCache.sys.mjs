@@ -377,6 +377,15 @@ export const NetworkGeolocationCache = {
     gCachedResponse.store(location, wifiList);
   },
 
+  // Drops the cache, its file and the recorded network ID seed, for when the
+  // user clears cached data.
+  clear() {
+    // Do this to guarantee that any cache file we can access is cleared.
+    ensureCachedResponse();
+    gCachedResponse.clear();
+    Services.prefs.clearUserPref(CACHE_SEED_PREF);
+  },
+
   // Drops the in-memory cache so the next lookup reloads it from disk.
   async resetForTesting() {
     await gCachedResponse?.finalizeForTesting();
