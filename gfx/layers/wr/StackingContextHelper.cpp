@@ -4,6 +4,8 @@
 
 #include "mozilla/layers/StackingContextHelper.h"
 
+#include <cmath>
+
 #include "ActiveLayerTracker.h"
 #include "UnitTransforms.h"
 #include "mozilla/PresShell.h"
@@ -130,7 +132,7 @@ StackingContextHelper::StackingContextHelper(
     const StackingContextHelper& aParentSC, const ActiveScrolledRoot* aAsr,
     nsIFrame* aContainerFrame, nsDisplayItem* aContainerItem,
     wr::DisplayListBuilder& aBuilder, const wr::StackingContextParams& aParams,
-    const Maybe<wr::WrSpatialId>& aReferenceFrame,
+    const Maybe<DefinedReferenceFrame>& aReferenceFrame,
     const LayoutDeviceSize& aBoundsSize)
     : mBuilder(&aBuilder),
       mScale(1.0f, 1.0f),
@@ -141,11 +143,17 @@ StackingContextHelper::StackingContextHelper(
   // Compute scale for fallback rendering. We don't try to guess a scale for 3d
   // transformed items
 
+  // The transform this stacking context applies on top of its parent's, and
+  // whether mInheritedTransform composes with the parent's at all.
+  gfx::Matrix localTransform;
+  bool inheritsTransform = true;
+
   if (aParams.mBoundTransform) {
     gfx::Matrix transform2d;
     bool canDraw2D = aParams.mBoundTransform->CanDraw2D(&transform2d);
     if (canDraw2D && !aContainerFrame->Combines3DTransformWithAncestors()) {
       mInheritedTransform = transform2d * aParentSC.mInheritedTransform;
+      localTransform = transform2d;
 
       int32_t apd = aContainerFrame->PresContext()->AppUnitsPerDevPixel();
       nsRect r = LayoutDevicePixel::ToAppUnits(
@@ -164,6 +172,7 @@ StackingContextHelper::StackingContextHelper(
       // state does not carry over either.
       mScale = gfx::MatrixScales(1.0f, 1.0f);
       mInheritedTransform = gfx::Matrix::Scaling(1.f, 1.f);
+      inheritsTransform = false;
     }
 
     if (aParams.mAnimated) {
@@ -180,6 +189,7 @@ StackingContextHelper::StackingContextHelper(
     gfx::Matrix transform = gfx::Matrix::Scaling(resolution, resolution);
 
     mInheritedTransform = transform * aParentSC.mInheritedTransform;
+    localTransform = transform;
     mScale =
         ScaleFactor<UnknownUnits, UnknownUnits>(resolution) * aParentSC.mScale;
     mRasterScaleIsDegenerate = aParentSC.mRasterScaleIsDegenerate;
@@ -203,6 +213,7 @@ StackingContextHelper::StackingContextHelper(
         gfx::Matrix::Scaling(resolution.xScale, resolution.yScale);
 
     mInheritedTransform = transform * aParentSC.mInheritedTransform;
+    localTransform = transform;
     mScale = aParentSC.mScale * resolution;
     mRasterScaleIsDegenerate = aParentSC.mRasterScaleIsDegenerate;
 
@@ -222,11 +233,37 @@ StackingContextHelper::StackingContextHelper(
   auto rasterSpace = wr::RasterSpace::Screen();
 
   MOZ_ASSERT(!aParams.clip.IsNone());
-  mBuilder->PushStackingContext(aParams, rasterSpace, aReferenceFrame);
-  mReferenceFrameId = aReferenceFrame;
+  if (aReferenceFrame) {
+    mReferenceFrameId = Some(aReferenceFrame->mId);
+  }
+  mBuilder->PushStackingContext(aParams, rasterSpace, mReferenceFrameId);
 
-  if (mReferenceFrameId) {
-    mSpaceAndClipChainHelper.emplace(aBuilder, mReferenceFrameId.ref());
+  if (aReferenceFrame) {
+    mSpaceAndClipChainHelper.emplace(aBuilder, aReferenceFrame->mId);
+
+    // WebRender applies the frame's transform about its origin. Include it so
+    // that mInheritedTransform maps into the space WebRender snaps in, as the
+    // sub-pixel phase of the origin decides how content is rounded.
+    if (inheritsTransform) {
+      mInheritedTransform =
+          localTransform *
+          gfx::Matrix::Translation(aReferenceFrame->mOrigin.x,
+                                   aReferenceFrame->mOrigin.y) *
+          aParentSC.mInheritedTransform;
+
+      // WebRender rounds the accumulated device offset of a snapping frame
+      // with a scale and offset transform to a whole device pixel, after
+      // quantizing it to remove float noise.
+      if (aReferenceFrame->mShouldSnap && mInheritedTransform._12 == 0.0f &&
+          mInheritedTransform._21 == 0.0f) {
+        auto snap = [](float aOffset) {
+          constexpr float kQuantum = 1.0f / 128.0f;
+          return std::round(std::round(aOffset / kQuantum) * kQuantum);
+        };
+        mInheritedTransform._31 = snap(mInheritedTransform._31);
+        mInheritedTransform._32 = snap(mInheritedTransform._32);
+      }
+    }
   }
 
   mAffectsClipPositioning = mReferenceFrameId.isSome();

@@ -71,12 +71,20 @@ skip-if(Android) == chrome://reftest/content/image/moz-broken-matching-lazy-load
 
 == img-invalidation-local-transform-1.html img-invalidation-local-transform-1-ref.html
 
-# An image under a reference frame whose origin is not on a device pixel is
-# rasterized a device pixel taller than the rect it snaps to. WebRender draws
-# that texture 1:1 from the snapped origin and clips the surplus rather than
-# resampling the whole image to fit; the reference is that raster, on the grid,
-# clipped to the snapped height (bug 2070683).
-pref(layout.disable-pixel-alignment,true) pref(layout.css.devPixelsPerPx,"1.0") == image-refframe-fractional-raster-1.html?100.6,0 image-fractional-raster-1-ref.html?101,201,200
+# An image under a reference frame whose origin is not on a device pixel must
+# be rasterized at the size of the rect it snaps to: WebRender snaps it with the
+# frame's origin composed in, so the raster size has to be picked with it too.
+# Picked in the frame's local space it would come out a device pixel taller,
+# and as the origin's phase changes, e.g. under a transform animated from
+# script, the image would change shape (bugs 2070683 and 2086864). That is
+# where WebRender snaps to, so the pairing only holds on the WebRender path.
+skip-if(useDrawSnapshot) pref(layout.disable-pixel-alignment,true) pref(layout.css.devPixelsPerPx,"1.0") == image-refframe-fractional-raster-1.html?100.6,0 image-fractional-raster-1-ref.html?101,200,200
+skip-if(useDrawSnapshot) pref(layout.disable-pixel-alignment,true) pref(layout.css.devPixelsPerPx,"1.0") == image-refframe-nested-fractional-raster-1.html image-fractional-raster-1-ref.html?101,200,200
+
+# The origin of an outer svg's content is snapped to a device pixel by
+# WebRender, so the raster size of an image inside it has to be picked from the
+# snapped origin (bug 2086864).
+pref(layout.disable-pixel-alignment,true) pref(layout.css.devPixelsPerPx,"1.0") == image-svg-snapped-origin-raster-1.html image-fractional-raster-1-ref.html?101,201,201
 
 # A fractional scroll offset must not change the raster size: the scroll offset
 # is normalized out of the item in app units and re-applied by WebRender rounded

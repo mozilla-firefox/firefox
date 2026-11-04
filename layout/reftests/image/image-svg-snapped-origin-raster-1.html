@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>An SVG image under an outer svg at a fractional position is rasterized at its snapped size</title>
+
+<!--
+  The content of an outer <svg> goes into a reference frame whose origin
+  WebRender rounds to a device pixel, so the raster size of an image inside it
+  has to be picked from the rounded origin rather than the fractional one. The
+  svg is at top 100.6, which rounds to 101, so the image covers device rows 101
+  to 301.6 and snaps to 101 to 302, 201 rows. Picked from the fractional origin
+  the size would come out as 200 rows (bug 2086864).
+
+  The viewBox scale makes the svg's content transformed, which is what gives it
+  its own snapped origin.
+-->
+
+<style>
+
+body {
+  margin: 0;
+}
+
+svg {
+  display: block;
+  position: absolute;
+  left: 20px;
+  top: 100.6px;
+}
+
+</style>
+
+<svg width="400" height="300" viewBox="0 0 200 150">
+  <image href="stripes-fractional.svg" width="200" height="100.3"
+         preserveAspectRatio="none"/>
+</svg>
+</html>

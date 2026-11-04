@@ -4,12 +4,12 @@
 <title>Reference: the image's own raster drawn 1:1 and clipped to its snapped rect</title>
 
 <!--
-  Reference for the fractional-raster tests. The image in those tests is
-  rasterized a device pixel taller than the rect it is snapped to, and
-  WebRender draws such a texture 1:1 from the snapped origin and clips the
-  surplus rather than resampling it to fit (bug 2070683). This reproduces that
-  directly: an image whose height is the raster height, on the device grid so
-  nothing is resampled, inside a wrapper clipped to the snapped height.
+  Reference for the fractional-raster tests. The image in those tests has a
+  fractional height and must be rasterized at the size of the rect it is
+  snapped to, which WebRender draws 1:1 from the snapped origin (bug 2070683).
+  This reproduces that directly: an image whose height is the raster height,
+  on the device grid so nothing is resampled, inside a wrapper clipped to the
+  snapped height.
 
   Query parameters, in CSS pixels at devPixelsPerPx 1: the wrapper's top, the
   image's height, and the wrapper's height.

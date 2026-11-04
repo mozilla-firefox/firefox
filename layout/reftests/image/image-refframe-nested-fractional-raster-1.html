@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>An image under nested reference frames at fractional positions is not resampled</title>
+
+<!--
+  As image-refframe-fractional-raster-1, but the fractional device offset is
+  split between the origins of two nested reference frames, so the raster size
+  has to be picked with every enclosing frame's origin composed in. Each frame
+  is at top 50.3, putting the image at device rows 100.6 to 301.2, which snap
+  to 101 to 301 (bug 2086864).
+-->
+
+<style>
+
+body {
+  margin: 0;
+}
+
+.refframe {
+  position: absolute;
+  top: 50.3px;
+  transform: translate(0, 0);
+}
+
+#outer {
+  left: 20px;
+}
+
+#inner {
+  left: 0;
+}
+
+img {
+  display: block;
+  width: 400px;
+  height: 200.6px;
+}
+
+</style>
+
+<div class="refframe" id="outer">
+  <div class="refframe" id="inner">
+    <img src="stripes-fractional.svg">
+  </div>
+</div>
+</html>

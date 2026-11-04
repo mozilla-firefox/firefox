@@ -2392,11 +2392,19 @@ void WebRenderCommandBuilder::PopOverrideForASR(
   mClipManager.PopOverrideForASR(aASR);
 }
 
-wr::WrSpatialId WebRenderCommandBuilder::DefineReferenceFrame(
+DefinedReferenceFrame WebRenderCommandBuilder::DefineReferenceFrame(
     wr::DisplayListBuilder& aBuilder, nsIFrame* aFrame,
     FrameReferenceFrame aKind, const LayoutDevicePoint& aOrigin,
     const wr::ReferenceFrameParams& aParams) {
-  return aBuilder.DefineReferenceFrame(wr::ToLayoutPoint(aOrigin), aParams);
+  const wr::LayoutVector2D parentScrollOffset =
+      aBuilder.CurrentAccumulatedScrollOffset();
+  DefinedReferenceFrame frame;
+  frame.mId =
+      aBuilder.DefineReferenceFrame(wr::ToLayoutPoint(aOrigin), aParams);
+  frame.mOrigin =
+      aOrigin + LayoutDevicePoint(parentScrollOffset.x, parentScrollOffset.y);
+  frame.mShouldSnap = aParams.should_snap;
+  return frame;
 }
 
 static wr::WrRotation ToWrRotation(VideoRotation aRotation) {

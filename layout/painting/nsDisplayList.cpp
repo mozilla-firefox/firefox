@@ -5563,7 +5563,7 @@ WebRenderCommandsResult nsDisplayOwnLayer::CreateWebRenderCommands(
   const bool shouldSnap = IsZoomingLayer() || ShouldGetFixedAnimationId() ||
                           (rootScrollbarContainer && HasDynamicToolbar());
 
-  Maybe<wr::WrSpatialId> referenceFrame;
+  Maybe<DefinedReferenceFrame> referenceFrame;
   if (animationId || shouldSnap) {
     wr::ReferenceFrameParams rfParams;
     rfParams.animation_id = animationId;
@@ -5706,7 +5706,7 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
   // not identity, because we generate a new coordinate system already from the
   // nsDisplayTransform (see nsDisplayTransform::CreateWebRenderCommands() for
   // more details).
-  Maybe<wr::WrSpatialId> referenceFrame;
+  Maybe<DefinedReferenceFrame> referenceFrame;
   if (mFrame->IsTransformed()) {
     // Use an identity matrix to force to push a reference frame to create a new
     // coordinate system for view transition captured frame.
@@ -7018,27 +7018,27 @@ WebRenderCommandsResult nsDisplayTransform::CreateWebRenderCommands(
     wr::ReferenceFrameParams originRfParams;
     originRfParams.is_2d_scale_translation = true;
     originRfParams.should_snap = true;
-    wr::WrSpatialId originSpatialId =
+    DefinedReferenceFrame originFrame =
         aManager->CommandBuilder().DefineReferenceFrame(
             aBuilder, mFrame,
             WebRenderCommandBuilder::FrameReferenceFrame::SVGOrigin, position,
             originRfParams);
     originSc.emplace(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                     originParams, Some(originSpatialId), boundsSize);
+                     originParams, Some(originFrame), boundsSize);
     // Items take their spatial node from the clip manager, which maps their
     // ASR to a spatial id. The inner stacking context only overrides that
     // mapping if it creates a reference frame or has a non-zero origin, which
     // is not the case with an identity viewBox transform. Override it here so
     // that the content is always positioned by the snapped origin frame.
     aManager->CommandBuilder().PushOverrideForASR(GetActiveScrolledRoot(),
-                                                  originSpatialId);
+                                                  originFrame.mId);
     position = LayoutDevicePoint();
   }
 
   // The transform, or the position alone if it is untransformed, goes into a
   // reference frame. This has to be defined once originSc is in place, as
   // that is the space it is in.
-  Maybe<wr::WrSpatialId> referenceFrame;
+  Maybe<DefinedReferenceFrame> referenceFrame;
   if (transformForSC || animationsId || position != LayoutDevicePoint()) {
     wr::ReferenceFrameParams rfParams;
     rfParams.transform_style = params.transform_style;
@@ -7817,7 +7817,7 @@ WebRenderCommandsResult nsDisplayPerspective::CreateWebRenderCommands(
   // transformation for the perspective contents.
   rfParams.scrolling_relative_to = scrollingRelativeTo.ptrOr(nullptr);
 
-  wr::WrSpatialId referenceFrame =
+  DefinedReferenceFrame referenceFrame =
       aManager->CommandBuilder().DefineReferenceFrame(
           aBuilder, mFrame,
           WebRenderCommandBuilder::FrameReferenceFrame::Perspective,

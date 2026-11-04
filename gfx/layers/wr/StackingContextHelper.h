@@ -19,6 +19,18 @@ struct ActiveScrolledRoot;
 namespace layers {
 
 /**
+ * A reference frame a stacking context can be put in.
+ */
+struct DefinedReferenceFrame {
+  wr::WrSpatialId mId;
+  // The frame's origin in its parent reference frame, including the parent's
+  // accumulated external scroll offset, as WebRender places it.
+  LayoutDevicePoint mOrigin;
+  // Whether WebRender snaps the frame's accumulated offset.
+  bool mShouldSnap = false;
+};
+
+/**
  * This is a helper class that pushes/pops a stacking context, and manages
  * some of the coordinate space transformations needed.
  */
@@ -29,7 +41,7 @@ class MOZ_RAII StackingContextHelper {
       nsIFrame* aContainerFrame, nsDisplayItem* aContainerItem,
       wr::DisplayListBuilder& aBuilder,
       const wr::StackingContextParams& aParams,
-      const Maybe<wr::WrSpatialId>& aReferenceFrame = Nothing(),
+      const Maybe<DefinedReferenceFrame>& aReferenceFrame = Nothing(),
       const LayoutDeviceSize& aBoundsSize = LayoutDeviceSize());
 
   // This version of the constructor should only be used at the root level

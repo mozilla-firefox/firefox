@@ -7,11 +7,11 @@
   The size an image is rasterized at is picked by rounding its destination
   rect, so it has to be rounded at the sub-pixel phase that rect is snapped
   at. WebRender composes a reference frame's origin into the transform it
-  snaps against, but the inherited transform Gecko rounds the rect with does
-  not carry it, so a reference frame whose origin is not on a device pixel
-  shifts the phase for everything inside it: the size comes out a pixel away
-  from the one the rect is snapped to and the image is resampled to fit
-  (bug 2070683).
+  snaps against, so a reference frame whose origin is not on a device pixel
+  shifts the phase for everything inside it, and the inherited transform Gecko
+  rounds the rect with has to carry the origin too. Otherwise the size comes
+  out a pixel away from the one the rect is snapped to (bugs 2070683 and
+  2086864).
 
   The transform creates the reference frame; the query parameter is the
   frame's top followed by the image's top inside it, in CSS pixels, and at
@@ -22,8 +22,7 @@
 
   Both put the image at device rows 100.6 to 301.2, so they snap to the same
   rect and have to render identically. In the second Gecko sees the fraction
-  itself and picks the size that rect snaps to; in the first the fraction is
-  in the origin and the size has to be picked as if it were not.
+  in the image's own rect; in the first only through the frame's origin.
 
   The image's height is deliberately fractional: with a whole extent every
   rounding agrees at every phase and there is nothing to detect.
