@@ -6,7 +6,11 @@
 import React, { useCallback } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { WIDGET_REGISTRY, resolveWidgetSize } from "common/WidgetsRegistry.mjs";
+import {
+  WIDGET_REGISTRY,
+  resolveWidgetFrame,
+  resolveWidgetSize,
+} from "common/WidgetsRegistry.mjs";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
@@ -42,6 +46,12 @@ function Travel({
   widgetEnabledMap,
 }) {
   const prefs = useSelector(state => state.Prefs.values);
+  const framedWidgets = useSelector(state => state.FramedWidgets);
+  const { src, state: frameState } = resolveWidgetFrame(
+    TRAVEL_ENTRY,
+    prefs,
+    framedWidgets
+  );
   const widgetSize = resolveWidgetSize(TRAVEL_ENTRY, prefs);
   const hasInteracted = prefs["widgets.travel.interaction"];
 
@@ -80,6 +90,10 @@ function Travel({
       source: "context_menu",
     });
     handleInteraction();
+  }
+
+  if (frameState === "hidden") {
+    return null;
   }
 
   return (
@@ -140,7 +154,16 @@ function Travel({
           </panel-list>
         </div>
       </div>
-      <div className="travel-body" />
+      <div className="travel-body">
+        <iframe
+          className="travel-frame"
+          aria-labelledby="travel-widget-label"
+          src={src}
+          // Same sandbox as the Crossword frame, including allow-same-origin,
+          // which is under the same security review.
+          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        />
+      </div>
     </article>
   );
 }

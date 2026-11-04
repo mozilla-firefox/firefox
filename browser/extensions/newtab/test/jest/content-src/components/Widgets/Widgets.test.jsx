@@ -178,12 +178,21 @@ describe("<Widgets>", () => {
   });
 
   it("should render <Travel> under Nova when its prefs are enabled", () => {
-    const state = widgetsState({
-      "nova.enabled": true,
-      [PREF_WIDGETS_ENABLED]: true,
-      [PREF_WIDGETS_TRAVEL_ENABLED]: true,
-      "widgets.system.travel.enabled": true,
-    });
+    const state = widgetsState(
+      {
+        "nova.enabled": true,
+        [PREF_WIDGETS_ENABLED]: true,
+        [PREF_WIDGETS_TRAVEL_ENABLED]: true,
+        "widgets.system.travel.enabled": true,
+      },
+      {
+        FramedWidgets: {
+          travel: {
+            url: "https://stage-widgets-kayak-travel.merino.nonprod.webservices.mozgcp.net/1.0.202610272219/index.html",
+          },
+        },
+      }
+    );
     const { container } = renderWidgets(state);
     expect(
       container.querySelector("article.travel.widget")

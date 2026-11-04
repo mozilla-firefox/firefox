@@ -453,6 +453,7 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsVisibleKey: "travelVisible",
     widgetsSettingsEnabledKey: "travelEnabled",
     trainhopNamespace: "widgetTravel",
+    framed: true,
   },
   {
     id: "solitaire",
