@@ -12,40 +12,9 @@
 <script>
 "use strict";
 
-const origin = get_host_info().HTTPS_ORIGIN;
 const noCorpURL = get_host_info().HTTPS_REMOTE_ORIGIN + "/html/document-isolation-policy/resources/nothing-no-corp.js";
 // The smallest valid WebAssembly module.
 const emptyModuleBytes = new Uint8Array([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]);
-
-function executorURL(policy, uuid) {
-  return origin + executor_path + policy + `&uuid=${uuid}`;
-}
-
-function createFrame(t, url) {
-  const frame = document.createElement("iframe");
-  t.add_cleanup(() => frame.remove());
-  const loaded = new Promise(resolve => frame.onload = resolve);
-  frame.src = url;
-  document.body.append(frame);
-  return loaded.then(() => frame);
-}
-
-// Runs the body of an async function in the context identified by uuid and returns its result.
-async function runInContext(uuid, body) {
-  const reply = token();
-  send(uuid, `
-    (async () => {
-      let result;
-      try {
-        result = await (async () => { ${body} })();
-      } catch (e) {
-        result = e.name;
-      }
-      send("${reply}", JSON.stringify(result));
-    })();
-  `);
-  return JSON.parse(await receive(reply));
-}
 
 promise_test(async t => {
   const uuid = token();
@@ -59,11 +28,7 @@ promise_test(async t => {
   const uuid = token();
   await createFrame(t, executorURL(dip_require_corp, uuid));
   const result = await runInContext(uuid, `
-    const child = document.createElement("iframe");
-    const loaded = new Promise(resolve => child.onload = resolve);
-    child.src = ${JSON.stringify(executorURL(dip_none, token()))};
-    document.body.append(child);
-    await loaded;
+    ${appendFrameScript(executorURL(dip_none, token()))}
     let access;
     try {
       access = typeof child.contentWindow.document;
@@ -79,11 +44,7 @@ promise_test(async t => {
   const uuid = token();
   await createFrame(t, executorURL(dip_require_corp, uuid));
   const result = await runInContext(uuid, `
-    const child = document.createElement("iframe");
-    const loaded = new Promise(resolve => child.onload = resolve);
-    child.src = ${JSON.stringify(executorURL(dip_require_corp, token()))};
-    document.body.append(child);
-    await loaded;
+    ${appendFrameScript(executorURL(dip_require_corp, token()))}
     return { contentDocument: child.contentDocument === null ? "null" : "document", access: typeof child.contentWindow.document };
   `);
   assert_object_equals(result, { contentDocument: "document", access: "object" });
@@ -179,8 +140,13 @@ async function createNamedFrameWithNavigateListener(t, name) {
   document.body.append(frame);
   await loaded;
   const reply = token();
+  // A cross-document navigation can end the document before send() completes, so the result is also stored for its successor.
   await runInContext(uuid, `
-    navigation.onnavigate = event => send("${reply}", event.sourceElement ? "element" : "null");
+    navigation.onnavigate = event => {
+      const sourceElement = event.sourceElement ? "element" : "null";
+      sessionStorage.setItem("${reply}", sourceElement);
+      send("${reply}", sourceElement);
+    };
     return "ready";
   `);
   return { url: frame.src, reply };
@@ -208,9 +174,19 @@ promise_test(async t => {
 }, "A navigate event in a same-origin frame without a policy exposes a link of a document without one as its sourceElement");
 
 promise_test(async t => {
+  const name = token();
+  const { reply } = await createNamedFrameWithNavigateListener(t, name);
+  const uuid = token();
+  await createFrame(t, executorURL(dip_require_corp, uuid));
+  const destination = token();
+  await runInContext(uuid, clickLinkScript(name, executorURL(dip_none, destination)));
+  assert_equals(await runInContext(destination, `return sessionStorage.getItem("${reply}") ?? "no navigate event";`), "null");
+}, "A cross-document navigate event in a same-origin frame without a policy does not expose a link of a document with one as its sourceElement");
+
+promise_test(async t => {
   const uuid = token();
   // The body arrives two seconds after the headers, so the fragment navigation happens while the reload is waiting for it.
-  const frame = await createFrame(t, origin + executor_path + dip_require_corp + "|trickle(d2)" + `&uuid=${uuid}`);
+  const frame = await createFrame(t, executorURL(dip_require_corp + "|trickle(d2)", uuid));
   const reloaded = new Promise(resolve => frame.onload = resolve);
   await runInContext(uuid, `
     location.reload();
@@ -249,26 +225,16 @@ const coepRequireCorp = "|header(Cross-Origin-Embedder-Policy,require-corp)";
 // Opens a cross-origin isolated popup and returns its uuid.
 function openCrossOriginIsolatedPopup(t) {
   const uuid = token();
-  window.open(origin + executor_path + coopSameOrigin + coepRequireCorp + `&uuid=${uuid}`);
+  window.open(executorURL(coopSameOrigin + coepRequireCorp, uuid));
   t.add_cleanup(() => send(uuid, "window.close();"));
   return uuid;
-}
-
-function appendFrameScript(url) {
-  return `
-    const child = document.createElement("iframe");
-    const loaded = new Promise(resolve => child.onload = resolve);
-    child.src = ${JSON.stringify(url)};
-    document.body.append(child);
-    await loaded;
-  `;
 }
 
 promise_test(async t => {
   const topUUID = openCrossOriginIsolatedPopup(t);
   const childUUID = token();
   const result = await runInContext(topUUID, `
-    ${appendFrameScript(origin + executor_path + coepRequireCorp + dip_require_corp + `&uuid=${childUUID}`)}
+    ${appendFrameScript(executorURL(coepRequireCorp + dip_require_corp, childUUID))}
     window.child = child;
     let access;
     try {
@@ -298,11 +264,11 @@ promise_test(async t => {
   const topUUID = openCrossOriginIsolatedPopup(t);
   const frameUUID = token();
   await runInContext(topUUID, `
-    ${appendFrameScript(remoteOrigin + executor_path + coepRequireCorp + corp_cross_origin + dip_require_corp + `&uuid=${frameUUID}`)}
+    ${appendFrameScript(executorURL(coepRequireCorp + corp_cross_origin + dip_require_corp, frameUUID, remoteOrigin))}
     return "loaded";
   `);
   const accessChild = policy => `
-    ${appendFrameScript(remoteOrigin + executor_path + coepRequireCorp + policy + `&uuid=${token()}`)}
+    ${appendFrameScript(executorURL(coepRequireCorp + policy, token(), remoteOrigin))}
     try {
       return typeof child.contentWindow.document;
     } catch (e) {
@@ -316,7 +282,7 @@ promise_test(async t => {
 promise_test(async t => {
   const uuid = token();
   // The opener has no Cross-Origin-Opener-Policy, so the response switches the popup to another browsing context group.
-  window.open(origin + executor_path + coopSameOrigin + dip_require_corp + `&uuid=${uuid}`);
+  window.open(executorURL(coopSameOrigin + dip_require_corp, uuid));
   t.add_cleanup(() => send(uuid, "window.close();"));
   const result = await runInContext(uuid, `
     let fetchResult;
@@ -326,8 +292,8 @@ promise_test(async t => {
     } catch (e) {
       fetchResult = "blocked";
     }
-    return { originAgentCluster, fetchResult };
+    return { originAgentCluster, crossOriginIsolated, fetchResult };
   `);
-  assert_object_equals(result, { originAgentCluster: true, fetchResult: "blocked" });
+  assert_object_equals(result, { originAgentCluster: true, crossOriginIsolated: true, fetchResult: "blocked" });
 }, "A popup with a policy keeps it when its response switches browsing context groups");
 </script>
