@@ -66,6 +66,16 @@ CONFIGS = defaultdict(
                 "OS_COMPILE_CMMFLAGS": ["-fobjc-call-cxx-cdtors"],
             },
         },
+        "database-c": {
+            "defines": {},
+            "substs": {
+                "CC": ["clang"],
+                "CXX": ["clang++"],
+                "COMPILE_ENVIRONMENT": "1",
+                "LIB_PREFIX": "lib",
+                "LIB_SUFFIX": "a",
+            },
+        },
         "objdir-local-includes": {
             "defines": {},
             "substs": {

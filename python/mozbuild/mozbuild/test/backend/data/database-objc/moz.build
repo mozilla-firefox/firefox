@@ -12,5 +12,7 @@ Library("dummy")
 
 SOURCES = ["baz.m", "qux.mm"]
 
+SOURCE_HEADERS = ["qux.h"]
+
 CMFLAGS += ["-fobjc-arc"]
 CMMFLAGS += ["-fobjc-weak"]

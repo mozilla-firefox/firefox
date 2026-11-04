@@ -11,3 +11,5 @@ def Library(name):
 Library("dummy")
 
 SOURCES = ["bar.c", "baz.cpp", "foo.c", "qux.cpp"]
+
+SOURCE_HEADERS = ["foo.h"]
