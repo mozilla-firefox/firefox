@@ -77,7 +77,7 @@ addAboutKbTask(async function testInit(tab) {
       "No shortcuts are customized"
     );
     const unassigned = content.document.querySelectorAll(".key:not(.assigned)");
-    is(unassigned.length, 4, "Four keys are unassigned");
+    is(unassigned.length, 5, "Five keys are unassigned");
     is(
       unassigned[0].dataset.id,
       "key_duplicateTab",
@@ -97,6 +97,11 @@ addAboutKbTask(async function testInit(tab) {
       unassigned[3].dataset.id,
       "key_separateTabSplitView",
       "key_separateTabSplitView is unassigned"
+    );
+    is(
+      unassigned[4].dataset.id,
+      "key_undoCloseTab",
+      "key_undoCloseTab is unassigned"
     );
     is(
       content.document.querySelectorAll(".editing").length,

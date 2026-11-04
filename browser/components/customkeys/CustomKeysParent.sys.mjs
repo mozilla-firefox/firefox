@@ -137,6 +137,11 @@ export class CustomKeysParent extends JSWindowActorParent {
       "customkeys-history-reopen-tab"
     );
     add(cat, "key_undoCloseWindow", "customkeys-history-reopen-window");
+    add(
+      cat,
+      "key_undoCloseTab",
+      "customkeys-history-reopen-tab-current-window"
+    );
     const sidebarCat = topWin.document.getElementById(
       "viewSidebarMenuMenu"
     ).label;
