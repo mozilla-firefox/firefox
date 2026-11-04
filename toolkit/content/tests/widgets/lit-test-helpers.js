@@ -653,6 +653,12 @@ class InputTestHelpers extends LitTestHelpers {
     let [firstInput, secondInput, thirdInput] =
       renderTarget.querySelectorAll(selector);
 
+    // Wait for elements to be visible  before triggering accesskeys.
+    await TestUtils.waitForCondition(
+      () => BrowserTestUtils.isVisible(firstInput),
+      "Waiting for button to be visible."
+    );
+
     // Validate that activating a unique accesskey focuses and checks the input.
     firstInput.blur();
     isnot(document.activeElement, firstInput, "First input is not focused.");
