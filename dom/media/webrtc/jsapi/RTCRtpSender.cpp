@@ -998,9 +998,9 @@ already_AddRefed<Promise> RTCRtpSender::SetParameters(
   // If the media stack is successfully configured with parameters,
   // queue a task to run the following steps:
   GetMainThreadSerialEventTarget()->Dispatch(NS_NewRunnableFunction(
-      __func__,
-      [this, self = RefPtr<RTCRtpSender>(this), p, paramsCopy, serialNumber,
-       keyFrameRids = std::move(keyFrameRids)]() mutable {
+      __func__, [this, self = RefPtr<RTCRtpSender>(this), p,
+                 paramsCopy = std::move(paramsCopy), serialNumber,
+                 keyFrameRids = std::move(keyFrameRids)]() mutable {
         // Requested here so it reaches the call thread after the new config.
         if (keyFrameRids && mPipeline) {
           mPipeline->mConduit->AsVideoSessionConduit().apply(
@@ -1011,7 +1011,7 @@ already_AddRefed<Promise> RTCRtpSender::SetParameters(
         // Set sender.[[LastReturnedParameters]] to null.
         mLastReturnedParameters = Nothing();
         // Set sender.[[SendEncodings]] to parameters.encodings.
-        mParameters.mEncodings = paramsCopy.mEncodings;
+        mParameters.mEncodings = std::move(paramsCopy.mEncodings);
         UpdateRestorableEncodings(mParameters.mEncodings);
         // If we had a valid degradation preference passed in store it in
         // mParameters so we can return it if needed via GetParameters calls.
