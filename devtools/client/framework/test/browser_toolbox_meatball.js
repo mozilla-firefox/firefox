@@ -59,12 +59,12 @@ async function openMeatballMenuWithClick(toolbox) {
     "toolbox-meatball-menu-button"
   );
   await waitUntil(() => meatballButton.style.pointerEvents !== "none");
-  EventUtils.synthesizeMouseAtCenter(meatballButton, {}, toolbox.win);
 
-  const panel = toolbox.doc.querySelectorAll(".tooltip-xul-wrapper");
+  const panel = toolbox.doc.querySelector(".tooltip-xul-wrapper");
   const shownListener = new Promise(res => {
-    panel[0].addEventListener("popupshown", res, { once: true });
+    panel.addEventListener("popupshown", res, { once: true });
   });
+  EventUtils.synthesizeMouseAtCenter(meatballButton, {}, toolbox.win);
 
   const menuPanel = toolbox.doc.getElementById(
     "toolbox-meatball-menu-button-panel"
@@ -84,7 +84,11 @@ async function closeMeatballMenuWithClick(toolbox) {
   await waitUntil(
     () => toolbox.win.getComputedStyle(meatballButton).pointerEvents === "none"
   );
-  meatballButton.click();
+  // The click is expected to land outside of the popup, on an element which is
+  // not accessible.
+  AccessibilityUtils.setEnv({ mustHaveAccessibleRule: false });
+  EventUtils.synthesizeMouseAtCenter(meatballButton, {}, toolbox.win);
+  AccessibilityUtils.resetEnv();
 
   const menuPanel = toolbox.doc.getElementById(
     "toolbox-meatball-menu-button-panel"
