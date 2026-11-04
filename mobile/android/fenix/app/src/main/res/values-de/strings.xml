@@ -215,6 +215,10 @@
   <string name="browser_menu_no_extensions_installed_description">Keine Erweiterungen aktiviert</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Eine empfohlene Erweiterung ausprobieren</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Update für %1$s prüfen</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Einstellungen zum Aktualisieren prüfen</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Kontoinformationen</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -372,7 +376,7 @@
   <!-- Link text to see what AI enhancements are and aren’t included -->
   <string name="ai_controls_see_whats_included">Sehen Sie sich an, was inbegriffen ist und was nicht</string>
   <!-- Banner text shown when AI enhancements are blocked -->
-  <string name="ai_controls_blocked_info_banner">Neue und aktuelle KI-Verbesserungen werden standardmäßig blockiert. Blockieren Sie im Folgenden bestimmte Funktionen.</string>
+  <string name="ai_controls_blocked_info_banner">Neue und aktuelle KI-Verbesserungen werden standardmäßig blockiert. Entsperren Sie im Folgenden bestimmte Funktionen.</string>
   <!-- Section header for the AI-powered features list -->
   <string name="ai_controls_ai_powered_features">KI-gestützte Funktionen</string>
   <!-- Title for the translations AI feature toggle -->
@@ -622,7 +626,7 @@
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
   <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage,UnusedResources">Teilen Sie mit Mozillas Marketingpartnern, wie Sie Firefox entdeckt haben und dass Sie ihn verwenden. Diese Daten werden nie verkauft.</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
-  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Sie können uns helfen, mehr Menschen zu erreichen, indem Sie Mozilla erlauben, die Kanäle, in denen wir Firefox bewerben, mitzuteilen, dass Sie ein Firefox-Nutzer sind.</string>
+  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Sie können uns helfen, mehr Menschen zu erreichen, indem Sie Mozilla erlauben, den Kanälen, in denen wir Firefox bewerben, mitzuteilen, dass Sie ein Firefox-Nutzer sind.</string>
   <!--
     Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded.
     “Platform you came from” refers to the external app, website, store, campaign, or other source that directed the user to Firefox.
@@ -646,7 +650,7 @@
   -->
   <string name="nova_onboarding_marketing_body_7" tools:ignore="BrandUsage">Sie können uns helfen, mehr Menschen zu erreichen, indem Sie Mozilla erlauben, die Plattform, von der Sie kommen, darüber zu informieren, dass Sie Firefox verwenden. %1$s</string>
   <!-- Marketing onboarding additional body text. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_marketing_body_line_two" tools:ignore="BrandUsage">Firefox ist stolz darauf, unabhängig und verteidigt das offene Web gegen Technologie-Monopole.</string>
+  <string name="nova_onboarding_marketing_body_line_two" tools:ignore="BrandUsage">Firefox ist stolz darauf, unabhängig zu sein und das offene Web gegen Technologie-Monopole zu verteidigen.</string>
   <!--
     Marketing onboarding additional body text. 'Firefox' is intentionally hardcoded.
     “Allowing” refers to the main button “Allow and Continue”; the ask for the user is to allow communicating back to the platform.
@@ -665,7 +669,7 @@
   <!-- Marketing onboarding secondary button text. -->
   <string name="nova_onboarding_marketing_secondary_button_text_2">Nein</string>
   <!-- Notifications onboarding title. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Benachrichtigungen helfen Ihnen, Firefox noch sicherer zu machen</string>
+  <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Benachrichtigungen helfen Ihnen, mit Firefox sicherer zu surfen</string>
   <!-- Notifications onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Entdecken Sie die neuesten Datenschutzfunktionen von Firefox, damit Sie immer auf dem neuesten Stand sind und sich schützen können.</string>
   <!-- Notifications onboarding button. -->
@@ -813,7 +817,7 @@
   <!-- Message shown in the error page for when trying to access a http website while https only mode is enabled. The message has two paragraphs. This is the first. -->
   <string name="errorpage_httpsonly_message_title">Höchstwahrscheinlich unterstützt die Website HTTPS einfach nicht.</string>
   <!-- Message shown in the error page for when trying to access a http website while https only mode is enabled. The message has two paragraphs. This is the second. -->
-  <string name="errorpage_httpsonly_message_summary">Möglicherweise handelt es sich aber auch um einen Angriff. Wenn Sie die Website trotzdem besuchen, sollten Sie keine sensiblen Informationen eingeben. Wenn Sie fortfahren, wird der Nur-HTTPS-Modus vorübergehend für die Webseite deaktiviert.</string>
+  <string name="errorpage_httpsonly_message_summary">Möglicherweise handelt es sich aber auch um einen Angriff. Wenn Sie die Website trotzdem besuchen, sollten Sie keine sensiblen Informationen eingeben. Wenn Sie fortfahren, wird der Nur-HTTPS-Modus vorübergehend für die Website deaktiviert.</string>
   <!-- Preference for accessibility -->
   <string name="preferences_accessibility">Barrierefreiheit</string>
   <!-- Preference to override the Mozilla account server -->
@@ -842,6 +846,8 @@
   <string name="preferences_toolbar_select_shortcut">Wählen Sie eine Verknüpfung</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Verknüpfung bearbeiten</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Menü</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Gesten</string>
   <!-- Preference for settings related to visual options -->
@@ -1100,7 +1106,7 @@
   <!-- Title for the "Momo" themed alternative app icon variant in the icon picker screen. The app icon was created by artist @heyheymomodraws and features a unique hand-drawn style with a friendly fox. -->
   <string name="alternative_app_icon_option_momo">Momo</string>
   <!-- Subtitle for the "Momo" themed alternative app icon variant in the icon picker screen. The app icon was created by artist @heyheymomodraws and features a unique hand-drawn style with a friendly fox. -->
-  <string name="alternative_app_icon_option_momo_subtitle">Erstellt von @heyheymomoraws</string>
+  <string name="alternative_app_icon_option_momo_subtitle">Erstellt von @heyheymomodraws</string>
   <!-- Title for the "Cuddling" themed alternative app icon variant in the icon picker screen. The app icon features a playful design with an adorable aesthetic. -->
   <string name="alternative_app_icon_option_cuddling">Kuscheln</string>
   <!-- Title for the "Flaming" themed alternative app icon variant in the icon picker screen. The app icon features a fiery design, with the Firefox logo surrounded by flames for a bold, energetic look. -->
@@ -1912,7 +1918,7 @@
     %s is the file type to change to.
   -->
   <string name="change_file_extension_title">Dateityp auf %s ändern?</string>
-  <string name="change_file_extension_description">Dies kann die Datei in einer anderen App öffnen und ist für Ihr Gerät riskant.</string>
+  <string name="change_file_extension_description">Dies kann die Datei in einer anderen App öffnen und für Ihr Gerät riskant sein.</string>
   <string name="change_file_extension_cancel_button">Abbrechen</string>
   <string name="change_file_extension_confirm_button">Ja, ändern</string>
   <!-- Text for the header of in progress downloads -->
@@ -2049,7 +2055,7 @@
   -->
   <string name="webcompat_reporter_reason_load">Website lädt nicht</string>
   <!-- Broken site reason text for can’t pay, check out or shop -->
-  <string name="webcompat_reporter_reason_checkout">Ich kann nicht bezahlen, den Warenkorb leeren oder einkaufen</string>
+  <string name="webcompat_reporter_reason_checkout">Ich kann nicht bezahlen, den Kauf abschließen oder einkaufen</string>
   <!-- Broken site reason text for site is slow -->
   <string name="webcompat_reporter_reason_slow2">Website ist langsam</string>
   <!-- Broken site reason text for video isn’t playing or loading -->
@@ -2744,7 +2750,7 @@
   <!-- Option for enhanced tracking protection for the custom protection settings for cookies -->
   <string name="preference_enhanced_tracking_protection_custom_cookies_4">Alle Cookies (einige Websites funktionieren dann nicht mehr)</string>
   <!-- Option for enhanced tracking protection for the custom protection settings for cookies -->
-  <string name="preference_enhanced_tracking_protection_custom_cookies_5">Seitenübergreifende Cookies</string>
+  <string name="preference_enhanced_tracking_protection_custom_cookies_5">Seitenübergreifende Cookies isolieren</string>
   <!-- Preference for Global Privacy Control for the custom privacy settings for Global Privacy Control. '&amp;' is replaced with the ampersand symbol: & -->
   <string name="preference_enhanced_tracking_protection_custom_global_privacy_control">Websites anweisen, meine Daten nicht zu verkaufen oder weiterzugeben</string>
   <!-- Preference for enhanced tracking protection for the custom protection settings for tracking content -->
@@ -2815,7 +2821,7 @@
 
     Preference title for DNS over HTTPS settings
   -->
-  <string name="preference_doh_title">DNS Over HTTPS</string>
+  <string name="preference_doh_title">DNS über HTTPS</string>
   <!-- Description of the preference to enable "DNS over HTTPS". %1$s is replaced by a link using `preference_doh_learn_more` at text ("Learn More"). -->
   <string name="preference_doh_summary">Domain Name System (DNS) über HTTPS sendet Ihre Anfrage für einen Domainnamen über eine verschlüsselte Verbindung, wodurch ein sicheres DNS bereitgestellt wird. Dies erschwert es anderen, zu sehen, welche Website Sie gerade besuchen. %1$s</string>
   <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
@@ -2947,11 +2953,11 @@
   <!-- Preference for autofilling saved logins in Firefox (in web content), %1$s will be replaced with the app name -->
   <string name="preferences_passwords_autofill2">Automatisches Ausfüllen in %1$s</string>
   <!-- Description for the preference for autofilling saved logins in Firefox (in web content), %1$s will be replaced with the app name -->
-  <string name="preferences_passwords_autofill_description">Benutzernamen und Passwörter auf Webseite bei Nutzung von %1$s automatisch ausfüllen.</string>
+  <string name="preferences_passwords_autofill_description">Benutzernamen und Passwörter auf Webseiten bei Nutzung von %1$s automatisch ausfüllen.</string>
   <!-- Preference for autofilling logins from Fenix in other apps (e.g. autofilling the Twitter app) -->
   <string name="preferences_android_autofill">Automatisches Ausfüllen in anderen Apps</string>
   <!-- Description for the preference for autofilling logins from Fenix in other apps (e.g. autofilling the Twitter app) -->
-  <string name="preferences_android_autofill_description">Benutzernamen und Passwörter auf Webseite bei Nutzung von anderen Apps auf Ihrem Gerät automatisch ausfüllen.</string>
+  <string name="preferences_android_autofill_description">Benutzernamen und Passwörter in anderen Apps auf Ihrem Gerät automatisch ausfüllen.</string>
   <!-- Preference option for adding a password -->
   <string name="preferences_logins_add_login_2">Passwort hinzufügen</string>
   <!-- Preference for syncing saved passwords in Fenix -->
@@ -3492,7 +3498,7 @@
     Context description text for the "Show all" button in the shortcuts home screen section
     which navigates the user to a screen displaying all the shortcuts.
   -->
-  <string name="homepage_shortcuts_show_all_content_description">Alle Tastenkombinationen anzeigen</string>
+  <string name="homepage_shortcuts_show_all_content_description">Alle Verknüpfungen anzeigen</string>
   <!--
     Label for the button in the shortcuts home screen section that expands the section to show
     every shortcut.
@@ -3649,7 +3655,7 @@
   <!-- Title for the translation dialog that allows a user to translate the webpage when a user uses the translation feature the first time. %1$s is the name of the app (for example "Firefox"). -->
   <string name="translations_bottom_sheet_title_first_time">Private Übersetzungen in %1$s ausprobieren</string>
   <!-- Additional information on the translation dialog that appears when a user uses the translation feature the first time. %1$s is a link using translations_bottom_sheet_info_message_learn_more as text. -->
-  <string name="translations_bottom_sheet_info_message">Zu Sicherstellung Ihrer Privatsphäre verlassen Übersetzungen niemals Ihr Gerät. Neue Sprachen und Verbesserungen folgen bald! %1$s</string>
+  <string name="translations_bottom_sheet_info_message">Zur Sicherstellung Ihrer Privatsphäre verlassen Übersetzungen niemals Ihr Gerät. Neue Sprachen und Verbesserungen folgen bald! %1$s</string>
   <!-- Text that links to additional information about the Firefox translations feature. -->
   <string name="translations_bottom_sheet_info_message_learn_more">Weitere Informationen</string>
   <!-- Label for the dropdown to select which language to translate from on the translations dialog. Usually the translate from language selected will be the same as the page language. -->
@@ -3726,7 +3732,7 @@
   <!-- Toggle switch label that indicates that the browser should signal or indicate when a translation is possible for any page. -->
   <string name="translation_settings_offer_to_translate">Übersetzung nach Möglichkeit anbieten</string>
   <!-- Toggle switch label that indicates that downloading files required for translating is permitted when using data saver mode in Android. -->
-  <string name="translation_settings_always_download">Sprachen immer im Datensparmodus herunterladen</string>
+  <string name="translation_settings_always_download">Sprachen im Datensparmodus immer herunterladen</string>
   <!-- Section header text that begins the section of a list of different options the user may select to adjust their translation preferences. -->
   <string name="translation_settings_translation_preference">Einstellungen für die Übersetzung</string>
   <!-- Button text for the button that will take the user to the automatic translations settings dialog. On the automatic translations settings dialog, the user can set if translations should occur automatically for a given language. -->
@@ -4016,7 +4022,7 @@
   -->
   <string name="connection_security_panel_issued_to">Ausgestellt auf %s</string>
   <!-- Text for the connection security panel when the site uses a QWAC. -->
-  <string name="connection_security_panel_qualified_certificate">Qualifiziert im Sinne der Richtlinie (EU) 2024/1183.</string>
+  <string name="connection_security_panel_qualified_certificate">Qualifiziert im Sinne der Verordnung (EU) 2024/1183.</string>
   <!--
     Debug drawer
 
@@ -4152,7 +4158,7 @@
   <!-- Uninstall survey answer option -->
   <string name="uninstall_survey_option_6_v2">Datenschutz- oder Sicherheitsbedenken</string>
   <!-- Button label shown at the bottom of the uninstall survey -->
-  <string name="uninstall_survey_button_label">Feedback übermitteln und Deinstallieren</string>
+  <string name="uninstall_survey_button_label">Feedback übermitteln und deinstallieren</string>
   <!--
     Accessibility
 
@@ -4166,7 +4172,7 @@
   <!-- Content description for "X" button that is closing microsurvey. -->
   <string name="microsurvey_close_button_content_description">Schließen</string>
   <!-- The title of the autofill tab in the Debug Drawer. -->
-  <string name="debug_drawer_autofill_title">Automatisches Ausfüllen - Werkzeuge</string>
+  <string name="debug_drawer_autofill_title">Automatisches Ausfüllen – Werkzeuge</string>
   <!--
     Debug drawer logins
 
@@ -4176,7 +4182,7 @@
   <!-- The title of the logins section in the Logins feature. %s is the site domain. -->
   <string name="debug_drawer_logins_current_domain_label">Aktuelle Domain: %s</string>
   <!-- The label for a button to add a new fake login for the current domain in the Logins feature. -->
-  <string name="debug_drawer_logins_add_login_button">Fügen Sie gefälschte Zugangsdaten für diese Domain hinzu</string>
+  <string name="debug_drawer_logins_add_login_button">Gefälschte Zugangsdaten für diese Domain hinzufügen</string>
   <!-- Content description for delete button. %s is the username of the login. -->
   <string name="debug_drawer_logins_delete_login_button_content_description">Zugangsdaten mit Benutzernamen %s löschen</string>
   <!--
@@ -4290,13 +4296,13 @@
   <!-- Homepage card title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
   <string name="certificate_warning_homepage_card_hcw3_title" tools:ignore="BrandUsage,UnusedResources">Letzte Chance, um Ihren Firefox zu behalten</string>
   <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
-  <string name="certificate_warning_homepage_card_hcw3_message" tools:ignore="BrandUsage,UnusedResources">Ihre Firefox-Version funktioniert ab 14. März nicht mehr, da ein Stammzertifikat abläuft.</string>
+  <string name="certificate_warning_homepage_card_hcw3_message" tools:ignore="BrandUsage,UnusedResources">Ihre Firefox-Version funktioniert ab 14. März nicht mehr richtig, da ein Stammzertifikat abläuft.</string>
   <!-- Push notification title about old Firefox version. "Update" is a noun. -->
   <string name="certificate_warning_push_notification_update_recommended_title" tools:ignore="UnusedResources">Aktualisierung empfohlen</string>
   <!-- Push notification message about old Firefox version -->
   <string name="certificate_warning_push_notification_pnr1_message" tools:ignore="UnusedResources">Add-ons und einige Funktionen funktionieren ab 14. März nicht mehr.</string>
   <!-- Push notification title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
-  <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">Sie verwenden eine veraltete Firefox-Version.</string>
+  <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">Sie verwenden eine veraltete Firefox-Version</string>
   <!-- Push notification message about old Firefox version. "Update" is a verb. -->
   <string name="certificate_warning_push_notification_pnw2_message" tools:ignore="UnusedResources">Installieren Sie vor dem 14. März das Update, um Add-ons und andere Funktionen weiterhin verwenden zu können.</string>
   <!-- Push notification message about old Firefox version -->
@@ -4402,7 +4408,7 @@
 
     Label for the secondary action to exit private browsing mode
   -->
-  <string name="pbm_authentication_leave_private_tabs">Private Tabs belassen</string>
+  <string name="pbm_authentication_leave_private_tabs">Private Tabs verlassen</string>
   <!-- Label for the primary action button to unlock private tabs -->
   <string name="pbm_authentication_unlock">Entsperren</string>
   <!-- Title text instructing the user to unlock private tabs -->
@@ -4498,6 +4504,39 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">Hier</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">LIVE</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Verzögert</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Unterbrochen</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Verschoben</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Ergebnisse</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Tabelle</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Hintergrundbilder</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Widget entfernen</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Weitere Optionen</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, Live-Spiel</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, Seite %2$d von %3$d</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4558,7 +4597,7 @@
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Abbrechen</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed_v2">Diese Grafik konnte nicht geladen werden</string>
+  <string name="lens_camera_image_load_failed_v2">Diese Grafik konnte nicht geladen werden.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Dieses Bild konnte nicht geladen werden. Versuchen Sie es mit einem anderen.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
@@ -4652,7 +4691,7 @@
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Hinzufügen</string>
   <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
-  <string name="pdf_tools_signature_adding_content_description">Signatur hinzufügen</string>
+  <string name="pdf_tools_signature_adding_content_description">Signatur wird hinzugefügt</string>
   <!--
     Listen to page
 

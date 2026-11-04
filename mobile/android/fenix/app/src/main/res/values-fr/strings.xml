@@ -215,6 +215,10 @@
   <string name="browser_menu_no_extensions_installed_description">Aucune extension activée</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Essayer une extension recommandée</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Mise à jour pour %1$s</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Vérifier les paramètres à mettre à jour</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Informations du compte</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -842,6 +846,8 @@
   <string name="preferences_toolbar_select_shortcut">Sélectionner un raccourci</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Modifier le raccourci</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Menu</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Mouvements</string>
   <!-- Preference for settings related to visual options -->
@@ -1076,7 +1082,7 @@
   <!-- Title for the "Purple Dark" alternative app icon variant in the icon picker screen. -->
   <string name="alternative_app_icon_option_purple_dark">Violet foncé</string>
   <!-- Title for the "Sunrise" gradient alternative app icon variant in the icon picker screen. The app icon features a soft yellow-to-blue gradient background, resembling the colors of early morning light. -->
-  <string name="alternative_app_icon_option_gradient_sunrise">Levé de soleil</string>
+  <string name="alternative_app_icon_option_gradient_sunrise">Lever de soleil</string>
   <!-- Title for the "Golden Hour" gradient alternative app icon variant in the icon picker screen. The app icon features a warm golden-to-pink gradient background, resembling the colors of the sunlight shortly before sunset. -->
   <string name="alternative_app_icon_option_gradient_golden_hour">Heure dorée</string>
   <!-- Title for the "Sunset" gradient alternative app icon variant in the icon picker screen. The app icon has a rich red-to-purple gradient background, resembling the tones of a sunset sky. -->
@@ -1194,7 +1200,7 @@
   <!-- Label summary indicating that sync failed. %s is the date stamp showing last time it succeeded. -->
   <string name="sync_failed_summary">La synchronisation a échoué. Dernier succès\u00a0: %s</string>
   <!-- Label summary showing never synced -->
-  <string name="sync_failed_never_synced_summary">La synchronisation a échoué. Dernier succès\u00a0: jamais</string>
+  <string name="sync_failed_never_synced_summary">La synchronisation a échoué. Dernière synchronisation\u00a0: jamais</string>
   <!-- Label summary the date we last synced. %s is date stamp showing last time sync was completed. -->
   <string name="sync_last_synced_summary">Dernière synchronisation\u00a0: %s</string>
   <!-- Label summary showing never synced -->
@@ -2025,7 +2031,7 @@
   <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
   <string name="webcompat_reporter_cancel">Annuler</string>
   <!-- The button text for the send button to submit the provided form data. -->
-  <string name="webcompat_reporter_send_report">Envoyer le rapport</string>
+  <string name="webcompat_reporter_send_report">Envoyer le signalement</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">Signalement envoyé</string>
   <!-- Placeholder text for the description field to prompt the user on what they should type. -->
@@ -3345,7 +3351,7 @@
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The header for the Do/Si of the address. Do/Si refers to provincial level divisions, pertinent to addresses in South Korea. -->
   <string name="addresses_do_si" tools:ignore="UnusedResources">Do/Si</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Used in countries like Nicaragua and Colombia where departments are a key administrative division. -->
-  <string name="addresses_department" tools:ignore="UnusedResources">Service</string>
+  <string name="addresses_department" tools:ignore="UnusedResources">Département</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Essential for addresses in the United Arab Emirates. -->
   <string name="addresses_emirate" tools:ignore="UnusedResources">Émirat</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Relevant for addresses in countries like Russia and Ukraine. -->
@@ -3714,7 +3720,7 @@
   <!-- Button text for the button that will take the user to a website to learn more about how translations works in the given app. %1$s is the name of the app (for example "Firefox"). -->
   <string name="translation_option_bottom_sheet_about_translations">À propos des traductions dans %1$s</string>
   <!-- Content description (not visible, for screen readers etc.) for closing the translations bottom sheet. -->
-  <string name="translation_option_bottom_sheet_close_content_description">Fermer l’onglet Traductions</string>
+  <string name="translation_option_bottom_sheet_close_content_description">Fermer le panneau Traductions</string>
   <!-- The title of the warning card informs the user that an error has occurred at page settings. -->
   <string name="translation_option_bottom_sheet_error_warning_text">Certains paramètres sont temporairement indisponibles.</string>
   <!--
@@ -4372,7 +4378,7 @@
   <!-- The title of the explore extensions task for the setup checklist -->
   <string name="setup_checklist_task_explore_extensions">Parcourir les extensions</string>
   <!-- The title of the search widget task for the setup checklist -->
-  <string name="setup_checklist_task_search_widget_2">Découvrir les widgets de recherche</string>
+  <string name="setup_checklist_task_search_widget_2">Découvrir le widget de recherche</string>
   <!--
     ===== Setup checklist feature: Group titles =====
 
@@ -4497,6 +4503,39 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">Vous pouvez en savoir plus %1$s.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">via ce lien</string>
+  <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">EN\u00a0DIRECT</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Retardé</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Suspendu</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Reporté</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Résultats</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Classement</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Fonds d’écran</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Supprimer le widget</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Options supplémentaires</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, match en direct</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, page %2$d sur %3$d</string>
   <!--
     Privacy notice homepage banner
 

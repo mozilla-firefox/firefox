@@ -118,7 +118,7 @@
   <!-- Title for using the suggest strong password confirmation dialog. %1$s will be replaced with the generated password -->
   <string name="mozac_feature_prompts_suggest_strong_password_message">Utiliser un mot de passe fort\u00a0: %1$s</string>
   <!-- Title for using the suggest strong password confirmation dialog -->
-  <string name="mozac_feature_prompts_suggest_strong_password_title">Utiliser un mot de passe compliqué ?</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_title">Utiliser un mot de passe compliqué\u00a0?</string>
   <!-- Content description for the suggest strong password confirmation dialog -->
   <string name="mozac_feature_prompts_suggest_strong_password_description_3">Protégez votre compte en utilisant un mot de passe robuste, généré aléatoirement. Il sera enregistré dans votre compte pour de futures utilisations.</string>
   <!-- Pressing this will use the suggested strong password -->

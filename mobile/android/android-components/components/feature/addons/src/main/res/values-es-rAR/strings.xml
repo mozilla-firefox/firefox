@@ -286,9 +286,9 @@
   <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">Recolección de datos requerida:</string>
   <!-- Heading for the optional settings section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_settings">Configuración opcional:</string>
-  <!-- Heading for the permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">Nuevos permisos:</string>
-  <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the data collection permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_data_collection">Nueva recolección de datos:</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">Agregar</string>
@@ -306,6 +306,20 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">Instalar %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Cancelar</string>
+  <!-- In list of installed extensions: displayed when the update for an extension requires changes to its permission settings. %1$s is the extension name. -->
+  <string name="mozac_feature_addons_update_requires_new_settings">%1$s requiere nueva configuración para actualizar.</string>
+  <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
+  <string name="mozac_feature_addons_update_requires_new_settings_this_extension">Esta extensión requiere una nueva configuración para actualizarse.</string>
+  <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
+  <string name="mozac_feature_addons_update_review_changes_button">Revisar cambios</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s requiere nueva configuración para actualizar</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Cancelar para mantener la versión y configuración actuales, o actualizar para obtener la nueva versión y aprobar los cambios.</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Actualizar</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">Cancelar</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Revisiones: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->

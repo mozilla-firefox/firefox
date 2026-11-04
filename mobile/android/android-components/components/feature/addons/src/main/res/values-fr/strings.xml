@@ -30,7 +30,7 @@
     When an add-on requires access to more than 4 domains, for example the add-on requires access for 6 domains. We will show the first 4 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description,
     then we will show another collapsed entry saying "Access your data on other domains".
   -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_2">Accéder aux données d’autres domaines</string>
+  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_2">Accéder à vos données sur d’autres domaines</string>
   <plurals name="mozac_feature_addons_permissions_all_domain_count_description_2">
     <!-- When an add-on requires access to domains, this entry is used to describe the total number of domains. Underneath it will be the list of all the domains. %1$d is the number of all the domains that will be shown to the user as required. -->
     <item quantity="one">Accéder à vos données pour les sites de %1$d domaine</item>
@@ -286,9 +286,9 @@
   <string name="mozac_feature_addons_permissions_dialog_heading_required_data_collection">Collecte de données obligatoire\u00a0:</string>
   <!-- Heading for the optional settings section in the add-on install dialog. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_settings">Paramètres optionnels\u00a0:</string>
-  <!-- Heading for the permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_permissions">Nouvelles autorisations\u00a0:</string>
-  <!-- Heading for the data collection permissions section in the optional permissions request dialog. -->
+  <!-- Heading for the data collection permissions section in the optional permissions request dialog, and in the confirmation dialog for updating an extension that needs new permissions. -->
   <string name="mozac_feature_addons_permissions_dialog_heading_optional_data_collection">Nouvelle collecte de données\u00a0:</string>
   <!-- This is a button to add (install) an add-on . -->
   <string name="mozac_feature_addons_permissions_dialog_add">Ajouter</string>
@@ -306,6 +306,20 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">Installer %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Annuler</string>
+  <!-- In list of installed extensions: displayed when the update for an extension requires changes to its permission settings. %1$s is the extension name. -->
+  <string name="mozac_feature_addons_update_requires_new_settings">%1$s demande de nouveaux paramètres pour être mis à jour.</string>
+  <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
+  <string name="mozac_feature_addons_update_requires_new_settings_this_extension">Cette extension demande de nouveaux paramètres pour être mise à jour.</string>
+  <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
+  <string name="mozac_feature_addons_update_review_changes_button">Examiner les modifications</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s demande de nouveaux paramètres pour être mis à jour</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Annulez pour conserver la version et les paramètres actuels, mettez à jour pour obtenir la nouvelle version et approuver les changements.</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Mettre à jour</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">Annuler</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Avis\u00a0: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->

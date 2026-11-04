@@ -10,5 +10,5 @@
   <!-- Content description (not visible, for screen readers etc.): Description for the overflow menu button in the browser toolbar. -->
   <string name="mozac_browser_menu2_button">Menu</string>
   <!-- Content description (not visible, for screen readers etc.): Indicates the overflow menu has a highlight -->
-  <string name="mozac_browser_menu2_highlighted">Sélectionné</string>
+  <string name="mozac_browser_menu2_highlighted">Mis en évidence</string>
 </resources>
