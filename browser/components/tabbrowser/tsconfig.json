@@ -3,6 +3,7 @@
     "*.sys.mjs",
     "content/*.mjs",
     "types/*.ts",
+    "../tabnotes/types/tabnotes.ts",
     "../../../tools/@types/browser-window.d.ts"
   ],
   "extends": "../../../tools/@types/tsconfig.json",

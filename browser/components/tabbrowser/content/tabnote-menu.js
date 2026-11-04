@@ -103,7 +103,10 @@
       }
 
       this.textContent = "";
-      this.appendChild(this.constructor.fragment);
+      this.appendChild(
+        /** @type {typeof MozTabbrowserTabNoteMenu} */ (this.constructor)
+          .fragment
+      );
       this.initializeAttributeInheritance();
 
       this.#panel = this.querySelector("panel");
