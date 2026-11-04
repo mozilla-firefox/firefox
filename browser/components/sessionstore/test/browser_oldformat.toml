@@ -48,9 +48,7 @@ support-files = [
   "coop_coep.html",
   "coop_coep.html^headers^",
 ]
-# remove this after bug 1628486 is landed
 prefs = [
-  "network.cookie.cookieBehavior=5",
   "gfx.font_rendering.fallback.async=false",
   "browser.sessionstore.closedTabsFromAllWindows=true",
   "browser.sessionstore.closedTabsFromClosedWindows=true",
