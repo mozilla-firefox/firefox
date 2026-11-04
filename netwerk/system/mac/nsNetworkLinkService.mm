@@ -649,6 +649,7 @@ void nsNetworkLinkService::calculateNetworkIdInternal(void) {
 
   if (found4 || found6) {
     nsAutoCString output;
+    SHA1Sum unseeded = sha1;
     SeedNetworkId(sha1);
     uint8_t digest[SHA1Sum::kHashSize];
     sha1.finish(digest);
@@ -658,6 +659,7 @@ void nsNetworkLinkService::calculateNetworkIdInternal(void) {
     MOZ_RELEASE_ASSERT(NS_SUCCEEDED(rv));
     LOG(("networkid: id %s\n", output.get()));
     MutexAutoLock lock(mMutex);
+    mUnseededNetworkId = mozilla::Some(unseeded);
     if (mNetworkId != output) {
       // new id
       if (found4 && !found6) {
@@ -683,6 +685,7 @@ void nsNetworkLinkService::calculateNetworkIdInternal(void) {
       idChanged = true;
       glean::network::id.AccumulateSingleSample(0);
     }
+    mUnseededNetworkId.reset();
   }
 
   if (idChanged) {

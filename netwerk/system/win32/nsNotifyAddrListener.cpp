@@ -243,6 +243,7 @@ void nsNotifyAddrListener::calculateNetworkId(void) {
         idChanged = true;
       }
       mNetworkId.Truncate();
+      mUnseededNetworkId.reset();
     }
     LOG(("calculateNetworkId: no network ID - no active networks"));
     glean::network::id.AccumulateSingleSample(0);
@@ -255,6 +256,7 @@ void nsNotifyAddrListener::calculateNetworkId(void) {
   nsAutoCString output;
   SHA1Sum::Hash digest;
   HashSortedNetworkIds(nwGUIDS, sha1);
+  SHA1Sum unseeded = sha1;
   SeedNetworkId(sha1);
   sha1.finish(digest);
   nsCString newString(reinterpret_cast<char*>(digest), SHA1Sum::kHashSize);
@@ -263,6 +265,7 @@ void nsNotifyAddrListener::calculateNetworkId(void) {
     {
       MutexAutoLock lock(mMutex);
       mNetworkId.Truncate();
+      mUnseededNetworkId.reset();
     }
     glean::network::id.AccumulateSingleSample(0);
     LOG(("calculateNetworkId: no network ID Base64Encode error %X",
@@ -271,6 +274,7 @@ void nsNotifyAddrListener::calculateNetworkId(void) {
   }
 
   MutexAutoLock lock(mMutex);
+  mUnseededNetworkId = mozilla::Some(unseeded);
   if (output != mNetworkId) {
     mNetworkId = output;
     glean::network::id.AccumulateSingleSample(1);

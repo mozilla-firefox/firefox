@@ -6,6 +6,7 @@
 
 #include <netinet/in.h>
 
+#include "mozilla/Maybe.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/SHA1.h"
 #include "mozilla/TimeStamp.h"
@@ -110,6 +111,9 @@ class NetlinkService : public nsIRunnable {
   mozilla::TimeStamp mTriggerTime;
 
   nsCString mNetworkId MOZ_GUARDED_BY(mMutex);
+  // Hash state of the inputs of mNetworkId before SeedNetworkId() was
+  // applied, for MatchNetworkID().
+  mozilla::Maybe<mozilla::SHA1Sum> mUnseededNetworkId MOZ_GUARDED_BY(mMutex);
   nsTArray<nsCString> mDNSSuffixList MOZ_GUARDED_BY(mMutex);
   nsTArray<NetAddr> mDNSResolvers MOZ_GUARDED_BY(mMutex);
 
