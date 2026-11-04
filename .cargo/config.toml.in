@@ -85,9 +85,9 @@ git = "https://github.com/mozilla/glean"
 tag = "v71.0.0"
 replace-with = "vendored-sources"
 
-[source."git+https://github.com/mozilla/happy-eyeballs?tag=v1.0.0"]
+[source."git+https://github.com/mozilla/happy-eyeballs?tag=v1.1.0"]
 git = "https://github.com/mozilla/happy-eyeballs"
-tag = "v1.0.0"
+tag = "v1.1.0"
 replace-with = "vendored-sources"
 
 [source."git+https://github.com/mozilla/memtest?rev=ad681ba425beb0aeba95f03e671432b4be932174"]

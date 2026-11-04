@@ -1,3 +1,5 @@
+#![allow(clippy::disallowed_methods, reason = "tests may use Instant::now")]
+
 /// > 4. Hostname Resolution
 ///
 /// <https://www.ietf.org/archive/id/draft-ietf-happy-happyeyeballs-v3-02.html#section-4>
@@ -14,6 +16,9 @@ use happy_eyeballs::{
     EndpointTarget, HappyEyeballs, HttpVersions, Id, Input, IpPreference, NetworkConfig, Output,
     RESOLUTION_DELAY,
 };
+
+/// The origin's HTTPS record name when the origin is on [`CUSTOM_PORT`].
+const HTTPS_NAME_CUSTOM_PORT: &str = "_8443._https.example.com";
 
 fn expect_hints_move_on_with_timeout(
     he: &mut HappyEyeballs,
@@ -50,6 +55,63 @@ fn sendig_dns_queries() {
     let (now, mut he) = setup();
 
     expect_initial_dns_queries(&mut he, now);
+}
+
+/// An HTTPS record is published per port, so the record for `example.com:8443`
+/// lives at `_8443._https.example.com`. Querying the bare origin name would
+/// read the record of whatever the host serves on port 443. Address records
+/// carry no prefix labels.
+///
+/// > The HTTPS RR uses Port Prefix Naming (Section 2.3), with one modification:
+/// > if the scheme is "https" and the port is 443, then the client's original
+/// > QNAME is equal to the service name (i.e., the origin's hostname), without
+/// > any prefix labels.
+///
+/// <https://www.rfc-editor.org/rfc/rfc9460#section-9.1>
+#[test]
+fn https_query_for_a_non_default_port_is_port_prefixed() {
+    let now = Instant::now();
+    let mut he = HappyEyeballs::new(HOSTNAME, CUSTOM_PORT).unwrap();
+
+    he.expect_all(
+        [
+            out_send_dns(Id::from(0), HTTPS_NAME_CUSTOM_PORT, DnsRecordType::Https),
+            out_send_dns(Id::from(1), HOSTNAME, DnsRecordType::Aaaa),
+            out_send_dns(Id::from(2), HOSTNAME, DnsRecordType::A),
+        ],
+        now,
+    );
+}
+
+/// The port-prefixed query is still the origin's HTTPS query, so its answer
+/// satisfies the SVCB/HTTPS half of the move-on condition and the first attempt
+/// goes out without waiting out the resolution delay.
+#[test]
+fn non_default_port_https_answer_satisfies_move_on() {
+    let now = Instant::now();
+    let mut he = HappyEyeballs::new(HOSTNAME, CUSTOM_PORT).unwrap();
+
+    he.expect_all(
+        [
+            out_send_dns(Id::from(0), HTTPS_NAME_CUSTOM_PORT, DnsRecordType::Https),
+            out_send_dns(Id::from(1), HOSTNAME, DnsRecordType::Aaaa),
+            out_send_dns(Id::from(2), HOSTNAME, DnsRecordType::A),
+        ],
+        now,
+    );
+
+    he.input(in_dns_https_negative(Id::from(0)), now);
+    he.input(in_dns_aaaa_positive(Id::from(1)), now);
+
+    he.expect(
+        out_attempt(
+            Id::from(3),
+            V6_ADDR.into(),
+            CUSTOM_PORT,
+            ConnectionAttemptHttpVersions::H2OrH1,
+        ),
+        now,
+    );
 }
 
 /// > Implementations SHOULD NOT wait for all answers to return before
@@ -259,7 +321,8 @@ fn resolution_delay_starts_on_first_response() {
 /// > are not available yet.
 ///
 /// HTTPS arrives first with both v6 and v4 hints while AAAA and A are still
-/// in-flight. After the resolution timeout the v6 hint is used. When AAAA and A
+/// in-flight. The v6 hint counts as the preferred family answer, so it is used
+/// right away, without waiting out the resolution delay. When AAAA and A
 /// subsequently arrive with negative answers, the hints are kept (a negative
 /// answer removes no address, so it does not remove the hint). After the
 /// in-flight v6 hint attempt fails, the v4 hint is tried next.
@@ -267,13 +330,10 @@ fn resolution_delay_starts_on_first_response() {
 /// <https://www.ietf.org/archive/id/draft-ietf-happy-happyeyeballs-v3-02.html#section-4.2.1>
 #[test]
 fn https_hints() {
-    let (mut now, mut he) = setup();
+    let (now, mut he) = setup();
 
     expect_initial_dns_queries(&mut he, now);
     he.input(in_dns_https_positive_v4_and_v6_hints(Id::from(0)), now);
-    he.expect(out_resolution_delay(), now);
-
-    now += RESOLUTION_DELAY;
     he.expect(out_attempt_v6_h3(Id::from(3)), now);
     he.expect(out_connection_attempt_delay(), now);
     // AAAA and A arrive negative, but the hints are kept. The connection
@@ -287,27 +347,31 @@ fn https_hints() {
     he.expect(out_attempt_v4_h3(Id::from(4)), now);
 }
 
-/// HTTPS IP hints should count as positive address answers for the
-/// resolution delay timeout path (`move_on_with_timeout`).
+/// An HTTPS IP hint of the preferred family counts as the preferred family
+/// answer: with only HTTPS (v6 hint) in, and AAAA and A still in-progress, move
+/// on right away instead of waiting out the resolution delay.
 ///
-/// Scenario: only HTTPS with v6 hints has arrived, AAAA and A are still
+/// > When these are received, they SHOULD be considered as positive non-empty
+/// > answers for the purpose of the algorithm when A and AAAA records
+/// > corresponding to the TargetName are not available yet.
+///
+/// <https://www.ietf.org/archive/id/draft-ietf-happy-happyeyeballs-v3-02.html#section-4.2.1>
+#[test]
+fn https_preferred_family_hints_move_on_without_timeout() {
+    let (now, mut he) = setup();
+
+    expect_initial_dns_queries(&mut he, now);
+    he.input(in_dns_https_positive_v6_hints(Id::from(0)), now);
+    he.expect(out_attempt_v6_h3(Id::from(3)), now);
+}
+
+/// HTTPS IP hints of the non-preferred family count as positive address
+/// answers for the resolution delay timeout path (`move_on_with_timeout`).
+///
+/// Scenario: only HTTPS with v4 hints has arrived, AAAA and A are still
 /// in-progress. After the resolution delay we should move on.
 ///
 /// <https://github.com/mozilla/happy-eyeballs/issues/39>
-#[test]
-fn https_hints_move_on_with_timeout() {
-    let (mut now, mut he) = setup();
-    expect_hints_move_on_with_timeout(
-        &mut he,
-        &mut now,
-        in_dns_https_positive_v6_hints(Id::from(0)),
-        out_attempt_v6_h3(Id::from(3)),
-    );
-}
-
-/// HTTPS IPv4 hints should also count for `move_on_with_timeout`.
-///
-/// Mirrors `https_hints_move_on_with_timeout` but using IPv4 hints instead of IPv6.
 #[test]
 fn https_v4_hints_move_on_with_timeout() {
     let (mut now, mut he) = setup();
@@ -319,10 +383,10 @@ fn https_v4_hints_move_on_with_timeout() {
     );
 }
 
-/// An HTTPS record with an IPv6 hint (advertising only HTTP/1.1) arrives
-/// first, so the hint should be connected to once the resolution delay expires
-/// (see `https_hints_move_on_with_timeout`). Then empty (NODATA) A and AAAA
-/// answers arrive at that same instant.
+/// With IPv4 preferred, an HTTPS record with an IPv6 hint (advertising only
+/// HTTP/1.1) arrives first, so the hint should be connected to once the
+/// resolution delay expires (see `https_v4_hints_move_on_with_timeout`). Then
+/// empty (NODATA) A and AAAA answers arrive at that same instant.
 ///
 /// An empty answer means the name simply has no A/AAAA records, so it carries
 /// no address to replace the hint with. The operator-supplied hint is still the
@@ -336,10 +400,18 @@ fn empty_a_aaaa_at_resolution_delay_keeps_v6_hint() {
     const RESOLUTION_DELAY_25MS: Duration = Duration::from_millis(25);
     let (mut now, mut he) = setup_with_config(NetworkConfig {
         resolution_delay: RESOLUTION_DELAY_25MS,
+        ip: IpPreference::DualStackPreferV4,
         ..NetworkConfig::default()
     });
 
-    expect_initial_dns_queries(&mut he, now);
+    he.expect_all(
+        [
+            out_send_dns_https(Id::from(0)),
+            out_send_dns(Id::from(1), HOSTNAME, DnsRecordType::Aaaa),
+            out_send_dns_a(Id::from(2)),
+        ],
+        now,
+    );
     he.input(in_dns_https_v6_hint_h1(Id::from(0)), now);
     he.expect(
         Output::Timer {
@@ -421,13 +493,24 @@ fn resolution_delay_boundary() {
 /// > for those TargetNames if they haven't yet received those records.
 ///
 /// <https://www.ietf.org/archive/id/draft-ietf-happy-happyeyeballs-v3-02.html#section-4.2.1>
+///
+/// The v6 hint is attempted right away, the target name queries follow.
 #[test]
 fn https_hints_still_query_a_aaaa() {
     let (now, mut he) = setup();
 
     expect_initial_dns_queries(&mut he, now);
     he.input(in_dns_https_positive_svc1(Id::from(0)), now);
-    he.expect(out_send_dns_svc1(Id::from(3)), now);
+    he.expect(
+        out_attempt(
+            Id::from(3),
+            V6_ADDR_2.into(),
+            PORT,
+            ConnectionAttemptHttpVersions::H3,
+        ),
+        now,
+    );
+    he.expect(out_send_dns_svc1(Id::from(4)), now);
 }
 
 #[test]
@@ -441,7 +524,7 @@ fn https_h3_upgrade_without_hints() {
     he.expect(out_attempt_v6_h3(Id::from(3)), now);
 }
 
-/// A ServiceInfo advertising H3 must not produce an H3 connection attempt
+/// A `ServiceInfo` advertising H3 must not produce an H3 connection attempt
 /// when H3 is disabled in the network config.
 #[test]
 fn https_h3_disabled() {
@@ -548,20 +631,34 @@ fn single_stack_target_name_skips_disabled_address_family() {
         ip: IpPreference,
         /// The only address-family query sent for the origin domain.
         origin_dns_query: Output,
-        /// The only address-family query sent for the target name.
-        target_name_dns_query: Output,
+        /// Outputs after the HTTPS answer: the target name's only
+        /// address-family query and then a timer, with an attempt to the v6
+        /// hint first when IPv6 is preferred.
+        after_https: Vec<Output>,
     }
 
     let cases = vec![
         Case {
             ip: IpPreference::Ipv6Only,
             origin_dns_query: out_send_dns_aaaa(Id::from(1)),
-            target_name_dns_query: out_send_dns_svc1(Id::from(2)),
+            after_https: vec![
+                out_attempt(
+                    Id::from(2),
+                    V6_ADDR_2.into(),
+                    PORT,
+                    ConnectionAttemptHttpVersions::H3,
+                ),
+                out_send_dns_svc1(Id::from(3)),
+                out_connection_attempt_delay(),
+            ],
         },
         Case {
             ip: IpPreference::Ipv4Only,
             origin_dns_query: out_send_dns_a(Id::from(1)),
-            target_name_dns_query: out_send_dns(Id::from(2), SVC1, DnsRecordType::A),
+            after_https: vec![
+                out_send_dns(Id::from(2), SVC1, DnsRecordType::A),
+                out_resolution_delay(),
+            ],
         },
     ];
 
@@ -574,9 +671,64 @@ fn single_stack_target_name_skips_disabled_address_family() {
         he.expect(out_send_dns_https(Id::from(0)), now);
         he.expect(case.origin_dns_query, now);
         he.input(in_dns_https_positive_svc1(Id::from(0)), now);
-        he.expect(case.target_name_dns_query, now);
-        // No query for the disabled address family should appear,
-        // only the resolution delay.
-        he.expect(out_resolution_delay(), now);
+        // No query for the disabled address family should appear.
+        he.expect_all(case.after_https, now);
+    }
+}
+
+/// On a single-stack network, an HTTPS record's IP hints for the disabled
+/// address family must not be attempted. The hints come straight from the DNS
+/// answer, so without this the record decides which family the client connects
+/// over, e.g. IPv6 for a client that has IPv6 disabled.
+#[test]
+fn single_stack_skips_disabled_address_family_hints() {
+    struct Case {
+        ip: IpPreference,
+        /// The only address-family query sent for the origin domain.
+        dns_query: Output,
+        dns_response: Input,
+        /// The enabled family's hint over each protocol; nothing else.
+        expected_connections: [Output; 2],
+    }
+
+    let cases = vec![
+        Case {
+            ip: IpPreference::Ipv4Only,
+            dns_query: out_send_dns_a(Id::from(1)),
+            dns_response: in_dns_a_negative(Id::from(1)),
+            expected_connections: [
+                out_attempt_v4_h3(Id::from(2)),
+                out_attempt_v4_h2(Id::from(3)),
+            ],
+        },
+        Case {
+            ip: IpPreference::Ipv6Only,
+            dns_query: out_send_dns_aaaa(Id::from(1)),
+            dns_response: in_dns_aaaa_negative(Id::from(1)),
+            expected_connections: [
+                out_attempt_v6_h3(Id::from(2)),
+                out_attempt_v6_h2(Id::from(3)),
+            ],
+        },
+    ];
+
+    for case in cases {
+        let (mut now, mut he) = setup_with_config(NetworkConfig {
+            ip: case.ip,
+            ..NetworkConfig::default()
+        });
+
+        he.expect(out_send_dns_https(Id::from(0)), now);
+        he.expect(case.dns_query, now);
+        // The HTTPS record carries a hint for both address families. The
+        // enabled family's hint counts as its answer, so no resolution delay.
+        he.input(in_dns_https_positive_v4_and_v6_hints(Id::from(0)), now);
+        let [first, second] = case.expected_connections;
+        he.expect(first, now);
+        he.expect(out_connection_attempt_delay(), now);
+        he.input(case.dns_response, now);
+        he.expect(out_connection_attempt_delay(), now);
+        // No attempt to the disabled family's hint follows.
+        he.expect_connection_attempts([second], &mut now);
     }
 }

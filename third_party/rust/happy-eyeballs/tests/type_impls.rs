@@ -1,5 +1,9 @@
+#![allow(clippy::disallowed_methods, reason = "tests may use Instant::now")]
+
 mod common;
 use common::*;
+
+use std::collections::HashSet;
 
 use happy_eyeballs::{
     ConnectionResult, EchConfig, HttpVersion, Id, Input, ServiceInfo, TargetName,
@@ -43,7 +47,7 @@ fn service_info_debug() {
 
     // With optional fields empty: conditional fields must not appear.
     let bare = ServiceInfo {
-        alpn_http_versions: Default::default(),
+        alpn_http_versions: HashSet::default(),
         ech_config: None,
         ipv4_hints: vec![],
         ipv6_hints: vec![],
@@ -66,7 +70,7 @@ fn happy_eyeballs_debug() {
     assert!(!s.contains("dns_queries"), "unexpected 'dns_queries': {s}");
 
     // After first process_output, dns_queries is populated.
-    let _ = he.process_output(now);
+    _ = he.process_output(now);
     let s = format!("{he:?}");
     assert!(s.contains("dns_queries"), "missing 'dns_queries': {s}");
 
@@ -82,7 +86,7 @@ fn happy_eyeballs_debug() {
 
     // AAAA arrives; connection attempt with ECH is emitted.
     he2.process_input(in_dns_aaaa_positive(Id::from(1)), now2);
-    let _ = he2.process_output(now2);
+    _ = he2.process_output(now2);
     let s = format!("{he2:?}");
     assert!(
         s.contains("connection_attempts"),

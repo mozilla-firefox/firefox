@@ -11,17 +11,27 @@
 
 [package]
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.95.0"
 name = "happy-eyeballs"
-version = "1.0.0"
+version = "1.1.0"
 build = false
 autolib = false
 autobins = false
 autoexamples = false
 autotests = false
 autobenches = false
+description = "Happy Eyeballs v3 (draft-ietf-happy-happyeyeballs) as a sans-I/O state machine"
 readme = "README.md"
+keywords = [
+    "happy-eyeballs",
+    "ipv6",
+    "dns",
+    "quic",
+    "networking",
+]
+categories = ["network-programming"]
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/mozilla/happy-eyeballs"
 
 [lib]
 name = "happy_eyeballs"
@@ -59,18 +69,119 @@ path = "tests/optimistic_dns.rs"
 name = "type_impls"
 path = "tests/type_impls.rs"
 
-[dependencies.log]
-version = "0.4"
-default-features = false
-
 [dependencies.thiserror]
 version = "2.0.12"
+default-features = false
+
+[dependencies.tracing]
+version = "0.1.37"
+features = ["std"]
 default-features = false
 
 [dependencies.url]
 version = "2.5.7"
 default-features = false
 
-[dev-dependencies.env_logger]
-version = "0.10"
+[dev-dependencies.tracing-subscriber]
+version = "0.3.20"
+features = [
+    "fmt",
+    "std",
+]
 default-features = false
+
+[lints.clippy]
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+assert_is_empty = "allow"
+cfg_not_test = "warn"
+clone_on_ref_ptr = "warn"
+create_dir = "warn"
+dbg_macro = "warn"
+empty_drop = "warn"
+empty_enum_variants_with_brackets = "warn"
+field_scoped_visibility_modifiers = "warn"
+filetype_is_file = "warn"
+float_cmp_const = "warn"
+fn_to_numeric_cast_any = "warn"
+get_unwrap = "warn"
+if_then_some_else_none = "warn"
+impl_trait_in_params = "warn"
+infinite_loop = "warn"
+iter_over_hash_type = "warn"
+large_include_file = "warn"
+let_underscore_must_use = "warn"
+let_underscore_untyped = "warn"
+literal_string_with_formatting_args = "warn"
+lossy_float_literal = "warn"
+map_with_unused_argument_over_ranges = "warn"
+mem_forget = "warn"
+missing_asserts_for_indexing = "warn"
+mixed_read_write_in_expression = "warn"
+module_name_repetitions = "warn"
+multiple_crate_versions = "allow"
+multiple_inherent_impl = "warn"
+mutex_atomic = "warn"
+mutex_integer = "warn"
+needless_raw_strings = "warn"
+non_ascii_literal = "warn"
+non_zero_suggestions = "warn"
+partial_pub_fields = "warn"
+pathbuf_init_then_push = "warn"
+precedence_bits = "warn"
+pub_without_shorthand = "warn"
+rc_buffer = "warn"
+rc_mutex = "warn"
+redundant_test_prefix = "warn"
+redundant_type_annotations = "warn"
+ref_patterns = "warn"
+renamed_function_params = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+return_and_then = "warn"
+self_named_module_files = "warn"
+semicolon_inside_block = "warn"
+string_lit_chars_any = "warn"
+suspicious_xor_used_as_pow = "warn"
+try_err = "warn"
+unnecessary_safety_comment = "warn"
+unnecessary_safety_doc = "warn"
+unnecessary_self_imports = "warn"
+unneeded_field_pattern = "warn"
+unused_result_ok = "warn"
+unused_trait_names = "warn"
+unwrap_in_result = "warn"
+unwrap_used = "warn"
+verbose_file_reads = "warn"
+
+[lints.clippy.cargo]
+level = "warn"
+priority = -1
+
+[lints.clippy.nursery]
+level = "warn"
+priority = -1
+
+[lints.clippy.pedantic]
+level = "warn"
+priority = -1
+
+[lints.rust]
+absolute_paths_not_starting_with_crate = "warn"
+ambiguous_negative_literals = "warn"
+explicit_outlives_requirements = "warn"
+macro_use_extern_crate = "warn"
+missing_abi = "warn"
+non_ascii_idents = "warn"
+redundant_imports = "warn"
+redundant_lifetimes = "warn"
+trivial_numeric_casts = "warn"
+unit_bindings = "warn"
+unused_import_braces = "warn"
+unused_lifetimes = "warn"
+unused_macro_rules = "warn"
+unused_qualifications = "warn"
+
+[lints.rust.unexpected_cfgs]
+level = "warn"
+priority = 0
+check-cfg = ["cfg(coverage,coverage_nightly,fuzzing)"]

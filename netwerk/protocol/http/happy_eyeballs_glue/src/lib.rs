@@ -51,9 +51,9 @@ pub enum ResolutionMode {
 impl From<ResolutionMode> for happy_eyeballs::ResolutionMode {
     fn from(v: ResolutionMode) -> Self {
         match v {
-            ResolutionMode::ByIp => Self::ByIp,
-            ResolutionMode::ByName => Self::ByName,
-            ResolutionMode::ByNameWithHttpsRr => Self::ByNameWithHttpsRr,
+            ResolutionMode::ByIp => Self::Ip,
+            ResolutionMode::ByName => Self::Name,
+            ResolutionMode::ByNameWithHttpsRr => Self::NameWithHttpsRr,
         }
     }
 }

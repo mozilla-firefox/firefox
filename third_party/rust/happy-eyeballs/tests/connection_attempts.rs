@@ -1,3 +1,5 @@
+#![allow(clippy::disallowed_methods, reason = "tests may use Instant::now")]
+
 /// > 6. Establishing Connections
 ///
 /// <https://www.ietf.org/archive/id/draft-ietf-happy-happyeyeballs-v3-02.html#section-6>
@@ -238,7 +240,7 @@ fn succeeded_keeps_emitting_succeeded() {
 }
 
 /// The connection-attempt-delay timer reflects the time *remaining*, not the full delay.
-/// Calling process_output partway through the delay should return a timer for the remainder.
+/// Calling `process_output` partway through the delay should return a timer for the remainder.
 #[test]
 fn connection_attempt_delay_partial_elapsed() {
     let custom_delay = Duration::from_millis(100);
@@ -257,7 +259,7 @@ fn connection_attempt_delay_partial_elapsed() {
     let elapsed = Duration::from_millis(40);
     he.expect(
         Output::Timer {
-            duration: custom_delay - elapsed,
+            duration: custom_delay.checked_sub(elapsed).unwrap(),
         },
         now + elapsed,
     );

@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![allow(dead_code, reason = "each test binary uses a subset of these helpers")]
 
 use std::{
     net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
@@ -87,12 +87,12 @@ pub trait HappyEyeballsExt {
     fn expect(&mut self, expected: Output, now: Instant);
     /// Assert that the next outputs equal `expected`, in order. Convenience for
     /// a run of consecutive outputs emitted at the same `now`.
-    fn expect_all(&mut self, expected: impl IntoIterator<Item = Output>, now: Instant);
+    fn expect_all<I: IntoIterator<Item = Output>>(&mut self, expected: I, now: Instant);
     /// Assert that the state machine has no further output to produce.
     fn expect_idle(&mut self, now: Instant);
-    fn expect_connection_attempts(
+    fn expect_connection_attempts<I: IntoIterator<Item = Output>>(
         &mut self,
-        connections: impl IntoIterator<Item = Output>,
+        connections: I,
         now: &mut Instant,
     );
 }
@@ -106,7 +106,7 @@ impl HappyEyeballsExt for HappyEyeballs {
         assert_eq!(Some(expected), self.process_output(now));
     }
 
-    fn expect_all(&mut self, expected: impl IntoIterator<Item = Output>, now: Instant) {
+    fn expect_all<I: IntoIterator<Item = Output>>(&mut self, expected: I, now: Instant) {
         for output in expected {
             self.expect(output, now);
         }
@@ -116,9 +116,9 @@ impl HappyEyeballsExt for HappyEyeballs {
         assert_eq!(None, self.process_output(now));
     }
 
-    fn expect_connection_attempts(
+    fn expect_connection_attempts<I: IntoIterator<Item = Output>>(
         &mut self,
-        connections: impl IntoIterator<Item = Output>,
+        connections: I,
         now: &mut Instant,
     ) {
         for conn in connections {
@@ -207,7 +207,7 @@ pub fn in_dns_https_positive_svc1(id: Id) -> Input {
     }
 }
 
-pub fn in_dns_https_negative(id: Id) -> Input {
+pub const fn in_dns_https_negative(id: Id) -> Input {
     Input::DnsResult {
         id,
         result: DnsResult::Https(Err(())),
@@ -222,6 +222,17 @@ pub fn in_dns_https_stale_v6_hints(id: Id) -> Input {
         result: DnsResult::Https(Ok(vec![
             service_info(1, HOSTNAME, &[HttpVersion::H3, HttpVersion::H2])
                 .ipv6_hints(vec![V6_ADDR]),
+        ])),
+        stale: true,
+    }
+}
+
+/// An HTTPS answer advertising ECH, served from a stale (expired) cache entry.
+pub fn in_dns_https_stale_ech(id: Id) -> Input {
+    Input::DnsResult {
+        id,
+        result: DnsResult::Https(Ok(vec![
+            service_info(1, HOSTNAME, &[HttpVersion::H3, HttpVersion::H2]).ech(),
         ])),
         stale: true,
     }
@@ -263,7 +274,7 @@ pub fn in_dns_a_stale(id: Id) -> Input {
     }
 }
 
-pub fn in_dns_aaaa_negative(id: Id) -> Input {
+pub const fn in_dns_aaaa_negative(id: Id) -> Input {
     Input::DnsResult {
         id,
         result: DnsResult::Aaaa(Err(())),
@@ -273,7 +284,7 @@ pub fn in_dns_aaaa_negative(id: Id) -> Input {
 
 /// A positive but empty AAAA answer (`Ok(vec![])`): the resolver returned no
 /// IPv6 addresses. Distinct from a negative answer (`Err`).
-pub fn in_dns_aaaa_empty(id: Id) -> Input {
+pub const fn in_dns_aaaa_empty(id: Id) -> Input {
     Input::DnsResult {
         id,
         result: DnsResult::Aaaa(Ok(vec![])),
@@ -283,7 +294,7 @@ pub fn in_dns_aaaa_empty(id: Id) -> Input {
 
 /// A positive but empty A answer (`Ok(vec![])`): the resolver returned no IPv4
 /// addresses. Distinct from a negative answer (`Err`).
-pub fn in_dns_a_empty(id: Id) -> Input {
+pub const fn in_dns_a_empty(id: Id) -> Input {
     Input::DnsResult {
         id,
         result: DnsResult::A(Ok(vec![])),
@@ -291,7 +302,7 @@ pub fn in_dns_a_empty(id: Id) -> Input {
     }
 }
 
-pub fn in_dns_a_negative(id: Id) -> Input {
+pub const fn in_dns_a_negative(id: Id) -> Input {
     Input::DnsResult {
         id,
         result: DnsResult::A(Err(())),
@@ -299,7 +310,7 @@ pub fn in_dns_a_negative(id: Id) -> Input {
     }
 }
 
-pub fn in_connection_result_positive(id: Id) -> Input {
+pub const fn in_connection_result_positive(id: Id) -> Input {
     Input::ConnectionResult {
         id,
         result: ConnectionResult::Success,
@@ -476,7 +487,7 @@ pub fn out_attempt_v4_h2_custom_port(id: Id) -> Output {
     }
 }
 
-pub fn out_attempt(
+pub const fn out_attempt(
     id: Id,
     addr: IpAddr,
     port: u16,
@@ -493,13 +504,13 @@ pub fn out_attempt(
     }
 }
 
-pub fn out_resolution_delay() -> Output {
+pub const fn out_resolution_delay() -> Output {
     Output::Timer {
         duration: RESOLUTION_DELAY,
     }
 }
 
-pub fn out_connection_attempt_delay() -> Output {
+pub const fn out_connection_attempt_delay() -> Output {
     Output::Timer {
         duration: CONNECTION_ATTEMPT_DELAY,
     }
@@ -510,9 +521,21 @@ pub fn setup() -> (Instant, HappyEyeballs) {
 }
 
 pub fn setup_with_config(config: NetworkConfig) -> (Instant, HappyEyeballs) {
-    let _ = env_logger::builder().is_test(true).try_init();
+    use tracing_subscriber::{
+        filter::{LevelFilter, Targets},
+        prelude::*,
+    };
+
+    let targets = std::env::var("RUST_LOG")
+        .ok()
+        .and_then(|directives| directives.parse::<Targets>().ok())
+        .unwrap_or_else(|| Targets::new().with_default(LevelFilter::ERROR));
+    _ = tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer().with_test_writer())
+        .with(targets)
+        .try_init();
     let now = Instant::now();
-    let he = HappyEyeballs::new_with_network_config(HOSTNAME, PORT, config).unwrap();
+    let he = HappyEyeballs::new_with_network_config(HOSTNAME, PORT, config).expect("valid host");
     (now, he)
 }
 

@@ -958,8 +958,11 @@ void HappyEyeballsConnectionAttempt::DNSLookup(
           if (httpsRRPort != NS_HTTPS_DEFAULT_PORT) {
             dns->NewAdditionalInfo(""_ns, httpsRRPort, getter_AddRefs(info));
           }
+          // aHostname is already port-prefixed for a non-443 origin. Resolve
+          // the origin instead and let nsHostResolver add the prefix, so it
+          // also keeps the origin host for a "." TargetName.
           rv = dns->AsyncResolveNative(
-              aHostname, nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+              mHost, nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
               flags | nsIDNSService::RESOLVE_WANT_RECORD_ON_ERROR, info, this,
               gSocketTransportService, mConnInfo->GetOriginAttributes(),
               getter_AddRefs(request));

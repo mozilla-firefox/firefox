@@ -3371,11 +3371,11 @@ dependencies = [
 
 [[package]]
 name = "happy-eyeballs"
-version = "1.0.0"
-source = "git+https://github.com/mozilla/happy-eyeballs?tag=v1.0.0#2e1a2d7a7a30dd07ca3c0fc6fa2475565e5c39a8"
+version = "1.1.0"
+source = "git+https://github.com/mozilla/happy-eyeballs?tag=v1.1.0#9b9994e740c8972fc409f10c4ce974ab634026fa"
 dependencies = [
- "log",
  "thiserror 2.0.12",
+ "tracing",
  "url",
 ]
 

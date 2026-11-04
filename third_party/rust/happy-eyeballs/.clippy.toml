@@ -1,0 +1,11 @@
+disallowed-methods = [
+    { path = "std::time::Instant::now", reason = "time should be provided externally" }
+]
+disallowed-macros = [
+    { path = "std::dbg" }
+]
+allow-mixed-uninlined-format-args = false
+allow-unwrap-in-tests = true
+allow-dbg-in-tests = true
+avoid-breaking-exported-api = false
+pass-by-value-size-limit = 32

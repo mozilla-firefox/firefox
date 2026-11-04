@@ -1,11 +1,13 @@
 //! By-name connection modes: [`NetworkConfig::resolution`] set to
-//! [`ResolutionMode::ByName`] or [`ResolutionMode::ByNameWithHttpsRr`].
+//! [`ResolutionMode::Name`] or [`ResolutionMode::NameWithHttpsRr`].
 //!
 //! When the host should not (or cannot) be resolved client-side (e.g. a proxy
 //! resolves it for us, or an inner proxy connection is being established), the
-//! state machine attempts by name instead of racing IPs. `ByName` skips DNS
-//! entirely; `ByNameWithHttpsRr` still fetches the origin HTTPS record for its
+//! state machine attempts by name instead of racing IPs. `Name` skips DNS
+//! entirely; `NameWithHttpsRr` still fetches the origin HTTPS record for its
 //! ALPN (so h3 is attempted when advertised) but never queries A/AAAA.
+
+#![allow(clippy::disallowed_methods, reason = "tests may use Instant::now")]
 
 mod common;
 use common::*;
@@ -19,14 +21,14 @@ use happy_eyeballs::{
 
 fn by_name_config() -> NetworkConfig {
     NetworkConfig {
-        resolution: ResolutionMode::ByName,
+        resolution: ResolutionMode::Name,
         ..NetworkConfig::default()
     }
 }
 
 fn by_name_https_rr_config() -> NetworkConfig {
     NetworkConfig {
-        resolution: ResolutionMode::ByNameWithHttpsRr,
+        resolution: ResolutionMode::NameWithHttpsRr,
         ..NetworkConfig::default()
     }
 }
@@ -46,7 +48,7 @@ fn out_attempt_by_name(id: Id, http_version: ConnectionAttemptHttpVersions) -> O
     }
 }
 
-/// In `ByName` mode the machine emits no DNS query at all and immediately
+/// In `Name` mode the machine emits no DNS query at all and immediately
 /// yields a by-name connection attempt over the default H2/H1 versions.
 #[test]
 fn by_name_no_dns_query_and_by_name_attempt() {
@@ -105,7 +107,7 @@ fn by_name_failure() {
 fn by_name_respects_http_versions() {
     let now = Instant::now();
     let config = NetworkConfig {
-        resolution: ResolutionMode::ByName,
+        resolution: ResolutionMode::Name,
         http_versions: HttpVersions {
             h1: true,
             h2: false,
@@ -121,7 +123,7 @@ fn by_name_respects_http_versions() {
     );
 }
 
-/// Even with HTTP/3 enabled, a plain `ByName` attempt never offers H3: without
+/// Even with HTTP/3 enabled, a plain `Name` attempt never offers H3: without
 /// an HTTPS record proving H3 support the machine falls back to H2/H1,
 /// mirroring how it treats an IP-literal host.
 #[test]
@@ -133,8 +135,8 @@ fn by_name_does_not_offer_h3() {
     assert_eq!(attempt.http_version, ConnectionAttemptHttpVersions::H2OrH1);
 }
 
-/// `ByName` mode attempts a domain alt-svc target by name, over its advertised
-/// protocol: an h3 alt-svc is raced over h3 (with no SendDnsQuery for it),
+/// `Name` mode attempts a domain alt-svc target by name, over its advertised
+/// protocol: an h3 alt-svc is raced over h3 (with no `SendDnsQuery` for it),
 /// ahead of the by-name origin H2/H1 fallback.
 #[test]
 fn by_name_attempts_alt_svc_by_name_over_h3() {
@@ -142,7 +144,7 @@ fn by_name_attempts_alt_svc_by_name_over_h3() {
 
     let mut now = Instant::now();
     let config = NetworkConfig {
-        resolution: ResolutionMode::ByName,
+        resolution: ResolutionMode::Name,
         alt_svc: vec![AltSvc {
             host: Some("alt.example.com".to_string()),
             port: None,
@@ -182,7 +184,7 @@ fn by_name_attempts_alt_svc_by_name_over_h3() {
     );
 }
 
-/// `ByNameWithHttpsRr` sends exactly one DNS query, the origin HTTPS record, and
+/// `NameWithHttpsRr` sends exactly one DNS query, the origin HTTPS record, and
 /// never an A or AAAA query. Before the answer arrives it emits nothing else:
 /// it waits for the HTTPS answer rather than racing addresses.
 #[test]
@@ -275,7 +277,7 @@ fn https_rr_empty_falls_back_to_by_name_h2_h1() {
     );
 }
 
-/// Regression: with the default [`ResolutionMode::ByIp`], a domain host still
+/// Regression: with the default [`ResolutionMode::Ip`], a domain host still
 /// opens the normal DNS phase, emitting HTTPS/AAAA/A queries before any
 /// connection attempt.
 #[test]
@@ -295,9 +297,9 @@ fn default_still_resolves() {
     assert!(attempt.address().is_some());
 }
 
-/// A record's TargetName is a DNS name, but a by-name attempt needs a connect
+/// A record's `TargetName` is a DNS name, but a by-name attempt needs a connect
 /// host: the root label's trailing dot is dropped (it is invalid as SNI and is
-/// rejected by proxies), and a ServiceMode target of "." denotes the owner name,
+/// rejected by proxies), and a `ServiceMode` target of "." denotes the owner name,
 /// i.e. the origin.
 #[test]
 fn https_rr_by_name_host_is_a_connect_name() {
@@ -334,14 +336,14 @@ fn https_rr_by_name_host_is_a_connect_name() {
     }
 }
 
-/// `ByName` performs no DNS at all, so a failure can never be a resolution
+/// `Name` performs no DNS at all, so a failure can never be a resolution
 /// failure. With no usable HTTP version there is nothing to attempt, and the
 /// machine reports a connection failure rather than a DNS one.
 #[test]
 fn by_name_failure_is_never_dns_resolution() {
     let now = Instant::now();
     let config = NetworkConfig {
-        resolution: ResolutionMode::ByName,
+        resolution: ResolutionMode::Name,
         http_versions: HttpVersions {
             h1: false,
             h2: false,
@@ -377,7 +379,7 @@ fn by_name_origin_drops_trailing_root_label() {
 
     // An alt-svc entry without a host of its own defaults to the origin.
     let config = NetworkConfig {
-        resolution: ResolutionMode::ByName,
+        resolution: ResolutionMode::Name,
         alt_svc: vec![AltSvc {
             host: None,
             port: None,

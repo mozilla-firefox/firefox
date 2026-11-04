@@ -1,3 +1,5 @@
+#![allow(clippy::disallowed_methods, reason = "tests may use Instant::now")]
+
 mod common;
 use common::*;
 
@@ -69,7 +71,7 @@ fn ip_host_connection_failure() {
             id: Id::from(0),
             endpoint: Endpoint {
                 target: EndpointTarget::Address(SocketAddr::new(
-                    IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+                    IpAddr::V4(Ipv4Addr::LOCALHOST),
                     PORT,
                 )),
                 http_version: ConnectionAttemptHttpVersions::H2OrH1,

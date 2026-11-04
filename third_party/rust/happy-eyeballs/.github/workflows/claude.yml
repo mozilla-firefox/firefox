@@ -1,9 +1,7 @@
 name: Claude Code Review
 
 on:
-  # zizmor: ignore[dangerous-triggers]
-  # pull_request_target is required to access secrets for fork PRs.
-  pull_request_target:
+  pull_request:
     branches: ["main"]
     types: [opened, synchronize, ready_for_review, reopened]
 
@@ -20,8 +18,6 @@ jobs:
       contents: read
       pull-requests: write # post review comments
       issues: read # read issue context for review
-      actions: read # read workflow run context
-      discussions: read # read discussion context for review
-    uses: mozilla/actions/.github/workflows/claude-review.yml@2152d1412122b04d838d6341aa3b4d6160b3de32 # v2.0.5
+    uses: mozilla/actions/.github/workflows/claude-review.yml@42622e57e54d96514373f5234c0220b014e64740 # v3.1.1
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
