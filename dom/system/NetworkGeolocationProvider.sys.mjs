@@ -18,16 +18,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
 // GeolocationPositionError has no interface object, so we can't use that here.
 const POSITION_UNAVAILABLE = 2;
 
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "gNetworkGeolocationLogLevel",
-  "geo.provider.network.loglevel",
-  "Off"
-);
-
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
   let consoleOptions = {
-    maxLogLevelPref: lazy.gNetworkGeolocationLogLevel,
+    maxLogLevelPref: "geo.provider.network.loglevel",
     prefix: "NetworkGeolocationProvider",
   };
   return console.createInstance(consoleOptions);
@@ -213,11 +206,6 @@ NetworkGeolocationProvider.prototype = {
       return;
     }
 
-    // The request cache is intentionally retained across shutdown so a recent
-    // position can be reused across the provider's stop/restart cycles within a
-    // browser run, instead of cold-starting a network request for each
-    // intermittent geolocation use.
-
     if (this.timer) {
       this.timer.cancel();
       this.timer = null;
@@ -311,7 +299,7 @@ NetworkGeolocationProvider.prototype = {
       data.wifiAccessPoints = wifiData;
     }
 
-    let cachedLocation = lazy.NetworkGeolocationCache.getValidLocation(
+    let cachedLocation = await lazy.NetworkGeolocationCache.getValidLocation(
       data.wifiAccessPoints
     );
 
