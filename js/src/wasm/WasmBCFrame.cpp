@@ -141,6 +141,9 @@ void BaseLocalIter::operator++(int) {
 
 bool BaseCompiler::checkStackHeight() {
   if (MOZ_UNLIKELY(!fr.checkStackHeight())) {
+#ifdef DEBUG
+    jit::GetJitContext()->setWasmFatalError();
+#endif
     return decoder_.fail(decoder_.beginOffset(), "stack frame is too large");
   }
   return true;

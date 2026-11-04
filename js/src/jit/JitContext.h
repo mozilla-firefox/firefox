@@ -88,6 +88,7 @@ class MOZ_RAII JitContext {
 
   bool isCompilingWasm_ = false;
   bool oom_ = false;
+  bool wasmFatalError_ = false;
 #endif
 
  public:
@@ -119,6 +120,8 @@ class MOZ_RAII JitContext {
   }
   bool hasOOM() { return oom_; }
   void setOOM() { oom_ = true; }
+  bool hasWasmFatalError() { return wasmFatalError_; }
+  void setWasmFatalError() { wasmFatalError_ = true; }
 
   bool inBaselineBackend() const { return inBaselineBackend_; }
   bool inIonBackend() const { return inIonBackend_; }
