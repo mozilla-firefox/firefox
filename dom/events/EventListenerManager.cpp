@@ -1148,6 +1148,8 @@ nsresult EventListenerManager::CompileEventHandlerInternal(Listener* aListener,
       GetScriptGlobalAndDocument(getter_AddRefs(doc));
   NS_ENSURE_STATE(global);
   NS_ENSURE_STATE(doc);
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  doc->SetTrustedTypesReadinessSignal(TrustedTypesReadinessSignal::RanScript);
 
   // Activate JSAPI, and make sure that exceptions are reported on the right
   // Window.

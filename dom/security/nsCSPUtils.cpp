@@ -1873,6 +1873,23 @@ bool nsCSPPolicy::allows(CSPDirective aDirective, enum CSPKeyword aKeyword,
   return true;
 }
 
+// Bug 2072122: Trusted Types readiness experiment only, to be removed.
+bool nsCSPPolicy::isStrict() const {
+  nsCSPDirective* scriptDir = matchingOrDefaultDirective(
+      nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE);
+  if (!scriptDir || !scriptDir->allows(CSP_STRICT_DYNAMIC, u""_ns)) {
+    return false;
+  }
+  for (nsCSPDirective* directive : mDirectives) {
+    if (directive->equals(nsIContentSecurityPolicy::BASE_URI_DIRECTIVE)) {
+      // This works because 'none' is only included by the parser when no
+      // other source except 'report-sample' is used.
+      return directive->allows(CSP_NONE, u""_ns);
+    }
+  }
+  return false;
+}
+
 nsCSPDirective* nsCSPPolicy::matchingOrDefaultDirective(
     CSPDirective aDirective) const {
   nsCSPDirective* defaultDir = nullptr;

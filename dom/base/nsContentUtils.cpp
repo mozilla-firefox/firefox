@@ -6989,6 +6989,8 @@ void nsContentUtils::SetHTMLUnsafe(
   // «Element setHTMLUnsafe» or «ShadowRoot setHTMLUnsafe», and «script»."
   constexpr nsLiteralString elementSink = u"Element setHTMLUnsafe"_ns;
   constexpr nsLiteralString shadowRootSink = u"ShadowRoot setHTMLUnsafe"_ns;
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  aTarget->OwnerDoc()->RecordTrustedTypesHTMLSink(aSource.IsTrustedHTML());
   Maybe<nsAutoString> compliantStringHolder;
   const nsAString* compliantString =
       TrustedTypeUtils::GetTrustedTypesCompliantString(

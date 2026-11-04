@@ -942,6 +942,8 @@ MOZ_CAN_RUN_SCRIPT void ShadowRoot::SetInnerHTML(
     const TrustedHTMLOrNullIsEmptyString& aInnerHTML,
     nsIPrincipal* aSubjectPrincipal, ErrorResult& aError) {
   constexpr nsLiteralString sink = u"ShadowRoot innerHTML"_ns;
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  OwnerDoc()->RecordTrustedTypesHTMLSink(aInnerHTML.IsTrustedHTML());
 
   Maybe<nsAutoString> compliantStringHolder;
   const nsAString* compliantString =

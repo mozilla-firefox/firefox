@@ -5707,6 +5707,8 @@ void Element::SetInnerHTML(const TrustedHTMLOrNullIsEmptyString& aInnerHTML,
                            nsIPrincipal* aSubjectPrincipal,
                            ErrorResult& aError) {
   constexpr nsLiteralString sink = u"Element innerHTML"_ns;
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  OwnerDoc()->RecordTrustedTypesHTMLSink(aInnerHTML.IsTrustedHTML());
 
   Maybe<nsAutoString> compliantStringHolder;
   const nsAString* compliantString =
@@ -5735,6 +5737,8 @@ void Element::SetOuterHTML(const TrustedHTMLOrNullIsEmptyString& aOuterHTML,
                            nsIPrincipal* aSubjectPrincipal,
                            ErrorResult& aError) {
   constexpr nsLiteralString sink = u"Element outerHTML"_ns;
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  OwnerDoc()->RecordTrustedTypesHTMLSink(aOuterHTML.IsTrustedHTML());
 
   Maybe<nsAutoString> compliantStringHolder;
   const nsAString* compliantString =
@@ -5808,6 +5812,8 @@ void Element::InsertAdjacentHTML(
   // 1. "Let compliantString be the result of invoking the get trusted type
   //    compliant string algorithm..."
   constexpr nsLiteralString kSink = u"Element insertAdjacentHTML"_ns;
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  OwnerDoc()->RecordTrustedTypesHTMLSink(aTrustedHTMLOrString.IsTrustedHTML());
 
   Maybe<nsAutoString> compliantStringHolder;
   const nsAString* compliantString =

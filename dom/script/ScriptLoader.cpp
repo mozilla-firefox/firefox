@@ -3609,6 +3609,10 @@ nsresult ScriptLoader::EvaluateScriptElement(ScriptLoadRequest* aRequest) {
     }
 
     globalObject = scriptGlobal;
+
+    // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+    mDocument->SetTrustedTypesReadinessSignal(
+        TrustedTypesReadinessSignal::RanScript);
   }
 
   // 5. If el's from an external file is true, or el's type is "module", then

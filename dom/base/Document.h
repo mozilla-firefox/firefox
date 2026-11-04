@@ -24,6 +24,7 @@
 #include "mozilla/CORSMode.h"
 #include "mozilla/CallState.h"
 #include "mozilla/ContentBlockingNotifier.h"
+#include "mozilla/EnumSet.h"
 #include "mozilla/FlushType.h"
 #include "mozilla/FunctionRef.h"
 #include "mozilla/LinkedList.h"
@@ -564,6 +565,22 @@ enum class LoadedAsData : uint8_t {
   // The "loaded as data" case: scripting disabled and CSS loader creation made
   // lazy
   AsData,
+};
+
+// Signals for the security.trusted_types_readiness telemetry.
+// Bug 2072122: Trusted Types readiness experiment only, to be removed.
+enum class TrustedTypesReadinessSignal : uint8_t {
+  UsedHTMLSinkWithTrustedHTML,
+  UsedHTMLSinkWithString,
+  UsedWriteSinkWithTrustedHTML,
+  UsedWriteSinkWithString,
+  CreatedPolicy,
+  UsedPolicy,
+  // Not set yet, detection of libraries supporting Trusted Types is pending.
+  HasTrustedTypesLibrary,
+  // Script of the page itself ran: a script element, an event handler
+  // attribute or a javascript: URL.
+  RanScript,
 };
 
 // Document interface.  This is implemented by all document objects in
@@ -3541,6 +3558,23 @@ class Document : public nsINode,
     mPageloadEventData.SetDocumentFeature(aFeature);
   }
 
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  void SetTrustedTypesReadinessSignal(TrustedTypesReadinessSignal aSignal);
+
+  void RecordTrustedTypesHTMLSink(bool aIsTrustedHTML) {
+    SetTrustedTypesReadinessSignal(
+        aIsTrustedHTML
+            ? TrustedTypesReadinessSignal::UsedHTMLSinkWithTrustedHTML
+            : TrustedTypesReadinessSignal::UsedHTMLSinkWithString);
+  }
+
+  void RecordTrustedTypesWriteSink(bool aIsTrustedHTML) {
+    SetTrustedTypesReadinessSignal(
+        aIsTrustedHTML
+            ? TrustedTypesReadinessSignal::UsedWriteSinkWithTrustedHTML
+            : TrustedTypesReadinessSignal::UsedWriteSinkWithString);
+  }
+
   ContentList* ImageMapList();
 
   // Add aLink to the set of links that need their status resolved.
@@ -4083,6 +4117,12 @@ class Document : public nsINode,
   // Reports document use counters via telemetry.  This method only has an
   // effect once per document, and so is called during document destruction.
   void ReportDocumentUseCounters();
+
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  // Reports the security.trusted_types_readiness telemetry. Called from
+  // ReportDocumentUseCounters so that it is reported exactly once for every
+  // document counted in use.counter.content_documents_destroyed.
+  void ReportTrustedTypesReadiness();
 
   // Reports largest contentful paint via telemetry. We want the most up to
   // date value for LCP and so this is called during document destruction.
@@ -6088,6 +6128,12 @@ class Document : public nsINode,
 
   // Collection of data used by the pageload event.
   PageloadEventData mPageloadEventData;
+
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  EnumSet<TrustedTypesReadinessSignal, uint16_t> mTrustedTypesReadinessSignals;
+  // Whether the pref was on when this document was created. Library detection
+  // only runs while it is on, so earlier documents can't report a wrong lib.
+  bool mRecordTrustedTypesReadiness = false;
 
   // Whether AccumulatePageLoadTelemetry() collected metrics, and whether the
   // tab was foreground when the load event started. Background loads are still

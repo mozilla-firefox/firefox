@@ -5139,6 +5139,15 @@
   value: true
   mirror: always
 
+# If true, record the security.trusted_types_readiness Glean metric when a
+# document is destroyed.
+# Bug 2072122: Trusted Types readiness experiment only, to be removed together
+# with its Nimbus feature.
+- name: dom.security.trusted_types.readiness_telemetry.enabled
+  type: bool
+  value: false
+  mirror: always
+
 # If true, all content requests will get upgraded to HTTPS://
 # (some Firefox functionality requests, like OCSP will not be affected)
 - name: dom.security.https_only_mode

@@ -763,6 +763,11 @@ class nsCSPPolicy {
 
   bool allowsAllInlineBehavior(CSPDirective aDir) const;
 
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  // Whether this is a strict CSP: the directive governing script elements
+  // contains 'strict-dynamic' and base-uri is 'none'.
+  bool isStrict() const;
+
   /*
    * Implements step 2.1 to 2.7 of
    * <https://w3c.github.io/trusted-types/dist/spec/#should-block-create-policy>.

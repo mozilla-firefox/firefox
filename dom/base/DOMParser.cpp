@@ -105,6 +105,12 @@ already_AddRefed<Document> DOMParser::ParseFromString(
 
   MOZ_ASSERT(mGlobal);
   nsCOMPtr<nsIGlobalObject> pinnedGlobal = mGlobal;
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  if (nsPIDOMWindowInner* window = pinnedGlobal->GetAsInnerWindow()) {
+    if (Document* doc = window->GetExtantDoc()) {
+      doc->RecordTrustedTypesHTMLSink(aStr.IsTrustedHTML());
+    }
+  }
   Maybe<nsAutoString> compliantStringHolder;
   const nsAString* compliantString =
       TrustedTypeUtils::GetTrustedTypesCompliantString(

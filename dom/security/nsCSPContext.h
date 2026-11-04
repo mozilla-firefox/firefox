@@ -5,6 +5,7 @@
 #ifndef nsCSPContext_h_
 #define nsCSPContext_h_
 
+#include "mozilla/Maybe.h"
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/dom/CSPViolationData.h"
 #include "mozilla/dom/SecurityPolicyViolationEvent.h"
@@ -160,6 +161,11 @@ class nsCSPContext : public nsIContentSecurityPolicy {
 
   // Returns an empty string if aPolicyIndex > num of policies.
   nsString GetReportGroupFor(uint64_t aPolicyIndex) const;
+
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  // Returns Enforce if any enforced policy is a strict CSP, otherwise Report if
+  // any report-only policy is, otherwise Nothing. See nsCSPPolicy::isStrict.
+  mozilla::Maybe<nsCSPPolicy::Disposition> GetStrictPolicyDisposition();
 
   static nsCSPContext* Cast(nsIContentSecurityPolicy* aCSP) {
     return static_cast<nsCSPContext*>(aCSP);

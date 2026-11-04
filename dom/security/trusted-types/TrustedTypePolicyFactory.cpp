@@ -10,6 +10,7 @@
 #include "mozilla/ErrorResult.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/dom/CSPViolationData.h"
+#include "mozilla/dom/Document.h"
 #include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/TrustedTypePolicy.h"
 #include "mozilla/dom/TrustedTypeUtils.h"
@@ -209,6 +210,14 @@ already_AddRefed<TrustedTypePolicy> TrustedTypePolicyFactory::CreatePolicy(
 
   if (aPolicyName.Equals(kDefaultPolicyName)) {
     mDefaultPolicy = policy;
+  }
+
+  // Bug 2072122: Trusted Types readiness experiment only, to be removed.
+  if (auto* piDOMWindowInner = mGlobalObject->GetAsInnerWindow()) {
+    if (Document* doc = piDOMWindowInner->GetExtantDoc()) {
+      doc->SetTrustedTypesReadinessSignal(
+          TrustedTypesReadinessSignal::CreatedPolicy);
+    }
   }
 
   mCreatedPolicyNames.AppendElement(aPolicyName);
