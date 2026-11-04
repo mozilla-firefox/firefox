@@ -15,7 +15,6 @@ import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.components.llm.ext.FxaAccessTokenProvider
 import org.mozilla.fenix.components.llm.ext.choose
 import org.mozilla.fenix.components.llm.ext.fxaTokenProvider
-import org.mozilla.fenix.perf.lazyMonitored
 
 /** Component group for LLM services. */
 class Llm(
@@ -26,9 +25,9 @@ class Llm(
     private val userIdProvider: UserIdProvider,
 ) {
 
-    val fenixMlpaService by lazyMonitored { FenixMlpaService(client) }
+    val fenixMlpaService by lazy { FenixMlpaService(client) }
 
-    val mlpaProvider: MlpaLlmProvider by lazyMonitored {
+    val mlpaProvider: MlpaLlmProvider by lazy {
         MlpaLlmProvider(
             MlpaTokenProvider.choose(
                 MlpaTokenProvider.fxaTokenProvider(fxaTokenProvider),

@@ -14,7 +14,6 @@ import mozilla.components.feature.accounts.FirefoxAccountsAuthFeature
 import mozilla.components.feature.app.links.AppLinksInterceptor
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import org.mozilla.fenix.ext.components
-import org.mozilla.fenix.perf.lazyMonitored
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.utils.PersistStoryUTMRequestInterceptor
 
@@ -24,7 +23,7 @@ class Services(
     private val store: BrowserStore,
     private val accountManager: FxaAccountManager,
 ) {
-    val accountsAuthFeature by lazyMonitored {
+    val accountsAuthFeature by lazy {
         FirefoxAccountsAuthFeature(accountManager, FxaServer.REDIRECT_URL) { context, authUrl ->
             var url = authUrl
             if (context.components.settings.useReactFxAServer) {
@@ -43,7 +42,7 @@ class Services(
         }
     }
 
-    val appLinksInterceptor by lazyMonitored {
+    val appLinksInterceptor by lazy {
         AppLinksInterceptor(
             context = context,
             launchInApp = { _ -> context.components.settings.shouldOpenLinksInApp() },
@@ -52,7 +51,7 @@ class Services(
         )
     }
 
-    val storyUTMRequestInterceptor by lazyMonitored {
+    val storyUTMRequestInterceptor by lazy {
         PersistStoryUTMRequestInterceptor()
     }
 }

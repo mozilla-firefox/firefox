@@ -9,7 +9,6 @@ import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.feature.fxsuggest.FxSuggestIngestionScheduler
 import mozilla.components.feature.fxsuggest.FxSuggestStorage
 import mozilla.components.support.remotesettings.RemoteSettingsService
-import org.mozilla.fenix.perf.lazyMonitored
 
 /**
  * Component group for Firefox Suggest.
@@ -23,7 +22,7 @@ class FxSuggest(
     remoteSettingsService: RemoteSettingsService,
     crashReporter: CrashReporting,
 ) {
-    val storage by lazyMonitored {
+    val storage by lazy {
         FxSuggestStorage(
             context,
             remoteSettingsService,
@@ -31,7 +30,7 @@ class FxSuggest(
         )
     }
 
-    val ingestionScheduler by lazyMonitored {
+    val ingestionScheduler by lazy {
         FxSuggestIngestionScheduler(context)
     }
 }

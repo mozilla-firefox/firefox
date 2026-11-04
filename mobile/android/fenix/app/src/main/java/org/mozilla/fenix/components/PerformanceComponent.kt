@@ -17,14 +17,13 @@ import mozilla.components.support.utils.RunWhenReadyQueue
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.perf.ColdStartupDurationTelemetry
-import org.mozilla.fenix.perf.lazyMonitored
 
 private const val FIVE_SECONDS_MILLIS = 5000L
 
 /** Component group for all functionality related to performance. */
 class PerformanceComponent {
-    val visualCompletenessQueue by lazyMonitored { RunWhenReadyQueue() }
-    val coldStartupDurationTelemetry by lazyMonitored { ColdStartupDurationTelemetry() }
+    val visualCompletenessQueue by lazy { RunWhenReadyQueue() }
+    val coldStartupDurationTelemetry by lazy { ColdStartupDurationTelemetry() }
 }
 
 /** A middleware for marking visual completeness when displaying the home screen during app startup. */

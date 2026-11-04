@@ -46,7 +46,6 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.home.mars.MARSUseCases
 import org.mozilla.fenix.pbmlock.PrivateBrowsingLockUseCases
 import org.mozilla.fenix.perf.StrictModeManager
-import org.mozilla.fenix.perf.lazyMonitored
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.wallpapers.WallpapersUseCases
 
@@ -71,18 +70,18 @@ class UseCases(
     strictMode: Lazy<StrictModeManager>,
 ) {
     /** Use cases that provide engine interactions for a given browser session. */
-    val sessionUseCases by lazyMonitored { SessionUseCases(store.value) }
+    val sessionUseCases by lazy { SessionUseCases(store.value) }
 
     /** Use cases that provide tab management. */
-    val tabsUseCases: TabsUseCases by lazyMonitored { TabsUseCases(store.value) }
+    val tabsUseCases: TabsUseCases by lazy { TabsUseCases(store.value) }
 
     /** Use cases for managing custom tabs. */
-    val customTabsUseCases: CustomTabsUseCases by lazyMonitored {
+    val customTabsUseCases: CustomTabsUseCases by lazy {
         CustomTabsUseCases(store.value, sessionUseCases.loadUrl)
     }
 
     /** Use cases that provide search engine integration. */
-    val searchUseCases by lazyMonitored {
+    val searchUseCases by lazy {
         SearchUseCases(
             store.value,
             tabsUseCases,
@@ -91,15 +90,15 @@ class UseCases(
     }
 
     /** Use cases that provide settings management. */
-    val settingsUseCases by lazyMonitored { SettingsUseCases(engine.value, store.value) }
+    val settingsUseCases by lazy { SettingsUseCases(engine.value, store.value) }
 
-    val appLinksUseCases by lazyMonitored { AppLinksUseCases(context.applicationContext) }
+    val appLinksUseCases by lazy { AppLinksUseCases(context.applicationContext) }
 
-    val webAppUseCases by lazyMonitored {
+    val webAppUseCases by lazy {
         WebAppUseCases(context, store.value, shortcutManager.value)
     }
 
-    val downloadUseCases by lazyMonitored {
+    val downloadUseCases by lazy {
         DownloadsUseCases(
             store = store.value,
             downloadFileUtils =
@@ -112,22 +111,22 @@ class UseCases(
         )
     }
 
-    val contextMenuUseCases by lazyMonitored { ContextMenuUseCases(store.value) }
+    val contextMenuUseCases by lazy { ContextMenuUseCases(store.value) }
 
-    val trackingProtectionUseCases by lazyMonitored { TrackingProtectionUseCases(store.value, engine.value) }
+    val trackingProtectionUseCases by lazy { TrackingProtectionUseCases(store.value, engine.value) }
 
     /** Use cases that provide top sites management. */
-    val topSitesUseCase by lazyMonitored { TopSitesUseCases(topSitesStorage.value) }
+    val topSitesUseCase by lazy { TopSitesUseCases(topSitesStorage.value) }
 
     /** Use cases that handle locale management. */
-    val localeUseCases by lazyMonitored { LocaleUseCases(store.value) }
+    val localeUseCases by lazy { LocaleUseCases(store.value) }
 
     /** Use cases that provide bookmark management. */
-    val bookmarksUseCases by lazyMonitored {
+    val bookmarksUseCases by lazy {
         BookmarksUseCase(bookmarksStorage.value, historyStorage.value, lastSavedFolderCache.value)
     }
 
-    val wallpaperUseCases by lazyMonitored {
+    val wallpaperUseCases by lazy {
         // Required to even access context.filesDir property and to retrieve current locale
         val (rootStorageDirectory, currentLocale) =
             strictMode.value.allowViolation(StrictMode::allowThreadDiskReads) {
@@ -148,18 +147,18 @@ class UseCases(
         )
     }
 
-    val closeSyncedTabsUseCases by lazyMonitored { CloseTabsUseCases(syncedTabsCommands.value) }
+    val closeSyncedTabsUseCases by lazy { CloseTabsUseCases(syncedTabsCommands.value) }
 
-    val marsUseCases by lazyMonitored { MARSUseCases(client.value) }
+    val marsUseCases by lazy { MARSUseCases(client.value) }
 
-    val mozAdsUseCases by lazyMonitored {
+    val mozAdsUseCases by lazy {
         MozAdsUseCases(
             adsClientProvider = adsClientProvider,
             crashReporter = crashReporter.value,
         )
     }
 
-    val fenixBrowserUseCases by lazyMonitored {
+    val fenixBrowserUseCases by lazy {
         FenixBrowserUseCases(
             appStore = appStore.value,
             tabsUseCases = tabsUseCases,
@@ -170,7 +169,7 @@ class UseCases(
         )
     }
 
-    val shareSheetLauncher: ShareSheetLauncher by lazyMonitored {
+    val shareSheetLauncher: ShareSheetLauncher by lazy {
         DefaultShareSheetLauncher(
             applicationContext = context.applicationContext,
             homeActivityClass = HomeActivity::class.java,
@@ -179,7 +178,7 @@ class UseCases(
     }
 
     /** Use cases for sharing content via the system share sheet or the in-app share fragment. */
-    val shareUseCases by lazyMonitored {
+    val shareUseCases by lazy {
         ShareUseCases(
             browserStore = store.value,
             shareSheetLauncher = shareSheetLauncher,
@@ -187,7 +186,7 @@ class UseCases(
         )
     }
 
-    val privateBrowsingLockUseCases by lazyMonitored {
+    val privateBrowsingLockUseCases by lazy {
         PrivateBrowsingLockUseCases(appStore.value)
     }
 

@@ -6,12 +6,11 @@ package org.mozilla.fenix.components
 
 import android.content.Context
 import mozilla.components.service.mars.MozAdsClientProvider
-import org.mozilla.fenix.perf.lazyMonitored
 
 /** Provides access to Mozilla Ads related components. */
 class Ads(private val context: Context) {
 
-    val lazyAdsClientProvider = lazyMonitored {
+    val lazyAdsClientProvider = lazy {
         MozAdsClientProvider.also {
             it.initialize(context = context)
         }

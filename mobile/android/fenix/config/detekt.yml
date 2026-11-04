@@ -825,8 +825,6 @@ mozilla-detekt-rules:
   MozillaRunBlockingCheck:
     active: true
     excludes: ['**/test/**', '**/androidTest/**']
-  MozillaUseLazyMonitored:
-    active: true
 
 acorn-detekt-rules:
   active: true

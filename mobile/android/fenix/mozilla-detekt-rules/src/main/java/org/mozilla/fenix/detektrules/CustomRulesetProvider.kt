@@ -10,7 +10,6 @@ import io.gitlab.arturbosch.detekt.api.RuleSetProvider
 import org.mozilla.fenix.detektrules.perf.MozillaBannedPropertyAccess
 import org.mozilla.fenix.detektrules.perf.MozillaRunBlockingCheck
 import org.mozilla.fenix.detektrules.perf.MozillaStrictModeSuppression
-import org.mozilla.fenix.detektrules.perf.MozillaUseLazyMonitored
 
 class CustomRulesetProvider : RuleSetProvider {
     override val ruleSetId: String = "mozilla-detekt-rules"
@@ -21,7 +20,6 @@ class CustomRulesetProvider : RuleSetProvider {
             MozillaBannedPropertyAccess(config),
             MozillaStrictModeSuppression(config),
             MozillaRunBlockingCheck(config),
-            MozillaUseLazyMonitored(config),
         ),
     )
 }
