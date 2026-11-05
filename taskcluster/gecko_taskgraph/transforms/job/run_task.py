@@ -7,6 +7,7 @@ Support for running jobs that are invoked via the `run-task` script.
 
 import dataclasses
 import functools
+import json
 import os
 from typing import Literal, Union
 from typing import Optional as TOptional
@@ -25,6 +26,20 @@ from gecko_taskgraph.transforms.job.common import (
     clone_type,
     support_vcs_checkout,
 )
+from gecko_taskgraph.util.sparse_profiles import (
+    git_checkout_is_full,
+    list_directory_files,
+    load_sparse_profile,
+    to_git_sparse_patterns,
+)
+
+
+@functools.cache
+def git_sparse_patterns(sparse_profile_path):
+    if git_checkout_is_full(sparse_profile_path):
+        return None
+    includes, excludes = load_sparse_profile(sparse_profile_path)
+    return json.dumps(to_git_sparse_patterns(includes, excludes, list_directory_files))
 
 
 class RunTaskSchema(Schema, kw_only=True):
@@ -109,12 +124,16 @@ def common_setup(config, job, taskdesc, command):
             )
         )
 
-    if clone_type(config, job) == "hg" and run["sparse-profile"]:
+    if run["sparse-profile"] and run["checkout"]:
         sparse_profile_prefix = run.pop(
             "sparse-profile-prefix", "build/sparse-profiles"
         )
         sparse_profile_path = path.join(sparse_profile_prefix, run["sparse-profile"])
-        command.append(f"--gecko-sparse-profile={sparse_profile_path}")
+        if clone_type(config, job) == "hg":
+            command.append(f"--gecko-sparse-profile={sparse_profile_path}")
+        elif patterns := git_sparse_patterns(sparse_profile_path):
+            command.append(f"--gecko-sparse-profile={sparse_profile_path}")
+            taskdesc["worker"].setdefault("env", {})["GECKO_SPARSE_PATTERNS"] = patterns
 
     if run_cwd:
         command.append(f"--task-cwd={run_cwd}")

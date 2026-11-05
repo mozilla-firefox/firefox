@@ -6,6 +6,7 @@
 Tests for the 'job' transform subsystem.
 """
 
+import json
 import os
 from copy import deepcopy
 
@@ -15,10 +16,15 @@ from taskgraph.config import load_graph_config
 from taskgraph.transforms.base import TransformConfig
 
 from gecko_taskgraph import GECKO
-from gecko_taskgraph.test.conftest import FakeParameters
+from gecko_taskgraph.test.conftest import FakeParameters, FakeTransformConfig
 from gecko_taskgraph.transforms import job
 from gecko_taskgraph.transforms.job import get_platform, run_task  # noqa: F401
 from gecko_taskgraph.transforms.task import group_name_variant
+from gecko_taskgraph.util.sparse_profiles import (
+    list_directory_files,
+    load_sparse_profile,
+    to_git_sparse_patterns,
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -256,6 +262,122 @@ def test_docker_worker_run_task_resource_monitor(monkeypatch, config, repository
         "path": path,
         "type": "file",
     } in worker["artifacts"]
+
+
+HG_HEAD_BUNDLE = {"artifact-reference": "<decision/public/checkout.bundle>"}
+
+
+@pytest.fixture
+def common_setup(monkeypatch):
+    monkeypatch.setattr(run_task, "support_vcs_checkout", lambda *args: "gecko")
+    monkeypatch.setattr(run_task, "support_caches", lambda *args: None)
+    config = FakeTransformConfig(
+        params=FakeParameters({"level": 1}), repo_configs={"gecko": None}
+    )
+
+    def inner(clone_with, run):
+        monkeypatch.setattr(run_task, "clone_type", lambda config, job: clone_with)
+        taskdesc = {"worker": {}}
+        command = []
+        run_task.common_setup(config, {"run": run, "worker": {}}, taskdesc, command)
+        return command, taskdesc["worker"]["env"]
+
+    return inner
+
+
+def test_common_setup_sparse_profile_git(common_setup):
+    command, env = common_setup("git", {"checkout": True, "sparse-profile": "mach"})
+
+    includes, excludes = load_sparse_profile("build/sparse-profiles/mach")
+    patterns = to_git_sparse_patterns(includes, excludes, list_directory_files)
+    assert command == [
+        "--gecko-checkout=gecko",
+        "--gecko-shallow-clone",
+        "--gecko-sparse-profile=build/sparse-profiles/mach",
+    ]
+    assert env == {"GECKO_SPARSE_PATTERNS": json.dumps(patterns), "MOZ_SCM_LEVEL": 1}
+
+
+def test_common_setup_sparse_profile_hg(common_setup):
+    command, env = common_setup("hg", {"checkout": True, "sparse-profile": "mach"})
+
+    assert command == [
+        "--gecko-checkout=gecko",
+        "--gecko-sparse-profile=build/sparse-profiles/mach",
+    ]
+    assert env == {"GECKO_HEAD_BUNDLE": HG_HEAD_BUNDLE, "MOZ_SCM_LEVEL": 1}
+
+
+@pytest.mark.parametrize("clone_with", ["git", "hg"])
+def test_common_setup_sparse_profile_no_checkout(common_setup, clone_with):
+    command, env = common_setup(
+        clone_with, {"checkout": False, "sparse-profile": "mach"}
+    )
+
+    assert command == []
+    assert env == {"MOZ_SCM_LEVEL": 1}
+
+
+@pytest.mark.parametrize(
+    "clone_with,expected_command,expected_env",
+    [
+        pytest.param(
+            "git",
+            ["--gecko-checkout=gecko", "--gecko-shallow-clone"],
+            {"MOZ_SCM_LEVEL": 1},
+            id="git",
+        ),
+        pytest.param(
+            "hg",
+            [
+                "--gecko-checkout=gecko",
+                "--gecko-sparse-profile=build/sparse-profiles/taskgraph",
+            ],
+            {"GECKO_HEAD_BUNDLE": HG_HEAD_BUNDLE, "MOZ_SCM_LEVEL": 1},
+            id="hg",
+        ),
+    ],
+)
+def test_common_setup_profile_marked_full_on_git(
+    common_setup, clone_with, expected_command, expected_env
+):
+    command, env = common_setup(
+        clone_with, {"checkout": True, "sparse-profile": "taskgraph"}
+    )
+
+    assert command == expected_command
+    assert env == expected_env
+
+
+@pytest.mark.parametrize(
+    "profile,expected_calls",
+    [
+        pytest.param(
+            "mach", ["git_checkout_is_full", "load_sparse_profile"], id="unmarked"
+        ),
+        pytest.param("taskgraph", ["git_checkout_is_full"], id="marked"),
+    ],
+)
+def test_common_setup_sparse_profile_git_cached(
+    common_setup, monkeypatch, profile, expected_calls
+):
+    calls = []
+
+    def record(func):
+        def inner(sparse_profile_path):
+            calls.append(func.__name__)
+            return func(sparse_profile_path)
+
+        return inner
+
+    for name in ("git_checkout_is_full", "load_sparse_profile"):
+        monkeypatch.setattr(run_task, name, record(getattr(run_task, name)))
+    run_task.git_sparse_patterns.cache_clear()
+
+    for _ in range(2):
+        common_setup("git", {"checkout": True, "sparse-profile": profile})
+
+    assert calls == expected_calls
 
 
 if __name__ == "__main__":
