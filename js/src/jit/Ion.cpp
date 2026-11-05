@@ -912,7 +912,8 @@ const SafepointIndex* IonScript::getSafepointIndex(uint32_t disp) const {
   //
   // such as:  <...      ...    ...  ...  .   ...    ...>
   if (guessDisp > disp) {
-    while (--guess >= minEntry) {
+    while (guess > minEntry) {
+      guess--;
       guessDisp = table[guess].displacement();
       MOZ_ASSERT(guessDisp >= disp);
       if (guessDisp == disp) {
