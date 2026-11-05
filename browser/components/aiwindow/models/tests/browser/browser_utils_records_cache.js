@@ -33,10 +33,12 @@ add_task(async function test_getRemoteRecords_releases_cache_once_idle() {
     Assert.equal(reads, 1, "The first caller reads the collection");
 
     published = [{ id: "after" }];
-    // Yields past the idle timer armed by the read above.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    let records;
+    await TestUtils.waitForCondition(async () => {
+      records = await getRemoteRecords();
+      return records[0].id === "after";
+    }, "Wait for the records cache to be released after going idle");
 
-    const records = await getRemoteRecords();
     Assert.equal(
       records[0].id,
       "after",
