@@ -88,6 +88,18 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
     }
 
     /**
+     * Set the UUID of the R8/ProGuard mapping file of the embedding app's build, if it is minified.
+     * It is recorded in Gecko profiles so that Java frames can be matched with the mapping.
+     *
+     * @param proguardUuid The mapping UUID, or <code>null</code> if not available.
+     * @return This Builder instance.
+     */
+    public @NonNull Builder proguardUuid(final @Nullable String proguardUuid) {
+      getSettings().mProguardUuid = proguardUuid;
+      return this;
+    }
+
+    /**
      * Set whether Extensions Process support should be enabled.
      *
      * @param flag A flag determining whether Extensions Process support should be enabled. Default
@@ -721,6 +733,7 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
   /* package */ String[] mArgs;
   /* package */ Bundle mExtras;
   /* package */ String mConfigFilePath;
+  /* package */ String mProguardUuid;
 
   /* package */ ContentBlocking.Settings mContentBlocking;
 
@@ -915,6 +928,7 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
     mCrashHandler = settings.mCrashHandler;
     mRequestedLocales = settings.mRequestedLocales;
     mConfigFilePath = settings.mConfigFilePath;
+    mProguardUuid = settings.mProguardUuid;
     mExperimentDelegate = settings.mExperimentDelegate;
   }
 
@@ -951,6 +965,15 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
    */
   public @Nullable String getConfigFilePath() {
     return mConfigFilePath;
+  }
+
+  /**
+   * Get the UUID of the R8/ProGuard mapping file of the embedding app's build.
+   *
+   * @return The mapping UUID, or <code>null</code> if not set.
+   */
+  public @Nullable String getProguardUuid() {
+    return mProguardUuid;
   }
 
   /**
@@ -2578,6 +2601,7 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
     out.writeString(mCrashHandler != null ? mCrashHandler.getName() : null);
     out.writeStringArray(mRequestedLocales);
     out.writeString(mConfigFilePath);
+    out.writeString(mProguardUuid);
   }
 
   // AIDL code may call readFromParcel even though it's not part of Parcelable.
@@ -2611,6 +2635,7 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
 
     mRequestedLocales = source.createStringArray();
     mConfigFilePath = source.readString();
+    mProguardUuid = source.readString();
   }
 
   /** Parcelable creator for GeckoRuntimeSettings instances. */

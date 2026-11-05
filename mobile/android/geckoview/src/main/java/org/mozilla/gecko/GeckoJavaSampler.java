@@ -840,4 +840,17 @@ public class GeckoJavaSampler {
     sb.append(Build.MODEL);
     return sb.toString();
   }
+
+  private static volatile String sProguardUuid;
+
+  /** Sets the UUID of the embedding app's R8/ProGuard mapping file, recorded in profiles. */
+  public static void setProguardUuid(final String proguardUuid) {
+    sProguardUuid = proguardUuid;
+  }
+
+  /** Returns the UUID of the embedding app's R8/ProGuard mapping file, or null if unknown. */
+  @WrapForJNI
+  public static String getProguardUuid() {
+    return sProguardUuid;
+  }
 }

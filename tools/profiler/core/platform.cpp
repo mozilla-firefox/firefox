@@ -3610,6 +3610,12 @@ static void StreamMetaJSCustomObject(
   jni::String::LocalRef deviceInformation =
       java::GeckoJavaSampler::GetDeviceInformation();
   aWriter.StringProperty("device", deviceInformation->ToCString());
+
+  jni::String::LocalRef proguardUuid =
+      java::GeckoJavaSampler::GetProguardUuid();
+  if (proguardUuid) {
+    aWriter.StringProperty("proguardUuid", proguardUuid->ToCString());
+  }
 #endif
 
   aWriter.StartObjectProperty("sampleUnits");

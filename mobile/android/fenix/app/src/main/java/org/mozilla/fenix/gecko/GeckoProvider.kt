@@ -105,6 +105,7 @@ object GeckoProvider {
     ): GeckoRuntimeSettings {
         val builder =
             GeckoRuntimeSettings.Builder()
+                .proguardUuid(context.components.buildMetadata.proguardUuid)
                 .crashHandler(CrashHandlerService::class.java)
                 .experimentDelegate(NimbusExperimentDelegate())
                 .contentBlocking(

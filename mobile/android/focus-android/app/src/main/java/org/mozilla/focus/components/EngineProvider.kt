@@ -17,6 +17,7 @@ import mozilla.components.lib.crash.handler.CrashHandlerService
 import org.mozilla.focus.R
 import org.mozilla.focus.components.EngineProvider.getCookiePolicy
 import org.mozilla.focus.components.EngineProvider.getOrCreateRuntime
+import org.mozilla.focus.ext.components
 import org.mozilla.focus.ext.settings
 import org.mozilla.focus.utils.AppConstants
 import org.mozilla.focus.utils.Settings
@@ -67,6 +68,7 @@ object EngineProvider {
         if (runtime == null) {
             val builder = GeckoRuntimeSettings.Builder()
 
+            builder.proguardUuid(context.components.buildMetadata.proguardUuid)
             builder.crashHandler(CrashHandlerService::class.java)
             builder.aboutConfigEnabled(AppConstants.isDevOrNightlyBuild || AppConstants.isBetaBuild)
 

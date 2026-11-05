@@ -1117,6 +1117,7 @@ package org.mozilla.geckoview {
     method public boolean getPauseForDebuggerEnabled();
     method @NonNull public boolean getPostQuantumKeyExchangeEnabled();
     method public int getPreferredColorScheme();
+    method @Nullable public String getProguardUuid();
     method public boolean getRemoteDebuggingEnabled();
     method @Nullable public GeckoRuntime getRuntime();
     method @NonNull public boolean getSameDocumentNavigationOverridesLoadType();
@@ -1247,6 +1248,7 @@ package org.mozilla.geckoview {
     method @NonNull public GeckoRuntimeSettings.Builder lowMemoryDetection(boolean);
     method @NonNull public GeckoRuntimeSettings.Builder pauseForDebugger(boolean);
     method @NonNull public GeckoRuntimeSettings.Builder preferredColorScheme(int);
+    method @NonNull public GeckoRuntimeSettings.Builder proguardUuid(@Nullable String);
     method @NonNull public GeckoRuntimeSettings.Builder remoteDebuggingEnabled(boolean);
     method @NonNull public GeckoRuntimeSettings.Builder screenSizeOverride(int, int);
     method @NonNull public GeckoRuntimeSettings.Builder setLnaBlockTrackers(@NonNull Boolean);

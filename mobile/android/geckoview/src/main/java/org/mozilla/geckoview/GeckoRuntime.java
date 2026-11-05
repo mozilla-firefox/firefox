@@ -43,6 +43,7 @@ import java.util.Map;
 import org.mozilla.gecko.Clipboard;
 import org.mozilla.gecko.EventDispatcher;
 import org.mozilla.gecko.GeckoAppShell;
+import org.mozilla.gecko.GeckoJavaSampler;
 import org.mozilla.gecko.GeckoNetworkManager;
 import org.mozilla.gecko.GeckoScreenChangeListener;
 import org.mozilla.gecko.GeckoScreenOrientation;
@@ -503,6 +504,7 @@ public final class GeckoRuntime implements Parcelable {
     GeckoAppShell.setDisplayDpiOverride(settings.getDisplayDpiOverride());
     GeckoAppShell.setScreenSizeOverride(settings.getScreenSizeOverride());
     GeckoAppShell.setCrashHandlerService(settings.getCrashHandler());
+    GeckoJavaSampler.setProguardUuid(settings.getProguardUuid());
     GeckoFontScaleListener.getInstance().attachToContext(context, settings);
 
     Bundle extras = settings.getExtras();
