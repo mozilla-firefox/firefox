@@ -2646,7 +2646,7 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 
 #remote-control-panel-toggle-button {
   margin: 0;
-  width: 100%;
+  justify-content: center;
 }
 
 /* Report Broken Site panels */
@@ -2726,22 +2726,31 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
     object-position: left top;
   }
 
-  moz-button.arrow-button {
-    --button-content-alignment: space-between;
-    --button-padding: var(--space-large) var(--space-medium);
-    --button-font-weight: normal;
-    --button-icon-fill: currentColor;
-
-    width: 100%;
+  button.arrow-button {
+    font-weight: normal;
+    padding: var(--space-large) var(--space-medium);
     margin: 0 0 var(--space-large);
+    border: 0;
 
-    &::part(moz-button-label) {
+    > hbox > label {
       text-align: start;
+
+      /* allow for multi-line localizations */
+      display: block !important;
       text-wrap: balance;
+      width: 100%;
     }
 
+    background: url("chrome://global/skin/icons/arrow-right.svg") no-repeat calc(100% - var(--panel-menuitem-padding-inline)) center;
     &:dir(rtl) {
-      --button-icon-content: url("chrome://global/skin/icons/arrow-left.svg");
+      background: url("chrome://global/skin/icons/arrow-left.svg") no-repeat var(--panel-menuitem-padding-inline) center;
+    }
+    background-color: var(--background-color-box);
+    -moz-context-properties: fill;
+    fill: currentColor;
+
+    &:not(:hover, :active) {
+      background-color: inherit;
     }
   }
 

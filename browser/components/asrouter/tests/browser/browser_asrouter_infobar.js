@@ -84,7 +84,7 @@ add_task(async function show_and_send_telemetry() {
   );
 
   let primaryBtn = infobar.notification.buttonContainer.querySelector(
-    ".notification-button[type='primary']"
+    ".notification-button.primary"
   );
 
   Assert.ok(primaryBtn, "Has a primary button");
@@ -277,7 +277,7 @@ add_task(
     );
 
     let cancelButton = infobar.notification.querySelector(
-      ".notification-button:not([type='primary'])"
+      ".footer-button:not(.primary)"
     );
 
     Assert.ok(cancelButton, "Non-primary footer button exists");

@@ -4253,11 +4253,8 @@ class SelectTranslationsTestUtils {
         : [cancelButton, tryAgainButton]),
     ]);
     SharedTranslationsTestUtils._assertHasFocus(tryAgainButton);
-    Assert.deepEqual(
-      tryAgainButton.buttonEl.ariaDescribedByElements,
-      [initFailureMessageBar],
-      "The try-again button is described by the init failure message bar."
-    );
+    const ariaDescribedBy = tryAgainButton.getAttribute("aria-describedby");
+    ok(ariaDescribedBy.includes(initFailureMessageBar.id));
   }
 
   /**
@@ -4305,11 +4302,8 @@ class SelectTranslationsTestUtils {
         : [cancelButton, tryAgainButton]),
     ]);
     SharedTranslationsTestUtils._assertHasFocus(tryAgainButton);
-    Assert.deepEqual(
-      tryAgainButton.buttonEl.ariaDescribedByElements,
-      [translationFailureMessageBar],
-      "The try-again button is described by the translation failure message bar."
-    );
+    const ariaDescribedBy = tryAgainButton.getAttribute("aria-describedby");
+    ok(ariaDescribedBy.includes(translationFailureMessageBar.id));
   }
 
   static #assertPanelTextAreaDirection(langTag = null) {

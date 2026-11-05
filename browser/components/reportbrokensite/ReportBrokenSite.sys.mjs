@@ -590,14 +590,14 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
     }
 
     for (const sendButton of state.sendButtons) {
-      sendButton.addEventListener("click", e => this.#sendButtonHandler(e));
+      sendButton.addEventListener("command", e => this.#sendButtonHandler(e));
     }
 
-    state.sendMoreInfoButton.addEventListener("click", e =>
+    state.sendMoreInfoButton.addEventListener("command", e =>
       this.#sendMoreInfoButtonHandler(e)
     );
 
-    state.previewButton.addEventListener("click", e =>
+    state.previewButton.addEventListener("command", e =>
       this.#previewButtonHandler(e)
     );
 
@@ -609,12 +609,12 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
       this.updateDescriptionValidity(e)
     );
 
-    state.okayButton.addEventListener("click", ({ target }) => {
+    state.okayButton.addEventListener("command", ({ target }) => {
       target.documentGlobal.CustomizableUI.hidePanelForNode(target);
     });
 
     for (const btn of state.cancelButtons) {
-      btn.addEventListener("click", e => this.#cancelButtonHandler(e));
+      btn.addEventListener("command", e => this.#cancelButtonHandler(e));
     }
 
     state.blockedTrackersToggle.addEventListener("toggle", ({ target }) => {

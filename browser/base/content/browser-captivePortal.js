@@ -303,7 +303,9 @@ var CaptivePortalWatcher = {
         }
 
         let doc = tab.ownerDocument;
-        let button = n.buttonContainer.querySelector(".notification-button");
+        let button = n.buttonContainer.querySelector(
+          "button.notification-button"
+        );
         if (doc.defaultView.gBrowser.selectedTab == tab) {
           button.style.visibility = "hidden";
         } else {

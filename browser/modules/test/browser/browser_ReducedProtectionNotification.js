@@ -147,9 +147,7 @@ add_task(async function test_button_disables_tp_and_reloads() {
 
   info("Clicking the reload button on the infobar");
   let reloadPromise = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
-  let button = notification.buttonContainer.querySelector(
-    ".notification-button:last-child"
-  );
+  let button = notification.buttonContainer.querySelector("button:last-child");
   button.click();
   await reloadPromise;
 
@@ -277,9 +275,7 @@ add_task(async function test_button_disables_all_tracker_prefs() {
   }
 
   let reloadPromise = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
-  notification.buttonContainer
-    .querySelector(".notification-button:last-child")
-    .click();
+  notification.buttonContainer.querySelector("button:last-child").click();
   await reloadPromise;
 
   for (const [, scopedPref] of TRACKER_PREFS) {
@@ -481,9 +477,7 @@ add_task(async function test_telemetry_reload_clicked() {
   );
 
   let reloadPromise = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
-  notification.buttonContainer
-    .querySelector(".notification-button:last-child")
-    .click();
+  notification.buttonContainer.querySelector("button:last-child").click();
   await reloadPromise;
 
   Assert.equal(
@@ -515,9 +509,7 @@ add_task(async function test_telemetry_disable_clicked() {
     "Waiting for notification to appear"
   );
 
-  notification.buttonContainer
-    .querySelector(".notification-button:first-child")
-    .click();
+  notification.buttonContainer.querySelector("button:first-child").click();
 
   Assert.equal(
     Glean.privacyReducedPageProtection.disableClicked.testGetValue(),
@@ -552,9 +544,8 @@ add_task(async function test_dont_show_again_disables_pref() {
   );
   ok(notification, "Infobar appeared");
 
-  let dontShowAgainButton = notification.buttonContainer.querySelector(
-    ".notification-button:first-child"
-  );
+  let dontShowAgainButton =
+    notification.buttonContainer.querySelector("button:first-child");
   ok(dontShowAgainButton, "Don't show again button is present");
   is(
     dontShowAgainButton.dataset.l10nId,

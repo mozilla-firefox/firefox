@@ -123,9 +123,7 @@ async function test_decoder_doctor_notification(
           "notification message should match expectation"
         );
 
-        let button = notification.buttonContainer.querySelector(
-          ".notification-button"
-        );
+        let button = notification.buttonContainer.querySelector("button");
         let link = notification.supportLinkEls[0];
         if (!label) {
           ok(!button, "There should not be a button");
@@ -143,16 +141,13 @@ async function test_decoder_doctor_notification(
         } else {
           ok(!link, "There should not be a link");
           await document.l10n.translateFragment(button);
-          await button.updateComplete;
           is(
             button.getAttribute("label"),
             label,
             `notification button should be '${label}'`
           );
-          // Accesskeys not restored on moz-button until
-          // bugs 1945032 and 1942186 are closed.
-          todo_is(
-            button.buttonEl.accessKey,
+          is(
+            button.getAttribute("accesskey"),
             accessKey,
             "notification button should have accesskey"
           );

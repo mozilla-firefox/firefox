@@ -49,7 +49,7 @@ let testcases = [
     }
 
     let button = notification.buttonContainer.querySelector(
-      ".notification-button"
+      "button.notification-button"
     );
     async function clickButtonAndExpectNewPortalTab() {
       let p = BrowserTestUtils.waitForNewTab(win.gBrowser, CANONICAL_URL);
