@@ -50,7 +50,10 @@ add_task(async function() {
 
   for (let dark of [false, true]) {
     for (let metaValue of ["light", "dark", "light dark"]) {
-      let expectedScheme = metaValue == "light dark" ? (dark ? "dark" : "light") : metaValue;
+      let followsMeta =
+        metaValue != "light dark" &&
+        SpecialPowers.getBoolPref("layout.css.prefers-color-scheme.meta-tag.enabled");
+      let expectedScheme = followsMeta ? metaValue : (dark ? "dark" : "light");
       meta.setAttribute("content", metaValue);
       await switchColorScheme(dark, expectedScheme);
       runTests();
