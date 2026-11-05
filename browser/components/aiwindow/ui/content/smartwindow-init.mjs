@@ -15,6 +15,12 @@ const { topChromeWindow } = window.browsingContext;
  * Initializes ASRouter and call appropriate trigger functions
  */
 async function init() {
+  // This init is only for the full-page Smart Window. Redirecting the hidden
+  // sidebar would leave about:newtab alive in the parent process.
+  if (window.browsingContext.embedderElement?.id === "ai-window-browser") {
+    return;
+  }
+
   if (!lazy.AIWindow.isAIWindowActive(topChromeWindow)) {
     window.location.href = topChromeWindow.BROWSER_NEW_TAB_URL;
     return;
