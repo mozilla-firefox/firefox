@@ -885,14 +885,14 @@ let inParent =
  * @param {boolean} [options.separateSemanticGroup]
  *   If true, semantic history results get their own group that fills only the
  *   space left after the other general groups.
- * @param {boolean} [options.temporalZeroPrefix]
+ * @param {boolean} [options.showTemporalSuggestions]
  *   If true, the groups are flexed for the zero prefix view with temporal
  *   search suggestions.
  */
 function makeDefaultResultGroups({
   showSearchSuggestionsFirst,
   separateSemanticGroup = false,
-  temporalZeroPrefix = false,
+  showTemporalSuggestions = false,
 }) {
   /**
    * @type {ResultGroup}
@@ -1030,7 +1030,7 @@ function makeDefaultResultGroups({
   if (!showSearchSuggestionsFirst) {
     mainGroup.children.reverse();
   }
-  if (temporalZeroPrefix) {
+  if (showTemporalSuggestions) {
     // Top sites, then recent searches and temporal suggestions split 7:3:3.
     mainGroup.children[0].flex = 7;
     mainGroup.children[1].flex = 6;
@@ -1308,7 +1308,23 @@ class Preferences {
     return this.get("scotchBonnet.enableOverride") || this.get(pref);
   }
 
-  getResultGroups({ context }) {
+  /**
+   * Returns the root result group to use for a query.
+   *
+   * @param {object} options
+   * @param {UrlbarQueryContext} options.context
+   *   The query context.
+   * @param {boolean} [options.showSearchSuggestionsFirst]
+   *   Whether search suggestions should be shown before general results.
+   * @param {boolean} [options.showTemporalSuggestions]
+   *   Whether to use the zero prefix layout for temporal search suggestions.
+   * @returns {ResultGroup}
+   */
+  getResultGroups({
+    context,
+    showSearchSuggestionsFirst = false,
+    showTemporalSuggestions = false,
+  }) {
     // We try to cache result groups so we don't have to rebuild them each time.
     // This key may be modified per each SAP, and will track the cached groups,
     // any additionally used condition must be added to the key.
@@ -1319,15 +1335,13 @@ class Preferences {
     key += separateSemanticGroup;
     switch (context.sapName) {
       case "urlbar": {
-        let temporalZeroPrefix = context.isTemporalZeroPrefix;
-        let showSearchSuggestionsFirst = context.showSearchSuggestionsFirst;
         key += showSearchSuggestionsFirst;
-        key += temporalZeroPrefix;
+        key += showTemporalSuggestions;
         return this.#getOrCacheResultGroups(key, () =>
           makeDefaultResultGroups({
             showSearchSuggestionsFirst,
             separateSemanticGroup,
-            temporalZeroPrefix,
+            showTemporalSuggestions,
           })
         );
       }
@@ -1342,7 +1356,6 @@ class Preferences {
         );
       }
       case "smartbar": {
-        let showSearchSuggestionsFirst = context.showSearchSuggestionsFirst;
         key += showSearchSuggestionsFirst;
         return this.#getOrCacheResultGroups(key, () =>
           makeSmartBarGroups({

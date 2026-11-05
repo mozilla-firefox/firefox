@@ -12,16 +12,6 @@ import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs"
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
 import { UrlbarResult } from "chrome://browser/content/urlbar/UrlbarResult.mjs";
 
-const { XPCOMUtils } =
-  typeof ChromeUtils == "undefined"
-    ? { XPCOMUtils: null }
-    : ChromeUtils.importESModule("resource://gre/modules/XPCOMUtils.sys.mjs");
-
-const lazy = XPCOMUtils?.declareLazy({
-  TemporalSuggestions:
-    "moz-src:///browser/components/urlbar/private/TemporalSuggestions.sys.mjs",
-});
-
 /**
  * @import {UrlbarSearchStringTokenData} from "moz-src:///browser/components/urlbar/UrlbarTokenizer.sys.mjs"
  * @import {SearchMode} from "moz-src:///browser/components/urlbar/content/UrlbarInputBase.mjs"
@@ -212,49 +202,20 @@ export class UrlbarQueryContext {
   isPrivate;
 
   /**
-   * The `maxResults` value passed to the constructor or last assigned.
+   * The maximum number of results that will be displayed for this query.
    *
    * @type {number}
    */
-  _maxResults;
+  maxResults;
 
   /**
-   * The maximum number of results that should be displayed for this query.
+   * The maximum result span that will be displayed for this query. The muxer
+   * sets this based on the final result composition, so it's undefined until
+   * then.
    *
-   * @type {number}
+   * @type {number|undefined}
    */
-  get maxResults() {
-    // When temporal suggestions are active and the SAP is urlbar, override the
-    // usual `maxRichResults` unless the user modified it.
-    if (
-      this.isTemporalZeroPrefix &&
-      this._maxResults == UrlbarPrefs.get("maxRichResults") &&
-      !UrlbarPrefs.hasUserValue("maxRichResults")
-    ) {
-      return UrlbarPrefs.get("temporal.zeroPrefixMaxRichResults");
-    }
-    return this._maxResults;
-  }
-
-  set maxResults(value) {
-    this._maxResults = value;
-  }
-
-  /**
-   * Whether the zero prefix layout and result count for temporal search
-   * suggestions apply to this query. They only apply to the urlbar SAP, and
-   * only when `TemporalSuggestions.isEnabled` is true.
-   *
-   * @type {boolean}
-   */
-  get isTemporalZeroPrefix() {
-    return (
-      this.sapName == "urlbar" &&
-      !!lazy?.TemporalSuggestions.isEnabled &&
-      !this.searchString &&
-      !this.searchMode
-    );
-  }
+  maxResultsActual;
 
   /**
    * Whether search suggestions should be shown before general results.
@@ -284,10 +245,6 @@ export class UrlbarQueryContext {
    * @returns {boolean}
    */
   _getShowSearchSuggestionsFirst(pref) {
-    if (this.isTemporalZeroPrefix) {
-      return false;
-    }
-
     let showSearchSuggestionsFirst =
       !!this.searchString ||
       (!UrlbarPrefs.get("suggest.trending") &&
