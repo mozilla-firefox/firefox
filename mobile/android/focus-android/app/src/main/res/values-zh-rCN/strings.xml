@@ -16,6 +16,8 @@
   <string name="feedback_erase2">浏览历史已清除</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">已清除标签页浏览历史。</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">菜单</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">分享…</string>
   <!--

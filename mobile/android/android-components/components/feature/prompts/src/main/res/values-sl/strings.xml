@@ -60,7 +60,7 @@
   <!-- Text of the title of a dialog when a page is requesting to open a new window. -->
   <string name="mozac_feature_prompts_popup_dialog_title">Dovolite odpiranje tega spletnega mesta?</string>
   <!-- Text of the title of a dialog when a third-party redirect is blocked. -->
-  <string name="mozac_feature_prompts_redirect_dialog_title">Dovolite preusmeritev na to stran?</string>
+  <string name="mozac_feature_prompts_redirect_dialog_title">Dovolite preusmeritev na to spletno mesto?</string>
   <!-- Title of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
   <string name="mozac_feature_prompt_before_unload_dialog_title">Ali ste prepričani?</string>
   <!-- Body text of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
@@ -120,7 +120,7 @@
   <!-- Title for using the suggest strong password confirmation dialog -->
   <string name="mozac_feature_prompts_suggest_strong_password_title">Želite uporabiti močno geslo?</string>
   <!-- Content description for the suggest strong password confirmation dialog -->
-  <string name="mozac_feature_prompts_suggest_strong_password_description_3">Zaščitite svoje račun z uporabo močnih, naključno ustvarjenih gesel. Shranjena bodo v vaš račun za nadaljnjo uporabo.</string>
+  <string name="mozac_feature_prompts_suggest_strong_password_description_3">Zaščitite svoj račun z uporabo močnih, naključno ustvarjenih gesel. Shranjena bodo v vaš račun za nadaljnjo uporabo.</string>
   <!-- Pressing this will use the suggested strong password -->
   <string name="mozac_feature_prompts_suggest_strong_password_use_password">Uporabi geslo</string>
   <!-- Pressing this will dismiss the suggested strong password dialog -->
@@ -157,7 +157,7 @@
   <!-- Text for the title of a save credit card dialog. -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_title">Želite varno shraniti to kartico?</string>
   <!-- Text for the title of an update credit card dialog. -->
-  <string name="mozac_feature_prompts_update_credit_card_prompt_title">Posodobi datum poteka veljavnosti kartice?</string>
+  <string name="mozac_feature_prompts_update_credit_card_prompt_title">Posodobim datum poteka veljavnosti kartice?</string>
   <!-- Subtitle text displayed under the title of the saved card dialog. %s is the name of the app (for example "Firefox"). -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_body_2">%s šifrira številko vaše kartice. Varnostna koda se ne bo shranila.</string>
   <!--

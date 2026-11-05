@@ -123,7 +123,7 @@
   <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
   <string name="tab_tray_close_tabs_banner_negative_button_text">Zapri</string>
   <!-- Text for the banner message to tell users about our inactive tabs feature. -->
-  <string name="tab_tray_inactive_onboarding_message">Zavihki, ki jih dva tedna niste odprli, se premaknejo sem.</string>
+  <string name="tab_tray_inactive_onboarding_message">Zavihki, ki si jih dva tedna niste ogledali, se premaknejo sem.</string>
   <!-- Text for the action link to go to Settings for inactive tabs. -->
   <string name="tab_tray_inactive_onboarding_button_text">Izklopi v nastavitvah</string>
   <!-- Text for title for the auto-close dialog of the inactive tabs. -->
@@ -281,6 +281,8 @@
   <string name="browser_custom_tab_menu_handlebar_content_description">Zapri meni zavihkov po meri</string>
   <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
   <string name="browser_toolbar_cached_page_indicator">Predpomnjeno</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Trenutna različica strani</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Dodaj stran med zaznamke</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -581,7 +583,7 @@
   -->
   <string name="nova_onboarding_tou_body_line_3" tools:ignore="BrandUsage">Za izboljšanje brskalnika Firefox Mozilli pošilja diagnostične podatke in podatke o uporabi. %1$s</string>
   <!-- Terms of use (ToU) onboarding body line three link text for nova_onboarding_tou_body_line_3. -->
-  <string name="nova_onboarding_tou_body_line_3_link_text">Nastavitve</string>
+  <string name="nova_onboarding_tou_body_line_3_link_text">Upravljanje nastavitev</string>
   <!-- "Set to default" onboarding title. -->
   <string name="nova_onboarding_set_to_default_title" tools:ignore="UnusedResources">Poslovite se od vsiljivih sledilcev</string>
   <!-- "Set to default" onboarding title. -->
@@ -931,6 +933,8 @@
   <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">Za uporabo te mape nimate dovoljenja. Poskusite izbrati drugo.</string>
   <!-- Preference title for choosing an app to handle downloads -->
   <string name="preferences_choose_app_for_downloads">Upravljaj prenose z drugo aplikacijo</string>
+  <!-- Message shown when no app is available to let the user pick a download folder. -->
+  <string name="preferences_downloads_no_folder_picker_available">Izbirnika map v tej napravi ni mogoče odpreti.</string>
   <!-- Preference category for deleting or removing downloads -->
   <string name="preferences_category_delete_or_remove_downloads">Izbriši ali odstrani prenose</string>
   <string name="preferences_downloads_delete_from_device">Izbriši z naprave</string>
@@ -1267,7 +1271,7 @@
     Preference description for marketing data collection.
     Note: The words "Firefox" and "Mozilla" should NOT be translated. “That you use it” is to mean that the user is opting in to sharing that they are continuing to use Firefox after installing it; not that Firefox is tracking their “usage” or what they’re using it for.
   -->
-  <string name="preferences_marketing_data_description_4" tools:ignore="BrandUsage">Objavite, kako ste odkrili Firefox in da ga uporabljate, z Mozillinimi tehnološkimi partnerji.</string>
+  <string name="preferences_marketing_data_description_4" tools:ignore="BrandUsage">Objavite, kako ste odkrili Firefox in da ga uporabljate, z Mozillinimi trženjskimi tehnološkimi partnerji.</string>
   <!-- Learn more link for marketing data preference -->
   <string name="preferences_marketing_data_learn_more">Več o podatkih za trženje</string>
   <!-- Title for studies preferences -->
@@ -1302,6 +1306,12 @@
   <string name="preference_simple_toolbar">Preprosto</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Razširjeno</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Položaj iskalne vrstice na domači strani</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">V sredini</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Na vrhu</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Odpri nov zavihek</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1972,6 +1982,8 @@
   <string name="download_search_no_results_found">Ni zadetkov</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Izberi vse</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(podatki)</string>
   <!--
     Downloads Content Type Filters
 
@@ -3282,6 +3294,8 @@
   <string name="credit_cards_warning_dialog_set_up_now">Nastavi zdaj</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Pozneje</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Zavarujte občutljive podatke</string>
   <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
   <string name="automotive_authentication_setup_dialog_set_up_now">Nastavi zdaj</string>
   <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
@@ -3888,7 +3902,7 @@
     Description text for the protection panel banner when tracking protection is disabled.
     %s is the name of the app (for example "Firefox").
   -->
-  <string name="protection_panel_banner_not_protected_description">%s je izključena. Priporočamo, da zaščito znova vključite.</string>
+  <string name="protection_panel_banner_not_protected_description">%s je izključen. Priporočamo, da zaščito znova vključite.</string>
   <!--
     Title text for the protection panel banner when tracking protection is enabled.
     %s is the name of the app (for example "Firefox").
@@ -4048,7 +4062,7 @@
   <!-- The title of the tab count section in Tab Tools. -->
   <string name="debug_drawer_tab_tools_tab_count_title">Št. zavihkov</string>
   <!-- The active tab count category in the tab count section in Tab Tools. -->
-  <string name="debug_drawer_tab_tools_tab_count_active">Dejaven</string>
+  <string name="debug_drawer_tab_tools_tab_count_active">Dejavni</string>
   <!-- The inactive tab count category in the tab count section in Tab Tools. -->
   <string name="debug_drawer_tab_tools_tab_count_inactive">Nedejavni</string>
   <!-- The private tab count category in the tab count section in Tab Tools. -->
@@ -4140,7 +4154,7 @@
   <!-- Text shown in the survey title for homepage microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_homepage_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste s Firefoxovo domačo stranjo?</string>
   <!-- Text shown in the survey title for search experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
-  <string name="microsurvey_search_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste z možnostjo iskanja v Firefoxu?</string>
+  <string name="microsurvey_search_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste z izkušnjo iskanja v Firefoxu?</string>
   <!-- Text shown in the survey title for sync experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_sync_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste s sinhronizacijo v Firefoxu?</string>
   <!-- Text shown in the survey title for 'describe your experience so far' microsurvey. Note: The word "Firefox" should NOT be translated. -->
@@ -4306,7 +4320,7 @@
   <!-- Push notification title about old Firefox version. "Update" is a noun. -->
   <string name="certificate_warning_push_notification_update_recommended_title" tools:ignore="UnusedResources">Priporočena je posodobitev</string>
   <!-- Push notification message about old Firefox version -->
-  <string name="certificate_warning_push_notification_pnr1_message" tools:ignore="UnusedResources">Dodatki in nekatere možnosti bodo 14. marca nehale delovati.</string>
+  <string name="certificate_warning_push_notification_pnr1_message" tools:ignore="UnusedResources">Dodatki in nekatere možnosti bodo 14. marca nehali delovati.</string>
   <!-- Push notification title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
   <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">Uporabljate starejšo različico Firefoxa</string>
   <!-- Push notification message about old Firefox version. "Update" is a verb. -->
@@ -4364,7 +4378,7 @@
   <!-- Subtitle for the setup checklist when the second task is completed. -->
   <string name="setup_checklist_subtitle_5_steps_second_step">Dokončali ste 2 od 5 korakov. Odličen napredek!</string>
   <!-- Subtitle for a setup checklist with 5 steps when three of the tasks are completed. -->
-  <string name="setup_checklist_subtitle_5_steps_third_step">Ste preko polovice! Trije koraki dokončani in še dva do konca.</string>
+  <string name="setup_checklist_subtitle_5_steps_third_step">Ste na pol poti! Trije koraki dokončani in še dva do konca.</string>
   <!-- Subtitle for a setup checklist with 5 steps when the fifth task is completed. -->
   <string name="setup_checklist_subtitle_5_steps_fourth_step">Še malo! Ste samo 1 korak od ciljne črte.</string>
   <!-- Subtitle for a setup checklist with 5 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
@@ -4382,7 +4396,7 @@
   <!-- The title of the toolbar selection task for the setup checklist -->
   <string name="setup_checklist_task_toolbar_selection">Izberite postavitev orodne vrstice</string>
   <!-- The title of the explore extensions task for the setup checklist -->
-  <string name="setup_checklist_task_explore_extensions">Razišči razširitve</string>
+  <string name="setup_checklist_task_explore_extensions">Raziščite razširitve</string>
   <!-- The title of the search widget task for the setup checklist -->
   <string name="setup_checklist_task_search_widget_2">Raziščite pripomoček za iskanje</string>
   <!--
@@ -4538,7 +4552,7 @@
   <!-- Content description for the gallery picker button in the Lens camera screen -->
   <string name="content_description_gallery">Izberite v galeriji za pošiljanje v Google Lens</string>
   <!-- Content description for the shutter button in the Lens camera screen -->
-  <string name="content_description_take_photo">Fotografiraj in pošlji Google Lens</string>
+  <string name="content_description_take_photo">Fotografiraj in pošlji v Google Lens</string>
   <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
   <string name="context_menu_open_image_with_google_lens">Išči z Google Lens</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->

@@ -391,6 +391,10 @@
   <string name="ai_controls_voice_search_title">Ahots bidezko bilaketa</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Audioa testura bihurtzen da Google Speech Services erabiliz.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Entzun orria</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Zure gailuak AA behar lezake ozenki irakurtzeko. Testu eta audioa pribatu mantentzen dira.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Blokeatu AA bidezko hobekuntzak?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -1009,6 +1013,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Hedapenen bilduma aldatu egin da. Aplikaziotik irteten aldaketak aplikatzeko…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Kendu %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Honek hedapena eta bere ezarpenak kentzen ditu gailu honetatik.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Kendu</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Utzi</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1173,6 +1189,12 @@
   <string name="preferences_sync_category">Aukeratu zer sinkronizatu</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Sinkronizatutako datuak</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Sinkronizatu gailu hau</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Zure datuen babeskopia eginda eta sinkronizatutako gailuetan erabilgarri dago.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Zure %1$s kontuan gordetako datuak erabiltzen.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Kudeatu zer sinkronizatzen den konektatutako zure gailu guztien artean</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3938,6 +3960,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">Pribatutasun-ezarpenak</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Baimenak</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Konexio segurua</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4515,6 +4539,8 @@
   <string name="wrex_widget_match_suspended">Bertan behera utzita</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Atzeratuta</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Berritu</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Emaitzak</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4523,19 +4549,57 @@
   <string name="wrex_widget_wallpapers">Horma-paperak</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Kendu widgeta</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Amaituta</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Atsedenaldia</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Luzapena</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penaltiak</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Aukera gehiago</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s - %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, zuzeneko partida</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, zuzenean</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Igarotako denbora minututan: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, %2$d / %3$d. orria</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Badirudi lineaz kanpo zaudela</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Egiaztatu Interneterako zure konexioa eta saiatu berriro.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Ezin da partidaren informazioa erakutsi une honetan</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Saiatu berritzen edo itzuli geroago.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Ezin dira emaitzak erakutsi une honetan</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Taldea zehazteke</string>
   <!--
     Privacy notice homepage banner
 

@@ -667,7 +667,7 @@
   <!-- "Add search widget" onboarding title. -->
   <string name="nova_onboarding_add_search_widget_title">Зробіть пошук приватнішим</string>
   <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Починайте кожен пошук з головного екрану, знаючи що вас прикриває автоматичний захист Firefox.</string>
+  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Починайте кожен пошук із головного екрана телефона, знаючи, що вас захищає автоматичний захист Firefox.</string>
   <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Додати віджет Firefox</string>
   <!-- Customize prompt onboarding title. -->
@@ -1278,7 +1278,7 @@
   <!-- Preference for reconnecting to FxA sync -->
   <string name="preferences_sync_sign_in_to_reconnect">Увійдіть, щоб відновити з’єднання</string>
   <!-- Preference for removing FxA account -->
-  <string name="preferences_sync_remove_account">Видалити обліковий запис</string>
+  <string name="preferences_sync_remove_account">Вилучити обліковий запис</string>
   <!--
     Pairing Feature strings
 
@@ -3145,7 +3145,7 @@
     %1$s is a localized date (for example "Jun 9") indicating the end of the promotional period.
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
-  <string name="ip_protection_onboarding_body_promo">Увімкніть цю функцію, щоб вдосконалити приватність перегляду вебсторінок та ускладнити відстеження. Спробуйте зараз, щоб отримати безлімітний трафік протягом %1$s. %2$s</string>
+  <string name="ip_protection_onboarding_body_promo">Увімкніть цю функцію, щоб вдосконалити приватність перегляду вебсторінок та ускладнити відстеження. Спробуйте зараз, щоб отримати безлімітний трафік до %1$s. %2$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Докладніше</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -4395,7 +4395,7 @@
   <!-- Label for the primary action button to unlock private tabs -->
   <string name="pbm_authentication_unlock">Розблокувати</string>
   <!-- Title text instructing the user to unlock private tabs -->
-  <string name="pbm_authentication_unlock_private_tabs">Розблокування приватних вкладкок</string>
+  <string name="pbm_authentication_unlock_private_tabs">Розблокувати приватні вкладки</string>
   <!-- Authentication prompt title to enable the private tabs mode -->
   <string name="pbm_authentication_enable_lock">Увімкнути блокування екрана приватних вкладок</string>
   <!-- Authentication prompt title to disable the private tabs mode -->

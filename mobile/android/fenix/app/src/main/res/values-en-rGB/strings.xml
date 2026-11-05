@@ -391,6 +391,10 @@
   <string name="ai_controls_voice_search_title">Voice search</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Audio is converted to text by Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Listen to page</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Your device may use AI to read aloud. The text and audio stay private.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Block AI enhancements?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -1009,6 +1013,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Extension collection modified. Quitting the application to apply changes…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Remove %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">This removes the extension and its settings from this device.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Remove</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Cancel</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1173,6 +1189,12 @@
   <string name="preferences_sync_category">Choose what to synchronise</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Synchronised data</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Synchronise this device</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Your data is backed up and available on synchronised devices.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Using saved data in your %1$s account.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Manage what synchronises on all your connected devices</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3938,6 +3960,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">Privacy Settings</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Permissions</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Secure connection</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4515,6 +4539,8 @@
   <string name="wrex_widget_match_suspended">Suspended</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Postponed</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Refresh</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Results</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4523,19 +4549,57 @@
   <string name="wrex_widget_wallpapers">Wallpapers</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Remove Widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">FT</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Half-time</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">ET</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penalties</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">More options</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s versus %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, live game</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, live</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Elapsed time in minutes: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, page %2$d of %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Looks like you’re offline</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Check your internet connection and try again.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Can’t show match info right now</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Try refreshing or check back later.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Can’t show results right now</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Team to be determined</string>
   <!--
     Privacy notice homepage banner
 

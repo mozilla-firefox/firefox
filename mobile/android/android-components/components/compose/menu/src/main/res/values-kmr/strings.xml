@@ -11,4 +11,14 @@
   <string name="mozac_menu_item_new_indicator_label">Nû</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Pêşniyarkirinê bigire</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">Beşan kaş bikî da ku ji nû ve rêz bikî</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">Pêşdîtin</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">Beşên veşartî</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">Beşan bikşîne vir da ku veşêre</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Vegerîne rewşa standard</string>
 </resources>

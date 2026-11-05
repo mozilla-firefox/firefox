@@ -125,7 +125,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_malformed_uri_title_alternative">不正確的網址</string>
   <!-- This string contains markup. The URL should not be localized. -->
-  <string name="mozac_browser_errorpages_malformed_uri_message_alternative"><![CDATA[<ul>\n<li>網址通常長得像 <strong>http://www.example.com/</strong>。</li>\n<li>請確定您用的是斜線（例: <strong>/</strong>）。</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_malformed_uri_message_alternative"><![CDATA[<ul>\n<li>網址通常長得像 <strong>http://www.example.com/</strong>。</li>\n<li>請確定您用的是斜線（例：<strong>/</strong>）。</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_protocol_title">未知的通訊協定</string>
   <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>指定的網址使用了瀏覽器無法辨識的通訊協定（如 <q>wxyz://</q>），無法正確連線。</p>\n<ul>\n<li>您是要存取非文字的影音多媒體服務嗎？請檢查網站上是否有更多需求。</li>\n<li>某些通訊協定需要另外安裝其它軟體或外掛程式才能使用。</li>\n</ul>]]></string>

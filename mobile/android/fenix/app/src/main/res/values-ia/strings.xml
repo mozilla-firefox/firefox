@@ -215,6 +215,10 @@
   <string name="browser_menu_no_extensions_installed_description">Nulle extensiones activate</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Essaya un extension recommendate</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Revider actualisation pro %1$s</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Revider configuration pro actualisar</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Informationes del conto</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -387,6 +391,8 @@
   <string name="ai_controls_voice_search_title">Recerca vocal</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Le audio es convertite a texto per Google Speech Services.</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Tu apparato pote usar IA pro leger in alte voce. Le texto e le audio remane private.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Blocar meliorationes de IA?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -842,6 +848,8 @@
   <string name="preferences_toolbar_select_shortcut">Elige un accesso directe</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Modificar via-breve</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Menu</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Gestos</string>
   <!-- Preference for settings related to visual options -->
@@ -1002,6 +1010,18 @@
   <string name="customize_addon_collection_user_hint">Proprietario del collection (ID de usator)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Collection de xtensiones modificate. Quitante le application pro applicar cambiamentos…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Remover %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Isto remove le extension e su parametros de iste apparato.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Remover</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Cancellar</string>
   <!--
     Customize Home
 
@@ -1167,6 +1187,12 @@
   <string name="preferences_sync_category">Elige lo que synchronisar</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Datos synchronisate</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Synchronisar iste apparato</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Tu datos es salveguardate e disponibile sur le apparatos synchronisate.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Usar datos salvate in tu conto %1$s.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Gere que synchronisar sur tote tu apparatos connexe</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3932,6 +3958,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">Parametros de confidentialitate</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Permissiones</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Connexion secur</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4497,6 +4525,79 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">Tu pote saper plus %1$s.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">hic</string>
+  <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">AL VIVO</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Retardate</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Suspendite</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Postponite</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Actualisar</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Resultatos</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Situationes</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Fundos</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Remover widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">FIN</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Intervallo</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Extension</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penalties</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Altere optiones</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s contra %2$s, %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, partita in curso</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, al vivo</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Tempore passate in minutas: %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, pagina %2$d de %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Il pare que tu es sin connexion</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Verifica tu connexion a internet e retenta.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Impossibile monstrar informationes re le partita a iste momento</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Tenta actualisar o re-controla plus tarde.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Impossibile monstrar resultatos a iste momento</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Equipas a definir</string>
   <!--
     Privacy notice homepage banner
 
