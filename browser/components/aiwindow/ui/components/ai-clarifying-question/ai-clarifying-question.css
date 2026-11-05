@@ -6,7 +6,8 @@
   --clarifying-border-color: var(--smartwindow-border-color, var(--border-color));
   --clarifying-option-background-color: light-dark(var(--color-violet-0), var(--color-violet-80));
   --clarifying-option-background-color-hover: color-mix(in srgb, currentColor 7%, var(--clarifying-option-background-color));
-  --clarifying-badge-background-color: light-dark(var(--color-violet-10), var(--color-violet-70));
+  --clarifying-badge-background-color: light-dark(var(--color-violet-0), var(--color-violet-70));
+  --clarifying-badge-text-color: var(--smartwindow-text-color-accent-primary, light-dark(var(--color-violet-60), var(--color-violet-30)));
   --clarifying-recommended-background-color: var(--background-color-box);
   --clarifying-recommended-background-color-hover: color-mix(in srgb, currentColor 7%, var(--clarifying-recommended-background-color));
 
@@ -20,7 +21,7 @@
   /* TODO: Bug 2033070 - desaturated tokens only exist in Nova, remove after it becomes default */
   @media -moz-pref("browser.nova.enabled") {
     --clarifying-option-background-color: light-dark(var(--color-violet-desaturated-0), var(--color-violet-desaturated-80));
-    --clarifying-badge-background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-70));
+    --clarifying-badge-background-color: light-dark(var(--color-violet-0), var(--color-violet-desaturated-70));
   }
 
   @media (forced-colors) {
@@ -152,7 +153,8 @@ moz-button.close-button {
   padding: var(--space-xxsmall) var(--space-small);
   border-radius: var(--border-radius-medium);
   background-color: var(--clarifying-badge-background-color);
-  color: var(--color-accent-primary);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  color: var(--clarifying-badge-text-color);
   font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
 }
