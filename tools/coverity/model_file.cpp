@@ -304,6 +304,36 @@ class nsTAutoStringN : public nsTString<T> {
   nsTAutoStringN& operator=(const nsTSubstring<T>& aStr) { return *this; }
 };
 
+/// mozilla::Atomic
+/// A pointer stored with exchange() or compareExchange() is owned by the
+/// atomic and freed by whoever later swaps it out, as in the lazily created
+/// caches of gfxFont (CIDs 1505160, 1505322, 1680871). Mark the stored value
+/// as escaping so RESOURCE_LEAK stops reporting it.
+namespace mozilla {
+enum MemoryOrdering : uint8_t {
+  Relaxed,
+  ReleaseAcquire,
+  SequentiallyConsistent
+};
+namespace detail {
+template <typename T, MemoryOrdering Order>
+class AtomicBase {
+ public:
+  T exchange(T aVal) {
+    __coverity_escape__(aVal);
+    T old;
+    return old;
+  }
+
+  bool compareExchange(T aOldValue, T aNewValue) {
+    __coverity_escape__(aNewValue);
+    bool exchanged;
+    return exchanged;
+  }
+};
+}  // namespace detail
+}  // namespace mozilla
+
 /// usrsctp defines all its usrsctp_sysctl_set_* setters with this macro, whose
 /// lower bound check is `value < <PREFIX>_MIN` with value a uint32_t and most
 /// of the _MIN being 0. Upstream silences the compiler about it with
@@ -326,3 +356,31 @@ class nsTAutoStringN : public nsTString<T> {
 /// Avoid false-positives like CID 1302578 where the reinterpretation of assert
 /// is not understood by Coverity
 #define GOOGLE_CHECK(expr) assert(!!(expr))
+
+/// NSS
+/// These functions take a new reference on a refcounted object and return the
+/// same pointer. Each caller then owns its own reference and releases it on
+/// its own, so wrapping both pointers in smart pointers is correct. Return an
+/// unknown pointer instead of the argument so MULTIPLE_INIT_SMART_PTRS stops
+/// treating them as one object owned twice (CIDs 1600983, 1601181, 1690208,
+/// 1695041 and friends).
+typedef struct CERTCertificateStr CERTCertificate;
+typedef struct PK11SlotInfoStr PK11SlotInfo;
+typedef struct SECMODModuleStr SECMODModule;
+
+extern "C" {
+CERTCertificate* CERT_DupCertificate(CERTCertificate* c) {
+  CERTCertificate* reference;
+  return reference;
+}
+
+PK11SlotInfo* PK11_ReferenceSlot(PK11SlotInfo* slot) {
+  PK11SlotInfo* reference;
+  return reference;
+}
+
+SECMODModule* SECMOD_ReferenceModule(SECMODModule* module) {
+  SECMODModule* reference;
+  return reference;
+}
+}
