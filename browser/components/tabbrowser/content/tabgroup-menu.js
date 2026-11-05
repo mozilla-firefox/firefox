@@ -362,6 +362,11 @@
 
     constructor() {
       super();
+      /** @type {boolean} */ this.smartTabGroupsFeatureConfigEnabled;
+      /** @type {boolean} */ this.smartTabGroupsUserEnabled;
+      /** @type {boolean} */ this.smartTabGroupsOptin;
+      /** @type {boolean} */ this.mlEnabled;
+      /** @type {boolean} */ this.aitabEnabled;
       XPCOMUtils.defineLazyPreferenceGetter(
         this,
         "smartTabGroupsFeatureConfigEnabled",
@@ -401,7 +406,10 @@
       }
 
       this.textContent = "";
-      this.appendChild(this.constructor.fragment);
+      this.appendChild(
+        /** @type {typeof MozTabbrowserTabGroupMenu} */ (this.constructor)
+          .fragment
+      );
       this.initializeAttributeInheritance();
 
       this._initialized = true;
@@ -815,7 +823,7 @@
       return this.#activeGroup;
     }
 
-    set activeGroup(group = null) {
+    set activeGroup(group) {
       this.#activeGroup = group;
       this.#nameField.value = group ? group.label : "";
       this.#swatches.forEach(node => {
@@ -846,7 +854,7 @@
     }
 
     get panel() {
-      return this.children[0];
+      return /** @type {XULPopupElement} */ (this.children[0]);
     }
 
     get #panelPosition() {
@@ -890,7 +898,6 @@
     /**
      * Attempt to set the label of the group to the suggested label
      *
-     * @param {MozTabbrowserTabGroup} group
      * @param {string} newLabel
      * @returns
      */
@@ -961,8 +968,9 @@
       this.#panel.openPopup(group.firstChild, {
         position: this.#panelPosition,
       });
-      document.getElementById("tabGroupEditor_moveGroupToNewWindow").disabled =
-        gBrowser.openTabs.length == this.activeGroup?.tabs.length;
+      /** @type {MozToolbarbutton} */ (
+        document.getElementById("tabGroupEditor_moveGroupToNewWindow")
+      ).disabled = gBrowser.openTabs.length == this.activeGroup?.tabs.length;
       let linkCount = this.#getGroupLinks(this.activeGroup).length;
       document.l10n.setAttributes(
         this.#commandButtons.copyAllLinks,
@@ -986,8 +994,8 @@
     }
 
     #maybeDisableOrHideSaveButton() {
-      const saveAndCloseGroup = document.getElementById(
-        "tabGroupEditor_saveAndCloseGroup"
+      const saveAndCloseGroup = /** @type {MozToolbarbutton} */ (
+        document.getElementById("tabGroupEditor_saveAndCloseGroup")
       );
       if (PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal)) {
         saveAndCloseGroup.hidden = true;
@@ -1261,8 +1269,8 @@
 
       this.#selectedSuggestedTabs = tabs;
       this.#suggestedTabs = tabs;
-      tabs.forEach((tab, index) => {
-        this.#createRow(tab, index);
+      tabs.forEach(tab => {
+        this.#createRow(tab);
       });
 
       this.suggestionState = this.#createMode
@@ -1319,7 +1327,9 @@
 
     #createRow(tab) {
       // Create Checkbox
-      let checkbox = document.createElement("moz-checkbox");
+      let checkbox = /** @type {MozCheckbox} */ (
+        document.createElement("moz-checkbox")
+      );
       checkbox.label = tab.label;
       checkbox.iconSrc = tab.image;
       checkbox.checked = true;
@@ -1327,8 +1337,8 @@
         "tab-group-suggestion-checkbox",
         "text-truncated-ellipsis"
       );
-      checkbox.addEventListener("change", e => {
-        if (e.target.checked) {
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) {
           this.#selectedSuggestedTabs.push(tab);
         } else {
           this.#selectedSuggestedTabs = this.#selectedSuggestedTabs.filter(
