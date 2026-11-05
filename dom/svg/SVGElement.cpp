@@ -1465,7 +1465,7 @@ void SVGElement::DidChangeValue(nsAtom* aName, nsAttrValue& aNewValue,
   // but currently SVG elements do not even use the old attribute value in
   // |AfterSetAttr|, so this should be ok.
   const AttrModType modType =
-      aName ? AttrModType::Modification : AttrModType::Addition;
+      HasAttr(aName) ? AttrModType::Modification : AttrModType::Addition;
   const nsAttrValue emptyValue;
   SetAttrAndNotify(kNameSpaceID_None, aName, nullptr, &emptyValue, aNewValue,
                    nullptr, modType, kNotifyDocumentObservers,
