@@ -1,0 +1,116 @@
+From 1d65796a7f282efff18a22071bbff754ab188eae Mon Sep 17 00:00:00 2001
+From: Mark Striemer <mstriemer@mozilla.com>
+Date: Sat, 24 Oct 2026 16:51:51 -0500
+Subject: [PATCH 2/7] Remove DOMParser
+
+---
+ packages/lit-html/src/lit-html.ts | 58 ++++++++++++++++++++++++++++++-
+ 1 file changed, 57 insertions(+), 1 deletion(-)
+
+diff --git a/packages/lit-html/src/lit-html.ts b/packages/lit-html/src/lit-html.ts
+index 350dc1a6..694bc4a5 100644
+--- a/packages/lit-html/src/lit-html.ts
++++ b/packages/lit-html/src/lit-html.ts
+@@ -16,6 +16,13 @@ const NODE_MODE = false;
+ // Allows minifiers to rename references to globalThis
+ const global = globalThis;
+ 
++// Templates are parsed with setHTML. A plain config object is passed instead of
++// a Sanitizer because privileged windows can have their own global Sanitizer.
++// Comments are kept since Lit uses them as markers. Unknown elements and
++// attributes are kept too, and setHTML always strips script, frames, embeds,
++// objects and event handler attributes regardless of this config.
++const __moz_sanitizerConfig = {comments: true};
++
+ /**
+  * Contains types that are part of the unstable debug API.
+  *
+@@ -338,6 +345,33 @@ const createSanitizer: SanitizerFactory = (node, name, type) => {
+   return sanitizerFactoryInternal(node, name, type);
+ };
+ 
++const __moz_navigationAttrs = new Set([
++  'action',
++  'data',
++  'href',
++  'formaction',
++  'src',
++  'xlink:href',
++]);
++const __moz_sanitizeAttribute = (name: string) => {
++  return __moz_navigationAttrs.has(name.toLowerCase());
++};
++const __moz_attributeValueSanitizer = (
++  value: unknown,
++  type: 'property' | 'attribute'
++): unknown => {
++  try {
++    const str = String(value);
++    const url = new URL(str, 'https://example.com/');
++    if (url.protocol !== 'javascript:') {
++      return str;
++    }
++  } catch {
++    // Couldn't parse as String or URL, not trustworthy.
++  }
++  return type === 'property' ? '' : nothing;
++};
++
+ // Added to an attribute name to mark the attribute as bound so we can find
+ // it easily.
+ const boundAttributeSuffix = '$lit$';
+@@ -1082,6 +1116,12 @@ class Template {
+       nodeIndex++;
+     }
+ 
++    if (parts.length !== partCount) {
++      throw new Error(
++        'lit-html: template is missing binding markers after parsing'
++      );
++    }
++
+     if (DEV_MODE) {
+       // If there was a duplicate attribute on a tag, then when the tag is
+       // parsed into an element the attribute gets de-duplicated. We can detect
+@@ -1120,7 +1160,17 @@ class Template {
+   /** @nocollapse */
+   static createElement(html: TrustedHTML, _options?: RenderOptions) {
+     const el = d.createElement('template');
+-    el.innerHTML = html as unknown as string;
++    // Passing a config object makes Firefox build and canonicalize a new
++    // Sanitizer on each call, which is slower than passing a reusable
++    // Sanitizer instance. We can't reuse one because privileged windows
++    // such as browser.xhtml define their own global `Sanitizer`, shadowing
++    // the web API constructor. This only runs once per unique template
++    // since Lit caches the resulting Template.
++    (
++      el as unknown as {
++        setHTML(html: string, options: {sanitizer: object}): void;
++      }
++    ).setHTML(html as unknown as string, {sanitizer: __moz_sanitizerConfig});
+     return el;
+   }
+ }
+@@ -1935,6 +1985,9 @@ class AttributePart implements Disconnectable {
+ 
+   /** @internal */
+   _commitValue(value: unknown) {
++    if (value && value !== nothing && __moz_sanitizeAttribute(this.name)) {
++      value = __moz_attributeValueSanitizer(value, 'attribute');
++    }
+     if (value === nothing) {
+       (wrap(this.element) as Element).removeAttribute(this.name);
+     } else {
+@@ -1980,6 +2033,9 @@ class PropertyPart extends AttributePart {
+       }
+       value = this._sanitizer(value);
+     }
++    if (value && value !== nothing && __moz_sanitizeAttribute(this.name)) {
++      value = __moz_attributeValueSanitizer(value, 'property');
++    }
+     debugLogEvent &&
+       debugLogEvent({
+         kind: 'commit property',
+-- 
+2.53.0
+

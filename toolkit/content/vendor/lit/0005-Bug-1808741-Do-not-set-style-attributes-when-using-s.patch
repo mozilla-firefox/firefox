@@ -1,4 +1,4 @@
-From 36b3969db435674da9c7be236b6ecc2b1052f231 Mon Sep 17 00:00:00 2001
+From 9ddef0f3bdd36e6e0f4b83ea5e1448a0a2cf37b1 Mon Sep 17 00:00:00 2001
 From: Mark Striemer <mstriemer@mozilla.com>
 Date: Wed, 14 Dec 2022 15:34:57 -0600
 Subject: [PATCH 5/7] Bug 1808741 - Do not set style attributes when using

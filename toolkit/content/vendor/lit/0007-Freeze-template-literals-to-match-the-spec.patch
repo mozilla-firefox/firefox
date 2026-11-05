@@ -1,4 +1,4 @@
-From fec5e06709710a50345a7fc659ff2e73cfbce734 Mon Sep 17 00:00:00 2001
+From 6b78caebae0d68304770ca47dc29b335ba19c28c Mon Sep 17 00:00:00 2001
 From: Mark Striemer <mstriemer@mozilla.com>
 Date: Tue, 13 Oct 2026 13:43:11 -0500
 Subject: [PATCH 7/7] Freeze template literals to match the spec
@@ -22,10 +22,10 @@ index d0c5cfc5..58870414 100644
      // dangerous. Third-party directives should not do this.
      return (this._templateResult = {
 diff --git a/packages/lit-html/src/lit-html.ts b/packages/lit-html/src/lit-html.ts
-index b74832d7..0ae68c1d 100644
+index 694bc4a5..1e8b5da2 100644
 --- a/packages/lit-html/src/lit-html.ts
 +++ b/packages/lit-html/src/lit-html.ts
-@@ -764,7 +764,12 @@ function trustFromTemplateString(
+@@ -793,7 +793,12 @@ function trustFromTemplateString(
    // though we might need to make that check inside of the html and svg
    // functions, because precompiled templates don't come in as
    // TemplateStringArray objects.

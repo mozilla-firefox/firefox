@@ -1,4 +1,4 @@
-From 468bdbb4aad3e8012d0f9ae6b6795a081443287f Mon Sep 17 00:00:00 2001
+From 3f45809c8b4f49093faceb34edabce35849932e7 Mon Sep 17 00:00:00 2001
 From: Mark Striemer <mstriemer@mozilla.com>
 Date: Thu, 20 Aug 2026 13:00:12 -0500
 Subject: [PATCH 6/7] Don't modify Symbol for Symbol.metadata polyfill
