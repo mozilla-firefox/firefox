@@ -1224,6 +1224,7 @@ split-view-footer {
      be defined when DevTools is not visible/docked to a different position so we need
      to provide meaningful fallback in those cases.
   */
+  /* physical left/right are more appropriate than the equivalent logical properties here */
   left: max(anchor(--browser-with-dialog left), anchor(--devtools-left-host right, 0));
   right: max(anchor(--browser-with-dialog right), anchor(--devtools-right-host left, 0));
   bottom: max(anchor(--browser-with-dialog bottom), anchor(--devtools-bottom-host top, 0));

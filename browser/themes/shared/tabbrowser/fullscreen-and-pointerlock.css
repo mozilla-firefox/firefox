@@ -31,8 +31,7 @@
 
 #fullscr-toggler {
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   height: 1px;
   position: fixed;
   z-index: 2147483647;
