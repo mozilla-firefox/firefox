@@ -36,6 +36,7 @@ elif CONFIG["OS_ARCH"] == "WINNT":
     ]
 
     EXPORTS.mozilla.sandboxing += [
+        "chromium-shim/sandbox/win/BrokerGeckoServices.h",
         "chromium-shim/sandbox/win/TargetGeckoServices.h",
         "win/SandboxInitialization.h",
     ]
@@ -62,6 +63,7 @@ elif CONFIG["OS_ARCH"] == "WINNT":
         "chromium-shim/base/debug/stack_trace.cpp",
         "chromium-shim/base/file_version_info_win.cpp",
         "chromium-shim/base/logging.cpp",
+        "chromium-shim/sandbox/win/BrokerGeckoClient.cpp",
         "chromium-shim/sandbox/win/src/registry_dispatcher.cc",
         "chromium-shim/sandbox/win/src/registry_interception.cc",
         "chromium-shim/sandbox/win/src/registry_policy.cc",

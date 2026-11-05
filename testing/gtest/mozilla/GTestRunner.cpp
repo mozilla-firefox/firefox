@@ -17,6 +17,9 @@
 #endif
 #ifdef XP_WIN
 #  include "mozilla/ipc/WindowsMessageLoop.h"
+#  if defined(MOZ_SANDBOX)
+#    include "sandboxBroker.h"
+#  endif
 #endif
 
 using ::testing::EmptyTestEventListener;
@@ -201,6 +204,10 @@ int RunGTestFunc(int* argc, char** argv) {
   PR_SetEnv("XPCOM_DEBUG_BREAK=stack-and-abort");
 
   ScopedXPCOM xpcom("GTest");
+
+#if defined(MOZ_SANDBOX) && defined(XP_WIN)
+  SandboxBroker::GeckoDependentInitialize();
+#endif
 
 #ifdef XP_WIN
   mozilla::ipc::windows::InitUIThread();

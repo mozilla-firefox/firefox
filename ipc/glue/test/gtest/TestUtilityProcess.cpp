@@ -39,15 +39,6 @@ using namespace mozilla::ipc;
 // Note that some test suites inherit TestUtilityProcess, so any change here
 // will propagate there. Please ensure compatibility.
 /* static */ void TestUtilityProcess::SetUpTestSuite() {
-#if defined(XP_WIN) && defined(MOZ_SANDBOX)
-  // Ensure only one execution even with GTEST_REPEAT>1
-  static bool sOnce = false;
-  if (!sOnce) {
-    mozilla::SandboxBroker::GeckoDependentInitialize();
-    sOnce = true;
-  }
-#endif  // defined(XP_WIN) && defined(MOZ_SANDBOX)
-
 #if defined(MOZ_WIDGET_ANDROID) || defined(XP_MACOSX)
   // Ensure that the app shell service is running
   nsCOMPtr<nsIAppShellService> appShell =

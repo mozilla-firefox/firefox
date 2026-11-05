@@ -36,6 +36,7 @@
 #include "mozilla/glean/SecuritySandboxMetrics.h"
 #include "mozilla/ipc/LaunchError.h"
 #include "mozilla/ipc/UtilityProcessSandboxing.h"
+#include "mozilla/sandboxing/BrokerGeckoServices.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsCOMPtr.h"
 #include "nsDirectoryServiceDefs.h"
@@ -62,6 +63,8 @@ namespace mozilla {
 constexpr wchar_t kLpacFirefoxInstallFiles[] = L"lpacFirefoxInstallFiles";
 
 sandbox::BrokerServices* sBrokerService = nullptr;
+
+static bool sGeckoDependentInitialized = false;
 
 // This is set to true in Initialize when our exe file name has a drive type of
 // DRIVE_REMOTE, so that we can tailor the sandbox policy as some settings break
@@ -284,6 +287,17 @@ static void AddCachedWindowsDirRule(
 void SandboxBroker::GeckoDependentInitialize() {
   MOZ_ASSERT(NS_IsMainThread());
 
+  // This is exported by the executable, which might not export it if it is from
+  // a different version because of a broken installation.
+  auto setBrokerGeckoServices =
+      reinterpret_cast<sandboxing::SetBrokerGeckoServicesFn>(
+          ::GetProcAddress(::GetModuleHandleW(nullptr),
+                           sandboxing::kSetBrokerGeckoServicesName));
+  if (setBrokerGeckoServices) {
+    sandboxing::BrokerGeckoServices services;
+    setBrokerGeckoServices(&services);
+  }
+
   // Cache directory paths for use in policy rules, because the directory
   // service must be called on the main thread.
   nsresult rv;
@@ -304,9 +318,15 @@ void SandboxBroker::GeckoDependentInitialize() {
   CacheDirectoryServiceDir(dirSvc, XRE_USER_SYS_EXTENSION_DIR,
                            sUserExtensionsDir);
 #endif
+
+  sGeckoDependentInitialized = true;
 }
 
 SandboxBroker::SandboxBroker() {
+  MOZ_ASSERT(sGeckoDependentInitialized,
+             "GeckoDependentInitialize must be called before creating a "
+             "SandboxBroker.");
+
   if (sBrokerService) {
     mPolicy = sBrokerService->CreatePolicy();
     if (sRunningFromNetworkDrive) {
