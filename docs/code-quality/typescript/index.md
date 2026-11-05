@@ -44,10 +44,11 @@ which will help to get the type definitions set up correctly.
   * Additionally, the way that TypeScript works means that it will run across
     the whole project regardless, so we report all the issues that it reports.
 * Will my patches get backed out due to TypeScript failures?
-  * Currently no. Whilst we have a [TypeScript Linter on CI](../lint/linters/typescript.md)
-    it is currently tier-3 which is hidden from the sheriffs view.
+  * Currently no. The [TypeScript Linter on CI](../lint/linters/typescript.md)
+    is [tier 2][job visibility tiers], so sheriffs will file bugs but won't
+    back out patches for them.
   * Failures will however, be reported on reviews on Phabricator.
-  * We will promote the linter to tier-2 and tier-1 once we have more automation
+  * We will promote the linter to tier 1 once we have more automation
     in place for type generation.
 * Are we planning to allow using TypeScript files and compiling directly from
   TypeScript?
@@ -82,3 +83,5 @@ enabling
 bestPractices
 updatingTypes
 ```
+
+[job visibility tiers]: https://wiki.mozilla.org/Sheriffing/Job_Visibility_Policy#Overview_of_the_Job_Visibility_Tiers

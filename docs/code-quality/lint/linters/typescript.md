@@ -56,11 +56,11 @@ the builders. Questions can also be asked on #lint:mozilla.org on Matrix.
 
 ### TypeScript task
 
-This is a tier-3 task whilst it is under development. This is hidden from the
-default view but will report via the code review bot. Issues should be fixed if
-possible. If uncertain check with the appropriate team.
+This task is [tier 2]. It also reports via the code review bot. Issues should
+be fixed if possible. If uncertain check with the appropriate team.
 
 For test harness issues, file bugs in Developer Infrastructure :: Lint and Formatting.
 
+[tier 2]: https://wiki.mozilla.org/Sheriffing/Job_Visibility_Policy#Overview_of_the_Job_Visibility_Tiers
 [this page]: ../../typescript/index.md
 [usage guide]: ../usage.md
