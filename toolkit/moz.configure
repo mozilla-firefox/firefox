@@ -3925,7 +3925,6 @@ def test_package_configuration(
         "stage-config",
         "stage-mach",
         "stage-extensions",
-        "stage-mochitest",
     ]
 
     # jittest is packaged directly from topsrcdir. Only jsreftest

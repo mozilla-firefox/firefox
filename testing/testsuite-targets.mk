@@ -63,8 +63,6 @@ stage-mach: make-stage-dir
 	cp $(topsrcdir)/testing/tools/mach_test_package_initialize.py $(PKG_STAGE)/tools/mach_initialize.py
 	cp $(topsrcdir)/mach $(PKG_STAGE)
 
-stage-mochitest: make-stage-dir ;
-
 stage-jstests: make-stage-dir
 	$(MAKE) -C $(DEPTH)/js/src/tests stage-package
 
@@ -149,7 +147,6 @@ stage-extensions: make-stage-dir
   make-stage-dir \
   stage-all \
   stage-config \
-  stage-mochitest \
   stage-jstests \
   stage-android \
   test-packages-manifest \
