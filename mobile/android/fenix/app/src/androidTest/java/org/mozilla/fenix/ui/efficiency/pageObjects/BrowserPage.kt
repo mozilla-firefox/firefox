@@ -38,6 +38,7 @@ import org.mozilla.fenix.helpers.TestHelper.packageName
 import org.mozilla.fenix.helpers.ext.waitNotNull
 import org.mozilla.fenix.ui.efficiency.core.WaitPolicy
 import org.mozilla.fenix.ui.efficiency.core.driveUntil
+import org.mozilla.fenix.ui.efficiency.data.AddressDetails
 import org.mozilla.fenix.ui.efficiency.helpers.BasePage
 import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.helpers.SwipeDirection
@@ -689,6 +690,19 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
     }
 
     // --- Address autofill on a web form ---
+
+    // Matches addressForm.html's specific field ids; a differently-shaped address form would need its own fill method.
+    fun fillAddressForm(address: AddressDetails): BrowserPage {
+        mozClearAndEnterText(address.streetAddress, BrowserPageSelectors.ADDRESS_STREET_WEB_FIELD)
+        dismissKnownOverlaysIfPresent()
+        mozClearAndEnterText(address.city, BrowserPageSelectors.ADDRESS_CITY_WEB_FIELD)
+        mozClearAndEnterText(address.state, BrowserPageSelectors.ADDRESS_STATE_WEB_FIELD)
+        mozClearAndEnterText(address.zipCode, BrowserPageSelectors.ADDRESS_ZIP_WEB_FIELD)
+        mozClearAndEnterText(address.country, BrowserPageSelectors.ADDRESS_COUNTRY_WEB_FIELD)
+        mozClearAndEnterText(address.phoneNumber, BrowserPageSelectors.ADDRESS_TELEPHONE_WEB_FIELD)
+        mozClearAndEnterText(address.emailAddress, BrowserPageSelectors.ADDRESS_EMAIL_WEB_FIELD)
+        return this
+    }
 
     /** Focus the web address form's street-address field, which triggers the autofill prompt. */
     fun clickAddressFormStreetField(): BrowserPage {

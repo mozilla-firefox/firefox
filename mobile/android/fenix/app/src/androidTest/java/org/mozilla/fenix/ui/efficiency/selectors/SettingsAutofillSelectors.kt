@@ -172,6 +172,15 @@ object SettingsAutofillSelectors : SelectorContainer {
             groups = setOf(Group.MANAGE_ADDRESSES),
         )
 
+    @Suppress("FunctionName")
+    fun SAVED_ADDRESS_DETAIL(savedAddressDetails: String = "") =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = savedAddressDetails,
+            description = "Saved address detail: $savedAddressDetails",
+            groups = setOf(Group.MANAGE_ADDRESSES),
+        )
+
     // --- Credit cards ---
 
     // Credit-cards section of the Autofill screen (present before any card is saved).

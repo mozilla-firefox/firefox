@@ -467,11 +467,86 @@ object BrowserPageSelectors : SelectorContainer {
             description = "Web address form: city field",
         )
 
+    val ADDRESS_STATE_WEB_FIELD =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
+            value = "state",
+            description = "Web address form: state field",
+        )
+
     val ADDRESS_COUNTRY_WEB_FIELD =
         Selector(
             strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
             value = "country",
             description = "Web address form: country field",
+        )
+
+    val ADDRESS_ZIP_WEB_FIELD =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
+            value = "zipCode",
+            description = "Web address form: zip code field",
+        )
+
+    val ADDRESS_TELEPHONE_WEB_FIELD =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
+            value = "telephone",
+            description = "Web address form: telephone field",
+        )
+
+    val ADDRESS_EMAIL_WEB_FIELD =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
+            value = "email",
+            description = "Web address form: email field",
+        )
+
+    // The settings EditAddress form has no apartment (address-line2) field, so a saved address always leaves it empty.
+    // Filling it on the web form while keeping every other field identical makes it a "superset" of the saved record,
+    // which is what turns the capture into an Update (vs Save) prompt -- see FormAutofillParent._onAddressSubmit.
+    val ADDRESS_APARTMENT_WEB_FIELD =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_COMPOSE_TAG,
+            value = "apartment",
+            description = "Web address form: apartment field",
+        )
+
+    val SAVE_ADDRESS_PROMPT =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
+            value = getStringResource(promptsR.string.mozac_feature_prompts_save_address_prompt_title),
+            description = "Save-address capture prompt",
+        )
+
+    val SAVE_ADDRESS_PROMPT_NOT_NOW_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(promptsR.string.mozac_feature_prompt_not_now),
+            description = "Save-address capture prompt: 'Not now' button",
+        )
+
+    // Shown instead of SAVE_ADDRESS_PROMPT when the submitted address is mergeable into an existing saved one
+    // (no "different" field, at least one "superset"/"similar"). Compose dialog title, matched by text via UIAutomator.
+    val UPDATE_ADDRESS_PROMPT =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
+            value = getStringResource(promptsR.string.mozac_feature_prompts_update_address_prompt_title),
+            description = "Update-address capture prompt",
+        )
+
+    val UPDATE_ADDRESS_PROMPT_UPDATE_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(promptsR.string.mozac_feature_prompt_update_confirmation),
+            description = "Update-address capture prompt: 'Update' button",
+        )
+
+    val UPDATE_ADDRESS_PROMPT_NOT_NOW_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(promptsR.string.mozac_feature_prompt_dont_update_2),
+            description = "Update-address capture prompt: 'Not now' button",
         )
 
     // NOTE: the Android stylus-handwriting prompt that can cover this page is handled centrally via

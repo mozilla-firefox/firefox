@@ -5,13 +5,29 @@
   </head>
   <body>
     <form>
-      <p>Street Address: <input id="streetAddress" type="text" /></p>
-      <p>City: <input id="city" type="text" /></p>
-      <p>Zip Code: <input id="zipCode" type="text" /></p>
-      <p>Country: <input id="country" type="text" /></p>
-      <p>Telephone: <input id="telephone" type="text" /></p>
-      <p>Email: <input id="email" type="text" /></p>
-      <p>Apartment, suite, etc. <input id="apartment" type="text" /></p>
+      <p>
+        Street Address:
+        <input id="streetAddress" type="text" autocomplete="street-address" />
+      </p>
+      <p>City: <input id="city" type="text" autocomplete="address-level2" /></p>
+      <p>
+        State: <input id="state" type="text" autocomplete="address-level1" />
+      </p>
+      <p>
+        Zip Code: <input id="zipCode" type="text" autocomplete="postal-code" />
+      </p>
+      <p>
+        Country: <input id="country" type="text" autocomplete="country-name" />
+      </p>
+      <p>Telephone: <input id="telephone" type="text" autocomplete="tel" /></p>
+      <p>Email: <input id="email" type="text" autocomplete="email" /></p>
+      <p>
+        Apartment, suite, etc.
+        <input id="apartment" type="text" autocomplete="address-line2" />
+      </p>
+      <p>
+        <input type="submit" id="submit" value="Submit" aria-label="submit" />
+      </p>
     </form>
   </body>
 </html>
