@@ -369,6 +369,51 @@ add_task(async function test_visit_recorded_in_history() {
   await SpecialPowers.popPrefEnv();
 });
 
+function getStoredFavicon(url) {
+  return PlacesUtils.favicons.getFaviconForPage(Services.io.newURI(url));
+}
+
+add_task(async function test_favicon_stored_and_removed_with_page() {
+  await SpecialPowers.pushPrefEnv({ set: [[AITAB_PREF, true]] });
+  await PlacesUtils.history.clear();
+
+  await ConversationStore.updateConversation(
+    new Conversation({ id: "conv-favicon", feature: "aitab" })
+  );
+  const { slug } = await AITabStore.create({
+    convId: "conv-favicon",
+    slug: "favicon_page",
+    title: "Favicon",
+    components: { surface: { components: [], dataModel: {} } },
+  });
+  const url = `about:smartpage?page=${slug}`;
+
+  const faviconChanged = PlacesTestUtils.waitForNotification(
+    "favicon-changed",
+    events => events.some(event => event.url == url)
+  );
+
+  await BrowserTestUtils.withNewTab(url, async browser => {
+    await faviconChanged;
+    const favicon = await getStoredFavicon(url);
+    Assert.equal(
+      favicon.uri.spec,
+      "chrome://browser/content/aiwindow/assets/smart-page-16.svg",
+      "The stored icon is the smart page icon"
+    );
+
+    const actor = browser.browsingContext.currentWindowGlobal.getActor("AITab");
+    await actor.receiveMessage({ name: "AITab:DeletePage" });
+    await TestUtils.waitForCondition(
+      async () => !(await getStoredFavicon(url)),
+      "Deleting the page removes its icon"
+    );
+  });
+
+  await PlacesUtils.history.clear();
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function test_missing_page_removed_from_history() {
   await SpecialPowers.pushPrefEnv({ set: [[AITAB_PREF, true]] });
   await PlacesUtils.history.clear();
