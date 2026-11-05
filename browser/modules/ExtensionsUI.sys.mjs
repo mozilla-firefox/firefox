@@ -30,7 +30,7 @@ ChromeUtils.defineLazyGetter(
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () =>
   console.createInstance({
-    prefix: "ExtensionsUI",
+    logModule: "ExtensionsUI",
     maxLogLevelPref: "extensions.webextensions.log.level",
   })
 );

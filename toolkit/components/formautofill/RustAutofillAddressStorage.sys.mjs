@@ -37,7 +37,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 const logger = console.createInstance({
-  prefix: "RustAutofillAddressStorage",
+  logModule: "RustAutofillAddressStorage",
   maxLogLevelPref: "extensions.formautofill.loglevel",
 });
 

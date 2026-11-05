@@ -10,7 +10,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "HistoryThumbnails",
+    logModule: "HistoryThumbnails",
     maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
   })
 );

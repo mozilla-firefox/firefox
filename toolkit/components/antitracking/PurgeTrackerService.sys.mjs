@@ -30,7 +30,7 @@ ChromeUtils.defineLazyGetter(lazy, "gClassifierFeature", () => {
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () => {
   return console.createInstance({
-    prefix: "PurgeTrackerService",
+    logModule: "PurgeTrackerService",
     maxLogLevelPref: "privacy.purge_trackers.logging.level",
   });
 });

@@ -377,7 +377,7 @@ export var GeckoViewUtils = {
     // when logging is off, which is not a ConsoleLogLevel. Debug messages are
     // gated on the MOZ_LOG module instead.
     const instance = console.createInstance({
-      prefix: tag,
+      logModule: tag,
       maxLogLevel: "Warn",
     });
 

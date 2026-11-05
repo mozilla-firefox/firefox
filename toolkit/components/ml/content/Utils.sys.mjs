@@ -47,14 +47,14 @@ if (IN_WORKER) {
   ChromeUtils.defineLazyGetter(lazy, "console", () => {
     return console.createInstance({
       maxLogLevel: logLevel, // we can't use maxLogLevelPref in workers.
-      prefix: "GeckoMLUtils",
+      logModule: "GeckoMLUtils",
     });
   });
 } else {
   ChromeUtils.defineLazyGetter(lazy, "console", () => {
     return console.createInstance({
       maxLogLevelPref: "browser.ml.logLevel",
-      prefix: "GeckoMLUtils",
+      logModule: "GeckoMLUtils",
     });
   });
 }

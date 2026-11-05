@@ -27,7 +27,7 @@ var logConsole;
 function log(...msgs) {
   if (!logConsole) {
     logConsole = console.createInstance({
-      prefix: "Sanitizer",
+      logModule: "Sanitizer",
       maxLogLevelPref: "browser.sanitizer.loglevel",
     });
   }

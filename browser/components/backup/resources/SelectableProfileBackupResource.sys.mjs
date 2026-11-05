@@ -17,7 +17,7 @@ ChromeUtils.defineLazyGetter(lazy, "l10n", () => {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "SelectableProfileBackupResource",
+    logModule: "SelectableProfileBackupResource",
     maxLogLevel: Services.prefs.getBoolPref("browser.backup.log", false)
       ? "Debug"
       : "Warn",

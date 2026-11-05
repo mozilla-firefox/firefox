@@ -5,7 +5,7 @@
 const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({ prefix: "SmartFormFillChild" });
+  return console.createInstance({ logModule: "SmartFormFillChild" });
 });
 
 ChromeUtils.defineLazyGetter(lazy, "formFillController", function () {

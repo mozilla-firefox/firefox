@@ -320,7 +320,7 @@ function unregisterVacuumParticipant(connectionData) {
  */
 function createLoggerWithPrefix(prefix) {
   return console.createInstance({
-    prefix: `SQLite JSM (${prefix})`,
+    logModule: `SQLite JSM (${prefix})`,
     maxLogLevelPref: "toolkit.sqlitejsm.loglevel",
   });
 }

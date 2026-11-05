@@ -10,7 +10,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
-    prefix: "NotificationDB",
+    logModule: "NotificationDB",
     maxLogLevelPref: "dom.webnotifications.loglevel",
   });
 });

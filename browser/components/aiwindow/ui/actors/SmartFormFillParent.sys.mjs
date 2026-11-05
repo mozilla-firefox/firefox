@@ -30,7 +30,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({ prefix: "SmartFormFillParent" });
+  return console.createInstance({ logModule: "SmartFormFillParent" });
 });
 
 XPCOMUtils.defineLazyPreferenceGetter(

@@ -9,7 +9,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "ToastNotification",
+    logModule: "ToastNotification",
     maxLogLevel: "Warn",
   });
 });

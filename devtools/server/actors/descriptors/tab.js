@@ -6,7 +6,7 @@
 
 loader.lazyGetter(this, "logger", function () {
   return console.createInstance({
-    prefix: "devtools_tabdescriptor",
+    logModule: "devtools_tabdescriptor",
     maxLogLevel: "Warn",
   });
 });

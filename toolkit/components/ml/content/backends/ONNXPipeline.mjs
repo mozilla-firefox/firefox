@@ -45,7 +45,7 @@ const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevel: _logLevel, // we can't use maxLogLevelPref in workers.
-    prefix: "GeckoMLONNXPipeline",
+    logModule: "GeckoMLONNXPipeline",
   });
 });
 

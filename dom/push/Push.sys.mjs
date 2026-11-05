@@ -9,7 +9,7 @@ const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "dom.push.loglevel",
-    prefix: "Push",
+    logModule: "Push",
   });
 });
 

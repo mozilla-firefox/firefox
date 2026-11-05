@@ -33,7 +33,7 @@ export class RemoteSettingsServer {
    */
   constructor({ maxLogLevel = "Info" } = {}) {
     this.#log = console.createInstance({
-      prefix: "RemoteSettingsServer",
+      logModule: "RemoteSettingsServer",
       maxLogLevel,
     });
   }

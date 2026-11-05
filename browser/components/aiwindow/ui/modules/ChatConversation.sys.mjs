@@ -77,7 +77,7 @@ ChromeUtils.defineLazyGetter(lazy, "fluentStrings", () => {
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
-    prefix: "ChatConversation",
+    logModule: "ChatConversation",
   });
 });
 

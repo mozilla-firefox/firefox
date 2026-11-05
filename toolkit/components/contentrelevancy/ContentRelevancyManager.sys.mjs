@@ -58,7 +58,7 @@ const NIMBUS_VARIABLE_INGEST_ENABLED = "ingestEnabled";
 function setupLogging() {
   ChromeUtils.defineLazyGetter(lazy, "log", () => {
     return console.createInstance({
-      prefix: "ContentRelevancyManager",
+      logModule: "ContentRelevancyManager",
       maxLogLevel: Services.prefs.getBoolPref(PREF_LOG_ENABLED, false)
         ? "Debug"
         : "Error",

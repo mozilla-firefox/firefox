@@ -17,7 +17,7 @@ let logConsole;
 function log(msg) {
   if (!logConsole) {
     logConsole = console.createInstance({
-      prefix: "PrincipalsCollector",
+      logModule: "PrincipalsCollector",
       maxLogLevelPref: "browser.sanitizer.loglevel",
     });
   }

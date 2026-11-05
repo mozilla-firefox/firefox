@@ -8,7 +8,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
-  return console.createInstance({ prefix: "EME", maxLogLevel: "Off" });
+  return console.createInstance({ logModule: "EME", maxLogLevel: "Off" });
 });
 
 const COLLECTION_NAME = "mfcdm-origins-list";

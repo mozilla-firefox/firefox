@@ -5,7 +5,7 @@ onmessage = () => {
   let logConsole = console.createInstance({
     maxLogLevelPref: "browser.test.logLevel",
     maxLogLevel: "Warn",
-    prefix: "testPrefix",
+    logModule: "testPrefix",
   });
 
   logConsole.warn("Test Warn");

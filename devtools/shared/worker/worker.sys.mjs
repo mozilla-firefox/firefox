@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 const logger = console.createInstance({
-  prefix: "devtools_worker",
+  logModule: "devtools_worker",
   maxLogLevel: "Warn",
 });
 

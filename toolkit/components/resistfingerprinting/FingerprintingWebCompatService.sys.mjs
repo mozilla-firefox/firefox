@@ -12,7 +12,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
   return console.createInstance({
-    prefix: "FingerprintingWebCompatService",
+    logModule: "FingerprintingWebCompatService",
     maxLogLevelPref:
       "privacy.fingerprintingProtection.WebCompatService.logLevel",
   });

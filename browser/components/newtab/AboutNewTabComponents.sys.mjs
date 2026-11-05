@@ -10,7 +10,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "AboutNewTabComponents",
+    logModule: "AboutNewTabComponents",
     maxLogLevel: Services.prefs.getBoolPref(
       "browser.newtabpage.activity-stream.externalComponents.log",
       false

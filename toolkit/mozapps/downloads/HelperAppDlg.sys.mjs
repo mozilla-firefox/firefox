@@ -251,7 +251,7 @@ export class nsUnknownContentTypeDialog {
     if (!this.#log) {
       this.#log = console.createInstance({
         maxLogLevelPref: "toolkit.download.loglevel",
-        prefix: "HelperAppService",
+        logModule: "HelperAppService",
       });
       let info = this.mLauncher.MIMEInfo;
       // primaryExtension can throw if there are no extensions on this mimetype.

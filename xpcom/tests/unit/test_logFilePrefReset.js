@@ -9,7 +9,7 @@ add_task(async function test_clearing_log_file_pref_stops_logging_to_files() {
   cwdLog.append(".moz_log");
   Assert.ok(!cwdLog.exists(), "No .moz_log in the working directory yet");
 
-  const logger = console.createInstance({ prefix: kModule });
+  const logger = console.createInstance({ logModule: kModule });
   Services.prefs.setStringPref(`logging.${kModule}`, "debug");
   // Flush each line, so the log file size can be checked right after logging.
   Services.prefs.setBoolPref("logging.config.sync", true);

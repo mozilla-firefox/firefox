@@ -23,7 +23,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "dom.push.loglevel",
-    prefix: "PushService",
+    logModule: "PushService",
   });
 });
 

@@ -393,7 +393,7 @@ export var OSKeyStore = {
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
   return console.createInstance({
     maxLogLevelPref: "toolkit.osKeyStore.loglevel",
-    prefix: "OSKeyStore",
+    logModule: "OSKeyStore",
   });
 });
 

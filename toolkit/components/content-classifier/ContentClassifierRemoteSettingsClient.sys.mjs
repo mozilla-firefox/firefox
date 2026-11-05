@@ -12,7 +12,7 @@ ChromeUtils.defineLazyGetter(lazy, "log", () => {
   return console.createInstance({
     maxLogLevelPref:
       "privacy.trackingprotection.content.remote_settings.loglevel",
-    prefix: "ContentClassifier",
+    logModule: "ContentClassifier",
   });
 });
 

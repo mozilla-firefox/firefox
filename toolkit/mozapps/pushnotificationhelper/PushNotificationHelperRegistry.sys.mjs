@@ -8,7 +8,7 @@ ChromeUtils.defineLazyGetter(lazy, "log", () =>
   console.createInstance({
     maxLogLevel: "Error",
     maxLogLevelPref: "app.backgroundNotifications.helper.loglevel",
-    prefix: "PushNotificationHelper",
+    logModule: "PushNotificationHelper",
   })
 );
 

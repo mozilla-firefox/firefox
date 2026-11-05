@@ -15,7 +15,7 @@ XPCOMUtils.defineLazyServiceGetter(
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "SponsorProtection",
+    logModule: "SponsorProtection",
     maxLogLevel: Services.prefs.getBoolPref(
       "browser.newtabpage.sponsor-protection.debug",
       false

@@ -20,7 +20,7 @@ const lazy = XPCOMUtils.declareLazy({
   SearchUtils: "moz-src:///toolkit/components/search/SearchUtils.sys.mjs",
   logConsole: () =>
     console.createInstance({
-      prefix: "OpenSearchEngine",
+      logModule: "OpenSearchEngine",
       maxLogLevel: lazy.SearchUtils.loggingEnabled ? "Debug" : "Warn",
     }),
 });

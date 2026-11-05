@@ -1149,7 +1149,7 @@ export var AboutNewTabResourceMapping = {
 };
 
 AboutNewTabResourceMapping.logger = console.createInstance({
-  prefix: "AboutNewTabResourceMapping",
+  logModule: "AboutNewTabResourceMapping",
   maxLogLevel: Services.prefs.getBoolPref(
     "browser.newtabpage.resource-mapping.log",
     false

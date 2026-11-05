@@ -130,7 +130,7 @@ export var AboutHomeStartupCache = {
     }
 
     this.log = console.createInstance({
-      prefix: this.LOG_NAME,
+      logModule: this.LOG_NAME,
       maxLogLevelPref: this.LOG_LEVEL_PREF,
     });
 

@@ -54,7 +54,7 @@ const prefs = Services.prefs.getBranch("dom.push.");
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "dom.push.loglevel",
-    prefix: "PushServiceWebSocket",
+    logModule: "PushServiceWebSocket",
   });
 });
 

@@ -19,7 +19,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/search/SERPCategorization.sys.mjs",
   logConsole: () => {
     return console.createInstance({
-      prefix: "SearchTelemetry",
+      logModule: "SearchTelemetry",
       maxLogLevel: lazy.SearchUtils.loggingEnabled ? "Debug" : "Warn",
     });
   },

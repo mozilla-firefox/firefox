@@ -15,7 +15,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () =>
   console.createInstance({
-    prefix: "UpdatePolicyEnforcer",
+    logModule: "UpdatePolicyEnforcer",
     maxLogLevelPref: "app.update.compulsory_restart_log",
   })
 );

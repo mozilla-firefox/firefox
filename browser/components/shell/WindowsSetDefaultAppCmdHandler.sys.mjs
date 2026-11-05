@@ -28,7 +28,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
   return console.createInstance({
-    prefix: "WindowsSetDefaultAppCmdHandler",
+    logModule: "WindowsSetDefaultAppCmdHandler",
     maxLogLevel: "Warn",
   });
 });

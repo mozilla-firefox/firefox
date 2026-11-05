@@ -17,7 +17,7 @@ const lazy = XPCOMUtils.declareLazy({
   HiddenBrowserManager: "resource://gre/modules/HiddenFrame.sys.mjs",
   console: () =>
     console.createInstance({
-      prefix: "PageExtractorChild",
+      logModule: "PageExtractorChild",
       maxLogLevelPref: "browser.ml.logLevel",
     }),
   collapseWhitespace:

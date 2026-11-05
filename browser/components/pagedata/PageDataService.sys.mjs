@@ -15,7 +15,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "PageData",
+    logModule: "PageData",
     maxLogLevel: Services.prefs.getBoolPref("browser.pagedata.log", false)
       ? "Debug"
       : "Warn",

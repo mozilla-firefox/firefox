@@ -55,7 +55,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "log", () =>
   console.createInstance({
-    prefix: "MonitorAgent",
+    logModule: "MonitorAgent",
     maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
   })
 );

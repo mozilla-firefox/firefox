@@ -7,7 +7,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
-    prefix: "CaptchaDetectionResponseObserver",
+    logModule: "CaptchaDetectionResponseObserver",
     maxLogLevelPref: "captchadetection.loglevel",
   });
 });

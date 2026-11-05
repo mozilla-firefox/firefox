@@ -14,7 +14,7 @@ ChromeUtils.defineLazyGetter(lazy, "log", () =>
   console.createInstance({
     maxLogLevel: "Error",
     maxLogLevelPref: "app.defaultagent.loglevel",
-    prefix: "DefaultAgentScheduler",
+    logModule: "DefaultAgentScheduler",
   })
 );
 

@@ -15,7 +15,7 @@ const DUMMY_VERSION_STRING = "____NOP____";
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "dom.push.loglevel",
-    prefix: "BroadcastService",
+    logModule: "BroadcastService",
   });
 });
 

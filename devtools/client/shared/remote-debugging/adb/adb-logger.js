@@ -8,6 +8,6 @@
  * Logger shared by all the ADB modules. Enable via eg MOZ_LOG=devtools_adb:5
  */
 exports.logger = console.createInstance({
-  prefix: "devtools_adb",
+  logModule: "devtools_adb",
   maxLogLevel: "Warn",
 });

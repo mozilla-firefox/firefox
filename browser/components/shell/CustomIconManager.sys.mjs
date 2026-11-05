@@ -156,7 +156,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "CustomIconManager",
+    logModule: "CustomIconManager",
     maxLogLevel: Services.prefs.getBoolPref(
       "browser.shell.customIcon.log",
       false

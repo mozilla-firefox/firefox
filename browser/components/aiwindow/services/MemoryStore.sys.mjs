@@ -144,7 +144,7 @@ ChromeUtils.defineLazyGetter(lazy, "gStorePath", () => {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "MemoryStore",
+    logModule: "MemoryStore",
     maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
   })
 );

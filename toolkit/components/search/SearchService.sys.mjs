@@ -39,7 +39,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///toolkit/components/search/UserSearchEngine.sys.mjs",
   logConsole: () =>
     console.createInstance({
-      prefix: "SearchService",
+      logModule: "SearchService",
       maxLogLevel: lazy.SearchUtils.loggingEnabled ? "Debug" : "Warn",
     }),
   timerManager: {

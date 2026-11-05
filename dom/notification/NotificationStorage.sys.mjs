@@ -6,7 +6,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
-    prefix: "NotificationStorage",
+    logModule: "NotificationStorage",
     maxLogLevelPref: "dom.webnotifications.loglevel",
   });
 });

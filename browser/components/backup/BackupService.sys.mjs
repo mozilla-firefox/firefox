@@ -58,7 +58,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "BackupService",
+    logModule: "BackupService",
     maxLogLevel: Services.prefs.getBoolPref("browser.backup.log", false)
       ? "Debug"
       : "Warn",

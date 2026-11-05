@@ -15,7 +15,7 @@ const lazy = XPCOMUtils.declareLazy({
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   logConsole: () =>
     console.createInstance({
-      prefix: "SearchUtils",
+      logModule: "SearchUtils",
       maxLogLevel: SearchUtils.loggingEnabled ? "Debug" : "Warn",
     }),
   configV3FeatureGate: {

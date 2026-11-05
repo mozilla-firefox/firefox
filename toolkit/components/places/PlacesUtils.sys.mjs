@@ -2137,7 +2137,7 @@ export var PlacesUtils = {
     let logger = this._loggers.get(prefix);
     if (!logger) {
       logger = console.createInstance({
-        prefix: `Places${prefix ? " - " + prefix : ""}`,
+        logModule: `Places${prefix ? " - " + prefix : ""}`,
         maxLogLevelPref: "places.loglevel",
       });
       this._loggers.set(prefix, logger);

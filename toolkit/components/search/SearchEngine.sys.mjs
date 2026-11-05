@@ -17,7 +17,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///toolkit/components/search/OpenSearchEngine.sys.mjs",
   logConsole: () =>
     console.createInstance({
-      prefix: "SearchEngine",
+      logModule: "SearchEngine",
       maxLogLevel: lazy.SearchUtils.loggingEnabled ? "Debug" : "Warn",
     }),
   settingsRedesignEnabled: {

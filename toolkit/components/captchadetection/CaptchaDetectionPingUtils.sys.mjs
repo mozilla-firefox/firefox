@@ -8,7 +8,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
-    prefix: "CaptchaDetectionPingUtils",
+    logModule: "CaptchaDetectionPingUtils",
     maxLogLevelPref: "captchadetection.loglevel",
   });
 });

@@ -39,7 +39,7 @@ const lazy = XPCOMUtils.declareLazy({
   console: () =>
     console.createInstance({
       maxLogLevelPref: "browser.ml.logLevel",
-      prefix: "GeckoMLEngineParent",
+      logModule: "GeckoMLEngineParent",
     }),
   mlUtils: { service: "@mozilla.org/ml-utils;1", iid: Ci.nsIMLUtils },
   CHECK_FOR_MEMORY: { pref: "browser.ml.checkForMemory" },

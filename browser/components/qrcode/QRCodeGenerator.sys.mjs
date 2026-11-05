@@ -12,7 +12,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "QRCodeGenerator",
+    logModule: "QRCodeGenerator",
     maxLogLevel: Services.prefs.getBoolPref("browser.qrcode.log", false)
       ? "Debug"
       : "Warn",

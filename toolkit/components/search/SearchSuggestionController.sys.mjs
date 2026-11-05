@@ -16,7 +16,7 @@ const lazy = XPCOMUtils.declareLazy({
   SearchUtils: "moz-src:///toolkit/components/search/SearchUtils.sys.mjs",
   logConsole: () =>
     console.createInstance({
-      prefix: "SearchSuggestionController",
+      logModule: "SearchSuggestionController",
       maxLogLevel: lazy.SearchUtils.loggingEnabled ? "Debug" : "Warn",
     }),
   /** Whether or not remote suggestions are turned on. */

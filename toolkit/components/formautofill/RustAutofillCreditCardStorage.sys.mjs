@@ -48,7 +48,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 const logger = console.createInstance({
-  prefix: "RustAutofillCreditCardStorage",
+  logModule: "RustAutofillCreditCardStorage",
   maxLogLevelPref: "extensions.formautofill.loglevel",
 });
 

@@ -20,7 +20,7 @@ DevToolsUtils.defineLazyGetter(this, "ScriptableInputStream", () => {
 });
 
 const logger = console.createInstance({
-  prefix: "devtools_rdp",
+  logModule: "devtools_rdp",
   maxLogLevel: "Warn",
 });
 

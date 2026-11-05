@@ -23,7 +23,7 @@ const lazy = /** @type {any} */ ({});
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "toolkit.telemetry.translations.logLevel",
-    prefix: "TranslationsTelemetry",
+    logModule: "TranslationsTelemetry",
   });
 });
 

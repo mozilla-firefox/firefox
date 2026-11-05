@@ -12,7 +12,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "InteractionsBlocklist",
+    logModule: "InteractionsBlocklist",
     maxLogLevel: Services.prefs.getBoolPref(
       "browser.places.interactions.log",
       false

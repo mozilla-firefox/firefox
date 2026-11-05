@@ -20,7 +20,7 @@ const PREF_STRIP_IS_TEST =
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () => {
   return console.createInstance({
-    prefix: "URLQueryStrippingListService",
+    logModule: "URLQueryStrippingListService",
     maxLogLevelPref: "privacy.query_stripping.listService.logLevel",
   });
 });

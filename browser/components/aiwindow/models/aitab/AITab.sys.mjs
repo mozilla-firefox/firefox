@@ -52,7 +52,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "AITab",
+    logModule: "AITab",
     maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
   })
 );

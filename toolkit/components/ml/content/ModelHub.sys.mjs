@@ -28,7 +28,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "browser.ml.logLevel",
-    prefix: "GeckoMLModelHub",
+    logModule: "GeckoMLModelHub",
   });
 });
 

@@ -6,7 +6,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "CanonicalURL",
+    logModule: "CanonicalURL",
     maxLogLevel: Services.prefs.getBoolPref("browser.tabs.notes.debug", false)
       ? "Debug"
       : "Warn",

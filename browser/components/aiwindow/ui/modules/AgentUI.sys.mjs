@@ -53,7 +53,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "AgentUI",
+    logModule: "AgentUI",
     maxLogLevelPref: "browser.smartwindow.agentUI.logLevel",
   })
 );

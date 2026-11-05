@@ -9,7 +9,7 @@ let lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "DAPSender",
+    logModule: "DAPSender",
     maxLogLevelPref: "toolkit.telemetry.dap.logLevel",
   });
 });

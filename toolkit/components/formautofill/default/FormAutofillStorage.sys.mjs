@@ -38,7 +38,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
   console.createInstance({
-    prefix: "FormAutofillStorage",
+    logModule: "FormAutofillStorage",
     maxLogLevelPref: "extensions.formautofill.loglevel",
   })
 );

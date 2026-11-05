@@ -16,7 +16,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "PreferencesBackupResource",
+    logModule: "PreferencesBackupResource",
     maxLogLevel: Services.prefs.getBoolPref("browser.backup.log", false)
       ? "Debug"
       : "Warn",

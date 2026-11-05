@@ -61,7 +61,7 @@ import { EveryWindow } from "resource:///modules/EveryWindow.sys.mjs";
 const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
-    prefix: "MemoriesManager",
+    logModule: "MemoriesManager",
     maxLogLevelPref: "browser.smartwindow.memoriesLogLevel",
   });
 });

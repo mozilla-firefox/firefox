@@ -6,7 +6,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "BackupUIChild",
+    logModule: "BackupUIChild",
     maxLogLevel: Services.prefs.getBoolPref("browser.backup.log", false)
       ? "Debug"
       : "Warn",

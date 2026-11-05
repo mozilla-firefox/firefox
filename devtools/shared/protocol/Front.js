@@ -14,7 +14,7 @@ var {
 } = require("resource://devtools/shared/platform/stack.js");
 
 const logger = console.createInstance({
-  prefix: "devtools_rdp",
+  logModule: "devtools_rdp",
   maxLogLevel: "Warn",
 });
 

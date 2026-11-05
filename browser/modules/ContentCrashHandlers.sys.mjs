@@ -797,7 +797,7 @@ export var UnsubmittedCrashHandler = {
     this.initialized = true;
 
     this.log = console.createInstance({
-      prefix: "UnsubmittedCrashHandler",
+      logModule: "UnsubmittedCrashHandler",
       maxLogLevel: this.prefs.getStringPref("loglevel", "Error"),
     });
 
@@ -1285,7 +1285,7 @@ ChromeUtils.defineLazyGetter(lazy, "cleanerPrefs", () =>
 );
 ChromeUtils.defineLazyGetter(lazy, "cleanerLog", () =>
   console.createInstance({
-    prefix: "CrashFileCleaner",
+    logModule: "CrashFileCleaner",
     maxLogLevel: lazy.cleanerPrefs.getStringPref("loglevel", "Error"),
   })
 );

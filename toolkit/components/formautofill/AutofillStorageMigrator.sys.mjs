@@ -680,12 +680,12 @@ export class AutofillStorageMigrator {
 }
 
 const addressLogger = console.createInstance({
-  prefix: "AddressStorageMigrator",
+  logModule: "AddressStorageMigrator",
   maxLogLevelPref: "extensions.formautofill.loglevel",
 });
 
 const creditCardLogger = console.createInstance({
-  prefix: "CreditCardStorageMigrator",
+  logModule: "CreditCardStorageMigrator",
   maxLogLevelPref: "extensions.formautofill.loglevel",
 });
 

@@ -10,7 +10,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
-    prefix: "UserCharacteristicsPage",
+    logModule: "UserCharacteristicsPage",
     maxLogLevelPref: "toolkit.telemetry.user_characteristics_ping.logLevel",
   });
 });

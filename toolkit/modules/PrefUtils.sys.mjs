@@ -131,7 +131,7 @@ export var PrefUtils = {
       kPrefBranches.user.clearUserPref(pref);
     } else if (branch === "default") {
       const log = console.createInstance({
-        prefix: "Toolkit.PrefUtils",
+        logModule: "Toolkit.PrefUtils",
         maxLogLevel: "Warn",
       });
       log.warn(

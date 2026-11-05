@@ -115,7 +115,7 @@ export class SQLiteStoreBase {
   get log() {
     if (!this.#log) {
       this.#log = console.createInstance({
-        prefix: this.logPrefix,
+        logModule: this.logPrefix,
         maxLogLevelPref: this.logLevelPref,
       });
     }

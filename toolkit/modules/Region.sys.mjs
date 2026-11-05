@@ -83,7 +83,7 @@ XPCOMUtils.defineLazyServiceGetter(
 );
 
 const log = console.createInstance({
-  prefix: "Region.sys.mjs",
+  logModule: "Region.sys.mjs",
   maxLogLevel: lazy.loggingEnabled ? "All" : "Warn",
 });
 

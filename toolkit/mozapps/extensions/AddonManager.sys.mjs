@@ -4874,7 +4874,7 @@ export class EnvironmentAddonBuilder {
     this._submitGleanPingAddonsUpdatedTask = null;
 
     this._log = console.createInstance({
-      prefix: "EnvironmentAddonBuilder",
+      logModule: "EnvironmentAddonBuilder",
       maxLogLevel: Services.prefs.getBoolPref(PREF_LOGGING_ENABLED, false)
         ? "Debug"
         : "Warn",

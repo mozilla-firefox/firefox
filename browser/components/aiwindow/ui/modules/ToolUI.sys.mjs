@@ -66,7 +66,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
   return console.createInstance({
-    prefix: "ToolUI",
+    logModule: "ToolUI",
   });
 });
 

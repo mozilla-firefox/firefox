@@ -25,7 +25,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "logger", () =>
   console.createInstance({
-    prefix: "WidgetGenerator",
+    logModule: "WidgetGenerator",
     maxLogLevel: "Warn",
     maxLogLevelPref: "browser.widgets.generated.loglevel",
   })

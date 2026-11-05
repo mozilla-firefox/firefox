@@ -24,7 +24,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = XPCOMUtils.declareLazy({
   console: () =>
     console.createInstance({
-      prefix: "PageExtractorChild",
+      logModule: "PageExtractorChild",
       maxLogLevelPref: "browser.ml.logLevel",
     }),
   ReaderMode: "moz-src:///toolkit/components/reader/ReaderMode.sys.mjs",

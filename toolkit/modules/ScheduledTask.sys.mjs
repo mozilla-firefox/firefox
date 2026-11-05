@@ -12,7 +12,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () =>
   console.createInstance({
-    prefix: "ScheduledTask",
+    logModule: "ScheduledTask",
     maxLogLevelPref: "app.update.compulsory_restart_log",
   })
 );

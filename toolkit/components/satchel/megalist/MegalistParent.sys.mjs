@@ -7,7 +7,7 @@ import { MegalistViewModel } from "resource://gre/modules/megalist/MegalistViewM
 const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "MegalistParent",
+    logModule: "MegalistParent",
     maxLogLevel: Services.prefs.getBoolPref(
       "browser.contextual-password-manager.log",
       false

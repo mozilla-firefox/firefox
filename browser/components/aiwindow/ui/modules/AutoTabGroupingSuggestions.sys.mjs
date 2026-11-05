@@ -39,7 +39,7 @@ XPCOMUtils.defineLazyServiceGetter(
 
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "AutoTabGrouping",
+    logModule: "AutoTabGrouping",
     maxLogLevelPref: "browser.smartwindow.autoTabGrouping.loglevel",
   })
 );

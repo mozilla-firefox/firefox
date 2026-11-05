@@ -48,7 +48,7 @@ import {
 const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "WebSearchFlow",
+    logModule: "WebSearchFlow",
     maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
   })
 );

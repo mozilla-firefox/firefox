@@ -27,7 +27,7 @@ import {
 
 ChromeUtils.defineLazyGetter(lazy, "console", () =>
   console.createInstance({
-    prefix: "AppServices",
+    logModule: "AppServices",
     maxLogLevelPref: "toolkit.rust-components.logging.internal-level",
   })
 );

@@ -22,7 +22,7 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () =>
   console.createInstance({
-    prefix: "RFPHelper",
+    logModule: "RFPHelper",
     maxLogLevelPref: "privacy.resistFingerprinting.jsmloglevel",
   })
 );

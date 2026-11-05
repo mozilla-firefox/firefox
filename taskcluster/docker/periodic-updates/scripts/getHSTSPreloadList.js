@@ -22,7 +22,7 @@ const { RemoteSecuritySettings } = ChromeUtils.importESModule(
   "moz-src:///security/manager/ssl/RemoteSecuritySettings.sys.mjs"
 );
 
-const logger = console.createInstance({ prefix: "HSTSPreloadList" });
+const logger = console.createInstance({ logModule: "HSTSPreloadList" });
 
 const SOURCE =
   "https://raw.githubusercontent.com/chromium/chromium/main/net/http/transport_security_state_static.json";

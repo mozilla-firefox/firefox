@@ -7,7 +7,7 @@ import { DAPReportController, Task } from "./DAPReportController.sys.mjs";
 let lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "DAPIncrementality",
+    logModule: "DAPIncrementality",
     maxLogLevelPref: "toolkit.telemetry.dap.logLevel",
   });
 });

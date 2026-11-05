@@ -438,7 +438,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 ChromeUtils.defineLazyGetter(lazy, "console", () => {
   return console.createInstance({
     maxLogLevelPref: "browser.translations.logLevel",
-    prefix: "Translations",
+    logModule: "Translations",
   });
 });
 

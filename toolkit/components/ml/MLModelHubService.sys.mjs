@@ -11,7 +11,7 @@ const lazy = XPCOMUtils.declareLazy({
   console: () => {
     return console.createInstance({
       maxLogLevelPref: "browser.ml.logLevel",
-      prefix: "MLModelHubService",
+      logModule: "MLModelHubService",
     });
   },
 });

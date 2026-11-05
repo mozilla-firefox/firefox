@@ -116,7 +116,7 @@ ChromeUtils.defineLazyGetter(lazy, "gSiteOverrides", () => {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
   return console.createInstance({
-    prefix: "PictureInPictureChild",
+    logModule: "PictureInPictureChild",
     maxLogLevel: Services.prefs.getBoolPref(
       "media.videocontrols.picture-in-picture.log",
       false

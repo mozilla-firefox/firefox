@@ -138,7 +138,7 @@ add_task(async function test_shouldLog_env() {
 
   for (const test of tests) {
     let mozLogCi = console.createInstance({
-      prefix: "shouldlogtest_" + test.mozLogLevel,
+      logModule: "shouldlogtest_" + test.mozLogLevel,
       maxLogLevel: test.maxLogLevel,
     });
 

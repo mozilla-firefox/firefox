@@ -225,7 +225,7 @@ var FullPageTranslationsPanel = new (class {
       try {
         this.#console = console.createInstance({
           maxLogLevelPref: "browser.translations.logLevel",
-          prefix: "Translations",
+          logModule: "Translations",
         });
       } catch {
         // The console may not be initialized yet.

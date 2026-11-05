@@ -14,7 +14,7 @@ function cacheKey(resourceType, resourceId) {
 
 loader.lazyGetter(this, "logger", function () {
   return console.createInstance({
-    prefix: "devtools_resourcecommand",
+    logModule: "devtools_resourcecommand",
     maxLogLevel: "Warn",
   });
 });

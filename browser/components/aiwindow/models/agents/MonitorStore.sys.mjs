@@ -17,7 +17,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 ChromeUtils.defineLazyGetter(lazy, "log", () =>
   console.createInstance({
-    prefix: "MonitorStore",
+    logModule: "MonitorStore",
     maxLogLevelPref: "browser.smartwindow.monitorStore.logLevel",
   })
 );

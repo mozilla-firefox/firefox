@@ -24,7 +24,7 @@ const lazy = XPCOMUtils.declareLazy({
   console: () =>
     console.createInstance({
       maxLogLevelPref: "browser.ml.logLevel",
-      prefix: "GeckoMLEngineChild",
+      logModule: "GeckoMLEngineChild",
     }),
   // Prefs:
   CACHE_TIMEOUT_MS: { pref: "browser.ml.modelCacheTimeout" },

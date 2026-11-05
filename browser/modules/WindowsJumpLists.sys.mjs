@@ -38,7 +38,7 @@ ChromeUtils.defineLazyGetter(lazy, "_stringBundle", function () {
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
-    prefix: "WindowsJumpLists",
+    logModule: "WindowsJumpLists",
     maxLogLevel: Services.prefs.getBoolPref("browser.taskbar.log", false)
       ? "Debug"
       : "Warn",

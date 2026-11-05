@@ -17,7 +17,7 @@ export async function runBackgroundTask(_commandLine) {
   console.debug("bar");
   console.assert(false, "assert-failure");
   const prefixed = console.createInstance({
-    prefix: "my-prefix",
+    logModule: "my-prefix",
     // Test setting a more restrictive level from MOZ_LOG
     maxLogLevel: "Info",
   });
@@ -30,7 +30,7 @@ export async function runBackgroundTask(_commandLine) {
   prefixed.assert(false, "prefixed-assert-failure");
 
   const limitedLevel = console.createInstance({
-    prefix: "limited-level",
+    logModule: "limited-level",
     // Test setting a more permissive level from MOZ_LOG
     maxLogLevel: "Error",
   });
@@ -39,7 +39,7 @@ export async function runBackgroundTask(_commandLine) {
   limitedLevel.assert(false, "limited-assert-failure");
 
   const errorOnly = console.createInstance({
-    prefix: "error-only",
+    logModule: "error-only",
     maxLogLevel: "Error",
   });
   errorOnly.log("error-only-log");

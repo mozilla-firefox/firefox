@@ -17,7 +17,7 @@ const lazy = XPCOMUtils.declareLazy({
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   log: () =>
     console.createInstance({
-      prefix: "AuthImplSelector",
+      logModule: "AuthImplSelector",
       maxLogLevel: Services.prefs.getBoolPref("browser.smartwindow.log", false)
         ? "Debug"
         : "Warn",

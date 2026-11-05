@@ -29,7 +29,7 @@ import {
 } from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustDbCrypto.sys.mjs";
 
 const logger = console.createInstance({
-  prefix: "RustAutofillStore",
+  logModule: "RustAutofillStore",
   maxLogLevelPref: "extensions.formautofill.loglevel",
 });
 
