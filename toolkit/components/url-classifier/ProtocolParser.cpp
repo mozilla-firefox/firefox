@@ -1218,6 +1218,10 @@ nsresult ProtocolParserProtobufV5::ProcessOneResponse(
     case v5::HashList::COMPRESSED_ADDITIONS_NOT_SET:
       break;
   }
+  if (NS_FAILED(rv)) {
+    PARSER_LOG(("Failed to parse encoded additions."));
+    return rv;
+  }
 
   if (aHashList.has_compressed_removals()) {
     rv = ProcessRemoval(*tuV4, aHashList.compressed_removals());
