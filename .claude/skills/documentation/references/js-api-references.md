@@ -46,18 +46,20 @@ and they do not agree:
 ## Verify by reading the rendered HTML
 
 A passing build proves little about a generated page. sphinx-js never reads
-jsdoc's exit status, so a type jsdoc could not parse costs nothing visible, and
-`make_sphinx_js_skip_missing_objects` in `docs/conf.py` turns a directive that
-names nothing into a warning. Open the page under `<objdir>/docs/html/` and
-count its member anchors (`id="<Class>.<member>"`) against the source, then
-spot-check a signature. An unresolvable `@see` is the exception: it fails the
-build with `'any' reference target not found`.
+jsdoc's exit status, so a jsdoc ERROR such as an untyped `@typedef` costs
+nothing visible, and `make_sphinx_js_skip_missing_objects` in `docs/conf.py`
+turns a directive that names nothing into a warning. Open the page under
+`<objdir>/docs/html/` and count its member anchors (`id="<Class>.<member>"`)
+against the source, then spot-check a signature. An unresolvable `@see` is the
+exception: it fails the build with `'any' reference target not found`.
 
 `jsdoc_cache` is unset, so a page that disagrees with the source is never a
-stale cache.
+stale cache. A rebuild after the first full run takes under a minute.
 
-The build log already carries many `Invalid type expression` lines from
-across `js_source_paths`. Search it for your own file rather than counting.
+A clean tree logs no `Invalid type expression` line, so one in the build log
+comes from your change and names its source file. The likely cause is an
+untyped `@typedef`, since `accept-typescript-types.mjs` rewrites only a brace
+that directly follows the tag.
 
 ## Links and anchors
 
@@ -68,20 +70,19 @@ across `js_source_paths`. Search it for your own file rather than counting.
     `@see` tag needs. `Class#member` does not resolve. Parameters get no
     anchors, so an option key inside a parameter list cannot be linked to.
 
-## Types jsdoc cannot parse
+## Types jsdoc parses differently
 
-jsdoc parses types with catharsis, which rejects some spellings that
-`accept-typescript-types.mjs` does not pass through. Introduce a named
-`@typedef` and use that.
+jsdoc parses types with catharsis. `accept-typescript-types.mjs` quotes every
+expression catharsis rejects on a type tag, such as `@param`, `@returns` or
+`@type`, so a build logs no `Invalid type expression` line for them and a
+misspelled type reaches the page as written. An expression catharsis accepts
+is parsed, and can come out differently from what TypeScript reads:
 
 -   **`?T` parses and loses its nullability.** jsdoc records `{?Console}` as
     `Console` alone, where `{Console|null}` keeps both names, and sphinx-js
     renders only those names. tsc and eslint treat the two spellings the same,
     so only the rendered page shows the difference. Write `{T|null}` in any
     file with a generated page.
--   An unparseable type on a member that does not render, such as an excluded
-    `_`-prefixed member, costs only a log line, so the stronger annotation can
-    stay there.
 
 ## Members that render wrongly or not at all
 
@@ -91,10 +92,20 @@ jsdoc parses types with catharsis, which rejects some spellings that
     `More than one object matches the path suffix` (the doclet takes the
     enclosing class's name) or with a parsimonious `ParseError` on an empty
     name that mentions no file. Widen the plugin rather than the comment.
--   **An inline cast on a member expression yields a doclet** named for the
-    expression, so `/** @type {X} */ (aTab.documentGlobal)` written twice in
-    one file collides with itself. `docs/jsdoc-plugins/skip-type-casts.mjs`
-    keeps such doclets off the page.
+-   **Two documented doclets at one path abort the build** with
+    `Your code contains multiple documented objects at each of these paths`
+    (sphinx-js's `PathsTaken`) followed by the shared path. Two shapes
+    produce one, and a plugin keeps each off the page:
+    -   An inline cast on a member expression yields a doclet named for the
+        expression, so `/** @type {X} */ (aTab.documentGlobal)` written twice
+        in one file collides at `aTab.documentGlobal`.
+        `docs/jsdoc-plugins/skip-type-casts.mjs` covers it.
+    -   A doc comment on a function-local variable or constant, even a lone
+        `@type`, yields an `<anonymous>~name` doclet, so same-named locals in
+        different functions of one file collide.
+        `docs/jsdoc-plugins/skip-anonymous-locals.mjs` covers it, but not a
+        documented local function, an arrow function assigned to a `const`
+        included, which still collides with a same-named one in the file.
 -   **A `@typedef` gets no entry of its own, and a record type renders as
     `Object`.** `js:autoclass` renders members only, so a typedef's name shows
     as plain text and its `@property` rows appear nowhere. Name the keys in the
