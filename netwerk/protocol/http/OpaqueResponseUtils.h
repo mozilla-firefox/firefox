@@ -141,7 +141,7 @@ class nsCompressedAudioVideoImageDetector : public nsUnknownDecoder {
   nsCompressedAudioVideoImageDetector(
       nsIStreamListener* aListener,
       std::function<void(void*, const uint8_t*, uint32_t)>&& aCallback)
-      : nsUnknownDecoder(aListener), mCallback(aCallback) {}
+      : nsUnknownDecoder(aListener), mCallback(std::move(aCallback)) {}
 
  protected:
   virtual void DetermineContentType(nsIRequest* aRequest) override {
