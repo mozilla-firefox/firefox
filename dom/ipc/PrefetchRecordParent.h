@@ -69,12 +69,6 @@ class PrefetchRecordParent final : public PPrefetchRecordParent,
   const nsString& SourcePartitionKey() const { return mSourcePartitionKey; }
   const nsString& IsolatedPartitionKey() const { return mIsolatedPartitionKey; }
   bool HadConflictingCredentials() const { return mHadConflictingCredentials; }
-  // The URL the held HTTP cache entry is stored under, or null if the record
-  // holds no entry or the response was reached through redirects (the entry
-  // then belongs to the last hop, which the navigation has to replay). This
-  // can differ from URL() when the prefetch was served from a
-  // No-Vary-Search-equivalent entry.
-  already_AddRefed<nsIURI> CacheEntryURI() const;
   const nsTArray<Maybe<nsString>>& Tags() const { return mTags; }
   const nsString& NoVarySearchHint() const { return mNoVarySearchHint; }
   bool IsEligibleForPrefetch() const { return mIsEligibleForPrefetch; }
