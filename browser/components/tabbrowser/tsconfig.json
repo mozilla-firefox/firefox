@@ -6,7 +6,7 @@
     "../tabnotes/types/tabnotes.ts",
     "../../../tools/@types/browser-window.d.ts"
   ],
-  "exclude": ["content/split-view-footer.mjs"],
+  "exclude": ["content/split-view-footer.mjs", "content/tabgroup-menu.mjs"],
   "extends": "../../../tools/@types/tsconfig.json",
   "compilerOptions": {
     "checkJs": true,

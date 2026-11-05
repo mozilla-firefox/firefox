@@ -452,7 +452,7 @@ add_task(async function test_smart_tab_grouping() {
           metricName: "embedder",
           // Three runs per invocation, and only two of them are real work:
           //  1. initEmbeddingEngine()'s warm-up embedMany(["test"]), kicked
-          //     off unawaited from tabgroup-menu.js:903 on every panel open.
+          //     off unawaited from tabgroup-menu.mjs on every panel open.
           //  2. the anchor+candidate title batch (SmartTabGrouping:896).
           //  3. the group label (:905), which fires because
           //     smartTabGroupingForGroup passes groupLabel: group?.label and

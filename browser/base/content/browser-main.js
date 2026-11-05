@@ -25,7 +25,7 @@
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tab-bar-visibility.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tab-context-menu.js", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabgroup.mjs", { global: "current" });
-  Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tabgroup-menu.js", this);
+  Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tabgroup-menu.mjs", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tabnote-menu.mjs", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabs.mjs", { global: "current" });
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tabsplitview.mjs", { global: "current" });

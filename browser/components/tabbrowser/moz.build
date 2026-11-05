@@ -8,7 +8,7 @@ with Files("GroupsList.sys.mjs"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
 with Files("content/tabgroup.mjs"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
-with Files("content/tabgroup-menu.js"):
+with Files("content/tabgroup-menu.mjs"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
 with Files("content/tab-groups-list.mjs"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser: Tab Groups")
