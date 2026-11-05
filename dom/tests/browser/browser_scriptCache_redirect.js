@@ -3,6 +3,12 @@ const SCRIPT_NAME = "redirect_server.sjs";
 const TEST_SCRIPT_URL =
   "https://example.com/browser/dom/tests/browser/" + SCRIPT_NAME;
 
+const { SpecialPowersForProcess } = ChromeUtils.importESModule(
+  "resource://testing-common/SpecialPowersProcessActor.sys.mjs"
+);
+
+const scope = this;
+
 function getCounter(tab, query) {
   const browser = tab.linkedBrowser;
   const scriptPath = SCRIPT_NAME + query;
@@ -28,7 +34,10 @@ async function reloadAndGetCounter(tab, query) {
 
 add_task(async function test_redirectCache() {
   await SpecialPowers.pushPrefEnv({
-    set: [["dom.script_loader.experimental.navigation_cache", true]],
+    set: [
+      ["dom.expose_test_interfaces", true],
+      ["dom.script_loader.experimental.navigation_cache", true],
+    ],
   });
   registerCleanupFunction(() => SpecialPowers.popPrefEnv());
 
@@ -36,6 +45,7 @@ add_task(async function test_redirectCache() {
     {
       query: "?redirect=cacheable&script=cacheable",
       cachedCounter: true,
+      useInMemoryCache: false,
       log: [",redirect=cacheable&script=cacheable", ",script=cacheable"].join(
         ""
       ),
@@ -43,6 +53,7 @@ add_task(async function test_redirectCache() {
     {
       query: "?redirect=cacheable&script=not-cacheable",
       cachedCounter: false,
+      useInMemoryCache: false,
       log: [
         ",redirect=cacheable&script=not-cacheable",
         ",script=not-cacheable",
@@ -52,6 +63,7 @@ add_task(async function test_redirectCache() {
     {
       query: "?redirect=not-cacheable&script=cacheable",
       cachedCounter: true,
+      useInMemoryCache: false,
       log: [
         ",redirect=not-cacheable&script=cacheable",
         ",script=cacheable",
@@ -61,6 +73,7 @@ add_task(async function test_redirectCache() {
     {
       query: "?redirect=not-cacheable&script=not-cacheable",
       cachedCounter: false,
+      useInMemoryCache: false,
       log: [
         ",redirect=not-cacheable&script=not-cacheable",
         ",script=not-cacheable",
@@ -68,9 +81,16 @@ add_task(async function test_redirectCache() {
         ",script=not-cacheable",
       ].join(""),
     },
+    {
+      // Test the request without redirect uses the cache.
+      query: "?script=cacheable",
+      cachedCounter: true,
+      useInMemoryCache: true,
+      log: [",script=cacheable"].join(""),
+    },
   ];
 
-  for (const { query, cachedCounter, log } of tests) {
+  for (const { query, cachedCounter, useInMemoryCache, log } of tests) {
     ChromeUtils.clearResourceCache();
     Services.cache2.clear();
 
@@ -82,17 +102,47 @@ add_task(async function test_redirectCache() {
       url: TEST_URL,
     });
 
+    const browser = tab.linkedBrowser;
+    const proc = browser.browsingContext.currentWindowGlobal.domProcess;
+    const processBoundSpecialPowers = new SpecialPowersForProcess(scope, proc);
+
     is(
       await getCounter(tab, query),
       0,
       "counter should be 0 for the first load."
     );
 
+    const eventPromise = processBoundSpecialPowers.spawn([], async () => {
+      const { promise, resolve } = Promise.withResolvers();
+
+      const observer = function (subject, topic, data) {
+        if (data.startsWith("event:load:")) {
+          resolve(data.split("\n")[0]);
+        }
+      };
+
+      Services.obs.addObserver(observer, "ScriptLoaderTest");
+
+      const event = await promise;
+
+      Services.obs.removeObserver(observer, "ScriptLoaderTest");
+
+      return event;
+    });
+
     const counter = await reloadAndGetCounter(tab, query);
     if (cachedCounter) {
       is(counter, 0, "cache should be used for " + query);
     } else {
       is(counter, 1, "cache should not be used for " + query);
+    }
+
+    const event = await eventPromise;
+
+    if (useInMemoryCache) {
+      is(event, "event:load:memorycache");
+    } else {
+      is(event, "event:load:source");
     }
 
     const logResponse = await fetch(TEST_SCRIPT_URL + "?log");
