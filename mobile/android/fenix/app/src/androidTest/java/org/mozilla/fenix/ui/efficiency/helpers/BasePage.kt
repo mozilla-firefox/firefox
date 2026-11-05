@@ -779,6 +779,21 @@ abstract class BasePage(protected val composeRule: AndroidComposeTestRule<HomeAc
             action = UiActions::click,
         )
 
+    /**
+     * Click a view by firing its nearest clickable ancestor's handler instead of tapping coordinates. Use for a row in
+     * a View-based list reached via a momentum scroll (e.g. a `PreferenceFragment` radio row with a `scrollDirection`):
+     * [mozClick]'s coordinate tap can be eaten as a scroll-stop while the list is still settling, reporting success
+     * while the app never acts. Delegates to [UiActions.performClick].
+     */
+    fun mozClickByPerformClick(selector: Selector, policy: WaitPolicy = WaitPolicy.Immediate) =
+        require(
+            verb = "perform_click",
+            selector = selector,
+            expectation = "clickable",
+            policy = policy,
+            action = UiActions::performClick,
+        )
+
     fun mozClickIfPresent(selector: Selector, timeout: Long = 3_000, interval: Long = 200) =
         require(
             verb = "click_if_present",

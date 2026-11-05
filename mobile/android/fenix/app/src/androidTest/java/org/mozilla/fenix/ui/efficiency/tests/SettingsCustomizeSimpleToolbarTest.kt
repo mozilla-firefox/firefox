@@ -170,10 +170,9 @@ class SettingsCustomizeSimpleToolbarTest : BaseTest() {
             .mozLongClick(ToolbarSelectors.SIMPLE_TOOLBAR_NEW_TAB_BUTTON)
             .mozVerify(ToolbarSelectors.EDIT_SHORTCUT_BUTTON)
             .mozClick(ToolbarSelectors.EDIT_SHORTCUT_BUTTON)
-        on.settingsCustomize
-            .mozVerify(SettingsCustomizeSelectors.SETTINGS_CUSTOMIZE_TITLE)
-            .mozClick(SettingsCustomizeSelectors.SHORTCUT_SHARE)
-            .mozPressBack()
+        on.settingsCustomize.mozVerify(SettingsCustomizeSelectors.SETTINGS_CUSTOMIZE_TITLE)
+        on.settingsCustomize.mozClickByPerformClick(SettingsCustomizeSelectors.SHORTCUT_SHARE)
+        on.settingsCustomize.verifyOptionIsSelected(SettingsCustomizeSelectors.SHORTCUT_SHARE).mozPressBack()
         on.browserPage
             .mozVerify(ToolbarSelectors.SIMPLE_TOOLBAR_SHARE_BUTTON)
             .mozLongClick(ToolbarSelectors.SIMPLE_TOOLBAR_SHARE_BUTTON)

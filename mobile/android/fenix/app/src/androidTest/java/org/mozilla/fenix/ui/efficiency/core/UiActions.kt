@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.ui.efficiency.core
 
+import android.view.View
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.longClick
@@ -12,12 +13,16 @@ import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.test.espresso.UiController
+import androidx.test.espresso.ViewAction
 import androidx.test.espresso.ViewInteraction
 import androidx.test.espresso.action.ViewActions
+import androidx.test.espresso.matcher.ViewMatchers.isEnabled
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject
 import androidx.test.uiautomator.UiObject2
+import org.hamcrest.Matcher
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeShort
 
 /**
@@ -50,6 +55,48 @@ object UiActions {
             },
         )
     }
+
+    /**
+     * Click by firing the view's click handler directly instead of tapping its on-screen coordinates. For an Espresso
+     * view this climbs to the nearest clickable ancestor (or the view itself) and calls [View.performClick] - a text
+     * selector on a `PreferenceFragment` row matches the label `TextView`, which has no click listener of its own (the
+     * row's itemView does), and `performClick` does not bubble, so firing the ancestor is what actually selects the
+     * option. Being coordinate-free, it is also immune to the dropped tap a list still settling from a momentum scroll
+     * causes, which [click]'s coordinate tap suffers. The other backends have no equivalent hazard here, so they fall
+     * back to their normal click.
+     */
+    fun performClick(element: UiElement) {
+        dispatch(
+            element,
+            "perform click",
+            espresso = { it.perform(clickableAncestorClick()) },
+            uiObject = {
+                if (!it.waitForExists(waitingTimeShort)) throw AssertionError("UiObject does not exist")
+                if (!it.click()) throw AssertionError("Failed to click UiObject")
+            },
+            uiObject2 = { it.click() },
+            compose = {
+                it.assertExists()
+                it.performClick()
+            },
+        )
+    }
+
+    private fun clickableAncestorClick(): ViewAction =
+        object : ViewAction {
+            override fun getConstraints(): Matcher<View> = isEnabled()
+
+            override fun getDescription(): String = "click the nearest clickable ancestor's handler directly"
+
+            override fun perform(uiController: UiController, view: View) {
+                var target: View? = view
+                while (target != null && !target.isClickable) {
+                    target = target.parent as? View
+                }
+                (target ?: view).performClick()
+                uiController.loopMainThreadUntilIdle()
+            }
+        }
 
     fun longClick(element: UiElement, durationMillis: Long = 5_000) =
         dispatch(
