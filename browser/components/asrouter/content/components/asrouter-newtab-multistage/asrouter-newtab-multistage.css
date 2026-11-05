@@ -2437,7 +2437,7 @@ html {
 @container card-stack (width <= 520px) {
   .onboardingContainer .screen[pos=card-stack] .section-secondary {
     height: var(--card-stack-secondary-height);
-    margin-block: 12px;
+    margin-block: 12px 0;
     margin-inline: auto;
   }
 }
@@ -2469,12 +2469,18 @@ html {
   padding-block: var(--space-xxlarge);
   width: auto;
 }
+@container card-stack (width <= 520px) {
+  .onboardingContainer .screen[pos=card-stack] .section-main .main-content {
+    padding-block: var(--space-xlarge);
+  }
+}
 .onboardingContainer .screen[pos=card-stack] .section-main .main-content .main-content-inner {
   justify-content: center;
 }
 @container card-stack (width <= 520px) {
   .onboardingContainer .screen[pos=card-stack] .section-main .main-content .main-content-inner {
     align-items: center;
+    padding-block: var(--space-large);
   }
 }
 .onboardingContainer .screen[pos=card-stack] .welcome-text {
@@ -2519,6 +2525,18 @@ html {
   font-size: var(--font-size-root);
   font-weight: var(--font-weight-semibold);
   line-height: 1;
+}
+@container card-stack (width <= 520px) {
+  .onboardingContainer .screen[pos=card-stack] .action-buttons {
+    flex-direction: column;
+    gap: var(--space-xxsmall);
+    width: 100%;
+  }
+  .onboardingContainer .screen[pos=card-stack] .action-buttons .primary,
+  .onboardingContainer .screen[pos=card-stack] .action-buttons .secondary,
+  .onboardingContainer .screen[pos=card-stack] .action-buttons .secondary-cta {
+    width: inherit;
+  }
 }
 .onboardingContainer .screen[pos=card-stack][layout=last-card] {
   --card-stack-flare-x: 50%;
