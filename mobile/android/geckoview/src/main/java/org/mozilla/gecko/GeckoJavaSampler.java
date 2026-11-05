@@ -139,7 +139,8 @@ public class GeckoJavaSampler {
 
       for (int i = 0; i < aStack.length; i++) {
         mFrames[aStack.length - 1 - i] =
-            new Frame(aStack[i].getMethodName(), aStack[i].getClassName());
+            new Frame(
+                aStack[i].getMethodName(), aStack[i].getClassName(), aStack[i].getLineNumber());
       }
     }
   }
@@ -151,10 +152,12 @@ public class GeckoJavaSampler {
   private static class Frame {
     public final String methodName;
     public final String className;
+    public final int lineNumber;
 
-    private Frame(final String methodName, final String className) {
+    private Frame(final String methodName, final String className, final int lineNumber) {
       this.methodName = methodName;
       this.className = className;
+      this.lineNumber = lineNumber;
     }
   }
 
@@ -490,6 +493,19 @@ public class GeckoJavaSampler {
       return frame.className + "." + frame.methodName + "()";
     }
     return null;
+  }
+
+  /** Returns the source line number of a frame, or a negative value if unknown. */
+  @WrapForJNI
+  public static synchronized int getFrameLineNumber(final int aSampleId, final int aFrameId) {
+    final Sample sample = getSample(aSampleId);
+    if (sample != null && aFrameId < sample.mFrames.length) {
+      final Frame frame = sample.mFrames[aFrameId];
+      if (frame != null) {
+        return frame.lineNumber;
+      }
+    }
+    return -1;
   }
 
   /**

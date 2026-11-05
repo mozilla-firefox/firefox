@@ -3777,16 +3777,23 @@ static void CollectJavaThreadProfileData(
     int frameId = 0;
     while (true) {
       jni::String::LocalRef frameName =
-          java::GeckoJavaSampler::GetFrameName(sampleId, frameId++);
+          java::GeckoJavaSampler::GetFrameName(sampleId, frameId);
       if (!frameName) {
         break;
       }
       nsCString frameNameString = frameName->ToCString();
 
+      int32_t lineNumber =
+          java::GeckoJavaSampler::GetFrameLineNumber(sampleId, frameId);
+      Maybe<uint32_t> maybeLineNumber =
+          lineNumber >= 0 ? Some(static_cast<uint32_t>(lineNumber)) : Nothing();
+
       auto categoryPair = InferJavaCategory(frameNameString);
       aProfileBuffer.CollectCodeLocation("", frameNameString.get(), 0, 0, 0,
-                                         Nothing(), Nothing(),
+                                         maybeLineNumber, Nothing(),
                                          Some(categoryPair));
+
+      frameId++;
     }
     sampleId++;
   }
