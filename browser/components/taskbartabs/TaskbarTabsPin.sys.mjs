@@ -19,6 +19,34 @@ ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
   });
 });
 
+ChromeUtils.defineLazyGetter(lazy, "platformPin", () => {
+  if (AppConstants.platform === "win" && lazy.TaskbarTabsUtils.isMSIX()) {
+    const { TaskbarTabsPinMsix } = ChromeUtils.importESModule(
+      "moz-src:///browser/components/taskbartabs/TaskbarTabsPinMsix.sys.mjs"
+    );
+    return new TaskbarTabsPinMsix();
+  }
+
+  if (AppConstants.platform === "win") {
+    const { TaskbarTabsPinWin } = ChromeUtils.importESModule(
+      "moz-src:///browser/components/taskbartabs/TaskbarTabsPinWin.sys.mjs"
+    );
+    return new TaskbarTabsPinWin();
+  }
+
+  if (AppConstants.platform === "linux") {
+    const { TaskbarTabsPinLinux } = ChromeUtils.importESModule(
+      "moz-src:///browser/components/taskbartabs/TaskbarTabsPinLinux.sys.mjs"
+    );
+    return new TaskbarTabsPinLinux();
+  }
+
+  const { TaskbarTabsPinBase } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/taskbartabs/TaskbarTabsPinBase.sys.mjs"
+  );
+  return new TaskbarTabsPinBase();
+});
+
 /**
  * Provides functionality to pin and unping Taskbar Tabs.
  */
@@ -39,18 +67,15 @@ export const TaskbarTabsPin = {
     let shortcut = null;
     let rejected = false;
     try {
-      let iconPath = await createTaskbarIcon(aTaskbarTab, aIcon);
+      let iconFile = await createTaskbarIcon(aTaskbarTab, aIcon);
 
-      shortcut = await createShortcut(aTaskbarTab, iconPath, window);
-
-      if (AppConstants.platform === "win" && !lazy.TaskbarTabsUtils.isMSIX()) {
-        let pinResult = await lazy.ShellService.pinShortcutToTaskbar(
-          aTaskbarTab.id,
-          "Programs",
-          shortcut
-        );
-        rejected = pinResult === Ci.nsIWindowsShellService.REJECTED;
-      }
+      shortcut = await lazy.platformPin.createShortcut(
+        aTaskbarTab,
+        iconFile,
+        getShortcutArgs(aTaskbarTab),
+        window
+      );
+      rejected = await lazy.platformPin.pinShortcut(aTaskbarTab, shortcut);
       Glean.webApp.pin.record({ result: rejected ? "Rejected" : "Success" });
     } catch (e) {
       lazy.logConsole.error(`An error occurred while pinning: ${e.message}`);
@@ -70,16 +95,13 @@ export const TaskbarTabsPin = {
     let unpinError = null;
     let removalError = null;
 
-    let isMSIX = lazy.TaskbarTabsUtils.isMSIX();
     try {
       lazy.logConsole.info("Unpinning Taskbar Tab from the taskbar.");
 
       let relativePath = aTaskbarTab.shortcutRelativePath;
 
       try {
-        if (AppConstants.platform === "win" && !isMSIX) {
-          lazy.ShellService.unpinShortcutFromTaskbar("Programs", relativePath);
-        }
+        lazy.platformPin.unpinFromTaskbar(relativePath);
       } catch (e) {
         lazy.logConsole.error(`Failed to unpin shortcut: ${e.message}`);
         unpinError = e;
@@ -90,20 +112,9 @@ export const TaskbarTabsPin = {
       lazy.logConsole.debug(`Deleting ${relativePath}`);
       lazy.logConsole.debug(`Deleting ${iconFile.path}`);
 
-      let deleteShortcut = Promise.resolve();
-      if (relativePath && AppConstants.platform === "win" && !isMSIX) {
-        deleteShortcut = lazy.ShellService.deleteShortcut(
-          "Programs",
-          relativePath
-        );
-      } else if (relativePath && AppConstants.platform === "win" && isMSIX) {
-        deleteShortcut =
-          lazy.ShellService.requestDeleteSecondaryTile(relativePath);
-      } else if (relativePath && AppConstants.platform === "linux") {
-        deleteShortcut = lazy.ShellService.deleteLinuxDesktopEntry(
-          relativePath.replace(/\.desktop$/, "")
-        );
-      }
+      let deleteShortcut = relativePath
+        ? lazy.platformPin.deleteShortcut(relativePath)
+        : Promise.resolve();
 
       await Promise.all([deleteShortcut, IOUtils.remove(iconFile.path)]);
     } catch (e) {
@@ -118,15 +129,6 @@ export const TaskbarTabsPin = {
       result: message(unpinError),
       removal_result: message(removalError),
     });
-  },
-
-  /**
-   * Gets a Localization object to use when creating shortcuts.
-   *
-   * @returns {Localization} An object to access localized strings.
-   */
-  _getLocalization() {
-    return new Localization(["branding/brand.ftl", "browser/taskbartabs.ftl"]);
   },
 };
 
@@ -153,22 +155,16 @@ async function createTaskbarIcon(aTaskbarTab, aIcon) {
 }
 
 /**
- * Creates a shortcut that opens Firefox with relevant Taskbar Tabs flags.
+ * Gets the command line arguments a shortcut should pass to Firefox to open
+ * the provided Taskbar Tab.
  *
- * @param {TaskbarTab} aTaskbarTab - The Taskbar Tab to generate a shortcut for.
- * @param {nsIFile} aFileIcon - The icon file to use for the shortcut.
- * @param {TaskbarTabsRegistry} aRegistry - The registry used to save the shortcut path.
- * @param {DOMWindow?} aWindow - The window to associate any UI with, or null
- * if no window is available.
- * @returns {Promise<string>} The path to the created shortcut.
+ * @param {TaskbarTab} aTaskbarTab - The Taskbar Tab the shortcut opens.
+ * @returns {string[]} The command line arguments.
  */
-async function createShortcut(aTaskbarTab, aFileIcon, aRegistry, aWindow) {
-  lazy.logConsole.info("Creating Taskbar Tabs shortcut.");
-
-  let targetfile = Services.dirsvc.get("XREExeF", Ci.nsIFile);
+function getShortcutArgs(aTaskbarTab) {
   let profileFolder = Services.dirsvc.get("ProfD", Ci.nsIFile);
 
-  let args = [
+  return [
     "-taskbar-tab",
     aTaskbarTab.id,
     "-new-window",
@@ -178,111 +174,6 @@ async function createShortcut(aTaskbarTab, aFileIcon, aRegistry, aWindow) {
     "-container",
     aTaskbarTab.userContextId.toString(),
   ];
-
-  if (AppConstants.platform === "win" && lazy.TaskbarTabsUtils.isMSIX()) {
-    let secondaryTileId = "taskbartab-" + aTaskbarTab.id;
-    await lazy.ShellService.requestCreateAndPinSecondaryTile(
-      secondaryTileId,
-      aTaskbarTab.name,
-      aFileIcon.path,
-      args
-    );
-
-    return secondaryTileId;
-  }
-
-  if (AppConstants.platform === "win") {
-    // non-MSIX
-    let { relativePath, description } = await generateShortcutInfo(aTaskbarTab);
-    lazy.logConsole.debug(
-      `Using shortcut path relative to Programs folder: ${relativePath}`
-    );
-
-    await lazy.ShellService.createShortcut(
-      targetfile,
-      args,
-      description,
-      aFileIcon,
-      0,
-      aTaskbarTab.id, // AUMID
-      "Programs",
-      relativePath
-    );
-
-    return relativePath;
-  }
-
-  if (AppConstants.platform === "linux") {
-    let appId = lazy.TaskbarTabsUtils._determineNewDesktopEntryName(
-      aTaskbarTab.id
-    );
-    await lazy.ShellService.createLinuxDesktopEntry(
-      appId,
-      aTaskbarTab.name,
-      args,
-      aFileIcon.path,
-      { window: aWindow }
-    );
-
-    let relativePath = appId + ".desktop";
-    return relativePath;
-  }
-
-  throw new Error("Don't know how to create a shortcut on this platform");
-}
-
-/**
- * Gets the path to the shortcut relative to the Start Menu folder,
- * as well as the description that should be attached to the shortcut.
- *
- * @param {TaskbarTab} aTaskbarTab - The Taskbar Tab to get the path of.
- * @returns {Promise<{description: string, relativePath: string}>} The description
- * and relative path of the shortcut.
- */
-async function generateShortcutInfo(aTaskbarTab) {
-  const l10n = TaskbarTabsPin._getLocalization();
-
-  let basename = sanitizeFilename(aTaskbarTab.name + ".lnk");
-  let dirname = await l10n.formatValue("taskbar-tab-shortcut-folder");
-  dirname = sanitizeFilename(dirname, { allowDirectoryNames: true });
-
-  const description = await l10n.formatValue(
-    "taskbar-tab-shortcut-description",
-    { name: aTaskbarTab.name }
-  );
-
-  return {
-    description,
-    relativePath: dirname + "\\" + basename,
-  };
-}
-
-/**
- * Cleans up the filename so it can be saved safely. This means replacing invalid names
- * (e.g. DOS devices) with others, or replacing invalid characters (e.g. asterisks on
- * Windows) with underscores.
- *
- * @param {string} aWantedName - The name to validate and sanitize. Make sure
- * that aWantedName has an extension if it will be saved with one.
- * @param {object} aOptions - Options to affect the sanitization.
- * @param {boolean} aOptions.allowDirectoryNames - Indicates that the name will be used
- * as a directory. If so, the validation rules may be slightly more lax.
- * @returns {string} The sanitized name.
- */
-function sanitizeFilename(aWantedName, { allowDirectoryNames = false } = {}) {
-  const mimeService = Cc["@mozilla.org/mime;1"].getService(Ci.nsIMIMEService);
-
-  let flags =
-    Ci.nsIMIMEService.VALIDATE_SANITIZE_ONLY |
-    Ci.nsIMIMEService.VALIDATE_DONT_COLLAPSE_WHITESPACE |
-    // Don't add .download to the name if it ends with .lnk.
-    Ci.nsIMIMEService.VALIDATE_ALLOW_INVALID_FILENAMES;
-
-  if (allowDirectoryNames) {
-    flags |= Ci.nsIMIMEService.VALIDATE_ALLOW_DIRECTORY_NAMES;
-  }
-
-  return mimeService.validateFileNameForSaving(aWantedName, "", flags);
 }
 
 /**

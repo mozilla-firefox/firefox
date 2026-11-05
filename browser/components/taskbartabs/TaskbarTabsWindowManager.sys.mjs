@@ -143,7 +143,7 @@ export class TaskbarTabsWindowManager {
         lazy.WinTaskbar.setGroupIdForWindow(
           win,
           // This is based on the tile ID set when we create the secondary tile
-          // in TaskbarTabsPin.sys.mjs.
+          // in TaskbarTabsPinMsix.sys.mjs.
           `${pfn}!App:taskbartab-${aTaskbarTab.id}`
         );
       } else {
