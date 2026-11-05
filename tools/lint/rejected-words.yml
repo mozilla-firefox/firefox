@@ -56,8 +56,6 @@ avoid-blacklist-and-whitelist:
         - browser/components/migration/ChromeProfileMigrator.sys.mjs
         - browser/components/preferences/config/privacy.mjs
         - browser/components/preferences/config/permissions-data.mjs
-        - browser/components/preferences/privacy.inc.xhtml
-        - browser/components/preferences/privacy.js
         - browser/components/resistfingerprinting/test/mochitest/test_bug1354633_media_error.html
         - browser/components/sessionstore/test/browser_crashedTabs.js
         - browser/components/tabbrowser/test/browser/tabMediaIndicator/browser_mute_webAudio.js

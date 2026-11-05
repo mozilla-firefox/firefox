@@ -179,7 +179,6 @@
   skin/classic/browser/preferences/mozilla-logo.svg            (../shared/preferences/mozilla-logo.svg)
   skin/classic/browser/preferences/preferences.css             (../shared/preferences/preferences.css)
   skin/classic/browser/preferences/applications.css            (../shared/preferences/applications.css)
-  skin/classic/browser/preferences/privacy.css                 (../shared/preferences/privacy.css)
   skin/classic/browser/preferences/relay-logo.svg              (../shared/preferences/relay-logo.svg)
   skin/classic/browser/preferences/search-arrow-indicator.svg  (../shared/preferences/search-arrow-indicator.svg)
   skin/classic/browser/preferences/vpn-logo.svg                (../shared/preferences/vpn-logo.svg)

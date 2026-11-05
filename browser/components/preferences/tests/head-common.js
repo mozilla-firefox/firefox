@@ -438,7 +438,7 @@ async function waitForAndAssertPrefState(pref, expectedValue, message) {
  */
 async function selectHistoryMode(win, value) {
   let historyMode = win.document.querySelector(
-    "setting-group[groupid='history2'] #historyMode"
+    "setting-group[groupid='history'] #historyMode"
   );
   let updated = waitForSettingControlChange(historyMode);
 

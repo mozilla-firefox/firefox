@@ -255,22 +255,22 @@ function getBundleForLocales(newLocales) {
 
 var gNodeToObjectMap = new WeakMap();
 
+/**
+ * @param {string} aId
+ * @param {string} aEventType
+ * @param {(ev: Event) => void} aCallback
+ */
+function setEventListener(aId, aEventType, aCallback) {
+  document
+    .getElementById(aId)
+    .addEventListener(aEventType, aCallback.bind(gMainPane));
+}
+
 var gMainPane = {
   /**
    * Initialization of gMainPane.
    */
   init() {
-    /**
-     * @param {string} aId
-     * @param {string} aEventType
-     * @param {(ev: Event) => void} aCallback
-     */
-    function setEventListener(aId, aEventType, aCallback) {
-      document
-        .getElementById(aId)
-        .addEventListener(aEventType, aCallback.bind(gMainPane));
-    }
-
     this.displayUseSystemLocale();
 
     if (Services.prefs.getBoolPref("intl.multilingual.enabled")) {

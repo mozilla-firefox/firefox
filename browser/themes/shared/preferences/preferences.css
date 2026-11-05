@@ -130,13 +130,6 @@ setting-group[data-category] {
   margin: 0 0 var(--space-xlarge);
 }
 
-/* Bug 2002963 - payments and addresses are in a groupbox together, but they probably shouldn't be */
-#formAutofillGroupBox {
-  display: flex;
-  flex-direction: column;
-  gap: 32px;
-}
-
 html|h1 {
   margin: 0 0 var(--space-large);
 }
@@ -176,11 +169,6 @@ label {
 
 label {
   margin: var(--space-xxsmall) 0;
-
-  &.tail-with-learn-more + a {
-    margin-block: var(--space-xxsmall);
-    margin-inline: var(--space-small) 0;
-  }
 }
 
 #urlLabel {
@@ -196,11 +184,6 @@ label {
   margin: 0;
 }
 
-.tip-caption {
-  font-size: 0.9em;
-  color: var(--text-color-deemphasized);
-}
-
 menulist::part(label),
 menuitem > label,
 button > hbox > label {
@@ -214,17 +197,6 @@ button > hbox > label {
 checkbox,
 radio {
   margin: var(--space-small) 0;
-
-  &.tail-with-learn-more + a {
-    margin-block: var(--space-small);
-    margin-inline: var(--space-small) 0;
-  }
-}
-
-/* Add a bit of space to the end of descriptions to
- * leave margin with e.g. additional buttons on the side. */
-.description-with-side-element {
-  margin-inline-end: 10px !important;
 }
 
 .learnMore {
@@ -483,31 +455,8 @@ richlistitem[selected] .actionsMenu:focus-visible {
   margin: 4px 0 0;
 }
 
-/* Privacy Pane */
-
-#allowSmartSize {
-  margin-block: 0 4px;
-}
-
-#historyPane {
-  margin-block-start: 4px;
-}
-
-#historyButtons {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-#blockCookies,
-#keepRow {
-  margin-block-start: 1.5em;
-}
-
 /* Collapse the non-active vboxes in decks to use only the height the
    active vbox needs */
-#historyPane:not([selectedIndex="1"]) > #historyDontRememberPane,
-#historyPane:not([selectedIndex="2"]) > #historyCustomPane,
 #weavePrefsDeck:not([selectedIndex="1"]) > #hasFxaAccount,
 #fxaLoginStatus:not([selectedIndex="1"]) > #fxaLoginUnverified,
 #fxaLoginStatus:not([selectedIndex="2"]) > #fxaLoginRejected {
@@ -1074,15 +1023,13 @@ richlistitem .text-link:hover {
   color: inherit;
 }
 
-#proxy-grid,
-#dnsOverHttps-grid {
+#proxy-grid {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
 }
 
-.proxy-grid-row,
-.dnsOverHttps-grid-row {
+.proxy-grid-row {
   display: contents;
 }
 
@@ -1336,13 +1283,20 @@ setting-group[groupid="home"] {
 }
 /** SRD rows control for New Tab END **/
 
-/** SRD History first item is label-less START **/
-/* bug 2001196: Workaround for using legend as label for the select. */
-setting-group[groupid="history"] > moz-fieldset::part(inputs),
-setting-group[groupid="history"] > moz-card > moz-fieldset::part(inputs) {
-  margin-block-start: 0;
+/** SRD Primary Password START **/
+#statusPrimaryPassword .primary-pw-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-small);
 }
-/** SRD History first item is label-less END **/
+
+#statusPrimaryPassword .primary-pw-status-icon {
+  width: var(--size-item-small);
+  height: var(--size-item-small);
+  -moz-context-properties: fill;
+  fill: var(--icon-color-success);
+}
+/** SRD Primary Password END **/
 
 setting-group[groupid="aiFeatures"] {
   --select-max-width: fit-content;
@@ -1541,14 +1495,17 @@ setting-pane[onsearchpane] {
   margin-block-start: var(--space-large);
 }
 
+/** SRD DNS over HTTPS START **/
 #dohProviderSelect {
   --select-max-width: 235px;
 }
+/** SRD DNS over HTTPS END **/
 
 #browserContainersbox moz-message-bar {
   margin-block-start: 0;
 }
 
+/** SRD Enhanced Tracking Protection START **/
 #etpBannerEl {
   border-radius: var(--border-radius-large);
   background-clip: content-box;
@@ -1574,6 +1531,7 @@ setting-pane[onsearchpane] {
   display: flex;
   gap: var(--space-small);
 }
+/** SRD Enhanced Tracking Protection END **/
 
 #addresses-list-header,
 #payments-list-header,

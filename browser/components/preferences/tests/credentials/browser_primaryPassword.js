@@ -88,7 +88,7 @@ add_task(async function () {
     );
   } else {
     primaryPasswordSet = true;
-    doc.defaultView.gPrivacyPane._initMasterPasswordUI();
+    Services.obs.notifyObservers(null, "passwordmgr-primary-pw-changed");
     await TestUtils.waitForCondition(
       () => !button.disabled,
       "waiting for primary password button to get enabled"

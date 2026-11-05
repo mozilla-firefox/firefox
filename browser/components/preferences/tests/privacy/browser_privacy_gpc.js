@@ -8,7 +8,7 @@
 const MODE_PREF = "privacy.globalprivacycontrol.enabled";
 const DNT_PREF = "privacy.donottrackheader.enabled";
 
-const SECTION_ID = "nonTechnicalPrivacy2";
+const SECTION_ID = "nonTechnicalPrivacy";
 const GPC_CHECKBOX_ID = "gpcEnabled";
 const NEW_DNT_ID = "dntRemoval";
 
@@ -40,7 +40,7 @@ add_task(async function test_section_shown() {
       let section = browser.contentDocument.querySelector(
         `[groupid=${SECTION_ID}]`
       );
-      is_element_visible(section, "nonTechnicalPrivacy2 section is shown");
+      is_element_visible(section, "nonTechnicalPrivacy section is shown");
     }
   );
 

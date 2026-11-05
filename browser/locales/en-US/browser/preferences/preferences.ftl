@@ -2,15 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-do-not-track-removal2 =
-    .label = We no longer support the “Do Not Track” signal
-
 global-privacy-control-description =
     .label = Tell websites not to sell or share my data
     .accesskey = s
-
-non-technical-privacy-group =
-    .label = Website Privacy Preferences
 
 do-not-track-removal3 =
     .message = We no longer support the “Do Not Track” feature.
@@ -21,7 +15,6 @@ non-technical-privacy-heading =
 preferences-privacy-relay-available =
     .label = Suggest { -relay-brand-name } email masks
     .description = Hides your real email address to protect your inbox from spam.
-
 
 # Do not translate.
 # "Global Privacy Control" or "GPC" are a web platform feature name and abbreviation
@@ -1548,11 +1541,6 @@ privacy-header = Browser Privacy
 
 ## Privacy Section - Passwords
 
-# "Logins" is the former term for "Passwords". Users should find password settings
-# by searching for the former term "logins". It's not displayed in the UI.
-pane-privacy-passwords-header = Passwords
-    .searchkeywords = logins
-
 forms-passwords-header =
     .label = Passwords
     .aria-label = Passwords
@@ -1564,16 +1552,12 @@ forms-ask-to-save-passwords =
 forms-manage-password-exceptions =
     .label = Manage password exceptions
     .accesskey = M
-forms-exceptions =
-    .label = Exceptions…
-    .accesskey = x
 forms-suggest-passwords =
     .label = Suggest strong passwords
     .accesskey = S
 forms-breach-alerts =
     .label = Show alerts about passwords for breached websites
     .accesskey = b
-forms-breach-alerts-learn-more-link = Learn more
 
 ## Privacy Panel Settings
 
@@ -1585,10 +1569,6 @@ privacy-panel-settings-header =
 privacy-panel-breach-alerts =
     .label = Show breach messages
     .accesskey = s
-preferences-relay-integration-checkbox2 =
-    .label = Suggest { -relay-brand-name } email masks to protect your email address
-    .accesskey = r
-relay-integration-learn-more-link = Learn more
 
 # Checkbox which controls filling saved logins into fields automatically when they appear, in some cases without user interaction.
 forms-fill-usernames-and-passwords =
@@ -1628,29 +1608,14 @@ forms-os-reauth =
     .label = Require device sign in to fill and manage passwords
 forms-os-reauth-2 =
     .label = Require device sign in to manage passwords
-forms-primary-pw-learn-more-link = Learn more
-# This string uses the former name of the Primary Password feature
-# ("Master Password" in English) so that the preferences can be found
-# when searching for the old name. The accesskey is unused.
-forms-master-pw-change =
-    .label = Change Master Password…
-    .accesskey = M
 forms-primary-pw-change =
     .label = Change Primary Password…
     .accesskey = P
-# Leave this message empty if the translation for "Primary Password" matches
-# "Master Password" in your language. If you're editing the FTL file directly,
-# use { "" } as the value.
-forms-primary-pw-former-name = Formerly known as Master Password
 
 forms-primary-pw-fips-title = You are currently in FIPS mode. FIPS requires a non-empty Primary Password.
 forms-master-pw-fips-desc = Password Change Failed
 forms-windows-sso =
     .label = Allow Windows single sign-on for Microsoft, work, and school accounts
-forms-windows-sso-learn-more-link = Learn more
-forms-windows-sso-desc = Manage accounts in your device settings
-
-windows-passkey-settings-label = Manage passkeys in system settings
 
 ## OS Authentication dialog
 
@@ -1848,10 +1813,6 @@ history-shutdown-exceptions =
     .label = Manage Exceptions
     .accesskey = x
 
-history-clear-button =
-    .label = Clear History…
-    .accesskey = s
-
 history-header2 =
     .heading = History
 
@@ -1868,9 +1829,6 @@ history-custom-button =
 
 ## Privacy Section - Site Data
 
-cookies-site-data-group =
-    .label = Cookies and Site Data
-
 sitedata-total-size-calculating = Calculating site data and cache size…
 
 # Variables:
@@ -1884,42 +1842,17 @@ sitedata-delete-on-close2 =
     .label = Clear cookies and site data every time you close { -brand-short-name }
     .accesskey = c
 
-sitedata-delete-on-close-private-browsing3 =
-    .message = Based on your history settings, { -brand-short-name } deletes cookies and site data from your session when you close the browser.
-
 sitedata-delete-on-close-private-browsing4 =
     .heading = History won’t be saved.
     .message = { -brand-short-name } clears cookies and site data from your session when you close the browser.
-
-sitedata-option-block-cross-site-trackers =
-    .label = Cross-site trackers
-sitedata-option-block-cross-site-tracking-cookies =
-    .label = Cross-site tracking cookies
-sitedata-option-block-cross-site-cookies2 =
-    .label = Isolate cross-site cookies
-sitedata-option-block-unvisited =
-    .label = Cookies from unvisited websites
-sitedata-option-block-all-cross-site-cookies =
-    .label = All cross-site cookies (may cause websites to break)
-sitedata-option-block-all =
-    .label = All cookies (will cause websites to break)
 
 sitedata-clear2 =
     .label = Clear browsing data
     .accesskey = l
 
-sitedata-settings2 =
-    .label = Manage browsing data
-    .accesskey = M
-
 sitedata-cookies-exceptions =
     .label = Manage Exceptions…
     .accesskey = x
-
-sitedata-cookies-exceptions2 =
-    .label = Manage exceptions
-    .accesskey = x
-    .description = You can specify which websites are always or never allowed to use cookies and site data.
 
 sitedata-heading =
     .label = Browsing data
@@ -1936,70 +1869,10 @@ sitedata-cookies-exceptions3 =
 
 ## Privacy Section - Content Blocking
 
-content-blocking-enhanced-tracking-protection = Enhanced Tracking Protection
-
-content-blocking-section-top-level-description = Trackers follow you around online to collect information about your browsing habits and interests. { -brand-short-name } blocks many of these trackers and other malicious scripts.
-
 content-blocking-learn-more = Learn more
 
-content-blocking-fpi-incompatibility-warning = You are using First Party Isolation (FPI), which overrides some of { -brand-short-name }’s cookie settings.
-
-# There is no need to translate "Resist Fingerprinting (RFP)". This is a
-# feature that can only be enabled via about:config, and it's not exposed to
-# standard users (e.g. via Settings).
-content-blocking-rfp-incompatibility-warning = You’re using Resist Fingerprinting (RFP), which replaces some of { -brand-short-name }’s fingerprinting protection settings. This might cause some sites to break.
-
-## These strings are used to define the different levels of
-## Enhanced Tracking Protection.
-
-# "Standard" in this case is an adjective, meaning "default" or "normal".
-enhanced-tracking-protection-setting-standard =
-  .label = Standard
-  .accesskey = d
-enhanced-tracking-protection-setting-strict =
-  .label = Strict
-  .accesskey = r
-enhanced-tracking-protection-setting-custom =
-  .label = Custom
-  .accesskey = C
-
-##
-
-content-blocking-etp-standard-desc = Balanced for protection and performance. Pages will load normally.
-content-blocking-etp-strict-desc = Stronger protection, but may cause some sites or content to break.
-content-blocking-etp-custom-desc = Choose which trackers and scripts to block.
-content-blocking-etp-blocking-desc = { -brand-short-name } blocks the following:
-
-content-blocking-private-windows = Tracking content in Private Windows
-content-blocking-cross-site-cookies-in-all-windows2 = Cross-site cookies in all windows
-content-blocking-cross-site-tracking-cookies = Cross-site tracking cookies
-content-blocking-all-cross-site-cookies-private-windows = Cross-site cookies in Private Windows
-content-blocking-isolate-cross-site-cookies = Isolate cross-site cookies
-content-blocking-social-media-trackers = Social media trackers
-content-blocking-all-cookies = All cookies
-content-blocking-unvisited-cookies = Cookies from unvisited sites
-content-blocking-all-windows-tracking-content = Tracking content in all windows
-content-blocking-all-cross-site-cookies = All cross-site cookies
 content-blocking-cryptominers = Cryptominers
 content-blocking-fingerprinters = Fingerprinters
-# The known fingerprinters are those that are known for collecting browser fingerprints from user devices. And
-# the suspected fingerprinters are those that we are uncertain about browser fingerprinting activities. But they could
-# possibly acquire browser fingerprints because of the behavior on accessing APIs that expose browser fingerprints.
-content-blocking-known-and-suspected-fingerprinters = Known and suspected fingerprinters
-
-# The tcp-rollout strings are no longer used for the rollout but for tcp-by-default in the standard section
-
-# "Contains" here means "isolates", "limits".
-content-blocking-etp-standard-tcp-rollout-description = Total Cookie Protection contains cookies to the site you’re on, so trackers can’t use them to follow you between sites.
-content-blocking-etp-standard-tcp-rollout-learn-more = Learn more
-
-content-blocking-etp-standard-tcp-title = Includes Total Cookie Protection, our most powerful privacy feature ever
-
-content-blocking-warning-title-2 = Some sites may break with strict tracking protection
-content-blocking-warning-title-custom = Some sites may break with custom tracking protection
-# “Fix site issues” references the string content-blocking-exceptions-subheader
-content-blocking-and-isolating-etp-warning-description-4 = { -brand-short-name } recommends using the “Fix site issues” settings to reduce broken site features and content. If a site seems broken, try turning off tracking protection for that site to load all content.
-content-blocking-warning-learn-how = Learn how
 
 content-blocking-baseline-exceptions-3 =
     .label = Fix major site issues (recommended)
@@ -2016,51 +1889,13 @@ content-blocking-baseline-uncheck-warning-dialog-ok-button = Turn fixes off
 content-blocking-baseline-uncheck-warning-dialog-cancel-button = Keep fixes on
 
 content-blocking-reload-description = You will need to reload your tabs to apply these changes.
-content-blocking-reload-tabs-button =
-  .label = Reload All Tabs
-  .accesskey = R
 
-content-blocking-tracking-content-label =
-  .label = Tracking content
-  .accesskey = T
 content-blocking-tracking-protection-option-all-windows =
   .label = In all windows
   .accesskey = A
 content-blocking-option-private =
   .label = Only in private windows
   .accesskey = p
-
-content-blocking-cookies-label =
-  .label = Cookies
-  .accesskey = C
-
-content-blocking-expand-section =
-  .tooltiptext = More information
-
-# Cryptomining refers to using scripts on websites that can use a computer’s resources to mine cryptocurrency without a user’s knowledge.
-content-blocking-cryptominers-label =
-  .label = Cryptominers
-  .accesskey = y
-
-# Browser fingerprinting is a method of tracking users by the configuration and settings information (their "digital fingerprint")
-# that is visible to websites they browse, rather than traditional tracking methods such as IP addresses and unique cookies.
-#
-# The known fingerprinters are those that are known for collecting browser fingerprints from user devices.
-content-blocking-known-fingerprinters-label =
-  .label = Known fingerprinters
-  .accesskey = K
-
-# The suspected fingerprinters are those that we are uncertain about browser fingerprinting activities. But they could
-# possibly acquire browser fingerprints because of the behavior on accessing APIs that expose browser fingerprints.
-content-blocking-suspected-fingerprinters-label =
-  .label = Suspected fingerprinters
-  .accesskey = S
-
-## Privacy Section - Tracking
-
-tracking-manage-exceptions =
-    .label = Manage Exceptions…
-    .accesskey = x
 
 ## Privacy Section - Permissions
 
@@ -2257,22 +2092,10 @@ collection-backlogged-crash-reports2 =
     .accesskey = c
 collection-backlogged-crash-reports-description = This helps { -vendor-short-name } diagnose and fix issues with the browser. Reports may include personal or sensitive data.
 
-privacy-segmentation-section-header = New features that enhance your browsing
-
-privacy-segmentation-section-description = When we offer features that use your data to give you a more personal experience:
-
-privacy-segmentation-radio-off =
-    .label = Use { -brand-product-name } recommendations
-
-privacy-segmentation-radio-on =
-    .label = Show detailed information
-
 ## Privacy Section - Security
 ##
 ## It is important that wording follows the guidelines outlined on this page:
 ## https://developers.google.com/safe-browsing/developers_guide_v2#AcceptableUsage
-
-security-header = Security
 
 browsing-protection-group2 =
     .label = Deceptive content and dangerous software protection
@@ -2345,7 +2168,6 @@ httpsonly-radio-disabled3 =
 
 ## DoH Section
 
-preferences-doh-header = DNS over HTTPS
 dns-over-https-group2 =
     .label = DNS over HTTPS
     .description = Domain Name System over HTTPS (DoH) encrypts site lookups so it’s harder for your internet provider or others to see what websites you’re about to visit.
@@ -2355,63 +2177,11 @@ preferences-doh-description2 = Domain Name System (DNS) over HTTPS sends your re
 # Variables:
 #   $status (string) - The status of the DoH connection
 preferences-doh-status = Status: { $status }
-# Variables:
-#   $name (string) - The name of the DNS over HTTPS resolver. If a custom resolver is used, the name will be the domain of the URL.
-preferences-doh-resolver = Provider: { $name }
-# This is displayed instead of $name in preferences-doh-resolver
-# when the DoH URL is not a valid URL
-preferences-doh-bad-url = Invalid URL
-preferences-doh-steering-status = Using local provider
-
-preferences-doh-status-active = Active
-preferences-doh-status-disabled = Off
-# Variables:
-#   $reason (string) - A string representation of the reason DoH is not active. For example NS_ERROR_UNKNOWN_HOST or TRR_RCODE_FAIL.
-preferences-doh-status-not-active = Not active ({ $reason })
-
-preferences-doh-group-message2 = Enable DNS over HTTPS using:
 
 preferences-doh-radio-group =
     .aria-label = Enable DNS over HTTPS using:
 
-preferences-doh-expand-section =
-  .tooltiptext = More information
-
-preferences-doh-setting-default =
-  .label = Default Protection
-  .accesskey = D
-preferences-doh-default-desc = { -brand-short-name } decides when to use secure DNS to protect your privacy.
-preferences-doh-default-detailed-desc-1 = Use secure DNS in regions where it’s available
-preferences-doh-default-detailed-desc-2 = Use your default DNS resolver if there is a problem with the secure DNS provider
-preferences-doh-default-detailed-desc-3 = Use a local provider, if possible
-preferences-doh-default-detailed-desc-4 = Turn off when VPN, parental control, or enterprise policies are active
-preferences-doh-default-detailed-desc-5 = Turn off when a network tells { -brand-short-name } it shouldn’t use secure DNS
-
-preferences-doh-setting-enabled =
-  .label = Increased Protection
-  .accesskey = I
-preferences-doh-enabled-desc = You control when to use secure DNS and choose your provider.
-preferences-doh-enabled-detailed-desc-1 = Use the provider you select
-preferences-doh-enabled-detailed-desc-2 = Only use your default DNS resolver if there is a problem with secure DNS
-
-preferences-doh-setting-strict =
-  .label = Max Protection
-  .accesskey = M
-preferences-doh-strict-desc = { -brand-short-name } will always use secure DNS. You’ll see a security risk warning before we use your system DNS.
-preferences-doh-strict-detailed-desc-1 = Only use the provider you select
-preferences-doh-strict-detailed-desc-2 = Always warn if secure DNS isn’t available
-preferences-doh-strict-detailed-desc-3 = If secure DNS is not available sites will not load or function properly
-
-preferences-doh-setting-off =
-  .label = Off
-  .accesskey = O
-preferences-doh-off-desc = Use your default DNS resolver
-
 preferences-doh-select-resolver = Choose provider:
-
-preferences-doh-manage-exceptions =
-    .label = Manage Exceptions…
-    .accesskey = x
 
 preferences-doh-overview-default =
     .label = Default protection
@@ -2460,12 +2230,10 @@ preferences-doh-status-item-off =
 preferences-doh-status-item-not-active =
     .message = DNS over HTTPS is not working because we encountered an error ({ $reason }) while trying to use the provider { $name }
 
-
 # Variables:
 #   $reason (string) - A string representation of the reason DoH is not active. For example NS_ERROR_UNKNOWN_HOST or TRR_RCODE_FAIL.
 preferences-doh-status-item-not-active-bad-url =
     .message = DNS over HTTPS is not working because we received an invalid URL ({ $reason })
-
 
 # Variables:
 #   $name (string) - The name of the DNS over HTTPS resolver. If a custom resolver is used, the name will be the domain of the URL.

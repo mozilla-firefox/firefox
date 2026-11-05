@@ -122,8 +122,10 @@ export class PasswordSettingHelpers {
       Ci.nsIFIPSUtils
     );
     if (fipsUtils.isFIPSEnabled) {
-      let title = document.getElementById("fips-title").textContent;
-      let desc = document.getElementById("fips-desc").textContent;
+      let [title, desc] = await document.l10n.formatValues([
+        "forms-primary-pw-fips-title",
+        "forms-master-pw-fips-desc",
+      ]);
       Services.prompt.alert(window, title, desc);
       PasswordSettingHelpers._initMasterPasswordUI();
     } else {
@@ -145,23 +147,12 @@ export class PasswordSettingHelpers {
   static _initMasterPasswordUI() {
     var noMP = !LoginHelper.isPrimaryPasswordSet();
 
-    // Check if settings-redesign is enabled to determine which UI is active
-    const srdEnabled = Services.prefs.getBoolPref(
-      "browser.settings-redesign.enabled",
-      false
-    );
-
-    const buttonId = srdEnabled
-      ? "changePrimaryPassword"
-      : "changeMasterPassword";
-    const checkboxId = srdEnabled ? "usePrimaryPassword" : "useMasterPassword";
-
-    var button = document.getElementById(buttonId);
+    var button = document.getElementById("changePrimaryPassword");
     if (button) {
       button.disabled = noMP;
     }
 
-    var checkbox = document.getElementById(checkboxId);
+    var checkbox = document.getElementById("usePrimaryPassword");
     if (checkbox) {
       checkbox.checked = !noMP;
       checkbox.disabled =

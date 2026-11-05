@@ -144,9 +144,6 @@ page it may be due to one of the following issues:
   ```html
   <html:your-component-name></html:your-component-name>
   ```
-- Adding a `script` tag to an `inc.xhtml` file. For example when using a new
-  component in the privacy section of `about:preferences` the `script` tag needs
-  to be added to `preferences.xhtml` rather than to `privacy.inc.xhtml`.
 - Trying to extend a built-in HTML element in Lit. [Because Webkit never
   implemented support for customized built-ins, Lit doesn't support it either.](https://github.com/lit/lit-element/issues/879#issuecomment-1061892879)
   That means if you want to do something like:

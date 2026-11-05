@@ -725,9 +725,8 @@ var gSearchResultsPane = {
         keywordsResult;
     }
 
-    // Should not search unselected child nodes of a <xul:deck> element
-    // except the "historyPane" <xul:deck> element.
-    if (nodeObject.localName == "deck" && nodeObject.id != "historyPane") {
+    // Should not search unselected child nodes of a <xul:deck> element.
+    if (nodeObject.localName == "deck") {
       let index = nodeObject.selectedIndex;
       if (index != -1) {
         let result = await this.searchChildNodeIfVisible(

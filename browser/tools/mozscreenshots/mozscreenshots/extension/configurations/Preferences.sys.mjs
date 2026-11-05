@@ -121,7 +121,7 @@ async function cacheGroup(aBrowser) {
     [],
     async function () {
       content.document
-        .querySelector('setting-group[groupid="cookiesAndSiteData2"]')
+        .querySelector('setting-group[groupid="cookiesAndSiteData"]')
         .scrollIntoView();
     }
   );
