@@ -1632,8 +1632,8 @@ impl RenderTask {
                 FilterGraphOp::SVGFEDropShadow{std_deviation_x, std_deviation_y, ..} => {
                     used_subregion
                     .inflate(
-                        std_deviation_x.ceil() * BLUR_SAMPLE_SCALE,
-                        std_deviation_y.ceil() * BLUR_SAMPLE_SCALE)
+                        std_deviation_x.clamp(0.0, (i32::MAX / 2) as f32).ceil() * BLUR_SAMPLE_SCALE,
+                        std_deviation_y.clamp(0.0, (i32::MAX / 2) as f32).ceil() * BLUR_SAMPLE_SCALE)
                 }
                 _ => used_subregion,
             }.union(&combined_input_subregion);
