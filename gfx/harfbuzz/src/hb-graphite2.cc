@@ -295,10 +295,16 @@ _hb_graphite2_shape (hb_shape_plan_t    *shape_plan HB_UNUSED,
     if (feats) gr_featureval_destroy (feats);
     gr_seg_destroy (seg);
     buffer->len = 0;
+    buffer->clear_positions ();
     return true;
   }
 
-  (void) buffer->ensure (glyph_count);
+  if (unlikely (!buffer->ensure (glyph_count)))
+  {
+    if (feats) gr_featureval_destroy (feats);
+    gr_seg_destroy (seg);
+    return false;
+  }
   scratch = buffer->get_scratch_buffer (&scratch_size);
   while ((DIV_CEIL (sizeof (hb_graphite2_cluster_t) * buffer->len, sizeof (*scratch)) +
 	  DIV_CEIL (sizeof (hb_graphite2_glyph_t) * glyph_count, sizeof (*scratch))) > scratch_size)
@@ -411,6 +417,7 @@ _hb_graphite2_shape (hb_shape_plan_t    *shape_plan HB_UNUSED,
     {
       hb_glyph_info_t *info = &buffer->info[clusters[i].base_glyph + j];
       info->codepoint = glyphs[clusters[i].base_glyph + j].codepoint;
+      info->mask = 0;
       info->cluster = HB_BUFFER_CLUSTER_LEVEL_IS_MONOTONE (buffer->cluster_level) ?
 		      glyphs[clusters[i].base_glyph + j].cluster :
 		      clusters[i].cluster;

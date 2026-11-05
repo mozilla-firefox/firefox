@@ -42,14 +42,17 @@ struct hb_vector_size_t
   elt_t& operator [] (unsigned int i) { return v[i]; }
   const elt_t& operator [] (unsigned int i) const { return v[i]; }
 
+  static inline constexpr unsigned len ()
+  { return byte_size / sizeof (elt_t); }
+
   void init0 ()
   {
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       v[i] = 0;
   }
   void init1 ()
   {
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       v[i] = (elt_t) -1;
   }
 
@@ -57,7 +60,7 @@ struct hb_vector_size_t
   hb_vector_size_t process (const Op& op) const
   {
     hb_vector_size_t r;
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       r.v[i] = op (v[i]);
     return r;
   }
@@ -65,7 +68,7 @@ struct hb_vector_size_t
   hb_vector_size_t process (const Op& op, const hb_vector_size_t &o) const
   {
     hb_vector_size_t r;
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       r.v[i] = op (v[i], o.v[i]);
     return r;
   }
@@ -80,7 +83,7 @@ struct hb_vector_size_t
 
   operator bool () const
   {
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       if (v[i])
 	return true;
     return false;
@@ -88,13 +91,13 @@ struct hb_vector_size_t
   operator unsigned int () const
   {
     unsigned int r = 0;
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       r += hb_popcount (v[i]);
     return r;
   }
   bool operator == (const hb_vector_size_t &o) const
   {
-    for (unsigned int i = 0; i < ARRAY_LENGTH (v); i++)
+    for (unsigned int i = 0; i < len (); i++)
       if (v[i] != o.v[i])
 	return false;
     return true;
@@ -105,7 +108,7 @@ struct hb_vector_size_t
 
   private:
   static_assert (0 == byte_size % sizeof (elt_t), "");
-  elt_t v[byte_size / sizeof (elt_t)];
+  elt_t v[len ()];
 };
 
 
@@ -119,7 +122,7 @@ struct hb_bit_page_t
   void dirty () { population = UINT_MAX; }
 
   static inline constexpr unsigned len ()
-  { return ARRAY_LENGTH_CONST (v); }
+  { return vector_t::len (); }
 
   operator bool () const { return !is_empty (); }
   bool is_empty () const
@@ -350,7 +353,7 @@ struct hb_bit_page_t
     for (int i = len () - 1; i >= 0; i--)
       if (v[i])
 	return i * ELT_BITS + elt_get_max (v[i]);
-    return 0;
+    return INVALID;
   }
 
   /*

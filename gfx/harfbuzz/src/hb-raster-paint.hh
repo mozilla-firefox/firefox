@@ -148,11 +148,19 @@ struct hb_raster_paint_t
 
   /* Helpers */
 
+  /* All surfaces in a paint session must match the root surface and clip.
+   * Configured extents are only used to create the root; render clears them. */
+  const hb_raster_extents_t &get_surface_extents () const
+  {
+    return surface_stack.length ? surface_stack[0]->extents : fixed_extents;
+  }
+
   int64_t get_default_pixel_budget () const
   {
+    const hb_raster_extents_t &extents = get_surface_extents ();
     return hb_max ((int64_t) HB_BUDGET_RASTER_PIXELS,
 		   (int64_t) HB_BUDGET_RASTER_PAINT_PASSES *
-		   fixed_extents.width * fixed_extents.height);
+		   extents.width * extents.height);
   }
 
   void recharge_budget ()
@@ -196,7 +204,8 @@ struct hb_raster_paint_t
       if (unlikely (!img)) return nullptr;
     }
 
-    if (unlikely (!img->configure (HB_RASTER_FORMAT_BGRA32, fixed_extents)))
+    const hb_raster_extents_t &extents = get_surface_extents ();
+    if (unlikely (!img->configure (HB_RASTER_FORMAT_BGRA32, extents)))
     {
       hb_raster_image_destroy (img);
       return nullptr;

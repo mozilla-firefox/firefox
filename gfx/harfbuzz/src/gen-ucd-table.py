@@ -154,7 +154,7 @@ for line in open(hb_script_list_h):
     sc_order[tag] = i
     sc_order[i] = tag
     if language.name == "rust":
-        name = name.replace("HB_SCRIPT_", "script::")
+        name = name.replace("HB_SCRIPT_", "Script::")
     sc_array.append(name)
 
 
@@ -195,9 +195,8 @@ elif language.name == "rust":
     print("#![allow(unused_parens)]")
     print("#![allow(clippy::unnecessary_cast, clippy::unreadable_literal, clippy::double_parens)]")
     print()
-    print("use crate::hb::algs::{HB_CODEPOINT_ENCODE3, HB_CODEPOINT_ENCODE3_11_7_14};")
-    print("use crate::hb::common::script;")
-    print("use crate::hb::common::Script as hb_script_t;")
+    print("use crate::algs::{HB_CODEPOINT_ENCODE3, HB_CODEPOINT_ENCODE3_11_7_14};")
+    print("use crate::Script;")
     print()
 else:
     assert False, "Unknown language: %s" % language.name
@@ -215,8 +214,9 @@ elif language.name == "rust":
 else:
     assert False, "Unknown language: %s" % language.name
 
-code = packTab.Code("_hb_ucd")
-sc_array, _ = code.addArray("hb_script_t", "sc_map", sc_array)
+code_prefix = "_hb_ucd" if language.name == "c" else "ucd"
+code = packTab.Code(code_prefix)
+sc_array, _ = code.addArray("hb_script_t" if language.name == "c" else "Script", "sc_map", sc_array)
 dm1_p0_array, _ = code.addArray(uint16_t, "dm1_p0_map", dm1_p0_array)
 dm1_p2_array, _ = code.addArray(uint16_t, "dm1_p2_map", dm1_p2_array)
 dm2_u32_array, _ = code.addArray(uint32_t, "dm2_u32_map", dm2_u32_array)
@@ -268,7 +268,7 @@ for step, text in modes.items():
             if ((i + 1) % 128) and sc[i] == "Zzzz":
                 sc[i] = sc[i + 1]
 
-    code = packTab.Code("_hb_ucd")
+    code = packTab.Code(code_prefix)
 
     for name, data, default, mapping in datasets:
         sol = packTab.pack_table(

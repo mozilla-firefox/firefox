@@ -55,7 +55,10 @@ struct Glyph
     switch (type) {
     case COMPOSITE: CompositeGlyph (*header, bytes, extended).drop_hints (); return;
     case SIMPLE:    SimpleGlyph (*header, bytes).drop_hints (); return;
-    case EMPTY:     return;
+    case EMPTY:
+      if (bytes.length >= GlyphHeader::static_size)
+        SimpleGlyph (*header, bytes).drop_hints ();
+      return;
     }
   }
 
@@ -73,7 +76,13 @@ struct Glyph
     switch (type) {
     case COMPOSITE: CompositeGlyph (*header, bytes, extended).drop_hints_bytes (dest_start); return;
     case SIMPLE:    SimpleGlyph (*header, bytes).drop_hints_bytes (dest_start, dest_end); return;
-    case EMPTY:     return;
+    case EMPTY:
+      dest_start = bytes;
+      dest_end = hb_bytes_t ();
+      if (bytes.length >= GlyphHeader::static_size &&
+          SimpleGlyph (*header, bytes).has_instructions_length ())
+        SimpleGlyph (*header, bytes).drop_hints_bytes (dest_start, dest_end);
+      return;
     }
   }
 
@@ -169,7 +178,7 @@ struct Glyph
                              hb_bytes_t &dest_bytes /* OUT */) const
   {
     GlyphHeader *glyph_header = nullptr;
-    if (!plan->pinned_at_default && type != EMPTY && all_points.length >= 4)
+    if (type != EMPTY && all_points.length >= 4)
     {
       glyph_header = (GlyphHeader *) hb_calloc (1, GlyphHeader::static_size);
       if (unlikely (!glyph_header)) return false;
@@ -212,9 +221,7 @@ struct Glyph
       plan->head_maxp_info.yMax = hb_max (plan->head_maxp_info.yMax, rounded_yMax);
     }
 
-    /* when pinned at default, no need to compile glyph header
-     * and for empty glyphs: all_points only include phantom points.
-     * just update metrics and then return */
+    /* Empty glyphs only include phantom points; update metrics and return. */
     if (!glyph_header)
       return true;
 
@@ -233,7 +240,8 @@ struct Glyph
                                   hb_font_t *font,
                                   const glyf_accelerator_t &glyf,
                                   hb_bytes_t &dest_start,  /* IN/OUT */
-                                  hb_bytes_t &dest_end /* OUT */)
+                                  hb_bytes_t &dest_end, /* OUT */
+                                  int64_t *budget /* IN/OUT */)
   {
     contour_point_vector_t all_points, points_with_deltas;
     unsigned composite_contours = 0;
@@ -250,7 +258,8 @@ struct Glyph
     }
 
     hb_glyf_scratch_t scratch;
-    if (!get_points (font, glyf, all_points, scratch, &points_with_deltas, head_maxp_info_p, composite_contours_p, false, false))
+    if (!get_points (font, glyf, all_points, scratch, &points_with_deltas, head_maxp_info_p, composite_contours_p, false, false,
+		     false, hb_array_t<const int> (), nullptr, 0, nullptr, budget))
       return false;
 
     // .notdef, set type to empty so we only update metrics and don't compile bytes for
@@ -263,30 +272,43 @@ struct Glyph
       dest_end = hb_bytes_t ();
     }
 
-    //dont compile bytes when pinned at default, just recalculate bounds
-    if (!plan->pinned_at_default)
+    // Recompile even at default: a previous partial instance may have
+    // rounded component offsets and child points independently.
+    switch (type)
     {
-      switch (type)
-      {
-      case COMPOSITE:
-        if (!CompositeGlyph (*header, bytes, extended).compile_bytes_with_deltas (dest_start,
+    case COMPOSITE:
+      if (!CompositeGlyph (*header, bytes, extended).compile_bytes_with_deltas (dest_start,
 										  points_with_deltas,
 										  dest_end))
-          return false;
-        break;
-      case SIMPLE:
-        if (!SimpleGlyph (*header, bytes).compile_bytes_with_deltas (all_points,
+        return false;
+      break;
+    case SIMPLE:
+      if (!SimpleGlyph (*header, bytes).compile_bytes_with_deltas (all_points,
 								     plan->flags & HB_SUBSET_FLAGS_NO_HINTING,
 								     dest_end))
-          return false;
-        break;
-      case EMPTY:
-        /* set empty bytes for empty glyph
-         * do not use source glyph's pointers */
-        dest_start = hb_bytes_t ();
-        dest_end = hb_bytes_t ();
-        break;
+        return false;
+      break;
+    case EMPTY:
+      dest_start = hb_bytes_t ();
+      dest_end = hb_bytes_t ();
+      /* Zero-contour glyphs may carry instructions for phantom points.
+       * Copy them into owned memory like the other compiled glyphs. */
+      if (!(plan->flags & HB_SUBSET_FLAGS_NO_HINTING) &&
+          bytes.length >= GlyphHeader::static_size &&
+          header->numberOfContours == 0)
+      {
+        SimpleGlyph simple (*header, bytes);
+        unsigned length = simple.instructions_length ();
+        if (length)
+        {
+          length = simple.length (length);
+          char *p = (char *) hb_malloc (length);
+          if (unlikely (!p)) return false;
+          hb_memcpy (p, bytes.arrayZ, length);
+          dest_start = hb_bytes_t (p, length);
+        }
       }
+      break;
     }
 
     if (!compile_header_bytes (plan, all_points, dest_start))
@@ -350,7 +372,16 @@ struct Glyph
     case COMPOSITE:
     {
       for (auto &item : get_composite_iterator ())
-        if (unlikely (!item.get_points (points, extended))) return false;
+      {
+        /* Preparing a component is a traversal step, even if cycle
+         * detection later skips its child glyph. */
+        if (unlikely (!hb_budget_spend (*budget, HB_BUDGET_16) ||
+                      !item.get_points (points, extended)))
+        {
+          points.resize (old_length);
+          return false;
+        }
+      }
       break;
     }
     case EMPTY:
@@ -394,7 +425,10 @@ struct Glyph
 							  gvar_cache,
 							  phantom_only && type == SIMPLE,
 							  budget))
+      {
+        points.resize (old_length);
         return false;
+      }
     }
 #endif
 
@@ -417,6 +451,17 @@ struct Glyph
     {
       hb_decycler_node_t decycler_node (scratch.decycler);
 
+      /* Each USE_MY_METRICS component overwrites the phantoms copied from
+       * the previous one, so when only phantoms are wanted the last such
+       * component is the only one worth descending into.  Ask the decycler
+       * here too, so we pick the same component the loop below would. */
+      const CompositeGlyphRecord *metrics_item = nullptr;
+      if (phantom_only && use_my_metrics)
+	for (auto &item : get_composite_iterator ())
+	  if (item.is_use_my_metrics () &&
+	      decycler_node.visit (item.get_gid (extended)))
+	    metrics_item = &item;
+
       unsigned int comp_index = 0;
       for (auto &item : get_composite_iterator ())
       {
@@ -428,10 +473,20 @@ struct Glyph
 	  continue;
 	}
 
+	bool copy_metrics = use_my_metrics && item.is_use_my_metrics () &&
+			    (!phantom_only || &item == metrics_item);
+
+	/* Nothing to take from this component; in particular don't
+	 * strip phantoms below that nobody pushed. */
+	if (phantom_only && !copy_metrics)
+	{
+	  comp_index++;
+	  continue;
+	}
+
 	unsigned old_count = all_points.length;
 
-	if (unlikely ((!phantom_only || (use_my_metrics && item.is_use_my_metrics ())) &&
-		      !glyf_accelerator.glyph_for_gid (item_gid)
+	if (unlikely (!glyf_accelerator.glyph_for_gid (item_gid)
 				       .get_points (font,
 						    glyf_accelerator,
 						    all_points,
@@ -458,7 +513,7 @@ struct Glyph
 	auto comp_points = all_points.as_array ().sub_array (old_count);
 
 	/* Copy phantom points from component if USE_MY_METRICS flag set */
-	if (use_my_metrics && item.is_use_my_metrics ())
+	if (copy_metrics)
 	  for (unsigned int i = 0; i < PHANTOM_COUNT; i++)
 	    phantoms[i] = comp_points[comp_points.length - PHANTOM_COUNT + i];
 
@@ -471,7 +526,7 @@ struct Glyph
 	  return false;
 	}
 
-	if (comp_points) // Empty in case of phantom_only
+	if (!phantom_only)
 	{
 	  float matrix[4];
 	  contour_point_t default_trans;
@@ -495,7 +550,10 @@ struct Glyph
 	  }
 	}
 
-	all_points.resize (all_points.length - PHANTOM_COUNT);
+	/* In phantom_only mode the component's contour points are reserved
+	 * but never loaded, and its phantoms are copied above. Drop them all,
+	 * so they are not carried to, and processed at, every level up. */
+	all_points.resize (phantom_only ? old_count : all_points.length - PHANTOM_COUNT);
 
 	if (all_points.length > HB_GLYF_MAX_POINTS)
 	{
@@ -530,8 +588,14 @@ struct Glyph
        * Shift points horizontally by the updated left side bearing
        */
       if (shift)
-        for (auto &point : all_points)
+      {
+	/* Guard the subtraction: a failed phantom extend() under OOM can
+	 * leave all_points shorter than PHANTOM_COUNT. */
+	unsigned start = phantom_only && all_points.length >= PHANTOM_COUNT
+			 ? all_points.length - PHANTOM_COUNT : 0;
+	for (auto &point : all_points.as_array ().sub_array (start))
 	  point.x -= shift;
+      }
     }
 
     return !all_points.in_error ();

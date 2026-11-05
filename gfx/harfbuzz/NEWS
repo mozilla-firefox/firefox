@@ -1,3 +1,103 @@
+Overview of changes leading to 15.1.0
+Wednesday, November 4, 2026
+=====================================
+- Add buffer deserialization APIs that report progress as a byte offset, for
+  use from introspection bindings.
+- Fix Indic shaping of the Unicode 18 Devanagari and Bengali additions.
+- Fix Arabic fallback shaping: wrong ligatures when a component is missing from
+  the font, and disappearing marks in legacy fonts.
+- Fix `COLR` glyph extents and mark positioning in fonts with empty layers.
+- Fix AAT shaping: wrong `kerx` kerning (formats 1 and 2) and mark positioning
+  (format 4, a 14.3.0 regression), and ignored `kern` and `mort` tables with a
+  non-first initial state.
+- Various fixes to the Graphite2 shaper.
+- Report HarfRust shaping failures through `hb_buffer_allocation_successful()`.
+- Fix wrong outlines in `gvar` fonts with intermediate tuples.
+- Fix `hb_face_create_or_fail()` rejecting face indices with named-instance
+  bits set.
+- Fix wrong fallback metrics: the vertical descender in fonts without `vhea`,
+  and the hanging baseline for some scripts.
+- Fix `hb_ot_layout_lookup_collect_glyph_alternates()` collecting garbage from
+  `AlternateSubst` and `SingleSubst` format 1 lookups.
+- Speed up shaping on faces with many shape plans, `hb_language_from_string()`,
+  vertical text with `hb-ft`, and `CBDT` and `sbix` fonts.
+- Fix crashes and deadlocks with FreeType, including `hb_ft_font_set_funcs()` on
+  immutable fonts and font queries from color paint callbacks.
+- Fix crashes with NULL result pointers in
+  `hb_ot_metrics_get_position_with_fallback()`,
+  `hb_ot_layout_get_font_extents()`, and `hb_ot_layout_get_font_extents2()`.
+- Fix use-after-free in `hb_map_update()` when updating a map from itself.
+- Various fixes for crashes, hangs, and memory use with malformed fonts.
+- Faster subsetting of large `GSUB` and `GPOS` tables, and smaller `CFF` output.
+- Partially instancing or desubroutinizing `CFF2` fonts with nested blends now
+  fails instead of changing the outlines.
+- Subsetting now fails if a glyph mapping assigns another glyph to glyph 0.
+- Fix `hb_subset_axis_range_from_string()` reading past the given length.
+- Fix subsetting beyond-64k variable fonts losing `HVAR` advance deltas.
+- Various subsetting and instancing fixes, mostly for `CFF`, `CFF2`, and `COLR`.
+- Fix rotated and skewed rectangle clips hiding their contents in the raster
+  library, and out-of-bounds access when extents change during painting.
+- Fix the vector library mirroring path clips in SVG, and writing PDFs with
+  wrong page bounds and misplaced or clipped `COLR` gradients.
+- Fix wrong clipping of `COLR` layers in the GPU library.
+- Various Cairo integration fixes, including a memory leak per scaled font.
+- Fix `hb-info --list-*` crashes on unusual fonts.
+- Various build and CI fixes.
+
+- New API:
+  +hb_buffer_deserialize_glyphs2()
+  +hb_buffer_deserialize_unicode2()
+
+
+Overview of changes leading to 15.0.0
+Thursday, October 22, 2026
+=====================================
+- Support for the new tables and formats in the ISO Open Font Format (OFF) 5th
+  edition is now enabled by default:
+  * New tables and formats for 24-bit glyph indices (a.k.a. beyond-64k): the
+    `GLYF`, `LOCA`, `GVAR`, `MAXP`, `HHEA`, `HMTX`, `VHEA`, and `VMTX` tables,
+    `cmap` format 15, `VORG` version 2, `COLR` `PaintGlyph2`, the 24-bit
+    `GSUB`, `GPOS`, `GDEF`, `BASE`, and `JSTF` formats, and extended TrueType
+    Collection directories.
+    A test font, `NotoSans-beyond64k.ttf`, which merges the Noto Sans fonts
+    into a single font, can be found at:
+    https://drive.google.com/file/d/1vMQI9mZMzfKIMHD96Iie40Oyo9NnnweH/view
+  * Cubic curves in `GLYF` outlines.
+  * The `DMAP` table, supported since 14.6.0.
+- Support instancing axes not referenced by retained `VARC` data. The latest
+  `VARC` test fonts can be found at:
+  https://github.com/notofonts/noto-cjk-varco/releases/tag/v0.005
+- The raster (`libharfbuzz-raster`), vector (`libharfbuzz-vector`), and GPU
+  (`libharfbuzz-gpu`) libraries are no longer considered experimental.
+  This means that the HarfBuzz API and ABI stability guarantees now apply to
+  these libraries as well.
+- Fix possible use-after-free in `hb_font_set_face()`, which now resets the
+  font functions to the defaults for the new face. The function is now 
+  deprecated. Use `hb_font_create()` instead.
+- Fix heap-buffer-overflow in `hb_font_set_variation()` after
+  `hb_font_set_face()` switches to a face with more variation axes.
+- Subsetting `CFF` and `CFF2` fonts whose subroutine calls are not preceded by
+  an immediate subroutine number now fails instead of silently dropping the
+  table, unless desubroutinizing.
+- Overriding atomic operators at compile time is not supported anymore.
+- Rewrite the number parser without Ragel, fixing various edge cases.
+- Harden the experimental WebAssembly shaper against malicious fonts.
+- Update the experimental Rust shaper (HarfRust) to 0.15, and the `fontations`
+  font functions to read-fonts 0.46.
+- Update the `kbts` shaping backend to `kb_text_shape` 2.28g, and support font
+  variations in it.
+- Various subsetting and instancing fixes, especially for `CFF2`, `COLR`, and
+  variable layout tables.
+- Various fixes to the raster and vector libraries.
+- Various variable font fixes.
+- Various fixes for malformed fonts.
+- Various documentation fixes.
+- Various build and CI fixes.
+
+- Deprecated API:
+  -hb_font_set_face()
+
+
 Overview of changes leading to 14.6.0
 Monday, October 5, 2026
 =====================================

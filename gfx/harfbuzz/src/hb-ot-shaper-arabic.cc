@@ -537,9 +537,9 @@ apply_stch (const hb_ot_shape_plan_t *plan HB_UNUSED,
 	     hb_in_range<uint8_t> (info[i - 1].arabic_shaping_action(), STCH_FIXED, STCH_REPEATING))
       {
 	i--;
-	if (step == MEASURE)
-	  pos[i].stch_advance() = font->get_glyph_h_advance (info[i].codepoint);
-	hb_position_t width = pos[i].stch_advance();
+        if (step == MEASURE)
+          pos[i].stch_advance() = font->get_glyph_h_advance (info[i].codepoint);
+        hb_position_t width = pos[i].stch_advance();
 	if (info[i].arabic_shaping_action() == STCH_FIXED)
 	{
 	  w_fixed = hb_saturate_add (w_fixed, width);
@@ -625,7 +625,7 @@ apply_stch (const hb_ot_shape_plan_t *plan HB_UNUSED,
 	hb_position_t x_offset = w_remaining / 2;
 	for (unsigned int k = end; k > start; k--)
 	{
-	  hb_position_t width = pos[k - 1].stch_advance();
+          hb_position_t width = pos[k - 1].stch_advance();
 
 	  unsigned int repeat = 1;
 	  if (info[k - 1].arabic_shaping_action() == STCH_REPEATING)

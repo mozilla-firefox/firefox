@@ -2469,6 +2469,7 @@ hb_font_get_parent (hb_font_t *font)
   return font->parent;
 }
 
+#ifndef HB_DISABLE_DEPRECATED
 /**
  * hb_font_set_face:
  * @font: #hb_font_t to work upon
@@ -2476,7 +2477,13 @@ hb_font_get_parent (hb_font_t *font)
  *
  * Sets @face as the font-face value of @font.
  *
+ * Font functions and their data may hold pointers into the old face,
+ * so the font functions of @font are released and replaced with the
+ * default ones for @face, as hb_font_create() would set up.  Other
+ * font properties, such as scale and variations, are kept.
+ *
  * Since: 1.4.3
+ * Deprecated: 15.0.0: Use hb_font_create() instead.
  **/
 void
 hb_font_set_face (hb_font_t *font,
@@ -2497,11 +2504,16 @@ hb_font_set_face (hb_font_t *font,
   font->face = hb_face_reference (face);
   font->changed ();
 
+  /* Release the old font funcs while the old face is still alive. */
+  hb_font_set_funcs (font, nullptr, nullptr, nullptr);
+  hb_font_set_funcs_using (font, nullptr);
+
   hb_face_destroy (old);
 
   font->changed ();
   font->serial_coords = font->serial;
 }
+#endif
 
 /**
  * hb_font_get_face:
@@ -2615,19 +2627,49 @@ static const struct supported_font_funcs_t {
 #endif
 };
 
+#ifndef HB_NO_GETENV
+static inline void free_static_funcs_name ();
+
+static struct hb_funcs_name_lazy_loader_t : hb_lazy_loader_t<char,
+							  hb_funcs_name_lazy_loader_t>
+{
+  static char *create ()
+  {
+    const char *env = getenv ("HB_FONT_FUNCS");
+    if (!env || !env[0])
+      return nullptr;
+
+    /* Duplicate the value and hold onto it: the environment storage is owned
+     * by the C runtime or the caller and may change after this lookup. */
+    size_t len = strlen (env) + 1;
+    char *name = (char *) hb_malloc (len);
+    if (unlikely (!name))
+      return nullptr;
+    hb_memcpy (name, env, len);
+
+    hb_atexit (free_static_funcs_name);
+
+    return name;
+  }
+  static void destroy (char *p)
+  { hb_free (p); }
+  static const char *get_null ()
+  { return ""; }
+} static_funcs_name;
+
+static inline void free_static_funcs_name ()
+{
+  static_funcs_name.free_instance ();
+}
+#endif
+
 static const char *get_default_funcs_name ()
 {
-  static hb_atomic_t<const char *> static_funcs_name;
-  const char *name = static_funcs_name.get_acquire ();
-  if (!name)
-  {
-    name = getenv ("HB_FONT_FUNCS");
-    if (!name)
-      name = "";
-    if (!static_funcs_name.cmpexch (nullptr, name))
-      name = static_funcs_name.get_acquire ();
-  }
-  return name;
+#ifndef HB_NO_GETENV
+  return static_funcs_name.get ();
+#else
+  return "";
+#endif
 }
 
 /**
@@ -3139,10 +3181,10 @@ hb_font_set_variation (hb_font_t *font,
     return;
   }
 
-  /* Initialize design coords. */
-  if (font->design_coords)
+  /* Initialize design coords.
+   * The font's coords may belong to another face after hb_font_set_face(). */
+  if (font->design_coords && font->num_coords == coords_length)
   {
-    assert (coords_length == font->num_coords);
     for (unsigned int i = 0; i < coords_length; i++)
       design_coords[i] = font->design_coords[i];
   }

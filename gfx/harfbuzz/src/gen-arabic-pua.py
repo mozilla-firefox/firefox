@@ -37,7 +37,7 @@ else:
     print ("#![allow(clippy::unreadable_literal)]")
     print ()
 
-code = packTab.Code('_hb_arabic_pua')
+code = packTab.Code('_hb_arabic_pua' if language.name == "c" else 'arabic_pua')
 
 for p, name in zip(paths, ("simp_map", "trad_map")):
     with open (p, encoding='utf-8') as f:

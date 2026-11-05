@@ -86,7 +86,7 @@ def print_joining_table(f):
 			value = "JOINING_TYPE_" + fields[2]
 		values[u] = value
 
-	code = packTab.Code ('_hb_arabic_joining')
+	code = packTab.Code ('_hb_arabic_joining' if language.name == "c" else 'arabic_joining')
 	data = {u: JOINING_CODE[v] for u, v in values.items ()}
 	sol = packTab.pack_table (data, default=JOINING_CODE['JOINING_TYPE_X'], compression=9)
 	if language.name == "c":
@@ -111,16 +111,16 @@ def print_joining_table(f):
 		print ("use crate::unicode::Codepoint;")
 		print ()
 		print (
-			"use super::ot_shaper_arabic::hb_arabic_joining_type_t::{"
+			"use super::arabic::ArabicJoiningType::{"
 			"self, D, GroupAlaph, GroupDalathRish, L, R, T, U, X};"
 		)
 		print ()
 		code.print_code (file=sys.stdout, language=language, private=False)
 		print ()
 		print ("#[inline]")
-		print ("pub(crate) fn joining_type (u: Codepoint) -> hb_arabic_joining_type_t")
+		print ("pub(crate) fn joining_type (u: Codepoint) -> ArabicJoiningType")
 		print ("{")
-		print ("  match _hb_arabic_joining_joining_type_u8 (u as usize) {")
+		print ("  match arabic_joining_joining_type_u8 (u as usize) {")
 		print ("    0 => U,")
 		print ("    1 => L,")
 		print ("    2 => R,")

@@ -290,7 +290,7 @@ hb_face_create_or_fail (hb_blob_t    *blob,
 			unsigned int  index)
 {
   unsigned num_faces = hb_face_count (blob);
-  if (index >= num_faces)
+  if ((index & 0xFFFFu) >= num_faces)
     return nullptr;
 
   hb_face_t *face = hb_face_create (blob, index);
@@ -362,19 +362,44 @@ static const struct supported_face_loaders_t {
 #endif
 };
 
+static inline void free_static_default_loader_name ();
+
+static struct hb_default_loader_name_lazy_loader_t : hb_lazy_loader_t<char,
+								      hb_default_loader_name_lazy_loader_t>
+{
+  static char *create ()
+  {
+    const char *env = getenv ("HB_FACE_LOADER");
+    if (!env || !env[0])
+      return nullptr;
+
+    /* Duplicate the value and hold onto it: the environment storage is owned
+     * by the C runtime or the caller and may change or be freed after this
+     * lookup. */
+    size_t len = strlen (env) + 1;
+    char *loader_name = (char *) hb_malloc (len);
+    if (unlikely (!loader_name))
+      return nullptr;
+    hb_memcpy (loader_name, env, len);
+
+    hb_atexit (free_static_default_loader_name);
+
+    return loader_name;
+  }
+  static void destroy (char *p)
+  { hb_free (p); }
+  static const char *get_null ()
+  { return ""; }
+} static_default_loader_name;
+
+static inline void free_static_default_loader_name ()
+{
+  static_default_loader_name.free_instance ();
+}
+
 static const char *get_default_loader_name ()
 {
-  static hb_atomic_t<const char *> static_loader_name;
-  const char *loader_name = static_loader_name.get_acquire ();
-  if (!loader_name)
-  {
-    loader_name = getenv ("HB_FACE_LOADER");
-    if (!loader_name)
-      loader_name = "";
-    if (!static_loader_name.cmpexch (nullptr, loader_name))
-      loader_name = static_loader_name.get_acquire ();
-  }
-  return loader_name;
+  return static_default_loader_name.get ();
 }
 
 /**
@@ -745,7 +770,9 @@ hb_face_reference_blob (hb_face_t *face)
         }
       }
 
-      blob = hb_face_reference_blob (builder);
+      // Serialize the builder directly; going through hb_face_reference_blob()
+      // again would recurse if the builder cannot produce a blob either.
+      blob = builder->reference_table (HB_TAG_NONE);
       hb_face_destroy (builder);
     }
   }

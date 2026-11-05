@@ -42,7 +42,7 @@ Here is a quick map of its components:
 | **libharfbuzz-cairo** | Cairo rendering integration. |
 | **libharfbuzz-gobject** | GObject/GI bindings. |
 
-### Experimental libraries
+### Rendering libraries
 
 | Library | Description |
 |---------|-------------|

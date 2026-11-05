@@ -71,6 +71,10 @@ struct hb_face_t
   };
 #ifndef HB_NO_SHAPER
   hb_atomic_t<plan_node_t *> shape_plans;
+  /* One-entry cache of the last plan looked up, so repeated shaping with the
+   * same key hits without walking the list.  Nodes are never freed before the
+   * face, so a cached pointer stays valid. */
+  hb_atomic_t<plan_node_t *> last_shape_plan;
 #endif
 
   hb_blob_t *reference_table (hb_tag_t tag) const

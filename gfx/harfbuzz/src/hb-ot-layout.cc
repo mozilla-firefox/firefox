@@ -1441,7 +1441,7 @@ _hb_ot_layout_table_get_feature_variations_state (hb_face_t             *face,
 						   const int             *coords,
 						   unsigned int           num_coords,
 						   unsigned int          *variations_index,
-						   hb_vector_t<unsigned> *lookup_variations)
+						   hb_vector_t<unsigned> *lookup_conditions)
 {
   const OT::GSUBGPOS &g = get_gsubgpos_table (face, table_tag);
   const OT::GDEF &gdef = *face->table.GDEF->table;
@@ -1453,7 +1453,19 @@ _hb_ot_layout_table_get_feature_variations_state (hb_face_t             *face,
 					 num_coords,
 					 variations_index,
 					 &instancer,
-					 lookup_variations);
+					 lookup_conditions);
+}
+
+bool
+_hb_ot_layout_feature_get_lookup_variations (hb_face_t *face,
+                                             hb_tag_t table_tag,
+                                             unsigned feature_index,
+                                             unsigned variations_index,
+                                             hb_sorted_array_t<const unsigned> conditions,
+                                             hb_set_t *lookup_indexes)
+{
+  return get_gsubgpos_table (face, table_tag).get_lookup_variations (
+      feature_index, variations_index, conditions, lookup_indexes);
 }
 
 
@@ -1574,9 +1586,24 @@ hb_ot_layout_lookup_would_substitute (hb_face_t            *face,
 				      unsigned int          glyphs_length,
 				      hb_bool_t             zero_context)
 {
+  return hb_ot_layout_lookup_would_substitute_with_buffer (face, lookup_index,
+							   glyphs, glyphs_length,
+							   (bool) zero_context,
+							   nullptr);
+}
+
+/* Same, but charges the work done to buffer's max_ops when buffer is not nullptr. */
+bool
+hb_ot_layout_lookup_would_substitute_with_buffer (hb_face_t            *face,
+						  unsigned int          lookup_index,
+						  const hb_codepoint_t *glyphs,
+						  unsigned int          glyphs_length,
+						  bool                  zero_context,
+						  hb_buffer_t          *buffer)
+{
   auto &gsub = face->table.GSUB;
   if (unlikely (lookup_index >= gsub->lookup_count)) return false;
-  OT::hb_would_apply_context_t c (face, glyphs, glyphs_length, (bool) zero_context);
+  OT::hb_would_apply_context_t c (face, glyphs, glyphs_length, zero_context, buffer);
 
   const OT::SubstLookup& l = gsub->table->get_lookup (lookup_index);
   auto *accel = gsub->get_accel (lookup_index);
@@ -2185,16 +2212,16 @@ hb_ot_layout_get_font_extents (hb_font_t         *font,
 			       hb_tag_t           language_tag,
 			       hb_font_extents_t *extents)
 {
+  hb_font_extents_t unused;
+  if (!extents) extents = &unused;
+
   hb_position_t min = 0, max = 0;
   if (font->face->table.BASE->get_min_max (font, direction, script_tag, language_tag, HB_TAG_NONE,
 					   &min, &max))
   {
-    if (extents)
-    {
-      extents->ascender  = max;
-      extents->descender = min;
-      extents->line_gap  = 0;
-    }
+    extents->ascender  = max;
+    extents->descender = min;
+    extents->line_gap  = 0;
     return true;
   }
 
@@ -2508,7 +2535,7 @@ hb_ot_layout_get_baseline_with_fallback (hb_font_t                   *font,
       hb_glyph_extents_t extents;
 
       /* Keep in sync with hb_ot_layout_get_horizontal_baseline_for_script */
-      switch ((int) script_tag)
+      switch ((int) hb_ot_tag_to_script (script_tag))
       {
       /* Unicode-1.1 additions */
       case HB_SCRIPT_BENGALI:          ch = 0x0995u; break;

@@ -1322,7 +1322,8 @@ struct CFFIndex
 
     /* serialize CFFIndex header */
     if (unlikely (!c->extend_min (this))) return_trace (false);
-    this->count = hb_len (it);
+    if (unlikely (!c->check_assign (this->count, hb_len (it), HB_SERIALIZE_ERROR_ARRAY_OVERFLOW)))
+      return_trace (false);
     if (!this->count) return_trace (true);
     if (unlikely (!c->extend (this->offSize))) return_trace (false);
     this->offSize = off_size;
@@ -1732,6 +1733,34 @@ struct TupleValues
     return encoded_len;
   }
 
+  static bool count_values (const unsigned char *p,
+			    const unsigned char *end,
+			    unsigned *count_out /* OUT */)
+  {
+    uint64_t total = 0;
+    while (p < end)
+    {
+      unsigned control = *p++;
+      unsigned run_count = (control & VALUE_RUN_COUNT_MASK) + 1;
+      unsigned width = 0;
+      switch (control & VALUES_SIZE_MASK)
+      {
+	case VALUES_ARE_ZEROS: break;
+	case VALUES_ARE_BYTES: width = HBINT8::static_size; break;
+	case VALUES_ARE_WORDS: width = HBINT16::static_size; break;
+	case VALUES_ARE_LONGS: width = HBINT32::static_size; break;
+      }
+      if (unlikely ((size_t) (end - p) < (size_t) run_count * width))
+	return false;
+      p += run_count * width;
+      total += run_count;
+      if (unlikely (total > (uint64_t) INT_MAX))
+	return false;
+    }
+    *count_out = (unsigned) total;
+    return true;
+  }
+
   template <typename T>
 #ifndef HB_OPTIMIZE_SIZE
   HB_ALWAYS_INLINE
@@ -1743,21 +1772,25 @@ struct TupleValues
 			 unsigned start = 0)
   {
     unsigned i = 0;
-    unsigned count = consume_all ? UINT_MAX : values.length;
+    unsigned count = values.length;
     if (consume_all)
-      values.alloc ((end - p) / 2);
+    {
+      if (unlikely (values.length))
+	values.shrink (0);
+      if (unlikely (!count_values ((const unsigned char *) p,
+				   (const unsigned char *) end,
+				   &count) ||
+		    !values.resize_dirty (count)))
+	return false;
+    }
     while (i < count)
     {
-      if (unlikely (p + 1 > end)) return consume_all;
+      if (unlikely (p >= end)) return false;
       unsigned control = *p++;
       unsigned run_count = (control & VALUE_RUN_COUNT_MASK) + 1;
-      if (consume_all)
-      {
-        if (unlikely (!values.resize_dirty  (values.length + run_count)))
-	  return false;
-      }
-      unsigned stop = i + run_count;
-      if (unlikely (stop > count)) return false;
+      unsigned stop;
+      if (unlikely (hb_unsigned_add_overflows (i, run_count, &stop) || stop > count))
+	return false;
 
       unsigned skip = i < start ? hb_min (start - i, run_count) : 0;
       i += skip;
@@ -1769,7 +1802,7 @@ struct TupleValues
       }
       else if ((control & VALUES_SIZE_MASK) ==  VALUES_ARE_WORDS)
       {
-        if (unlikely (p + run_count * HBINT16::static_size > end)) return false;
+        if (unlikely (unsigned (end - p) < run_count * HBINT16::static_size)) return false;
 	p += skip * HBINT16::static_size;
 #ifndef HB_OPTIMIZE_SIZE
         for (; i + 3 < stop; i += 4)
@@ -1792,7 +1825,7 @@ struct TupleValues
       }
       else if ((control & VALUES_SIZE_MASK) ==  VALUES_ARE_LONGS)
       {
-        if (unlikely (p + run_count * HBINT32::static_size > end)) return false;
+        if (unlikely (unsigned (end - p) < run_count * HBINT32::static_size)) return false;
 	p += skip * HBINT32::static_size;
         for (; i < stop; i++)
         {
@@ -1802,7 +1835,7 @@ struct TupleValues
       }
       else if ((control & VALUES_SIZE_MASK) ==  VALUES_ARE_BYTES)
       {
-        if (unlikely (p + run_count > end)) return false;
+        if (unlikely (unsigned (end - p) < run_count)) return false;
 	p += skip * HBINT8::static_size;
 #ifndef HB_OPTIMIZE_SIZE
 	for (; i + 3 < stop; i += 4)
@@ -1887,8 +1920,9 @@ struct TupleValues
 	default: assert (false);
       }
 
-      if (unlikely (p + run_count * width > endp))
+      if (unlikely (unsigned (endp - p) < run_count * width))
       {
+	p = endp;
 	run_count = 0;
 	current_value = 0;
 	return false;
@@ -1984,8 +2018,9 @@ struct TupleValues
 	default: assert (false);
       }
 
-      if (unlikely (p + run_count * width > end))
+      if (unlikely (unsigned (end - p) < run_count * width))
       {
+	p = end;
 	run_count = 0;
 	return false;
       }
@@ -2098,6 +2133,9 @@ struct TupleValues
 
 struct TupleList : CFF2Index
 {
+  hb_ubytes_t bytes_at (unsigned i) const
+  { return CFF2Index::operator [] (i); }
+
   TupleValues::iter_t operator [] (unsigned i) const
   {
     auto bytes = CFF2Index::operator [] (i);

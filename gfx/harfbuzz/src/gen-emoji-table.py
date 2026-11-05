@@ -69,7 +69,7 @@ elif language.name == "rust":
 	print ("#![allow(unused_parens)]")
 	print ("#![allow(clippy::unnecessary_cast, clippy::unreadable_literal, clippy::double_parens)]")
 	print ()
-	print ("use crate::hb::unicode::Codepoint;")
+	print ("use crate::unicode::Codepoint;")
 	print ()
 else:
 	assert False, "Unknown language: %s" % language.name
@@ -83,19 +83,19 @@ for typ, s in ranges.items():
 			arr[i] = 1
 
 	sol = packTab.pack_table(arr, 0, compression=9)
-	code = packTab.Code('_hb_emoji')
+	code = packTab.Code('_hb_emoji' if language.name == "c" else 'emoji')
 	if language.name == "c":
 		sol.genCode(code, 'is_'+typ, language=language)
 		code.print_code(language=language)
 		print()
 	elif language.name == "rust":
-		sol.genCode(code, 'is_'+typ+'_u8', language=language, private=False)
+		sol.genCode(code, 'is_'+typ.lower()+'_u8', language=language, private=False)
 		code.print_code(language=language, private=False)
 		print()
 		print ("#[inline]")
 		print ("pub(crate) fn is_%s (u: Codepoint) -> bool" % typ)
 		print ("{")
-		print ("  _hb_emoji_is_%s_u8 (u as usize) != 0" % typ)
+		print ("  emoji_is_%s_u8 (u as usize) != 0" % typ.lower())
 		print ("}")
 		print()
 	else:

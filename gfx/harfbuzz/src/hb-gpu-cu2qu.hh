@@ -170,6 +170,13 @@ hb_gpu_cubic_to_quadratics (hb_gpu_draw_t *g,
 			    hb_gpu_cu2qu_point_t c3,
 			    double tolerance, unsigned depth)
 {
+  /* Charge one unit per node for its fit test and split, and stop once
+   * the accumulator has failed or the work budget is spent: whatever we
+   * would emit from here is dropped by acc_emit() anyway. */
+  if (unlikely (!g->success ||
+		!hb_budget_spend (*g->get_budget_remaining (), HB_BUDGET_1)))
+    return;
+
   hb_gpu_cu2qu_point_t q1;
   if (hb_gpu_cubic_approx_quadratic (c0, c1, c2, c3, tolerance, &q1))
   {

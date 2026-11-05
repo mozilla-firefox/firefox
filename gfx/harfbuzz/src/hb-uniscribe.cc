@@ -378,18 +378,25 @@ _hb_rename_font (hb_blob_t *blob_in, wchar_t *new_name)
     *p++ = new_name[i] & 0xff;
   }
 
-  /* Adjust name table entry to point to new name table */
-  const OT::OpenTypeFontFile &file = * (OT::OpenTypeFontFile *) (new_sfnt_data);
+  /* Adjust name table entry to point to new name table.
+   *
+   * Look the entries up in the sanitized original, not in the copy we are
+   * editing: face directories of a TTC may overlap, so an edit for one face
+   * can change what another face's directory parses as, and the copy is
+   * never sanitized again.  Edits are then applied to the copy at the same
+   * offsets, which are all within the original's length. */
+  const OT::OpenTypeFontFile &file = *blob->as<OT::OpenTypeFontFile> ();
   unsigned int face_count = file.get_face_count ();
   for (unsigned int face_index = 0; face_index < face_count; face_index++)
   {
-    /* Note: doing multiple edits (ie. TTC) can be unsafe.  There may be
-     * toe-stepping.  But we don't really care. */
+    /* Note: doing multiple edits (ie. TTC) may step on each other's toes
+     * and produce a wrong font.  But we don't really care. */
     const OT::OpenTypeFontFace &face = file.get_face (face_index);
     unsigned int index;
     if (face.find_table_index (HB_OT_TAG_name, &index))
     {
-      OT::TableRecord &record = const_cast<OT::TableRecord &> (face.get_table (index));
+      unsigned int record_offset = (const char *) &face.get_table (index) - orig_sfnt_data;
+      OT::TableRecord &record = StructAtOffset<OT::TableRecord> (new_sfnt_data, record_offset);
       record.checkSum.set_for_data (&name, padded_name_table_length);
       record.offset = name_table_offset;
       record.length = name_table_length;
@@ -484,6 +491,11 @@ populate_log_font (LOGFONTW  *lf,
 hb_uniscribe_font_data_t *
 _hb_uniscribe_shaper_font_data_create (hb_font_t *font)
 {
+  /* Face data creation may have failed, eg. if GDI rejected the font.
+   * populate_log_font() dereferences it, so bail out before that. */
+  if (unlikely (!font->face->data.uniscribe))
+    return nullptr;
+
   hb_uniscribe_font_data_t *data = (hb_uniscribe_font_data_t *) hb_calloc (1, sizeof (hb_uniscribe_font_data_t));
   if (unlikely (!data))
     return nullptr;

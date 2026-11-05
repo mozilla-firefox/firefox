@@ -113,7 +113,7 @@ hb_ot_metrics_get_position (hb_font_t           *font,
 HB_EXTERN void
 hb_ot_metrics_get_position_with_fallback (hb_font_t           *font,
 					  hb_ot_metrics_tag_t  metrics_tag,
-					  hb_position_t       *position     /* OUT */);
+					  hb_position_t       *position     /* OUT.  May be NULL. */);
 
 HB_EXTERN float
 hb_ot_metrics_get_variation (hb_font_t *font, hb_ot_metrics_tag_t metrics_tag);

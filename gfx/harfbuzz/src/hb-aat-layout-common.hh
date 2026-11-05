@@ -166,6 +166,19 @@ struct hb_aat_apply_context_t :
     buffer_is_reversed = !buffer_is_reversed;
   }
 
+  /* Applying a subtable walks the whole buffer.  The font controls the
+   * number of subtables, so charge each pass to the buffer's work budget. */
+  HB_NODISCARD bool charge_buffer_pass ()
+  {
+    buffer->max_ops -= buffer->len;
+    if (unlikely (buffer->max_ops < 0))
+    {
+      buffer->successful = false;
+      return false;
+    }
+    return true;
+  }
+
   void setup_buffer_glyph_set ()
   {
     using_buffer_glyph_set = buffer->len >= 4 && buffer_glyph_set;
@@ -239,6 +252,8 @@ struct hb_aat_apply_context_t :
   {
     buffer->scratch_flags |= HB_BUFFER_SCRATCH_FLAG_AAT_HAS_DELETED;
     _hb_glyph_info_set_aat_deleted (&buffer->cur());
+    if (likely (using_buffer_glyph_set))
+      buffer_glyph_set->add (DELETED_GLYPH);
     return buffer->replace_glyph (DELETED_GLYPH);
   }
 
@@ -367,16 +382,44 @@ struct LookupFormat2
   template <typename set_t>
   void collect_glyphs (set_t &glyphs) const
   {
-    unsigned count = segments.get_length ();
-    for (unsigned int i = 0; i < count; i++)
-      segments[i].collect_glyphs (glyphs);
+    collect_glyphs_filtered (glyphs, [] (const T &) { return true; });
   }
   template <typename set_t, typename filter_t>
   void collect_glyphs_filtered (set_t &glyphs, const filter_t &filter) const
   {
+    /* Segments are supposed to be sorted and disjoint, in which case adding
+     * them one by one touches each page of the set at most once.  The
+     * sanitizer does not check that, and a malformed table can repeat a
+     * segment spanning the whole glyph range thousands of times, each
+     * costing a full pass over the set.  So once a segment is out of order,
+     * add the rest as a single range; that is a superset of the glyphs,
+     * which is fine for a set that is only used as a pre-filter. */
     unsigned count = segments.get_length ();
-    for (unsigned int i = 0; i < count; i++)
-      segments[i].collect_glyphs_filtered (glyphs, filter);
+    hb_codepoint_t next = 0; /* One past the last glyph added. */
+    unsigned i;
+    for (i = 0; i < count; i++)
+    {
+      const auto &segment = segments[i];
+      if (segment.first < next) break; /* Not sorted and disjoint. */
+      if (segment.first == DELETED_GLYPH || segment.first > segment.last ||
+	  !filter (segment.value))
+	continue;
+      glyphs.add_range (segment.first, segment.last);
+      next = segment.last + 1;
+    }
+
+    hb_codepoint_t first = HB_CODEPOINT_INVALID, last = 0;
+    for (; i < count; i++)
+    {
+      const auto &segment = segments[i];
+      if (segment.first == DELETED_GLYPH || segment.first > segment.last ||
+	  !filter (segment.value))
+	continue;
+      first = hb_min (first, (hb_codepoint_t) segment.first);
+      last = hb_max (last, (hb_codepoint_t) segment.last);
+    }
+    if (first <= last)
+      glyphs.add_range (first, last);
   }
 
   bool sanitize (hb_sanitize_context_t *c) const
@@ -692,7 +735,7 @@ struct LookupFormat10
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) &&
 		  hb_barrier () &&
-		  valueSize <= 4 &&
+		  1 <= valueSize && valueSize <= 4 &&
 		  valueArrayZ.sanitize (c, glyphCount * valueSize));
   }
 
@@ -946,7 +989,8 @@ struct StateTable
     const HBUSHORT *states = (this+stateArrayTable).arrayZ;
     const Entry<Extra> *entries = (this+entryTable).arrayZ;
 
-    unsigned int entry = states[state * n_classes + klass];
+    /* State can be negative; see sanitize().  Keep the index signed. */
+    unsigned int entry = states[state * (int) n_classes + (int) klass];
     DEBUG_MSG (APPLY, nullptr, "e%u", entry);
 
     return entries[entry];
@@ -995,16 +1039,17 @@ struct StateTable
       if (min_state < state_neg)
       {
 	/* Negative states. */
-	if (unlikely (hb_unsigned_mul_overflows (min_state, num_classes)))
+	unsigned int num_neg_states = -min_state;
+	if (unlikely (hb_unsigned_mul_overflows (num_neg_states, num_classes)))
 	  return_trace (false);
-	if (unlikely (!c->check_range (&states[min_state * num_classes],
-				       -min_state,
+	if (unlikely (!c->check_range (states - num_neg_states * num_classes,
+				       num_neg_states,
 				       row_stride)))
 	  return_trace (false);
 	if ((c->max_ops -= state_neg - min_state) <= 0)
 	  return_trace (false);
 	{ /* Sweep new states. */
-	  const HBUSHORT *stop = &states[min_state * num_classes];
+	  const HBUSHORT *stop = states - num_neg_states * num_classes;
 	  if (unlikely (stop > states))
 	    return_trace (false);
 	  for (const HBUSHORT *p = states; stop < p; p--)

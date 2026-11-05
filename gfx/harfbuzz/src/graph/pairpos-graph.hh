@@ -61,11 +61,18 @@ struct PairPosFormat1 : public OT::Layout::GPOS_impl::PairPosFormat1_3<SmallType
     unsigned partial_coverage_size = 4;
     unsigned accumulated = base_size;
     hb_vector_t<unsigned> split_points;
+
+    // Finding the object id associated with an array index is O(n)
+    // so to avoid O(n^2), precompute the mapping.
+    TRY_ASSIGN (auto pair_sets, c.graph.vertices_[this_index].position_to_index_map ());
     for (unsigned i = 0; i < pairSet.len; i++)
     {
-      TRY_ASSIGN (unsigned pair_set_index, pair_set_graph_index (c, this_index, i));
+      unsigned pair_set_position = (const char*) &pairSet[i] - (const char*) this;
+      unsigned* pair_set_index;
+      if (unlikely (!pair_sets.has (pair_set_position, &pair_set_index)))
+        return Err(INVALID_ARGUMENT);
       unsigned accumulated_delta =
-          c.graph.find_subgraph_size (pair_set_index, visited).value_or (0) +
+          c.graph.find_subgraph_size (*pair_set_index, visited).value_or (0) +
           SmallTypes::size; // for PairSet offset.
       partial_coverage_size += OT::HBUINT16::static_size;
 
@@ -164,16 +171,17 @@ struct PairPosFormat1 : public OT::Layout::GPOS_impl::PairPosFormat1_3<SmallType
     pair_pos_prime->valueFormat[1] = this->valueFormat[1];
     pair_pos_prime->pairSet.len = num_pair_sets;
 
-    for (unsigned i = start; i < end; i++)
-    {
-      TRY (c.graph.move_child<> (this_index,
-                                 &pairSet[i],
-                                 pair_pos_prime_id,
-                                 &pair_pos_prime->pairSet[i - start]));
-    }
-
-    // Restore correct ordering of the vertex links which are disturbed by move_child.
+    // Moving the PairSets one at a time is O(n) per PairSet, so move the whole
+    // range in one pass. move_children keeps the links in the order it finds
+    // them, so sort by position first to keep the PairSets in array order.
     c.graph.vertices_[this_index].sort_real_links ();
+
+    const unsigned pair_sets_position = (const char*) pairSet.arrayZ - (const char*) this;
+    TRY (c.graph.move_children<OT::Offset16> (this_index,
+                                              pair_sets_position + start * SmallTypes::size,
+                                              pair_sets_position + end * SmallTypes::size,
+                                              pair_pos_prime_id,
+                                              pair_sets_position));
 
     TRY_ASSIGN (unsigned coverage_id, c.graph.index_for_offset (this_index, &coverage));
     TRY (Coverage::clone_coverage (c,
@@ -183,13 +191,6 @@ struct PairPosFormat1 : public OT::Layout::GPOS_impl::PairPosFormat1_3<SmallType
                                    start, end));
 
     return Ok(pair_pos_prime_id);
-  }
-
-
-
-  graph_result_t<unsigned> pair_set_graph_index (gsubgpos_graph_context_t& c, unsigned this_index, unsigned i) const
-  {
-    return c.graph.index_for_offset (this_index, &pairSet[i]);
   }
 };
 
@@ -203,7 +204,8 @@ struct PairPosFormat2 : public OT::Layout::GPOS_impl::PairPosFormat2_4<SmallType
     hb_barrier ();
 
     const unsigned class1_count = class1Count;
-    if (unlikely (vertex_len < min_size + class1_count * get_class1_record_size ()))
+    if (unlikely (vertex_len - min_size <
+                  hb_unsigned_mul_saturate (class1_count, get_class1_record_size ())))
       return Err(SANITIZE_FAILURE);
     return Ok();
   }
@@ -295,12 +297,8 @@ struct PairPosFormat2 : public OT::Layout::GPOS_impl::PairPosFormat2_4<SmallType
       this,
       this_index,
       class1_record_size,
-      total_value_len,
-      value_1_len,
-      value_2_len,
       max_coverage_size,
       max_class_def_1_size,
-      device_tables,
       format1_device_table_indices,
       format2_device_table_indices
     };
@@ -315,13 +313,9 @@ struct PairPosFormat2 : public OT::Layout::GPOS_impl::PairPosFormat2_4<SmallType
     PairPosFormat2* thiz;
     unsigned this_index;
     unsigned class1_record_size;
-    unsigned value_record_len;
-    unsigned value1_record_len;
-    unsigned value2_record_len;
     unsigned max_coverage_size;
     unsigned max_class_def_size;
 
-    const hb_hashmap_t<unsigned, unsigned>& device_tables;
     const hb_vector_t<unsigned>& format1_device_table_indices;
     const hb_vector_t<unsigned>& format2_device_table_indices;
 
@@ -443,59 +437,19 @@ struct PairPosFormat2 : public OT::Layout::GPOS_impl::PairPosFormat2_4<SmallType
       // No device tables to move over.
       return Ok();
 
-    unsigned class2_count = class2Count;
-    for (unsigned i = start; i < end; i++)
-    {
-      for (unsigned j = 0; j < class2_count; j++)
-      {
-        unsigned value1_index = split_context.value_record_len * (class2_count * i + j);
-        unsigned value2_index = value1_index + split_context.value1_record_len;
+    // The only links in the class1 records are the ones to device tables, so
+    // rather than moving them one at a time (O(n) each) move the whole range
+    // in one pass. move_children keeps the links in the order it finds them,
+    // so sort by position first to keep the device tables in record order.
+    graph_t& graph = split_context.c.graph;
+    graph.vertices_[split_context.this_index].sort_real_links ();
 
-        unsigned new_value1_index = split_context.value_record_len * (class2_count * (i - start) + j);
-        unsigned new_value2_index = new_value1_index + split_context.value1_record_len;
-
-        TRY (transfer_device_tables (split_context,
-                                     pair_pos_prime_id,
-                                     split_context.format1_device_table_indices,
-                                     value1_index,
-                                     new_value1_index));
-
-        TRY (transfer_device_tables (split_context,
-                                     pair_pos_prime_id,
-                                     split_context.format2_device_table_indices,
-                                     value2_index,
-                                     new_value2_index));
-      }
-    }
-    return Ok();
-  }
-
-  graph_result_t<void> transfer_device_tables (split_context_t& split_context,
-                                               unsigned pair_pos_prime_id,
-                                               const hb_vector_t<unsigned>& device_table_indices,
-                                               unsigned old_value_record_index,
-                                               unsigned new_value_record_index) const
-  {
-    PairPosFormat2* pair_pos_prime =
-        (PairPosFormat2*) split_context.c.graph.object (pair_pos_prime_id).head;
-
-    for (unsigned i : device_table_indices)
-    {
-      OT::Offset16* record = (OT::Offset16*) &values[old_value_record_index + i];
-      unsigned record_position = ((char*) record) - ((char*) this);
-      if (!split_context.device_tables.has (record_position)) continue;
-
-      TRY (split_context.c.graph.move_child (
-          split_context.this_index,
-          record,
-          pair_pos_prime_id,
-          (OT::Offset16*) &pair_pos_prime->values[new_value_record_index + i]));
-    }
-
-    // Restore correct ordering of the vertex links which are disturbed by move_child.
-    split_context.c.graph.vertices_[split_context.this_index].sort_real_links ();
-
-    return Ok();
+    const unsigned values_position = (const char*) &values[0] - (const char*) this;
+    return graph.move_children<OT::Offset16> (split_context.this_index,
+                                              values_position + start * split_context.class1_record_size,
+                                              values_position + end * split_context.class1_record_size,
+                                              pair_pos_prime_id,
+                                              values_position);
   }
 
   graph_result_t<void> shrink (split_context_t& split_context,

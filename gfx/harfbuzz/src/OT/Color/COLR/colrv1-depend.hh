@@ -39,6 +39,10 @@ namespace OT {
 HB_INTERNAL void PaintColrLayers::dependv1 (hb_colrv1_depend_context_t* c) const
 {
   const LayerList &paint_offset_lists = c->get_colr_table ()->get_layerList ();
+  /* Charge the whole layer run: a layer resolving to the null or an
+   * unknown-format paint is dropped by Paint::dispatch() before it reaches
+   * the context, so without this the loop can still spin uncharged. */
+  if (unlikely (!c->spend_ops (numLayers))) return;
   for (unsigned i = firstLayerIndex; i < firstLayerIndex + numLayers; i++)
   {
     const Paint &paint = paint_offset_lists.get_paint (i);

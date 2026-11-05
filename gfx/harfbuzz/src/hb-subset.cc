@@ -284,6 +284,7 @@ _dependencies_satisfied (hb_subset_plan_t *plan, hb_tag_t tag,
   case HB_TAG('O','S','/','2'):
     return !plan->normalized_coords || !outline_pending;
   case HB_TAG('G','P','O','S'):
+  case HB_TAG('G','S','U','B'):
     return plan->all_axes_pinned || !pending_subset_tags.has (HB_TAG('G','D','E','F'));
   /* For avar2, variation tables must wait for avar to be subsetted first. */
   case HB_TAG('g','v','a','r'):

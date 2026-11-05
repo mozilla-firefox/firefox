@@ -348,6 +348,11 @@ struct cff1_cs_opset_subr_subset_t : cff1_cs_opset_t<cff1_cs_opset_subr_subset_t
 				 cff1_cs_interp_env_t &env, subr_subset_param_t& param,
 				 cff1_biased_subrs_t& subrs, hb_set_t *closure)
   {
+    if (unlikely (!param.current_parsed_str->has_immediate_subr_number ()))
+    {
+      env.set_error ();
+      return;
+    }
     byte_str_ref_t    str_ref = env.str_ref;
     env.call_subr (subrs, type);
     param.current_parsed_str->add_call_op (op, str_ref, env.context.subr_num);
@@ -482,11 +487,12 @@ struct cff1_subset_plan
 
     subset_enc_code_ranges.complete (glyph);
 
-    assert (subset_enc_num_codes <= 0xFF);
     size0 = Encoding0::min_size + HBUINT8::static_size * subset_enc_num_codes;
     size1 = Encoding1::min_size + Encoding1_Range::static_size * subset_enc_code_ranges.length;
 
-    if (size0 < size1)
+    /* Format 0 holds at most 255 codes; a format 1 source encoding
+     * can give codes to more glyphs than that. */
+    if (subset_enc_num_codes <= 0xFF && size0 < size1)
       subset_enc_format = 0;
     else
       subset_enc_format = 1;
@@ -528,6 +534,13 @@ struct cff1_subset_plan
 
     if (!glyph_to_sid_map || glyph_to_sid_map->in_error ())
     {
+      /* A map created above is not yet shared with the accelerator, so a
+       * failed one is ours to free. */
+      if (created_map && glyph_to_sid_map)
+      {
+	glyph_to_sid_map->~glyph_to_sid_map_t ();
+	hb_free (glyph_to_sid_map);
+      }
       glyph_to_sid_map = nullptr;
       created_map = false;
     }
@@ -552,12 +565,14 @@ struct cff1_subset_plan
 	/* Retain the SID for the old missing glyph ID */
 	old_glyph = glyph;
       }
+      /* Missing output glyphs can lie beyond the source glyph map. */
+      bool in_map = glyph_to_sid_map && old_glyph < glyph_to_sid_map->length;
       unsigned sid;
       if (identity_charset)
 	sid = glyph;
       else
       {
-	sid = glyph_to_sid_map ?
+	sid = in_map ?
 		       glyph_to_sid_map->arrayZ[old_glyph].code :
 		       acc.glyph_to_sid (old_glyph, &glyph_to_sid_cache);
 
@@ -568,7 +583,7 @@ struct cff1_subset_plan
       if (sid != last_sid + 1)
 	subset_charset_ranges.push (code_pair_t {sid, glyph});
 
-      if (glyph == old_glyph && skip)
+      if (glyph == old_glyph && skip && in_map)
       {
 	glyph = hb_min (_.first - 1, glyph_to_sid_map->arrayZ[old_glyph].glyph);
 	sid += glyph - old_glyph;
@@ -586,17 +601,16 @@ struct cff1_subset_plan
       }
     }
 
-    bool two_byte = subset_charset_ranges.complete (num_glyphs);
+    subset_charset_ranges.complete (num_glyphs);
 
     size0 = Charset0::get_size (plan->num_output_glyphs ());
-    if (!two_byte)
-      size_ranges = Charset1::get_size_for_ranges (subset_charset_ranges.length);
-    else
-      size_ranges = Charset2::get_size_for_ranges (subset_charset_ranges.length);
+    unsigned int size1 = Charset::get_size_for_format1 (subset_charset_ranges);
+    unsigned int size2 = Charset2::get_size_for_ranges (subset_charset_ranges.length);
+    size_ranges = hb_min (size1, size2);
 
     if (size0 < size_ranges)
       subset_charset_format = 0;
-    else if (!two_byte)
+    else if (size1 <= size2)
       subset_charset_format = 1;
     else
       subset_charset_format = 2;
@@ -620,6 +634,51 @@ struct cff1_subset_plan
 	if (fdmap.has (i))
 	  (void)sidmap.add (acc.fontDicts[i].fontName);
 
+    return true;
+  }
+
+  bool can_copy_programs (const OT::cff1::accelerator_subset_t &acc,
+			  const hb_subset_plan_t *plan) const
+  {
+    if (drop_hints || desubroutinize || plan->inprogress_accelerator ||
+	!(plan->flags & HB_SUBSET_FLAGS_NOTDEF_OUTLINE) ||
+	num_glyphs != acc.num_glyphs ||
+	plan->new_to_old_gid_list.length != num_glyphs)
+      return false;
+
+    for (const auto &_ : plan->new_to_old_gid_list)
+      if (_.first != _.second)
+	return false;
+    return true;
+  }
+
+  template <typename INDEX>
+  static bool copy_index (const INDEX &index, str_buff_vec_t &output)
+  {
+    if (unlikely (!output.resize_exact (index.count)))
+      return false;
+    for (unsigned int i = 0; i < index.count; i++)
+    {
+      hb_ubytes_t str = index[i];
+      output[i].set_storage (const_cast<unsigned char *> (str.arrayZ), str.length);
+    }
+    return true;
+  }
+
+  bool copy_programs (const OT::cff1::accelerator_subset_t &acc)
+  {
+    if (!copy_index (*acc.charStrings, subset_charstrings) ||
+	!copy_index (*acc.globalSubrs, subset_globalsubrs) ||
+	unlikely (!subset_localsubrs.resize (orig_fdcount)))
+      return false;
+
+    for (unsigned int fd = 0; fd < orig_fdcount; fd++)
+    {
+      subset_localsubrs[fd].init ();
+      if (fdmap.has (fd) &&
+	  !copy_index (*acc.privateDicts[fd].localSubrs, subset_localsubrs[fd]))
+	return false;
+    }
     return true;
   }
 
@@ -677,6 +736,7 @@ struct cff1_subset_plan
 	if (unlikely (!hb_plan_subset_cff_fdselect (plan,
 				  orig_fdcount,
 				  *acc.fdSelect,
+				  acc.num_glyphs,
 				  subset_fdcount,
 				  info.fd_select.size,
 				  subset_fdselect_format,
@@ -717,23 +777,43 @@ struct cff1_subset_plan
       if (!subr_subsetter.subset ())
 	return false;
 
-      /* encode charstrings, global subrs, local subrs with new subroutine numbers */
-      if (!subr_subsetter.encode_charstrings (subset_charstrings))
-	return false;
+      bool copy = can_copy_programs (acc, plan) &&
+		  subr_subsetter.has_identity_global_remap ();
+      if (copy)
+	for (unsigned int fd = 0; fd < orig_fdcount; fd++)
+	  if (fdmap.has (fd) && !subr_subsetter.has_identity_local_remap (fd))
+	  {
+	    copy = false;
+	    break;
+	  }
 
-      if (!subr_subsetter.encode_globalsubrs (subset_globalsubrs))
-	return false;
-
-      /* local subrs */
-      if (!subset_localsubrs.resize (orig_fdcount))
-	return false;
-      for (unsigned int fd = 0; fd < orig_fdcount; fd++)
+      if (copy)
       {
-	subset_localsubrs[fd].init ();
-	if (fdmap.has (fd))
+	/* Calls and their biases remain valid.  Reuse source bytes instead of
+	 * re-encoding every charstring and retained subroutine. */
+	if (!copy_programs (acc))
+	  return false;
+      }
+      else
+      {
+	/* encode charstrings, global subrs, local subrs with new subroutine numbers */
+	if (!subr_subsetter.encode_charstrings (subset_charstrings))
+	  return false;
+
+	if (!subr_subsetter.encode_globalsubrs (subset_globalsubrs))
+	  return false;
+
+	/* local subrs */
+	if (!subset_localsubrs.resize (orig_fdcount))
+	  return false;
+	for (unsigned int fd = 0; fd < orig_fdcount; fd++)
 	{
-	  if (!subr_subsetter.encode_localsubrs (fd, subset_localsubrs[fd]))
-	    return false;
+	  subset_localsubrs[fd].init ();
+	  if (fdmap.has (fd))
+	  {
+	    if (!subr_subsetter.encode_localsubrs (fd, subset_localsubrs[fd]))
+	      return false;
+	  }
 	}
       }
     }
@@ -1008,6 +1088,7 @@ OT::cff1::accelerator_subset_t::subset (hb_subset_context_t *c) const
   if (unlikely (!cff_plan.create (*this, c->plan)))
   {
     DEBUG_MSG(SUBSET, nullptr, "Failed to generate a cff subsetting plan.");
+    c->serializer->err (HB_SERIALIZE_ERROR_OTHER);
     return false;
   }
 

@@ -282,7 +282,6 @@ hb_base_ragel_generated_sources = files(
   'hb-buffer-deserialize-json.hh',
   'hb-buffer-deserialize-text-glyphs.hh',
   'hb-buffer-deserialize-text-unicode.hh',
-  'hb-number-parser.hh',
   'hb-ot-shaper-indic-machine.hh',
   'hb-ot-shaper-khmer-machine.hh',
   'hb-ot-shaper-myanmar-machine.hh',
@@ -292,7 +291,6 @@ hb_base_ragel_sources = [
   'hb-buffer-deserialize-json.rl',
   'hb-buffer-deserialize-text-glyphs.rl',
   'hb-buffer-deserialize-text-unicode.rl',
-  'hb-number-parser.rl',
   'hb-ot-shaper-indic-machine.rl',
   'hb-ot-shaper-khmer-machine.rl',
   'hb-ot-shaper-myanmar-machine.rl',
@@ -401,6 +399,7 @@ hb_subset_sources = files(
   'hb-subset-cff-common.hh',
   'hb-subset-cff1.cc',
   'hb-subset-cff2.cc',
+  'hb-subset-cff2-round.hh',
   'hb-subset-cff2-to-cff1.hh',
   'hb-subset-input.cc',
   'hb-subset-input.hh',
@@ -753,7 +752,7 @@ hb_vector_headers = [
 
 libharfbuzz_raster_dep = null_dep
 if not get_option('raster').disabled()
-  raster_deps = [m_dep]
+  raster_deps = common_harfbuzz_deps
   if png_dep.found()
     raster_deps += [png_dep]
   endif
@@ -794,7 +793,7 @@ endif
 
 libharfbuzz_vector_dep = null_dep
 if not get_option('vector').disabled()
-  vector_deps = [m_dep]
+  vector_deps = common_harfbuzz_deps
   if zlib_dep.found()
     vector_deps += [zlib_dep]
   endif
@@ -875,7 +874,7 @@ hb_gpu_headers = [
 
 libharfbuzz_gpu_dep = null_dep
 if not get_option('gpu').disabled()
-  gpu_deps = [m_dep]
+  gpu_deps = common_harfbuzz_deps
 
   libharfbuzz_gpu = library('harfbuzz-gpu',
     hb_gpu_sources,
@@ -930,7 +929,7 @@ if conf.get('HAVE_CAIRO', 0) == 1
 
   libharfbuzz_cairo = library('harfbuzz-cairo', hb_cairo_sources,
     include_directories: incconfig,
-    dependencies: [m_dep, cairo_dep],
+    dependencies: common_harfbuzz_deps + [cairo_dep],
     link_with: [libharfbuzz],
     cpp_args: cpp_args + extra_hb_cpp_args,
     soversion: hb_so_version,
@@ -990,10 +989,13 @@ if get_option('tests').enabled()
   endif
 
   compiled_tests = {
+    'test-aat': ['test-aat.cc', 'hb-static.cc'],
     'test-algs': ['test-algs.cc', 'hb-static.cc'],
     'test-array': ['test-array.cc'],
     'test-bimap': ['test-bimap.cc', 'hb-static.cc'],
+    'test-cache': ['test-cache.cc'],
     'test-cff': ['test-cff.cc', 'hb-static.cc'],
+    'test-colr': ['test-colr.cc', 'hb-static.cc'],
     'test-classdef-graph': ['graph/test-classdef-graph.cc', 'hb-static.cc', 'graph/gsubgpos-context.cc'],
     'test-result': ['test-result.cc', 'hb-static.cc'],
     'test-decycler': ['test-decycler.cc', 'hb-static.cc'],
@@ -1016,6 +1018,9 @@ if get_option('tests').enabled()
     'test-jstf': ['test-jstf.cc', 'hb-static.cc'],
     'test-unicode-ranges': ['test-unicode-ranges.cc'],
   }
+  if conf.get('HAVE_UNISCRIBE', 0) == 1
+    compiled_tests += {'test-uniscribe': ['test-uniscribe.cc']}
+  endif
   foreach name, source : compiled_tests
     if cpp_is_microsoft_compiler and source.contains('hb-static.cc')
       # TODO: Microsoft compilers cannot link tests using hb-static.cc, fix them
@@ -1028,6 +1033,44 @@ if get_option('tests').enabled()
       install: false,
     ), suite: ['src'])
   endforeach
+
+  if not cpp_is_microsoft_compiler and not get_option('subset').disabled()
+    test('test-cbdt-cache', executable('test-cbdt-cache', ['test-cbdt-cache.cc', 'hb-static.cc'],
+      include_directories: incconfig,
+      cpp_args: cpp_args + ['-UNDEBUG'],
+      dependencies: [libharfbuzz_dep, libharfbuzz_subset_dep],
+      install: false,
+    ),
+      args: [meson.project_source_root() / 'test/api/fonts/NotoColorEmoji.subset.multiple_size_tables.ttf'],
+      suite: ['src', 'subset'])
+    test('test-subset-cff2-serialize', executable('test-subset-cff2-serialize', ['hb-subset-cff2.cc', 'hb-subset-cff-common.cc', 'hb-subset-instancer-solver.cc', 'hb-subset-instancer-iup.cc', 'hb-static.cc'],
+      include_directories: incconfig,
+      cpp_args: cpp_args + ['-DMAIN', '-UNDEBUG'],
+      dependencies: [libharfbuzz_dep, libharfbuzz_subset_dep],
+      install: false,
+    ),
+      suite: ['src', 'subset'])
+  endif
+
+  if not cpp_is_microsoft_compiler and conf.get('HAVE_GRAPHITE2', 0) == 1
+    test('test-graphite2-buffer', executable('test-graphite2-buffer', ['test-graphite2-buffer.cc', 'hb-static.cc'],
+      include_directories: incconfig,
+      cpp_args: cpp_args + ['-UNDEBUG'],
+      dependencies: libharfbuzz_dep,
+      install: false,
+    ),
+      args: [meson.project_source_root() / 'test/api/fonts/graphite2-expansion.ttf'],
+      suite: ['src', 'shape'])
+  endif
+
+  if not get_option('raster').disabled()
+    test('test-raster-paint', executable('test-raster-paint', 'test-raster-paint.cc',
+      include_directories: incconfig,
+      cpp_args: cpp_args + ['-UNDEBUG'],
+      dependencies: libharfbuzz_raster_dep,
+      install: false,
+    ), suite: ['src', 'raster'])
+  endif
 endif
 
 pkgmod.generate(libharfbuzz,
@@ -1055,7 +1098,7 @@ if have_icu and not have_icu_builtin
 
   libharfbuzz_icu = library('harfbuzz-icu', [hb_icu_sources, hb_icu_headers],
     include_directories: incconfig,
-    dependencies: icu_dep,
+    dependencies: [thread_dep, icu_dep],
     link_with: [libharfbuzz],
     cpp_args: cpp_args + extra_hb_cpp_args,
     soversion: hb_so_version,
@@ -1098,8 +1141,6 @@ else
   cmake_package_prefix_dir = run_command(relative_to, get_option('prefix'), get_option('prefix') / cmake_config_dir, check: true).stdout().strip()
 endif
 
-cmake_package_prefix_dir = '${CMAKE_CURRENT_LIST_DIR}/@0@'.format(cmake_package_prefix_dir)
-
 # Make all the relevant paths relative to our prefix, so we can later append
 # them onto ${PACKAGE_PREFIX_DIR} to get the correct paths.
 
@@ -1134,7 +1175,8 @@ if fs.is_absolute(cmake_install_bindir)
 endif
 
 cmake_config.set('PACKAGE_INIT', '''
-get_filename_component(PACKAGE_PREFIX_DIR "@0@" ABSOLUTE)
+get_filename_component(ABSOLUTE_CMAKE_LIST_DIR ${CMAKE_CURRENT_LIST_DIR} REALPATH)
+set(PACKAGE_PREFIX_DIR "${ABSOLUTE_CMAKE_LIST_DIR}/@0@")
 
 macro(set_and_check _var _file)
   set(${_var} "${_file}")
@@ -1249,7 +1291,7 @@ if have_gobject
 
   libharfbuzz_gobject = library('harfbuzz-gobject', [hb_gobject_sources, gobject_enums_c, gobject_enums_h],
     include_directories: incconfig,
-    dependencies: [glib_dep, gobject_dep],
+    dependencies: [thread_dep, glib_dep, gobject_dep],
     link_with: [libharfbuzz],
     cpp_args: cpp_args + extra_hb_cpp_args,
     soversion: hb_so_version,

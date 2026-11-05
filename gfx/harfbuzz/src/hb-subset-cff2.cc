@@ -35,6 +35,7 @@
 #include "hb-subset-plan.hh"
 #include "hb-subset-cff-common.hh"
 #include "hb-cff2-interp-cs.hh"
+#include "hb-subset-cff2-round.hh"
 #include "hb-subset-cff2-to-cff1.hh"
 
 using namespace CFF;
@@ -272,11 +273,16 @@ struct cff2_instancing_plan_t
       return false;
     unsigned regions_offset = (unsigned) offset;
     uint64_t total = offset + 4 + (uint64_t) new_regions.length * axis_tags.length * 6;
-    if (unlikely (total > 0xFFFFu)) return false;
+    if (unlikely (total > 0xFFFFFFFFu ||
+                  data_count > 0xFFFFu ||
+                  axis_tags.length > 0xFFFFu ||
+                  new_regions.length > 0x7FFFu))
+      return false;
 
     HBUINT16 *size_field = c->allocate_size<HBUINT16> (HBUINT16::static_size);
     if (unlikely (!size_field)) return false;
-    *size_field = total;
+    /* OFF 2026 5.3.3.11.2 permits larger stores with length=65535. */
+    *size_field = hb_min (total, (uint64_t) 0xFFFFu);
 
     char *header = c->allocate_size<char> (header_size);
     if (unlikely (!header)) return false;
@@ -290,13 +296,17 @@ struct cff2_instancing_plan_t
     {
       if (!t.alive ()) continue;
       unsigned k = t.region_indices.length;
+      if (unlikely (k > 0xFFFFu)) return false;
       HBUINT16 *v = (HBUINT16 *) c->allocate_size<char> (6 + 2 * k);
       if (unlikely (!v)) return false;
       v[0] = 0;						/* itemCount */
       v[1] = 0;						/* wordSizeCount */
       v[2] = k;						/* regionIndices.len */
       for (unsigned j = 0; j < k; j++)
+      {
+	if (unlikely (t.region_indices.arrayZ[j] > 0xFFFFu)) return false;
 	v[3 + j] = t.region_indices.arrayZ[j];
+      }
     }
 
     hb_vector_t<const hb_hashmap_t<hb_tag_t, Triple>*> region_ptrs;
@@ -320,13 +330,18 @@ struct cff2_usage_param_t
 
   cff2_instancing_plan_t *instancing = nullptr;
   bool drop_hints = false;
+  bool has_blend = false;
+  bool has_flex1 = false;
   unsigned ivs = 0;	/* dict-side current vsindex */
 };
 
 struct cff2_cs_opset_usage_t : cff2_cs_opset_t<cff2_cs_opset_usage_t, cff2_usage_param_t, blend_arg_t>
 {
+  static constexpr bool preserve_blends = true;
+
   static void flush_args_and_op (op_code_t op, cff2_cs_interp_env_t<blend_arg_t> &env, cff2_usage_param_t& param)
   {
+    param.has_flex1 |= op == OpCode_flex1;
     bool counts = true;
     switch (op)
     {
@@ -353,7 +368,8 @@ struct cff2_cs_opset_usage_t : cff2_cs_opset_t<cff2_cs_opset_usage_t, cff2_usage
       for (unsigned int i = 0; i < env.argStack.get_count (); i++)
 	if (env.argStack[i].blending ())
 	{
-	  param.instancing->note_use (env.get_ivs ());
+	  param.has_blend = true;
+	  if (param.instancing) param.instancing->note_use (env.get_ivs ());
 	  break;
 	}
 
@@ -420,56 +436,44 @@ struct cff2_top_dict_op_serializer_t : cff_top_dict_op_serializer_t<>
 
 struct cff2_cs_opset_flatten_t : cff2_cs_opset_t<cff2_cs_opset_flatten_t, flatten_param_t, blend_arg_t>
 {
+  static constexpr bool preserve_blends = true;
+
   static void flush_args_and_op (op_code_t op, cff2_cs_interp_env_t<blend_arg_t> &env, flatten_param_t& param)
   {
-    /* Optionally capture command for specialization (before flushing, to preserve args) */
-    if (param.commands)
+    bool skip_command = false;
+    switch (op)
     {
-      bool skip_command = false;
+      case OpCode_return:
+      case OpCode_endchar:
+	skip_command = true;
+	break;
 
-      switch (op)
-      {
-	case OpCode_return:
-	case OpCode_endchar:
-	  skip_command = true;
-	  break;
+      case OpCode_hstem:
+      case OpCode_hstemhm:
+      case OpCode_vstem:
+      case OpCode_vstemhm:
+      case OpCode_hintmask:
+      case OpCode_cntrmask:
+	skip_command = param.drop_hints;
+	break;
 
-	case OpCode_hstem:
-	case OpCode_hstemhm:
-	case OpCode_vstem:
-	case OpCode_vstemhm:
-	case OpCode_hintmask:
-	case OpCode_cntrmask:
-	  if (param.drop_hints)
-	    skip_command = true;
-	  break;
+      default:
+	break;
+    }
 
-	default:
-	  break;
-      }
+    if (!skip_command && param.rounding && unlikely (!round_args (op, env, param)))
+    {
+      env.set_error ();
+      return;
+    }
 
-      if (!skip_command)
-      {
-	cs_command_t cmd (op);
-	/* Capture resolved blend values */
-	for (unsigned int i = 0; i < env.argStack.get_count ();)
-	{
-	  const blend_arg_t &arg = env.argStack[i];
-	  if (arg.blending ())
-	  {
-	    /* For blend args, capture only the resolved default value */
-	    cmd.args.push (arg);
-	    /* Skip over the multiple blend values */
-	    i += arg.numValues;
-	  }
-	  else
-	  {
-	    cmd.args.push (arg);
-	    i++;
-	  }
-	}
-	param.commands->push (cmd);
-      }
+    /* Capture resolved commands for CFF2-to-CFF1 specialization. */
+    if (param.commands && !skip_command)
+    {
+      cs_command_t cmd (op);
+      for (unsigned i = 0; i < env.argStack.get_count (); i++)
+	cmd.args.push (env.argStack[i]);
+      param.commands->push (cmd);
     }
 
     switch (op)
@@ -502,6 +506,12 @@ struct cff2_cs_opset_flatten_t : cff2_cs_opset_t<cff2_cs_opset_flatten_t, flatte
 
   static void flush_args (cff2_cs_interp_env_t<blend_arg_t> &env, flatten_param_t& param)
   {
+    if (param.rounding)
+    {
+      encode_rounded_args (env, param);
+      SUPER::flush_args (env, param);
+      return;
+    }
     for (unsigned int i = 0; i < env.argStack.get_count ();)
     {
       const blend_arg_t &arg = env.argStack[i];
@@ -526,6 +536,65 @@ struct cff2_cs_opset_flatten_t : cff2_cs_opset_t<cff2_cs_opset_flatten_t, flatte
       }
     }
     SUPER::flush_args (env, param);
+  }
+
+  static bool round_args (op_code_t op, cff2_cs_interp_env_t<blend_arg_t> &env, flatten_param_t& param)
+  {
+    unsigned k = 0;
+    if (param.instancer)
+    {
+      unsigned ivs = env.get_ivs ();
+      const auto *t = param.instancer->get_transform (ivs);
+      k = t && t->alive () ? t->matrix.length : 0;
+      for (unsigned i = 0; i < env.argStack.get_count (); i++)
+      {
+	auto &arg = env.argStack[i];
+	if (!arg.blending ()) continue;
+	if (unlikely (!t || arg.deltas.length != t->gains.length)) return false;
+	double value = arg.to_real () + param.instancer->fold_deltas (ivs, arg.deltas.as_array ());
+	hb_vector_t<number_t> deltas = std::move (arg.deltas);
+	arg.set_real (value);
+	if (unlikely (!arg.deltas.resize (k))) return false;
+	for (unsigned r = 0; r < k; r++)
+	  arg.deltas.arrayZ[r].set_real (t->transform_delta (r, deltas.as_array ()));
+      }
+    }
+    return param.rounding->round (op, hb_array (env.argStack.arrayZ, env.argStack.get_count ()), k);
+  }
+
+  static void encode_rounded_args (cff2_cs_interp_env_t<blend_arg_t> &env, flatten_param_t& param)
+  {
+    str_encoder_t encoder (param.flatStr);
+    unsigned count = env.argStack.get_count ();
+    for (unsigned i = 0; i < count;)
+    {
+      const auto &arg = env.argStack[i];
+      if (!arg.blending ())
+      {
+	encoder.encode_num_cs (arg);
+	i++;
+	continue;
+      }
+      unsigned k = arg.deltas.length;
+      unsigned n = 1;
+      while (i + n < count && env.argStack[i + n].deltas.length == k) n++;
+      /* Previously emitted operands remain on the stack during each blend. */
+      unsigned chunk = hb_min (n, (512 - i) / (k + 1));
+      if (unlikely (!chunk))
+      {
+	env.set_error ();
+	return;
+      }
+      for (unsigned j = 0; j < chunk; j++)
+	encoder.encode_num_cs (env.argStack[i + j]);
+      for (unsigned j = 0; j < chunk; j++)
+	for (const auto &d : env.argStack[i + j].deltas)
+	  encoder.encode_num_cs (d);
+      encoder.encode_int (chunk);
+      encoder.encode_op (OpCode_blendcs);
+      param.emitted_blend = true;
+      i += chunk;
+    }
   }
 
   static void flatten_blends (const blend_arg_t &arg, unsigned int i, cff2_cs_interp_env_t<blend_arg_t> &env, flatten_param_t& param)
@@ -625,7 +694,7 @@ struct cff2_cs_opset_flatten_t : cff2_cs_opset_t<cff2_cs_opset_flatten_t, flatte
 	for (unsigned r = 0; r < k_new; r++)
 	{
 	  number_t v;
-	  v.set_int ((int) round (t->transform_delta (r, arg1.deltas.as_array ())));
+	  v.set_int (hb_clamp_to<int> (round (t->transform_delta (r, arg1.deltas.as_array ()))));
 	  encoder.encode_num_cs (v);
 	}
       }
@@ -746,6 +815,11 @@ struct cff2_cs_opset_subr_subset_t : cff2_cs_opset_t<cff2_cs_opset_subr_subset_t
 				 cff2_cs_interp_env_t<blend_arg_t> &env, subr_subset_param_t& param,
 				 cff2_biased_subrs_t& subrs, hb_set_t *closure)
   {
+    if (unlikely (!param.current_parsed_str->has_immediate_subr_number ()))
+    {
+      env.set_error ();
+      return;
+    }
     byte_str_ref_t    str_ref = env.str_ref;
     env.call_subr (subrs, type);
     param.current_parsed_str->add_call_op (op, str_ref, env.context.subr_num);
@@ -836,7 +910,7 @@ struct cff2_private_dict_blend_opset_t : dict_opset_t
 				 const hb_array_t<const number_t> blends,
 				 unsigned n, unsigned i)
   {
-    arg.set_int (round (arg.to_real () + param.blend_deltas (blends)));
+    arg.set_int (hb_clamp_to<int> (round (arg.to_real () + param.blend_deltas (blends))));
   }
 
   /* The fold added to a value, error-compensated across the operator: most
@@ -915,7 +989,7 @@ struct cff2_private_dict_blend_opset_t : dict_opset_t
 	  for (unsigned r = 0; r < k_new; r++)
 	  {
 	    number_t v;
-	    v.set_int ((int) round (t->transform_delta (r, blends)));
+	    v.set_int (hb_clamp_to<int> (round (t->transform_delta (r, blends))));
 	    encoder.encode_num_tp (v);
 	  }
 	}
@@ -1130,10 +1204,13 @@ struct cff2_subset_plan
 
     if (desubroutinize)
     {
-      if (partial_instancing)
+      if (instancing_requested)
       {
-	/* Pass 1: collect which VarDatas the retained blends reference, so
-	 * unused ones get pruned and the survivors renumbered. */
+	/* Identify charstrings that can round absolute coordinates.  Conservatively
+	 * keep relative rounding for flex1, whose implicit direction can vary.
+	 * Also collect the VarDatas referenced by partial instances. */
+	hb_vector_t<bool> round_charstrings;
+	if (unlikely (!round_charstrings.resize (num_glyphs))) return false;
 	hb_set_t used_fds;
 	for (unsigned int i = 0; i < num_glyphs; i++)
 	{
@@ -1141,41 +1218,48 @@ struct cff2_subset_plan
 	  if (!plan->old_gid_for_new_gid (i, &glyph))
 	    continue;
 	  const hb_ubytes_t str = (*acc.charStrings)[glyph];
-	  unsigned int fd = acc.fdSelect->get_fd (glyph);
+	  unsigned int fd = CFF::subset_get_fd (acc, glyph);
 	  if (unlikely (fd >= acc.fdCount))
 	    return false;
 	  used_fds.add (fd);
 
 	  cff2_cs_interp_env_t<blend_arg_t> env (str, acc, fd);
+	  env.preserve_blends = partial_instancing;
 	  cs_interpreter_t<cff2_cs_interp_env_t<blend_arg_t>, cff2_cs_opset_usage_t, cff2_usage_param_t> interp (env);
 	  cff2_usage_param_t param;
-	  param.instancing = &instancing;
+	  param.instancing = partial_instancing ? &instancing : nullptr;
 	  param.drop_hints = drop_hints;
 	  if (unlikely (!interp.interpret (param)))
 	    return false;
+	  round_charstrings.arrayZ[i] = param.has_blend && !param.has_flex1;
 	}
-	for (unsigned fd : used_fds)
+	if (partial_instancing)
 	{
-	  cff2_usage_param_t param;
-	  param.instancing = &instancing;
-	  unsigned count = acc.privateDicts[fd].get_count ();
-	  for (unsigned j = 0; j < count; j++)
+	  for (unsigned fd : used_fds)
 	  {
-	    const op_str_t &opstr = acc.privateDicts[fd][j];
-	    if (drop_hints && dict_opset_t::is_hint_op (opstr.op))
-	      continue;
-	    cff2_priv_dict_interp_env_t env {hb_ubytes_t (opstr.ptr, opstr.length)};
-	    dict_interpreter_t<cff2_private_dict_usage_opset_t, cff2_usage_param_t, cff2_priv_dict_interp_env_t> interp (env);
-	    if (unlikely (!interp.interpret (param)))
-	      return false;
+	    cff2_usage_param_t param;
+	    param.instancing = &instancing;
+	    unsigned count = acc.privateDicts[fd].get_count ();
+	    for (unsigned j = 0; j < count; j++)
+	    {
+	      const op_str_t &opstr = acc.privateDicts[fd][j];
+	      if (drop_hints && dict_opset_t::is_hint_op (opstr.op))
+	        continue;
+	      cff2_priv_dict_interp_env_t env {hb_ubytes_t (opstr.ptr, opstr.length)};
+	      dict_interpreter_t<cff2_private_dict_usage_opset_t, cff2_usage_param_t, cff2_priv_dict_interp_env_t> interp (env);
+	      if (unlikely (!interp.interpret (param)))
+	        return false;
+	    }
 	  }
+	  if (unlikely (!instancing.finalize ()))
+	    return false;
 	}
-	if (unlikely (!instancing.finalize ()))
-	  return false;
 
-	/* Pass 2: like subr_flattener_t, but blends stay symbolic (no coords
-	 * fed to the env) and get rewritten against the instanced store. */
+	/* Keep full-instance blends unrounded until their absolute positions
+	 * are known; partial-instance blends stay symbolic for rewriting. */
 	if (!subset_charstrings.resize_exact (num_glyphs))
+	  return false;
+	if (capture_commands && !charstring_commands.resize_exact (num_glyphs))
 	  return false;
 	for (unsigned int i = 0; i < num_glyphs; i++)
 	{
@@ -1183,18 +1267,24 @@ struct cff2_subset_plan
 	  if (!plan->old_gid_for_new_gid (i, &glyph))
 	    continue;
 	  const hb_ubytes_t str = (*acc.charStrings)[glyph];
-	  unsigned int fd = acc.fdSelect->get_fd (glyph);
+	  unsigned int fd = CFF::subset_get_fd (acc, glyph);
 	  if (unlikely (fd >= acc.fdCount))
 	    return false;
 
-	  cff2_cs_interp_env_t<blend_arg_t> env (str, acc, fd);
+	  cff2_cs_interp_env_t<blend_arg_t> env (str, acc, fd,
+					       pinned ? plan->normalized_coords.arrayZ : nullptr,
+					       pinned ? plan->normalized_coords.length : 0);
+	  env.round_blends = !round_charstrings.arrayZ[i];
 	  cs_interpreter_t<cff2_cs_interp_env_t<blend_arg_t>, cff2_cs_opset_flatten_t, flatten_param_t> interp (env);
 	  flatten_param_t param = {
 	    subset_charstrings.arrayZ[i],
 	    (bool) (plan->flags & HB_SUBSET_FLAGS_NO_HINTING),
-	    plan
+	    plan,
+	    capture_commands ? &charstring_commands.arrayZ[i] : nullptr
 	  };
-	  param.instancer = &instancing;
+	  cff2_cs_rounding_t rounding;
+	  if (round_charstrings.arrayZ[i]) param.rounding = &rounding;
+	  param.instancer = partial_instancing ? &instancing : nullptr;
 	  if (unlikely (!interp.interpret (param)))
 	    return false;
 	}
@@ -1205,20 +1295,8 @@ struct cff2_subset_plan
       subr_flattener_t<const OT::cff2::accelerator_subset_t, cff2_cs_interp_env_t<blend_arg_t>, cff2_cs_opset_flatten_t>
 		    flattener(acc, plan);
 
-      /* Enable command capture if requested (for specialization) */
-      if (capture_commands)
-      {
-	if (!charstring_commands.resize_exact (num_glyphs))
-	  return false;
-
-	if (!flattener.flatten (subset_charstrings, &charstring_commands))
-	  return false;
-      }
-      else
-      {
-	if (!flattener.flatten (subset_charstrings))
-	  return false;
-      }
+      if (!flattener.flatten (subset_charstrings))
+	return false;
       }
     }
     else
@@ -1253,6 +1331,7 @@ struct cff2_subset_plan
       if (unlikely (!hb_plan_subset_cff_fdselect (plan,
 						  orig_fdcount,
 						  *(const FDSelect *)acc.fdSelect,
+						  acc.num_glyphs,
 						  subset_fdcount,
 						  subset_fdselect_size,
 						  subset_fdselect_format,
@@ -1381,7 +1460,7 @@ _serialize_cff1_charstrings (hb_serialize_context_t *c,
   }
 
   unsigned data_size = 0;
-  unsigned total_size = CFF1CharStrings::total_size (cff1_charstrings, &data_size);
+  unsigned total_size = CFF1CharStrings::total_size (cff1_charstrings, &data_size, plan.min_charstrings_off_size);
   if (unlikely (!c->start_zerocopy (total_size)))
   {
     c->pop_discard ();
@@ -1389,7 +1468,7 @@ _serialize_cff1_charstrings (hb_serialize_context_t *c,
   }
 
   auto *cs = c->start_embed<CFF1CharStrings> ();
-  if (unlikely (!cs->serialize (c, cff1_charstrings)))
+  if (unlikely (!cs->serialize (c, cff1_charstrings, &data_size, plan.min_charstrings_off_size)))
   {
     c->pop_discard ();
     return false;
@@ -1917,7 +1996,10 @@ OT::cff2::accelerator_subset_t::serialize (hb_serialize_context_t *c,
     TopDict &dict = cff2 + cff2->topDict;
     cff2_top_dict_op_serializer_t topSzr;
     if (unlikely (!dict.serialize (c, topDict, topSzr, plan.info))) return false;
-    cff2->topDictSize = c->head - (const char *)&dict;
+    if (unlikely (!c->check_assign (cff2->topDictSize,
+				    (unsigned) (c->head - (const char *) &dict),
+				    HB_SERIALIZE_ERROR_INT_OVERFLOW)))
+      return false;
   }
 
   /* global subrs */
@@ -1932,7 +2014,12 @@ OT::cff2::accelerator_subset_t::subset (hb_subset_context_t *c) const
 {
   cff2_subset_plan cff2_plan;
 
-  if (unlikely (!cff2_plan.create (*this, c->plan))) return false;
+  if (unlikely (!cff2_plan.create (*this, c->plan)))
+  {
+    /* A planning failure is not an intentionally empty outline table. */
+    c->serializer->err (HB_SERIALIZE_ERROR_OTHER);
+    return false;
+  }
 
   // If instantiating (pinned) and downgrade flag is set, convert to CFF1
   if (cff2_plan.pinned && (c->plan->flags & HB_SUBSET_FLAGS_DOWNGRADE_CFF2))
@@ -1969,4 +2056,75 @@ OT::cff2::accelerator_subset_t::subset (hb_subset_context_t *c) const
 		    c->plan->normalized_coords.as_array ());
 }
 
+#endif
+
+#ifdef MAIN
+int
+main (int argc, char **argv)
+{
+#ifndef HB_NO_SUBSET_CFF
+  const hb_tag_t tag = HB_TAG ('w', 'g', 'h', 't');
+  {
+    CFF::cff2_instancing_plan_t inst;
+    hb_vector_t<hb_tag_t> axes;
+    axes.push (tag);
+    hb_always_assert (inst.new_regions.resize (1));
+    hb_always_assert (inst.new_regions[0].set (tag, Triple (0., 0.5, 1.)));
+    inst.new_major_count = 1;
+    hb_always_assert (inst.transforms.resize (1));
+    inst.transforms[0].alive_ = true;
+    inst.transforms[0].region_indices.push (0);
+
+    char buf[64];
+    hb_serialize_context_t c (buf, sizeof (buf));
+    hb_always_assert (inst.serialize_var_store (&c, axes));
+    hb_always_assert (!c.in_error ());
+    const auto &store = reinterpret_cast<const CFF2ItemVariationStore *> (buf)->varStore;
+    hb_always_assert (store.get_sub_table_count () == 1);
+    hb_always_assert (store.get_region_list ().axisCount == 1);
+    hb_always_assert (store.get_region_list ().regionCount == 1);
+    hb_always_assert (store.get_sub_table (0).get_region_index_count () == 1);
+    hb_always_assert (store.get_sub_table (0).get_region_index (0) == 0);
+  }
+
+  struct limits_t
+  {
+    unsigned axis_count, region_count, data_count, index_count, index;
+    bool preflight;
+  };
+  const limits_t invalid[] = {
+    {1, 1, 0x10000u, 0, 0, true}, /* Too many VarDatas. */
+    {0x10000u, 1, 1, 1, 0, true}, /* Too many axes. */
+    {1, 0x8000u, 1, 1, 0, true},  /* Reserved regionCount bit. */
+    {1, 1, 1, 0x10000u, 0, false}, /* Too many region indexes. */
+    {1, 1, 1, 1, 0x10000u, false}, /* Region index does not fit uint16. */
+  };
+  hb_vector_t<char> buf;
+  hb_always_assert (buf.resize (1u << 20));
+  for (const auto &limits : invalid)
+  {
+    CFF::cff2_instancing_plan_t inst;
+    hb_vector_t<hb_tag_t> axes;
+    hb_always_assert (axes.resize (limits.axis_count));
+    for (auto &axis : axes)
+      axis = tag;
+    hb_always_assert (inst.new_regions.resize (limits.region_count));
+    hb_always_assert (inst.new_regions[0].set (tag, Triple (0., 0.5, 1.)));
+    inst.new_major_count = limits.data_count;
+    hb_always_assert (inst.transforms.resize (limits.data_count));
+    for (auto &t : inst.transforms)
+      t.alive_ = true;
+    auto &indices = inst.transforms[0].region_indices;
+    hb_always_assert (indices.resize (limits.index_count));
+    for (auto &index : indices)
+      index = limits.index;
+
+    hb_serialize_context_t c (buf.arrayZ, buf.length);
+    hb_always_assert (!inst.serialize_var_store (&c, axes));
+    if (limits.preflight)
+      hb_always_assert (c.head == c.start);
+  }
+#endif
+  return 0;
+}
 #endif

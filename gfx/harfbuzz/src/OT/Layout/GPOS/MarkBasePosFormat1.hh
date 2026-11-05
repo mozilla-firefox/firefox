@@ -49,31 +49,15 @@ struct MarkBasePosFormat1_2
 
   void collect_variation_indices (hb_collect_variation_indices_context_t *c) const
   {
-    + hb_zip (this+markCoverage, this+markArray)
-    | hb_filter (c->glyph_set, hb_first)
-    | hb_map (hb_second)
-    | hb_apply ([&] (const MarkRecord<Types>& record) { record.collect_variation_indices (c, &(this+markArray)); })
-    ;
+    (this+markArray).collect_variation_indices (c, this+markCoverage);
 
     hb_map_t klass_mapping;
     Markclass_closure_and_remap_indexes (this+markCoverage, this+markArray, *c->glyph_set, &klass_mapping);
 
-    unsigned basecount = (this+baseArray).rows;
-    auto base_iter =
-    + hb_zip (this+baseCoverage, hb_range (basecount))
-    | hb_filter (c->glyph_set, hb_first)
-    | hb_map (hb_second)
-    ;
-
     hb_sorted_vector_t<unsigned> base_indexes;
-    for (const unsigned row : base_iter)
-    {
-      + hb_range ((unsigned) classCount)
-      | hb_filter (klass_mapping)
-      | hb_map ([&] (const unsigned col) { return row * (unsigned) classCount + col; })
-      | hb_sink (base_indexes)
-      ;
-    }
+    collect_anchor_indexes (this+baseCoverage, (this+baseArray).rows,
+                            classCount, *c->glyph_set, klass_mapping,
+                            base_indexes);
     (this+baseArray).collect_variation_indices (c, base_indexes.iter ());
   }
 
@@ -200,35 +184,13 @@ struct MarkBasePosFormat1_2
 						    &klass_mapping)))
       return_trace (false);
 
-    unsigned basecount = (this+baseArray).rows;
-    auto base_iter =
-    + hb_zip (this+baseCoverage, hb_range (basecount))
-    | hb_filter (glyphset, hb_first)
-    ;
-
     new_coverage.reset ();
     hb_sorted_vector_t<unsigned> base_indexes;
-    auto &base_array = (this+baseArray);
-    for (const auto _ : + base_iter)
-    {
-      unsigned row = _.second;
-      bool non_empty = + hb_range ((unsigned) classCount)
-                       | hb_filter (klass_mapping)
-                       | hb_map ([&] (const unsigned col) { return !base_array.offset_is_null (row, col, (unsigned) classCount); })
-                       | hb_any
-                       ;
-
-      if (!non_empty) continue;
-      
-      hb_codepoint_t new_g = glyph_map.get ( _.first);
-      new_coverage.push (new_g);
-
-      + hb_range ((unsigned) classCount)
-      | hb_filter (klass_mapping)
-      | hb_map ([&] (const unsigned col) { return row * (unsigned) classCount + col; })
-      | hb_sink (base_indexes)
-      ;
-    }
+    const auto &base_array = this+baseArray;
+    collect_subset_anchor_indexes (this+baseCoverage, base_array.rows,
+                                   classCount, base_array.matrixZ.arrayZ,
+                                   glyphset, glyph_map, klass_mapping,
+                                   new_coverage, base_indexes);
 
     if (!new_coverage) return_trace (false);
     if (!out->baseCoverage.serialize_serialize (c->serializer, new_coverage.iter ()))

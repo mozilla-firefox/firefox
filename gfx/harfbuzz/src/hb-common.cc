@@ -237,10 +237,17 @@ struct hb_language_item_t {
 /* Thread-safe lockfree language list */
 
 static hb_atomic_t<hb_language_item_t *> langs;
+/* One-entry cache of the most recently returned language, so that repeated
+ * lookups of the same tag (the common case: every run of a mostly-one-language
+ * document) return without walking the whole list.  Interned languages are
+ * never freed, so a cached pointer stays valid; a stale or raced read just
+ * falls through to the list scan below. */
+static hb_atomic_t<hb_language_item_t *> last_found_lang;
 
 static inline void
 free_langs ()
 {
+  last_found_lang.set_relaxed (nullptr);
 retry:
   hb_language_item_t *first_lang = langs;
   if (unlikely (!langs.cmpexch (first_lang, nullptr)))
@@ -257,12 +264,21 @@ retry:
 static hb_language_item_t *
 lang_find_or_insert (const char *key)
 {
+  /* Fast path: the most recently returned language.  Repeated lookups of the
+   * same tag hit here without walking the list. */
+  hb_language_item_t *cached = last_found_lang.get_acquire ();
+  if (cached && *cached == key)
+    return cached;
+
 retry:
   hb_language_item_t *first_lang = langs;
 
   for (hb_language_item_t *lang = first_lang; lang; lang = lang->next)
     if (*lang == key)
+    {
+      last_found_lang.set_release (lang);
       return lang;
+    }
 
   /* Not found; allocate one. */
   hb_language_item_t *lang = (hb_language_item_t *) hb_calloc (1, sizeof (hb_language_item_t));
@@ -286,6 +302,7 @@ retry:
   if (!first_lang)
     hb_atexit (free_langs); /* First person registers atexit() callback. */
 
+  last_found_lang.set_release (lang);
   return lang;
 }
 

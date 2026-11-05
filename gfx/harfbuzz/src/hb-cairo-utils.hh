@@ -29,12 +29,13 @@
 
 #include "hb.hh"
 #include "hb-cairo.h"
+#include "hb-vector.hh"
 
 
 struct hb_cairo_budget_t
 {
   /* Cairo serializes glyph-cache population for a scaled font.  Keeping the
-   * owner there lets recursive color-glyph callbacks share one session. */
+   * owner there lets the draw and paint callbacks share one session. */
   int64_t budget = HB_BUDGET_DEFAULT;
   int64_t budget_remaining = HB_BUDGET_GLYPH;
   unsigned int active = 0;
@@ -88,10 +89,62 @@ struct hb_cairo_context_t
   bool spend (unsigned int cost, unsigned int mult = 1)
   { return hb_budget_spend (budget->budget_remaining, cost, mult); }
 
+  /* One emitted path segment.  Also counted, so that the compositing
+   * operations that cairo later performs with the path can be charged. */
+  bool spend_segment ()
+  {
+    if (unlikely (!spend (HB_BUDGET_1)))
+      return false;
+    path_segments++;
+    return true;
+  }
+
+  /* One compositing operation: a fill, a paint, or a composited group.
+   * Cairo rasterizes the path being filled and every clip path in force
+   * anew for each of them, walking every segment through the scanlines it
+   * crosses; with more than one path it first intersects them, which is
+   * quadratic in their segments.  Charge accordingly, so that a font
+   * cannot pay for a clip outline once and reuse it for thousands of
+   * paints.  WEIGHT is the relative cost of a span of the source being
+   * composited.  These counters feed the existing budget_remaining; they
+   * are not a separate per-callback limit. */
+  bool spend_paint (unsigned int weight = HB_BUDGET_512)
+  {
+    unsigned paths = clip.paths + !!path_segments;
+    unsigned segments = clip.segments + path_segments;
+    path_segments = 0;
+    return spend (1 + segments, hb_max (weight, paths > 1 ? segments : 0u));
+  }
+
+  /* The current path becomes a clip, in force until the matching pop_clip. */
+  void push_clip ()
+  {
+    if (unlikely (!clip_stack.push_or_fail (clip)))
+      budget->budget_remaining = -1;
+    clip.paths += !!path_segments;
+    clip.segments += path_segments;
+    path_segments = 0;
+  }
+
+  void pop_clip ()
+  {
+    if (likely (clip_stack.length))
+      clip = clip_stack.pop ();
+  }
+
   cairo_scaled_font_t *scaled_font;
   cairo_t *cr;
   hb_map_t *color_cache;
   hb_cairo_budget_t *budget;
+
+  /* Segments of the current path, and of the clip paths in force. */
+  unsigned path_segments = 0;
+  struct clip_t
+  {
+    unsigned paths = 0;
+    unsigned segments = 0;
+  } clip;
+  hb_vector_t<clip_t> clip_stack;
 };
 
 static inline cairo_operator_t

@@ -185,7 +185,8 @@ struct graph_t
           return Err(INVALID_ARGUMENT);
         }
 
-        if (unlikely (end >= table_size ()))
+        // end < start means start + width wrapped around.
+        if (unlikely (end < start || end >= table_size ()))
         {
           DEBUG_MSG (SUBSET_REPACK, nullptr,
                      "Invalid graph. Link position is out of bounds.");
@@ -1015,12 +1016,7 @@ public:
     // incoming edges to root_idx should be all 32 bit in length so we don't need to de-dup these
     // set the subgraph incoming edge count to match all of root_idx's incoming edges
     hb_set_t parents;
-    for (unsigned root_idx : roots)
-    {
-      if (unlikely (root_idx >= vertices_.length))
-        return Err(OUT_OF_BOUNDS);
-      subgraph.set (root_idx, wide_parents (root_idx, parents));
-    }
+    TRY (wide_parents (roots, subgraph, parents));
     for (unsigned root_idx : roots)
     {
       TRY (find_subgraph (root_idx, subgraph));
@@ -1337,6 +1333,7 @@ public:
       index_map.set (child, *r);
       return true;
     }));
+    TRY (result);
 
     return graph_result_t<void>::from(index_map, ALLOCATION_FAILURE);
   }
@@ -1769,26 +1766,45 @@ public:
   }
 
   /*
-   * Returns the numbers of incoming edges that are 24 or 32 bits wide.
+   * For each node in nodes, sets counts[node] to the number of incoming edges that
+   * are 24 or 32 bits wide. The sources of those edges are added to parents.
+   * counts is expected to be empty.
    */
-  unsigned wide_parents (unsigned node_idx, hb_set_t& parents) const
+  graph_result_t<void> wide_parents (const hb_set_t& nodes,
+                                     hb_map_t& counts,
+                                     hb_set_t& parents) const
   {
-    unsigned count = 0;
-    for (unsigned p : vertices_[node_idx].parents_iter ())
+    // A single parent may link to many of the nodes (eg. a ConditionSet with
+    // thousands of 32 bit offsets), so collect the parents first and walk the
+    // links of each one only once.
+    hb_set_t all_parents;
+    for (unsigned node_idx : nodes)
+    {
+      if (unlikely (node_idx >= vertices_.length))
+        return Err(OUT_OF_BOUNDS);
+      counts.set (node_idx, 0);
+      for (unsigned p : vertices_[node_idx].parents_iter ())
+        all_parents.add (p);
+    }
+    TRY (graph_result_t<void>::from (all_parents, ALLOCATION_FAILURE));
+    TRY (graph_result_t<void>::from (counts, ALLOCATION_FAILURE));
+
+    for (unsigned p : all_parents)
     {
       // Only real links can be wide
       for (const auto& l : vertices_[p].obj().real_links)
       {
-        if (l.objidx == node_idx
-            && (l.width == 3 || l.width == 4)
-            && !l.is_signed)
+        hb_codepoint_t *count;
+        if ((l.width == 3 || l.width == 4)
+            && !l.is_signed
+            && counts.has (l.objidx, &count))
         {
-          count++;
+          (*count)++;
           parents.add (p);
         }
       }
     }
-    return count;
+    return graph_result_t<void>::from (parents, ALLOCATION_FAILURE);
   }
 
  public:
@@ -1871,8 +1887,8 @@ public:
     TRY (graph_result_t<void>::from (queue, ALLOCATION_FAILURE));
 
     hb_vector_t<bool> visited;
-    visited.resize (vertices_.length);
-    TRY (graph_result_t<void>::from (visited, ALLOCATION_FAILURE));
+    if (unlikely (!visited.resize (vertices_.length)))
+      return Err(ALLOCATION_FAILURE);
 
     while (!queue.in_error () && !queue.is_empty ())
     {

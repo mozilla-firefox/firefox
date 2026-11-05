@@ -156,10 +156,13 @@ struct TrackData
     float t0 = trackTable[i].get_track_value ();
     float t1 = trackTable[j].get_track_value ();
 
-    float t = (track - t0) / (t1 - t0);
-
     float a = trackTable[i].get_value (ptem, base, size_table);
     float b = trackTable[j].get_value (ptem, base, size_table);
+
+    // Deal with font bugs.
+    if (unlikely (t0 == t1)) return (a + b) * 0.5f;
+
+    float t = (track - t0) / (t1 - t0);
     return a + t * (b - a);
   }
 

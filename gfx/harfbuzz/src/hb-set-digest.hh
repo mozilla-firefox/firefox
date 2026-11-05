@@ -70,7 +70,7 @@ struct hb_set_digest_t
   // No science in these. Intuition and testing only.
   using mask_t = uint64_t;
 
-  static constexpr unsigned n = ARRAY_LENGTH_CONST (hb_set_digest_shifts);
+  static constexpr unsigned n = ARRAY_LENGTH (hb_set_digest_shifts);
   static constexpr unsigned mask_bytes = sizeof (mask_t);
   static constexpr unsigned mask_bits = sizeof (mask_t) * 8;
   static constexpr hb_codepoint_t mb1 = mask_bits - 1;

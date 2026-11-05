@@ -101,6 +101,7 @@ struct SubstLookup : Lookup
   {
     if (unlikely (!c->len)) return false;
     if (!accel->may_have (c->glyphs[0])) return false;
+    if (unlikely (!c->charge_ops (1 + get_subtable_count ()))) return false;
       return dispatch (c);
   }
 

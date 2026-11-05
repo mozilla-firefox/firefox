@@ -85,6 +85,8 @@ public:
   hb_decycler_t layers_decycler;
   int depth_left = HB_MAX_NESTING_LEVEL;
   int edge_count = HB_MAX_GRAPH_EDGE_COUNT;
+  int64_t local_budget = HB_BUDGET_GLYPH;
+  int64_t *budget;
 
   hb_paint_context_t (const void *base_,
 		      hb_paint_funcs_t *funcs_,
@@ -104,8 +106,12 @@ public:
 #endif
     ),
     foreground (foreground_),
-    instancer (instancer_)
+    instancer (instancer_),
+    budget (funcs->get_budget_remaining_ptr (data))
   {
+    if (!budget)
+      budget = &local_budget;
+
     if (font->is_synthetic)
     {
       font = hb_font_create_sub_font (font);
@@ -189,8 +195,12 @@ struct hb_colrv1_closure_context_t :
 
   void add_layer_indices (unsigned first_layer_index, unsigned num_of_layers)
   {
-    if (num_of_layers == 0) return;
-    layer_indices->add_range (first_layer_index, first_layer_index + num_of_layers - 1);
+    if (!num_of_layers || first_layer_index == hb_set_t::INVALID) return;
+    unsigned last;
+    if (unlikely (hb_unsigned_add_overflows (first_layer_index, num_of_layers - 1, &last) ||
+		  last == hb_set_t::INVALID))
+      last = hb_set_t::INVALID - 1;
+    layer_indices->add_range (first_layer_index, last);
   }
 
   void add_palette_index (unsigned palette_index)
@@ -199,7 +209,11 @@ struct hb_colrv1_closure_context_t :
   void add_var_idxes (unsigned first_var_idx, unsigned num_idxes)
   {
     if (!num_idxes || first_var_idx == VarIdx::NO_VARIATION) return;
-    variation_indices->add_range (first_var_idx, first_var_idx + num_idxes - 1);
+    unsigned last;
+    if (unlikely (hb_unsigned_add_overflows (first_var_idx, num_idxes - 1, &last) ||
+		  last == VarIdx::NO_VARIATION))
+      last = VarIdx::NO_VARIATION - 1;
+    variation_indices->add_range (first_var_idx, last);
   }
 
   public:
@@ -236,6 +250,9 @@ struct hb_colrv1_depend_context_t :
   template <typename T>
   return_t dispatch (const T &obj)
   {
+    if (unlikely (!spend_ops ()))
+      return hb_empty_t ();
+
     if (unlikely (nesting_level_left == 0))
       return hb_empty_t ();
 
@@ -261,6 +278,20 @@ struct hb_colrv1_depend_context_t :
     return false;
   }
 
+  /* Layers and paints shared between base glyphs are walked again for each
+   * of them, which sanitize does not charge for.  Bound the total work and
+   * fail, rather than return a graph with edges missing. */
+  bool spend_ops (unsigned count = 1)
+  {
+    max_ops -= (int) count;
+    if (unlikely (max_ops < 0))
+    {
+      max_ops = -1;
+      return depend_data->fail ();
+    }
+    return true;
+  }
+
   const COLR* get_colr_table () const
   { return colr; }
 
@@ -268,14 +299,19 @@ struct hb_colrv1_depend_context_t :
   const COLR *colr;
   hb_depend_data_builder_t *depend_data;
   hb_set_t visited_paint;
+  int max_ops;
   unsigned nesting_level_left;
   hb_codepoint_t source_gid;
 
   hb_colrv1_depend_context_t (const COLR *colr_,
+                              unsigned colr_length,
                               hb_depend_data_builder_t *depend_data_,
                               unsigned nesting_level_left_ = HB_MAX_NESTING_LEVEL) :
                           colr (colr_),
                           depend_data (depend_data_),
+                          max_ops ((int) hb_clamp ((uint64_t) colr_length * HB_SANITIZE_MAX_OPS_FACTOR,
+                                                   (uint64_t) HB_SANITIZE_MAX_OPS_MIN,
+                                                   (uint64_t) HB_SANITIZE_MAX_OPS_MAX)),
                           nesting_level_left (nesting_level_left_),
                           source_gid (0)
   {}
@@ -335,6 +371,8 @@ template <typename T>
 struct Variable
 {
   static constexpr bool is_variable = true;
+
+  const T& get_value () const { return value; }
 
   Variable<T>* copy (hb_serialize_context_t *c) const
   {
@@ -418,6 +456,8 @@ struct NoVariable
 {
   static constexpr bool is_variable = false;
 
+  const T& get_value () const { return value; }
+
   static constexpr uint32_t varIdxBase = VarIdx::NO_VARIATION;
 
   NoVariable<T>* copy (hb_serialize_context_t *c) const
@@ -476,6 +516,14 @@ struct NoVariable
 
 // Color structures
 
+template <typename Type, unsigned fraction_bits>
+static void
+set_fixed_clamped (HBFixed<Type, fraction_bits> &out, float value)
+{
+  // Variation deltas are unbounded; clamp before the implicit integer cast.
+  out.set_int (hb_clamp_to<typename Type::type> (roundf ((value / HBFixed<Type, fraction_bits>::mult))));
+}
+
 struct ColorStop
 {
   void dependv1 (hb_colrv1_depend_context_t * c) const {}
@@ -496,8 +544,12 @@ struct ColorStop
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->stopOffset.set_float (stopOffset.to_float(instancer (varIdxBase, 0)));
-      out->alpha.set_float (alpha.to_float (instancer (varIdxBase, 1)));
+      set_fixed_clamped (out->stopOffset, stopOffset.to_float(instancer (varIdxBase, 0)));
+      float a = alpha.to_float (instancer (varIdxBase, 1));
+      /* Partial instances must keep the unclamped base: retained axes can
+       * bring the alpha back into range. Clamp before narrowing a full
+       * instance so overflow cannot wrap an opaque alpha to transparent. */
+      set_fixed_clamped (out->alpha, c->plan->all_axes_pinned ? hb_clamp (a, 0.f, 1.f) : a);
     }
 
     return_trace (c->serializer->check_assign (out->paletteIndex, c->plan->colr_palettes.get (paletteIndex),
@@ -590,6 +642,10 @@ struct ColorLine
       for (i = 0; i < *count && start + i < len; i++)
         stops[start + i].get_color_stop (c, &color_stops[i], instancer);
       *count = i;
+
+      /* A gradient is one graph edge however long its color line is, and
+       * color lines can be shared.  recurse() stops once this runs out. */
+      hb_budget_spend (*c->budget, HB_BUDGET_16, i);
     }
 
     return len;
@@ -665,12 +721,17 @@ struct Affine2x3
     if (unlikely (!out)) return_trace (false);
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->xx.set_float (xx.to_float(instancer (varIdxBase, 0)));
-      out->yx.set_float (yx.to_float(instancer (varIdxBase, 1)));
-      out->xy.set_float (xy.to_float(instancer (varIdxBase, 2)));
-      out->yy.set_float (yy.to_float(instancer (varIdxBase, 3)));
-      out->dx.set_float (dx.to_float(instancer (varIdxBase, 4)));
-      out->dy.set_float (dy.to_float(instancer (varIdxBase, 5)));
+      auto fold = [&] (F16DOT16 &target, F16DOT16 source, unsigned offset) {
+        // Keep the stored integer precise while applying the float delta.
+        target.set_int (hb_clamp_to<int32_t> (roundf ((double) source.to_int () +
+                                                    (double) instancer (varIdxBase, offset))));
+      };
+      fold (out->xx, xx, 0);
+      fold (out->yx, yx, 1);
+      fold (out->xy, xy, 2);
+      fold (out->yy, yy, 3);
+      fold (out->dx, dx, 4);
+      fold (out->dy, dy, 5);
     }
     return_trace (true);
   }
@@ -747,7 +808,10 @@ struct PaintSolid
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
-      out->alpha.set_float (alpha.to_float (instancer (varIdxBase, 0)));
+    {
+      float a = alpha.to_float (instancer (varIdxBase, 0));
+      set_fixed_clamped (out->alpha, c->plan->all_axes_pinned ? hb_clamp (a, 0.f, 1.f) : a);
+    }
 
     if (format == 3 && c->plan->all_axes_pinned)
         out->format = 2;
@@ -808,12 +872,12 @@ struct PaintLinearGradient
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->x0 = x0 + (int) roundf (instancer (varIdxBase, 0));
-      out->y0 = y0 + (int) roundf (instancer (varIdxBase, 1));
-      out->x1 = x1 + (int) roundf (instancer (varIdxBase, 2));
-      out->y1 = y1 + (int) roundf (instancer (varIdxBase, 3));
-      out->x2 = x2 + (int) roundf (instancer (varIdxBase, 4));
-      out->y2 = y2 + (int) roundf (instancer (varIdxBase, 5));
+      out->x0 = hb_clamp_to<int16_t> ((double) x0 + (double) roundf (instancer (varIdxBase, 0)));
+      out->y0 = hb_clamp_to<int16_t> ((double) y0 + (double) roundf (instancer (varIdxBase, 1)));
+      out->x1 = hb_clamp_to<int16_t> ((double) x1 + (double) roundf (instancer (varIdxBase, 2)));
+      out->y1 = hb_clamp_to<int16_t> ((double) y1 + (double) roundf (instancer (varIdxBase, 3)));
+      out->x2 = hb_clamp_to<int16_t> ((double) x2 + (double) roundf (instancer (varIdxBase, 4)));
+      out->y2 = hb_clamp_to<int16_t> ((double) y2 + (double) roundf (instancer (varIdxBase, 5)));
     }
 
     if (format == 5 && c->plan->all_axes_pinned)
@@ -862,6 +926,34 @@ struct PaintLinearGradient
 template <template<typename> class Var>
 struct PaintRadialGradient
 {
+  bool constant_after_pinning (hb_subset_context_t *c,
+                               const ItemVarStoreInstancer &instancer) const
+  {
+    if (c->plan->has_avar2) return false;
+    /* The answer depends on the table and the plan only, but shared paints
+     * are visited once per reference, so compute it once per plan. */
+    int &constant = c->plan->colrv1_constant_after_pinning;
+    if (constant >= 0) return constant;
+    const auto &regions = instancer.varStore->get_region_list ();
+    for (unsigned i = 0; i < regions.regionCount; i++)
+    {
+      hb_hashmap_t<hb_tag_t, Triple> axes;
+      if (!regions.get_var_region (i, c->plan->axes_old_index_tag_map, axes))
+      {
+        c->serializer->err (HB_SERIALIZE_ERROR_OUT_OF_ROOM);
+        return false;
+      }
+      for (auto axis : axes)
+      {
+        Triple *limit;
+        if (!c->plan->user_axes_location.has (axis.first, &limit) ||
+            limit->minimum != limit->maximum)
+          return (constant = false);
+      }
+    }
+    return (constant = true);
+  }
+
   void dependv1 (hb_colrv1_depend_context_t* c) const {}
 
   void closurev1 (hb_colrv1_closure_context_t* c) const
@@ -870,22 +962,156 @@ struct PaintRadialGradient
     c->num_var_idxes = 6;
   }
 
+  bool subset_nonnegative (hb_subset_context_t *c,
+                           const ItemVarStoreInstancer &instancer,
+                           uint32_t varIdxBase) const
+  {
+    double source[6] = {
+      x0 + (double) roundf (instancer (varIdxBase, 0)),
+      y0 + (double) roundf (instancer (varIdxBase, 1)),
+      radius0 + (double) roundf (instancer (varIdxBase, 2)),
+      x1 + (double) roundf (instancer (varIdxBase, 3)),
+      y1 + (double) roundf (instancer (varIdxBase, 4)),
+      radius1 + (double) roundf (instancer (varIdxBase, 5))
+    };
+    auto transparent = [&] {
+      auto *out = c->serializer->allocate_size<PaintSolid> (5);
+      if (!out) return false;
+      out->format = 2; out->paletteIndex = 0xFFFF; out->alpha.set_float (0);
+      return true;
+    };
+    const auto &line = this+colorLine;
+    if (source[2] == source[5] || !line.stops.len) return transparent ();
+    struct stop_t { double offset, alpha; unsigned palette, order; };
+    hb_vector_t<stop_t> stops;
+    if (!stops.alloc (line.stops.len)) return false;
+    unsigned order = 0;
+    for (const auto &entry : line.stops.iter ())
+    {
+      const auto &stop = entry.get_value ();
+      stops.push (stop_t {(double) roundf (stop.stopOffset.to_float (instancer (entry.varIdxBase, 0)) * 16384.f) / 16384.,
+                   (double) hb_clamp (stop.alpha.to_float (instancer (entry.varIdxBase, 1)), 0.f, 1.f),
+                   stop.paletteIndex, order++});
+    }
+    if (stops.in_error ()) return false;
+    stops.qsort ([] (const stop_t &a, const stop_t &b) {
+      return a.offset < b.offset ? -1 : a.offset > b.offset ? 1 :
+             a.order < b.order ? -1 : a.order > b.order ? 1 : 0;
+    });
+    double dr = source[5] - source[2];
+    // Fractional shifts must preserve both integer circles and F2Dot14 stops.
+    unsigned lattice = 16384;
+    for (unsigned j = 0; j < 3; j++)
+    {
+      double remainder = fmod (fabs (source[j + 3] - source[j]), 16384.);
+      if (!(remainder >= 0 && remainder < 16384))
+      {
+        c->serializer->err (HB_SERIALIZE_ERROR_INT_OVERFLOW);
+        return false;
+      }
+      unsigned right = (unsigned) remainder;
+      while (right) { unsigned r = lattice % right; lattice = right; right = r; }
+    }
+    for (unsigned shift = 0; shift < 16; shift++)
+    {
+      double b = 1u << shift;
+      double coarse = dr > 0 ? ceil (-source[2] / dr) : floor (source[2] / -dr) - b;
+      double fine = dr > 0 ? ceil (-source[2] / dr * lattice) / lattice :
+                            floor (source[2] / -dr * lattice) / lattice - b;
+      double candidates[] = {coarse, fine};
+      for (double a : candidates)
+      {
+        // omega = a + b*q. Positive b preserves the largest valid root.
+        double geometry[6];
+        bool fits = true;
+        for (unsigned j = 0; j < 3; j++)
+        {
+          double difference = source[j + 3] - source[j];
+          geometry[j] = source[j] + a * difference;
+          geometry[j + 3] = source[j] + (a + b) * difference;
+          double low = j == 2 ? 0 : -32768, high = j == 2 ? 65535 : 32767;
+          fits &= geometry[j] >= low && geometry[j] <= high &&
+                  geometry[j + 3] >= low && geometry[j + 3] <= high;
+        }
+        if (!fits) continue;
+        unsigned first = 0, count = stops.length;
+        double min = (stops[0].offset - a) / b, max = (stops.tail ().offset - a) / b;
+        double bias = 0;
+        bool constant = false;
+        if (line.extend == Extend::EXTEND_PAD)
+        {
+          double tip = -geometry[2] / (b * dr);
+          if ((dr > 0 && max <= tip) || (dr < 0 && min > tip))
+          {
+            first = dr > 0 ? stops.length - 1 : 0;
+            count = 1; constant = true;
+          }
+        }
+        else
+        {
+          double period = max - min;
+          if (line.extend == Extend::EXTEND_REFLECT) period *= 2;
+          if (period <= 0) return transparent ();
+          double n = ceil ((-2 - min) / period);
+          if (n > floor ((32767. / 16384. - max) / period)) continue;
+          bias = n * period;
+        }
+        for (unsigned j = 0; j < count; j++)
+        {
+          double bits = constant ? 0 : ((stops[first + j].offset - a) / b + bias) * 16384;
+          fits &= bits >= -32768 && bits <= 32767 && bits == round (bits);
+        }
+        if (!fits) continue;
+        auto *out = c->serializer->allocate_size<PaintRadialGradient<NoVariable>> (16);
+        if (!out) return false;
+        out->format = 6;
+        out->x0 = (int) geometry[0]; out->y0 = (int) geometry[1]; out->radius0 = (unsigned) geometry[2];
+        out->x1 = (int) geometry[3]; out->y1 = (int) geometry[4]; out->radius1 = (unsigned) geometry[5];
+        c->serializer->push ();
+        auto *out_line = c->serializer->allocate_size<ColorLine<NoVariable>> (3 + count * ColorStop::static_size);
+        if (!out_line) { c->serializer->pop_discard (); return false; }
+        out_line->extend = line.extend;
+        out_line->stops.len = count;
+        for (unsigned j = 0; j < count; j++)
+        {
+          const auto &stop = stops[first + j];
+          auto &out_stop = out_line->stops[j].value;
+          out_stop.stopOffset.set_float ((float) (constant ? 0 : (stop.offset - a) / b + bias));
+          out_stop.alpha.set_float ((float) stop.alpha);
+          if (!c->serializer->check_assign (out_stop.paletteIndex, c->plan->colr_palettes.get (stop.palette),
+                                            HB_SERIALIZE_ERROR_INT_OVERFLOW))
+          { c->serializer->pop_discard (); return false; }
+        }
+        c->serializer->add_link (out->colorLine, c->serializer->pop_pack ());
+        return !c->serializer->in_error ();
+      }
+    }
+    // Reject an unrepresentable static result instead of changing its colors.
+    c->serializer->err (HB_SERIALIZE_ERROR_INT_OVERFLOW);
+    return false;
+  }
+
   bool subset (hb_subset_context_t *c,
                const ItemVarStoreInstancer &instancer,
                uint32_t varIdxBase) const
   {
     TRACE_SUBSET (this);
+    if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION &&
+        (c->plan->all_axes_pinned || constant_after_pinning (c, instancer)) &&
+        (radius0 + (double) roundf (instancer (varIdxBase, 2)) < 0 ||
+         radius1 + (double) roundf (instancer (varIdxBase, 5)) < 0))
+      return_trace (subset_nonnegative (c, instancer, varIdxBase));
     auto *out = c->serializer->embed (this);
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->x0 = x0 + (int) roundf (instancer (varIdxBase, 0));
-      out->y0 = y0 + (int) roundf (instancer (varIdxBase, 1));
-      out->radius0 = hb_clamp ((int) radius0 + (int) roundf (instancer (varIdxBase, 2)), 0, 0xFFFF);
-      out->x1 = x1 + (int) roundf (instancer (varIdxBase, 3));
-      out->y1 = y1 + (int) roundf (instancer (varIdxBase, 4));
-      out->radius1 = hb_clamp ((int) radius1 + (int) roundf (instancer (varIdxBase, 5)), 0, 0xFFFF);
+      out->x0 = hb_clamp_to<int16_t> ((double) x0 + (double) roundf (instancer (varIdxBase, 0)));
+      out->y0 = hb_clamp_to<int16_t> ((double) y0 + (double) roundf (instancer (varIdxBase, 1)));
+      out->radius0 = hb_clamp_to<uint16_t> ((double) radius0 + (double) roundf (instancer (varIdxBase, 2)));
+      out->x1 = hb_clamp_to<int16_t> ((double) x1 + (double) roundf (instancer (varIdxBase, 3)));
+      out->y1 = hb_clamp_to<int16_t> ((double) y1 + (double) roundf (instancer (varIdxBase, 4)));
+      out->radius1 = hb_clamp_to<uint16_t> ((double) radius1 + (double) roundf (instancer (varIdxBase, 5)));
     }
 
     if (format == 7 && c->plan->all_axes_pinned)
@@ -952,10 +1178,10 @@ struct PaintSweepGradient
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->centerX = centerX + (int) roundf (instancer (varIdxBase, 0));
-      out->centerY = centerY + (int) roundf (instancer (varIdxBase, 1));
-      out->startAngle.set_float (startAngle.to_float (instancer (varIdxBase, 2)));
-      out->endAngle.set_float (endAngle.to_float (instancer (varIdxBase, 3)));
+      out->centerX = hb_clamp_to<int16_t> ((double) centerX + (double) roundf (instancer (varIdxBase, 0)));
+      out->centerY = hb_clamp_to<int16_t> ((double) centerY + (double) roundf (instancer (varIdxBase, 1)));
+      set_fixed_clamped (out->startAngle, startAngle.to_float (instancer (varIdxBase, 2)));
+      set_fixed_clamped (out->endAngle, endAngle.to_float (instancer (varIdxBase, 3)));
     }
 
     if (format == 9 && c->plan->all_axes_pinned)
@@ -1121,8 +1347,8 @@ struct PaintTranslate
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->dx = dx + (int) roundf (instancer (varIdxBase, 0));
-      out->dy = dy + (int) roundf (instancer (varIdxBase, 1));
+      out->dx = hb_clamp_to<int16_t> ((double) dx + (double) roundf (instancer (varIdxBase, 0)));
+      out->dy = hb_clamp_to<int16_t> ((double) dy + (double) roundf (instancer (varIdxBase, 1)));
     }
 
     if (format == 15 && c->plan->all_axes_pinned)
@@ -1156,6 +1382,70 @@ struct PaintTranslate
   DEFINE_SIZE_STATIC (4 + 2 * FWORD::static_size);
 };
 
+template <typename Source>
+static bool serialize_scale_transform (hb_subset_context_t *c,
+                                       float sx, float sy, float dx, float dy,
+                                       const Source &source)
+{
+  auto *out = c->serializer->allocate_size<PaintTransform<NoVariable>> (7);
+  if (unlikely (!out)) return false;
+  out->format = 12;
+
+  c->serializer->push ();
+  auto *transform = c->serializer->allocate_size<Affine2x3> (Affine2x3::static_size);
+  if (unlikely (!transform))
+  {
+    c->serializer->pop_discard ();
+    return false;
+  }
+  set_fixed_clamped (transform->xx, sx);
+  transform->yx.set_float (0);
+  transform->xy.set_float (0);
+  set_fixed_clamped (transform->yy, sy);
+  set_fixed_clamped (transform->dx, dx);
+  set_fixed_clamped (transform->dy, dy);
+  c->serializer->add_link (out->transform, c->serializer->pop_pack ());
+
+  c->serializer->push ();
+  bool ret = source ();
+  if (ret)
+    c->serializer->add_link (out->src, c->serializer->pop_pack ());
+  else
+    c->serializer->pop_discard ();
+  return ret;
+}
+
+template <typename Base>
+static bool subset_scale_as_transform (hb_subset_context_t *c,
+                                      const Base *base,
+                                      const Offset24To<Paint> &src,
+                                      const ItemVarStoreInstancer &instancer,
+                                      float sx, float sy,
+                                      float cx = 0, float cy = 0)
+{
+  if (src.is_null ()) return false;
+  auto source = [&] { return c->dispatch (base+src, instancer); };
+  float dx = cx * (1 - sx), dy = cy * (1 - sy);
+  if (dx >= -32768 && dx < 32768 && dy >= -32768 && dy < 32768)
+    return serialize_scale_transform (c, sx, sy, dx, dy, source);
+
+  // Preserve the center as separate translations when the combined matrix
+  // exceeds Fixed. Splitting also makes the inverse of -32768 representable.
+  auto inner = [&] {
+    return serialize_scale_transform (c, 1, 1, -cx / 2, -cy / 2, source);
+  };
+  auto inverse = [&] {
+    return serialize_scale_transform (c, 1, 1, -cx / 2, -cy / 2, inner);
+  };
+  auto scale = [&] {
+    return serialize_scale_transform (c, sx, sy, 0, 0, inverse);
+  };
+  auto outer = [&] {
+    return serialize_scale_transform (c, 1, 1, cx / 2, cy / 2, scale);
+  };
+  return serialize_scale_transform (c, 1, 1, cx / 2, cy / 2, outer);
+}
+
 struct PaintScale
 {
   HB_INTERNAL void dependv1 (hb_colrv1_depend_context_t* c) const;
@@ -1166,13 +1456,21 @@ struct PaintScale
                uint32_t varIdxBase) const
   {
     TRACE_SUBSET (this);
+    if (c->plan->all_axes_pinned && instancer &&
+        !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
+    {
+      float sx = roundf (scaleX.to_float (instancer (varIdxBase, 0)) * 16384) / 16384;
+      float sy = roundf (scaleY.to_float (instancer (varIdxBase, 1)) * 16384) / 16384;
+      if (sx < -2 || sx >= 2 || sy < -2 || sy >= 2)
+        return_trace (subset_scale_as_transform (c, this, src, instancer, sx, sy));
+    }
     auto *out = c->serializer->embed (this);
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->scaleX.set_float (scaleX.to_float (instancer (varIdxBase, 0)));
-      out->scaleY.set_float (scaleY.to_float (instancer (varIdxBase, 1)));
+      set_fixed_clamped (out->scaleX, scaleX.to_float (instancer (varIdxBase, 0)));
+      set_fixed_clamped (out->scaleY, scaleY.to_float (instancer (varIdxBase, 1)));
     }
 
     if (format == 17 && c->plan->all_axes_pinned)
@@ -1216,15 +1514,26 @@ struct PaintScaleAroundCenter
                uint32_t varIdxBase) const
   {
     TRACE_SUBSET (this);
+    if (c->plan->all_axes_pinned && instancer &&
+        !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
+    {
+      float sx = roundf (scaleX.to_float (instancer (varIdxBase, 0)) * 16384) / 16384;
+      float sy = roundf (scaleY.to_float (instancer (varIdxBase, 1)) * 16384) / 16384;
+      if (sx < -2 || sx >= 2 || sy < -2 || sy >= 2)
+        return_trace (subset_scale_as_transform (
+            c, this, src, instancer, sx, sy,
+            centerX + roundf (instancer (varIdxBase, 2)),
+            centerY + roundf (instancer (varIdxBase, 3))));
+    }
     auto *out = c->serializer->embed (this);
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->scaleX.set_float (scaleX.to_float (instancer (varIdxBase, 0)));
-      out->scaleY.set_float (scaleY.to_float (instancer (varIdxBase, 1)));
-      out->centerX = centerX + (int) roundf (instancer (varIdxBase, 2));
-      out->centerY = centerY + (int) roundf (instancer (varIdxBase, 3));
+      set_fixed_clamped (out->scaleX, scaleX.to_float (instancer (varIdxBase, 0)));
+      set_fixed_clamped (out->scaleY, scaleY.to_float (instancer (varIdxBase, 1)));
+      out->centerX = hb_clamp_to<int16_t> ((double) centerX + (double) roundf (instancer (varIdxBase, 2)));
+      out->centerY = hb_clamp_to<int16_t> ((double) centerY + (double) roundf (instancer (varIdxBase, 3)));
     }
 
     if (format == 19 && c->plan->all_axes_pinned)
@@ -1272,11 +1581,18 @@ struct PaintScaleUniform
                uint32_t varIdxBase) const
   {
     TRACE_SUBSET (this);
+    if (c->plan->all_axes_pinned && instancer &&
+        !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
+    {
+      float s = roundf (scale.to_float (instancer (varIdxBase, 0)) * 16384) / 16384;
+      if (s < -2 || s >= 2)
+        return_trace (subset_scale_as_transform (c, this, src, instancer, s, s));
+    }
     auto *out = c->serializer->embed (this);
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
-      out->scale.set_float (scale.to_float (instancer (varIdxBase, 0)));
+      set_fixed_clamped (out->scale, scale.to_float (instancer (varIdxBase, 0)));
 
     if (format == 21 && c->plan->all_axes_pinned)
         out->format = 20;
@@ -1317,14 +1633,24 @@ struct PaintScaleUniformAroundCenter
                uint32_t varIdxBase) const
   {
     TRACE_SUBSET (this);
+    if (c->plan->all_axes_pinned && instancer &&
+        !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
+    {
+      float s = roundf (scale.to_float (instancer (varIdxBase, 0)) * 16384) / 16384;
+      if (s < -2 || s >= 2)
+        return_trace (subset_scale_as_transform (
+            c, this, src, instancer, s, s,
+            centerX + roundf (instancer (varIdxBase, 1)),
+            centerY + roundf (instancer (varIdxBase, 2))));
+    }
     auto *out = c->serializer->embed (this);
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->scale.set_float (scale.to_float (instancer (varIdxBase, 0)));
-      out->centerX = centerX + (int) roundf (instancer (varIdxBase, 1));
-      out->centerY = centerY + (int) roundf (instancer (varIdxBase, 2));
+      set_fixed_clamped (out->scale, scale.to_float (instancer (varIdxBase, 0)));
+      out->centerX = hb_clamp_to<int16_t> ((double) centerX + (double) roundf (instancer (varIdxBase, 1)));
+      out->centerY = hb_clamp_to<int16_t> ((double) centerY + (double) roundf (instancer (varIdxBase, 2)));
     }
 
     if (format == 23 && c->plan->all_axes_pinned)
@@ -1374,7 +1700,7 @@ struct PaintRotate
     if (unlikely (!out)) return_trace (false);
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
-      out->angle.set_float (angle.to_float (instancer (varIdxBase, 0)));
+      set_fixed_clamped (out->angle, angle.to_float (instancer (varIdxBase, 0)));
 
     if (format == 25 && c->plan->all_axes_pinned)
       out->format = 24;
@@ -1420,9 +1746,9 @@ struct PaintRotateAroundCenter
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->angle.set_float (angle.to_float (instancer (varIdxBase, 0)));
-      out->centerX = centerX + (int) roundf (instancer (varIdxBase, 1));
-      out->centerY = centerY + (int) roundf (instancer (varIdxBase, 2));
+      set_fixed_clamped (out->angle, angle.to_float (instancer (varIdxBase, 0)));
+      out->centerX = hb_clamp_to<int16_t> ((double) centerX + (double) roundf (instancer (varIdxBase, 1)));
+      out->centerY = hb_clamp_to<int16_t> ((double) centerY + (double) roundf (instancer (varIdxBase, 2)));
     }
 
     if (format ==27 && c->plan->all_axes_pinned)
@@ -1473,8 +1799,8 @@ struct PaintSkew
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->xSkewAngle.set_float (xSkewAngle.to_float (instancer (varIdxBase, 0)));
-      out->ySkewAngle.set_float (ySkewAngle.to_float (instancer (varIdxBase, 1)));
+      set_fixed_clamped (out->xSkewAngle, xSkewAngle.to_float (instancer (varIdxBase, 0)));
+      set_fixed_clamped (out->ySkewAngle, ySkewAngle.to_float (instancer (varIdxBase, 1)));
     }
 
     if (format == 29 && c->plan->all_axes_pinned)
@@ -1523,10 +1849,10 @@ struct PaintSkewAroundCenter
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->xSkewAngle.set_float (xSkewAngle.to_float (instancer (varIdxBase, 0)));
-      out->ySkewAngle.set_float (ySkewAngle.to_float (instancer (varIdxBase, 1)));
-      out->centerX = centerX + (int) roundf (instancer (varIdxBase, 2));
-      out->centerY = centerY + (int) roundf (instancer (varIdxBase, 3));
+      set_fixed_clamped (out->xSkewAngle, xSkewAngle.to_float (instancer (varIdxBase, 0)));
+      set_fixed_clamped (out->ySkewAngle, ySkewAngle.to_float (instancer (varIdxBase, 1)));
+      out->centerX = hb_clamp_to<int16_t> ((double) centerX + (double) roundf (instancer (varIdxBase, 2)));
+      out->centerY = hb_clamp_to<int16_t> ((double) centerY + (double) roundf (instancer (varIdxBase, 3)));
     }
 
     if (format == 31 && c->plan->all_axes_pinned)
@@ -1679,10 +2005,10 @@ struct ClipBoxFormat1
 
     if (instancer && !c->plan->pinned_at_default && varIdxBase != VarIdx::NO_VARIATION)
     {
-      out->xMin = xMin + (int) roundf (instancer (varIdxBase, 0));
-      out->yMin = yMin + (int) roundf (instancer (varIdxBase, 1));
-      out->xMax = xMax + (int) roundf (instancer (varIdxBase, 2));
-      out->yMax = yMax + (int) roundf (instancer (varIdxBase, 3));
+      out->xMin = hb_clamp_to<int16_t> ((double) xMin + (double) floorf (instancer (varIdxBase, 0)));
+      out->yMin = hb_clamp_to<int16_t> ((double) yMin + (double) floorf (instancer (varIdxBase, 1)));
+      out->xMax = hb_clamp_to<int16_t> ((double) xMax + (double) ceilf (instancer (varIdxBase, 2)));
+      out->yMax = hb_clamp_to<int16_t> ((double) yMax + (double) ceilf (instancer (varIdxBase, 3)));
     }
 
     if (format == 2 && c->plan->all_axes_pinned)
@@ -1708,15 +2034,15 @@ struct ClipBoxFormat2 : Variable<ClipBoxFormat1>
     value.get_clip_box(clip_box, instancer);
     if (instancer)
     {
-      clip_box.xMin = hb_saturate_add (clip_box.xMin, hb_clamp_to<int> (roundf (instancer (varIdxBase, 0))));
-      clip_box.yMin = hb_saturate_add (clip_box.yMin, hb_clamp_to<int> (roundf (instancer (varIdxBase, 1))));
-      clip_box.xMax = hb_saturate_add (clip_box.xMax, hb_clamp_to<int> (roundf (instancer (varIdxBase, 2))));
-      clip_box.yMax = hb_saturate_add (clip_box.yMax, hb_clamp_to<int> (roundf (instancer (varIdxBase, 3))));
+      clip_box.xMin = hb_saturate_add (clip_box.xMin, hb_clamp_to<int> (floorf (instancer (varIdxBase, 0))));
+      clip_box.yMin = hb_saturate_add (clip_box.yMin, hb_clamp_to<int> (floorf (instancer (varIdxBase, 1))));
+      clip_box.xMax = hb_saturate_add (clip_box.xMax, hb_clamp_to<int> (ceilf (instancer (varIdxBase, 2))));
+      clip_box.yMax = hb_saturate_add (clip_box.yMax, hb_clamp_to<int> (ceilf (instancer (varIdxBase, 3))));
     }
   }
 
   void closurev1 (hb_colrv1_closure_context_t* c) const
-  { c->variation_indices->add_range (varIdxBase, varIdxBase + 3); }
+  { c->add_var_idxes (varIdxBase, 4); }
 };
 
 struct ClipBox
@@ -1896,17 +2222,17 @@ struct ClipList
 
     hb_map_t new_gid_offset_map;
     hb_set_t new_gids;
-    for (const ClipRecord& record : clips.iter ())
+    /* Look up each retained glyph the same way get_extents () does, instead of
+     * walking every gid of every record: records are not required to be
+     * disjoint, so that can cost num_records * num_glyphs. */
+    for (hb_codepoint_t gid : glyphset)
     {
-      unsigned start_gid = record.startGlyphID;
-      unsigned end_gid = record.endGlyphID;
-      for (unsigned gid = start_gid; gid <= end_gid; gid++)
-      {
-        if (!glyphset.has (gid) || !glyph_map.has (gid)) continue;
-        unsigned new_gid = glyph_map.get (gid);
-        new_gid_offset_map.set (new_gid, record.clipBox);
-        new_gids.add (new_gid);
-      }
+      const hb_codepoint_t *new_gid;
+      if (!glyph_map.has (gid, &new_gid)) continue;
+      const ClipRecord *record = clips.as_array ().bsearch (gid);
+      if (!record) continue;
+      new_gid_offset_map.set (*new_gid, record->clipBox);
+      new_gids.add (*new_gid);
     }
 
     unsigned count = serialize_clip_records (c, instancer, new_gids, new_gid_offset_map);
@@ -2305,12 +2631,12 @@ struct COLR
     void depend (hb_depend_data_builder_t *depend_data) const
     {
       if (!has_data ()) return;
-      colr->depend (depend_data);
+      colr->depend (depend_data, colr.get_length ());
     }
 
-    void closure_glyphs (hb_codepoint_t glyph,
+    void closure_glyphs (const hb_set_t *glyphs,
 			 hb_set_t *related_ids /* OUT */) const
-    { colr->closure_glyphs (glyph, related_ids); }
+    { colr->closure_glyphs (glyphs, related_ids); }
 
     void closure_V0palette_indices (const hb_set_t *glyphs,
 				    hb_set_t *palettes /* OUT */) const
@@ -2369,14 +2695,18 @@ struct COLR
     mutable hb_atomic_t<hb_colr_scratch_t *> cached_scratch;
   };
 
-  void depend (hb_depend_data_builder_t *depend_data) const
+  void depend (hb_depend_data_builder_t *depend_data, unsigned table_length) const
   {
+    hb_colrv1_depend_context_t c (this, table_length, depend_data);
+
     // v0
     hb_array_t<const BaseGlyphRecord> baseGlyphs = (this+baseGlyphsZ).as_array (numBaseGlyphs);
     for (const BaseGlyphRecord &record : baseGlyphs)
     {
       auto glyph_layers = (this+layersZ).as_array (numLayers).sub_array (record.firstLayerIdx,
                                                                          record.numLayers);
+      if (unlikely (!c.spend_ops (glyph_layers.length)))
+        return;
       for (const LayerRecord layer : glyph_layers)
         depend_data->add_depend(record.glyphId, HB_OT_TAG_COLR, layer.glyphId);
     }
@@ -2385,11 +2715,13 @@ struct COLR
       return;
 
     // v1
-    hb_colrv1_depend_context_t c (this, depend_data);
     const BaseGlyphList &baseglyph_paintrecords = this+baseGlyphList;
 
     for (const BaseGlyphPaintRecord &baseglyph_paintrecord: baseglyph_paintrecords.iter ())
     {
+      if (unlikely (!depend_data->successful))
+        return;
+
       c.source_gid = baseglyph_paintrecord.glyphId;
       c.visited_paint.clear ();
 
@@ -2398,16 +2730,33 @@ struct COLR
     }
   }
 
-  void closure_glyphs (hb_codepoint_t glyph,
+  /* Base glyphs may share layers.  The V0 closures collect the layer
+   * indices of all base glyphs first, so each layer is visited once. */
+  void collect_V0layer_indices (const BaseGlyphRecord &record,
+				hb_set_t *layer_indices /* OUT */) const
+  {
+    unsigned count = (this+layersZ).as_array (numLayers).sub_array (record.firstLayerIdx,
+								    record.numLayers).length;
+    if (!count) return;
+    layer_indices->add_range (record.firstLayerIdx, record.firstLayerIdx + count - 1);
+  }
+
+  void closure_glyphs (const hb_set_t *glyphs,
 		       hb_set_t *related_ids /* OUT */) const
   {
-    const BaseGlyphRecord *record = get_base_glyph_record (glyph);
-    if (!record) return;
+    if (!numBaseGlyphs || !numLayers) return;
+    hb_array_t<const LayerRecord> all_layers = (this+layersZ).as_array (numLayers);
 
-    auto glyph_layers = (this+layersZ).as_array (numLayers).sub_array (record->firstLayerIdx,
-								       record->numLayers);
-    if (!glyph_layers.length) return;
-    related_ids->add_array (&glyph_layers[0].glyphId, glyph_layers.length, LayerRecord::min_size);
+    hb_set_t layer_indices;
+    for (hb_codepoint_t glyph : *glyphs)
+    {
+      const BaseGlyphRecord *record = get_base_glyph_record (glyph);
+      if (!record) continue;
+      collect_V0layer_indices (*record, &layer_indices);
+    }
+
+    for (unsigned idx : layer_indices)
+      related_ids->add (all_layers[idx].glyphId);
   }
 
   void closure_V0palette_indices (const hb_set_t *glyphs,
@@ -2417,14 +2766,15 @@ struct COLR
     hb_array_t<const BaseGlyphRecord> baseGlyphs = (this+baseGlyphsZ).as_array (numBaseGlyphs);
     hb_array_t<const LayerRecord> all_layers = (this+layersZ).as_array (numLayers);
 
-    for (const BaseGlyphRecord record : baseGlyphs)
+    hb_set_t layer_indices;
+    for (const BaseGlyphRecord &record : baseGlyphs)
     {
       if (!glyphs->has (record.glyphId)) continue;
-      hb_array_t<const LayerRecord> glyph_layers = all_layers.sub_array (record.firstLayerIdx,
-                                                                   record.numLayers);
-      for (const LayerRecord layer : glyph_layers)
-        palettes->add (layer.colorIdx);
+      collect_V0layer_indices (record, &layer_indices);
     }
+
+    for (unsigned idx : layer_indices)
+      palettes->add (all_layers[idx].colorIdx);
   }
 
   void closure_forV1 (hb_set_t *glyphset,
@@ -2697,6 +3047,16 @@ struct COLR
     | hb_map_retains_sorting (hb_second)
     ;
 
+    /* Base glyphs sharing layers each get their own copy in the output.
+     * Drop the table instead of expanding more layers than numLayers holds. */
+    unsigned num_layers = 0;
+    for (const BaseGlyphRecord record : + base_it)
+    {
+      num_layers += record.numLayers;
+      if (unlikely (num_layers > 0xFFFFu))
+	return_trace (false);
+    }
+
     auto layer_it =
     + hb_range (c->plan->num_output_glyphs ())
     | hb_map (reverse_glyph_map)
@@ -2952,7 +3312,7 @@ struct COLR_accelerator_t : COLR::accelerator_t {
 void
 hb_paint_context_t::recurse (const Paint &paint)
 {
-  if (unlikely (depth_left <= 0 || edge_count <= 0)) return;
+  if (unlikely (depth_left <= 0 || edge_count <= 0 || *budget < 0)) return;
   depth_left--;
   edge_count--;
   paint.dispatch (this);

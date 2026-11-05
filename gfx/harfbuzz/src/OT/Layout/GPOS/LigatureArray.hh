@@ -5,6 +5,35 @@ namespace OT {
 namespace Layout {
 namespace GPOS_impl {
 
+HB_INTERNAL inline
+void collect_ligature_variation_indices (hb_collect_variation_indices_context_t *c,
+                                        const Coverage &coverage,
+                                        const void *base,
+                                        glyph_data_t offsets,
+                                        unsigned count,
+                                        unsigned class_count,
+                                        const hb_map_t &klass_mapping)
+{
+  for (const auto _ : hb_zip (coverage, hb_range (count)))
+  {
+    if (!c->glyph_set->has (_.first)) continue;
+    hb_barrier ();
+    unsigned offset = offsets[_.second];
+    if (!offset) continue;
+
+    const void *matrix = &StructAtOffset<const HBUINT16> (base, offset);
+    /* LigatureAttach always has a 16-bit component count; its anchor
+     * offsets have the same width as the LigatureArray offsets. */
+    unsigned rows = *static_cast<const HBUINT16 *> (matrix);
+    glyph_data_t anchors = offsets;
+    anchors.data = (const char *) matrix + HBUINT16::static_size;
+
+    hb_sorted_vector_t<unsigned> indexes;
+    collect_ligature_anchor_indexes (rows, class_count, klass_mapping, indexes);
+    collect_anchor_variation_indices (c, matrix, anchors, indexes.iter ());
+  }
+}
+
 
 /* Array of LigatureAttach tables ordered by LigatureCoverage Index */
 template <typename Types>
@@ -28,6 +57,15 @@ struct LigatureArray :
   {
     TRACE_SANITIZE (this);
     return_trace (Super::sanitize (c, this, std::forward<Ts> (ds)...));
+  }
+
+  void collect_variation_indices (hb_collect_variation_indices_context_t *c,
+                                  const Coverage &coverage,
+                                  unsigned class_count,
+                                  const hb_map_t &klass_mapping) const
+  {
+    collect_ligature_variation_indices (c, coverage, this, this->arrayZ,
+                                        this->len, class_count, klass_mapping);
   }
 
   template <typename Iterator,

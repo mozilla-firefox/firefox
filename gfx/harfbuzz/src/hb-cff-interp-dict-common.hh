@@ -27,6 +27,7 @@
 #define HB_CFF_INTERP_DICT_COMMON_HH
 
 #include "hb-cff-interp-common.hh"
+#include "hb-number-parser.hh"
 
 namespace CFF {
 
@@ -84,9 +85,10 @@ struct dict_opset_t : opset_t<number_t>
 
     enum Nibble { DECIMAL=10, EXP_POS, EXP_NEG, RESERVED, NEG, END };
 
-    char buf[32] = {0};
+    constexpr size_t MAX_BCD_CHARS = 32;
+    hb_number_parser_t parser;
     unsigned char byte = 0;
-    for (unsigned i = 0, count = 0; count < ARRAY_LENGTH (buf); ++i, ++count)
+    for (unsigned i = 0, count = 0; count < MAX_BCD_CHARS; ++i, ++count)
     {
       unsigned nibble;
       if (!(i & 1))
@@ -103,20 +105,19 @@ struct dict_opset_t : opset_t<number_t>
       if (unlikely (nibble == RESERVED)) break;
       else if (nibble == END)
       {
-	const char *p = buf;
-	double pv;
-	if (unlikely (!hb_parse_double (&p, p + count, &pv, true/* whole buffer */)))
+	size_t length = parser.commit ();
+	if (unlikely (length == 0 || length != count))
 	  break;
-	return pv;
+	return parser.get_value ();
       }
       else
       {
-	buf[count] = "0123456789.EE?-?"[nibble];
+	if (!parser.consume ("0123456789.EE?-?"[nibble])) break;
 	if (nibble == EXP_NEG)
 	{
 	  ++count;
-	  if (unlikely (count == ARRAY_LENGTH (buf))) break;
-	  buf[count] = '-';
+	  if (unlikely (count == MAX_BCD_CHARS)) break;
+	  if (!parser.consume ('-')) break;
 	}
       }
     }

@@ -37,10 +37,10 @@ struct SinglePos
   }
 
   template<typename Iterator,
-      typename SrcLookup,
       hb_requires (hb_is_iterator (Iterator))>
   void serialize (hb_serialize_context_t *c,
-                  const SrcLookup* src,
+                  const ValueBase* src,
+                  ValueFormat src_format,
                   Iterator glyph_val_iter_pairs,
                   const hb_hashmap_t<unsigned, hb_pair_t<unsigned, int>> *layout_variation_idx_delta_map,
                   unsigned newFormat)
@@ -63,26 +63,26 @@ struct SinglePos
     u.format.v = format;
     switch (u.format.v) {
     case 1: hb_barrier (); u.format1.serialize (c,
-                                 src,
+                                 src, src_format,
                                  glyph_val_iter_pairs,
                                  new_format,
                                  layout_variation_idx_delta_map);
       return;
     case 2: hb_barrier (); u.format2.serialize (c,
-                                 src,
+                                 src, src_format,
                                  glyph_val_iter_pairs,
                                  new_format,
                                  layout_variation_idx_delta_map);
       return;
 #ifndef HB_NO_BEYOND_64K
     case 3: u.format3.serialize (c,
-                                 src,
+                                 src, src_format,
                                  glyph_val_iter_pairs,
                                  new_format,
                                  layout_variation_idx_delta_map);
       return;
     case 4: u.format4.serialize (c,
-                                 src,
+                                 src, src_format,
                                  glyph_val_iter_pairs,
                                  new_format,
                                  layout_variation_idx_delta_map);
@@ -110,14 +110,15 @@ struct SinglePos
 };
 
 
-template<typename Iterator, typename SrcLookup>
+template<typename Iterator>
 static void
 SinglePos_serialize (hb_serialize_context_t *c,
-                     const SrcLookup *src,
+                     const ValueBase *src,
+                     ValueFormat src_format,
                      Iterator it,
                      const hb_hashmap_t<unsigned, hb_pair_t<unsigned, int>> *layout_variation_idx_delta_map,
                      unsigned new_format)
-{ c->start_embed<SinglePos> ()->serialize (c, src, it, layout_variation_idx_delta_map, new_format); }
+{ c->start_embed<SinglePos> ()->serialize (c, src, src_format, it, layout_variation_idx_delta_map, new_format); }
 
 
 }

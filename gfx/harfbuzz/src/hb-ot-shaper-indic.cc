@@ -98,10 +98,14 @@ struct hb_indic_would_substitute_feature_t
 
   bool would_substitute (const hb_codepoint_t *glyphs,
 			 unsigned int          glyphs_count,
-			 hb_face_t            *face) const
+			 hb_face_t            *face,
+			 hb_buffer_t          *buffer) const
   {
+    if (unlikely (!buffer->successful)) return false;
     for (const auto &lookup : lookups)
-      if (hb_ot_layout_lookup_would_substitute (face, lookup.index, glyphs, glyphs_count, zero_context))
+      if (hb_ot_layout_lookup_would_substitute_with_buffer (face, lookup.index,
+							    glyphs, glyphs_count,
+							    zero_context, buffer))
 	return true;
     return false;
   }
@@ -357,7 +361,8 @@ static indic_position_t
 consonant_position_from_face (const indic_shape_plan_t *indic_plan,
 			      const hb_codepoint_t consonant,
 			      const hb_codepoint_t virama,
-			      hb_face_t *face)
+			      hb_face_t *face,
+			      hb_buffer_t *buffer)
 {
   /* For old-spec, the order of glyphs is Consonant,Virama,
    * whereas for new-spec, it's Virama,Consonant.  However,
@@ -374,16 +379,16 @@ consonant_position_from_face (const indic_shape_plan_t *indic_plan,
    * https://github.com/harfbuzz/harfbuzz/issues/1587
    */
   hb_codepoint_t glyphs[3] = {virama, consonant, virama};
-  if (indic_plan->blwf.would_substitute (glyphs  , 2, face) ||
-      indic_plan->blwf.would_substitute (glyphs+1, 2, face) ||
-      indic_plan->vatu.would_substitute (glyphs  , 2, face) ||
-      indic_plan->vatu.would_substitute (glyphs+1, 2, face))
+  if (indic_plan->blwf.would_substitute (glyphs  , 2, face, buffer) ||
+      indic_plan->blwf.would_substitute (glyphs+1, 2, face, buffer) ||
+      indic_plan->vatu.would_substitute (glyphs  , 2, face, buffer) ||
+      indic_plan->vatu.would_substitute (glyphs+1, 2, face, buffer))
     return POS_BELOW_C;
-  if (indic_plan->pstf.would_substitute (glyphs  , 2, face) ||
-      indic_plan->pstf.would_substitute (glyphs+1, 2, face))
+  if (indic_plan->pstf.would_substitute (glyphs  , 2, face, buffer) ||
+      indic_plan->pstf.would_substitute (glyphs+1, 2, face, buffer))
     return POS_POST_C;
-  if (indic_plan->pref.would_substitute (glyphs  , 2, face) ||
-      indic_plan->pref.would_substitute (glyphs+1, 2, face))
+  if (indic_plan->pref.would_substitute (glyphs  , 2, face, buffer) ||
+      indic_plan->pref.would_substitute (glyphs+1, 2, face, buffer))
     return POS_POST_C;
   return POS_BASE_C;
 }
@@ -445,7 +450,7 @@ update_consonant_positions_indic (const hb_ot_shape_plan_t *plan,
       if (info[i].indic_position() == POS_BASE_C)
       {
 	hb_codepoint_t consonant = info[i].codepoint;
-	info[i].indic_position() = consonant_position_from_face (indic_plan, consonant, virama, face);
+	info[i].indic_position() = consonant_position_from_face (indic_plan, consonant, virama, face, buffer);
       }
   }
 }
@@ -511,9 +516,9 @@ initial_reordering_consonant_syllable (const hb_ot_shape_plan_t *plan,
 				  info[start + 1].codepoint,
 				  indic_plan->config->reph_mode == REPH_MODE_EXPLICIT ?
 				    info[start + 2].codepoint : 0};
-      if (indic_plan->rphf.would_substitute (glyphs, 2, face) ||
+      if (indic_plan->rphf.would_substitute (glyphs, 2, face, buffer) ||
 	  (indic_plan->config->reph_mode == REPH_MODE_EXPLICIT &&
-	   indic_plan->rphf.would_substitute (glyphs, 3, face)))
+	   indic_plan->rphf.would_substitute (glyphs, 3, face, buffer)))
       {
 	limit += 2;
 	while (limit < end && is_joiner (info[limit]))
@@ -898,7 +903,7 @@ initial_reordering_consonant_syllable (const hb_ot_shape_plan_t *plan,
       hb_codepoint_t glyphs[2];
       for (unsigned int j = 0; j < pref_len; j++)
 	glyphs[j] = info[i + j].codepoint;
-      if (indic_plan->pref.would_substitute (glyphs, pref_len, face))
+      if (indic_plan->pref.would_substitute (glyphs, pref_len, face, buffer))
       {
 	for (unsigned int j = 0; j < pref_len; j++)
 	  info[i++].mask |= indic_plan->mask_array[INDIC_PREF];

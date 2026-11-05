@@ -43,6 +43,8 @@ ALLOWED_BLOCKS = [
 	'Myanmar Extended-B',
 	'Myanmar Extended-A',
 	'Myanmar Extended-C',
+	'Devanagari Extended-A',
+	'Bengali Supplement',
 ]
 
 files = [open (x, encoding='utf-8') for x in sys.argv[1:]]
@@ -540,8 +542,8 @@ elif language.name == "rust":
 	print ("#![allow(non_camel_case_types)]")
 	print ("#![allow(unused_imports)]")
 	print ()
-	print ('use super::ot_shaper_indic::ot_category_t::*;')
-	print ('use super::ot_shaper_indic::ot_position_t::*;')
+	print ('use super::indic::category::*;')
+	print ('use super::indic::position::*;')
 	print ()
 else:
 	assert False, "Unknown language: %s" % language.name
@@ -650,7 +652,7 @@ else:
 unique_values = sorted (set (pack_data.values ()) | {default_value})
 mapping = {v: i for i, v in enumerate (unique_values)}
 
-code = packTab.Code ('_hb_indic')
+code = packTab.Code ('_hb_indic' if language.name == "c" else 'indic')
 value_type = 'uint16_t' if language.name == "c" else language.type_name ("u16")
 indic_values, _ = code.addArray (value_type, 'values', unique_values)
 sol = packTab.pack_table (pack_data, default=default_value, mapping=mapping, compression=9)
@@ -678,7 +680,7 @@ else:
 	print ("#[inline]")
 	print ("pub(crate) fn get_categories (u: u32) -> (u8, u8)")
 	print ("{")
-	print ("  let v = %s[_hb_indic_get_categories_index (u as usize) as usize];" % indic_values)
+	print ("  let v = %s[indic_get_categories_index (u as usize) as usize];" % indic_values)
 	print ("  ((v & 0xFF) as u8, (v >> 8) as u8)")
 	print ("}")
 print ()

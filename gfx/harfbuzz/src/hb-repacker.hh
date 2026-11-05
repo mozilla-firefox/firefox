@@ -262,7 +262,7 @@ graph_result_t<bool> _resolve_shared_overflow(const hb_vector_t<graph::overflow_
   }
 
   auto result = sorted_graph.duplicate(&parents, r.child);
-  if (!result.is_ok () && parents.get_population() > 2) {
+  if (result.is_err () && result.error () == graph::INVALID_ARGUMENT && parents.get_population() > 2) {
     // All links to the child are overflowing, so we can't include all
     // in the duplication. Remove one parent from the duplication.
     // Remove the lowest index parent, which will be the closest to the child.
@@ -270,7 +270,14 @@ graph_result_t<bool> _resolve_shared_overflow(const hb_vector_t<graph::overflow_
     result = sorted_graph.duplicate(&parents, r.child);
   }
 
-  if (!result.is_ok ()) return Ok(false);
+  if (result.is_err ()) {
+    if (result.error () == graph::INVALID_ARGUMENT)
+      // The child can't be duplicated (eg. all links are from the same parent),
+      // the caller can try other resolution options.
+      return Ok(false);
+    // All other errors (eg. vertex limit exceeded, allocation failure) are propagated.
+    return Err(result.error ());
+  }
 
   if (parents.get_population() > 1) {
     // If the duplicated node has more than one parent pre-emptively raise it's priority to the maximum.
@@ -327,10 +334,11 @@ graph_result_t<bool> _process_overflows (const hb_vector_t<graph::overflow_recor
       //                     Since in that case moving the parent will cause a smaller increase in
       //                     the length of other offsets.
       TRY_ASSIGN (bool raised, sorted_graph.raise_childrens_priority (r.parent));
-      if (raised) {
-        priority_bumped_parents.add (r.parent);
+      // Record the parent even if nothing was raised: another attempt in this round can't
+      // do any better, and would walk all of the parent's links again for each overflow.
+      priority_bumped_parents.add (r.parent);
+      if (raised)
         resolution_attempted = true;
-      }
       continue;
     }
 

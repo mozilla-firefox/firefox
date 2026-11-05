@@ -35,7 +35,7 @@ static const hb_shaper_entry_t _hb_all_shapers[] = {
 #undef HB_SHAPER_IMPLEMENT
 };
 #ifndef HB_NO_SHAPER
-static_assert (0 != ARRAY_LENGTH_CONST (_hb_all_shapers), "No shaper enabled.");
+static_assert (0 != ARRAY_LENGTH (_hb_all_shapers), "No shaper enabled.");
 #endif
 
 static inline void free_static_shapers ();
@@ -64,7 +64,7 @@ static struct hb_shapers_lazy_loader_t : hb_lazy_loader_t<hb_shaper_entry_t,
       if (!end)
 	end = p + strlen (p);
 
-      for (unsigned int j = i; j < ARRAY_LENGTH_CONST (_hb_all_shapers); j++)
+      for (unsigned int j = i; j < ARRAY_LENGTH (_hb_all_shapers); j++)
 	if (end - p == (int) strlen (shapers[j].name) &&
 	    0 == strncmp (shapers[j].name, p, end - p))
 	{

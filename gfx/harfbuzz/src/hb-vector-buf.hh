@@ -51,6 +51,12 @@ struct hb_vector_buf_t : hb_vector_t<char>
    * importantly sweep-gradient meshes and embedded bitmaps. */
   bool overflowed = false;
 
+  /* Bytes already held by the buffers this one will be appended to (the
+   * enclosing paint groups).  They are part of the same document, so they
+   * count towards the cap; otherwise every open buffer gets a cap of its
+   * own and the limit multiplies with the nesting depth. */
+  unsigned base = 0;
+
   /* Hides (does not override -- the base method is not virtual) the base
    * in_error(); every emission site uses hb_vector_buf_t directly, so the
    * cap is seen everywhere.  clear() resets the sticky flag so a context
@@ -73,6 +79,7 @@ struct hb_vector_buf_t : hb_vector_t<char>
       return true;
     unsigned new_len;
     if (unlikely (hb_unsigned_add_overflows (length, add, &new_len) ||
+		  hb_unsigned_add_overflows (new_len, base, &new_len) ||
 		  new_len > HB_VECTOR_MAX_DOCUMENT_SIZE))
     {
       overflowed = true;

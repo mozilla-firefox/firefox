@@ -37,7 +37,8 @@ struct hb_vector_blob_meta_t
   bool in_replace;
 };
 
-static hb_user_data_key_t hb_vector_blob_meta_user_data_key;
+/* Blobs recycled between renderers must use the same user-data key. */
+extern HB_INTERNAL hb_user_data_key_t hb_vector_blob_meta_user_data_key;
 
 static inline void
 hb_vector_blob_meta_set_buffer (hb_vector_blob_meta_t *meta,
@@ -111,6 +112,8 @@ hb_buf_blob_from (hb_blob_t **recycled_blob,
   {
     meta->in_replace = true;
     blob->replace_buffer (data, len, HB_MEMORY_MODE_WRITABLE, meta, hb_vector_blob_meta_destroy);
+    /* An unchanged buffer does not run the old destroy callback. */
+    meta->in_replace = false;
     hb_vector_blob_meta_set_buffer (meta, data, allocated);
   }
   else

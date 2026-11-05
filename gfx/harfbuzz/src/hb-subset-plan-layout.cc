@@ -29,18 +29,19 @@
 #include "hb-ot-layout-gdef-table.hh"
 #include "hb-ot-layout-gpos-table.hh"
 #include "hb-ot-layout-gsub-table.hh"
+#include "hb-ot-math-table.hh"
 
 using OT::Layout::GSUB;
 using OT::Layout::GPOS;
 
 #ifndef HB_NO_SUBSET_LAYOUT
 
-float
+double
 hb_subset_plan_t::layout_variation_delta (unsigned var_idx HB_UNUSED)
 {
 #ifndef HB_NO_VAR
   hb_blob_ptr_t<OT::GDEF> gdef = source_table<OT::GDEF> ();
-  float delta = gdef->get_var_store ().get_delta (var_idx,
+  double delta = gdef->get_var_store ().get_delta<double> (var_idx,
                                                 normalized_coords.as_array ());
   gdef.destroy ();
   return delta;
@@ -108,6 +109,7 @@ static bool
 _collect_instanced_lookup_variations (
     hb_subset_plan_t *plan,
     const T& table,
+    const hb_set_t *feature_indices,
     hb_hashmap_t<unsigned, hb::shared_ptr<hb_set_t>> *lookup_variations)
 {
   hb_blob_ptr_t<OT::GDEF> gdef = plan->source_table<OT::GDEF> ();
@@ -126,20 +128,16 @@ _collect_instanced_lookup_variations (
   if (unlikely (!success || state.in_error ()))
     return plan->check_success (false);
 
-  unsigned i = 0;
-  while (i < state.length)
+  const auto &variations = table.get_feature_variations ();
+  for (const auto &record : variations.get_lookup_variation_records ())
   {
-    if (unlikely (state.length - i < 2))
-      return plan->check_success (false);
-
-    unsigned feature_index = state[i++];
-    unsigned lookup_count = state[i++];
-    if (unlikely (lookup_count > state.length - i))
-      return plan->check_success (false);
+    unsigned feature_index = record.get_feature_index ();
+    if (!feature_indices->has (feature_index)) continue;
 
     hb::shared_ptr<hb_set_t> lookups {hb_set_create ()};
-    for (unsigned end = i + lookup_count; i < end; i++)
-      lookups->add (state[i]);
+    record.collect_lookups (&variations,
+                           table.get_feature_variation (feature_index, variations_index),
+                           state.as_sorted_array (), lookups);
 
     if (unlikely (lookups->in_error () ||
 		  !lookup_variations->set (feature_index, lookups)))
@@ -214,7 +212,7 @@ static void _collect_layout_indices (hb_subset_plan_t     *plan,
 
 #ifndef HB_NO_VAR
   if (plan->all_axes_pinned &&
-      !_collect_instanced_lookup_variations (plan, table, lookup_variations))
+      !_collect_instanced_lookup_variations (plan, table, feature_indices, lookup_variations))
     return;
 #endif
 
@@ -257,14 +255,50 @@ static void _collect_layout_indices (hb_subset_plan_t     *plan,
 }
 
 
+static bool
+_features_have_equal_params (const OT::Feature &a HB_UNUSED,
+                            const OT::Feature &b HB_UNUSED,
+                            hb_tag_t tag HB_UNUSED)
+{
+#ifndef HB_NO_LAYOUT_FEATURE_PARAMS
+  if (bool (a.featureParams) != bool (b.featureParams)) return false;
+  if (!a.featureParams) return true;
+  const OT::FeatureParams &ap = a.get_feature_params ();
+  const OT::FeatureParams &bp = b.get_feature_params ();
+  if (tag == HB_TAG ('s','i','z','e'))
+    return !hb_memcmp (&ap.get_size_params (tag), &bp.get_size_params (tag),
+                       OT::FeatureParamsSize::static_size);
+  if ((tag & 0xFFFF0000u) == HB_TAG ('s','s','\0','\0'))
+    return !hb_memcmp (&ap.get_stylistic_set_params (tag), &bp.get_stylistic_set_params (tag),
+                       OT::FeatureParamsStylisticSet::static_size);
+  if ((tag & 0xFFFF0000u) == HB_TAG ('c','v','\0','\0'))
+  {
+    const auto &ac = ap.get_character_variants_params (tag);
+    const auto &bc = bp.get_character_variants_params (tag);
+    return ac.get_size () == bc.get_size () &&
+           !hb_memcmp (&ac, &bc, ac.get_size ());
+  }
+#endif
+  return true;
+}
+
 static inline void
 _GSUBGPOS_find_duplicate_features (const OT::GSUBGPOS &g,
 				   const hb_map_t *lookup_indices,
 				   const hb_set_t *feature_indices,
 				   const hb_hashmap_t<unsigned, const OT::Feature*> *feature_substitutes_map,
+                                   bool all_axes_pinned HB_UNUSED,
 				   hb_map_t *duplicate_feature_map /* OUT */)
 {
   if (feature_indices->is_empty ()) return;
+#ifndef HB_NO_VAR
+  hb_set_t variable_features;
+  if (!all_axes_pinned)
+    g.get_feature_variations ().collect_feature_indices (&variable_features);
+  /* Lookup variations are instanced, not dropped, when all axes are pinned. */
+  g.get_feature_variations ().collect_lookup_variation_feature_indices (&variable_features);
+  if (unlikely (variable_features.in_error ())) return;
+#endif
   hb_hashmap_t<hb_tag_t, hb::unique_ptr<hb_set_t>> unique_features;
   //find out duplicate features after subset
   for (unsigned i : feature_indices->iter ())
@@ -287,8 +321,8 @@ _GSUBGPOS_find_duplicate_features (const OT::GSUBGPOS &g,
     for (unsigned other_f_index : same_tag_features->iter ())
     {
 #ifndef HB_NO_VAR
-      if (g.get_feature_variations ().has_lookup_variations (i) ||
-	  g.get_feature_variations ().has_lookup_variations (other_f_index))
+      /* Matching base lookups do not imply matching alternate behavior. */
+      if (variable_features.has (i) || variable_features.has (other_f_index))
 	continue;
 #endif
 
@@ -300,6 +334,8 @@ _GSUBGPOS_find_duplicate_features (const OT::GSUBGPOS &g,
       const OT::Feature* other_f = &(g.get_feature (other_f_index));
       if (feature_substitutes_map->has (other_f_index, &p))
         other_f = *p;
+
+      if (!_features_have_equal_params (*f, *other_f, t)) continue;
 
       auto f_iter =
       + hb_iter (f->lookupIndex)
@@ -411,11 +447,24 @@ _closure_glyphs_lookups_features (hb_subset_plan_t   *plan,
                          feature_substitutes_map,
                          &feature_indices);
   hb_map_t duplicate_feature_map;
-  _GSUBGPOS_find_duplicate_features (*table, lookups, &feature_indices, feature_substitutes_map, &duplicate_feature_map);
+  _GSUBGPOS_find_duplicate_features (*table, lookups, &feature_indices, feature_substitutes_map,
+                                    plan->all_axes_pinned, &duplicate_feature_map);
 
   feature_indices.clear ();
   table->prune_langsys (&duplicate_feature_map, &plan->layout_scripts, langsys_map, &feature_indices);
   remap_feature_indices (feature_indices, duplicate_feature_map, catch_all_record_idx_feature_map, features, features_w_duplicates);
+
+#ifndef HB_NO_VAR
+  // Populate alternate parameter tags after deduplication. Before this point
+  // the map contains only catch-all features and also controls their retention.
+  if (table->get_feature_variations ().record_count ())
+    for (auto p : *features_w_duplicates)
+    {
+      const OT::Feature& f = table->get_feature (p.first);
+      const void *tag = &(table->get_feature_list ().get_tag (p.first));
+      catch_all_record_idx_feature_map.set (p.first, hb_pair (&f, tag));
+    }
+#endif
 
   table.destroy ();
 }
@@ -426,13 +475,21 @@ void layout_nameid_closure (hb_subset_plan_t* plan,
   if (!drop_tables->has (HB_OT_TAG_GPOS))
   {
     hb_blob_ptr_t<GPOS> gpos = plan->source_table<GPOS> ();
-    gpos->collect_name_ids (&plan->gpos_features, &plan->name_ids);
+    gpos->collect_name_ids (&plan->gpos_features, &plan->name_ids,
+                            &plan->gpos_feature_substitutes_map,
+                            plan->user_axes_location.is_empty () ? nullptr : &plan->gpos_feature_record_cond_idx_map,
+                            &plan->gpos_old_features,
+                            plan->all_axes_pinned);
     gpos.destroy ();
   }
   if (!drop_tables->has (HB_OT_TAG_GSUB))
   {
     hb_blob_ptr_t<GSUB> gsub = plan->source_table<GSUB> ();
-    gsub->collect_name_ids (&plan->gsub_features, &plan->name_ids);
+    gsub->collect_name_ids (&plan->gsub_features, &plan->name_ids,
+                            &plan->gsub_feature_substitutes_map,
+                            plan->user_axes_location.is_empty () ? nullptr : &plan->gsub_feature_record_cond_idx_map,
+                            &plan->gsub_old_features,
+                            plan->all_axes_pinned);
     gsub.destroy ();
   }
 }
@@ -490,6 +547,8 @@ collect_layout_variation_indices (hb_subset_plan_t* plan)
   OT::hb_collect_variation_indices_context_t c (&varidx_set,
                                                 &plan->_glyphset_gsub,
                                                 &plan->gpos_lookups);
+  if (plan->normalized_coords && !plan->all_axes_pinned)
+    c.condition_values = &plan->layout_condition_values;
   gdef->collect_variation_indices (&c);
 
   if (hb_ot_layout_has_substitution (plan->source))
@@ -500,6 +559,18 @@ collect_layout_variation_indices (hb_subset_plan_t* plan)
     gpos->collect_variation_indices (&c);
   }
 
+#ifndef HB_NO_MATH
+  if (!plan->drop_tables.has (HB_OT_TAG_MATH))
+  {
+    hb_blob_ptr_t<OT::MATH> math = plan->source_table<OT::MATH> ();
+    auto *glyph_set = c.glyph_set;
+    c.glyph_set = &plan->_glyphset_mathed;
+    math->collect_variation_indices (&c, &plan->_glyphset_cmaped);
+    c.glyph_set = glyph_set;
+    math.destroy ();
+  }
+#endif
+
   remap_variation_indices (gdef->get_var_store (),
                            varidx_set, plan->normalized_coords,
                            !plan->pinned_at_default,
@@ -508,6 +579,7 @@ collect_layout_variation_indices (hb_subset_plan_t* plan)
 
   unsigned subtable_count = gdef->get_var_store ().get_sub_table_count ();
   generate_varstore_inner_maps (varidx_set, subtable_count, plan->gdef_varstore_inner_maps);
+  plan->check_success (!plan->layout_condition_values.in_error ());
 
   gdef.destroy ();
   gsub.destroy ();

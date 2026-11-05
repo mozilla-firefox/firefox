@@ -201,6 +201,12 @@ struct cff2_cs_interp_env_t : cs_interp_env_t<ELEM, CFF2Subrs>
 
   bool have_coords () const { return num_coords; }
 
+  /* Subsetter instancing can defer rounding until absolute points are known. */
+  bool round_blends = true;
+
+  /* Some analysis passes need only blend presence, not symbolic deltas. */
+  bool preserve_blends = true;
+
   protected:
   const int     *coords;
   unsigned int  num_coords;
@@ -219,6 +225,9 @@ struct cff2_cs_interp_env_t : cs_interp_env_t<ELEM, CFF2Subrs>
 template <typename OPSET, typename PARAM, typename ELEM, typename PATH=path_procs_null_t<cff2_cs_interp_env_t<ELEM>, PARAM>>
 struct cff2_cs_opset_t : cs_opset_t<ELEM, OPSET, cff2_cs_interp_env_t<ELEM>, PARAM, PATH>
 {
+  /* Retained subroutine collection needs only blend identity. */
+  static constexpr bool preserve_blends = false;
+
   static void process_op (op_code_t op, cff2_cs_interp_env_t<ELEM> &env, PARAM& param)
   {
     switch (op) {
@@ -263,8 +272,23 @@ struct cff2_cs_opset_t : cs_opset_t<ELEM, OPSET, cff2_cs_interp_env_t<ELEM>, PAR
 				 unsigned n, unsigned i)
   {
     if (env.have_coords ())
-      arg.set_int (round (arg.to_real () + env.blend_deltas (blends)));
-    else if (unlikely (arg.blending ()))
+    {
+      double v = arg.to_real () + env.blend_deltas (blends);
+      arg.set_real (env.round_blends ? round (v) : v);
+      return;
+    }
+
+    /* Without coordinates, the flat delta vector cannot represent a
+     * product of region scalars. Do not discard a delta's own blend. */
+    if (OPSET::preserve_blends && env.preserve_blends)
+      for (const ELEM &delta : blends)
+	if (unlikely (delta.blending ()))
+	{
+	  env.set_error ();
+	  return;
+	}
+
+    if (unlikely (arg.blending ()))
     {
       /* A blend result used as an operand of a later blend: the value is
        * default + inner deltas + outer deltas, so accumulate the deltas. */

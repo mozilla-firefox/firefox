@@ -30,6 +30,8 @@
 
 #include "../../../hb-open-type.hh"
 #include "../../../hb-paint.hh"
+#include "../../../hb-map.hh"
+#include "../../../hb-set.hh"
 
 /*
  * sbix -- Standard Bitmap Graphics
@@ -204,6 +206,17 @@ struct sbix
     {
       table = hb_sanitize_context_t ().reference_table<sbix> (face);
       num_glyphs = face->get_num_glyphs ();
+
+      /* Index strikes by ppem, such that choose_strike() doesn't have to
+       * walk them all.  Of those with equal ppem the first one wins. */
+      unsigned count = table->strikes.len;
+      for (unsigned int i = 0; i < count; i++)
+      {
+	unsigned int ppem = table->get_strike (i).ppem;
+	if (strike_ppems.has (ppem)) continue;
+	strike_ppems.add (ppem);
+	strike_for_ppem.set (ppem, i);
+      }
     }
     ~accelerator_t () { table.destroy (); }
 
@@ -266,29 +279,20 @@ struct sbix
 
     const SBIXStrike &choose_strike (hb_font_t *font) const
     {
-      unsigned count = table->strikes.len;
-      if (unlikely (!count))
+      if (unlikely (strike_ppems.is_empty ()))
 	return Null (SBIXStrike);
 
       unsigned int requested_ppem = hb_max (font->x_ppem, font->y_ppem);
       if (!requested_ppem)
 	requested_ppem = 1<<30; /* Choose largest strike. */
       /* TODO Add DPI sensitivity as well? */
-      unsigned int best_i = 0;
-      unsigned int best_ppem = table->get_strike (0).ppem;
 
-      for (unsigned int i = 1; i < count; i++)
-      {
-	unsigned int ppem = (table->get_strike (i)).ppem;
-	if ((requested_ppem <= ppem && ppem < best_ppem) ||
-	    (requested_ppem > best_ppem && ppem > best_ppem))
-	{
-	  best_i = i;
-	  best_ppem = ppem;
-	}
-      }
+      /* Smallest strike that is large enough, or otherwise the largest. */
+      hb_codepoint_t ppem = requested_ppem - 1;
+      if (!strike_ppems.next (&ppem))
+	ppem = strike_ppems.get_max ();
 
-      return table->get_strike (best_i);
+      return table->get_strike (strike_for_ppem.get (ppem));
     }
 
     struct PNGHeader
@@ -363,6 +367,8 @@ struct sbix
     hb_blob_ptr_t<sbix> table;
 
     unsigned int num_glyphs;
+    hb_set_t strike_ppems;
+    hb_map_t strike_for_ppem;
   };
 
   bool sanitize (hb_sanitize_context_t *c) const

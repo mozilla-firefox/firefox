@@ -81,6 +81,7 @@ struct LigatureSet
 
   bool would_apply (hb_would_apply_context_t *c) const
   {
+    if (unlikely (!c->charge_ops (ligature.len))) return false;
     return
     + hb_iter (ligature)
     | hb_map (hb_add (this))

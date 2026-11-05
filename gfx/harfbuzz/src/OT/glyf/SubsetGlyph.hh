@@ -114,9 +114,10 @@ struct SubsetGlyph
 
   bool compile_bytes_with_deltas (const hb_subset_plan_t *plan,
                                   hb_font_t *font,
-                                  const glyf_accelerator_t &glyf)
+                                  const glyf_accelerator_t &glyf,
+                                  int64_t *budget /* IN/OUT */)
   {
-    allocated = source_glyph.compile_bytes_with_deltas (plan, font, glyf, dest_start, dest_end);
+    allocated = source_glyph.compile_bytes_with_deltas (plan, font, glyf, dest_start, dest_end, budget);
     return allocated;
   }
 

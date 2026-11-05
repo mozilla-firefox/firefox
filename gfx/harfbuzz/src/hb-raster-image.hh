@@ -45,7 +45,8 @@ struct hb_raster_image_t
 
   HB_INTERNAL static unsigned bytes_per_pixel (hb_raster_format_t format);
   HB_INTERNAL bool configure (hb_raster_format_t format, hb_raster_extents_t extents);
-  HB_INTERNAL bool deserialize_from_png (hb_blob_t *png);
+  HB_INTERNAL bool deserialize_from_png (hb_blob_t *png,
+					 unsigned max_dimension = (unsigned) INT_MAX);
   HB_INTERNAL hb_blob_t *serialize_to_png_or_fail () const;
   HB_INTERNAL void clear ();
   HB_INTERNAL const uint8_t *get_buffer () const;

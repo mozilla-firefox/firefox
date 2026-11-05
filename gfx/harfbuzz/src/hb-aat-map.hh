@@ -117,6 +117,7 @@ struct hb_aat_map_builder_t
   hb_sorted_vector_t<feature_info_t> current_features;
   unsigned range_first = HB_FEATURE_GLOBAL_START;
   unsigned range_last = HB_FEATURE_GLOBAL_END;
+  mutable int64_t budget = HB_BUDGET_AAT_MAP;
 };
 
 

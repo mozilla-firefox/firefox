@@ -39,12 +39,22 @@ _hb_ot_layout_table_get_feature_variations_state (hb_face_t             *face,
 						   const int             *coords,
 						   unsigned int           num_coords,
 						   unsigned int          *variations_index,
-						   hb_vector_t<unsigned> *lookup_variations);
+						   hb_vector_t<unsigned> *lookup_conditions);
+
+HB_INTERNAL bool
+_hb_ot_layout_feature_get_lookup_variations (hb_face_t *face,
+                                             hb_tag_t table_tag,
+                                             unsigned feature_index,
+                                             unsigned variations_index,
+                                             hb_sorted_array_t<const unsigned> conditions,
+                                             hb_set_t *lookup_indexes);
 
 struct hb_ot_shape_plan_key_t
 {
   unsigned int variations_index[2];
-  hb_vector_t<unsigned> lookup_variations[2];
+  /* Sorted offsets of distinct true conditions within FeatureVariations.
+   * Different outcomes may conservatively separate equivalent lookup sets. */
+  hb_vector_t<unsigned> lookup_conditions[2];
 
   bool init (hb_face_t *face,
 	     const int *coords,
@@ -57,9 +67,9 @@ struct hb_ot_shape_plan_key_t
 			coords,
 			num_coords,
 			&variations_index[table_index],
-			&lookup_variations[table_index])))
+			&lookup_conditions[table_index])))
       {
-	for (auto &v : lookup_variations)
+	for (auto &v : lookup_conditions)
 	  v.fini ();
 	return false;
       }
@@ -68,37 +78,26 @@ struct hb_ot_shape_plan_key_t
 
   void fini ()
   {
-    for (auto &v : lookup_variations)
+    for (auto &v : lookup_conditions)
       v.fini ();
   }
 
-  bool get_lookup_variations (unsigned int table_index,
+  bool get_lookup_variations (hb_face_t *face,
+                              unsigned int table_index,
 			      unsigned int feature_index,
-			      hb_array_t<const unsigned> &lookups) const
+			      hb_set_t *lookups) const
   {
-    hb_array_t<const unsigned> state = lookup_variations[table_index].as_array ();
-    for (unsigned i = 0; i + 2 <= state.length;)
-    {
-      unsigned index = state[i++];
-      unsigned count = state[i++];
-      if (unlikely (count > state.length - i))
-	return false;
-      if (index == feature_index)
-      {
-	lookups = state.sub_array (i, count);
-	return true;
-      }
-      i += count;
-    }
-    return false;
+    return _hb_ot_layout_feature_get_lookup_variations (
+	face, table_tags[table_index], feature_index, variations_index[table_index],
+	lookup_conditions[table_index].as_sorted_array (), lookups);
   }
 
   bool equal (const hb_ot_shape_plan_key_t *other)
   {
     return variations_index[0] == other->variations_index[0] &&
 	   variations_index[1] == other->variations_index[1] &&
-	   lookup_variations[0] == other->lookup_variations[0] &&
-	   lookup_variations[1] == other->lookup_variations[1];
+	   lookup_conditions[0] == other->lookup_conditions[0] &&
+	   lookup_conditions[1] == other->lookup_conditions[1];
   }
 };
 

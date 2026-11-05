@@ -169,6 +169,9 @@ struct hb_subset_plan_t
   // whether GDEF ItemVariationStore is retained
   mutable bool has_gdef_varstore;
 
+  // whether every COLR variation region uses pinned axes only; -1 until computed
+  int colrv1_constant_after_pinning;
+
   // whether we're doing avar2 partial instancing
   bool has_avar2;
 
@@ -215,7 +218,7 @@ struct hb_subset_plan_t
 
   bool in_error () const { return !successful; }
 
-  HB_INTERNAL float layout_variation_delta (unsigned var_idx);
+  HB_INTERNAL double layout_variation_delta (unsigned var_idx);
 
   bool check_success(bool success)
   {

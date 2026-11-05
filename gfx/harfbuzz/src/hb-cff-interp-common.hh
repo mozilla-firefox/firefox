@@ -503,15 +503,15 @@ struct arg_stack_t : cff_stack_t<ARG, 513>
 /* an operator prefixed by its operands in a byte string */
 struct op_str_t
 {
-  /* This used to have a hb_ubytes_t. Using a pointer and length
-   * in a particular order, saves 8 bytes in this struct and more
-   * in our parsed_cs_op_t subclass. */
+  /* Borrow the encoded bytes. DICT entries with accumulated blends can
+   * exceed the length of an individual charstring token. */
 
   const unsigned char *ptr = nullptr;
 
   op_code_t  op = OpCode_Invalid;
 
-  uint8_t length = 0;
+  /* DICT entries can contain many blends before their final operator. */
+  unsigned length = 0;
 };
 
 /* base of OP_SERIALIZER */

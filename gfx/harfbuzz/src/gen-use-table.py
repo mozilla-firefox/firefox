@@ -462,7 +462,7 @@ elif language.name == "rust":
     print("#![allow(unused_parens)]")
     print("#![allow(clippy::unnecessary_cast, clippy::unreadable_literal, clippy::double_parens)]")
     print()
-    print("use super::ot_shaper_use::category::*;")
+    print("use super::use_::category::*;")
     print()
 else:
     assert False, "Unknown language: %s" % language.name
@@ -507,7 +507,7 @@ for step, text in modes.items():
     compression = compression_level[step]
     logging.info("  Compression=%d:" % compression)
 
-    code = packTab.Code('hb_use')
+    code = packTab.Code('hb_use' if language.name == "c" else 'use')
     sol = packTab.pack_table(data, compression=compression, default='O')
     logging.info('      FullCost=%d' % (sol.fullCost))
     sol.genCode(code, f'get_category', language=language, private=private)

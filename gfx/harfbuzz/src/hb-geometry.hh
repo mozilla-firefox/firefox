@@ -188,6 +188,9 @@ struct hb_transform_t
 
   void transform_extents (hb_extents_t<Float> &extents) const
   {
+    /* Transforming a void box's sentinel corners would give it area. */
+    if (unlikely (extents.is_void ())) return;
+
     Float quad_x[4], quad_y[4];
 
     quad_x[0] = extents.xmin;

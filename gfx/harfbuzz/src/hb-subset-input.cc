@@ -627,11 +627,11 @@ hb_subset_axis_range_from_string (const char *str, int len,
     len = strlen (str);
 
   const char *end = str + len;
-  const char* part = strpbrk (str, ":");
+  const char* part = (const char *) memchr (str, ':', end - str);
   if (!part)
   {
     // Single value.
-    if (strcmp (str, "drop") == 0)
+    if (len == 4 && 0 == hb_memcmp (str, "drop", 4))
     {
       *axis_min_value = NAN;
       *axis_def_value = NAN;
@@ -652,23 +652,24 @@ hb_subset_axis_range_from_string (const char *str, int len,
   int count = 0;
   for (int i = 0; i < 3; i++) {
     count++;
-    if (!*str || part == str)
+    if (str == end || part == str)
     {
       values[i] = NAN;
 
       if (part == NULL) break;
       str = part + 1;
-      part = strpbrk (str, ":");
+      part = (const char *) memchr (str, ':', end - str);
       continue;
     }
 
     double v;
-    if (!hb_parse_double (&str, part, &v)) return false;
+    const char *piece_end = part ? part : end;
+    if (!hb_parse_double (&str, piece_end, &v)) return false;
     values[i] = v;
 
     if (part == NULL) break;
     str = part + 1;
-    part = strpbrk (str, ":");
+    part = (const char *) memchr (str, ':', end - str);
   }
 
   if (count == 2)
@@ -1159,6 +1160,8 @@ hb_subset_preprocess (hb_face_t *source)
  * If this map is left empty then glyph ids will be automatically mapped to new
  * values by the subsetter. If populated, the mapping must be unique. That
  * is no two original glyph ids can be mapped to the same new id.
+ * Glyph id 0 (.notdef) always stays at 0, so no other glyph can be mapped to 0.
+ * The resulting glyph count, including unmapped glyphs, must fit in 24 bits.
  * Additionally, if a mapping is provided then the retain gids option cannot
  * be enabled.
  *
@@ -1245,7 +1248,19 @@ hb_subset_input_override_name_table (hb_subset_input_t  *input,
     hb_memcpy (override_name, name_str, str_len);
     name_bytes = hb_bytes_t (override_name, str_len);
   }
-  input->name_table_overrides.set (hb_ot_name_record_ids_t (platform_id, encoding_id, language_id, name_id), name_bytes);
+
+  hb_ot_name_record_ids_t record_ids (platform_id, encoding_id, language_id, name_id);
+
+  /* Overriding the same record again replaces the previous string; free it. */
+  hb_bytes_t *old_bytes;
+  if (input->name_table_overrides.has (record_ids, &old_bytes))
+    old_bytes->fini ();
+
+  if (unlikely (!input->name_table_overrides.set (record_ids, name_bytes)))
+  {
+    name_bytes.fini ();
+    return false;
+  }
   return true;
 }
 #endif

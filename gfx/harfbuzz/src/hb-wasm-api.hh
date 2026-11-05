@@ -83,11 +83,9 @@ HB_INTERNAL extern hb_user_data_key_t _hb_wasm_ref_type_key;
   { \
     if (likely (wasm_runtime_validate_app_addr (module_inst, \
 						retptr, sizeof (type)))) \
-    { \
       _name_ptr = (type *) wasm_runtime_addr_app_to_native (module_inst, retptr); \
-      if (unlikely (!_name_ptr)) \
-	return; \
-    } \
+    if (unlikely (!_name_ptr)) \
+      return; \
   } \
   type &name = *_name_ptr
 

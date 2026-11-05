@@ -42,8 +42,8 @@ struct AnchorMatrix : public OT::Layout::GPOS_impl::AnchorMatrix<SmallTypes>
     if (unlikely (vertex_len < AnchorMatrix::min_size)) return Err(SANITIZE_FAILURE);
     hb_barrier ();
 
-    if (unlikely (vertex_len < AnchorMatrix::min_size +
-                  OT::Offset16::static_size * class_count * this->rows))
+    if (unlikely (vertex_len - AnchorMatrix::min_size <
+                  hb_unsigned_mul_saturate (OT::Offset16::static_size, class_count, this->rows)))
       return Err(SANITIZE_FAILURE);
     return Ok();
   }
@@ -201,16 +201,34 @@ struct MarkArray : public OT::Layout::GPOS_impl::MarkArray<SmallTypes>
       unsigned offset_pos = (char*) &((*this)[mark].markAnchor) - (char*) this;
       unsigned* anchor_index;
       if (pos_to_index.has (offset_pos, &anchor_index))
-        TRY (c.graph.move_child (this_index,
-                                 &((*this)[mark].markAnchor),
-                                 prime_id,
-                                 &((*prime)[i].markAnchor)));
+        TRY (c.graph.add_link (&((*prime)[i].markAnchor),
+                               prime_id,
+                               *anchor_index));
 
       i++;
     }
 
-    // Restore correct ordering of the vertex links which are disturbed by move_child.
-    c.graph.vertices_[this_index].sort_real_links ();
+    // Finding the link for a single mark is O(n) so to avoid O(n^2), remove
+    // the old links of all of the moved marks in one pass.
+    auto& v = c.graph.vertices_[this_index];
+    const auto& o = v.obj ();
+    int num_links = o.real_links.length;
+    for (int j = 0; j < num_links; j++)
+    {
+      const auto& link = o.real_links[j];
+      unsigned mark = (link.position - MarkArray::min_size) /
+                      OT::Layout::GPOS_impl::MarkRecord<SmallTypes>::static_size;
+      if (!marks.has (mark)) continue;
+
+      c.graph.vertices_[link.objidx].remove_parent (this_index);
+
+      v.remove_real_link_unordered (j);
+      num_links--;
+      j--;
+    }
+
+    // Restore correct ordering after the above removes, which mess up link ordering.
+    v.sort_real_links ();
 
     return Ok(prime_id);
   }

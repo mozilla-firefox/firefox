@@ -75,9 +75,7 @@ struct hb_vector_paint_t
   int64_t budget_remaining = HB_BUDGET_GLYPH;
   hb_vector_path_sink_t clip_path_sink = {nullptr, 0, 1.f, 1.f, nullptr};
   unsigned gradient_counter = 0;
-  unsigned color_glyph_depth = 0;
   unsigned path_def_count = 0;
-  hb_set_t *active_color_glyphs = nullptr;
   hb_vector_t<hb_color_stop_t> color_stops_scratch;
   hb_vector_buf_t captured_scratch;
   hb_blob_t *recycled_blob = nullptr;

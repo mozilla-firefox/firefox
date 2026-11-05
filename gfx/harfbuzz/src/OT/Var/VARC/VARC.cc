@@ -86,18 +86,23 @@ VarComponent::decompile_record (const VARC &varc,
   if (decoded->flags & (unsigned) flags_t::HAVE_AXES)
   {
     READ_UINT32VAR_FIELD (decoded->axis_indices_index, axis_indices);
+    hb_ubytes_t axis_indices_bytes = (&varc+varc.axisIndicesList).bytes_at (decoded->axis_indices_index);
     unsigned axis_count;
-    if (axis_indices)
-    {
-      axis_indices->extend ((&varc+varc.axisIndicesList)[decoded->axis_indices_index]);
-      if (unlikely (axis_indices->in_error ())) return false;
-      axis_count = axis_indices->length;
-    }
-    else
-      axis_count = hb_len ((&varc+varc.axisIndicesList)[decoded->axis_indices_index]);
+    if (unlikely (!TupleValues::count_values (axis_indices_bytes.arrayZ,
+					      axis_indices_bytes.arrayZ + axis_indices_bytes.length,
+					      &axis_count)))
+      return false;
     if (unlikely (budget && axis_count &&
 		  !hb_budget_spend (*budget, HB_BUDGET_1, axis_count)))
       return false;
+    if (axis_indices)
+    {
+      if (unlikely (!axis_indices->resize_dirty (axis_count))) return false;
+      const HBUINT8 *p = (const HBUINT8 *) axis_indices_bytes.arrayZ;
+      if (unlikely (!TupleValues::decompile (p, *axis_indices,
+					     p + axis_indices_bytes.length)))
+	return false;
+    }
     if (axis_values)
     {
       if (unlikely (!axis_values->resize (axis_count))) return false;

@@ -36,14 +36,22 @@ HB_WASM_API (ptr_t(face_t), face_create) (HB_WASM_EXEC_ENV
 					  unsigned int index)
 {
   HB_PTR_PARAM (blob_t, blob);
+  if (unlikely (!blob))
+    return nullref;
+
+  char *data = HB_ARRAY_APP2NATIVE (char, blob->data, blob->length);
+  if (unlikely (!data))
+    return nullref;
+
   hb_blob_t *hb_blob = hb_blob_create(
-				      HB_ARRAY_APP2NATIVE (char, blob->data, blob->length),
+				      data,
 				      blob->length,
 				      HB_MEMORY_MODE_DUPLICATE,
 				      NULL,
 				      NULL);
 
   hb_face_t *face = hb_face_create(hb_blob, index);
+  hb_blob_destroy (hb_blob);
 
   HB_OBJ2REF (face);
   return faceref;

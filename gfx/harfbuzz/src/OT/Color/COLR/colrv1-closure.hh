@@ -38,9 +38,13 @@ namespace OT {
 
 HB_INTERNAL void PaintColrLayers::closurev1 (hb_colrv1_closure_context_t* c) const
 {
-  c->add_layer_indices (firstLayerIndex, numLayers);
   const LayerList &paint_offset_lists = c->get_colr_table ()->get_layerList ();
-  for (unsigned i = firstLayerIndex; i < firstLayerIndex + numLayers; i++)
+  /* Only retain layers that exist in the LayerList; firstLayerIndex is not
+   * checked against it at sanitize time. */
+  unsigned first = hb_min ((unsigned) firstLayerIndex, (unsigned) paint_offset_lists.len);
+  unsigned count = hb_min ((unsigned) numLayers, paint_offset_lists.len - first);
+  c->add_layer_indices (first, count);
+  for (unsigned i = first; i < first + count; i++)
   {
     const Paint &paint = paint_offset_lists.get_paint (i);
     paint.dispatch (c);

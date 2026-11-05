@@ -267,7 +267,7 @@ struct hb_bit_set_t
 	last_g = g;
 
         if (g != INVALID && (v || page)) /* The v check is to optimize out the page check if v is true. */
-	  page->add (g);
+	  page->set (g, v);
 
 	array = &StructAtOffsetUnaligned<T> (array, stride);
 	count--;
@@ -327,7 +327,6 @@ struct hb_bit_set_t
 	  page_map.arrayZ[write_index++] = page_map.arrayZ[i];
       }
       compact (compact_workspace, write_index);
-      resize (write_index);
     }
   }
 
@@ -510,6 +509,9 @@ struct hb_bit_set_t
   /*
    * workspace should be a pre-sized vector allocated to hold at exactly pages.length
    * elements.
+   *
+   * Truncates page_map and pages to length, which cannot fail, so that the set
+   * stays well-formed even if the caller then fails to grow it.
    */
   void compact (hb_vector_t<unsigned>& workspace,
                 unsigned int length)
@@ -522,6 +524,9 @@ struct hb_bit_set_t
       old_index_to_page_map_index[page_map[i].index] =  i;
 
     compact_pages (old_index_to_page_map_index);
+
+    page_map.shrink (length, false);
+    pages.shrink (length, false);
   }
   void compact_pages (const hb_vector_t<unsigned>& old_index_to_page_map_index)
   {
@@ -748,7 +753,7 @@ struct hb_bit_set_t
     unsigned int elt = 0;
     if (likely (*codepoint != INVALID))
     {
-      hb_codepoint_t base = *codepoint & -page_t::ELT_BITS;
+      hb_codepoint_t base = *codepoint & ~page_t::ELT_MASK;
       if (unlikely (base >= INVALID - page_t::ELT_BITS + 1))
         goto done;
       base += page_t::ELT_BITS;
@@ -970,12 +975,15 @@ struct hb_bit_set_t
 	  return 0;  // codepoint is greater than our max element.
       }
       start_page = i;
-      start_page_value = page_remainder (codepoint + 1);
-      if (unlikely (start_page_value == 0))
+      if (page_map_array[i].major == major)
       {
-        // The export-after value was last in the page. Start on next page.
-        start_page++;
-        start_page_value = 0;
+        start_page_value = page_remainder (codepoint + 1);
+        if (unlikely (start_page_value == 0))
+        {
+          // The export-after value was last in the page. Start on next page.
+          start_page++;
+          start_page_value = 0;
+        }
       }
     }
 
@@ -1019,12 +1027,15 @@ struct hb_bit_set_t
         }
       }
       start_page = i;
-      start_page_value = page_remainder (codepoint + 1);
-      if (unlikely (start_page_value == 0))
+      if (page_map_array[i].major == major)
       {
-        // The export-after value was last in the page. Start on next page.
-        start_page++;
-        start_page_value = 0;
+        start_page_value = page_remainder (codepoint + 1);
+        if (unlikely (start_page_value == 0))
+        {
+          // The export-after value was last in the page. Start on next page.
+          start_page++;
+          start_page_value = 0;
+        }
       }
     }
 

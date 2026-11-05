@@ -142,9 +142,14 @@ hb_ot_map_builder_t::add_lookups (hb_ot_map_t  &m,
 
   table_lookup_count = hb_ot_layout_table_get_lookup_count (face, table_tags[table_index]);
 
-  hb_array_t<const unsigned> varied_lookups;
-  if (key.get_lookup_variations (table_index, feature_index, varied_lookups))
+  hb_set_t varied_lookups;
+  if (key.get_lookup_variations (face, table_index, feature_index, &varied_lookups))
   {
+    if (unlikely (varied_lookups.in_error ()))
+    {
+      m.lookups[table_index].ensure_error ();
+      return;
+    }
     for (unsigned int lookup_index : varied_lookups)
     {
       if (lookup_index >= table_lookup_count)

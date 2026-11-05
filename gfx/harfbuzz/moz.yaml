@@ -20,11 +20,11 @@ origin:
 
   # Human-readable identifier for this version/release
   # Generally "version NNN", "tag SSS", "bookmark SSS"
-  release: 14.6.0 (2026-10-05T23:11:34+03:00).
+  release: 15.1.0 (2026-11-04T23:03:36+02:00).
 
   # Revision to pull in
   # Must be a long or short commit SHA (long preferred)
-  revision: 14.6.0
+  revision: 15.1.0
 
   # The package's license, where possible using the mnemonic from
   # https://spdx.org/licenses/

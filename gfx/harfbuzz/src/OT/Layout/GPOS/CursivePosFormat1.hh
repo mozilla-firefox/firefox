@@ -100,6 +100,130 @@ reverse_cursive_minor_offset (hb_glyph_position_t *pos,
 }
 
 
+static inline bool
+apply_cursive_attachment (hb_ot_apply_context_t *c,
+                          const Anchor &exit_anchor,
+                          const Anchor &entry_anchor,
+                          unsigned i)
+{
+  hb_buffer_t *buffer = c->buffer;
+  unsigned int j = buffer->idx;
+
+  if (HB_BUFFER_MESSAGE_MORE && c->buffer->messaging ())
+  {
+    c->buffer->message (c->font,
+			  "cursive attaching glyph at %u to glyph at %u",
+			  i, j);
+  }
+
+  buffer->unsafe_to_break (i, j + 1);
+  float entry_x, entry_y, exit_x, exit_y;
+  exit_anchor.get_anchor (c, buffer->info[i].codepoint, &exit_x, &exit_y);
+  entry_anchor.get_anchor (c, buffer->info[j].codepoint, &entry_x, &entry_y);
+
+  hb_glyph_position_t *pos = buffer->pos;
+
+  hb_position_t d;
+  /* Main-direction adjustment */
+  switch (c->direction) {
+    case HB_DIRECTION_LTR:
+      pos[i].x_advance = hb_saturate_add ((hb_position_t) roundf (exit_x), pos[i].x_offset);
+
+      d = hb_saturate_add ((hb_position_t) roundf (entry_x), pos[j].x_offset);
+      pos[j].x_advance = hb_saturate_sub (pos[j].x_advance, d);
+      pos[j].x_offset = hb_saturate_sub (pos[j].x_offset, d);
+      break;
+    case HB_DIRECTION_RTL:
+      d = hb_saturate_add ((hb_position_t) roundf (exit_x), pos[i].x_offset);
+      pos[i].x_advance = hb_saturate_sub (pos[i].x_advance, d);
+      pos[i].x_offset = hb_saturate_sub (pos[i].x_offset, d);
+
+      pos[j].x_advance = hb_saturate_add ((hb_position_t) roundf (entry_x), pos[j].x_offset);
+      break;
+    case HB_DIRECTION_TTB:
+      pos[i].y_advance = hb_saturate_add ((hb_position_t) roundf (exit_y), pos[i].y_offset);
+
+      d = hb_saturate_add ((hb_position_t) roundf (entry_y), pos[j].y_offset);
+      pos[j].y_advance = hb_saturate_sub (pos[j].y_advance, d);
+      pos[j].y_offset = hb_saturate_sub (pos[j].y_offset, d);
+      break;
+    case HB_DIRECTION_BTT:
+      d = hb_saturate_add ((hb_position_t) roundf (exit_y), pos[i].y_offset);
+      pos[i].y_advance = hb_saturate_sub (pos[i].y_advance, d);
+      pos[i].y_offset = hb_saturate_sub (pos[i].y_offset, d);
+
+      pos[j].y_advance = (hb_position_t) roundf (entry_y);
+      break;
+    case HB_DIRECTION_INVALID:
+    default:
+      break;
+  }
+
+  /* Cross-direction adjustment */
+
+  /* We attach child to parent (think graph theory and rooted trees whereas
+   * the root stays on baseline and each node aligns itself against its
+   * parent.
+   *
+   * Optimize things for the case of RightToLeft, as that's most common in
+   * Arabic. */
+  unsigned int child  = i;
+  unsigned int parent = j;
+  hb_position_t x_offset = (hb_position_t) roundf (entry_x - exit_x);
+  hb_position_t y_offset = (hb_position_t) roundf (entry_y - exit_y);
+  if  (!(c->lookup_props & LookupFlag::RightToLeft))
+  {
+    unsigned int k = child;
+    child = parent;
+    parent = k;
+    x_offset = -x_offset;
+    y_offset = -y_offset;
+  }
+
+  /* If child was already connected to someone else, walk through its old
+   * chain and reverse the link direction, such that the whole tree of its
+   * previous connection now attaches to new parent.  Watch out for case
+   * where new parent is on the path from old chain...
+   */
+  reverse_cursive_minor_offset (pos, buffer->len, child, c->direction, parent);
+
+  pos[child].attach_chain() = (int) parent - (int) child;
+  if (pos[child].attach_chain() != (int) parent - (int) child)
+  {
+    pos[child].attach_chain() = 0;
+    goto overflow;
+  }
+  pos[child].attach_type() = ATTACH_TYPE_CURSIVE;
+  buffer->scratch_flags |= HB_BUFFER_SCRATCH_FLAG_HAS_GPOS_ATTACHMENT;
+  if (likely (HB_DIRECTION_IS_HORIZONTAL (c->direction)))
+    pos[child].y_offset = y_offset;
+  else
+    pos[child].x_offset = x_offset;
+
+  /* If parent was attached to child, separate them.
+   * https://github.com/harfbuzz/harfbuzz/issues/2469
+   */
+  if (unlikely (pos[parent].attach_chain() == -pos[child].attach_chain()))
+  {
+    pos[parent].attach_chain() = 0;
+    if (likely (HB_DIRECTION_IS_HORIZONTAL (c->direction)))
+	pos[parent].y_offset = 0;
+    else
+	pos[parent].x_offset = 0;
+  }
+
+  if (HB_BUFFER_MESSAGE_MORE && c->buffer->messaging ())
+  {
+    c->buffer->message (c->font,
+			  "cursive attached glyph at %u to glyph at %u",
+			  i, j);
+  }
+
+overflow:
+  buffer->idx++;
+  return true;
+}
+
 template <typename Types>
 struct CursivePosFormat1_2
 {
@@ -176,122 +300,10 @@ struct CursivePosFormat1_2
     }
     hb_barrier ();
 
-    unsigned int i = skippy_iter.idx;
-    unsigned int j = buffer->idx;
-
-    if (HB_BUFFER_MESSAGE_MORE && c->buffer->messaging ())
-    {
-      c->buffer->message (c->font,
-			  "cursive attaching glyph at %u to glyph at %u",
-			  i, j);
-    }
-
-    buffer->unsafe_to_break (i, j + 1);
-    float entry_x, entry_y, exit_x, exit_y;
-    (this+prev_record.exitAnchor).get_anchor (c, buffer->info[i].codepoint, &exit_x, &exit_y);
-    (this+this_record.entryAnchor).get_anchor (c, buffer->info[j].codepoint, &entry_x, &entry_y);
-
-    hb_glyph_position_t *pos = buffer->pos;
-
-    hb_position_t d;
-    /* Main-direction adjustment */
-    switch (c->direction) {
-      case HB_DIRECTION_LTR:
-        pos[i].x_advance = hb_saturate_add ((hb_position_t) roundf (exit_x), pos[i].x_offset);
-
-        d = hb_saturate_add ((hb_position_t) roundf (entry_x), pos[j].x_offset);
-        pos[j].x_advance = hb_saturate_sub (pos[j].x_advance, d);
-        pos[j].x_offset = hb_saturate_sub (pos[j].x_offset, d);
-        break;
-      case HB_DIRECTION_RTL:
-        d = hb_saturate_add ((hb_position_t) roundf (exit_x), pos[i].x_offset);
-        pos[i].x_advance = hb_saturate_sub (pos[i].x_advance, d);
-        pos[i].x_offset = hb_saturate_sub (pos[i].x_offset, d);
-
-        pos[j].x_advance = hb_saturate_add ((hb_position_t) roundf (entry_x), pos[j].x_offset);
-        break;
-      case HB_DIRECTION_TTB:
-        pos[i].y_advance = hb_saturate_add ((hb_position_t) roundf (exit_y), pos[i].y_offset);
-
-        d = hb_saturate_add ((hb_position_t) roundf (entry_y), pos[j].y_offset);
-        pos[j].y_advance = hb_saturate_sub (pos[j].y_advance, d);
-        pos[j].y_offset = hb_saturate_sub (pos[j].y_offset, d);
-        break;
-      case HB_DIRECTION_BTT:
-        d = hb_saturate_add ((hb_position_t) roundf (exit_y), pos[i].y_offset);
-        pos[i].y_advance = hb_saturate_sub (pos[i].y_advance, d);
-        pos[i].y_offset = hb_saturate_sub (pos[i].y_offset, d);
-
-        pos[j].y_advance = (hb_position_t) roundf (entry_y);
-        break;
-      case HB_DIRECTION_INVALID:
-      default:
-        break;
-    }
-
-    /* Cross-direction adjustment */
-
-    /* We attach child to parent (think graph theory and rooted trees whereas
-     * the root stays on baseline and each node aligns itself against its
-     * parent.
-     *
-     * Optimize things for the case of RightToLeft, as that's most common in
-     * Arabic. */
-    unsigned int child  = i;
-    unsigned int parent = j;
-    hb_position_t x_offset = (hb_position_t) roundf (entry_x - exit_x);
-    hb_position_t y_offset = (hb_position_t) roundf (entry_y - exit_y);
-    if  (!(c->lookup_props & LookupFlag::RightToLeft))
-    {
-      unsigned int k = child;
-      child = parent;
-      parent = k;
-      x_offset = -x_offset;
-      y_offset = -y_offset;
-    }
-
-    /* If child was already connected to someone else, walk through its old
-     * chain and reverse the link direction, such that the whole tree of its
-     * previous connection now attaches to new parent.  Watch out for case
-     * where new parent is on the path from old chain...
-     */
-    reverse_cursive_minor_offset (pos, buffer->len, child, c->direction, parent);
-
-    pos[child].attach_chain() = (int) parent - (int) child;
-    if (pos[child].attach_chain() != (int) parent - (int) child)
-    {
-      pos[child].attach_chain() = 0;
-      goto overflow;
-    }
-    pos[child].attach_type() = ATTACH_TYPE_CURSIVE;
-    buffer->scratch_flags |= HB_BUFFER_SCRATCH_FLAG_HAS_GPOS_ATTACHMENT;
-    if (likely (HB_DIRECTION_IS_HORIZONTAL (c->direction)))
-      pos[child].y_offset = y_offset;
-    else
-      pos[child].x_offset = x_offset;
-
-    /* If parent was attached to child, separate them.
-     * https://github.com/harfbuzz/harfbuzz/issues/2469
-     */
-    if (unlikely (pos[parent].attach_chain() == -pos[child].attach_chain()))
-    {
-      pos[parent].attach_chain() = 0;
-      if (likely (HB_DIRECTION_IS_HORIZONTAL (c->direction)))
-	pos[parent].y_offset = 0;
-      else
-	pos[parent].x_offset = 0;
-    }
-
-    if (HB_BUFFER_MESSAGE_MORE && c->buffer->messaging ())
-    {
-      c->buffer->message (c->font,
-			  "cursive attached glyph at %u to glyph at %u",
-			  i, j);
-    }
-
-  overflow:
-    buffer->idx++;
-    return_trace (true);
+    return_trace (apply_cursive_attachment (c,
+                                            this+prev_record.exitAnchor,
+                                            this+this_record.entryAnchor,
+                                            skippy_iter.idx));
   }
 
   template <typename Iterator,

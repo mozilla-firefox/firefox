@@ -139,13 +139,13 @@ class ConstraintSet (object):
 				s.append ('matched = true;\n')
 			elif len (self._c) == 1:
 				assert index == 1, 'Cannot use `matched` for this constraint; the general case has not been implemented'
-				s.append ('matched = 0x{:04X} == buffer.cur({}).glyph_id;\n'.format (next (iter (self._c)), index))
+				s.append ('matched = 0x{:04X} == cur_glyph(buffer, {});\n'.format (next (iter (self._c)), index))
 			else:
-				s.append ('if 0x{:04X} == buffer.cur({}).glyph_id &&\n'.format (self._c[0], index))
+				s.append ('if 0x{:04X} == cur_glyph(buffer, {}) &&\n'.format (self._c[0], index))
 				if index:
 					s.append ('buffer.idx + {} < buffer.len &&\n'.format (index + 1))
 				for i, cp in enumerate (self._c[1:], start=1):
-					s.append ('0x{:04X} == buffer.cur({}).glyph_id{}\n'.format (
+					s.append ('0x{:04X} == cur_glyph(buffer, {}){}\n'.format (
 						cp, index + i, '' if i == len (self._c) - 1 else ' &&'))
 				s.append ('{\n')
 				for i in range (index + 1):
@@ -153,7 +153,7 @@ class ConstraintSet (object):
 				s.append ('output_dotted_circle(buffer);\n')
 				s.append ('}\n')
 		else:
-			s.append ('match buffer.cur({}).glyph_id {{\n'.format (index))
+			s.append ('match cur_glyph(buffer, {}) {{\n'.format (index))
 			cases = collections.defaultdict (set)
 			for first, rest in sorted (self._c.items ()):
 				cases[rest.rust_str (index + 1)].add (first)
@@ -199,24 +199,31 @@ if output_rust:
 	print ()
 	print ('#![allow(clippy::single_match)]')
 	print ()
-	print ('use super::buffer::hb_buffer_t;')
-	print ('use super::script;')
+	print ('use crate::buffer::Buffer;')
 	print ('use crate::BufferFlags;')
+	print ('use crate::Script;')
 	print ()
-	print ('fn output_dotted_circle(buffer: &mut hb_buffer_t) {')
+	print ('/// The glyph `i` places past the current one, or 0, which matches nothing.')
+	print ('fn cur_glyph(buffer: &Buffer, i: usize) -> u32 {')
+	print ('    buffer.cur(i).map_or(0, |info| info.glyph_id)')
+	print ('}')
+	print ()
+	print ('fn output_dotted_circle(buffer: &mut Buffer) {')
 	print ('    buffer.output_glyph(0x25CC);')
 	print ('    {')
 	print ('        let out_idx = buffer.out_len - 1;')
-	print ('        buffer.out_info_mut()[out_idx].clear_continuation();')
+	print ('        if let Some(info) = buffer.out_info_mut().get_mut(out_idx) {')
+	print ('            info.clear_continuation();')
+	print ('        }')
 	print ('    }')
 	print ('}')
 	print ()
-	print ('fn output_with_dotted_circle(buffer: &mut hb_buffer_t) {')
+	print ('fn output_with_dotted_circle(buffer: &mut Buffer) {')
 	print ('    output_dotted_circle(buffer);')
 	print ('    buffer.next_glyph();')
 	print ('}')
 	print ()
-	print ('pub fn preprocess_text_vowel_constraints(buffer: &mut hb_buffer_t) {')
+	print ('pub fn preprocess_text_vowel_constraints(buffer: &mut Buffer) {')
 	print ('    if buffer.flags.contains(BufferFlags::DO_NOT_INSERT_DOTTED_CIRCLE) {')
 	print ('        return;')
 	print ('    }')
@@ -230,7 +237,7 @@ if output_rust:
 	print ('    match buffer.script {')
 
 	for script, constraints in sorted (constraints.items (), key=lambda s_c: script_order[s_c[0]]):
-		print ('        Some(script::{}) => {{'.format (script.upper ()))
+		print ('        Some(Script::{}) => {{'.format (script.upper ()))
 		print ('            buffer.idx = 0;')
 		print ('            while buffer.idx + 1 < buffer.len {')
 		print ('                #[allow(unused_mut)]')

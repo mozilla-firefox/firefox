@@ -50,38 +50,13 @@ struct MarkLigPosFormat1_2
 
   void collect_variation_indices (hb_collect_variation_indices_context_t *c) const
   {
-    + hb_zip (this+markCoverage, this+markArray)
-    | hb_filter (c->glyph_set, hb_first)
-    | hb_map (hb_second)
-    | hb_apply ([&] (const MarkRecord<Types>& record) { record.collect_variation_indices (c, &(this+markArray)); })
-    ;
+    (this+markArray).collect_variation_indices (c, this+markCoverage);
 
     hb_map_t klass_mapping;
     Markclass_closure_and_remap_indexes (this+markCoverage, this+markArray, *c->glyph_set, &klass_mapping);
 
-    unsigned ligcount = (this+ligatureArray).len;
-    auto lig_iter =
-    + hb_zip (this+ligatureCoverage, hb_range (ligcount))
-    | hb_filter (c->glyph_set, hb_first)
-    | hb_map (hb_second)
-    ;
-
-    const LigatureArray<Types>& lig_array = this+ligatureArray;
-    for (const unsigned i : lig_iter)
-    {
-      hb_sorted_vector_t<unsigned> lig_indexes;
-      unsigned row_count = lig_array[i].rows;
-      for (unsigned row : + hb_range (row_count))
-      {
-        + hb_range ((unsigned) classCount)
-        | hb_filter (klass_mapping)
-        | hb_map ([&] (const unsigned col) { return row * (unsigned) classCount + col; })
-        | hb_sink (lig_indexes)
-        ;
-      }
-
-      lig_array[i].collect_variation_indices (c, lig_indexes.iter ());
-    }
+    (this+ligatureArray).collect_variation_indices (c, this+ligatureCoverage,
+                                                   classCount, klass_mapping);
   }
 
   void collect_glyphs (hb_collect_glyphs_context_t *c) const
@@ -203,7 +178,7 @@ struct MarkLigPosFormat1_2
     out->classCount = klass_mapping.get_population ();
 
     auto mark_iter =
-    + hb_zip (this+markCoverage, this+markArray)
+    + hb_zip (this+markCoverage, hb_range ((unsigned) (this+markArray).len))
     | hb_filter (glyphset, hb_first)
     ;
 

@@ -193,6 +193,7 @@ struct class_def_size_estimator_t
     included_glyphs.clear();
     included_class_def_glyphs.clear();
     included_classes.clear();
+    coverage_range_count = 0;
     class_def_range_count = 0;
     class_max = 0;
     coverage_size_val = compute_coverage_size ();
@@ -210,12 +211,23 @@ struct class_def_size_estimator_t
     if (!included_classes.has(klass)) {
       hb_set_t* glyphs = nullptr;
       if (glyphs_per_class.has(klass, &glyphs)) {
-        unsigned num_glyphs = included_glyphs.get_population();
+        // Each glyph belongs to exactly one class, so none of these glyphs are
+        // included yet. Keep the coverage range count incremental (recounting
+        // the ranges of included_glyphs for every class is quadratic): each new
+        // range adds one, and merges with each already included neighbour.
+        hb_codepoint_t start = HB_SET_VALUE_INVALID;
+        hb_codepoint_t end = HB_SET_VALUE_INVALID;
+        while (glyphs->next_range (&start, &end))
+        {
+          coverage_range_count++;
+          if (start && included_glyphs.has (start - 1)) coverage_range_count--;
+          if (included_glyphs.has (end + 1)) coverage_range_count--;
+        }
+
         included_glyphs.union_(*glyphs);
         if (klass)
           included_class_def_glyphs.union_(*glyphs);
-        if (num_glyphs != included_glyphs.get_population())
-          coverage_size_val = compute_coverage_size ();
+        coverage_size_val = compute_coverage_size ();
       }
 
       if (klass)
@@ -228,17 +240,6 @@ struct class_def_size_estimator_t
     }
 
     return class_def_size ();
-  }
-
-  unsigned num_glyph_ranges (const hb_set_t &glyphs) const {
-    hb_codepoint_t start = HB_SET_VALUE_INVALID;
-    hb_codepoint_t end = HB_SET_VALUE_INVALID;
-
-    unsigned count = 0;
-    while (glyphs.next_range (&start, &end)) {
-        count++;
-    }
-    return count;
   }
 
  private:
@@ -266,7 +267,7 @@ struct class_def_size_estimator_t
     unsigned coverage_base_size = OT::HBUINT16::static_size + glyph_size;
     unsigned range_size = 3 * glyph_size;
     unsigned format1_size = coverage_base_size + glyph_size * included_glyphs.get_population();
-    unsigned format2_size = coverage_base_size + range_size * num_glyph_ranges (included_glyphs);
+    unsigned format2_size = coverage_base_size + range_size * coverage_range_count;
     return hb_min(format1_size, format2_size);
   }
 
@@ -306,6 +307,7 @@ struct class_def_size_estimator_t
   hb_set_t included_classes;
   hb_set_t included_glyphs;
   hb_set_t included_class_def_glyphs;
+  unsigned coverage_range_count;
   unsigned class_def_range_count;
   unsigned class_max;
   unsigned coverage_size_val;

@@ -90,7 +90,7 @@ struct cff1_cs_opset_t : cs_opset_t<number_t, OPSET, cff1_cs_interp_env_t, PARAM
   {
     switch (op) {
       case OpCode_dotsection:
-	SUPER::flush_args_and_op (op, env, param);
+	OPSET::flush_op (op, env, param);
 	break;
 
       case OpCode_endchar:

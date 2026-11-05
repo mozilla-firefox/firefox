@@ -69,11 +69,6 @@ _hb_ot_metrics_get_position_common (hb_font_t           *font,
 #else
 #define GET_VAR .0f
 #endif
-// Unused:
-//#define GET_METRIC_X(TABLE, ATTR) \
-//  (face->table.TABLE->has_data () && \
-//    ((void) (position && (*position = font->em_scalef_x (_fix_ascender_descender ( \
-//      face->table.TABLE->ATTR + GET_VAR, metrics_tag)))), true))
 #define GET_METRIC_Y(TABLE, ATTR) \
   (face->table.TABLE->has_data () && \
     ((void) (position && (*position = font->em_scalef_y (_fix_ascender_descender ( \
@@ -106,7 +101,6 @@ _hb_ot_metrics_get_position_common (hb_font_t           *font,
 #undef GET_HEA_METRIC_Y
 #undef GET_HEA_METRIC_X
 #undef GET_METRIC_Y
-#undef GET_METRIC_X
 #undef GET_VAR
   default:                               assert (0); return false;
   }
@@ -272,11 +266,14 @@ hb_ot_metrics_get_position (hb_font_t           *font,
 void
 hb_ot_metrics_get_position_with_fallback (hb_font_t           *font,
 					  hb_ot_metrics_tag_t  metrics_tag,
-					  hb_position_t       *position     /* OUT */)
+					  hb_position_t       *position     /* OUT.  May be NULL. */)
 {
   hb_font_extents_t font_extents;
   hb_codepoint_t glyph;
   hb_glyph_extents_t extents;
+
+  hb_position_t unused;
+  if (!position) position = &unused;
 
   if (hb_ot_metrics_get_position (font, metrics_tag, position))
     {
@@ -307,7 +304,7 @@ hb_ot_metrics_get_position_with_fallback (hb_font_t           *font,
 
   case HB_OT_METRICS_TAG_VERTICAL_DESCENDER:
     hb_font_get_extents_for_direction (font, HB_DIRECTION_TTB, &font_extents);
-    *position = font_extents.ascender;
+    *position = font_extents.descender;
     break;
 
   case HB_OT_METRICS_TAG_HORIZONTAL_LINE_GAP:

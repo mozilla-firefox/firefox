@@ -164,11 +164,13 @@ HB_WASM_API (bool_t, buffer_set_contents) (HB_WASM_EXEC_ENV
   if (unlikely (hb_unsigned_mul_overflows (length, sizeof (buffer->info[0]), &bytes)))
     return false;
 
-  if (unlikely (!buffer->resize (length)))
-    return false;
-
   glyph_info_t *info = (glyph_info_t *) (validate_app_addr (contents->info, bytes) ? addr_app_to_native (contents->info) : nullptr);
   glyph_position_t *pos = (glyph_position_t *) (validate_app_addr (contents->pos, bytes) ? addr_app_to_native (contents->pos) : nullptr);
+  if (unlikely (!info || !pos))
+    return false;
+
+  if (unlikely (!buffer->resize (length)))
+    return false;
 
   if (!buffer->have_positions)
     buffer->clear_positions (); /* This is wasteful. */

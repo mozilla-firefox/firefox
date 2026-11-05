@@ -976,7 +976,7 @@ struct hb_accelerate_subtables_context_t :
   template <typename T>
   return_t dispatch (const T &obj)
   {
-    hb_applicable_t *entry = &array[i++];
+    hb_applicable_t *entry = &array[i];
 
     entry->init (obj, num_glyphs);
 
@@ -992,7 +992,7 @@ struct hb_accelerate_subtables_context_t :
 
   hb_applicable_t *array;
   unsigned num_glyphs;
-  unsigned i = 0;
+  unsigned i = 0; /* Index of the subtable being accelerated; set by Chain::accelerate(). */
 };
 
 struct hb_aat_layout_chain_accelerator_t
@@ -1025,7 +1025,7 @@ struct hb_aat_layout_chain_accelerator_t
     thiz->count = count;
 
     hb_accelerate_subtables_context_t c_accelerate_subtables (thiz->subtables, num_glyphs);
-    chain.dispatch (&c_accelerate_subtables);
+    chain.accelerate (&c_accelerate_subtables);
 
     return thiz;
   }
@@ -1140,6 +1140,9 @@ struct Chain
     hb_mask_t flags = defaultFlags;
     {
       unsigned int count = featureCount;
+      /* Charge the chain and its feature records; the map builder stops
+       * compiling further ranges once its budget is exhausted. */
+      hb_budget_spend (map->budget, HB_BUDGET_1, 1 + count);
       for (unsigned i = 0; i < count; i++)
       {
 	const Feature &feature = featureZ[i];
@@ -1164,7 +1167,7 @@ struct Chain
 #ifndef HB_NO_AAT
 	else if (type == HB_AAT_LAYOUT_FEATURE_TYPE_LANGUAGE_TAG_TYPE && setting &&
 		 /* TODO: Rudimentary language matching. */
-		 hb_language_matches (map->face->table.ltag->get_language (setting - 1), map->props.language))
+		 map->face->table.ltag->matches_language (setting - 1, map->props.language))
 	{
 	  flags &= feature.disableFlags;
 	  flags |= feature.enableFlags;
@@ -1238,6 +1241,9 @@ struct Chain
 		bool (coverage & ChainSubtable<Types>::Backwards) !=
 		HB_DIRECTION_IS_BACKWARD (c->buffer->props.direction);
 
+      if (unlikely (!c->charge_buffer_pass ()))
+	break;
+
       if (!c->buffer->message (c->font, "start chainsubtable %u", c->lookup_index))
 	goto skip;
 
@@ -1259,6 +1265,22 @@ struct Chain
   }
 
   size_t get_size () const { return length; }
+
+  /* Fills one accelerator entry per subtable, indexed by subtable position
+   * so that apply() can look them up by position.  Subtables of unknown
+   * type are skipped by ChainSubtable::dispatch() and keep their zeroed
+   * entry, which is fine since apply() does not run them either. */
+  void accelerate (hb_accelerate_subtables_context_t *c) const
+  {
+    const ChainSubtable<Types> *subtable = &StructAfter<ChainSubtable<Types>> (featureZ.as_array (featureCount));
+    unsigned int count = subtableCount;
+    for (unsigned int i = 0; i < count; i++)
+    {
+      c->i = i;
+      subtable->dispatch (c);
+      subtable = &StructAfter<ChainSubtable<Types>> (*subtable);
+    }
+  }
 
   template <typename context_t, typename ...Ts>
   typename context_t::return_t dispatch (context_t *c, Ts&&... ds) const
@@ -1385,6 +1407,7 @@ struct mortmorx
 
 	if (unlikely (!accels[chain_index].cmpexch (nullptr, accel)))
 	{
+	  accel->destroy ();
 	  hb_free (accel);
 	  goto retry;
 	}
@@ -1409,9 +1432,22 @@ struct mortmorx
       return;
     for (unsigned int i = 0; i < count; i++)
     {
-      map->chain_flags[i].push (hb_aat_map_t::range_flags_t {chain->compile_flags (mapper),
-							     mapper->range_first,
-							     mapper->range_last});
+      hb_mask_t flags = chain->compile_flags (mapper);
+      auto &ranges = map->chain_flags[i];
+      /* Ranges are compiled in order and are contiguous.  Extend the last
+       * one instead of starting a new one if this chain does not tell the
+       * two apart; the map would otherwise hold one entry per chain per
+       * range, a product the font and the caller's features do not bound. */
+      if (ranges.length && ranges.tail ().flags == flags)
+	ranges.tail ().cluster_last = mapper->range_last;
+      else
+      {
+	/* Stored ranges cost memory; charge them more than visited ones. */
+	hb_budget_spend (mapper->budget, HB_BUDGET_16);
+	ranges.push (hb_aat_map_t::range_flags_t {flags,
+						  mapper->range_first,
+						  mapper->range_last});
+      }
       chain = &StructAfter<Chain<Types>> (*chain);
     }
   }
@@ -1454,11 +1490,16 @@ struct mortmorx
 
     const Chain<Types> *chain = &firstChain;
     unsigned int count = chainCount;
+    unsigned int subtable_count = 0;
     for (unsigned int i = 0; i < count; i++)
     {
       if (!chain->sanitize (c, version))
 	return_trace (false);
       hb_barrier ();
+      /* The accelerator keeps a glyph set per subtable. */
+      subtable_count += chain->get_subtable_count ();
+      if (unlikely (subtable_count > HB_AAT_MAX_SUBTABLES))
+	return_trace (false);
       chain = &StructAfter<Chain<Types>> (*chain);
     }
 

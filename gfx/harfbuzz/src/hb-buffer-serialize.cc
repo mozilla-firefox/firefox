@@ -895,4 +895,78 @@ hb_buffer_deserialize_unicode (hb_buffer_t *buffer,
 }
 
 
+/**
+ * hb_buffer_deserialize_glyphs2:
+ * @buffer: an #hb_buffer_t buffer.
+ * @buf: (array length=buf_len) (element-type uint8_t): string to deserialize
+ * @buf_len: the size of @buf in bytes, or -1 if it is `NULL`-terminated
+ * @buf_consumed: (out) (optional): output byte offset of the character after
+ *               the last consumed one, on success or failure
+ * @font: (nullable): font for getting glyph IDs
+ * @format: the #hb_buffer_serialize_format_t of the input @buf
+ *
+ * Deserializes glyphs into @buffer from the textual representation produced
+ * by hb_buffer_serialize_glyphs().
+ *
+ * Behaves like hb_buffer_deserialize_glyphs(), including its return value and
+ * any partial buffer contents left on failure, but reports progress as a byte
+ * offset from @buf instead of a pointer into it. If no input is consumed,
+ * @buf_consumed is set to zero.
+ *
+ * Return value: `true` if the full string was parsed, `false` otherwise.
+ *
+ * Since: 15.1.0
+ **/
+hb_bool_t
+hb_buffer_deserialize_glyphs2 (hb_buffer_t *buffer,
+			       const char *buf,
+			       int buf_len,
+			       unsigned int *buf_consumed,
+			       hb_font_t *font,
+			       hb_buffer_serialize_format_t format)
+{
+  const char *end;
+  hb_bool_t ret = hb_buffer_deserialize_glyphs (buffer, buf, buf_len, &end,
+						font, format);
+  if (buf_consumed)
+    *buf_consumed = end == buf ? 0 : end - buf;
+  return ret;
+}
+
+/**
+ * hb_buffer_deserialize_unicode2:
+ * @buffer: an #hb_buffer_t buffer.
+ * @buf: (array length=buf_len) (element-type uint8_t): string to deserialize
+ * @buf_len: the size of @buf in bytes, or -1 if it is `NULL`-terminated
+ * @buf_consumed: (out) (optional): output byte offset of the character after
+ *               the last consumed one, on success or failure
+ * @format: the #hb_buffer_serialize_format_t of the input @buf
+ *
+ * Deserializes Unicode into @buffer from the textual representation produced
+ * by hb_buffer_serialize_unicode().
+ *
+ * Behaves like hb_buffer_deserialize_unicode(), including its return value and
+ * any partial buffer contents left on failure, but reports progress as a byte
+ * offset from @buf instead of a pointer into it. If no input is consumed,
+ * @buf_consumed is set to zero.
+ *
+ * Return value: `true` if the full string was parsed, `false` otherwise.
+ *
+ * Since: 15.1.0
+ **/
+hb_bool_t
+hb_buffer_deserialize_unicode2 (hb_buffer_t *buffer,
+				const char *buf,
+				int buf_len,
+				unsigned int *buf_consumed,
+				hb_buffer_serialize_format_t format)
+{
+  const char *end;
+  hb_bool_t ret = hb_buffer_deserialize_unicode (buffer, buf, buf_len, &end,
+						 format);
+  if (buf_consumed)
+    *buf_consumed = end == buf ? 0 : end - buf;
+  return ret;
+}
+
 #endif

@@ -698,17 +698,20 @@ struct GDEF
 	if (varStore)
 	{
 	  item_variations_t item_vars;
-	  if (item_vars.instantiate (this+varStore, c->plan, true, true,
-				     c->plan->gdef_varstore_inner_maps.as_array ())) {
-	    subset_varstore = out->varStore.serialize_serialize (c->serializer,
-								 item_vars.has_long_word (),
-								 c->plan->axis_tags,
-								 item_vars.get_region_list (),
-								 item_vars.get_vardata_encodings ());
-	    varstore_index = c->serializer->last_added_child_index();
-	  }
+	  if (unlikely (!c->serializer->check_success (
+                  item_vars.instantiate (this+varStore, c->plan, true, true,
+                                          c->plan->gdef_varstore_inner_maps.as_array (), true))))
+            return_trace (false);
+	  subset_varstore = out->varStore.serialize_serialize (c->serializer,
+							     item_vars.has_long_word (),
+							     c->plan->axis_tags,
+							     item_vars.get_region_list (),
+							     item_vars.get_vardata_encodings ());
+	  varstore_index = c->serializer->last_added_child_index();
 	  remap_varidx_after_instantiation (item_vars.get_varidx_map (),
 					    c->plan->layout_variation_idx_delta_map);
+          remap_varidx_after_instantiation (item_vars.get_varidx_map (),
+                                            c->plan->layout_condition_idx_value_map);
 	}
       }
       else
@@ -1118,8 +1121,9 @@ struct GDEF
   }
 
   protected:
+  template <typename Key>
   static void remap_varidx_after_instantiation (const hb_map_t& varidx_map,
-                                                hb_hashmap_t<unsigned, hb_pair_t<unsigned, int>>& layout_variation_idx_delta_map /* IN/OUT */)
+                                                hb_hashmap_t<Key, hb_pair_t<unsigned, int>>& layout_variation_idx_delta_map /* IN/OUT */)
   {
     /* varidx_map is empty which means varstore is empty after instantiation,
      * no variations, map all varidx to HB_OT_LAYOUT_NO_VARIATIONS_INDEX.

@@ -303,6 +303,9 @@ struct cff2_private_dict_opset_t : dict_opset_t
 	env.clear_args ();
 	break;
       case OpCode_blenddict:
+        /* Hint values are ignored here. Discard each group so raw operands
+         * from successive blends cannot overflow the stack. */
+        env.clear_args ();
 	break;
 
       default:

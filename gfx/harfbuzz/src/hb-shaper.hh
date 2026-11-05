@@ -68,7 +68,8 @@ enum hb_shaper_order_t
 
 template <enum hb_shaper_order_t order, typename Object> struct hb_shaper_object_data_type_t;
 
-#define HB_SHAPER_DATA_SUCCEEDED ((void *) +1)
+/* Low bit is taken by the lazy-loader's tag_null. */
+#define HB_SHAPER_DATA_SUCCEEDED ((void *) +2)
 #define HB_SHAPER_DATA_TYPE(shaper, object)		hb_##shaper##_##object##_data_t
 #define HB_SHAPER_DATA_CREATE_FUNC(shaper, object)	_hb_##shaper##_shaper_##object##_data_create
 #define HB_SHAPER_DATA_DESTROY_FUNC(shaper, object)	_hb_##shaper##_shaper_##object##_data_destroy
@@ -99,6 +100,8 @@ template <enum hb_shaper_order_t order, typename Object> struct hb_shaper_object
 	  static Type* create (hb_##object##_t *data) \
 	  { return HB_SHAPER_DATA_CREATE_FUNC (shaper, object) (data); } \
 	  static Type *get_null () { return nullptr; } \
+	  /* Remember a failed create (), instead of retrying on every access. */ \
+	  static constexpr bool tag_null = true; \
 	  static void destroy (Type *p) { HB_SHAPER_DATA_DESTROY_FUNC (shaper, object) (p); } \
 	}; \
 	\

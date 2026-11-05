@@ -350,7 +350,7 @@ struct hmtxvmtx
 					    hb_scalar_cache_t *store_cache = nullptr) const
     {
       unsigned int advance = get_advance_without_var_unscaled (glyph);
-      return hb_max(0.0f, advance + roundf (var_table->get_advance_delta_unscaled (glyph,
+      return hb_clamp_to<unsigned> (advance + roundf (var_table->get_advance_delta_unscaled (glyph,
 								      font->coords, font->num_coords,
 								      store_cache)));
     }
@@ -477,7 +477,7 @@ struct hmtx_accelerator_t : hb_dual_accelerator_t<hmtx::accelerator_t,
 					  hb_scalar_cache_t *store_cache = nullptr) const
   {
     unsigned int advance = get_advance_without_var_unscaled (glyph);
-    return hb_max(0.0f, advance + roundf (var_table->get_advance_delta_unscaled (glyph,
+    return hb_clamp_to<unsigned> (advance + roundf (var_table->get_advance_delta_unscaled (glyph,
 								    font->coords, font->num_coords,
 								    store_cache)));
   }
@@ -518,7 +518,7 @@ struct vmtx_accelerator_t : hb_dual_accelerator_t<vmtx::accelerator_t,
 					  hb_scalar_cache_t *store_cache = nullptr) const
   {
     unsigned int advance = get_advance_without_var_unscaled (glyph);
-    return hb_max(0.0f, advance + roundf (var_table->get_advance_delta_unscaled (glyph,
+    return hb_clamp_to<unsigned> (advance + roundf (var_table->get_advance_delta_unscaled (glyph,
 								    font->coords, font->num_coords,
 								    store_cache)));
   }

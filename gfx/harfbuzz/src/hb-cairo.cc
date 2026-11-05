@@ -55,7 +55,7 @@ hb_cairo_move_to (hb_draw_funcs_t *dfuncs HB_UNUSED,
 		  void *user_data HB_UNUSED)
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) draw_data;
-  if (unlikely (!c->spend (HB_BUDGET_1)))
+  if (unlikely (!c->spend_segment ()))
     return;
 
   cairo_move_to (c->cr, (double) to_x, (double) to_y);
@@ -69,7 +69,7 @@ hb_cairo_line_to (hb_draw_funcs_t *dfuncs HB_UNUSED,
 		  void *user_data HB_UNUSED)
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) draw_data;
-  if (unlikely (!c->spend (HB_BUDGET_1)))
+  if (unlikely (!c->spend_segment ()))
     return;
 
   cairo_line_to (c->cr, (double) to_x, (double) to_y);
@@ -85,7 +85,7 @@ hb_cairo_cubic_to (hb_draw_funcs_t *dfuncs HB_UNUSED,
 		   void *user_data HB_UNUSED)
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) draw_data;
-  if (unlikely (!c->spend (HB_BUDGET_1)))
+  if (unlikely (!c->spend_segment ()))
     return;
 
   cairo_curve_to (c->cr,
@@ -101,7 +101,7 @@ hb_cairo_close_path (hb_draw_funcs_t *dfuncs HB_UNUSED,
 		     void *user_data HB_UNUSED)
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) draw_data;
-  if (unlikely (!c->spend (HB_BUDGET_1)))
+  if (unlikely (!c->spend_segment ()))
     return;
 
   cairo_close_path (c->cr);
@@ -220,38 +220,26 @@ hb_cairo_fill_glyph (hb_paint_funcs_t *pfuncs HB_UNUSED,
   hb_font_draw_glyph (font, glyph, hb_cairo_draw_get_funcs (), c);
   cairo_close_path (cr);
   _hb_cairo_set_source_color (c, use_foreground, color);
-  cairo_fill (cr);
+  if (likely (c->spend_paint ()))
+    cairo_fill (cr);
 
   cairo_restore (cr);
 }
 
 static hb_bool_t
 hb_cairo_paint_color_glyph (hb_paint_funcs_t *pfuncs HB_UNUSED,
-			    void *paint_data,
-			    hb_codepoint_t glyph,
-			    hb_font_t *font,
+			    void *paint_data HB_UNUSED,
+			    hb_codepoint_t glyph HB_UNUSED,
+			    hb_font_t *font HB_UNUSED,
 			    void *user_data HB_UNUSED)
 {
-  hb_cairo_context_t *c = (hb_cairo_context_t *) paint_data;
-  cairo_t *cr = c->cr;
-
-  if (unlikely (!c->spend (HB_BUDGET_1)))
-    return true;
-
-  cairo_save (cr);
-
-  hb_position_t x_scale, y_scale;
-  hb_font_get_scale (font, &x_scale, &y_scale);
-  cairo_scale (cr, x_scale, -y_scale);
-
-  cairo_glyph_t cairo_glyph = { glyph, 0, 0 };
-  cairo_set_scaled_font (cr, c->scaled_font);
-  cairo_set_font_size (cr, 1);
-  cairo_show_glyphs (cr, &cairo_glyph, 1);
-
-  cairo_restore (cr);
-
-  return true;
+  /* Showing the nested glyph through cairo_show_glyphs() would re-enter
+   * hb_font_paint_glyph() on a scaled font of its own, with a fresh paint
+   * context: the glyph decycler, nesting depth and work limits of the
+   * walk in progress do not carry over, so two glyphs painting each other
+   * recurse until the stack is exhausted.  Decline, and let the caller
+   * paint the nested glyph inline under the limits of the current walk. */
+  return false;
 }
 
 static void
@@ -271,6 +259,7 @@ hb_cairo_push_clip_glyph (hb_paint_funcs_t *pfuncs HB_UNUSED,
 
   cairo_close_path (cr);
   cairo_clip (cr);
+  c->push_clip ();
 }
 
 static void
@@ -283,10 +272,18 @@ hb_cairo_push_clip_rectangle (hb_paint_funcs_t *pfuncs HB_UNUSED,
   cairo_t *cr = c->cr;
 
   cairo_save (cr);
+  cairo_new_path (cr);
   cairo_rectangle (cr,
                    (double) xmin, (double) ymin,
                    (double) (xmax - xmin), (double) (ymax - ymin));
   cairo_clip (cr);
+
+  /* Cairo keeps an axis-aligned rectangle as a box, not as a path. */
+  cairo_matrix_t m;
+  cairo_get_matrix (cr, &m);
+  if (m.xy || m.yx)
+    c->path_segments += 4;
+  c->push_clip ();
 }
 
 static hb_draw_funcs_t *
@@ -314,6 +311,7 @@ hb_cairo_push_clip_path_end (hb_paint_funcs_t *pfuncs HB_UNUSED,
 
   cairo_close_path (cr);
   cairo_clip (cr);
+  c->push_clip ();
 }
 
 static void
@@ -325,6 +323,7 @@ hb_cairo_pop_clip (hb_paint_funcs_t *pfuncs HB_UNUSED,
   cairo_t *cr = c->cr;
 
   cairo_restore (cr);
+  c->pop_clip ();
 }
 
 static void
@@ -350,7 +349,8 @@ hb_cairo_pop_group (hb_paint_funcs_t *pfuncs HB_UNUSED,
 
   cairo_pop_group_to_source (cr);
   cairo_set_operator (cr, _hb_paint_composite_mode_to_cairo (mode));
-  cairo_paint (cr);
+  if (likely (c->spend_paint ()))
+    cairo_paint (cr);
 
   cairo_restore (cr);
 }
@@ -364,6 +364,9 @@ hb_cairo_paint_color (hb_paint_funcs_t *pfuncs HB_UNUSED,
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) paint_data;
   cairo_t *cr = c->cr;
+
+  if (unlikely (!c->spend_paint ()))
+    return;
 
   _hb_cairo_set_source_color (c, use_foreground, color);
   cairo_paint (cr);
@@ -396,6 +399,9 @@ hb_cairo_paint_linear_gradient (hb_paint_funcs_t *pfuncs HB_UNUSED,
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) paint_data;
 
+  if (unlikely (!c->spend_paint (HB_BUDGET_1024)))
+    return;
+
   _hb_cairo_paint_linear_gradient (c, color_line, x0, y0, x1, y1, x2, y2);
 }
 
@@ -409,6 +415,9 @@ hb_cairo_paint_radial_gradient (hb_paint_funcs_t *pfuncs HB_UNUSED,
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) paint_data;
 
+  if (unlikely (!c->spend_paint (HB_BUDGET_1024)))
+    return;
+
   _hb_cairo_paint_radial_gradient (c, color_line, x0, y0, r0, x1, y1, r1);
 }
 
@@ -421,6 +430,10 @@ hb_cairo_paint_sweep_gradient (hb_paint_funcs_t *pfuncs HB_UNUSED,
 			       void *user_data HB_UNUSED)
 {
   hb_cairo_context_t *c = (hb_cairo_context_t *) paint_data;
+
+  /* The sweep is a mesh pattern, which cairo rasterizes per paint. */
+  if (unlikely (!c->spend_paint (HB_BUDGET_8192)))
+    return;
 
   _hb_cairo_paint_sweep_gradient (c, color_line, x0, y0, start_angle, end_angle);
 }
@@ -590,7 +603,11 @@ hb_cairo_init_scaled_font (cairo_scaled_font_t  *scaled_font,
   hb_font_t *font = (hb_font_t *) cairo_font_face_get_user_data (font_face,
 								 &hb_cairo_font_user_data_key);
 
-  if (!font)
+  if (font)
+    /* Shared font owned by the cairo font face (the font-based
+     * constructor).  Take our own reference to hand to the scaled font. */
+    hb_font_reference (font);
+  else
   {
     hb_face_t *face = (hb_face_t *) cairo_font_face_get_user_data (font_face,
 								   &hb_cairo_face_user_data_key);
@@ -635,16 +652,28 @@ hb_cairo_init_scaled_font (cairo_scaled_font_t  *scaled_font,
     {
       void *user_data = cairo_font_face_get_user_data (font_face,
 						       &hb_cairo_font_init_user_data_user_data_key);
-      font = init_func (font, scaled_font, user_data);
+      hb_font_t *new_font = init_func (font, scaled_font, user_data);
+      /* Preserve the historical ownership behavior for a callback that
+       * returns a different font: reference it, rather than assuming it
+       * transfers ownership.  The font we created is the callback's to
+       * release, as before. */
+      if (new_font != font)
+	hb_font_reference (new_font);
+      font = new_font;
     }
 
     hb_font_make_immutable (font);
   }
 
-  cairo_scaled_font_set_user_data (scaled_font,
-				   &hb_cairo_font_user_data_key,
-				   (void *) hb_font_reference (font),
-				   hb_cairo_font_destroy);
+  /* The scaled font takes over our one reference to font. */
+  if (unlikely (CAIRO_STATUS_SUCCESS != cairo_scaled_font_set_user_data (scaled_font,
+									 &hb_cairo_font_user_data_key,
+									 (void *) font,
+									 hb_cairo_font_destroy)))
+  {
+    hb_font_destroy (font);
+    return CAIRO_STATUS_NO_MEMORY;
+  }
 
   hb_cairo_budget_t *budget = (hb_cairo_budget_t *) hb_malloc (sizeof (hb_cairo_budget_t));
   if (unlikely (!budget))
@@ -1065,6 +1094,10 @@ hb_cairo_font_face_get_scale_factor (cairo_font_face_t *font_face)
  * If the value @clusters points at has changed after the call, the caller
  * will free the allocated cluster array using cairo_text_cluster_free().
  *
+ * Cairo can only represent monotone clusters.  If the cluster values in
+ * @buffer are not monotone in the buffer's direction, a single cluster
+ * mapping all of @utf8 to all of the glyphs is returned.
+ *
  * See hb_cairo_font_face_set_scale_factor() for the details of
  * the @scale_factor argument.
  *
@@ -1099,13 +1132,26 @@ hb_cairo_glyphs_from_buffer (hb_buffer_t *buffer,
   if (orig_num_glyphs < *num_glyphs + 1)
     *glyphs = cairo_glyph_allocate (*num_glyphs + 1);
 
+  hb_bool_t backward = HB_DIRECTION_IS_BACKWARD (hb_buffer_get_direction (buffer));
+  bool monotone = true;
   if (clusters && utf8)
   {
     unsigned orig_num_clusters = *num_clusters;
     *num_clusters = *num_glyphs ? 1 : 0;
     for (unsigned int i = 1; i < *num_glyphs; i++)
       if (hb_glyph[i].cluster != hb_glyph[i-1].cluster)
+      {
+	if (unlikely ((hb_glyph[i].cluster < hb_glyph[i-1].cluster) != (bool) backward))
+	{
+	  /* Cairo can only represent monotone clusters.  Non-monotone
+	   * cluster levels, shaper bugs, or shaping that failed midway
+	   * can all get us here.  Map all of the text to all of the glyphs. */
+	  monotone = false;
+	  *num_clusters = 1;
+	  break;
+	}
 	(*num_clusters)++;
+      }
     if (orig_num_clusters < *num_clusters)
       *clusters = cairo_text_cluster_allocate (*num_clusters);
   }
@@ -1131,12 +1177,16 @@ hb_cairo_glyphs_from_buffer (hb_buffer_t *buffer,
   if (clusters && *num_clusters && utf8)
   {
     hb_memset ((void *) *clusters, 0, *num_clusters * sizeof ((*clusters)[0]));
-    hb_bool_t backward = HB_DIRECTION_IS_BACKWARD (hb_buffer_get_direction (buffer));
     *cluster_flags = backward ? CAIRO_TEXT_CLUSTER_FLAG_BACKWARD : (cairo_text_cluster_flags_t) 0;
     unsigned int cluster = 0;
     const char *start = utf8, *end;
     (*clusters)[cluster].num_glyphs++;
-    if (backward)
+    if (unlikely (!monotone))
+    {
+      (*clusters)[cluster].num_glyphs = *num_glyphs;
+      (*clusters)[cluster].num_bytes = utf8_len;
+    }
+    else if (backward)
     {
       for (i = *num_glyphs - 2; i >= 0; i--)
       {

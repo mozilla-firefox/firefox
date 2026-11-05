@@ -327,12 +327,76 @@ static void test_running_class_size_estimates_with_locally_consecutive_glyphs ()
   hb_always_assert(check_add_class_def_size(estimator, map, 3, {2, 3}));
 }
 
+static void test_running_coverage_size_estimates_with_interleaved_glyphs () {
+  gid_and_class_list_t map = {
+    {0, 2},
+    {1, 1},
+    {2, 1},
+    {3, 1},
+    {4, 2},
+    {5, 1},
+    {6, 1},
+    {7, 1},
+    {8, 2},
+    {10, 3},
+  };
+
+  // Class 2 extends and joins the coverage ranges of class 1.
+  graph::class_def_size_estimator_t estimator = *graph::class_def_size_estimator_t::create (map.iter());
+  hb_always_assert(check_add_class_def_size(estimator, map, 1, {1}));
+  hb_always_assert(check_add_class_def_size(estimator, map, 2, {1, 2}));
+  hb_always_assert(check_add_class_def_size(estimator, map, 3, {1, 2, 3}));
+
+  estimator.reset();
+  hb_always_assert(check_add_class_def_size(estimator, map, 2, {2}));
+  hb_always_assert(check_add_class_def_size(estimator, map, 1, {1, 2}));
+}
+
+static void
+test_class_def_intersects_class ()
+{
+  /* Range count, then first/last/class for each range. Include gaps,
+   * adjacent ranges, explicit class zero, and ranges starting at gid 0. */
+  const unsigned cases[][7] = {
+    {0, 0, 0, 0, 0, 0, 0},
+    {1, 0, 3, 1, 0, 0, 0},
+    {1, 0, 7, 1, 0, 0, 0},
+    {2, 0, 1, 1, 4, 5, 2},
+    {2, 0, 1, 1, 2, 3, 2},
+    {2, 0, 1, 0, 4, 5, 2},
+    {2, 1, 2, 1, 4, 5, 2},
+  };
+  for (const auto &ranges : cases)
+  {
+    OT::HBUINT16 data[8];
+    data[0] = 2;
+    for (unsigned i = 0; i < 7; i++)
+      data[i + 1] = ranges[i];
+    const auto &class_def = *reinterpret_cast<const OT::ClassDef *> (data);
+    for (unsigned mask = 0; mask < 256; mask++)
+    {
+      hb_set_t glyphs;
+      for (unsigned g = 0; g < 8; g++)
+        if (mask & (1u << g)) glyphs.add (g);
+      for (unsigned klass = 0; klass < 4; klass++)
+      {
+        bool expected = false;
+        for (auto g : glyphs)
+          expected |= class_def.get_class (g) == klass;
+        hb_always_assert (class_def.intersects_class (&glyphs, klass) == expected);
+      }
+    }
+  }
+}
+
 int
 main (int argc, char **argv)
 {
+  test_class_def_intersects_class ();
   test_class_and_coverage_size_estimates ();
   test_running_class_and_coverage_size_estimates ();
   test_running_class_size_estimates_with_locally_consecutive_glyphs ();
+  test_running_coverage_size_estimates_with_interleaved_glyphs ();
 #ifndef HB_NO_BEYOND_64K
   test_class_def_format_3_values ();
 #endif

@@ -205,6 +205,7 @@ struct Encoding
 
     case 1:
     {
+      if (unlikely (!c->check_success (code_ranges.length <= 0xFF))) return_trace (false);
       Encoding1 *fmt1 = c->allocate_size<Encoding1> (Encoding1::min_size + Encoding1_Range::static_size * code_ranges.length);
       if (unlikely (!fmt1)) return_trace (false);
       fmt1->nRanges () = code_ranges.length;
@@ -495,6 +496,19 @@ typedef Charset_Range<HBUINT16> Charset2_Range;
 
 struct Charset
 {
+  static unsigned int get_format1_range_count (const hb_vector_t<code_pair_t>& sid_ranges)
+  {
+    unsigned int count = 0;
+    for (const auto &_ : sid_ranges)
+      count += _.glyph / 0x100 + 1;
+    return count;
+  }
+
+  static size_t get_size_for_format1 (const hb_vector_t<code_pair_t>& sid_ranges)
+  {
+    return Charset1::get_size_for_ranges (get_format1_range_count (sid_ranges));
+  }
+
   /* serialize a fullset Charset */
   bool serialize (hb_serialize_context_t *c, const Charset &src, unsigned int num_glyphs)
   {
@@ -530,18 +544,25 @@ struct Charset
 
     case 1:
     {
-      Charset1 *fmt1 = c->allocate_size<Charset1> (Charset1::get_size_for_ranges (sid_ranges.length), false);
+      Charset1 *fmt1 = c->allocate_size<Charset1> (get_size_for_format1 (sid_ranges), false);
       if (unlikely (!fmt1)) return_trace (false);
-      hb_codepoint_t all_glyphs = 0;
+      unsigned int j = 0;
       for (unsigned int i = 0; i < sid_ranges.length; i++)
       {
-        auto &_ = sid_ranges.arrayZ[i];
-        all_glyphs |= _.glyph;
-	fmt1->ranges[i].first = _.code;
-	fmt1->ranges[i].nLeft = _.glyph;
+        hb_codepoint_t sid = sid_ranges.arrayZ[i].code;
+        unsigned int left = sid_ranges.arrayZ[i].glyph;
+        for (;;)
+        {
+	  unsigned int chunk = hb_min (left, 0xFFu);
+	  fmt1->ranges[j].first = sid;
+	  fmt1->ranges[j].nLeft = chunk;
+	  j++;
+	  if (left <= 0xFF)
+	    break;
+	  sid += 0x100;
+	  left -= 0x100;
+	}
       }
-      if (unlikely (!(all_glyphs <= 0xFF)))
-	return_trace (false);
     }
     break;
 
@@ -1249,6 +1270,8 @@ struct cff1
     hb_codepoint_t glyph_to_code (hb_codepoint_t glyph,
 				  code_pair_t *glyph_to_sid_cache = nullptr) const
     {
+      if (unlikely (glyph >= num_glyphs)) return CFF_UNDEF_CODE;
+
       if (encoding != &Null (Encoding))
 	return encoding->get_code (glyph);
       else
@@ -1497,7 +1520,7 @@ struct cff1
 
   struct accelerator_subset_t : accelerator_templ_t<cff1_private_dict_opset_subset_t, cff1_private_dict_values_subset_t>
   {
-    accelerator_subset_t (hb_face_t *face) : SUPER (face) {}
+    HB_INTERNAL accelerator_subset_t (hb_face_t *face);
     ~accelerator_subset_t ()
     {
       if (cff_accelerator)
@@ -1510,6 +1533,7 @@ struct cff1
     HB_INTERNAL bool get_seac_components (hb_codepoint_t glyph, hb_codepoint_t *base, hb_codepoint_t *accent) const;
 
     mutable CFF::cff_subset_accelerator_t* cff_accelerator = nullptr;
+    bool subrs_may_end_in_seac = false;
 
     typedef accelerator_templ_t<cff1_private_dict_opset_subset_t, cff1_private_dict_values_subset_t> SUPER;
   };

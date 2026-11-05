@@ -149,7 +149,9 @@ struct LigatureSubstFormat1 : public OT::Layout::GSUB_impl::LigatureSubstFormat1
       // all links
       TRY_ASSIGN (auto index_to_id, ligature_index_to_object_id (liga_set));
 
-      for (unsigned j = 0; j < liga_set.table->ligature.len; j++)
+      // Split points and liga_counts () must count the same offset slots,
+      // including null offsets.
+      for (unsigned j = 0; j < liga_set.table->ligature.len; j++, ligature_index++)
       {
         const unsigned liga_id = index_to_id[j];
         if (liga_id == HB_GRAPH_INVALID) continue; // no outgoing link, ignore
@@ -168,8 +170,6 @@ struct LigatureSubstFormat1 : public OT::Layout::GSUB_impl::LigatureSubstFormat1
             OT::Layout::GSUB_impl::LigatureSet<SmallTypes>::min_size + // for liga set subtable
             liga_size; // for liga sub table
         }
-
-        ligature_index++;
       }
     }
 
@@ -340,6 +340,9 @@ struct LigatureSubstFormat1 : public OT::Layout::GSUB_impl::LigatureSubstFormat1
         // a new liga set sub table and move the intersecting ligas to it.
         unsigned start_index = hb_max(start, current_start) - count;
         unsigned end_index = hb_min(end, current_end) - count;
+        // Narrowing to the remaining links may leave an inverted range.
+        if (unlikely (end_index < start_index))
+          return Err(INVALID_ARGUMENT);
         unsigned liga_count = end_index - start_index;
         TRY_ASSIGN (auto result, new_liga_set(c, liga_count));
         liga_set_prime_id = result.first;

@@ -29,6 +29,12 @@
 #ifndef HB_HH
 #define HB_HH
 
+/* Avoid a libstdc++ runtime dependency in unoptimized builds. */
+#undef _GLIBCXX_ASSERTIONS
+#ifndef _GLIBCXX_NO_ASSERTIONS
+#define _GLIBCXX_NO_ASSERTIONS
+#endif
+
 #ifndef HB_NO_PRAGMA_GCC_DIAGNOSTIC
 #ifdef _MSC_VER
 #pragma warning( disable: 4068 ) /* Unknown pragma */

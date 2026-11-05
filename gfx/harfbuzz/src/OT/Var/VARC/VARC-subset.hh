@@ -97,6 +97,18 @@ struct varc_subset_plan_t
 
   bool create_maps ()
   {
+    const auto *plan = subset_context->plan;
+    if (!plan->user_axes_location.is_empty ())
+    {
+      /* Instancing axes referenced by VARC is not supported. Keep this
+       * restriction for avar2 as well; component coordinate overrides
+       * and their variation data need special handling. */
+      axis_map = &axes_index_map;
+      for (auto _ : plan->axes_index_map)
+	if (!plan->user_axes_location.has (plan->axes_old_index_tag_map.get (_.first)))
+	  axes_index_map.set (_.first, _.second);
+      if (unlikely (axes_index_map.in_error ())) return false;
+    }
     condition_map.add_set (&condition_indices);
     axis_indices_map.add_set (&axis_indices);
     return !condition_map.in_error () && !axis_indices_map.in_error () &&
@@ -146,11 +158,33 @@ struct varc_subset_plan_t
   bool select_axis_indices ()
   {
     if (unlikely (!selected_axis_indices.alloc_exact (
-					  axis_indices_map.get_population ())))
+					  axis_indices_map.get_population ()) ||
+		  (axis_map && !axis_indices_data.resize (
+					  axis_indices_map.get_population ()))))
       return false;
     for (unsigned i = 0; i < axis_indices_map.get_population (); i++)
     {
       hb_ubytes_t bytes = source_axis_indices[axis_indices_map.backward (i)];
+      if (axis_map)
+      {
+	hb_vector_t<int> indices;
+	const HBUINT8 *p = (const HBUINT8 *) bytes.arrayZ;
+	if (unlikely (!TupleValues::decompile (p, indices, p + bytes.length, true)))
+	  return false;
+	for (int &index : indices)
+	{
+	  if (unlikely (!axis_map->has (index))) return false;
+	  index = axis_map->get (index);
+	}
+	auto &data = axis_indices_data[i];
+	/* One control byte and at most four data bytes per value. */
+	unsigned size;
+	if (unlikely (hb_unsigned_mul_overflows (indices.length, 5u, &size) ||
+		      !data.resize_dirty (size)))
+	  return false;
+	data.shrink (TupleValues::compile_unsafe (indices.as_array (), data.arrayZ));
+	bytes = data.as_array ();
+      }
       axis_indices_data_size = hb_unsigned_add_saturate (axis_indices_data_size,
 							 bytes.length);
       selected_axis_indices.push (bytes);
@@ -184,7 +218,10 @@ struct varc_subset_plan_t
   hb_vector_t<hb_ubytes_t> records;
 
   hb_vector_t<hb_ubytes_t> selected_axis_indices;
+  hb_vector_t<hb_vector_t<unsigned char>> axis_indices_data;
   unsigned axis_indices_data_size = 0;
+  hb_map_t axes_index_map;
+  const hb_map_t *axis_map = nullptr;
 
   private:
   bool auxiliary_indices_unchanged () const
@@ -332,12 +369,6 @@ VARC::subset (hb_subset_context_t *c) const
     return false;
   };
 
-  /* VARC instancing is not supported yet.  In particular, copying the
-   * auxiliary lists while fvar axes are removed would leave stale axis
-   * indices in the table. */
-  if (unlikely (!c->plan->user_axes_location.is_empty ()))
-    return_trace (fail ());
-
   const Coverage &source_coverage = this+coverage;
   const CFF2Index &source_records = this+glyphRecords;
   const ConditionList &source_conditions = this+conditionList;
@@ -373,7 +404,8 @@ VARC::subset (hb_subset_context_t *c) const
 		 !out->conditionList.serialize_serialize (c->serializer,
 						       &source_conditions,
 						       subset_plan.condition_map,
-						       subset_plan.varidx_map)) ||
+						       subset_plan.varidx_map,
+						       subset_plan.axis_map)) ||
 		(subset_plan.axis_indices_map.get_population () &&
 		 !out->axisIndicesList.serialize_serialize (c->serializer,
 							subset_plan.selected_axis_indices.iter (),
@@ -381,7 +413,8 @@ VARC::subset (hb_subset_context_t *c) const
 		(subset_plan.var_indices.get_population () &&
 		 !out->varStore.serialize_serialize (c->serializer,
 						  &source_var_store,
-						  subset_plan.var_inner_maps.as_array ())) ||
+						  subset_plan.var_inner_maps.as_array (),
+						  subset_plan.axis_map)) ||
 		!out->glyphRecords.serialize_serialize (c->serializer,
 						 subset_plan.records.iter (),
 						 &subset_plan.data_size)))

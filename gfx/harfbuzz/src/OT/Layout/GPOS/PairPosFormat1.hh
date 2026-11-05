@@ -241,8 +241,6 @@ struct PairPosFormat1_3
                                                                  bool strip_hints, bool strip_empty,
                                                                  const hb_hashmap_t<unsigned, hb_pair_t<unsigned, int>> *varidx_delta_map = nullptr) const
   {
-    unsigned record_size = PairSet::get_size (valueFormat);
-
     unsigned format1 = 0;
     unsigned format2 = 0;
     for (const auto & _ :
@@ -252,20 +250,13 @@ struct PairPosFormat1_3
 	)
     {
       const PairSet& set = (this + _);
-      const PairValueRecord *record = &set.firstPairValueRecord;
+      auto formats = set.get_values_view (valueFormat).compute_effective_value_formats (
+          glyphset, valueFormat, strip_hints, strip_empty, varidx_delta_map);
+      format1 |= formats.first;
+      format2 |= formats.second;
 
-      unsigned count = set.len;
-      for (unsigned i = 0; i < count; i++)
-      {
-        if (record->intersects (glyphset))
-        {
-          format1 = format1 | valueFormat[0].get_effective_format (record->get_values_1 (), strip_hints, strip_empty, &set, varidx_delta_map);
-          format2 = format2 | valueFormat[1].get_effective_format (record->get_values_2 (valueFormat[0]), strip_hints, strip_empty, &set, varidx_delta_map);
-        }
-        record = &StructAtOffset<const PairValueRecord> (record, record_size);
-      }
-
-      if (format1 == valueFormat[0] && format2 == valueFormat[1])
+      if (!varidx_delta_map &&
+          format1 == valueFormat[0] && format2 == valueFormat[1])
         break;
     }
 

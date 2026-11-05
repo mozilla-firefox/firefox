@@ -4,10 +4,10 @@ edition = "2021"
 rust-version = "1.87.0"
 
 [dependencies]
-harfrust = { version = "0.14.0", optional = true }
+harfrust = { version = "0.15.0", optional = true }
 # harfrust = { git = "https://github.com/harfbuzz/harfrust", optional = true }
-read-fonts = { version = "0.45.*", optional = true }
-skrifa = { version = "0.48.*", optional = true, default-features = false, features = ["std"] }
+read-fonts = { version = "0.46.*", optional = true }
+skrifa = { version = "0.49.*", optional = true, default-features = false, features = ["std"] }
 smallvec = { version = "1.*", optional = true }
 
 [lib]
@@ -17,14 +17,14 @@ crate-type = ["staticlib"]
 
 [features]
 default = ["paint", "draw", "hb-allocator"]
-# Core font functions require only read-fonts.
+# Core font functions, including bitmap and COLR extents, require only
+# read-fonts.
 font = ["read-fonts"]
 shape = ["dep:harfrust", "dep:smallvec"]
 read-fonts = ["dep:read-fonts"]
-# Skrifa also provides bitmap and COLR extents without drawing or painting.
-skrifa = ["read-fonts", "dep:skrifa"]
-paint = ["skrifa"]
-draw = ["skrifa"]
+paint = ["read-fonts"]
+# Skrifa draws outlines.
+draw = ["read-fonts", "dep:skrifa"]
 hb-allocator = []
 
 [profile.release]

@@ -156,6 +156,11 @@ hb_aat_map_builder_t::compile (hb_aat_map_t  &m)
 
       hb_aat_layout_compile_map (this, &m);
 
+      /* Out of budget?  Stop here; the adjustment below extends the ranges
+       * compiled so far to the end of the text. */
+      if (unlikely (!hb_budget_spend (budget, HB_BUDGET_1, active_features.length)))
+	break;
+
       last_index = event->index;
     }
 

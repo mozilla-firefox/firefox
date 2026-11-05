@@ -1,7 +1,5 @@
-
-#line 1 "hb-number-parser.rl"
 /*
- * Copyright © 2019  Ebrahim Byagowi
+ * Copyright © 2019-2026  Ebrahim Byagowi
  *
  *  This is part of HarfBuzz, a text shaping library.
  *
@@ -30,208 +28,211 @@
 
 #include "hb.hh"
 
+static const double _small_powers_of_10[] =
+{ 1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15 };
+static const double _large_powers_of_10[] =
+{ 1e0, 1e16, 1e32, 1e48, 1e64, 1e80, 1e96, 1e112, 1e128, 1e144,
+  1e160, 1e176, 1e192, 1e208, 1e224, 1e240, 1e256, 1e272, 1e288, 1e304 };
 
-#line 32 "hb-number-parser.hh"
-static const unsigned char _double_parser_trans_keys[] = {
-	0u, 0u, 43u, 57u, 46u, 57u, 48u, 57u, 43u, 57u, 48u, 57u, 48u, 101u, 48u, 57u, 
-	46u, 101u, 0
-};
-
-static const char _double_parser_key_spans[] = {
-	0, 15, 12, 10, 15, 10, 54, 10, 
-	56
-};
-
-static const unsigned char _double_parser_index_offsets[] = {
-	0, 0, 16, 29, 40, 56, 67, 122, 
-	133
-};
-
-static const char _double_parser_indicies[] = {
-	0, 1, 2, 3, 1, 4, 4, 
-	4, 4, 4, 4, 4, 4, 4, 4, 
-	1, 3, 1, 4, 4, 4, 4, 4, 
-	4, 4, 4, 4, 4, 1, 5, 5, 
-	5, 5, 5, 5, 5, 5, 5, 5, 
-	1, 6, 1, 7, 1, 1, 8, 8, 
-	8, 8, 8, 8, 8, 8, 8, 8, 
-	1, 8, 8, 8, 8, 8, 8, 8, 
-	8, 8, 8, 1, 5, 5, 5, 5, 
-	5, 5, 5, 5, 5, 5, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 9, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 9, 1, 8, 8, 8, 8, 8, 
-	8, 8, 8, 8, 8, 1, 3, 1, 
-	4, 4, 4, 4, 4, 4, 4, 4, 
-	4, 4, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 9, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 1, 1, 1, 
-	1, 1, 1, 1, 1, 9, 1, 0
-};
-
-static const char _double_parser_trans_targs[] = {
-	2, 0, 2, 3, 8, 6, 5, 5, 
-	7, 4
-};
-
-static const char _double_parser_trans_actions[] = {
-	0, 0, 1, 0, 2, 3, 0, 4, 
-	5, 0
-};
-
-static const int double_parser_start = 1;
-static const int double_parser_first_final = 6;
-static const int double_parser_error = 0;
-
-static const int double_parser_en_main = 1;
-
-
-#line 68 "hb-number-parser.rl"
-
-
-/* Works only for n < 512 */
-static inline double
-_pow10 (unsigned exponent)
+/* Grammar:
+ *   number  := sign? mantissa exponent?
+ *   sign    := '+' | '-'
+ *   mantissa:= digits ('.' digits?)?
+ *            | '.' digits
+ *   exponent:= ('e'|'E') sign? digits
+ */
+struct hb_number_parser_t
 {
-  static const double _powers_of_10[] =
+  /* Returns true if c was accepted; false ends the parse (c not consumed). */
+  bool consume (char c)
   {
-    1.0e+256,
-    1.0e+128,
-    1.0e+64,
-    1.0e+32,
-    1.0e+16,
-    1.0e+8,
-    10000.,
-    100.,
-    10.
-  };
-  unsigned mask = 1 << (ARRAY_LENGTH (_powers_of_10) - 1);
-  double result = 1;
-  for (const double *power = _powers_of_10; mask; ++power, mask >>= 1)
-    if (exponent & mask) result *= *power;
-  return result;
-}
+    switch (state)
+    {
+      case Start:
+	if (c == '+' || c == '-') { neg = (c == '-'); state = Sign; pos++; return true; }
+	if ('0' <= c && c <= '9') { value = value * 10. + (c - '0'); state = IntDigits; pos++; return true; }
+	if (c == '.') { state = AfterDotFromStart; pos++; return true; }
+	return false;
 
-/* a variant of strtod that also gets end of buffer in its second argument */
-static inline double
-strtod_rl (const char *p, const char **end_ptr /* IN/OUT */)
-{
+      case Sign:
+	if ('0' <= c && c <= '9') { value = value * 10. + (c - '0'); state = IntDigits; pos++; return true; }
+	if (c == '.') { state = AfterDotFromStart; pos++; return true; }
+	return false;
+
+      case IntDigits:
+	if ('0' <= c && c <= '9') { value = value * 10. + (c - '0'); pos++; return true; }
+	if (c == '.') { state = AfterDotFromInt; pos++; return true; }
+	if (c == 'e' || c == 'E') { enter_exponent (); return true; }
+	return false;
+
+      case AfterDotFromInt:
+	if ('0' <= c && c <= '9') { fraction.add (c - '0'); state = FracDigits; pos++; return true; }
+	if (c == 'e' || c == 'E') { enter_exponent (); return true; }
+	return false;
+
+      case AfterDotFromStart:
+	if ('0' <= c && c <= '9') { fraction.add (c - '0'); state = FracDigits; pos++; return true; }
+	return false;
+
+      case FracDigits:
+	if ('0' <= c && c <= '9') { fraction.add (c - '0'); pos++; return true; }
+	if (c == 'e' || c == 'E') { enter_exponent (); return true; }
+	return false;
+
+      case ExpStart:
+	if (c == '+' || c == '-') { exp_neg = (c == '-'); state = ExpSign; pos++; return true; }
+	if ('0' <= c && c <= '9') { exp = c - '0'; state = ExpDigits; pos++; return true; }
+	rollback_exponent ();
+	return false;
+
+      case ExpSign:
+	if ('0' <= c && c <= '9') { exp = c - '0'; state = ExpDigits; pos++; return true; }
+	rollback_exponent ();
+	return false;
+
+      case ExpDigits:
+	if ('0' <= c && c <= '9')
+	{
+	  constexpr unsigned MAX_EXP = 0x7FFu; /* 2^11-1 */
+	  if (likely (exp * 10 + (c - '0') <= MAX_EXP)) exp = exp * 10 + (c - '0');
+	  else exp_overflow = true;
+	  pos++;
+	  return true;
+	}
+	return false;
+    }
+    return false;
+  }
+
+  /* Signal end of input.  Rolls back a dangling exponent.  Returns the
+   * accepted length, or 0 if no valid number was parsed. */
+  HB_NODISCARD size_t commit ()
+  {
+    if (state == ExpStart || state == ExpSign) rollback_exponent ();
+    return (state == Sign || state == AfterDotFromStart) ? 0 : pos;
+  }
+
+  /* Valid after `commit ()` returned nonzero. */
+  double get_value () const
+  {
+    double v = value;
+    if (!fraction.is_empty ()) v += fraction.get_value ();
+    if (neg) v *= -1.;
+
+    /* Zero mantissa: any exponent gives zero, and this avoids
+     * 0 * HUGE_VAL = nan for "0e441" where _pow10(441) is HUGE_VAL
+     * but exp_overflow didn't fire.  Preserves -0.0 for "-0e<...>". */
+    if (v == 0) return v;
+
+    if (unlikely (exp_overflow))
+    {
+      if (exp_neg) return neg ? -.0 : .0;
+      else         return neg ? -HUGE_VAL : HUGE_VAL;
+    }
+
+    if (exp)
+    {
+      unsigned e = exp;
+      if (exp_neg)
+      {
+	/* 10^308 is the largest finite power of ten, so two reductions of 308 suffice. */
+	if (unlikely (e > 308))
+	{
+	  v /= 1e308; e -= 308;
+	  if (unlikely (e > 308)) { v /= 1e308; e -= 308; }
+	}
+	v /= _pow10 (e);
+      }
+      else
+	v *= _pow10 (e);
+    }
+    return v;
+  }
+
+private:
+  static constexpr uint64_t MAX_FRACT = 10000000000000000000ull; // 10^19
+  struct /* fraction */
+  {
+    void add (int digit)
+    {
+      if (likely (fraction <= MAX_FRACT / 10))
+      {
+	fraction = fraction * 10 + digit;
+	++count;
+      }
+      else if (drop < 0) drop = digit;
+      else if (digit != 0) sticky = true;
+    }
+
+    double get_value () const
+    {
+      /* (double) fraction rounds to nearest; division by an exact
+       * power of ten rounds once more.  Combined error < 1 ULP. */
+      double result = (double) fraction;
+      if (drop > 5 || (drop == 5 && (sticky || (fraction & 1))))
+	result += 1;
+      return result / _pow10 (count);
+    }
+
+    bool is_empty () const { return !count; }
+
+  private:
+    unsigned count = 0;
+    uint64_t fraction = 0;
+    int drop = -1; /* drop is the first digit we couldn't accumulate */
+    bool sticky = false; /* sticky is set when any later digit was nonzero. */
+  } fraction;
+
+  enum /* State */
+  {
+    Start, Sign, IntDigits,
+    AfterDotFromInt, AfterDotFromStart, FracDigits,
+    ExpStart, ExpSign, ExpDigits,
+  } state = Start, pre_exp_state = Start;
+
   double value = 0;
-  double frac = 0;
-  double frac_count = 0;
   unsigned exp = 0;
-  bool neg = false, exp_neg = false, exp_overflow = false;
-  const unsigned long long MAX_FRACT = 0xFFFFFFFFFFFFFull; /* 2^52-1 */
-  const unsigned MAX_EXP = 0x7FFu; /* 2^11-1 */
+  bool neg = false, exp_neg = false, exp_overflow = false, exp_speculation_active = false;
+  size_t pos = 0, pre_exp_pos = 0;
 
-  const char *pe = *end_ptr;
-  while (p < pe && ISSPACE (*p))
-    p++;
-
-  int cs;
-  
-#line 132 "hb-number-parser.hh"
-	{
-	cs = double_parser_start;
-	}
-
-#line 135 "hb-number-parser.hh"
-	{
-	int _slen;
-	int _trans;
-	const unsigned char *_keys;
-	const char *_inds;
-	if ( p == pe )
-		goto _test_eof;
-	if ( cs == 0 )
-		goto _out;
-_resume:
-	_keys = _double_parser_trans_keys + (cs<<1);
-	_inds = _double_parser_indicies + _double_parser_index_offsets[cs];
-
-	_slen = _double_parser_key_spans[cs];
-	_trans = _inds[ _slen > 0 && _keys[0] <=(*p) &&
-		(*p) <= _keys[1] ?
-		(*p) - _keys[0] : _slen ];
-
-	cs = _double_parser_trans_targs[_trans];
-
-	if ( _double_parser_trans_actions[_trans] == 0 )
-		goto _again;
-
-	switch ( _double_parser_trans_actions[_trans] ) {
-	case 1:
-#line 37 "hb-number-parser.rl"
-	{ neg = true; }
-	break;
-	case 4:
-#line 38 "hb-number-parser.rl"
-	{ exp_neg = true; }
-	break;
-	case 2:
-#line 40 "hb-number-parser.rl"
-	{
-	value = value * 10. + ((*p) - '0');
-}
-	break;
-	case 3:
-#line 43 "hb-number-parser.rl"
-	{
-	if (likely (frac <= MAX_FRACT / 10))
-	{
-	  frac = frac * 10. + ((*p) - '0');
-	  ++frac_count;
-	}
-}
-	break;
-	case 5:
-#line 50 "hb-number-parser.rl"
-	{
-	if (likely (exp * 10 + ((*p) - '0') <= MAX_EXP))
-	  exp = exp * 10 + ((*p) - '0');
-	else
-	  exp_overflow = true;
-}
-	break;
-#line 187 "hb-number-parser.hh"
-	}
-
-_again:
-	if ( cs == 0 )
-		goto _out;
-	if ( ++p != pe )
-		goto _resume;
-	_test_eof: {}
-	_out: {}
-	}
-
-#line 113 "hb-number-parser.rl"
-
-
-  *end_ptr = p;
-
-  if (frac_count) value += frac / _pow10 (frac_count);
-  if (neg) value *= -1.;
-
-  if (unlikely (exp_overflow))
+  void enter_exponent ()
   {
-    if (value == 0) return value;
-    if (exp_neg)    return neg ? -DBL_MIN : DBL_MIN;
-    else            return neg ? -DBL_MAX : DBL_MAX;
+    pre_exp_state = state;
+    pre_exp_pos = pos;
+    exp_speculation_active = true;
+    state = ExpStart;
+    pos++;
   }
 
-  if (exp)
+  void rollback_exponent ()
   {
-    if (exp_neg) value /= _pow10 (exp);
-    else         value *= _pow10 (exp);
+    if (unlikely (!exp_speculation_active)) return;
+    state = pre_exp_state;
+    pos = pre_exp_pos;
+    exp = 0;
+    exp_neg = false;
+    exp_overflow = false;
+    exp_speculation_active = false;
   }
 
-  return value;
-}
+  /* Handles 0..308; anything larger overflows double and returns HUGE_VAL. */
+  static double _pow10 (unsigned n)
+  {
+    /* DBL_MAX is between 10^308 and 10^309 */
+    constexpr unsigned MAX_POW10_EXP = 308;
+    constexpr unsigned POW10_SHIFT   = 4;
+    constexpr unsigned POW10_SMALL   = 1u << POW10_SHIFT;   /* 16 */
+    constexpr unsigned POW10_MASK    = POW10_SMALL - 1;     /* 15 */
+
+    static_assert (ARRAY_LENGTH (_small_powers_of_10) == POW10_SMALL,
+		   "_small_powers_of_10: size must be 2^POW10_SHIFT");
+    static_assert ((MAX_POW10_EXP >> POW10_SHIFT) < ARRAY_LENGTH (_large_powers_of_10),
+		   "_large_powers_of_10: must cover MAX_POW10_EXP >> POW10_SHIFT");
+
+    if (unlikely (n > MAX_POW10_EXP)) return HUGE_VAL;
+    if (likely (n < POW10_SMALL)) return _small_powers_of_10[n];
+    return _large_powers_of_10[n >> POW10_SHIFT] * _small_powers_of_10[n & POW10_MASK];
+  }
+};
 
 #endif /* HB_NUMBER_PARSER_HH */
