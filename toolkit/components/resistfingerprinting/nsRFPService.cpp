@@ -2686,7 +2686,14 @@ RFPTargetSet nsRFPService::CreateOverridesFromText(
     const nsString& aOverridesText, RFPTargetSet aBaseOverrides) {
   RFPTargetSet result = aBaseOverrides;
 
-  for (const nsAString& each : aOverridesText.Split(',')) {
+  for (const nsAString& token : aOverridesText.Split(',')) {
+    // Tolerate whitespace around each entry, e.g. "+A, -B".
+    nsAutoString each(token);
+    each.Trim(" \t\r\n");
+    if (each.IsEmpty()) {
+      continue;
+    }
+
     Maybe<RFPTarget> mappedValue =
         nsRFPService::TextToRFPTarget(Substring(each, 1, each.Length() - 1));
     if (mappedValue.isNothing()) {
