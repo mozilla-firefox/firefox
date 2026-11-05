@@ -6,7 +6,7 @@
  * https://w3c.github.io/gamepad/extensions.html#gamepadpose-interface
  */
 
-[Pref="dom.gamepad.extensions.enabled",
+[Pref="dom.gamepad.pose.enabled",
  Exposed=Window]
 interface GamepadPose
 {

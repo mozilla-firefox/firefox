@@ -108,7 +108,7 @@ use.counter:
     send_in_pings:
       - use-counters
 
-# Total of 2688 use counter metrics (excludes denominators).
+# Total of 2694 use counter metrics (excludes denominators).
 # Total of 441 'page' use counters.
 use.counter.page:
   svgsvgelement_getelementbyid:
@@ -18785,7 +18785,7 @@ use.counter.worker.service:
     send_in_pings:
       - use-counters
 
-# Total of 57 'deprecated operations (page)' use counters.
+# Total of 60 'deprecated operations (page)' use counters.
 use.counter.deprecated_ops.page:
   components:
     type: counter
@@ -19756,7 +19756,58 @@ use.counter.deprecated_ops.page:
     send_in_pings:
       - use-counters
 
-# Total of 57 'deprecated operations (document)' use counters.
+  gamepad_hand:
+    type: counter
+    description: >
+      Whether a page used GamepadHand.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  gamepad_haptic_actuators:
+    type: counter
+    description: >
+      Whether a page used GamepadHapticActuators.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  gamepad_pose:
+    type: counter
+    description: >
+      Whether a page used GamepadPose.
+      Compare against `use.counter.top_level_content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+# Total of 60 'deprecated operations (document)' use counters.
 use.counter.deprecated_ops.doc:
   components:
     type: counter
@@ -20714,6 +20765,57 @@ use.counter.deprecated_ops.doc:
     type: counter
     description: >
       Whether a document used IDBIndexMozGetAllKeys.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  gamepad_hand:
+    type: counter
+    description: >
+      Whether a document used GamepadHand.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  gamepad_haptic_actuators:
+    type: counter
+    description: >
+      Whether a document used GamepadHapticActuators.
+      Compare against `use.counter.content_documents_destroyed`
+      to calculate the rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1852098
+    notification_emails:
+      - dom-core@mozilla.com
+      - emilio@mozilla.com
+    expires: never
+    send_in_pings:
+      - use-counters
+
+  gamepad_pose:
+    type: counter
+    description: >
+      Whether a document used GamepadPose.
       Compare against `use.counter.content_documents_destroyed`
       to calculate the rate.
     bugs:

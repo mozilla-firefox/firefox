@@ -47,7 +47,9 @@ async function pressButton() {
 
 async function startTest() {
   await SpecialPowers.pushPrefEnv({ "set": [
-                                    ["dom.gamepad.extensions.enabled", true],
+                                    ["dom.gamepad.hand.enabled", true],
+                                    ["dom.gamepad.haptic_actuators.enabled", true],
+                                    ["dom.gamepad.pose.enabled", true],
                                     ["dom.gamepad.extensions.lightindicator", true],
                                     ["dom.gamepad.extensions.multitouch", true]] });
   // Add a gamepad

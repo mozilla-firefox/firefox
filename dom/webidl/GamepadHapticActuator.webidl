@@ -10,7 +10,7 @@ enum GamepadHapticActuatorType {
   "vibration"
 };
 
-[Pref="dom.gamepad.extensions.enabled",
+[Pref="dom.gamepad.haptic_actuators.enabled",
  HeaderFile="mozilla/dom/GamepadHapticActuator.h",
  Exposed=Window]
 interface GamepadHapticActuator

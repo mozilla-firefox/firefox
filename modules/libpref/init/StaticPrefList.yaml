@@ -3427,8 +3427,20 @@
   value: true
   mirror: always
 
-# Is Gamepad Extension API enabled?
-- name: dom.gamepad.extensions.enabled
+# Is Gamepad.hand enabled?
+- name: dom.gamepad.hand.enabled
+  type: bool
+  value: true
+  mirror: always
+
+# Is Gamepad.pose enabled?
+- name: dom.gamepad.pose.enabled
+  type: bool
+  value: true
+  mirror: always
+
+# Is Gamepad.hapticActuators enabled?
+- name: dom.gamepad.haptic_actuators.enabled
   type: bool
   value: true
   mirror: always

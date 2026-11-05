@@ -56,7 +56,7 @@ interface Gamepad {
    * The hand in use for this device. The empty string
    * indicates that unknown, both hands, or not applicable
    */
-  [Pref="dom.gamepad.extensions.enabled"]
+  [Pref="dom.gamepad.hand.enabled", Deprecated=GamepadHand]
   readonly attribute GamepadHand hand;
 
   /**
@@ -86,19 +86,19 @@ interface Gamepad {
   /**
    * The current pose of the device, a GamepadPose.
    */
-  [Pref="dom.gamepad.extensions.enabled"]
+  [Pref="dom.gamepad.pose.enabled", Deprecated=GamepadPose]
   readonly attribute GamepadPose? pose;
 
   /**
    * The current haptic actuator of the device, an array of
    * GamepadHapticActuator.
    */
-  [Constant, Cached, Frozen, Pref="dom.gamepad.extensions.enabled"]
+  [Constant, Cached, Frozen, Pref="dom.gamepad.haptic_actuators.enabled", Deprecated=GamepadHapticActuators]
   readonly attribute sequence<GamepadHapticActuator> hapticActuators;
 
-  [Constant, Cached, Frozen, Pref="dom.gamepad.extensions.enabled", Pref="dom.gamepad.extensions.lightindicator"]
+  [Constant, Cached, Frozen, Pref="dom.gamepad.extensions.lightindicator"]
   readonly attribute sequence<GamepadLightIndicator> lightIndicators;
 
-  [Constant, Cached, Frozen, Pref="dom.gamepad.extensions.enabled", Pref="dom.gamepad.extensions.multitouch"]
+  [Constant, Cached, Frozen, Pref="dom.gamepad.extensions.multitouch"]
   readonly attribute sequence<GamepadTouch> touchEvents;
 };

@@ -165,23 +165,26 @@ void Gamepad::SyncState(Gamepad* aOther) {
     Gamepad_Binding::ClearCachedAxesValue(this);
   }
 
-  if (StaticPrefs::dom_gamepad_extensions_enabled()) {
+  if (StaticPrefs::dom_gamepad_pose_enabled()) {
     MOZ_ASSERT(aOther->GetPose());
     mPose->SetPoseState(aOther->GetPose()->GetPoseState());
+  }
+  if (StaticPrefs::dom_gamepad_hand_enabled()) {
     mHand = aOther->Hand();
+  }
+  if (StaticPrefs::dom_gamepad_haptic_actuators_enabled()) {
     for (uint32_t i = 0; i < mHapticActuators.Length(); ++i) {
       mHapticActuators[i]->Set(aOther->mHapticActuators[i]);
     }
-
-    if (StaticPrefs::dom_gamepad_extensions_lightindicator()) {
-      for (uint32_t i = 0; i < mLightIndicators.Length(); ++i) {
-        mLightIndicators[i]->Set(aOther->mLightIndicators[i]);
-      }
+  }
+  if (StaticPrefs::dom_gamepad_extensions_lightindicator()) {
+    for (uint32_t i = 0; i < mLightIndicators.Length(); ++i) {
+      mLightIndicators[i]->Set(aOther->mLightIndicators[i]);
     }
-    if (StaticPrefs::dom_gamepad_extensions_multitouch()) {
-      for (uint32_t i = 0; i < mTouchEvents.Length(); ++i) {
-        mTouchEvents[i]->Set(aOther->mTouchEvents[i]);
-      }
+  }
+  if (StaticPrefs::dom_gamepad_extensions_multitouch()) {
+    for (uint32_t i = 0; i < mTouchEvents.Length(); ++i) {
+      mTouchEvents[i]->Set(aOther->mTouchEvents[i]);
     }
   }
 

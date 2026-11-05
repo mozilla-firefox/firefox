@@ -114,7 +114,11 @@ void VRManager::ManagerInit() {
   // Enable gamepad extensions while VR is enabled.
   // Preference only can be set at the Parent process.
   if (StaticPrefs::dom_vr_enabled() && XRE_IsParentProcess()) {
-    Preferences::SetBool("dom.gamepad.extensions.enabled", true);
+    // XXX(krosylight): We should stop doing this. See bug 1636311 to remove
+    // WebVR.
+    Preferences::SetBool("dom.gamepad.hand.enabled", true);
+    Preferences::SetBool("dom.gamepad.haptic_actuators.enabled", true);
+    Preferences::SetBool("dom.gamepad.pose.enabled", true);
   }
 
   if (sVRManagerSingleton == nullptr) {
