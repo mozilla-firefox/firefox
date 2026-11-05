@@ -23,6 +23,9 @@ let gChatModuleRecords;
 let gSkillNames;
 
 add_setup(async function read_real_chat_records() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.aitab.enabled", true]],
+  });
   const records = await getRemoteClient().get();
   gChatParams = records.find(
     record =>
@@ -124,7 +127,7 @@ add_task(
 );
 
 /**
- * Test the gated pages module when AITab is on.
+ * Test that the pages module follows the AITab preference.
  */
 add_task(async function test_buildChatSystemPrompt_skips_gated_module() {
   const AITAB_PREF = "browser.smartwindow.aitab.enabled";
