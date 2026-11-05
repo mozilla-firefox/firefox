@@ -783,7 +783,7 @@ pref("browser.urlbar.contextualSearch.enabled", true);
 pref("browser.urlbar.addons.featureGate", false);
 
 // Feature gate pref for semanticHistory
-#if defined(EARLY_BETA_OR_EARLIER) || defined(MOZ_DEV_EDITION)
+#ifdef NIGHTLY_BUILD
 pref("places.semanticHistory.featureGate", true);
 #else
 pref("places.semanticHistory.featureGate", false);
