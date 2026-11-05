@@ -1915,6 +1915,10 @@ auto LockRemoteCryptokiState(SearchingFor searchingFor) {
 }
 
 void CacheRemoteCryptokiObjects(SearchingFor searchingFor) {
+  if (!PKCS11ModuleDB::UtilityProcessEnabled()) {
+    return;
+  }
+
   MOZ_ASSERT(!NS_IsMainThread());
   if (NS_IsMainThread()) {
     return;
