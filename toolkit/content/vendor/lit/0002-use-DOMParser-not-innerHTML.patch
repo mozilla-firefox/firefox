@@ -1,0 +1,47 @@
+From a1a35e0563656c4dd2374b0c15497f54f3e25d68 Mon Sep 17 00:00:00 2001
+From: Mark Striemer <mstriemer@mozilla.com>
+Date: Wed, 16 Nov 2022 23:07:57 -0600
+Subject: [PATCH 2/7] use DOMParser not innerHTML=
+
+---
+ packages/lit-html/src/lit-html.ts | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/packages/lit-html/src/lit-html.ts b/packages/lit-html/src/lit-html.ts
+index 350dc1a6..b74832d7 100644
+--- a/packages/lit-html/src/lit-html.ts
++++ b/packages/lit-html/src/lit-html.ts
+@@ -16,6 +16,11 @@ const NODE_MODE = false;
+ // Allows minifiers to rename references to globalThis
+ const global = globalThis;
+ 
++// We use a DOMParser to create the template elements. TS wants this to work for
++// both SSR and regular browser rendering, so we create one conditionally.
++const __moz_domParser =
++  typeof window !== 'undefined' && window.DOMParser ? new DOMParser() : null;
++
+ /**
+  * Contains types that are part of the unstable debug API.
+  *
+@@ -1119,6 +1124,18 @@ class Template {
+   // Overridden via `litHtmlPolyfillSupport` to provide platform support.
+   /** @nocollapse */
+   static createElement(html: TrustedHTML, _options?: RenderOptions) {
++    if (__moz_domParser) {
++      // DOMParser is available (browser rendering).
++      const doc = __moz_domParser.parseFromString(
++        `<template>${html}</template>`,
++        'text/html'
++      );
++      return document.importNode(
++        doc.querySelector('template') as HTMLTemplateElement,
++        true
++      );
++    }
++    // SSR mode.
+     const el = d.createElement('template');
+     el.innerHTML = html as unknown as string;
+     return el;
+-- 
+2.53.0
+
