@@ -18,8 +18,10 @@ running automated tests of your code.
 
 To request this, follow the instructions on the [Becoming A Mozilla Committer](https://www.mozilla.org/en-US/about/governance/policies/commit/) page
 to file a bug with the title “Commit Access (Level 1) for \${your name}”,
-and continue with steps such as adding the public SSH key, etc (it’s not
-enough with just filing the bug!).
+and continue with steps such as agreeing to the
+[Commit Access Requirements](https://www.mozilla.org/about/governance/policies/commit/requirements/)
+and getting your voucher to comment on the bug (it’s not enough with just
+filing the bug!).
 
 The person that asked you to request this can also vouch for you.
 

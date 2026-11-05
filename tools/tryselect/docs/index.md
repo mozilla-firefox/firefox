@@ -90,26 +90,6 @@ behaviour that was previously accessed with `--push-to-lando`.
    - Lando applies the submitted patches starting from that base commit.
    - Lando pushes the resulting changes to `hg.mozilla.org/try` so they appear in Treeherder.
 
-## Pushing directly to VCS
-
-In some cases, you may want to bypass Lando and push directly to `hg.mozilla.org/try`.
-This is done with the `--push-to-vcs` flag:
-
-```shell
-./mach try auto --push-to-vcs
-```
-
-### Requirements for using `--push-to-vcs`
-
-- You must be using Mercurial directly, or a Git checkout created with
-  [git-cinnabar](https://github.com/glandium/git-cinnabar).
-- Your local repo must already be able to push directly to `hg.mozilla.org`.
-- Unlike the default Lando-based workflow, no Auth0 authentication is used. Instead,
-  your SSH credentials are used to push.
-
-This option is generally only recommended for developers who are comfortable working directly
-with Mercurial or git-cinnabar.
-
 ## Resolving "\<Try build> is damaged and can't be opened" error
 
 To run a try build on macOS, you need to get around Apple's restrictions on downloaded applications.

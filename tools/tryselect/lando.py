@@ -572,8 +572,7 @@ def get_lando_config_section_name(vcs: SupportedVcsRepository) -> str:
     if vcs.name == "hg":
         raise LandoAPIException(
             "Mercurial is not supported for Try pushes via Lando.\n"
-            + "You can use `--push-to-vcs` to push straight to HgMO.\n"
-            + "You should consider migrating your clone to git soon.\n"
+            + "Please migrate your clone to git.\n"
             + "Please see https://bit.ly/fx-git-migration for guidance on how to migrate."
         )
 
