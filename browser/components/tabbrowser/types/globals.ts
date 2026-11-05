@@ -12,10 +12,6 @@ type TabGroupStateData =
 type SavedTabGroupStateData =
   import("../../sessionstore/TabGroupState.sys.mjs").SavedTabGroupStateData;
 
-// TaskbarTabsRegistry keeps its entry class private to Web Apps.
-// TODO(bug 2066310): the tabbrowser has no business holding one.
-type TaskbarTab = any;
-
 // Sessionstore names TabStateData in its JSDoc without defining it anywhere.
 type TabStateData = any;
 
