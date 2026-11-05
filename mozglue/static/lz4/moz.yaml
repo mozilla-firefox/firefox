@@ -10,8 +10,8 @@ origin:
 
   url: https://github.com/lz4/lz4
 
-  release: v1.10.0 (2024-07-21T10:29:49-07:00).
-  revision: v1.10.0
+  release: v1.11.0 (2026-11-03T16:58:16-08:00).
+  revision: v1.11.0
 
   license: BSD-2-Clause
   license-file: LICENSE
