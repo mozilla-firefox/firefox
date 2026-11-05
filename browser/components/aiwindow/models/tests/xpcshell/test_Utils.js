@@ -445,3 +445,38 @@ add_task(function test_isRetryableError() {
     "Plain non-network error is not retryable"
   );
 });
+
+add_task(async function test_runWithGenerator_ends_on_abort_while_waiting() {
+  const sb = sinon.createSandbox();
+  try {
+    const fakeEngine = {
+      async *runWithGenerator() {
+        yield { text: "first" };
+        await new Promise(() => {});
+      },
+    };
+    sb.stub(openAIEngine, "_createEngine").resolves(fakeEngine);
+    const engine = await openAIEngine.build({
+      model: MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+
+    const controller = new AbortController();
+    const stream = engine.runWithGenerator({ signal: controller.signal });
+    const first = await stream.next();
+    Assert.equal(first.value.text, "first", "Should yield the first chunk");
+
+    const pending = stream.next();
+    controller.abort();
+    const result = await pending;
+    Assert.ok(
+      result.done,
+      "Aborting while waiting for a chunk should end the stream"
+    );
+  } finally {
+    sb.restore();
+  }
+});
