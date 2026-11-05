@@ -107,6 +107,13 @@ interface TabDataCoordinator {
     suspend fun addTabsToTabGroup(tabGroupId: String, tabIds: List<String>)
 
     /**
+     * Opens a new tab, assigns it to the group with [tabGroupId], and focuses the tab.
+     *
+     * @param tabGroupId The ID of the group the new tab is added to.
+     */
+    suspend fun addNewTabToTabGroup(tabGroupId: String)
+
+    /**
      * Assigns [tabId] to the group with [tabGroupId], moving the group's existing tabs next to [tabId] instead of
      * moving [tabId] to the group.
      *
@@ -283,6 +290,12 @@ class DefaultTabDataCoordinator(
         }
 
         tabGroupRepository.addTabsToTabGroup(tabGroupId = tabGroupId, tabIds = tabIds)
+    }
+
+    override suspend fun addNewTabToTabGroup(tabGroupId: String) {
+        val tabId = tabRepository.addNewTab()
+        addTabsToTabGroup(tabGroupId = tabGroupId, tabIds = listOf(tabId))
+        tabRepository.selectTab(tabId)
     }
 
     override suspend fun mergeTabGroupIntoTab(tabGroupId: String, tabId: String) {

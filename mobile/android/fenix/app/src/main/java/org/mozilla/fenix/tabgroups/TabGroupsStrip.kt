@@ -6,6 +6,9 @@ package org.mozilla.fenix.tabgroups
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.systemGestureExclusion
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -24,27 +27,34 @@ import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripStore
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
- * The bottom toolbar shown while the active tab is in a group.
+ * The strip of the active group's tabs, shown while the active tab is in a group.
  *
  * @param store The [TabGroupsStripStore] driving the strip.
+ * @param listState The [LazyListState] containing the strip's scroll position.
  * @param modifier The [Modifier] to be applied to the strip.
+ * @param showAddButton Whether the add tab button is shown. Hidden when homepage as a new tab (HNT) is disabled.
  * @param containerColor The background color.
  */
 @Composable
 fun TabGroupsStrip(
     store: TabGroupsStripStore,
+    listState: LazyListState,
     modifier: Modifier = Modifier,
+    showAddButton: Boolean = true,
     containerColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     val state by store.stateFlow.collectAsState()
     val visibleStrip = state as? TabGroupsStripState.TabGroupStripVisible ?: return
 
     Surface(
-        modifier = modifier.fillMaxWidth().height(dimensionResource(R.dimen.tab_groups_strip_height)),
+        modifier =
+            modifier.fillMaxWidth().height(dimensionResource(R.dimen.tab_groups_strip_height)).systemGestureExclusion(),
         color = containerColor,
     ) {
         TabGroupsStripContent(
             state = visibleStrip,
+            listState = listState,
+            showAddButton = showAddButton,
             onTabClick = { store.dispatch(TabGroupsStripAction.TabClicked(it)) },
             onAddTabClick = { store.dispatch(TabGroupsStripAction.AddTabClicked) },
             onExpandGroupClick = { store.dispatch(TabGroupsStripAction.ExpandGroupClicked) },
@@ -75,7 +85,7 @@ private fun TabGroupsStripPreview() {
     }
 
     FirefoxTheme {
-        TabGroupsStrip(store = store)
+        TabGroupsStrip(store = store, listState = rememberLazyListState())
     }
 }
 
@@ -85,6 +95,6 @@ private fun TabGroupsStripHiddenPreview() {
     val store = remember { TabGroupsStripStore(initialState = TabGroupsStripState.TabGroupStripHidden) }
 
     FirefoxTheme {
-        TabGroupsStrip(store = store)
+        TabGroupsStrip(store = store, listState = rememberLazyListState())
     }
 }

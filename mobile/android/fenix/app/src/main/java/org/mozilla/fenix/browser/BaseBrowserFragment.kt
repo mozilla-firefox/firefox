@@ -38,6 +38,7 @@ import androidx.core.text.HtmlCompat
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.findNavController
@@ -248,9 +249,12 @@ import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.tabgroups.TabGroupsStrip
+import org.mozilla.fenix.tabgroups.strip.TabGroupsStripScrollViewModel
+import org.mozilla.fenix.tabgroups.strip.observeSelectedTabForNavigation
 import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripAction
 import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripMiddleware
 import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripStore
+import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripTelemetryMiddleware
 import org.mozilla.fenix.tabstray.ext.toDisplayTitle
 import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.theme.FirefoxTheme
@@ -475,12 +479,7 @@ abstract class BaseBrowserFragment :
             view = binding.root,
         )
 
-        if (customTabSessionId == null) {
-            // We currently only need this observer to navigate to home
-            // in case all tabs have been removed on startup. No need to
-            // this if we have a known session to display.
-            observeRestoreComplete(requireComponents.core.store, findNavController())
-        }
+        observeTabState()
 
         browsingModeObserver.set(
             feature =
@@ -494,12 +493,6 @@ abstract class BaseBrowserFragment :
             owner = viewLifecycleOwner,
             view = view,
         )
-
-        observeTabSelection(requireComponents.core.store)
-
-        if (customTabSessionId == null) {
-            tabGroupsStripStore.dispatch(TabGroupsStripAction.InitializeDataObservation)
-        }
 
         observePrivateModeLock {
             findNavController()
@@ -1706,13 +1699,48 @@ abstract class BaseBrowserFragment :
                 listOf(
                     TabGroupsStripMiddleware(
                         tabDataCoordinator = requireComponents.tabDataCoordinator,
+                        isHomepageAsNewTabEnabled = { context?.components?.settings?.enableHomepageAsNewTab ?: false },
                         scope = lifecycleScope,
-                    )
+                    ),
+                    TabGroupsStripTelemetryMiddleware(
+                        isHomepageAsNewTabEnabled = { context?.components?.settings?.enableHomepageAsNewTab ?: false }
+                    ),
                 )
         )
     }
 
-    private fun buildTabGroupsStrip(): @Composable () -> Unit = { TabGroupsStrip(store = tabGroupsStripStore) }
+    private val tabGroupsStripScrollViewModel: TabGroupsStripScrollViewModel by activityViewModels()
+
+    private fun buildTabGroupsStrip(): @Composable () -> Unit = {
+        TabGroupsStrip(
+            store = tabGroupsStripStore,
+            listState = tabGroupsStripScrollViewModel.listState,
+            showAddButton = requireComponents.settings.enableHomepageAsNewTab,
+        )
+    }
+
+    private fun observeTabState() {
+        if (customTabSessionId == null) {
+            // We currently only need this observer to navigate to home
+            // in case all tabs have been removed on startup. No need to
+            // this if we have a known session to display.
+            observeRestoreComplete(requireComponents.core.store, findNavController())
+        }
+
+        observeTabSelection(requireComponents.core.store)
+
+        if (customTabSessionId == null) {
+            tabGroupsStripStore.dispatch(TabGroupsStripAction.InitializeDataObservation)
+            if (requireComponents.settings.shouldShowTabGroupsStrip) {
+                observeSelectedTabForNavigation(
+                    fragment = this,
+                    store = requireComponents.core.store,
+                    currentDestinationId = R.id.browserFragment,
+                    directions = NavGraphDirections.actionGlobalHome(),
+                )
+            }
+        }
+    }
 
     private fun buildAwesomeBar(
         activity: HomeActivity,

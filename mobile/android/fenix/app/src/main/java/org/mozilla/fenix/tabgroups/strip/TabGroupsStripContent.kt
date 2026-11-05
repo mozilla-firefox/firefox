@@ -21,12 +21,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -42,6 +45,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.ThemedValue
 import mozilla.components.compose.base.theme.ThemedValueProvider
@@ -55,22 +59,26 @@ import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripStore
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
- * A horizontal strip of the active group's tabs, each shown as a favicon circle, followed by an add tab button and an
- * expand button.
+ * A horizontal strip of the active group's tabs, each shown as a favicon circle, optionally followed by an add tab
+ * button, and an expand button.
  *
  * @param state The [TabGroupsStripState] to render.
+ * @param listState The [LazyListState] holding the overflowing strip's scroll position.
  * @param onTabClick Invoked with a tab's ID when its favicon is tapped.
  * @param onAddTabClick Invoked when the add tab button is tapped.
  * @param onExpandGroupClick Invoked when the expand button is tapped.
  * @param modifier The [Modifier] to be applied to the strip.
+ * @param showAddButton Whether the add tab button is shown. Hidden when homepage as a new tab (HNT) is disabled.
  */
 @Composable
 internal fun TabGroupsStripContent(
     state: TabGroupsStripState.TabGroupStripVisible,
+    listState: LazyListState,
     onTabClick: (String) -> Unit,
     onAddTabClick: () -> Unit,
     onExpandGroupClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showAddButton: Boolean = true,
 ) {
     val edgePadding = FirefoxTheme.layout.space.static100
     val itemSpacing = FirefoxTheme.layout.space.static100
@@ -82,7 +90,7 @@ internal fun TabGroupsStripContent(
         contentAlignment = Alignment.CenterStart,
     ) {
         val tabsOverflowing =
-            remember(state.tabs.size, maxWidth) {
+            remember(state.tabs.size, maxWidth, showAddButton) {
                 areTabsOverflowing(
                     tabCount = state.tabs.size,
                     availableWidth = maxWidth,
@@ -90,26 +98,18 @@ internal fun TabGroupsStripContent(
                     itemSpacing = itemSpacing,
                     edgePadding = edgePadding,
                     expandButtonWidth = expandButtonWidth,
+                    showAddButton = showAddButton,
                 )
             }
 
-        // The tabs live in their own LazyRow so screen readers announce them as a list.
-        // The add and expand buttons are kept outside it so they read as "out of list".
-        val tabItems: LazyListScope.() -> Unit = {
-            items(items = state.tabs, key = { it.id }) { tab ->
-                TabFaviconCircle(tab = tab, onClick = { onTabClick(tab.id) })
-            }
-        }
-
         if (tabsOverflowing) {
-            OverflowingTabsStrip(
-                tabItems = tabItems,
+            OverflowingTabGroupsStripContent(
+                state = state,
+                listState = listState,
+                showAddButton = showAddButton,
+                onTabClick = onTabClick,
                 onAddTabClick = onAddTabClick,
                 onExpandGroupClick = onExpandGroupClick,
-                itemSpacing = itemSpacing,
-                itemSize = itemSize,
-                edgePadding = edgePadding,
-                expandButtonWidth = expandButtonWidth,
             )
         } else {
             Row(
@@ -122,9 +122,12 @@ internal fun TabGroupsStripContent(
                     horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                     contentPadding = PaddingValues(start = edgePadding),
                     verticalAlignment = Alignment.CenterVertically,
-                    content = tabItems,
-                )
-                AddTabButton(onClick = onAddTabClick)
+                ) {
+                    tabFaviconItems(state.tabs, onTabClick)
+                }
+                if (showAddButton) {
+                    AddTabButton(onClick = onAddTabClick)
+                }
             }
 
             ExpandButton(
@@ -133,6 +136,71 @@ internal fun TabGroupsStripContent(
             )
         }
     }
+}
+
+/** Lays out the group's tabs as favicon circles. */
+private fun LazyListScope.tabFaviconItems(
+    tabs: List<TabGroupsStripState.Tab>,
+    onTabClick: (String) -> Unit,
+) {
+    items(items = tabs, key = { it.id }) { tab ->
+        TabFaviconCircle(tab = tab, onClick = { onTabClick(tab.id) })
+    }
+}
+
+/** The tabs scrolling behind the pinned add and expand buttons, used when the group's tabs overflow the strip. */
+@Composable
+private fun BoxScope.OverflowingTabGroupsStripContent(
+    state: TabGroupsStripState.TabGroupStripVisible,
+    listState: LazyListState,
+    showAddButton: Boolean,
+    onTabClick: (String) -> Unit,
+    onAddTabClick: () -> Unit,
+    onExpandGroupClick: () -> Unit,
+) {
+    val edgePadding = FirefoxTheme.layout.space.static100
+    val itemSpacing = FirefoxTheme.layout.space.static100
+    val itemSize = FirefoxTheme.layout.size.static600
+    val expandButtonWidth = FirefoxTheme.layout.size.static600
+    val addButtonWidth = if (showAddButton) itemSize else 0.dp
+
+    val focusedIndex = state.tabs.indexOfFirst { it.isFocused }
+    // Whenever the focused tab changes, scroll to the item if not fully visible.
+    LaunchedEffect(focusedIndex) {
+        if (!listState.isItemFullyVisible(focusedIndex)) {
+            listState.animateScrollToItem(focusedIndex)
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
+        contentPadding =
+            PaddingValues(
+                start = edgePadding,
+                end = gradientWidth + addButtonWidth + expandButtonWidth + edgePadding,
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        tabFaviconItems(state.tabs, onTabClick)
+    }
+
+    OverflowTrailingButtons(
+        showAddButton = showAddButton,
+        onAddTabClick = onAddTabClick,
+        onExpandGroupClick = onExpandGroupClick,
+        endPadding = edgePadding,
+        modifier = Modifier.align(Alignment.CenterEnd),
+    )
+}
+
+/** Whether the item at [index] is visible within the strip and list's viewport excluding end padding. */
+private fun LazyListState.isItemFullyVisible(index: Int): Boolean {
+    val item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == index } ?: return false
+    val start = layoutInfo.viewportStartOffset + layoutInfo.beforeContentPadding
+    val end = layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding
+    return item.offset >= start && item.offset + item.size <= end
 }
 
 /**
@@ -145,6 +213,7 @@ internal fun TabGroupsStripContent(
  * @param itemSpacing The spacing between tabs.
  * @param edgePadding The padding at each end of the strip.
  * @param expandButtonWidth The width of the pinned expand button.
+ * @param showAddButton Whether the add tab button is shown.
  */
 @VisibleForTesting
 internal fun areTabsOverflowing(
@@ -154,49 +223,21 @@ internal fun areTabsOverflowing(
     itemSpacing: Dp,
     edgePadding: Dp,
     expandButtonWidth: Dp,
+    showAddButton: Boolean = true,
 ): Boolean {
     if (tabCount == 0) return false
 
-    val addButtonWidth = itemSize
     val tabsWidth = itemSize * tabCount + itemSpacing * (tabCount - 1)
-    val requiredWidth = edgePadding + tabsWidth + itemSpacing + addButtonWidth
+    val addButtonWidth = if (showAddButton) itemSpacing + itemSize else 0.dp
+    val requiredWidth = edgePadding + tabsWidth + addButtonWidth
     val widthForContent = availableWidth - expandButtonWidth - edgePadding
 
     return requiredWidth > widthForContent
 }
 
 @Composable
-private fun BoxScope.OverflowingTabsStrip(
-    tabItems: LazyListScope.() -> Unit,
-    onAddTabClick: () -> Unit,
-    onExpandGroupClick: () -> Unit,
-    itemSpacing: Dp,
-    itemSize: Dp,
-    edgePadding: Dp,
-    expandButtonWidth: Dp,
-) {
-    LazyRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-        contentPadding =
-            PaddingValues(
-                start = edgePadding,
-                end = gradientWidth + itemSize + expandButtonWidth + edgePadding,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        content = tabItems,
-    )
-
-    OverflowTrailingButtons(
-        onAddTabClick = onAddTabClick,
-        onExpandGroupClick = onExpandGroupClick,
-        endPadding = edgePadding,
-        modifier = Modifier.align(Alignment.CenterEnd),
-    )
-}
-
-@Composable
 private fun OverflowTrailingButtons(
+    showAddButton: Boolean,
     onAddTabClick: () -> Unit,
     onExpandGroupClick: () -> Unit,
     endPadding: Dp,
@@ -208,7 +249,9 @@ private fun OverflowTrailingButtons(
             modifier = Modifier.fillMaxHeight().background(MaterialTheme.colorScheme.surface).padding(end = endPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AddTabButton(onClick = onAddTabClick)
+            if (showAddButton) {
+                AddTabButton(onClick = onAddTabClick)
+            }
             ExpandButton(onClick = onExpandGroupClick)
         }
     }
@@ -309,6 +352,7 @@ private fun TabGroupsStripContentPreview(
         Box(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             TabGroupsStripContent(
                 state = state as TabGroupsStripState.TabGroupStripVisible,
+                listState = rememberLazyListState(),
                 onTabClick = { store.dispatch(TabGroupsStripAction.TabClicked(it)) },
                 onAddTabClick = { store.dispatch(TabGroupsStripAction.AddTabClicked) },
                 onExpandGroupClick = { store.dispatch(TabGroupsStripAction.ExpandGroupClicked) },
