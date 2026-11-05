@@ -36,3 +36,12 @@ vendoring:
       to: '{vendor_dir}'
     - action: delete-path
       path: '{vendor_dir}/lib'
+
+updatebot:
+  maintainer-phab: glandium
+  maintainer-bz: mh+mozilla@glandium.org
+  fuzzy-query: "'gtest | 'xpcshell | 'reftest | 'mochitest-chrome !nofis !swr !-dc !msix !web-platform !talos !source-test"
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: every
