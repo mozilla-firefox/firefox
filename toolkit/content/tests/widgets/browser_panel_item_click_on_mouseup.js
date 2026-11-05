@@ -45,23 +45,24 @@ add_task(async function test_clickOnMouseupInContentDocument() {
       doc.addEventListener("click", event => {
         doc.documentElement.dataset.clicks += event.target.id + ";";
       });
+      panelList.addEventListener("shown", () => {
+        doc.documentElement.dataset.shown = "true";
+      });
     });
 
-    let shown = SpecialPowers.spawn(browser, [], async () => {
-      await ContentTaskUtils.waitForEvent(
-        content.document.querySelector("panel-list"),
-        "shown",
-        false,
-        null,
-        true
-      );
-    });
     await BrowserTestUtils.synthesizeMouseAtCenter(
       "#anchor",
       { type: "mousedown" },
       browser
     );
-    await shown;
+    await SpecialPowers.spawn(browser, [], async () => {
+      let root = content.document.documentElement;
+      await ContentTaskUtils.waitForMutationCondition(
+        root,
+        { attributeFilter: ["data-shown"] },
+        () => root.dataset.shown
+      );
+    });
 
     await BrowserTestUtils.synthesizeMouseAtCenter(
       "#first",
