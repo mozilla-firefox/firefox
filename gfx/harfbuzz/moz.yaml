@@ -68,11 +68,6 @@ vendoring:
     - "src/test*"
     - src/hb-ucdn
 
-  patches:
-    - stch-advance-cache.patch
-    - hb-scalar-cache-quantization.patch
-    - bug-2082025.patch
-
 updatebot:
   maintainer-phab: jfkthame
   maintainer-bz: jfkthame@gmail.com
