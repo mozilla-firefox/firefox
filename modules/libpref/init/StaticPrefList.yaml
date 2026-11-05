@@ -19297,7 +19297,7 @@
   # there initializes all `once` prefs before xpcshell test prefs are set.
 -   name: security.sandbox.font-file-rule.enabled
     type: bool
-    value: false
+    value: @IS_NIGHTLY_BUILD@
     mirror: never
 #endif
 
