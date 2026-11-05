@@ -218,7 +218,7 @@
   <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
   <string name="browser_menu_extensions_review_update_description">Adolygu diweddariad ar gyfer %1$s</string>
   <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
-  <string name="browser_menu_extension_review_update_description">Adolygu gosodiadau i ddiweddaru</string>
+  <string name="browser_menu_extension_review_update_description">Adolygu gosodiadau i\'w diweddaru</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Manylion cyfrif</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -1317,7 +1317,7 @@
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Estynedig</string>
   <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
-  <string name="preferences_homepage_search_location">Lleoliad chwilio tudalen gartref</string>
+  <string name="preferences_homepage_search_location">Lleoliad chwilio\'r tudalen gartref</string>
   <!-- Preference for showing the homepage search bar in the middle of the homepage -->
   <string name="preference_homepage_search_location_middle">Canol</string>
   <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
@@ -3319,7 +3319,7 @@
   <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
   <string name="automotive_authentication_setup_dialog_title">Diogelwch eich data sensitif</string>
   <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
-  <string name="automotive_authentication_setup_dialog_message">Sefydlwch batrwm clo dyfais, PIN, neu gyfrinair i amddiffyn eich data sensitif a arbedwyd rhag cael mynediad ato os yw rhywun arall yn gyrru\'ch car.</string>
+  <string name="automotive_authentication_setup_dialog_message">Gosodwch batrwm clo dyfais, PIN, neu gyfrinair i amddiffyn eich data sensitif wedi\'u cadw, rhag cael mynediad ato os yw rhywun arall yn gyrru\'ch car.</string>
   <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
   <string name="automotive_authentication_setup_dialog_set_up_now">Gosod nawr</string>
   <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
@@ -4570,19 +4570,19 @@
   -->
   <string name="wrex_widget_match_live">BYW</string>
   <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
-  <string name="wrex_widget_match_delayed">Rhedeg yn Hwyr</string>
+  <string name="wrex_widget_match_delayed">Rhedeg yn hwyr</string>
   <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
-  <string name="wrex_widget_match_suspended">Wedi\'i Atal</string>
+  <string name="wrex_widget_match_suspended">Wedi\'i hatal</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
-  <string name="wrex_widget_match_postponed">Wedi\'i Ohirio</string>
+  <string name="wrex_widget_match_postponed">Wedi\'i ohirio</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Canlyniadau</string>
   <!-- Sports widget menu item to view the league standings table. -->
-  <string name="wrex_widget_standings">Sefyllfaoedd</string>
+  <string name="wrex_widget_standings">Presennol</string>
   <!-- Sports widget menu item to browse the team's wallpapers. -->
   <string name="wrex_widget_wallpapers">Papurau wal</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
-  <string name="wrex_widget_remove_widget">Dileu Widget</string>
+  <string name="wrex_widget_remove_widget">Dileu Teclyn</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Rhagor o ddewisiadau</string>
   <!--

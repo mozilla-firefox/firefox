@@ -216,9 +216,9 @@
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Probearje in oanrekommandearre útwreiding</string>
   <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
-  <string name="browser_menu_extensions_review_update_description">Fernijingen foar %1$s beoardiele</string>
+  <string name="browser_menu_extensions_review_update_description">Fernijing foar %1$s beoardiele</string>
   <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
-  <string name="browser_menu_extension_review_update_description">Ynstellingen om by te wurkjen beoardiele</string>
+  <string name="browser_menu_extension_review_update_description">By te wurkjen ynstellingen beoardiele</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Accountynformaasje</string>
   <!-- Browser menu button that opens the settings menu -->

@@ -29,6 +29,12 @@
   </plurals>
   <!-- Listen to Page media player: screen reader value of the playback position slider, such as "3:34 of 6:00". %1$s is the elapsed time and %2$s is the total duration. -->
   <string name="mozac_feature_listentopage_seek_state">%1$s od %2$s</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_25">Predvajanje 75-odstotno upočasnjeno</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_5">Predvajanje nastavljeno na polovično hitrost</string>
+  <!-- Content description of the playback control notification, when the playback is set to 0.75 times the normal reading speed. -->
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_75">Predvajanje 25-odstotno upočasnjeno</string>
   <!-- Content description of the playback control notification, when the playback is set to normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_1">Običajna hitrost predvajanja</string>
   <!-- Content description of the playback control notification, when the playback is set to 2 times (double) the normal reading speed. -->

@@ -526,7 +526,7 @@
   <!-- Marketing onboarding page title. 'Firefox' is intentionally hardcoded. -->
   <string name="onboarding_marketing_redesign_title" tools:ignore="BrandUsage">Pomagajte Firefoxu rasti</string>
   <!-- Marketing onboarding page opt-out checkbox. Unchecking the box does not increase data collection. Our data practices remain the same. 'Mozilla' is intentionally hardcoded. -->
-  <string name="onboarding_marketing_redesign_opt_out_checkbox" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
+  <string name="onboarding_marketing_redesign_opt_out_checkbox" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
   <!-- Marketing onboarding page clickable link text to "learn more" on how data is used. -->
   <string name="onboarding_marketing_redesign_learn_more" tools:ignore="UnusedResources">Kako uporabljamo te podatke</string>
   <!-- Marketing onboarding page button label. Button to confirm choice and start browsing. -->
@@ -546,7 +546,7 @@
   <!-- Marketing onboarding page title variant. “One last thing” refers to the final step or action in the onboarding process that we’re asking users to take before they can start using the browser. -->
   <string name="onboarding_marketing_title_1" tools:ignore="UnusedResources">Za konec</string>
   <!-- Marketing onboarding page body variant. 'Firefox' is intentionally hardcoded. -->
-  <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
+  <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
   <!-- Marketing onboarding page button label variant. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_positive_button_1" tools:ignore="UnusedResources">Strinjam se, začni z brskanjem</string>
   <!-- "Continue" onboarding button. -->
@@ -616,11 +616,11 @@
     Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded.
     %1$s is replaced by an active link, using nova_onboarding_marketing_body_link_text as text (“How we use the data”).
   -->
-  <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali. %1$s</string>
+  <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali. %1$s</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
-  <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
+  <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
-  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Pomagate nam lahko doseči več ljudi, tako da Mozilli dovolite, da kanale, na katerih promoviramo Firefox, obvestimo, da ste vi njegov uporabnik.</string>
+  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Pomagate nam lahko doseči več ljudi, tako da Mozilli dovolite, da kanale, na katerih promoviramo Firefox, obvesti, da ste vi njegov uporabnik.</string>
   <!--
     Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded.
     “Platform you came from” refers to the external app, website, store, campaign, or other source that directed the user to Firefox.
@@ -649,7 +649,7 @@
     Marketing onboarding additional body text. 'Firefox' is intentionally hardcoded.
     “Allowing” refers to the main button “Allow and Continue”; the ask for the user is to allow communicating back to the platform.
   -->
-  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Prosim, razmislite o tem, da dovolite in pomagajte Firefoxu, da zmaga.</string>
+  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Prosim, razmislite o tem, da dovolite, in pomagajte Firefoxu, da zmaga.</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text">Kako uporabljamo te podatke</string>
   <!-- Marketing onboarding body link text. -->
@@ -671,7 +671,7 @@
   <!-- "Add search widget" onboarding title. -->
   <string name="nova_onboarding_add_search_widget_title">Naj bo vsako iskanje zasebnejše</string>
   <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Začnite vsako iskanje z domače strani svojega telefona in vedite, da vam Firefox s svojimi zaščitami krije hrbet.</string>
+  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Začnite vsako iskanje z domačega zaslona svojega telefona in vedite, da vam Firefox s svojimi zaščitami krije hrbet.</string>
   <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Dodaj pripomoček Firefox</string>
   <!-- Customize prompt onboarding title. -->
@@ -871,7 +871,7 @@
   <!-- Preference title for switch preference to show a clipboard suggestion when searching -->
   <string name="preferences_show_clipboard_suggestions">Prikaži predloge odložišča</string>
   <!-- Preference title for switch preference to suggest browsing history when searching -->
-  <string name="preferences_search_browsing_history">Išči po zgodovini iskanja</string>
+  <string name="preferences_search_browsing_history">Išči po zgodovini brskanja</string>
   <!-- Preference title for switch preference to suggest bookmarks when searching -->
   <string name="preferences_search_bookmarks">Iskanje po zaznamkih</string>
   <!-- Preference title for switch preference to suggest synced tabs when searching -->
@@ -2294,7 +2294,7 @@
   <!-- Label that indicates that video and audio autoplay is only allowed over Wi-Fi -->
   <string name="preference_option_autoplay_allowed_wifi_only2">Zavrni zvok in video samo na mobilnih podatkih</string>
   <!-- Subtext that explains 'autoplay on Wi-Fi only' option -->
-  <string name="preference_option_autoplay_allowed_wifi_subtext">Zvok in Video se bosta predvajala na Wi-Fi</string>
+  <string name="preference_option_autoplay_allowed_wifi_subtext">Zvok in video se bosta predvajala na Wi-Fi</string>
   <!-- Label for global setting that indicates that video autoplay is allowed, but audio autoplay is blocked -->
   <string name="preference_option_autoplay_block_audio2">Zavrni samo zvok</string>
   <!-- Label for site specific setting that indicates that video autoplay is allowed, but audio autoplay is blocked -->
@@ -2523,7 +2523,7 @@
   <!-- Text shown in snackbar when user closes multiple inactive tabs. %1$s will be replaced with the number of tabs closed. -->
   <string name="snackbar_num_tabs_closed">Zaprtih zavihkov: %1$s</string>
   <!-- Text shown in snackbar when user bookmarks a list of tabs. %s is the name of the folder the bookmark was saved into. -->
-  <string name="snackbar_message_bookmarks_saved_in_2">Zaznamki shranjeni v “%s”</string>
+  <string name="snackbar_message_bookmarks_saved_in_2">Zaznamki shranjeni v \"%s\"</string>
   <!-- Text shown in snackbar when user adds a site to shortcuts -->
   <string name="snackbar_added_to_shortcuts">Dodano med bližnjice!</string>
   <!-- Text shown in snackbar when user closes a private tab -->
@@ -2764,7 +2764,7 @@
   <!-- Description of social media trackers that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_social_media_trackers_description">Omeji zmožnost družbenih omrežij, da bi sledile vašemu brskanju po spletu.</string>
   <!-- Category of trackers (cross-site tracking cookies) that can be blocked by Enhanced Tracking Protection -->
-  <string name="etp_cookies_title">Spletni sledilni piškotki</string>
+  <string name="etp_cookies_title">Piškotki za sledenje med spletnimi mesti</string>
   <!-- Category of trackers (cross-site tracking cookies) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_cookies_title_2">Medspletni piškotki</string>
   <!-- Description of cross-site tracking cookies that can be blocked by Enhanced Tracking Protection -->
@@ -2883,7 +2883,7 @@
   <!-- Preference to access list of login exceptions that we don't use DNS over HTTPS -->
   <string name="preference_doh_exceptions">Izjeme</string>
   <!-- Description of "exceptions" for "DNS over HTTPS". %1$s is the name of the app (for example "Firefox"). -->
-  <string name="preference_doh_exceptions_summary">Na teh spletnih mestih in njihovih poddomenah %1$s ne bo uporabljal varnega DNS.</string>
+  <string name="preference_doh_exceptions_summary">Na teh spletnih mestih in njihovih poddomenah %1$s ne bo uporabljal zavarovanega DNS.</string>
   <!-- Text displayed that links to adding website domain for "DNS over HTTPS" exceptions. -->
   <string name="preference_doh_exceptions_add">Dodaj spletno mesto</string>
   <!-- Text displayed above the input field when adding exceptions for "DNS over HTTPS". -->
@@ -3289,7 +3289,7 @@
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Odklenite svojo napravo</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
-  <string name="credit_cards_biometric_prompt_unlock_message_2">Odklenite za ogled shranjenih plačilnih sredstev</string>
+  <string name="credit_cards_biometric_prompt_unlock_message_2">Odklenite za uporabo shranjenih plačilnih sredstev</string>
   <!-- Title of the "Add address" screen -->
   <string name="addresses_add_address">Dodaj naslov</string>
   <!-- Title of the "Edit address" screen -->
@@ -3467,7 +3467,7 @@
   <!-- Text displayed when user has disabled tab syncing in Firefox Sync Account -->
   <string name="synced_tabs_enable_tab_syncing">Omogočite sinhronizacijo zavihkov.</string>
   <!-- Text displayed when user has no tabs that have been synced -->
-  <string name="synced_tabs_no_tabs" tools:ignore="BrandUsage">V Firefoxu na drugih napravah nimate odprtih drugih zavihkov.</string>
+  <string name="synced_tabs_no_tabs" tools:ignore="BrandUsage">V Firefoxu na drugih napravah nimate odprtih zavihkov.</string>
   <!-- Text displayed in the synced tabs screen when a user is not signed in to Firefox Sync describing Synced Tabs -->
   <string name="synced_tabs_sign_in_message">Oglejte si seznam zavihkov drugih naprav.</string>
   <!-- Text displayed on a button in the synced tabs screen to link users to sign in when a user is not signed in to Firefox Sync -->
@@ -3645,7 +3645,7 @@
   <!-- Title for the translation dialog that allows a user to translate the webpage when a user uses the translation feature the first time. %1$s is the name of the app (for example "Firefox"). -->
   <string name="translations_bottom_sheet_title_first_time">Preskusite zasebno prevajanje v %1$su</string>
   <!-- Additional information on the translation dialog that appears when a user uses the translation feature the first time. %1$s is a link using translations_bottom_sheet_info_message_learn_more as text. -->
-  <string name="translations_bottom_sheet_info_message">Zasebnost je zagotovljena, saj prevodi nikoli ne zapustijo vašega računalnika. Novi jeziki in izboljšave so na poti! %1$s</string>
+  <string name="translations_bottom_sheet_info_message">Zasebnost je zagotovljena, saj prevodi nikoli ne zapustijo vaše naprave. Novi jeziki in izboljšave so na poti! %1$s</string>
   <!-- Text that links to additional information about the Firefox translations feature. -->
   <string name="translations_bottom_sheet_info_message_learn_more">Več o tem</string>
   <!-- Label for the dropdown to select which language to translate from on the translations dialog. Usually the translate from language selected will be the same as the page language. -->
@@ -3744,7 +3744,7 @@
   -->
   <string name="automatic_translation_toolbar_title_preference">Samodejno prevajanje</string>
   <!-- Screen header presenting the automatic translation preference feature. It will appear under the toolbar. -->
-  <string name="automatic_translation_header_preference">Izberite jezik za upravljanje nastavitev ”vedno prevedi“ in ”nikoli ne prevajaj“.</string>
+  <string name="automatic_translation_header_preference">Izberite jezik za upravljanje nastavitev \"vedno prevedi\" in \"nikoli ne prevajaj\".</string>
   <!-- The title of the warning card informs the user that the system could not load languages for translation settings. -->
   <string name="automatic_translation_error_warning_text">Jezikov ni bilo mogoče naložiti. Poskusite znova pozneje.</string>
   <!--
