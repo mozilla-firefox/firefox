@@ -2492,44 +2492,6 @@ printing:
       - 'main'
 
 widget:
-  ime_name_on_windows:
-    bug_numbers:
-      - 1215818
-    description: >
-      Locale ID and name of IME which was selected by users on Windows.  This
-      does NOT collect legacy IMM-IME names since we cannot get readable names
-      and we do not support IMM-IME so aggressively because IME vendors
-      should've already released TIP for TSF for supporting Windows 8 or later
-      completely.
-    keyed: true
-    expires: never
-    kind: boolean
-    notification_emails:
-      - mnakano.birchill@mozilla.com
-    release_channel_collection: opt-out
-    products:
-      - 'firefox'
-      - 'fennec'
-    record_in_processes:
-      - 'main'
-
-  ime_name_on_windows_inserted_crlf:
-    bug_numbers:
-      - 1865256
-    description:
-      Same data as ime_name_on_windows, but only collecting IME names which
-      inserted CRLF to check whether the feature works.
-    keyed: true
-    expires: never
-    kind: boolean
-    notification_emails:
-      - mnakano.birchill@mozilla.com
-    release_channel_collection: opt-out
-    products:
-      - 'firefox'
-    record_in_processes:
-      - 'main'
-
   dark_mode:
     bug_numbers:
       - 1601846

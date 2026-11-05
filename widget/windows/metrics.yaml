@@ -28,7 +28,6 @@ widget:
     notification_emails:
       - mnakano.birchill@mozilla.com
     expires: never
-    telemetry_mirror: WIDGET_IME_NAME_ON_WINDOWS
 
   ime_name_on_windows_inserted_crlf:
     type: labeled_boolean
@@ -44,7 +43,6 @@ widget:
     notification_emails:
       - mnakano.birchill@mozilla.com
     expires: never
-    telemetry_mirror: WIDGET_IME_NAME_ON_WINDOWS_INSERTED_CRLF
 
   jump_list_shell_call:
     type: labeled_timing_distribution
