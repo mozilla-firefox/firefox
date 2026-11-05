@@ -1114,23 +1114,6 @@ void SandboxBroker::SetSecurityLevelForContentProcess(int32_t aSandboxLevel,
     config->SetDesktop(sandbox::Desktop::kAlternateWinstation);
   }
 
-  if (StaticPrefs::security_sandbox_content_close_ksecdd_handle()) {
-    // bug 2006941 and bug 2008739 and bug 2022584 - Trellix DLP uses these
-    // functions, so don't do this if their DLLs are loaded
-    bool isTrellixDllLoaded;
-#if defined(_M_X64)
-    isTrellixDllLoaded = !!::GetModuleHandleW(L"fcagff64.dll") ||
-                         !!::GetModuleHandleW(L"fcagff64hc.dll");
-#elif defined(_M_ARM64)
-    isTrellixDllLoaded = !!::GetModuleHandleW(L"fcagffarm64hc.dll");
-#else
-    isTrellixDllLoaded = !!::GetModuleHandleW(L"fcagff.dll");
-#endif
-    if (!isTrellixDllLoaded) {
-      config->AddKernelObjectToClose(sandbox::HandleToClose::kKsecDD);
-    }
-  }
-
   sandbox::MitigationFlags mitigations =
       sandbox::MITIGATION_BOTTOM_UP_ASLR | sandbox::MITIGATION_HEAP_TERMINATE |
       sandbox::MITIGATION_SEHOP | sandbox::MITIGATION_DEP_NO_ATL_THUNK |
