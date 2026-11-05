@@ -1142,8 +1142,6 @@ addressbar-dismissed-suggestions-label-2 =
 addressbar-restore-dismissed-suggestions-button-2 =
     .label = Restore suggestions
 
-search-one-click-header2 = Search Shortcuts
-search-one-click-desc = Choose the alternative search engines that appear below the address bar and search bar when you start to enter a keyword.
 search-one-click-header-3 =
     .label = Additional search engines
     .description = Choose which search engines and shortcuts appear in your address bar.
@@ -1163,48 +1161,14 @@ search-enable-engine =
 search-outlink-to-extensions-page =
     .title = Manage in extensions and themes
 
-search-choose-engine-column =
-    .label = Search Engine
-search-choose-keyword-column =
-    .label = Keyword
-
-search-restore-default =
-    .label = Restore Default Search Engines
-    .accesskey = D
-
-search-remove-engine =
-    .label = Remove
-    .accesskey = R
-search-add-engine =
-    .label = Add
-    .accesskey = A
 search-add-engine-2 =
     .label = Add search engine
     .accesskey = A
-search-edit-engine =
-    .label = Edit
-    .accesskey = E
-
-search-find-more-link = Find more search engines
 
 search-filtering-for-add-engine = Add Engine
 
-# This warning is displayed when the chosen keyword is already in use
-# ('Duplicate' is an adjective)
-search-keyword-warning-title = Duplicate Keyword
-# Variables:
-#   $name (string) - Name of a search engine.
-search-keyword-warning-engine = You have chosen a keyword that is currently in use by “{ $name }”. Please select another.
-search-keyword-warning-bookmark = You have chosen a keyword that is currently in use by a bookmark. Please select another.
-
-# This warning is displayed when the chosen name is already in use.
-# Variables:
-#   $name (string) - Name of a search engine.
-edit-engine-name-warning-duplicate = There already is a search engine with the name “{ $name }”. Please choose another name.
-
 remove-engine-confirmation = Are you sure you want to remove this search engine?
 remove-engine-remove = Remove
-remove-addon-engine-alert = To remove this search engine, remove the associated add-on.
 
 ## Containers Section
 

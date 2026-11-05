@@ -9,7 +9,6 @@ browser.jar:
 
    content/browser/preferences/main.js
    content/browser/preferences/translations.js
-   content/browser/preferences/search.js
    content/browser/preferences/sync.js
    content/browser/preferences/moreFromMozilla.js
    content/browser/preferences/fxaPairDevice.xhtml

@@ -418,42 +418,18 @@ richlistitem[selected] .actionsMenu:focus-visible {
   outline-offset: -3px;
 }
 
-/* Search Pane */
+/** SRD Search Pane START **/
 
-#engineList > treechildren::-moz-tree-image(engineShown, checked),
-#blocklistsTree > treechildren::-moz-tree-image(selectionCol, checked) {
-  list-style-image: url("chrome://global/skin/icons/check.svg");
-  -moz-context-properties: fill, stroke;
-  fill: var(--color-accent-primary);
+#defaultEngineNormal,
+#defaultPrivateEngine {
+  max-width: var(--search-engine-name-max-width);
 }
 
-#engineList > treechildren::-moz-tree-image(engineShown, checked, selected),
-#blocklistsTree > treechildren::-moz-tree-image(selectionCol, checked, selected) {
-  fill: var(--text-color-accent-primary-selected);
-  stroke: var(--color-accent-primary-selected);
+#engineList {
+  --box-group-max-height: 500px;
 }
 
-@media (forced-colors) {
-  #engineList > treechildren::-moz-tree-image(hover),
-  #blocklistsTree > treechildren::-moz-tree-image(hover) {
-    fill: var(--text-color-list-item-hover);
-    /* fill allows icon and text colors, but we have no such rules for stroke */
-    stroke: var(--background-color-list-item-hover);
-  }
-}
-
-#engineList > treechildren::-moz-tree-row,
-#blocklistsTree > treechildren::-moz-tree-row {
-  min-height: 36px;
-}
-
-#selectionCol {
-  min-width: 26px;
-}
-
-#addEnginesBox {
-  margin: 4px 0 0;
-}
+/** SRD Search Pane END **/
 
 /* Collapse the non-active vboxes in decks to use only the height the
    active vbox needs */

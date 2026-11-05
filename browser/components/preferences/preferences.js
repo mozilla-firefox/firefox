@@ -4,7 +4,6 @@
 
 // Import globals from the files imported by the .xul files.
 /* import-globals-from main.js */
-/* import-globals-from search.js */
 /* import-globals-from sync.js */
 /* import-globals-from moreFromMozilla.js */
 /* import-globals-from findInPage.js */
@@ -462,7 +461,6 @@ const CONFIG_PANES = Object.freeze({
     ],
     iconSrc: "chrome://browser/skin/preferences/category-search.svg",
     module: "chrome://browser/content/preferences/config/search.mjs",
-    replaces: "search",
   },
   sync: {
     l10nId: "account-sync-section",
@@ -584,7 +582,6 @@ function init_all() {
     document.getElementById("category-general").hidden = false;
     document.getElementById("nav-separator").hidden = true;
   }
-  register_module("paneSearch", gSearchPane);
 
   // Restore the cached Firefox Labs nav button visibility so it shows
   // immediately when recipes are expected to be available, before

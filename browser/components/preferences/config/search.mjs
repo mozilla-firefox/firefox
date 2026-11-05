@@ -1150,7 +1150,6 @@ SettingGroupManager.registerGroups({
     ],
   },
   searchShortcuts: {
-    inProgress: true,
     l10nId: "search-one-click-header-3",
     headingLevel: 2,
     items: [
@@ -1183,7 +1182,6 @@ SettingGroupManager.registerGroups({
     ],
   },
   addressBarNavigation: {
-    inProgress: true,
     l10nId: "addressbar-navigation-group",
     subcategory: "addressBarNavigation",
     headingLevel: 2,
