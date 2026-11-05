@@ -14,47 +14,25 @@ class ConvertBugsToLinks(SphinxTransform):
 
     default_priority = 400
     bz_url = "https://bugzilla.mozilla.org/show_bug.cgi?id={0}"
-    bz_reg = r"bug[' '][0-9]\d*"
+    bz_reg = re.compile(r"\bbug [0-9]+\b", re.IGNORECASE)
 
     def apply(self):
-        def check_if_paragraph(o):
-            return isinstance(o, paragraph)
+        for node in list(self.document.findall(paragraph)):
+            for text in list(node.findall(Text)):
+                if not isinstance(text.parent, reference):
+                    self.convert(text)
 
-        def check_if_text(o):
-            return (
-                not isinstance(o.parent, reference)
-                and isinstance(o, Text)
-                and re.search(self.bz_reg, o, re.IGNORECASE)
-            )
-
-        changed = True
-        while changed:
-            changed = self.textToReferences(check_if_paragraph, check_if_text)
-
-    def textToReferences(self, check_if_paragraph, check_if_text):
-        # Analyses the document and replaces from the paragraph nodes
-        # the Text element(s) that contain bz_reg matching strings.
-        # Whevever the matching strings are more than one and
-        # a correction is made, the function returns True.
-
-        for node in self.document.traverse(check_if_paragraph):
-            for text in node.traverse(check_if_text):
-                bugs = re.findall(self.bz_reg, text, re.IGNORECASE)
-                if len(bugs) == 0:
-                    continue
-                bug = bugs[0]
-                txtparts = text.split(bug, 1)
-                new_ref = reference(
-                    bug,
-                    bug,
-                    refuri=self.bz_url.format(bug.split()[1]),
-                )
-                txt_0 = Text(txtparts[0])
-                txt_1 = Text(txtparts[1])
-                text.parent.replace(text, [txt_0, new_ref, txt_1])
-                if len(bugs) > 1:
-                    return True
-        return False
+    def convert(self, text):
+        parts = []
+        pos = 0
+        for match in self.bz_reg.finditer(text):
+            bug = match.group()
+            parts.append(Text(text[pos : match.start()]))
+            parts.append(reference(bug, bug, refuri=self.bz_url.format(bug[4:])))
+            pos = match.end()
+        if parts:
+            parts.append(Text(text[pos:]))
+            text.parent.replace(text, parts)
 
 
 def setup(app):
