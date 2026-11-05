@@ -75,13 +75,16 @@ declare global {
     ): T | null;
   }
 
-  // toolkit/content/widgets/tabbox.js. Declares only the MozTab members that
-  // code outside the class uses on a <tab> subclass. When tsc reports a MozTab
-  // member as missing, declare that member here.
+  // toolkit/content/widgets/tabbox.js, with MozElements.BaseText's label and
+  // image folded in. Declares only the MozTab members that code outside the
+  // class uses on a <tab> subclass. When tsc reports a MozTab member as
+  // missing, declare that member here.
   class MozTab extends MozXULElement {
     readonly selected: boolean;
     linkedPanel: string;
     label: string;
+    get image(): string | null;
+    set image(val: string);
     on_mousedown(event: MouseEvent): void;
   }
 
