@@ -50,6 +50,26 @@ class IPProtectionGpiProviderTest {
     }
 
     @Test
+    fun `GIVEN the integrity client fails to warm up, WHEN GPI provider warms up, THEN a failure is reported`() =
+        runTest {
+            val integrityClient =
+                coMock<GooglePlayIntegrityClient> {
+                    whenever(warmUp()).thenThrow(RuntimeException("warm-up-failed"))
+                }
+            val handler = FakeIPProtectionHandler()
+            val testScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+
+            IPProtectionGpiProvider(integrityClient).configure(handler, testScope)
+
+            var warmedUpSuccessfully: Boolean? = null
+            handler.gpiProvider!!.warmUp { successful ->
+                warmedUpSuccessfully = successful
+            }
+            testScheduler.advanceUntilIdle()
+            assertEquals(false, warmedUpSuccessfully)
+        }
+
+    @Test
     fun `WHEN a token is requested THEN the consumer client token is returned`() = runTest {
         val integrityClient =
             mock<GooglePlayIntegrityClient> {
