@@ -13362,11 +13362,9 @@
     value: false
     mirror: once
 
-# Change to true when shipping HDR video on Windows
-# https://bugzilla.mozilla.org/show_bug.cgi?id=2012848
 -   name: media.wmf.force.allow-p010-format
     type: RelaxedAtomicBool
-    value: @IS_EARLY_BETA_OR_EARLIER@
+    value: false
     mirror: always
 
 -   name: media.wmf.use-sync-texture
