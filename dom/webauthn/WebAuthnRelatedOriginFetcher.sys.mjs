@@ -16,6 +16,28 @@ let l10n;
 // Steps 3-5 of https://w3c.github.io/webauthn/#sctn-validating-relation-origin.
 const kMaxLabels = 5;
 
+// Reject any redirect that leaves the https scheme. XMLHttpRequest saves the
+// channel's notification callbacks before installing itself and forwards
+// redirects to the sink it finds there, so this composes with XHR's own
+// redirect handling.
+const kRequireHttpsRedirects = {
+  QueryInterface: ChromeUtils.generateQI([
+    "nsIChannelEventSink",
+    "nsIInterfaceRequestor",
+  ]),
+
+  getInterface(iid) {
+    return this.QueryInterface(iid);
+  },
+
+  asyncOnChannelRedirect(oldChannel, newChannel, flags, callback) {
+    if (!newChannel.URI.schemeIs("https")) {
+      throw Components.Exception("", Cr.NS_ERROR_DOM_BAD_URI);
+    }
+    callback.onRedirectVerifyCallback(Cr.NS_OK);
+  },
+};
+
 function validateRelatedOrigins(origins, callerOrigin) {
   const labelsSeen = [];
 
@@ -91,6 +113,7 @@ async function fetchAndValidateRelatedOrigin(aRpId, aCallerOrigin, aSignal) {
       xhr.setRequestHeader("Sec-Fetch-Site", "none");
       xhr.setRequestHeader("Sec-Fetch-Mode", "no-cors");
       xhr.setRequestHeader("Sec-Fetch-Dest", "empty");
+      xhr.channel.notificationCallbacks = kRequireHttpsRedirects;
       xhr.timeout = 10000;
       aSignal?.addEventListener("abort", () => xhr.abort(), { once: true });
       xhr.addEventListener("load", () => resolve(xhr), { once: true });
@@ -103,15 +126,6 @@ async function fetchAndValidateRelatedOrigin(aRpId, aCallerOrigin, aSignal) {
     });
   } catch {
     return false;
-  }
-
-  if (new URL(req.responseURL).protocol !== "https:") {
-    return false;
-  }
-  for (const entry of req.channel.loadInfo.redirectChain) {
-    if (entry.principal.URI.scheme !== "https") {
-      return false;
-    }
   }
 
   // Step 2.1: The fetch must have status code 200 and content type
