@@ -6,11 +6,7 @@
     "../tabnotes/types/tabnotes.ts",
     "../../../tools/@types/browser-window.d.ts"
   ],
-  "exclude": [
-    "content/drag-and-drop.mjs",
-    "content/split-view-footer.mjs",
-    "content/tabgroup-menu.mjs"
-  ],
+  "exclude": ["content/drag-and-drop.mjs"],
   "extends": "../../../tools/@types/tsconfig.json",
   "compilerOptions": {
     "checkJs": true,

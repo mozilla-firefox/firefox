@@ -442,6 +442,12 @@
       "chrome://browser/content/sidebar/sidebar-tab-list.mjs": [
         "../../../browser/components/sidebar/sidebar-tab-list.mjs"
       ],
+      "chrome://browser/content/tabbrowser/drag-and-drop.mjs": [
+        "../../../browser/components/tabbrowser/content/drag-and-drop.mjs"
+      ],
+      "chrome://browser/content/tabbrowser/split-view-footer.mjs": [
+        "../../../browser/components/tabbrowser/content/split-view-footer.mjs"
+      ],
       "chrome://browser/content/tabbrowser/tab-groups-list.mjs": [
         "../../../browser/components/tabbrowser/content/tab-groups-list.mjs"
       ],
@@ -451,8 +457,14 @@
       "chrome://browser/content/tabbrowser/tab.mjs": [
         "../../../browser/components/tabbrowser/content/tab.mjs"
       ],
+      "chrome://browser/content/tabbrowser/tabgroup-menu.mjs": [
+        "../../../browser/components/tabbrowser/content/tabgroup-menu.mjs"
+      ],
       "chrome://browser/content/tabbrowser/tabgroup.mjs": [
         "../../../browser/components/tabbrowser/content/tabgroup.mjs"
+      ],
+      "chrome://browser/content/tabbrowser/tabnote-menu.mjs": [
+        "../../../browser/components/tabbrowser/content/tabnote-menu.mjs"
       ],
       "chrome://browser/content/tabbrowser/tabs.mjs": [
         "../../../browser/components/tabbrowser/content/tabs.mjs"

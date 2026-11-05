@@ -6,6 +6,8 @@
    DynamicShortcutTooltip, gBrowser, gClickAndHoldListenersOnElement,
    gMultiProcessBrowser, gSharedTabWarning, MozElements, RTL_UI */
 
+import { TabDragAndDrop } from "chrome://browser/content/tabbrowser/drag-and-drop.mjs";
+
 const DIRECTION_BACKWARD = -1;
 const DIRECTION_FORWARD = 1;
 
@@ -227,7 +229,7 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
 
     this.tooltip = "tabbrowser-tab-tooltip";
 
-    this.tabDragAndDrop = new window.TabDragAndDrop(this);
+    this.tabDragAndDrop = new TabDragAndDrop(this);
     this.tabDragAndDrop.init();
   }
 

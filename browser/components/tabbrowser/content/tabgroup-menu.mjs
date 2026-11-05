@@ -2,1548 +2,1538 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// This is loaded into chrome windows with the subscript loader. Wrap in
-// a block to prevent accidentally leaking globals onto `window`.
-{
-  const { TabMetrics } = ChromeUtils.importESModule(
-    "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs"
-  );
-  const { TabStateFlusher } = ChromeUtils.importESModule(
-    "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
-  );
-  const lazy = {};
-  ChromeUtils.defineESModuleGetters(lazy, {
-    AIWindow:
-      "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
-    AIWindowMenu:
-      "moz-src:///browser/components/aiwindow/ui/modules/AIWindowMenu.sys.mjs",
-    ContentSharingUtils:
-      "moz-src:///browser/components/sharing/ContentSharingUtils.sys.mjs",
-  });
+/* global gBrowser, gURLBar, MozXULElement, openTrustedLinkIn,
+   SidebarController */
 
-  ChromeUtils.importESModule(
-    "chrome://browser/content/genai/content/model-optin.mjs",
-    {
-      global: "current",
-    }
-  );
+const { TabMetrics } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs"
+);
+const { TabStateFlusher } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
+);
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+const lazy = XPCOMUtils.declareLazy({
+  AIWindow:
+    "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
+  AIWindowMenu:
+    "moz-src:///browser/components/aiwindow/ui/modules/AIWindowMenu.sys.mjs",
+  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
+  ContentSharingUtils:
+    "moz-src:///browser/components/sharing/ContentSharingUtils.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+});
 
-  class MozTabbrowserTabGroupMenu extends MozXULElement {
-    static COLORS = [
-      "blue",
-      "purple",
-      "cyan",
-      "orange",
-      "yellow",
-      "pink",
-      "green",
-      "gray",
-      "red",
-    ];
+ChromeUtils.importESModule(
+  "chrome://browser/content/genai/content/model-optin.mjs",
+  {
+    global: "current",
+  }
+);
 
-    static MESSAGE_IDS = {
-      blue: "tab-group-editor-color-selector2-blue",
-      purple: "tab-group-editor-color-selector2-purple",
-      cyan: "tab-group-editor-color-selector2-cyan",
-      orange: "tab-group-editor-color-selector2-orange",
-      yellow: "tab-group-editor-color-selector2-yellow",
-      pink: "tab-group-editor-color-selector2-pink",
-      green: "tab-group-editor-color-selector2-green",
-      gray: "tab-group-editor-color-selector2-gray",
-      red: "tab-group-editor-color-selector2-red",
-    };
+export class MozTabbrowserTabGroupMenu extends MozXULElement {
+  static COLORS = [
+    "blue",
+    "purple",
+    "cyan",
+    "orange",
+    "yellow",
+    "pink",
+    "green",
+    "gray",
+    "red",
+  ];
 
-    static AI_ICON = "chrome://global/skin/icons/highlights.svg";
+  static MESSAGE_IDS = {
+    blue: "tab-group-editor-color-selector2-blue",
+    purple: "tab-group-editor-color-selector2-purple",
+    cyan: "tab-group-editor-color-selector2-cyan",
+    orange: "tab-group-editor-color-selector2-orange",
+    yellow: "tab-group-editor-color-selector2-yellow",
+    pink: "tab-group-editor-color-selector2-pink",
+    green: "tab-group-editor-color-selector2-green",
+    gray: "tab-group-editor-color-selector2-gray",
+    red: "tab-group-editor-color-selector2-red",
+  };
 
-    static headerSection = /*html*/ `
-      <html:div class="panel-header" >
-        <html:h1
-          id="tab-group-editor-title-create"
-          class="tab-group-create-mode-only"
-          data-l10n-id="tab-group-editor-title-create">
-        </html:h1>
-        <html:h1
-          id="tab-group-editor-title-edit"
-          class="tab-group-edit-mode-only"
-          data-l10n-id="tab-group-editor-title-edit">
-        </html:h1>
-        <html:h1
-          id="tab-group-editor-title-suggest"
-          data-l10n-id="tab-group-editor-title-suggest"
-          hidden=""
-        ></html:h1>
-      </html:div>
-    `;
+  static AI_ICON = "chrome://global/skin/icons/highlights.svg";
 
-    static editActions = /*html*/ `
-      <html:div
-        class="tab-group-edit-actions tab-group-edit-mode-only">
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_addNewTabInGroup"
-          class="subviewbutton"
-          data-l10n-id="tab-group-editor-action-new-tab">
-        </toolbarbutton>
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_moveGroupToNewWindow"
-          class="subviewbutton"
-          data-l10n-id="tab-group-editor-action-new-window">
-        </toolbarbutton>
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_shareTabGroup"
-          class="subviewbutton"
-          badged="true"
-          data-l10n-id="tab-group-editor-action-share-group"
-          hidden="">
-          <html:moz-badge type="new" move-after-stack="true"></html:moz-badge>
-        </toolbarbutton>
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_copyAllLinks"
-          class="subviewbutton">
-        </toolbarbutton>
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_createAITab"
-          class="subviewbutton"
-          data-l10n-id="tab-group-editor-action-create-aitab"
-          hidden="">
-        </toolbarbutton>
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_saveAndCloseGroup"
-          class="subviewbutton"
-          data-l10n-id="tab-group-editor-action-save">
-        </toolbarbutton>
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_ungroupTabs"
-          class="subviewbutton"
-          data-l10n-id="tab-group-editor-action-ungroup">
-        </toolbarbutton>
-        <toolbarseparator class="tab-group-edit-mode-only" />
-        <toolbarbutton
-          tabindex="0"
-          id="tabGroupEditor_deleteGroup"
-          class="subviewbutton"
-          data-l10n-id="tab-group-editor-action-delete">
-        </toolbarbutton>
-      </html:div>
-    `;
+  static headerSection = /*html*/ `
+    <html:div class="panel-header" >
+      <html:h1
+        id="tab-group-editor-title-create"
+        class="tab-group-create-mode-only"
+        data-l10n-id="tab-group-editor-title-create">
+      </html:h1>
+      <html:h1
+        id="tab-group-editor-title-edit"
+        class="tab-group-edit-mode-only"
+        data-l10n-id="tab-group-editor-title-edit">
+      </html:h1>
+      <html:h1
+        id="tab-group-editor-title-suggest"
+        data-l10n-id="tab-group-editor-title-suggest"
+        hidden=""
+      ></html:h1>
+    </html:div>
+  `;
 
-    static suggestionsSection = /*html*/ `
-      <html:div id="tab-group-suggestions-container"
-        class="panel-subview-body"
-        hidden="">
-
-        <html:moz-checkbox
-          checked=""
-          id="tab-group-select-checkbox"
-          data-l10n-id="tab-group-editor-select-suggestions">
-        </html:moz-checkbox>
-
-        <html:div id="tab-group-suggestions"></html:div>
-
-        <html:p
-          data-l10n-id="tab-group-editor-information-message">
-        </html:p>
-
-        <html:moz-button-group class="panel-footer tab-group-create-actions">
-          <html:moz-button
-            id="tab-group-cancel-suggestions-button"
-            data-l10n-id="tab-group-editor-cancel">
-          </html:moz-button>
-          <html:moz-button
-            type="primary"
-            id="tab-group-create-suggestions-button"
-            data-l10n-id="tab-group-editor-done">
-          </html:moz-button>
-        </html:moz-button-group>
-
-      </html:div>
-    `;
-
-    static suggestionsButton = /*html*/ `
-      <html:moz-button
-        hidden="true"
-        id="tab-group-suggestion-button"
+  static editActions = /*html*/ `
+    <html:div
+      class="tab-group-edit-actions tab-group-edit-mode-only">
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_addNewTabInGroup"
         class="subviewbutton"
-        type="icon ghost"
-        data-l10n-id="tab-group-editor-smart-suggest-button-create">
-      </html:moz-button>
-    `;
+        data-l10n-id="tab-group-editor-action-new-tab">
+      </toolbarbutton>
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_moveGroupToNewWindow"
+        class="subviewbutton"
+        data-l10n-id="tab-group-editor-action-new-window">
+      </toolbarbutton>
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_shareTabGroup"
+        class="subviewbutton"
+        badged="true"
+        data-l10n-id="tab-group-editor-action-share-group"
+        hidden="">
+        <html:moz-badge type="new" move-after-stack="true"></html:moz-badge>
+      </toolbarbutton>
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_copyAllLinks"
+        class="subviewbutton">
+      </toolbarbutton>
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_createAITab"
+        class="subviewbutton"
+        data-l10n-id="tab-group-editor-action-create-aitab"
+        hidden="">
+      </toolbarbutton>
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_saveAndCloseGroup"
+        class="subviewbutton"
+        data-l10n-id="tab-group-editor-action-save">
+      </toolbarbutton>
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_ungroupTabs"
+        class="subviewbutton"
+        data-l10n-id="tab-group-editor-action-ungroup">
+      </toolbarbutton>
+      <toolbarseparator class="tab-group-edit-mode-only" />
+      <toolbarbutton
+        tabindex="0"
+        id="tabGroupEditor_deleteGroup"
+        class="subviewbutton"
+        data-l10n-id="tab-group-editor-action-delete">
+      </toolbarbutton>
+    </html:div>
+  `;
 
-    static loadingSection = /*html*/ `
-      <html:div id="tab-group-suggestions-loading" hidden="true">
-        <html:div
-          class="tab-group-suggestions-loading-header"
-          data-l10n-id="tab-group-suggestions-loading-header">
-        </html:div>
-        <html:div class="tab-group-suggestions-loading-block"></html:div>
-        <html:div class="tab-group-suggestions-loading-block"></html:div>
-        <html:div class="tab-group-suggestions-loading-block"></html:div>
-      </html:div>
-    `;
+  static suggestionsSection = /*html*/ `
+    <html:div id="tab-group-suggestions-container"
+      class="panel-subview-body"
+      hidden="">
 
-    static defaultActions = /*html*/ `
-      <html:moz-button-group
-        class="tab-group-create-actions tab-group-create-mode-only panel-footer"
-        id="tab-group-default-actions">
+      <html:moz-checkbox
+        checked=""
+        id="tab-group-select-checkbox"
+        data-l10n-id="tab-group-editor-select-suggestions">
+      </html:moz-checkbox>
+
+      <html:div id="tab-group-suggestions"></html:div>
+
+      <html:p
+        data-l10n-id="tab-group-editor-information-message">
+      </html:p>
+
+      <html:moz-button-group class="panel-footer tab-group-create-actions">
         <html:moz-button
-          id="tab-group-editor-button-cancel"
+          id="tab-group-cancel-suggestions-button"
           data-l10n-id="tab-group-editor-cancel">
         </html:moz-button>
         <html:moz-button
           type="primary"
-          id="tab-group-editor-button-create"
+          id="tab-group-create-suggestions-button"
           data-l10n-id="tab-group-editor-done">
         </html:moz-button>
       </html:moz-button-group>
-    `;
 
-    static loadingActions = /*html*/ `
-      <html:moz-button-group
-        id="tab-group-suggestions-load-actions"
-        class="panel-footer"
-        hidden="">
-        <html:moz-button
-          id="tab-group-suggestions-load-cancel"
-          data-l10n-id="tab-group-editor-cancel">
-        </html:moz-button>
-      </html:moz-button-group>
-    `;
+    </html:div>
+  `;
 
-    static optinSection = /*html*/ `
+  static suggestionsButton = /*html*/ `
+    <html:moz-button
+      hidden="true"
+      id="tab-group-suggestion-button"
+      class="subviewbutton"
+      type="icon ghost"
+      data-l10n-id="tab-group-editor-smart-suggest-button-create">
+    </html:moz-button>
+  `;
+
+  static loadingSection = /*html*/ `
+    <html:div id="tab-group-suggestions-loading" hidden="true">
       <html:div
-        id="tab-group-suggestions-optin-container" hidden="">
+        class="tab-group-suggestions-loading-header"
+        data-l10n-id="tab-group-suggestions-loading-header">
       </html:div>
-    `;
+      <html:div class="tab-group-suggestions-loading-block"></html:div>
+      <html:div class="tab-group-suggestions-loading-block"></html:div>
+      <html:div class="tab-group-suggestions-loading-block"></html:div>
+    </html:div>
+  `;
 
-    static markup = /*html*/ `
-      <panel
-        type="arrow"
-        class="tab-group-editor-panel"
-        orient="vertical"
-        role="dialog"
-        ignorekeys="true"
-        norolluponanchor="true">
+  static defaultActions = /*html*/ `
+    <html:moz-button-group
+      class="tab-group-create-actions tab-group-create-mode-only panel-footer"
+      id="tab-group-default-actions">
+      <html:moz-button
+        id="tab-group-editor-button-cancel"
+        data-l10n-id="tab-group-editor-cancel">
+      </html:moz-button>
+      <html:moz-button
+        type="primary"
+        id="tab-group-editor-button-create"
+        data-l10n-id="tab-group-editor-done">
+      </html:moz-button>
+    </html:moz-button-group>
+  `;
 
-        ${this.headerSection}
+  static loadingActions = /*html*/ `
+    <html:moz-button-group
+      id="tab-group-suggestions-load-actions"
+      class="panel-footer"
+      hidden="">
+      <html:moz-button
+        id="tab-group-suggestions-load-cancel"
+        data-l10n-id="tab-group-editor-cancel">
+      </html:moz-button>
+    </html:moz-button-group>
+  `;
 
-        <toolbarseparator />
+  static optinSection = /*html*/ `
+    <html:div
+      id="tab-group-suggestions-optin-container" hidden="">
+    </html:div>
+  `;
 
-        <html:div
-          class="tab-group-editor-name">
-          <html:label
-            for="tab-group-name"
-            data-l10n-id="tab-group-editor-name-label">
-          </html:label>
-          <html:input
-            id="tab-group-name"
-            type="text"
-            name="tab-group-name"
-            value=""
-            data-l10n-id="tab-group-editor-name-field"
+  static markup = /*html*/ `
+    <panel
+      type="arrow"
+      class="tab-group-editor-panel"
+      orient="vertical"
+      role="dialog"
+      ignorekeys="true"
+      norolluponanchor="true">
+
+      ${this.headerSection}
+
+      <toolbarseparator />
+
+      <html:div
+        class="tab-group-editor-name">
+        <html:label
+          for="tab-group-name"
+          data-l10n-id="tab-group-editor-name-label">
+        </html:label>
+        <html:input
+          id="tab-group-name"
+          type="text"
+          name="tab-group-name"
+          value=""
+          data-l10n-id="tab-group-editor-name-field"
+        />
+      </html:div>
+
+      <html:div id="tab-group-main" class="panel-subview-body">
+        <html:div id="tab-group-properties-and-actions">
+          <html:div
+            class="tab-group-editor-swatches"
+            role="radiogroup"
+            data-l10n-id="tab-group-editor-color-selector"
           />
-        </html:div>
 
-        <html:div id="tab-group-main" class="panel-subview-body">
-          <html:div id="tab-group-properties-and-actions">
-            <html:div
-              class="tab-group-editor-swatches"
-              role="radiogroup"
-              data-l10n-id="tab-group-editor-color-selector"
-            />
+          <toolbarseparator class="tab-group-edit-mode-only"/>
 
-            <toolbarseparator class="tab-group-edit-mode-only"/>
+          ${this.editActions}
 
-            ${this.editActions}
+          <toolbarseparator id="tab-group-suggestions-separator" hidden="true"/>
 
-            <toolbarseparator id="tab-group-suggestions-separator" hidden="true"/>
+          ${this.suggestionsButton}
 
-            ${this.suggestionsButton}
-
-            <html:div id="tab-group-suggestions-message-container" hidden="true">
-              <html:moz-button
-                disabled="true"
-                type="icon ghost"
-                id="tab-group-suggestions-message"
-                data-l10n-id="tab-group-editor-no-tabs-found-title">
-              </html:moz-button>
-              <html:p
-                data-l10n-id="tab-group-editor-no-tabs-found-message">
-              </html:p>
-            </html:div>
-
-            ${this.defaultActions}
-
+          <html:div id="tab-group-suggestions-message-container" hidden="true">
+            <html:moz-button
+              disabled="true"
+              type="icon ghost"
+              id="tab-group-suggestions-message"
+              data-l10n-id="tab-group-editor-no-tabs-found-title">
+            </html:moz-button>
+            <html:p
+              data-l10n-id="tab-group-editor-no-tabs-found-message">
+            </html:p>
           </html:div>
 
-          ${this.loadingSection}
-          ${this.loadingActions}
-          ${this.suggestionsSection}
-          ${this.optinSection}
-        </html:div>
-      </panel>
-    `;
+          ${this.defaultActions}
 
-    static State = {
-      // Standard create mode (No AI UI)
-      CREATE_STANDARD_INITIAL: 0,
-      // Create mode with AI able to suggest tabs
-      CREATE_AI_INITIAL: 1,
-      // No ungrouped tabs to suggest (hide AI interactions)
-      CREATE_AI_INITIAL_SUGGESTIONS_DISABLED: 2,
-      // Create mode with suggestions
-      CREATE_AI_WITH_SUGGESTIONS: 3,
-      // Create mode with no suggestions
-      CREATE_AI_WITH_NO_SUGGESTIONS: 4,
-      // Standard edit mode (No AI UI)
-      EDIT_STANDARD_INITIAL: 5,
-      // Edit mode with AI able to suggest tabs
-      EDIT_AI_INITIAL: 6,
-      // No ungrouped tabs to suggest
-      EDIT_AI_INITIAL_SUGGESTIONS_DISABLED: 7,
-      // Edit mode with suggestions
-      EDIT_AI_WITH_SUGGESTIONS: 8,
-      // Edit mode with no suggestions
-      EDIT_AI_WITH_NO_SUGGESTIONS: 9,
-      LOADING: 10,
-      ERROR: 11,
-      // Optin for STG AI
-      OPTIN: 12,
+        </html:div>
+
+        ${this.loadingSection}
+        ${this.loadingActions}
+        ${this.suggestionsSection}
+        ${this.optinSection}
+      </html:div>
+    </panel>
+  `;
+
+  static State = {
+    // Standard create mode (No AI UI)
+    CREATE_STANDARD_INITIAL: 0,
+    // Create mode with AI able to suggest tabs
+    CREATE_AI_INITIAL: 1,
+    // No ungrouped tabs to suggest (hide AI interactions)
+    CREATE_AI_INITIAL_SUGGESTIONS_DISABLED: 2,
+    // Create mode with suggestions
+    CREATE_AI_WITH_SUGGESTIONS: 3,
+    // Create mode with no suggestions
+    CREATE_AI_WITH_NO_SUGGESTIONS: 4,
+    // Standard edit mode (No AI UI)
+    EDIT_STANDARD_INITIAL: 5,
+    // Edit mode with AI able to suggest tabs
+    EDIT_AI_INITIAL: 6,
+    // No ungrouped tabs to suggest
+    EDIT_AI_INITIAL_SUGGESTIONS_DISABLED: 7,
+    // Edit mode with suggestions
+    EDIT_AI_WITH_SUGGESTIONS: 8,
+    // Edit mode with no suggestions
+    EDIT_AI_WITH_NO_SUGGESTIONS: 9,
+    LOADING: 10,
+    ERROR: 11,
+    // Optin for STG AI
+    OPTIN: 12,
+  };
+
+  #tabGroupMain;
+  #tabGroupPropertiesActions;
+  #activeGroup;
+  #cancelButton;
+  #commandButtons;
+  #createButton;
+  #createMode;
+  #keepNewlyCreatedGroup;
+  #nameContainer;
+  #nameField;
+  #panel;
+  #swatches;
+  #swatchesContainer;
+  #defaultActions;
+  #suggestionState = MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL;
+  #suggestionsHeading;
+  #createTabGroupHeading;
+  #editTabGroupHeading;
+  /** @type {string} */
+  #initialTabGroupName;
+  #suggestionsContainer;
+  #suggestions;
+  #suggestionButton;
+  #cancelSuggestionsButton;
+  #createSuggestionsButton;
+  #suggestionsLoading;
+  #selectSuggestionsCheckbox;
+  #suggestionsMessage;
+  #suggestionsMessageContainer;
+  #selectedSuggestedTabs = [];
+  #suggestedMlLabel;
+  #hasSuggestedMlTabs = false;
+  #suggestedTabs = [];
+  #suggestionsLoadActions;
+  #suggestionsLoadCancel;
+  #suggestionsSeparator;
+  #smartTabGroupingManager;
+  #smartTabGroupsInitiated = false;
+  #suggestionsOptinContainer;
+  #suggestionsOptin;
+  #suggestionsRunToken;
+
+  constructor() {
+    super();
+    /** @type {boolean} */ this.smartTabGroupsFeatureConfigEnabled;
+    /** @type {boolean} */ this.smartTabGroupsUserEnabled;
+    /** @type {boolean} */ this.smartTabGroupsOptin;
+    /** @type {boolean} */ this.mlEnabled;
+    /** @type {boolean} */ this.aitabEnabled;
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "smartTabGroupsFeatureConfigEnabled",
+      "browser.tabs.groups.smart.enabled",
+      false,
+      this.#onSmartTabGroupsPrefChange.bind(this)
+    );
+
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "smartTabGroupsUserEnabled",
+      "browser.tabs.groups.smart.userEnabled",
+      true,
+      this.#onSmartTabGroupsPrefChange.bind(this)
+    );
+
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "smartTabGroupsOptin",
+      "browser.tabs.groups.smart.optin",
+      false,
+      this.#onSmartTabGroupsOptInPrefChange.bind(this)
+    );
+
+    XPCOMUtils.defineLazyPreferenceGetter(
+      this,
+      "mlEnabled",
+      "browser.ml.enable",
+      true,
+      this.#onSmartTabGroupsPrefChange.bind(this)
+    );
+  }
+
+  connectedCallback() {
+    if (this._initialized) {
+      return;
+    }
+
+    this.textContent = "";
+    this.appendChild(
+      /** @type {typeof MozTabbrowserTabGroupMenu} */ (this.constructor)
+        .fragment
+    );
+    this.initializeAttributeInheritance();
+
+    this._initialized = true;
+
+    this.#cancelButton = this.querySelector("#tab-group-editor-button-cancel");
+    this.#createButton = this.querySelector("#tab-group-editor-button-create");
+    this.#panel = this.querySelector("panel");
+    this.#nameField = this.querySelector("#tab-group-name");
+    this.#nameContainer = this.querySelector(".tab-group-editor-name");
+    this.#panel.addEventListener("click", e => {
+      if (e.target !== this.#nameField) {
+        this.#nameField.blur();
+      }
+    });
+    this.#swatchesContainer = this.querySelector(".tab-group-editor-swatches");
+    this.#createTabGroupHeading = this.querySelector(
+      "#tab-group-editor-title-create"
+    );
+    this.#editTabGroupHeading = this.querySelector(
+      "#tab-group-editor-title-edit"
+    );
+    this.#defaultActions = this.querySelector("#tab-group-default-actions");
+    this.#tabGroupMain = this.querySelector("#tab-group-main");
+    this.#tabGroupPropertiesActions = this.querySelector(
+      "#tab-group-properties-and-actions"
+    );
+    this.#initSuggestions();
+
+    this.#populateSwatches();
+
+    this.#cancelButton.addEventListener("click", () => {
+      this.#handleMlTelemetry("cancel");
+      this.close(false);
+    });
+
+    this.#createButton.addEventListener("click", () => {
+      this.#handleMlTelemetry("save");
+      this.close();
+    });
+
+    this.#nameField.addEventListener("input", () => {
+      if (this.activeGroup) {
+        this.activeGroup.label = this.#nameField.value;
+      }
+    });
+
+    /**
+     * Check if the smart suggest button should be shown
+     * If there are no ungrouped tabs, the button should be hidden
+     */
+    this.canShowAIUserInterface = () => {
+      const { tabs } = gBrowser;
+      let show = false;
+      tabs.forEach(tab => {
+        if (tab.group === null) {
+          show = true;
+        }
+      });
+
+      return show;
     };
 
-    #tabGroupMain;
-    #tabGroupPropertiesActions;
-    #activeGroup;
-    #cancelButton;
-    #commandButtons;
-    #createButton;
-    #createMode;
-    #keepNewlyCreatedGroup;
-    #nameContainer;
-    #nameField;
-    #panel;
-    #swatches;
-    #swatchesContainer;
-    #defaultActions;
-    #suggestionState = MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL;
-    #suggestionsHeading;
-    #createTabGroupHeading;
-    #editTabGroupHeading;
-    /** @type {string} */
-    #initialTabGroupName;
-    #suggestionsContainer;
-    #suggestions;
-    #suggestionButton;
-    #cancelSuggestionsButton;
-    #createSuggestionsButton;
-    #suggestionsLoading;
-    #selectSuggestionsCheckbox;
-    #suggestionsMessage;
-    #suggestionsMessageContainer;
-    #selectedSuggestedTabs = [];
-    #suggestedMlLabel;
-    #hasSuggestedMlTabs = false;
-    #suggestedTabs = [];
-    #suggestionsLoadActions;
-    #suggestionsLoadCancel;
-    #suggestionsSeparator;
-    #smartTabGroupingManager;
-    #smartTabGroupsInitiated = false;
-    #suggestionsOptinContainer;
-    #suggestionsOptin;
-    #suggestionsRunToken;
+    this.#commandButtons = {
+      addNewTabInGroup: document.getElementById(
+        "tabGroupEditor_addNewTabInGroup"
+      ),
+      moveGroupToNewWindow: document.getElementById(
+        "tabGroupEditor_moveGroupToNewWindow"
+      ),
+      copyAllLinks: document.getElementById("tabGroupEditor_copyAllLinks"),
+      createAITab: document.getElementById("tabGroupEditor_createAITab"),
+      ungroupTabs: document.getElementById("tabGroupEditor_ungroupTabs"),
+      saveAndCloseGroup: document.getElementById(
+        "tabGroupEditor_saveAndCloseGroup"
+      ),
+      deleteGroup: document.getElementById("tabGroupEditor_deleteGroup"),
+      shareTabGroup: document.getElementById("tabGroupEditor_shareTabGroup"),
+    };
 
-    constructor() {
-      super();
-      /** @type {boolean} */ this.smartTabGroupsFeatureConfigEnabled;
-      /** @type {boolean} */ this.smartTabGroupsUserEnabled;
-      /** @type {boolean} */ this.smartTabGroupsOptin;
-      /** @type {boolean} */ this.mlEnabled;
-      /** @type {boolean} */ this.aitabEnabled;
-      XPCOMUtils.defineLazyPreferenceGetter(
-        this,
-        "smartTabGroupsFeatureConfigEnabled",
-        "browser.tabs.groups.smart.enabled",
-        false,
-        this.#onSmartTabGroupsPrefChange.bind(this)
-      );
+    this.#commandButtons.addNewTabInGroup.addEventListener("command", () => {
+      this.#handleNewTabInGroup();
+    });
 
-      XPCOMUtils.defineLazyPreferenceGetter(
-        this,
-        "smartTabGroupsUserEnabled",
-        "browser.tabs.groups.smart.userEnabled",
-        true,
-        this.#onSmartTabGroupsPrefChange.bind(this)
-      );
-
-      XPCOMUtils.defineLazyPreferenceGetter(
-        this,
-        "smartTabGroupsOptin",
-        "browser.tabs.groups.smart.optin",
-        false,
-        this.#onSmartTabGroupsOptInPrefChange.bind(this)
-      );
-
-      XPCOMUtils.defineLazyPreferenceGetter(
-        this,
-        "mlEnabled",
-        "browser.ml.enable",
-        true,
-        this.#onSmartTabGroupsPrefChange.bind(this)
-      );
-    }
-
-    connectedCallback() {
-      if (this._initialized) {
-        return;
-      }
-
-      this.textContent = "";
-      this.appendChild(
-        /** @type {typeof MozTabbrowserTabGroupMenu} */ (this.constructor)
-          .fragment
-      );
-      this.initializeAttributeInheritance();
-
-      this._initialized = true;
-
-      this.#cancelButton = this.querySelector(
-        "#tab-group-editor-button-cancel"
-      );
-      this.#createButton = this.querySelector(
-        "#tab-group-editor-button-create"
-      );
-      this.#panel = this.querySelector("panel");
-      this.#nameField = this.querySelector("#tab-group-name");
-      this.#nameContainer = this.querySelector(".tab-group-editor-name");
-      this.#panel.addEventListener("click", e => {
-        if (e.target !== this.#nameField) {
-          this.#nameField.blur();
-        }
-      });
-      this.#swatchesContainer = this.querySelector(
-        ".tab-group-editor-swatches"
-      );
-      this.#createTabGroupHeading = this.querySelector(
-        "#tab-group-editor-title-create"
-      );
-      this.#editTabGroupHeading = this.querySelector(
-        "#tab-group-editor-title-edit"
-      );
-      this.#defaultActions = this.querySelector("#tab-group-default-actions");
-      this.#tabGroupMain = this.querySelector("#tab-group-main");
-      this.#tabGroupPropertiesActions = this.querySelector(
-        "#tab-group-properties-and-actions"
-      );
-      this.#initSuggestions();
-
-      this.#populateSwatches();
-
-      this.#cancelButton.addEventListener("click", () => {
-        this.#handleMlTelemetry("cancel");
-        this.close(false);
-      });
-
-      this.#createButton.addEventListener("click", () => {
-        this.#handleMlTelemetry("save");
-        this.close();
-      });
-
-      this.#nameField.addEventListener("input", () => {
-        if (this.activeGroup) {
-          this.activeGroup.label = this.#nameField.value;
-        }
-      });
-
-      /**
-       * Check if the smart suggest button should be shown
-       * If there are no ungrouped tabs, the button should be hidden
-       */
-      this.canShowAIUserInterface = () => {
-        const { tabs } = gBrowser;
-        let show = false;
-        tabs.forEach(tab => {
-          if (tab.group === null) {
-            show = true;
-          }
-        });
-
-        return show;
-      };
-
-      this.#commandButtons = {
-        addNewTabInGroup: document.getElementById(
-          "tabGroupEditor_addNewTabInGroup"
-        ),
-        moveGroupToNewWindow: document.getElementById(
-          "tabGroupEditor_moveGroupToNewWindow"
-        ),
-        copyAllLinks: document.getElementById("tabGroupEditor_copyAllLinks"),
-        createAITab: document.getElementById("tabGroupEditor_createAITab"),
-        ungroupTabs: document.getElementById("tabGroupEditor_ungroupTabs"),
-        saveAndCloseGroup: document.getElementById(
-          "tabGroupEditor_saveAndCloseGroup"
-        ),
-        deleteGroup: document.getElementById("tabGroupEditor_deleteGroup"),
-        shareTabGroup: document.getElementById("tabGroupEditor_shareTabGroup"),
-      };
-
-      this.#commandButtons.addNewTabInGroup.addEventListener("command", () => {
-        this.#handleNewTabInGroup();
-      });
-
-      this.#commandButtons.moveGroupToNewWindow.addEventListener(
-        "command",
-        () => {
-          gBrowser.replaceGroupWithWindow(this.activeGroup, {
-            metricsContext: gBrowser.TabMetrics.userTriggeredContext(
-              gBrowser.TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU
-            ),
-          });
-        }
-      );
-
-      this.#commandButtons.copyAllLinks.addEventListener("command", () => {
-        let links = this.#getGroupLinks(this.activeGroup);
-        if (links.length) {
-          BrowserUtils.copyLinks(links);
-        }
-        Glean.tabgroup.groupInteractions.copy_all_links.add(1);
-        this.close();
-      });
-
-      this.#commandButtons.ungroupTabs.addEventListener("command", () => {
-        this.activeGroup.ungroupTabs(
-          TabMetrics.userTriggeredContext(
-            TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU
-          )
-        );
-      });
-
-      this.#commandButtons.saveAndCloseGroup.addEventListener("command", () => {
-        this.activeGroup.saveAndClose(
-          TabMetrics.userTriggeredContext(
-            TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU
-          )
-        );
-      });
-
-      this.#commandButtons.deleteGroup.addEventListener("command", () => {
-        gBrowser.removeTabGroup(this.activeGroup, {
-          metricsContext: TabMetrics.userTriggeredContext(
-            TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU
+    this.#commandButtons.moveGroupToNewWindow.addEventListener(
+      "command",
+      () => {
+        gBrowser.replaceGroupWithWindow(this.activeGroup, {
+          metricsContext: gBrowser.TabMetrics.userTriggeredContext(
+            gBrowser.TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU
           ),
         });
-      });
-
-      this.#commandButtons.shareTabGroup.addEventListener("command", () => {
-        lazy.ContentSharingUtils.handleShareTabGroup(this.activeGroup);
-        this.close();
-      });
-
-      this.#commandButtons.createAITab.addEventListener("command", () => {
-        lazy.AIWindow.createAITab(
-          window,
-          this.activeGroup.tabs.map(tab => tab.linkedBrowser.currentURI.spec),
-          "tab_group"
-        );
-        this.close();
-      });
-
-      this.panel.addEventListener("popupshown", this);
-      this.panel.addEventListener("popuphidden", this);
-      this.panel.addEventListener("keypress", this);
-      this.#swatchesContainer.addEventListener("change", this);
-      Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
-    }
-
-    get smartTabGroupsEnabled() {
-      return (
-        Services.locale.appLocaleAsBCP47.startsWith("en") &&
-        this.smartTabGroupsUserEnabled &&
-        this.smartTabGroupsFeatureConfigEnabled &&
-        !PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal) &&
-        this.mlEnabled
-      );
-    }
-
-    get smartTabGroupsPrefEnabled() {
-      return (
-        this.smartTabGroupsUserEnabled &&
-        this.smartTabGroupsFeatureConfigEnabled &&
-        this.smartTabGroupsOptin
-      );
-    }
-
-    #onSmartTabGroupsPrefChange(_preName, _prev, _latest) {
-      if (!this.#smartTabGroupsInitiated && this.smartTabGroupsEnabled) {
-        this.#initSuggestions();
       }
-      const icon = this.smartTabGroupsEnabled
-        ? MozTabbrowserTabGroupMenu.AI_ICON
-        : "";
+    );
 
-      this.#suggestionButton.iconSrc = icon;
-      this.#suggestionsMessage.iconSrc = icon;
-      Glean.tabgroup.smartTab.record({
-        enabled: this.smartTabGroupsPrefEnabled,
+    this.#commandButtons.copyAllLinks.addEventListener("command", () => {
+      let links = this.#getGroupLinks(this.activeGroup);
+      if (links.length) {
+        lazy.BrowserUtils.copyLinks(links);
+      }
+      Glean.tabgroup.groupInteractions.copy_all_links.add(1);
+      this.close();
+    });
+
+    this.#commandButtons.ungroupTabs.addEventListener("command", () => {
+      this.activeGroup.ungroupTabs(
+        TabMetrics.userTriggeredContext(TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU)
+      );
+    });
+
+    this.#commandButtons.saveAndCloseGroup.addEventListener("command", () => {
+      this.activeGroup.saveAndClose(
+        TabMetrics.userTriggeredContext(TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU)
+      );
+    });
+
+    this.#commandButtons.deleteGroup.addEventListener("command", () => {
+      gBrowser.removeTabGroup(this.activeGroup, {
+        metricsContext: TabMetrics.userTriggeredContext(
+          TabMetrics.METRIC_SOURCE.TAB_GROUP_MENU
+        ),
       });
-      Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
+    });
+
+    this.#commandButtons.shareTabGroup.addEventListener("command", () => {
+      lazy.ContentSharingUtils.handleShareTabGroup(this.activeGroup);
+      this.close();
+    });
+
+    this.#commandButtons.createAITab.addEventListener("command", () => {
+      lazy.AIWindow.createAITab(
+        window,
+        this.activeGroup.tabs.map(tab => tab.linkedBrowser.currentURI.spec),
+        "tab_group"
+      );
+      this.close();
+    });
+
+    this.panel.addEventListener("popupshown", this);
+    this.panel.addEventListener("popuphidden", this);
+    this.panel.addEventListener("keypress", this);
+    this.#swatchesContainer.addEventListener("change", this);
+    Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
+  }
+
+  get smartTabGroupsEnabled() {
+    return (
+      Services.locale.appLocaleAsBCP47.startsWith("en") &&
+      this.smartTabGroupsUserEnabled &&
+      this.smartTabGroupsFeatureConfigEnabled &&
+      !lazy.PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal) &&
+      this.mlEnabled
+    );
+  }
+
+  get smartTabGroupsPrefEnabled() {
+    return (
+      this.smartTabGroupsUserEnabled &&
+      this.smartTabGroupsFeatureConfigEnabled &&
+      this.smartTabGroupsOptin
+    );
+  }
+
+  #onSmartTabGroupsPrefChange(_preName, _prev, _latest) {
+    if (!this.#smartTabGroupsInitiated && this.smartTabGroupsEnabled) {
+      this.#initSuggestions();
     }
+    const icon = this.smartTabGroupsEnabled
+      ? MozTabbrowserTabGroupMenu.AI_ICON
+      : "";
 
-    #onSmartTabGroupsOptInPrefChange(_preName, _prev, _latest) {
-      Glean.tabgroup.smartTab.record({
-        enabled: this.smartTabGroupsPrefEnabled,
-      });
-      Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
-    }
+    this.#suggestionButton.iconSrc = icon;
+    this.#suggestionsMessage.iconSrc = icon;
+    Glean.tabgroup.smartTab.record({
+      enabled: this.smartTabGroupsPrefEnabled,
+    });
+    Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
+  }
 
-    #initSmartTabGroupsOptin() {
-      this.#handleMLOptinTelemetry("step0-optin-shown");
-      this.suggestionState = MozTabbrowserTabGroupMenu.State.OPTIN;
+  #onSmartTabGroupsOptInPrefChange(_preName, _prev, _latest) {
+    Glean.tabgroup.smartTab.record({
+      enabled: this.smartTabGroupsPrefEnabled,
+    });
+    Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
+  }
 
-      // Init optin component
-      this.#suggestionsOptin = document.createElement("model-optin");
-      this.#suggestionsOptin.headingL10nId =
-        "tab-group-suggestions-optin-title";
-      this.#suggestionsOptin.messageL10nId =
-        "tab-group-suggestions-optin-message";
-      this.#suggestionsOptin.footerMessageL10nId =
-        "tab-group-suggestions-optin-message-footer";
-      this.#suggestionsOptin.headingIcon = MozTabbrowserTabGroupMenu.AI_ICON;
+  #initSmartTabGroupsOptin() {
+    this.#handleMLOptinTelemetry("step0-optin-shown");
+    this.suggestionState = MozTabbrowserTabGroupMenu.State.OPTIN;
 
-      // On Confirm
-      this.#suggestionsOptin.addEventListener("MlModelOptinConfirm", () => {
-        this.#handleMLOptinTelemetry("step1-optin-confirmed");
-        Services.prefs.setBoolPref("browser.tabs.groups.smart.optin", true);
-        this.#handleFirstDownloadAndSuggest();
-      });
+    // Init optin component
+    this.#suggestionsOptin = document.createElement("model-optin");
+    this.#suggestionsOptin.headingL10nId = "tab-group-suggestions-optin-title";
+    this.#suggestionsOptin.messageL10nId =
+      "tab-group-suggestions-optin-message";
+    this.#suggestionsOptin.footerMessageL10nId =
+      "tab-group-suggestions-optin-message-footer";
+    this.#suggestionsOptin.headingIcon = MozTabbrowserTabGroupMenu.AI_ICON;
 
-      // On Deny
-      this.#suggestionsOptin.addEventListener("MlModelOptinDeny", () => {
-        this.#handleMLOptinTelemetry("step1-optin-denied");
+    // On Confirm
+    this.#suggestionsOptin.addEventListener("MlModelOptinConfirm", () => {
+      this.#handleMLOptinTelemetry("step1-optin-confirmed");
+      Services.prefs.setBoolPref("browser.tabs.groups.smart.optin", true);
+      this.#handleFirstDownloadAndSuggest();
+    });
+
+    // On Deny
+    this.#suggestionsOptin.addEventListener("MlModelOptinDeny", () => {
+      this.#handleMLOptinTelemetry("step1-optin-denied");
+      this.#smartTabGroupingManager.terminateProcess();
+      this.suggestionState = this.createMode
+        ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
+        : MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL;
+      this.#setFormToDisabled(false);
+      this.#suggestionsOptinContainer.hidden = true;
+    });
+
+    // On Cancel Model Download
+    this.#suggestionsOptin.addEventListener(
+      "MlModelOptinCancelDownload",
+      () => {
+        this.#suggestionsRunToken = null;
+        this.#handleMLOptinTelemetry("step2-optin-cancel-download");
         this.#smartTabGroupingManager.terminateProcess();
         this.suggestionState = this.createMode
           ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
           : MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL;
         this.#setFormToDisabled(false);
         this.#suggestionsOptinContainer.hidden = true;
-      });
-
-      // On Cancel Model Download
-      this.#suggestionsOptin.addEventListener(
-        "MlModelOptinCancelDownload",
-        () => {
-          this.#suggestionsRunToken = null;
-          this.#handleMLOptinTelemetry("step2-optin-cancel-download");
-          this.#smartTabGroupingManager.terminateProcess();
-          this.suggestionState = this.createMode
-            ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
-            : MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL;
-          this.#setFormToDisabled(false);
-          this.#suggestionsOptinContainer.hidden = true;
-        }
-      );
-
-      // On Message link click
-      this.#suggestionsOptin.addEventListener(
-        "MlModelOptinMessageLinkClick",
-        () => {
-          this.#handleMLOptinTelemetry("step0-optin-link-click");
-          openTrustedLinkIn(
-            "https://support.mozilla.org/kb/how-use-ai-enhanced-tab-groups",
-            "tab"
-          );
-        }
-      );
-
-      // On Footer link click
-      this.#suggestionsOptin.addEventListener(
-        "MlModelOptinFooterLinkClick",
-        () => {
-          openTrustedLinkIn("about:preferences", "tab");
-        }
-      );
-
-      this.#suggestionsOptinContainer.hidden = false;
-      this.#suggestionsOptinContainer.appendChild(this.#suggestionsOptin);
-    }
-
-    #initSuggestions() {
-      if (!this.smartTabGroupsEnabled || this.#smartTabGroupsInitiated) {
-        return;
       }
-      const { SmartTabGroupingManager } = ChromeUtils.importESModule(
-        "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs"
-      );
-      this.#smartTabGroupingManager = new SmartTabGroupingManager();
+    );
 
-      // Init Suggestion Button
-      this.#suggestionButton = this.querySelector(
-        "#tab-group-suggestion-button"
-      );
-      this.#suggestionButton.iconSrc = this.smartTabGroupsEnabled
-        ? MozTabbrowserTabGroupMenu.AI_ICON
-        : "";
-
-      // If user has not opted in, show the optin flow
-      this.#suggestionButton.addEventListener("click", () => {
-        !this.smartTabGroupsOptin
-          ? this.#initSmartTabGroupsOptin()
-          : this.#handleSmartSuggest();
-      });
-
-      // Init Suggestions UI
-      this.#suggestionsHeading = this.querySelector(
-        "#tab-group-editor-title-suggest"
-      );
-      this.#suggestionsContainer = this.querySelector(
-        "#tab-group-suggestions-container"
-      );
-      this.#suggestions = this.querySelector("#tab-group-suggestions");
-      this.#selectSuggestionsCheckbox = this.querySelector(
-        "#tab-group-select-checkbox"
-      );
-      this.#selectSuggestionsCheckbox.addEventListener("change", e => {
-        if (e.target.checked) {
-          this.#handleSelectAll();
-        } else {
-          this.#handleDeselectAll();
-        }
-      });
-      this.#suggestionsMessageContainer = this.querySelector(
-        "#tab-group-suggestions-message-container"
-      );
-      this.#suggestionsMessage = this.querySelector(
-        "#tab-group-suggestions-message"
-      );
-      this.#suggestionsMessage.iconSrc = this.smartTabGroupsEnabled
-        ? MozTabbrowserTabGroupMenu.AI_ICON
-        : "";
-      this.#createSuggestionsButton = this.querySelector(
-        "#tab-group-create-suggestions-button"
-      );
-      this.#createSuggestionsButton.addEventListener("click", () => {
-        this.#handleMlTelemetry("save");
-        this.activeGroup.addTabs(this.#selectedSuggestedTabs);
-        this.close(true);
-      });
-      this.#cancelSuggestionsButton = this.querySelector(
-        "#tab-group-cancel-suggestions-button"
-      );
-      this.#cancelSuggestionsButton.addEventListener("click", () => {
-        this.#handleMlTelemetry("cancel");
-        this.#suggestionsRunToken = null;
-        this.close();
-      });
-      this.#suggestionsSeparator = this.querySelector(
-        "#tab-group-suggestions-separator"
-      );
-      this.#suggestionsOptinContainer = this.querySelector(
-        "#tab-group-suggestions-optin-container"
-      );
-
-      // Init Loading UI
-      this.#suggestionsLoading = this.querySelector(
-        "#tab-group-suggestions-loading"
-      );
-      this.#suggestionsLoadActions = this.querySelector(
-        "#tab-group-suggestions-load-actions"
-      );
-      this.#suggestionsLoadCancel = this.querySelector(
-        "#tab-group-suggestions-load-cancel"
-      );
-      this.#suggestionsLoadCancel.addEventListener("click", () => {
-        this.#suggestionsRunToken = null;
-        this.#handleLoadSuggestionsCancel();
-      });
-      this.#smartTabGroupsInitiated = true;
-    }
-
-    #populateSwatches() {
-      this.#clearSwatches();
-      for (let colorCode of MozTabbrowserTabGroupMenu.COLORS) {
-        let input = document.createElement("input");
-        input.id = `tab-group-editor-swatch-${colorCode}`;
-        input.type = "radio";
-        input.name = "tab-group-color";
-        input.value = colorCode;
-        let label = document.createElement("label");
-        label.classList.add("tab-group-editor-swatch");
-        label.setAttribute(
-          "data-l10n-id",
-          MozTabbrowserTabGroupMenu.MESSAGE_IDS[colorCode]
+    // On Message link click
+    this.#suggestionsOptin.addEventListener(
+      "MlModelOptinMessageLinkClick",
+      () => {
+        this.#handleMLOptinTelemetry("step0-optin-link-click");
+        openTrustedLinkIn(
+          "https://support.mozilla.org/kb/how-use-ai-enhanced-tab-groups",
+          "tab"
         );
-        label.htmlFor = input.id;
-        label.style.setProperty(
-          "--tabgroup-swatch-color",
-          `var(--tab-group-${colorCode})`
-        );
-        label.style.setProperty(
-          "--tabgroup-swatch-color-invert",
-          `var(--tab-group-${colorCode}-invert)`
-        );
-        this.#swatchesContainer.append(input, label);
-        this.#swatches.push(input);
       }
-    }
+    );
 
-    #clearSwatches() {
-      this.#swatchesContainer.innerHTML = "";
-      this.#swatches = [];
-    }
-
-    get createMode() {
-      return this.#createMode;
-    }
-
-    set createMode(enableCreateMode) {
-      this.#panel.classList.toggle(
-        "tab-group-editor-mode-create",
-        enableCreateMode
-      );
-      this.#panel.setAttribute(
-        "aria-labelledby",
-        enableCreateMode
-          ? "tab-group-editor-title-create"
-          : "tab-group-editor-title-edit"
-      );
-      this.#commandButtons.copyAllLinks.hidden = enableCreateMode;
-      this.#createMode = enableCreateMode;
-    }
-
-    get activeGroup() {
-      return this.#activeGroup;
-    }
-
-    set activeGroup(group) {
-      this.#activeGroup = group;
-      this.#nameField.value = group ? group.label : "";
-      this.#swatches.forEach(node => {
-        if (group && node.value == group.color) {
-          node.checked = true;
-        } else {
-          node.checked = false;
-        }
-      });
-    }
-
-    get nextUnusedColor() {
-      let usedColors = [];
-      gBrowser.getAllTabGroups().forEach(group => {
-        usedColors.push(group.color);
-      });
-      let color = MozTabbrowserTabGroupMenu.COLORS.find(
-        colorCode => !usedColors.includes(colorCode)
-      );
-      if (!color) {
-        // if all colors are used, pick one randomly
-        let randomIndex = Math.floor(
-          Math.random() * MozTabbrowserTabGroupMenu.COLORS.length
-        );
-        color = MozTabbrowserTabGroupMenu.COLORS[randomIndex];
+    // On Footer link click
+    this.#suggestionsOptin.addEventListener(
+      "MlModelOptinFooterLinkClick",
+      () => {
+        openTrustedLinkIn("about:preferences", "tab");
       }
-      return color;
+    );
+
+    this.#suggestionsOptinContainer.hidden = false;
+    this.#suggestionsOptinContainer.appendChild(this.#suggestionsOptin);
+  }
+
+  #initSuggestions() {
+    if (!this.smartTabGroupsEnabled || this.#smartTabGroupsInitiated) {
+      return;
     }
+    const { SmartTabGroupingManager } = ChromeUtils.importESModule(
+      "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs"
+    );
+    this.#smartTabGroupingManager = new SmartTabGroupingManager();
 
-    get panel() {
-      return /** @type {XULPopupElement} */ (this.children[0]);
-    }
+    // Init Suggestion Button
+    this.#suggestionButton = this.querySelector("#tab-group-suggestion-button");
+    this.#suggestionButton.iconSrc = this.smartTabGroupsEnabled
+      ? MozTabbrowserTabGroupMenu.AI_ICON
+      : "";
 
-    get #panelPosition() {
-      if (gBrowser.tabContainer.verticalMode) {
-        return SidebarController._positionStart
-          ? "topleft topright"
-          : "topright topleft";
-      }
-      return "bottomleft topleft";
-    }
+    // If user has not opted in, show the optin flow
+    this.#suggestionButton.addEventListener("click", () => {
+      !this.smartTabGroupsOptin
+        ? this.#initSmartTabGroupsOptin()
+        : this.#handleSmartSuggest();
+    });
 
-    /**
-     * Sets the suggested title for the group
-     */
-    async #initMlGroupLabel() {
-      if (!this.smartTabGroupsEnabled || !this.activeGroup.tabs?.length) {
-        return;
-      }
-
-      const tabs = this.activeGroup.tabs;
-      const otherTabs = gBrowser.visibleTabs.filter(
-        t => !tabs.includes(t) && !t.pinned
-      );
-      let predictedLabel =
-        await this.#smartTabGroupingManager.getPredictedLabelForGroup(
-          tabs,
-          otherTabs
-        );
-      this.#setMlGroupLabel(predictedLabel);
-    }
-
-    /**
-     * Check if the label should be updated with the suggested label
-     *
-     * @returns {boolean}
-     */
-    #shouldUpdateLabelWithMlLabel() {
-      return !this.#nameField.value && this.panel.state !== "closed";
-    }
-
-    /**
-     * Attempt to set the label of the group to the suggested label
-     *
-     * @param {string} newLabel
-     * @returns
-     */
-    #setMlGroupLabel(newLabel) {
-      if (!this.#shouldUpdateLabelWithMlLabel()) {
-        return;
-      }
-      this.#activeGroup.label = newLabel;
-      this.#nameField.value = newLabel;
-      this.#nameField.select();
-      this.#suggestedMlLabel = newLabel;
-    }
-
-    openCreateModal(group) {
-      this.activeGroup = group;
-      this.createMode = true;
-      this.suggestionState = this.smartTabGroupsEnabled
-        ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
-        : MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL;
-
-      this.#maybeUpdateLayoutForNova();
-
-      this.#panel.openPopup(group.firstChild, {
-        position: this.#panelPosition,
-      });
-      if (!this.smartTabGroupsOptin) {
-        return;
-      }
-      // If user has opted in kick off label generation
-      this.#initMlGroupLabel();
-      if (this.smartTabGroupsEnabled) {
-        // initialize the embedding engine in the background
-        this.#smartTabGroupingManager.initEmbeddingEngine();
-      }
-    }
-
-    /*
-     * Set the ml generated label - used for testing
-     */
-    set mlLabel(label) {
-      this.#suggestedMlLabel = label;
-    }
-
-    get mlLabel() {
-      return this.#suggestedMlLabel;
-    }
-
-    /*
-     * Set if the ml suggest tab flow was done
-     */
-    set hasSuggestedMlTabs(suggested) {
-      this.#hasSuggestedMlTabs = suggested;
-    }
-
-    get hasSuggestedMlTabs() {
-      return this.#hasSuggestedMlTabs;
-    }
-
-    openEditModal(group) {
-      this.activeGroup = group;
-      this.createMode = false;
-      this.suggestionState = this.smartTabGroupsEnabled
-        ? MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL
-        : MozTabbrowserTabGroupMenu.State.EDIT_STANDARD_INITIAL;
-
-      this.#maybeUpdateLayoutForNova();
-
-      this.#panel.openPopup(group.firstChild, {
-        position: this.#panelPosition,
-      });
-      /** @type {MozToolbarbutton} */ (
-        document.getElementById("tabGroupEditor_moveGroupToNewWindow")
-      ).disabled = gBrowser.openTabs.length == this.activeGroup?.tabs.length;
-      let linkCount = this.#getGroupLinks(this.activeGroup).length;
-      document.l10n.setAttributes(
-        this.#commandButtons.copyAllLinks,
-        "tab-group-editor-action-copy-links",
-        { linkCount }
-      );
-      this.#commandButtons.copyAllLinks.disabled = !linkCount;
-      this.#maybeDisableOrHideSaveButton();
-    }
-
-    #maybeUpdateLayoutForNova() {
-      const isNovaEnabled = Services.prefs.getBoolPref(
-        "browser.nova.enabled",
-        false
-      );
-      if (isNovaEnabled) {
-        this.#nameContainer.before(this.#swatchesContainer);
+    // Init Suggestions UI
+    this.#suggestionsHeading = this.querySelector(
+      "#tab-group-editor-title-suggest"
+    );
+    this.#suggestionsContainer = this.querySelector(
+      "#tab-group-suggestions-container"
+    );
+    this.#suggestions = this.querySelector("#tab-group-suggestions");
+    this.#selectSuggestionsCheckbox = this.querySelector(
+      "#tab-group-select-checkbox"
+    );
+    this.#selectSuggestionsCheckbox.addEventListener("change", e => {
+      if (e.target.checked) {
+        this.#handleSelectAll();
       } else {
-        this.#tabGroupPropertiesActions.prepend(this.#swatchesContainer);
+        this.#handleDeselectAll();
       }
-    }
-
-    #maybeDisableOrHideSaveButton() {
-      const saveAndCloseGroup = /** @type {MozToolbarbutton} */ (
-        document.getElementById("tabGroupEditor_saveAndCloseGroup")
-      );
-      if (PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal)) {
-        saveAndCloseGroup.hidden = true;
-        return;
-      }
-
-      let flushes = [];
-      this.activeGroup.tabs.forEach(tab => {
-        flushes.push(TabStateFlusher.flush(tab.linkedBrowser));
-      });
-      Promise.allSettled(flushes).then(() => {
-        // `this.activeGroup` could be no longer available if the menu was closed
-        // since starting the tab state flushes.
-        if (this.activeGroup?.tabs) {
-          saveAndCloseGroup.disabled = !SessionStore.shouldSaveTabsToGroup(
-            this.activeGroup.tabs
-          );
-        }
-      });
-    }
-
-    close(keepNewlyCreatedGroup = true) {
-      if (this.createMode) {
-        this.#keepNewlyCreatedGroup = keepNewlyCreatedGroup;
-      }
-      this.#panel.hidePopup();
-    }
-
-    on_popupshown() {
-      if (this.createMode) {
-        this.#keepNewlyCreatedGroup = true;
-      }
-      this.#initialTabGroupName = this.activeGroup?.label;
-      this.#nameField.focus();
-
-      for (const button of Object.values(this.#commandButtons)) {
-        button.tooltipText = button.label;
-      }
-
-      this.#commandButtons.shareTabGroup.hidden =
-        !lazy.ContentSharingUtils.isEnabled;
-      this.#commandButtons.createAITab.hidden =
-        !lazy.AIWindowMenu.canShowAITabMenu(
-          window,
-          this.activeGroup?.tabs.map(tab => tab.linkedBrowser.currentURI) ?? []
-        );
-    }
-
-    on_popuphidden() {
-      if (this.createMode) {
-        if (this.#keepNewlyCreatedGroup) {
-          this.dispatchEvent(
-            new CustomEvent("TabGroupCreateDone", { bubbles: true })
-          );
-          if (
-            this.smartTabGroupsEnabled &&
-            this.smartTabGroupsOptin &&
-            (this.#suggestedMlLabel !== null || this.#hasSuggestedMlTabs)
-          ) {
-            this.#handleMlTelemetry("save-popup-hidden");
-          }
-        } else {
-          this.activeGroup.ungroupTabs(
-            TabMetrics.userTriggeredContext(
-              TabMetrics.METRIC_SOURCE.CANCEL_TAB_GROUP_CREATION
-            )
-          );
-        }
-      }
-      if (this.#nameField.disabled) {
-        this.#setFormToDisabled(false);
-      }
-      if (this.activeGroup?.label != this.#initialTabGroupName) {
-        Glean.tabgroup.groupInteractions.rename.add(1);
-      }
-      this.activeGroup = null;
-      this.#smartTabGroupingManager?.terminateProcess();
-    }
-
-    on_keypress(event) {
-      if (event.defaultPrevented) {
-        // The event has already been consumed inside of the panel.
-        return;
-      }
-
-      switch (event.keyCode) {
-        case KeyEvent.DOM_VK_ESCAPE:
-          this.close(false);
-          break;
-        case KeyEvent.DOM_VK_RETURN:
-          // When focus is on a button, we need to let that handle the Enter key,
-          // which should ultimately close the panel as well.
-          if (
-            event.target.localName != "toolbarbutton" &&
-            event.target.localName != "moz-button"
-          ) {
-            this.close();
-          }
-          break;
-      }
-    }
-
-    /**
-     * change handler for color input
-     */
-    on_change(aEvent) {
-      if (aEvent.target.name != "tab-group-color") {
-        return;
-      }
-      if (this.activeGroup) {
-        this.activeGroup.color = aEvent.target.value;
-        Glean.tabgroup.groupInteractions.change_color.add(1);
-      }
-    }
-
-    async #handleNewTabInGroup() {
-      let lastTab = this.activeGroup?.tabs.at(-1);
-      let onTabOpened = async aEvent => {
-        this.activeGroup?.addTabs([aEvent.target]);
-        this.close();
-        window.removeEventListener("TabOpen", onTabOpened);
-      };
-      window.addEventListener("TabOpen", onTabOpened);
-      // The tab group menu can be invoked on a window that isn't the OS-level
-      // frontmost window (most reproducibly on macOS in a multi-monitor
-      // setup). Raise the window so the new tab's focusUrlBar request can
-      // actually land OS keyboard focus on the address bar. Bug 2039674
-      // tracks routing this through URILoadingHelper instead.
-      window.focus();
-      gBrowser.addAdjacentNewTab(lastTab);
-    }
-
-    /**
-     * @param {MozTabbrowserTabGroup} group
-     * @returns {Array<{url: string, title: string}>}
-     */
-    #getGroupLinks(group) {
-      let links = [];
-      for (let tab of group.tabs) {
-        let browser = tab.linkedBrowser;
-        let shareableURL = BrowserUtils.getShareableURL(browser.currentURI);
-        if (shareableURL) {
-          links.push({
-            url: gURLBar.makeURIReadable(shareableURL).displaySpec,
-            title: browser.contentTitle,
-          });
-        }
-      }
-      return links;
-    }
-
-    /**
-     * @param {number} newState - See MozTabbrowserTabGroupMenu.State
-     */
-    set suggestionState(newState) {
-      if (this.#suggestionState === newState) {
-        return;
-      }
-      this.#suggestionState = newState;
-      this.#renderSuggestionState();
-    }
-
-    #handleLoadSuggestionsCancel() {
+    });
+    this.#suggestionsMessageContainer = this.querySelector(
+      "#tab-group-suggestions-message-container"
+    );
+    this.#suggestionsMessage = this.querySelector(
+      "#tab-group-suggestions-message"
+    );
+    this.#suggestionsMessage.iconSrc = this.smartTabGroupsEnabled
+      ? MozTabbrowserTabGroupMenu.AI_ICON
+      : "";
+    this.#createSuggestionsButton = this.querySelector(
+      "#tab-group-create-suggestions-button"
+    );
+    this.#createSuggestionsButton.addEventListener("click", () => {
+      this.#handleMlTelemetry("save");
+      this.activeGroup.addTabs(this.#selectedSuggestedTabs);
+      this.close(true);
+    });
+    this.#cancelSuggestionsButton = this.querySelector(
+      "#tab-group-cancel-suggestions-button"
+    );
+    this.#cancelSuggestionsButton.addEventListener("click", () => {
+      this.#handleMlTelemetry("cancel");
       this.#suggestionsRunToken = null;
+      this.close();
+    });
+    this.#suggestionsSeparator = this.querySelector(
+      "#tab-group-suggestions-separator"
+    );
+    this.#suggestionsOptinContainer = this.querySelector(
+      "#tab-group-suggestions-optin-container"
+    );
 
-      this.suggestionState = this.createMode
-        ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
-        : MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL;
-    }
+    // Init Loading UI
+    this.#suggestionsLoading = this.querySelector(
+      "#tab-group-suggestions-loading"
+    );
+    this.#suggestionsLoadActions = this.querySelector(
+      "#tab-group-suggestions-load-actions"
+    );
+    this.#suggestionsLoadCancel = this.querySelector(
+      "#tab-group-suggestions-load-cancel"
+    );
+    this.#suggestionsLoadCancel.addEventListener("click", () => {
+      this.#suggestionsRunToken = null;
+      this.#handleLoadSuggestionsCancel();
+    });
+    this.#smartTabGroupsInitiated = true;
+  }
 
-    #handleSelectAll() {
-      document
-        .querySelectorAll(".tab-group-suggestion-checkbox")
-        .forEach(checkbox => {
-          checkbox.checked = true;
-        });
-      // Reset selected tabs to all suggested tabs
-      this.#selectedSuggestedTabs = this.#suggestedTabs;
-    }
-
-    #handleDeselectAll() {
-      document
-        .querySelectorAll(".tab-group-suggestion-checkbox")
-        .forEach(checkbox => {
-          checkbox.checked = false;
-        });
-      this.#selectedSuggestedTabs = [];
-    }
-
-    /**
-     * Set the state of the form to disabled or enabled
-     *
-     * @param {boolean} state
-     */
-    #setFormToDisabled(state) {
-      const toolbarButtons =
-        this.#tabGroupMain.querySelectorAll("toolbarbutton");
-
-      toolbarButtons.forEach(button => {
-        button.disabled = state;
-      });
-
-      this.#nameField.disabled = state;
-
-      const swatches = this.#swatchesContainer.querySelectorAll("input");
-      swatches.forEach(input => {
-        input.disabled = state;
-      });
-    }
-
-    async #handleFirstDownloadAndSuggest() {
-      this.#setFormToDisabled(true);
-      this.#suggestionsOptin.headingL10nId =
-        "tab-group-suggestions-optin-title-download";
-      this.#suggestionsOptin.messageL10nId =
-        "tab-group-suggestions-optin-message-download";
-      this.#suggestionsOptin.headingIcon = "";
-      this.#suggestionsOptin.isLoading = true;
-
-      // Init progress with value to show determiniate progress
-      this.#suggestionsOptin.progressStatus = 0;
-      const runToken = Date.now();
-      this.#suggestionsRunToken = runToken;
-      await this.#smartTabGroupingManager.preloadAllModels(prog => {
-        this.#suggestionsOptin.progressStatus = prog.percentage;
-      });
-      // Clean up optin UI
-      this.#setFormToDisabled(false);
-      this.#suggestionsOptin.isHidden = true;
-      this.#suggestionsOptin.isLoading = false;
-
-      if (runToken !== this.#suggestionsRunToken) {
-        // User has canceled
-        return;
-      }
-
-      // Continue on with the suggest flow
-      this.#handleMLOptinTelemetry("step3-optin-completed");
-      this.#initMlGroupLabel();
-      this.#handleSmartSuggest();
-    }
-
-    async #handleSmartSuggest() {
-      // Loading
-      const runToken = Date.now();
-      this.#suggestionsRunToken = runToken;
-
-      this.suggestionState = MozTabbrowserTabGroupMenu.State.LOADING;
-      const tabs = await this.#smartTabGroupingManager.smartTabGroupingForGroup(
-        this.activeGroup,
-        gBrowser.tabs
+  #populateSwatches() {
+    this.#clearSwatches();
+    for (let colorCode of MozTabbrowserTabGroupMenu.COLORS) {
+      let input = document.createElement("input");
+      input.id = `tab-group-editor-swatch-${colorCode}`;
+      input.type = "radio";
+      input.name = "tab-group-color";
+      input.value = colorCode;
+      let label = document.createElement("label");
+      label.classList.add("tab-group-editor-swatch");
+      label.setAttribute(
+        "data-l10n-id",
+        MozTabbrowserTabGroupMenu.MESSAGE_IDS[colorCode]
       );
-      if (this.#suggestionsRunToken != runToken) {
-        // User has canceled
-        return;
-      }
-      if (!tabs.length) {
-        // No un-grouped tabs found
-        this.suggestionState = this.#createMode
-          ? MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_NO_SUGGESTIONS
-          : MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_NO_SUGGESTIONS;
-
-        // there's no "save" button from the edit ai interaction with
-        // no tab suggestions, so we need to capture here
-        if (!this.#createMode) {
-          this.#hasSuggestedMlTabs = true;
-          this.#handleMlTelemetry("save");
-        }
-        return;
-      }
-
-      this.#selectedSuggestedTabs = tabs;
-      this.#suggestedTabs = tabs;
-      tabs.forEach(tab => {
-        this.#createRow(tab);
-      });
-
-      this.suggestionState = this.#createMode
-        ? MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_SUGGESTIONS
-        : MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_SUGGESTIONS;
-
-      this.#hasSuggestedMlTabs = true;
-    }
-
-    /**
-     * Sends Glean metrics if smart tab grouping is enabled
-     *
-     * @param {string} action "save", "save-popup-hidden" or "cancel"
-     */
-    #handleMlTelemetry(action) {
-      if (!this.smartTabGroupsEnabled || !this.smartTabGroupsOptin) {
-        return;
-      }
-      if (this.#suggestedMlLabel !== null) {
-        this.#smartTabGroupingManager.handleLabelTelemetry({
-          action,
-          numTabsInGroup: this.#activeGroup.tabs.length,
-          mlLabel: this.#suggestedMlLabel,
-          userLabel: this.#nameField.value,
-          id: this.#activeGroup.id,
-        });
-        this.#suggestedMlLabel = null;
-      }
-      if (this.#hasSuggestedMlTabs) {
-        this.#smartTabGroupingManager.handleSuggestTelemetry({
-          action,
-          numTabsInWindow: gBrowser.tabs.length,
-          numTabsInGroup: this.#activeGroup.tabs.length,
-          numTabsSuggested: this.#suggestedTabs.length,
-          numTabsApproved: this.#selectedSuggestedTabs.length,
-          numTabsRemoved:
-            this.#suggestedTabs.length - this.#selectedSuggestedTabs.length,
-          id: this.#activeGroup.id,
-        });
-        this.#hasSuggestedMlTabs = false;
-      }
-    }
-
-    /**
-     * Sends Glean metrics for opt-in UI flow
-     *
-     * @param {string} step contains step number and description of flow
-     */
-    #handleMLOptinTelemetry(step) {
-      Glean.tabgroup.smartTabOptin.record({
-        step,
-      });
-    }
-
-    #createRow(tab) {
-      // Create Checkbox
-      let checkbox = /** @type {MozCheckbox} */ (
-        document.createElement("moz-checkbox")
+      label.htmlFor = input.id;
+      label.style.setProperty(
+        "--tabgroup-swatch-color",
+        `var(--tab-group-${colorCode})`
       );
-      checkbox.label = tab.label;
-      checkbox.iconSrc = tab.image;
-      checkbox.checked = true;
-      checkbox.classList.add(
-        "tab-group-suggestion-checkbox",
-        "text-truncated-ellipsis"
+      label.style.setProperty(
+        "--tabgroup-swatch-color-invert",
+        `var(--tab-group-${colorCode}-invert)`
       );
-      checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          this.#selectedSuggestedTabs.push(tab);
-        } else {
-          this.#selectedSuggestedTabs = this.#selectedSuggestedTabs.filter(
-            t => t != tab
-          );
-        }
-      });
-
-      // Apply Row to Suggestions
-      this.#suggestions.appendChild(checkbox);
-    }
-
-    /**
-     * Element visibility utility function.
-     * Toggles the `hidden` attribute of a DOM element.
-     *
-     * @param {HTMLElement|XULElement} element - The DOM element to show/hide.
-     * @param {boolean} shouldShow - Whether the element should be shown (true) or hidden (false).
-     */
-    #setElementVisibility(element, shouldShow) {
-      if (!element) {
-        return;
-      }
-      element.hidden = !shouldShow;
-    }
-
-    #showDefaultTabGroupActions(value) {
-      this.#setElementVisibility(this.#defaultActions, value);
-    }
-
-    #showSmartSuggestionsContainer(value) {
-      this.#setElementVisibility(this.#suggestionsContainer, value);
-    }
-
-    #showSuggestionButton(value) {
-      this.#setElementVisibility(this.#suggestionButton, value);
-    }
-
-    #showSuggestionMessageContainer(value) {
-      this.#setElementVisibility(this.#suggestionsMessageContainer, value);
-    }
-
-    #showSuggestionsSeparator(value) {
-      this.#setElementVisibility(this.#suggestionsSeparator, value);
-    }
-
-    #setLoadingState(value) {
-      this.#setElementVisibility(this.#suggestionsLoadActions, value);
-      this.#setElementVisibility(this.#suggestionsLoading, value);
-    }
-
-    #setSuggestionsButtonCreateModeState(value) {
-      const translationString = value
-        ? "tab-group-editor-smart-suggest-button-create"
-        : "tab-group-editor-smart-suggest-button-edit";
-
-      this.#suggestionButton.setAttribute("data-l10n-id", translationString);
-    }
-
-    /**
-     * Unique state setter for a "3rd" panel state while in suggest Mode
-     * that just shows suggestions and hides the majority of the panel
-     *
-     * @param {boolean} value
-     */
-    #setSuggestModeSuggestionState(value) {
-      this.#setElementVisibility(this.#tabGroupPropertiesActions, !value);
-      this.#setElementVisibility(this.#createTabGroupHeading, !value);
-      this.#setElementVisibility(this.#editTabGroupHeading, !value);
-      this.#setElementVisibility(this.#suggestionsHeading, value);
-      this.#panel.classList.toggle("tab-group-editor-panel-expanded", value);
-    }
-
-    #resetCommonUI() {
-      this.#setLoadingState(false);
-      this.#setSuggestModeSuggestionState(false);
-      this.#suggestedTabs = [];
-      this.#selectedSuggestedTabs = [];
-      if (this.#suggestions) {
-        this.#suggestions.replaceChildren();
-      }
-      if (this.#selectSuggestionsCheckbox) {
-        this.#selectSuggestionsCheckbox.checkbox = true;
-      }
-      this.#showSmartSuggestionsContainer(false);
-      if (this.#suggestionsOptinContainer) {
-        this.#suggestionsOptinContainer.replaceChildren();
-        this.#suggestionsOptinContainer.hidden = true;
-      }
-    }
-
-    #renderSuggestionState() {
-      switch (this.#suggestionState) {
-        // CREATE STANDARD INITIAL
-        case MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL:
-          this.#resetCommonUI();
-          this.#showDefaultTabGroupActions(true);
-          this.#showSuggestionButton(false);
-          this.#showSuggestionMessageContainer(false);
-          this.#showSuggestionsSeparator(false);
-          break;
-
-        //CREATE AI INITIAL
-        case MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL:
-          this.#resetCommonUI();
-          this.#showSuggestionButton(true);
-          this.#showDefaultTabGroupActions(true);
-          this.#showSuggestionMessageContainer(false);
-          this.#setSuggestionsButtonCreateModeState(true);
-          this.#showSuggestionsSeparator(true);
-          break;
-
-        // CREATE AI INITIAL SUGGESTIONS DISABLED
-        case MozTabbrowserTabGroupMenu.State
-          .CREATE_AI_INITIAL_SUGGESTIONS_DISABLED:
-          this.#resetCommonUI();
-          this.#showSuggestionButton(false);
-          this.#showSuggestionMessageContainer(true);
-          this.#showDefaultTabGroupActions(true);
-          this.#showSuggestionsSeparator(true);
-          break;
-
-        // CREATE AI WITH SUGGESTIONS
-        case MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_SUGGESTIONS:
-          this.#setLoadingState(false);
-          this.#showSmartSuggestionsContainer(true);
-          this.#showSuggestionButton(false);
-          this.#showSuggestionsSeparator(true);
-          this.#showDefaultTabGroupActions(false);
-          this.#setSuggestModeSuggestionState(true);
-          break;
-
-        // CREATE AI WITH NO SUGGESTIONS
-        case MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_NO_SUGGESTIONS:
-          this.#setLoadingState(false);
-          this.#showSuggestionMessageContainer(true);
-          this.#showDefaultTabGroupActions(true);
-          this.#showSuggestionButton(false);
-          this.#showSuggestionsSeparator(true);
-          break;
-
-        // EDIT STANDARD INITIAL
-        case MozTabbrowserTabGroupMenu.State.EDIT_STANDARD_INITIAL:
-          this.#resetCommonUI();
-          this.#showSuggestionButton(false);
-          this.#showSuggestionMessageContainer(false);
-          this.#showDefaultTabGroupActions(false);
-          this.#showSuggestionsSeparator(false);
-          break;
-
-        // EDIT AI INITIAL
-        case MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL:
-          this.#resetCommonUI();
-          this.#showSuggestionMessageContainer(false);
-          this.#showSuggestionButton(true);
-          this.#showDefaultTabGroupActions(false);
-          this.#setSuggestionsButtonCreateModeState(false);
-          this.#showSuggestionsSeparator(true);
-          break;
-
-        // EDIT AI INITIAL SUGGESTIONS DISABLED
-        case MozTabbrowserTabGroupMenu.State
-          .EDIT_AI_INITIAL_SUGGESTIONS_DISABLED:
-          this.#resetCommonUI();
-          this.#showSuggestionMessageContainer(true);
-          this.#showSuggestionButton(false);
-          this.#showDefaultTabGroupActions(false);
-          this.#showSuggestionsSeparator(true);
-          break;
-
-        // EDIT AI WITH SUGGESTIONS
-        case MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_SUGGESTIONS:
-          this.#setLoadingState(false);
-          this.#showSmartSuggestionsContainer(true);
-          this.#setSuggestModeSuggestionState(true);
-          this.#showSuggestionsSeparator(false);
-          break;
-
-        // EDIT AI WITH NO SUGGESTIONS
-        case MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_NO_SUGGESTIONS:
-          this.#setLoadingState(false);
-          this.#showSuggestionMessageContainer(true);
-          this.#showSuggestionsSeparator(true);
-          break;
-
-        // LOADING
-        case MozTabbrowserTabGroupMenu.State.LOADING:
-          this.#showDefaultTabGroupActions(false);
-          this.#showSuggestionButton(false);
-          this.#showSuggestionMessageContainer(false);
-          this.#setLoadingState(true);
-          this.#showSuggestionsSeparator(true);
-          this.#showDefaultTabGroupActions(false);
-          break;
-
-        // ERROR
-        case MozTabbrowserTabGroupMenu.State.ERROR:
-          //TODO
-          break;
-
-        case MozTabbrowserTabGroupMenu.State.OPTIN:
-          this.#showSuggestionButton(false);
-          this.#showDefaultTabGroupActions(false);
-          break;
-      }
+      this.#swatchesContainer.append(input, label);
+      this.#swatches.push(input);
     }
   }
 
-  customElements.define("tabgroup-menu", MozTabbrowserTabGroupMenu);
+  #clearSwatches() {
+    this.#swatchesContainer.innerHTML = "";
+    this.#swatches = [];
+  }
+
+  get createMode() {
+    return this.#createMode;
+  }
+
+  set createMode(enableCreateMode) {
+    this.#panel.classList.toggle(
+      "tab-group-editor-mode-create",
+      enableCreateMode
+    );
+    this.#panel.setAttribute(
+      "aria-labelledby",
+      enableCreateMode
+        ? "tab-group-editor-title-create"
+        : "tab-group-editor-title-edit"
+    );
+    this.#commandButtons.copyAllLinks.hidden = enableCreateMode;
+    this.#createMode = enableCreateMode;
+  }
+
+  get activeGroup() {
+    return this.#activeGroup;
+  }
+
+  set activeGroup(group) {
+    this.#activeGroup = group;
+    this.#nameField.value = group ? group.label : "";
+    this.#swatches.forEach(node => {
+      if (group && node.value == group.color) {
+        node.checked = true;
+      } else {
+        node.checked = false;
+      }
+    });
+  }
+
+  get nextUnusedColor() {
+    let usedColors = [];
+    gBrowser.getAllTabGroups().forEach(group => {
+      usedColors.push(group.color);
+    });
+    let color = MozTabbrowserTabGroupMenu.COLORS.find(
+      colorCode => !usedColors.includes(colorCode)
+    );
+    if (!color) {
+      // if all colors are used, pick one randomly
+      let randomIndex = Math.floor(
+        Math.random() * MozTabbrowserTabGroupMenu.COLORS.length
+      );
+      color = MozTabbrowserTabGroupMenu.COLORS[randomIndex];
+    }
+    return color;
+  }
+
+  get panel() {
+    return /** @type {XULPopupElement} */ (this.children[0]);
+  }
+
+  get #panelPosition() {
+    if (gBrowser.tabContainer.verticalMode) {
+      return SidebarController._positionStart
+        ? "topleft topright"
+        : "topright topleft";
+    }
+    return "bottomleft topleft";
+  }
+
+  /**
+   * Sets the suggested title for the group
+   */
+  async #initMlGroupLabel() {
+    if (!this.smartTabGroupsEnabled || !this.activeGroup.tabs?.length) {
+      return;
+    }
+
+    const tabs = this.activeGroup.tabs;
+    const otherTabs = gBrowser.visibleTabs.filter(
+      t => !tabs.includes(t) && !t.pinned
+    );
+    let predictedLabel =
+      await this.#smartTabGroupingManager.getPredictedLabelForGroup(
+        tabs,
+        otherTabs
+      );
+    this.#setMlGroupLabel(predictedLabel);
+  }
+
+  /**
+   * Check if the label should be updated with the suggested label
+   *
+   * @returns {boolean}
+   */
+  #shouldUpdateLabelWithMlLabel() {
+    return !this.#nameField.value && this.panel.state !== "closed";
+  }
+
+  /**
+   * Attempt to set the label of the group to the suggested label
+   *
+   * @param {string} newLabel
+   * @returns
+   */
+  #setMlGroupLabel(newLabel) {
+    if (!this.#shouldUpdateLabelWithMlLabel()) {
+      return;
+    }
+    this.#activeGroup.label = newLabel;
+    this.#nameField.value = newLabel;
+    this.#nameField.select();
+    this.#suggestedMlLabel = newLabel;
+  }
+
+  openCreateModal(group) {
+    this.activeGroup = group;
+    this.createMode = true;
+    this.suggestionState = this.smartTabGroupsEnabled
+      ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
+      : MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL;
+
+    this.#maybeUpdateLayoutForNova();
+
+    this.#panel.openPopup(group.firstChild, {
+      position: this.#panelPosition,
+    });
+    if (!this.smartTabGroupsOptin) {
+      return;
+    }
+    // If user has opted in kick off label generation
+    this.#initMlGroupLabel();
+    if (this.smartTabGroupsEnabled) {
+      // initialize the embedding engine in the background
+      this.#smartTabGroupingManager.initEmbeddingEngine();
+    }
+  }
+
+  /*
+   * Set the ml generated label - used for testing
+   */
+  set mlLabel(label) {
+    this.#suggestedMlLabel = label;
+  }
+
+  get mlLabel() {
+    return this.#suggestedMlLabel;
+  }
+
+  /*
+   * Set if the ml suggest tab flow was done
+   */
+  set hasSuggestedMlTabs(suggested) {
+    this.#hasSuggestedMlTabs = suggested;
+  }
+
+  get hasSuggestedMlTabs() {
+    return this.#hasSuggestedMlTabs;
+  }
+
+  openEditModal(group) {
+    this.activeGroup = group;
+    this.createMode = false;
+    this.suggestionState = this.smartTabGroupsEnabled
+      ? MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL
+      : MozTabbrowserTabGroupMenu.State.EDIT_STANDARD_INITIAL;
+
+    this.#maybeUpdateLayoutForNova();
+
+    this.#panel.openPopup(group.firstChild, {
+      position: this.#panelPosition,
+    });
+    /** @type {MozToolbarbutton} */ (
+      document.getElementById("tabGroupEditor_moveGroupToNewWindow")
+    ).disabled = gBrowser.openTabs.length == this.activeGroup?.tabs.length;
+    let linkCount = this.#getGroupLinks(this.activeGroup).length;
+    document.l10n.setAttributes(
+      this.#commandButtons.copyAllLinks,
+      "tab-group-editor-action-copy-links",
+      { linkCount }
+    );
+    this.#commandButtons.copyAllLinks.disabled = !linkCount;
+    this.#maybeDisableOrHideSaveButton();
+  }
+
+  #maybeUpdateLayoutForNova() {
+    const isNovaEnabled = Services.prefs.getBoolPref(
+      "browser.nova.enabled",
+      false
+    );
+    if (isNovaEnabled) {
+      this.#nameContainer.before(this.#swatchesContainer);
+    } else {
+      this.#tabGroupPropertiesActions.prepend(this.#swatchesContainer);
+    }
+  }
+
+  #maybeDisableOrHideSaveButton() {
+    const saveAndCloseGroup = /** @type {MozToolbarbutton} */ (
+      document.getElementById("tabGroupEditor_saveAndCloseGroup")
+    );
+    if (lazy.PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal)) {
+      saveAndCloseGroup.hidden = true;
+      return;
+    }
+
+    let flushes = [];
+    this.activeGroup.tabs.forEach(tab => {
+      flushes.push(TabStateFlusher.flush(tab.linkedBrowser));
+    });
+    Promise.allSettled(flushes).then(() => {
+      // `this.activeGroup` could be no longer available if the menu was closed
+      // since starting the tab state flushes.
+      if (this.activeGroup?.tabs) {
+        saveAndCloseGroup.disabled = !lazy.SessionStore.shouldSaveTabsToGroup(
+          this.activeGroup.tabs
+        );
+      }
+    });
+  }
+
+  close(keepNewlyCreatedGroup = true) {
+    if (this.createMode) {
+      this.#keepNewlyCreatedGroup = keepNewlyCreatedGroup;
+    }
+    this.#panel.hidePopup();
+  }
+
+  on_popupshown() {
+    if (this.createMode) {
+      this.#keepNewlyCreatedGroup = true;
+    }
+    this.#initialTabGroupName = this.activeGroup?.label;
+    this.#nameField.focus();
+
+    for (const button of Object.values(this.#commandButtons)) {
+      button.tooltipText = button.label;
+    }
+
+    this.#commandButtons.shareTabGroup.hidden =
+      !lazy.ContentSharingUtils.isEnabled;
+    this.#commandButtons.createAITab.hidden =
+      !lazy.AIWindowMenu.canShowAITabMenu(
+        window,
+        this.activeGroup?.tabs.map(tab => tab.linkedBrowser.currentURI) ?? []
+      );
+  }
+
+  on_popuphidden() {
+    if (this.createMode) {
+      if (this.#keepNewlyCreatedGroup) {
+        this.dispatchEvent(
+          new CustomEvent("TabGroupCreateDone", { bubbles: true })
+        );
+        if (
+          this.smartTabGroupsEnabled &&
+          this.smartTabGroupsOptin &&
+          (this.#suggestedMlLabel !== null || this.#hasSuggestedMlTabs)
+        ) {
+          this.#handleMlTelemetry("save-popup-hidden");
+        }
+      } else {
+        this.activeGroup.ungroupTabs(
+          TabMetrics.userTriggeredContext(
+            TabMetrics.METRIC_SOURCE.CANCEL_TAB_GROUP_CREATION
+          )
+        );
+      }
+    }
+    if (this.#nameField.disabled) {
+      this.#setFormToDisabled(false);
+    }
+    if (this.activeGroup?.label != this.#initialTabGroupName) {
+      Glean.tabgroup.groupInteractions.rename.add(1);
+    }
+    this.activeGroup = null;
+    this.#smartTabGroupingManager?.terminateProcess();
+  }
+
+  on_keypress(event) {
+    if (event.defaultPrevented) {
+      // The event has already been consumed inside of the panel.
+      return;
+    }
+
+    switch (event.keyCode) {
+      case KeyEvent.DOM_VK_ESCAPE:
+        this.close(false);
+        break;
+      case KeyEvent.DOM_VK_RETURN:
+        // When focus is on a button, we need to let that handle the Enter key,
+        // which should ultimately close the panel as well.
+        if (
+          event.target.localName != "toolbarbutton" &&
+          event.target.localName != "moz-button"
+        ) {
+          this.close();
+        }
+        break;
+    }
+  }
+
+  /**
+   * change handler for color input
+   */
+  on_change(aEvent) {
+    if (aEvent.target.name != "tab-group-color") {
+      return;
+    }
+    if (this.activeGroup) {
+      this.activeGroup.color = aEvent.target.value;
+      Glean.tabgroup.groupInteractions.change_color.add(1);
+    }
+  }
+
+  async #handleNewTabInGroup() {
+    let lastTab = this.activeGroup?.tabs.at(-1);
+    let onTabOpened = async aEvent => {
+      this.activeGroup?.addTabs([aEvent.target]);
+      this.close();
+      window.removeEventListener("TabOpen", onTabOpened);
+    };
+    window.addEventListener("TabOpen", onTabOpened);
+    // The tab group menu can be invoked on a window that isn't the OS-level
+    // frontmost window (most reproducibly on macOS in a multi-monitor
+    // setup). Raise the window so the new tab's focusUrlBar request can
+    // actually land OS keyboard focus on the address bar. Bug 2039674
+    // tracks routing this through URILoadingHelper instead.
+    window.focus();
+    gBrowser.addAdjacentNewTab(lastTab);
+  }
+
+  /**
+   * @param {MozTabbrowserTabGroup} group
+   * @returns {Array<{url: string, title: string}>}
+   */
+  #getGroupLinks(group) {
+    let links = [];
+    for (let tab of group.tabs) {
+      let browser = tab.linkedBrowser;
+      let shareableURL = lazy.BrowserUtils.getShareableURL(browser.currentURI);
+      if (shareableURL) {
+        links.push({
+          url: gURLBar.makeURIReadable(shareableURL).displaySpec,
+          title: browser.contentTitle,
+        });
+      }
+    }
+    return links;
+  }
+
+  /**
+   * @param {number} newState - See MozTabbrowserTabGroupMenu.State
+   */
+  set suggestionState(newState) {
+    if (this.#suggestionState === newState) {
+      return;
+    }
+    this.#suggestionState = newState;
+    this.#renderSuggestionState();
+  }
+
+  #handleLoadSuggestionsCancel() {
+    this.#suggestionsRunToken = null;
+
+    this.suggestionState = this.createMode
+      ? MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL
+      : MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL;
+  }
+
+  #handleSelectAll() {
+    document
+      .querySelectorAll(".tab-group-suggestion-checkbox")
+      .forEach(checkbox => {
+        checkbox.checked = true;
+      });
+    // Reset selected tabs to all suggested tabs
+    this.#selectedSuggestedTabs = this.#suggestedTabs;
+  }
+
+  #handleDeselectAll() {
+    document
+      .querySelectorAll(".tab-group-suggestion-checkbox")
+      .forEach(checkbox => {
+        checkbox.checked = false;
+      });
+    this.#selectedSuggestedTabs = [];
+  }
+
+  /**
+   * Set the state of the form to disabled or enabled
+   *
+   * @param {boolean} state
+   */
+  #setFormToDisabled(state) {
+    const toolbarButtons = this.#tabGroupMain.querySelectorAll("toolbarbutton");
+
+    toolbarButtons.forEach(button => {
+      button.disabled = state;
+    });
+
+    this.#nameField.disabled = state;
+
+    const swatches = this.#swatchesContainer.querySelectorAll("input");
+    swatches.forEach(input => {
+      input.disabled = state;
+    });
+  }
+
+  async #handleFirstDownloadAndSuggest() {
+    this.#setFormToDisabled(true);
+    this.#suggestionsOptin.headingL10nId =
+      "tab-group-suggestions-optin-title-download";
+    this.#suggestionsOptin.messageL10nId =
+      "tab-group-suggestions-optin-message-download";
+    this.#suggestionsOptin.headingIcon = "";
+    this.#suggestionsOptin.isLoading = true;
+
+    // Init progress with value to show determiniate progress
+    this.#suggestionsOptin.progressStatus = 0;
+    const runToken = Date.now();
+    this.#suggestionsRunToken = runToken;
+    await this.#smartTabGroupingManager.preloadAllModels(prog => {
+      this.#suggestionsOptin.progressStatus = prog.percentage;
+    });
+    // Clean up optin UI
+    this.#setFormToDisabled(false);
+    this.#suggestionsOptin.isHidden = true;
+    this.#suggestionsOptin.isLoading = false;
+
+    if (runToken !== this.#suggestionsRunToken) {
+      // User has canceled
+      return;
+    }
+
+    // Continue on with the suggest flow
+    this.#handleMLOptinTelemetry("step3-optin-completed");
+    this.#initMlGroupLabel();
+    this.#handleSmartSuggest();
+  }
+
+  async #handleSmartSuggest() {
+    // Loading
+    const runToken = Date.now();
+    this.#suggestionsRunToken = runToken;
+
+    this.suggestionState = MozTabbrowserTabGroupMenu.State.LOADING;
+    const tabs = await this.#smartTabGroupingManager.smartTabGroupingForGroup(
+      this.activeGroup,
+      gBrowser.tabs
+    );
+    if (this.#suggestionsRunToken != runToken) {
+      // User has canceled
+      return;
+    }
+    if (!tabs.length) {
+      // No un-grouped tabs found
+      this.suggestionState = this.#createMode
+        ? MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_NO_SUGGESTIONS
+        : MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_NO_SUGGESTIONS;
+
+      // there's no "save" button from the edit ai interaction with
+      // no tab suggestions, so we need to capture here
+      if (!this.#createMode) {
+        this.#hasSuggestedMlTabs = true;
+        this.#handleMlTelemetry("save");
+      }
+      return;
+    }
+
+    this.#selectedSuggestedTabs = tabs;
+    this.#suggestedTabs = tabs;
+    tabs.forEach(tab => {
+      this.#createRow(tab);
+    });
+
+    this.suggestionState = this.#createMode
+      ? MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_SUGGESTIONS
+      : MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_SUGGESTIONS;
+
+    this.#hasSuggestedMlTabs = true;
+  }
+
+  /**
+   * Sends Glean metrics if smart tab grouping is enabled
+   *
+   * @param {string} action "save", "save-popup-hidden" or "cancel"
+   */
+  #handleMlTelemetry(action) {
+    if (!this.smartTabGroupsEnabled || !this.smartTabGroupsOptin) {
+      return;
+    }
+    if (this.#suggestedMlLabel !== null) {
+      this.#smartTabGroupingManager.handleLabelTelemetry({
+        action,
+        numTabsInGroup: this.#activeGroup.tabs.length,
+        mlLabel: this.#suggestedMlLabel,
+        userLabel: this.#nameField.value,
+        id: this.#activeGroup.id,
+      });
+      this.#suggestedMlLabel = null;
+    }
+    if (this.#hasSuggestedMlTabs) {
+      this.#smartTabGroupingManager.handleSuggestTelemetry({
+        action,
+        numTabsInWindow: gBrowser.tabs.length,
+        numTabsInGroup: this.#activeGroup.tabs.length,
+        numTabsSuggested: this.#suggestedTabs.length,
+        numTabsApproved: this.#selectedSuggestedTabs.length,
+        numTabsRemoved:
+          this.#suggestedTabs.length - this.#selectedSuggestedTabs.length,
+        id: this.#activeGroup.id,
+      });
+      this.#hasSuggestedMlTabs = false;
+    }
+  }
+
+  /**
+   * Sends Glean metrics for opt-in UI flow
+   *
+   * @param {string} step contains step number and description of flow
+   */
+  #handleMLOptinTelemetry(step) {
+    Glean.tabgroup.smartTabOptin.record({
+      step,
+    });
+  }
+
+  #createRow(tab) {
+    // Create Checkbox
+    let checkbox = /** @type {MozCheckbox} */ (
+      document.createElement("moz-checkbox")
+    );
+    checkbox.label = tab.label;
+    checkbox.iconSrc = tab.image;
+    checkbox.checked = true;
+    checkbox.classList.add(
+      "tab-group-suggestion-checkbox",
+      "text-truncated-ellipsis"
+    );
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) {
+        this.#selectedSuggestedTabs.push(tab);
+      } else {
+        this.#selectedSuggestedTabs = this.#selectedSuggestedTabs.filter(
+          t => t != tab
+        );
+      }
+    });
+
+    // Apply Row to Suggestions
+    this.#suggestions.appendChild(checkbox);
+  }
+
+  /**
+   * Element visibility utility function.
+   * Toggles the `hidden` attribute of a DOM element.
+   *
+   * @param {HTMLElement|XULElement} element - The DOM element to show/hide.
+   * @param {boolean} shouldShow - Whether the element should be shown (true) or hidden (false).
+   */
+  #setElementVisibility(element, shouldShow) {
+    if (!element) {
+      return;
+    }
+    element.hidden = !shouldShow;
+  }
+
+  #showDefaultTabGroupActions(value) {
+    this.#setElementVisibility(this.#defaultActions, value);
+  }
+
+  #showSmartSuggestionsContainer(value) {
+    this.#setElementVisibility(this.#suggestionsContainer, value);
+  }
+
+  #showSuggestionButton(value) {
+    this.#setElementVisibility(this.#suggestionButton, value);
+  }
+
+  #showSuggestionMessageContainer(value) {
+    this.#setElementVisibility(this.#suggestionsMessageContainer, value);
+  }
+
+  #showSuggestionsSeparator(value) {
+    this.#setElementVisibility(this.#suggestionsSeparator, value);
+  }
+
+  #setLoadingState(value) {
+    this.#setElementVisibility(this.#suggestionsLoadActions, value);
+    this.#setElementVisibility(this.#suggestionsLoading, value);
+  }
+
+  #setSuggestionsButtonCreateModeState(value) {
+    const translationString = value
+      ? "tab-group-editor-smart-suggest-button-create"
+      : "tab-group-editor-smart-suggest-button-edit";
+
+    this.#suggestionButton.setAttribute("data-l10n-id", translationString);
+  }
+
+  /**
+   * Unique state setter for a "3rd" panel state while in suggest Mode
+   * that just shows suggestions and hides the majority of the panel
+   *
+   * @param {boolean} value
+   */
+  #setSuggestModeSuggestionState(value) {
+    this.#setElementVisibility(this.#tabGroupPropertiesActions, !value);
+    this.#setElementVisibility(this.#createTabGroupHeading, !value);
+    this.#setElementVisibility(this.#editTabGroupHeading, !value);
+    this.#setElementVisibility(this.#suggestionsHeading, value);
+    this.#panel.classList.toggle("tab-group-editor-panel-expanded", value);
+  }
+
+  #resetCommonUI() {
+    this.#setLoadingState(false);
+    this.#setSuggestModeSuggestionState(false);
+    this.#suggestedTabs = [];
+    this.#selectedSuggestedTabs = [];
+    if (this.#suggestions) {
+      this.#suggestions.replaceChildren();
+    }
+    if (this.#selectSuggestionsCheckbox) {
+      this.#selectSuggestionsCheckbox.checkbox = true;
+    }
+    this.#showSmartSuggestionsContainer(false);
+    if (this.#suggestionsOptinContainer) {
+      this.#suggestionsOptinContainer.replaceChildren();
+      this.#suggestionsOptinContainer.hidden = true;
+    }
+  }
+
+  #renderSuggestionState() {
+    switch (this.#suggestionState) {
+      // CREATE STANDARD INITIAL
+      case MozTabbrowserTabGroupMenu.State.CREATE_STANDARD_INITIAL:
+        this.#resetCommonUI();
+        this.#showDefaultTabGroupActions(true);
+        this.#showSuggestionButton(false);
+        this.#showSuggestionMessageContainer(false);
+        this.#showSuggestionsSeparator(false);
+        break;
+
+      //CREATE AI INITIAL
+      case MozTabbrowserTabGroupMenu.State.CREATE_AI_INITIAL:
+        this.#resetCommonUI();
+        this.#showSuggestionButton(true);
+        this.#showDefaultTabGroupActions(true);
+        this.#showSuggestionMessageContainer(false);
+        this.#setSuggestionsButtonCreateModeState(true);
+        this.#showSuggestionsSeparator(true);
+        break;
+
+      // CREATE AI INITIAL SUGGESTIONS DISABLED
+      case MozTabbrowserTabGroupMenu.State
+        .CREATE_AI_INITIAL_SUGGESTIONS_DISABLED:
+        this.#resetCommonUI();
+        this.#showSuggestionButton(false);
+        this.#showSuggestionMessageContainer(true);
+        this.#showDefaultTabGroupActions(true);
+        this.#showSuggestionsSeparator(true);
+        break;
+
+      // CREATE AI WITH SUGGESTIONS
+      case MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_SUGGESTIONS:
+        this.#setLoadingState(false);
+        this.#showSmartSuggestionsContainer(true);
+        this.#showSuggestionButton(false);
+        this.#showSuggestionsSeparator(true);
+        this.#showDefaultTabGroupActions(false);
+        this.#setSuggestModeSuggestionState(true);
+        break;
+
+      // CREATE AI WITH NO SUGGESTIONS
+      case MozTabbrowserTabGroupMenu.State.CREATE_AI_WITH_NO_SUGGESTIONS:
+        this.#setLoadingState(false);
+        this.#showSuggestionMessageContainer(true);
+        this.#showDefaultTabGroupActions(true);
+        this.#showSuggestionButton(false);
+        this.#showSuggestionsSeparator(true);
+        break;
+
+      // EDIT STANDARD INITIAL
+      case MozTabbrowserTabGroupMenu.State.EDIT_STANDARD_INITIAL:
+        this.#resetCommonUI();
+        this.#showSuggestionButton(false);
+        this.#showSuggestionMessageContainer(false);
+        this.#showDefaultTabGroupActions(false);
+        this.#showSuggestionsSeparator(false);
+        break;
+
+      // EDIT AI INITIAL
+      case MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL:
+        this.#resetCommonUI();
+        this.#showSuggestionMessageContainer(false);
+        this.#showSuggestionButton(true);
+        this.#showDefaultTabGroupActions(false);
+        this.#setSuggestionsButtonCreateModeState(false);
+        this.#showSuggestionsSeparator(true);
+        break;
+
+      // EDIT AI INITIAL SUGGESTIONS DISABLED
+      case MozTabbrowserTabGroupMenu.State.EDIT_AI_INITIAL_SUGGESTIONS_DISABLED:
+        this.#resetCommonUI();
+        this.#showSuggestionMessageContainer(true);
+        this.#showSuggestionButton(false);
+        this.#showDefaultTabGroupActions(false);
+        this.#showSuggestionsSeparator(true);
+        break;
+
+      // EDIT AI WITH SUGGESTIONS
+      case MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_SUGGESTIONS:
+        this.#setLoadingState(false);
+        this.#showSmartSuggestionsContainer(true);
+        this.#setSuggestModeSuggestionState(true);
+        this.#showSuggestionsSeparator(false);
+        break;
+
+      // EDIT AI WITH NO SUGGESTIONS
+      case MozTabbrowserTabGroupMenu.State.EDIT_AI_WITH_NO_SUGGESTIONS:
+        this.#setLoadingState(false);
+        this.#showSuggestionMessageContainer(true);
+        this.#showSuggestionsSeparator(true);
+        break;
+
+      // LOADING
+      case MozTabbrowserTabGroupMenu.State.LOADING:
+        this.#showDefaultTabGroupActions(false);
+        this.#showSuggestionButton(false);
+        this.#showSuggestionMessageContainer(false);
+        this.#setLoadingState(true);
+        this.#showSuggestionsSeparator(true);
+        this.#showDefaultTabGroupActions(false);
+        break;
+
+      // ERROR
+      case MozTabbrowserTabGroupMenu.State.ERROR:
+        //TODO
+        break;
+
+      case MozTabbrowserTabGroupMenu.State.OPTIN:
+        this.#showSuggestionButton(false);
+        this.#showDefaultTabGroupActions(false);
+        break;
+    }
+  }
 }
+
+customElements.define("tabgroup-menu", MozTabbrowserTabGroupMenu);
