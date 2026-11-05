@@ -145,6 +145,46 @@ function assertOneFlow() {
   return flowId;
 }
 
+// Waits until only the Manage Passwords footer remains.
+function waitForFooterOnly(popup) {
+  return TestUtils.waitForCondition(
+    () =>
+      popup.view.matchCount === 1 &&
+      popup.view.getStyleAt(0) === "loginsFooter",
+    "Wait for only the footer to remain"
+  );
+}
+
+function waitForPopupHidden(popup) {
+  return BrowserTestUtils.waitForEvent(
+    popup,
+    "popuphidden",
+    false,
+    event => event.target === popup
+  );
+}
+
+async function closeWithEscape(popup) {
+  const hidden = waitForPopupHidden(popup);
+  await EventUtils.synthesizeKey("KEY_Escape");
+  await hidden;
+}
+
+function assertClosedAs(closeReason, message) {
+  const closedEvents = Glean.autocomplete.dropdownClosed.testGetValue();
+  Assert.equal(
+    closedEvents?.length,
+    1,
+    "One dropdown closed event is recorded"
+  );
+  Assert.equal(
+    closedEvents[0].extra.record_type,
+    "password",
+    "The event names the password record type"
+  );
+  Assert.equal(closedEvents[0].extra.close_reason, closeReason, message);
+}
+
 async function activateDelete(popup) {
   const { item, button } = getSecondaryAction(popup, 0);
   await selectRow(item, 0);
@@ -343,6 +383,103 @@ add_task(async function test_selecting_a_login_records_dropdown_closed() {
     }
   );
 });
+
+add_task(async function test_typing_past_logins_records_typed_through() {
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: TEST_URL_PATH },
+    async function (browser) {
+      const popup = document.getElementById("PopupAutoComplete");
+      await openACPopup(popup, browser, "#form-basic-username");
+
+      Services.fog.testResetFOG();
+      for (const ch of ["z", "z", "z"]) {
+        await BrowserTestUtils.synthesizeKey(ch, {}, browser);
+      }
+      await waitForFooterOnly(popup);
+      Assert.equal(popup.state, "open", "The footer keeps the dropdown open");
+
+      await closeWithEscape(popup);
+      assertClosedAs(
+        "typed_through",
+        "Closing once only the footer remains records typed_through"
+      );
+    }
+  );
+});
+
+add_task(async function test_backspace_back_to_logins_records_dismissed() {
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: TEST_URL_PATH },
+    async function (browser) {
+      const popup = document.getElementById("PopupAutoComplete");
+      await openACPopup(popup, browser, "#form-basic-username");
+
+      Services.fog.testResetFOG();
+      await BrowserTestUtils.synthesizeKey("u", {}, browser);
+      await BrowserTestUtils.synthesizeKey("z", {}, browser);
+      await waitForFooterOnly(popup);
+
+      await BrowserTestUtils.synthesizeKey("KEY_Backspace", {}, browser);
+      await TestUtils.waitForCondition(
+        () => popup.view.getStyleAt(0) === "loginWithOrigin",
+        "Wait for the logins to come back"
+      );
+
+      await closeWithEscape(popup);
+      assertClosedAs(
+        "dismissed",
+        "Closing once the logins are back records dismissed"
+      );
+    }
+  );
+});
+
+add_task(async function test_typing_in_password_field_records_typed_through() {
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: TEST_URL_PATH },
+    async function (browser) {
+      const popup = document.getElementById("PopupAutoComplete");
+      await openACPopup(popup, browser, "#form-basic-password");
+
+      Services.fog.testResetFOG();
+      const hidden = waitForPopupHidden(popup);
+      await BrowserTestUtils.synthesizeKey("z", {}, browser);
+      await hidden;
+      assertClosedAs(
+        "typed_through",
+        "Typing in the password field closes with typed_through"
+      );
+    }
+  );
+});
+
+add_task(
+  async function test_footer_after_typing_past_logins_records_selected() {
+    await BrowserTestUtils.withNewTab(
+      { gBrowser, url: TEST_URL_PATH },
+      async function (browser) {
+        const popup = document.getElementById("PopupAutoComplete");
+        await openACPopup(popup, browser, "#form-basic-username");
+
+        await BrowserTestUtils.synthesizeKey("z", {}, browser);
+        await waitForFooterOnly(popup);
+
+        Services.fog.testResetFOG();
+        const hidden = waitForPopupHidden(popup);
+        const passwordManager = await openPasswordManager(async () => {
+          await EventUtils.synthesizeKey("KEY_ArrowDown");
+          await EventUtils.synthesizeKey("KEY_Enter");
+        }, false);
+        await hidden;
+        assertClosedAs(
+          "selected",
+          "Picking the footer records a selected close"
+        );
+        passwordManager.close();
+      }
+    );
+  }
+);
 
 add_task(async function test_flyout_opens_via_keyboard() {
   await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });

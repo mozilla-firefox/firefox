@@ -134,6 +134,7 @@ autocomplete:
     bugs:
       - https://bugzil.la/2081366
       - https://bugzil.la/2085010
+      - https://bugzil.la/2088399
     data_reviews:
       - https://bugzil.la/2081366
       - https://bugzil.la/2085010
@@ -152,7 +153,9 @@ autocomplete:
         description: >
           Why the dropdown closed: "selected" (the user picked a suggestion),
           "dismissed" (clicked elsewhere or pressed Escape without picking
-          anything), "typed_through" (kept typing until no results remained),
+          anything), "typed_through" (kept typing until no saved records
+          remained, even if non-record rows such as a footer kept the
+          dropdown open),
           "removal_prompt" (hidden because a record removal reauthentication
           or confirmation prompt took focus; usually followed by a
           dropdown_shown with the same flow_id) or "left_page" (navigated away

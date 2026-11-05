@@ -205,6 +205,32 @@ function getSavedRecordType(style, comment) {
   return null;
 }
 
+/**
+ * The saved record type of the first result that is a saved record, if any.
+ *
+ * @param {object[]} results Autocomplete results
+ * @returns {?string} See getSavedRecordType
+ */
+function getFirstSavedRecordType(results) {
+  for (const result of results) {
+    let recordType;
+    try {
+      recordType = getSavedRecordType(
+        result.style,
+        JSON.parse(result.comment || "{}")
+      );
+    } catch (ex) {
+      // Non-saved-record results (e.g. plain history suggestions) can
+      // have a non-JSON comment; they're never a saved record type.
+      continue;
+    }
+    if (recordType) {
+      return recordType;
+    }
+  }
+  return null;
+}
+
 export class AutoCompleteParent extends JSWindowActorParent {
   #reportedTelemetryInputs = new Set();
 
@@ -236,6 +262,13 @@ export class AutoCompleteParent extends JSWindowActorParent {
    * @type {?string}
    */
   #dropdownInputKey = null;
+
+  /**
+   * Whether typing left the current dropdown without saved records.
+   *
+   * @type {boolean}
+   */
+  #savedRecordsExhausted = false;
 
   /**
    * A record removal in progress, so the dropdown it reopens keeps its flow.
@@ -330,12 +363,16 @@ export class AutoCompleteParent extends JSWindowActorParent {
             close_reason:
               this.#pendingRemoval && !this.#closingForEmptyResults
                 ? "removal_prompt"
-                : (this.#dropdownCloseReason ?? "dismissed"),
+                : (this.#dropdownCloseReason ??
+                  (this.#savedRecordsExhausted
+                    ? "typed_through"
+                    : "dismissed")),
             flow_id: this.#dropdownFlowId ?? "",
           });
         }
         this.#dropdownRecordType = null;
         this.#dropdownCloseReason = null;
+        this.#savedRecordsExhausted = false;
         this.#dropdownFlowId = null;
         this.#dropdownInputKey = null;
 
@@ -443,28 +480,14 @@ export class AutoCompleteParent extends JSWindowActorParent {
     const reopenedAfterRemoval =
       Boolean(inputKey) && this.#pendingRemoval?.inputKey === inputKey;
     this.#dropdownCloseReason = null;
+    this.#savedRecordsExhausted = false;
     this.#dropdownInputKey = inputKey;
     this.#dropdownFlowId = reopenedAfterRemoval
       ? this.#pendingRemoval.flowId
       : Services.uuid.generateUUID().toString();
     this.#clearPendingRemoval();
 
-    let recordType = null;
-    for (const result of results) {
-      try {
-        recordType = getSavedRecordType(
-          result.style,
-          JSON.parse(result.comment || "{}")
-        );
-      } catch (ex) {
-        // Non-saved-record results (e.g. plain history suggestions) can
-        // have a non-JSON comment; they're never a saved record type.
-        continue;
-      }
-      if (recordType) {
-        break;
-      }
-    }
+    const recordType = getFirstSavedRecordType(results);
     this.#dropdownRecordType = recordType;
     if (recordType) {
       Glean.autocomplete.dropdownShown.record({
@@ -591,6 +614,10 @@ export class AutoCompleteParent extends JSWindowActorParent {
         this.#closingForEmptyResults = false;
       }
     } else {
+      if (this.#dropdownRecordType) {
+        // Footer rows can outlive the saved records.
+        this.#savedRecordsExhausted = !getFirstSavedRecordType(results);
+      }
       AutoCompleteResultView.setResults(this, results);
       this.openedPopup.invalidate();
       this.#notifyAutoCompletePopupUpdated();
