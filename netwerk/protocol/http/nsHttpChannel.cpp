@@ -1617,45 +1617,8 @@ nsresult nsHttpChannel::ContinueConnect() {
 }
 
 nsresult nsHttpChannel::DoConnect(HttpTransactionShell* aTransWithStickyConn) {
-  LOG(("nsHttpChannel::DoConnect [this=%p]\n", this));
-
-  if (!mDNSBlockingPromise.IsEmpty()) {
-    LOG(("  waiting for DNS prefetch"));
-
-    // Transaction is passed only from auth retry for which we will definitely
-    // not block on DNS to alter the origin server name for IP; it has already
-    // been done.
-    MOZ_ASSERT(!aTransWithStickyConn);
-    MOZ_ASSERT(mDNSBlockingThenable);
-
-    nsCOMPtr<nsISerialEventTarget> target(do_GetMainThread());
-    RefPtr<nsHttpChannel> self(this);
-    mDNSBlockingThenable->Then(
-        target, __func__,
-        [self](const nsCOMPtr<nsIDNSRecord>& aRec) {
-          nsresult rv = self->DoConnectActual(nullptr);
-          if (NS_FAILED(rv)) {
-            self->CloseCacheEntry(false);
-            (void)self->AsyncAbort(rv);
-          }
-        },
-        [self](nsresult err) {
-          self->CloseCacheEntry(false);
-          (void)self->AsyncAbort(err);
-        });
-
-    // The connection will continue when the promise is resolved in
-    // OnLookupComplete.
-    return NS_OK;
-  }
-
-  return DoConnectActual(aTransWithStickyConn);
-}
-
-nsresult nsHttpChannel::DoConnectActual(
-    HttpTransactionShell* aTransWithStickyConn) {
-  LOG(("nsHttpChannel::DoConnectActual [this=%p, aTransWithStickyConn=%p]\n",
-       this, aTransWithStickyConn));
+  LOG(("nsHttpChannel::DoConnect [this=%p, aTransWithStickyConn=%p]\n", this,
+       aTransWithStickyConn));
 
   nsresult rv = SetupChannelForTransaction();
   if (NS_FAILED(rv)) {
@@ -11601,15 +11564,6 @@ nsHttpChannel::OnLookupComplete(nsICancelable* request, nsIDNSRecord* rec,
     mCaps &= ~NS_HTTP_REFRESH_DNS;
     if (mTransaction) {
       mTransaction->SetDNSWasRefreshed();
-    }
-  }
-
-  if (!mDNSBlockingPromise.IsEmpty()) {
-    if (NS_SUCCEEDED(status)) {
-      nsCOMPtr<nsIDNSRecord> record(rec);
-      mDNSBlockingPromise.Resolve(record, __func__);
-    } else {
-      mDNSBlockingPromise.Reject(status, __func__);
     }
   }
 
