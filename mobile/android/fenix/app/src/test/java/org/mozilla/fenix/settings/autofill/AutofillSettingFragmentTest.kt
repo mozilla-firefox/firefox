@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.settings.autofill
 
+import android.content.Context
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 import androidx.preference.Preference
@@ -26,6 +27,7 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getPreferenceKey
+import org.mozilla.fenix.settings.biometric.AutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.settings.requirePreference
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -265,5 +267,34 @@ class AutofillSettingFragmentTest {
 
         assertNotNull(autofillCardsPreference)
         assertFalse(autofillCardsPreference.isChecked)
+    }
+
+    @Test
+    fun `GIVEN the compose autofill settings WHEN managing credit cards THEN authentication is requested before navigating`() {
+        every { testContext.components.settings.enableComposeAutofillSettings } returns true
+        val composeFragment = AutofillSettingFragment()
+        val activity = Robolectric.buildActivity(FragmentActivity::class.java).create().get()
+        activity.supportFragmentManager
+            .beginTransaction()
+            .add(composeFragment, "ComposeAutofillSettingFragmentTest")
+            .commitNow()
+        val titles = mutableListOf<String>()
+        composeFragment.automotiveAuthenticator =
+            object : AutomotiveSensitiveDataAuthenticator {
+                override fun isRequired(context: Context) = true
+
+                override fun authenticate(
+                    activity: FragmentActivity,
+                    title: String,
+                    onAuthenticated: () -> Unit,
+                    onBlocked: () -> Unit,
+                ) {
+                    titles.add(title)
+                }
+            }
+
+        composeFragment.goToFragment(AutofillScreenDestination.MANAGE_CREDIT_CARDS)
+
+        assertEquals(listOf(testContext.getString(R.string.credit_cards_biometric_prompt_message)), titles)
     }
 }
