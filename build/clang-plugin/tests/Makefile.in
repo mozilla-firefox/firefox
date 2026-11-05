@@ -14,6 +14,3 @@ tests-ok: $(OBJS) $(CSRCS) $(CPPSRCS) $(CLANG_PLUGIN)
 	touch $@ $(OBJS)
 
 target-objects: tests-ok
-
-# Don't actually build a library, since we don't actually build objects.
-$(LIBRARY): EXPAND_LIBS_GEN=true
