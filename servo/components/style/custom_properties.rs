@@ -862,7 +862,9 @@ pub fn substitute_references_if_needed_and_apply(
                 .substitution_functions
                 .insert_attr(name, value);
         },
-        SubstitutionFunctionKind::Env => unreachable!("Kind cannot be env."),
+        SubstitutionFunctionKind::Env | SubstitutionFunctionKind::Ident => {
+            unreachable!("Kind must be `var` or `attr`.")
+        },
     }
 }
 

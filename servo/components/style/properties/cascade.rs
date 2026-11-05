@@ -2383,6 +2383,12 @@ fn substitute_all(
                         };
                         (VarType::Custom(name.0.clone()), var_fn.fallback.as_ref())
                     },
+                    SubstitutionFunction::Ident(ref ident_fn) => {
+                        if let SubstitutionArgument::Unparsed(ref arg) = ident_fn.arg {
+                            refs_stack.push(&arg.references);
+                        }
+                        continue;
+                    },
                 };
 
                 visit_link(

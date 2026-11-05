@@ -11539,7 +11539,7 @@ fn compute_arbritrary_substitution_functions(
         return None;
     };
 
-    if !parser.seen_arbitrary_substitution_functions() {
+    if !parser.seen_arbitrary_substitution_functions() || !variable_value.has_references() {
         return None;
     }
 
@@ -11690,10 +11690,13 @@ pub unsafe extern "C" fn Servo_GetComputationStepsSupportedCSSFunctions(
     out: &mut nsTArray<nsCString>,
 ) {
     use style::properties::ARBITRARY_SUBSTITUTION_FUNCTIONS;
+    use style::substitution::SubstitutionFunctionKind;
     use style::values::specified::calc::MathFunction;
 
     for func in ARBITRARY_SUBSTITUTION_FUNCTIONS {
-        out.push(nsCString::from(*func));
+        if SubstitutionFunctionKind::from_ident(func).is_ok() {
+            out.push(nsCString::from(*func));
+        }
     }
     for func in MathFunction::variants() {
         out.push(nsCString::from(func.as_ref()));

@@ -11401,6 +11401,14 @@
   mirror: always
   rust: true
 
+# Is support for the ident() arbitrary substitution function enabled?
+# https://drafts.csswg.org/css-values-5/#ident
+- name: layout.css.ident-function.enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+  rust: true
+
 # Is support for CSS initial-letter property enabled?
 - name: layout.css.initial-letter.enabled
   type: bool
