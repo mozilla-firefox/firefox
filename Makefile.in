@@ -112,11 +112,6 @@ default::
 	@echo "==================="
 endif
 
-ifdef MOZ_CRASHREPORTER
-include $(topsrcdir)/toolkit/mozapps/installer/package-name.mk
-
-endif
-
 .PHONY: prepsymbolsarchive
 prepsymbolsarchive:
 	echo packing symbols
