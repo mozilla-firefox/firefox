@@ -26,8 +26,9 @@ internal class PdfOverlayBehavior(
 
     private val addressBarIds = listOf(R.id.toolbar, R.id.composable_toolbar)
 
-    // The address bar sits at whichever edge was chosen, while the navigation bar is always at the bottom.
-    private val topEdgeIds = if (isAddressBarAtBottom) emptyList() else addressBarIds
+    // When the address bar is at the bottom, then the top edge is the tab strip or nothing.
+    // When the address bar is at the top, then the address bar is always the top bottom edge (tab strip is above it).
+    private val topEdgeIds = if (isAddressBarAtBottom) listOf(R.id.tabstrip) else addressBarIds
 
     private val bottomEdgeIds =
         if (isAddressBarAtBottom) addressBarIds + R.id.navigation_bar else listOf(R.id.navigation_bar)

@@ -20,6 +20,7 @@ import org.robolectric.annotation.Config
 
 private const val CHROME_HEIGHT = 100
 private const val NAV_BAR_HEIGHT = 60
+private const val TAB_STRIP_HEIGHT = 40
 private const val KEYBOARD_HEIGHT = 800
 private const val WINDOW_WIDTH = 500
 private const val WINDOW_HEIGHT = 2000
@@ -163,6 +164,27 @@ class PdfOverlayBehaviorTest {
 
         assertEquals(Gravity.BOTTOM, layoutParams.gravity)
         assertEquals(CHROME_HEIGHT + NAV_BAR_HEIGHT, layoutParams.bottomMargin)
+    }
+
+    @Test
+    @Config(qualifiers = "sw800dp")
+    fun `GIVEN a tablet window with the address bar at the bottom and a top tab strip THEN the tools are inset below the tab strip`() {
+        // Test for Bug 2086233
+        addChrome(R.id.tabstrip, height = TAB_STRIP_HEIGHT)
+        addChrome(R.id.composable_toolbar)
+        addChrome(R.id.navigation_bar, height = NAV_BAR_HEIGHT)
+
+        pdfToolsBehavior(isAddressBarAtBottom = true).measureTools()
+
+        assertEquals(Gravity.TOP, layoutParams.gravity)
+        assertEquals(TAB_STRIP_HEIGHT, layoutParams.topMargin)
+        assertEquals(0, layoutParams.bottomMargin)
+
+        signatureDialogBehavior(isAddressBarAtBottom = true).measureTools()
+
+        assertEquals(Gravity.BOTTOM, layoutParams.gravity)
+        assertEquals(CHROME_HEIGHT + NAV_BAR_HEIGHT, layoutParams.bottomMargin)
+        assertEquals(0, layoutParams.topMargin)
     }
 
     @Test
