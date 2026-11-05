@@ -1,0 +1,39 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src resource: chrome:; object-src 'none'; img-src chrome:;"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <title data-l10n-id="widget-studio-title"></title>
+    <link rel="localization" href="branding/brand.ftl" />
+    <link rel="localization" href="browser/sidebar.ftl" />
+    <link rel="localization" href="preview/widgets.ftl" />
+    <link rel="stylesheet" href="chrome://global/skin/global.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://browser/content/sidebar/sidebar.css"
+    />
+    <link
+      rel="stylesheet"
+      href="chrome://global/skin/design-system/tokens-brand.css"
+    />
+    <script
+      type="module"
+      src="chrome://browser/content/widgets/sidebar-widget-studio.mjs"
+    ></script>
+    <script src="chrome://browser/content/contentTheme.js"></script>
+    <script src="chrome://global/content/globalOverlay.js"></script>
+    <script src="chrome://global/content/editMenuOverlay.js"></script>
+  </head>
+
+  <body>
+    <sidebar-widget-studio />
+  </body>
+</html>

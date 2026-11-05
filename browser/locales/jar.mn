@@ -19,6 +19,7 @@
   preview/privacyPreferences.ftl                   (../locales-preview/privacyPreferences.ftl)
   preview/remoteControl.ftl                          (../locales-preview/remoteControl.ftl)
   preview/newtabPreview.ftl                        (../locales-preview/newtabPreview.ftl)
+  preview/widgets.ftl                              (../locales-preview/widgets.ftl)
 
 @AB_CD@.jar:
 % locale browser @AB_CD@ %locale/browser/

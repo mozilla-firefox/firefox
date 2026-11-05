@@ -2536,6 +2536,10 @@ pref("browser.smartwindow.smartbarMentions.loglevel", "Error");
 pref("browser.smartwindow.telemetryLogLevel", "Error");
 
 pref("browser.widgets.generated.enabled", false);
+pref(
+  "sidebar.newTool.migration.widgets",
+  '{"visibilityPref":"browser.widgets.generated.enabled"}'
+);
 pref("browser.widgets.generated.loglevel", "Warn");
 pref("browser.widgets.generated.endpoint", "");
 pref("browser.widgets.generated.apiKey", "");

@@ -21,6 +21,7 @@ const toolsNameMap = {
   viewTabsSidebar: "syncedtabs",
   viewCPMSidebar: "passwords",
   viewResourceMonitorSidebar: "resourcemonitor",
+  viewWidgetsSidebar: "widgets",
 };
 const EXPAND_ON_HOVER_DEBOUNCE_TIMEOUT_MS = 1000;
 const LAUNCHER_SPLITTER_WIDTH = 4;
@@ -272,6 +273,20 @@ var SidebarController = {
           iconUrl: "chrome://browser/skin/open-tabs.svg",
           gleanClickEvent: Glean.sidebar.openTabsIconClick,
           contextMenuId: "sidebar-opentabs-context-menu",
+        }
+      );
+      this.registerPrefSidebar(
+        "browser.widgets.generated.enabled",
+        "viewWidgetsSidebar",
+        {
+          name: "widgets",
+          elementId: "sidebar-switcher-widgets",
+          url: "chrome://browser/content/widgets/sidebar-widget-studio.html",
+          menuId: "menu_widgetsSidebar",
+          menuL10nId: "menu-view-widget-studio",
+          revampL10nId: "sidebar-menu-widget-studio-label",
+          iconUrl: "chrome://browser/skin/topsites.svg",
+          hasCustomHeader: true,
         }
       );
     }

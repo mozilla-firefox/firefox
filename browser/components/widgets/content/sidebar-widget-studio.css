@@ -1,0 +1,35 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  position: relative;
+  background-color: var(--background-color-canvas);
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+}
+
+#close-button {
+  --button-border-radius: var(--border-radius-circle);
+
+  position: absolute;
+  inset-block-start: var(--space-large);
+  inset-inline-end: var(--space-large);
+  z-index: 1;
+
+  @media not (forced-colors) {
+    --button-background-color-ghost: var(--background-color-box);
+    --button-background-color-ghost-hover: color-mix(in srgb, currentColor 14%, var(--background-color-box));
+    --button-background-color-ghost-active: color-mix(in srgb, currentColor 21%, var(--background-color-box));
+
+    &::part(button) {
+      box-shadow: var(--box-shadow-level-1);
+    }
+  }
+
+  /* The shared panel header provides the close button in this mode. */
+  @media -moz-pref("sidebar.visibility", "hide-launcher") {
+    display: none;
+  }
+}
