@@ -124,6 +124,7 @@ class GeckoMediaPluginServiceParent final
   void UnloadPlugins();
   void CrashPlugins();
   void NotifySyncShutdownComplete();
+  void RejectPendingInitPromise();
 
   void RemoveOnGMPThread(const nsAString& aDirectory,
                          const bool aDeleteFromDisk, const bool aCanDefer);
