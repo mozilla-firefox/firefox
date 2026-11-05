@@ -42,4 +42,4 @@ updatebot:
     - type: vendoring
       enabled: true
       frequency: 1 day
-      blocking: 2084741
+      blocking: 2089109
