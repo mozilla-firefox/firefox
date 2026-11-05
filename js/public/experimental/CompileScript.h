@@ -27,22 +27,12 @@ struct CompilationInput;
 namespace JS {
 using FrontendContext = js::FrontendContext;
 
-struct FrontendContextCreationOptions {
-  // Set to false to avoid sharing the compiled stencil's script data to the
-  // process global state.
-  //
-  // If the compiled stencils will never be instantiated in the process and
-  // they'll be discarded immediately, set this to false to avoid holding the
-  // data unnecessarily.
-  bool shareScriptData = true;
-
-  // Set to true to allow calling JS::RequestFrontendCompilationCancellation.
-  bool allowCancellingCompilation = false;
-};
+enum class AllowCancellingCompilation : bool { No, Yes };
 
 // Create a new front-end context.
 JS_PUBLIC_API JS::FrontendContext* NewFrontendContext(
-    const FrontendContextCreationOptions* options = nullptr);
+    AllowCancellingCompilation allowCancellingCompilation =
+        AllowCancellingCompilation::No);
 
 // Destroy a front-end context allocated with NewFrontendContext.
 JS_PUBLIC_API void DestroyFrontendContext(JS::FrontendContext* fc);
@@ -104,11 +94,11 @@ JS_PUBLIC_API bool HadFrontendAllocationOverflow(JS::FrontendContext* fc);
 
 // Request that the compilation using the given JS::FrontendContext be
 // cancelled, which then fails as if an error had been reported. Requires
-// FrontendContextCreationOptions::allowCancellingCompilation to be true, and
-// can be called from any thread. A running compilation aborts before the next
-// function it parses or emits, so it can also still succeed. The request is
-// permanent, and the resulting failure cannot be converted with
-// ConvertFrontendErrorsToRuntimeErrors, so the result must be discarded.
+// AllowCancellingCompilation::Yes, and can be called from any thread. A running
+// compilation aborts before the next function it parses or emits, so it can
+// also still succeed. The request is permanent, and the resulting failure
+// cannot be converted with ConvertFrontendErrorsToRuntimeErrors, so the result
+// must be discarded.
 JS_PUBLIC_API void RequestFrontendCompilationCancellation(
     JS::FrontendContext* fc);
 

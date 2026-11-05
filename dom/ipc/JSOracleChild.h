@@ -21,9 +21,7 @@ struct JSFrontendContextHolder {
     MOZ_RELEASE_ASSERT(JS_IsInitialized(),
                        "UtilityProcessChild::Init should have JS initialized");
 
-    JS::FrontendContextCreationOptions options;
-    options.shareScriptData = false;
-    mFc = JS::NewFrontendContext(&options);
+    mFc = JS::NewFrontendContext();
     if (!mFc) {
       MOZ_CRASH("Failed to create JS FrontendContext");
       return;

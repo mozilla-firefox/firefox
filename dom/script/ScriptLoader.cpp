@@ -20,7 +20,7 @@
 #include "js/PropertyAndElement.h"  // JS_DefineProperty
 #include "js/Transcoding.h"  // JS::TranscodeRange, JS::TranscodeResult, JS::IsTranscodeFailureResult
 #include "js/Utility.h"
-#include "js/experimental/CompileScript.h"  // JS::FrontendContext, JS::NewFrontendContext, JS::DestroyFrontendContext, JS::SetNativeStackQuota, JS::ThreadStackQuotaForSize, JS::CompilationStorage, JS::CompileGlobalScriptToStencil, JS::CompileModuleScriptToStencil, JS::DecodeStencil, JS::PrepareForInstantiate, JS::FrontendContextCreationOptions, JS::RequestFrontendCompilationCancellation
+#include "js/experimental/CompileScript.h"  // JS::FrontendContext, JS::NewFrontendContext, JS::DestroyFrontendContext, JS::SetNativeStackQuota, JS::ThreadStackQuotaForSize, JS::CompilationStorage, JS::CompileGlobalScriptToStencil, JS::CompileModuleScriptToStencil, JS::DecodeStencil, JS::PrepareForInstantiate, JS::AllowCancellingCompilation, JS::RequestFrontendCompilationCancellation
 #include "js/experimental/JSStencil.h"  // JS::Stencil, JS::InstantiationStorage, JS::StartCollectingDelazifications, JS::IsStencilCacheable
 #include "js/loader/LoadedScript.h"
 #include "js/loader/ModuleLoadRequest.h"
@@ -2578,9 +2578,8 @@ void StencilCompileOrDecodeTask::CancelTask() {
 }
 
 nsresult StencilCompileOrDecodeTask::InitFrontendContext() {
-  JS::FrontendContextCreationOptions options;
-  options.allowCancellingCompilation = true;
-  mFrontendContext = JS::NewFrontendContext(&options);
+  mFrontendContext =
+      JS::NewFrontendContext(JS::AllowCancellingCompilation::Yes);
   if (!mFrontendContext) {
     mIsCancelled = true;
     return NS_ERROR_OUT_OF_MEMORY;

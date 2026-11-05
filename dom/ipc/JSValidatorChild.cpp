@@ -190,12 +190,10 @@ JSValidatorChild::ValidatorResult JSValidatorChild::ShouldAllowJS(
     return ValidatorResult::Failure;
   }
 
-  auto clearContext =
-      mozilla::MakeScopeExit([&] { JS::ClearFrontendErrors(fc); });
-
   JS::SourceText<Utf8Unit> srcBuf;
   if (!srcBuf.init(fc, aSpan.Elements(), aSpan.Length(),
                    JS::SourceOwnership::Borrowed)) {
+    JS::ClearFrontendErrors(fc);
     return ValidatorResult::Failure;
   }
 
@@ -208,6 +206,7 @@ JSValidatorChild::ValidatorResult JSValidatorChild::ShouldAllowJS(
       JS::CompileGlobalScriptToStencil(fc, options, srcBuf);
 
   if (!stencil) {
+    JS::ClearFrontendErrors(fc);
     return ValidatorResult::Other;
   }
 
