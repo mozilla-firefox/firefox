@@ -706,6 +706,11 @@ nsresult nsFrameLoader::ReallyStartLoadingInternal() {
         loadState->TriggeringPrincipal()->IsSystemPrincipal()) {
       loadState->SetRemoteTypeOverride(mRemoteType);
     }
+
+    if (StaticPrefs::dom_navigation_new_iframe_load_behaviour_enabled()) {
+      loadState->SetHistoryBehavior(NavigationHistoryBehavior::Auto);
+      loadState->SetNeedsCompletelyLoadedDocument(true);
+    }
   }
 
   if (IsRemoteFrame()) {

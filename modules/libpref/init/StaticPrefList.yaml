@@ -4156,6 +4156,12 @@
   value: false
   mirror: always
 
+# Use the new Navigation API history behaviour and load path for iframes.
+- name: dom.navigation.new_iframe_load_behaviour.enabled
+  type: bool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # Network Information API
 # This feature is not available on Firefox desktop. It exposes too much
 # user information. Let's be consistent and disable it on Android.
