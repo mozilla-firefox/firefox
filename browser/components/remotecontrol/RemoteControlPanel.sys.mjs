@@ -144,12 +144,12 @@ class RemoteControlPanelClass {
   }
 
   #onViewHiding(event) {
-    event.target.removeEventListener("command", this);
+    event.target.removeEventListener("click", this);
   }
 
   #onViewShowing(event) {
     const panelview = event.target;
-    panelview.addEventListener("command", this);
+    panelview.addEventListener("click", this);
     this.#updatePanel(panelview);
   }
 
