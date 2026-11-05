@@ -17,6 +17,7 @@ support-files = [
   "file_fullscreen-hidden.html",
   "file_fullscreen-iframe-inner.html",
   "file_fullscreen-iframe-middle.html",
+  "file_fullscreen-iframe-multiple-middle.html",
   "file_fullscreen-iframe-top.html",
   "file_fullscreen-lenient-setters.html",
   "file_fullscreen_meta_viewport.html",
@@ -63,6 +64,8 @@ skip-if = [
 skip-if = [
   "os == 'mac'", # Bug 1928559
 ]
+
+["test_fullscreen_iframe_nested_multiple.html"]
 
 ["test_fullscreen_meta_viewport.html"]
 

@@ -1,0 +1,227 @@
+<!doctype html>
+<html>
+<head>
+<title>Test for bug 2078994</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<div id="div" style="width: 100px; height: 100px; background: red;"></div>
+<iframe id="middle1" allowfullscreen="yes" src="file_fullscreen-iframe-multiple-middle.html"></iframe>
+<iframe id="middle2" allowfullscreen="yes" src="file_fullscreen-iframe-multiple-middle.html"></iframe>
+<iframe id="middle3" allowfullscreen="yes" src="file_fullscreen-iframe-multiple-middle.html"></iframe>
+<script>
+
+// The frame tree built by this test is
+//   this document
+//      - middle iframe 1 (middle document 1)
+//          |- inner iframe 1-1 (inner document 1-1)
+//           - inner iframe 1-2 (inner document 1-2)
+//      - middle iframe 2 (middle document 2)
+//          |- inner iframe 2-1 (inner document 2-1)
+//           - inner iframe 2-2 (inner document 2-2)
+//      - middle iframe 3 (middle document 3)
+//          |- inner iframe 3-1 (inner document 3-1)
+//           - inner iframe 3-2 (inner document 3-2)
+// Exiting fullscreen from this document while the middle document has two
+// fullscreen iframes in its top layer should also reset the inner document
+// which is not in the current fullscreen chain.
+
+function waitForEvent(aElement, aType) {
+  return new Promise(resolve => {
+    aElement.addEventListener(aType, resolve, { once: true });
+  });
+}
+
+async function requestFullscreen(aElement) {
+  try {
+    let document = aElement.ownerDocument;
+    if (document.fullscreenElement === aElement) {
+      return;
+    }
+
+    let promise = waitForEvent(document, "fullscreenchange");
+    await aElement.requestFullscreen();
+    await promise;
+  } catch (e) {
+    ok(false, `requestFullscreen was rejected: ${e}`);
+  }
+}
+
+async function exitFullscreen(aDocument) {
+  try {
+    if (!aDocument.fullscreenElement) {
+      return;
+    }
+
+    let promise = waitForEvent(aDocument, "fullscreenchange");
+    await aDocument.exitFullscreen();
+    await promise;
+  } catch (e) {
+    ok(false, `requestFullscreen was rejected: ${e}`);
+  }
+}
+
+function dumpFullscreenStrate(aDocument, aDocumentName) {
+  const name = e => (e ? e.id || e.localName : "null");
+  let state = `${aDocumentName}=${name(aDocument.fullscreenElement)}`;
+
+  const iframes = aDocument.querySelectorAll("iframe");
+  for (let i = 0; i < iframes.length; ++i) {
+    if (iframes[i].contentDocument) {
+      const documentName = `${aDocumentName}-${name(iframes[i])}`;
+      state += `, ${dumpFullscreenStrate(iframes[i].contentDocument, documentName)}`;
+    }
+  }
+  return state;
+}
+
+function checkFullscreenState(aDocument, aDocumentName, aShouldNotBeInFullscreen = false) {
+  if (aShouldNotBeInFullscreen) {
+    ok(!aDocument.fullscreenElement, `${aDocumentName} should not be in fullscreen`);
+  }
+
+  let iframes = Array.from(aDocument.querySelectorAll("iframe"));
+  for (let i = 0; i < iframes.length; ++i) {
+    if (iframes[i].contentDocument) {
+      let name = `${aDocumentName}-${iframes[i].id}`;
+      checkFullscreenState(iframes[i].contentDocument, name, !aDocument.fullscreenElement);
+    }
+  }
+}
+
+let middleIframe1;
+let middleDoc1;
+let innerDoc1_1;
+let innerDoc1_2;
+
+let middleIframe2
+let middleDoc2;
+let innerDoc2_1;
+let innerDoc2_2;
+
+let middleIframe3
+let middleDoc3;
+let innerDoc3_1;
+let innerDoc3_2;
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["full-screen-api.allow-trusted-requests-only", false],
+      ["full-screen-api.transition-duration.enter", "0 0"],
+      ["full-screen-api.transition-duration.leave", "0 0"],
+      ["full-screen-api.warning.timeout", 0],
+    ],
+  });
+  await SimpleTest.promiseFocus();
+
+  [middleIframe1, middleIframe2, middleIframe3] = document.querySelectorAll("iframe");
+
+  middleDoc1 = middleIframe1.contentDocument;
+  [innerDoc1_1, innerDoc1_2] = Array.from(middleIframe1.contentWindow.frames, (f) => f.document);
+
+  middleDoc2 = middleIframe2.contentDocument;
+  [innerDoc2_1, innerDoc2_2] = Array.from(middleIframe2.contentWindow.frames, (f) => f.document);
+
+  middleDoc3 = middleIframe3.contentDocument;
+  [innerDoc3_1, innerDoc3_2] = Array.from(middleIframe3.contentWindow.frames, (f) => f.document);
+});
+
+add_task(async function test_no_orphaned_fullscreen_document() {
+  const target = document.getElementById("div");
+  const innerTarget1_1 = innerDoc1_1.getElementById("div");
+  const innerTarget1_2 = innerDoc1_2.getElementById("div");
+
+  info("Trigger fullscreen on the top-level document, then on both inner documents");
+  await requestFullscreen(target);
+  await requestFullscreen(innerTarget1_1);
+  await requestFullscreen(innerTarget1_2);
+
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top");
+
+  info("Exit fullscreen from top-level document");
+  let promise = waitForEvent(document, "fullscreenchange");
+  await document.exitFullscreen();
+  await promise;
+
+  is(document.fullscreenElement, target, "document should still in fullscreen");
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top");
+
+  if (document.fullscreenElement) {
+    info("Exit fullscreen from top-level document again");
+    promise = waitForEvent(document, "fullscreenchange");
+    await document.exitFullscreen();
+    await promise;
+
+    is(document.fullscreenElement, null, "Should fully exit fullscreen");
+    info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+    checkFullscreenState(document, "top", true);
+  }
+});
+
+add_task(async function test_current_fullscreen_chain_subdocument_exit() {
+  const target = document.getElementById("div");
+  const innerTarget1_1 = innerDoc1_1.getElementById("div");
+  const innerTarget2_1 = innerDoc2_1.getElementById("div");
+
+  info("Trigger fullscreen on both inner documents");
+  await requestFullscreen(innerTarget1_1);
+  await requestFullscreen(innerTarget2_1);
+
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top");
+  is(document.fullscreenElement, middleIframe2,
+     "Top-level document's fullscreenElement should be the second middle document");
+
+  info("Exit fullscreen from middle document that is in current fullscreen chain");
+  let promise = waitForEvent(middleDoc2, "fullscreenchange");
+  await middleDoc2.exitFullscreen();
+  await promise;
+
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top");
+  is(document.fullscreenElement, middleIframe1,
+     "Top-level document's fullscreenElement should rollback to the first middle document");
+
+  info("Exit fullscreen from middle document that is in current fullscreen chain again");
+  promise = waitForEvent(middleDoc1, "fullscreenchange");
+  await middleDoc1.exitFullscreen();
+  await promise;
+
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top", true);
+  is(document.fullscreenElement, null, "Top-level document should fully exit fullscreen");
+});
+
+add_task(async function test_non_current_fullscreen_chain_subdocument_exit() {
+  const target = document.getElementById("div");
+  const innerTarget1_1 = innerDoc1_1.getElementById("div");
+  const innerTarget2_1 = innerDoc2_1.getElementById("div");
+  const innerTarget3_1 = innerDoc3_1.getElementById("div");
+
+  info("Trigger fullscreen on all inner documents");
+  await requestFullscreen(innerTarget1_1);
+  await requestFullscreen(innerTarget2_1);
+  await requestFullscreen(innerTarget3_1);
+
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top");
+  is(document.fullscreenElement, middleIframe3,
+     "Top-level document's fullscreenElement should be the third middle document");
+
+  info("Exit fullscreen from middle document that is not in current fullscreen chain");
+  let promise = waitForEvent(middleDoc1, "fullscreenchange");
+  await middleDoc1.exitFullscreen();
+  await promise;
+
+  info(`Fullscreen state: ${dumpFullscreenStrate(document, "top")}`);
+  checkFullscreenState(document, "top", true);
+  is(document.fullscreenElement, null, "Top-level document should fully exit fullscreen");
+});
+
+</script>
+</body>
+</html>
