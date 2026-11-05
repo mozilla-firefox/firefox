@@ -49,14 +49,15 @@ class nsLocalFile final : public nsILocalFileWin {
   static bool CheckForReservedFileName(const nsAString& aFileName);
 
   /**
-   * Checks whether the inherited ACEs in aChildDacl only come from the parent.
+   * Checks whether the inherited ACEs in aChildDacl only come from the parent,
+   * by comparing them, in order, with the ACEs that would be inherited from it.
    *
    * @param aChildDacl the DACL for the child file object
    * @param aIsChildDir true if child is a directory
    * @param aChildSecDesc the SECURITY_DESCRIPTOR for the child, this will
    *                      correspond to aChildDacl
    * @param aParentDir the parent nsIFile
-   * @return true if inherited ACEs are only from aParentDir
+   * @return true if inherited ACEs exactly match those from aParentDir
    *         false if child has other inherited ACEs or a failure occurs
    */
   static bool ChildAclMatchesAclInheritedFromParent(

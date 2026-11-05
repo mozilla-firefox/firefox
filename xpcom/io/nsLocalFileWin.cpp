@@ -195,16 +195,16 @@ bool nsLocalFile::CheckForReservedFileName(const nsAString& aFileName) {
 bool nsLocalFile::ChildAclMatchesAclInheritedFromParent(
     const NotNull<ACL*> aChildDacl, bool aIsChildDir,
     const AutoFreeSecurityDescriptor& aChildSecDesc, nsIFile* aParentDir) {
-  // If the child inherits no ACEs or we fail at any point return false.
-  auto getInheritedAceCount = [](const ACL* aAcl) {
-    AclAceRange aclAceRange(WrapNotNull(aAcl));
-    return std::count_if(
-        aclAceRange.begin(), aclAceRange.end(),
-        [](const auto& hdr) { return hdr.AceFlags & INHERITED_ACE; });
+  auto nextInherited = [](const auto& aFromIt, AclAceRange& aAceRange) {
+    return std::find_if(aFromIt, aAceRange.end(), [](const ACE_HEADER& aHdr) {
+      return aHdr.AceFlags & INHERITED_ACE;
+    });
   };
 
-  auto childInheritedCount = getInheritedAceCount(aChildDacl);
-  if (childInheritedCount == 0) {
+  // If the child inherits no ACEs or we fail at any point return false.
+  AclAceRange childRange(aChildDacl);
+  auto childIt = nextInherited(childRange.begin(), childRange);
+  if (childIt == childRange.end()) {
     // This could happen if aParentDir has no inheritable ACEs, but that should
     // be rare and returning false here ensures that the file will get its ACL
     // reset to inherit in case the parent gets inheritable ACEs added later.
@@ -226,9 +226,9 @@ bool nsLocalFile::ChildAclMatchesAclInheritedFromParent(
   }
 
   // Create a new security descriptor with a DACL that just inherits from the
-  // parent. We can then compare the current childs DACL to make sure the counts
-  // of inherited ACEs match. We pass the child security descriptor as the
-  // creator to get the owner and group information.
+  // parent. We can then compare with the current child's DACL to make sure the
+  // inherited ACEs match. We pass the child security descriptor as the creator
+  // to get the owner and group information.
   AutoDestroySecurityDescriptor newSecDesc;
   GENERIC_MAPPING mapping;
   mapping.GenericRead = FILE_GENERIC_READ;
@@ -263,7 +263,21 @@ bool nsLocalFile::ChildAclMatchesAclInheritedFromParent(
     return false;
   }
 
-  return childInheritedCount == getInheritedAceCount(newDacl);
+  // The inheritance rules have already been applied to the new DACL, so the
+  // inherited ACEs should be identical and in the same order.
+  AclAceRange newRange(WrapNotNull(newDacl));
+  auto newIt = nextInherited(newRange.begin(), newRange);
+  while (childIt != childRange.end() && newIt != newRange.end()) {
+    if (childIt->AceSize != newIt->AceSize ||
+        memcmp(&*childIt, &*newIt, childIt->AceSize) != 0) {
+      return false;
+    }
+
+    childIt = nextInherited(std::next(childIt), childRange);
+    newIt = nextInherited(std::next(newIt), newRange);
+  }
+
+  return childIt == childRange.end() && newIt == newRange.end();
 }
 
 class nsDriveEnumerator : public nsSimpleEnumerator,
@@ -1929,10 +1943,10 @@ nsresult nsLocalFile::MoveOrCopyAsSingleFileOrDir(nsIFile* aDestParent,
             GROUP_SECURITY_INFORMATION,
         nullptr, nullptr, &childDacl, nullptr, getter_Transfers(childSecDesc));
     if (errCode == ERROR_SUCCESS && childDacl) {
-      // Compare the number of inherited ACEs on the child to the number we
-      // expect from the parent. If they don't match then we reset. This is
-      // because we can get old inherited ACEs from the previous dir if moved
-      // within the same volume. We check this to prevent unnecessary calls to
+      // Compare the inherited ACEs on the child to the ones we expect from the
+      // parent. If they don't match then we reset. This is because we can get
+      // old inherited ACEs from the previous dir if moved within the same
+      // volume. We check this to prevent unnecessary calls to
       // SetNamedSecurityInfoW, this avoids a request for SeTcbPrivilege, which
       // can cause a lot of audit events if enabled (Bug 1816694).
       if (isDir.isNothing() ||
