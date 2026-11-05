@@ -169,9 +169,4 @@
   flex: 1;
   justify-content: flex-end;
   column-gap: var(--space-xsmall);
-
-  > .footer-button {
-    height: var(--size-item-large);
-    min-height: var(--size-item-large);
-  }
 }
