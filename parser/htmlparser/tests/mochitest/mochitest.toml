@@ -46,7 +46,6 @@ support-files = [
   "file_bug716579-8.xhtml",
   "file_bug716579-8.xhtml^headers^",
   "file_bug717180.html",
-  "file_bug1758288.sjs",
   "file_img_picture_preload.html",
   "file_img_picture_preload.sjs",
   "html5_tree_construction_exceptions.js",
@@ -218,8 +217,6 @@ support-files = [
 ["test_bug1646140-1.html"]
 
 ["test_bug1646140-2.html"]
-
-["test_bug1758288.html"]
 
 ["test_compatmode.html"]
 
