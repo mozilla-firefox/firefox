@@ -8,4 +8,11 @@ ignore = [
   "RUSTSEC-2026-0369",
   # zip <https://bugzilla.mozilla.org/show_bug.cgi?id=2088053>
   "RUSTSEC-2026-0429",
+  # unmaintained warnings <https://bugzilla.mozilla.org/show_bug.cgi?id=2089569>
+  "RUSTSEC-2026-0374",
+  "RUSTSEC-2026-0441",
+  "RUSTSEC-2024-0449",
+  # tokio soundness bug <https://bugzilla.mozilla.org/show_bug.cgi?id=2089569>
+  # we don't deploy tokio, so this is low priority
+  "RUSTSEC-2026-0386",
 ]
