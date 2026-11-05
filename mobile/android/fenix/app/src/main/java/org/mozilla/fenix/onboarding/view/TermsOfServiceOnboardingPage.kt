@@ -7,7 +7,6 @@ package org.mozilla.fenix.onboarding.view
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.LinkText
 import mozilla.components.compose.base.LinkTextState
 import mozilla.components.compose.base.button.FilledButton
+import mozilla.components.ui.animation.AnimatedIllustration
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.ScrollIndicator
 import org.mozilla.fenix.theme.FirefoxTheme
@@ -131,21 +132,18 @@ fun TermsOfServiceOnboardingPage(
 
 @Composable
 private fun Header(pageState: OnboardingPageState) {
-    val currentImageIndex = remember { mutableIntStateOf(0) }
-    val currentImageRes = kitImageResources[currentImageIndex.intValue]
-
-    Image(
-        painter = painterResource(id = currentImageRes),
-        contentDescription = null, // Decorative image only.
-        modifier =
-            Modifier.height(pageState.imageHeight()).clickable(
-                role = Role.Button,
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null, // Prevents onClick press/ripple animation
-            ) {
-                currentImageIndex.intValue = nextCyclicImageIndex(currentImageIndex.intValue, kitImageResources.size)
-            },
-    )
+    if (FeatureFlags.onboardingKitAnimationEnabled) {
+        AnimatedIllustration(
+            animationResource = R.raw.terms_of_use_hero_animation,
+            staticDrawableResource = R.drawable.terms_of_use_hero,
+            modifier = Modifier.height(pageState.imageHeight()),
+            contentDescription = null, // Decorative image only.
+            iterations = 1,
+            replayOnClick = true,
+        )
+    } else {
+        KitImage(pageState)
+    }
 
     Spacer(Modifier.height(20.dp))
 
@@ -158,6 +156,25 @@ private fun Header(pageState: OnboardingPageState) {
     Spacer(Modifier.height(20.dp))
 
     pageState.termsOfService?.subheaderOneText?.let { SubHeader(it) }
+}
+
+@Composable
+private fun KitImage(pageState: OnboardingPageState) {
+    val currentImageIndex = remember { mutableIntStateOf(0) }
+    val currentImageRes = kitImageResources[currentImageIndex.intValue]
+
+    Image(
+        painter = painterResource(id = currentImageRes),
+        contentDescription = null, // Decorative image only.
+        modifier =
+            Modifier.height(pageState.imageHeight()).clickable(
+                role = Role.Button,
+                interactionSource = null,
+                indication = null, // Prevents onClick press/ripple animation
+            ) {
+                currentImageIndex.intValue = nextCyclicImageIndex(currentImageIndex.intValue, kitImageResources.size)
+            },
+    )
 }
 
 private fun OnboardingPageState.imageHeight() =

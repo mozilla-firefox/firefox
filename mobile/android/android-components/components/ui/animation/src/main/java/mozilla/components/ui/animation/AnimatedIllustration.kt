@@ -9,9 +9,13 @@ import android.provider.Settings
 import androidx.annotation.DrawableRes
 import androidx.annotation.RawRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -51,6 +55,7 @@ internal object AnimatedIllustrationTestTag {
  * @param contentDescription Accessibility description for the illustration.
  * @param iterations Number of times to play the animation. Defaults to infinite.
  * @param iterationDelay The pause between animation loops. Defaults to no delay.
+ * @param replayOnClick Whether tapping the animation restarts it from the beginning.
  * @param contentScale How the content should be scaled.
  */
 @Composable
@@ -61,6 +66,7 @@ fun AnimatedIllustration(
     contentDescription: String? = null,
     iterations: Int = ITERATE_FOREVER,
     iterationDelay: Duration = Duration.ZERO,
+    replayOnClick: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
 ) {
     val context = LocalContext.current
@@ -79,6 +85,7 @@ fun AnimatedIllustration(
         contentDescription = contentDescription,
         iterations = iterations,
         iterationDelay = iterationDelay,
+        replayOnClick = replayOnClick,
         contentScale = contentScale,
     )
 }
@@ -91,6 +98,7 @@ internal fun AnimatedIllustration(
     contentDescription: String? = null,
     iterations: Int = ITERATE_FOREVER,
     iterationDelay: Duration = Duration.ZERO,
+    replayOnClick: Boolean = false,
     contentScale: ContentScale = ContentScale.Fit,
 ) {
     if (composition == null) {
@@ -101,6 +109,9 @@ internal fun AnimatedIllustration(
             contentScale = contentScale,
         )
     } else {
+        // Incremented on each tap and passed to LoopingLottieAnimation as a LaunchedEffect key, so a change cancels
+        // the running playback loop and restarts it from the first iteration.
+        var replayTrigger by remember { mutableIntStateOf(0) }
         val animatedModifier =
             modifier
                 .testTag(AnimatedIllustrationTestTag.ANIMATION)
@@ -114,8 +125,21 @@ internal fun AnimatedIllustration(
                         Modifier
                     }
                 )
+                .then(
+                    if (replayOnClick) {
+                        Modifier.clickable(
+                            role = Role.Button,
+                            interactionSource = null,
+                            indication = null,
+                        ) {
+                            replayTrigger++
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
 
-        if (iterationDelay <= Duration.ZERO) {
+        if (iterationDelay <= Duration.ZERO && !replayOnClick) {
             LottieAnimation(
                 composition = composition,
                 iterations = iterations,
@@ -127,6 +151,7 @@ internal fun AnimatedIllustration(
                 composition = composition,
                 iterations = iterations,
                 iterationDelay = iterationDelay,
+                replayTrigger = replayTrigger,
                 modifier = animatedModifier,
                 contentScale = contentScale,
             )
@@ -134,18 +159,25 @@ internal fun AnimatedIllustration(
     }
 }
 
-/** Plays [composition], resting on the final frame for an [iterationDelay] pause between each loop. */
+/**
+ * Plays [composition], resting on the final frame for an [iterationDelay] pause between each loop. Restarts from the
+ * first frame whenever [replayTrigger] changes.
+ *
+ * @param replayTrigger Opaque value used only as a restart signal. Its magnitude is meaningless; any change relaunches
+ *   the playback loop, which is how [AnimatedIllustration] implements `replayOnClick`.
+ */
 @Composable
 private fun LoopingLottieAnimation(
     composition: LottieComposition,
     iterations: Int,
     iterationDelay: Duration,
+    replayTrigger: Int,
     modifier: Modifier,
     contentScale: ContentScale,
 ) {
     val animatable = rememberLottieAnimatable()
 
-    LaunchedEffect(composition, iterations, iterationDelay) {
+    LaunchedEffect(composition, iterations, iterationDelay, replayTrigger) {
         var playedIterations = 0
         while (iterations == ITERATE_FOREVER || playedIterations < iterations) {
             animatable.animate(
