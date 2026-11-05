@@ -83,6 +83,24 @@ bool MakeCredentialRequestIncludesPrfExtension(
   return false;
 }
 
+bool IsSameOriginWithAncestors(WindowGlobalParent* aParent) {
+  nsIPrincipal* principal = aParent->DocumentPrincipal();
+
+  if (!principal) {
+    return false;
+  }
+
+  for (WindowGlobalParent* parent = aParent->GetParentWindowContext(); parent;
+       parent = parent->GetParentWindowContext()) {
+    nsIPrincipal* parentPrincipal = parent->DocumentPrincipal();
+    if (!principal->Equals(parentPrincipal)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 class RelatedOriginCheckHandler final
     : public nsIWebAuthnRelatedOriginCheckCallback {
  public:
@@ -303,7 +321,7 @@ void WebAuthnTransactionParent::ContinueWithRegister(
 
   nsIPrincipal* topPrincipal = manager->TopWindowContext()->DocumentPrincipal();
 
-  bool isCrossOrigin = !principal->Equals(topPrincipal);
+  bool isCrossOrigin = !IsSameOriginWithAncestors(manager);
 
   nsCString topOrigin;
   nsresult rv = topPrincipal->GetWebExposedOriginSerialization(topOrigin);
@@ -578,7 +596,7 @@ void WebAuthnTransactionParent::ContinueWithSign(
 
   nsIPrincipal* topPrincipal = manager->TopWindowContext()->DocumentPrincipal();
 
-  bool isCrossOrigin = !principal->Equals(topPrincipal);
+  bool isCrossOrigin = !IsSameOriginWithAncestors(manager);
 
   nsCString topOrigin;
   nsresult rv = topPrincipal->GetWebExposedOriginSerialization(topOrigin);

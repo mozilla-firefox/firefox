@@ -19,6 +19,8 @@
     var gCrossCredId;
 
     const CROSS_DOMAIN = "example.org";
+    const BLANK_CROSS_DOMAIN = "https://" + CROSS_DOMAIN + "/tests/dom/webauthn/tests/empty.html";
+    const BLANK_SAME_DOMAIN = "https://" + document.domain + "/tests/dom/webauthn/tests/empty.html";
 
     function compare(a, b) {
       if (a.length != b.length) return false;
@@ -76,6 +78,11 @@
           .catch(e => Promise.reject(e.name));
     }
 
+    /**
+     * Create a new credential, returning the credential ID.
+     *
+     * @returns {Promise<Uint8Array>} New Credential ID.
+     */
     function createCredential() {
       this.content.document.notifyUserGestureActivation();
 
@@ -89,6 +96,27 @@
 
       return this.content.window.navigator.credentials.create({publicKey})
           .then(res => Promise.resolve(new Uint8Array(res.rawId)))
+          .catch(e => Promise.reject(e.name));
+    }
+
+    /**
+     * Create a new credential, returning the PublicKeyCredentialJSON.
+     *
+     * @returns {Promise<PublicKeyCredentialJSON>} The created credential.
+     */
+    function createCredentialAndReturnPublicKeyCredentialJSON() {
+      this.content.document.notifyUserGestureActivation();
+
+      const cose_alg_ECDSA_w_SHA256 = -7;
+      let publicKey = {
+        rp: {id: this.content.window.document.domain, name: "none"},
+        user: {id: new Uint8Array(), name: "none", displayName: "none"},
+        challenge: this.content.window.crypto.getRandomValues(new Uint8Array(16)),
+        pubKeyCredParams: [{type: "public-key", alg: cose_alg_ECDSA_w_SHA256}],
+      };
+
+      return this.content.window.navigator.credentials.create({publicKey})
+          .then(res => Promise.resolve(res.toJSON()))
           .catch(e => Promise.reject(e.name));
     }
 
@@ -117,7 +145,7 @@
       await setup(false, false);
 
       let iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "https://" + document.domain + "/tests/dom/webauthn/tests/empty.html");
+      iframe.setAttribute("src", BLANK_SAME_DOMAIN);
       document.body.appendChild(iframe);
       await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
 
@@ -127,7 +155,15 @@
 
       // We should be able to create a credential in a same-origin iframe by default.
       is(gSameCredId, undefined);
-      gSameCredId = new Uint8Array(await SpecialPowers.spawn(iframe, [], createCredential));
+      let pkc = await SpecialPowers.spawn(iframe, [], createCredentialAndReturnPublicKeyCredentialJSON);
+      gSameCredId = Uint8Array.fromBase64(pkc.rawId, {alphabet: "base64url"});
+      isnot(gSameCredId, undefined, "gSameCredId should be set");
+
+      let clientData = JSON.parse(buffer2string(
+        Uint8Array.fromBase64(pkc.response.clientDataJSON, {alphabet: "base64url"})));
+      ok(!clientData.crossOrigin, "Client data shows response is same origin");
+      is(clientData.origin, window.location.origin, "Client data includes the correct origin");
+      is(clientData.topOrigin, undefined, "Client data does not include top origin");
 
       // We should be able to assert a credential in a same-origin iframe by default.
       await SpecialPowers.spawn(iframe, [gSameCredId], getAssertion)
@@ -138,8 +174,9 @@
       let clientDataBuffer = await SpecialPowers.spawn(iframe, [gSameCredId], getAssertionAndReturnClientDataJSON)
           .catch(arrivingHereIsBad);
 
-      let clientData = JSON.parse(buffer2string(clientDataBuffer));
+      clientData = JSON.parse(buffer2string(clientDataBuffer));
       ok(!clientData.crossOrigin, "Client data shows response is same origin");
+      is(clientData.origin, window.location.origin, "Client data includes the correct origin");
       is(clientData.topOrigin, undefined, "Client data does not include top origin");
     });
 
@@ -148,7 +185,7 @@
       await setup(true, false);
 
       let iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "https://" + document.domain + "/tests/dom/webauthn/tests/empty.html");
+      iframe.setAttribute("src", BLANK_SAME_DOMAIN);
       iframe.setAttribute("allow", "publickey-credentials-create 'none'; publickey-credentials-get 'none'");
       document.body.appendChild(iframe);
       await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
@@ -175,7 +212,7 @@
       await setup(false, false);
 
       let iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "https://" + CROSS_DOMAIN + "/tests/dom/webauthn/tests/empty.html");
+      iframe.setAttribute("src", BLANK_CROSS_DOMAIN);
       iframe.setAttribute("allow", "publickey-credentials-create https://" + CROSS_DOMAIN + "; publickey-credentials-get https://" + CROSS_DOMAIN);
       document.body.appendChild(iframe);
       await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
@@ -187,7 +224,15 @@
       // We should be able to create a credential in a same-origin iframe if
       // the iframe allows publickey-credentials-create.
       is(gCrossCredId, undefined);
-      gCrossCredId = new Uint8Array(await SpecialPowers.spawn(iframe, [], createCredential));
+      let pkc = await SpecialPowers.spawn(iframe, [], createCredentialAndReturnPublicKeyCredentialJSON);
+      gCrossCredId = Uint8Array.fromBase64(pkc.rawId, {alphabet: "base64url"});
+      isnot(gCrossCredId, undefined, "gCrossCredId should be set");
+
+      let clientData = JSON.parse(buffer2string(
+        Uint8Array.fromBase64(pkc.response.clientDataJSON, {alphabet: "base64url"})));
+      ok(clientData.crossOrigin, "Client data shows response is cross origin");
+      is(clientData.origin, `https://${CROSS_DOMAIN}`, "Client data includes the correct origin");
+      is(clientData.topOrigin, window.location.origin, "Top origin is correct");
 
       // We should be able to assert a credential in a cross-origin iframe if
       // the iframe allows publickey-credentials-get.
@@ -199,8 +244,9 @@
       let clientDataBuffer = await SpecialPowers.spawn(iframe, [gCrossCredId], getAssertionAndReturnClientDataJSON)
           .catch(arrivingHereIsBad);
 
-      let clientData = JSON.parse(buffer2string(clientDataBuffer));
+      clientData = JSON.parse(buffer2string(clientDataBuffer));
       ok(clientData.crossOrigin, "Client data shows response is cross origin");
+      is(clientData.origin, `https://${CROSS_DOMAIN}`, "Client data includes the correct origin");
       is(clientData.topOrigin, window.location.origin, "Top origin is correct");
     });
 
@@ -209,7 +255,7 @@
       await setup(false, true);
 
       let iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "https://" + CROSS_DOMAIN + "/tests/dom/webauthn/tests/empty.html");
+      iframe.setAttribute("src", BLANK_CROSS_DOMAIN);
       document.body.appendChild(iframe);
       await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
 
@@ -235,7 +281,7 @@
       await setup(false, false);
 
       let iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "https://" + CROSS_DOMAIN + "/tests/dom/webauthn/tests/empty.html");
+      iframe.setAttribute("src", BLANK_CROSS_DOMAIN);
       iframe.setAttribute("allow", "publickey-credentials-create https://" + CROSS_DOMAIN);
       document.body.appendChild(iframe);
       await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
@@ -247,7 +293,15 @@
       // We should be able to create a credential in a cross-origin iframe if
       // the iframe allows publickey-credentials-create.
       is(gCrossCredId, undefined);
-      gCrossCredId = new Uint8Array(await SpecialPowers.spawn(iframe, [], createCredential));
+      let pkc = await SpecialPowers.spawn(iframe, [], createCredentialAndReturnPublicKeyCredentialJSON);
+      gCrossCredId = Uint8Array.fromBase64(pkc.rawId, {alphabet: "base64url"});
+      isnot(gCrossCredId, undefined, "gCrossCredId should be set");
+
+      let clientData = JSON.parse(buffer2string(
+        Uint8Array.fromBase64(pkc.response.clientDataJSON, {alphabet: "base64url"})));
+      ok(clientData.crossOrigin, "Client data shows response is cross origin");
+      is(clientData.origin, `https://${CROSS_DOMAIN}`, "Client data includes the correct origin");
+      is(clientData.topOrigin, window.location.origin, "Top origin is correct");
 
       // We should not be able to assert a credential in a cross-origin iframe if
       // the iframe does not allow publickey-credentials-get.
@@ -261,7 +315,7 @@
       await setup(false, true);
 
       let iframe = document.createElement("iframe");
-      iframe.setAttribute("src", "https://" + CROSS_DOMAIN + "/tests/dom/webauthn/tests/empty.html");
+      iframe.setAttribute("src", BLANK_CROSS_DOMAIN);
       iframe.setAttribute("allow", "publickey-credentials-get https://" + CROSS_DOMAIN);
       document.body.appendChild(iframe);
       await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
@@ -283,6 +337,176 @@
           .catch(arrivingHereIsBad);
     });
 
+    add_task(async function test_cross_origin_iframe_nested_same_origin_allow() {
+      // Don't preload any credentials. We'll try to create one in content.
+      await setup(false, false);
+
+      // Create a same-origin iframe.
+      let iframe = document.createElement("iframe");
+      iframe.setAttribute("src", BLANK_SAME_DOMAIN);
+      document.body.appendChild(iframe);
+      await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
+
+      ok("featurePolicy" in iframe, "we have iframe.featurePolicy");
+      ok(iframe.featurePolicy.allowsFeature("publickey-credentials-create"), "parent iframe allows publickey-credentials-create");
+      ok(iframe.featurePolicy.allowsFeature("publickey-credentials-get"), "parent iframe allows publickey-credentials-get");
+
+      // Create a nested same-origin iframe inside the same-origin iframe.
+      // This makes the full stack .com -> .com -> .com.
+      await SpecialPowers.spawn(iframe, [BLANK_SAME_DOMAIN], async (childURL) => {
+        const nested = this.content.document.createElement("iframe");
+        nested.setAttribute("src", childURL);
+        this.content.document.body.appendChild(nested);
+        await new Promise(resolve => nested.addEventListener("load", resolve, {once: true}));
+      });
+
+      // We should be able to MakeCredential for .com from the nested iframe.
+      is(gSameCredId, undefined, "gSameCredId should be unset");
+      let pkc = await SpecialPowers.spawn(iframe, [], async () => {
+        const nested = this.content.document.querySelector("iframe");
+        return await SpecialPowers.spawn(nested, [], async () => {
+          // createCredentialAndReturnPublicKeyCredentialJSON
+          this.content.document.notifyUserGestureActivation();
+
+          const cose_alg_ECDSA_w_SHA256 = -7;
+          let publicKey = {
+            rp: {id: this.content.window.document.domain, name: "none"},
+            user: {id: new Uint8Array(), name: "none", displayName: "none"},
+            challenge: this.content.window.crypto.getRandomValues(new Uint8Array(16)),
+            pubKeyCredParams: [{type: "public-key", alg: cose_alg_ECDSA_w_SHA256}],
+          };
+
+          return this.content.window.navigator.credentials.create({publicKey})
+              .then(res => Promise.resolve(res.toJSON()))
+              .catch(e => Promise.reject(e.name));
+          });
+      });
+      gSameCredId = Uint8Array.fromBase64(pkc.rawId, {alphabet: "base64url"});
+      isnot(gSameCredId, undefined, "gSameCredId should be set");
+
+      // The clientDataJSON should indicate that it is not cross-origin, with topOrigin unset.
+      let clientData = JSON.parse(buffer2string(
+        Uint8Array.fromBase64(pkc.response.clientDataJSON, {alphabet: "base64url"})));
+      ok(!clientData.crossOrigin, "Creation client data shows response is not cross origin");
+      is(clientData.origin, window.location.origin, "Creation origin is correct");
+      is(clientData.topOrigin, undefined, "Creation top origin is undefined");
+
+      // We should be able to GetAssertion for .com from the nested iframe too.
+      let clientDataBuffer = await SpecialPowers.spawn(iframe, [gSameCredId], async (id) => {
+        const nested = this.content.document.querySelector("iframe");
+        return await SpecialPowers.spawn(nested, [id], async (id) => {
+          // getAssertionAndReturnClientDataJSON
+          this.content.document.notifyUserGestureActivation();
+
+          let chall = new Uint8Array(16);
+          this.content.window.crypto.getRandomValues(chall);
+
+          let options = {
+            challenge: chall,
+            allowCredentials: [ { type: "public-key", id } ],
+          };
+
+          return this.content.window.navigator.credentials.get({publicKey: options})
+            .then(res => Promise.resolve(new Uint8Array(res.response.clientDataJSON)))
+            .catch(e => Promise.reject(e.name));
+        });
+      });
+
+      // The clientDataJSON should indicate that it is not cross-origin, with topOrigin unset.
+      clientData = JSON.parse(buffer2string(clientDataBuffer));
+      ok(!clientData.crossOrigin, "Assertion client data shows response is not cross origin");
+      is(clientData.origin, window.location.origin, "Assertion origin is correct");
+      is(clientData.topOrigin, undefined, "Assertion top origin is undefined");
+    });
+
+    add_task(async function test_cross_origin_iframe_nested_cross_origin_allow() {
+      // Don't preload any credentials. We'll try to create one in content.
+      await setup(false, false);
+
+      let allowRules = "publickey-credentials-create *; publickey-credentials-get *";
+
+      // Create a cross-domain iframe.
+      let iframe = document.createElement("iframe");
+      iframe.setAttribute("src", BLANK_CROSS_DOMAIN);
+      iframe.setAttribute("allow", allowRules);
+      document.body.appendChild(iframe);
+      await new Promise(resolve => iframe.addEventListener("load", resolve, {once: true}));
+
+      ok("featurePolicy" in iframe, "we have iframe.featurePolicy");
+      ok(iframe.featurePolicy.allowsFeature("publickey-credentials-create"), "parent iframe allows publickey-credentials-create");
+      ok(iframe.featurePolicy.allowsFeature("publickey-credentials-get"), "parent iframe allows publickey-credentials-get");
+
+      // Create a nested same-origin iframe inside the cross-domain iframe.
+      // This makes the full stack .com -> .org -> .com.
+      await SpecialPowers.spawn(iframe, [BLANK_SAME_DOMAIN, allowRules], async (childURL, allowRules) => {
+        const nested = this.content.document.createElement("iframe");
+        nested.setAttribute("src", childURL);
+        nested.setAttribute("allow", allowRules);
+        this.content.document.body.appendChild(nested);
+        await new Promise(resolve => nested.addEventListener("load", resolve, {once: true}));
+      });
+
+      // We should be able to MakeCredential for .com from the nested iframe.
+      is(gSameCredId, undefined, "gSameCredId should be unset");
+      let pkc = await SpecialPowers.spawn(iframe, [], async () => {
+        const nested = this.content.document.querySelector("iframe");
+        return await SpecialPowers.spawn(nested, [], async () => {
+          // createCredentialAndReturnPublicKeyCredentialJSON
+          this.content.document.notifyUserGestureActivation();
+
+          const cose_alg_ECDSA_w_SHA256 = -7;
+          let publicKey = {
+            rp: {id: this.content.window.document.domain, name: "none"},
+            user: {id: new Uint8Array(), name: "none", displayName: "none"},
+            challenge: this.content.window.crypto.getRandomValues(new Uint8Array(16)),
+            pubKeyCredParams: [{type: "public-key", alg: cose_alg_ECDSA_w_SHA256}],
+          };
+
+          return this.content.window.navigator.credentials.create({publicKey})
+              .then(res => Promise.resolve(res.toJSON()))
+              .catch(e => Promise.reject(e.name));
+          });
+      });
+      gSameCredId = Uint8Array.fromBase64(pkc.rawId, {alphabet: "base64url"});
+      isnot(gSameCredId, undefined, "gSameCredId should be set");
+
+      // The clientDataJSON should indicate that it is a cross-origin with an origin and topOrigin
+      // of .com. We can't actually identify the .org in the middle because of WebAuthn spec
+      // limitations.
+      let clientData = JSON.parse(buffer2string(
+        Uint8Array.fromBase64(pkc.response.clientDataJSON, {alphabet: "base64url"})));
+      ok(clientData.crossOrigin, "Creation client data shows response is cross origin");
+      is(clientData.origin, window.location.origin, "Creation origin is correct");
+      is(clientData.topOrigin, window.location.origin, "Creation top origin is correct");
+
+      // We should be able to GetAssertion for .com from the nested iframe too.
+      let clientDataBuffer = await SpecialPowers.spawn(iframe, [gSameCredId], async (id) => {
+        const nested = this.content.document.querySelector("iframe");
+        return await SpecialPowers.spawn(nested, [id], async (id) => {
+          // getAssertionAndReturnClientDataJSON
+          this.content.document.notifyUserGestureActivation();
+
+          let chall = new Uint8Array(16);
+          this.content.window.crypto.getRandomValues(chall);
+
+          let options = {
+            challenge: chall,
+            allowCredentials: [ { type: "public-key", id } ],
+          };
+
+          return this.content.window.navigator.credentials.get({publicKey: options})
+            .then(res => Promise.resolve(new Uint8Array(res.response.clientDataJSON)))
+            .catch(e => Promise.reject(e.name));
+        });
+      });
+
+      // The clientDataJSON should indicate that it is a cross-origin with an origin and topOrigin
+      // of .com.
+      clientData = JSON.parse(buffer2string(clientDataBuffer));
+      ok(clientData.crossOrigin, "Assertion client data shows response is cross origin");
+      is(clientData.origin, window.location.origin, "Assertion origin is correct");
+      is(clientData.topOrigin, window.location.origin, "Assertion top origin is correct");
+    });
   </script>
 
 </body>
