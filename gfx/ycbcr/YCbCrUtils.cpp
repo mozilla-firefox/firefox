@@ -40,6 +40,11 @@ GetYCbCrToRGBDestFormatAndSize(const layers::PlanarYCbCrData& aData,
   bool prescale = aSuggestedSize.width > 0 && aSuggestedSize.height > 0 &&
                   aSuggestedSize != aData.mPictureRect.Size();
 
+  // The RGB565 functions don't support Y8.
+  if (aSuggestedFormat == SurfaceFormat::R5G6B5_UINT16 && yuvtype == Y8) {
+    aSuggestedFormat = SurfaceFormat::B8G8R8X8;
+  }
+
   if (aSuggestedFormat == SurfaceFormat::R5G6B5_UINT16) {
 #if defined(HAVE_YCBCR_TO_RGB565)
     if (prescale &&

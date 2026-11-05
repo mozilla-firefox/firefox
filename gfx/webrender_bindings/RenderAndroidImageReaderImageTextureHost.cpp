@@ -97,7 +97,12 @@ bool RenderAndroidImageReaderImageTextureHost::EnsureLockable() {
     }
   }
 
-  MOZ_RELEASE_ASSERT(mAndroidImageConsumer->GetSize() == mSize);
+  if (mAndroidImageConsumer->GetSize() != mSize) {
+    gfxCriticalNoteOnce << "AndroidImageReader size mismatch: actual="
+                        << mAndroidImageConsumer->GetSize()
+                        << ", expected=" << mSize;
+  }
+  MOZ_ASSERT(mAndroidImageConsumer->GetSize() == mSize);
   MOZ_RELEASE_ASSERT(mAndroidImageConsumer->GetFormat() == mFormat);
 
   const auto handle = mAndroidImageConsumer->GetGlTextureHandle();

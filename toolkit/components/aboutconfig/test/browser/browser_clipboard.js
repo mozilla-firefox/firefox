@@ -102,21 +102,13 @@ add_task(async function test_copy() {
 add_task(async function test_copy_multiple() {
   await AboutConfigTest.withNewTab(async function () {
     // Lines are separated by a single LF character on all platforms.
-    let expectedString = Services.prefs.getBoolPref(
-      "dom.selection.exclude_non_selectable_nodes"
-    )
-      ? "test.aboutconfig.copy.false\tfalse\t\n" +
-        "test.aboutconfig.copy.number\t10\t\n" +
-        "test.aboutconfig.copy.spaces.1\t \t\n" +
-        "test.aboutconfig.copy.spaces.2\t  \t\n" +
-        "test.aboutconfig.copy.spaces.3\t   \t\n" +
-        "test.aboutconfig.copy.string\t010.5"
-      : "test.aboutconfig.copy.false\tfalse\t\t\n" +
-        "test.aboutconfig.copy.number\t10\t\t\n" +
-        "test.aboutconfig.copy.spaces.1\t \t\t\n" +
-        "test.aboutconfig.copy.spaces.2\t  \t\t\n" +
-        "test.aboutconfig.copy.spaces.3\t   \t\t\n" +
-        "test.aboutconfig.copy.string\t010.5";
+    let expectedString =
+      "test.aboutconfig.copy.false\tfalse\t\t\n" +
+      "test.aboutconfig.copy.number\t10\t\t\n" +
+      "test.aboutconfig.copy.spaces.1\t \t\t\n" +
+      "test.aboutconfig.copy.spaces.2\t  \t\t\n" +
+      "test.aboutconfig.copy.spaces.3\t   \t\t\n" +
+      "test.aboutconfig.copy.string\t010.5";
 
     this.search("test.aboutconfig.copy.");
     let startRow = this.getRow("test.aboutconfig.copy.false");

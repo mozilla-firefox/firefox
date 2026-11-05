@@ -83,7 +83,7 @@ Maybe<IntSize> Image::GetAddressableSize() const {
 
 static void CopyPlane(uint8_t* aDst, const uint8_t* aSrc,
                       const gfx::IntSize& aSize, int32_t aStride, int32_t aSkip,
-                      int32_t aBytesPerElement = 1);
+                      int32_t aBytesPerElement);
 
 RefPtr<PlanarYCbCrImage> ImageFactory::CreatePlanarYCbCrImage(
     const gfx::IntSize& aScaleHint, BufferRecycleBin* aRecycleBin) {
@@ -918,12 +918,15 @@ nsresult PlanarYCbCrImage::BuildSurfaceDescriptorBuffer(
       pdata->mYUVColorSpace, pdata->mColorRange, pdata->mTransferFunction,
       pdata->mChromaSubsampling, pdata->mHDRMetadata);
 
+  const int32_t bytesPerSample =
+      pdata->mColorDepth == gfx::ColorDepth::COLOR_8 ? 1 : 2;
+
   CopyPlane(buffer + yOffset, pdata->mYChannel, ySize, pdata->mYStride,
-            pdata->mYSkip);
+            pdata->mYSkip, bytesPerSample);
   CopyPlane(buffer + cbOffset, pdata->mCbChannel, cbcrSize, pdata->mCbCrStride,
-            pdata->mCbSkip);
+            pdata->mCbSkip, bytesPerSample);
   CopyPlane(buffer + crOffset, pdata->mCrChannel, cbcrSize, pdata->mCbCrStride,
-            pdata->mCrSkip);
+            pdata->mCrSkip, bytesPerSample);
   return NS_OK;
 }
 
@@ -970,13 +973,17 @@ static void CopyPlane(uint8_t* aDst, const uint8_t* aSrc,
       aBytesPerElement;
   MOZ_RELEASE_ASSERT(srcRowSpan <= aStride);
 
+  if (height == 0) {
+    return;
+  }
+
   if (!aSkip) {
     // Fast path: planar input.
-    memcpy(aDst, aSrc, height * aStride);
+    memcpy(aDst, aSrc, size_t(aStride) * (height - 1) + rowBytes);
   } else {
     for (int y = 0; y < height; ++y) {
-      const uint8_t* src = aSrc;
-      uint8_t* dst = aDst;
+      const uint8_t* src = aSrc + size_t(y) * aStride;
+      uint8_t* dst = aDst + size_t(y) * aStride;
       // Slow path
       for (int x = 0; x < width; ++x) {
         for (int b = 0; b < aBytesPerElement; ++b) {
@@ -984,11 +991,14 @@ static void CopyPlane(uint8_t* aDst, const uint8_t* aSrc,
         }
         src += aSkip * aBytesPerElement;
       }
-      // Trailing stride bytes are not pixel data; zero them so
-      // VideoFrame.copyTo() does not expose stale buffer contents to JS.
-      memset(dst, 0, aStride - rowBytes);
-      aSrc += aStride;
-      aDst += aStride;
+    }
+  }
+
+  if (rowBytes < aStride) {
+    // Trailing stride bytes are not pixel data; zero them so
+    // VideoFrame.copyTo() does not expose stale buffer contents to JS.
+    for (int y = 0; y < height; ++y) {
+      memset(aDst + size_t(y) * aStride + rowBytes, 0, aStride - rowBytes);
     }
   }
 }
@@ -1029,7 +1039,7 @@ nsresult RecyclingPlanarYCbCrImage::CopyData(const Data& aData) {
       aData.mColorDepth == gfx::ColorDepth::COLOR_8 ? 1 : 2;
 
   CopyPlane(mData.mYChannel, aData.mYChannel, ySize, aData.mYStride,
-            aData.mYSkip);
+            aData.mYSkip, bytesPerSample);
   CopyPlane(mData.mCbChannel, aData.mCbChannel, cbcrSize, aData.mCbCrStride,
             aData.mCbSkip, bytesPerSample);
   CopyPlane(mData.mCrChannel, aData.mCrChannel, cbcrSize, aData.mCbCrStride,
@@ -1039,7 +1049,8 @@ nsresult RecyclingPlanarYCbCrImage::CopyData(const Data& aData) {
     mData.mAlpha->mChannel =
         mData.mCrChannel + mData.mCbCrStride * cbcrSize.height;
     CopyPlane(mData.mAlpha->mChannel, aData.mAlpha->mChannel, ySize,
-              aData.mYStride, aData.mYSkip);
+              aData.mYStride, aData.mYSkip,
+              aData.mAlpha->mDepth == gfx::ColorDepth::COLOR_8 ? 1 : 2);
   }
 
   mSize = aData.mPictureRect.Size();

@@ -86,6 +86,9 @@ void ChromeObserver::AttributeChanged(dom::Element* aElement,
       SetMica(added);
     }
   }
+  if (aName == nsGkAtoms::icon) {
+    RecomputeIcon(*aElement);
+  }
   if (aName == nsGkAtoms::localedir) {
     // if the localedir changed on the root element, reset the document
     // direction
@@ -100,8 +103,18 @@ void ChromeObserver::NodeWillBeDestroyed(nsINode* aNode) {
   mDocument = nullptr;
 }
 
+void ChromeObserver::RecomputeIcon(Element& aElement) {
+  if (RefPtr mainWidget = GetWindowWidget()) {
+    nsAutoString value;
+    // TODO(emilio): Probably add support for restoring the default icon?
+    if (aElement.GetAttr(nsGkAtoms::icon, value)) {
+      mainWidget->SetIcon(value);
+    }
+  }
+}
+
 void ChromeObserver::SetMica(bool aEnable) {
-  if (nsIWidget* mainWidget = GetWindowWidget()) {
+  if (RefPtr mainWidget = GetWindowWidget()) {
     mainWidget->SetMicaBackdrop(aEnable);
   }
 }
@@ -117,7 +130,7 @@ void ChromeObserver::SetCustomTitlebar(bool aCustomTitlebar) {
 }
 
 void ChromeObserver::HideWindowChrome(bool aShouldHide) {
-  if (nsCOMPtr<nsIWidget> mainWidget = GetWindowWidget()) {
+  if (RefPtr mainWidget = GetWindowWidget()) {
     mainWidget->HideWindowChrome(aShouldHide);
   }
 }

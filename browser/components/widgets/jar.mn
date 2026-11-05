@@ -8,3 +8,6 @@ browser.jar:
     content/browser/widgets/moz-widget-header.mjs    (content/moz-widget-header.mjs)
     content/browser/widgets/moz-widget-header.css    (content/moz-widget-header.css)
     content/browser/widgets/prompt.md                (prompt.md)
+    content/browser/widgets/sidebar-widget-studio.html (content/sidebar-widget-studio.html)
+    content/browser/widgets/sidebar-widget-studio.mjs (content/sidebar-widget-studio.mjs)
+    content/browser/widgets/sidebar-widget-studio.css (content/sidebar-widget-studio.css)

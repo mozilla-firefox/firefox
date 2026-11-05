@@ -11,8 +11,10 @@ ChromeUtils.defineESModuleGetters(this, {
 
 const kTaskbarTabName = "(Taskbar Tab Name)";
 const kUserContextLabel = "(User Context Label)";
+const kRenamedUserContextLabel = "(Renamed Container)";
 const kGenericProfileName = "(Profile Name)";
 let gProfileName = null;
+let gUserContextLabel = kUserContextLabel;
 
 const kUri = Services.io.newURI("https://example.com");
 
@@ -23,7 +25,7 @@ add_setup(function setup() {
   sinon
     .stub(ContextualIdentityService, "getUserContextLabel")
     .callsFake(index => {
-      return index === 0 ? "" : kUserContextLabel;
+      return index === 0 ? "" : gUserContextLabel;
     });
   sinon
     .stub(SelectableProfileService, "isEnabled")
@@ -96,10 +98,10 @@ function assertHasTaskbarTabName(aPrivate, aTitle) {
   );
 }
 
-function assertHasContainerName(aPrivate, aTitle) {
+function assertHasContainerName(aPrivate, aTitle, aLabel = kUserContextLabel) {
   is(
     aPrivate !== "privacy",
-    aTitle.includes(kUserContextLabel),
+    aTitle.includes(aLabel),
     `Does ${aPrivate === "privacy" ? "NOT " : ""}include container name`
   );
 }
@@ -172,6 +174,70 @@ async function test_profileAndContainer(aPrivate) {
   await TaskbarTabs.removeTaskbarTab(tt.id);
 }
 
+async function test_profileAddedWhileOpen(aPrivate) {
+  const { tt, win } = await phaseBeforeContentTitle(1, null, aPrivate);
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  assertHasContainerName(aPrivate, titleBefore);
+  ok(
+    !titleBefore.includes(kGenericProfileName),
+    "Doesn't include profile name"
+  );
+
+  gProfileName = kGenericProfileName;
+  await phaseAfterContentTitle(win);
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  assertHasContainerName(aPrivate, titleAfter);
+  ok(titleAfter.includes(kGenericProfileName), "Does include profile name");
+
+  await BrowserTestUtils.closeWindow(win);
+  await TaskbarTabs.removeTaskbarTab(tt.id);
+}
+
+async function test_containerRenamedWhileOpen(aPrivate) {
+  const { tt, win } = await phaseBeforeContentTitle(1, null, aPrivate);
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  assertHasContainerName(aPrivate, titleBefore);
+
+  gUserContextLabel = kRenamedUserContextLabel;
+  await phaseAfterContentTitle(win);
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  ok(
+    !titleAfter.includes(kUserContextLabel),
+    "Doesn't include old container name"
+  );
+  assertHasContainerName(aPrivate, titleAfter, kRenamedUserContextLabel);
+
+  gUserContextLabel = kUserContextLabel;
+  await BrowserTestUtils.closeWindow(win);
+  await TaskbarTabs.removeTaskbarTab(tt.id);
+}
+
+async function test_containerRemovedWhileOpen(aPrivate) {
+  const { tt, win } = await phaseBeforeContentTitle(1, null, aPrivate);
+  const titleBefore = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleBefore);
+  assertHasContainerName(aPrivate, titleBefore);
+
+  // A removed container has no label.
+  gUserContextLabel = "";
+  await phaseAfterContentTitle(win);
+  const titleAfter = win.document.title;
+  assertHasTaskbarTabName(aPrivate, titleAfter);
+  ok(
+    !titleAfter.includes(kUserContextLabel),
+    "Doesn't include removed container name"
+  );
+  ok(!titleAfter.includes("()"), "Doesn't include an empty container");
+
+  gUserContextLabel = kUserContextLabel;
+  await BrowserTestUtils.closeWindow(win);
+  await TaskbarTabs.removeTaskbarTab(tt.id);
+}
+
 async function withoutExposingTitle(aTestCase) {
   await SpecialPowers.pushPrefEnv({
     set: [["privacy.exposeContentTitleInWindow", false]],
@@ -188,6 +254,9 @@ add_task(test_defaultCase);
 add_task(test_container);
 add_task(test_profile);
 add_task(test_profileAndContainer);
+add_task(test_profileAddedWhileOpen);
+add_task(test_containerRenamedWhileOpen);
+add_task(test_containerRemovedWhileOpen);
 
 add_task(async function test_defaultCase_privacy() {
   return withoutExposingTitle(test_defaultCase);
@@ -203,4 +272,16 @@ add_task(async function test_profile_privacy() {
 
 add_task(async function test_profileAndContainer_privacy() {
   return withoutExposingTitle(test_profileAndContainer);
+});
+
+add_task(async function test_profileAddedWhileOpen_privacy() {
+  return withoutExposingTitle(test_profileAddedWhileOpen);
+});
+
+add_task(async function test_containerRenamedWhileOpen_privacy() {
+  return withoutExposingTitle(test_containerRenamedWhileOpen);
+});
+
+add_task(async function test_containerRemovedWhileOpen_privacy() {
+  return withoutExposingTitle(test_containerRemovedWhileOpen);
 });

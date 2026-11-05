@@ -280,3 +280,9 @@ partial interface SubtleCrypto {
                                        CryptoKey decapsulationKey,
                                        BufferSource ciphertext);
 };
+
+partial dictionary JsonWebKey {
+  // The following fields are defined in RFC 9964
+  DOMString pub;
+  DOMString priv;
+};

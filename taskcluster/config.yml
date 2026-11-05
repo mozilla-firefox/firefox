@@ -641,7 +641,7 @@ workers:
             implementation: generic-worker
             os: windows
             worker-type: '{alias}-azure'
-        b-win2022(|-xxlarge|-updatebot):
+        b-win2022(|-xxlarge):
             provisioner: '{trust-domain}-{level}'
             implementation: generic-worker
             os: windows

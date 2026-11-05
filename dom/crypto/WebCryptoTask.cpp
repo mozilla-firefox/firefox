@@ -2128,6 +2128,8 @@ class ImportMLKEMKeyTask : public ImportKeyTask {
       mEarlyRv = NS_ERROR_DOM_NOT_SUPPORTED_ERR;
       return;
     }
+
+    mKey->Algorithm().MakeMlKem(mAlgName);
   }
 
  private:
@@ -2135,6 +2137,13 @@ class ImportMLKEMKeyTask : public ImportKeyTask {
 
   virtual nsresult DoCrypto() override {
     if (mFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_PUBLIC)) {
+      // If usages contains an entry which is not "encapsulateKey" or
+      // "encapsulateBits" then throw a SyntaxError.
+      if (mKey->HasUsageOtherThan(CryptoKey::ENCAPSULATEKEY |
+                                  CryptoKey::ENCAPSULATEBITS)) {
+        return NS_ERROR_DOM_SYNTAX_ERR;
+      }
+
       UniqueSECKEYPublicKey pubKey =
           CryptoKey::PublicMLKEMKeyFromRaw(mKeyData, mMLKEMParams);
       if (!pubKey) {
@@ -2150,6 +2159,13 @@ class ImportMLKEMKeyTask : public ImportKeyTask {
     }
 
     if (mFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_SPKI)) {
+      // If usages contains an entry which is not "encapsulateKey" or
+      // "encapsulateBits" then throw a SyntaxError.
+      if (mKey->HasUsageOtherThan(CryptoKey::ENCAPSULATEKEY |
+                                  CryptoKey::ENCAPSULATEBITS)) {
+        return NS_ERROR_DOM_SYNTAX_ERR;
+      }
+
       UniqueSECKEYPublicKey pubKey = CryptoKey::PublicKeyFromSpki(mKeyData);
       if (!pubKey || pubKey->keyType != kyberKey ||
           pubKey->u.kyber.params != mMLKEMParams.mKyberParams) {
@@ -2165,6 +2181,13 @@ class ImportMLKEMKeyTask : public ImportKeyTask {
     }
 
     if (mFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_RAW_SEED)) {
+      // If usages contains an entry which is not "decapsulateKey" or
+      // "decapsulateBits" then throw a SyntaxError.
+      if (mKey->HasUsageOtherThan(CryptoKey::DECAPSULATEKEY |
+                                  CryptoKey::DECAPSULATEBITS)) {
+        return NS_ERROR_DOM_SYNTAX_ERR;
+      }
+
       UniqueSECKEYPrivateKey privKey =
           CryptoKey::PrivateMLKEMKeyFromSeed(mKeyData, mMLKEMParams);
       if (!privKey) {
@@ -2176,30 +2199,158 @@ class ImportMLKEMKeyTask : public ImportKeyTask {
       }
 
       mKey->SetType(CryptoKey::PRIVATE);
+
+      // If the [[type]] internal slot of result is "secret" or "private" and
+      // usages is empty, then throw a SyntaxError.
+      if (!mKey->HasAnyUsage()) {
+        return NS_ERROR_DOM_SYNTAX_ERR;
+      }
       return NS_OK;
+    }
+
+    if (mFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_PKCS8)) {
+      // If usages contains an entry which is not "decapsulateKey" or
+      // "decapsulateBits" then throw a SyntaxError.
+      if (mKey->HasUsageOtherThan(CryptoKey::DECAPSULATEKEY |
+                                  CryptoKey::DECAPSULATEBITS)) {
+        return NS_ERROR_DOM_SYNTAX_ERR;
+      }
+
+      UniqueSECKEYPrivateKey privKey = CryptoKey::PrivateKeyFromPkcs8(mKeyData);
+      if (!privKey || !MatchesParameterSet(privKey.get())) {
+        return NS_ERROR_DOM_DATA_ERR;
+      }
+
+      // WebCrypto does not allow the expandedKey form, which has no seed.
+      CryptoBuffer seed;
+      if (NS_FAILED(CryptoKey::PrivateMLKEMKeyToSeed(privKey.get(), seed))) {
+        return NS_ERROR_DOM_NOT_SUPPORTED_ERR;
+      }
+
+      if (NS_FAILED(mKey->SetPrivateKey(privKey.get()))) {
+        return NS_ERROR_DOM_OPERATION_ERR;
+      }
+
+      mKey->SetType(CryptoKey::PRIVATE);
+
+      // If the [[type]] internal slot of result is "secret" or "private" and
+      // usages is empty, then throw a SyntaxError.
+      if (!mKey->HasAnyUsage()) {
+        return NS_ERROR_DOM_SYNTAX_ERR;
+      }
+      return NS_OK;
+    }
+
+    if (mFormat.EqualsLiteral(WEBCRYPTO_KEY_FORMAT_JWK)) {
+      return ImportJwk();
     }
 
     return NS_ERROR_DOM_NOT_SUPPORTED_ERR;
   }
 
-  virtual nsresult AfterCrypto() override {
-    if (mKey->GetKeyType() == CryptoKey::PUBLIC &&
+  bool MatchesParameterSet(SECKEYPrivateKey* aPrivKey) {
+    UniqueSECKEYPublicKey pubKey(SECKEY_ConvertToPublicKey(aPrivKey));
+    return pubKey && pubKey->keyType == kyberKey &&
+           pubKey->u.kyber.params == mMLKEMParams.mKyberParams;
+  }
+
+  nsresult ImportJwk() {
+    // If the priv field of jwk is present and if usages contains an entry
+    // which is not "decapsulateKey" or "decapsulateBits" then throw a
+    // SyntaxError.
+    if (mJwk.mPriv.WasPassed() &&
+        mKey->HasUsageOtherThan(CryptoKey::DECAPSULATEKEY |
+                                CryptoKey::DECAPSULATEBITS)) {
+      return NS_ERROR_DOM_SYNTAX_ERR;
+    }
+
+    // If the priv field of jwk is not present and if usages contains an entry
+    // which is not "encapsulateKey" or "encapsulateBits" then throw a
+    // SyntaxError.
+    if (!mJwk.mPriv.WasPassed() &&
         mKey->HasUsageOtherThan(CryptoKey::ENCAPSULATEKEY |
                                 CryptoKey::ENCAPSULATEBITS)) {
       return NS_ERROR_DOM_SYNTAX_ERR;
     }
 
-    if (mKey->GetKeyType() == CryptoKey::PRIVATE) {
-      if (mKey->HasUsageOtherThan(CryptoKey::DECAPSULATEKEY |
-                                  CryptoKey::DECAPSULATEBITS)) {
-        return NS_ERROR_DOM_SYNTAX_ERR;
+    if (!mJwk.mKty.EqualsLiteral(JWK_TYPE_AKP) || !mJwk.mAlg.WasPassed() ||
+        !mJwk.mAlg.Value().Equals(mAlgName)) {
+      return NS_ERROR_DOM_DATA_ERR;
+    }
+
+    // If usages is non-empty and the use field of jwk is present and is not
+    // equal to "enc", then throw a DataError.
+    if (mKey->HasAnyUsage() && mJwk.mUse.WasPassed() &&
+        !mJwk.mUse.Value().EqualsLiteral(JWK_USE_ENC)) {
+      return NS_ERROR_DOM_DATA_ERR;
+    }
+
+    if (!JwkCompatible(mJwk, mKey)) {
+      return NS_ERROR_DOM_DATA_ERR;
+    }
+
+    if (mJwk.mPriv.WasPassed()) {
+      CryptoBuffer seed;
+      if (NS_FAILED(seed.FromJwkBase64(mJwk.mPriv.Value()))) {
+        return NS_ERROR_DOM_DATA_ERR;
       }
+
+      UniqueSECKEYPrivateKey privKey =
+          CryptoKey::PrivateMLKEMKeyFromSeed(seed, mMLKEMParams);
+      if (!privKey) {
+        return NS_ERROR_DOM_DATA_ERR;
+      }
+
+      // The spec requires "pub" to match the key derived from "priv".
+      UniqueSECKEYPublicKey derived(SECKEY_ConvertToPublicKey(privKey.get()));
+      if (!derived || derived->keyType != kyberKey) {
+        return NS_ERROR_DOM_OPERATION_ERR;
+      }
+
+      CryptoBuffer derivedPub;
+      if (NS_FAILED(
+              CryptoKey::PublicMLKEMKeyToRaw(derived.get(), derivedPub))) {
+        return NS_ERROR_DOM_OPERATION_ERR;
+      }
+
+      CryptoBuffer pub;
+      if (!mJwk.mPub.WasPassed() ||
+          NS_FAILED(pub.FromJwkBase64(mJwk.mPub.Value())) ||
+          derivedPub != pub) {
+        return NS_ERROR_DOM_DATA_ERR;
+      }
+
+      if (NS_FAILED(mKey->SetPrivateKey(privKey.get()))) {
+        return NS_ERROR_DOM_OPERATION_ERR;
+      }
+
+      mKey->SetType(CryptoKey::PRIVATE);
+
+      // If the [[type]] internal slot of result is "secret" or "private" and
+      // usages is empty, then throw a SyntaxError.
       if (!mKey->HasAnyUsage()) {
         return NS_ERROR_DOM_SYNTAX_ERR;
       }
+      return NS_OK;
     }
 
-    mKey->Algorithm().MakeMlKem(mAlgName);
+    CryptoBuffer pub;
+    if (!mJwk.mPub.WasPassed() ||
+        NS_FAILED(pub.FromJwkBase64(mJwk.mPub.Value()))) {
+      return NS_ERROR_DOM_DATA_ERR;
+    }
+
+    UniqueSECKEYPublicKey pubKey =
+        CryptoKey::PublicMLKEMKeyFromRaw(pub, mMLKEMParams);
+    if (!pubKey) {
+      return NS_ERROR_DOM_DATA_ERR;
+    }
+
+    if (NS_FAILED(mKey->SetPublicKey(pubKey.get()))) {
+      return NS_ERROR_DOM_OPERATION_ERR;
+    }
+
+    mKey->SetType(CryptoKey::PUBLIC);
     return NS_OK;
   }
 };
@@ -2267,7 +2418,8 @@ class ExportKeyTask : public WebCryptoTask {
         case rsaKey:
         case edKey:
         case ecKey:
-        case ecMontKey: {
+        case ecMontKey:
+        case kyberKey: {
           nsresult rv =
               CryptoKey::PrivateKeyToPkcs8(mPrivateKey.get(), mResult);
           if (NS_FAILED(rv)) {

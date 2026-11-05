@@ -14,6 +14,7 @@ from mozpack.path import (
     dirname,
     join,
     match,
+    matcher,
     normpath,
     rebase,
     relpath,
@@ -125,6 +126,42 @@ class TestPath(unittest.TestCase):
         self.assertTrue(match("foo/bar/baz.qux", "foo/**/bar/**"))
         self.assertFalse(match("foo/nobar/baz.qux", "foo/**/bar/**"))
         self.assertTrue(match("foo/bar", "foo/**/bar/**"))
+
+    def test_matcher(self):
+        self.assertFalse(matcher([])("foo"))
+        self.assertTrue(matcher(["bar", ""])("foo"))
+        m = matcher(["**/node_modules", "foo/*/baz.qux", "qux"])
+        self.assertTrue(m("node_modules"))
+        self.assertTrue(m("foo/node_modules/bar"))
+        self.assertTrue(m("foo/bar/baz.qux"))
+        self.assertTrue(m("qux/foo"))
+        self.assertFalse(m("foo/baz.qux"))
+        self.assertFalse(m("foo/qux"))
+        self.assertFalse(m("node_modules_foo"))
+
+        patterns = ["foo/bar", "baz/", "/abs", "qux", "a/**/b", "c*"]
+        m = matcher(patterns)
+        for path in (
+            "foo",
+            "foo/bar",
+            "foo/bar/x",
+            "foo/barx",
+            "baz",
+            "baz/",
+            "baz/x",
+            "baz//x",
+            "/abs",
+            "/abs/x",
+            "abs",
+            "qux",
+            "x/qux",
+            "a/b",
+            "a/x/b/y",
+            "cat/x",
+            "x/cat",
+            "",
+        ):
+            self.assertEqual(m(path), any(match(path, p) for p in patterns), repr(path))
 
     def test_rebase(self):
         self.assertEqual(rebase("foo", "foo/bar", "bar/baz"), "baz")

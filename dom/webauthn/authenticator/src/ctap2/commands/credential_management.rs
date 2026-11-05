@@ -406,7 +406,16 @@ impl PinUvAuthCommand for CredentialManagement {
         pin_uv_auth_token: Option<PinUvAuthToken>,
     ) -> Result<(), AuthenticatorError> {
         let mut param = None;
-        if let Some(token) = pin_uv_auth_token {
+        // enumerateRPsGetNextRP and enumerateCredentialsGetNextCredential are
+        // sent without pinUvAuthProtocol/pinUvAuthParam (CTAP 2.1, 6.8.3 and
+        // 6.8.4). Some authenticators (e.g. Feitian BioPass FIDO2 Plus with
+        // FIDO_2_1_PRE) reject them with CTAP2_ERR_PIN_AUTH_INVALID otherwise.
+        let is_get_next = matches!(
+            self.subcommand,
+            CredManagementCommand::EnumerateRPsGetNextRP
+                | CredManagementCommand::EnumerateCredentialsGetNextCredential
+        );
+        if let Some(token) = pin_uv_auth_token.filter(|_| !is_get_next) {
             // pinUvAuthParam (0x04): the result of calling
             // authenticate(pinUvAuthToken, uint8(subCommand) || subCommandParams).
             let (id, params) = self.subcommand.to_id_and_param();
@@ -519,6 +528,43 @@ mod test {
                 use_legacy_preview: false,
             };
             assert_canonical_cbor_encoding(&request);
+        }
+    }
+
+    #[test]
+    fn test_get_next_subcommands_have_no_pin_uv_auth_param() {
+        let token = PinUvAuthToken::new_test(
+            crate::crypto::PinUvAuthProtocol(Box::new(crate::crypto::PinUvAuth1 {})),
+            vec![0x42; 32],
+            crate::ctap2::PinUvAuthTokenPermission::CredentialManagement,
+        );
+
+        for subcommand in [
+            CredManagementCommand::EnumerateRPsGetNextRP,
+            CredManagementCommand::EnumerateCredentialsGetNextCredential,
+        ] {
+            let mut request = CredentialManagement::new(subcommand, true);
+            // A PUAP left over from the previous subcommand must be cleared.
+            request.pin_uv_auth_param = Some(PinUvAuthParam::create_empty());
+            request
+                .set_pin_uv_auth_param(Some(token.clone()))
+                .expect("set_pin_uv_auth_param failed");
+            assert!(request.pin_uv_auth_param.is_none());
+            let wire = request.wire_format().expect("wire_format failed");
+            // Only the subCommand (0x01) is sent: {1: 3} or {1: 5}
+            assert_eq!(wire.len(), 3);
+        }
+
+        for subcommand in [
+            CredManagementCommand::GetCredsMetadata,
+            CredManagementCommand::EnumerateRPsBegin,
+            CredManagementCommand::EnumerateCredentialsBegin(RpIdHash([0u8; 32])),
+        ] {
+            let mut request = CredentialManagement::new(subcommand, true);
+            request
+                .set_pin_uv_auth_param(Some(token.clone()))
+                .expect("set_pin_uv_auth_param failed");
+            assert!(request.pin_uv_auth_param.is_some());
         }
     }
 }

@@ -61,6 +61,15 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
             **kwargs,
         )
 
+    def _add_objdir_dependency(self, obj, path):
+        dep = mozpath.relpath(path.full_path, self.environment.topobjdir)
+        # Only the first output file is specified as a dependency. If there
+        # are multiple output files from a single GENERATED_FILES invocation
+        # that are installed, we only want to run the command once.
+        self._dependencies[f"install-{obj.install_target}"].append(
+            self._generated_files_map.get(dep, dep)
+        )
+
     def consume_object(self, obj):
         if isinstance(
             obj, (FinalTargetFiles, FinalTargetPreprocessedFiles)
@@ -108,15 +117,11 @@ class FasterMakeBackend(MakeBackend, PartialBackend):
                             src, mozpath.join(path, f.target_basename)
                         )
                     if isinstance(f, ObjDirPath):
-                        dep_target = "install-%s" % obj.install_target
-                        dep = mozpath.relpath(f.full_path, self.environment.topobjdir)
-                        if dep in self._generated_files_map:
-                            # Only the first output file is specified as a
-                            # dependency. If there are multiple output files
-                            # from a single GENERATED_FILES invocation that are
-                            # installed, we only want to run the command once.
-                            dep = self._generated_files_map[dep]
-                        self._dependencies[dep_target].append(dep)
+                        self._add_objdir_dependency(obj, f)
+            if isinstance(obj, FinalTargetPreprocessedFiles):
+                for extra_dep in obj.extra_deps:
+                    if isinstance(extra_dep, ObjDirPath):
+                        self._add_objdir_dependency(obj, extra_dep)
 
         elif isinstance(obj, ChromeManifestEntry) and obj.install_target.startswith(
             "dist/bin"

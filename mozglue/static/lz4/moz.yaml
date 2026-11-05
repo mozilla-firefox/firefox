@@ -10,8 +10,8 @@ origin:
 
   url: https://github.com/lz4/lz4
 
-  release: v1.10.0 (2024-07-21T10:29:49-07:00).
-  revision: v1.10.0
+  release: v1.11.0 (2026-11-03T16:58:16-08:00).
+  revision: v1.11.0
 
   license: BSD-2-Clause
   license-file: LICENSE
@@ -36,3 +36,12 @@ vendoring:
       to: '{vendor_dir}'
     - action: delete-path
       path: '{vendor_dir}/lib'
+
+updatebot:
+  maintainer-phab: glandium
+  maintainer-bz: mh+mozilla@glandium.org
+  fuzzy-query: "'gtest | 'xpcshell | 'reftest | 'mochitest-chrome !nofis !swr !-dc !msix !web-platform !talos !source-test"
+  tasks:
+    - type: vendoring
+      enabled: true
+      frequency: every

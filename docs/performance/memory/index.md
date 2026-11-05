@@ -9,7 +9,7 @@ that is never released.
 
 about_colon_memory
 memory_reporting
-awsy
+/testing/perfdocs/awsy
 bloatview
 ```
 

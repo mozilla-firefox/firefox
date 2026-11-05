@@ -66,6 +66,8 @@ Generally, TaskbarTabsPin is responsible for integrating the newly-created web a
 
 Linux under Snap is currently not supported.
 
+The platform-dependent parts live in subclasses of {searchfox}`TaskbarTabsPinBase <browser/components/taskbartabs/TaskbarTabsPinBase.sys.mjs>`: `TaskbarTabsPinWin`, `TaskbarTabsPinMsix` and `TaskbarTabsPinLinux`. Each one creates its shortcut however its platform needs, and only overrides the pinning and unpinning steps if they're separate from creating and deleting the shortcut (currently only on Windows non-MSIX). On platforms without support, TaskbarTabsPinBase is used as-is and pinning fails. TaskbarTabsPin saves the icon, builds the command line arguments, picks the right subclass at runtime and records telemetry, so callers don't need to care about the platform.
+
 ### Keep in mind!
 * On Windows prior to Windows 11, we usually can pin to the taskbar without prompting the user. However, we want to make sure we have the user's permission first (e.g. by clicking on the page action).
 * On Linux under Flatpak, you need the user's permission to update the desktop entry.

@@ -950,6 +950,14 @@ urlbar-view-context-menu-open-in-window2 = Open in New Window
     .accesskey = N
 urlbar-view-context-menu-open-in-private-window2 = Open in New Private Window
     .accesskey = P
+urlbar-view-context-menu-search-in-tab = Search in New Tab
+    .accesskey = w
+urlbar-view-context-menu-search-in-container-tab = Search in New Container Tab
+    .accesskey = i
+urlbar-view-context-menu-search-in-window = Search in New Window
+    .accesskey = N
+urlbar-view-context-menu-search-in-private-window = Search in New Private Window
+    .accesskey = P
 
 # A checkable menu item that controls whether pressing the Tab key while
 # navigating the address bar results stops on each result's menu button. When

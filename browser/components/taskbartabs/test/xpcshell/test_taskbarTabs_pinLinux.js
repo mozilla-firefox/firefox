@@ -29,13 +29,6 @@ sinon.stub(ShellService, "shellService").value({
   },
 });
 
-sinon.stub(TaskbarTabsPin, "_getLocalization").returns({
-  formatValue(msg) {
-    // Slash must also be sanitized, so it should appear as '_' in paths.
-    return `[formatValue/${msg}]`;
-  },
-});
-
 registerCleanupFunction(() => {
   sinon.restore();
 });

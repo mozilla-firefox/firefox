@@ -1999,7 +1999,6 @@ nsresult nsHttpConnection::OnSocketReadable() {
   mLastReadTime = now;
 
   nsresult rv = NS_OK;
-  uint32_t n;
   bool again = true;
 
   do {
@@ -2022,6 +2021,7 @@ nsresult nsHttpConnection::OnSocketReadable() {
     }
 
     mSocketInCondition = NS_OK;
+    uint32_t n = 0;
     if (!mTransaction) {
       rv = NS_ERROR_FAILURE;
       LOG(("  No Transaction In OnSocketWritable\n"));

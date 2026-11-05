@@ -9,6 +9,8 @@ ChromeUtils.defineESModuleGetters(this, {
   ShellService: "moz-src:///browser/components/shell/ShellService.sys.mjs",
   TaskbarTabsPin:
     "moz-src:///browser/components/taskbartabs/TaskbarTabsPin.sys.mjs",
+  TaskbarTabsPinWin:
+    "moz-src:///browser/components/taskbartabs/TaskbarTabsPinWin.sys.mjs",
   TaskbarTabsRegistry:
     "moz-src:///browser/components/taskbartabs/TaskbarTabsRegistry.sys.mjs",
   TaskbarTabsUtils:
@@ -34,7 +36,7 @@ const kMockNativeShellService = {
 sinon.stub(ShellService, "shellService").value(kMockNativeShellService);
 sinon.stub(ShellService, "writeShortcutIcon");
 
-sinon.stub(TaskbarTabsPin, "_getLocalization").returns({
+sinon.stub(TaskbarTabsPinWin, "_getLocalization").returns({
   formatValue(msg) {
     // Slash must also be sanitized, so it should appear as '_' in paths.
     return `[formatValue/${msg}]`;
@@ -214,6 +216,29 @@ add_task(async function test_pin_rejected() {
   );
   Assert.equal(result.rejected, true, "A declined pin is reported");
   Assert.ok(result.shortcut, "The shortcut path is still returned");
+
+  pinShortcutToTaskbar.resolves();
+  registry.removeTaskbarTab(taskbarTab.id);
+});
+
+add_task(async function test_pin_error_returns_shortcut() {
+  const parsedURI = Services.io.newURI("https://www.example.com");
+  const taskbarTab = createTaskbarTab(registry, parsedURI, 0);
+  const { pinShortcutToTaskbar } = kMockNativeShellService;
+  sinon.resetHistory();
+
+  pinShortcutToTaskbar.rejects(new Error("Pin failed"));
+  let result = await TaskbarTabsPin.pinTaskbarTab(
+    taskbarTab,
+    await TaskbarTabsUtils.getDefaultIcon()
+  );
+
+  Assert.strictEqual(
+    result.shortcut,
+    kMockNativeShellService.createShortcut.firstCall.args[7],
+    "The created shortcut is returned so that it can be deleted later"
+  );
+  Assert.strictEqual(result.rejected, false, "A failed pin is not a rejection");
 
   pinShortcutToTaskbar.resolves();
   registry.removeTaskbarTab(taskbarTab.id);

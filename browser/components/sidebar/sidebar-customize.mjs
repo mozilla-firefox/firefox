@@ -23,6 +23,7 @@ const l10nMap = new Map([
   ["viewOpenTabsSidebar", "sidebar-menu-open-tabs-label"],
   ["viewCPMSidebar", "sidebar-menu-contextual-password-manager-label"],
   ["viewResourceMonitorSidebar", "sidebar-menu-resource-monitor-label"],
+  ["viewWidgetsSidebar", "sidebar-menu-widget-studio-label"],
 ]);
 const VISIBILITY_SETTING_PREF = "sidebar.visibility";
 const EXPAND_ON_HOVER_PREF = "sidebar.expandOnHover";

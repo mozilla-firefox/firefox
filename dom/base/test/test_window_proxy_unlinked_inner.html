@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test that a WindowProxy whose inner window has been unlinked is not exposed</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+
+add_setup(async function init() {
+  await SimpleTest.promiseFocus(window);
+})
+
+add_task(async function test_window_proxy_unlinked_inner() {
+  let frame = document.createElement("iframe");
+  document.body.append(frame);
+
+  let win = frame.contentWindow;
+  win.cycle = new win.MessageEvent("cycle", {data: win});
+
+  // The two events keep the native BrowsingContext and outer alive, not
+  // the JS global.
+  let windowHolders = {
+    message: new MessageEvent("hold", {source: win}),
+    ui: new UIEvent("hold", {view: win}),
+  };
+  let windowWeakRef = new WeakRef(win);
+
+  frame.remove();
+  is(windowHolders.message.source, win,
+     "MessageEvent.source can expose a live detached window");
+  is(windowHolders.ui.view, win,
+     "UIEvent.view can expose a live detached window");
+
+  frame = null;
+  win = null;
+
+  await SimpleTest.promiseWaitForCondition(() => {
+    // Check after every CC, before another GC can collect the JS wrapper
+    // and conceal a stale native cache.
+    SpecialPowers.DOMWindowUtils.garbageCollect();
+    SpecialPowers.DOMWindowUtils.cycleCollect();
+    return windowWeakRef.deref() === undefined;
+  }, "The detached window has been collected")
+
+  is(windowWeakRef.deref(), undefined,
+     "Check that the detached window has been collected");
+  is(windowHolders.message.source, null,
+     "MessageEvent.source must not expose an unlinked window");
+  is(windowHolders.ui.view, null,
+     "UIEvent.view must not expose an unlinked window");
+});
+
+</script>
+</body>
+</html>

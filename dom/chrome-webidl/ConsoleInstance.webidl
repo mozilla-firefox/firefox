@@ -35,6 +35,8 @@ dictionary ConsoleEvent {
   DOMString groupName = "";
   any timer = null;
   any counter = null;
+  // The log module, then the prefix, of the console.
+  // TODO: split into logModule and prefix, e.g. for console.context().
   DOMString prefix = "";
   boolean chromeContext = false;
 };
@@ -143,7 +145,16 @@ dictionary ConsoleInstanceOptions {
   // An optional function to intercept all strings written to stdout.
   ConsoleInstanceDumpCallback dump;
 
-  // An optional prefix string to be printed before the actual logged message.
+  // An optional name for the MOZ_LOG module of the console. An empty logModule
+  // defaults to "console".
+  // DEPRECATED: An empty logModule can default to the prefix, for backward
+  // compatibility.
+  DOMString logModule = "";
+
+  // An optional prefix string to be printed after the log module and before the
+  // actual logged message.
+  // DEPRECATED: A prefix given without a logModule also names the MOZ_LOG
+  // module, for backward compatibility. Give a logModule instead.
   DOMString prefix = "";
 
   // An ID representing the source of the message. Normally the inner ID of a

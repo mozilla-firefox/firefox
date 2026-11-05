@@ -71,12 +71,15 @@ struct BreakpadProcessId {
 #endif
 };
 
-using RustDumpCallback = void (*)(const void*, BreakpadProcessId,
-                                  const ExtraCrashData*, const breakpad_char*);
+struct OpaqueCrashGenerator;
+
+using RustDumpCallback = void (*)(const OpaqueCrashGenerator*,
+                                  BreakpadProcessId, const ExtraCrashData*,
+                                  const breakpad_char*);
 
 struct BreakpadContext {
   RustDumpCallback callback;
-  const void* generator;
+  const OpaqueCrashGenerator* generator;
 };
 
 #if defined(XP_LINUX)

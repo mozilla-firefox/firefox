@@ -22,7 +22,8 @@ add_task(async function test_console_to_mozlog() {
       lines.push(line);
     },
     extraEnv: {
-      MOZ_LOG: "console:5,my-prefix:2,PageMessages:5,error-only:1",
+      MOZ_LOG:
+        "console:5,my-prefix:2,PageMessages:5,error-only:1,log-module:5,prefix-only:5",
     },
   });
   const exitCode = await promise;
@@ -59,6 +60,16 @@ add_task(async function test_console_to_mozlog() {
     // MOZ_LOG=PageMessages:5
     `I/PageMessages String message`,
     `E/PageMessages [JavaScript Error: "Error: Async exception" {file: "resource://testing-common/backgroundtasks/BackgroundTask_console.sys.mjs" line: 50}]`,
+
+    // MOZ_LOG=log-module:5
+    // MOZ_LOG already logs the module name, so only the prefix is added.
+    `I/log-module log: "log-module-only"`,
+    `I/log-module log: Some prefix: "log-module-and-prefix"`,
+    `I/log-module log: "log-module-as-prefix"`,
+
+    // MOZ_LOG=prefix-only:5
+    // Without a logModule, the prefix names the module, and isn't added.
+    `I/prefix-only log: "prefix-only"`,
   ];
 
   info(lines);

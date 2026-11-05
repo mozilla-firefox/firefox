@@ -22,7 +22,7 @@ using mozilla::OriginTrials from "mozilla/OriginTrialsIPCUtils.h";
 using mozilla::RFPTargetSet from "nsRFPService.h";
 using struct mozilla::dom::RemoteType from "mozilla/dom/RemoteType.h";
 
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 namespace mozilla {
 namespace dom {

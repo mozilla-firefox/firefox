@@ -99,6 +99,14 @@ static auto GetSecurityInfoStructured(nsIFile* aFile) {
                          std::move(secDesc));
 }
 
+static bool ChildAclMatchesParent(nsIFile* aChild, nsIFile* aParentDir) {
+  auto [childPath, childDacl, childSecDesc] = GetSecurityInfoStructured(aChild);
+  bool isDir = false;
+  EXPECT_NS_SUCCEEDED(aChild->IsDirectory(&isDir));
+  return nsLocalFile::ChildAclMatchesAclInheritedFromParent(
+      childDacl, isDir, childSecDesc, aParentDir);
+}
+
 // SECURITY_SID_SIZE() is not defined in mingw headers
 #  if !defined(__MINGW32__)
 static void AddAcesForRandomSidToDir(nsIFile* aDir) {
@@ -132,6 +140,29 @@ static void AddAcesForRandomSidToDir(nsIFile* aDir) {
                                     DACL_SECURITY_INFORMATION, nullptr, nullptr,
                                     newDacl.get(), nullptr),
             (ULONG)ERROR_SUCCESS);
+}
+
+static void ExpectSameDacl(nsIFile* aFile, nsIFile* aExpectedFile) {
+  auto [path, dacl, secDesc] = GetSecurityInfoStructured(aFile);
+  auto [expectedPath, expectedDacl, expectedSecDesc] =
+      GetSecurityInfoStructured(aExpectedFile);
+
+  ACL_SIZE_INFORMATION sizeInfo;
+  ASSERT_TRUE(::GetAclInformation(dacl.get(), &sizeInfo, sizeof(sizeInfo),
+                                  AclSizeInformation));
+  ACL_SIZE_INFORMATION expectedSizeInfo;
+  ASSERT_TRUE(::GetAclInformation(expectedDacl.get(), &expectedSizeInfo,
+                                  sizeof(expectedSizeInfo),
+                                  AclSizeInformation));
+  ASSERT_EQ(sizeInfo.AceCount, expectedSizeInfo.AceCount)
+      << NS_ConvertUTF16toUTF8(path).get() << " has a different ACE count to "
+      << NS_ConvertUTF16toUTF8(expectedPath).get();
+  ASSERT_EQ(sizeInfo.AclBytesInUse, expectedSizeInfo.AclBytesInUse);
+  EXPECT_EQ(memcmp(dacl.get() + 1, expectedDacl.get() + 1,
+                   sizeInfo.AclBytesInUse - sizeof(ACL)),
+            0)
+      << NS_ConvertUTF16toUTF8(path).get() << " has different ACEs to "
+      << NS_ConvertUTF16toUTF8(expectedPath).get();
 }
 #  endif
 #endif
@@ -388,10 +419,7 @@ static bool TestMove(nsIFile* aBase, nsIFile* aDestDir, const char* aName,
       GetSecurityInfoStructured(file);
   EXPECT_FALSE(childSecDesc->Control & SE_DACL_PROTECTED)
       << "SE_DACL_PROTECTED bit should not be set on the security descriptor";
-  bool isDir = false;
-  EXPECT_NS_SUCCEEDED(file->IsDirectory(&isDir));
-  EXPECT_TRUE(nsLocalFile::ChildAclMatchesAclInheritedFromParent(
-      childDacl, isDir, childSecDesc, aDestDir))
+  EXPECT_TRUE(ChildAclMatchesParent(file, aDestDir))
       << newName.get() << " ACL, does not match destination dir";
 #endif
 
@@ -672,6 +700,52 @@ static void SetupAndTestFunctions(const nsAString& aDirName,
   auto [f9p, f9d, file9SecDescAfter] = GetSecurityInfoStructured(file9);
   ASSERT_TRUE(file9SecDescAfter->Control & SE_DACL_PROTECTED);
   ASSERT_TRUE(TestMove(subdir, base, "file9.txt", "file9.txt"));
+
+  // If the source and target dirs pass on the same number of inherited ACEs,
+  // but they are different, then we still need to reset the inheritance.
+  nsCOMPtr<nsIFile> subdir3;
+  ASSERT_TRUE(TestCreate(base, "subdir3", nsIFile::DIRECTORY_TYPE, 0700,
+                         getter_AddRefs(subdir3)));
+  AddAcesForRandomSidToDir(subdir3);
+  nsCOMPtr<nsIFile> subdir4;
+  ASSERT_TRUE(TestCreate(base, "subdir4", nsIFile::DIRECTORY_TYPE, 0700,
+                         getter_AddRefs(subdir4)));
+  AddAcesForRandomSidToDir(subdir4);
+  ASSERT_TRUE(
+      TestCreate(subdir3, "file10.txt", nsIFile::NORMAL_FILE_TYPE, 0600));
+  ASSERT_TRUE(TestMove(subdir3, subdir4, "file10.txt", "file10.txt"));
+  nsCOMPtr<nsIFile> file10 = NewFile(subdir4);
+  ASSERT_TRUE(file10);
+  ASSERT_NS_SUCCEEDED(file10->AppendNative("file10.txt"_ns));
+  nsCOMPtr<nsIFile> file11;
+  ASSERT_TRUE(TestCreate(subdir4, "file11.txt", nsIFile::NORMAL_FILE_TYPE, 0600,
+                         getter_AddRefs(file11)));
+  ExpectSameDacl(file10, file11);
+
+  // Children that inherit normally from a parent should match it, so that we
+  // don't make unnecessary calls to reset their inheritance.
+  EXPECT_TRUE(ChildAclMatchesParent(file11, subdir4));
+  nsCOMPtr<nsIFile> subdir5;
+  ASSERT_TRUE(TestCreate(subdir4, "subdir5", nsIFile::DIRECTORY_TYPE, 0700,
+                         getter_AddRefs(subdir5)));
+  EXPECT_TRUE(ChildAclMatchesParent(subdir5, subdir4));
+
+  // This should also be the case for children of different dirs that inherit
+  // the same ACEs.
+  nsCOMPtr<nsIFile> subdir6;
+  ASSERT_TRUE(TestCreate(base, "subdir6", nsIFile::DIRECTORY_TYPE, 0700,
+                         getter_AddRefs(subdir6)));
+  nsCOMPtr<nsIFile> subdir7;
+  ASSERT_TRUE(TestCreate(base, "subdir7", nsIFile::DIRECTORY_TYPE, 0700,
+                         getter_AddRefs(subdir7)));
+  nsCOMPtr<nsIFile> file12;
+  ASSERT_TRUE(TestCreate(subdir6, "file12.txt", nsIFile::NORMAL_FILE_TYPE, 0600,
+                         getter_AddRefs(file12)));
+  EXPECT_TRUE(ChildAclMatchesParent(file12, subdir7));
+  nsCOMPtr<nsIFile> subdir8;
+  ASSERT_TRUE(TestCreate(subdir6, "subdir8", nsIFile::DIRECTORY_TYPE, 0700,
+                         getter_AddRefs(subdir8)));
+  EXPECT_TRUE(ChildAclMatchesParent(subdir8, subdir7));
 #endif
 
   // Test copying across directories

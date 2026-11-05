@@ -1,0 +1,6 @@
+---
+BadSplitDirsLinter:
+    description: Has an invalid split-dirs directive.
+    split-dirs: '2'
+    type: string
+    payload: foobar

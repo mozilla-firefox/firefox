@@ -49,9 +49,9 @@ class WebBrowserPersistDocumentParent final
   using Attrs = WebBrowserPersistDocumentAttrs;
 
   // IPDL methods:
-  mozilla::ipc::IPCResult RecvAttributes(Attrs&& aAttrs,
-                                         NotNull<nsIPrincipal*> aPrincipal,
-                                         nsIInputStream* aPostStream);
+  mozilla::ipc::IPCResult RecvAttributes(
+      Attrs&& aAttrs, Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
+      nsIInputStream* aPostStream);
   mozilla::ipc::IPCResult RecvInitFailure(const nsresult& aFailure);
 
   PWebBrowserPersistResourcesParent* AllocPWebBrowserPersistResourcesParent();

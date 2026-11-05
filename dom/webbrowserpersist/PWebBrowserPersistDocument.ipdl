@@ -13,7 +13,7 @@ include NeckoChannelParams;
 include "mozilla/dom/ReferrerInfoUtils.h";
 
 [RefCounted] using class nsIReferrerInfo from "nsIReferrerInfo.h";
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 [RefCounted] using class nsIInputStream from "mozilla/ipc/IPCStreamUtils.h";
 
 namespace mozilla {

@@ -4,10 +4,10 @@
 
 export const NET_ERROR_ILLUSTRATIONS = {
   noConnection: {
-    src: "chrome://global/skin/illustrations/no-connection.svg",
+    src: "resource://content-accessible/illustrations/no-connection.svg",
     className: "no-connection",
   },
   securityError: {
-    src: "chrome://global/skin/illustrations/security-error.svg",
+    src: "resource://content-accessible/illustrations/security-error.svg",
   },
 };

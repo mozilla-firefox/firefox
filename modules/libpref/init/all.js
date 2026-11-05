@@ -3073,6 +3073,11 @@ pref("network.tcp.keepalive.idle_time", 600); // seconds; 10 mins
   pref("geo.provider.network.timeout", 60000);
 #endif
 
+// Maximum age, in days, of a response the NetworkGeolocationProvider request
+// cache (which is persisted across browser sessions) may reuse. Clamped to
+// the range 1 to 30.
+pref("geo.provider.network.requestCache.maxAgeDays", 30);
+
 #ifdef XP_MACOSX
   pref("geo.provider.use_corelocation", true);
 #endif

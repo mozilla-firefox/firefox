@@ -69,8 +69,6 @@ var ops = {
 }
 
 function runTest() {
-  const excludeNonSelectableNodes = SpecialPowers.getBoolPref("dom.selection.exclude_non_selectable_nodes");
-
   const firstText = pre.childNodes[0];             // [0] 1st line:  0-9 (+ leading linefeed 1)
   const xBeforeSpan2 = firstText.nextSibling;      // [1] 1st line:  0-4
   const span2 = document.getElementById("span2");  // [2] 1st line:  0-13
@@ -100,38 +98,19 @@ function runTest() {
       if (action == keyLeft) {
         keyLeft({shiftKey:true}, 2)
         checkRanges(
-          excludeNonSelectableNodes
-           ? [
-               [firstText, 8, pre, 2],
-               [xAfterSpan2, 0, pre, 4],
-               [xAfterSpan3, 0, lastText, 0],
-             ]
-            : [[firstText, 8, lastText, 0]],
+          [[firstText, 8, lastText, 0]],
           {id: "prev1: after Shift+ArrowLeft twice"}
         );
       } else if (action == keyRight) {
         keyRight({shiftKey:true}, 2)
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [xBeforeSpan2.firstChild, 2, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 0],
-              ]
-            : [[xBeforeSpan2.firstChild, 2, lastText, 0]],
+          [[xBeforeSpan2.firstChild, 2, lastText, 0]],
           {id: "prev1: after Shift+ArrowRight twice"}
         );
       } else if (action == accelDragSelect) {
         accelDragSelect(pre, 30, 50);
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 1, firstText, 2],
-                [xBeforeSpan2.firstChild, 0, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 0],
-              ]
-            : [
+            [
               [firstText, 1, firstText, 2],
               [xBeforeSpan2.firstChild, 0, lastText, 0],
             ],
@@ -140,49 +119,27 @@ function runTest() {
       } else {
         action(pre, 30);
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 1, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 0],
-              ]
-            : [[firstText, 1, lastText, 0]],
+          [[firstText, 1, lastText, 0]],
           {id: `prev1: after action(${action.name})`}
         );
       }
     } else if (test == "#prev2") {
       action(pre, 260);
       checkRanges(
-        excludeNonSelectableNodes
-          ? [
-              [xBeforeSpan2.firstChild, 3, pre, 2],
-              [xAfterSpan2, 0, pre, 4],
-              [xAfterSpan3, 0, lastText, 0],
-            ]
-          : [[xBeforeSpan2.firstChild, 3, lastText, 0]],
+        [[xBeforeSpan2.firstChild, 3, lastText, 0]],
         {id: `prev2: after action(${action.name})`}
       );
     } else if (test == "#prev3") {
       enableSelection('span2');
       action(pre, 400);
       checkRanges(
-        excludeNonSelectableNodes
-          ? [
-              [span2.firstChild, 5, pre, 4],
-              [xAfterSpan3, 0, lastText, 0],
-            ]
-          : [[span2.firstChild, 5, lastText, 0]],
+        [[span2.firstChild, 5, lastText, 0]],
         {id: `prev3: after action(${action.name}) with enabling selection of span2`}
       );
     } else if (test == "#prev4") {
       action(pre, 180, 65);
       checkRanges(
-        excludeNonSelectableNodes
-          ? [
-              [xAfterSpan2.firstChild, 2, pre, 4],
-              [xAfterSpan3, 0, lastText, 0],
-            ]
-          : [[xAfterSpan2.firstChild, 2, lastText, 0]],
+        [[xAfterSpan2.firstChild, 2, lastText, 0]],
         {id: `prev4: after action(${action.name})`}
       );
     } else if (test == "#prev5") {
@@ -202,17 +159,10 @@ function runTest() {
       if (action == accelDragSelect) {
         accelDragSelect(pre, 460, 500, 125);
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [xBeforeSpan2.firstChild, 0, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 0],
-                [lastText, 8, lastText, 10],
-              ]
-            : [
-                [xBeforeSpan2.firstChild, 0, lastText, 0],
-                [lastText, 8, lastText, 10],
-              ],
+          [
+            [xBeforeSpan2.firstChild, 0, lastText, 0],
+            [lastText, 8, lastText, 10],
+          ],
           {id: "prev7: after accelDragSelect"}
         );
       } else {
@@ -233,12 +183,7 @@ function runTest() {
         synthesizeMouse(pre, 200, 60, {type: "mousemove", accelKey: true});
         synthesizeMouse(pre, 200, 60, {type: "mouseup", accelKey: true});
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [xAfterSpan2.firstChild, 3, pre, 4],
-                [xAfterSpan3, 0, xAfterSpan3.firstChild, 5],
-              ]
-            : [[xAfterSpan2.firstChild, 3, xAfterSpan3.firstChild, 5]],
+          [[xAfterSpan2.firstChild, 3, xAfterSpan3.firstChild, 5]],
           {id: "prev8: after dragging mouse with pressing accel key"}
         );
       }
@@ -248,41 +193,22 @@ function runTest() {
       if (action == keyLeft) {
         keyLeft({shiftKey:true}, 2)
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-              [firstText, 10, pre, 2],
-              [xAfterSpan2, 0, pre, 4],
-              [xAfterSpan3, 0, xAfterSpan3.firstChild, 8],
-            ]
-            : [[firstText, 10, xAfterSpan3.firstChild, 8]],
+          [[firstText, 10, xAfterSpan3.firstChild, 8]],
           {id: "next1: after Shift+ArrowLeft twice"}
         );
       } else if (action == keyRight) {
         keyRight({shiftKey:true}, 2)
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 10, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 2],
-              ]
-            : [[firstText, 10, lastText, 2]],
+          [[firstText, 10, lastText, 2]],
           {id: "next1: after Shift+ArrowRight twice"}
         );
       } else if (action == accelDragSelect) {
         accelDragSelect(pre, 30, 50);
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 1, firstText, 2],
-                [firstText, 10, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, xAfterSpan3.firstChild, 10],
-              ]
-            : [
-                [firstText, 1, firstText, 2],
-                [firstText, 10, xAfterSpan3.firstChild, 10],
-              ],
+          [
+            [firstText, 1, firstText, 2],
+            [firstText, 10, xAfterSpan3.firstChild, 10],
+          ],
           {id: "next1: after accelDragSelect"}
         );
       } else {
@@ -308,78 +234,43 @@ function runTest() {
     } else if (test == "#next4") {
       action(pre, 180, 65);
       checkRanges(
-        excludeNonSelectableNodes
-          ? [
-              [firstText, 10, pre, 2],
-              [xAfterSpan2, 0, xAfterSpan2.firstChild, 2],
-            ]
-          : [[firstText, 10, xAfterSpan2.firstChild, 2]],
+        [[firstText, 10, xAfterSpan2.firstChild, 2]],
         {id: `next4: after action(${action.name})`}
       );
     } else if (test == "#next5") {
       enableSelection('span3');
       action(pre, 440, 65);
       checkRanges(
-        excludeNonSelectableNodes
-          ? [
-              [firstText, 10, pre, 2],
-              [xAfterSpan2, 0, span3.firstChild, 10],
-            ]
-          : [[firstText, 10, span3.firstChild, 10]],
+        [[firstText, 10, span3.firstChild, 10]],
         {id: `next5: after action(${action.name}) with enabling selection in span3`}
       );
     } else if (test == "#next6") {
       action(pre, 140, 125);
       checkRanges(
-        excludeNonSelectableNodes
-          ? [
-              [firstText, 10, pre, 2],
-              [xAfterSpan2, 0, pre, 4],
-              [xAfterSpan3, 0, xAfterSpan3.firstChild, 2],
-            ]
-          : [[firstText, 10, xAfterSpan3.firstChild, 2]],
+        [[firstText, 10, xAfterSpan3.firstChild, 2]],
         {id: `next6: after action(${action.name})`}
       );
     } else if (test == "#next7") {
       if (action == keyRight) {
         keyRight({shiftKey:true}, 2)
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 10, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 2],
-              ]
-            : [[firstText, 10, lastText, 2]],
+          [[firstText, 10, lastText, 2]],
           {id: "next7: after Shift+ArrowRight twice"}
         );
       } else if (action == accelDragSelect) {
         accelDragSelect(pre, 460, 500, 125);
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 10, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, xAfterSpan3.firstChild, 10],
-                [lastText, 8, lastText, 10],
-              ]
-            : [
-                [firstText, 10, xAfterSpan3.firstChild, 10],
-                [lastText, 8, lastText, 10],
-              ],
+          [
+            [firstText, 10, xAfterSpan3.firstChild, 10],
+            [lastText, 8, lastText, 10],
+          ],
           {id: "next7: after accelDragSelect"}
         );
       } else {
         action(pre, 500, 125);
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-                [firstText, 10, pre, 2],
-                [xAfterSpan2, 0, pre, 4],
-                [xAfterSpan3, 0, lastText, 10],
-              ]
-            : [[firstText, 10, lastText, 10]],
-            {id: `next7: after action(${action.name}`}
+          [[firstText, 10, lastText, 10]],
+          {id: `next7: after action(${action.name}`}
         );
       }
     } else if (test == "#next8") {
@@ -394,12 +285,7 @@ function runTest() {
         synthesizeMouse(pre, 200, 125, {type: "mousemove", accelKey: true});
         synthesizeMouse(pre, 200, 125, {type: "mouseup", accelKey: true});
         checkRanges(
-          excludeNonSelectableNodes
-            ? [
-              [xAfterSpan2.firstChild, 3, pre, 4],
-              [xAfterSpan3, 0, xAfterSpan3.firstChild, 5],
-            ]
-            : [[xAfterSpan2.firstChild, 3,xAfterSpan3.firstChild, 5]],
+          [[xAfterSpan2.firstChild, 3,xAfterSpan3.firstChild, 5]],
           {id: "next8: after dragging with pressing Accel key"}
         );
       }

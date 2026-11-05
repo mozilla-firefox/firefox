@@ -3,33 +3,24 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+import { NetworkGeoPositionObject } from "moz-src:///dom/system/NetworkGeoPosition.sys.mjs";
 
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   LocationHelper: "moz-src:///dom/base/LocationHelper.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
+  NetworkGeolocationCache:
+    "moz-src:///dom/system/NetworkGeolocationCache.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
 // GeolocationPositionError has no interface object, so we can't use that here.
 const POSITION_UNAVAILABLE = 2;
 
-// A cached location is only valid on the network it was obtained from, so the
-// cache drops itself when the network link changes and the public IP (or set of
-// visible access points) may differ. See nsINetworkLinkService.
-const NETWORK_LINK_TOPIC = "network:link-status-changed";
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "gNetworkGeolocationLogLevel",
-  "geo.provider.network.loglevel",
-  "Off"
-);
-
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
   let consoleOptions = {
-    maxLogLevelPref: lazy.gNetworkGeolocationLogLevel,
+    maxLogLevelPref: "geo.provider.network.loglevel",
     prefix: "NetworkGeolocationProvider",
   };
   return console.createInstance(consoleOptions);
@@ -71,154 +62,6 @@ export function networkProviderLabel(url) {
 
   return "other";
 }
-
-// Build a Set of access-point MAC addresses from a wifi list.
-function wifiMacSet(wifiList = []) {
-  return new Set(wifiList.map(ap => ap.macAddress));
-}
-
-// Two sets are approximately equal if at least 50% of the larger set is common
-// to both.
-function wifiSetsApproxEqual(setA, setB) {
-  if (!setA.size || !setB.size) {
-    return false;
-  }
-
-  let common = setA.intersection(setB).size;
-  let kPercentMatch = 0.5;
-  return common >= Math.max(setA.size, setB.size) * kPercentMatch;
-}
-
-// Caches the most recent network-geolocation response so repeated lookups can
-// reuse it instead of re-querying.
-class CachedResponse {
-  QueryInterface = ChromeUtils.generateQI(["nsIObserver"]);
-
-  location = null;
-  #wifis = new Set();
-
-  constructor() {
-    Services.obs.addObserver(this, NETWORK_LINK_TOPIC);
-  }
-
-  store(location, wifiList) {
-    this.location = location;
-    this.#wifis = wifiMacSet(wifiList);
-  }
-
-  clear() {
-    this.location = null;
-    this.#wifis = new Set();
-  }
-
-  hasLocation() {
-    return !!this.location;
-  }
-
-  hasWifis() {
-    return this.#wifis.size > 0;
-  }
-
-  isGeoip() {
-    return !this.hasWifis();
-  }
-
-  isWifiApproxEqual(wifiList) {
-    return wifiSetsApproxEqual(this.#wifis, wifiMacSet(wifiList));
-  }
-
-  observe(subject, topic, data) {
-    if (topic !== NETWORK_LINK_TOPIC) {
-      return;
-    }
-
-    Glean.geolocation.networkLinkChange[data].add();
-
-    // "down"/"unknown" do not imply a different network. Losing the link cannot
-    // make a cached position wrong, and up/down are edge-triggered, so any
-    // return of the link fires "up" and invalidates before the first request
-    // that could have been served from the stale entry.
-    if (data === "changed" || data === "up") {
-      this.clear();
-    }
-  }
-}
-
-// The single cache instance, created lazily to avoid needlessly registering
-// the NetworkLinkService observer.
-/** @type {CachedResponse?} */
-var gCachedResponse = null;
-var gDebugCacheReasoning = ""; // for logging the caching logic
-
-function ensureCachedResponse() {
-  if (!gCachedResponse) {
-    gCachedResponse = new CachedResponse();
-  }
-}
-
-// Returns the cached location to reuse for a request with the given wifi list,
-// or null if the cache is unusable: disabled, empty, or insufficiently
-// accurate to service the new request (as determined by isWifiApproxEqual).
-function getValidCachedLocation(newWifiList) {
-  gDebugCacheReasoning = "";
-  let isNetworkRequestCacheEnabled = Services.prefs.getBoolPref(
-    "geo.provider.network.debug.requestCache.enabled",
-    true
-  );
-  // Mochitest needs this pref to simulate request failure
-  if (!isNetworkRequestCacheEnabled) {
-    gCachedResponse?.clear();
-  }
-
-  if (!gCachedResponse?.hasLocation() || !isNetworkRequestCacheEnabled) {
-    gDebugCacheReasoning = "No cached data";
-    return null;
-  }
-
-  if (!newWifiList) {
-    gDebugCacheReasoning = "New req. is GeoIP.";
-    return gCachedResponse.location;
-  }
-
-  let hasEqualWifis = gCachedResponse.isWifiApproxEqual(newWifiList);
-
-  gDebugCacheReasoning = `EqualWifis: ${hasEqualWifis}`;
-
-  if (gCachedResponse.hasWifis() && hasEqualWifis) {
-    gDebugCacheReasoning += ", Wifi only.";
-    return gCachedResponse.location;
-  }
-
-  return null;
-}
-
-function NetworkGeoCoordsObject(lat, lon, acc) {
-  this.latitude = lat;
-  this.longitude = lon;
-  this.accuracy = acc;
-
-  // Neither GLS nor MLS return the following properties, so set them to NaN
-  // here. nsGeoPositionCoords will convert NaNs to null for optional properties
-  // of the JavaScript Coordinates object.
-  this.altitude = NaN;
-  this.altitudeAccuracy = NaN;
-  this.heading = NaN;
-  this.speed = NaN;
-}
-
-NetworkGeoCoordsObject.prototype = {
-  QueryInterface: ChromeUtils.generateQI(["nsIDOMGeoPositionCoords"]),
-};
-
-function NetworkGeoPositionObject(lat, lng, acc) {
-  this.coords = new NetworkGeoCoordsObject(lat, lng, acc);
-  this.address = null;
-  this.timestamp = Date.now();
-}
-
-NetworkGeoPositionObject.prototype = {
-  QueryInterface: ChromeUtils.generateQI(["nsIDOMGeoPosition"]),
-};
 
 export function NetworkGeolocationProvider() {
   /*
@@ -363,11 +206,6 @@ NetworkGeolocationProvider.prototype = {
       return;
     }
 
-    // The request cache is intentionally retained across shutdown so a recent
-    // position can be reused across the provider's stop/restart cycles within a
-    // browser run, instead of cold-starting a network request for each
-    // intermittent geolocation use.
-
     if (this.timer) {
       this.timer.cancel();
       this.timer = null;
@@ -461,13 +299,15 @@ NetworkGeolocationProvider.prototype = {
       data.wifiAccessPoints = wifiData;
     }
 
-    let cachedLocation = getValidCachedLocation(data.wifiAccessPoints);
+    let cachedLocation = await lazy.NetworkGeolocationCache.getValidLocation(
+      data.wifiAccessPoints
+    );
 
     lazy.log.debug(
       "Use request cache:" +
         !!cachedLocation +
         " reason:" +
-        gDebugCacheReasoning
+        lazy.NetworkGeolocationCache.debugReason
     );
 
     if (cachedLocation) {
@@ -509,8 +349,7 @@ NetworkGeolocationProvider.prototype = {
         this.listener.update(newLocation);
       }
 
-      ensureCachedResponse();
-      gCachedResponse.store(newLocation, data.wifiAccessPoints);
+      lazy.NetworkGeolocationCache.store(newLocation, data.wifiAccessPoints);
 
       // Recovered: if we had backed off, return the timer to normal cadence.
       if (this._currentTimerInterval !== this._wifiMonitorTimeout) {

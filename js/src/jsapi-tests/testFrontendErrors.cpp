@@ -11,7 +11,7 @@
 #include "js/AllocPolicy.h"            // js::ReportOutOfMemory
 #include "js/CompileOptions.h"  // JS::PrefableCompileOptions, JS::CompileOptions
 #include "js/Exception.h"  // JS_IsExceptionPending, JS_IsThrowingOutOfMemory, JS_GetPendingException, JS_ClearPendingException, JS_ErrorFromException
-#include "js/experimental/CompileScript.h"  // JS::NewFrontendContext, JS::DestroyFrontendContext, JS::SetNativeStackQuota, JS::CompileGlobalScriptToStencil, JS::ConvertFrontendErrorsToRuntimeErrors, JS::HadFrontendErrors, JS::HadFrontendOverRecursed, JS::HadFrontendOutOfMemory, JS::HadFrontendAllocationOverflow, JS::AllowCancellingCompilation, JS::RequestFrontendCompilationCancellation, JS::HadFrontendCancelled, JS::GetFrontendWarningCount, JS::GetFrontendWarningAt
+#include "js/experimental/CompileScript.h"  // JS::NewFrontendContext, JS::DestroyFrontendContext, JS::SetNativeStackQuota, JS::CompileGlobalScriptToStencil, JS::ConvertFrontendErrorsToRuntimeErrors, JS::HadFrontendErrors, JS::HadFrontendOverRecursed, JS::HadFrontendOutOfMemory, JS::HadFrontendAllocationOverflow, JS::FrontendContextCreationOptions, JS::RequestFrontendCompilationCancellation, JS::HadFrontendCancelled, JS::GetFrontendWarningCount, JS::GetFrontendWarningAt
 #include "js/friend/ErrorMessages.h"        // JSMSG_*
 #include "js/friend/StackLimits.h"          // js::ReportOverRecursed
 #include "js/RootingAPI.h"                  // JS::Rooted
@@ -349,8 +349,9 @@ END_TEST(testFrontendErrors_allocationOverflow)
     cls_testFrontendErrors_allocationOverflow::warningReporterCalled = false;
 
 BEGIN_TEST(testFrontendErrors_cancelled) {
-  JS::FrontendContext* fc =
-      JS::NewFrontendContext(JS::AllowCancellingCompilation::Yes);
+  JS::FrontendContextCreationOptions fcOptions;
+  fcOptions.allowCancellingCompilation = true;
+  JS::FrontendContext* fc = JS::NewFrontendContext(&fcOptions);
   CHECK(fc);
 
   static constexpr JS::NativeStackSize stackSize = 128 * sizeof(size_t) * 1024;

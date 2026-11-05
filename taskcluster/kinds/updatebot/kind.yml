@@ -5,7 +5,6 @@
 loader: taskgraph.loader.transform:loader
 
 kind-dependencies:
-    - fetch
     - toolchain
 
 transforms:
@@ -56,45 +55,3 @@ tasks:
                 - linux64-rust
                 - linux64-cargo-vet
                 - linux64-gn
-
-    cron-win:
-        description: Cron Job for Updatebot (Windows)
-        run-on-projects: []
-        treeherder:
-            kind: other
-            platform: updatebot/all
-            symbol: w-cron
-            tier: 1
-        worker-type: b-win2022-updatebot
-        worker:
-            max-run-time: 4500
-            taskcluster-proxy: true
-            # begin _GENERATE_DEPOT_TOOLS_BINARIES_
-            # artifacts:
-            #     - type: directory
-            #       name: public/depot_tools.zip
-            #       path: build\src\obj-build\depot_tools
-            # end _GENERATE_DEPOT_TOOLS_BINARIES_
-            env:
-                TOOLTOOL_MANIFEST: "taskcluster/kinds/updatebot/tooltool-manifests/updatebot.manifest"
-                MSYSTEM: "MINGW64"
-        run:
-            clone-with: hg
-            using: run-task
-            cwd: '{checkout}'
-            command: ./taskcluster/docker/updatebot/windows-setup.sh
-            tooltool-downloads: internal
-        scopes:
-            - secrets:get:project/updatebot/{level}/try-sshkey
-            - secrets:get:project/updatebot/{level}/phabricator-token
-            - secrets:get:project/updatebot/{level}/bugzilla-api-key
-            - secrets:get:project/updatebot/{level}/database-password
-            - secrets:get:project/updatebot/{level}/sentry-url
-            - secrets:get:project/updatebot/{level}/sql-proxy-config
-            - hooks:trigger-hook:project-gecko/in-tree-action-1-generic/*
-        fetches:
-            fetch:
-                - cloud-sql-proxy-1.25.0
-                - php-windows-7.4.24
-                - arcanist
-                - depot_tools

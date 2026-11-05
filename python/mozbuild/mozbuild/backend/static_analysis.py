@@ -13,8 +13,6 @@ import mozpack.path as mozpath
 
 from mozbuild.compilation.database import CompileDBBackend
 
-from ..frontend.data import Headers
-
 
 class StaticAnalysisBackend(CompileDBBackend):
     def _init(self):
@@ -32,22 +30,6 @@ class StaticAnalysisBackend(CompileDBBackend):
                 mozpath.join(self.environment.topsrcdir, line.strip())
                 for line in content
             ]
-
-    def consume_object(self, obj):
-        if isinstance(obj, Headers):
-            self._process_headers(obj)
-        else:
-            super().consume_object(obj)
-
-        return True
-
-    def _process_headers(self, obj):
-        # FIXME: Currently skip generated headers in obj.generated_files.
-        for f in obj.static_files:
-            db_line = self._build_db_line(
-                obj.objdir, obj.relsrcdir, obj.config, f, obj.canonical_suffix
-            )
-            db_line.append("-xc++")
 
     def _build_cmd(self, cmd, filename, unified):
         cmd = list(cmd)

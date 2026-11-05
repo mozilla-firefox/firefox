@@ -11,6 +11,9 @@ const QUERIES = ["q1", "q2", "q3", "q4", "q5", "q6", "q7"];
 const NUM_TOP_SITES = 16;
 const NUM_RECENT_SEARCHES = 15;
 
+// This test is slow in chaos mode and can time out in verify mode.
+requestLongerTimeout(2);
+
 let gEngine;
 let gFeature;
 
@@ -191,6 +194,24 @@ add_task(async function suggestTemporalDisabled() {
     ]);
     await SpecialPowers.popPrefEnv();
   }
+});
+
+// The default zero prefix layout and `maxRichResults` are used when no temporal
+// suggestion is eligible.
+add_task(async function noEligibleSuggestions() {
+  await addRecentSearches(NUM_RECENT_SEARCHES);
+  for (let now of [
+    "2026-11-11T12:00[America/New_York]",
+    "2026-11-28T12:00[America/New_York]",
+  ]) {
+    info(`Checking now: ${now}`);
+    UrlbarTestUtils.stubNowZonedDateTime(now);
+    Assert.deepEqual(await getZeroPrefixLayout(), [
+      ["top_site", 7],
+      ["recent_search", 3],
+    ]);
+  }
+  UrlbarTestUtils.stubNowZonedDateTime("2026-11-15T12:00[America/New_York]");
 });
 
 // Recent searches take the space temporal suggestions don't use.

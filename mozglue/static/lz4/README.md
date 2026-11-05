@@ -17,7 +17,7 @@ They generate and decode data using the [LZ4 block format].
 
 #### Level 2 : High Compression variant
 
-For more compression ratio at the cost of compression speed,
+For better compression ratio at the cost of compression speed,
 the High Compression variant called **lz4hc** is available.
 Add files **`lz4hc.c`** and **`lz4hc.h`**.
 This variant also compresses data using the [LZ4 block format],
@@ -72,6 +72,11 @@ The following build macro can be selected to adjust source code behavior at comp
   It's also possible to enable or disable it manually, by passing `LZ4_FAST_DEC_LOOP=1` or `0` to the preprocessor.
   For example, with `gcc` : `-DLZ4_FAST_DEC_LOOP=1`,
   and with `make` : `CPPFLAGS+=-DLZ4_FAST_DEC_LOOP=1 make lz4`.
+
+- `LZ4_WILDCOPY64` : within the fast decompression loop, copy long literals and matches 64 bytes at a time.
+  It's automatically enabled on `x64` and `aarch64` cpus, and can be enabled or disabled manually, like `LZ4_FAST_DEC_LOOP`.
+  On `wasm`, it depends on the host cpu : `-DLZ4_FAST_DEC_LOOP=1 -DLZ4_WILDCOPY64=1` speeds up decompression on Apple silicon,
+  but slows it down on `x64`.
 
 - `LZ4_DISTANCE_MAX` : control the maximum offset that the compressor will allow.
   Set to 65535 by default, which is the maximum value supported by lz4 format.
@@ -133,12 +138,39 @@ The following build macro can be selected to adjust source code behavior at comp
 - `LZ4F_HEAPMODE` : selects how `LZ4F_compressFrame()` allocates the compression state,
   either on stack (default, value 0) or using heap memory (value 1).
 
+- `LZ4F_MULTITHREAD` : by setting this build macro to 1, `lz4frame.c` can compress with multiple threads,
+  as requested with experimental field `LZ4F_preferences_t.nbWorkers`.
+  It requires `<pthread.h>` on POSIX systems (compile and link with `-pthread`), or Windows threads.
+  Default is 0 : no threading code is compiled, and requests are served serially, producing the same output.
+  Build systems (`make`, `cmake`, `meson`, Visual Studio) enable it for the dynamic library only (see below).
+
 
 #### Makefile variables
 
 The following `Makefile` variables can be selected to alter the profile of produced binaries :
 - `BUILD_SHARED` : generate `liblz4` dynamic library (enabled by default)
 - `BUILD_STATIC` : generate `liblz4` static library (enabled by default)
+- `MULTITHREAD` : by default, the dynamic library is built with multi-threading support (`LZ4F_MULTITHREAD`),
+  when threads are available, while the static library is not, so that programs linking `liblz4.a` don't need `-pthread`.
+  `MULTITHREAD=1` (or target `lib-mt`) enables it for both libraries :
+  on POSIX systems, programs linking `liblz4.a` must then add `-pthread` (`pkg-config --static` provides it).
+  `MULTITHREAD=0` (or target `lib-nomt`) disables it for both libraries.
+  `make install` installs the libraries already built (ex: `make lib-mt && make install`),
+  and only builds them, with current settings, when they are absent.
+  `liblz4.pc` declares `-pthread` (`Libs.private`) when the installed `liblz4.a` requires it.
+
+The same policy applies to other build systems :
+- `cmake` : options `LZ4_SHARED_MULTITHREAD` (default `ON`) and `LZ4_STATIC_MULTITHREAD` (default `OFF`).
+- `meson` : options `shared-multithread` (default `true`) and `static-multithread` (default `false`).
+- Visual Studio : `liblz4-dll` is built with multi-threading support, `liblz4` (static) without.
+
+- `JCC_ERRATUM` : on x86 and x86-64, binaries keep their branches within 32-byte boundaries,
+  when the compiler supports it (clang, or gcc with binutils >= 2.34).
+  This mitigates the JCC erratum of Intel cpus of the Skylake family, on which lz4 is then faster
+  (measured on Coffee Lake : compression up to +12%, decompression up to +31%),
+  while its speed is unchanged on other cpus. `JCC_ERRATUM=0` disables it.
+  `cmake` : option `LZ4_JCC_ERRATUM` (default `ON`). `meson` : option `jcc-erratum` (default `true`).
+  Visual Studio projects (`build/VS2022`) : always, for Win32 and x64 (`Directory.Build.targets`).
 
 
 #### Amalgamation

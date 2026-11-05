@@ -6,6 +6,7 @@
 
 package mozilla.components.feature.ipprotection.auth.gpi
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import mozilla.components.ExperimentalAndroidComponentsApi
@@ -33,15 +34,27 @@ class IPProtectionGpiProvider(private val integrityClient: GooglePlayIntegrityCl
             object : IPProtectionHandler.GpiProvider {
                 override fun warmUp(onComplete: (Boolean) -> Unit) {
                     scope.launch {
-                        onComplete(integrityClient.warmUp())
+                        logger.info("Warm up GPI")
+                        runCatching { integrityClient.warmUp() }
+                            .onSuccess { warmedUp ->
+                                logger.info("Warm up successful: $warmedUp")
+                                onComplete(warmedUp)
+                            }
+                            .onFailure {
+                                logger.error("Warm up failed", it)
+                                onComplete(false)
+                                if (it is CancellationException) throw it
+                            }
                     }
                 }
 
                 override fun getToken(onComplete: (String?) -> Unit) {
+                    logger.info("Get token from GPI")
                     scope.launch {
                         val token =
                             ipProtectionIntegrityClient
                                 .request()
+                                .onSuccess { logger.info("Token request succeeded") }
                                 .onFailure { logger.error("GPI token request failed", it) }
                                 .getOrNull()
                                 ?.value

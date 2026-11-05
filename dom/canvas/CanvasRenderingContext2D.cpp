@@ -6825,13 +6825,6 @@ already_AddRefed<ImageData> CanvasRenderingContext2D::GetImageData(
     h = aSh;
   }
 
-  if (w == 0) {
-    w = 1;
-  }
-  if (h == 0) {
-    h = 1;
-  }
-
   RecordCanvasUsage(CanvasExtractionAPI::GetImageData, CSSIntSize(w, h));
 
   JS::Rooted<JSObject*> array(aCx);

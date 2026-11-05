@@ -9,6 +9,7 @@
 #include <SystemConfiguration/SystemConfiguration.h>
 #include <netinet/in.h>
 
+#include "mozilla/Maybe.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/SHA1.h"
 #include "nsINetworkLinkService.h"
@@ -71,6 +72,9 @@ class nsNetworkLinkService : public nsINetworkLinkService,
 
   mozilla::Mutex mMutex;
   nsCString mNetworkId MOZ_GUARDED_BY(mMutex);
+  // Hash state of the inputs of mNetworkId before SeedNetworkId() was
+  // applied, for MatchNetworkID().
+  mozilla::Maybe<mozilla::SHA1Sum> mUnseededNetworkId MOZ_GUARDED_BY(mMutex);
   nsTArray<nsCString> mDNSSuffixList MOZ_GUARDED_BY(mMutex);
 
   // The timer used to delay the calculation of network id since it takes some

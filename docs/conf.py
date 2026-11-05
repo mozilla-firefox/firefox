@@ -170,6 +170,7 @@ htmlhelp_basename = "FirefoxTreeDocs"
 moz_project_name = "main"
 
 html_show_copyright = False
+html_copy_source = False
 
 # GitHub integration for "View page source" links
 html_context = {
@@ -195,7 +196,7 @@ def add_github_source_link(app, pagename, templatename, context, doctree):
     """
     from moztreedocs import manager
 
-    if not manager.trees:
+    if not manager.trees or pagename not in app.env.all_docs:
         return
 
     source_suffix = context.get("page_source_suffix", "")

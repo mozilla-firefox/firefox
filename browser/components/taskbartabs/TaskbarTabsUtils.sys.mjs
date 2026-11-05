@@ -8,6 +8,8 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 let lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  ContextualIdentityService:
+    "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   FaviconUtils: "moz-src:///toolkit/modules/FaviconUtils.sys.mjs",
   ShellService: "moz-src:///browser/components/shell/ShellService.sys.mjs",
 });
@@ -16,7 +18,45 @@ XPCOMUtils.defineLazyServiceGetters(lazy, {
   Favicons: ["@mozilla.org/browser/favicon-service;1", Ci.nsIFaviconService],
 });
 
+ChromeUtils.defineLazyGetter(
+  lazy,
+  "l10n",
+  () =>
+    new Localization(["browser/taskbartabs.ftl", "branding/brand.ftl"], true)
+);
+
 export const TaskbarTabsUtils = {
+  /**
+   * Builds the part of a window title that identifies a Taskbar Tab: its
+   * name, its container and the current profile.
+   *
+   * @param {{name: string, userContextId: number}} aInfo - The name and
+   * container of the Taskbar Tab, from TaskbarTabs.getTaskbarTabTitleInfo.
+   * @param {string} [aProfile] - Name of the current profile, if it should
+   * appear in the title.
+   * @returns {string} The localized title.
+   */
+  createTaskbarTabTitle(aInfo, aProfile) {
+    let containerLabel = aInfo.userContextId
+      ? lazy.ContextualIdentityService.getUserContextLabel(aInfo.userContextId)
+      : "";
+
+    let stringName = "taskbar-tab-title-default";
+    if (containerLabel && aProfile) {
+      stringName = "taskbar-tab-title-container-profile";
+    } else if (containerLabel && !aProfile) {
+      stringName = "taskbar-tab-title-container";
+    } else if (!containerLabel && aProfile) {
+      stringName = "taskbar-tab-title-profile";
+    }
+
+    return lazy.l10n.formatValueSync(stringName, {
+      name: aInfo.name,
+      container: containerLabel,
+      profile: aProfile,
+    });
+  },
+
   /**
    * Checks if Taskbar Tabs has been enabled.
    *

@@ -20,8 +20,6 @@ from mozperftest.utils import (
     get_adb_path,
 )
 
-HERE = Path(__file__).parent
-
 _ROOT_URL = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/"
 _FENIX_NIGHTLY_BUILDS = (
     "mobile.v3.firefox-android.apks.fenix-nightly.latest.{architecture}"
@@ -142,18 +140,6 @@ class AndroidDevice(Layer):
         super().__init__(env, mach_cmd)
         self.android_activity = self.app_name = self.device = None
         self.capture_logcat = self.capture_file = None
-        self._custom_apk_path = None
-
-    @property
-    def custom_apk_path(self):
-        if self._custom_apk_path is None:
-            custom_apk_path = Path(HERE, "..", "user_upload.apk")
-            if custom_apk_path.exists():
-                self._custom_apk_path = custom_apk_path
-        return self._custom_apk_path
-
-    def custom_apk_exists(self):
-        return self.custom_apk_path is not None
 
     def enable_notifications(self, package_id):
         """
@@ -182,14 +168,6 @@ class AndroidDevice(Layer):
             f"performancetest true -n {package_id}/org.mozilla.fenix.App"
         )
         time.sleep(4)  # ensure skip onboarding call has time to propagate.
-
-    def setup(self):
-        if self.custom_apk_exists():
-            self.info(
-                f"Replacing --android-install-apk with custom APK found at "
-                f"{self.custom_apk_path}"
-            )
-            self.set_arg("android-install-apk", [self.custom_apk_path])
 
     def teardown(self):
         if self.capture_file is not None:

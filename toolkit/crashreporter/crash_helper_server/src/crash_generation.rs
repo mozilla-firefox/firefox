@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use super::{
-    breakpad_crash_generator::{BreakpadCrashGenerator, BreakpadProcessId},
+    breakpad_crash_generator::{BreakpadCrashGenerator, BreakpadProcessId, OpaqueCrashGenerator},
     phc::{self, StackTrace},
 };
 
@@ -37,7 +37,7 @@ use num_traits::FromPrimitive;
 use std::{
     collections::HashMap,
     convert::TryInto,
-    ffi::{CString, OsStr, OsString, c_void},
+    ffi::{CString, OsStr, OsString},
     fs::File,
     io::{Seek, SeekFrom, Write},
     mem::size_of,
@@ -376,7 +376,7 @@ fn serialize_phc_stack(stack_trace: &StackTrace) -> String {
 /// point to valid objects or are null. The ownership remains to the caller for
 /// those two objects.
 pub(crate) unsafe extern "C" fn finalize_breakpad_minidump(
-    generator: *const c_void,
+    generator: *const OpaqueCrashGenerator,
     process_id: BreakpadProcessId,
     extra_data: Option<&ExtraCrashData>,
     minidump_path_ptr: *const BreakpadChar,

@@ -33,7 +33,7 @@ using mozilla::dom::TabId from "mozilla/dom/ipc/IdType.h";
 using nsIDNSService::DNSFlags from "nsIDNSService.h";
 [RefCounted] using class nsIInputStream from "mozilla/ipc/IPCStreamUtils.h";
 [RefCounted] using class nsIURI from "mozilla/ipc/URIUtils.h";
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 
 namespace mozilla {
@@ -79,7 +79,7 @@ parent:
   async PWebSocket(nullable PBrowser browser, SerializedLoadContext loadContext,
                    uint32_t aSerialID);
   async PTCPServerSocket(uint16_t localPort, uint16_t backlog, bool useArrayBuffers);
-  async PUDPSocket(nullable nsIPrincipal principal, nsCString filter);
+  async PUDPSocket([NoTaint="Bug 1167039"] nullable nsIPrincipal principal, nsCString filter);
 
   async PDNSRequest(nsCString hostName, nsCString trrServer, int32_t port,
                     uint16_t type, OriginAttributes originAttributes,
@@ -93,7 +93,7 @@ parent:
   async SpeculativeConnect(nullable PBrowser browser,
                            SerializedLoadContext loadContext,
                            nullable nsIURI uri,
-                           nullable nsIPrincipal principal,
+                           [NoTaint="Bug 2089486"] nullable nsIPrincipal principal,
                            OriginAttributes? originAttributes,
                            bool anonymous);
   async HTMLDNSPrefetch(nsString hostname, bool isHttps,

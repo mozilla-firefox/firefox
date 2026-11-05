@@ -133,6 +133,23 @@ nsNetworkLinkService::GetNetworkID(nsACString& aNetworkID) {
 }
 
 NS_IMETHODIMP
+nsNetworkLinkService::GetNetworkIDSeed(nsACString& aSeed) {
+  aSeed = GetNetworkIdSeed();
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsNetworkLinkService::MatchNetworkID(const nsACString& aNetworkID,
+                                     const nsACString& aSeed,
+                                     nsACString& aMatchingNetworkID,
+                                     bool* aResult) {
+  MutexAutoLock lock(mMutex);
+  *aResult = MatchNetworkId(aNetworkID, aSeed, mUnseededNetworkId, mNetworkId,
+                            aMatchingNetworkID);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsNetworkLinkService::GetPlatformDNSIndications(
     uint32_t* aPlatformDNSIndications) {
   return NS_ERROR_NOT_IMPLEMENTED;
@@ -649,6 +666,7 @@ void nsNetworkLinkService::calculateNetworkIdInternal(void) {
 
   if (found4 || found6) {
     nsAutoCString output;
+    SHA1Sum unseeded = sha1;
     SeedNetworkId(sha1);
     uint8_t digest[SHA1Sum::kHashSize];
     sha1.finish(digest);
@@ -658,6 +676,7 @@ void nsNetworkLinkService::calculateNetworkIdInternal(void) {
     MOZ_RELEASE_ASSERT(NS_SUCCEEDED(rv));
     LOG(("networkid: id %s\n", output.get()));
     MutexAutoLock lock(mMutex);
+    mUnseededNetworkId = mozilla::Some(unseeded);
     if (mNetworkId != output) {
       // new id
       if (found4 && !found6) {
@@ -683,19 +702,16 @@ void nsNetworkLinkService::calculateNetworkIdInternal(void) {
       idChanged = true;
       glean::network::id.AccumulateSingleSample(0);
     }
+    mUnseededNetworkId.reset();
   }
 
-  // Don't report network change if this is the first time we calculate the id.
-  static bool initialIDCalculation = true;
-  if (idChanged && !initialIDCalculation) {
+  if (idChanged) {
     RefPtr<nsNetworkLinkService> self = this;
 
     NS_DispatchToMainThread(NS_NewRunnableFunction(
         "nsNetworkLinkService::calculateNetworkIdInternal",
         [self]() { self->OnNetworkIdChanged(); }));
   }
-
-  initialIDCalculation = false;
 }
 
 NS_IMETHODIMP

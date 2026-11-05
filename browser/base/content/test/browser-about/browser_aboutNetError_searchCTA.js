@@ -174,7 +174,7 @@ add_task(async function test_ctaRendersWhenEnabled() {
           card.shadowRoot
             .querySelector(".img-container img")
             .getAttribute("src"),
-          "chrome://global/skin/illustrations/security-error.svg",
+          "resource://content-accessible/illustrations/security-error.svg",
           "The CTA page shows the security illustration"
         );
       }

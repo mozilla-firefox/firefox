@@ -4,9 +4,11 @@
 
 # This modules provides functionality for dealing with code completion.
 
+import os
+
 from mach.decorators import Command, CommandArgument
+from mozfile import json
 from mozshellutil import quote as shell_quote
-from mozshellutil import split as shell_split
 
 # Instropection commands.
 
@@ -21,33 +23,24 @@ from mozshellutil import split as shell_split
 )
 def compileflags(command_context, what):
     from mozbuild.compilation import util
-    from mozbuild.util import resolve_target_to_make
 
-    if not util.check_top_objdir(command_context.topobjdir):
+    db = util.find_compile_db(command_context.topobjdir)
+    if db is None:
+        print(
+            "No compilation database found. Please run |mach build| with no "
+            "arguments, or |mach build-backend -b CompileDB|."
+        )
         return 1
 
-    path_arg = command_context._wrap_path_argument(what)
+    arg = command_context._wrap_path_argument(what)
+    path = os.path.abspath(arg.objdir_path())
+    if not os.path.exists(path):
+        path = os.path.abspath(arg.srcdir_path())
+    with open(db, encoding="utf-8") as fh:
+        flags = util.compile_flags_for(json.load(fh), path)
 
-    make_dir, make_target = resolve_target_to_make(
-        command_context.topobjdir, path_arg.relpath()
-    )
-
-    if make_dir is None and make_target is None:
+    if flags is None:
+        print(f"No file compiled at or above {what} in the compilation database.")
         return 1
 
-    build_vars = util.get_build_vars(make_dir, command_context)
-
-    if what.endswith(".c"):
-        cc = "CC"
-        name = "COMPILE_CFLAGS"
-    else:
-        cc = "CXX"
-        name = "COMPILE_CXXFLAGS"
-
-    if name not in build_vars:
-        return
-
-    # Drop the first flag since that is the pathname of the compiler.
-    flags = (shell_split(build_vars[cc]) + shell_split(build_vars[name]))[1:]
-
-    print(" ".join(shell_quote(arg) for arg in util.sanitize_cflags(flags)))
+    print(shell_quote(*flags))

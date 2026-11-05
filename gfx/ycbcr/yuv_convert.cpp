@@ -115,7 +115,8 @@ ConvertYCbCrToRGB32(const uint8_t* y_buf,
                          color_range == ColorRange::LIMITED);
   // The deprecated function only support BT601.
   // See Bug 1210357.
-  if (yuv_color_space != YUVColorSpace::BT601) {
+  // It also does not support Y8, which has no chroma planes.
+  if (yuv_color_space != YUVColorSpace::BT601 || yuv_type == Y8) {
     use_deprecated = false;
   }
   if (use_deprecated) {
@@ -447,7 +448,8 @@ ScaleYCbCrToRGB32(const uint8_t* y_buf,
 #endif
   // The deprecated function only support BT601.
   // See Bug 1210357.
-  if (yuv_color_space != YUVColorSpace::BT601) {
+  // It also does not support Y8, which has no chroma planes.
+  if (yuv_color_space != YUVColorSpace::BT601 || yuv_type == Y8) {
     use_deprecated = false;
   }
   if (use_deprecated) {

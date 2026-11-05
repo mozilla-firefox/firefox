@@ -6,7 +6,7 @@ include protocol PBrowser;
 
 include "mozilla/dom/PermissionMessageUtils.h";
 
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 namespace mozilla {
 namespace dom {

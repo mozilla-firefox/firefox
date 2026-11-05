@@ -59,6 +59,36 @@ interface nsINetworkLinkService : nsISupports
   readonly attribute ACString networkID;
 
   /**
+   * The random value this process mixes into networkID so that the ID cannot
+   * be matched across users or sessions. Kept alongside a networkID, it lets
+   * matchNetworkID recognize the same network in a later process.
+   *
+   * Empty if no random value could be generated, in which case networkID is
+   * salted with the process creation time instead; an empty seed can never
+   * match, so callers should not persist it.
+   *
+   * Persisting a networkID together with its seed makes the ID linkable across
+   * sessions, which partly undoes the purpose of the seed (bug 1817756).  The
+   * hashed inputs, such as gateway MAC addresses, have little entropy, so
+   * anyone who can read both can test offline whether they came from a given
+   * network.
+   */
+  readonly attribute ACString networkIDSeed;
+
+  /**
+   * Returns false while the current networkID is empty and throws (on Linux
+   * and Android) when networkID does.  Otherwise returns true.
+   * If aNetworkID identifies the current network with seed
+   * aSeed then this method sets aMatchingNetworkID to the current
+   * networkID.  If not, aMatchingNetworkID is set to the empty string.
+   * Both results come from a single read of the current network, so callers
+   * need not read networkID separately, which could observe a different
+   * network if it changes in between.
+   */
+  boolean matchNetworkID(in ACString aNetworkID, in ACString aSeed,
+                         out ACString aMatchingNetworkID);
+
+  /**
    * The list of DNS suffixes for the currently active network interfaces.
    */
   readonly attribute Array<ACString> dnsSuffixList;
@@ -119,7 +149,7 @@ interface nsINetworkLinkService : nsISupports
 #define NS_NETWORK_LINK_DATA_UNKNOWN "unknown"
 
 /**
- * network ID has changed.
+ * The network ID has been assigned or changed.
  */
 #define NS_NETWORK_ID_CHANGED_TOPIC "network:networkid-changed"
 

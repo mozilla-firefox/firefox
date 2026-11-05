@@ -18,6 +18,7 @@ class FilterPath:
     def __init__(self, path):
         self.path = os.path.normpath(path)
         self._finder = None
+        self._parts = None
 
     @property
     def finder(self):
@@ -55,30 +56,22 @@ class FilterPath:
                 return True
         return False
 
+    def parts(self):
+        if self._parts is None:
+            parts = os.path.abspath(self.path).split(os.sep)
+            if _is_windows and parts[0].endswith(":"):
+                # Normalize case of drive letters, without invoking the file system.
+                parts[0] = parts[0].upper()
+            self._parts = parts
+        return self._parts
+
     def contains(self, other):
         """Return True if other is a subdirectory of self or equals self."""
-        if isinstance(other, FilterPath):
-            other = other.path
-        a = os.path.abspath(self.path)
-        b = os.path.normpath(os.path.abspath(other))
-
-        parts_a = a.split(os.sep)
-        parts_b = b.split(os.sep)
-
-        if len(parts_a) > len(parts_b):
-            return False
-
-        if _is_windows and parts_a:
-            # Normalize case of drive letters, without invoking the file system.
-            if parts_a[0].endswith(":"):
-                parts_a[0] = parts_a[0].upper()
-            if parts_b[0].endswith(":"):
-                parts_b[0] = parts_b[0].upper()
-
-        for i, part in enumerate(parts_a):
-            if part != parts_b[i]:
-                return False
-        return True
+        if not isinstance(other, FilterPath):
+            other = FilterPath(other)
+        parts_a = self.parts()
+        parts_b = other.parts()
+        return len(parts_a) <= len(parts_b) and parts_b[: len(parts_a)] == parts_a
 
     def __repr__(self):
         return repr(self.path)
@@ -150,6 +143,38 @@ def collapse(paths, base=None, dotfiles=False):
     return list(covered)
 
 
+def _find_globs(base, patterns, skip):
+    """Yield the paths under `base`, relative to it, that match one of
+    `patterns`, without descending into a match or into a directory in
+    `skip`. Dot files are ignored unless a component of a pattern names them.
+    """
+    patterns = [mozpath.normsep(p) for p in patterns]
+    matches = mozpath.matcher(patterns)
+    dotted = [part for p in patterns for part in p.split("/") if part.startswith(".")]
+    stack = [(base, "")]
+    while stack:
+        dirpath, rel = stack.pop()
+        try:
+            entries = list(os.scandir(dirpath))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.name.startswith(".") and not any(
+                mozpath.match(entry.name, d) for d in dotted
+            ):
+                continue
+            p = f"{rel}/{entry.name}" if rel else entry.name
+            if entry.is_dir():
+                if entry.path in skip:
+                    continue
+                if matches(p):
+                    yield p
+                else:
+                    stack.append((entry.path, p))
+            elif matches(p):
+                yield p
+
+
 def filterpaths(
     root,
     paths,
@@ -191,6 +216,15 @@ def filterpaths(
     exclude = list(map(normalize, exclude or []))
     excludepaths = [p for p in exclude if p.exists]
     excludeglobs = [p.path for p in exclude if not p.exists]
+    prunable = [e for e in excludepaths if not any(e.contains(i) for i in include)]
+    excludedirs = {p.path for p in prunable if p.isdir}
+    findglobs = [p for p in excludeglobs if "*" in p]
+
+    # Only excludes that are subdirectories of the include
+    # path matter.
+    include_excludes = [
+        (inc, [e for e in excludepaths if inc.contains(e)]) for inc in include
+    ]
 
     keep = set()
     discard = set()
@@ -206,16 +240,12 @@ def filterpaths(
 
         # First handle include/exclude directives
         # that exist (i.e don't have globs)
-        for inc in include:
+        for inc, excs in include_excludes:
             # If the include directive is a file and we're specifically linting
             # it, keep it.
             if inc.isfile and path.path == inc.path:
                 keep.add(inc)
                 continue
-
-            # Only excludes that are subdirectories of the include
-            # path matter.
-            excs = [e for e in excludepaths if inc.contains(e)]
 
             if path.contains(inc):
                 # If specified path is an ancestor of include path,
@@ -241,8 +271,8 @@ def filterpaths(
 
         # Next expand excludes with globs in them so we can add them to
         # the set of files to discard.
-        for pattern in excludeglobs:
-            for p, f in path.finder.find(pattern):
+        if findglobs and path.isdir and not any(e.contains(path) for e in prunable):
+            for p in _find_globs(path.path, findglobs, excludedirs):
                 discard.add(path.join(p))
 
     if expand_excludes:
@@ -366,21 +396,24 @@ def expand_exclusions(paths, config, root):
             return path
         return mozpath.join(root, path)
 
+    global_exclude = config.get("global_exclude", [])
     exclude = list(map(normalize, config.get("exclude", [])))
+    exclude += [normalize(e) for e in global_exclude if not e.startswith("**/")]
     # We need excluded extensions in both the ignore for the FileFinder and in
     # the exclusion set. If we don't put it in the exclusion set, we would
     # return files that are passed explicitly and whose extensions are in the
     # exclusion set. If we don't put it in the ignore set, the FileFinder
     # would return files in (sub)directories passed to us.
     base_ignore = [f"**/*.{ext}" for ext in exclude_extensions]
+    base_ignore += [
+        mozpath.normsep(e).rstrip("/") for e in global_exclude if e.startswith("**/")
+    ]
     exclude += base_ignore
+    excluded = mozpath.matcher([e.rstrip("/") for e in exclude])
     for path in paths:
         path = mozpath.normsep(path)
         if os.path.isfile(path):
-            if any(path.startswith(e) for e in exclude if "*" not in e):
-                continue
-
-            if any(mozpath.match(path, e) for e in exclude if "*" in e):
+            if excluded(path):
                 continue
 
             yield path
@@ -397,8 +430,12 @@ def expand_exclusions(paths, config, root):
             if mozpath.commonprefix((path, e)) == path
         ]
 
+        if not os.path.isdir(path):
+            continue
+
         finder = FileFinder(path, ignore=ignore, find_dotfiles=find_dotfiles)
-        for p, f in finder.find("**"):
+        for p in finder.walk_unfiltered(""):
             if extensions and os.path.splitext(p)[1] not in extensions:
                 continue
-            yield os.path.join(path, p)
+            if finder.get(p, known_to_exist=True):
+                yield os.path.join(path, p)

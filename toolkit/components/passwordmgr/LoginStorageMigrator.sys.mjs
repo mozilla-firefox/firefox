@@ -380,10 +380,10 @@ export class LoginStorageMigrator {
     return this.#jsonStorage;
   }
 
+  // Leaves rust.enabled alone: it is set by Nimbus, and writing it would
+  // unenroll the client.
   #exceedMigrationBudget() {
-    this.#logger.log("Migration budget exceeded; disabling Rust backend");
-    Services.prefs.setBoolPref(PREFS.RUST_ENABLED, false);
-    Services.prefs.setIntPref(PREFS.MIGRATION_ATTEMPTS, 0);
+    this.#logger.log("Migration budget exceeded; staying on JSON storage");
     return this.#jsonStorage;
   }
 

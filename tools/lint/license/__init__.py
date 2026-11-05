@@ -10,6 +10,7 @@ documented in docs/code-quality/lint/linters/license.md.
 
 import ast
 import collections
+import os
 import re
 from pathlib import Path
 
@@ -149,29 +150,33 @@ def _declarations(path):
     return Declarations(tree)
 
 
-def _declared_in_tree(config, root):
-    """The set of ids named under LICENSES anywhere in the tree.
-
-    Gathered from every moz.build rather than from the ones being linted,
-    because a notice is usually declared far from the code referencing it: the
-    shared texts in toolkit/content/licenses cover the whole tree.
-    """
-    declared = set()
-    for path in expand_exclusions([root], config, root):
-        try:
-            declarations = _declarations(Path(path))
-        except (OSError, SyntaxError):
-            # Reported by the loop in lint() when it covers the same tree; a
-            # run over a subset of it reports nothing here, so a file it cannot
-            # read leaves the declared set short.
+def _on_disk_spelling(root, path):
+    """`path` with each component in its on disk case, or as given if none matches."""
+    current = root
+    for part in mozpath.normsep(os.path.relpath(path, root)).split("/"):
+        if part in ("", "."):
             continue
-        declared.update(declarations.named)
-    return declared
+        try:
+            names = os.listdir(current)
+        except OSError:
+            names = []
+        if part in names:
+            name = part
+        else:
+            name = next((n for n in names if n.lower() == part.lower()), part)
+        current = mozpath.join(current, name)
+    return mozpath.normpath(current)
 
 
 def lint(paths, config, **lintargs):
     root = lintargs["root"]
-    declared_in_tree = _declared_in_tree(config, root)
+
+    targets = {_on_disk_spelling(root, p) for p in paths}
+    prefixes = tuple(f"{p.rstrip('/')}/" for p in targets if os.path.isdir(p))
+
+    def linted(path):
+        path = mozpath.normpath(path)
+        return path in targets or path.startswith(prefixes)
 
     licensing = get_spdx_licensing()
     manifests = {}
@@ -189,28 +194,40 @@ def lint(paths, config, **lintargs):
             )
         )
 
-    for path in sorted(expand_exclusions(paths, config, root)):
+    parsed = {}
+    for path in expand_exclusions([root], config, root):
         try:
-            declarations = _declarations(Path(path))
+            parsed[path] = _declarations(Path(path))
         except SyntaxError as e:
-            report(
-                path,
-                e.lineno or 1,
-                f"this file does not parse as Python: {e.msg}.",
-                "The license declarations are read from the syntax tree, and "
-                "the build system cannot execute this file either.",
-            )
-            continue
+            if linted(path):
+                report(
+                    path,
+                    e.lineno or 1,
+                    f"this file does not parse as Python: {e.msg}.",
+                    "The license declarations are read from the syntax tree, "
+                    "and the build system cannot execute this file either.",
+                )
         except OSError as e:
-            report(
-                path,
-                1,
-                f"this file cannot be read: {e.strerror}.",
-                "The license declarations are read from every moz.build in "
-                "the tree, so this one has to be readable.",
-            )
-            continue
+            if linted(path):
+                report(
+                    path,
+                    1,
+                    f"this file cannot be read: {e.strerror}.",
+                    "The license declarations are read from every moz.build "
+                    "in the tree, so this one has to be readable.",
+                )
 
+    # Gathered from every moz.build rather than from the ones being linted,
+    # because a notice is usually declared far from the code referencing it: the
+    # shared texts in toolkit/content/licenses cover the whole tree. A file that
+    # cannot be read leaves the set short, and is reported above when it is
+    # linted.
+    declared_in_tree = set().union(*(d.named for d in parsed.values()))
+
+    for path in sorted(parsed):
+        if not linted(path):
+            continue
+        declarations = parsed[path]
         problems = []
 
         for license_id, lineno in declarations.referenced.items():

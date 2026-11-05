@@ -24,18 +24,18 @@ scheme = "https"
 
 ["test_adapter_enabled.html"]
 skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && !early_beta_or_earlier",
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && !nightly_build",
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64'",
 ]
 
 ["test_enabled.html"]
 skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && !early_beta_or_earlier",
+  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && !nightly_build",
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64'",
 ]
 
 ["test_gpu_disabled.html"]
 skip-if = [
-  "early_beta_or_earlier",
+  "nightly_build",
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'",
 ]

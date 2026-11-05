@@ -231,32 +231,25 @@ TestArray.addTest(
 );
 
 TestArray.addTest(
-  "exportKey pkcs8 and jwk are not supported for ML-KEM-768",
+  "an ML-KEM-768 private key exported as pkcs8 re-imports and decapsulates",
   function() {
-    var that = this;
-    function nameOf(promise) {
-      return promise.then(function() {
-        return "resolved";
-      }, function(err) {
-        return err.name;
-      });
-    }
+    var keyAlg = { name: "ML-KEM-768" };
 
-    crypto.subtle.generateKey({ name: "ML-KEM-768" }, true,
-                              ["encapsulateBits", "decapsulateBits"])
-    .then(function(pair) {
-      return Promise.all([
-        nameOf(crypto.subtle.exportKey("pkcs8", pair.privateKey)),
-        nameOf(crypto.subtle.exportKey("jwk", pair.publicKey)),
-        nameOf(crypto.subtle.exportKey("jwk", pair.privateKey)),
-      ]);
+    crypto.subtle.importKey("raw-seed", tv.ml_kem_768.privateSeed, keyAlg,
+                            true, ["decapsulateBits"])
+    .then(function(privateKey) {
+      return crypto.subtle.exportKey("pkcs8", privateKey);
     })
-    .then(complete(this, function(errors) {
-      console.log("exportKey errors: " + errors.join(", "));
-      return errors.every(function(name) {
-        return name == "NotSupportedError";
-      });
-    }), error(that));
+    .then(function(pkcs8) {
+      return crypto.subtle.importKey("pkcs8", pkcs8, keyAlg, false,
+                                     ["decapsulateBits"]);
+    })
+    .then(function(reimported) {
+      return crypto.subtle.decapsulateBits(keyAlg, reimported,
+                                           tv.ml_kem_768.sampleCiphertext);
+    })
+    .then(memcmp_complete(this, tv.ml_kem_768.expectedSharedSecret),
+          error(this));
   }
 );
 
@@ -310,11 +303,8 @@ TestArray.addTest(
 );
 
 TestArray.addTest(
-  "importKey pkcs8 and jwk are not supported for ML-KEM-768",
+  "importKey rejects malformed pkcs8 and jwk for ML-KEM-768",
   function() {
-    var that = this;
-    var dummy = new Uint8Array(64);
-    var jwk = { kty: "AKP", alg: "ML-KEM-768", pub: "AAAA" };
     function nameOf(promise) {
       return promise.then(function() {
         return "resolved";
@@ -323,18 +313,64 @@ TestArray.addTest(
       });
     }
 
-    Promise.all([
-      nameOf(crypto.subtle.importKey("pkcs8", dummy, { name: "ML-KEM-768" },
-                                     true, ["decapsulateBits"])),
-      nameOf(crypto.subtle.importKey("jwk", jwk, { name: "ML-KEM-768" },
-                                     true, ["encapsulateBits"])),
-    ])
+    var alg = { name: "ML-KEM-768" };
+
+    crypto.subtle.generateKey(alg, true, ["encapsulateBits", "decapsulateBits"])
+    .then(function(pair) {
+      return crypto.subtle.exportKey("jwk", pair.publicKey);
+    })
+    .then(function(jwk) {
+      var badPub = Object.assign({}, jwk, { pub: "AAAA" });
+      var badKty = Object.assign({}, jwk, { kty: "OKP" });
+      var badAlg = Object.assign({}, jwk, { alg: "ML-KEM-512" });
+      return Promise.all([
+        nameOf(crypto.subtle.importKey("pkcs8", new Uint8Array(64), alg, true,
+                                       ["decapsulateBits"])),
+        nameOf(crypto.subtle.importKey("jwk", badPub, alg, true,
+                                       ["encapsulateBits"])),
+        nameOf(crypto.subtle.importKey("jwk", badKty, alg, true,
+                                       ["encapsulateBits"])),
+        nameOf(crypto.subtle.importKey("jwk", badAlg, alg, true,
+                                       ["encapsulateBits"])),
+      ]);
+    })
     .then(complete(this, function(errors) {
-      console.log("importKey errors: " + errors.join(", "));
       return errors.every(function(name) {
-        return name == "NotSupportedError";
+        return name == "DataError";
       });
-    }), error(that));
+    }), error(this));
+  }
+);
+
+TestArray.addTest(
+  "an ML-KEM-768 jwk use other than enc only matters with usages",
+  function() {
+    function nameOf(promise) {
+      return promise.then(function() {
+        return "resolved";
+      }, function(err) {
+        return err.name;
+      });
+    }
+
+    var alg = { name: "ML-KEM-768" };
+
+    crypto.subtle.generateKey(alg, true, ["encapsulateBits", "decapsulateBits"])
+    .then(function(pair) {
+      return crypto.subtle.exportKey("jwk", pair.publicKey);
+    })
+    .then(function(jwk) {
+      var sig = Object.assign({}, jwk, { use: "sig" });
+      delete sig.key_ops;
+      return Promise.all([
+        nameOf(crypto.subtle.importKey("jwk", sig, alg, true, [])),
+        nameOf(crypto.subtle.importKey("jwk", sig, alg, true,
+                                       ["encapsulateBits"])),
+      ]);
+    })
+    .then(complete(this, function(results) {
+      return results[0] == "resolved" && results[1] == "DataError";
+    }), error(this));
   }
 );
 
@@ -386,6 +422,92 @@ TestArray.addTest(
     })
     .then(complete(this, function(decapsulated) {
       return util.memcmp(expected, decapsulated);
+    }), error(this));
+  }
+);
+
+TestArray.addTest(
+  "an ML-KEM-768 private key exported as JWK re-imports and decapsulates",
+  function() {
+    var keyAlg = { name: "ML-KEM-768" };
+
+    crypto.subtle.importKey("raw-seed", tv.ml_kem_768.privateSeed, keyAlg,
+                            true, ["decapsulateBits"])
+    .then(function(privateKey) {
+      return crypto.subtle.exportKey("jwk", privateKey);
+    })
+    .then(function(jwk) {
+      if (jwk.kty != "AKP" || jwk.alg != "ML-KEM-768" || !jwk.priv ||
+          !jwk.pub) {
+        throw new Error("unexpected JWK: " + JSON.stringify(jwk));
+      }
+      return crypto.subtle.importKey("jwk", jwk, keyAlg, false,
+                                     ["decapsulateBits"]);
+    })
+    .then(function(reimported) {
+      return crypto.subtle.decapsulateBits(keyAlg, reimported,
+                                           tv.ml_kem_768.sampleCiphertext);
+    })
+    .then(memcmp_complete(this, tv.ml_kem_768.expectedSharedSecret),
+          error(this));
+  }
+);
+
+TestArray.addTest(
+  "an ML-KEM-768 public key exported as JWK omits priv and re-imports",
+  function() {
+    var keyAlg = { name: "ML-KEM-768" };
+    var privateKey, expected;
+
+    crypto.subtle.generateKey(keyAlg, true,
+                              ["encapsulateBits", "decapsulateBits"])
+    .then(function(pair) {
+      privateKey = pair.privateKey;
+      return crypto.subtle.exportKey("jwk", pair.publicKey);
+    })
+    .then(function(jwk) {
+      if (jwk.kty != "AKP" || jwk.alg != "ML-KEM-768" || !jwk.pub ||
+          "priv" in jwk) {
+        throw new Error("unexpected JWK: " + JSON.stringify(jwk));
+      }
+      return crypto.subtle.importKey("jwk", jwk, keyAlg, false,
+                                     ["encapsulateBits"]);
+    })
+    .then(function(reimported) {
+      return crypto.subtle.encapsulateBits(keyAlg, reimported);
+    })
+    .then(function(encapsulated) {
+      expected = encapsulated.sharedKey;
+      return crypto.subtle.decapsulateBits(keyAlg, privateKey,
+                                           encapsulated.ciphertext);
+    })
+    .then(complete(this, function(decapsulated) {
+      return util.memcmp(expected, decapsulated);
+    }), error(this));
+  }
+);
+
+TestArray.addTest(
+  "ML-KEM-768 importKey checks usages before parsing the key data",
+  function() {
+    function nameOf(promise) {
+      return promise.then(function() {
+        return "resolved";
+      }, function(err) {
+        return err.name;
+      });
+    }
+
+    var alg = { name: "ML-KEM-768" };
+
+    Promise.all([
+      nameOf(crypto.subtle.importKey("raw-seed", new Uint8Array(63), alg,
+                                     false, ["encapsulateBits"])),
+      nameOf(crypto.subtle.importKey("spki", new Uint8Array(8), alg, false,
+                                     ["decapsulateBits"])),
+    ])
+    .then(complete(this, function(names) {
+      return names[0] == "SyntaxError" && names[1] == "SyntaxError";
     }), error(this));
   }
 );

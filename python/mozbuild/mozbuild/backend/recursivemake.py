@@ -807,6 +807,14 @@ class RecursiveMakeBackend(MakeBackend):
         rule = root_deps_mk.create_rule(["recurse_pre-compile"])
         rule.add_dependencies("%s/pre-compile" % d for d in sorted(self._pre_compile))
 
+        # This is required so that the pre-export tier sees the rules in
+        # the directories that have one.
+        if self._no_skip["pre-export"]:
+            rule = root_deps_mk.create_rule(["recurse_pre-export"])
+            rule.add_dependencies(
+                f"{d}/pre-export" for d in sorted(self._no_skip["pre-export"])
+            )
+
         targets_with_pre_compile = sorted(
             t for t in self._compile_graph if mozpath.dirname(t) in self._pre_compile
         )
@@ -1414,11 +1422,15 @@ class RecursiveMakeBackend(MakeBackend):
         )
 
     def _process_program(self, obj, backend_file):
-        backend_file.write(
-            "PROGRAM = %s\n" % self._pretty_path(obj.output_path, backend_file)
-        )
+        program = self._pretty_path(obj.output_path, backend_file)
+        backend_file.write(f"PROGRAM = {program}\n")
         if not obj.cxx_link and not self.environment.bin_suffix:
             backend_file.write("PROG_IS_C_ONLY_%s := 1\n" % obj.program)
+        self._add_lto_object_path_flags(obj, program, backend_file)
+
+    def _add_lto_object_path_flags(self, obj, target, backend_file):
+        if flags := obj.lto_object_path_flags:
+            backend_file.write(f"{target}: LDFLAGS += {' '.join(flags)}\n")
 
     def _process_host_program(self, program, backend_file):
         backend_file.write(
@@ -1511,6 +1523,7 @@ class RecursiveMakeBackend(MakeBackend):
             backend_file.write("SIMPLE_PROGRAMS += %s\n" % obj.program)
             if not obj.cxx_link and not self.environment.bin_suffix:
                 backend_file.write("PROG_IS_C_ONLY_%s := 1\n" % obj.program)
+        self._add_lto_object_path_flags(obj, obj.program, backend_file)
 
     def _process_host_simple_program(self, obj, backend_file):
         backend_file.write(f"HOST_SIMPLE_PROGRAMS += {obj.program}\n")
@@ -1611,6 +1624,8 @@ class RecursiveMakeBackend(MakeBackend):
                 "%s_FLAGS += %s\n" % (mozpath.basename(per_source_flag.file_name), flag)
             )
         stem = mozpath.splitext(mozpath.basename(per_source_flag.file_name))[0]
+        if per_source_flag.no_pgo:
+            backend_file.write(f"{stem}.$(OBJ_SUFFIX): COMPUTED_PGO_CFLAGS :=\n")
         if per_source_flag.object_deps:
             prerequisites = " ".join(
                 self._pretty_path(p, backend_file)
@@ -1638,8 +1653,13 @@ class RecursiveMakeBackend(MakeBackend):
         )
         shared_lib = self._pretty_path(libdef.output_path, backend_file)
         backend_file.write("SHARED_LIBRARY := %s\n" % shared_lib)
+        self._add_lto_object_path_flags(libdef, shared_lib, backend_file)
         if libdef.soname:
             backend_file.write("DSO_SONAME := %s\n" % libdef.soname)
+        if libdef.dso_link_flags:
+            backend_file.write(
+                f"EXTRA_DSO_LDOPTS += {' '.join(libdef.dso_link_flags)}\n"
+            )
         if libdef.symbols_file:
             if libdef.symbols_link_arg:
                 backend_file.write("EXTRA_DSO_LDOPTS += %s\n" % libdef.symbols_link_arg)

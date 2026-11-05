@@ -1,0 +1,6 @@
+---
+BadSplitDirsGlobalLinter:
+    description: Has a split-dirs directive on a global linter.
+    split-dirs: 2
+    type: global
+    payload: global_payload:global_payload

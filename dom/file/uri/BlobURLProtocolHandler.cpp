@@ -209,7 +209,7 @@ void BroadcastBlobURLRegistration(const nsACString& aURI,
 
   dom::ContentChild* cc = dom::ContentChild::GetSingleton();
   (void)NS_WARN_IF(!cc->SendStoreAndBroadcastBlobURLRegistration(
-      nsCString(aURI), ipcBlob, aPrincipal, aPartitionKey));
+      nsCString(aURI), ipcBlob, WrapNotNull(aPrincipal), aPartitionKey));
 }
 
 void BroadcastBlobURLUnregistration(

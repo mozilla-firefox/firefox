@@ -12,8 +12,9 @@ Services.scriptloader.loadSubScript(
 );
 
 const ALLOWED_CHROME_IMAGE_URLS = [
-  "chrome://global/skin/illustrations/security-error.svg",
-  "chrome://global/skin/illustrations/no-connection.svg",
+  "resource://content-accessible/illustrations/security-error.svg",
+  "resource://content-accessible/illustrations/no-connection.svg",
+  "resource://content-accessible/close-12.svg",
 ];
 
 add_task(async function test_view_allowed_chrome_image_in_new_tab() {

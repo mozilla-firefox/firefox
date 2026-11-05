@@ -13,6 +13,7 @@
 #include "gfxPlatform.h"  // for gfxPlatform
 #include "gfxUtils.h"     // for gfxUtils::GetAsLZ4Base64Str
 #include "mozilla/Atomics.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/Mutex.h"
 #include "mozilla/ProfilerLabels.h"
 #include "mozilla/SchedulerGroup.h"
@@ -1968,34 +1969,50 @@ static void copyData(PixelDataType* aDst,
 }
 
 bool MappedYCbCrChannelData::CopyInto(MappedYCbCrChannelData& aDst) {
-  if (!data || !aDst.data || size != aDst.size) {
+  if (!data || !aDst.data || size != aDst.size || size.IsEmpty()) {
     return false;
   }
 
-  if (stride == aDst.stride && skip == aDst.skip) {
-    // fast path!
-    // We assume that the padding in the destination is there for alignment
-    // purposes and doesn't contain useful data.
-    memcpy(aDst.data, data, stride * size.height);
-    return true;
+  CheckedInt32 rowBytes(size.width);
+  rowBytes *= bytesPerPixel;
+  if (!rowBytes.isValid() || rowBytes.value() > stride ||
+      rowBytes.value() > aDst.stride) {
+    return false;
   }
 
   if (aDst.skip == 0 && skip == 0) {
-    // fast-ish path
-    for (int32_t i = 0; i < size.height; ++i) {
-      memcpy(aDst.data + i * aDst.stride, data + i * stride,
-             size.width * bytesPerPixel);
+    if (stride == aDst.stride) {
+      // fast path
+      CheckedInt<size_t> length =
+          CheckedInt<size_t>(stride) * (size.height - 1);
+      length += rowBytes.value();
+      if (!length.isValid()) {
+        return false;
+      }
+      memcpy(aDst.data, data, length.value());
+    } else {
+      // fast-ish path
+      for (int32_t i = 0; i < size.height; ++i) {
+        memcpy(aDst.data + i * aDst.stride, data + i * stride,
+               rowBytes.value());
+      }
     }
-    return true;
+  } else {
+    MOZ_ASSERT(bytesPerPixel == 1 || bytesPerPixel == 2);
+    // slow path
+    if (bytesPerPixel == 1) {
+      copyData(aDst.data, aDst, data, *this);
+    } else if (bytesPerPixel == 2) {
+      copyData(reinterpret_cast<uint16_t*>(aDst.data), aDst,
+               reinterpret_cast<uint16_t*>(data), *this);
+    }
   }
 
-  MOZ_ASSERT(bytesPerPixel == 1 || bytesPerPixel == 2);
-  // slow path
-  if (bytesPerPixel == 1) {
-    copyData(aDst.data, aDst, data, *this);
-  } else if (bytesPerPixel == 2) {
-    copyData(reinterpret_cast<uint16_t*>(aDst.data), aDst,
-             reinterpret_cast<uint16_t*>(data), *this);
+  if (aDst.skip == 0 && rowBytes.value() < aDst.stride) {
+    for (int32_t i = 0; i < size.height; ++i) {
+      memset(aDst.data + size_t(i) * aDst.stride + rowBytes.value(), 0,
+             aDst.stride - rowBytes.value());
+    }
   }
   return true;
 }

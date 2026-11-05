@@ -1,6 +1,6 @@
 ---
 name: firefox-commits
-description: Guidelines to follow when committing, or amending commits
+description: Guidelines to follow when committing, amending commits, or updating a submitted Phabricator revision
 ---
 
 # Skill commit message / committing
@@ -78,3 +78,30 @@ now does in neutral terms, and there is no body: the explanation goes in the
 bug. People watch check-ins, so the message leaves out the nature of the issue
 (use-after-free, overflow, bypass), the word security, and the sec-approver's
 name. See `docs/bug-mgmt/processes/fixing-security-bugs.md`.
+
+## Addressing review comments on a commit in a stack
+
+Fold the change into the commit it belongs to, so its message and its
+`Differential Revision:` line stay as they are. With git:
+
+```
+git commit --fixup=<rev> <files>
+GIT_SEQUENCE_EDITOR=true git rebase -i --autosquash <rev>~1
+```
+
+This gives `<rev>` and every commit above it a new hash, and the old hash still
+points to the code without the fix. Look `<rev>` up again with
+`git log --oneline` before using it. With jj, `jj squash --into <rev> <files>`,
+and refer to the commit by its change ID, which stays the same.
+
+To update only that revision on Phabricator, pass `--single`:
+
+```
+moz-phab submit --single <rev> -y
+```
+
+Without `--single`, `moz-phab submit <rev>` takes `<rev>` as the start of a
+range that runs to the current commit and leaves `<rev>` itself out. It uploads
+new diffs for the commits above it and leaves the one that changed untouched.
+After submitting, fetch the revision with the `moz` MCP and check that its diff
+contains the fix.

@@ -2949,7 +2949,7 @@
 # see https://html.spec.whatwg.org/#blocking-attributes
 - name: dom.element.blocking.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 # The implementation-defined timeout of
@@ -3279,7 +3279,7 @@
 
 - name: dom.fetch.streaming_upload
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 # Whether to validate that a fetch request's principal is compatible with the
@@ -3326,6 +3326,12 @@
 #endif
   mirror: always
   rust: true
+
+# Controls platform-specific handling of file-backed DOM blobs.
+- name: dom.file.allowMagicFiles
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
 
 # Allow the content process to create a File from a path. This is allowed just
 # on parent process, on 'file' Content process, or for testing.
@@ -5872,7 +5878,7 @@
 
 - name: dom.viewTransitions.cross-document.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
   rust: true
 
@@ -6204,13 +6210,6 @@
   value: false
   mirror: always
 
-# If true, when user selects a range, `Selection` will split the range to
-# exclude unselectable content from the range.
-- name: dom.selection.exclude_non_selectable_nodes
-  type: bool
-  value: false
-  mirror: always
-
 # Mimic Chrome's window.getSelection().toString() behaviour
 - name: dom.selection.mimic_chrome_tostring.enabled
   type: bool
@@ -6278,7 +6277,7 @@
 #if defined(XP_WIN) || defined(XP_MACOSX) && defined(MOZ_AARCH64)
   value: true
 #else
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
 #endif
   mirror: always
 
@@ -6299,7 +6298,7 @@
 #if defined(XP_WIN) || defined(XP_MACOSX) && defined(MOZ_AARCH64)
   value: true
 #else
-  value: @IS_EARLY_BETA_OR_EARLIER@
+  value: @IS_NIGHTLY_BUILD@
 #endif
   mirror: always
 
@@ -9719,7 +9718,7 @@
   # hack the result forcibly.
 -   name: intl.tsf.hack.allow_to_stop_hacking_on_build_17643_or_later
     type: bool
-    value: @IS_EARLY_BETA_OR_EARLIER@
+    value: true
     mirror: always
 
   # If true, automatically extend selection to cluster boundaries when
@@ -11403,6 +11402,14 @@
 # Enable the new css-grid-3 specification of grid-lanes.
 # https://drafts.csswg.org/css-grid-3/
 - name: layout.css.display-grid-lanes.enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+  rust: true
+
+# Is support for the ident() arbitrary substitution function enabled?
+# https://drafts.csswg.org/css-values-5/#ident
+- name: layout.css.ident-function.enabled
   type: RelaxedAtomicBool
   value: @IS_NIGHTLY_BUILD@
   mirror: always

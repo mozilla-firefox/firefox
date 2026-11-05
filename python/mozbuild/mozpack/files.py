@@ -1049,23 +1049,8 @@ class FileFinder(BaseFinder):
         self.find_dotfiles = find_dotfiles
         self.find_executables = find_executables
         self.ignore = tuple(mozpath.normsep(path) for path in ignore)
-        # Matching a path against hundreds of patterns dominates a walk of the
-        # tree, so the ones without a glob are looked up instead.
-        self._ignore_paths = frozenset(p for p in self.ignore if p and "*" not in p)
-        self._ignore_globs = tuple(p for p in self.ignore if not p or "*" in p)
+        self._ignored = mozpath.matcher(self.ignore)
         self.ignore_broken_symlinks = ignore_broken_symlinks
-
-    def _ignored(self, path):
-        """Whether `path` matches one of the ``ignore`` patterns, the way
-        ``mozpath.match()`` would."""
-        if path in self._ignore_paths:
-            return True
-        slash = path.find("/")
-        while slash != -1:
-            if path[:slash] in self._ignore_paths:
-                return True
-            slash = path.find("/", slash + 1)
-        return any(mozpath.match(path, p) for p in self._ignore_globs)
 
     def _find(self, pattern):
         """
@@ -1084,10 +1069,22 @@ class FileFinder(BaseFinder):
 
     def _find_dir(self, path):
         """
-        Actual implementation of FileFinder.find() when the given pattern
-        corresponds to an existing directory under the base directory.
-        Ignores file names starting with a '.' under the given path. If the
-        path itself has leafs starting with a '.', they are not ignored.
+        FileFinder.find() for a pattern that is an existing directory under
+        the base directory. Filters the files ``walk_unfiltered`` yields
+        through ``get``.
+        """
+        for child in self.walk_unfiltered(path):
+            if f := self.get(child, known_to_exist=True):
+                yield child, f
+
+    def walk_unfiltered(self, path):
+        """
+        Yield the files under the given directory, sorted by name at each
+        level. Ignored directories are skipped, but the files themselves are
+        not tested against ``ignore``, so check each one with ``get``. File
+        names starting with a '.' under the given path are skipped unless
+        ``find_dotfiles`` is set. If the path itself has leafs starting with a
+        '.', they are not ignored.
         """
         if self._ignored(path):
             return
@@ -1106,9 +1103,9 @@ class FileFinder(BaseFinder):
         for name, is_dir in entries:
             child = mozpath.join(path, name)
             if is_dir:
-                yield from self._find_dir(child)
-            elif f := self.get(child, known_to_exist=True):
-                yield child, f
+                yield from self.walk_unfiltered(child)
+            else:
+                yield child
 
     def get(self, path, known_to_exist=False):
         srcpath = os.path.join(self.base, path)

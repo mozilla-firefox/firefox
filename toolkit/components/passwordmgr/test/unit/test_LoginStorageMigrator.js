@@ -807,12 +807,15 @@ add_task(async function test_exceedMigrationBudget_falls_back_to_json() {
   const result = await new LoginStorageMigrator(json, rust).run();
 
   Assert.equal(result, json, "exceeded budget returns the JSON store");
-  Assert.equal(
+  Assert.ok(
     Services.prefs.getBoolPref(PREF_ENABLED),
-    false,
-    "rust disabled"
+    "rust.enabled is left alone"
   );
-  Assert.equal(Services.prefs.getIntPref(PREF_ATTEMPTS), 0, "attempts reset");
+  Assert.equal(
+    Services.prefs.getIntPref(PREF_ATTEMPTS),
+    10,
+    "attempts are not reset"
+  );
   Assert.equal(rust.calls.length, 0, "no migration performed");
 });
 

@@ -415,6 +415,13 @@ impl<Set: string_cache::StaticAtomSet> malloc_size_of::MallocSizeOf for GenericA
 }
 
 #[cfg(feature = "servo")]
+impl<Set: string_cache::StaticAtomSet> Parse for GenericAtomIdent<Set> {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        Ok(Self::from(input.expect_ident()?.as_ref()))
+    }
+}
+
+#[cfg(feature = "servo")]
 impl<Set: string_cache::StaticAtomSet> cssparser::ToCss for GenericAtomIdent<Set> {
     fn to_css<W>(&self, dest: &mut W) -> fmt::Result
     where
@@ -484,6 +491,13 @@ impl<Set: string_cache::StaticAtomSet> GenericAtomIdent<Set> {
     Clone, Debug, Default, Deref, Eq, Hash, MallocSizeOf, PartialEq, SpecifiedValueInfo, ToShmem,
 )]
 pub struct AtomIdent(pub Atom);
+
+#[cfg(feature = "gecko")]
+impl Parse for AtomIdent {
+    fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        Ok(Self::from(input.expect_ident()?.as_ref()))
+    }
+}
 
 #[cfg(feature = "gecko")]
 impl cssparser::ToCss for AtomIdent {

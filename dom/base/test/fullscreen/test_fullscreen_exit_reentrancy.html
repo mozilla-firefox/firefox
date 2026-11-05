@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Test for bug 2079786</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<iframe id="inner" src="file_fullscreen-iframe-inner.html" allowfullscreen></iframe>
+<script>
+
+function waitForEvent(aTarget, aType) {
+  return new Promise(resolve => {
+    aTarget.addEventListener(aType, resolve, { once: true });
+  });
+}
+
+async function requestFullscreen(aElement) {
+  try {
+    let document = aElement.ownerDocument;
+    if (document.fullscreenElement === aElement) {
+      return;
+    }
+
+    let promise = waitForEvent(document, "fullscreenchange");
+    await aElement.requestFullscreen();
+    await promise;
+  } catch (e) {
+    info(`requestFullscreen was rejected: ${e}`);
+  }
+}
+
+async function exitFullscreen(aDocument) {
+  try {
+    if (!aDocument.fullscreenElement) {
+      return;
+    }
+
+    let promise = waitForEvent(aDocument, "fullscreenchange");
+    await aDocument.exitFullscreen();
+    await promise;
+  } catch (e) {
+    info(`exitFullscreen was rejected: ${e}`);
+  }
+}
+
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["full-screen-api.allow-trusted-requests-only", false],
+      ["full-screen-api.transition-duration.enter", "0 0"],
+      ["full-screen-api.transition-duration.leave", "0 0"],
+      ["full-screen-api.warning.timeout", 0],
+    ],
+  });
+  await SimpleTest.promiseFocus();
+});
+
+// Exercise exitFullscreen() being re-entered from a microtask that runs while
+// the fullscreen/pointer-lock teardown is already unwinding. This must not crash.
+add_task(async function test_exit_fullscreen_reentrancy() {
+  await (async () => {
+    info(`Setup nodes`);
+    let innerDoc = document.getElementById("inner").contentDocument;
+    let tempDiv = innerDoc.createElement("div");
+    tempDiv.textContent = "Element that will be removed later";
+    tempDiv.id = "temp";
+    innerDoc.body.appendChild(tempDiv);
+
+    info("Enter fullscreen on the inner elements");
+    await requestFullscreen(innerDoc.getElementById("div"));
+    await requestFullscreen(tempDiv);
+  })();
+
+  info("Lock the pointer on the top-level document");
+  await document.body.requestPointerLock().catch(e => {
+    info(`requestPointerLock was rejected: ${e}`);
+  });
+
+  info("Re-enter exitFullscreen() from a microtask checkpoint");
+  // The Blob method resolves a promise, whose await machinery reads the
+  // poisoned Object.prototype.then getter and triggers the re-entrant.
+  Object.defineProperty(Object.prototype, "then", {
+    configurable: true,
+    get() {
+      delete Object.prototype.then;
+      queueMicrotask(() => {
+        (() => {
+          info("Microtask ran");
+          let iframe = document.getElementById("inner");
+          let innerDoc = iframe.contentDocument;
+          innerDoc.exitFullscreen();
+          iframe.remove();
+          innerDoc.getElementById("temp").remove();
+        })();
+
+        info("Force GC and CC");
+        SpecialPowers.forceShrinkingGC();
+        SpecialPowers.forceCC();
+        SpecialPowers.forceShrinkingGC();
+        SpecialPowers.forceCC();
+      });
+
+      let innerDoc = document.getElementById("inner").contentDocument;
+      innerDoc.exitFullscreen();
+      return undefined;
+    },
+  });
+  await new Blob(["x"]).arrayBuffer();
+  ok(true, "Should not crash");
+
+  info("Clean up");
+  delete Object.prototype.then;
+  if (document.fullscreenElement) {
+    await exitFullscreen(document);
+  }
+});
+
+</script>
+</body>
+</html>

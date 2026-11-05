@@ -110,5 +110,27 @@ def test_prettier_fix(eslint, config, create_temp_file):
     assert fixed == 1
 
 
+def test_eslint_interrupt(eslint, paths, linter_module, monkeypatch):
+    procs = []
+
+    class Proc:
+        def __init__(self, cmd_args):
+            self.killed = False
+            procs.append(self)
+
+        def communicate(self):
+            if self is procs[0]:
+                raise KeyboardInterrupt
+            return b"", b""
+
+        def kill(self):
+            self.killed = True
+
+    monkeypatch.setattr(linter_module.prettier_utils, "start_process", Proc)
+    with pytest.raises(KeyboardInterrupt):
+        eslint(paths("subdir/bad.js"), root=build.topsrcdir)
+    assert [p.killed for p in procs] == [True, True]
+
+
 if __name__ == "__main__":
     mozunit.main()

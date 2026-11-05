@@ -9,6 +9,9 @@ import com.google.android.play.core.integrity.IntegrityManagerFactory
 import com.google.android.play.core.integrity.StandardIntegrityException
 import com.google.android.play.core.integrity.StandardIntegrityManager
 import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTEGRITY_TOKEN_PROVIDER_INVALID
+import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 import mozilla.components.concept.integrity.IntegrityClient
 import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.concept.integrity.RequestHashProvider
@@ -154,13 +157,22 @@ internal constructor(
     /**
      * Eagerly initializes the underlying [TokenProvider], if needed.
      *
-     * This method is safe to call multiple times and will only attempt provider creation once unless the provider is
-     * refreshed.
+     * This method is safe to call multiple times and will only perform work if the provider has not been already
+     * created or refreshed. If there is already a token provider, it will return that provider's warm-up result.
+     *
+     * This method will return `false` if the warm-up does not conclude within a duration specified by [WarmUpTimeout].
+     *
+     * @return true if the warm up was successful, or false if the warm up did not succeed.
      */
     override suspend fun warmUp(): Boolean {
         if (tokenProvider == null) {
             val start = currentTimeMillis()
-            refreshTokenProvider()
+            try {
+                withTimeout(WarmUpTimeout) {
+                    refreshTokenProvider()
+                }
+            } catch (_: TimeoutCancellationException) {}
+
             Integrity.warmedUp.record(
                 Integrity.WarmedUpExtra(
                     success = tokenProvider?.isSuccess == true,
@@ -225,6 +237,15 @@ internal constructor(
         tokenProvider = tokenProviderFactory.create()
     }
 }
+
+/**
+ * Timeout for warm up request.
+ *
+ * Even though it is expected that most warmups will complete under 10 seconds, we want to allow for up to 1 minute as
+ * advised on
+ * [https://developer.android.com/google/play/integrity/standard#prepare-integrity](https://developer.android.com/google/play/integrity/standard#prepare-integrity)
+ */
+internal val WarmUpTimeout = 1.minutes
 
 /** Thrown when a Google project number is required but invalid. */
 class InvalidProjectNumber : IllegalStateException("Google Cloud project number is missing or not a valid number.")

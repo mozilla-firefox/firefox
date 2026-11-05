@@ -7,6 +7,27 @@ const { PROMPT_MAJOR_VERSION } = ChromeUtils.importESModule(
   "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs"
 );
 
+const WIDGETS_VIEW = "viewWidgetsSidebar";
+
+ChromeUtils.defineLazyGetter(this, "SidebarTestUtils", () => {
+  const { SidebarTestUtils: utils } = ChromeUtils.importESModule(
+    "resource://testing-common/SidebarTestUtils.sys.mjs"
+  );
+  utils.init(this);
+  return utils;
+});
+
+async function openWidgetsSidebar(win = window) {
+  await SidebarTestUtils.showPanel(win, WIDGETS_VIEW);
+  return TestUtils.waitForCondition(
+    () =>
+      win.SidebarController.browser.contentDocument?.querySelector(
+        "sidebar-widget-studio"
+      ),
+    "Panel in the sidebar"
+  );
+}
+
 const GENERATOR_RECORD = {
   id: "widget-generation-1-0",
   version: `${PROMPT_MAJOR_VERSION}.0`,

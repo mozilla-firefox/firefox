@@ -20,6 +20,7 @@
 #include "mozilla/RecursiveMutex.h"
 #include "mozilla/Result.h"
 #include "mozilla/StaticPtr.h"
+#include "mozilla/Tainting.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/dom/AudioSessionBinding.h"
@@ -186,6 +187,14 @@ class ContentParent final : public PContentParent,
   static mozilla::ipc::IPCResult PrincipalValidationIpcFail(
       nsIPrincipal* aPrincipal, mozilla::ipc::IProtocol* aActor,
       const char* aMethod);
+
+  template <typename T>
+  static mozilla::ipc::IPCResult PrincipalValidationIpcFail(
+      const Tainted<T>& aPrincipal, mozilla::ipc::IProtocol* aActor,
+      const char* aMethod) {
+    T principal = MOZ_NO_VALIDATE(aPrincipal, "Only used for error reporting");
+    return PrincipalValidationIpcFail(principal, aActor, aMethod);
+  }
 
   /**
    * Picks a random content parent from |aContentParents| respecting the index
@@ -569,10 +578,10 @@ class ContentParent final : public PContentParent,
       const bool& aForWindowDotPrint, const bool& aTopLevelCreatedByWebContent,
       nsIURI* aURIToLoad, const nsACString& aFeatures,
       const UserActivation::Modifiers& aModifiers,
-      nsIPrincipal* aTriggeringPrincipal, nsIPolicyContainer* aPolicyContainer,
-      nsIReferrerInfo* aReferrerInfo, const OriginAttributes& aOriginAttributes,
-      bool aUserActivation, bool aTextDirectiveUserActivation,
-      CreateWindowResolver&& aResolve);
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aTriggeringPrincipal,
+      nsIPolicyContainer* aPolicyContainer, nsIReferrerInfo* aReferrerInfo,
+      const OriginAttributes& aOriginAttributes, bool aUserActivation,
+      bool aTextDirectiveUserActivation, CreateWindowResolver&& aResolve);
 
   static void BroadcastBlobURLRegistration(
       const nsACString& aURI, BlobImpl* aBlobImpl, nsIPrincipal* aPrincipal,
@@ -583,7 +592,8 @@ class ContentParent final : public PContentParent,
       ContentParent* aIgnoreThisCP = nullptr);
 
   mozilla::ipc::IPCResult RecvStoreAndBroadcastBlobURLRegistration(
-      const nsACString& aURI, const IPCBlob& aBlob, nsIPrincipal* aPrincipal,
+      const nsACString& aURI, const IPCBlob& aBlob,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
       const nsCString& aPartitionKey);
 
   mozilla::ipc::IPCResult RecvUnstoreAndBroadcastBlobURLUnregistration(
@@ -592,10 +602,11 @@ class ContentParent final : public PContentParent,
   virtual int32_t Pid() const override;
 
   // PURLClassifierParent.
-  PURLClassifierParent* AllocPURLClassifierParent(nsIPrincipal* aPrincipal,
-                                                  bool* aSuccess);
+  PURLClassifierParent* AllocPURLClassifierParent(
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>& aPrincipal, bool* aSuccess);
   virtual mozilla::ipc::IPCResult RecvPURLClassifierConstructor(
-      PURLClassifierParent* aActor, nsIPrincipal* aPrincipal,
+      PURLClassifierParent* aActor,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
       bool* aSuccess) override;
 
   // PURLClassifierLocalParent.
@@ -666,6 +677,19 @@ class ContentParent final : public PContentParent,
   bool ValidatePrincipal(
       nsIPrincipal* aPrincipal,
       const EnumSet<ValidatePrincipalOptions>& aOptions = {});
+
+  // Validates a tainted principal received over IPC. Returns the untainted
+  // principal on success, or Nothing() if validation failed, in which case
+  // aPrincipal can still be passed to PrincipalValidationIpcFail.
+  template <typename T>
+  Maybe<T> ValidatePrincipal(
+      Tainted<T>& aPrincipal,
+      const EnumSet<ValidatePrincipalOptions>& aOptions = {}) {
+    if (!MOZ_IS_VALID(aPrincipal, ValidatePrincipal(aPrincipal, aOptions))) {
+      return Nothing();
+    }
+    return Some(MOZ_NO_VALIDATE(aPrincipal, "Validated above"));
+  }
 
   nsIDOMProcessParent* ProcessParent() override { return this; }
 
@@ -995,7 +1019,7 @@ class ContentParent final : public PContentParent,
       nsTArray<nsCString>&& aTypes,
       const nsIClipboard::ClipboardType& aWhichClipboard,
       const MaybeDiscarded<WindowContext>& aRequestingWindowContext,
-      mozilla::NotNull<nsIPrincipal*> aRequestingPrincipal,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aRequestingPrincipal,
       GetClipboardDataSnapshotResolver&& aResolver);
 
   mozilla::ipc::IPCResult RecvGetClipboardDataSnapshotSync(
@@ -1019,8 +1043,9 @@ class ContentParent final : public PContentParent,
   mozilla::ipc::IPCResult RecvSetURITitle(nsIURI* uri, const nsAString& title);
 
   mozilla::ipc::IPCResult RecvLoadURIExternal(
-      NotNull<nsIURI*> uri, NotNull<nsIPrincipal*> triggeringPrincipal,
-      nsIPrincipal* redirectPrincipal,
+      NotNull<nsIURI*> uri,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& triggeringPrincipal,
+      Tainted<RefPtr<nsIPrincipal>>&& redirectPrincipal,
       const MaybeDiscarded<BrowsingContext>& aContext,
       bool aWasExternallyTriggered, bool aHasValidUserGestureActivation,
       bool aNewWindowTarget);
@@ -1211,7 +1236,7 @@ class ContentParent final : public PContentParent,
   mozilla::ipc::IPCResult RecvBHRThreadHang(const HangDetails& aHangDetails);
 
   mozilla::ipc::IPCResult RecvAutomaticStorageAccessPermissionCanBeGranted(
-      nsIPrincipal* aPrincipal,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
       AutomaticStorageAccessPermissionCanBeGrantedResolver&& aResolver);
 
   mozilla::ipc::IPCResult RecvStorageAccessPermissionGrantedForOrigin(
@@ -1235,7 +1260,7 @@ class ContentParent final : public PContentParent,
       CompleteAllowAccessForResolver&& aResolver);
 
   mozilla::ipc::IPCResult RecvStoreUserInteractionAsPermission(
-      nsIPrincipal* aPrincipal);
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal);
 
   mozilla::ipc::IPCResult RecvTestCookiePermissionDecided(
       const MaybeDiscarded<BrowsingContext>& aContext, nsIPrincipal* aPrincipal,

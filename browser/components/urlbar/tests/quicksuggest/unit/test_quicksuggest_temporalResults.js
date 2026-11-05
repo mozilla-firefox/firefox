@@ -155,6 +155,7 @@ async function checkQuery(
       "Commands"
     );
   }
+  return context;
 }
 
 // A zero prefix query returns `temporal.rowCount` temporal search results.
@@ -245,13 +246,13 @@ add_task(async function nimbus() {
     "Enrollment sets temporal.featureGate"
   );
   Assert.ok(gFeature.isEnabled, "Feature is enabled after enrollment");
+  gFeature._reset();
+  let context = await checkQuery(["q1", "q2", "q3", "q4", "q5"]);
   Assert.equal(
-    createContext("").maxResults,
+    context.maxResultsActual,
     UrlbarPrefs.get("temporal.zeroPrefixMaxRichResults"),
     "Zero prefix layout is used after enrollment"
   );
-  gFeature._reset();
-  await checkQuery(["q1", "q2", "q3", "q4", "q5"]);
 
   await cleanUpNimbus();
   await QuickSuggestTestUtils.forceSync();
@@ -260,11 +261,6 @@ add_task(async function nimbus() {
     "Unenrollment restores temporal.featureGate"
   );
   Assert.ok(!gFeature.isEnabled, "Feature is disabled after unenrollment");
-  Assert.equal(
-    createContext("").maxResults,
-    UrlbarPrefs.get("maxRichResults"),
-    "Zero prefix layout is not used after unenrollment"
-  );
   gFeature._reset();
   await checkQuery([]);
 

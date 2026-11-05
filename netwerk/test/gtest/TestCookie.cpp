@@ -9,6 +9,7 @@
 #include "TestCommon.h"
 #include "gtest/gtest.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/Services.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/gtest/MozAssertions.h"
 #include "mozilla/net/CookieJarSettings.h"
@@ -18,7 +19,10 @@
 #include "nsIConsoleReportCollector.h"
 #include "nsICookie.h"
 #include "nsICookieManager.h"
+#include "nsICookieNotification.h"
 #include "nsICookieService.h"
+#include "nsIObserver.h"
+#include "nsIObserverService.h"
 #include "nsIPrefBranch.h"
 #include "nsIPrefService.h"
 #include "nsIPrincipal.h"
@@ -1444,6 +1448,71 @@ TEST(TestCookie, HasCookiesForSite)
   otherAttrs.mUserContextId = 2;
   addCookie(otherAttrs, kFuture);
   EXPECT_TRUE(storage->HasCookies(baseDomain, nonPbPattern));
+}
+
+class CookieNotificationCollector final : public nsIObserver {
+ public:
+  NS_DECL_ISUPPORTS
+
+  NS_IMETHOD Observe(nsISupports* aSubject, const char* aTopic,
+                     const char16_t* aData) override {
+    nsCOMPtr<nsICookieNotification> notification = do_QueryInterface(aSubject);
+    if (notification) {
+      mNotifications.AppendElement(notification);
+    }
+    return NS_OK;
+  }
+
+  nsTArray<nsCOMPtr<nsICookieNotification>> mNotifications;
+
+ private:
+  ~CookieNotificationCollector() = default;
+};
+
+NS_IMPL_ISUPPORTS(CookieNotificationCollector, nsIObserver)
+
+TEST(TestCookie, OperationIDInNotifications)
+{
+  nsresult rv;
+  nsCOMPtr<nsICookieManager> cookieMgr =
+      do_GetService(NS_COOKIEMANAGER_CONTRACTID, &rv);
+  ASSERT_NS_SUCCEEDED(rv);
+
+  nsCOMPtr<nsIObserverService> os = services::GetObserverService();
+  ASSERT_TRUE(os);
+
+  RefPtr<CookieNotificationCollector> collector =
+      new CookieNotificationCollector();
+  ASSERT_NS_SUCCEEDED(os->AddObserver(collector, "cookie-changed", false));
+
+  nsCOMPtr<nsIURI> uri;
+  NS_NewURI(getter_AddRefs(uri), "https://operationid.test"_ns);
+  OriginAttributes attrs;
+
+  nsID addID = nsID::GenerateUUID();
+  nsCOMPtr<nsICookieValidation> cv;
+  EXPECT_NS_SUCCEEDED(cookieMgr->AddNative(
+      uri, "operationid.test"_ns, "/"_ns, "opid"_ns, "value"_ns, true, false,
+      true, INT64_MAX, &attrs, nsICookie::SAMESITE_LAX, nsICookie::SCHEME_HTTPS,
+      false, false, &addID, getter_AddRefs(cv)));
+
+  ASSERT_EQ(collector->mNotifications.Length(), 1u);
+  EXPECT_EQ(collector->mNotifications[0]->GetAction(),
+            nsICookieNotification::COOKIE_ADDED);
+  EXPECT_EQ(collector->mNotifications[0]->OperationID(), Some(addID));
+  EXPECT_FALSE(collector->mNotifications[0]->GetIsThirdParty());
+
+  nsID removeID = nsID::GenerateUUID();
+  EXPECT_NS_SUCCEEDED(cookieMgr->RemoveNative(
+      "operationid.test"_ns, "opid"_ns, "/"_ns, &attrs, false, &removeID));
+
+  ASSERT_EQ(collector->mNotifications.Length(), 2u);
+  EXPECT_EQ(collector->mNotifications[1]->GetAction(),
+            nsICookieNotification::COOKIE_DELETED);
+  EXPECT_EQ(collector->mNotifications[1]->OperationID(), Some(removeID));
+  EXPECT_FALSE(collector->mNotifications[1]->GetIsThirdParty());
+
+  EXPECT_NS_SUCCEEDED(os->RemoveObserver(collector, "cookie-changed"));
 }
 
 namespace mozilla::net {

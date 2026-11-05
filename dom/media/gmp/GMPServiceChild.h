@@ -25,7 +25,6 @@ class GeckoMediaPluginServiceChild : public GeckoMediaPluginService {
 
  public:
   static already_AddRefed<GeckoMediaPluginServiceChild> GetSingleton();
-  nsresult Init() override;
 
   NS_DECL_ISUPPORTS_INHERITED
 
@@ -57,6 +56,9 @@ class GeckoMediaPluginServiceChild : public GeckoMediaPluginService {
   void BeginShutdown();
 
  protected:
+  nsresult InitMainThread() override;
+  void UninitMainThread() override;
+
   void InitializePlugins(nsISerialEventTarget*) override {
     // Nothing to do here.
   }

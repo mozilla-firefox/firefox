@@ -172,7 +172,9 @@ already_AddRefed<PathBuilder> PathCairo::CopyToBuilder(
 bool PathCairo::ContainsPoint(const Point& aPoint,
                               const Matrix& aTransform) const {
   Matrix inverse = aTransform;
-  inverse.Invert();
+  if (!inverse.Invert()) {
+    return false;
+  }
   Point transformed = inverse.TransformPoint(aPoint);
 
   EnsureContainingContext(aTransform);
@@ -184,7 +186,9 @@ bool PathCairo::StrokeContainsPoint(const StrokeOptions& aStrokeOptions,
                                     const Point& aPoint,
                                     const Matrix& aTransform) const {
   Matrix inverse = aTransform;
-  inverse.Invert();
+  if (!inverse.Invert()) {
+    return false;
+  }
   Point transformed = inverse.TransformPoint(aPoint);
 
   EnsureContainingContext(aTransform);

@@ -260,6 +260,9 @@ support-files = [
 
 ["test_filter.html"]
 
+["test_filter_blur_translucent_stroke.html"]
+subsuite = "gpu"
+
 ["test_filter_opacity_a8.html"]
 
 ["test_filter_tainted.html"]

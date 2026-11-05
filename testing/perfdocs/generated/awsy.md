@@ -1,6 +1,15 @@
 # AWSY
 
 Are We Slim Yet project (commonly known as AWSY) tracks memory usage across builds.
+It uses the same infrastructure as [about:memory](/performance/memory/about_colon_memory.md)
+to measure memory usage, either with the recorded tp6 pageset or with blank tabs
+(base memory usage). AWSY runs in TaskCluster on all branches and platforms, and its results
+are posted to [Perfherder](https://treeherder.mozilla.org/perfherder/) where regressions are
+tracked automatically.
+
+As new processes are added to Firefox we want to make sure their memory usage is also tracked
+by AWSY. To this end we request that memory reporting be integrated into any new process
+before it is enabled on Nightly.
 
 On treeherder, the AWSY builds are listed in subgroups of `SY`.
 
@@ -178,7 +187,7 @@ Running `./mach awsy-test` by default will run TP6 tests.
 
 - A regression in this usually means a new feature is using or retaining more memory and should be looked at. These are easier to diagnose because we can compare memory reports.
 
-See the `about:memory` [mdn page](https://developer.mozilla.org/docs/Mozilla/Performance/about:memory#Explicit_Allocations) for more details.
+See the [about:memory documentation](/performance/memory/about_colon_memory.md#explicit-allocations) for more details.
 
 ### Heap Unclassified
 
@@ -214,9 +223,15 @@ See the `about:memory` [mdn page](https://developer.mozilla.org/docs/Mozilla/Per
 
 A change has caused more JavaScript to load at startup or into blank pages.
 
-- **Common solution**: lazily load any new modules you rely on
-- **Common solution**: Split your code out to only load what is minimally needed initially. You modified the JS engine and it's using more memory
-- **Common solution**: Attempt to reduce your object size for the common case, these tend to add up! You implemented a new feature in JavaScript
+- **Common solution**: Lazily load any new modules you rely on.
+- **Common solution**: Split your code out to only load what is minimally needed initially.
+
+You modified the JS engine and it's using more memory.
+
+- **Common solution**: Attempt to reduce your object size for the common case, these tend to add up!
+
+You implemented a new feature in JavaScript.
+
 - **Common solution**: Write the majority (or all of it) in compiled code (C++/Rust). This will reduce overhead and generally improve performance.
 
 ### Base Content Heap Unclassified
@@ -228,7 +243,7 @@ A change has caused more JavaScript to load at startup or into blank pages.
 - A regression in this can indicate that we're leaking memory or that additional memory reporters should be added.
 - An improvement can indicate that leaks have been fixed or that we added new memory reporters.
 
-See the `about:memory` [mdn page](https://developer.mozilla.org/docs/Mozilla/Performance/about:memory#Explicit_Allocations) for more details.
+See the [about:memory documentation](/performance/memory/about_colon_memory.md#explicit-allocations) for more details.
 
 ### Base Content JS
 
@@ -240,8 +255,9 @@ See the `about:memory` [mdn page](https://developer.mozilla.org/docs/Mozilla/Per
 
 ### Base Content Resident Unique Memory
 
-*to do: add test definition*
+- This is the "resident-unique" value in `about:memory`, also known as the unique set size ([USS](https://en.wikipedia.org/wiki/Unique_set_size)). It is the memory mapped by a content process that is present in physical memory and not shared with any other process, which is roughly the amount of RAM we'd expect to be freed if that process was closed. Read-only data such as shared libraries is shared between processes, so it is not counted here.
+- Since we can have dozens of content processes with Fission, this measures how much a single new content process adds to the total memory used by the system. The median value across all content processes is reported.
 
-#### Other references
+**Possible regression causes**
 
-[Are We Slim Yet MDN web docs](https://developer.mozilla.org/en-US/docs/Mozilla/Performance/AWSY)
+- A regression in this usually means more memory is allocated or touched in every content process, for example by loading more code or data at content process startup. It often tracks regressions in Base Content Explicit, Base Content Heap Unclassified, or Base Content JS. A regression here that isn't visible in those can indicate memory that isn't covered by memory reporters, such as graphics allocations or memory that used to be shared between processes.

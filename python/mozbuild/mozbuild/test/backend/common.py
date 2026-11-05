@@ -66,10 +66,27 @@ CONFIGS = defaultdict(
                 "OS_COMPILE_CMMFLAGS": ["-fobjc-call-cxx-cdtors"],
             },
         },
+        "database-c": {
+            "defines": {},
+            "substs": {
+                "CC": ["clang"],
+                "CXX": ["clang++"],
+                "COMPILE_ENVIRONMENT": "1",
+                "LIB_PREFIX": "lib",
+                "LIB_SUFFIX": "a",
+            },
+        },
         "objdir-local-includes": {
             "defines": {},
             "substs": {
                 "COMPILE_ENVIRONMENT": "1",
+                "LIB_PREFIX": "lib",
+                "LIB_SUFFIX": "a",
+            },
+        },
+        "no-pgo-source": {
+            "defines": {},
+            "substs": {
                 "LIB_PREFIX": "lib",
                 "LIB_SUFFIX": "a",
             },
@@ -351,6 +368,17 @@ CONFIGS = defaultdict(
             "substs": {
                 "COMPILE_ENVIRONMENT": "1",
                 "BIN_SUFFIX": ".prog",
+            },
+        },
+        "lto-object-path": {
+            "defines": {},
+            "substs": {
+                "COMPILE_ENVIRONMENT": "1",
+                "BIN_SUFFIX": ".prog",
+                "DLL_PREFIX": "lib",
+                "DLL_SUFFIX": ".so",
+                "LIB_SUFFIX": "a",
+                "MOZ_LTO_OBJECT_PATH": "1",
             },
         },
         "extra-link-deps": {

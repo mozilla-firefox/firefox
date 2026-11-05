@@ -9,7 +9,7 @@
     rel="nofollow"
     >Report an issue</a
   >
-  / {%- if display_github and has_source and github_source_path %}
+  / {%- if display_github and github_source_path %}
   <a
     href="https://{{ github_host|default('github.com') }}/{{ github_user }}/{{ github_repo }}/blob/{{ github_version }}/{{ github_source_path }}"
     rel="nofollow"

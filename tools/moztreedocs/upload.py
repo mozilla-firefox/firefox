@@ -20,6 +20,10 @@ import requests
 if TYPE_CHECKING:
     from mozpack.files import BaseFile
 
+# Each upload is a small file that mostly waits on the request round trip, so
+# many requests in flight keep the upload short on workers far from the bucket.
+UPLOAD_THREADS = 128
+
 
 @functools.cache
 def create_aws_session():
@@ -54,7 +58,10 @@ def create_aws_session():
         print("Trying to use your AWS credentials..")
         session = boto3.session.Session(region_name=region)
 
-    s3 = session.client("s3", config=botocore.client.Config(max_pool_connections=25))
+    # The upload threads and the prune task in s3_upload share this client.
+    s3 = session.client(
+        "s3", config=botocore.client.Config(max_pool_connections=UPLOAD_THREADS + 1)
+    )
 
     return s3, bucket
 
@@ -165,8 +172,8 @@ def s3_upload(files: list[tuple[str, BaseFile]], key_prefix: str | None = None) 
         s3.upload_fileobj(io.BytesIO(f.read()), bucket, key, ExtraArgs=extra_args)
 
     fs = []
-    # One extra worker for the prune task on top of the 20 upload workers.
-    with futures.ThreadPoolExecutor(21) as e:
+    # One extra worker for the prune task on top of the upload workers.
+    with futures.ThreadPoolExecutor(UPLOAD_THREADS + 1) as e:
         # Kick off the (slow) prune first so its bucket listing overlaps with
         # the uploads rather than blocking after them.
         delete_future = e.submit(s3_delete_missing, files, key_prefix)

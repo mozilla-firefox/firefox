@@ -25,6 +25,12 @@ elif app == "mobile/android":
 else:
     DIRS += ["windows"]
 
+if app != "mobile/android":
+    CONTENT_ACCESSIBLE_FILES.illustrations += [
+        "shared/illustrations/no-connection.svg",
+        "shared/illustrations/security-error.svg",
+    ]
+
 with Files("**"):
     BUG_COMPONENT = ("Toolkit", "Themes")
 

@@ -25,7 +25,10 @@ export class SidebarPanelHeader extends MozLitElement {
     switcher: "sidebar-panel-switcher",
   };
 
-  #l10n = new Localization(["browser/sidebar.ftl", "preview/genai.ftl"], true);
+  #l10n = new Localization(
+    ["browser/sidebar.ftl", "preview/genai.ftl", "preview/widgets.ftl"],
+    true
+  );
 
   closeSidebarPanel(e) {
     e.preventDefault();

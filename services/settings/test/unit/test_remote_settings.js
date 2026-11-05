@@ -218,6 +218,16 @@ add_task(async function test_records_can_have_local_fields() {
     accepted: true,
   });
   await c.maybeSync(3000); // Does not fail.
+
+  const records = await c.db.list();
+  const local = records.find(
+    r => r.id == "c74279ce-fb0a-42a6-ae11-386b567a6119"
+  );
+  ok(local.accepted, "Local field set locally is preserved");
+  const remote = records.find(
+    r => r.id == "1f5c98b9-6d93-4c13-aa26-978b38695096"
+  );
+  ok(!("accepted" in remote), "Local field served by the server is ignored");
 });
 add_task(clear_state);
 
@@ -1799,6 +1809,7 @@ wNuvFqc=
             {
               id: "1f5c98b9-6d93-4c13-aa26-978b38695096",
               last_modified: 3000,
+              accepted: true,
             },
           ],
         },

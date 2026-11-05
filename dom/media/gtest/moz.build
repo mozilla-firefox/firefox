@@ -129,6 +129,7 @@ if CONFIG["OS_TARGET"] != "Android":
         "TestGMPCrossOrigin.cpp",
         "TestGMPPluginScan.cpp",
         "TestGMPRemoveAndDelete.cpp",
+        "TestGMPServiceCreation.cpp",
         "TestSpeechModelMapping.cpp",
     ]
 

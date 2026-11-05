@@ -1191,22 +1191,6 @@ nsresult Selection::StyledRanges::SubtractRange(
   return NS_OK;
 }
 
-static void UserSelectRangesToAdd(dom::Range* aItem,
-                                  nsTArray<RefPtr<dom::Range>>& aRangesToAdd) {
-  // We cannot directly call IsEditorSelection() because we may be in an
-  // inconsistent state during Collapse() (we're cleared already but we haven't
-  // got a new focus node yet).
-  if (!StaticPrefs::dom_selection_exclude_non_selectable_nodes() ||
-      (IsEditorNode(aItem->GetStartContainer()) &&
-       IsEditorNode(aItem->GetEndContainer()))) {
-    // Don't mess with the selection ranges for editing, editor doesn't really
-    // deal well with multi-range selections.
-    aRangesToAdd.AppendElement(aItem);
-  } else {
-    aItem->ExcludeNonSelectableNodes(&aRangesToAdd);
-  }
-}
-
 static nsINode* DetermineSelectstartEventTarget(const dom::Range& aRange) {
   nsINode* target = aRange.GetStartContainer();
   if (target && target->IsInNativeAnonymousSubtree()) {
@@ -1243,8 +1227,7 @@ bool Selection::IsUserSelectionCollapsed(
     const Range& aRange, nsTArray<RefPtr<Range>>& aTempRangesToAdd) {
   MOZ_ASSERT(aTempRangesToAdd.IsEmpty());
 
-  RefPtr<Range> scratchRange = aRange.CloneRange();
-  UserSelectRangesToAdd(scratchRange, aTempRangesToAdd);
+  aTempRangesToAdd.AppendElement(aRange.CloneRange());
   const bool userSelectionCollapsed =
       (aTempRangesToAdd.Length() == 0) ||
       ((aTempRangesToAdd.Length() == 1) && aTempRangesToAdd[0]->Collapsed());
@@ -1313,7 +1296,7 @@ nsresult Selection::AddRangesForUserSelectableNodes(
   }
 
   // Generate the ranges to add
-  UserSelectRangesToAdd(aRange, rangesToAdd);
+  rangesToAdd.AppendElement(aRange);
   size_t newAnchorFocusIndex =
       GetDirection() == eDirPrevious ? 0 : rangesToAdd.Length() - 1;
   for (size_t i = 0; i < rangesToAdd.Length(); ++i) {

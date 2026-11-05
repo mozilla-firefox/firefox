@@ -177,3 +177,9 @@
 -dontwarn java.beans.IntrospectionException
 -dontwarn java.beans.Introspector
 -dontwarn java.beans.PropertyDescriptor
+
+# SnakeYAML looks up its own package names in static initializers, e.g.
+# TypeDescription.class.getPackage().getName(). Obfuscation moves renamed classes
+# into the root package, where getPackage() returns null, so DebugConfig.fromFile
+# crashes when a test harness provides a config file.
+-keepnames class org.yaml.snakeyaml.**

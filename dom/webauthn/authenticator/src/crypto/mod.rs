@@ -360,6 +360,19 @@ impl PinUvAuthToken {
             permissions: self.permissions,
         })
     }
+
+    #[cfg(test)]
+    pub fn new_test(
+        pin_protocol: PinUvAuthProtocol,
+        pin_token: Vec<u8>,
+        permissions: PinUvAuthTokenPermission,
+    ) -> Self {
+        Self {
+            pin_protocol,
+            pin_token,
+            permissions,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

@@ -1369,7 +1369,9 @@ export class RemoteSettingsClient extends EventEmitter {
     return {
       remoteTimestamp,
       metadata,
-      remoteRecords,
+      remoteRecords: this.localFields.length
+        ? remoteRecords.map(r => this._cleanLocalFields(r))
+        : remoteRecords,
       ageSeconds,
     };
   }

@@ -10,12 +10,19 @@ import sys
 import time
 from itertools import chain
 
+import mozpack.path as mozpath
 import mozunit
 import pytest
 
 from mozlint.errors import LintersNotConfigured, NoValidLinter
 from mozlint.result import Issue, ResultSummary
-from mozlint.roller import LintRoller, _group_jobs
+from mozlint.roller import (
+    LintRoller,
+    _balanced_jobs,
+    _group_jobs,
+    _read_ignore_patterns,
+    _split_dirs,
+)
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -426,6 +433,200 @@ def test_support_files(lint, linters, filedir, monkeypatch, files):
         "`--fix` with `--rev` on a `support-files` change should "
         "avoid linting the entire root."
     )
+
+
+@pytest.mark.parametrize(
+    "find_dotfiles,expected",
+    [
+        (False, ["a.js", "sub/b.js", "sub/deep"]),
+        (True, [".hidden", "a.js", "sub/.d.js", "sub/b.js", "sub/deep"]),
+    ],
+)
+def test_split_dirs(tmp_path, find_dotfiles, expected):
+    for path in (".hidden/x.js", "a.js", "sub/.d.js", "sub/b.js", "sub/deep/c.js"):
+        (tmp_path / "top" / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "top" / path).write_text("")
+    top = tmp_path / "top"
+    split = _split_dirs([str(top)], find_dotfiles, depth=2)
+    assert [os.path.relpath(p, top) for p in split] == [
+        os.path.normpath(p) for p in expected
+    ]
+
+
+def test_split_dirs_depth(tmp_path, lint):
+    for path in ("a.js", "sub/b.js", "sub/deep/c.js"):
+        (tmp_path / "top" / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "top" / path).write_text("")
+    top = str(tmp_path / "top")
+    lint.root = str(tmp_path)
+    lint.linters = [
+        {"name": "depth", "type": "external", "include": [top], "split-dirs": 1}
+    ]
+    jobs = lint._generate_jobs({top}, set(), num_procs=8)
+    paths = sorted(os.path.relpath(p, top) for _, ps in jobs for p in ps)
+    assert paths == ["a.js", "sub"]
+
+
+def test_split_dirs_filtered(tmp_path, lint):
+    for path in ("a.js", "b.py", "skip/c.js", "sub/d.js"):
+        (tmp_path / "top" / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / "top" / path).write_text("")
+    top = str(tmp_path / "top")
+    lint.root = str(tmp_path)
+    lint.linters = [
+        {
+            "name": "filtered",
+            "type": "external",
+            "include": [top],
+            "exclude": ["top/skip"],
+            "extensions": ["js"],
+            "split-dirs": 1,
+        }
+    ]
+    jobs = lint._generate_jobs({top}, set(), num_procs=8)
+    paths = sorted(os.path.relpath(p, top) for _, ps in jobs for p in ps)
+    assert paths == ["a.js", "sub"]
+
+
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="monkeypatch issues with multiprocessing on Windows",
+)
+def test_split_dirs_jobs(monkeypatch, lint, linters, filedir):
+    monkeypatch.setattr(sys.modules[lint.__module__], "_run_worker", fake_run_worker)
+
+    lint.read(linters("string"))
+    lint.linters[0]["split-dirs"] = 2
+    num_jobs = len(lint.roll(filedir, num_procs=16).issues["count"])
+    assert num_jobs == 2
+
+
+def is_js(path):
+    return path.endswith(".js")
+
+
+def auto_jobs(lint, tmp_path, files, **linter):
+    top = tmp_path / "top"
+    for path in files:
+        (top / path).parent.mkdir(parents=True, exist_ok=True)
+        (top / path).write_text("")
+    lint.root = str(tmp_path)
+    lint.linters = [
+        {
+            "name": "auto",
+            "type": "external",
+            "include": [str(top)],
+            "split-dirs": "auto",
+            **linter,
+        }
+    ]
+    jobs = lint._generate_jobs({str(top)}, set(), num_procs=2)
+    return [sorted(mozpath.relpath(p, str(top)) for p in ps) for _, ps in jobs]
+
+
+def test_balanced_jobs(tmp_path):
+    top = tmp_path / "top"
+    files = [f"big/{d}/{i}.js" for d in ("x", "y") for i in range(4)]
+    files += [f"vendor/{i}.js" for i in range(20)]
+    files += ["small/a.js", "small/b.py", "skip/c.js", ".dot/d.js"]
+    for path in files:
+        (top / path).parent.mkdir(parents=True, exist_ok=True)
+        (top / path).write_text("")
+    paths = [str(top / name) for name in ("big", "small", "skip", "vendor", ".dot")]
+    jobs = _balanced_jobs(
+        paths,
+        2,
+        str(tmp_path),
+        is_js,
+        mozpath.matcher(["top/skip"]),
+        mozpath.matcher(["top/vendor"]),
+        True,
+        200000,
+    )
+    rel = [sorted(mozpath.relpath(p, str(top)) for p in job) for job in jobs]
+    assert rel == [["big/x", "small"], [".dot", "big/y", "vendor"]]
+
+
+def test_balanced_jobs_max_chars(tmp_path):
+    top = tmp_path / "top"
+    for name in ("a", "b", "c"):
+        (top / name).mkdir(parents=True)
+        (top / name / "f.js").write_text("")
+    paths = [str(top / name) for name in ("a", "b", "c")]
+    size = len(paths[0]) + 1
+    none = mozpath.matcher([])
+    jobs = _balanced_jobs(paths, 1, str(tmp_path), is_js, none, none, False, size)
+    assert sorted(len(job) for job in jobs) == [1, 1, 1]
+
+
+def test_balanced_jobs_max_chars_files(tmp_path):
+    top = tmp_path / "top"
+    top.mkdir()
+    for i in range(10):
+        (top / f"{i}.js").write_text("")
+    size = 3 * (len(str(top / "0.js")) + 1)
+    none = mozpath.matcher([])
+    jobs = _balanced_jobs([str(top)], 2, str(tmp_path), is_js, none, none, False, size)
+    rel = sorted(sorted(mozpath.relpath(p, str(top)) for p in job) for job in jobs)
+    assert rel == [
+        ["0.js", "1.js", "2.js"],
+        ["3.js", "4.js", "5.js"],
+        ["6.js", "7.js", "8.js"],
+        ["9.js"],
+    ]
+
+
+def test_balanced_jobs_no_filter(tmp_path, lint):
+    lint.lintargs["use_filters"] = False
+    jobs = auto_jobs(
+        lint, tmp_path, ["skip/a.js"], exclude=["top/skip"], extensions=["js"]
+    )
+    assert jobs == [["skip/a.js"]]
+
+
+def test_balanced_jobs_exclude_extensions(tmp_path, lint):
+    files = [f"{ext}/{i}.{ext}" for ext in ("js", "py") for i in range(4)]
+    jobs = auto_jobs(lint, tmp_path, files, exclude_extensions=["py"])
+    assert jobs == [["js/0.js", "js/1.js", "py"], ["js/2.js", "js/3.js"]]
+
+
+def test_balanced_jobs_ignore_files(tmp_path, lint):
+    (tmp_path / "ignores.txt").write_text("top/vendor/\n\n")
+    files = [f"{d}/{i}.js" for d in ("app", "vendor") for i in range(4)]
+    jobs = auto_jobs(
+        lint,
+        tmp_path,
+        files,
+        extensions=["js"],
+        **{"split-ignore-files": ["ignores.txt"]},
+    )
+    assert jobs == [["app/0.js", "app/1.js", "vendor"], ["app/2.js", "app/3.js"]]
+
+
+def test_read_ignore_patterns(tmp_path):
+    ignores = tmp_path / "ignores.mjs"
+    ignores.write_text(
+        "export default [\n"
+        '  "!.*.js",\n'
+        '  "*.ts",\n'
+        '  "**/reftests/",\n'
+        '  "js/src/jit-test/", // comment\n'
+        "];\n"
+    )
+    assert _read_ignore_patterns(str(ignores)) == [
+        "**/*.ts",
+        "**/reftests",
+        "js/src/jit-test",
+    ]
+
+
+def test_read_ignore_patterns_txt(tmp_path):
+    ignores = tmp_path / "ignores.txt"
+    ignores.write_text("third_party/rust/\n\n  js/src/jit-test\n")
+    assert _read_ignore_patterns(str(ignores)) == [
+        "third_party/rust",
+        "js/src/jit-test",
+    ]
 
 
 def test_group_jobs(filedir):

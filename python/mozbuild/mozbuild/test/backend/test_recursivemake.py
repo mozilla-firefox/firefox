@@ -607,6 +607,28 @@ class TestRecursiveMakeBackend(BackendTester):
         targets = RecursiveMakeBackend.TARGETS
         self.assertEqual(list(targets), sorted(targets))
 
+    def test_generated_files_pre_export(self):
+        env = self._get_environment(
+            "generated-files-pre-export", substs={"MOZ_WIDGET_TOOLKIT": "android"}
+        )
+        self._consume("generated-files-pre-export", RecursiveMakeBackend, env=env)
+
+        backend_path = mozpath.join(env.topobjdir, "backend.mk")
+        with open(backend_path) as fh:
+            lines = [l.strip() for l in fh.readlines()]
+        self.assertIn("app/pre-export: app/$(MDDEPDIR)/Generated.java.stub", lines)
+
+        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
+        with open(root_deps_path) as fh:
+            lines = [l.strip() for l in fh.readlines()]
+        self.assertIn("recurse_pre-export: app/pre-export", lines)
+
+        env = self._consume("generated-files-pre-export", RecursiveMakeBackend)
+
+        root_deps_path = mozpath.join(env.topobjdir, "root-deps.mk")
+        with open(root_deps_path) as fh:
+            self.assertNotIn("recurse_pre-export", fh.read())
+
     def test_generated_files_force(self):
         """Ensure GENERATED_FILES with .force is handled properly."""
         env = self._consume("generated-files-force", RecursiveMakeBackend)
@@ -1426,6 +1448,63 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertIn("-DMOZ_RUST_SPEC_HOST_CFLAG", edge["computed_host_cxxflags"])
         self.assertIn("-Wl,--moz-rust-spec-ldflag", edge["link_flags"])
 
+    def _assert_rust_library_spec_flags(self, substs):
+        env = self._get_environment("rust-library-flags", substs=substs)
+        self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
+
+        edge = self._cargo_spec(env, ".cargo-library-spec.json")["edge"]
+
+        cflags = [
+            "-DMOZ_RUST_SPEC_CFLAG",
+            f"-I{env.topsrcdir}",
+            f"-I{env.topobjdir}",
+            f"-I{mozpath.join(env.topobjdir, 'dist', 'include')}",
+            "-fno-strict-aliasing",
+            "-ffp-contract=off",
+        ]
+        self.assertEqual(edge["computed_cflags"], cflags)
+        self.assertEqual(edge["computed_cxxflags"], cflags)
+        self.assertEqual(edge["link_flags"], ["-Wl,--moz-rust-spec-ldflag"])
+
+    def test_rust_library_command_spec_computed_flags_nspr(self):
+        env = self._get_environment(
+            "rust-library-flags", substs={"NSPR_CFLAGS": ["-I/obj/nspr"]}
+        )
+        self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
+
+        edge = self._cargo_spec(env, ".cargo-library-spec.json")["edge"]
+
+        self.assertIn("-DMOZ_RUST_SPEC_HOST_CFLAG", edge["computed_host_cflags"])
+        self.assertNotIn("-I/obj/nspr", edge["computed_host_cflags"])
+        self.assertNotIn("-I/obj/nspr", edge["computed_host_cxxflags"])
+
+    def test_rust_library_command_spec_computed_flags_lto(self):
+        self._assert_rust_library_spec_flags({
+            "MOZ_LTO_CFLAGS": ["-flto=thin"],
+            "MOZ_LTO_LDFLAGS": ["-flto=thin"],
+        })
+
+    def test_rust_library_command_spec_computed_flags_pgo(self):
+        self._assert_rust_library_spec_flags({
+            "MOZ_PROFILE_GENERATE": "1",
+            "PROFILE_GEN_CFLAGS": ["-fprofile-generate"],
+            "PROFILE_GEN_LDFLAGS": ["-fprofile-generate"],
+        })
+
+    def test_computed_pgo_cflags(self):
+        env = self._get_environment(
+            "rust-library-flags",
+            substs={
+                "MOZ_PROFILE_GENERATE": "1",
+                "PROFILE_GEN_CFLAGS": ["-fprofile-generate"],
+            },
+        )
+        self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
+
+        with open(mozpath.join(env.topobjdir, "backend.mk")) as fh:
+            lines = [l.strip() for l in fh if l.startswith("COMPUTED_PGO_CFLAGS")]
+        self.assertEqual(lines, ["COMPUTED_PGO_CFLAGS += -fprofile-generate"])
+
     def test_host_rust_library(self):
         """Test that a Rust library is written to backend.mk correctly."""
         env = self._consume("host-rust-library", RecursiveMakeBackend)
@@ -2154,6 +2233,20 @@ class TestRecursiveMakeBackend(BackendTester):
                 ][0]
                 self.assertEqual(program, expected_program)
 
+    def test_macos_install_name(self):
+        env = self._get_environment(
+            "shared-lib-paths", substs={"OS_ARCH": "Darwin", "DLL_SUFFIX": ".dylib"}
+        )
+        self._consume("shared-lib-paths", RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, "dist-bin", "backend.mk")) as fh:
+            content = fh.read()
+        self.assertIn(
+            "EXTRA_DSO_LDOPTS += -dynamiclib -install_name @rpath/libdist-bin.dylib "
+            "-compatibility_version 1 -current_version 1\n",
+            content,
+        )
+
     def test_host_cpp_prog_link(self):
         env = self._consume("host-cpp-link", RecursiveMakeBackend)
 
@@ -2167,6 +2260,34 @@ class TestRecursiveMakeBackend(BackendTester):
             lines = fh.readlines()
         self.assertIn("HOST_SIMPLE_PROGRAMS += host_asimple\n", lines)
         self.assertIn("HOST_CPP_PROG_LINK := 1\n", lines)
+
+    def _windows_shared_lib_backend_mk(self, cc_type):
+        env = self._get_environment(
+            "shared-lib-paths",
+            substs={
+                "OS_ARCH": "WINNT",
+                "CC_TYPE": cc_type,
+                "DLL_PREFIX": "",
+                "DLL_SUFFIX": ".dll",
+                "LIB_PREFIX": "",
+                "IMPORT_LIB_SUFFIX": "lib",
+            },
+        )
+        self._consume("shared-lib-paths", RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, "dist-bin", "backend.mk")) as fh:
+            return fh.read()
+
+    def test_mingw_import_library(self):
+        content = self._windows_shared_lib_backend_mk("clang")
+        self.assertIn(
+            "EXTRA_DSO_LDOPTS += -Wl,--out-implib -Wl,dist-bin.lib\n", content
+        )
+
+    def test_clang_cl_import_library(self):
+        content = self._windows_shared_lib_backend_mk("clang-cl")
+        self.assertIn("EXTRA_DSO_LDOPTS += -IMPLIB:dist-bin.lib\n", content)
+        self.assertNotIn("--out-implib", content)
 
     def test_per_source_object_deps(self):
         env = self._consume("per-source-object-deps", RecursiveMakeBackend)
@@ -2183,6 +2304,38 @@ class TestRecursiveMakeBackend(BackendTester):
             "static.$(OBJ_SUFFIX): $(srcdir)/static.s $(srcdir)/included.inc\n", lines
         )
         self.assertEqual([l for l in lines if l.startswith("plain.$(OBJ_SUFFIX)")], [])
+
+    def test_no_pgo_source(self):
+        env = self._consume("no-pgo-source", RecursiveMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "backend.mk")) as fh:
+            lines = fh.readlines()
+
+        self.assertIn("unprofiled.$(OBJ_SUFFIX): COMPUTED_PGO_CFLAGS :=\n", lines)
+        self.assertNotIn("profiled.$(OBJ_SUFFIX): COMPUTED_PGO_CFLAGS :=\n", lines)
+
+    def test_lto_object_path(self):
+        env = self._consume("lto-object-path", RecursiveMakeBackend)
+
+        expected = {
+            "prog": "$(DEPTH)/dist/bin/aprog.prog: LDFLAGS += "
+            "-Wl,-object_path_lto,aprog.prog.lto.o/\n",
+            "simple": "asimple.prog: LDFLAGS += "
+            "-Wl,-object_path_lto,asimple.prog.lto.o/\n",
+            "shared": "$(DEPTH)/dist/bin/libashared.so: LDFLAGS += "
+            "-Wl,-object_path_lto,libashared.so.lto.o/\n",
+        }
+        for subdir, line in expected.items():
+            with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+                self.assertIn(line, fh.readlines())
+
+    def test_lto_object_path_disabled(self):
+        env = self._consume("program-paths", RecursiveMakeBackend)
+
+        for subdir in ("dist-bin", "not-installed"):
+            with open(os.path.join(env.topobjdir, subdir, "backend.mk")) as fh:
+                content = fh.read()
+            self.assertNotIn("-object_path_lto", content)
 
     def test_extra_link_deps(self):
         """Test that EXTRA_LINK_DEPS is handled properly."""

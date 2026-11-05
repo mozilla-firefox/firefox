@@ -65,11 +65,28 @@ def test_parser_valid_multiple(parse):
         "non_existing_include.yml",
         "non_existing_exclude.yml",
         "non_existing_support_files.yml",
+        "non_existing_split_ignore_files.yml",
     ],
 )
 def test_parse_invalid_linter(parse, linter):
     with pytest.raises(LinterParseError):
         parse(linter)
+
+
+@pytest.mark.parametrize(
+    "linter,message",
+    [
+        ("invalid_split_dirs.yml", "must be a positive integer or 'auto', not '2'"),
+        ("invalid_split_dirs_global.yml", "global linter can't have a split-dirs"),
+    ],
+)
+def test_parse_invalid_split_dirs(parse, linter, message):
+    with pytest.raises(LinterParseError, match=message):
+        parse(linter)
+
+
+def test_parse_split_dirs_auto(parse):
+    assert parse("split_dirs_auto.yml")[0]["split-dirs"] == "auto"
 
 
 def test_parse_non_existent_linter(parse):

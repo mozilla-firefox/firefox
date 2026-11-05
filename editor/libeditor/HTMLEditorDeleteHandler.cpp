@@ -956,10 +956,11 @@ nsresult HTMLEditor::AutoDeleteRangesHandler::ComputeRangesToDelete(
     Result<nsIEditor::EDirection, nsresult> extendResult =
         aRangesToDelete.ExtendAnchorFocusRangeFor(aHTMLEditor,
                                                   aDirectionAndAmount);
-    if (extendResult.isErr()) {
-      NS_WARNING(
-          "AutoClonedSelectionRangeArray::ExtendAnchorFocusRangeFor() failed");
-      return extendResult.unwrapErr();
+    if (extendResult.isErr()) [[unlikely]] {
+      // Couldn't extend the range to outside the limiter. Don't warn this nor
+      // return error since the user may press Backspace or Delete at start or
+      // end of the editing host or a table cell/caption element.
+      return NS_OK;
     }
 
     // For compatibility with other browsers, we should set target ranges
@@ -1222,10 +1223,11 @@ Result<EditActionResult, nsresult> HTMLEditor::AutoDeleteRangesHandler::Run(
     Result<nsIEditor::EDirection, nsresult> extendResult =
         aRangesToDelete.ExtendAnchorFocusRangeFor(aHTMLEditor,
                                                   aDirectionAndAmount);
-    if (MOZ_UNLIKELY(extendResult.isErr())) {
-      NS_WARNING(
-          "AutoClonedSelectionRangeArray::ExtendAnchorFocusRangeFor() failed");
-      return extendResult.propagateErr();
+    if (extendResult.isErr()) [[unlikely]] {
+      // Couldn't extend the range to outside the limiter. Don't warn this nor
+      // return error since the user may press Backspace or Delete at start or
+      // end of the editing host or a table cell/caption element.
+      return EditActionResult::HandledResult();
     }
     if (caretPoint.isSome() &&
         MOZ_UNLIKELY(!caretPoint.ref().IsSetAndValid())) {

@@ -1138,6 +1138,10 @@ features:
         description: The final date for the promotion to end. This needs to be an ISO 8601 formatted date (i.e. YYYY-MM-DD).
         type: String
         default: "2026-08-31"
+      gpi-data-limit-gigabytes:
+        description: Specifies the VPN data limit in GB to show in the onboarding prompt when using without an account (through GPI)
+        type: Int
+        default: 5
     defaults:
       - channel: developer
         value:

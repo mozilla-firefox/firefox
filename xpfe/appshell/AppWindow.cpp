@@ -1510,13 +1510,6 @@ void AppWindow::SyncAttributesToWidget() {
     NS_ENSURE_TRUE_VOID(mWindow);
   }
 
-  // "icon" attribute
-  windowElement->GetAttribute(u"icon"_ns, attr);
-  if (!attr.IsEmpty()) {
-    mWindow->SetIcon(attr);
-    NS_ENSURE_TRUE_VOID(mWindow);
-  }
-
   // "hidetitlebarseparator" attribute
   mWindow->SetHideTitlebarSeparator(
       windowElement->GetBoolAttr(nsGkAtoms::hidetitlebarseparator));

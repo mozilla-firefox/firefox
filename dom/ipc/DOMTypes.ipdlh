@@ -47,7 +47,7 @@ using mozilla::ScrollbarPreference from "mozilla/ScrollbarPreferences.h";
 using mozilla::gfx::SurfaceFormat from "mozilla/gfx/Types.h";
 using nsILoadInfo::HTTPSUpgradeTelemetryType from "nsILoadInfo.h";
 using nsILoadInfo::SchemelessInputType from "nsILoadInfo.h";
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 using mozilla::dom::MaybeDiscardedBrowsingContext from "mozilla/dom/BrowsingContext.h";
 [RefCounted] using class nsIURI from "nsIURI.h";
 [RefCounted] using class nsIPolicyContainer from "nsIPolicyContainer.h";

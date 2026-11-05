@@ -176,6 +176,26 @@ geolocation:
     notification_emails:
       - daparks@mozilla.com
     expires: never
+  persisted_cache:
+    type: labeled_counter
+    description: >
+      What became of the NetworkGeolocationProvider request cache entry that an
+      earlier session persisted, recorded when a session first consults the
+      cache: absent if there was none, adopted if it was for the current
+      network, rejected if it was for another network, or superseded if a
+      network request completed before the network ID was known.
+    labels:
+      - absent
+      - adopted
+      - rejected
+      - superseded
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2078452
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2078452
+    notification_emails:
+      - daparks@mozilla.com
+    expires: never
   macos_error_code:
     type: labeled_counter
     description: >

@@ -443,9 +443,6 @@ nsresult ContentAnalysisRequest::GetFileDigest(const nsAString& aFilePath,
   auto closeFile = MakeScopeExit([fd]() { PR_Close(fd); });
   constexpr uint32_t kBufferSize = 1024 * 1024;
   auto buffer = std::make_unique<uint8_t[]>(kBufferSize);
-  if (!buffer) {
-    return NS_ERROR_OUT_OF_MEMORY;
-  }
   PRInt32 bytesRead = PR_Read(fd, buffer.get(), kBufferSize);
   while (bytesRead != 0) {
     if (bytesRead == -1) {

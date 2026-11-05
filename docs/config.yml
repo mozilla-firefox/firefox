@@ -101,6 +101,7 @@ categories:
         - metrics
 
 redirects:
+    performance/memory/awsy.html: testing/perfdocs/awsy.html
     performance/memory/memory.html: devtools-user/memory/index.html
     performance/memory/basic_operations.html: devtools-user/memory/basic_operations/index.html
     performance/memory/aggregate_view.html: devtools-user/memory/aggregate_view/index.html

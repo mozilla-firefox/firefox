@@ -25,9 +25,9 @@ with Files("test_infra/**"):
     BUG_COMPONENT = ("Firefox for Android", "UI Tests")
 
 # The Android APKs are assembled in the `export` tier, which usually occurs
-# before the following files are generated. However, mechanisms in `recurse.mk`
-# are used to pull the generated files into the `pre-export` tier, so do not
-# require an explicit dependency here.
+# before the following files are generated. However, the build backend pulls
+# the generated files into the `pre-export` tier, so do not require an explicit
+# dependency here.
 config_keys = ("MOZ_ANDROID_CONTENT_SERVICE_COUNT",)
 flags = ["%s=%s" % (k, CONFIG[k] if CONFIG[k] else "") for k in config_keys]
 

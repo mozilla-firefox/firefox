@@ -147,6 +147,10 @@ uri-setspec:
 
 eslint:
     description: JS lint check
+    # Review bot waits for every lint, and this one finishes last more often
+    # than any other. It parallelizes well, so a 30 core worker shortens the end
+    # to end time.
+    worker-type: b-linux-docker-large-amd
     treeherder:
         symbol: js(ES)
     run:

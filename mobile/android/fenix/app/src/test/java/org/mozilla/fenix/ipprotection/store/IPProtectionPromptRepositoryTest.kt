@@ -30,7 +30,7 @@ class IPProtectionPromptRepositoryTest {
 
     @Test
     fun `WHEN all conditions satisfied THEN show the prompt`() {
-        settings.isIPProtectionEnabled = true
+        settings.overrideIPProtectionEnabled = true
         repository.isShowingPrompt = false
 
         assertTrue(settings.isIPProtectionAvailable)
@@ -39,7 +39,7 @@ class IPProtectionPromptRepositoryTest {
 
     @Test
     fun `WHEN the prompt is already showing THEN do not show the prompt`() {
-        settings.isIPProtectionEnabled = true
+        settings.overrideIPProtectionEnabled = true
         repository.isShowingPrompt = true
 
         assertTrue(settings.isIPProtectionAvailable)
@@ -62,7 +62,7 @@ class IPProtectionPromptRepositoryTest {
                     ),
             )
         hardcodedNimbus.connectWith(FxNimbus)
-        settings.isIPProtectionEnabled = false
+        settings.overrideIPProtectionEnabled = false
         repository.isShowingPrompt = false
 
         assertFalse(settings.isIPProtectionAvailable)

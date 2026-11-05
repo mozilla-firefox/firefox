@@ -73,7 +73,7 @@ $(TOPOBJDIR)/%: FORCE
 # corresponding install manifests are named correspondingly, with forward
 # slashes replaced with underscores, and prefixed with `install_`. That is,
 # the install manifest for `dist/bin` would be `install_dist_bin`.
-$(addprefix install-,$(INSTALL_MANIFESTS)): install-%: $(addprefix $(TOPOBJDIR)/,buildid.h source-repo.h)
+$(addprefix install-,$(INSTALL_MANIFESTS)): install-%:
 	$(PYTHON3) -m mozbuild.action.process_install_manifest \
 		--track install_$(subst /,_,$*).track \
 		$(TOPOBJDIR)/$* \

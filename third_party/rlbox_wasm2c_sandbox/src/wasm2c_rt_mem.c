@@ -68,8 +68,10 @@ wasm_rt_funcref_table_t* w2c_env_0x5F_indirect_function_table(
 // By default max heap is 4GB
 #  define WASM_HEAP_DEFAULT_MAX_PAGES 65536
 #elif UINTPTR_MAX == 0xffffffff
-// No guard pages
-#  define WASM_HEAP_GUARD_PAGE_SIZE 0
+// Single guard page as an extra safety check as a second defense for partial
+// OOB read/writes. Platforms that have non-4k pages will simply round up this
+// value to the their default page size, which will work fine.
+#  define WASM_HEAP_GUARD_PAGE_SIZE 4096
 // Unaligned heap
 #  define WASM_HEAP_ALIGNMENT 0
 // Default max heap is 16MB
@@ -317,9 +319,9 @@ static int os_mmap_commit(void* curr_heap_end_pointer,
 
 #  include <sys/mman.h>
 #  include <unistd.h>
-#if defined(linux)
-#  include <sys/prctl.h>
-#endif
+#  if defined(linux)
+#    include <sys/prctl.h>
+#  endif
 
 // These constants are copied from <sys/prctl.h>, because the headers
 // used for building may not have them even though the running kernel
@@ -433,14 +435,16 @@ static void* os_mmap_aligned(void* addr,
     }
   }
 
-#if defined(linux)
+#  if defined(linux)
   if (name) {
     // Ignore errors here as this is best effort
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME,
-      (unsigned long)aligned, requested_length,
-      (unsigned long)name);
+    prctl(PR_SET_VMA,
+          PR_SET_VMA_ANON_NAME,
+          (unsigned long)aligned,
+          requested_length,
+          (unsigned long)name);
   }
-#endif
+#  endif
 
   return (void*)aligned;
 }

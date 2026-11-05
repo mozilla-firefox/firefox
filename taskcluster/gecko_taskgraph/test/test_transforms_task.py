@@ -10,6 +10,8 @@ from gecko_taskgraph.test.conftest import FakeParameters, FakeTransformConfig
 from gecko_taskgraph.transforms import job  # noqa: F401
 from gecko_taskgraph.transforms.task import (
     TREEHERDER_ROOT_URL,
+    _run_task_suffix,
+    check_run_task_caches,
     get_default_priority,
     get_treeherder_link,
     get_treeherder_project,
@@ -297,6 +299,76 @@ def test_get_default_priority(project, shipping, expected):
     # GraphConfig is hashable, which get_default_priority requires as it is cached.
     graph_config = GraphConfig({"task-priority": TASK_PRIORITY_CONFIG}, root_dir=".")
     assert get_default_priority(graph_config, project, shipping) == expected
+
+
+def _checkout_task(clone_with, cache, *run_task_args):
+    return {
+        "label": "fake-task-label",
+        "attributes": {"clone_with": clone_with},
+        "task": {
+            "payload": {
+                "command": [
+                    f"/builds/worker/bin/run-task-{clone_with}",
+                    "--gecko-checkout=/builds/worker/checkouts/gecko",
+                    *run_task_args,
+                    "--",
+                    "true",
+                ],
+                "cache": {
+                    f"test-domain-level-1-{cache}-v3-{_run_task_suffix(clone_with)}": (
+                        "/builds/worker/checkouts"
+                    ),
+                },
+            },
+        },
+    }
+
+
+def _check_run_task_caches(run_transform, task):
+    params = FakeParameters({"level": "1", "repository_type": "hg"})
+    return list(run_transform(check_run_task_caches, task, params=params))
+
+
+def test_check_run_task_caches_git_sparse_shallow(run_transform):
+    task = _checkout_task(
+        "git",
+        "checkouts-git-shallow",
+        "--gecko-shallow-clone",
+        "--gecko-sparse-profile=build/sparse-profiles/mach",
+    )
+    assert _check_run_task_caches(run_transform, task) == [task]
+
+
+def test_check_run_task_caches_git_missing_sparse_profile(run_transform):
+    task = _checkout_task(
+        "git",
+        "checkouts-git-shallow",
+        "--gecko-shallow-clone",
+        "--gecko-sparse-profile=build/sparse-profiles/does-not-exist",
+    )
+    with pytest.raises(Exception, match="is using non-existant sparse profile"):
+        _check_run_task_caches(run_transform, task)
+
+
+def test_check_run_task_caches_git_sparse_then_shallow(run_transform):
+    task = _checkout_task(
+        "git",
+        "checkouts-git",
+        "--gecko-sparse-profile=build/sparse-profiles/mach",
+        "--gecko-shallow-clone",
+    )
+    with pytest.raises(Exception, match="not using a shallow checkout cache"):
+        _check_run_task_caches(run_transform, task)
+
+
+def test_check_run_task_caches_hg_sparse_git_cache(run_transform):
+    task = _checkout_task(
+        "hg",
+        "checkouts-git",
+        "--gecko-sparse-profile=build/sparse-profiles/mach",
+    )
+    with pytest.raises(Exception, match="not using a sparse checkout cache"):
+        _check_run_task_caches(run_transform, task)
 
 
 if __name__ == "__main__":

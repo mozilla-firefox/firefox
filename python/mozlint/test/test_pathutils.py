@@ -42,6 +42,13 @@ def assert_paths(a, b):
             "expected": ["subdir1/subdir3/d.js"],
         },
         {
+            "paths": ["subdir1/subdir3"],
+            "include": ["subdir1/subdir3"],
+            "exclude": ["subdir1", "**/*.py"],
+            "expected": ["subdir1/subdir3"],
+            "expected_exclude": ["subdir1/subdir3/d.py"],
+        },
+        {
             "paths": ["."],
             "include": ["."],
             "exclude": ["**/c.py", "subdir1/subdir3"],
@@ -212,6 +219,46 @@ def test_filterpaths(test):
             },
             id="A file with no extension survives exclude_extensions.",
         ),
+        pytest.param(
+            {
+                "paths": ["missing"],
+                "config": {},
+                "expected": [],
+            },
+            id="A path that does not exist expands to nothing.",
+        ),
+        pytest.param(
+            {
+                "paths": ["subdir1", "subdir2"],
+                "config": {"global_exclude": ["subdir1/subdir3", "**/*.py"]},
+                "expected": ["subdir1/b.js", "subdir2/c.js", "subdir2/noext"],
+            },
+            id="Global excludes apply to a directory nothing else filters.",
+        ),
+        pytest.param(
+            {
+                "paths": ["subdir1"],
+                "config": {"global_exclude": ["**/subdir3/"]},
+                "expected": ["subdir1/b.js", "subdir1/b.py"],
+            },
+            id="A global exclude with a trailing slash applies to a directory walk.",
+        ),
+        pytest.param(
+            {
+                "paths": ["subdir1/b.js", "subdir2/c.js"],
+                "config": {"global_exclude": ["subdir1"]},
+                "expected": ["subdir2/c.js"],
+            },
+            id="Global excludes apply to files passed explicitly.",
+        ),
+        pytest.param(
+            {
+                "paths": ["subdir1/b.js"],
+                "config": {"global_exclude": ["subdir1/b"]},
+                "expected": ["subdir1/b.js"],
+            },
+            id="An exclude does not match a file whose name only starts with it.",
+        ),
     ),
 )
 def test_expand_exclusions(test):
@@ -257,6 +304,34 @@ def test_collapse(paths, expected):
 
     print(f"inputs: {inputs}")
     assert_paths(pathutils.collapse(inputs), expected)
+
+
+def test_find_globs_symlink(tmp_path):
+    (tmp_path / "real").mkdir()
+    (tmp_path / "real" / "skip.py").write_text("")
+    try:
+        (tmp_path / "link").symlink_to(tmp_path / "real", target_is_directory=True)
+    except OSError:
+        pytest.skip("symlinks are not supported")
+    found = pathutils._find_globs(str(tmp_path), ["**/skip.py"], set())
+    assert sorted(found) == ["link/skip.py", "real/skip.py"]
+
+
+def test_find_globs_dot_dir(tmp_path):
+    for d in (".gen", ".other"):
+        (tmp_path / d).mkdir()
+        (tmp_path / d / "bad.py").write_text("")
+    found = pathutils._find_globs(str(tmp_path), [".gen/*.py", "**/*.py"], set())
+    assert sorted(found) == [".gen/bad.py"]
+
+
+def test_find_globs_skip(tmp_path):
+    for path in ("keep/a.py", "pruned/b.py", "pruned/sub/c.py"):
+        (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / path).write_text("")
+    skip = {os.path.join(str(tmp_path), "pruned")}
+    found = pathutils._find_globs(str(tmp_path), ["**/*.py"], skip)
+    assert sorted(found) == ["keep/a.py"]
 
 
 def test_findobject_loads_from_root(monkeypatch):

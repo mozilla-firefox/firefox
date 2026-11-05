@@ -1187,15 +1187,11 @@ class TreeMetadataEmitter(LoggingMixin):
 
         no_pgo = context.get("NO_PGO")
         no_pgo_sources = [f for f, (_, flags) in all_flags.items() if flags.no_pgo]
-        if no_pgo:
-            if no_pgo_sources:
-                raise SandboxValidationError(
-                    "NO_PGO and SOURCES[...].no_pgo cannot be set at the same time",
-                    context,
-                )
-            passthru.variables["NO_PROFILE_GUIDED_OPTIMIZE"] = no_pgo
-        if no_pgo_sources:
-            passthru.variables["NO_PROFILE_GUIDED_OPTIMIZE"] = no_pgo_sources
+        if no_pgo and no_pgo_sources:
+            raise SandboxValidationError(
+                "NO_PGO and SOURCES[...].no_pgo cannot be set at the same time",
+                context,
+            )
 
         # A map from "canonical suffixes" for a particular source file
         # language to the range of suffixes associated with that language.
@@ -1294,7 +1290,7 @@ class TreeMetadataEmitter(LoggingMixin):
                     wasm_linkable.sources[suffix] += srcs
 
         for f, (path, flags) in sorted(all_flags.items()):
-            if flags.flags or flags.object_deps:
+            if flags.flags or flags.no_pgo or flags.object_deps:
                 ext = mozpath.splitext(f)[1]
                 deps = []
                 for d in flags.object_deps:
@@ -1306,7 +1302,7 @@ class TreeMetadataEmitter(LoggingMixin):
                             context,
                         )
                     deps.append(p)
-                yield PerSourceFlag(context, path, flags.flags, deps)
+                yield PerSourceFlag(context, path, flags.flags, flags.no_pgo, deps)
 
         # If there are any C++ sources, set all the linkables defined here
         # to require the C++ linker.
@@ -1390,6 +1386,17 @@ class TreeMetadataEmitter(LoggingMixin):
         for v in ["CXXFLAGS", "CFLAGS", "CMFLAGS", "CMMFLAGS"]:
             if v in context and context[v]:
                 computed_flags.resolve_flags("MOZBUILD_%s" % v, context[v])
+
+        # A directory can opt out with `NO_PGO`. Simple programs don't need a
+        # profile and there is no logic to re-link them in the second pass,
+        # and there is no sense in profiling unit tests.
+        if (
+            context.get("NO_PGO")
+            or context.get("SIMPLE_PROGRAMS")
+            or context.get("CPP_UNIT_TESTS")
+        ):
+            computed_flags.resolve_flags("PGO", [])
+            computed_flags.resolve_flags("PGO_DEFINES", [])
 
         for v in ["WASM_CFLAGS", "WASM_CXXFLAGS"]:
             if v in context and context[v]:

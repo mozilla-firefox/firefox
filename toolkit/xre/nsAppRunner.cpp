@@ -5322,11 +5322,9 @@ int XREMain::XRE_mainStartup(bool* aExitFlag) {
     if (const char* currentDesktop = PR_GetEnv("XDG_CURRENT_DESKTOP")) {
       useXI2 |= (nsDependentCString(currentDesktop) == "gamescope"_ns);
     }
-#    ifdef EARLY_BETA_OR_EARLIER
     // We tried 3.24.0+ but had problems, let's retry with newer versions. See
     // bug 1660212.
     useXI2 |= !gtk_check_version(3, 24, 49);
-#    endif
   }
   if (!useXI2) {
     gdk_disable_multidevice();

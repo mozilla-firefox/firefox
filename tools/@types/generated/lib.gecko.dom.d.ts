@@ -866,6 +866,8 @@ interface ConsoleInstanceOptions {
     dump?: ConsoleInstanceDumpCallback;
     /** <!-- binding_to(idl, attribute, WEBIDL_ConsoleInstanceOptions_innerID) --> */
     innerID?: string;
+    /** <!-- binding_to(idl, attribute, WEBIDL_ConsoleInstanceOptions_logModule) --> */
+    logModule?: string;
     /** <!-- binding_to(idl, attribute, WEBIDL_ConsoleInstanceOptions_maxLogLevel) --> */
     maxLogLevel?: ConsoleLogLevel;
     /** <!-- binding_to(idl, attribute, WEBIDL_ConsoleInstanceOptions_maxLogLevelPref) --> */

@@ -3940,7 +3940,8 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
     nsTArray<IPCTransferableData>&& aTransferables, const uint32_t& aAction,
     Maybe<BigBuffer>&& aVisualDnDData, const uint32_t& aStride,
     const gfx::SurfaceFormat& aFormat, const LayoutDeviceIntRect& aDragRect,
-    nsIPrincipal* aPrincipal, nsIPolicyContainer* aPolicyContainer,
+    Tainted<RefPtr<nsIPrincipal>>&& aPrincipal,
+    nsIPolicyContainer* aPolicyContainer,
     const CookieJarSettingsArgs& aCookieJarSettingsArgs,
     const MaybeDiscarded<WindowContext>& aSourceWindowContext,
     const MaybeDiscarded<WindowContext>& aSourceTopWindowContext) {
@@ -3975,7 +3976,8 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
     return IPC_OK();
   }
 
-  if (!Manager()->ValidatePrincipal(aPrincipal, {})) {
+  auto principal = Manager()->ValidatePrincipal(aPrincipal);
+  if (!principal) {
     return ContentParent::PrincipalValidationIpcFail(aPrincipal, this,
                                                      __func__);
   }
@@ -3985,7 +3987,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvInvokeDragSession(
                                       getter_AddRefs(cookieJarSettings));
 
   RefPtr<RemoteDragStartData> dragStartData = new RemoteDragStartData(
-      this, std::move(aTransferables), aDragRect, aPrincipal, aPolicyContainer,
+      this, std::move(aTransferables), aDragRect, *principal, aPolicyContainer,
       cookieJarSettings, aSourceWindowContext.GetMaybeDiscarded(),
       aSourceTopWindowContext.GetMaybeDiscarded());
 

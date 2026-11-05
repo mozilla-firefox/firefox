@@ -16,6 +16,20 @@ add_task(async function test_canonicaljson() {
   );
 });
 
+add_task(async function test_canonical_does_not_merge_ids_of_different_types() {
+  const records = [
+    { id: 1, title: "injected" },
+    { id: "1", title: "title 1" },
+  ];
+
+  const serialized = await RemoteSettingsWorker.canonicalStringify(records, 42);
+
+  Assert.equal(
+    serialized,
+    '{"data":[{"id":1,"title":"injected"},{"id":"1","title":"title 1"}],"last_modified":"42"}'
+  );
+});
+
 add_task(async function test_import_json_dump_into_idb() {
   if (IS_ANDROID) {
     // Skip test: we don't ship remote settings dumps on Android (see package-manifest).

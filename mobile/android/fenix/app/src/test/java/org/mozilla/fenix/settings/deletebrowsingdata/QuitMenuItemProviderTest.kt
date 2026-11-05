@@ -61,8 +61,8 @@ class QuitMenuItemProviderTest {
     }
 
     @Test
-    fun `GIVEN customize menu target WHEN providing the item THEN show default item`() {
-        val provider = createProvider(deletesBrowsingDataOnQuit = false, target = MenuTarget.CustomizeMenu)
+    fun `GIVEN customize menu target AND deletesBrowsingDataOnQuit is true WHEN providing the item THEN show default item`() {
+        val provider = createProvider(deletesBrowsingDataOnQuit = true, target = MenuTarget.CustomizeMenu)
 
         assertEquals(
             StandardMenuItem(
@@ -73,6 +73,13 @@ class QuitMenuItemProviderTest {
             ),
             provider.itemsFlow.value.single(),
         )
+    }
+
+    @Test
+    fun `GIVEN customize menu target AND deletesBrowsingDataOnQuit is false WHEN providing the item THEN don't show it`() {
+        val provider = createProvider(deletesBrowsingDataOnQuit = false, target = MenuTarget.CustomizeMenu)
+
+        assertTrue(provider.itemsFlow.value.isEmpty())
     }
 
     @Test

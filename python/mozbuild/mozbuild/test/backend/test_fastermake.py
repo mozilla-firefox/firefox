@@ -70,6 +70,23 @@ class TestFasterMakeBackend(BackendTester):
             ],
         )
 
+    def test_pp_files_extra_deps(self):
+        env = self._consume("pp-files-extra-deps-generated", FasterMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "faster", "Makefile")) as fh:
+            lines = [l.rstrip() for l in fh]
+        self.assertIn("install-dist/bin: $(TOPOBJDIR)/generated-header.h", lines)
+
+    def test_pp_files_extra_deps_jar(self):
+        env = self._consume("pp-files-extra-deps-jar", FasterMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "faster", "Makefile")) as fh:
+            lines = [l.rstrip() for l in fh]
+        self.assertIn("install-dist/bin: $(TOPOBJDIR)/generated-header.h", lines)
+        self.assertEqual(
+            [l for l in lines if l.startswith("install-dist/bin/browser:")], []
+        )
+
 
 if __name__ == "__main__":
     main()

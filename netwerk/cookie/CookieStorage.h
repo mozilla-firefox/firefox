@@ -9,6 +9,7 @@
 
 #include "CookieCommons.h"
 #include "CookieKey.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/net/Cookie.h"
 #include "nsICookieNotification.h"
 #include "nsIObserver.h"
@@ -95,7 +96,7 @@ class CookieStorage : public nsIObserver, public nsSupportsWeakReference {
                     const OriginAttributes& aOriginAttributes,
                     const nsACString& aHost, const nsACString& aName,
                     const nsACString& aPath, bool aFromHttp,
-                    const nsID* aOperationID);
+                    const Maybe<nsID>& aOperationID = Nothing());
 
   virtual void RemoveCookiesWithOriginAttributes(
       const OriginAttributesPattern& aPattern, const nsACString& aBaseDomain);
@@ -111,14 +112,14 @@ class CookieStorage : public nsIObserver, public nsSupportsWeakReference {
                      const nsACString& aBaseDomain, bool aIsThirdParty = false,
                      dom::BrowsingContext* aBrowsingContext = nullptr,
                      bool aOldCookieIsSession = false,
-                     const nsID* aOperationID = nullptr);
+                     const Maybe<nsID>& aOperationID = Nothing());
 
   void AddCookie(CookieParser* aCookieParser, const nsACString& aBaseDomain,
                  const OriginAttributes& aOriginAttributes, Cookie* aCookie,
                  int64_t aCurrentTimeInUsec, nsIURI* aHostURI,
                  const nsACString& aCookieHeader, bool aFromHttp,
                  bool aIsThirdParty, dom::BrowsingContext* aBrowsingContext,
-                 const nsID* aOperationID = nullptr);
+                 const Maybe<nsID>& aOperationID = Nothing());
 
   uint32_t RemoveOldestCookies(CookieEntry* aEntry, bool aSecure,
                                uint32_t aBytesToRemove,

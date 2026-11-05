@@ -5033,6 +5033,16 @@ Maybe<mozilla::StyleUserSelect> nsIFrame::UsedUserSelectRecurse(
     return Some(StyleUserSelect::None);
   }
 
+  // nsTableColFrame is inserted after nsTableRowGroupFrame and its content is
+  // the corresponding <col> if one exists, or <colgroup> or <table> otherwise.
+  // That means the frame tree order is different from the DOM tree order of
+  // HTML table so that the caret navigation may return start of the <table>
+  // after end of the last cell. Fortunately, it's invisible from user's
+  // selection point of view. So, we should be able to treat it as unselectable.
+  if (aFrame->IsTableColFrame()) {
+    return Some(StyleUserSelect::None);
+  }
+
   // Per https://drafts.csswg.org/css-ui-4/#content-selection:
   //
   // The used value is the same as the computed value, except:
@@ -5606,6 +5616,28 @@ nsresult nsIFrame::SelectWordOrLinkAtPoint(
       CaretAssociationHint::After);
 }
 
+nsIFrame::ContentOffsets nsIFrame::GetContentOffsetsFromPointForSelection(
+    const nsPoint& aPoint) {
+  // A text control's own frames use its independent selection, where its
+  // editor's anonymous content belongs.
+  const nsFrameSelection* const frameSelection = GetConstFrameSelection();
+  const Element* const independentSelectionRoot =
+      frameSelection ? frameSelection->GetIndependentSelectionRootElement()
+                     : nullptr;
+  ContentOffsets offsets = GetContentOffsetsFromPoint(
+      aPoint, independentSelectionRoot
+                  ? SKIP_HIDDEN
+                  : SKIP_HIDDEN | IGNORE_NATIVE_ANONYMOUS_SUBTREE);
+  if (offsets.content && independentSelectionRoot &&
+      !independentSelectionRoot->Contains(offsets.content)) {
+    // The text control's independent selection cannot use offsets outside
+    // its editor, e.g. if a press on its padding resolves to an ancestor
+    // with `user-select: all`.
+    return ContentOffsets();
+  }
+  return offsets;
+}
+
 nsresult nsIFrame::SelectByTypeAtPoint(const nsPoint& aPoint,
                                        nsSelectionAmount aBeginAmountType,
                                        nsSelectionAmount aEndAmountType,
@@ -5615,8 +5647,7 @@ nsresult nsIFrame::SelectByTypeAtPoint(const nsPoint& aPoint,
     return NS_OK;
   }
 
-  ContentOffsets offsets = GetContentOffsetsFromPoint(
-      aPoint, SKIP_HIDDEN | IGNORE_NATIVE_ANONYMOUS_SUBTREE);
+  ContentOffsets offsets = GetContentOffsetsFromPointForSelection(aPoint);
   if (!offsets.content) {
     return NS_ERROR_FAILURE;
   }

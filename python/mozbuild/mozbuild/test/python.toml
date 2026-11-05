@@ -59,6 +59,8 @@ subsuite = "mozbuild"
 
 ["codecoverage/test_lcov_rewrite.py"]
 
+["compilation/test_util.py"]
+
 ["compilation/test_warnings.py"]
 
 ["configure/lint.py"]

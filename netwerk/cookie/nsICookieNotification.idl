@@ -9,6 +9,10 @@ interface nsICookie;
 interface nsIArray;
 webidl BrowsingContext;
 
+%{C++
+#include "mozilla/Maybe.h"
+%}
+
 /**
  * Meta object dispatched by cookie change notifications.
  */
@@ -74,7 +78,21 @@ interface nsICookieNotification : nsISupports {
 
     /**
      * Operation ID to track which nsICookieManager operation has generated
-     * this notification.
+     * this notification. Throws NS_ERROR_NOT_AVAILABLE if no operation ID
+     * is set.
      */
-    readonly attribute nsIDPtr operationID;
+    readonly attribute nsIDRef operationID;
+
+%{C++
+  inline mozilla::Maybe<nsID> OperationID()
+  {
+    nsID id;
+    nsresult rv = GetOperationID(id);
+    if (NS_FAILED(rv)) {
+      return mozilla::Nothing();
+    }
+    return mozilla::Some(id);
+  }
+%}
+
 };

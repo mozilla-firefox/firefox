@@ -1,4 +1,9 @@
 [DEFAULT]
+prefs = [
+  "browser.widgets.generated.enabled=true",
+]
 support-files = ["head.js"]
 
 ["browser_generated_widgets.js"]
+
+["browser_sidebar_widget_studio.js"]
