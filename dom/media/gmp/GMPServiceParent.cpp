@@ -91,20 +91,14 @@ GeckoMediaPluginServiceParent::GeckoMediaPluginServiceParent()
       mWaitingForPluginsSyncShutdown(false),
       mInitPromiseMonitor("GeckoMediaPluginServiceParent::mInitPromiseMonitor"),
       mInitPromise(&mInitPromiseMonitor),
-      mLoadPluginsFromDiskComplete(false) {
-  MOZ_ASSERT(NS_IsMainThread());
-}
+      mLoadPluginsFromDiskComplete(false) {}
 
 GeckoMediaPluginServiceParent::~GeckoMediaPluginServiceParent() {
   MOZ_ASSERT(mPlugins.IsEmpty());
 }
 
-nsresult GeckoMediaPluginServiceParent::Init() {
+nsresult GeckoMediaPluginServiceParent::InitMainThread() {
   MOZ_ASSERT(NS_IsMainThread());
-
-  if (AppShutdown::GetCurrentShutdownPhase() != ShutdownPhase::NotInShutdown) {
-    return NS_OK;
-  }
 
   nsCOMPtr<nsIObserverService> obsService =
       mozilla::services::GetObserverService();
@@ -135,9 +129,8 @@ nsresult GeckoMediaPluginServiceParent::Init() {
     return rv;
   }
 
-  // Kick off scanning for plugins
-  nsCOMPtr<nsIThread> thread;
-  rv = GetThread(getter_AddRefs(thread));
+  // Kicks off scanning for plugins
+  rv = GeckoMediaPluginService::InitMainThread();
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
@@ -235,12 +228,9 @@ nsresult GeckoMediaPluginServiceParent::InitStorage() {
     return rv;
   }
 
-  {
-    MutexAutoLock lock(mMutex);
-    mStorageBaseDir = std::move(storageBaseDir);
-  }
-
-  return GeckoMediaPluginService::Init();
+  MutexAutoLock lock(mMutex);
+  mStorageBaseDir = std::move(storageBaseDir);
+  return NS_OK;
 }
 
 NS_IMETHODIMP
@@ -382,15 +372,17 @@ GeckoMediaPluginServiceParent::Observe(nsISupports* aSubject,
 
 void GeckoMediaPluginServiceParent::RejectPendingInitPromise() {
   // InitializePlugins() settles mInitPromise from the GMP thread, which has
-  // now been joined, so a scan still in flight will never settle it. Do it
-  // here instead, so that EnsureInitialized() cannot leave a caller waiting
-  // forever.
+  // been joined by now, so a scan still in flight will never settle it, and
+  // one that never started would not either. Do it here instead, so that
+  // EnsureInitialized() cannot leave a caller waiting forever.
   MonitorAutoLock lock(mInitPromiseMonitor);
   if (!mLoadPluginsFromDiskComplete) {
     mLoadPluginsFromDiskComplete = true;
     mInitPromise.RejectIfExists(NS_ERROR_ABORT, __func__);
   }
 }
+
+void GeckoMediaPluginServiceParent::OnShutdown() { RejectPendingInitPromise(); }
 
 void GeckoMediaPluginServiceParent::OnPreferenceChanged(
     mozilla::dom::Pref&& aPref) {
@@ -405,11 +397,18 @@ void GeckoMediaPluginServiceParent::OnPreferenceChanged(
 RefPtr<GenericNonExclusivePromise>
 GeckoMediaPluginServiceParent::EnsureInitialized() {
   MonitorAutoLock lock(mInitPromiseMonitor);
+  if (mMainInit == MainInit::Shutdown) {
+    // Shutdown() marks the plugin scan complete without having run it.
+    return GenericNonExclusivePromise::CreateAndReject(NS_ERROR_ABORT,
+                                                       __func__);
+  }
   if (mLoadPluginsFromDiskComplete) {
     return GenericNonExclusivePromise::CreateAndResolve(true, __func__);
   }
-  // We should have an init promise in flight.
-  MOZ_ASSERT(!mInitPromise.IsEmpty());
+  // InitializePlugins() settles this once it has started, which is not until
+  // the main thread setup has run. That can be after the first call to this,
+  // if the service was first used off the main thread. Shutdown() settles it if
+  // that never happens.
   return mInitPromise.Ensure(__func__);
 }
 
@@ -484,12 +483,12 @@ void GeckoMediaPluginServiceParent::InitializePlugins(
           [self]() -> void {
             MonitorAutoLock lock(self->mInitPromiseMonitor);
             self->mLoadPluginsFromDiskComplete = true;
-            self->mInitPromise.Resolve(true, __func__);
+            self->mInitPromise.ResolveIfExists(true, __func__);
           },
           [self]() -> void {
             MonitorAutoLock lock(self->mInitPromiseMonitor);
             self->mLoadPluginsFromDiskComplete = true;
-            self->mInitPromise.Reject(NS_ERROR_FAILURE, __func__);
+            self->mInitPromise.RejectIfExists(NS_ERROR_FAILURE, __func__);
           });
 }
 
@@ -1337,6 +1336,8 @@ void GeckoMediaPluginServiceParent::ReAddOnGMPThread(
 
 NS_IMETHODIMP
 GeckoMediaPluginServiceParent::GetStorageDir(nsIFile** aOutFile) {
+  // Not set until the main thread setup has run, which can be after the first
+  // use of the service from another thread.
   nsCOMPtr<nsIFile> storageBaseDir;
   {
     MutexAutoLock lock(mMutex);

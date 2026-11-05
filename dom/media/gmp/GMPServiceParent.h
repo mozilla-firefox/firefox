@@ -40,7 +40,6 @@ class GeckoMediaPluginServiceParent final
   static already_AddRefed<GeckoMediaPluginServiceParent> GetSingleton();
 
   GeckoMediaPluginServiceParent();
-  nsresult Init() override;
 
   NS_DECL_ISUPPORTS_INHERITED
 
@@ -149,6 +148,8 @@ class GeckoMediaPluginServiceParent final
   friend class GMPParent;
   void ReAddOnGMPThread(const RefPtr<GMPParent>& aOld);
   void PluginTerminated(const RefPtr<GMPParent>& aOld);
+  nsresult InitMainThread() override;
+  void OnShutdown() override;
   void InitializePlugins(nsISerialEventTarget* GMPThread) override;
   RefPtr<GenericPromise> LoadFromEnvironment();
   RefPtr<GenericPromise> AddOnGMPThread(nsString aDirectory);
