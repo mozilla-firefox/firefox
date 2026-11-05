@@ -52,5 +52,23 @@ export async function runBackgroundTask(_commandLine) {
 
   Services.console.logStringMessage("String message");
 
+  const logModuleOnly = console.createInstance({ logModule: "log-module" });
+  logModuleOnly.log("log-module-only");
+
+  const logModuleAndPrefix = console.createInstance({
+    logModule: "log-module",
+    prefix: "Some prefix",
+  });
+  logModuleAndPrefix.log("log-module-and-prefix");
+
+  const logModuleAsPrefix = console.createInstance({
+    logModule: "log-module",
+    prefix: "log-module",
+  });
+  logModuleAsPrefix.log("log-module-as-prefix");
+
+  const prefixOnly = console.createInstance({ prefix: "prefix-only" });
+  prefixOnly.log("prefix-only");
+
   return 0;
 }

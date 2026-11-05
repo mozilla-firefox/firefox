@@ -4,10 +4,13 @@ support-files = ""
 
 ["test_basic.js"]
 
+["test_consoleMethod_levels.js"]
+
+["test_console_logModule.js"]
+environment = ["MOZ_LOG=testWarn:2,testVerbose:5"]
+
 ["test_console_shouldLog.js"]
 environment = ["MOZ_LOG=shouldlogtest_0:0,shouldlogtest_1:1,shouldlogtest_2:2,shouldlogtest_3:3,shouldlogtest_4:4,shouldlogtest_5:5"]
-
-["test_consoleMethod_levels.js"]
 
 ["test_failing_console_listener.js"]
 skip-if = [
