@@ -614,3 +614,51 @@ add_task(async function test_malformed_granular_pref_is_isolated() {
     await SpecialPowers.popPrefEnv();
   }
 });
+
+// Verify that granular override entries from the pref are validated against
+// the schema: valid entries (including the "*" wildcard, long TLDs and IDN
+// TLDs) are imported, and malformed entries are dropped.
+add_task(async function test_granular_pref_schema_validation() {
+  const valid = [
+    { firstPartyDomain: "*", overrides: "+WindowOuterSize" },
+    { firstPartyDomain: "example.photography", overrides: "+WindowOuterSize" },
+    { firstPartyDomain: "example.xn--p1ai", overrides: "+WindowOuterSize" },
+    {
+      firstPartyDomain: "example.co.uk",
+      thirdPartyDomain: "",
+      overrides: "+WindowOuterSize",
+    },
+  ];
+  const invalid = [
+    { firstPartyDomain: "bad domain", overrides: "+WindowOuterSize" },
+    { firstPartyDomain: "example.com", overrides: "+Window OuterSize" },
+    { firstPartyDomain: "example.net" },
+    {
+      firstPartyDomain: "example.edu",
+      thirdPartyDomain: "not a domain",
+      overrides: "+WindowOuterSize",
+    },
+  ];
+
+  await setGranularOverridePrefs("", JSON.stringify([...valid, ...invalid]));
+
+  for (let key of [
+    "*,0",
+    "example.photography,0",
+    "example.xn--p1ai,0",
+    "example.co.uk,0",
+  ]) {
+    ok(hasOverrideEntry(key), `The valid override ${key} was imported.`);
+  }
+  for (let key of [
+    "bad domain,0",
+    "example.com,0",
+    "example.net,0",
+    "example.edu,not a domain,0",
+  ]) {
+    ok(!hasOverrideEntry(key), `The invalid override ${key} was dropped.`);
+  }
+
+  await SpecialPowers.popPrefEnv();
+  await SpecialPowers.popPrefEnv();
+});
