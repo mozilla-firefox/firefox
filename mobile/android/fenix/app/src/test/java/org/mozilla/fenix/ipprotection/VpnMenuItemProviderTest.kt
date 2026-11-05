@@ -161,6 +161,19 @@ class VpnMenuItemProviderTest {
         )
     }
 
+    @Test
+    fun `GIVEN the user is not eligible AND target is CustomizeMenu WHEN building the menu item THEN don't show it`() =
+        runTest {
+            val provider =
+                VpnMenuItemProvider(
+                    IPProtectionStore(IPProtectionState()),
+                    target = MenuTarget.CustomizeMenu,
+                    scope = backgroundScope,
+                )
+
+            assertTrue(provider.itemsFlow.value.isEmpty())
+        }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `WHEN the user stops being eligible THEN stop showing the menu item`() = runTest {
