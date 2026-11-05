@@ -102,19 +102,6 @@ LINK_PDBFILE = $(basename $@).pdb
 endif
 endif
 
-ifeq ($(CC_TYPE),clang-cl)
-
-ifdef SIMPLE_PROGRAMS
-COMPILE_PDB_FLAG ?= -Fd$(basename $(@F)).pdb
-COMPILE_CFLAGS += $(COMPILE_PDB_FLAG)
-COMPILE_CXXFLAGS += $(COMPILE_PDB_FLAG)
-endif
-
-ifdef MOZ_DEBUG
-CODFILE=$(basename $(@F)).cod
-endif
-
-endif # CC_TYPE == clang-cl
 endif # WINNT
 
 ifeq ($(OS_ARCH),WINNT)
