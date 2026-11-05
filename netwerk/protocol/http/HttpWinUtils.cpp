@@ -109,7 +109,7 @@ static bool GetWindowsCredentials(nsIURI* aURI,
   return true;
 }
 
-void AddWindowsSSO(nsHttpChannel* channel) {
+void AddWindowsSSO(nsHttpChannel* channel, bool aDeviceOnly) {
   nsCOMPtr<nsIURI> uri;
   channel->GetURI(getter_AddRefs(uri));
 
@@ -129,6 +129,10 @@ void AddWindowsSSO(nsHttpChannel* channel) {
   nsAutoString allCookies;
 
   for (const SSOCredential& credential : credentials) {
+    if (aDeviceOnly &&
+        !credential.mName.LowerCaseEqualsLiteral("x-ms-devicecredential")) {
+      continue;
+    }
     nsAutoString cookieData(credential.mData);
     // Strip old Set-Cookie info for WinInet
     int32_t semicolon = cookieData.FindChar(';');

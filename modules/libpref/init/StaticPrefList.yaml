@@ -15445,6 +15445,16 @@
   value: true
   mirror: never
 
+# Only send the device credential from Windows SSO or Microsoft Entra SSO,
+# not the signed-in user's credentials. One pref covers both platforms.
+# To override this for a container, add a pref like
+# `network.http.microsoft-entra-sso.device-only.${containerId}`. It only has an
+# effect if SSO is already enabled for that container.
+- name: network.http.microsoft-entra-sso.device-only
+  type: bool
+  value: false
+  mirror: always
+
 # To specify the list of trusted Microsoft Single Sign-On (SSO) authority URLs
 # This is needed for macOS unlike Windows where we send every URL to SSO
 - name: network.microsoft-sso-authority-list

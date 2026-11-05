@@ -10,7 +10,7 @@ namespace net {
 
 class nsHttpChannel;
 
-void AddWindowsSSO(nsHttpChannel* channel);
+void AddWindowsSSO(nsHttpChannel* channel, bool aDeviceOnly);
 
 }  // namespace net
 }  // namespace mozilla

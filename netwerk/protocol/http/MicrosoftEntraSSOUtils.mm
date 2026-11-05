@@ -38,11 +38,12 @@ class API_AVAILABLE(macos(13.3)) MicrosoftEntraSSOUtils final {
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(MicrosoftEntraSSOUtils)
 
-  explicit MicrosoftEntraSSOUtils(nsHttpChannel* aChannel,
-                                  std::function<void()>&& aResultCallback);
+  MicrosoftEntraSSOUtils(nsHttpChannel* aChannel, bool aDeviceOnly,
+                         std::function<void()>&& aResultCallback);
   bool AddMicrosoftEntraSSOInternal();
   void AddRequestHeader(const nsACString& aKey, const nsACString& aValue);
   void InvokeCallback();
+  bool DeviceOnly() const { return mDeviceOnly; }
 
  private:
   ~MicrosoftEntraSSOUtils();
@@ -51,6 +52,7 @@ class API_AVAILABLE(macos(13.3)) MicrosoftEntraSSOUtils final {
   SSORequestDelegate* mRequestDelegate;
   RefPtr<nsHttpChannel> mChannel;
   std::function<void()> mResultCallback;
+  bool mDeviceOnly;
   nsTHashMap<nsCStringHashKey, nsCString> mRequestHeaders;
 };
 }  // namespace net
@@ -167,6 +169,10 @@ class API_AVAILABLE(macos(13.3)) MicrosoftEntraSSOUtils final {
     mozilla::glean::network_sso::entra_success.Get("success"_ns).Add(1);
   }
 
+  if (mCallback->DeviceOnly() && ssoCookiesDict[@"prt_headers"]) {
+    [allHeaders removeObjectIdenticalTo:ssoCookiesDict[@"prt_headers"]];
+  }
+
   // Append cookie headers retrieved from MS Broker
   for (NSArray* headerArray in allHeaders) {
     if (!headerArray) {
@@ -266,12 +272,14 @@ namespace mozilla {
 namespace net {
 
 MicrosoftEntraSSOUtils::MicrosoftEntraSSOUtils(
-    nsHttpChannel* aChannel, std::function<void()>&& aResultCallback)
+    nsHttpChannel* aChannel, bool aDeviceOnly,
+    std::function<void()>&& aResultCallback)
     : mProvider(nullptr),
       mAuthorizationController(nullptr),
       mRequestDelegate(nullptr),
       mChannel(aChannel),
-      mResultCallback(std::move(aResultCallback)) {
+      mResultCallback(std::move(aResultCallback)),
+      mDeviceOnly(aDeviceOnly) {
   MOZ_LOG(gMacOSWebAuthnServiceLog, mozilla::LogLevel::Debug,
           ("MicrosoftEntraSSOUtils::MicrosoftEntraSSOUtils()"));
 }
@@ -386,15 +394,15 @@ bool MicrosoftEntraSSOUtils::AddMicrosoftEntraSSOInternal() {
 }
 
 API_AVAILABLE(macos(13.3))
-nsresult AddMicrosoftEntraSSO(nsHttpChannel* aChannel,
+nsresult AddMicrosoftEntraSSO(nsHttpChannel* aChannel, bool aDeviceOnly,
                               std::function<void()>&& aResultCallback) {
   MOZ_ASSERT(XRE_IsParentProcess());
 
   // The service is used by this function and the delegate, and it should be
   // released when the delegate finishes running. It will remain alive even
   // after AddMicrosoftEntraSSO returns.
-  RefPtr<MicrosoftEntraSSOUtils> service =
-      new MicrosoftEntraSSOUtils(aChannel, std::move(aResultCallback));
+  RefPtr<MicrosoftEntraSSOUtils> service = new MicrosoftEntraSSOUtils(
+      aChannel, aDeviceOnly, std::move(aResultCallback));
 
   mozilla::glean::network_sso::total_entra_uses.Add(1);
 

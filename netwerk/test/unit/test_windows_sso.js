@@ -91,6 +91,12 @@ add_setup(async function () {
     Services.prefs.clearUserPref(
       "network.http.windows-sso.container-enabled.2"
     );
+    Services.prefs.clearUserPref(
+      "network.http.microsoft-entra-sso.device-only"
+    );
+    Services.prefs.clearUserPref(
+      "network.http.microsoft-entra-sso.device-only.2"
+    );
   });
 });
 
@@ -170,4 +176,71 @@ add_task(async function test_live_cookies() {
   let headers = await getRequestHeaders(`${liveServer.origin()}/`);
   ok(headers.cookie?.includes("DIDC=cookie"), ".live.com gets cookies");
   equal(headers[DEVICE], "device", ".live.com gets the device credential");
+});
+
+add_task(async function test_device_only() {
+  Services.prefs.setBoolPref("network.http.windows-sso.enabled", true);
+  Services.prefs.setBoolPref(
+    "network.http.microsoft-entra-sso.device-only",
+    true
+  );
+
+  let headers = await getRequestHeaders(`${httpsServer.origin()}/`);
+  equal(headers[DEVICE], "device", "Device-only sends the device credential");
+  ok(!(USER in headers), "Device-only doesn't send the user credential");
+
+  headers = await getRequestHeaders(`${liveServer.origin()}/`);
+  equal(headers[DEVICE], "device", "Device-only on .live.com");
+  ok(!headers.cookie?.includes("DIDC"), "Device-only sends no cookies");
+
+  Services.prefs.clearUserPref("network.http.microsoft-entra-sso.device-only");
+});
+
+add_task(async function test_device_only_containers() {
+  Services.prefs.setBoolPref("network.http.windows-sso.enabled", true);
+  Services.prefs.setBoolPref(
+    "network.http.windows-sso.container-enabled.2",
+    true
+  );
+  Services.prefs.setBoolPref(
+    "network.http.microsoft-entra-sso.device-only.2",
+    true
+  );
+
+  let headers = await getRequestHeaders(`${httpsServer.origin()}/`, {
+    userContextId: 2,
+  });
+  equal(headers[DEVICE], "device", "Device-only container");
+  ok(!(USER in headers), "Device-only container gets no user credential");
+
+  headers = await getRequestHeaders(`${httpsServer.origin()}/`);
+  equal(headers[USER], "user", "Default container still gets full SSO");
+
+  Services.prefs.setBoolPref(
+    "network.http.microsoft-entra-sso.device-only",
+    true
+  );
+  Services.prefs.clearUserPref(
+    "network.http.microsoft-entra-sso.device-only.2"
+  );
+  headers = await getRequestHeaders(`${httpsServer.origin()}/`, {
+    userContextId: 2,
+  });
+  equal(headers[DEVICE], "device", "Container without an override");
+  ok(!(USER in headers), "Container without an override uses device-only");
+
+  Services.prefs.setBoolPref(
+    "network.http.microsoft-entra-sso.device-only.2",
+    false
+  );
+  headers = await getRequestHeaders(`${httpsServer.origin()}/`, {
+    userContextId: 2,
+  });
+  equal(headers[USER], "user", "Container can opt out of device-only");
+
+  Services.prefs.clearUserPref("network.http.microsoft-entra-sso.device-only");
+  Services.prefs.clearUserPref(
+    "network.http.microsoft-entra-sso.device-only.2"
+  );
+  Services.prefs.clearUserPref("network.http.windows-sso.container-enabled.2");
 });

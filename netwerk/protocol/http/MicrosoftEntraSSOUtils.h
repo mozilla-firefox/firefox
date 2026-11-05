@@ -14,7 +14,7 @@ namespace net {
 class nsHttpChannel;
 class MicrosoftEntraSSOUtils;  // Used in SSORequestDelegate
 
-nsresult AddMicrosoftEntraSSO(nsHttpChannel* aChannel,
+nsresult AddMicrosoftEntraSSO(nsHttpChannel* aChannel, bool aDeviceOnly,
                               std::function<void()>&& aResultCallback);
 
 }  // namespace net
