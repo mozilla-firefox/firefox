@@ -587,6 +587,8 @@ browsertime-benchmark:
             by-subtest:
                 jetstream3:
                     by-test-platform:
+                        linux.*shippable.*: [--power-profile=performance]
+                        linux.*nightlyasrelease.*: [--power-profile=performance]
                         macosx1500.*shippable.*:
                             - --page-timeout=900000
                         default: []
