@@ -16,6 +16,7 @@
 #include "jit/IonScript.h"
 #include "jit/JitFrames.h"
 #include "jit/JitSpewer.h"
+#include "jit/JitZone.h"
 #include "jit/ScriptFromCalleeToken.h"
 #include "jit/ShapeList.h"
 #include "jit/TrialInlining.h"
@@ -95,6 +96,14 @@ bool JSScript::createJitScript(JSContext* cx) {
 
     if (!cx->runtime()->geckoProfiler().insertScriptSource(scriptSource())) {
       ReportOutOfMemory(cx);
+      return false;
+    }
+  }
+
+  if (JitOptions.emitInterpreterEntryTrampoline &&
+      IsBaselineInterpreterEnabled()) {
+    if (!cx->zone()->jitZone()->getOrCreateInterpreterEntryTrampoline(cx,
+                                                                      this)) {
       return false;
     }
   }

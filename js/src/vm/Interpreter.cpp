@@ -388,31 +388,19 @@ static MOZ_ALWAYS_INLINE bool MaybeEnterInterpreterTrampoline(JSContext* cx,
   if (jit::JitOptions.emitInterpreterEntryTrampoline &&
       cx->runtime()->hasJitRuntime()) {
     JSScript* script = state.script();
-    Zone* zone = script->zone();
-    jit::JitZone* jitZone = zone->getOrCreateJitZone(cx);
+    jit::JitZone* jitZone = script->zone()->getOrCreateJitZone(cx);
     if (!jitZone) {
       return false;
     }
 
-    jit::EntryTrampolineMap* map =
-        jitZone->getOrCreateInterpreterEntryMap(zone);
-    if (!map) {
-      ReportOutOfMemory(cx);
+    jit::JitCode* code =
+        jitZone->getOrCreateInterpreterEntryTrampoline(cx, script);
+    if (!code) {
       return false;
     }
 
     jit::JitRuntime* jitRuntime = cx->runtime()->jitRuntime();
-    auto ptr = map->lookupForAdd(script);
-    if (!ptr) {
-      jit::JitCode* code =
-          jitRuntime->generateEntryTrampolineForScript(cx, script);
-      if (!code || !map->relookupOrAdd(ptr, script, code)) {
-        ReportOutOfMemory(cx);
-        return false;
-      }
-    }
-
-    uint8_t* codeRaw = ptr->value()->raw();
+    uint8_t* codeRaw = code->raw();
     MOZ_ASSERT(codeRaw, "Should have a valid trampoline here.");
     // The C++ entry thunk is located at the vmInterpreterEntryOffset offset.
     codeRaw += jitRuntime->vmInterpreterEntryOffset();

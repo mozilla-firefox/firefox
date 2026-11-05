@@ -316,6 +316,11 @@ class JitZone {
   }
   EntryTrampolineMap* getOrCreateInterpreterEntryMap(JS::Zone* zone);
 
+  // Returns the interpreter entry trampoline for |script|, generating it if
+  // necessary. Reports OOM and returns nullptr on failure.
+  JitCode* getOrCreateInterpreterEntryTrampoline(JSContext* cx,
+                                                 JSScript* script);
+
   static constexpr size_t offsetOfStringConcatStub() {
     return offsetof(JitZone, stubs_) +
            size_t(StubKind::StringConcat) * sizeof(uintptr_t);
