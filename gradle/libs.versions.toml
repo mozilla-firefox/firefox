@@ -117,7 +117,7 @@ jsoup = "1.24.1"
 lottie = "6.7.1"
 okhttp = "5.5.1"
 okio = "3.18.2"
-sentry = "8.58.0"
+sentry = "8.63.0"
 zxing = "3.5.4"
 
 [libraries]
