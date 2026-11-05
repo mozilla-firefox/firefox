@@ -12,6 +12,10 @@ body {
 
     /* NOTE: keep in sync with --popup-border-radius */
     border-radius: 24px;
+
+    @media -moz-pref("browser.uidensity", 1) {
+      border-radius: 18px;
+    }
   }
 
   @media (-moz-platform: linux) and (not (-moz-gtk-csd-transparency-available)) {
