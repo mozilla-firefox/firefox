@@ -803,6 +803,8 @@ skip-if = [
 
 ["test_window_proto.html"]
 
+["test_window_proxy_unlinked_inner.html"]
+
 ["test_writable-replaceable.html"]
 
 ["test_x-frame-options.html"]
