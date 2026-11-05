@@ -1,0 +1,27 @@
+<!doctype html>
+<html class="reftest-wait">
+<head>
+<meta charset="utf-8">
+<title>Test for painting caret after the last preformatted line break of the preformatted Text</title>
+<style>
+span[contenteditable] {
+  white-space: pre-line;
+  outline: none;
+}
+</style>
+<script>
+"use strict";
+
+addEventListener("load", () => {
+  const editingHost = document.querySelector("span[contenteditable]");
+  editingHost.focus();
+  getSelection().collapse(editingHost, 3);
+  SpecialPowers.wrap(getSelection()).interlinePosition = true;
+  document.documentElement.removeAttribute("class");
+}, {once: true});
+</script>
+</head>
+<body>
+  <span contenteditable>ABC<br><br></span>
+</body>
+</html>

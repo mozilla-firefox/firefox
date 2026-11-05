@@ -283,12 +283,32 @@ bool SelectionMovementUtils::AdjustFrameForLineStart(nsIFrame*& aFrame,
     return false;
   }
 
-  nsIFrame* nextSibling = aFrame->GetNextSibling();
-  if (!nextSibling) {
+  // The terminal newline may have split an ancestor inline, in which case the
+  // next frame is inside a continuation of that ancestor.
+  nsIFrame* const nextSiblingOrFirstFrameInNextLine = [&]() -> nsIFrame* {
+    nsIFrame* f = aFrame;
+    nsIFrame* next = f->GetNextSibling();
+    while (!next) {
+      f = f->GetParent();
+      if (!f || !f->IsLineParticipant()) {
+        return nullptr;  // Reached current block end
+      }
+      next = f->GetNextSibling();
+    }
+    while (next->IsLineParticipant()) {
+      nsIFrame* firstChild = next->PrincipalChildList().FirstChild();
+      if (!firstChild) {
+        break;  // No content in the new line, the terminal newline is invisible
+      }
+      next = firstChild;
+    }
+    return next;
+  }();
+  if (!nextSiblingOrFirstFrameInNextLine) {
     return false;
   }
 
-  aFrame = nextSibling;
+  aFrame = nextSiblingOrFirstFrameInNextLine;
   std::tie(start, end) = aFrame->GetOffsets();
   aFrameOffset = start;
   return true;
