@@ -3279,7 +3279,7 @@
 
 - name: dom.fetch.streaming_upload
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 # Whether to validate that a fetch request's principal is compatible with the
