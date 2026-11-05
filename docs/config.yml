@@ -154,7 +154,6 @@ allowed_warnings:
     - "WARNING: Lexing literal_block"
     - "WARNING: dot command 'dot' cannot be run \\(needed for graphviz output\\)"
     # Specific warnings allowed when the allow list was created.
-    - "testing/automated-testing/manifest-sandbox\\.md:.*: WARNING: download file not readable"
     - "UITour-lib.Mozilla.UITour.* WARNING: duplicate class description of Mozilla.UITour"
     - "uitour/docs/index\\.md:.*: WARNING: duplicate class description of Mozilla\\.UITour"
     # Undefined label warnings.

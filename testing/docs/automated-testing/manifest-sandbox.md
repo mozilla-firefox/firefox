@@ -4,9 +4,23 @@ Suites that use `manifestparser`, like Mochitest and XPCShell, have test
 manifests that denote whether a given test should be skipped or not based
 on a set of context.
 
-Gecko builds generate a `target.mozinfo.json` with metadata about the build.
-An example `target.mozinfo.json` might look like {download}`this
-<target.mozinfo.json>`. These keys can then be used `skip-if` in test manifests:
+Gecko builds generate a `target.mozinfo.json` with metadata about the build,
+written by {searchfox}`python/mozbuild/mozbuild/mozinfo.py`. An excerpt of one
+might look like this:
+
+```json
+{
+  "os": "linux",
+  "processor": "x86_64",
+  "bits": 64,
+  "debug": false,
+  "asan": false,
+  "nightly_build": true,
+  "toolkit": "gtk"
+}
+```
+
+These keys can then be used `skip-if` in test manifests:
 
 ```
 skip-if = e10s && os == 'win'
@@ -37,8 +51,7 @@ Reftests and Crashtests use a different kind of manifest, but the general idea
 is the same.
 
 As before, Gecko builds generate a `target.mozinfo.json` with metadata about
-the build. An example `target.mozinfo.json` might look like {download}`this
-<target.mozinfo.json>`. This is consumed in the Reftest harness and translated
+the build. This is consumed in the Reftest harness and translated
 into keywords that can be used like:
 
 ```
