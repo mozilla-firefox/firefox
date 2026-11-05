@@ -103,15 +103,11 @@ bool FileSystemPolicy::GenerateRules(const wchar_t* name,
   PolicyRule query_full(result);
 
   if (semantics == FileSemantics::kAllowReadonly) {
-    // We consider all flags that are not known to be readonly as potentially
-    // used for write.
-    DWORD allowed_flags = FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA |
-                          SYNCHRONIZE | FILE_EXECUTE | GENERIC_READ |
-                          GENERIC_EXECUTE | READ_CONTROL;
-    DWORD restricted_flags = ~allowed_flags;
-    open.AddNumberMatch(IF_NOT, OpenFile::ACCESS, restricted_flags, AND);
+    open.AddNumberMatch(IF_NOT, OpenFile::ACCESS, kReadonlyRestrictedFlags,
+                        AND);
     open.AddNumberMatch(IF, OpenFile::OPENONLY, true, EQUAL);
-    create.AddNumberMatch(IF_NOT, OpenFile::ACCESS, restricted_flags, AND);
+    create.AddNumberMatch(IF_NOT, OpenFile::ACCESS, kReadonlyRestrictedFlags,
+                          AND);
     create.AddNumberMatch(IF, OpenFile::OPENONLY, true, EQUAL);
   }
 

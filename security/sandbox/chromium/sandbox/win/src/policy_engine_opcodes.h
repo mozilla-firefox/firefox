@@ -76,6 +76,7 @@ enum OpcodeID : uint16_t {
   OP_NUMBER_MATCH,        // Match a 32-bit integer as n == a.
   OP_NUMBER_AND_MATCH,    // Match using bitwise AND; as in: n & a != 0.
   OP_WSTRING_MATCH,       // Match a string for equality.
+  OP_FONT_FILE_MATCH,     // Match a string that is an allowed font file path.
   OP_ACTION               // Evaluates to an action opcode.
 };
 
@@ -332,6 +333,12 @@ class OpcodeFactory {
   PolicyOpcode* MakeOpNumberAndMatch(uint8_t selected_param,
                                      uint32_t match,
                                      uint32_t options);
+
+  // Creates an OpFontFileMatch opcode using the raw memory passed in the ctor.
+  // selected_param: index of the input argument. It must be a wstring or the
+  // evaluation result will generate a EVAL_ERROR.
+  // Implemented in font_file_policy_opcode.cc.
+  PolicyOpcode* MakeOpFontFileMatch(uint8_t selected_param, uint32_t options);
 
  private:
   // Constructs the common part of every opcode. selected_param is the index

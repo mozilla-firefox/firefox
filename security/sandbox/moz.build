@@ -64,6 +64,8 @@ elif CONFIG["OS_ARCH"] == "WINNT":
         "chromium-shim/base/file_version_info_win.cpp",
         "chromium-shim/base/logging.cpp",
         "chromium-shim/sandbox/win/BrokerGeckoClient.cpp",
+        "chromium-shim/sandbox/win/src/font_file_policy.cc",
+        "chromium-shim/sandbox/win/src/font_file_policy_opcode.cc",
         "chromium-shim/sandbox/win/src/registry_dispatcher.cc",
         "chromium-shim/sandbox/win/src/registry_interception.cc",
         "chromium-shim/sandbox/win/src/registry_policy.cc",

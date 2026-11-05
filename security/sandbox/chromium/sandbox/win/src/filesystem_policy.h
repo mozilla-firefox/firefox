@@ -19,6 +19,13 @@ namespace sandbox {
 // This class centralizes most of the knowledge related to file system policy
 class FileSystemPolicy {
  public:
+  // For read-only access, we consider all flags that are not known to be
+  // read-only as potentially used for write.
+  static constexpr DWORD kReadonlyAllowedFlags =
+      FILE_READ_DATA | FILE_READ_ATTRIBUTES | FILE_READ_EA | SYNCHRONIZE |
+      FILE_EXECUTE | GENERIC_READ | GENERIC_EXECUTE | READ_CONTROL;
+  static constexpr DWORD kReadonlyRestrictedFlags = ~kReadonlyAllowedFlags;
+
   // Creates the required low-level policy rules to evaluate a high-level
   // policy rule for File IO, in particular open or create actions.
   // 'name' is the file or directory name.

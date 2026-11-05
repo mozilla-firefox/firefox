@@ -181,6 +181,11 @@ class [[clang::lto_visibility_public]] TargetConfig {
   [[nodiscard]] virtual ResultCode AllowRegistryRead(
       const wchar_t* pattern) = 0;
 
+  // Adds read-only policy rules for font files, which only match if the Gecko
+  // font file validator accepts the path. Because the validation is relatively
+  // expensive, this should be called after adding other file rules.
+  [[nodiscard]] virtual ResultCode AllowFontFileAccess() = 0;
+
   // Adds a policy rule effective for processes spawned using this policy.
   // Modules patching `path` exactly can still be loaded under
   // Code-Integrity Guard (MITIGATION_FORCE_MS_SIGNED_BINS).
