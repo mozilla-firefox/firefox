@@ -56,8 +56,11 @@ enum class CCReason : uint8_t {
   // continue it. Otherwise, start a new one.
   FIRST_MANUAL_REASON = 128,
 
-  // We want to GC, but must finish any ongoing cycle collection first.
-  GC_WAITING = FIRST_MANUAL_REASON,
+  // We want to GC, but must finish any ongoing cycle collection right now.
+  GC_WAITING_NOW = FIRST_MANUAL_REASON,
+
+  // Like GC_WAITING_NOW, but not as urgent.
+  GC_WAITING,
 
   // CC requested via an API. Used by tests.
   API,
@@ -85,6 +88,7 @@ enum class CCReason : uint8_t {
   MACRO(TIMED)                   \
   MACRO(GC_FINISHED)             \
   MACRO(SLICE)                   \
+  MACRO(GC_WAITING_NOW)          \
   MACRO(GC_WAITING)              \
   MACRO(API)                     \
   MACRO(DUMP_HEAP)               \
