@@ -10,7 +10,6 @@ sys.path.append(".")
 
 import base64
 import os
-import platform
 import signal
 import stat
 import subprocess
@@ -22,17 +21,11 @@ import taskcluster
 # Bump this number when you need to cause a commit for the job to re-run: 23
 
 if len(sys.argv) < 3:
-    print("Usage:", sys.argv[0], "gecko-dev-path updatebot-path [moz-fetches-dir]")
+    print("Usage:", sys.argv[0], "gecko-dev-path updatebot-path")
     sys.exit(1)
 
-GECKO_DEV_PATH = sys.argv[1].replace("/", os.path.sep)
-UPDATEBOT_PATH = sys.argv[2].replace("/", os.path.sep)
-
-# Only needed on Windows
-if len(sys.argv) > 3:
-    FETCHES_PATH = sys.argv[3].replace("/", os.path.sep)
-else:
-    FETCHES_PATH = None
+GECKO_DEV_PATH = sys.argv[1]
+UPDATEBOT_PATH = sys.argv[2]
 
 HOME_PATH = os.path.expanduser("~")
 
@@ -119,14 +112,6 @@ with open("id_rsa", "w") as sshkey:
 os.chmod("id_rsa", stat.S_IRUSR | stat.S_IWUSR)
 
 arc_filename = ".arcrc"
-if platform.system() == "Windows":
-    arc_path = os.path.join(FETCHES_PATH, "..", "AppData", "Roaming")
-    os.makedirs(arc_path, exist_ok=True)
-    os.chdir(arc_path)
-    log("Writing %s to %s" % (arc_filename, arc_path))
-else:
-    os.chdir(HOME_PATH)
-
 arcrc = open(arc_filename, "w")
 towrite = """
 {
@@ -152,13 +137,10 @@ with open("sql-proxy-key", "w") as proxy_key_file:
     )
 
 instance_name = sql_proxy_config["instance-name"]
-if platform.system() == "Linux":
-    sql_proxy_command = "cloud_sql_proxy"
-else:
-    sql_proxy_command = os.path.join(UPDATEBOT_PATH, "..", "cloud_sql_proxy.exe")
-
-sql_proxy_command += (
-    " -instances=" + instance_name + "=tcp:3306 -credential_file=sql-proxy-key"
+sql_proxy_command = (
+    "cloud_sql_proxy -instances="
+    + instance_name
+    + "=tcp:3306 -credential_file=sql-proxy-key"
 )
 sql_proxy_args = {
     "stdout": subprocess.PIPE,
@@ -166,12 +148,6 @@ sql_proxy_args = {
     "shell": True,
     "start_new_session": True,
 }
-
-if platform.system() == "Windows":
-    si = subprocess.STARTUPINFO()
-    si.dwFlags = subprocess.CREATE_NEW_PROCESS_GROUP
-
-    sql_proxy_args["startupinfo"] = si
 
 sql_proxy = subprocess.Popen((sql_proxy_command), **sql_proxy_args)
 
@@ -224,10 +200,8 @@ config.write("localconfig = " + str(localconfig))
 config.close()
 
 log("Running updatebot")
-# On Windows, Updatebot is run by windows-setup.sh
-if platform.system() == "Linux":
-    subprocess.check_call(["python3", "-m", "poetry", "run", "./automation.py"])
+subprocess.check_call(["python3", "-m", "poetry", "run", "./automation.py"])
 
-    # Clean up ===============================================
-    log("Killing cloud_sql_proxy")
-    os.kill(sql_proxy.pid, signal.SIGTERM)
+# Clean up ===============================================
+log("Killing cloud_sql_proxy")
+os.kill(sql_proxy.pid, signal.SIGTERM)

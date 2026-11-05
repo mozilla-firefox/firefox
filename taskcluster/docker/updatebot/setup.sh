@@ -5,8 +5,8 @@
 
 set -vex
 
-# Copy the system known_hosts to the home directory so we have uniformity with Windows
-# and the ssh command will find them in the same place.
+# Copy the system known_hosts to the home directory
+# so the ssh command will find them there.
 cp /etc/ssh/ssh_known_hosts "$HOME/ssh_known_hosts"
 
 # If poetry is not run as worker, then it won't work when run as user later.
