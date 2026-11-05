@@ -631,6 +631,9 @@ class MOZ_STACK_CLASS AutoClonedSelectionRangeArray final
    * selection limiter.  Note that if a range is extened, the range is
    * recreated.  Therefore, caller cannot cache pointer of any ranges before
    * calling this.
+   * NOTE: When the range cannot be extened due to there is no more visible
+   * content around the limiter, this returns error. Unfortunately, we cannot
+   * distinguish whether the error is caused by unexpected situation or not.
    */
   [[nodiscard]] MOZ_CAN_RUN_SCRIPT Result<nsIEditor::EDirection, nsresult>
   ExtendAnchorFocusRangeFor(const EditorBase& aEditorBase,

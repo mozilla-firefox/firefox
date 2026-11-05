@@ -2142,10 +2142,13 @@ class HTMLEditUtils final {
   }
 
   static Element* GetInclusiveAncestorAnyTableElement(
-      const nsIContent& aContent) {
+      const nsIContent& aContent, const Element* aAncestorLimiter = nullptr) {
     for (Element* parent : aContent.InclusiveAncestorsOfType<Element>()) {
       if (HTMLEditUtils::IsAnyTableElementExceptColumnElement(*parent)) {
         return parent;
+      }
+      if (parent == aAncestorLimiter) {
+        break;
       }
     }
     return nullptr;

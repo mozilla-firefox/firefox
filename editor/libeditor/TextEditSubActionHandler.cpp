@@ -676,10 +676,11 @@ Result<EditActionResult, nsresult> TextEditor::HandleDeleteSelectionInternal(
   AutoClonedSelectionRangeArray rangesToDelete(SelectionRef());
   Result<nsIEditor::EDirection, nsresult> result =
       rangesToDelete.ExtendAnchorFocusRangeFor(*this, aDirectionAndAmount);
-  if (result.isErr()) {
-    NS_WARNING(
-        "AutoClonedSelectionRangeArray::ExtendAnchorFocusRangeFor() failed");
-    return result.propagateErr();
+  if (result.isErr()) [[unlikely]] {
+    // Couldn't extend the range to outside the limiter. Don't warn this nor
+    // return error since the user may press Backspace or Delete at start or
+    // end of the anonymous <div>.
+    return EditActionResult::HandledResult();
   }
   if (const Text* theTextNode = GetTextNode()) {
     rangesToDelete.EnsureRangesInTextNode(*theTextNode);
