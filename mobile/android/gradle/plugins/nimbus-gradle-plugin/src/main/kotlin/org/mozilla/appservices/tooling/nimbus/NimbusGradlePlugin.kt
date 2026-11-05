@@ -209,6 +209,9 @@ class NimbusPlugin : Plugin<Project> {
         val topsrcdir = requireNotNull(mozconfig?.get("topsrcdir") as? String) {
             "topsrcdir not found in mozconfig"
         }
+        @Suppress("UNCHECKED_CAST")
+        val cacheParent = (mozconfig["substs"] as? Map<String, Any>)?.get("NIMBUS_FML_CACHE_DIR") as? String ?: ".gradle/caches"
+        val cacheRootPath = File(topsrcdir).resolve(cacheParent).resolve("nimbus-fml").path
         val rootBuildDir = rootProject.layout.buildDirectory
         val rootProjectLayout = rootProject.layout
 
@@ -217,11 +220,12 @@ class NimbusPlugin : Plugin<Project> {
             description = "Fetch the Nimbus FML tools from Application Services"
 
             val relativeCacheRoot = rootProjectLayout.projectDirectory.asFile.toPath()
-                .relativize(File(topsrcdir, ".gradle/caches/nimbus-fml").toPath())
+                .relativize(File(cacheRootPath).toPath())
                 .toString()
             val cacheRoot = rootProjectLayout.projectDirectory.dir(relativeCacheRoot)
 
             cacheRootDir.set(cacheRoot)
+            offline.set(rootProject.gradle.startParameter.isOffline)
             versionCacheDir.set(asVersionProvider.map { version -> cacheRoot.dir(version) })
             fmlBinary.set(rootBuildDir.flatMap { buildDir ->
                 asVersionProvider.zip(platform) { version, plat ->

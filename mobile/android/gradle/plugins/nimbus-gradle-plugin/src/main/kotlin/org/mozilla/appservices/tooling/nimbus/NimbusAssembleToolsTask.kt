@@ -101,10 +101,15 @@ abstract class NimbusAssembleToolsTask : DefaultTask() {
     @get:Internal
     abstract val readTimeout: Property<Int>
 
+    /** Whether Gradle is offline, in which case a cache miss fails instead of downloading. */
+    @get:Internal
+    abstract val offline: Property<Boolean>
+
     init {
         platform.convention(detectPlatform(providers))
         connectTimeout.convention(30000)
         readTimeout.convention(60000)
+        offline.convention(false)
         archiveFile.convention(versionCacheDir.file("nimbus-fml.zip"))
         hashFile.convention(versionCacheDir.file("nimbus-fml.sha256"))
     }
@@ -150,6 +155,10 @@ abstract class NimbusAssembleToolsTask : DefaultTask() {
                 extractBinary(archiveFileObj)
                 return
             }
+        }
+
+        if (offline.get()) {
+            throw GradleException("nimbus-fml is not cached in ${versionCacheDir.get().asFile} and Gradle is offline")
         }
 
         val sources = (listOf(fetchSpec) + fetchSpec.fallbackSources.get()).map {

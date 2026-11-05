@@ -51,6 +51,10 @@ python3 "$VERIFY_DEPENDENCIES" --inventories "$DEPENDENCY_INVENTORIES" \
     android-gradle-dependencies/google \
     android-gradle-dependencies/gradle-plugins
 
+if [ -z "$MOZ_APPSERVICES_IN_TREE" ]; then
+    ls android-gradle-dependencies/nimbus-fml/*/nimbus-fml.zip
+fi
+
 tar cavf /builds/worker/artifacts/android-gradle-dependencies.tar.zst android-gradle-dependencies
 
 popd

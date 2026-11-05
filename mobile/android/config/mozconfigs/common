@@ -9,6 +9,7 @@ ac_add_options --enable-project=mobile/android
 
 ac_add_options --with-gradle="$MOZ_FETCHES_DIR/android-gradle-dependencies/gradle-dist/bin/gradle"
 export GRADLE_MAVEN_REPOSITORIES="file://$MOZ_FETCHES_DIR/android-gradle-dependencies/mozilla","file://$MOZ_FETCHES_DIR/android-gradle-dependencies/google","file://$MOZ_FETCHES_DIR/android-gradle-dependencies/central","file://$MOZ_FETCHES_DIR/android-gradle-dependencies/gradle-plugins"
+export NIMBUS_FML_CACHE_DIR="$MOZ_FETCHES_DIR/android-gradle-dependencies"
 
 if [ -z "$NO_NDK" -a -z "$USE_ARTIFACT" ]; then
     CFLAGS="$CFLAGS -fcrash-diagnostics-dir=${UPLOAD_PATH}"

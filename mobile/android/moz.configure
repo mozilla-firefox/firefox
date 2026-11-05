@@ -213,6 +213,13 @@ def check_host_bin_prog(var, prog, toolchain=None):
 check_host_bin_prog("EMBEDDED_UNIFFI_BINDGEN", "embedded-uniffi-bindgen")
 check_host_bin_prog("NIMBUS_FML", "nimbus-fml")
 
+option(
+    env="NIMBUS_FML_CACHE_DIR",
+    nargs=1,
+    help="Directory in which to create the nimbus-fml cache for nightly application-services",
+)
+set_config("NIMBUS_FML_CACHE_DIR", depends_if("NIMBUS_FML_CACHE_DIR")(lambda v: v[0]))
+
 
 @depends(
     moz_app_name,

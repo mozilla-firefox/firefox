@@ -272,6 +272,8 @@ linux64-android-gradle-dependencies:
             - 'mobile/android/config/mozconfigs/android-arm-gradle-dependencies/**'
             - 'mobile/android/config/mozconfigs/common*'
             - 'mobile/android/gradle.configure'
+            - 'mobile/android/moz.configure'
+            - 'mobile/android/gradle/plugins/nimbus-gradle-plugin/src/**'
             # The enumeration passes live here.
             - 'mobile/android/mach_commands.py'
             - 'taskcluster/scripts/misc/android-gradle-dependencies/**'

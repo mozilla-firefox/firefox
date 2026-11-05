@@ -15,4 +15,8 @@ export MOZCONFIG=mobile/android/config/mozconfigs/android-arm-gradle-dependencie
 
 ./mach android gradle-dependencies
 
+if [ -z "$MOZ_APPSERVICES_IN_TREE" ]; then
+    ./mach gradle assembleNimbusTools
+fi
+
 . taskcluster/scripts/misc/android-gradle-dependencies/after.sh

@@ -97,6 +97,7 @@ path:config/milestone.txt
 path:mobile/android/mach_commands.py
 path:gradle/
 path:mobile/android/config/
+path:mobile/android/gradle/plugins/nimbus-gradle-plugin/src/
 path:third_party/application-services/.buildconfig-android.yml
 glob:**/*.gradle
 glob:**/*.gradle.kts
