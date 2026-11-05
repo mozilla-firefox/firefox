@@ -649,7 +649,7 @@ void HttpChannelChild::DoOnStartRequest(nsIRequest* aRequest) {
     }
   }
 
-#if defined(EARLY_BETA_OR_EARLIER) || defined(DEBUG)
+#if defined(NIGHTLY_BUILD) || defined(DEBUG)
   if (nsCOMPtr<nsIThreadRetargetableRequest> req =
           do_QueryInterface(aRequest)) {
     nsCOMPtr<nsISerialEventTarget> target;

@@ -153,7 +153,7 @@ class nsStandardURL : public nsIFileURL,
   // location and length of an url segment relative to mSpec
   //
   struct URLSegment {
-#ifdef EARLY_BETA_OR_EARLIER
+#ifdef NIGHTLY_BUILD
     URLSegmentNumber<uint32_t> mPos{0};
     URLSegmentNumber<int32_t> mLen{-1};
 #else
