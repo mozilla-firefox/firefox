@@ -234,8 +234,12 @@ TypeScript doesn't see an element class that a script loads with
 `Services.scriptloader.loadSubScript`, because no module imports the script. So
 each access to a member that the class defines is an error.
 
-Convert the script to a module if you can. Until then, declare an interface for
-the element in the project's shared declarations (see
+Convert the script to a module if you can. Other files can then import the
+class's type, but TypeScript reports errors in the module itself only if the
+project includes it (see
+[The tsconfig.json File](enabling.md#the-tsconfigjson-file)). Until the script
+is a module, declare an interface for the element in the project's shared
+declarations (see
 [Shared Declarations](enabling.md#shared-declarations)).
 {searchfox}`browser/components/tabbrowser/types/elements.ts` is an example.
 
