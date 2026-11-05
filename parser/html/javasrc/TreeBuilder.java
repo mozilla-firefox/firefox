@@ -5939,7 +5939,7 @@ public abstract class TreeBuilder<T> implements TokenHandler,
      *
      * @return the scriptingEnabled
      */
-    public boolean isScriptingEnabled() {
+    @Inline public boolean isScriptingEnabled() {
         return scriptingEnabled;
     }
 
@@ -5949,24 +5949,24 @@ public abstract class TreeBuilder<T> implements TokenHandler,
      * @param scriptingEnabled
      *            the scriptingEnabled to set
      */
-    public void setScriptingEnabled(boolean scriptingEnabled) {
+    @Inline public void setScriptingEnabled(boolean scriptingEnabled) {
         this.scriptingEnabled = scriptingEnabled;
     }
 
-    public void setForceNoQuirks(boolean forceNoQuirks) {
+    @Inline public void setForceNoQuirks(boolean forceNoQuirks) {
         this.forceNoQuirks = forceNoQuirks;
     }
 
     // Redundant method retained because previously public.
-    public void setIsSrcdocDocument(boolean isSrcdocDocument) {
+    @Inline public void setIsSrcdocDocument(boolean isSrcdocDocument) {
         this.setForceNoQuirks(isSrcdocDocument);
     }
 
-    public boolean isAllowDeclarativeShadowRoots() {
+    @Inline public boolean isAllowDeclarativeShadowRoots() {
         return allowDeclarativeShadowRoots;
     }
 
-    public void setAllowDeclarativeShadowRoots(boolean allow) {
+    @Inline public void setAllowDeclarativeShadowRoots(boolean allow) {
         allowDeclarativeShadowRoots = allow;
     }
 

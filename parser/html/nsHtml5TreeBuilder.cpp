@@ -4431,28 +4431,6 @@ nsIContentHandle* nsHtml5TreeBuilder::currentNode() {
   return stack[currentPtr]->node;
 }
 
-bool nsHtml5TreeBuilder::isScriptingEnabled() { return scriptingEnabled; }
-
-void nsHtml5TreeBuilder::setScriptingEnabled(bool scriptingEnabled) {
-  this->scriptingEnabled = scriptingEnabled;
-}
-
-void nsHtml5TreeBuilder::setForceNoQuirks(bool forceNoQuirks) {
-  this->forceNoQuirks = forceNoQuirks;
-}
-
-void nsHtml5TreeBuilder::setIsSrcdocDocument(bool isSrcdocDocument) {
-  this->setForceNoQuirks(isSrcdocDocument);
-}
-
-bool nsHtml5TreeBuilder::isAllowDeclarativeShadowRoots() {
-  return allowDeclarativeShadowRoots;
-}
-
-void nsHtml5TreeBuilder::setAllowDeclarativeShadowRoots(bool allow) {
-  allowDeclarativeShadowRoots = allow;
-}
-
 void nsHtml5TreeBuilder::flushCharacters() {
   if (charBufferLen > 0) {
     if ((mode == IN_TABLE || mode == IN_TABLE_BODY || mode == IN_ROW) &&
