@@ -21427,7 +21427,9 @@ Document::AutomaticStorageAccessPermissionCanBeGranted(
     ContentChild* cc = ContentChild::GetSingleton();
     MOZ_ASSERT(cc);
 
-    return cc->SendAutomaticStorageAccessPermissionCanBeGranted(NodePrincipal())
+    return cc
+        ->SendAutomaticStorageAccessPermissionCanBeGranted(
+            WrapNotNull(NodePrincipal()))
         ->Then(GetCurrentSerialEventTarget(), __func__,
                [](const ContentChild::
                       AutomaticStorageAccessPermissionCanBeGrantedPromise::

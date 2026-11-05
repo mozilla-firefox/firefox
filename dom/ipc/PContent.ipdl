@@ -1235,7 +1235,7 @@ parent:
     async ReleaseHWInferenceConnection();
 #endif  // !ANDROID
 
-    sync PURLClassifier(nullable nsIPrincipal principal)
+    sync PURLClassifier(nsIPrincipal principal)
         returns (bool success);
 
     async PURLClassifierLocal(nullable nsIURI uri, IPCURLClassifierFeature[] features);
@@ -1647,7 +1647,7 @@ parent:
                        nullable nsIURI aURIToLoad,
                        nsCString aFeatures,
                        Modifiers aModifiers,
-                       nullable nsIPrincipal aTriggeringPrincipal,
+                       nsIPrincipal aTriggeringPrincipal,
                        nullable nsIPolicyContainer aPolicyContainer,
                        nullable nsIReferrerInfo aReferrerInfo,
                        OriginAttributes aOriginAttributes,
@@ -1659,7 +1659,7 @@ parent:
      async DeleteGetFilesRequest(nsID aID);
 
      async StoreAndBroadcastBlobURLRegistration(nsCString url, IPCBlob blob,
-                                                nullable nsIPrincipal principal, nsCString aPartitionKey);
+                                                nsIPrincipal principal, nsCString aPartitionKey);
 
      async UnstoreAndBroadcastBlobURLUnregistration(BroadcastBlobURLUnregistrationRequest[] aRequests);
 
@@ -1686,7 +1686,7 @@ parent:
      * Determines whether storage access can be granted automatically by the
      * storage access API without showing a user prompt.
      */
-    async AutomaticStorageAccessPermissionCanBeGranted(nullable nsIPrincipal aPrincipal)
+    async AutomaticStorageAccessPermissionCanBeGranted(nsIPrincipal aPrincipal)
           returns (bool success);
 
     /*
@@ -1711,7 +1711,7 @@ parent:
                                  bool? aHadPriorUserInteraction)
           returns (StorageAccessPromptChoices? choice);
 
-    async StoreUserInteractionAsPermission(nullable nsIPrincipal aPrincipal);
+    async StoreUserInteractionAsPermission(nsIPrincipal aPrincipal);
 
     async TestCookiePermissionDecided(MaybeDiscardedBrowsingContext aContext,
                          nullable nsIPrincipal aPrincipal)

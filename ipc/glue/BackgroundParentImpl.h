@@ -344,10 +344,6 @@ class BackgroundParentImpl : public PBackgroundParent {
       const bool& aAllowPermissionRequest,
       RequestCameraAccessResolver&& aResolver) override;
 
-  mozilla::ipc::IPCResult RecvPLockManagerConstructor(
-      PLockManagerParent* actor, mozilla::NotNull<nsIPrincipal*> aPrincipalInfo,
-      const Maybe<nsID>& aClientId) override;
-
   already_AddRefed<PLockManagerParent> AllocPLockManagerParent(
       NotNull<nsIPrincipal*> aPrincipal, const Maybe<nsID>& aClientId) final;
 

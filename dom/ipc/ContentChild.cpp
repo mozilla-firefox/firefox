@@ -1195,8 +1195,8 @@ nsresult ContentChild::ProvideWindowCommon(
       aOpenWindowInfo->GetIsForPrinting(),
       aOpenWindowInfo->GetIsForWindowDotPrint(),
       aOpenWindowInfo->GetIsTopLevelCreatedByWebContent(), aURI, features,
-      aModifiers, triggeringPrincipal, policyContainer, referrerInfo,
-      aOpenWindowInfo->GetOriginAttributes(),
+      aModifiers, WrapNotNull(triggeringPrincipal), policyContainer,
+      referrerInfo, aOpenWindowInfo->GetOriginAttributes(),
       aLoadState ? aLoadState->HasValidUserGestureActivation() : false,
       aLoadState ? aLoadState->GetTextDirectiveUserActivation() : false,
       std::move(resolve), std::move(reject));
@@ -3357,7 +3357,7 @@ void ContentChild::FatalErrorIfNotUsingGPUProcess(const char* const aErrorMsg,
 }
 
 PURLClassifierChild* ContentChild::AllocPURLClassifierChild(
-    nsIPrincipal* aPrincipal, bool* aSuccess) {
+    NotNull<nsIPrincipal*> aPrincipal, bool* aSuccess) {
   *aSuccess = true;
   return new URLClassifierChild();
 }

@@ -569,10 +569,10 @@ class ContentParent final : public PContentParent,
       const bool& aForWindowDotPrint, const bool& aTopLevelCreatedByWebContent,
       nsIURI* aURIToLoad, const nsACString& aFeatures,
       const UserActivation::Modifiers& aModifiers,
-      nsIPrincipal* aTriggeringPrincipal, nsIPolicyContainer* aPolicyContainer,
-      nsIReferrerInfo* aReferrerInfo, const OriginAttributes& aOriginAttributes,
-      bool aUserActivation, bool aTextDirectiveUserActivation,
-      CreateWindowResolver&& aResolve);
+      NotNull<nsIPrincipal*> aTriggeringPrincipal,
+      nsIPolicyContainer* aPolicyContainer, nsIReferrerInfo* aReferrerInfo,
+      const OriginAttributes& aOriginAttributes, bool aUserActivation,
+      bool aTextDirectiveUserActivation, CreateWindowResolver&& aResolve);
 
   static void BroadcastBlobURLRegistration(
       const nsACString& aURI, BlobImpl* aBlobImpl, nsIPrincipal* aPrincipal,
@@ -583,8 +583,8 @@ class ContentParent final : public PContentParent,
       ContentParent* aIgnoreThisCP = nullptr);
 
   mozilla::ipc::IPCResult RecvStoreAndBroadcastBlobURLRegistration(
-      const nsACString& aURI, const IPCBlob& aBlob, nsIPrincipal* aPrincipal,
-      const nsCString& aPartitionKey);
+      const nsACString& aURI, const IPCBlob& aBlob,
+      NotNull<nsIPrincipal*> aPrincipal, const nsCString& aPartitionKey);
 
   mozilla::ipc::IPCResult RecvUnstoreAndBroadcastBlobURLUnregistration(
       const nsTArray<BroadcastBlobURLUnregistrationRequest>& aRequests);
@@ -592,10 +592,10 @@ class ContentParent final : public PContentParent,
   virtual int32_t Pid() const override;
 
   // PURLClassifierParent.
-  PURLClassifierParent* AllocPURLClassifierParent(nsIPrincipal* aPrincipal,
-                                                  bool* aSuccess);
+  PURLClassifierParent* AllocPURLClassifierParent(
+      NotNull<nsIPrincipal*> aPrincipal, bool* aSuccess);
   virtual mozilla::ipc::IPCResult RecvPURLClassifierConstructor(
-      PURLClassifierParent* aActor, nsIPrincipal* aPrincipal,
+      PURLClassifierParent* aActor, NotNull<nsIPrincipal*> aPrincipal,
       bool* aSuccess) override;
 
   // PURLClassifierLocalParent.
@@ -1211,7 +1211,7 @@ class ContentParent final : public PContentParent,
   mozilla::ipc::IPCResult RecvBHRThreadHang(const HangDetails& aHangDetails);
 
   mozilla::ipc::IPCResult RecvAutomaticStorageAccessPermissionCanBeGranted(
-      nsIPrincipal* aPrincipal,
+      NotNull<nsIPrincipal*> aPrincipal,
       AutomaticStorageAccessPermissionCanBeGrantedResolver&& aResolver);
 
   mozilla::ipc::IPCResult RecvStorageAccessPermissionGrantedForOrigin(
@@ -1235,7 +1235,7 @@ class ContentParent final : public PContentParent,
       CompleteAllowAccessForResolver&& aResolver);
 
   mozilla::ipc::IPCResult RecvStoreUserInteractionAsPermission(
-      nsIPrincipal* aPrincipal);
+      NotNull<nsIPrincipal*> aPrincipal);
 
   mozilla::ipc::IPCResult RecvTestCookiePermissionDecided(
       const MaybeDiscarded<BrowsingContext>& aContext, nsIPrincipal* aPrincipal,

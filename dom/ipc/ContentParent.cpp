@@ -5570,14 +5570,10 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
     const bool& aForWindowDotPrint, const bool& aIsTopLevelCreatedByWebContent,
     nsIURI* aURIToLoad, const nsACString& aFeatures,
     const UserActivation::Modifiers& aModifiers,
-    nsIPrincipal* aTriggeringPrincipal, nsIPolicyContainer* aPolicyContainer,
-    nsIReferrerInfo* aReferrerInfo, const OriginAttributes& aOriginAttributes,
-    bool aUserActivation, bool aTextDirectiveUserActivation,
-    CreateWindowResolver&& aResolve) {
-  if (!aTriggeringPrincipal) {
-    return IPC_FAIL(this, "No principal");
-  }
-
+    NotNull<nsIPrincipal*> aTriggeringPrincipal,
+    nsIPolicyContainer* aPolicyContainer, nsIReferrerInfo* aReferrerInfo,
+    const OriginAttributes& aOriginAttributes, bool aUserActivation,
+    bool aTextDirectiveUserActivation, CreateWindowResolver&& aResolve) {
   if (!ValidatePrincipal(aTriggeringPrincipal)) {
     return PrincipalValidationIpcFail(aTriggeringPrincipal, this, __func__);
   }
@@ -5892,12 +5888,8 @@ void ContentParent::BroadcastBlobURLUnregistration(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvStoreAndBroadcastBlobURLRegistration(
-    const nsACString& aURI, const IPCBlob& aBlob, nsIPrincipal* aPrincipal,
-    const nsCString& aPartitionKey) {
-  if (!aPrincipal) {
-    return IPC_FAIL(this, "No principal");
-  }
-
+    const nsACString& aURI, const IPCBlob& aBlob,
+    NotNull<nsIPrincipal*> aPrincipal, const nsCString& aPartitionKey) {
   if (!ValidatePrincipal(aPrincipal)) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
@@ -6467,7 +6459,7 @@ mozilla::ipc::IPCResult ContentParent::RecvRecordPageLoadEvent(
 // PURLClassifierParent
 
 PURLClassifierParent* ContentParent::AllocPURLClassifierParent(
-    nsIPrincipal* aPrincipal, bool* aSuccess) {
+    NotNull<nsIPrincipal*> aPrincipal, bool* aSuccess) {
   MOZ_ASSERT(NS_IsMainThread());
 
   *aSuccess = true;
@@ -6476,21 +6468,17 @@ PURLClassifierParent* ContentParent::AllocPURLClassifierParent(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvPURLClassifierConstructor(
-    PURLClassifierParent* aActor, nsIPrincipal* aPrincipal, bool* aSuccess) {
+    PURLClassifierParent* aActor, NotNull<nsIPrincipal*> aPrincipal,
+    bool* aSuccess) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aActor);
   *aSuccess = false;
 
   auto* actor = mozilla::ipc::ActorCast<URLClassifierParent>(aActor);
-  nsCOMPtr<nsIPrincipal> principal(aPrincipal);
-  if (!principal) {
-    actor->ClassificationFailed();
-    return IPC_OK();
-  }
   if (!ValidatePrincipal(aPrincipal)) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
-  return actor->StartClassify(principal, aSuccess);
+  return actor->StartClassify(aPrincipal, aSuccess);
 }
 
 bool ContentParent::DeallocPURLClassifierParent(PURLClassifierParent* aActor) {
@@ -6642,12 +6630,8 @@ mozilla::ipc::IPCResult ContentParent::RecvBHRThreadHang(
 
 mozilla::ipc::IPCResult
 ContentParent::RecvAutomaticStorageAccessPermissionCanBeGranted(
-    nsIPrincipal* aPrincipal,
+    NotNull<nsIPrincipal*> aPrincipal,
     AutomaticStorageAccessPermissionCanBeGrantedResolver&& aResolver) {
-  if (!aPrincipal) {
-    return IPC_FAIL(this, "No principal");
-  }
-
   if (!ValidatePrincipal(aPrincipal)) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
@@ -6727,11 +6711,7 @@ mozilla::ipc::IPCResult ContentParent::RecvCompleteAllowAccessFor(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvStoreUserInteractionAsPermission(
-    nsIPrincipal* aPrincipal) {
-  if (!aPrincipal) {
-    return IPC_FAIL(this, "No principal");
-  }
-
+    NotNull<nsIPrincipal*> aPrincipal) {
   if (!ValidatePrincipal(aPrincipal)) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }

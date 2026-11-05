@@ -561,8 +561,8 @@ class ContentChild final : public PContentChild,
   }
 
   // PURLClassifierChild
-  PURLClassifierChild* AllocPURLClassifierChild(nsIPrincipal* aPrincipal,
-                                                bool* aSuccess);
+  PURLClassifierChild* AllocPURLClassifierChild(
+      NotNull<nsIPrincipal*> aPrincipal, bool* aSuccess);
   bool DeallocPURLClassifierChild(PURLClassifierChild* aActor);
 
   // PURLClassifierLocalChild
