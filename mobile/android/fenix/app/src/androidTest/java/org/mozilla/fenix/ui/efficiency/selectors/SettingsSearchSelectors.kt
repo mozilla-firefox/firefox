@@ -71,8 +71,8 @@ object SettingsSearchSelectors : SelectorContainer {
     val HOME_SCREEN_WIDGET_OPTION =
         Selector(
             strategy = SelectorStrategy.ESPRESSO_BY_TEXT,
-            value = getStringResource(R.string.preferences_add_search_widget_from_settings),
-            description = "Home screen widget option",
+            value = getStringResource(R.string.preferences_search_widget_in_home_screen),
+            description = "Add search widget to Home screen option",
             scrollDirection = SwipeDirection.UP,
         )
 

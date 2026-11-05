@@ -24,10 +24,10 @@
             android:key="@string/pref_key_google_lens_integration_user_enabled"
             android:title="@string/search_settings_google_lens_title"
             android:summary="@string/search_settings_google_lens_description" />
-        <SwitchPreferenceCompat
+        <androidx.preference.Preference
             app:iconSpaceReserved="false"
             android:key="@string/pref_key_search_widget_installed_2"
-            android:title="@string/preferences_add_search_widget_from_settings"/>
+            android:title="@string/preferences_search_widget_in_home_screen"/>
     </PreferenceCategory>
 
     <PreferenceCategory

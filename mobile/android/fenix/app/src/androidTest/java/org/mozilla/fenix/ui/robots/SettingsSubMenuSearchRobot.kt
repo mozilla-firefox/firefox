@@ -627,28 +627,25 @@ class SettingsSubMenuSearchRobot {
     fun verifyTheHomeScreenWidgetOption() {
         Log.i(
             TAG,
-            "verifyTheHomeScreenWidgetOption: Trying to verify that the \"Home screen widget\" option is visible",
+            "verifyTheHomeScreenWidgetOption: Trying to verify that the \"Add search widget to Home screen\" option is visible",
         )
         homeScreenWidgetOption().check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
-        Log.i(TAG, "verifyTheHomeScreenWidgetOption: Verified that the \"Home screen widget\" option is visible")
-    }
-
-    fun verifyTheHomeScreenWidgetToggle(enabled: Boolean) {
         Log.i(
             TAG,
-            "verifyTheHomeScreenWidgetToggle: Trying to verify that the \"Home screen widget\" toggle is checked: $enabled",
-        )
-        homeScreenWidgetOption().check(matches(hasCousin(allOf(withClassName(endsWith("Switch")), isChecked(enabled)))))
-        Log.i(
-            TAG,
-            "verifyTheHomeScreenWidgetToggle: Verified that the \"Home screen widget\" toggle is checked: $enabled",
+            "verifyTheHomeScreenWidgetOption: Verified that the \"Add search widget to Home screen\" option is visible",
         )
     }
 
-    fun clickTheHomeScreenWidgetToggle() {
-        Log.i(TAG, "clickTheHomeScreenWidgetToggle: Trying to click the \"Home screen widget\" toggle")
+    fun clickAddSearchWidgetToHomeScreenMenuItem() {
+        Log.i(
+            TAG,
+            "clickAddSearchWidgetToHomeScreenMenuItem: Trying to click the \"Add search widget to Home screen\" menu item",
+        )
         homeScreenWidgetOption().click()
-        Log.i(TAG, "clickTheHomeScreenWidgetToggle: Clicked the \"Home screen widget\" toggle")
+        Log.i(
+            TAG,
+            "clickAddSearchWidgetToHomeScreenMenuItem: Clicked the \"Add search widget to Home screen\" menu item",
+        )
         mDevice.waitForIdle()
     }
 
@@ -877,4 +874,4 @@ private fun overflowMenuWithSiblingText(text: String): SemanticsMatcher =
     hasAnySibling(hasText(text)) and hasContentDescription("More options")
 
 private fun homeScreenWidgetOption() =
-    onView(CoreMatchers.allOf(withText(R.string.preferences_add_search_widget_from_settings)))
+    onView(CoreMatchers.allOf(withText(R.string.preferences_search_widget_in_home_screen)))

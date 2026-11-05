@@ -51,7 +51,6 @@ class SettingsSearchTest : BaseTest() {
             .mozVerifyOptionSwitchIsChecked(SettingsSearchSelectors.GOOGLE_LENS_OPTION)
             .mozSwipeTo(SettingsSearchSelectors.HOME_SCREEN_WIDGET_OPTION, direction = SwipeDirection.UP)
             .mozVerify(SettingsSearchSelectors.HOME_SCREEN_WIDGET_OPTION)
-            .mozVerifyOptionSwitchIsNotChecked(SettingsSearchSelectors.HOME_SCREEN_WIDGET_OPTION)
             // Suggestions from search engines section: search + trending + recent on by default,
             // private-session suggestions off by default
             .mozSwipeTo(SettingsSearchSelectors.SEARCH_SUGGESTIONS_SECTION_HEADER, direction = SwipeDirection.UP)

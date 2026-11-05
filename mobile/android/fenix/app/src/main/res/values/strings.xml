@@ -676,8 +676,8 @@
     <string name="preferences_search">Search</string>
     <!-- Preference for settings related to Search engines -->
     <string name="preferences_search_engines">Search engines</string>
-    <!-- Settings item to add a search widget on the device's homescreen. -->
-    <string name="preferences_add_search_widget_from_settings">Home screen widget</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+    <string name="preferences_search_widget_in_home_screen">Add search widget to Home screen</string>
     <!-- Preference for settings related to Search engines suggestions-->
     <string name="preferences_search_engines_suggestions">Suggestions from search engines</string>
     <!-- Preference Category for settings related to Search address bar -->

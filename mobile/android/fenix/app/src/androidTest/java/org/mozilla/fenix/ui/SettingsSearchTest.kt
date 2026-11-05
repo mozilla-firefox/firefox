@@ -718,10 +718,8 @@ class SettingsSearchTest {
             .clickSettingsButton {}
             .openSearchSubMenu {
                 verifyTheHomeScreenWidgetOption()
-                verifyTheHomeScreenWidgetToggle(false)
-                clickTheHomeScreenWidgetToggle()
+                clickAddSearchWidgetToHomeScreenMenuItem()
                 clickSystemHomeScreenShortcutAddButton()
-                verifyTheHomeScreenWidgetToggle(true)
                 verifySearchWidgetExistsOnHomeScreen()
             }
             .clickSearchWidgetOnHomeScreen(composeTestRule) {
