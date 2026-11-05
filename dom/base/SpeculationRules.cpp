@@ -131,6 +131,51 @@ void SpeculationRules::Unregister(nsIScriptElement* aScriptElement) {
   ConsiderLoads();
 }
 
+void SpeculationRules::UpdateForBaseURLChange() {
+  // https://html.spec.whatwg.org/#respond-to-base-url-changes
+  // Steps 3-4.
+  // Instead of walking all script elements looking for those which are
+  // speculation rules, we instead only update those we cached when their
+  // result was registered to the document previously. This is equivalent as
+  // any script element with a speculation rules parse result should have been
+  // registered to the document by this point.
+  for (auto iter = mRuleSetsFromScript.Iter(); !iter.Done(); iter.Next()) {
+    nsIScriptElement* element = iter.Key();
+    nsAutoString source;
+    element->GetScriptText(source);
+
+    auto ruleSetResult = SpeculationRuleSet::Parse(
+        NS_ConvertUTF16toUTF8(source), mDocument->GetBaseURI(),
+        mDocument->GetBaseURI());
+
+    // https://html.spec.whatwg.org/#update-speculation-rules
+    // For Step 1, we only remove the existing speculation rule set if the
+    // parsing fails - otherwise, we overwrite it instead.
+    // We inline registering the speculation rules from Step 2 here as well,
+    // as any exception needs to be explicitly queued here, and we will
+    // consider speculative loads once all the rules have been updated.
+    if (ruleSetResult.isErr()) {
+      iter.Remove();
+
+      if (nsCOMPtr<nsIGlobalObject> global = mDocument->GetScopeObject()) {
+        mDocument->Dispatch(NS_NewRunnableFunction(
+            "SpeculationRules::UpdateForBaseURLChange",
+            [global = std::move(global),
+             parseError = ruleSetResult.unwrapErr()]() {
+              SpeculationRuleSet::ReportParseError(global, parseError);
+            }));
+      }
+    } else {
+      iter.Data() = ruleSetResult.unwrap();
+    }
+  }
+
+  if (HasRuleSets()) {
+    // Step 4.
+    ConsiderLoads();
+  }
+}
+
 namespace {
 
 class ConsiderSpeculativeLoadsMicrotask final
