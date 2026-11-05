@@ -553,3 +553,64 @@ add_task(async function test_beacon_request() {
 
   BrowserTestUtils.removeTab(tab);
 });
+
+function hasOverrideEntry(domainKey) {
+  try {
+    Services.rfp.getFingerprintingOverrides(domainKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Setting the granular override prefs synchronously re-imports and populates
+// the overrides from the pref observer, so the result can be checked as soon
+// as pushPrefEnv resolves.
+async function setGranularOverridePrefs(baselineValue, fppValue) {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["privacy.baselineFingerprintingProtection.granularOverrides", ""],
+      ["privacy.fingerprintingProtection.granularOverrides", ""],
+    ],
+  });
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "privacy.baselineFingerprintingProtection.granularOverrides",
+        baselineValue,
+      ],
+      ["privacy.fingerprintingProtection.granularOverrides", fppValue],
+    ],
+  });
+}
+
+// A malformed value in one granular override pref must not prevent the other
+// granular override pref from being imported.
+add_task(async function test_malformed_granular_pref_is_isolated() {
+  const fppEntries = JSON.stringify([
+    { firstPartyDomain: "example.info", overrides: "+WindowOuterSize" },
+  ]);
+  const baselineEntries = JSON.stringify([
+    { firstPartyDomain: "example.net", overrides: "+WindowOuterSize" },
+  ]);
+
+  for (let malformed of ["not json", "{}", '"a string"']) {
+    info(`Malformed baseline pref ${malformed}, valid FPP pref`);
+    await setGranularOverridePrefs(malformed, fppEntries);
+    ok(
+      hasOverrideEntry("example.info,0"),
+      "The FPP granular override was imported despite a malformed baseline pref."
+    );
+    await SpecialPowers.popPrefEnv();
+    await SpecialPowers.popPrefEnv();
+
+    info(`Valid baseline pref, malformed FPP pref ${malformed}`);
+    await setGranularOverridePrefs(baselineEntries, malformed);
+    ok(
+      hasOverrideEntry("example.net,1"),
+      "The baseline granular override was imported despite a malformed FPP pref."
+    );
+    await SpecialPowers.popPrefEnv();
+    await SpecialPowers.popPrefEnv();
+  }
+});

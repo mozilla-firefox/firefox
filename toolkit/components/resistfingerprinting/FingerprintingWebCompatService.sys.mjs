@@ -173,11 +173,13 @@ export class FingerprintingWebCompatService {
       try {
         overrides = JSON.parse(pref || "[]");
       } catch (error) {
+        // Skip only this pref; a malformed baseline pref must not prevent the
+        // FPP pref (or vice versa) from being imported.
         lazy.logConsole.error(
           `Failed to parse granular override JSON string: Not a valid JSON.`,
           error
         );
-        return;
+        continue;
       }
 
       // Ensure we have an array we can iterate over and not an object.
@@ -185,7 +187,7 @@ export class FingerprintingWebCompatService {
         lazy.logConsole.error(
           "Failed to parse granular overrides JSON String: Not an array."
         );
-        return;
+        continue;
       }
 
       // Skip creating the validator if there's nothing to validate.
