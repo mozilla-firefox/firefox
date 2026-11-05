@@ -12,9 +12,9 @@
 const EXPECTED_REFLOWS = [
   {
     stack: [
-      "clientPos@chrome://browser/content/tabbrowser/drag-and-drop.js",
-      "startTabDrag@chrome://browser/content/tabbrowser/drag-and-drop.js",
-      "handle_dragstart@chrome://browser/content/tabbrowser/drag-and-drop.js",
+      "clientPos@chrome://browser/content/tabbrowser/drag-and-drop.mjs",
+      "startTabDrag@chrome://browser/content/tabbrowser/drag-and-drop.mjs",
+      "handle_dragstart@chrome://browser/content/tabbrowser/drag-and-drop.mjs",
       "on_dragstart@chrome://browser/content/tabbrowser/tabs.mjs",
       "handleEvent@chrome://browser/content/tabbrowser/tabs.mjs",
       "synthesizeMouseAtPoint@chrome://mochikit/content/tests/SimpleTest/EventUtils.js",
@@ -27,8 +27,8 @@ const EXPECTED_REFLOWS = [
   {
     stack: [
       "get scrollPosition@chrome://global/content/elements/arrowscrollbox.js",
-      "startTabDrag@chrome://browser/content/tabbrowser/drag-and-drop.js",
-      "handle_dragstart@chrome://browser/content/tabbrowser/drag-and-drop.js",
+      "startTabDrag@chrome://browser/content/tabbrowser/drag-and-drop.mjs",
+      "handle_dragstart@chrome://browser/content/tabbrowser/drag-and-drop.mjs",
       "on_dragstart@chrome://browser/content/tabbrowser/tabs.mjs",
       "handleEvent@chrome://browser/content/tabbrowser/tabs.mjs",
       "synthesizeMouseAtPoint@chrome://mochikit/content/tests/SimpleTest/EventUtils.js",

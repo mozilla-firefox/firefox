@@ -6,7 +6,7 @@ browser.jar:
    content/browser/tabbrowser/browser-allTabsMenu.js      (content/browser-allTabsMenu.js)
    content/browser/tabbrowser/browser-ctrlTab.js          (content/browser-ctrlTab.js)
    content/browser/tabbrowser/browser-fullZoom.js         (content/browser-fullZoom.js)
-   content/browser/tabbrowser/drag-and-drop.js            (content/drag-and-drop.js)
+   content/browser/tabbrowser/drag-and-drop.mjs           (content/drag-and-drop.mjs)
    content/browser/tabbrowser/opentabs.css                (content/opentabs.css)
    content/browser/tabbrowser/opentabs.html               (content/opentabs.html)
    content/browser/tabbrowser/opentabs-splitview.css      (content/opentabs-splitview.css)

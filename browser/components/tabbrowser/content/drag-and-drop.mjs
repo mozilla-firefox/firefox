@@ -2,8 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-"use strict";
-
 // Wrap in a block to prevent leaking to window scope.
 {
   const lazy = {};
@@ -13,9 +11,6 @@
       "moz-src:///browser/components/tabbrowser/OpenInTabsUtils.sys.mjs",
   });
 
-  const { Tabbrowser } = ChromeUtils.importESModule(
-    "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs"
-  );
   const { isTab, isTabGroupLabel, isSplitViewWrapper } = Tabbrowser;
 
   /**
@@ -731,24 +726,29 @@
 
       // screen.availLeft et. al. only check the screen that this window is on,
       // but we want to look at the screen the tab is being dropped onto.
-      var screen = event.screen;
+      var dropScreen = event.screen;
       var availX = {},
         availY = {},
         availWidth = {},
         availHeight = {};
       // Get available rect in desktop pixels.
-      screen.GetAvailRectDisplayPix(availX, availY, availWidth, availHeight);
+      dropScreen.GetAvailRectDisplayPix(
+        availX,
+        availY,
+        availWidth,
+        availHeight
+      );
       availX = availX.value;
       availY = availY.value;
       availWidth = availWidth.value;
       availHeight = availHeight.value;
 
       // Compute the final window size in desktop pixels ensuring that the new
-      // window entirely fits within `screen`.
+      // window entirely fits within `dropScreen`.
       let ourCssToDesktopScale =
         window.devicePixelRatio / window.desktopToDeviceScale;
       let screenCssToDesktopScale =
-        screen.defaultCSSScaleFactor / screen.contentsScaleFactor;
+        dropScreen.defaultCSSScaleFactor / dropScreen.contentsScaleFactor;
 
       // NOTE(emilio): Multiplying the sizes here for screenCssToDesktopScale
       // means that we'll try to create a window that has the same amount of CSS
@@ -768,7 +768,7 @@
       // pixels. Since we're doing the sizing above based on those, we also need
       // to apply the offset with pixels relative to the screen's scale rather
       // than our scale.
-      var left = Math.min(
+      var winLeft = Math.min(
         Math.max(
           event.screenX * ourCssToDesktopScale -
             draggedTab._dragData.offsetX * screenCssToDesktopScale,
@@ -776,7 +776,7 @@
         ),
         availX + availWidth - winWidth
       );
-      var top = Math.min(
+      var winTop = Math.min(
         Math.max(
           event.screenY * ourCssToDesktopScale -
             draggedTab._dragData.offsetY * screenCssToDesktopScale,
@@ -786,8 +786,8 @@
       );
 
       // Convert back left and top to our CSS pixel space.
-      left /= ourCssToDesktopScale;
-      top /= ourCssToDesktopScale;
+      winLeft /= ourCssToDesktopScale;
+      winTop /= ourCssToDesktopScale;
 
       delete draggedTab._dragData;
 
@@ -804,7 +804,7 @@
         winHeight /= ourCssToDesktopScale;
 
         window.resizeTo(winWidth, winHeight);
-        window.moveTo(left, top);
+        window.moveTo(winLeft, winTop);
         window.focus();
       } else {
         let props = {
@@ -814,7 +814,7 @@
           ),
         };
         if (window.fullScreen && AppConstants.platform == "macosx") {
-          // `left` and `top` above leave room for a window as large as this
+          // `winLeft` and `winTop` above leave room for a window as large as this
           // one, and a fullscreen window covers the screen, so they collapse
           // onto the corner of it. The new window doesn't take our size
           // either, so there is no drop position to compute for it and it is
@@ -825,8 +825,8 @@
           // synchronous transition to the Dock (bug 2051071).
           props.suppressinitialfullscreen = 1;
         } else {
-          props.screenX = left;
-          props.screenY = top;
+          props.screenX = winLeft;
+          props.screenY = winTop;
         }
         gBrowser.replaceTabsWithWindow(draggedTab, props);
       }
@@ -1650,10 +1650,10 @@
       if (this._tabbrowserTabs.expandOnHover) {
         // Query the expanded width from sidebar launcher to ensure tabs aren't
         // cut off (Bug 1974037).
-        const { SidebarController } = tab.documentGlobal;
-        SidebarController.expandOnHoverComplete.then(async () => {
+        const sidebarController = tab.documentGlobal.SidebarController;
+        sidebarController.expandOnHoverComplete.then(async () => {
           const width = await window.promiseDocumentFlushed(
-            () => SidebarController.sidebarMain.clientWidth
+            () => sidebarController.sidebarMain.clientWidth
           );
           requestAnimationFrame(() => {
             for (const t of movingTabs) {
@@ -1904,12 +1904,12 @@
       dragData.animLastScreenX ??= dragData.screenX;
       dragData.animLastScreenY ??= dragData.screenY;
 
-      let screenX = event.screenX;
-      let screenY = event.screenY;
+      let screenPosX = event.screenX;
+      let screenPosY = event.screenY;
 
       if (
-        screenY == dragData.animLastScreenY &&
-        screenX == dragData.animLastScreenX
+        screenPosY == dragData.animLastScreenY &&
+        screenPosX == dragData.animLastScreenX
       ) {
         return;
       }
@@ -1919,8 +1919,8 @@
         gBrowser.pinnedTabCount
       );
 
-      dragData.animLastScreenY = screenY;
-      dragData.animLastScreenX = screenX;
+      dragData.animLastScreenY = screenPosY;
+      dragData.animLastScreenX = screenPosX;
 
       let { width: tabWidth, height: tabHeight } =
         draggedTab.getBoundingClientRect();
@@ -1935,8 +1935,8 @@
       let endScreenY = draggedTab.screenY + tabHeight;
       let startScreenX = draggedTab.screenX;
       let startScreenY = draggedTab.screenY;
-      let translateX = screenX - dragData.screenX;
-      let translateY = screenY - dragData.screenY;
+      let translateX = screenPosX - dragData.screenX;
+      let translateY = screenPosY - dragData.screenY;
       let startBoundX = this._tabbrowserTabs.screenX - startScreenX;
       let startBoundY = this._tabbrowserTabs.screenY - startScreenY;
       let endBoundX =
@@ -2027,19 +2027,19 @@
           break;
         }
         let [shiftX, shiftY] = getTabShift(tabs[mid], oldIndex);
-        screenX = tabs[mid].screenX + shiftX;
-        screenY = tabs[mid].screenY + shiftY;
+        screenPosX = tabs[mid].screenX + shiftX;
+        screenPosY = tabs[mid].screenY + shiftY;
 
-        if (screenY + tabHeight < tabCenterY) {
+        if (screenPosY + tabHeight < tabCenterY) {
           low = mid + 1;
-        } else if (screenY > tabCenterY) {
+        } else if (screenPosY > tabCenterY) {
           high = mid - 1;
         } else if (
-          RTL_UI ? screenX + tabWidth < tabCenterX : screenX > tabCenterX
+          RTL_UI ? screenPosX + tabWidth < tabCenterX : screenPosX > tabCenterX
         ) {
           high = mid - 1;
         } else if (
-          RTL_UI ? screenX > tabCenterX : screenX + tabWidth < tabCenterX
+          RTL_UI ? screenPosX > tabCenterX : screenPosX + tabWidth < tabCenterX
         ) {
           low = mid + 1;
         } else {
@@ -2085,14 +2085,14 @@
       dragData.animLastScreenPos ??= this._tabbrowserTabs.verticalMode
         ? dragData.screenY
         : dragData.screenX;
-      let screen = this._tabbrowserTabs.verticalMode
+      let screenPos = this._tabbrowserTabs.verticalMode
         ? event.screenY
         : event.screenX;
-      if (screen == dragData.animLastScreenPos) {
+      if (screenPos == dragData.animLastScreenPos) {
         return;
       }
-      let screenForward = screen > dragData.animLastScreenPos;
-      dragData.animLastScreenPos = screen;
+      let screenForward = screenPos > dragData.animLastScreenPos;
+      dragData.animLastScreenPos = screenPos;
 
       this._clearDragOverGroupingTimer();
       this.#clearPinnedDropIndicatorTimer();
@@ -2131,7 +2131,7 @@
       );
       let tabSize = this._tabbrowserTabs.verticalMode ? tabHeight : tabWidth;
       let shiftSize = tabSize;
-      let translate = screen - dragData[screenAxis];
+      let translate = screenPos - dragData[screenAxis];
 
       // Constrain the range over which the moving tabs can move between the edge of the tabstrip and periphery.
       // Add 1 to periphery so we don't overlap it.
@@ -2146,12 +2146,12 @@
       // Center the tab under the cursor if the tab is not under the cursor while dragging
       let draggedTabScreenAxis = draggedTab[screenAxis] + translate;
       if (
-        (screen < draggedTabScreenAxis ||
-          screen > draggedTabScreenAxis + tabSize) &&
+        (screenPos < draggedTabScreenAxis ||
+          screenPos > draggedTabScreenAxis + tabSize) &&
         draggedTabScreenAxis + tabSize < endBound &&
         draggedTabScreenAxis > startBound
       ) {
-        translate = screen - draggedTab[screenAxis] - tabSize / 2;
+        translate = screenPos - draggedTab[screenAxis] - tabSize / 2;
         // Ensure, after the above calculation, we are still within bounds
         translate = Math.min(Math.max(translate, startBound), endBound);
       }
@@ -2317,13 +2317,13 @@
           }
           let element = tabs[mid];
           let elementForSize = elementToMove(element);
-          screen =
+          screenPos =
             elementForSize[screenAxis] +
             getTabShift(element, oldDropElementIndex);
 
-          if (screen > point) {
+          if (screenPos > point) {
             high = mid - 1;
-          } else if (screen + bounds(elementForSize)[size] < point) {
+          } else if (screenPos + bounds(elementForSize)[size] < point) {
             low = mid + 1;
           } else {
             return element;
