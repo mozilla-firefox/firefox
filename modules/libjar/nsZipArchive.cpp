@@ -29,6 +29,8 @@
 #  include <windows.h>
 #endif
 
+#include <algorithm>
+
 // For placement new used for arena allocations of zip file list
 #include <new>
 #define ZIP_ARENABLOCKSIZE (1 * 1024)
@@ -684,7 +686,7 @@ nsresult nsZipArchive::BuildFileList(
       mFd->mLen > ZIPCENTRAL_SIZE &&
       xtolong(startp + centralOffset) == CENTRALSIG) {
     // Success means optimized jar layout from bug 559961 is in effect
-    uint32_t readaheadLength = xtolong(startp);
+    uint32_t readaheadLength = std::min(xtolong(startp), mFd->mLen);
     mozilla::PrefetchMemory(const_cast<uint8_t*>(startp), readaheadLength);
   } else {
     for (buf = endp - ZIPEND_SIZE; buf > startp; buf--) {
