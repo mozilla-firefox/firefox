@@ -161,7 +161,7 @@ def subs(ctx):
 def tsc(ctx, *args):
     return ctx._sub_mach([
         "node",
-        os.path.join("node_modules", "typescript", "bin", "tsc"),
+        os.path.join(ctx.topsrcdir, "node_modules", "typescript", "bin", "tsc"),
         *args,
     ])
 
@@ -180,6 +180,7 @@ def maybe_setup(ctx):
     if not check_node_executables_valid():
         return 1
 
+    setup_helper.set_project_root(ctx.topsrcdir)
     setup_helper.eslint_maybe_setup(package_name="TypeScript")
 
     """Check if npm modules are installed, and run setup if needed."""
