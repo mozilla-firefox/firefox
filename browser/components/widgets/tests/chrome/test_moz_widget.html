@@ -27,6 +27,8 @@
     <pre id="test"></pre>
     <script>
       const WIDGET_DOCUMENT = "about:blank";
+      const SERVED_ORIGIN = "http://mochi.test:8888";
+      const WEB_DOCUMENT = `${SERVED_ORIGIN}/`;
 
       function createWidget({ supportsXULElements, ...props } = {}) {
         const widget = document.createElement("moz-widget");
@@ -40,6 +42,24 @@
         Object.assign(widget, props);
         document.getElementById("content").append(widget);
         return widget;
+      }
+
+      function addErrorContent(widget) {
+        const errorContent = document.createElement("p");
+        errorContent.slot = "error";
+        errorContent.textContent = "Widget unavailable";
+        widget.append(errorContent);
+        return errorContent;
+      }
+
+      function checkErrorContent(widget, errorContent) {
+        isDeeply(
+          widget.shadowRoot
+            .querySelector('.error-overlay slot[name="error"]')
+            .assignedElements(),
+          [errorContent],
+          "host error content slotted into the overlay"
+        );
       }
 
       const IAB_WIDTH = 300;
@@ -124,6 +144,423 @@
         widget.src = null;
         await widget.updateComplete;
         ok(!widget.frame, "frame dropped");
+        widget.remove();
+      });
+
+      add_task(async function test_error_covers_the_frame() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+        const frame = widget.frame;
+
+        const events = [];
+        widget.addEventListener("widget-error", () => events.push("error"));
+        widget.addEventListener("widget-ready", () => events.push("ready"));
+
+        widget.reportError();
+        await widget.updateComplete;
+        is(widget.frame, frame, "frame kept, not replaced");
+        ok(
+          widget.shadowRoot.querySelector(".content[inert]"),
+          "frame inert while covered"
+        );
+        checkErrorContent(widget, errorContent);
+
+        widget.reportError();
+        await widget.updateComplete;
+        is(events.length, 1, "a second report is not a second event");
+
+        widget.reportReady();
+        await widget.updateComplete;
+        is(widget.frame, frame, "same frame afterwards");
+        ok(
+          !widget.shadowRoot.querySelector(".content[inert]"),
+          "frame interactive again"
+        );
+        ok(
+          !widget.shadowRoot.querySelector(".error-overlay"),
+          "overlay removed"
+        );
+
+        is(events.join(), "error,ready", "one event each way");
+        widget.remove();
+      });
+
+      add_task(async function test_error_covers_slotted_content() {
+        const widget = createWidget();
+        const content = document.createElement("p");
+        content.textContent = "Widget content";
+        widget.append(content);
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+
+        widget.reportError();
+        await widget.updateComplete;
+        ok(
+          widget.shadowRoot.querySelector(".content[inert]"),
+          "slotted content inert while covered"
+        );
+        checkErrorContent(widget, errorContent);
+
+        widget.reportReady();
+        await widget.updateComplete;
+        ok(
+          !widget.shadowRoot.querySelector(".content[inert]"),
+          "slotted content interactive again"
+        );
+        ok(
+          !widget.shadowRoot.querySelector(".error-overlay"),
+          "overlay removed"
+        );
+        isDeeply(
+          widget.shadowRoot.querySelector(".content slot").assignedElements(),
+          [content],
+          "default content kept after recovery"
+        );
+        widget.remove();
+      });
+
+      add_task(async function test_error_covers_a_browser_frame() {
+        const widget = createWidget({ src: WIDGET_DOCUMENT });
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+        ok(widget.frame, "a browser frame");
+
+        widget.reportError();
+        await widget.updateComplete;
+        // inert is an HTML attribute, so a XUL browser cannot carry it. The
+        // wrapper does, and -moz-inert inherits down to the slotted frame.
+        const wrapper = widget.shadowRoot.querySelector(".content[inert]");
+        ok(wrapper, "wrapper inert while covered");
+        is(
+          widget.frame.assignedSlot?.parentNode,
+          wrapper,
+          "the browser is slotted inside it, so -moz-inert reaches it"
+        );
+        checkErrorContent(widget, errorContent);
+        const frame = widget.frame;
+        widget.reportReady();
+        await widget.updateComplete;
+        is(widget.frame, frame, "browser frame kept after recovery");
+        widget.remove();
+      });
+
+      add_task(async function test_frame_load_failure() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+
+        const events = [];
+        widget.addEventListener("widget-error", event => events.push(event));
+
+        widget.frame.dispatchEvent(new Event("error"));
+        await widget.updateComplete;
+
+        ok(widget.error, "a frame that failed to load is an error");
+        is(events.length, 1, "the host hears about it");
+        is(events[0].detail.reason, undefined, "a frame failure has no reason");
+        checkErrorContent(widget, errorContent);
+        const frame = widget.frame;
+        widget.reportReady();
+        await widget.updateComplete;
+        is(widget.frame, frame, "frame kept after recovery");
+        widget.remove();
+      });
+
+      add_task(async function test_error_reason() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+
+        const reasons = [];
+        const frame = widget.frame;
+        let detail;
+        widget.addEventListener("widget-error", event => {
+          reasons.push(event.detail.reason);
+          detail = event.detail;
+        });
+
+        widget.reportError("render_failed");
+        widget.reportError("other");
+        await widget.updateComplete;
+        is(reasons.length, 1, "synchronous reports fire one event");
+        isDeeply(detail, { reason: "render_failed" }, "the first reason is kept");
+        checkErrorContent(widget, errorContent);
+
+        widget.reportError("other");
+        await widget.updateComplete;
+        is(reasons.length, 1, "a settled error does not fire another event");
+
+        widget.reportReady();
+        await widget.updateComplete;
+        widget.error = true;
+        await widget.updateComplete;
+        isDeeply(
+          reasons,
+          ["render_failed", undefined],
+          "setting error directly has no reason"
+        );
+
+        widget.reportReady();
+        await widget.updateComplete;
+        widget.reportError("stale");
+        widget.reportReady();
+        widget.error = true;
+        await widget.updateComplete;
+        isDeeply(
+          reasons,
+          ["render_failed", undefined, undefined],
+          "a ready report clears a reason before the update"
+        );
+
+        widget.reportReady();
+        await widget.updateComplete;
+        widget.reportError("render_failed");
+        await widget.updateComplete;
+        widget.error = false;
+        await widget.updateComplete;
+        widget.error = true;
+        await widget.updateComplete;
+        isDeeply(
+          reasons,
+          ["render_failed", undefined, undefined, "render_failed", undefined],
+          "clearing error directly clears the reason for the next error"
+        );
+        widget.reportReady();
+        await widget.updateComplete;
+        is(widget.frame, frame, "frame kept after recovery");
+        widget.remove();
+      });
+
+      add_task(async function test_ready_when_error_cleared() {
+        const widget = createWidget();
+        const content = document.createElement("p");
+        content.textContent = "Widget content";
+        widget.append(content);
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+
+        const events = [];
+        const reasons = [];
+        widget.addEventListener("widget-ready", () => events.push("ready"));
+        widget.addEventListener("widget-error", event => {
+          events.push("error");
+          reasons.push(event.detail.reason);
+        });
+
+        widget.reportError();
+        await widget.updateComplete;
+        checkErrorContent(widget, errorContent);
+        events.length = 0;
+        widget.error = false;
+        await widget.updateComplete;
+        is(
+          events.join(),
+          "ready",
+          "clearing error directly reports ready once"
+        );
+        isDeeply(
+          widget.shadowRoot.querySelector(".content slot").assignedElements(),
+          [content],
+          "default content kept after recovery"
+        );
+
+        widget.reportError();
+        await widget.updateComplete;
+        events.length = 0;
+        widget.reportReady();
+        is(events.join(), "ready", "reportReady reports ready synchronously");
+        await widget.updateComplete;
+        is(events.join(), "ready", "the update does not report ready again");
+
+        events.length = 0;
+        widget.reportError();
+        widget.reportReady();
+        await widget.updateComplete;
+        is(events.join(), "ready", "a synchronous recovery only reports ready");
+
+        widget.reportError();
+        await widget.updateComplete;
+        events.length = 0;
+        widget.error = false;
+        widget.error = true;
+        await widget.updateComplete;
+        is(events.length, 0, "an unchanged error state fires neither event");
+
+        widget.addEventListener(
+          "widget-ready",
+          () => widget.reportError("second"),
+          { once: true }
+        );
+        widget.error = false;
+        await widget.updateComplete;
+        await widget.updateComplete;
+        is(
+          events.join(),
+          "ready,error",
+          "a ready listener can report another error"
+        );
+        is(reasons.at(-1), "second", "the listener's error reason is kept");
+        checkErrorContent(widget, errorContent);
+        widget.reportReady();
+        await widget.updateComplete;
+        isDeeply(
+          widget.shadowRoot.querySelector(".content slot").assignedElements(),
+          [content],
+          "default content kept after the listener's error recovers"
+        );
+        widget.remove();
+      });
+
+      add_task(async function test_ready_listener_reports_error() {
+        const widget = createWidget();
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+
+        const events = [];
+        const reasons = [];
+        widget.addEventListener("widget-ready", () => events.push("ready"));
+        widget.addEventListener("widget-error", event => {
+          events.push("error");
+          reasons.push(event.detail.reason);
+        });
+
+        widget.reportError();
+        await widget.updateComplete;
+        events.length = 0;
+        reasons.length = 0;
+
+        widget.addEventListener(
+          "widget-ready",
+          () => widget.reportError("second"),
+          { once: true }
+        );
+        widget.reportReady();
+        await widget.updateComplete;
+        is(
+          events.join(),
+          "ready,error",
+          "an error reported from a ready listener is not dropped"
+        );
+        isDeeply(reasons, ["second"], "the listener's reason is kept");
+        checkErrorContent(widget, errorContent);
+        widget.remove();
+      });
+
+      add_task(async function test_error_clears_on_src_change() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        const errorContent = addErrorContent(widget);
+        await widget.updateComplete;
+        const frame = widget.frame;
+
+        const events = [];
+        widget.addEventListener("widget-ready", () => events.push("ready"));
+
+        widget.reportError();
+        await widget.updateComplete;
+        ok(widget.error, "in the error state");
+        checkErrorContent(widget, errorContent);
+
+        widget.src = `${WEB_DOCUMENT}other`;
+        await widget.updateComplete;
+        ok(!widget.error, "a different document gets a fresh go");
+        is(events.length, 0, "a src change is not ready");
+        isnot(
+          widget.frame,
+          frame,
+          "a new frame, so the old document cannot report into the new one"
+        );
+        widget.remove();
+      });
+
+      add_task(async function test_ready_without_a_prior_error() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        await widget.updateComplete;
+
+        const events = [];
+        widget.addEventListener("widget-ready", () => events.push("ready"));
+
+        await new Promise(resolve =>
+          widget.frame.addEventListener("load", resolve, { once: true })
+        );
+        is(widget.readyOnLoad, false, "readyOnLoad is off by default");
+        is(events.length, 0, "loading does not report ready by default");
+
+        widget.reportReady();
+        await widget.updateComplete;
+
+        ok(!widget.error, "never in the error state");
+        is(events.length, 1, "a clean load still reports ready");
+        widget.remove();
+      });
+
+      add_task(async function test_report_ready_twice() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        await widget.updateComplete;
+
+        const events = [];
+        widget.addEventListener("widget-ready", () => events.push("ready"));
+
+        widget.reportReady();
+        widget.reportReady();
+        is(events.length, 2, "each report is an event");
+        widget.remove();
+      });
+
+      add_task(async function test_ready_on_load() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WEB_DOCUMENT,
+        });
+        await widget.updateComplete;
+
+        widget.setAttribute("ready-on-load", "");
+        const ready = new Promise(resolve =>
+          widget.addEventListener("widget-ready", resolve, { once: true })
+        );
+        widget.src = WIDGET_DOCUMENT;
+        await ready;
+        ok(!widget.error, "ready once the page loads");
+
+        widget.remove();
+      });
+
+      add_task(async function test_ready_on_load_follows_the_attribute() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WIDGET_DOCUMENT,
+        });
+        await widget.updateComplete;
+
+        let readyEvents = 0;
+        widget.addEventListener("widget-ready", () => readyEvents++);
+
+        widget.frame.dispatchEvent(new Event("load"));
+        is(readyEvents, 0, "no ready event without the attribute");
+
+        widget.setAttribute("ready-on-load", "");
+        await widget.updateComplete;
+        widget.frame.dispatchEvent(new Event("load"));
+        is(readyEvents, 1, "one ready event with the attribute");
+
         widget.remove();
       });
 

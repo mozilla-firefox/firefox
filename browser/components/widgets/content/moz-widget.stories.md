@@ -2,7 +2,7 @@
 
 `moz-widget` is a card that embeds a self-contained, interactive widget in a host surface. Widgets are used for presenting brief updates or completing a quick task.
 
-It clips content to its bounds and uses the dimensions set by the `size` attribute. Content comes from a browser or iframe when `src` is set and otherwise from the default slot.
+It clips content to its bounds and uses the dimensions set by the `size` attribute. Content comes from a browser or iframe when `src` is set and otherwise from the default slot. The `error` slot carries the message shown when a widget fails.
 
 ```html story
 <moz-widget widget-id="weather" size="medium">
@@ -192,3 +192,21 @@ Without a header, the content extends to the card's edges. `moz-widget` draws th
 The frame is a `browser` element in chrome or an `iframe` element in content.
 
 In a browser element, `remote-type="extension"` loads a `moz-extension:` document in the extension process, and `group-id` joins the extension's browsing context group, taken from `WebExtensionPolicy.browsingContextGroupId`.
+
+### Reporting an error
+
+`moz-widget` watches its iframe. An iframe that fails to load puts the widget in its error state: it covers the content with the host's error content, sets the `error` attribute and fires `widget-error`. Set `ready-on-load` to have an iframe load fire `widget-ready`; it is off by default and does not affect a `browser` frame. Gecko fires `error` only where the load never starts, such as a blocked URL; a document that loads and then fails gets an error page, which counts as a successful load.
+
+A host calls `reportError()` to show its error content and `reportReady()` to uncover the content and fire `widget-ready` on every call. The `error` property reads or sets the same state; turning it on fires `widget-error`, and clearing it fires `widget-ready` unless `src` changes in the same update. The content is covered rather than replaced, so the document keeps running and can recover. This also works for slotted content without `src`.
+
+`reportError(reason)` passes the reason on as `widget-error`'s `detail.reason`.
+
+A host should always provide content in the `error` slot, since that is what covers the widget content. Without it a failing widget leaves an empty card.
+
+```html
+<moz-widget widget-id="weather" title="Weather" src="moz-extension://UUID/widget.html">
+  <div slot="error" class="my-error">Widget unavailable. Check back later.</div>
+</moz-widget>
+```
+
+A `browser` frame is a top-level browsing context, so it cannot report for itself. A chrome host calls `reportError()` and `reportReady()` for it.
