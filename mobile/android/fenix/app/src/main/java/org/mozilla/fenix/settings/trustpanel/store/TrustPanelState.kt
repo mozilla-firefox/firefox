@@ -62,7 +62,10 @@ data class WebsiteInfoState(
     val websiteTitle: String = "",
     val certificate: X509Certificate? = null,
     val qwac: X509Certificate? = null,
-)
+) {
+    /** The subject and issuer fields of [certificate], or null if there is no certificate. */
+    val certificateDetails: CertificateDetails? by lazy { certificate?.toCertificateDetails() }
+}
 
 /**
  * Wrapper over a website permission encompassing all its needed state to be rendered on the screen.
