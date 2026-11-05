@@ -50,7 +50,7 @@ typedef double f64;
 #define TRAP(x) wasm_rt_trap(WASM_RT_TRAP_##x)
 
 #if WABT_BIG_ENDIAN
-#error "WABT_BIG_ENDIAN is currently not supported"
+#  error "WABT_BIG_ENDIAN is currently not supported"
 #endif
 
 #define WASI_MEMACCESS(mem, a) ((void*)&(mem->data[a]))
@@ -394,11 +394,11 @@ static void os_clock_cleanup_instance(void** clock_data_pointer)
   (void)clock_data_pointer;
 }
 
-static int os_translate_clock_id(int wasm_clock_id) {
+static int os_translate_clock_id(int wasm_clock_id)
+{
   // Some OSes like OpenBSD use different clock ids, so wasm's clock id should
   // be explicitly translated
-  switch (wasm_clock_id)
-  {
+  switch (wasm_clock_id) {
     case WASM_CLOCK_REALTIME:
       return CLOCK_REALTIME;
     case WASM_CLOCK_MONOTONIC:
@@ -721,7 +721,10 @@ void w2c_wasi__snapshot__preview1_proc_exit(
 /////////////////////////////////////////////////////////////
 
 #define STUB_IMPORT_IMPL(ret, name, params)                                    \
-  ret name params { return WASI_NOSYS_ERROR; }
+  ret name params                                                              \
+  {                                                                            \
+    return WASI_NOSYS_ERROR;                                                   \
+  }
 
 // clang-format off
 
