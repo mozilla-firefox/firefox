@@ -185,10 +185,6 @@ endif
 # Interdependencies that moz.build world don't know about yet for compilation.
 # Note some others are hardcoded or "guessed" in recursivemake.py and emitter.py
 
-# Most things are built during compile (target/host), but some things happen during export
-# Those need to depend on config/export for system wrappers.
-$(addprefix build/unix/stdc++compat/,target host) build/clang-plugin/host: config/export
-
 # Rust targets, and export targets that run cbindgen need
 # $topobjdir/.cargo/config.toml to be preprocessed first. Ideally, we'd only set it
 # as a dependency of the rust targets, but unfortunately, that pushes Make to
