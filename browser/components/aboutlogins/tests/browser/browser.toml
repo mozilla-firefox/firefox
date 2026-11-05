@@ -15,7 +15,7 @@ skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt", # Bug 1648862
   "os == 'win' && opt", # bug 1605494 is more prevalent on linux, Bug 1627419
   "tsan",
-  "os == 'mac' && arch == 'x86_64' && opt", # Bug 1796283
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1796283
 ]
 
 ["browser_alertDismissedAfterChangingPassword.js"]
