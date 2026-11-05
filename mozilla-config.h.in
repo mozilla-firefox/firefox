@@ -40,8 +40,8 @@
 #endif
 
 /*
- * MOZ_NEUTER_SEH_FOR_MINGWCLANG is defined in security/sandbox/moz.build
- * and in third_party/zucchini/moz.build.
+ * MOZ_NEUTER_SEH_FOR_MINGWCLANG is defined in security/sandbox/moz.build,
+ * third_party/zucchini/moz.build and third_party/zucchini/executable/moz.build.
  */
 #if defined(MOZ_NEUTER_SEH_FOR_MINGWCLANG) && defined(XP_WIN) && defined(__MINGW32__)
 /*

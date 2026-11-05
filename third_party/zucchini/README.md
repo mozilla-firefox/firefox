@@ -99,7 +99,9 @@ Different Split Of Code
 
 Upstream build definitions split zucchini into two libraries `zucchini_lib` and
 `zucchini_io`, and one executable `zucchini`. Our equivalents are a single
-library named `zucchini` and an executable also named `zucchini`.
+library named `zucchini` and an executable also named `zucchini`. The upstream
+integration code (`zucchini_integration.cc`) is built in the executable rather
+than the library, because the library is compiled with C++ exceptions enabled.
 
 Different Integration Code
 --------------------------

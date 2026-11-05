@@ -17,6 +17,7 @@ LOCAL_INCLUDES += [
 
 DEFINES["UNICODE"] = True
 DEFINES["ENABLED_VLOG_LEVEL"] = 1
+DEFINES["MOZ_NEUTER_SEH_FOR_MINGWCLANG"] = True
 
 if not CONFIG["MOZ_DEBUG"]:
     DEFINES["NDEBUG"] = True
@@ -25,6 +26,9 @@ SOURCES += [
     "/third_party/zucchini/chromium/base/command_line.cc",
     "/third_party/zucchini/chromium/components/zucchini/main_utils.cc",
     "/third_party/zucchini/chromium/components/zucchini/zucchini_commands.cc",
+    # Not in the library: with C++ exceptions enabled there, clang rejects the
+    # __try in ApplyCommon.
+    "/third_party/zucchini/chromium/components/zucchini/zucchini_integration.cc",
     "/third_party/zucchini/chromium/components/zucchini/zucchini_main.cc",
     "/third_party/zucchini/chromium/components/zucchini/zucchini_tools.cc",
 ]

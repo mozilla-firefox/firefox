@@ -84,7 +84,6 @@ SOURCES += [
     "/third_party/zucchini/chromium/components/zucchini/targets_affinity.cc",
     "/third_party/zucchini/chromium/components/zucchini/zucchini_apply.cc",
     "/third_party/zucchini/chromium/components/zucchini/zucchini_gen.cc",
-    "/third_party/zucchini/chromium/components/zucchini/zucchini_integration.cc",
     "/third_party/zucchini/moz_zucchini.cc",
 ]
 
