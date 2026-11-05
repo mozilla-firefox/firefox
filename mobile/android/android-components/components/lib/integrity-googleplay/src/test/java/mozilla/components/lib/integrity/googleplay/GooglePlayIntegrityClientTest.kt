@@ -11,6 +11,8 @@ import androidx.work.testing.WorkManagerTestInitHelper
 import com.google.android.play.core.integrity.StandardIntegrityException
 import com.google.android.play.core.integrity.model.StandardIntegrityErrorCode.INTEGRITY_TOKEN_PROVIDER_INVALID
 import kotlin.test.assertIs
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.integrity.IntegrityToken
 import mozilla.components.lib.integrity.googleplay.GleanMetrics.Integrity
@@ -26,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 
+@OptIn(ExperimentalCoroutinesApi::class) // testScheduler.currentTime
 @RunWith(AndroidJUnit4::class)
 class GooglePlayIntegrityClientTest {
 
@@ -93,6 +96,70 @@ class GooglePlayIntegrityClientTest {
             assertTrue(client.tokenProvider == null)
             client.forConsumer(IntegrityConsumer.Summarize).warmUp()
             assertEquals(Result.success(tokenProvider), client.tokenProvider)
+        }
+
+    @Test
+    fun `GIVEN a warmup times out THEN false is returned`() = runTest {
+        val tokenProvider = TokenProvider { _ ->
+            Result.success(IntegrityToken("test-token"))
+        }
+
+        val client =
+            GooglePlayIntegrityClient(
+                tokenProviderFactory = {
+                    delay(WarmUpTimeout * 2)
+                    Result.success(tokenProvider)
+                },
+                requestHashProvider = { "test-hash" },
+            )
+
+        val warmUpSucceeded = client.warmUp()
+
+        assertFalse("Warm up should not succeed", warmUpSucceeded)
+    }
+
+    @Test
+    fun `GIVEN a warmup times out THEN the warmedUp event is recorded as unsuccessful and timeout value as the duration`() =
+        runTest {
+            val tokenProvider = TokenProvider { _ ->
+                Result.success(IntegrityToken("test-token"))
+            }
+            val client =
+                GooglePlayIntegrityClient(
+                    tokenProviderFactory = {
+                        delay(WarmUpTimeout * 2)
+                        Result.success(tokenProvider)
+                    },
+                    requestHashProvider = { "test-hash" },
+                    currentTimeMillis = { testScheduler.currentTime },
+                )
+
+            client.warmUp()
+
+            val eventExtra = Integrity.warmedUp.testGetValue()!!.last().extra
+            assertEquals("false", eventExtra?.get("success"))
+            assertEquals(WarmUpTimeout.inWholeMilliseconds.toString(), eventExtra?.get("duration_ms"))
+        }
+
+    @Test
+    fun `GIVEN a successful warmup is delayed for less than timeout value THEN warm up result is successful`() =
+        runTest {
+            val tokenProvider = TokenProvider { _ ->
+                Result.success(IntegrityToken("test-token"))
+            }
+
+            val client =
+                GooglePlayIntegrityClient(
+                    tokenProviderFactory = {
+                        delay(WarmUpTimeout / 2)
+                        Result.success(tokenProvider)
+                    },
+                    requestHashProvider = { "test-hash" },
+                )
+
+            val warmUpSucceeded = client.warmUp()
+
+            assertTrue("Warm up should succeed", warmUpSucceeded)
         }
 
     @Test
