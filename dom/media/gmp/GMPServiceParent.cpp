@@ -211,14 +211,15 @@ nsresult GeckoMediaPluginServiceParent::InitStorage() {
 
   // Directory service is main thread only, so cache the profile dir here
   // so that we can use it off main thread.
+  nsCOMPtr<nsIFile> storageBaseDir;
   nsresult rv = NS_GetSpecialDirectory(NS_APP_USER_PROFILE_50_DIR,
-                                       getter_AddRefs(mStorageBaseDir));
+                                       getter_AddRefs(storageBaseDir));
 
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
-  rv = mStorageBaseDir->AppendNative("gmp"_ns);
+  rv = storageBaseDir->AppendNative("gmp"_ns);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
@@ -229,9 +230,14 @@ nsresult GeckoMediaPluginServiceParent::InitStorage() {
     return rv;
   }
 
-  rv = mStorageBaseDir->Append(platform);
+  rv = storageBaseDir->Append(platform);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
+  }
+
+  {
+    MutexAutoLock lock(mMutex);
+    mStorageBaseDir = std::move(storageBaseDir);
   }
 
   return GeckoMediaPluginService::Init();
@@ -1327,10 +1333,15 @@ void GeckoMediaPluginServiceParent::ReAddOnGMPThread(
 
 NS_IMETHODIMP
 GeckoMediaPluginServiceParent::GetStorageDir(nsIFile** aOutFile) {
-  if (NS_WARN_IF(!mStorageBaseDir)) {
-    return NS_ERROR_FAILURE;
+  nsCOMPtr<nsIFile> storageBaseDir;
+  {
+    MutexAutoLock lock(mMutex);
+    storageBaseDir = mStorageBaseDir;
   }
-  return mStorageBaseDir->Clone(aOutFile);
+  if (NS_WARN_IF(!storageBaseDir)) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+  return storageBaseDir->Clone(aOutFile);
 }
 
 nsresult WriteToFile(nsIFile* aPath, const nsACString& aFileName,
