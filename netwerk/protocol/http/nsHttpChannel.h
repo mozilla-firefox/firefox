@@ -402,6 +402,8 @@ class nsHttpChannel final : public HttpBaseChannel,
   void ProcessSSLInformation();
   bool IsHTTPS();
 
+  [[nodiscard]] nsresult ContinueOnStartRequestAfterFallback(nsresult);
+  [[nodiscard]] nsresult ContinueOnStartRequestWithoutFallback();
   [[nodiscard]] nsresult ContinueOnStartRequest1(nsresult);
   [[nodiscard]] nsresult ContinueOnStartRequest2(nsresult);
   [[nodiscard]] nsresult ContinueOnStartRequest3(nsresult);

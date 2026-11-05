@@ -742,6 +742,8 @@ prefs = [
 
 ["test_essential_domain_fallback.js"]
 
+["test_essential_domain_fallback_redirect_fail.js"]
+
 ["test_event_sink.js"]
 
 ["test_eviction.js"]
