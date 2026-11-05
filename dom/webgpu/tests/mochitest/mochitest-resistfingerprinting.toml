@@ -1,7 +1,7 @@
 [DEFAULT]
 subsuite = "webgpu"
 run-if = [
-  "early_beta_or_earlier",
+  "nightly_build",
   "os == 'mac' && arch == 'aarch64'",
   "os == 'win'",
 ]

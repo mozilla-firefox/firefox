@@ -2,7 +2,6 @@ function entryDisabled(
   entry,
   {
     isNightly,
-    isEarlyBetaOrEarlier,
     isRelease,
     isDesktop,
     isWindows,
@@ -33,7 +32,6 @@ function entryDisabled(
     // will get treated as "insecureContext: false", which means exposed
     // only in secure contexts.
     (isInsecureContext && !entry.insecureContext) ||
-    entry.earlyBetaOrEarlier === !isEarlyBetaOrEarlier ||
     entry.crossOriginIsolated === !isCrossOriginIsolated ||
     entry.disabled
   );
@@ -138,7 +136,6 @@ if (typeof window !== "undefined") {
 
     return {
       isNightly: AppConstants.NIGHTLY_BUILD,
-      isEarlyBetaOrEarlier: AppConstants.EARLY_BETA_OR_EARLIER,
       isRelease: AppConstants.RELEASE_OR_BETA,
       isDesktop: !/Mobile|Tablet/.test(navigator.userAgent),
       isMac: AppConstants.platform == "macosx",
