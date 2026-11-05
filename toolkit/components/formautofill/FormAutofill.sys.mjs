@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { Region } from "resource://gre/modules/Region.sys.mjs";
 import { AddressMetaDataLoader } from "resource://gre/modules/shared/AddressMetaDataLoader.sys.mjs";
@@ -176,15 +177,45 @@ export const FormAutofill = {
    * Whether the CVV feature has been rolled out to this user. Takes the same
    * "on"/"off" values as the other supported prefs, and needs the Rust credit
    * card store to be the one serving: only that store encrypts the security
-   * code, and the JSON store would keep it in the clear.
+   * code, and the JSON store would keep it in the clear. On Android the app
+   * stores credit cards, always in the Rust store, so only the rollout counts.
    *
    * @returns {boolean}
    */
   get isAutofillCreditCardCVVSupported() {
     return (
       this._autofillCreditCardCVVSupportedPref == "on" &&
-      this._isCreditCardRustStorageActive
+      this._canStoreEncryptedCreditCardSecurityCode
     );
+  },
+
+  /**
+   * Whether the store serving credit cards encrypts security codes, so they
+   * are never kept in the clear. Both android and desktop keep credit cards
+   * in the Application Services autofill store, which encrypts them, but reach
+   * it differently:
+   *
+   * - On desktop, Gecko owns the storage. `RustAutofillCreditCardStorage`
+   *   wraps the Application Services store, and
+   *   `_isCreditCardRustStorageActive` tells whether that wrapper is serving
+   *   rather than the JSON store, which would keep security codes in the
+   *   clear.
+   * - On Android, Gecko keeps no credit cards and hands them to the GeckoView
+   *   embedder. Fenix stores them through `GeckoAutocompleteStorageDelegate`
+   *   in Android Components, which uses the same Application Services store.
+   *   `_isCreditCardRustStorageActive` only applies to the desktop wrapper,
+   *   so it is not checked here.
+   *
+   * @returns {boolean}
+   */
+  get _canStoreEncryptedCreditCardSecurityCode() {
+    switch (AppConstants.platform) {
+      case "android":
+        return true;
+      default:
+        // Only the Rust store encrypts security codes, not the JSON one.
+        return this._isCreditCardRustStorageActive;
+    }
   },
 
   /**
