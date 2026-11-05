@@ -198,7 +198,7 @@ class DecoderTemplate : public DOMEventTargetHelper {
 
   // Returns true when mAgent can be created.
   bool CreateDecoderAgent(DecoderAgent::Id aId,
-                          already_AddRefed<ConfigTypeInternal> aConfig,
+                          RefPtr<ConfigTypeInternal>&& aConfig,
                           UniquePtr<TrackInfo>&& aInfo);
   void DestroyDecoderAgentIfAny();
 

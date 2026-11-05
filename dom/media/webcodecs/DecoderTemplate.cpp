@@ -838,7 +838,7 @@ MessageProcessedResult DecoderTemplate<DecoderType>::ProcessFlushMessage(
 
 template <typename DecoderType>
 bool DecoderTemplate<DecoderType>::CreateDecoderAgent(
-    DecoderAgent::Id aId, already_AddRefed<ConfigTypeInternal> aConfig,
+    DecoderAgent::Id aId, RefPtr<ConfigTypeInternal>&& aConfig,
     UniquePtr<TrackInfo>&& aInfo) {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mState == CodecState::Configured);
