@@ -151,7 +151,26 @@ private fun reducer(state: TrustPanelState, action: TrustPanelAction): TrustPane
         is TrustPanelAction.UpdateNumberOfTrackersBlocked ->
             state.copy(numberOfTrackersBlocked = action.newNumberOfTrackersBlocked)
         is TrustPanelAction.UpdateSitePermissions -> state.copy(sitePermissions = action.sitePermissions)
-        is TrustPanelAction.UpdateQWAC -> state.copy(websiteInfoState = state.websiteInfoState.copy(qwac = action.qwac))
+        is TrustPanelAction.UpdateQWAC ->
+            if (action.forCertificate == state.websiteInfoState.certificate) {
+                state.copy(websiteInfoState = state.websiteInfoState.copy(qwac = action.qwac))
+            } else {
+                state
+            }
+        is TrustPanelAction.UpdateSecurityInfo -> {
+            val websiteInfoState = state.websiteInfoState
+            // A QWAC only applies to the certificate it was determined for, so drop it when the certificate changes.
+            // TrustPanelMiddleware then requests the QWAC status of the new certificate.
+            val isSameCertificate = action.certificate == websiteInfoState.certificate
+            state.copy(
+                websiteInfoState =
+                    websiteInfoState.copy(
+                        isSecured = action.isSecured,
+                        certificate = action.certificate,
+                        qwac = websiteInfoState.qwac.takeIf { isSameCertificate },
+                    )
+            )
+        }
     }
 }
 

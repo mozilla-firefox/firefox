@@ -6,6 +6,7 @@ package org.mozilla.fenix.settings.trustpanel.middleware
 
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.net.toUri
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -43,6 +44,7 @@ import org.mozilla.fenix.utils.Settings
  * @param requestPermissionsLauncher Used to execute an ActivityResultContract to request runtime permissions.
  * @param onDismiss Callback invoked to dismiss the trust panel.
  * @param scope [CoroutineScope] used to launch coroutines.
+ * @param mainDispatcher [CoroutineDispatcher] used to request the QWAC status.
  */
 @Suppress("LongParameterList")
 class TrustPanelMiddleware(
@@ -55,6 +57,7 @@ class TrustPanelMiddleware(
     private val requestPermissionsLauncher: ActivityResultLauncher<Array<String>>,
     private val onDismiss: suspend () -> Unit,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Main),
+    private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : Middleware<TrustPanelState, TrustPanelAction> {
 
     override fun invoke(
@@ -76,17 +79,27 @@ class TrustPanelMiddleware(
         }
 
         next(action)
+
+        if (
+            action is TrustPanelAction.UpdateSecurityInfo &&
+                action.certificate != null &&
+                action.certificate != currentState.websiteInfoState.certificate
+        ) {
+            store.dispatch(TrustPanelAction.RequestQWAC)
+        }
     }
 
     private fun requestQwac(
         currentState: TrustPanelState,
         store: Store<TrustPanelState, TrustPanelAction>,
-    ) =
-        scope.launch(Dispatchers.Main) {
-            currentState.sessionState?.engineState?.engineSession?.qwacStatus { cert ->
-                store.dispatch(TrustPanelAction.UpdateQWAC(cert))
+    ) {
+        val certificate = currentState.websiteInfoState.certificate
+        scope.launch(mainDispatcher) {
+            currentState.sessionState?.engineState?.engineSession?.qwacStatus { qwac ->
+                store.dispatch(TrustPanelAction.UpdateQWAC(qwac = qwac, forCertificate = certificate))
             }
         }
+    }
 
     private fun toggleTrackingProtection(currentState: TrustPanelState) = scope.launch {
         currentState.sessionState?.let { session ->

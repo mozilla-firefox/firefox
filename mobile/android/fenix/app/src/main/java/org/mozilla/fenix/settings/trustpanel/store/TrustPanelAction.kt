@@ -76,8 +76,20 @@ sealed class TrustPanelAction : Action {
      * [TrustPanelAction] dispatched when QWAC status is determined.
      *
      * @property qwac The QWAC ([X509Certificate]) in use, or null if none.
+     * @property forCertificate The certificate of the web page when the QWAC status was requested.
      */
-    data class UpdateQWAC(val qwac: X509Certificate?) : TrustPanelAction()
+    data class UpdateQWAC(val qwac: X509Certificate?, val forCertificate: X509Certificate?) : TrustPanelAction()
+
+    /**
+     * [TrustPanelAction] dispatched when the security info of the current web page changes.
+     *
+     * @property isSecured Whether the website connection is secured or not.
+     * @property certificate The certificate presented by the current web page, or null if none.
+     */
+    data class UpdateSecurityInfo(
+        val isSecured: Boolean,
+        val certificate: X509Certificate?,
+    ) : TrustPanelAction()
 
     /**
      * [TrustPanelAction] dispatched when a toggleable permission is toggled.

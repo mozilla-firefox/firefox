@@ -9,14 +9,19 @@ import io.mockk.Called
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
+import java.security.cert.X509Certificate
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.state.ContentState
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.EngineSession.TrackingProtectionPolicy.TrackingCategory
 import mozilla.components.concept.engine.content.blocking.TrackerLog
 import mozilla.components.concept.engine.permission.SitePermissions
@@ -26,6 +31,7 @@ import mozilla.components.feature.sitepermissions.SitePermissionsRules
 import mozilla.components.lib.publicsuffixlist.PublicSuffixList
 import mozilla.components.support.ktx.kotlin.getOrigin
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mozilla.fenix.components.AppStore
@@ -37,6 +43,7 @@ import org.mozilla.fenix.settings.trustpanel.store.AutoplayValue
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelAction
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelState
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelStore
+import org.mozilla.fenix.settings.trustpanel.store.WebsiteInfoState
 import org.mozilla.fenix.settings.trustpanel.store.WebsitePermission
 import org.mozilla.fenix.trackingprotection.TrackerBuckets
 import org.mozilla.fenix.utils.Settings
@@ -437,10 +444,114 @@ class TrustPanelMiddlewareTest {
             verify(exactly = 0) { reloadUrlUseCase.invoke(sessionId) }
         }
 
+    @Test
+    fun `GIVEN a QWAC WHEN the certificate changes THEN the QWAC status of the new certificate is requested`() =
+        runTest {
+            val newQwac: X509Certificate = mockk()
+            val engineSession = mockQwacStatus(newQwac)
+            val store =
+                createStore(
+                    scope = this,
+                    trustPanelState = qwacTrustPanelState(engineSession, certificate = mockk(), qwac = mockk()),
+                    mainDispatcher = StandardTestDispatcher(testScheduler),
+                )
+
+            store.dispatch(TrustPanelAction.UpdateSecurityInfo(isSecured = true, certificate = mockk()))
+            testScheduler.advanceUntilIdle()
+
+            verify(exactly = 1) { engineSession.qwacStatus(any()) }
+            assertEquals(newQwac, store.state.websiteInfoState.qwac)
+        }
+
+    @Test
+    fun `GIVEN a QWAC WHEN the security info is updated with the same certificate THEN the QWAC is not requested again`() =
+        runTest {
+            val certificate: X509Certificate = mockk()
+            val qwac: X509Certificate = mockk()
+            val engineSession = mockQwacStatus(mockk())
+            val store =
+                createStore(
+                    scope = this,
+                    trustPanelState = qwacTrustPanelState(engineSession, certificate = certificate, qwac = qwac),
+                    mainDispatcher = StandardTestDispatcher(testScheduler),
+                )
+
+            store.dispatch(TrustPanelAction.UpdateSecurityInfo(isSecured = true, certificate = certificate))
+            testScheduler.advanceUntilIdle()
+
+            verify(exactly = 0) { engineSession.qwacStatus(any()) }
+            assertEquals(qwac, store.state.websiteInfoState.qwac)
+        }
+
+    @Test
+    fun `GIVEN a QWAC WHEN the certificate is removed THEN the QWAC is not requested again`() = runTest {
+        val engineSession = mockQwacStatus(mockk())
+        val store =
+            createStore(
+                scope = this,
+                trustPanelState = qwacTrustPanelState(engineSession, certificate = mockk(), qwac = mockk()),
+                mainDispatcher = StandardTestDispatcher(testScheduler),
+            )
+
+        store.dispatch(TrustPanelAction.UpdateSecurityInfo(isSecured = false, certificate = null))
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 0) { engineSession.qwacStatus(any()) }
+        assertNull(store.state.websiteInfoState.qwac)
+    }
+
+    @Test
+    fun `GIVEN a pending QWAC request WHEN the page becomes insecure before the result arrives THEN the result is ignored`() =
+        runTest {
+            val onQwacStatus = slot<(X509Certificate?) -> Unit>()
+            val engineSession: EngineSession = mockk()
+            every { engineSession.qwacStatus(capture(onQwacStatus)) } returns Unit
+            val sessionState: SessionState = mockk()
+            every { sessionState.engineState.engineSession } returns engineSession
+            val store =
+                createStore(
+                    scope = this,
+                    trustPanelState =
+                        TrustPanelState(
+                            sessionState = sessionState,
+                            websiteInfoState = WebsiteInfoState(certificate = mockk()),
+                        ),
+                    mainDispatcher = StandardTestDispatcher(testScheduler),
+                )
+
+            store.dispatch(TrustPanelAction.RequestQWAC)
+            testScheduler.advanceUntilIdle()
+            store.dispatch(TrustPanelAction.UpdateSecurityInfo(isSecured = false, certificate = null))
+            onQwacStatus.captured.invoke(mockk())
+
+            assertNull(store.state.websiteInfoState.certificate)
+            assertNull(store.state.websiteInfoState.qwac)
+        }
+
+    private fun mockQwacStatus(qwac: X509Certificate?): EngineSession {
+        val engineSession: EngineSession = mockk()
+        every { engineSession.qwacStatus(any()) } answers { firstArg<(X509Certificate?) -> Unit>().invoke(qwac) }
+        return engineSession
+    }
+
+    private fun qwacTrustPanelState(
+        engineSession: EngineSession,
+        certificate: X509Certificate,
+        qwac: X509Certificate,
+    ): TrustPanelState {
+        val sessionState: SessionState = mockk()
+        every { sessionState.engineState.engineSession } returns engineSession
+        return TrustPanelState(
+            sessionState = sessionState,
+            websiteInfoState = WebsiteInfoState(certificate = certificate, qwac = qwac),
+        )
+    }
+
     private fun createStore(
         scope: CoroutineScope,
         trustPanelState: TrustPanelState = TrustPanelState(),
         onDismiss: suspend () -> Unit = {},
+        mainDispatcher: CoroutineDispatcher = StandardTestDispatcher(),
     ) =
         TrustPanelStore(
             initialState = trustPanelState,
@@ -456,6 +567,7 @@ class TrustPanelMiddlewareTest {
                         requestPermissionsLauncher = requestPermissionsLauncher,
                         onDismiss = onDismiss,
                         scope = scope,
+                        mainDispatcher = mainDispatcher,
                     )
                 ),
         )

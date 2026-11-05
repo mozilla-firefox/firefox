@@ -68,6 +68,7 @@ class TrustPanelTelemetryMiddleware : Middleware<TrustPanelState, TrustPanelActi
             is TrustPanelAction.WebsitePermissionAction,
             is TrustPanelAction.RequestQWAC,
             is TrustPanelAction.UpdateQWAC,
+            is TrustPanelAction.UpdateSecurityInfo,
             is TrustPanelAction.Navigate.ManagePhoneFeature,
             is TrustPanelAction.Navigate.IPProtectionSettings -> Unit
         }

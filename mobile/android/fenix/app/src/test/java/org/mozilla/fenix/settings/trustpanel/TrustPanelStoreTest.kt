@@ -6,6 +6,8 @@ package org.mozilla.fenix.settings.trustpanel
 
 import io.mockk.every
 import io.mockk.mockk
+import java.security.cert.X509Certificate
+import javax.security.auth.x500.X500Principal
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.state.content.PermissionHighlightsState
 import mozilla.components.concept.engine.permission.SitePermissions
@@ -15,6 +17,7 @@ import mozilla.components.feature.ipprotection.store.state.IPProtectionStatus
 import mozilla.components.feature.sitepermissions.SitePermissionsRules.Action.ASK_TO_ALLOW
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +28,7 @@ import org.mozilla.fenix.settings.trustpanel.store.AutoplayValue
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelAction
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelState
 import org.mozilla.fenix.settings.trustpanel.store.TrustPanelStore
+import org.mozilla.fenix.settings.trustpanel.store.WebsiteInfoState
 import org.mozilla.fenix.settings.trustpanel.store.WebsitePermission
 import org.mozilla.fenix.trackingprotection.TrackingProtectionCategory
 import org.mozilla.fenix.utils.Settings
@@ -367,6 +371,125 @@ class TrustPanelStoreTest {
             (store.state.websitePermissionsState[PhoneFeature.AUTOPLAY] as? WebsitePermission.Autoplay)?.autoplayValue,
             AutoplayValue.AUTOPLAY_ALLOW_ALL,
         )
+    }
+
+    @Test
+    fun `WHEN update security info action is dispatched THEN only the security info is updated`() = runTest {
+        val certificate: X509Certificate = mockk()
+        val store =
+            TrustPanelStore(
+                initialState =
+                    TrustPanelState(
+                        websiteInfoState =
+                            WebsiteInfoState(
+                                isSecured = false,
+                                websiteUrl = "https://www.mozilla.org",
+                                websiteTitle = "Mozilla",
+                            )
+                    )
+            )
+
+        store.dispatch(TrustPanelAction.UpdateSecurityInfo(isSecured = true, certificate = certificate))
+
+        assertEquals(
+            WebsiteInfoState(
+                isSecured = true,
+                websiteUrl = "https://www.mozilla.org",
+                websiteTitle = "Mozilla",
+                certificate = certificate,
+            ),
+            store.state.websiteInfoState,
+        )
+    }
+
+    @Test
+    fun `GIVEN an HTTPS page WHEN navigating to an HTTP page THEN the certificate and its details are cleared`() =
+        runTest {
+            val certificate: X509Certificate = mockk()
+            every { certificate.subjectX500Principal } returns X500Principal("CN=www.mozilla.org, O=Mozilla")
+            every { certificate.issuerX500Principal } returns X500Principal("CN=Issuer")
+            val store =
+                TrustPanelStore(
+                    initialState =
+                        TrustPanelState(
+                            websiteInfoState =
+                                WebsiteInfoState(websiteUrl = "https://www.mozilla.org", certificate = certificate)
+                        )
+                )
+            assertEquals("Mozilla", store.state.websiteInfoState.certificateDetails?.subjectOrganization)
+
+            store.dispatch(
+                TrustPanelAction.UpdateSecurityInfo(
+                    isSecured = false,
+                    certificate = null,
+                )
+            )
+
+            assertFalse(store.state.websiteInfoState.isSecured)
+            assertNull(store.state.websiteInfoState.certificate)
+            assertNull(store.state.websiteInfoState.certificateDetails)
+        }
+
+    @Test
+    fun `GIVEN a QWAC WHEN security info is updated with the same certificate THEN the QWAC is kept`() = runTest {
+        val certificate: X509Certificate = mockk()
+        val qwac: X509Certificate = mockk()
+        val store =
+            TrustPanelStore(
+                initialState =
+                    TrustPanelState(websiteInfoState = WebsiteInfoState(certificate = certificate, qwac = qwac))
+            )
+
+        store.dispatch(
+            TrustPanelAction.UpdateSecurityInfo(
+                isSecured = true,
+                certificate = certificate,
+            )
+        )
+
+        assertEquals(qwac, store.state.websiteInfoState.qwac)
+    }
+
+    @Test
+    fun `GIVEN a QWAC WHEN security info is updated with a different certificate THEN the QWAC is cleared`() = runTest {
+        val store =
+            TrustPanelStore(
+                initialState =
+                    TrustPanelState(websiteInfoState = WebsiteInfoState(certificate = mockk(), qwac = mockk()))
+            )
+
+        store.dispatch(
+            TrustPanelAction.UpdateSecurityInfo(
+                isSecured = true,
+                certificate = mockk(),
+            )
+        )
+
+        assertNull(store.state.websiteInfoState.qwac)
+    }
+
+    @Test
+    fun `WHEN a QWAC is determined for the current certificate THEN the QWAC is stored`() = runTest {
+        val certificate: X509Certificate = mockk()
+        val qwac: X509Certificate = mockk()
+        val store =
+            TrustPanelStore(
+                initialState = TrustPanelState(websiteInfoState = WebsiteInfoState(certificate = certificate))
+            )
+
+        store.dispatch(TrustPanelAction.UpdateQWAC(qwac = qwac, forCertificate = certificate))
+
+        assertEquals(qwac, store.state.websiteInfoState.qwac)
+    }
+
+    @Test
+    fun `WHEN a QWAC is determined for a previous certificate THEN the QWAC is ignored`() = runTest {
+        val store =
+            TrustPanelStore(initialState = TrustPanelState(websiteInfoState = WebsiteInfoState(certificate = mockk())))
+
+        store.dispatch(TrustPanelAction.UpdateQWAC(qwac = mockk(), forCertificate = mockk()))
+
+        assertNull(store.state.websiteInfoState.qwac)
     }
 
     private fun initializeSitePermissions(sitePermissions: SitePermissions) {
