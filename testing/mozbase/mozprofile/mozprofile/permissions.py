@@ -151,11 +151,10 @@ class ServerLocations:
         """
         Reads the file and adds all valid locations to the ``self._locations`` array.
 
-        :param filename: in the format of server-locations.txt_
+        :param filename: in the format of
+          :searchfox:`server-locations.txt <build/pgo/server-locations.txt>`
         :param check_for_primary: if True, a ``MissingPrimaryLocationError`` exception is raised
           if no primary is found
-
-        .. _server-locations.txt: http://searchfox.org/firefox-main/source/build/pgo/server-locations.txt # noqa
 
         The only exception is that the port, if not defined, defaults to 80 or 443.
 
