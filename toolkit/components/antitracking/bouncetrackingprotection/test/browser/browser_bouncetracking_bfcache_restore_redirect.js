@@ -15,8 +15,9 @@ let bounceTrackingProtection = Cc[
 
 // The history traversal and the redirect have to land inside the finalization
 // window armed by B's response. The test asserts that they did, so a slow run
-// fails rather than passing without exercising the restore.
-const TIMER_PERIOD_MS = 3000;
+// fails rather than passing without exercising the restore. The timer is long
+// enough to not fire under chaos mode, so closing the tab finalizes the record.
+const TIMER_PERIOD_MS = 60000;
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
@@ -62,6 +63,7 @@ async function runBackThenNavigate({ expectBfcache, reload = false }) {
   let urlA = getStartURL(ORIGIN_A);
   let urlB = getStartURL(ORIGIN_B);
   let urlTarget = reload ? urlA : getStartURL(ORIGIN_C);
+  let finalized;
 
   await BrowserTestUtils.withNewTab(
     reload ? getStartURL(ORIGIN_C) : urlA,
@@ -97,7 +99,7 @@ async function runBackThenNavigate({ expectBfcache, reload = false }) {
 
       // A navigation ending the extended navigation finalizes the record before
       // this point, so only the finalization after A's navigation is observed.
-      let finalized = waitForRecordBounces(browser, 0);
+      finalized = waitForRecordBounces(browser, 0);
 
       let loadedTarget = BrowserTestUtils.browserLoaded(
         browser,
@@ -129,10 +131,9 @@ async function runBackThenNavigate({ expectBfcache, reload = false }) {
         "A should have navigated before the timer armed by B's response fired, " +
           "otherwise this test is not exercising the restore."
       );
-
-      await finalized;
     }
   );
+  await finalized;
 
   let candidates = bounceTrackingProtection
     .testGetBounceTrackerCandidateHosts({})
@@ -186,6 +187,7 @@ async function runContentBackWithoutActivation({ expectBfcache }) {
 
   let urlA = getStartURL(ORIGIN_A);
   let urlB = getStartURL(ORIGIN_B);
+  let finalized;
 
   await BrowserTestUtils.withNewTab(getStartURL(ORIGIN_C), async browser => {
     let loadedA = BrowserTestUtils.browserLoaded(browser, false, urlA);
@@ -200,7 +202,7 @@ async function runContentBackWithoutActivation({ expectBfcache }) {
     await navigateLinkClick(browser, new URL(urlB));
     await loadedB;
 
-    let finalized = waitForRecordBounces(browser, 0);
+    finalized = waitForRecordBounces(browser, 0);
 
     let restored = BrowserTestUtils.waitForLocationChange(gBrowser, urlA);
     await SpecialPowers.spawn(browser, [], () => {
@@ -220,9 +222,8 @@ async function runContentBackWithoutActivation({ expectBfcache }) {
       expectBfcache,
       `A should ${expectBfcache ? "" : "not "}have been restored from bfcache.`
     );
-
-    await finalized;
   });
+  await finalized;
 
   let candidates = bounceTrackingProtection
     .testGetBounceTrackerCandidateHosts({})

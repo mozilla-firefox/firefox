@@ -14,8 +14,9 @@ let bounceTrackingProtection = Cc[
 
 // The history traversal has to land inside the pending finalization window.
 // The test asserts that it did, so a slow run fails rather than passing without
-// exercising the restore.
-const TIMER_PERIOD_MS = 3000;
+// exercising the restore. The timer is long enough to not fire under chaos
+// mode, so closing the tab finalizes the record.
+const TIMER_PERIOD_MS = 60000;
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
@@ -47,6 +48,7 @@ add_task(async function test_bfcache_restore_overwrites_finalhost() {
 
   let urlA = getStartURL(ORIGIN_A);
   let urlB = getStartURL(ORIGIN_B);
+  let recordBounces;
 
   await BrowserTestUtils.withNewTab(urlA, async browser => {
     // Marker used to prove the traversal below was served from bfcache rather
@@ -59,16 +61,16 @@ add_task(async function test_bfcache_restore_overwrites_finalhost() {
     // A -> B with user activation. This ends A's extended navigation and starts a
     // new one with initialHost A. B's response puts B in the bounce set and arms
     // the finalization timer, and B's load sets finalHost to B, which is what
-    // would exempt B.
-    let loadedB = BrowserTestUtils.browserLoaded(browser, false, urlB);
+    // would exempt B. finalHost is set on the parent's STATE_STOP, which can
+    // arrive after the content load event.
+    let loadedB = BrowserTestUtils.browserStopped(browser, urlB);
     let timerArmedBefore = ChromeUtils.now();
     await navigateLinkClick(browser, new URL(urlB));
     await loadedB;
 
-    // Listen before going back: the timer armed by B's response may fire before
-    // the steps below complete on slow builds. The A -> B finalization already
-    // ran synchronously in OnStartNavigation.
-    let recordBounces = waitForRecordBounces(browser, 0);
+    // Listen before going back, in case the restore finalizes the record. The
+    // A -> B finalization already ran synchronously in OnStartNavigation.
+    recordBounces = waitForRecordBounces(browser, 0);
 
     // Go back to A. Deliberately chrome driven: clicking in B's content area
     // would record user activation for B and exempt it, masking the defect.
@@ -91,9 +93,8 @@ add_task(async function test_bfcache_restore_overwrites_finalhost() {
       "A should have been restored from bfcache, otherwise this test is not " +
         "exercising the restore path."
     );
-
-    await recordBounces;
   });
+  await recordBounces;
 
   let candidates = bounceTrackingProtection
     .testGetBounceTrackerCandidateHosts({})
@@ -114,15 +115,17 @@ add_task(async function test_no_traversal_does_not_classify() {
   bounceTrackingProtection.clearAll();
 
   let urlB = getStartURL(ORIGIN_B);
+  let recordBounces;
 
   await BrowserTestUtils.withNewTab(getStartURL(ORIGIN_A), async browser => {
-    let loadedB = BrowserTestUtils.browserLoaded(browser, false, urlB);
+    let loadedB = BrowserTestUtils.browserStopped(browser, urlB);
     await navigateLinkClick(browser, new URL(urlB));
     await loadedB;
 
-    // No Back here. Wait out the same finalization timer.
-    await waitForRecordBounces(browser, 0);
+    // No Back here. The same tab close finalizes the record.
+    recordBounces = waitForRecordBounces(browser, 0);
   });
+  await recordBounces;
 
   let candidates = bounceTrackingProtection
     .testGetBounceTrackerCandidateHosts({})
