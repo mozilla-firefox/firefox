@@ -610,15 +610,6 @@ export class UrlbarParentController {
       );
     }
 
-    // Record when the user uses the search bar so SearchWidgetTracker can
-    // remove the search bar when it hasn't been used in a long time.
-    if (this.sapName == "searchbar") {
-      Services.prefs.setStringPref(
-        "browser.search.widget.lastUsed",
-        new Date().toISOString()
-      );
-    }
-
     if (this.sapName == "newtab_searchbar") {
       let newtabBrowser = this.#actor.browsingContext.top.embedderElement;
       details.newtabSessionId = lazy.AboutNewTab.getVisitId(newtabBrowser);

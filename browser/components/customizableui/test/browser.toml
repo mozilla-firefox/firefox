@@ -379,8 +379,6 @@ skip-if = [
 
 ["browser_screenshot_button_disabled.js"]
 
-["browser_searchbar_removal.js"]
-
 ["browser_share_tab_button_linux.js"]
 run-if = [
   "os == 'linux'",

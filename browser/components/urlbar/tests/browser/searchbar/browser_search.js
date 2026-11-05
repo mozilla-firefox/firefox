@@ -70,15 +70,6 @@ add_task(async function test_simple() {
   let expectedUrl = engine1.getSubmission(searchTerm).uri.spec;
   Assert.equal(gBrowser.currentURI.spec, expectedUrl, "Search successful");
   Assert.equal(searchbar.value, searchTerm, "Search term was persisted");
-  let searchBarLastUsed = Services.prefs.getStringPref(
-    "browser.search.widget.lastUsed",
-    ""
-  );
-  const fiveMin = 5 * 60 * 1000;
-  Assert.ok(
-    searchBarLastUsed && new Date() - new Date(searchBarLastUsed) < fiveMin,
-    "Last used pref was set"
-  );
 
   searchbar.handleRevert();
   await SpecialPowers.popPrefEnv();

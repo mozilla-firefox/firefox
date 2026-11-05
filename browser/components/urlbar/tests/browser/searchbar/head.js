@@ -36,5 +36,4 @@ registerCleanupFunction(async () => {
   searchbar.view.queryContextCache.clear();
   await gCUITestUtils.removeSearchBar();
   await SearchbarTestUtils.formHistory.clear();
-  Services.prefs.clearUserPref("browser.search.widget.lastUsed");
 });

@@ -1003,10 +1003,6 @@ pref("browser.search.serpEventTelemetryCategorization.enabled", true);
 // experiment info (and not actual SERP categorizations) at startup.
 pref("browser.search.serpMetricsRecordedCounter", 0);
 
-// Search Bar removal from the toolbar for users who haven’t used it in 120
-// days
-pref("browser.search.widget.removeAfterDaysUnused", 120);
-
 // Feature gate for searchbar based on urlbar code.
 pref("browser.search.widget.new", true);
 

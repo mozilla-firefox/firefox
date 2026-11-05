@@ -417,12 +417,6 @@
 
       this.telemetrySelectedIndex = -1;
 
-      // Record when the user uses the search bar
-      Services.prefs.setStringPref(
-        "browser.search.widget.lastUsed",
-        new Date().toISOString()
-      );
-
       // null parameter below specifies HTML response for search
       let params = {
         postData: submission.postData,

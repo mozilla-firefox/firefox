@@ -9,8 +9,7 @@ const WIDGET_ID = "search-container";
 
 /**
  * Updates persisted widths when the search bar is removed from any
- * customizable area and put into the palette. Also automatically removes the
- * search bar if it has not been used in a long time.
+ * customizable area and put into the palette.
  */
 export const SearchWidgetTracker = {
   /**
@@ -18,7 +17,6 @@ export const SearchWidgetTracker = {
    */
   init() {
     CustomizableUI.addListener(this);
-    this._removeWidgetIfUnused();
   },
 
   /**
@@ -41,58 +39,6 @@ export const SearchWidgetTracker = {
     }
   },
 
-  onCustomizeStart() {
-    this._widgetWasInNavBar = this._widgetIsInNavBar;
-  },
-
-  onCustomizeEnd() {
-    if (!this._widgetWasInNavBar && this._widgetIsInNavBar) {
-      // We consider the widget "used" when manually placing it, so that
-      // restarting without searching first won't automatically remove it again.
-      Services.prefs.setStringPref(
-        "browser.search.widget.lastUsed",
-        new Date().toISOString()
-      );
-    }
-    delete this._widgetWasInNavBar;
-  },
-
-  /**
-   * If the search bar is in the navigation toolbar, this method will check
-   * the lastUsed preference to see when the last time the search bar was
-   * actually used. If the number of days since it was last used exceeds a
-   * certain threshold, the widget is moved back into the customization
-   * palette.
-   */
-  _removeWidgetIfUnused() {
-    if (!this._widgetIsInNavBar) {
-      return;
-    }
-    let searchBarLastUsed = Services.prefs.getStringPref(
-      "browser.search.widget.lastUsed",
-      ""
-    );
-    if (searchBarLastUsed) {
-      const removeAfterDaysUnused = Services.prefs.getIntPref(
-        "browser.search.widget.removeAfterDaysUnused"
-      );
-      let saerchBarUnusedThreshold =
-        removeAfterDaysUnused * 24 * 60 * 60 * 1000;
-      if (new Date() - new Date(searchBarLastUsed) > saerchBarUnusedThreshold) {
-        CustomizableUI.removeWidgetFromArea(WIDGET_ID);
-        // BrowserUsageTelemetry may silently do nothing when called too early
-        // during startup, so we call Glean directly instead. This means that we
-        // can't leverage BrowserUsageTelemetry to record the previous position
-        // of the search bar, so we use `na`; for this particular short-lived
-        // probe, we're only interested in recording that the auto-removal
-        // happened.
-        Glean.browserUi.customizedWidgets[
-          "search-container_remove_na_na_auto-unused"
-        ].add(1);
-      }
-    }
-  },
-
   /**
    * Removes any widget customization on the search bar (which can be created
    * with the resizer that appears if the search bar is placed immediately after
@@ -112,15 +58,5 @@ export const SearchWidgetTracker = {
       searchbar.removeAttribute("width");
       searchbar.style.removeProperty("width");
     }
-  },
-
-  /**
-   * True if the search bar is currently in the navigation toolbar area.
-   *
-   * @type {boolean}
-   */
-  get _widgetIsInNavBar() {
-    let placement = CustomizableUI.getPlacementOfWidget(WIDGET_ID);
-    return placement?.area == CustomizableUI.AREA_NAVBAR;
   },
 };
