@@ -332,7 +332,7 @@ p.kill()
   .. automethod:: mozprocess.run_and_wait
 
   .. autoclass:: ProcessHandlerMixin
-     :members: __init__, timedOut, commandline, run, kill, processOutputLine, onTimeout, onFinish, wait
+     :members: __init__, timedOut, commandline, run, kill, wait
 
   .. autoclass:: ProcessHandler
      :members:
