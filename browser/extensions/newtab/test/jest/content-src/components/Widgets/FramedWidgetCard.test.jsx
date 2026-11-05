@@ -271,6 +271,20 @@ describe("<FramedWidgetCard>", () => {
       );
     });
 
+    it("keeps the error when only a choice changes", () => {
+      const { card, store } = renderCard({ menu: MENU });
+      const replace = jest.fn();
+      card.frame = { contentWindow: { location: { replace } } };
+      act(() => {
+        card.dispatchEvent(new CustomEvent("widget-error"));
+      });
+      expect(card.querySelector(".widget-error")).not.toBeNull();
+
+      setView(store, "week");
+
+      expect(card.querySelector(".widget-error")).not.toBeNull();
+    });
+
     it("loads a new document normally", () => {
       const { card, rerenderWithSrc } = renderCard({ menu: MENU });
       const replace = jest.fn();

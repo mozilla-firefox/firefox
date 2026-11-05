@@ -2,9 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { INITIAL_STATE } from "common/Reducers.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
+import { WIDGET_REGISTRY } from "common/WidgetsRegistry.mjs";
 import { MozWidgetCard } from "content-src/components/Widgets/MozWidgetCard";
 import { WrapWithProvider } from "test/jest/test-utils";
 
@@ -18,20 +19,20 @@ const ENTRY = {
   name: "Tally",
 };
 
-function renderCard(
+function cardElement({
   entry = {},
+  dispatch,
   prefs = {},
   src = "moz-extension://uuid/widget.html",
   size = "medium",
   displaySize = size,
-  props = {}
-) {
-  const dispatch = jest.fn();
+  props = {},
+}) {
   const state = {
     ...INITIAL_STATE,
     Prefs: { ...INITIAL_STATE.Prefs, values: prefs },
   };
-  const { container } = render(
+  return (
     <WrapWithProvider state={state}>
       <MozWidgetCard
         dispatch={dispatch}
@@ -44,10 +45,17 @@ function renderCard(
       />
     </WrapWithProvider>
   );
+}
+
+function renderCard(entry, prefs, src, size, displaySize, props) {
+  const dispatch = jest.fn();
+  const { container, rerender } = render(
+    cardElement({ entry, dispatch, prefs, src, size, displaySize, props })
+  );
   const card = container.querySelector("moz-widget");
   const header = card.querySelector("moz-widget-header");
   const menu = card.querySelector(':scope > panel-list[slot="menu"]');
-  return { card, dispatch, header, menu };
+  return { card, dispatch, header, menu, rerender };
 }
 
 function findUserEvent(dispatch, userAction) {
@@ -63,6 +71,30 @@ function menuItems(menu) {
 }
 
 describe("<MozWidgetCard>", () => {
+  let originalIntersectionObserver;
+  let observerInstances;
+
+  beforeEach(() => {
+    observerInstances = [];
+    originalIntersectionObserver = global.IntersectionObserver;
+    global.IntersectionObserver = class MockIntersectionObserver {
+      constructor(callback) {
+        this.callback = callback;
+        this.observed = [];
+        observerInstances.push(this);
+      }
+      observe(el) {
+        this.observed.push(el);
+      }
+      unobserve() {}
+      disconnect() {}
+    };
+  });
+
+  afterEach(() => {
+    global.IntersectionObserver = originalIntersectionObserver;
+  });
+
   it("draws the entry's icon before its name in the header", () => {
     const { header } = renderCard({ icon: "chrome://test/content/icon.png" });
     const icon = header.querySelector(':scope > img[slot="leading"]');
@@ -80,6 +112,18 @@ describe("<MozWidgetCard>", () => {
   it("shows no placeholder with a document", () => {
     const { card } = renderCard();
     expect(card.querySelector(":scope > p")).toBeNull();
+  });
+
+  it("lets the page load count as ready", () => {
+    const { card } = renderCard();
+    expect(card).toHaveAttribute("ready-on-load", "");
+  });
+
+  it("leaves ready to a card that says so", () => {
+    const { card } = renderCard({}, {}, undefined, "medium", "medium", {
+      readyOnLoad: false,
+    });
+    expect(card).not.toHaveAttribute("ready-on-load");
   });
 
   it("draws no icon for an entry without one", () => {
@@ -183,36 +227,14 @@ describe("<MozWidgetCard>", () => {
   });
 
   describe("impression telemetry", () => {
-    let originalIntersectionObserver;
-    let observerInstances;
-
-    beforeEach(() => {
-      observerInstances = [];
-      originalIntersectionObserver = global.IntersectionObserver;
-      global.IntersectionObserver = class MockIntersectionObserver {
-        constructor(callback) {
-          this.callback = callback;
-          this.observed = [];
-          observerInstances.push(this);
-        }
-        observe(el) {
-          this.observed.push(el);
-        }
-        unobserve() {}
-        disconnect() {}
-      };
-    });
-
-    afterEach(() => {
-      global.IntersectionObserver = originalIntersectionObserver;
-    });
-
     it("records an impression of the card", () => {
       const { card, dispatch } = renderCard();
       const [observer] = observerInstances;
       expect(observer.observed).toEqual([card]);
 
-      observer.callback([{ isIntersecting: true, target: card }], observer);
+      act(() => {
+        observer.callback([{ isIntersecting: true, target: card }], observer);
+      });
 
       expect(dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -220,6 +242,222 @@ describe("<MozWidgetCard>", () => {
           data: { widget_name: "extension_widget", widget_size: "medium" },
         })
       );
+    });
+  });
+
+  // moz-widget decides the widget failed and signals it with widget-error and
+  // widget-ready. The card only mounts and unmounts the message.
+  describe("the error message", () => {
+    function seeError(card) {
+      const error = card.querySelector(".widget-error");
+      const observer = observerInstances.at(-1);
+      observer.callback([{ isIntersecting: true, target: error }], observer);
+    }
+
+    function errors(dispatch) {
+      return dispatch.mock.calls.filter(
+        ([action]) => action.type === at.WIDGETS_ERROR
+      );
+    }
+
+    function reportError(card) {
+      act(() => {
+        card.dispatchEvent(new CustomEvent("widget-error"));
+      });
+    }
+
+    function reportReady(card) {
+      act(() => {
+        card.dispatchEvent(new CustomEvent("widget-ready"));
+      });
+    }
+
+    it("shows nothing until the widget reports a failure", () => {
+      const { card } = renderCard();
+      expect(card.querySelector(".widget-error")).toBeNull();
+    });
+
+    it("shows the generic message on widget-error", () => {
+      const { card } = renderCard();
+      reportError(card);
+
+      expect(card.querySelector(".widget-error")).toHaveAttribute(
+        "slot",
+        "error"
+      );
+      expect(card.querySelector(".widget-error-text")).toHaveAttribute(
+        "data-l10n-id",
+        "newtab-widget-error-not-available"
+      );
+    });
+
+    it("gives the message the widget's name, for the announcement", () => {
+      const { card } = renderCard();
+      reportError(card);
+
+      expect(card.querySelector(".widget-error-title")).toHaveTextContent(
+        "Tally"
+      );
+    });
+
+    it("uses the entry's own message when it has one", () => {
+      const { card } = renderCard({
+        errorL10nId: "newtab-stocks-error-not-available",
+      });
+      reportError(card);
+
+      expect(card.querySelector(".widget-error-text")).toHaveAttribute(
+        "data-l10n-id",
+        "newtab-stocks-error-not-available"
+      );
+    });
+
+    it("takes the message away again on widget-ready", () => {
+      const { card } = renderCard();
+      reportError(card);
+      reportReady(card);
+
+      expect(card.querySelector(".widget-error")).toBeNull();
+    });
+
+    it("drops the error message for a new document", () => {
+      const { card, dispatch, rerender } = renderCard();
+      reportError(card);
+      expect(card.querySelector(".widget-error")).not.toBeNull();
+      seeError(card);
+      expect(errors(dispatch)).toHaveLength(1);
+
+      rerender(
+        cardElement({ dispatch, src: "moz-extension://uuid/other.html" })
+      );
+
+      expect(card.querySelector(".widget-error")).toBeNull();
+      expect(errors(dispatch)).toHaveLength(1);
+
+      reportError(card);
+      seeError(card);
+      expect(errors(dispatch)).toHaveLength(2);
+    });
+
+    it("drops the error message when the document goes", () => {
+      const { card, dispatch, rerender } = renderCard();
+      reportError(card);
+      expect(card.querySelector(".widget-error")).not.toBeNull();
+      seeError(card);
+      expect(errors(dispatch)).toHaveLength(1);
+
+      rerender(cardElement({ dispatch, src: "" }));
+
+      expect(card.querySelector(".widget-error")).toBeNull();
+      expect(errors(dispatch)).toHaveLength(1);
+      expect(
+        card.querySelector(
+          ':scope > p[data-l10n-id="newtab-widget-placeholder"]'
+        )
+      ).not.toBeNull();
+      expect(
+        dispatch.mock.calls.filter(
+          ([action]) => action.type === at.WIDGETS_READY
+        )
+      ).toHaveLength(0);
+    });
+
+    it("names the error after a widget without a name", () => {
+      const entry = {
+        ...WIDGET_REGISTRY.find(w => w.id === "wrexhamAFC"),
+        name: undefined,
+      };
+      const { card } = renderCard(entry);
+      card.title = "Wrexham AFC";
+      reportError(card);
+
+      expect(card.querySelector(".widget-error h2")).toHaveTextContent(
+        "Wrexham AFC"
+      );
+    });
+
+    it("names the error after the widget's name first", () => {
+      const { card } = renderCard();
+      card.title = "Something else";
+      reportError(card);
+
+      expect(card.querySelector(".widget-error h2")).toHaveTextContent("Tally");
+    });
+
+    it("leaves src alone, since moz-widget covers its own frame", () => {
+      const { card } = renderCard();
+      reportError(card);
+
+      expect(card).toHaveAttribute("src", "moz-extension://uuid/widget.html");
+    });
+
+    it("records load_error once the message is on screen", () => {
+      const { card, dispatch } = renderCard();
+      reportError(card);
+      const error = card.querySelector(".widget-error");
+      const observer = observerInstances.at(-1);
+      expect(observer.observed).toEqual([error]);
+
+      observer.callback([{ isIntersecting: true, target: error }], observer);
+      observer.callback([{ isIntersecting: true, target: error }], observer);
+
+      const errors = dispatch.mock.calls.filter(
+        ([action]) => action.type === at.WIDGETS_ERROR
+      );
+      expect(errors).toHaveLength(1);
+      expect(errors[0][0].data).toMatchObject({
+        widget_name: "extension_widget",
+        widget_size: "medium",
+        error_type: "load_error",
+      });
+    });
+
+    it("records the widget's own reason as the error type", () => {
+      const { card, dispatch } = renderCard();
+      act(() => {
+        card.dispatchEvent(
+          new CustomEvent("widget-error", {
+            detail: { reason: "render_failed" },
+          })
+        );
+      });
+      seeError(card);
+
+      expect(errors(dispatch)).toHaveLength(1);
+      expect(errors(dispatch)[0][0].data).toMatchObject({
+        error_type: "render_failed",
+      });
+    });
+
+    it("records a widget that fails, recovers and fails again twice", () => {
+      const { card, dispatch } = renderCard();
+      const see = () => {
+        const error = card.querySelector(".widget-error");
+        const observer = observerInstances.at(-1);
+        observer.callback([{ isIntersecting: true, target: error }], observer);
+      };
+
+      reportError(card);
+      see();
+      reportReady(card);
+      reportError(card);
+      see();
+
+      const errors = dispatch.mock.calls.filter(
+        ([action]) => action.type === at.WIDGETS_ERROR
+      );
+      expect(errors).toHaveLength(2);
+    });
+
+    it("records nothing for a failure the user never saw", () => {
+      const { card, dispatch } = renderCard();
+      reportError(card);
+      reportReady(card);
+
+      const errors = dispatch.mock.calls.filter(
+        ([action]) => action.type === at.WIDGETS_ERROR
+      );
+      expect(errors).toHaveLength(0);
     });
   });
 });

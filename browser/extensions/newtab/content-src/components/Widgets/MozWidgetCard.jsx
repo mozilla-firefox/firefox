@@ -2,11 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { batch } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { WidgetMenuFooter } from "./WidgetMenuFooter";
 import { SizeSubmenu } from "./SizeSubmenu";
+import { WidgetError } from "./WidgetError";
 import { useWidgetTelemetry } from "./useWidgetTelemetry";
 
 const USER_ACTION_TYPES = {
@@ -27,6 +28,7 @@ const USER_ACTION_TYPES = {
  * @param {string} [props.displaySize] - the size the widget is drawn at, which
  *   can be larger than its size
  * @param {string} props.src - URL of the widget's document, or "" for none
+ * @param {boolean} [props.readyOnLoad=true] - count the document's load as ready.
  * @param {object} props.widgetEnabledMap - Map of widget id to whether it is
  *   currently active, used by the Move submenu.
  * @param {React.ReactNode} [props.menuItems] - menu items drawn above the
@@ -41,19 +43,30 @@ export function MozWidgetCard({
   size,
   displaySize = size,
   src,
+  readyOnLoad = true,
   widgetEnabledMap,
   menuItems,
   onChangeSize,
   cardRef,
 }) {
-  const { impressionRef, recordUserAction } = useWidgetTelemetry({
+  const [lastSrc, setLastSrc] = useState(src);
+  const [failure, setFailure] = useState(null);
+
+  if (src !== lastSrc) {
+    setLastSrc(src);
+    setFailure(null);
+  }
+
+  const { impressionRef, recordUserAction, recordError } = useWidgetTelemetry({
     dispatch,
     widget: entry,
     widgetSize: size,
   });
 
+  const widgetRef = useRef(null);
   const setCardRef = useCallback(
     el => {
+      widgetRef.current = el;
       impressionRef(el);
       if (cardRef) {
         cardRef.current = el;
@@ -61,6 +74,28 @@ export function MozWidgetCard({
     },
     [impressionRef, cardRef]
   );
+
+  /**
+   * @backward-compat { version 161 }
+   * moz-widget gained the widget-error and widget-ready events in 161. On 160
+   * they never fire, so a framed widget there shows no message and records no
+   * widgets_error. Nothing breaks; remove this note once 161 reaches Release.
+   */
+  useEffect(() => {
+    const card = widgetRef.current;
+    if (!card) {
+      return undefined;
+    }
+    const onError = event =>
+      setFailure({ title: card.title, reason: event.detail?.reason });
+    const onReady = () => setFailure(null);
+    card.addEventListener("widget-error", onError);
+    card.addEventListener("widget-ready", onReady);
+    return () => {
+      card.removeEventListener("widget-error", onError);
+      card.removeEventListener("widget-ready", onReady);
+    };
+  }, []);
 
   const handleChangeSize = useCallback(
     newSize => {
@@ -92,6 +127,7 @@ export function MozWidgetCard({
       widget-id={entry.id}
       size={displaySize}
       padded={true}
+      ready-on-load={readyOnLoad ? "" : undefined}
       src={src}
       title={entry.name}
       data-l10n-id={entry.l10nId}
@@ -111,6 +147,15 @@ export function MozWidgetCard({
         )}
       </moz-widget-header>
       {!src && <p data-l10n-id="newtab-widget-placeholder" />}
+      {failure && (
+        <WidgetError
+          slot="error"
+          recordError={recordError}
+          title={entry.name ?? failure.title}
+          errorType={failure.reason}
+          l10nId={entry.errorL10nId}
+        />
+      )}
       <panel-list slot="menu" className="panel-list-no-icons">
         {menuItems}
         <WidgetMenuFooter

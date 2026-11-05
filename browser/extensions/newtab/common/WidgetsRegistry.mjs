@@ -233,6 +233,7 @@ export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
  * @property {"FramedWidgetCard"} [card] - The name of the card component that draws an entry without its own row component: FramedWidgetCard, for a document a hosted page provides. Without it, MozWidgetCard draws the entry.
  * @property {WidgetMenuItem[]} [menu] - Items drawn above the shared items in the widget's card menu. Only FramedWidgetCard reads it, so it needs `card: "FramedWidgetCard"`.
  * @property {string} [l10nId] - Fluent id of the widget's name. The message carries .title, .label and .menu-label attributes.
+ * @property {string} [errorL10nId] - Fluent id of the message shown when the widget fails to load. Falls back to the generic message in WidgetError.
  */
 
 // If you add a widget market pref to firefox.js that older hosts don't have,
