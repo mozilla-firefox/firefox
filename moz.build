@@ -351,6 +351,8 @@ SPHINX_TREES["mots"] = "docs/mots"
 
 SPHINX_TREES["update-infrastructure"] = "docs/update-infrastructure"
 
+SPHINX_TREES["release-mgmt"] = "docs/release-mgmt"
+
 SPHINX_TREES["content-security"] = "docs/content-security"
 
 # Wired up here rather than in security/rlbox/moz.build, which is only

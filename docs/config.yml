@@ -87,6 +87,7 @@ categories:
     ai_agent_tools_doc:
         - ai-agent-tools
     release_doc:
+        - release-mgmt
         - update-infrastructure
         - tools/update-verify
     l10n_doc:
