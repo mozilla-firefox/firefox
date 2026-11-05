@@ -78,6 +78,7 @@ class AppLinksInterceptorTest {
         mockLoadUrlUseCase = mock()
         mockFragmentManager = mock()
         whenever(mockUseCases.interceptedAppLinkRedirect).thenReturn(mockGetRedirect)
+        whenever(mockUseCases.appLinkRedirectIncludeInstall).thenReturn(mockGetRedirect)
         whenever(mockUseCases.openAppLink).thenReturn(mockOpenRedirect)
         whenever(mockFragmentManager.beginTransaction()).thenReturn(mock())
         userDoNotInterceptCache.clear()
@@ -1375,6 +1376,116 @@ class AppLinksInterceptorTest {
             )
 
         assertIs<RequestInterceptor.InterceptionResponse.Deny>(response)
+    }
+
+    @Test
+    fun `GIVEN open links in apps is never AND a custom tab WHEN an https redirect resolves to the calling app THEN the calling app is opened`() {
+        val callbackUrl = "https://accounts.example.com/android/com.example/callback?code=abc123"
+        val appIntent =
+            Intent.parseUri(callbackUrl, 0).apply {
+                component = ComponentName("com.example", "com.example.MainActivity")
+            }
+        val mockGetRedirectIncludeInstall: AppLinksUseCases.GetAppLinkRedirect = mock()
+        whenever(mockUseCases.appLinkRedirectIncludeInstall).thenReturn(mockGetRedirectIncludeInstall)
+        whenever(mockGetRedirect.invoke(callbackUrl)).thenReturn(AppLinkRedirect(null, "", null, null))
+        whenever(mockGetRedirectIncludeInstall.invoke(callbackUrl))
+            .thenReturn(AppLinkRedirect(appIntent, "ExampleApp", null, null))
+
+        val tabSessionState =
+            mozilla.components.browser.state.state.createTab(
+                url = "https://example.com",
+                private = false,
+                id = "tab1",
+                source =
+                    SessionState.Source.External.CustomTab(
+                        ExternalPackage("com.example", PackageCategory.PRODUCTIVITY)
+                    ),
+                engineSession = mockEngineSession,
+            )
+
+        val interceptor =
+            AppLinksInterceptor(
+                context = mockContext,
+                launchInApp = { false },
+                useCases = mockUseCases,
+                store = BrowserStore().apply { dispatch(TabListAction.AddTabAction(tabSessionState)) },
+            )
+
+        val response =
+            interceptor.onLoadRequest(
+                engineSession = mockEngineSession,
+                uri = callbackUrl,
+                lastUri = "https://accounts.google.com",
+                hasUserGesture = false,
+                isSameDomain = false,
+                isRedirect = true,
+                isDirectNavigation = false,
+                isSubframeRequest = false,
+            )
+
+        verify(mockOpenRedirect)
+            .invoke(
+                appIntent = eq(appIntent),
+                launchInNewTask = anyBoolean(),
+                clearTop = eq(true),
+                failedToLaunchAction = any(),
+            )
+        assertIs<RequestInterceptor.InterceptionResponse.Deny>(response)
+    }
+
+    @Test
+    fun `GIVEN open links in apps is never AND a custom tab WHEN an https redirect resolves to another app THEN the request loads in the browser`() {
+        val linkUrl = "https://other.example.com/item"
+        val appIntent =
+            Intent.parseUri(linkUrl, 0).apply {
+                component = ComponentName("com.other", "com.other.MainActivity")
+            }
+        val mockGetRedirectIncludeInstall: AppLinksUseCases.GetAppLinkRedirect = mock()
+        whenever(mockUseCases.appLinkRedirectIncludeInstall).thenReturn(mockGetRedirectIncludeInstall)
+        whenever(mockGetRedirect.invoke(linkUrl)).thenReturn(AppLinkRedirect(null, "", null, null))
+        whenever(mockGetRedirectIncludeInstall.invoke(linkUrl))
+            .thenReturn(AppLinkRedirect(appIntent, "OtherApp", null, null))
+
+        val tabSessionState =
+            mozilla.components.browser.state.state.createTab(
+                url = "https://example.com",
+                private = false,
+                id = "tab1",
+                source =
+                    SessionState.Source.External.CustomTab(
+                        ExternalPackage("com.example", PackageCategory.PRODUCTIVITY)
+                    ),
+                engineSession = mockEngineSession,
+            )
+
+        val interceptor =
+            AppLinksInterceptor(
+                context = mockContext,
+                launchInApp = { false },
+                useCases = mockUseCases,
+                store = BrowserStore().apply { dispatch(TabListAction.AddTabAction(tabSessionState)) },
+            )
+
+        val response =
+            interceptor.onLoadRequest(
+                engineSession = mockEngineSession,
+                uri = linkUrl,
+                lastUri = "https://accounts.google.com",
+                hasUserGesture = false,
+                isSameDomain = false,
+                isRedirect = true,
+                isDirectNavigation = false,
+                isSubframeRequest = false,
+            )
+
+        verify(mockOpenRedirect, times(0))
+            .invoke(
+                appIntent = any(),
+                launchInNewTask = anyBoolean(),
+                clearTop = anyBoolean(),
+                failedToLaunchAction = any(),
+            )
+        assertNull(response)
     }
 
     @Test

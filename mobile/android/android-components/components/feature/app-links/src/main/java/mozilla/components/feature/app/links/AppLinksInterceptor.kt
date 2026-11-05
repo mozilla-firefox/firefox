@@ -117,7 +117,12 @@ class AppLinksInterceptor(
         }
 
         val tabId = tabSessionState?.id ?: ""
-        val redirect = useCases.interceptedAppLinkRedirect(uri)
+        val redirect =
+            if (isPossibleAuthentication(tabSessionState)) {
+                useCases.appLinkRedirectIncludeInstall(uri)
+            } else {
+                useCases.interceptedAppLinkRedirect(uri)
+            }
         val result = handleRedirect(redirect, uri, tabId)
         val packageName = redirect.appIntent?.component?.packageName
         val isAuthenticationFlow = isAuthentication(tabSessionState, packageName)
