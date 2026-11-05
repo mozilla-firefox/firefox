@@ -564,7 +564,7 @@ aiwindow-resume-card-tab-count =
 aiwindow-resume-card-more = More
     .aria-label = More options for { $text }
 aiwindow-resume-card-open-tabs = Open tabs
-aiwindow-resume-card-snooze = Snooze for now
+aiwindow-resume-card-snooze = Snooze until tomorrow
 # Variables:
 #   $text (String) - The journey title
 aiwindow-resume-card-resume = Resume

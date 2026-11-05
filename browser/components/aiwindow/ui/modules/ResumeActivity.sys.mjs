@@ -8,13 +8,8 @@ let _resumeSectionHiddenForSession = false;
 
 export const ResumeActivity = {
   /**
-   * Marks a resume-activity memory as dismissed for this session.
-   *
-   * TODO Bug 2067871: Replace this frontend state with
-   * `JourneyManager.dismissJourney` once resume activities use the journey
-   * store. Store-backed dismissals will persist across restarts and remove
-   * the need for `dismissMemory` and `isMemoryDismissed`. Section visibility
-   * remains frontend-owned.
+   * Marks a resume pill as dismissed for this session.
+   * Remove with the pill fallback in Bug 2077652.
    *
    * @param {string} memoryId
    */

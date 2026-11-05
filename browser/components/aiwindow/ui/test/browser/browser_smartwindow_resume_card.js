@@ -31,6 +31,7 @@ const RESUME_ACTIVITY_PREFS = [
   ["browser.smartwindow.memories.generateFromHistory", true],
   ["browser.smartwindow.resumeCards.enabled", true],
 ];
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 async function ensureCardDefined(doc) {
   if (doc.defaultView.customElements.get("smartwindow-resume-card")) {
@@ -363,15 +364,16 @@ add_task(async function test_resume_card_click_closing_menu_does_not_resume() {
   }
 });
 
-add_task(async function test_resume_card_snooze_dismisses_for_session() {
+add_task(async function test_resume_card_snoozes_for_24_hours() {
   const sb = sinon.createSandbox();
   try {
     await withRenderedResumeCard(
       () => stubResumeActivityGeneration(sb),
-      async ({ aiWindow, section, card, memories }) => {
+      async ({ section, card, memories }) => {
         // stubResumeActivityGeneration only produces one valid journey.
         const [{ id: journeyId }] = memories;
 
+        const beforeSnooze = Date.now();
         card.dispatchEvent(
           new CustomEvent("smartwindow-resume-card:menu-item-selected", {
             detail: { journeyId, itemId: "snooze" },
@@ -379,8 +381,11 @@ add_task(async function test_resume_card_snooze_dismisses_for_session() {
             composed: true,
           })
         );
-        await aiWindow.updateComplete;
-        await section.updateComplete;
+        await TestUtils.waitForCondition(
+          () => !section.shadowRoot.querySelector("smartwindow-resume-card"),
+          "Wait for the snoozed card to be removed"
+        );
+        const afterSnooze = Date.now();
 
         Assert.equal(
           section.shadowRoot.querySelector("smartwindow-resume-card"),
@@ -393,9 +398,20 @@ add_task(async function test_resume_card_snooze_dismisses_for_session() {
           "aiwindow-resume-section-empty-all-dismissed-heading",
           "Snoozing the last card should show the all-dismissed empty state"
         );
+        const metadata = await JourneyStore.get(journeyId);
         Assert.ok(
-          ResumeActivity.isMemoryDismissed(journeyId),
-          "Snoozing should record the dismissal so it doesn't reappear this session"
+          !metadata.dismissed,
+          "Snoozing should not dismiss permanently"
+        );
+        Assert.greaterOrEqual(
+          metadata.dismissed_until,
+          beforeSnooze + DAY_MS,
+          "The snooze should expire no earlier than 24 hours after the action started"
+        );
+        Assert.lessOrEqual(
+          metadata.dismissed_until,
+          afterSnooze + DAY_MS,
+          "The snooze should expire no later than 24 hours after the action completed"
         );
       }
     );
@@ -404,17 +420,19 @@ add_task(async function test_resume_card_snooze_dismisses_for_session() {
   }
 });
 
-add_task(async function test_resume_card_close_button_snoozes() {
+add_task(async function test_resume_card_close_button_dismisses_permanently() {
   const sb = sinon.createSandbox();
   try {
     await withRenderedResumeCard(
       () => stubResumeActivityGeneration(sb),
-      async ({ aiWindow, section, card, memories }) => {
+      async ({ section, card, memories }) => {
         const [{ id: journeyId }] = memories;
 
         card.shadowRoot.querySelector(".resume-card-dismiss").click();
-        await aiWindow.updateComplete;
-        await section.updateComplete;
+        await TestUtils.waitForCondition(
+          () => !section.shadowRoot.querySelector("smartwindow-resume-card"),
+          "Wait for the dismissed card to be removed"
+        );
 
         Assert.equal(
           section.shadowRoot.querySelector("smartwindow-resume-card"),
@@ -428,8 +446,8 @@ add_task(async function test_resume_card_close_button_snoozes() {
           "Closing the last card should show the all-dismissed empty state"
         );
         Assert.ok(
-          ResumeActivity.isMemoryDismissed(journeyId),
-          "Closing should snooze the card for the session"
+          (await JourneyStore.get(journeyId)).dismissed,
+          "Closing should permanently dismiss the journey"
         );
       }
     );
@@ -959,6 +977,10 @@ add_task(async function test_resume_card_action_telemetry() {
       () => stubResumeActivityGenerationPool(sb, 3),
       async ({ aiWindow, section }) => {
         sb.stub(ToolUI, "openOrGroupTabs").resolves();
+        await TestUtils.waitForCondition(
+          () => Glean.smartWindow.resumeCardsDisplayed.testGetValue(),
+          "Wait for the initial resume cards displayed event"
+        );
         const card = () =>
           section.shadowRoot.querySelectorAll("smartwindow-resume-card")[1];
 
@@ -993,14 +1015,18 @@ add_task(async function test_resume_card_action_telemetry() {
         await section.updateComplete;
 
         await clickResumeCardMenuItem(card(), "aiwindow-resume-card-snooze");
+        await TestUtils.waitForCondition(
+          () =>
+            section.shadowRoot.querySelectorAll("smartwindow-resume-card")
+              .length === 2,
+          "Wait for the snoozed card to be removed"
+        );
         assertResumeAction(
           "resumeCardAction",
           aiWindow,
           { action: "snooze", position: "1" },
-          "Snooze records the card before it is removed"
+          "Snooze records the card's position"
         );
-        await aiWindow.updateComplete;
-        await section.updateComplete;
 
         // The close button only appears while the card is hovered.
         const firstCard = section.shadowRoot.querySelector(
@@ -1014,11 +1040,27 @@ add_task(async function test_resume_card_action_telemetry() {
         synthesizeClick(
           firstCard.shadowRoot.querySelector(".resume-card-dismiss")
         );
+        await TestUtils.waitForCondition(
+          () =>
+            section.shadowRoot.querySelectorAll("smartwindow-resume-card")
+              .length === 1,
+          "Wait for the dismissed card to be removed"
+        );
         assertResumeAction(
           "resumeCardAction",
           aiWindow,
           { action: "dismiss", position: "0" },
           "The close button records dismiss"
+        );
+        // Removing a card triggers the initial-impression update path;
+        // ensure the section isn't recorded again.
+        await new Promise(resolve =>
+          section.documentGlobal.requestAnimationFrame(resolve)
+        );
+        Assert.equal(
+          Glean.smartWindow.resumeCardsDisplayed.testGetValue().length,
+          1,
+          "Removing cards should not record another displayed event"
         );
       }
     );

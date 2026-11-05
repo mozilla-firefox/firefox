@@ -43,6 +43,7 @@ export class SmartwindowResumeSection extends MozLitElement {
 
   #visibilityHandler = null;
   #displayedFrame = 0;
+  #hasRecordedDisplayed = false;
 
   constructor() {
     super();
@@ -60,7 +61,13 @@ export class SmartwindowResumeSection extends MozLitElement {
 
   updated(changedProperties) {
     super.updated(changedProperties);
-    if (changedProperties.has("loading") && !this.loading) {
+    // Fast lookups can resolve before the loading delay, so watch content too.
+    if (
+      !this.loading &&
+      (changedProperties.has("loading") ||
+        changedProperties.has("cards") ||
+        changedProperties.has("emptyReason"))
+    ) {
       this.#recordDisplayedWhenSeen();
     }
   }
@@ -78,10 +85,12 @@ export class SmartwindowResumeSection extends MozLitElement {
   }
 
   /**
-   * Records Glean event "resume_cards_displayed" after loading if the section
-   * is visible, once the tab is shown and the parent has re-rendered.
+   * Records the displayed event once the section is ready and visible.
    */
   #recordDisplayedWhenSeen() {
+    if (this.#hasRecordedDisplayed) {
+      return;
+    }
     this.#cancelPendingDisplayed();
     if (this.ownerDocument.hidden) {
       this.#visibilityHandler = () => this.#recordDisplayedWhenSeen();
@@ -109,6 +118,7 @@ export class SmartwindowResumeSection extends MozLitElement {
         cards: this.#visibleCardCount,
         total_cards: this.cards.length,
       });
+      this.#hasRecordedDisplayed = true;
     });
   }
 
