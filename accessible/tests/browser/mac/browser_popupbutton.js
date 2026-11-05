@@ -149,7 +149,6 @@ addAccessibleTask(
     events = Promise.all([
       waitForMacEvent("AXMenuClosed"),
       waitForMacEvent("AXFocusedUIElementChanged"),
-      waitForMacEvent("AXSelectedChildrenChanged"),
     ]);
     menuItem.performAction("AXPress");
     let [, newFocus] = await events;

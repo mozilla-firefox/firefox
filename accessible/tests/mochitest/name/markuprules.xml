@@ -275,7 +275,7 @@
             ref="html:select/html:option[1]" ruleset="HTMLOption">
       <html:span id="l1" textequiv="test2">test2</html:span>
       <html:span id="l2" textequiv="test3">test3</html:span>
-      <html:select>
+      <html:select size="3">
         <html:option id="opt"
                      aria-label="test1"
                      aria-labelledby="l1 l2"

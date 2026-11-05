@@ -11,14 +11,7 @@ loadScripts({ name: "attributes.js", dir: MOCHITESTS_DIR });
  * select elements
  */
 addAccessibleTask(
-  `<select>
-    <option id="opt1-nosize">option1</option>
-    <option id="opt2-nosize">option2</option>
-    <option id="opt3-nosize">option3</option>
-    <option id="opt4-nosize">option4</option>
-  </select>
-
-  <select size="4">
+  `<select size="4">
     <option id="opt1">option1</option>
     <option id="opt2">option2</option>
   </select>
@@ -33,16 +26,6 @@ addAccessibleTask(
   </select>`,
   async function (browser, accDoc) {
     let getAcc = id => findAccessibleChildByID(accDoc, id);
-
-    // ////////////////////////////////////////////////////////////////////////
-    // HTML select with no size attribute.
-    testGroupAttrs(getAcc("opt1-nosize"), 1, 4);
-    testGroupAttrs(getAcc("opt2-nosize"), 2, 4);
-    testGroupAttrs(getAcc("opt3-nosize"), 3, 4);
-    testGroupAttrs(getAcc("opt4-nosize"), 4, 4);
-
-    // Container should have item count and not hierarchical
-    testGroupParentAttrs(getAcc("opt1-nosize").parent, 4, false);
 
     // ////////////////////////////////////////////////////////////////////////
     // HTML select

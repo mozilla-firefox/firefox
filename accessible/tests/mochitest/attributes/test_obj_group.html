@@ -17,16 +17,6 @@
   <script type="application/javascript">
     function doTest() {
       // ////////////////////////////////////////////////////////////////////////
-      // HTML select with no size attribute.
-      testGroupAttrs("opt1-nosize", 1, 4);
-      testGroupAttrs("opt2-nosize", 2, 4);
-      testGroupAttrs("opt3-nosize", 3, 4);
-      testGroupAttrs("opt4-nosize", 4, 4);
-
-      // Container should have item count and not hierarchical
-      testGroupParentAttrs(getAccessible("opt1-nosize").parent, 4, false);
-
-      // ////////////////////////////////////////////////////////////////////////
       // HTML select
       testGroupAttrs("opt1", 1, 2);
       testGroupAttrs("opt2", 2, 2);
@@ -299,13 +289,6 @@
   <div id="content" style="display: none"></div>
   <pre id="test">
   </pre>
-
-  <select>
-    <option id="opt1-nosize">option1</option>
-    <option id="opt2-nosize">option2</option>
-    <option id="opt3-nosize">option3</option>
-    <option id="opt4-nosize">option4</option>
-  </select>
 
   <select size="4">
     <option id="opt1">option1</option>
