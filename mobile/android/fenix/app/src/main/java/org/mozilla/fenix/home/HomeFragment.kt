@@ -214,7 +214,7 @@ import org.mozilla.fenix.trackingprotection.TrackersBlockedFeature
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.allowUndo
 import org.mozilla.fenix.utils.getUndoDelay
-import org.mozilla.fenix.utils.showAddSearchWidgetPromptIfSupported
+import org.mozilla.fenix.utils.maybeShowAddSearchWidgetPrompt
 import org.mozilla.fenix.wallpapers.LocalWallpaperState
 import org.mozilla.fenix.wallpapers.Wallpaper
 
@@ -1398,11 +1398,11 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
      *
      * This function should be called when the fragment's view is active (e.g., in response to a user interaction). It
      * launches a coroutine within the [viewLifecycleOwner]'s [androidx.lifecycle.LifecycleCoroutineScope] to display
-     * the widget prompt using [showAddSearchWidgetPromptIfSupported].
+     * the widget prompt using [maybeShowAddSearchWidgetPrompt].
      */
     private fun showAddSearchWidgetPrompt() {
         viewLifecycleOwner.lifecycleScope.launch {
-            showAddSearchWidgetPromptIfSupported(requireActivity())
+            maybeShowAddSearchWidgetPrompt(requireActivity())
         }
     }
 

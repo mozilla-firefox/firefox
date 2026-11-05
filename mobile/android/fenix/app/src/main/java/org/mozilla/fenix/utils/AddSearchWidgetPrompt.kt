@@ -6,44 +6,25 @@ package org.mozilla.fenix.utils
 
 import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
-import android.content.Context
 import org.mozilla.fenix.widget.glance.SearchBarWithLensWidgetReceiver
 
 /**
  * Displays the "add search widget" prompt for capable devices.
  *
  * @param activity the parent [Activity].
+ * @param provider The search widget provider the prompt offers to add.
  */
-fun maybeShowAddSearchWidgetPrompt(activity: Activity) {
+fun maybeShowAddSearchWidgetPrompt(
+    activity: Activity,
+    provider: Class<out AppWidgetProvider> = SearchBarWithLensWidgetReceiver::class.java,
+) {
     val appWidgetManager = AppWidgetManager.getInstance(activity)
 
     // We don't use canShowAddSearchWidgetPrompt here directly as lint does not pick on the version check.
     if (appWidgetManager.isRequestPinAppWidgetSupported) {
-        val searchWidgetProvider = ComponentName(activity, SearchBarWithLensWidgetReceiver::class.java)
-        appWidgetManager.requestPinAppWidget(searchWidgetProvider, null, null)
-    }
-}
-
-/**
- * Displays the "add search widget" prompt if the device supports it.
- *
- * This function checks if the current Android version is Oreo (API 26) or higher and if the `AppWidgetManager` supports
- * pinning app widgets. If both conditions are met, it requests to pin the search widget.
- *
- * @param context [Context] used for the Android framework interactions.
- */
-fun showAddSearchWidgetPromptIfSupported(context: Context) {
-    val packageName = context.packageName
-    val appWidgetManager = AppWidgetManager.getInstance(context)
-
-    if (canShowAddSearchWidgetPrompt(appWidgetManager)) {
-        val searchWidgetProvider =
-            ComponentName(
-                packageName,
-                SearchBarWithLensWidgetReceiver::class.java.name,
-            )
-        appWidgetManager.requestPinAppWidget(searchWidgetProvider, null, null)
+        appWidgetManager.requestPinAppWidget(ComponentName(activity, provider), null, null)
     }
 }
 
