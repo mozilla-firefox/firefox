@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=1758288
+-->
+<head>
+  <meta charset="x-user-defined">
+  <title>Test for Bug 1758288</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=1758288">Mozilla Bug 1758288</a>
+<div id="content" style="display: none">
+
+<template>
+<table>
+<tr><td>
+
+<link rel="stylesheet" type="text/css" href="file_bug1758288.sjs"/>
+<img src="file_bug1758288.sjs">
+<script src="file_bug1758288.sjs"></script>
+<video poster="file_bug1758288.sjs"></video>
+
+</td></tr>
+</table>
+
+</template>
+
+
+</div>
+
+
+<script>
+add_task(async function() {
+  let response = await fetch(
+    "file_bug1758288.sjs?result"
+  );
+  let status = await response.json();
+  is(status, "PASS");
+  info("finished");
+});
+</script>
+</body>
+</html>
