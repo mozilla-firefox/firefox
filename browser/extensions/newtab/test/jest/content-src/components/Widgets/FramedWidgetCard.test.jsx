@@ -85,6 +85,299 @@ const MENU = [
 ];
 
 describe("<FramedWidgetCard>", () => {
+  it("leaves ready to its web page", () => {
+    const { card } = renderCard({}, {}, "https://widget.example/doc.html");
+    expect(card).not.toHaveAttribute("ready-on-load");
+  });
+
+  describe("widget messages", () => {
+    let iframe;
+    let frames;
+    let originalIntersectionObserver;
+    let observerInstances;
+
+    function appendFrame() {
+      const frame = document.createElement("iframe");
+      document.body.appendChild(frame);
+      frames.push(frame);
+      return frame;
+    }
+
+    beforeEach(() => {
+      frames = [];
+      iframe = appendFrame();
+      observerInstances = [];
+      originalIntersectionObserver = global.IntersectionObserver;
+      global.IntersectionObserver = class MockIntersectionObserver {
+        constructor(callback) {
+          this.callback = callback;
+          observerInstances.push(this);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      };
+    });
+
+    afterEach(() => {
+      frames.forEach(frame => frame.remove());
+      global.IntersectionObserver = originalIntersectionObserver;
+    });
+
+    function renderWebCard() {
+      return renderCard({}, {}, "https://widget.example/doc.html");
+    }
+
+    function stubReports(card) {
+      card.frame = iframe;
+      card.reportError = jest.fn(() => {
+        card.error = true;
+      });
+      card.reportReady = jest.fn();
+    }
+
+    function postWidgetMessage({
+      data = {
+        channel: "extension_widget_widget",
+        type: "widget_error",
+        payload: { reason: "render_failed", terminal: true },
+      },
+      origin = "https://widget.example",
+      source = iframe.contentWindow,
+    } = {}) {
+      const event = new MessageEvent("message", { data, origin });
+      Object.defineProperty(event, "source", {
+        configurable: true,
+        value: source,
+      });
+      act(() => {
+        window.dispatchEvent(event);
+      });
+    }
+
+    it("reports the widget's own error and ready", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+
+      postWidgetMessage({
+        data: {
+          channel: "extension_widget_widget",
+          type: "widget_ready",
+          payload: { protocol: 1 },
+        },
+      });
+      expect(card.reportReady).toHaveBeenCalledTimes(1);
+      postWidgetMessage();
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+      expect(card.reportError).toHaveBeenCalledWith("render_failed");
+    });
+
+    it("keeps a terminal error when the page then reports ready", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+
+      postWidgetMessage();
+      postWidgetMessage({
+        data: {
+          channel: "extension_widget_widget",
+          type: "widget_ready",
+          payload: { protocol: 1 },
+        },
+      });
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+      expect(card.reportReady).not.toHaveBeenCalled();
+    });
+
+    it("ignores messages from anywhere else", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+
+      for (const message of [
+        {
+          data: {
+            channel: "other",
+            type: "widget_error",
+            payload: { reason: "render_failed", terminal: true },
+          },
+        },
+        {
+          data: {
+            channel: "moz_widget",
+            type: "widget_error",
+            payload: { reason: "render_failed", terminal: true },
+          },
+        },
+        { source: window },
+        { source: null },
+        { origin: "https://example.com" },
+        { origin: "null" },
+      ]) {
+        postWidgetMessage(message);
+        expect(card.reportError).not.toHaveBeenCalled();
+        expect(card.reportReady).not.toHaveBeenCalled();
+      }
+      postWidgetMessage();
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it("leaves the widget alone on an error it recovers from", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+
+      for (const payload of [
+        { reason: "uncaught_error", terminal: false },
+        { reason: "uncaught_error" },
+        { reason: "render_failed", terminal: "true" },
+      ]) {
+        postWidgetMessage({
+          data: {
+            channel: "extension_widget_widget",
+            type: "widget_error",
+            payload,
+          },
+        });
+        expect(card.reportError).not.toHaveBeenCalled();
+      }
+    });
+
+    it("ignores an error whose reason breaks the protocol", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+
+      for (const reason of [
+        undefined,
+        5,
+        "",
+        "Render failed",
+        "1st",
+        "a".repeat(65),
+      ]) {
+        postWidgetMessage({
+          data: {
+            channel: "extension_widget_widget",
+            type: "widget_error",
+            payload: { reason, terminal: true },
+          },
+        });
+        expect(card.reportError).not.toHaveBeenCalled();
+      }
+      postWidgetMessage();
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores a message when the frame has no window", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+      card.frame = { contentWindow: null };
+
+      postWidgetMessage({ source: null });
+      expect(card.reportError).not.toHaveBeenCalled();
+      expect(card.reportReady).not.toHaveBeenCalled();
+      card.frame = iframe;
+      postWidgetMessage();
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores malformed messages", () => {
+      const { card } = renderWebCard();
+      stubReports(card);
+
+      for (const data of [
+        null,
+        "widget_error",
+        { type: "widget_error" },
+        { channel: "extension_widget_widget", type: "widget_error" },
+      ]) {
+        postWidgetMessage({ data });
+        expect(card.reportError).not.toHaveBeenCalled();
+        expect(card.reportReady).not.toHaveBeenCalled();
+      }
+      postWidgetMessage();
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores the previous document", () => {
+      const { card, rerenderWithSrc } = renderWebCard();
+      stubReports(card);
+      const oldWindow = iframe.contentWindow;
+
+      rerenderWithSrc("https://widget.example/other.html");
+      card.frame = appendFrame();
+      postWidgetMessage({ source: oldWindow });
+      expect(card.reportError).not.toHaveBeenCalled();
+      expect(card.reportReady).not.toHaveBeenCalled();
+      postWidgetMessage({ source: card.frame.contentWindow });
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores messages once the document is gone", () => {
+      const { card, rerenderWithSrc } = renderWebCard();
+      stubReports(card);
+
+      rerenderWithSrc("");
+      postWidgetMessage();
+      expect(card.reportError).not.toHaveBeenCalled();
+      expect(card.reportReady).not.toHaveBeenCalled();
+      rerenderWithSrc("https://other.example/doc.html");
+      postWidgetMessage();
+      expect(card.reportError).not.toHaveBeenCalled();
+      expect(card.reportReady).not.toHaveBeenCalled();
+      postWidgetMessage({ origin: "https://other.example" });
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores a document with an opaque origin", () => {
+      const { card } = renderCard({}, {}, "data:text/html,hi");
+      stubReports(card);
+
+      postWidgetMessage({ origin: "null" });
+      expect(card.reportError).not.toHaveBeenCalled();
+      expect(card.reportReady).not.toHaveBeenCalled();
+    });
+
+    it.each([159, 160])("reports nothing on %i", version => {
+      const { card, dispatch } = renderWebCard();
+      if (version === 160) {
+        card.frame = iframe;
+      }
+
+      postWidgetMessage();
+      postWidgetMessage({
+        data: {
+          channel: "extension_widget_widget",
+          type: "widget_ready",
+          payload: { protocol: 1 },
+        },
+      });
+      const [observer] = observerInstances;
+      act(() => {
+        observer.callback([{ isIntersecting: true, target: card }], observer);
+      });
+
+      expect(card.querySelector(".widget-error")).toBeNull();
+      expect(dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({ type: at.WIDGETS_IMPRESSION })
+      );
+      expect(
+        dispatch.mock.calls.filter(
+          ([action]) => action.type === at.WIDGETS_ERROR
+        )
+      ).toHaveLength(0);
+
+      stubReports(card);
+      postWidgetMessage({
+        data: {
+          channel: "extension_widget_widget",
+          type: "widget_ready",
+          payload: { protocol: 1 },
+        },
+      });
+      expect(card.reportReady).toHaveBeenCalledTimes(1);
+      postWidgetMessage();
+      expect(card.reportError).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("menu items", () => {
     const checkedValues = menu =>
       [...menu.querySelectorAll("panel-item[data-value]")]

@@ -10,6 +10,11 @@ import { MozWidgetCard } from "./MozWidgetCard";
 import { useWidgetTelemetry } from "./useWidgetTelemetry";
 import { useSizeSubmenu } from "../../lib/utils";
 
+const ERROR_MESSAGE = "widget_error";
+const READY_MESSAGE = "widget_ready";
+// The framed-widgets protocol's reason token rule.
+const REASON_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
+
 // The host actions a WidgetMenuItem of type "action" can run.
 const MENU_ACTIONS = {
   "show-customize": dispatch => dispatch({ type: at.SHOW_PERSONALIZE }),
@@ -52,6 +57,14 @@ function ChoiceSubmenu({ submenuId, item, checkedValue, onChoose }) {
  * it passes the entry's choices to the document as parameters in its URL
  * fragment, without adding session history entries when they change.
  *
+ * A web page reports its state to this card with
+ * `window.parent.postMessage({ channel: "<telemetryName>_widget", type, payload }, "*")`,
+ * where `type` is "widget_error" or "widget_ready". The payload of an error is
+ * `{ reason, terminal }`, and only a terminal error covers the frame. The card
+ * accepts only messages from the window of its frame and the origin of its
+ * document. The protocol is in docs/host-integration.md of
+ * mozilla/framed-widgets.
+ *
  * @param {object} props - the props of MozWidgetCard
  */
 export function FramedWidgetCard(props) {
@@ -85,6 +98,55 @@ export function FramedWidgetCard(props) {
       cardRef.current?.frame?.contentWindow?.location.replace(frameSrc);
     }
   }, [frameSrc]);
+
+  let widgetOrigin = null;
+  try {
+    widgetOrigin = new URL(loadedSrc).origin;
+  } catch {}
+  // An opaque origin serialises as "null", which cannot identify the sender.
+  if (widgetOrigin === "null") {
+    widgetOrigin = null;
+  }
+  /**
+   * @backward-compat { version 161 }
+   * moz-widget gained reportError() and reportReady() in 161. On 160 they are
+   * missing, so the optional calls do nothing. Drop the `?.` once 161 reaches
+   * Release.
+   */
+  useEffect(() => {
+    if (!widgetOrigin) {
+      return undefined;
+    }
+    const channel = `${entry.telemetryName}_widget`;
+    function handleMessage(event) {
+      const frameWindow = cardRef.current?.frame?.contentWindow;
+      if (
+        event.origin !== widgetOrigin ||
+        !frameWindow ||
+        event.source !== frameWindow ||
+        event.data?.channel !== channel
+      ) {
+        return;
+      }
+      // A widget sends widget_ready when its page loads, even after an earlier
+      // terminal error, so a ready must not clear that error.
+      if (event.data.type === ERROR_MESSAGE) {
+        const { payload } = event.data;
+        const reason = payload?.reason;
+        if (
+          payload?.terminal === true &&
+          typeof reason === "string" &&
+          REASON_PATTERN.test(reason)
+        ) {
+          cardRef.current.reportError?.(reason);
+        }
+      } else if (event.data.type === READY_MESSAGE && !cardRef.current.error) {
+        cardRef.current.reportReady?.();
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [widgetOrigin, entry.telemetryName]);
 
   const { recordUserAction } = useWidgetTelemetry({
     dispatch,
@@ -147,6 +209,7 @@ export function FramedWidgetCard(props) {
 
   return (
     <MozWidgetCard
+      readyOnLoad={false}
       {...props}
       src={loadedSrc}
       menuItems={menuItems}
