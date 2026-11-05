@@ -1440,23 +1440,35 @@ void SandboxBroker::SetSecurityLevelForGPUProcess(int32_t aSandboxLevel) {
   AddShaderCachesToPolicy(&trackingConfig, aSandboxLevel);
 
   if (aSandboxLevel >= 2) {
-    // We don't want to add a rule directly here but use the same retrieval and
-    // caching mechanism to get the Windows user's dirs.
-    EnsureWindowsDirCached(FOLDERID_Profile, sWindowsProfileDir,
-                           "Failed to get Windows Profile folder");
-    EnsureWindowsDirCached(FOLDERID_LocalAppData, sLocalAppDataDir,
-                           "Failed to get Windows LocalAppData folder");
-    EnsureWindowsDirCached(FOLDERID_RoamingAppData, sRoamingAppDataDir,
-                           "Failed to get Windows RoamingAppData folder");
-    if (sWindowsProfileDir && sLocalAppDataDir && sRoamingAppDataDir) {
-      sandboxing::UserFontConfigHelper configHelper(
-          LR"(Software\Microsoft\Windows NT\CurrentVersion\Fonts)",
-          *sWindowsProfileDir, *sLocalAppDataDir, *sRoamingAppDataDir);
-      if (!configHelper.AddRules(trackingConfig)) {
-        // We've run out of space for font rules, so fall back to
-        // USER_INTERACTIVE to maintain access to all user fonts.
-        SANDBOX_SUCCEED_OR_CRASH(config->SetTokenLevel(
-            initialTokenLevel, sandbox::USER_INTERACTIVE));
+    if (sFontFileRuleEnabled) {
+      // Font file access is validated by the broker against the installed font
+      // files. This is added after the other rules here, so that paths they
+      // allow never wait for the font path set to be rebuilt.
+      if (trackingConfig.AllowFontFileAccess() != sandbox::SBOX_ALL_OK) {
+        // Fall back to the standard per-user fonts directory.
+        AddCachedWindowsDirRule(
+            &trackingConfig, sandbox::FileSemantics::kAllowReadonly,
+            FOLDERID_LocalAppData, u"\\Microsoft\\Windows\\Fonts\\*"_ns);
+      }
+    } else {
+      // We don't want to add a rule directly here but use the same retrieval
+      // and caching mechanism to get the Windows user's dirs.
+      EnsureWindowsDirCached(FOLDERID_Profile, sWindowsProfileDir,
+                             "Failed to get Windows Profile folder");
+      EnsureWindowsDirCached(FOLDERID_LocalAppData, sLocalAppDataDir,
+                             "Failed to get Windows LocalAppData folder");
+      EnsureWindowsDirCached(FOLDERID_RoamingAppData, sRoamingAppDataDir,
+                             "Failed to get Windows RoamingAppData folder");
+      if (sWindowsProfileDir && sLocalAppDataDir && sRoamingAppDataDir) {
+        sandboxing::UserFontConfigHelper configHelper(
+            LR"(Software\Microsoft\Windows NT\CurrentVersion\Fonts)",
+            *sWindowsProfileDir, *sLocalAppDataDir, *sRoamingAppDataDir);
+        if (!configHelper.AddRules(trackingConfig)) {
+          // We've run out of space for font rules, so fall back to
+          // USER_INTERACTIVE to maintain access to all user fonts.
+          SANDBOX_SUCCEED_OR_CRASH(config->SetTokenLevel(
+              initialTokenLevel, sandbox::USER_INTERACTIVE));
+        }
       }
     }
   }
