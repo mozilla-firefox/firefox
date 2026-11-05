@@ -8,11 +8,15 @@
 loadScripts({ name: "role.js", dir: MOCHITESTS_DIR });
 
 addAccessibleTask(
-  '<select id="select" size="5"></select>',
+  '<select id="select"></select>',
   async function (browser, accDoc) {
+    const isSelectListBox = e => {
+      return getAccessibleDOMNodeID(e.accessible.parent) == "select";
+    };
+
     let select = findAccessibleChildByID(accDoc, "select");
 
-    let onEvent = waitForEvent(EVENT_REORDER, "select");
+    let onEvent = waitForEvent(EVENT_REORDER, isSelectListBox);
     // Create a combobox with grouping and 2 standalone options
     await invokeContentTask(browser, [], () => {
       let doc = content.document;
@@ -37,21 +41,26 @@ addAccessibleTask(
     let option1Node = findAccessibleChildByID(event.accessible, "option1Node");
 
     let tree = {
-      LISTBOX: [
+      COMBOBOX: [
         {
-          GROUPING: [
-            { OPTION: [{ TEXT_LEAF: [] }] },
-            { OPTION: [{ TEXT_LEAF: [] }] },
+          COMBOBOX_LIST: [
+            {
+              GROUPING: [{ COMBOBOX_OPTION: [] }, { COMBOBOX_OPTION: [] }],
+            },
+            {
+              COMBOBOX_OPTION: [],
+            },
+            {
+              COMBOBOX_OPTION: [],
+            },
           ],
         },
-        { OPTION: [] },
-        { OPTION: [] },
       ],
     };
     testAccessibleTree(select, tree);
     ok(!isDefunct(option1Node), "option shouldn't be defunct");
 
-    onEvent = waitForEvent(EVENT_REORDER, "select");
+    onEvent = waitForEvent(EVENT_REORDER, isSelectListBox);
     // Remove grouping from combobox
     await invokeContentTask(browser, [], () => {
       let contentSelect = content.document.getElementById("select");
@@ -60,7 +69,11 @@ addAccessibleTask(
     await onEvent;
 
     tree = {
-      LISTBOX: [{ OPTION: [] }, { OPTION: [] }],
+      COMBOBOX: [
+        {
+          COMBOBOX_LIST: [{ COMBOBOX_OPTION: [] }, { COMBOBOX_OPTION: [] }],
+        },
+      ],
     };
     testAccessibleTree(select, tree);
     ok(
@@ -68,7 +81,7 @@ addAccessibleTask(
       "removed option shouldn't be accessible anymore!"
     );
 
-    onEvent = waitForEvent(EVENT_REORDER, "select");
+    onEvent = waitForEvent(EVENT_REORDER, isSelectListBox);
     // Remove all options from combobox
     await invokeContentTask(browser, [], () => {
       let contentSelect = content.document.getElementById("select");
@@ -79,7 +92,11 @@ addAccessibleTask(
     await onEvent;
 
     tree = {
-      LISTBOX: [],
+      COMBOBOX: [
+        {
+          COMBOBOX_LIST: [],
+        },
+      ],
     };
     testAccessibleTree(select, tree);
   },
