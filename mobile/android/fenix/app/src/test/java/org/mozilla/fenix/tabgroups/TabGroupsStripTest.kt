@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.tabgroups
 
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -59,10 +58,7 @@ class TabGroupsStripTest {
         composeTestRule.setContent {
             CompositionLocalProvider(LocalUnderTest provides true) {
                 FirefoxTheme(theme = Theme.Light) {
-                    TabGroupsStrip(
-                        store = TabGroupsStripStore(initialState = state),
-                        listState = rememberLazyListState(),
-                    )
+                    TabGroupsStrip(store = TabGroupsStripStore(initialState = state))
                 }
             }
         }

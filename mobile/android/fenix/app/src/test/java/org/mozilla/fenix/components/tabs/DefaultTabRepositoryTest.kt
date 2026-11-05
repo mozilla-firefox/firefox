@@ -30,14 +30,10 @@ import mozilla.components.browser.state.state.createCustomTab
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.mediasession.MediaSession
-import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabdata.coordinator.data.Tab
 import mozilla.components.feature.tabdata.coordinator.repository.TabRepository
 import mozilla.components.feature.tabs.TabsUseCases
 import org.junit.Test
-import org.mozilla.fenix.components.AppStore
-import org.mozilla.fenix.components.appstate.AppState
-import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.ext.maxActiveTime
 
 private const val URL = "https://www.mozilla.org"
@@ -373,22 +369,8 @@ class DefaultTabRepositoryTest {
                 )
         )
 
-    private fun createRepository(browserStore: BrowserStore): DefaultTabRepository {
-        val tabsUseCases = TabsUseCases(store = browserStore)
-        return DefaultTabRepository(
-            browserStore = browserStore,
-            tabsUseCases = tabsUseCases,
-            fenixBrowserUseCases =
-                FenixBrowserUseCases(
-                    appStore = AppStore(AppState()),
-                    tabsUseCases = tabsUseCases,
-                    loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
-                    searchUseCases = mockk(relaxed = true),
-                    homepageTitle = "",
-                    profiler = null,
-                ),
-        )
-    }
+    private fun createRepository(browserStore: BrowserStore): DefaultTabRepository =
+        DefaultTabRepository(browserStore = browserStore, tabsUseCases = TabsUseCases(store = browserStore))
 
     private fun TestScope.observeTabFlow(initialState: BrowserState): List<TabRepository.Data> =
         observeTabFlow(BrowserStore(initialState = initialState))

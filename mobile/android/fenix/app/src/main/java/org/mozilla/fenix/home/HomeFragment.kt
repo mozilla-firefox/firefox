@@ -60,8 +60,12 @@ import androidx.navigation.fragment.navArgs
 import java.lang.ref.WeakReference
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.compose.base.modifier.thenConditional
@@ -77,6 +81,7 @@ import mozilla.components.feature.ipprotection.IPProtectionWarningBinding
 import mozilla.components.feature.tab.collections.TabCollection
 import mozilla.components.feature.top.sites.presenter.DefaultTopSitesPresenter
 import mozilla.components.lib.state.ext.flow
+import mozilla.components.lib.state.ext.flowScoped
 import mozilla.components.lib.state.ext.observeAsComposableState
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
@@ -192,12 +197,9 @@ import org.mozilla.fenix.search.awesomebar.AwesomeBarComposable
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.tabgroups.TabGroupsStrip
-import org.mozilla.fenix.tabgroups.strip.TabGroupsStripScrollViewModel
-import org.mozilla.fenix.tabgroups.strip.observeSelectedTabForNavigation
 import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripAction
 import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripMiddleware
 import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripStore
-import org.mozilla.fenix.tabgroups.strip.redux.TabGroupsStripTelemetryMiddleware
 import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.tabstray.ui.AccessPoint
 import org.mozilla.fenix.termsofuse.store.DefaultPrivacyNoticeBannerRepository
@@ -224,8 +226,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     @VisibleForTesting internal lateinit var bundleArgs: Bundle
 
     private val homeViewModel: HomeScreenViewModel by activityViewModels()
-
-    private val tabGroupsStripScrollViewModel: TabGroupsStripScrollViewModel by activityViewModels()
 
     private val snackbarHostState = SnackbarHostState()
 
@@ -265,12 +265,8 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 listOf(
                     TabGroupsStripMiddleware(
                         tabDataCoordinator = requireComponents.tabDataCoordinator,
-                        isHomepageAsNewTabEnabled = { context?.components?.settings?.enableHomepageAsNewTab ?: false },
                         scope = lifecycleScope,
-                    ),
-                    TabGroupsStripTelemetryMiddleware(
-                        isHomepageAsNewTabEnabled = { context?.components?.settings?.enableHomepageAsNewTab ?: false }
-                    ),
+                    )
                 )
         )
     }
@@ -596,12 +592,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
         if (requireComponents.settings.shouldShowTabGroupsStrip) {
             tabGroupsStripStore.dispatch(TabGroupsStripAction.InitializeDataObservation)
-            observeSelectedTabForNavigation(
-                fragment = this,
-                store = requireComponents.core.store,
-                currentDestinationId = R.id.homeFragment,
-                directions = HomeFragmentDirections.actionGlobalBrowser(null),
-            )
+            observeSelectedTabForNavigation()
         }
 
         privacyNoticeBannerStore =
@@ -642,10 +633,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
      */
     private fun isToolbarSwipeToSwitchTabsEnabled(): Boolean =
         with(requireComponents.settings) {
-            isSwipeToolbarToSwitchTabsEnabled &&
-                !isTabStripEnabled &&
-                !shouldShowTabGroupsStrip &&
-                enableHomepageAsNewTab
+            isSwipeToolbarToSwitchTabsEnabled && !isTabStripEnabled && enableHomepageAsNewTab
         }
 
     @Suppress("ReturnCount")
@@ -873,12 +861,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     TabStrip()
                 }
                 if (settings.shouldShowTabGroupsStrip) {
-                    TabGroupsStrip(
-                        store = tabGroupsStripStore,
-                        listState = tabGroupsStripScrollViewModel.listState,
-                        showAddButton = settings.enableHomepageAsNewTab,
-                        containerColor = colors.surface,
-                    )
+                    TabGroupsStrip(store = tabGroupsStripStore, containerColor = colors.surface)
                 }
                 homeNavigationBar?.Content()
             }
@@ -899,12 +882,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 dividerColor = colors.outlineVariant,
             ) {
                 if (settings.shouldShowTabGroupsStrip) {
-                    TabGroupsStrip(
-                        store = tabGroupsStripStore,
-                        listState = tabGroupsStripScrollViewModel.listState,
-                        showAddButton = settings.enableHomepageAsNewTab,
-                        containerColor = colors.surface,
-                    )
+                    TabGroupsStrip(store = tabGroupsStripStore, containerColor = colors.surface)
                 }
                 toolbarView.Content()
             }
@@ -1154,6 +1132,22 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                 },
                 onTabCounterClick = { openTabsTray() },
             )
+        }
+    }
+
+    // Navigates from the homepage to the browser when the tab group strip selects a non-homepage tab.
+    private fun observeSelectedTabForNavigation() {
+        requireComponents.core.store.flowScoped(viewLifecycleOwner, Main) { flow ->
+            flow
+                .map { it.selectedTabId }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect {
+                    val url = requireComponents.core.store.state.selectedTab?.content?.url
+                    if (url != null && url != ABOUT_HOME_URL) {
+                        findNavController().nav(R.id.homeFragment, HomeFragmentDirections.actionGlobalBrowser(null))
+                    }
+                }
         }
     }
 

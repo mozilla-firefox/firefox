@@ -606,7 +606,6 @@ class Components(
                 DefaultTabRepository(
                     browserStore = core.store,
                     tabsUseCases = useCases.tabsUseCases,
-                    fenixBrowserUseCases = useCases.fenixBrowserUseCases,
                 ),
             tabGroupRepository = core.tabGroupRepository,
             isInactiveTabsEnabled = settings::inactiveTabsAreEnabled,

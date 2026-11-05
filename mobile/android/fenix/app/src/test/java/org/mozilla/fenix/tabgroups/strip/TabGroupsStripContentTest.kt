@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.tabgroups.strip
 
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
@@ -54,13 +53,7 @@ class TabGroupsStripContentTest {
     @Test
     fun `WHEN rendered THEN a favicon circle is shown for each tab`() {
         setContent {
-            TabGroupsStripContent(
-                state = state,
-                listState = rememberLazyListState(),
-                onTabClick = {},
-                onAddTabClick = {},
-                onExpandGroupClick = {},
-            )
+            TabGroupsStripContent(state = state, onTabClick = {}, onAddTabClick = {}, onExpandGroupClick = {})
         }
 
         composeTestRule.onAllNodesWithTag(TabGroupsTestTag.TAB_GROUPS_STRIP_TAB).assertCountEquals(state.tabs.size)
@@ -72,7 +65,6 @@ class TabGroupsStripContentTest {
         setContent {
             TabGroupsStripContent(
                 state = state,
-                listState = rememberLazyListState(),
                 onTabClick = { clickedId = it },
                 onAddTabClick = {},
                 onExpandGroupClick = {},
@@ -87,33 +79,10 @@ class TabGroupsStripContentTest {
     @Test
     fun `WHEN rendered THEN the add tab and expand buttons are shown`() {
         setContent {
-            TabGroupsStripContent(
-                state = state,
-                listState = rememberLazyListState(),
-                onTabClick = {},
-                onAddTabClick = {},
-                onExpandGroupClick = {},
-            )
+            TabGroupsStripContent(state = state, onTabClick = {}, onAddTabClick = {}, onExpandGroupClick = {})
         }
 
         composeTestRule.onNodeWithTag(TabGroupsTestTag.TAB_GROUPS_STRIP_ADD_BUTTON).assertExists()
-        composeTestRule.onNodeWithTag(TabGroupsTestTag.TAB_GROUPS_STRIP_EXPAND_BUTTON).assertExists()
-    }
-
-    @Test
-    fun `GIVEN showAddButton is false WHEN rendered THEN the add tab button is hidden and the expand button is shown`() {
-        setContent {
-            TabGroupsStripContent(
-                state = state,
-                listState = rememberLazyListState(),
-                onTabClick = {},
-                onAddTabClick = {},
-                onExpandGroupClick = {},
-                showAddButton = false,
-            )
-        }
-
-        composeTestRule.onNodeWithTag(TabGroupsTestTag.TAB_GROUPS_STRIP_ADD_BUTTON).assertDoesNotExist()
         composeTestRule.onNodeWithTag(TabGroupsTestTag.TAB_GROUPS_STRIP_EXPAND_BUTTON).assertExists()
     }
 
@@ -123,7 +92,6 @@ class TabGroupsStripContentTest {
         setContent {
             TabGroupsStripContent(
                 state = state,
-                listState = rememberLazyListState(),
                 onTabClick = {},
                 onAddTabClick = { addClicked = true },
                 onExpandGroupClick = {},
@@ -141,7 +109,6 @@ class TabGroupsStripContentTest {
         setContent {
             TabGroupsStripContent(
                 state = state,
-                listState = rememberLazyListState(),
                 onTabClick = {},
                 onAddTabClick = {},
                 onExpandGroupClick = { expandClicked = true },
@@ -174,7 +141,6 @@ class TabGroupsStripContentTest {
         setContent {
             TabGroupsStripContent(
                 state = overflowingState,
-                listState = rememberLazyListState(),
                 onTabClick = {},
                 onAddTabClick = {},
                 onExpandGroupClick = {},

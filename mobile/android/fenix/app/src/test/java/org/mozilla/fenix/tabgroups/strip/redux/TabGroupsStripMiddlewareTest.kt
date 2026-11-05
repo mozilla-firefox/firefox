@@ -143,15 +143,7 @@ class TabGroupsStripMiddlewareTest {
                 )
             val store =
                 TabGroupsStripStore(
-                    middleware =
-                        listOf(
-                            TabGroupsStripMiddleware(
-                                coordinator,
-                                isHomepageAsNewTabEnabled = { true },
-                                scope = testScope,
-                                dispatcher = testDispatcher,
-                            )
-                        )
+                    middleware = listOf(TabGroupsStripMiddleware(coordinator, testScope, testDispatcher))
                 )
 
             testDispatcher.scheduler.advanceUntilIdle()
@@ -238,71 +230,10 @@ class TabGroupsStripMiddlewareTest {
             assertTrue(coordinator.selectedTabIds.isEmpty())
         }
 
-    @Test
-    fun `GIVEN HNT is enabled and in a group WHEN AddTabClicked is dispatched THEN a new tab is added to the group`() =
-        runTest(testDispatcher) {
-            val tab1 = createTab(id = "1", tabGroupId = "group")
-            val coordinator =
-                FakeTabDataCoordinator(
-                    TabsSnapshot(
-                        selectedTab = tab1,
-                        normalTabs = listOf(tab1),
-                        openTabGroups = listOf(createGroup("group", "Group", tabIds = listOf("1"))),
-                    )
-                )
-            val store = buildStore(coordinator, isHomepageAsNewTabEnabled = { true })
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            store.dispatch(TabGroupsStripAction.AddTabClicked)
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertEquals(expected = listOf("group"), actual = coordinator.addNewTabToGroupIds)
-        }
-
-    @Test
-    fun `GIVEN HNT is disabled WHEN AddTabClicked is dispatched THEN no tab is added to the group`() =
-        runTest(testDispatcher) {
-            val tab1 = createTab(id = "1", tabGroupId = "group")
-            val coordinator =
-                FakeTabDataCoordinator(
-                    TabsSnapshot(
-                        selectedTab = tab1,
-                        normalTabs = listOf(tab1),
-                        openTabGroups = listOf(createGroup("group", "Group", tabIds = listOf("1"))),
-                    )
-                )
-            val store = buildStore(coordinator, isHomepageAsNewTabEnabled = { false })
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            store.dispatch(TabGroupsStripAction.AddTabClicked)
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertTrue(coordinator.addNewTabToGroupIds.isEmpty())
-        }
-
-    @Test
-    fun `GIVEN not in a group WHEN AddTabClicked is dispatched THEN no tab is added to the group`() =
-        runTest(testDispatcher) {
-            val coordinator = FakeTabDataCoordinator(TabsSnapshot())
-            val store = buildStore(coordinator, isHomepageAsNewTabEnabled = { true })
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            store.dispatch(TabGroupsStripAction.AddTabClicked)
-            testDispatcher.scheduler.advanceUntilIdle()
-
-            assertTrue(coordinator.addNewTabToGroupIds.isEmpty())
-        }
-
     private fun buildStore(snapshot: TabsSnapshot?): TabGroupsStripStore = buildStore(FakeTabDataCoordinator(snapshot))
 
-    private fun buildStore(
-        coordinator: FakeTabDataCoordinator,
-        isHomepageAsNewTabEnabled: () -> Boolean = { true },
-    ): TabGroupsStripStore =
-        TabGroupsStripStore(
-                middleware =
-                    listOf(TabGroupsStripMiddleware(coordinator, isHomepageAsNewTabEnabled, testScope, testDispatcher))
-            )
+    private fun buildStore(coordinator: FakeTabDataCoordinator): TabGroupsStripStore =
+        TabGroupsStripStore(middleware = listOf(TabGroupsStripMiddleware(coordinator, testScope, testDispatcher)))
             .also { it.dispatch(TabGroupsStripAction.InitializeDataObservation) }
 
     private fun createTab(

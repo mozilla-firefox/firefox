@@ -208,11 +208,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
     }
 
     private fun setupToolbarSwipeBehavior(settings: Settings, components: Components) {
-        if (
-            !settings.isTabStripEnabled &&
-                !settings.shouldShowTabGroupsStrip &&
-                settings.isSwipeToolbarToSwitchTabsEnabled
-        ) {
+        if (!settings.isTabStripEnabled && settings.isSwipeToolbarToSwitchTabsEnabled) {
             binding.gestureLayout.addGestureListener(
                 ToolbarHorizontalGesturesHandler(
                     activity = requireActivity(),
