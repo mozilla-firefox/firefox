@@ -1302,6 +1302,67 @@ static Navigation* NavigationOfDocument(Document* aDocument) {
   return inner ? inner->Navigation() : nullptr;
 }
 
+// https://html.spec.whatwg.org/#navigate-to-a-javascript:-url
+// javascript: URL loads don't go through the parent process, so the loading
+// entry is created here. The Navigation API entries of the new document are
+// those of the previous document with the replaced entry swapped for the new
+// one.
+static LoadingSessionHistoryInfo CreateLoadingEntryForJavascriptURL(
+    SessionHistoryInfo* aActiveEntry, Document& aOldDocument,
+    Document& aNewDocument) {
+  MOZ_ASSERT(aActiveEntry || aOldDocument.IsEverInitialDocument());
+
+  nsIURI* uri =
+      aActiveEntry ? aActiveEntry->GetURI() : aNewDocument.GetDocumentURI();
+  nsAutoString contentType;
+  aNewDocument.GetContentType(contentType);
+  SessionHistoryInfo info(uri, aNewDocument.NodePrincipal(),
+                          aNewDocument.NodePrincipal(),
+                          aNewDocument.PartitionedPrincipal(),
+                          aActiveEntry ? aActiveEntry->GetPolicyContainer()
+                                       : aOldDocument.GetPolicyContainer(),
+                          NS_ConvertUTF16toUTF8(contentType));
+  if (aActiveEntry) {
+    info.NavigationKey() = aActiveEntry->NavigationKey();
+    const nsCOMPtr<nsIReferrerInfo> referrerInfo =
+        aActiveEntry->GetReferrerInfo();
+    info.SetReferrerInfo(referrerInfo);
+    info.SetName(aActiveEntry->GetName());
+  }
+
+  LoadingSessionHistoryInfo loadingEntry(info);
+  loadingEntry.mTriggeringNavigationType = Some(NavigationType::Replace);
+  loadingEntry.mReplacesActiveEntry = true;
+
+  // https://html.spec.whatwg.org/#update-document-for-history-step-application
+  // The replaced entry is the previous entry for the new document's
+  // activation, unless it belonged to the initial about:blank document.
+  loadingEntry.mPreviousEntry =
+      aOldDocument.IsInitialDocument() || !aActiveEntry
+          ? Some(PreviousSessionHistoryInfo{})
+          : PreviousSessionHistoryInfo::CreateValidatedPreviousEntry(
+                info, Some(*aActiveEntry), Some(NavigationType::Replace));
+
+  // The old document has no entries if it is the initial about:blank document
+  // or has entries disabled, in which case the new entry is the only one.
+  bool replaced = false;
+  if (RefPtr<Navigation> navigation = NavigationOfDocument(&aOldDocument)) {
+    nsTArray<RefPtr<NavigationHistoryEntry>> oldEntries;
+    navigation->Entries(oldEntries);
+    for (const auto& entry : oldEntries) {
+      const bool isReplaced =
+          entry->SessionHistoryInfo()->NavigationKey() == info.NavigationKey();
+      replaced |= isReplaced;
+      loadingEntry.mContiguousEntries.AppendElement(
+          isReplaced ? info : *entry->SessionHistoryInfo());
+    }
+  }
+  if (!replaced) {
+    loadingEntry.mContiguousEntries.AppendElement(info);
+  }
+  return loadingEntry;
+}
+
 void nsDocShell::FirePageSwapWithoutTransition(
     const mozilla::dom::SessionHistoryInfo* aPageSwapTargetInfo,
     NavigationType aNavigationType) {
@@ -7227,6 +7288,17 @@ nsresult nsDocShell::CreateDocumentViewer(const nsACString& aContentType,
   bool errorOnLocationChangeNeeded = false;
   nsCOMPtr<nsIChannel> failedChannel = mFailedChannel;
   nsCOMPtr<nsIURI> failedURI;
+
+  if (const nsCOMPtr<nsIScriptChannel> scriptChannel =
+          do_QueryInterface(aOpenedChannel)) {
+    MOZ_ASSERT(mDocumentViewer && mDocumentViewer->GetDocument(),
+               "javascript: URLs evaluate in the active document");
+    SetLoadingSessionHistoryInfo(
+        CreateLoadingEntryForJavascriptURL(mActiveEntry.get(),
+                                           *mDocumentViewer->GetDocument(),
+                                           *viewer->GetDocument()),
+        !mActiveEntry);
+  }
 
   // https://html.spec.whatwg.org/#finalize-a-cross-document-navigation
   // 9. If entryToReplace is null, then: ...
@@ -13366,7 +13438,12 @@ void nsDocShell::MoveLoadingToActiveEntry(bool aExpired, uint32_t aCacheKey,
             mLoadType,
             /* aUpdatedCacheKey = */ 0, false);
       }
-      if (!(previousActiveEntry && previousActiveEntry->IsTransient())) {
+      if (loadingEntry->mReplacesActiveEntry) {
+        if (previousActiveEntry) {
+          mBrowsingContext->ReplaceActiveSessionHistoryEntry(
+              mActiveEntry.get());
+        }
+      } else if (!(previousActiveEntry && previousActiveEntry->IsTransient())) {
         mBrowsingContext->IncrementHistoryEntryCountForBrowsingContext();
       }
     }
