@@ -84,17 +84,16 @@ void PrefetchRecordParent::Init(WindowGlobalParent* aWGP,
           : PrefetchAnonymizationPolicy::None;
   mStartTime = TimeStamp::Now();
 
-  // Compute cross-origin flag directly from docPrincipal since Manager() is
-  // not yet set during AllocPPrefetchRecordParent (IsCrossOriginToDocument
-  // uses Manager() internally and would return false incorrectly here).
-  bool isCrossOrigin = false;
-  docPrincipal->IsSameOrigin(mURL, &isCrossOrigin);
-  isCrossOrigin = !isCrossOrigin;
+  // The spec separates prefetches by network partition key, i.e. by site:
+  // same-site cross-origin prefetches share the document's partition, and only
+  // cross-site ones need the isolated partition.
+  bool isCrossSite = true;
+  docPrincipal->IsThirdPartyURI(mURL, &isCrossSite);
 
-  if (StaticPrefs::dom_speculation_rules_same_origin_only() && isCrossOrigin) {
+  if (StaticPrefs::dom_speculation_rules_same_site_only() && isCrossSite) {
     LOG_SPECRULES_WARN(
-        ("PrefetchRecordParent::Init: this=%p cross-origin rejected "
-         "(same_origin_only=true)",
+        ("PrefetchRecordParent::Init: this=%p cross-site rejected "
+         "(same_site_only=true)",
          this));
     mState = PrefetchState::Canceled;
     return;
@@ -110,10 +109,10 @@ void PrefetchRecordParent::Init(WindowGlobalParent* aWGP,
 
   mIsEligibleForPrefetch = true;
 
-  // Set up the prefetch record's "isolated partition key" for cross-origin
+  // Set up the prefetch record's "isolated partition key" for cross-site
   // isolation (used when creating navigation params by fetching).
   OriginAttributes isolatedAttrs = sourceAttrs;
-  if (isCrossOrigin) {
+  if (isCrossSite) {
     PopulateIsolatedPartitionKey(isolatedAttrs);
   }
   mIsolatedPartitionKey = isolatedAttrs.mPartitionKey;

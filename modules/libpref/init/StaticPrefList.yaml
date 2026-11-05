@@ -5050,10 +5050,11 @@
   value: false
   mirror: always
 
-# When true, cross-origin prefetch URLs are rejected at StartPrefetch.
-# Keeps M1 same-origin only; set false in tests to exercise cross-origin
+# When true, cross-site prefetch URLs are rejected at StartPrefetch.
+# Same-site (including same-site cross-origin) prefetches share the document's
+# network partition and are allowed; set false in tests to exercise cross-site
 # code paths without requiring Private Prefetch Proxy (PPP) support.
-- name: dom.speculation_rules.same_origin_only
+- name: dom.speculation_rules.same_site_only
   type: RelaxedAtomicBool
   value: true
   mirror: always

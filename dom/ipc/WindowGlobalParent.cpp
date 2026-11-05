@@ -2509,7 +2509,7 @@ static bool ConflictingCredentialsExist(const ExchangeRecord& aExchange,
   if (attrs.mPartitionKey == aSourcePartitionKey) {
     return false;
   }
-  // M1: same_origin_only gate prevents cross-site hops (see the cross-site
+  // M1: same_site_only gate prevents cross-site hops (see the cross-site
   // redirect check in PrefetchRecordParent::AsyncOnChannelRedirect).
   // M2: implement cookie presence check via nsICookieManager.
   return false;
