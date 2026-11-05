@@ -75,18 +75,9 @@ GMPLogLevel GetGMPLibraryLogLevel() {
 
 namespace gmp {
 
-static StaticMutex sSingletonMutex;
-static StaticRefPtr<GeckoMediaPluginService> sSingletonService
-    MOZ_GUARDED_BY(sSingletonMutex);
-
-// Releases outside of the lock, as the last reference may run the destructor.
-static void UnpublishSingleton(const GeckoMediaPluginService* aOnlyIf) {
-  RefPtr<GeckoMediaPluginService> service;
-  StaticMutexAutoLock lock(sSingletonMutex);
-  if (sSingletonService.get() == aOnlyIf) {
-    service = sSingletonService.forget();
-  }
-}
+StaticMutex GeckoMediaPluginService::sSingletonMutex;
+StaticRefPtr<GeckoMediaPluginService>
+    GeckoMediaPluginService::sSingletonService;
 
 already_AddRefed<GeckoMediaPluginService>
 GeckoMediaPluginService::GetGeckoMediaPluginService() {
@@ -179,7 +170,13 @@ void GeckoMediaPluginService::Shutdown() {
   OnShutdown();
   // Also refuses to create the GMP thread from now on.
   ShutdownGMPThread();
-  UnpublishSingleton(this);
+
+  // Release outside of the lock, as the last reference may run the destructor.
+  RefPtr<GeckoMediaPluginService> service;
+  StaticMutexAutoLock lock(sSingletonMutex);
+  if (sSingletonService.get() == this) {
+    service = sSingletonService.forget();
+  }
 }
 
 NS_IMPL_ISUPPORTS(GeckoMediaPluginService, mozIGeckoMediaPluginService,

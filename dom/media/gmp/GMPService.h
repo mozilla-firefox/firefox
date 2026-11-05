@@ -11,6 +11,8 @@
 #include "mozIGeckoMediaPluginService.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/MozPromise.h"
+#include "mozilla/StaticMutex.h"
+#include "mozilla/StaticPtr.h"
 #include "mozilla/gmp/GMPTypes.h"
 #include "nsCOMPtr.h"
 #include "nsClassHashtable.h"
@@ -143,9 +145,14 @@ class GeckoMediaPluginService : public mozIGeckoMediaPluginService,
 
   Atomic<MainInit> mMainInit;
 
-  Mutex mMutex;  // Protects mGMPThread, mPluginCrashHelpers,
-                 // mGMPThreadShutdown and some members in
-                 // derived classes.
+  // Protects sSingletonService. Always acquired before mMutex, as
+  // GetGeckoMediaPluginService() creates the GMP thread, which takes mMutex,
+  // before it registers the service.
+  static StaticMutex sSingletonMutex;
+  static StaticRefPtr<GeckoMediaPluginService> sSingletonService
+      MOZ_GUARDED_BY(sSingletonMutex);
+
+  Mutex mMutex MOZ_ACQUIRED_AFTER(sSingletonMutex);
 
   const nsCOMPtr<nsISerialEventTarget> mMainThread;
 

@@ -241,8 +241,7 @@ class GeckoMediaPluginServiceParent final
 
   // Tracks how many IPC connections to GMPServices running in content
   // processes we have. When this is empty we can safely shut down.
-  // Synchronized across thread via mMutex in base class.
-  nsTArray<GMPServiceParent*> mServiceParents;
+  nsTArray<GMPServiceParent*> mServiceParents MOZ_GUARDED_BY(mMutex);
 
   uint32_t mDirectoriesAdded = 0;
   uint32_t mDirectoriesInProgress = 0;
