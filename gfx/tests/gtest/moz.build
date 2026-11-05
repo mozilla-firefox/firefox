@@ -44,6 +44,11 @@ if CONFIG["OS_TARGET"] != "Android":
         "TestRect.cpp",
     ]
 
+if CONFIG["OS_TARGET"] == "WINNT":
+    SOURCES += [
+        "TestFontPathSet.cpp",
+    ]
+
 if CONFIG["OS_TARGET"] == "Darwin":
     # Not in UNIFIED_SOURCES: MacIOSurface.h includes Carbon headers (MacTypes.h)
     # which would make Rect/Point/Size ambiguous in all subsequent unified files.

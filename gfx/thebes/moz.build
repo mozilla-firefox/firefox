@@ -162,10 +162,12 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
     EXPORTS.mozilla.gfx += [
         "DeviceManagerDx.h",
         "DisplayConfigWindows.h",
+        "FontPathSet.h",
         "PrintTargetWindows.h",
     ]
     SOURCES += [
         "DisplayConfigWindows.cpp",
+        "FontPathSet.cpp",
         "gfxDWriteCommon.cpp",
         "gfxDWriteFonts.cpp",
         "gfxWindowsPlatform.cpp",
