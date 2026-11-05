@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.447
- * pdfjsBuild = c7ca8a32e
+ * pdfjsVersion = 6.5.472
+ * pdfjsBuild = 1c3fdc259
  */
 
 ;// ./web/ui_utils.js
@@ -907,7 +907,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "ba7bc200-d8f4-4157-9972-b20498608fe7";
+const INTERNAL_EVT = "04764f19-0fc1-4bbe-a75d-c1c20893f918";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -12498,9 +12498,6 @@ class TextLayerBuilder {
 
 
 
-
-
-const DEFAULT_LAYER_PROPERTIES = null;
 const LAYERS_ORDER = new Map([["canvasWrapper", 0], ["textLayer", 1], ["annotationLayer", 2], ["annotationEditorLayer", 3], ["xfaLayer", 3]]);
 class PDFPageView extends BasePDFPageView {
   #abortSignal = null;
@@ -12531,7 +12528,7 @@ class PDFPageView extends BasePDFPageView {
       defaultViewport
     } = options;
     this.renderingId = "page" + this.id;
-    this.#layerProperties = options.layerProperties || DEFAULT_LAYER_PROPERTIES;
+    this.#layerProperties = options.layerProperties;
     this.#abortSignal = options.abortSignal || null;
     this.pdfPage = null;
     this.pageLabel = null;
@@ -13430,7 +13427,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "6.5.447";
+    const viewerVersion = "6.5.472";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }

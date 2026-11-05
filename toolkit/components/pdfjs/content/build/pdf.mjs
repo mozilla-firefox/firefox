@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.447
- * pdfjsBuild = c7ca8a32e
+ * pdfjsVersion = 6.5.472
+ * pdfjsBuild = 1c3fdc259
  */
 
 ;// ./src/shared/util.js
@@ -2052,7 +2052,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "ba7bc200-d8f4-4157-9972-b20498608fe7";
+const INTERNAL_EVT = "04764f19-0fc1-4bbe-a75d-c1c20893f918";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -12726,27 +12726,37 @@ class FontLoader {
     }
     unreachable("Not implemented: loadSystemFont without the Font Loading API.");
   }
+  async #loadFontFace(font) {
+    if (!this.isFontLoadingAPISupported) {
+      return;
+    }
+    const fontFace = font.createNativeFontFace();
+    if (!fontFace) {
+      return;
+    }
+    this.addNativeFontFace(fontFace);
+    try {
+      await fontFace.loaded;
+    } catch (ex) {
+      warn(`Failed to load font '${fontFace.family}': '${ex}'.`);
+      this.removeNativeFontFace(fontFace);
+      if (!font.missingFile) {
+        font.disableFontFace = true;
+        throw ex;
+      }
+    }
+  }
   async bind(font) {
-    if (font.attached || font.missingFile && !font.systemFontInfo) {
+    if (font.attached || font.missingFile && !font.systemFontInfo && !font.generatedFontName) {
       return;
     }
     font.attached = true;
     if (font.systemFontInfo) {
-      await this.loadSystemFont(font);
+      await Promise.all([this.loadSystemFont(font), this.#loadFontFace(font)]);
       return;
     }
     if (this.isFontLoadingAPISupported) {
-      const nativeFontFace = font.createNativeFontFace();
-      if (nativeFontFace) {
-        this.addNativeFontFace(nativeFontFace);
-        try {
-          await nativeFontFace.loaded;
-        } catch (ex) {
-          warn(`Failed to load font '${nativeFontFace.family}': '${ex}'.`);
-          font.disableFontFace = true;
-          throw ex;
-        }
-      }
+      await this.#loadFontFace(font);
       return;
     }
     const rule = font.createFontFaceRule();
@@ -12781,6 +12791,32 @@ class FontFaceObject {
       Object.assign(this, extra);
     }
   }
+  #getFontFaceProperties() {
+    const {
+      generatedFontName
+    } = this;
+    let family = generatedFontName || this.loadedName;
+    const css = Object.create(null);
+    if (generatedFontName) {
+      css.style = this.italic ? "italic" : "normal";
+      css.weight = "normal";
+      if (this.black) {
+        css.weight = "900";
+      } else if (this.bold) {
+        css.weight = "bold";
+      }
+    } else if (this.cssFontInfo) {
+      family = serializeFontFamily(this.cssFontInfo.fontFamily);
+      css.weight = this.cssFontInfo.fontWeight;
+      if (this.cssFontInfo.italicAngle) {
+        css.style = `oblique ${this.cssFontInfo.italicAngle}deg`;
+      }
+    }
+    return {
+      family,
+      css
+    };
+  }
   createNativeFontFace() {
     const {
       data
@@ -12788,19 +12824,14 @@ class FontFaceObject {
     if (!data || this.disableFontFace) {
       return null;
     }
-    let nativeFontFace;
-    if (!this.cssFontInfo) {
-      nativeFontFace = new FontFace(this.loadedName, data, {});
-    } else {
-      const css = {
-        weight: this.cssFontInfo.fontWeight
-      };
-      if (this.cssFontInfo.italicAngle) {
-        css.style = `oblique ${this.cssFontInfo.italicAngle}deg`;
-      }
-      nativeFontFace = new FontFace(serializeFontFamily(this.cssFontInfo.fontFamily), data, css);
+    const {
+      family,
+      css
+    } = this.#getFontFaceProperties();
+    const nativeFontFace = new FontFace(family, data, css);
+    if (!this.generatedFontName) {
+      this._inspectFont?.(this);
     }
-    this._inspectFont?.(this);
     return nativeFontFace;
   }
   createFontFaceRule() {
@@ -12811,18 +12842,18 @@ class FontFaceObject {
       return null;
     }
     const url = `url(data:${this.mimetype};base64,${data.toBase64()});`;
-    let rule;
-    if (!this.cssFontInfo) {
-      rule = `@font-face {font-family:"${this.loadedName}";src:${url}}`;
-    } else {
-      let css = `font-weight: ${this.cssFontInfo.fontWeight};`;
-      if (this.cssFontInfo.italicAngle) {
-        css += `font-style: oblique ${this.cssFontInfo.italicAngle}deg;`;
-      }
-      const fontFamily = serializeFontFamily(this.cssFontInfo.fontFamily);
-      rule = `@font-face {font-family:${fontFamily};${css}src:${url}}`;
+    const {
+      family,
+      css
+    } = this.#getFontFaceProperties();
+    let rule = `@font-face {font-family:${serializeFontFamily(family)};`;
+    for (const [property, value] of Object.entries(css)) {
+      rule += `font-${property}: ${value};`;
     }
-    this._inspectFont?.(this, url);
+    rule += `src:${url}}`;
+    if (!this.generatedFontName) {
+      this._inspectFont?.(this, url);
+    }
     return rule;
   }
   getPathGenerator(objs, character) {
@@ -12885,6 +12916,9 @@ class FontFaceObject {
   }
   get fallbackName() {
     return this.#fontData.fallbackName;
+  }
+  get generatedFontName() {
+    return this.#fontData.generatedFontName;
   }
   get loadedName() {
     return this.#fontData.loadedName;
@@ -12982,7 +13016,7 @@ class SYSTEM_FONT_INFO {
 }
 class FONT_INFO {
   static bools = ["black", "bold", "disableFontFace", "fontExtraProperties", "isInvalidPDFjsFont", "isType3Font", "italic", "missingFile", "remeasure", "vertical"];
-  static strings = ["fallbackName", "loadedName"];
+  static strings = ["fallbackName", "generatedFontName", "loadedName"];
   static OFFSET_BBOX = Math.ceil(this.bools.length * 2 / 8);
   static OFFSET_FONT_MATRIX = this.OFFSET_BBOX + 1 + 2 * 4;
   static OFFSET_STRINGS = this.OFFSET_FONT_MATRIX + 1 + 8 * 6;
@@ -13144,8 +13178,11 @@ class FontInfo {
   get fallbackName() {
     return shadow(this, "fallbackName", this.#readString(0));
   }
+  get generatedFontName() {
+    return shadow(this, "generatedFontName", this.#readString(1));
+  }
   get loadedName() {
-    return shadow(this, "loadedName", this.#readString(1));
+    return shadow(this, "loadedName", this.#readString(2));
   }
   #getBufferOffset(index) {
     let offset = FONT_INFO.OFFSET_STRINGS;
@@ -14618,7 +14655,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "6.5.447";
+      const apiVersion = "6.5.472";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -14986,8 +15023,8 @@ class TextLayer {
       top = tx[5] - fontAscent * Math.cos(angle);
     }
     const divStyle = textDiv.style;
-    divStyle.left = `${(100 * left / this.#pageWidth).toFixed(2)}%`;
-    divStyle.top = `${(100 * top / this.#pageHeight).toFixed(2)}%`;
+    divStyle.left = `${(100 * left / this.#pageWidth).toFixed(3)}%`;
+    divStyle.top = `${(100 * top / this.#pageHeight).toFixed(3)}%`;
     const roundedFontHeight = Math.round(fontHeight * 100) / 100;
     divStyle.setProperty("--font-height", `${roundedFontHeight}px`);
     divStyle.fontFamily = fontFamily;
@@ -15254,7 +15291,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "6.5.447",
+    apiVersion: "6.5.472",
     data,
     password,
     disableAutoFetch,
@@ -16954,8 +16991,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "6.5.447";
-const build = "c7ca8a32e";
+const version = "6.5.472";
+const build = "1c3fdc259";
 
 ;// ./src/display/editor/color_picker.js
 
