@@ -217,7 +217,7 @@ dependencies {
     androidTestImplementation libs.androidx.test.runner
     androidTestImplementation libs.kotlin.test
     androidTestImplementation libs.kotlinx.coroutines.test
-    androidTestImplementation 'com.koushikdutta.async:androidasync:3.1.0'
+    androidTestImplementation libs.mockwebserver
 }
 
 apply from: "${topsrcdir}/mobile/android/gradle/with_gecko_binaries.gradle"
