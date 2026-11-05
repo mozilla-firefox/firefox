@@ -1101,9 +1101,12 @@ polyfillSupport$2?.({ ReactiveElement });
  */
 // Allows minifiers to rename references to globalThis
 const global$1 = globalThis;
-// We use a DOMParser to create the template elements. TS wants this to work for
-// both SSR and regular browser rendering, so we create one conditionally.
-const __moz_domParser = typeof window !== 'undefined' && window.DOMParser ? new DOMParser() : null;
+// Templates are parsed with setHTML. A plain config object is passed instead of
+// a Sanitizer because privileged windows can have their own global Sanitizer.
+// Comments are kept since Lit uses them as markers. Unknown elements and
+// attributes are kept too, and setHTML always strips script, frames, embeds,
+// objects and event handler attributes regardless of this config.
+const __moz_sanitizerConfig = { comments: true };
 const wrap$1 = (node) => node;
 const trustedTypes = global$1.trustedTypes;
 /**
@@ -1119,6 +1122,30 @@ const policy = trustedTypes
         createHTML: (s) => s,
     })
     : undefined;
+const __moz_navigationAttrs = new Set([
+    'action',
+    'data',
+    'href',
+    'formaction',
+    'src',
+    'xlink:href',
+]);
+const __moz_sanitizeAttribute = (name) => {
+    return __moz_navigationAttrs.has(name.toLowerCase());
+};
+const __moz_attributeValueSanitizer = (value, type) => {
+    try {
+        const str = String(value);
+        const url = new URL(str, 'https://example.com/');
+        if (url.protocol !== 'javascript:') {
+            return str;
+        }
+    }
+    catch {
+        // Couldn't parse as String or URL, not trustworthy.
+    }
+    return type === 'property' ? '' : nothing;
+};
 // Added to an attribute name to mark the attribute as bound so we can find
 // it easily.
 const boundAttributeSuffix = '$lit$';
@@ -1584,18 +1611,21 @@ class Template {
             }
             nodeIndex++;
         }
+        if (parts.length !== partCount) {
+            throw new Error('lit-html: template is missing binding markers after parsing');
+        }
     }
     // Overridden via `litHtmlPolyfillSupport` to provide platform support.
     /** @nocollapse */
     static createElement(html, _options) {
-        if (__moz_domParser) {
-            // DOMParser is available (browser rendering).
-            const doc = __moz_domParser.parseFromString(`<template>${html}</template>`, 'text/html');
-            return document.importNode(doc.querySelector('template'), true);
-        }
-        // SSR mode.
         const el = d.createElement('template');
-        el.innerHTML = html;
+        // Passing a config object makes Firefox build and canonicalize a new
+        // Sanitizer on each call, which is slower than passing a reusable
+        // Sanitizer instance. We can't reuse one because privileged windows
+        // such as browser.xhtml define their own global `Sanitizer`, shadowing
+        // the web API constructor. This only runs once per unique template
+        // since Lit caches the resulting Template.
+        el.setHTML(html, { sanitizer: __moz_sanitizerConfig });
         return el;
     }
 }
@@ -2035,6 +2065,9 @@ class AttributePart {
     }
     /** @internal */
     _commitValue(value) {
+        if (value && value !== nothing && __moz_sanitizeAttribute(this.name)) {
+            value = __moz_attributeValueSanitizer(value, 'attribute');
+        }
         if (value === nothing) {
             wrap$1(this.element).removeAttribute(this.name);
         }
@@ -2050,6 +2083,9 @@ class PropertyPart extends AttributePart {
     }
     /** @internal */
     _commitValue(value) {
+        if (value && value !== nothing && __moz_sanitizeAttribute(this.name)) {
+            value = __moz_attributeValueSanitizer(value, 'property');
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.element[this.name] = value === nothing ? undefined : value;
     }
