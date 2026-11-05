@@ -7,8 +7,6 @@ import itertools
 import json
 import os
 import pathlib
-import shutil
-import subprocess
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta
 
@@ -70,25 +68,12 @@ MAX_PERF_TASKS = 600
 # Name of the base category with no variants applied to it
 BASE_CATEGORY_NAME = "base"
 
-# Add environment variable for firefox-android integration.
-# This will let us find the APK to upload automatically. However,
-# the following option will need to be supplied:
-#       --browsertime-upload-apk firefox-android
-# OR    --mozperftest-upload-apk firefox-android
-MOZ_FIREFOX_ANDROID_APK_OUTPUT = os.getenv("MOZ_FIREFOX_ANDROID_APK_OUTPUT", None)
-
 
 class InvalidCategoryException(Exception):
     """Thrown when a category is found to be invalid.
 
     See the `PerfParser.run_category_checks()` method for more info.
     """
-
-    pass
-
-
-class APKNotFound(Exception):
-    """Raised when a user-supplied path to an APK is invalid."""
 
     pass
 
@@ -200,36 +185,6 @@ class PerfParser(CompareParser):
                 "help": "Query to run in either the perf-category selector, "
                 "or the fuzzy selector if --show-all/--full is provided. "
                 "Specifying multiple times schedules the union of computed tasks.",
-            },
-        ],
-        [
-            # Bug 1866047 - Remove once monorepo changes are complete
-            ["--browsertime-upload-apk"],
-            {
-                "type": str,
-                "default": None,
-                "help": "Path to an APK to upload. Note that this "
-                "will replace the APK installed in all Android Performance "
-                "tests. If the Activity, Binary Path, or Intents required "
-                "change at all relative to the existing GeckoView, and Fenix "
-                "tasks, then you will need to make fixes in the associated "
-                "taskcluster files (e.g. taskcluster/kinds/browsertime/mobile.yml). "
-                "Alternatively, set MOZ_FIREFOX_ANDROID_APK_OUTPUT to a path to "
-                "an APK, and then run the command with --browsertime-upload-apk "
-                "firefox-android. This option will only copy the APK for browsertime, see "
-                "--mozperftest-upload-apk to upload APKs for startup tests.",
-            },
-        ],
-        [
-            # Bug 1866047 - Remove once monorepo changes are complete
-            ["--mozperftest-upload-apk"],
-            {
-                "type": str,
-                "default": None,
-                "help": "See --browsertime-upload-apk. This option does the same "
-                "thing except it's for mozperftest tests such as the startup ones. "
-                "Note that those tests only exist through --show-all/--full as they "
-                "aren't contained in any existing categories.",
             },
         ],
         [
@@ -1647,73 +1602,6 @@ class PerfParser(CompareParser):
 
         return True
 
-    def setup_apk_upload(framework, apk_upload_path):
-        """Setup the APK for uploading to test on try.
-
-        There are two ways of performing the upload:
-            (1) Passing a path to an APK with:
-                --browsertime-upload-apk <PATH/FILE.APK>
-                --mozperftest-upload-apk <PATH/FILE.APK>
-            (2) Setting MOZ_FIREFOX_ANDROID_APK_OUTPUT to a path that will
-                always point to an APK (<PATH/FILE.APK>) that we can upload.
-
-        The file is always copied to testing/raptor/raptor/user_upload.apk to
-        integrate with minimal changes for simpler cases when using raptor-browsertime.
-
-        For mozperftest, the APK is always uploaded here for the same reasons:
-        python/mozperftest/mozperftest/user_upload.apk
-        """
-        frameworks_to_locations = {
-            "browsertime": pathlib.Path(
-                build.topsrcdir, "testing", "raptor", "raptor", "user_upload.apk"
-            ),
-            "mozperftest": pathlib.Path(
-                build.topsrcdir,
-                "python",
-                "mozperftest",
-                "mozperftest",
-                "user_upload.apk",
-            ),
-        }
-
-        print("Setting up custom APK upload")
-        if apk_upload_path in ("firefox-android"):
-            apk_upload_path = MOZ_FIREFOX_ANDROID_APK_OUTPUT
-            if apk_upload_path is None:
-                raise APKNotFound(
-                    "MOZ_FIREFOX_ANDROID_APK_OUTPUT is not defined. It should "
-                    "point to an APK to upload."
-                )
-            apk_upload_path = pathlib.Path(apk_upload_path)
-            if not apk_upload_path.exists() or apk_upload_path.is_dir():
-                raise APKNotFound(
-                    "MOZ_FIREFOX_ANDROID_APK_OUTPUT needs to point to an APK."
-                )
-        else:
-            apk_upload_path = pathlib.Path(apk_upload_path)
-            if not apk_upload_path.exists():
-                raise APKNotFound(f"Path does not exist: {str(apk_upload_path)}")
-
-        print("\nCopying file in-tree for upload...")
-        shutil.copyfile(
-            str(apk_upload_path),
-            frameworks_to_locations[framework],
-        )
-
-        hg_cmd = ["hg", "add", str(frameworks_to_locations[framework])]
-        print(
-            f"\nRunning the following hg command (RAM warnings are expected):\n"
-            f" {hg_cmd}"
-        )
-        subprocess.check_output(hg_cmd)
-        print(
-            "\nAPK is setup for uploading. Please commit the changes, "
-            "and re-run this command. \nEnsure you "
-            "select the correct tasks (fenix, geckoview) or use "
-            "--show-all/--full for mozperftest task selection. \nFor Fenix, ensure "
-            "you also provide the --fenix flag."
-        )
-
     def build_category_description(base_cmd, categories):
         descriptions = {}
 
@@ -1738,19 +1626,6 @@ class PerfParser(CompareParser):
 
 
 def run(**kwargs):
-    if (
-        kwargs.get("browsertime_upload_apk") is not None
-        or kwargs.get("mozperftest_upload_apk") is not None
-    ):
-        framework = "browsertime"
-        upload_apk = kwargs.get("browsertime_upload_apk")
-        if upload_apk is None:
-            framework = "mozperftest"
-            upload_apk = kwargs.get("mozperftest_upload_apk")
-
-        PerfParser.setup_apk_upload(framework, upload_apk)
-        return
-
     # Make sure the categories are following
     # the rules we've setup
     PerfParser.run_category_checks()
