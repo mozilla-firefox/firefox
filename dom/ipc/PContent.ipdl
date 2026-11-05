@@ -1418,8 +1418,8 @@ parent:
      *       provided.
      */
     async PContentPermissionRequest(PermissionRequest[] aRequests,
-                                    nullable nsIPrincipal aPrincipal,
-                                    nullable nsIPrincipal aTopLevelPrincipal,
+                                    [NoTaint="Bug 1501072"] nullable nsIPrincipal aPrincipal,
+                                    [NoTaint="Bug 1501072"] nullable nsIPrincipal aTopLevelPrincipal,
                                     bool aIsHandlingUserInput,
                                     bool aMaybeUnsafePermissionDelegate,
                                     TabId tabId,
@@ -1695,7 +1695,7 @@ parent:
      */
     async StorageAccessPermissionGrantedForOrigin(uint64_t aTopLevelWindowId,
                                                   MaybeDiscardedBrowsingContext aParentContext,
-                                                  nullable nsIPrincipal aTrackingPrincipal,
+                                                  [NoTaint="Bug 2014105"] nullable nsIPrincipal aTrackingPrincipal,
                                                   nsCString aTrackingOrigin,
                                                   StorageAccessPromptChoices aAllowMode,
                                                   StorageAccessPermissionGrantedReason? aReason,
@@ -1704,7 +1704,7 @@ parent:
 
     async CompleteAllowAccessFor(MaybeDiscardedBrowsingContext aParentContext,
                                  uint64_t aTopLevelWindowId,
-                                 nullable nsIPrincipal aTrackingPrincipal,
+                                 [NoTaint="Bug 2014105"] nullable nsIPrincipal aTrackingPrincipal,
                                  nsCString aTrackingOrigin,
                                  uint32_t aCookieBehavior,
                                  StorageAccessPermissionGrantedReason aReason,
@@ -1714,7 +1714,7 @@ parent:
     async StoreUserInteractionAsPermission(nsIPrincipal aPrincipal);
 
     async TestCookiePermissionDecided(MaybeDiscardedBrowsingContext aContext,
-                         nullable nsIPrincipal aPrincipal)
+                         [NoTaint="Bug 2014105"] nullable nsIPrincipal aPrincipal)
           returns (bool? allowed);
 
    /**
@@ -1860,8 +1860,8 @@ parent:
       returns(nsresult result);
 
     async BlobURLDataRequest(nsCString aBlobURL,
-                             nsIPrincipal aTriggeringPrincipal,
-                             nullable nsIPrincipal aLoadingPrincipal,
+                             [NoTaint="Bug 2089478"] nsIPrincipal aTriggeringPrincipal,
+                             [NoTaint="Bug 2089478"] nullable nsIPrincipal aLoadingPrincipal,
                              OriginAttributes aOriginAttributes,
                              uint64_t aInnerWindowId,
                              nsCString aPartitionKey)

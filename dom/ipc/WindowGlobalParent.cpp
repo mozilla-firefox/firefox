@@ -523,29 +523,36 @@ IPCResult WindowGlobalParent::RecvUpdateDocumentURI(NotNull<nsIURI*> aURI) {
 }
 
 IPCResult WindowGlobalParent::RecvUpdateDocumentPrincipal(
-    nsIPrincipal* aNewDocumentPrincipal,
-    nsIPrincipal* aNewDocumentPartitionedPrincipal) {
-  if (!mDocumentPrincipal->Equals(aNewDocumentPrincipal)) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aNewDocumentPrincipal,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aNewDocumentPartitionedPrincipal) {
+  if (!MOZ_IS_VALID(aNewDocumentPrincipal,
+                    mDocumentPrincipal->Equals(aNewDocumentPrincipal))) {
     return IPC_FAIL(this,
                     "Trying to reuse WindowGlobalParent but the principal of "
                     "the new document does not match the old one");
   }
+  NotNull<RefPtr<nsIPrincipal>> newDocumentPrincipal =
+      MOZ_NO_VALIDATE(aNewDocumentPrincipal, "Validated above");
   // NOTE: Unfortunately, we cannot check ->Equals for our old & new partitioned
   // principals, as the partition key for an initial about:blank document may
   // not match the partition key of the load which replaces it.
-  if (!VerifyPartitionedPrincipalMatchesDocumentPrincipal(
-          aNewDocumentPrincipal, aNewDocumentPartitionedPrincipal)) {
+  if (!MOZ_IS_VALID(
+          aNewDocumentPartitionedPrincipal,
+          VerifyPartitionedPrincipalMatchesDocumentPrincipal(
+              newDocumentPrincipal, aNewDocumentPartitionedPrincipal))) {
     return IPC_FAIL(
         this, "Invalid PartitionedPrincipal when re-using WindowGlobalParent");
   }
+  NotNull<RefPtr<nsIPrincipal>> newDocumentPartitionedPrincipal =
+      MOZ_NO_VALIDATE(aNewDocumentPartitionedPrincipal, "Validated above");
 
-  mDocumentPrincipal = aNewDocumentPrincipal;
-  if (mDocumentPrincipal->Equals(aNewDocumentPartitionedPrincipal)) {
+  mDocumentPrincipal = newDocumentPrincipal;
+  if (mDocumentPrincipal->Equals(newDocumentPartitionedPrincipal)) {
     // Keep only one copy of the principal around if we don't have a partition
     // key.
     mDocumentPartitionedPrincipal = mDocumentPrincipal;
   } else {
-    mDocumentPartitionedPrincipal = aNewDocumentPartitionedPrincipal;
+    mDocumentPartitionedPrincipal = newDocumentPartitionedPrincipal;
   }
 
   return IPC_OK();

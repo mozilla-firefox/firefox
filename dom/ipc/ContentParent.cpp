@@ -3453,10 +3453,11 @@ mozilla::ipc::IPCResult ContentParent::RecvGetClipboardDataSnapshot(
     nsTArray<nsCString>&& aTypes,
     const nsIClipboard::ClipboardType& aWhichClipboard,
     const MaybeDiscarded<WindowContext>& aRequestingWindowContext,
-    mozilla::NotNull<nsIPrincipal*> aRequestingPrincipal,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aRequestingPrincipal,
     GetClipboardDataSnapshotResolver&& aResolver) {
-  if (!ValidatePrincipal(aRequestingPrincipal,
-                         {ValidatePrincipalOptions::AllowExpanded})) {
+  auto requestingPrincipal = ValidatePrincipal(
+      aRequestingPrincipal, {ValidatePrincipalOptions::AllowExpanded});
+  if (!requestingPrincipal) {
     return PrincipalValidationIpcFail(aRequestingPrincipal, this, __func__);
   }
 
@@ -3483,7 +3484,7 @@ mozilla::ipc::IPCResult ContentParent::RecvGetClipboardDataSnapshot(
 
   auto callback = MakeRefPtr<ClipboardGetCallback>(this, std::move(aResolver));
   rv = clipboard->GetDataSnapshot(aTypes, aWhichClipboard, requestingWindow,
-                                  aRequestingPrincipal, callback);
+                                  *requestingPrincipal, callback);
   if (NS_FAILED(rv)) {
     callback->OnError(rv);
     return IPC_OK();
@@ -4769,8 +4770,9 @@ mozilla::ipc::IPCResult ContentParent::RecvAccumulateMixedContentHSTS(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvLoadURIExternal(
-    NotNull<nsIURI*> uri, NotNull<nsIPrincipal*> aTriggeringPrincipal,
-    nsIPrincipal* aRedirectPrincipal,
+    NotNull<nsIURI*> uri,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aTriggeringPrincipal,
+    Tainted<RefPtr<nsIPrincipal>>&& aRedirectPrincipal,
     const MaybeDiscarded<BrowsingContext>& aContext,
     bool aWasExternallyTriggered, bool aHasValidUserGestureActivation,
     bool aNewWindowTarget) {
@@ -4778,12 +4780,13 @@ mozilla::ipc::IPCResult ContentParent::RecvLoadURIExternal(
     return IPC_OK();
   }
 
-  if (!ValidatePrincipal(aTriggeringPrincipal)) {
+  auto triggeringPrincipal = ValidatePrincipal(aTriggeringPrincipal);
+  if (!triggeringPrincipal) {
     return PrincipalValidationIpcFail(aTriggeringPrincipal, this, __func__);
   }
-
-  if (!ValidatePrincipal(aRedirectPrincipal,
-                         {ValidatePrincipalOptions::AllowNullPtr})) {
+  auto redirectPrincipal = ValidatePrincipal(
+      aRedirectPrincipal, {ValidatePrincipalOptions::AllowNullPtr});
+  if (!redirectPrincipal) {
     return PrincipalValidationIpcFail(aRedirectPrincipal, this, __func__);
   }
 
@@ -4794,7 +4797,7 @@ mozilla::ipc::IPCResult ContentParent::RecvLoadURIExternal(
   }
 
   BrowsingContext* bc = aContext.get();
-  extProtService->LoadURI(uri, aTriggeringPrincipal, aRedirectPrincipal, bc,
+  extProtService->LoadURI(uri, *triggeringPrincipal, *redirectPrincipal, bc,
                           aWasExternallyTriggered,
                           aHasValidUserGestureActivation, aNewWindowTarget);
   return IPC_OK();
@@ -5565,11 +5568,12 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
     const bool& aForWindowDotPrint, const bool& aIsTopLevelCreatedByWebContent,
     nsIURI* aURIToLoad, const nsACString& aFeatures,
     const UserActivation::Modifiers& aModifiers,
-    NotNull<nsIPrincipal*> aTriggeringPrincipal,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aTriggeringPrincipal,
     nsIPolicyContainer* aPolicyContainer, nsIReferrerInfo* aReferrerInfo,
     const OriginAttributes& aOriginAttributes, bool aUserActivation,
     bool aTextDirectiveUserActivation, CreateWindowResolver&& aResolve) {
-  if (!ValidatePrincipal(aTriggeringPrincipal)) {
+  auto triggeringPrincipal = ValidatePrincipal(aTriggeringPrincipal);
+  if (!triggeringPrincipal) {
     return PrincipalValidationIpcFail(aTriggeringPrincipal, this, __func__);
   }
 
@@ -5665,7 +5669,7 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateWindow(
       aThisTab, *parent, newBCOpenerId != 0, aChromeFlags, aCalledFromJS,
       aForPrinting, aForWindowDotPrint, aIsTopLevelCreatedByWebContent,
       aURIToLoad, aFeatures, aModifiers, newTab, rv, newRemoteTab,
-      &cwi.windowOpened(), openLocation, aTriggeringPrincipal, aReferrerInfo,
+      &cwi.windowOpened(), openLocation, *triggeringPrincipal, aReferrerInfo,
       aPolicyContainer, aOriginAttributes, aUserActivation,
       aTextDirectiveUserActivation);
   if (!ipcResult) {
@@ -5884,12 +5888,14 @@ void ContentParent::BroadcastBlobURLUnregistration(
 
 mozilla::ipc::IPCResult ContentParent::RecvStoreAndBroadcastBlobURLRegistration(
     const nsACString& aURI, const IPCBlob& aBlob,
-    NotNull<nsIPrincipal*> aPrincipal, const nsCString& aPartitionKey) {
-  if (!ValidatePrincipal(aPrincipal)) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
+    const nsCString& aPartitionKey) {
+  auto principal = ValidatePrincipal(aPrincipal);
+  if (!principal) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
 
-  if (!BlobURLProtocolHandler::IsBlobURLValid(aPrincipal, aURI)) {
+  if (!BlobURLProtocolHandler::IsBlobURLValid(*principal, aURI)) {
     return IPC_FAIL(this, "Blob URL format is invalid.");
   }
 
@@ -5899,10 +5905,10 @@ mozilla::ipc::IPCResult ContentParent::RecvStoreAndBroadcastBlobURLRegistration(
   }
 
   if (NS_FAILED(BlobURLProtocolHandler::AddDataEntryParent(
-          aURI, aPrincipal, aPartitionKey, blobImpl, ChildID()))) {
+          aURI, *principal, aPartitionKey, blobImpl, ChildID()))) {
     return IPC_FAIL(this, "Conflicting Blob URL principal");
   }
-  BroadcastBlobURLRegistration(aURI, blobImpl, aPrincipal, aPartitionKey, this);
+  BroadcastBlobURLRegistration(aURI, blobImpl, *principal, aPartitionKey, this);
 
   return IPC_OK();
 }
@@ -6454,7 +6460,7 @@ mozilla::ipc::IPCResult ContentParent::RecvRecordPageLoadEvent(
 // PURLClassifierParent
 
 PURLClassifierParent* ContentParent::AllocPURLClassifierParent(
-    NotNull<nsIPrincipal*> aPrincipal, bool* aSuccess) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>& aPrincipal, bool* aSuccess) {
   MOZ_ASSERT(NS_IsMainThread());
 
   *aSuccess = true;
@@ -6463,17 +6469,18 @@ PURLClassifierParent* ContentParent::AllocPURLClassifierParent(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvPURLClassifierConstructor(
-    PURLClassifierParent* aActor, NotNull<nsIPrincipal*> aPrincipal,
-    bool* aSuccess) {
+    PURLClassifierParent* aActor,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal, bool* aSuccess) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aActor);
   *aSuccess = false;
 
   auto* actor = mozilla::ipc::ActorCast<URLClassifierParent>(aActor);
-  if (!ValidatePrincipal(aPrincipal)) {
+  auto principal = ValidatePrincipal(aPrincipal);
+  if (!principal) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
-  return actor->StartClassify(aPrincipal, aSuccess);
+  return actor->StartClassify(*principal, aSuccess);
 }
 
 bool ContentParent::DeallocPURLClassifierParent(PURLClassifierParent* aActor) {
@@ -6625,12 +6632,13 @@ mozilla::ipc::IPCResult ContentParent::RecvBHRThreadHang(
 
 mozilla::ipc::IPCResult
 ContentParent::RecvAutomaticStorageAccessPermissionCanBeGranted(
-    NotNull<nsIPrincipal*> aPrincipal,
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
     AutomaticStorageAccessPermissionCanBeGrantedResolver&& aResolver) {
-  if (!ValidatePrincipal(aPrincipal)) {
+  auto principal = ValidatePrincipal(aPrincipal);
+  if (!principal) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
-  aResolver(Document::AutomaticStorageAccessPermissionCanBeGranted(aPrincipal));
+  aResolver(Document::AutomaticStorageAccessPermissionCanBeGranted(*principal));
   return IPC_OK();
 }
 
@@ -6706,11 +6714,12 @@ mozilla::ipc::IPCResult ContentParent::RecvCompleteAllowAccessFor(
 }
 
 mozilla::ipc::IPCResult ContentParent::RecvStoreUserInteractionAsPermission(
-    NotNull<nsIPrincipal*> aPrincipal) {
-  if (!ValidatePrincipal(aPrincipal)) {
+    Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal) {
+  auto principal = ValidatePrincipal(aPrincipal);
+  if (!principal) {
     return PrincipalValidationIpcFail(aPrincipal, this, __func__);
   }
-  ContentBlockingUserInteraction::Observe(aPrincipal);
+  ContentBlockingUserInteraction::Observe(*principal);
   return IPC_OK();
 }
 

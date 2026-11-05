@@ -332,8 +332,9 @@ class WindowGlobalParent final : public WindowContext,
   mozilla::ipc::IPCResult RecvAddSecurityState(uint32_t aStateFlags);
   mozilla::ipc::IPCResult RecvUpdateDocumentURI(NotNull<nsIURI*> aURI);
   mozilla::ipc::IPCResult RecvUpdateDocumentPrincipal(
-      nsIPrincipal* aNewDocumentPrincipal,
-      nsIPrincipal* aNewDocumentPartitionedPrincipal);
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aNewDocumentPrincipal,
+      Tainted<NotNull<RefPtr<nsIPrincipal>>>&&
+          aNewDocumentPartitionedPrincipal);
   mozilla::ipc::IPCResult RecvUpdatePrincipalPartitioning(
       bool aPartitionStoragePrincipal);
   mozilla::ipc::IPCResult RecvUpdateDocumentHasLoaded(bool aDocumentHasLoaded);

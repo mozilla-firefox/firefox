@@ -10,7 +10,7 @@ include IPCBlob;
 include NeckoChannelParams;
 
 using mozilla::gfx::SurfaceFormat from "mozilla/gfx/Types.h";
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 [RefCounted] using class nsIReferrerInfo from "nsIReferrerInfo.h";
 [MoveOnly] using class mozilla::ipc::BigBuffer from "mozilla/ipc/BigBuffer.h";
 

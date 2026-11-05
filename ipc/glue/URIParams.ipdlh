@@ -5,7 +5,7 @@
 include "mozilla/dom/PermissionMessageUtils.h";
 
 using struct mozilla::void_t from "mozilla/ipc/IPCCore.h";
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
+[RefCounted, Tainted] using class nsIPrincipal from "nsIPrincipal.h";
 
 include PBackgroundSharedTypes;
 

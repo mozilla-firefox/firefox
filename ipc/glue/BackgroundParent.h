@@ -6,6 +6,8 @@
 #define mozilla_ipc_backgroundparent_h_
 
 #include "base/process.h"
+#include "mozilla/Maybe.h"
+#include "mozilla/Tainting.h"
 #include "mozilla/dom/ContentParent.h"
 #include "nsStringFwd.h"
 #include "nsTArrayForwardDeclare.h"
@@ -87,6 +89,20 @@ class BackgroundParent final {
   static bool ValidatePrincipal(
       PBackgroundParent* aBackgroundActor, nsIPrincipal* aPrincipal,
       const EnumSet<dom::ValidatePrincipalOptions>& aOptions = {});
+
+  // Validates a tainted principal received over IPC. Returns the untainted
+  // principal on success, or Nothing() if validation failed.
+  template <typename T>
+  static Maybe<T> ValidatePrincipal(
+      PBackgroundParent* aBackgroundActor, Tainted<T>& aPrincipal,
+      const EnumSet<dom::ValidatePrincipalOptions>& aOptions = {}) {
+    if (!MOZ_IS_VALID(aPrincipal, ValidatePrincipal(aBackgroundActor,
+                                                    aPrincipal, aOptions))) {
+      return Nothing();
+    }
+    return Some(MOZ_NO_VALIDATE(aPrincipal, "Validated above"));
+  }
+
   static bool ValidatePrincipalInfo(
       PBackgroundParent* aBackgroundActor, const PrincipalInfo& aPrincipalInfo,
       const EnumSet<dom::ValidatePrincipalOptions>& aOptions = {});

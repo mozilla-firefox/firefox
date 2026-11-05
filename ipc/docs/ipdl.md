@@ -529,11 +529,13 @@ determined from the `[ParentProc]` and `[ChildProc]` attributes of the
 protocol's toplevel protocols, so for `[ParentProc=GPU, ChildProc=Parent]`
 the child side is tainted instead of the parent side.
 
-Individual parameters can opt out of tainting with `[NoTaint=passback]` or
-`[NoTaint=allvalid]`, where the value documents why validation is not needed:
-`passback` means the value is only passed on to some other code that does its
-own validation, and `allvalid` means every possible value is valid. `NoTaint`
-is only allowed when the message is `[Tainted]` or the parameter's type is.
+Individual parameters can opt out of tainting with `[NoTaint=passback]`,
+`[NoTaint=allvalid]` or `[NoTaint="Bug XXXX"]`, where the value documents why
+validation is not needed: `passback` means the value is only passed on to some
+other code that does its own validation, and `allvalid` means every possible
+value is valid. A string, typically a bug number, documents why the parameter
+isn't validated (yet). `NoTaint` is only allowed when the message is
+`[Tainted]` or the parameter's type is.
 
 ```cpp
 [Tainted, RefCounted] using class nsIFoo from "nsIFoo.h";
@@ -730,7 +732,8 @@ for use in IPDL files:
                               received by the parent process from another
                               process are tainted.
 ``[NoTaint=...]``             Excludes a message parameter from tainting.
-                              The value is ``passback`` or ``allvalid``.
+                              The value is ``passback``, ``allvalid`` or
+                              a string such as ``"Bug XXXX"``.
 ``[Compress]``                Indicates repeated messages of this type will
                               consolidate.  When two messages of this type are
                               sent and end up side-by-side in the message queue

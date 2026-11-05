@@ -1506,7 +1506,9 @@ class GatherDecls(TcheckVisitor):
                     #    merely returned to the Child later.
                     # AllValid indicates that the entire span of values representable by
                     #    the type are acceptable.  e.g. 0-255 in a uint8
-                    "NoTaint": ("passback", "allvalid")
+                    # A literal string can be used to reference a bug for adding the
+                    #    missing validation.
+                    "NoTaint": ("passback", "allvalid", StringLiteral)
                 },
             )
 

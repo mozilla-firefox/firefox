@@ -52,19 +52,20 @@ WebBrowserPersistDocumentParent::~WebBrowserPersistDocumentParent() {
 }
 
 mozilla::ipc::IPCResult WebBrowserPersistDocumentParent::RecvAttributes(
-    Attrs&& aAttrs, NotNull<nsIPrincipal*> aPrincipal,
+    Attrs&& aAttrs, Tainted<NotNull<RefPtr<nsIPrincipal>>>&& aPrincipal,
     nsIInputStream* aPostStream) {
   if (!mOnReady || mReflection) {
     return IPC_FAIL(this, "invalid actor state");
   }
 
   auto* contentParent = dom::ContentParent::Cast(Manager());
-  if (!contentParent->ValidatePrincipal(aPrincipal, {})) {
+  auto principal = contentParent->ValidatePrincipal(aPrincipal);
+  if (!principal) {
     return IPC_FAIL(this, "invalid principal");
   }
 
   mReflection = new WebBrowserPersistRemoteDocument(this, std::move(aAttrs),
-                                                    aPrincipal, aPostStream);
+                                                    *principal, aPostStream);
   RefPtr<WebBrowserPersistRemoteDocument> reflection = mReflection;
   mOnReady->OnDocumentReady(reflection);
   mOnReady = nullptr;
