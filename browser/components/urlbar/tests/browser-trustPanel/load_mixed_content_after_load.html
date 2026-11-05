@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+<video id="video" crossorigin="anonymous"/>
+<script>
+  function loadTrack(source) {
+    let video = document.getElementById("video");
+    let track = document.createElement("track");
+    track.src = source;
+    track.default = true;
+    video.appendChild(track);
+  }
+</script>
+</body>
+</html>

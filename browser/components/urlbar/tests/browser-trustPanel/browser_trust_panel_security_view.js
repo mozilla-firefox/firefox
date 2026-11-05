@@ -348,3 +348,264 @@ add_task(async function test_non_qwac() {
     await BrowserTestUtils.removeTab(tab);
   }
 });
+
+add_task(async function test_no_qwac_ui_if_mixed_content() {
+  let url =
+    getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content",
+      "https://1-qwac.example.com"
+    ) + "load_mixed_content_after_load.html";
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: url,
+    waitForLoad: true,
+  });
+
+  await UrlbarTestUtils.openTrustPanel(window);
+  await UrlbarTestUtils.openTrustPanelSubview(
+    window,
+    "trustpanel-securityInformationView"
+  );
+
+  // Wait for the QWAC status to be determined.
+  await gTrustPanelHandler.qwacStatusPromise;
+
+  Assert.ok(
+    BrowserTestUtils.isVisible(
+      document.getElementById("identity-popup-content-etsi")
+    ),
+    "etsi qualified text visible"
+  );
+
+  await UrlbarTestUtils.closeTrustPanel(window);
+
+  // Cause the page to load mixed content.
+  let httpSource =
+    getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content",
+      // eslint-disable-next-line sdl/no-insecure-url
+      "http://example.com"
+    ) + "silence.ogg";
+  await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [httpSource],
+    async function (source) {
+      content.window.wrappedJSObject.loadTrack(source);
+    }
+  );
+
+  await UrlbarTestUtils.openTrustPanel(window);
+  await UrlbarTestUtils.openTrustPanelSubview(
+    window,
+    "trustpanel-securityInformationView"
+  );
+
+  // Wait for the QWAC status to be determined.
+  await gTrustPanelHandler.qwacStatusPromise;
+
+  Assert.ok(
+    BrowserTestUtils.isVisible(
+      document.querySelector(
+        "[data-l10n-id='identity-description-passive-loaded']"
+      )
+    ),
+    "passive mixed content warning text should be visible"
+  );
+  Assert.ok(
+    BrowserTestUtils.isHidden(
+      document.getElementById("identity-popup-content-etsi")
+    ),
+    "etsi qualified text should not be visible"
+  );
+
+  await BrowserTestUtils.removeTab(tab);
+});
+
+add_task(
+  {
+    // Test EV information is debug-only.
+    skip_if: () => !AppConstants.DEBUG,
+  },
+  async function test_no_ev_ui_if_mixed_content() {
+    let url =
+      getRootDirectory(gTestPath).replace(
+        "chrome://mochitests/content",
+        "https://ev.example.com"
+      ) + "load_mixed_content_after_load.html";
+    const tab = await BrowserTestUtils.openNewForegroundTab({
+      gBrowser,
+      opening: url,
+      waitForLoad: true,
+    });
+
+    await UrlbarTestUtils.openTrustPanel(window);
+    await UrlbarTestUtils.openTrustPanelSubview(
+      window,
+      "trustpanel-securityInformationView"
+    );
+
+    Assert.ok(
+      BrowserTestUtils.isVisible(
+        document.getElementById("identity-popup-content-owner")
+      ),
+      "ev owner text should be visible"
+    );
+
+    await UrlbarTestUtils.closeTrustPanel(window);
+
+    // Cause the page to load mixed content.
+    let httpSource =
+      getRootDirectory(gTestPath).replace(
+        "chrome://mochitests/content",
+        // eslint-disable-next-line sdl/no-insecure-url
+        "http://example.com"
+      ) + "silence.ogg";
+    await SpecialPowers.spawn(
+      tab.linkedBrowser,
+      [httpSource],
+      async function (source) {
+        content.window.wrappedJSObject.loadTrack(source);
+      }
+    );
+
+    await UrlbarTestUtils.openTrustPanel(window);
+    await UrlbarTestUtils.openTrustPanelSubview(
+      window,
+      "trustpanel-securityInformationView"
+    );
+
+    Assert.ok(
+      BrowserTestUtils.isVisible(
+        document.querySelector(
+          "[data-l10n-id='identity-description-passive-loaded']"
+        )
+      ),
+      "passive mixed content warning text should be visible"
+    );
+    Assert.ok(
+      BrowserTestUtils.isHidden(
+        document.getElementById("identity-popup-content-owner")
+      ),
+      "ev owner text should not be visible"
+    );
+
+    await BrowserTestUtils.removeTab(tab);
+  }
+);
+
+add_task(async function test_override_ui_with_mixed_content() {
+  registerCleanupFunction(() => {
+    let certOverrideService = Cc[
+      "@mozilla.org/security/certoverride;1"
+    ].getService(Ci.nsICertOverrideService);
+    certOverrideService.clearValidityOverride("expired.example.com", 443, {});
+  });
+
+  let url =
+    getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content",
+      "https://expired.example.com"
+    ) + "load_mixed_content_after_load.html";
+
+  // Load https://expired.example.com. It should result in a certificate error page.
+  let certErrorLoaded;
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    () => {
+      gBrowser.selectedTab = BrowserTestUtils.addTab(gBrowser, url);
+      let browser = gBrowser.selectedBrowser;
+      certErrorLoaded = BrowserTestUtils.waitForErrorPage(browser);
+    },
+    false
+  );
+  await certErrorLoaded;
+  // Spawn a task to open the advanced pane and click the button to add an exception.
+  let loaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser, false, url);
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    const netErrorCard = await ContentTaskUtils.waitForCondition(
+      () => content.document.querySelector("net-error-card")?.wrappedJSObject,
+      "Waiting for net-error-card"
+    );
+    await netErrorCard.getUpdateComplete();
+    const advancedButton = netErrorCard.advancedButton;
+    advancedButton.scrollIntoView(true);
+    EventUtils.synthesizeMouseAtCenter(advancedButton, {}, content);
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        netErrorCard.exceptionButton && !netErrorCard.exceptionButton.disabled,
+      "Wait for the exception button to be created."
+    );
+    netErrorCard.exceptionButton.scrollIntoView(true);
+    EventUtils.synthesizeMouseAtCenter(
+      netErrorCard.exceptionButton,
+      {},
+      content
+    );
+  });
+  await loaded;
+
+  await UrlbarTestUtils.openTrustPanel(window);
+  await UrlbarTestUtils.openTrustPanelSubview(
+    window,
+    "trustpanel-securityInformationView"
+  );
+
+  Assert.ok(
+    BrowserTestUtils.isVisible(
+      document.getElementById(
+        "identity-popup-content-cert-exception-overridden"
+      )
+    ),
+    "certificate exception overridden text should be visible"
+  );
+  Assert.ok(
+    BrowserTestUtils.isHidden(
+      document.querySelector(
+        "[data-l10n-id='identity-description-passive-loaded']"
+      )
+    ),
+    "passive mixed content warning text should not be visible"
+  );
+
+  await UrlbarTestUtils.closeTrustPanel(window);
+
+  // Cause the page to load mixed content.
+  let httpSource =
+    getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content",
+      // eslint-disable-next-line sdl/no-insecure-url
+      "http://example.com"
+    ) + "silence.ogg";
+  await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [httpSource],
+    async function (source) {
+      content.window.wrappedJSObject.loadTrack(source);
+    }
+  );
+
+  await UrlbarTestUtils.openTrustPanel(window);
+  await UrlbarTestUtils.openTrustPanelSubview(
+    window,
+    "trustpanel-securityInformationView"
+  );
+
+  Assert.ok(
+    BrowserTestUtils.isVisible(
+      document.getElementById(
+        "identity-popup-content-cert-exception-overridden"
+      )
+    ),
+    "certificate exception overridden text should still be visible"
+  );
+  Assert.ok(
+    BrowserTestUtils.isVisible(
+      document.querySelector(
+        "[data-l10n-id='identity-description-passive-loaded']"
+      )
+    ),
+    "passive mixed content warning text should be visible"
+  );
+
+  await BrowserTestUtils.removeTab(tab);
+});

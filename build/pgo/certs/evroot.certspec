@@ -1,0 +1,7 @@
+issuer:evroot
+subject:evroot
+subjectKey:ev
+issuerKey:ev
+validity:20150101-20350101
+extension:basicConstraints:cA,
+extension:keyUsage:keyCertSign,cRLSign

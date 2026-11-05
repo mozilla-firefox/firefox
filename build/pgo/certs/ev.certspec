@@ -1,0 +1,5 @@
+issuer:evroot
+subject:printableString/O=Mozilla EV Test/CN=EV Test
+issuerKey:ev
+extension:certificatePolicies:2.23.140.1.1
+extension:subjectAlternativeName:ev.example.com
