@@ -81,7 +81,7 @@ export const ResetPBMPanel = {
       return;
     }
 
-    panelview.addEventListener("command", this);
+    panelview.addEventListener("click", this);
 
     // Before the panel is shown, update checkbox state based on pref.
     this._rememberCheck(triggeringWindow).checked = this._shouldConfirmClear;
@@ -94,7 +94,7 @@ export const ResetPBMPanel = {
 
   onViewHiding(event) {
     let panelview = event.target;
-    panelview.removeEventListener("command", this);
+    panelview.removeEventListener("click", this);
   },
 
   handleEvent(event) {

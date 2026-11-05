@@ -411,12 +411,14 @@
               class="panel-footer"
               data-l10n-id="bookmark-panel"
               data-l10n-attrs="style">
-          <button id="editBookmarkPanelDoneButton"
-                  class="footer-button"
-                  data-l10n-id="bookmark-panel-save-button2"
-                  default="true"/>
-          <button id="editBookmarkPanelRemoveButton"
-                  class="footer-button"/>
+          <html:moz-button
+            type="primary"
+            id="editBookmarkPanelDoneButton"
+            data-l10n-id="bookmark-panel-save-button2"
+          ></html:moz-button>
+          <html:moz-button
+            id="editBookmarkPanelRemoveButton"
+          ></html:moz-button>
         </html:moz-button-group>
       </vbox>
     </panel>

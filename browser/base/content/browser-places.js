@@ -75,12 +75,30 @@ var StarUI = {
     element.addEventListener("input", this);
     element.addEventListener("popuphidden", this);
     element.addEventListener("popupshown", this);
+
+    this._element("editBookmarkPanelDoneButton").addEventListener(
+      "click",
+      this
+    );
+    this._element("editBookmarkPanelRemoveButton").addEventListener(
+      "click",
+      this
+    );
     return (this.panel = element);
   },
 
   // nsIDOMEventListener
   handleEvent(aEvent) {
     switch (aEvent.type) {
+      case "click":
+        if (aEvent.currentTarget.id === "editBookmarkPanelDoneButton") {
+          this.panel.hidePopup();
+        } else if (
+          aEvent.currentTarget.id === "editBookmarkPanelRemoveButton"
+        ) {
+          this.removeBookmarkButtonCommand();
+        }
+        break;
       case "mousemove":
         clearTimeout(this._autoCloseTimer);
         // The autoclose timer is not disabled on generic mouseout
