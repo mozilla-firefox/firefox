@@ -150,6 +150,10 @@ if CONFIG["OS_TARGET"] == "OpenBSD":
     DEFINES["__STDC_CONSTANT_MACROS"] = True
     DEFINES["__STDC_FORMAT_MACROS"] = True
 
+    UNIFIED_SOURCES += [
+        "/third_party/angle/src/common/system_utils_posix.cpp"
+    ]
+
 if CONFIG["OS_TARGET"] == "WINNT":
 
     DEFINES["ANGLE_IS_WIN"] = True

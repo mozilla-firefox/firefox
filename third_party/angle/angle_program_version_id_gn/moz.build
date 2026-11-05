@@ -1901,7 +1901,7 @@ if CONFIG["OS_TARGET"] == "OpenBSD":
     GeneratedFile(
         "/third_party/angle/gen/ANGLEShaderProgramVersion.h.rsp",
         entry_point="write_paths",
-        inputs=['ANGLEShaderProgramVersion.h-c5df9b35e76f7eab.rsp.in'],
+        inputs=['ANGLEShaderProgramVersion.h-da9ca5d47e7c27c1.rsp.in'],
         script="/python/mozbuild/mozbuild/action/write_path_list.py",
     )
 
@@ -2007,6 +2007,7 @@ if CONFIG["OS_TARGET"] == "OpenBSD":
             "/third_party/angle/src/common/uniform_type_info_autogen.cpp",
             "/third_party/angle/src/common/utilities.cpp",
             "/third_party/angle/src/common/backtrace_utils_noop.cpp",
+            "/third_party/angle/src/common/system_utils_posix.cpp",
             "/third_party/angle/src/libANGLE/AttributeMap.h",
             "/third_party/angle/src/libANGLE/BlobCache.h",
             "/third_party/angle/src/libANGLE/Buffer.h",
