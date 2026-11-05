@@ -118,8 +118,8 @@ internal val ListenError.displayIcon: Int
         when (this) {
             ListenError.NoOfflineVoice -> iconsR.drawable.mozac_ic_warning_fill_24
             ListenError.ContentUnavailable -> iconsR.drawable.mozac_ic_warning_fill_24
-            ListenError.PlaybackFailed -> iconsR.drawable.mozac_ic_arrow_clockwise_24
-            ListenError.SynthesisFailed -> iconsR.drawable.mozac_ic_arrow_clockwise_24
+            ListenError.PlaybackFailed -> iconsR.drawable.mozac_ic_warning_fill_24
+            ListenError.SynthesisFailed -> iconsR.drawable.mozac_ic_warning_fill_24
         }
 
 @get:StringRes
