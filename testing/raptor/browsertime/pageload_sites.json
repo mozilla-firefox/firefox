@@ -82,11 +82,6 @@
       "test_url": "https://m.imdb.com/"
     },
     {
-      "login": true,
-      "name": "instagram",
-      "test_url": "https://www.instagram.com"
-    },
-    {
       "login": false,
       "name": "microsoft-support",
       "test_url": "https://support.microsoft.com/en-us"
@@ -206,22 +201,6 @@
     },
     {
       "login": true,
-      "name": "facebook",
-      "test_url": "https://www.facebook.com",
-      "secondary_url": "https://www.facebook.com/marketplace/?ref=bookmark",
-      "test_cmds": [
-        [
-          "click.byXpathAndWait",
-          "/html/body/div[3]/div[2]/div/div/div/div/div[3]/button[1]"
-        ],
-        [
-          "click.byXpathAndWait",
-          "/html/body/div[3]/div[2]/div/div/div/div/div[3]/button[1]"
-        ]
-      ]
-    },
-    {
-      "login": true,
       "login-test": true,
       "name": "facebook-login",
       "test_url": "https://www.facebook.com",
@@ -266,12 +245,6 @@
       "secondary_url": "https://docs.google.com/document/d/1vUnn0ePU-ynArE1OdxyEHXR2G0sl74ja_st_4OOzlgE/preview"
     },
     {
-      "login": true,
-      "name": "google-mail",
-      "test_url": "https://mail.google.com/",
-      "test_cmds": [["click.byXpathAndWait", "/html/body/div/div/span[2]/a[2]"]]
-    },
-    {
       "login": false,
       "name": "google-slides",
       "test_url": "https://docs.google.com/presentation/d/1Ici0ceWwpFvmIb3EmKeWSq_vAQdmmdFcWqaiLqUkJng/edit?usp=sharing",
@@ -308,17 +281,6 @@
       }
     },
     {
-      "login": true,
-      "name": "instagram",
-      "test_url": "https://www.instagram.com/"
-    },
-    {
-      "login": true,
-      "name": "linkedin",
-      "test_url": "https://www.linkedin.com/in/thommy-harris-hk-385723106/",
-      "secondary_url": "https://www.linkedin.com/company/github?trk=affiliated-pages"
-    },
-    {
       "login": false,
       "name": "microsoft",
       "test_url": "https://www.microsoft.com/en-us/",
@@ -347,34 +309,6 @@
       ]
     },
     {
-      "login": true,
-      "name": "netflix",
-      "test_url": "https://www.netflix.com/title/80117263",
-      "secondary_url": "https://www.netflix.com/title/699257"
-    },
-    {
-      "login": true,
-      "name": "office",
-      "test_url": "https://www.office.com/launch/powerpoint/",
-      "secondary_url": "https://www.office.com/"
-    },
-    {
-      "login": true,
-      "name": "outlook",
-      "test_url": "https://outlook.live.com/mail/inbox"
-    },
-    {
-      "login": true,
-      "name": "paypal",
-      "test_url": "https://www.paypal.com/myaccount/summary/"
-    },
-    {
-      "login": true,
-      "name": "pinterest",
-      "test_url": "https://pinterest.com/",
-      "secondary_url": "https://www.pinterest.com/today/best/halloween-costumes-for-your-furry-friends/75787/"
-    },
-    {
       "login": false,
       "name": "reddit",
       "test_url": "https://www.reddit.com/r/technology/comments/9sqwyh/we_posed_as_100_senators_to_run_ads_on_facebook/",
@@ -385,12 +319,6 @@
           "/html/body/div[1]/div/div[2]/div[3]/div[1]/section/div/section/section/form[1]/button"
         ]
       ]
-    },
-    {
-      "login": true,
-      "name": "tumblr",
-      "test_url": "https://www.tumblr.com/dashboard",
-      "secondary_url": "https://www.tumblr.com/tagged/funny+cats?sort=top"
     },
     {
       "login": true,
@@ -412,11 +340,6 @@
       "name": "wikipedia",
       "test_url": "https://en.wikipedia.org/wiki/Barack_Obama",
       "secondary_url": "https://en.wikipedia.org/wiki/Joe_Biden"
-    },
-    {
-      "login": true,
-      "name": "yahoo-mail",
-      "test_url": "https://mail.yahoo.com/"
     },
     {
       "login": false,

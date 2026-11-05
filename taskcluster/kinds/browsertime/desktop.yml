@@ -132,24 +132,12 @@ browsertime-tp6:
                         - --conditioned-profile=settled
                         - --extra-profiler-run
         run-on-projects:
-            by-subtest:
-                netflix:
-                    by-app:
-                        firefox:
-                            by-test-platform:
-                                linux.*shippable.*: [trunk]
-                                windows.*-64.*shippable.*: [trunk]
-                                macosx1470.*shippable.*: [trunk]
-                                macosx1500.*shippable.*: [trunk]
-                                default: []
+            by-app:
+                firefox:
+                    by-test-platform:
+                        .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
                         default: []
-                default:
-                    by-app:
-                        firefox:
-                            by-test-platform:
-                                .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
-                                default: []
-                        default: []
+                default: []
         treeherder-symbol: Btime(tp6)
     raptor:
         apps: [firefox]
@@ -160,21 +148,12 @@ browsertime-tp6:
             - ebay
             - espn
             - expedia
-            - [facebook, fb]
             - [google-docs, gdocs]
-            - [google-mail, gmail]
             - [google-search, gsearch]
             - imdb
             - imgur
-            - linkedin
             - microsoft
-            - netflix
-            - office
-            - outlook
-            - paypal
-            - pinterest
             - reddit
-            - tumblr
             - wikia
             - youtube
     tier:
@@ -242,10 +221,8 @@ browsertime-tp6-essential:
                 - cnn
                 - fandom
                 - [google-slides, gslides]
-                - instagram
                 - twitter
                 - wikipedia
-                - yahoo-mail
         run-on-projects:
             by-app:
                 firefox:
@@ -274,10 +251,8 @@ browsertime-tp6-bytecode:
             - cnn
             - fandom
             - [google-slides, gslides]
-            - instagram
             - twitter
             - wikipedia
-            - yahoo-mail
     run-on-projects:
         by-app:
             firefox:
@@ -764,27 +739,16 @@ browsertime-tp6-live:
             - amazon
             - [bing-search, bing]
             - ebay
-            - [facebook, fb]
             - fandom
             - [google-docs, gdocs]
-            - [google-mail, gmail]
             - [google-search, gsearch]
             - [google-slides, gslides]
             - imdb
             - imgur
-            - instagram
-            - linkedin
             - microsoft
-            - netflix
-            # - office (site loads blank page if not signed in)
-            - outlook
-            - paypal
-            - pinterest
             - reddit
-            - tumblr
             - twitter
             - wikipedia
-            - yahoo-mail
             - youtube
     run-on-projects: []
     treeherder-symbol: Btime-live(tp6)

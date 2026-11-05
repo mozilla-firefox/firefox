@@ -78,12 +78,6 @@ test_url = "https://www.google.com/search?q=restaurants+near+me"
 [imdb]
 test_url = "https://m.imdb.com/"
 
-[instagram]
-playback_version = "12.2.1"
-login = true
-playback_pageset_manifest = "mitm8-android-gve-{subtest}.manifest"
-test_url = "https://www.instagram.com"
-
 [microsoft-support]
 test_url = "https://support.microsoft.com/en-us"
 

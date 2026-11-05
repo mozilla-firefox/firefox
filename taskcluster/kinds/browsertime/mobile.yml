@@ -148,7 +148,6 @@ browsertime-tp6m:
             - [ebay-kleinanzeigen-search, ebay-k-s]
             - [google-maps, gmaps]
             - [google-search-restaurants, gsearch-r]
-            - instagram
             - imdb
             - reddit
             - [stackoverflow, stacko]
@@ -340,7 +339,6 @@ browsertime-tp6m-live:
             - [google-accounts, gacc]
             - [google-maps, gmaps]
             - [google-search-restaurants, gsearch-r]
-            - instagram
             - imdb
             - [imdb-firefox, imdb-f]
             - [medium-article, medium]

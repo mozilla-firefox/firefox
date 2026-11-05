@@ -56,12 +56,6 @@ playback_pageset_manifest = "mitm8-darwin-firefox-expedia.manifest"
 secondary_url = "https://groups.expedia.com/Group-Rate/?locale=en_US&ol=1"
 test_url = "https://expedia.com/Hotel-Search?destination=New+York%2C+New+York&latLong=40.756680%2C-73.986470&regionId=178293&startDate=&endDate=&rooms=1&_xpid=11905%7C1&adults=2"
 
-[facebook]
-# playback_version = "8.1.1"
-playback_pageset_manifest = "mitm11-windows-firefox-facebook.manifest"
-secondary_url = "https://www.facebook.com/marketplace/?ref=bookmark"
-test_url = "https://www.facebook.com"
-
 [fandom]
 benchmark_page = false
 playback_pageset_manifest = "mitm11-windows-firefox-fandom.manifest"
@@ -72,11 +66,6 @@ playback_pageset_manifest = "mitm12-darwin-firefox-google-docs.manifest"
 page_complete_wait_time = 8000
 secondary_url = "https://docs.google.com/document/d/1vUnn0ePU-ynArE1OdxyEHXR2G0sl74ja_st_4OOzlgE/preview"
 test_url = "https://docs.google.com/document/d/1US-07msg12slQtI_xchzYxcKlTs6Fp7WqIc6W5GK5M8/edit?usp=sharing"
-
-[google-mail]
-benchmark_page = false
-playback_pageset_manifest = "mitm5-linux-firefox-google-mail.manifest"
-test_url = "https://mail.google.com/"
 
 [google-search]
 # Bug 1974848 - permafail with mitmproxy 12.x
@@ -107,58 +96,16 @@ preferences = ['media.autoplay.default=5',
 secondary_url = "https://imgur.com/gallery/firefox-logo-w8fgXyY"
 test_url = "https://imgur.com/gallery/mozilla-performance-testing-logo-sNUtC19"
 
-[instagram]
-playback_pageset_manifest = "mitm8-darwin-firefox-instagram.manifest"
-secondary_url = "https://www.instagram.com/nobelprize_org/"
-test_url = "https://www.instagram.com/"
-
-[linkedin]
-playback_version = "8.1.1"
-playback_pageset_manifest = "mitm6-linux-firefox-linkedin.manifest"
-secondary_url = "https://www.linkedin.com/in/thommy-harris-hk-385723106/"
-test_url = "https://www.linkedin.com/feed/"
-
 [microsoft]
 playback_pageset_manifest = "mitm8-linux-firefox-microsoft.manifest"
 secondary_url = "https://support.microsoft.com/en-us"
 test_url = "https://www.microsoft.com/en-us/"
-
-[netflix]
-playback_version = "8.1.1"
-playback_pageset_manifest = "mitm6-linux-firefox-netflix.manifest"
-secondary_url = "https://www.netflix.com/title/699257"
-test_url = "https://www.netflix.com/title/80117263"
-
-[office]
-secondary_url = "https://www.office.com/"
-test_url = "https://www.office.com/launch/powerpoint?auth=1"
-
-[outlook]
-playback_pageset_manifest = "mitm5-linux-firefox-live.manifest"
-test_url = "https://outlook.live.com/mail/inbox"
-
-[paypal]
-playback_pageset_manifest = "mitm5-linux-firefox-paypal.manifest"
-test_url = "https://www.paypal.com/myaccount/summary/"
-
-[pinterest]
-playback_version = "8.1.1"
-benchmark_page = false
-playback_pageset_manifest = "mitm6-linux-firefox-pinterest.manifest"
-secondary_url = "https://www.pinterest.com/today/best/halloween-costumes-for-your-furry-friends/75787/"
-test_url = "https://pinterest.com/"
 
 [reddit]
 benchmark_page = false
 playback_pageset_manifest = "mitm11-windows-firefox-reddit.manifest"
 secondary_url = "https://www.reddit.com/r/technology/"
 test_url = "https://www.reddit.com/r/technology/comments/9sqwyh/we_posed_as_100_senators_to_run_ads_on_facebook/"
-
-[tumblr]
-playback_version = "8.1.1"
-playback_pageset_manifest = "mitm6-linux-firefox-tumblr.manifest"
-secondary_url = "https://www.tumblr.com/tagged/funny+cats?sort=top"
-test_url = "https://www.tumblr.com/dashboard"
 
 [twitter]
 benchmark_page = false
@@ -176,11 +123,6 @@ test_url = "https://marvel.fandom.com/wiki/Black_Panther"
 playback_pageset_manifest = "mitm11-windows-firefox-wikipedia.manifest"
 secondary_url = "https://en.wikipedia.org/wiki/Joe_Biden"
 test_url = "https://en.wikipedia.org/wiki/Barack_Obama"
-
-[yahoo-mail]
-benchmark_page = false
-playback_pageset_manifest = "mitm5-linux-firefox-yahoo-mail.manifest"
-test_url = "https://mail.yahoo.com/"
 
 [youtube]
 playback_pageset_manifest = "mitm11-windows-firefox-youtube.manifest"
