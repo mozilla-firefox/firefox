@@ -80,6 +80,11 @@ interface nsIFileInputStream : nsIInputStream
      * allows the OS to delete the file from disk just like POSIX.
      */
     const long SHARE_DELETE = 1<<5;
+
+    /**
+     * Check for platform-specific pseudo-files which could cause problems in some cases.
+     */
+    const long NO_MAGIC_FILES = 1<<6;
 };
 
 /**
