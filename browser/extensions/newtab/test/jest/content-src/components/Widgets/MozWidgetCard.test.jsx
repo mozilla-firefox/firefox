@@ -245,6 +245,123 @@ describe("<MozWidgetCard>", () => {
     });
   });
 
+  describe("ready telemetry", () => {
+    function see(card) {
+      const [observer] = observerInstances;
+      act(() => {
+        observer.callback([{ isIntersecting: true, target: card }], observer);
+      });
+    }
+
+    function reportReady(card) {
+      act(() => {
+        card.dispatchEvent(new CustomEvent("widget-ready"));
+      });
+    }
+
+    function readys(dispatch) {
+      return dispatch.mock.calls.filter(
+        ([action]) => action.type === at.WIDGETS_READY
+      );
+    }
+
+    it("records the widget once it reports ready and the card is seen", () => {
+      const { card, dispatch } = renderCard();
+      reportReady(card);
+      see(card);
+
+      expect(readys(dispatch)).toHaveLength(1);
+      expect(readys(dispatch)[0][0].data).toMatchObject({
+        widget_name: "extension_widget",
+        widget_size: "medium",
+      });
+    });
+
+    it("records the widget seen before it reports ready", () => {
+      const { card, dispatch } = renderCard();
+      see(card);
+      reportReady(card);
+
+      expect(readys(dispatch)).toHaveLength(1);
+    });
+
+    it("records nothing for a widget the user never saw", () => {
+      const { card, dispatch } = renderCard();
+      reportReady(card);
+
+      expect(readys(dispatch)).toHaveLength(0);
+    });
+
+    it("records nothing until the widget reports itself ready", () => {
+      const { card, dispatch } = renderCard();
+      see(card);
+
+      expect(readys(dispatch)).toHaveLength(0);
+    });
+
+    it("does not record ready while the widget has failed", () => {
+      const { card, dispatch } = renderCard();
+      reportReady(card);
+      act(() => {
+        card.dispatchEvent(new CustomEvent("widget-error"));
+      });
+      see(card);
+
+      expect(readys(dispatch)).toHaveLength(0);
+
+      reportReady(card);
+      expect(readys(dispatch)).toHaveLength(1);
+    });
+
+    it("does not record ready from the previous document", () => {
+      const { card, dispatch, rerender } = renderCard();
+      reportReady(card);
+      rerender(
+        cardElement({ dispatch, src: "moz-extension://uuid/other.html" })
+      );
+      see(card);
+
+      expect(readys(dispatch)).toHaveLength(0);
+
+      reportReady(card);
+      expect(readys(dispatch)).toHaveLength(1);
+    });
+
+    it("does not record a second time when the widget recovers", () => {
+      const { card, dispatch } = renderCard();
+      reportReady(card);
+      see(card);
+      act(() => {
+        card.dispatchEvent(new CustomEvent("widget-error"));
+      });
+      reportReady(card);
+
+      expect(readys(dispatch)).toHaveLength(1);
+    });
+
+    it("does not record a second time when the effect re-runs", () => {
+      const { card, dispatch, rerender } = renderCard();
+      reportReady(card);
+      see(card);
+
+      // A different dispatch function rebuilds recordReady, which the effect
+      // depends on, so the effect runs again with both conditions still true.
+      // Only readyRecorded stops a second event.
+      rerender(cardElement({ dispatch: (...args) => dispatch(...args) }));
+
+      expect(readys(dispatch)).toHaveLength(1);
+    });
+
+    it("records the size the impression used, not a later one", () => {
+      const { card, dispatch, rerender } = renderCard();
+      see(card);
+      rerender(cardElement({ dispatch, size: "large" }));
+      reportReady(card);
+
+      expect(readys(dispatch)[0][0].data.widget_size).toBe("medium");
+    });
+  });
+
   // moz-widget decides the widget failed and signals it with widget-error and
   // widget-ready. The card only mounts and unmounts the message.
   describe("the error message", () => {

@@ -939,6 +939,7 @@ interface GleanImpl {
     widgetsListsChangeDisplay: GleanEventWithExtras<{ display_status?: string|boolean, newtab_visit_id?: string }>;
     widgetsListsImpression: GleanEventWithExtras<{ newtab_visit_id?: string }>;
     widgetsListsUserEvent: GleanEventWithExtras<{ newtab_visit_id?: string, user_action?: string }>;
+    widgetsReady: GleanEventWithExtras<{ newtab_visit_id?: string, widget_location?: string, widget_name?: string, widget_size?: string, widget_variant?: string }>;
     widgetsTimerChangeDisplay: GleanEventWithExtras<{ display_status?: string|boolean, newtab_visit_id?: string }>;
     widgetsTimerImpression: GleanEventWithExtras<{ newtab_visit_id?: string }>;
     widgetsTimerToggleNotification: GleanEventWithExtras<{ display_status?: string|boolean, newtab_visit_id?: string }>;

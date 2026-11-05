@@ -24,6 +24,7 @@ function TestComponent({
   widgetVariant,
   legacyImpressionTypes,
   legacyUserEventType,
+  onImpression,
   showEl = true,
   onRender,
 }) {
@@ -34,6 +35,7 @@ function TestComponent({
     widgetVariant,
     legacyImpressionTypes,
     legacyUserEventType,
+    onImpression,
   });
   onRender(telemetry);
   return showEl ? <div ref={telemetry.impressionRef} /> : null;
@@ -232,6 +234,71 @@ describe("useWidgetTelemetry", () => {
       const secondEl = container.querySelector("div");
       expect(observerInstance.observe).toHaveBeenCalledTimes(2);
       expect(observerInstance.observe.mock.lastCall[0]).toBe(secondEl);
+    });
+  });
+
+  describe("onImpression", () => {
+    it("passes the impression's payload to onImpression", () => {
+      let telemetry;
+      const onImpression = jest.fn();
+      render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          showEl={false}
+          onImpression={onImpression}
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      telemetry.recordImpression({ size: "small" });
+
+      expect(onImpression).toHaveBeenCalledWith(
+        expect.objectContaining({
+          widget_name: "weather",
+          widget_size: "small",
+        })
+      );
+    });
+
+    it("invokes onImpression once when the impression fires", () => {
+      const onImpression = jest.fn();
+      const { container } = render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          onImpression={onImpression}
+          onRender={() => {}}
+        />
+      );
+      const [observerInstance] = observerStub.mock.instances;
+      const el = container.querySelector("div");
+
+      observerInstance.callback([{ isIntersecting: true, target: el }]);
+      observerInstance.callback([{ isIntersecting: true, target: el }]);
+
+      expect(onImpression).toHaveBeenCalledTimes(1);
+    });
+
+    it("also fires onImpression for a manual recordImpression", () => {
+      let telemetry;
+      const onImpression = jest.fn();
+      render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          showEl={false}
+          onImpression={onImpression}
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      telemetry.recordImpression();
+
+      expect(onImpression).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -511,7 +578,7 @@ describe("useWidgetTelemetry", () => {
   });
 
   describe("widgetVariant", () => {
-    it("adds widget_variant to all four events", () => {
+    it("adds widget_variant to all five events", () => {
       let telemetry;
       render(
         <TestComponent
@@ -527,12 +594,14 @@ describe("useWidgetTelemetry", () => {
       telemetry.recordUserAction("learn_more", { source: "context_menu" });
       telemetry.recordEnabled(false, { source: "context_menu" });
       telemetry.recordError("load_error");
+      telemetry.recordReady();
 
       expect(dispatch.mock.calls.map(([action]) => action.type)).toEqual([
         at.WIDGETS_IMPRESSION,
         at.WIDGETS_USER_EVENT,
         at.WIDGETS_ENABLED,
         at.WIDGETS_ERROR,
+        at.WIDGETS_READY,
       ]);
       for (const [action] of dispatch.mock.calls) {
         expect(action.data.widget_variant).toBe("variant-a");
@@ -554,8 +623,9 @@ describe("useWidgetTelemetry", () => {
       telemetry.recordUserAction("learn_more", { source: "context_menu" });
       telemetry.recordEnabled(false, { source: "context_menu" });
       telemetry.recordError("load_error");
+      telemetry.recordReady();
 
-      expect(dispatch).toHaveBeenCalledTimes(4);
+      expect(dispatch).toHaveBeenCalledTimes(5);
       for (const [action] of dispatch.mock.calls) {
         expect(action.data).not.toHaveProperty("widget_variant");
       }
@@ -584,6 +654,46 @@ describe("useWidgetTelemetry", () => {
       telemetry.recordUserAction("learn_more", { source: "context_menu" });
 
       expect(dispatch.mock.calls[0][0].data.widget_variant).toBe("variant-b");
+    });
+  });
+
+  describe("recordReady", () => {
+    it("dispatches WIDGETS_READY with no error_type or widget_source", () => {
+      let telemetry;
+      render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      telemetry.recordReady();
+
+      expect(dispatch).toHaveBeenCalledTimes(1);
+      const [[action]] = dispatch.mock.calls;
+      expect(action.type).toBe(at.WIDGETS_READY);
+      expect(action.data).toEqual({
+        widget_name: "weather",
+        widget_size: "medium",
+      });
+    });
+
+    it("honors size override", () => {
+      let telemetry;
+      render(
+        <TestComponent
+          dispatch={dispatch}
+          widget={WEATHER_WIDGET}
+          widgetSize="medium"
+          onRender={t => (telemetry = t)}
+        />
+      );
+
+      telemetry.recordReady({ size: "small" });
+
+      expect(dispatch.mock.calls[0][0].data.widget_size).toBe("small");
     });
   });
 
@@ -705,6 +815,7 @@ describe("useWidgetTelemetry", () => {
       ]);
       telemetry.recordUserAction("list_create", { source: "widget" });
       telemetry.recordEnabled(false, { source: "context_menu" });
+      telemetry.recordReady();
       return Object.fromEntries(
         dispatch.mock.calls.map(([action]) => [action.type, action.data])
       );
@@ -724,6 +835,7 @@ describe("useWidgetTelemetry", () => {
         ));
         expect(events[at.WIDGETS_IMPRESSION].widget_location).toBe(location);
         expect(events[at.WIDGETS_USER_EVENT].widget_location).toBe(location);
+        expect(events[at.WIDGETS_READY].widget_location).toBe(location);
         expect("widget_location" in events[at.WIDGETS_ENABLED]).toBe(false);
       }
     );
@@ -738,6 +850,7 @@ describe("useWidgetTelemetry", () => {
         ));
         expect(events[at.WIDGETS_IMPRESSION].widget_location).toBe(location);
         expect(events[at.WIDGETS_USER_EVENT].widget_location).toBe(location);
+        expect(events[at.WIDGETS_READY].widget_location).toBe(location);
       }
     );
 
@@ -745,6 +858,7 @@ describe("useWidgetTelemetry", () => {
       const events = eventsWith(child => child);
       expect("widget_location" in events[at.WIDGETS_IMPRESSION]).toBe(false);
       expect("widget_location" in events[at.WIDGETS_USER_EVENT]).toBe(false);
+      expect("widget_location" in events[at.WIDGETS_READY]).toBe(false);
     });
   });
 });

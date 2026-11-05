@@ -3,7 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import React, { useEffect, useRef, useState } from "react";
-import { batch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { getChosenOption } from "common/WidgetsRegistry.mjs";
 import { MozWidgetCard } from "./MozWidgetCard";
@@ -158,12 +158,10 @@ export function FramedWidgetCard(props) {
     dispatch(ac.OnlyToMain({ type: at.SET_PREF, data: { name: pref, value } }));
 
   const handleChoose = (item, value) => {
-    batch(() => {
-      setPref(item.pref, value);
-      recordUserAction(`change_${item.id}`, {
-        source: "context_menu",
-        value,
-      });
+    setPref(item.pref, value);
+    recordUserAction(`change_${item.id}`, {
+      source: "context_menu",
+      value,
     });
   };
 
@@ -209,9 +207,9 @@ export function FramedWidgetCard(props) {
 
   return (
     <MozWidgetCard
-      readyOnLoad={false}
       {...props}
       src={loadedSrc}
+      readyOnLoad={false}
       menuItems={menuItems}
       onChangeSize={handleChangeSize}
       cardRef={cardRef}

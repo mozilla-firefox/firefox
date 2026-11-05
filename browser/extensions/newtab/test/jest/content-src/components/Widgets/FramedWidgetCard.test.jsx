@@ -360,7 +360,8 @@ describe("<FramedWidgetCard>", () => {
       );
       expect(
         dispatch.mock.calls.filter(
-          ([action]) => action.type === at.WIDGETS_ERROR
+          ([action]) =>
+            action.type === at.WIDGETS_ERROR || action.type === at.WIDGETS_READY
         )
       ).toHaveLength(0);
 

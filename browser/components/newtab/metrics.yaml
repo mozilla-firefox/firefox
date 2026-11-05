@@ -1586,6 +1586,30 @@ newtab:
     send_in_pings:
       - newtab
 
+  widgets_ready:
+    type: event
+    description: >
+      Recorded once per widget card, when the widget is ready and the user has
+      seen the card.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2070700
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2070700
+    data_sensitivity:
+      - technical
+      - interaction
+    notification_emails:
+      - mcrawford@mozilla.com
+    expires: never
+    extra_keys:
+      newtab_visit_id: *newtab_visit_id
+      widget_name: *widget_name
+      widget_size: *widget_size
+      widget_location: *widget_location
+      widget_variant: *widget_variant
+    send_in_pings:
+      - newtab
+
   widgets_container_action:
     type: event
     description: >
