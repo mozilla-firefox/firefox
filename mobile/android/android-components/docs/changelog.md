@@ -4,7 +4,9 @@ title: Changelog
 permalink: /changelog/
 ---
 
-# 161.0 (In Development)
+# 162.0 (In Development)
+
+# 161.0
 * **browser-state**
     * Added `TabSessionState.listenToPageActive` and `ListenToPageAction` (`ListenToPageActivated`, `ListenToPageDeactivated`) to track which tab is being read out loud by Listen to Page. [Bug 2072957](https://bugzilla.mozilla.org/show_bug.cgi?id=2072957)
 * **feature-media**
