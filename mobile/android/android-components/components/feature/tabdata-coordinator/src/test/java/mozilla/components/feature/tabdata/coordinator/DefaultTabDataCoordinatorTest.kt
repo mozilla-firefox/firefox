@@ -638,6 +638,30 @@ class DefaultTabDataCoordinatorTest {
     }
 
     @Test
+    fun `WHEN a new tab is added to a tab group THEN it is opened, assigned to the group, and selected`() = runTest {
+        val group = createStoredTabGroup(id = "group-1", tabIds = listOf("1"))
+        val tabRepository = createTabRepository(selectedTabId = "1", tabs = listOf(createTab(id = "1")))
+        val coordinator =
+            createCoordinator(
+                tabRepository = tabRepository,
+                tabGroupRepository =
+                    createTabGroupRepository(tabGroups = listOf(group), tabGroupAssignments = mapOf("1" to group.id)),
+            )
+
+        coordinator.initialize()
+        runCurrent()
+
+        coordinator.addNewTabToTabGroup(tabGroupId = group.id)
+        runCurrent()
+
+        val groupTabIds = coordinator.tabsSnapshot.value?.tabIdsInTabGroup(tabGroupId = group.id)
+        val newTabId = groupTabIds?.last()
+        assertEquals(expected = 2, actual = groupTabIds?.size)
+        assertEquals(expected = "1", actual = groupTabIds?.first())
+        assertEquals(expected = newTabId, actual = coordinator.tabsSnapshot.value?.selectedTab?.id)
+    }
+
+    @Test
     fun `WHEN a group is merged into a tab THEN the group's tabs are moved to the tab's position`() = runTest {
         val group = createStoredTabGroup(id = "group-1", tabIds = listOf("3"))
         val tabRepository =

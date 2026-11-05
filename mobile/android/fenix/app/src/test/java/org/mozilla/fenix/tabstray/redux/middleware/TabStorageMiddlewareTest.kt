@@ -2696,6 +2696,7 @@ class TabStorageMiddlewareTest {
                     DefaultTabRepository(
                         browserStore = browserStore,
                         tabsUseCases = TabsUseCases(store = browserStore),
+                        fenixBrowserUseCases = fenixBrowserUseCases,
                     ),
                 tabGroupRepository = tabGroupRepository,
                 isInactiveTabsEnabled = { inactiveTabsEnabled },

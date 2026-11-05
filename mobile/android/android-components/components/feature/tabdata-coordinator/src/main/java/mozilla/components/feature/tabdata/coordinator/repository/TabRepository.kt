@@ -46,6 +46,9 @@ interface TabRepository {
      */
     fun selectTab(tabId: String)
 
+    /** Opens a new tab and returns its ID. */
+    fun addNewTab(): String
+
     /**
      * Value class representing the data observed from the browser tab data source.
      *
