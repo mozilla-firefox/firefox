@@ -3,6 +3,8 @@ tags = "urlbar"
 support-files = [
   "../browser/head-common.js",
   "head.js",
+  "load_mixed_content_after_load.html",
+  "silence.ogg",
 ]
 prefs = [
   "browser.urlbar.trending.featureGate=false",
