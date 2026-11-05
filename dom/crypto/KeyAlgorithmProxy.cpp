@@ -245,6 +245,10 @@ nsString KeyAlgorithmProxy::JwkAlg() const {
     return NS_LITERAL_STRING_FROM_CSTRING(JWK_ALG_ED25519);
   }
 
+  if (IsMLKEMAlgorithm(mName)) {
+    return mName;
+  }
+
   return nsString();
 }
 

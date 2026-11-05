@@ -93,6 +93,7 @@ struct JSStructuredCloneWriter;
 #define JWK_TYPE_RSA "RSA"
 #define JWK_TYPE_EC "EC"
 #define JWK_TYPE_OKP "OKP"
+#define JWK_TYPE_AKP "AKP"
 
 // JWK algorithms
 #define JWK_ALG_A128CBC "A128CBC"  // CBC
