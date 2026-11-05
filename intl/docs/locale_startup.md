@@ -1,3 +1,8 @@
+```{eval-rst}
+.. role:: js(code)
+   :language: javascript
+```
+
 # Startup
 
 There are cases where it may be important to understand how Gecko locale management

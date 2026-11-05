@@ -1,3 +1,8 @@
+```{eval-rst}
+.. role:: js(code)
+   :language: javascript
+```
+
 # Environments
 
 While all the concepts described above apply to all programming languages and frameworks
