@@ -326,10 +326,12 @@ void SpeculationRules::EnactCandidates(nsIURI* aURL, Eagerness aTriggerLevel) {
     }
 
     nsIURI* documentUri = mDocument->GetDocumentURI();
-    if (bool equals = false;
+    if (bool equalsExceptRef = false, equals = true;
         documentUri &&
-        NS_SUCCEEDED(documentUri->EqualsExceptRef(candidateUri, &equals)) &&
-        equals) {
+        NS_SUCCEEDED(
+            documentUri->EqualsExceptRef(candidateUri, &equalsExceptRef)) &&
+        equalsExceptRef &&
+        NS_SUCCEEDED(documentUri->Equals(candidateUri, &equals)) && !equals) {
       continue;
     }
 
