@@ -97,6 +97,14 @@ GeckoMediaPluginServiceParent::~GeckoMediaPluginServiceParent() {
   MOZ_ASSERT(mPlugins.IsEmpty());
 }
 
+static constexpr const char* kObserverTopics[] = {
+    "profile-change-teardown",
+    "last-pb-context-exited",
+    "browser:purge-session-history",
+    NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID,
+    "nsPref:changed",
+};
+
 nsresult GeckoMediaPluginServiceParent::InitMainThread() {
   MOZ_ASSERT(NS_IsMainThread());
 
@@ -104,15 +112,9 @@ nsresult GeckoMediaPluginServiceParent::InitMainThread() {
       mozilla::services::GetObserverService();
   MOZ_ASSERT(obsService);
 
-  MOZ_ALWAYS_SUCCEEDS(
-      obsService->AddObserver(this, "profile-change-teardown", false));
-  MOZ_ALWAYS_SUCCEEDS(
-      obsService->AddObserver(this, "last-pb-context-exited", false));
-  MOZ_ALWAYS_SUCCEEDS(
-      obsService->AddObserver(this, "browser:purge-session-history", false));
-  MOZ_ALWAYS_SUCCEEDS(
-      obsService->AddObserver(this, NS_XPCOM_WILL_SHUTDOWN_OBSERVER_ID, false));
-  MOZ_ALWAYS_SUCCEEDS(obsService->AddObserver(this, "nsPref:changed", false));
+  for (const char* topic : kObserverTopics) {
+    MOZ_ALWAYS_SUCCEEDS(obsService->AddObserver(this, topic, false));
+  }
 
 #ifdef DEBUG
   MOZ_ALWAYS_SUCCEEDS(obsService->AddObserver(
@@ -192,6 +194,29 @@ static nsresult GMPPlatformString(nsAString& aOutPlatform) {
   CopyUTF8toUTF16(platform, aOutPlatform);
 
   return NS_OK;
+}
+
+void GeckoMediaPluginServiceParent::UninitMainThread() {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  nsCOMPtr<nsIObserverService> obsService =
+      mozilla::services::GetObserverService();
+  if (obsService) {
+    for (const char* topic : kObserverTopics) {
+      (void)obsService->RemoveObserver(this, topic);
+    }
+#ifdef DEBUG
+    (void)obsService->RemoveObserver(this,
+                                     dom::MediaKeys::kMediaKeysRequestTopic);
+#endif
+  }
+
+  nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
+  if (prefs) {
+    prefs->RemoveObserver("media.gmp.plugin.crash", this);
+  }
+
+  GeckoMediaPluginService::UninitMainThread();
 }
 
 nsresult GeckoMediaPluginServiceParent::InitStorage() {

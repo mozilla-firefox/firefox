@@ -105,6 +105,10 @@ class GeckoMediaPluginService : public mozIGeckoMediaPluginService,
   // RunMainThreadInit(), after it has made sure shutdown has not started.
   virtual nsresult InitMainThread();
 
+  // Main thread only. Undoes what InitMainThread() registered, as far as it
+  // got, after it failed. Derived classes undo theirs and call this one.
+  virtual void UninitMainThread();
+
   // Called after Shutdown() has shut down the GMP thread.
   virtual void OnShutdown() {}
 

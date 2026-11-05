@@ -62,6 +62,17 @@ nsresult GeckoMediaPluginServiceChild::InitMainThread() {
   return GeckoMediaPluginService::InitMainThread();
 }
 
+void GeckoMediaPluginServiceChild::UninitMainThread() {
+  MOZ_ASSERT(NS_IsMainThread());
+  GMP_LOG_DEBUG("{}::{}", __CLASS__, __FUNCTION__);
+
+  // Rejects the ticket's promise, which the callback in AddShutdownBlocker()
+  // ignores.
+  mShutdownBlocker = nullptr;
+
+  GeckoMediaPluginService::UninitMainThread();
+}
+
 NS_IMPL_ISUPPORTS_INHERITED0(GeckoMediaPluginServiceChild,
                              GeckoMediaPluginService)
 
@@ -497,7 +508,8 @@ nsresult GeckoMediaPluginServiceChild::AddShutdownBlocker() {
       name, NS_LITERAL_STRING_FROM_CSTRING(__FILE__), __LINE__);
   if (mShutdownBlocker) {
     mShutdownBlocker->ShutdownPromise()->Then(
-        mMainThread, __func__, [this, self = RefPtr(this), name]() {
+        mMainThread, __func__,
+        [this, self = RefPtr(this), name]() {
           GMP_LOG_DEBUG("GMPServiceChild::BlockShutdown: {}",
                         NS_ConvertUTF16toUTF8(name).get());
           mXPCOMWillShutdown = true;
@@ -505,7 +517,8 @@ nsresult GeckoMediaPluginServiceChild::AddShutdownBlocker() {
           gmpThread->Dispatch(
               NewRunnableMethod("GMPServiceChild::BeginShutdown", this,
                                 &GeckoMediaPluginServiceChild::BeginShutdown));
-        });
+        },
+        [] {});
     return NS_OK;
   }
 

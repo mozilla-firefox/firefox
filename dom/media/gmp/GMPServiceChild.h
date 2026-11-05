@@ -57,6 +57,7 @@ class GeckoMediaPluginServiceChild : public GeckoMediaPluginService {
 
  protected:
   nsresult InitMainThread() override;
+  void UninitMainThread() override;
 
   void InitializePlugins(nsISerialEventTarget*) override {
     // Nothing to do here.

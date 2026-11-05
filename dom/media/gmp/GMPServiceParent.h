@@ -149,6 +149,7 @@ class GeckoMediaPluginServiceParent final
   void ReAddOnGMPThread(const RefPtr<GMPParent>& aOld);
   void PluginTerminated(const RefPtr<GMPParent>& aOld);
   nsresult InitMainThread() override;
+  void UninitMainThread() override;
   void OnShutdown() override;
   void InitializePlugins(nsISerialEventTarget* GMPThread) override;
   RefPtr<GenericPromise> LoadFromEnvironment();
