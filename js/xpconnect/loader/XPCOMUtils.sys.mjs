@@ -281,9 +281,8 @@ export var XPCOMUtils = {
    * an ES module or run another utility getter when accessed.
    *
    * Use this version when you need to define getters on the
-   * global `this`, or any other object you can't assign to:
+   * global `this`, or any other object you can't assign to::
    *
-   *    @example
    *    XPCOMUtils.defineLazy(this, {
    *      AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
    *      verticalTabs: { pref: "sidebar.verticalTabs", default: false },
@@ -292,9 +291,8 @@ export var XPCOMUtils = {
    *    });
    *
    * Additionally, the given object is also returned, which enables
-   * type-friendly composition:
+   * type-friendly composition::
    *
-   *    @example
    *    const existing = {
    *      someProps: new Widget(),
    *    };
@@ -306,9 +304,8 @@ export var XPCOMUtils = {
    * but TypeScript also knows about lazy getters defined on it.
    *
    * Since you probably don't want aliases, you can use it like this to,
-   * for example, define (static) lazy getters on a class:
+   * for example, define (static) lazy getters on a class::
    *
-   *    @example
    *    const Widget = XPCOMUtils.defineLazy(
    *      class Widget {
    *        static normalProp = 3;
@@ -324,19 +321,13 @@ export var XPCOMUtils = {
    * The object to define the getters on.
    *
    * @param {L} definition
-   * Each key:value property defines type and parameters for getters.
-   *
-   *  - "resource://module" string
-   *    @see ChromeUtils.defineESModuleGetters
-   *
-   *  - () => value
-   *    @see ChromeUtils.defineLazyGetter
-   *
-   *  - { service: "contract", iid?: nsIID }
-   *    @see XPCOMUtils.defineLazyServiceGetter
-   *
-   *  - { pref: "name", default?, onUpdate?, transform? }
-   *    @see XPCOMUtils.defineLazyPreferenceGetter
+   * Each key:value property defines a getter, whose type depends on the value:
+   * a "resource://module" string (see ChromeUtils.defineESModuleGetters),
+   * a `() => value` function (see ChromeUtils.defineLazyGetter),
+   * a `{ service: "contract", iid?: nsIID }` object
+   * (see XPCOMUtils.defineLazyServiceGetter), or
+   * a `{ pref: "name", default?, onUpdate?, transform? }` object
+   * (see XPCOMUtils.defineLazyPreferenceGetter).
    *
    * @param {ImportESModuleOptionsDictionary} [options]
    * When importing ESModules in devtools and worker contexts,
@@ -371,11 +362,10 @@ export var XPCOMUtils = {
   },
 
   /**
-   * @see XPCOMUtils.defineLazy
-   * A shorthand for above which always returns a new lazy object.
-   * Use this version if you have a global `lazy` const with all the getters:
+   * A shorthand for XPCOMUtils.defineLazy which always returns a new lazy
+   * object. Use this version if you have a global `lazy` const with all the
+   * getters::
    *
-   *    @example
    *    const lazy = XPCOMUtils.declareLazy({
    *      AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
    *      verticalTabs: { pref: "sidebar.verticalTabs", default: false },
