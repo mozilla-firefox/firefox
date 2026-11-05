@@ -115,8 +115,8 @@
      *            When the button is used, this is called with the arguments:
      *             1. The <notification-message> element.
      *             2. This button object definition.
-     *             3. The <button> element.
-     *             4. The "command" event.
+     *             3. The <moz-button> element.
+     *             4. The "click" event.
      *            If the callback returns false, the notification is closed.
      *          link:
      *             A url to open when the button is clicked. The button is
@@ -132,9 +132,6 @@
      *            button is pressed. If not specified, then 'action' is used for
      *            a press on any button. Specify this only if you want to distinguish
      *            which button has been pressed in telemetry data.
-     *          is:
-     *            Defines a Custom Element name to use as the "is" value on
-     *            button creation.
      *        }
      *    aDisableClickJackingDelay
      *        Optional boolean arg to disable clickjacking protections. By
@@ -511,6 +508,7 @@
           if (
             e.type === "click" &&
             (e.target.localName === "button" ||
+              e.target.localName === "moz-button" ||
               e.target.classList.contains("text-link") ||
               e.target.classList.contains("notification-link"))
           ) {
@@ -522,7 +520,14 @@
           }
         }
 
-        if (e.type == "click" && e.target.localName != "label") {
+        if (
+          e.type == "click" &&
+          !["label", "moz-button"].includes(e.target.localName)
+        ) {
+          return;
+        }
+
+        if (e.type == "command" && e.target.localName == "moz-button") {
           return;
         }
 
@@ -589,18 +594,15 @@
             buttonElem.setAttribute("href", link);
             buttonElem.classList.add("notification-link", "text-link");
           } else {
-            buttonElem = document.createXULElement(
-              "button",
-              button.is ? { is: button.is } : {}
+            buttonElem = document.createElementNS(
+              "http://www.w3.org/1999/xhtml",
+              "moz-button"
             );
-            buttonElem.classList.add(
-              "notification-button",
-              "small-button",
-              "footer-button"
-            );
+            buttonElem.classList.add("notification-button");
+            buttonElem.size = "small";
 
             if (button.primary) {
-              buttonElem.classList.add("primary");
+              buttonElem.type = "primary";
             }
           }
 

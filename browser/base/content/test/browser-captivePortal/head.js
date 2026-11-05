@@ -143,7 +143,7 @@ async function ensurePortalNotification(win) {
 async function testShowLoginPageButtonVisibility(notification, visibility) {
   await notification.updateComplete;
   let showLoginPageButton = notification.buttonContainer.querySelector(
-    "button.notification-button"
+    ".notification-button"
   );
   // If the visibility property was never changed from default, it will be
   // an empty string, so we pretend it's "visible" (effectively the same).

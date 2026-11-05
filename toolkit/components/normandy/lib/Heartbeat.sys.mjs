@@ -317,7 +317,9 @@ export var Heartbeat = class {
       noticeEl.messageImage?.classList.remove("pulse-onshow");
       noticeEl.messageImage?.classList.add("pulse-twice");
       // Remove the custom contents of the buttons
-      for (let button of noticeEl.buttonContainer.querySelectorAll("button")) {
+      for (let button of noticeEl.buttonContainer.querySelectorAll(
+        ".notification-button"
+      )) {
         button.remove();
       }
     });

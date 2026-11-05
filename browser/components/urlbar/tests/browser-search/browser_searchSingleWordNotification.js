@@ -138,7 +138,9 @@ async function runURLBarSearchTest({
           "http://" + valueToOpen + "/",
           browser
         );
-        notification.buttonContainer.querySelector("button").click();
+        notification.buttonContainer
+          .querySelector(".notification-button")
+          .click();
         info("await document load after confirming the notification");
         await docLoadPromise;
       } else {
