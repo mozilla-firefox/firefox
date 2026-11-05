@@ -154,12 +154,8 @@ class Worker {
     this.idleTimeoutId = null;
   }
 
-  async canonicalStringify(localRecords, remoteRecords, timestamp) {
-    return this._execute("canonicalStringify", [
-      localRecords,
-      remoteRecords,
-      timestamp,
-    ]);
+  async canonicalStringify(records, timestamp) {
+    return this._execute("canonicalStringify", [records, timestamp]);
   }
 
   async importJSONDump(bucket, collection) {

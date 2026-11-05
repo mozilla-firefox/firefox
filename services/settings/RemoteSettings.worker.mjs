@@ -42,7 +42,7 @@ const Agent = {
     for (let i = 0; i < allRecords.length /* no increment! */; ) {
       const rec = allRecords[i];
       const next = allRecords[i + 1];
-      if ((next && rec.id == next.id) || rec.deleted) {
+      if ((next && rec.id === next.id) || rec.deleted) {
         allRecords.splice(i, 1); // remove local record
       } else {
         i++;
