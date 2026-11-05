@@ -5033,6 +5033,16 @@ Maybe<mozilla::StyleUserSelect> nsIFrame::UsedUserSelectRecurse(
     return Some(StyleUserSelect::None);
   }
 
+  // nsTableColFrame is inserted after nsTableRowGroupFrame and its content is
+  // the corresponding <col> if one exists, or <colgroup> or <table> otherwise.
+  // That means the frame tree order is different from the DOM tree order of
+  // HTML table so that the caret navigation may return start of the <table>
+  // after end of the last cell. Fortunately, it's invisible from user's
+  // selection point of view. So, we should be able to treat it as unselectable.
+  if (aFrame->IsTableColFrame()) {
+    return Some(StyleUserSelect::None);
+  }
+
   // Per https://drafts.csswg.org/css-ui-4/#content-selection:
   //
   // The used value is the same as the computed value, except:
