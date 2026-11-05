@@ -3935,8 +3935,6 @@ void ScriptLoader::InstantiateClassicScriptFromCachedStencil(
 
   CalculateCacheFlag(aRequest);
 
-  MOZ_ASSERT(aRequest->PassedConditionForMemoryCache());
-
   // For cached stencils, there can be already ongoing work for the in-memory
   // cache and the disk cache.
   //
