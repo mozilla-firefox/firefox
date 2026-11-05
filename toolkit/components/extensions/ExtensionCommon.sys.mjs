@@ -2385,6 +2385,7 @@ class EventManager {
    *
    * - the value stored in the Map or persistent listeners we keep in memory
    *   is a plain object with:
+   *
    *   - a property called `params` that is the original (ie, not uneval()ed)
    *     extra arguments to addListener()
    *   - and a property called `listeners` that is an array of plain object
