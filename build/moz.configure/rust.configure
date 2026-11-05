@@ -1083,7 +1083,7 @@ def rustflags_target_common(
     # but we're not using a thumbv7neon target, where it's already the default.
     # (CPUs with neon have 32 FPU registers available)
     if fpu == "neon" and not rust_target.startswith("thumbv7neon-"):
-        flags += ["-C", "target_feature=+neon,-d16"]
+        flags += ["-C", "target_feature=+neon,+d32"]
     if tsan:
         flags.append("-Zsanitizer=thread")
     # We need -Cembed-bitcode=yes for all crates when using -Clto.
