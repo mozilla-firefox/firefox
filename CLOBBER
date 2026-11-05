@@ -22,20 +22,4 @@
 # changes to stick? As of bug 928195, this shouldn't be necessary! Please
 # don't change CLOBBER for WebIDL changes any more.
 
-Modified build files in third_party/libwebrtc - Bug 1888181 - Vendor libwebrtc from aaa123debb
-Modified build files in third_party/libwebrtc - Bug 1888181 - Vendor libwebrtc from 39ac25d6ec
-Modified build files in third_party/libwebrtc - Bug 1888181 - Vendor libwebrtc from c708c00f95
-Merge day clobber 2024-04-15
-Modified build files in third_party/libwebrtc - Bug 1883116 - (fix-3d9c3687a4) Supporting change of call_factory.cc to create_call.cc.
-Modified build files in third_party/libwebrtc - Bug 1883116 - (fix-e79e722834) add enviroment_factory to libwebrtc build and enforce providing clock and task_queue when creating Environment
-Merge day clobber 2024-03-18
-Modified build files in third_party/libwebrtc - Bug 1876843 - Vendor libwebrtc from 3c5850148e
-Modified build files in third_party/libwebrtc - Bug 1876843 - (fix-b29ff000da) remove mozilla dependency on api:enable_media
-Modified build files in third_party/libwebrtc - Bug 1876843 - Vendor libwebrtc from b29ff000da
-Modified build files in third_party/libwebrtc - Bug 1876843 - Vendor libwebrtc from d6bac61b64
-Modified build files in third_party/libwebrtc - Remove android_support dependency from libwebrtc.
-Merge day clobber 2026-10-23
-Modified build files in third_party/libwebrtc - Bug 1876843 - Vendor libwebrtc from 24510d43dc
-Modified build files in third_party/libwebrtc - Bug 1855330 - pt4 - BUILD.gn fixes for updated libwebrtc/third_party. r?ng!
-Modified build files in third_party/libwebrtc - Bug 1883116 - Vendor libwebrtc from 0b6899272c
-Modified build files in third_party/libwebrtc - Bug 1888181 - Vendor libwebrtc from 414c94290a
+Merge day clobber 2026-11-05
