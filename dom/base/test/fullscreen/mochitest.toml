@@ -58,6 +58,9 @@ skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug && xorigin && verify-standalone",
 ]
 
+["test_fullscreen_exit_reentrancy.html"]
+scheme = "https"
+
 ["test_fullscreen_iframe.html"]
 
 ["test_fullscreen_iframe_multiple.html"]
