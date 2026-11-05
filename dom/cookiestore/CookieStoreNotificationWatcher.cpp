@@ -5,7 +5,6 @@
 #include "CookieStoreNotificationWatcher.h"
 
 #include "mozilla/Services.h"
-#include "mozilla/UniquePtrExtensions.h"
 #include "nsICookie.h"
 #include "nsICookieNotification.h"
 #include "nsIObserverService.h"
@@ -47,12 +46,7 @@ CookieStoreNotificationWatcher::Observe(nsISupports* aSubject,
   nsCOMPtr<nsICookieNotification> notification = do_QueryInterface(aSubject);
   NS_ENSURE_TRUE(notification, NS_ERROR_FAILURE);
 
-  UniqueFreePtr<nsID> operationID;
-  nsresult rv = notification->GetOperationID(TempPtrToSetter(&operationID));
-  if (NS_WARN_IF(NS_FAILED(rv))) {
-    return NS_OK;
-  }
-
+  Maybe<nsID> operationID = notification->OperationID();
   if (!operationID) {
     return NS_OK;
   }

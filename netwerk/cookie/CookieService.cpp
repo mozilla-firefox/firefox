@@ -729,7 +729,7 @@ CookieService::Add(const nsACString& aHost, const nsACString& aPath,
   nsresult rv = AddInternal(nullptr, aHost, aPath, aName, aValue, aIsSecure,
                             aIsHttpOnly, aIsSession, aExpiry, &attrs, aSameSite,
                             aSchemeMap, aIsPartitioned, /* from-http: */ true,
-                            nullptr, getter_AddRefs(validation));
+                            Nothing(), getter_AddRefs(validation));
   if (rv != NS_ERROR_ILLEGAL_VALUE || !validation ||
       CookieValidation::Cast(validation)->Result() ==
           nsICookieValidation::eOK) {
@@ -753,7 +753,7 @@ CookieService::AddNative(nsIURI* aCookieURI, const nsACString& aHost,
   return AddInternal(aCookieURI, aHost, aPath, aName, aValue, aIsSecure,
                      aIsHttpOnly, aIsSession, aExpiry, aOriginAttributes,
                      aSameSite, aSchemeMap, aIsPartitioned, aFromHttp,
-                     aOperationID, aValidation);
+                     ToMaybe(aOperationID), aValidation);
 }
 
 nsresult CookieService::AddInternal(
@@ -762,7 +762,7 @@ nsresult CookieService::AddInternal(
     bool aIsHttpOnly, bool aIsSession, int64_t aExpiry,
     OriginAttributes* aOriginAttributes, int32_t aSameSite,
     nsICookie::schemeType aSchemeMap, bool aIsPartitioned, bool aFromHttp,
-    const nsID* aOperationID, nsICookieValidation** aValidation) {
+    const Maybe<nsID>& aOperationID, nsICookieValidation** aValidation) {
   NS_ENSURE_ARG_POINTER(aValidation);
 
   if (NS_WARN_IF(!aOriginAttributes)) {
@@ -817,7 +817,8 @@ nsresult CookieService::AddInternal(
 nsresult CookieService::Remove(const nsACString& aHost,
                                const OriginAttributes& aAttrs,
                                const nsACString& aName, const nsACString& aPath,
-                               bool aFromHttp, const nsID* aOperationID) {
+                               bool aFromHttp,
+                               const Maybe<nsID>& aOperationID) {
   // first, normalize the hostname, and fail if it contains illegal characters.
   nsAutoCString host(aHost);
   nsresult rv = NormalizeHost(host);
@@ -863,8 +864,8 @@ CookieService::RemoveNative(const nsACString& aHost, const nsACString& aName,
     return NS_ERROR_FAILURE;
   }
 
-  nsresult rv =
-      Remove(aHost, *aOriginAttributes, aName, aPath, aFromHttp, aOperationID);
+  nsresult rv = Remove(aHost, *aOriginAttributes, aName, aPath, aFromHttp,
+                       ToMaybe(aOperationID));
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
@@ -1537,7 +1538,7 @@ class RemoveAllSinceRunnable : public Runnable {
       if (cookie->CreationTimeInUSec() > mSinceWhen &&
           NS_FAILED(mSelf->Remove(cookie->Host(), cookie->OriginAttributesRef(),
                                   cookie->Name(), cookie->Path(),
-                                  /* from http: */ true, nullptr))) {
+                                  /* from http: */ true))) {
         continue;
       }
     }
