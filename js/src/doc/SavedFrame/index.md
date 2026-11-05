@@ -92,4 +92,4 @@ stack. In this case, there might be an `asyncParent` instead.
 Return this frame and its parents formatted as a human readable stack trace
 string.
 
-[dbg-source]: ../Debugger/Debugger.Source.md
+[dbg-source]: /devtools-user/debugger-api/debugger.source/index.md
