@@ -227,6 +227,13 @@ class nsHttpChannel final : public HttpBaseChannel,
 
   void AsyncOpenFinal(TimeStamp aTimeStamp);
 
+  // For a navigation activated from a speculation-rules prefetch record:
+  // read the response from the cache entry stored under aURI (the one the
+  // record holds) instead of looking up the request URI, which could pick a
+  // different No-Vary-Search-equivalent entry. Must be called before
+  // AsyncOpen().
+  nsresult SetNavigationalPrefetchCacheURI(nsIURI* aURI);
+
   [[nodiscard]] nsresult OpenCacheEntry(bool isHttps);
   [[nodiscard]] nsresult OpenCacheEntryInternal(bool isHttps);
   // Records whether the entry the cache handed us is keyed on mCacheEntryURI or
@@ -649,6 +656,7 @@ class nsHttpChannel final : public HttpBaseChannel,
   nsCOMPtr<nsICacheEntry> mORBValidationCacheEntry;
 
   nsCOMPtr<nsIURI> mCacheEntryURI;
+  nsCOMPtr<nsIURI> mNavigationalPrefetchCacheURI;
   nsCString mCacheIdExtension;
 
   // We must close mCacheInputStream explicitly to avoid leaks.
