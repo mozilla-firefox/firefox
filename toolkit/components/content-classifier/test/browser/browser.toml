@@ -37,4 +37,6 @@ support-files = ["!/toolkit/components/antitracking/test/browser/cookies.sjs"]
 
 ["browser_content_classifier_test_trackers_engines.js"]
 
+["browser_content_classifier_worker.js"]
+
 ["browser_urlclassifier_disable_for_channel_classifier.js"]

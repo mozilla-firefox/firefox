@@ -129,21 +129,13 @@ nsresult UrlClassifierCommon::GetTopWindowURI(nsIChannel* aChannel,
 }
 
 /* static */
-nsresult UrlClassifierCommon::CreatePairwiseEntityListURI(nsIChannel* aChannel,
-                                                          nsIURI** aURI) {
+void UrlClassifierCommon::GetTopWindowURIWithFallback(nsIChannel* aChannel,
+                                                      nsIURI** aURI) {
   MOZ_ASSERT(aChannel);
   MOZ_ASSERT(aURI);
 
-  nsresult rv;
-  nsCOMPtr<nsIHttpChannelInternal> chan = do_QueryInterface(aChannel, &rv);
-  NS_ENSURE_SUCCESS(rv, rv);
-  if (!chan) {
-    return NS_ERROR_FAILURE;
-  }
-
   nsCOMPtr<nsIURI> topWinURI;
-  rv =
-      UrlClassifierCommon::GetTopWindowURI(aChannel, getter_AddRefs(topWinURI));
+  nsresult rv = GetTopWindowURI(aChannel, getter_AddRefs(topWinURI));
   if (NS_FAILED(rv) || !topWinURI) {
     // SharedWorker and ServiceWorker don't have an associated window, use
     // client's URI instead.
@@ -155,7 +147,7 @@ nsresult UrlClassifierCommon::CreatePairwiseEntityListURI(nsIChannel* aChannel,
       if ((clientInfo->Type() == dom::ClientType::Sharedworker) ||
           (clientInfo->Type() == dom::ClientType::Serviceworker)) {
         UC_LOG(
-            ("UrlClassifierCommon::CreatePairwiseEntityListURI - "
+            ("UrlClassifierCommon::GetTopWindowURIWithFallback - "
              "channel %p initiated by worker, get uri from client",
              aChannel));
 
@@ -173,7 +165,7 @@ nsresult UrlClassifierCommon::CreatePairwiseEntityListURI(nsIChannel* aChannel,
 
     if (!topWinURI) {
       UC_LOG(
-          ("UrlClassifierCommon::CreatePairwiseEntityListURI - "
+          ("UrlClassifierCommon::GetTopWindowURIWithFallback - "
            "no top-level window associated with channel %p, "
            "get uri from loading principal",
            aChannel));
@@ -186,6 +178,25 @@ nsresult UrlClassifierCommon::CreatePairwiseEntityListURI(nsIChannel* aChannel,
       }
     }
   }
+
+  topWinURI.forget(aURI);
+}
+
+/* static */
+nsresult UrlClassifierCommon::CreatePairwiseEntityListURI(nsIChannel* aChannel,
+                                                          nsIURI** aURI) {
+  MOZ_ASSERT(aChannel);
+  MOZ_ASSERT(aURI);
+
+  nsresult rv;
+  nsCOMPtr<nsIHttpChannelInternal> chan = do_QueryInterface(aChannel, &rv);
+  NS_ENSURE_SUCCESS(rv, rv);
+  if (!chan) {
+    return NS_ERROR_FAILURE;
+  }
+
+  nsCOMPtr<nsIURI> topWinURI;
+  GetTopWindowURIWithFallback(aChannel, getter_AddRefs(topWinURI));
 
   if (!topWinURI) {
     UC_LOG(

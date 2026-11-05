@@ -51,6 +51,12 @@ class UrlClassifierCommon final {
 
   static nsresult GetTopWindowURI(nsIChannel* aChannel, nsIURI** aURI);
 
+  // Like GetTopWindowURI, but for channels without a top-level window, such as
+  // worker requests, falls back to the URI of the SharedWorker or
+  // ServiceWorker client, then to the URI of the loading principal. Sets
+  // aURI to null when none is available.
+  static void GetTopWindowURIWithFallback(nsIChannel* aChannel, nsIURI** aURI);
+
   static bool ShouldProcessWithProtectionFeature(nsIChannel* aChannel);
 
  private:
