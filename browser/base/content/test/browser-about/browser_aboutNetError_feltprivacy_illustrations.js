@@ -37,7 +37,7 @@ add_task(async function test_noConnection_illustration() {
     Assert.ok(img, "illustration img element exists");
     Assert.equal(
       img.getAttribute("src"),
-      "chrome://global/skin/illustrations/no-connection.svg",
+      "resource://content-accessible/illustrations/no-connection.svg",
       "noConnection illustration src is correct"
     );
     Assert.equal(
@@ -76,7 +76,7 @@ add_task(async function test_workOffline_showsNoConnectionIllustration() {
     Assert.ok(img, "illustration img element exists");
     Assert.equal(
       img.getAttribute("src"),
-      "chrome://global/skin/illustrations/no-connection.svg",
+      "resource://content-accessible/illustrations/no-connection.svg",
       "work offline illustration src is correct"
     );
     Assert.equal(
@@ -101,7 +101,7 @@ add_task(async function test_securityError_illustration() {
     Assert.ok(img, "illustration img element exists");
     Assert.equal(
       img.getAttribute("src"),
-      "chrome://global/skin/illustrations/security-error.svg",
+      "resource://content-accessible/illustrations/security-error.svg",
       "securityError illustration src is correct"
     );
     Assert.equal(

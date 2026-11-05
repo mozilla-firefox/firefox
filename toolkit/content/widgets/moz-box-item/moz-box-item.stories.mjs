@@ -99,7 +99,7 @@ const Template = ({
       ${slottedContent
         ? html`<div class="slotted">
             <img
-              src="chrome://global/skin/illustrations/security-error.svg"
+              src="resource://content-accessible/illustrations/security-error.svg"
               alt="Confused Kit is looking at an orange exclamation mark"
             />
             <span>This is an example message</span>

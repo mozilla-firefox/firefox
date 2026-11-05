@@ -41,7 +41,7 @@ const Template = ({ imageSrc = "", l10nId = "", supportPage = "" }) => html`
 
 export const Default = Template.bind({});
 Default.args = {
-  imageSrc: "chrome://global/skin/illustrations/security-error.svg",
+  imageSrc: "resource://content-accessible/illustrations/security-error.svg",
   l10nId: "placeholder-message-label-description",
   supportPage: "",
 };

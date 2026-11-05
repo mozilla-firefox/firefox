@@ -101,8 +101,8 @@ const PASSWORD_FIELDNAME_HINTS = ["current-password", "new-password"];
 const USERNAME_FIELDNAME_HINT = "username";
 
 const ALLOWED_CHROME_IMAGE_URLS = new Set([
-  "chrome://global/skin/illustrations/security-error.svg",
-  "chrome://global/skin/illustrations/no-connection.svg",
+  "resource://content-accessible/illustrations/security-error.svg",
+  "resource://content-accessible/illustrations/no-connection.svg",
 ]);
 
 const IMAGE_ONLY_PROTOCOLS = [
