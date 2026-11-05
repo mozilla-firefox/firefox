@@ -10,6 +10,7 @@ import com.android.build.api.dsl.CommonExtension
 import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.FilterConfiguration
 import org.gradle.api.Action
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -85,6 +86,7 @@ class ProjectPlugin : Plugin<Project> {
         configureKtfmt(project, mozilla)
         configureDetekt(project, mozilla)
         configureAndroidComponentsLint(project, mozilla, topsrcdir)
+        configureRoomImplementationCheck(project)
         configureUnitTests(project)
         configurePackagingResourcesExcludes(project)
         configureBuildMetadata(project)
@@ -554,6 +556,27 @@ class ProjectPlugin : Plugin<Project> {
         project.pluginManager.withPlugin("com.android.application", action)
     }
 
+    private fun configureRoomImplementationCheck(project: Project) {
+        project.pluginManager.withPlugin("com.google.devtools.ksp") {
+            val schemas = project.file("schemas")
+            val kspOutputs = project.layout.buildDirectory.dir("generated/ksp").get().asFile
+            val kspTask = Regex("ksp(\\w+)Kotlin")
+            project.tasks.configureEach {
+                val variant = kspTask.matchEntire(name)?.groupValues?.get(1)?.replaceFirstChar { it.lowercase() }
+                if (variant == null || variant.contains("Test")) return@configureEach
+                doLast {
+                    val missing = missingRoomImplementations(
+                        schemas.listFiles().orEmpty().filter { it.isDirectory }.map { it.name },
+                        File(kspOutputs, variant).walk().filter { it.isFile }.map { it.name }.toList(),
+                    )
+                    if (missing.isNotEmpty()) {
+                        throw GradleException("$path ran but Room generated no implementation for ${missing.joinToString()}")
+                    }
+                }
+            }
+        }
+    }
+
     private fun configureUnitTests(project: Project) {
         val automation = project.providers.environmentVariable("MOZ_AUTOMATION").isPresent
         val fetches = project.providers.environmentVariable("MOZ_FETCHES_DIR")
@@ -730,5 +753,17 @@ abstract class ExtractNativeLibsForTests : TransformAction<ExtractNativeLibsForT
                     }
                 }
         }
+    }
+}
+
+/**
+ * Returns the Room databases, named by their exported schema directories (fully qualified class names), that have
+ * no `_Impl` class among [generatedFiles], the file names KSP generated for one variant.
+ */
+internal fun missingRoomImplementations(databases: List<String>, generatedFiles: List<String>): List<String> {
+    val generated = generatedFiles.map { it.substringBeforeLast('.') }
+    return databases.filterNot { database ->
+        val impl = "${database.substringAfterLast('.')}_Impl"
+        generated.any { it == impl || it.endsWith("_$impl") }
     }
 }
