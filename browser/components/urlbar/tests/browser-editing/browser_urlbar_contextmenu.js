@@ -247,6 +247,68 @@ add_task(async function menu_button_on_openable_rows() {
   await PlacesUtils.history.clear();
 });
 
+add_task(async function labels_by_type() {
+  await PlacesTestUtils.addVisits(["https://example.com/"]);
+
+  const TEST_CASES = [
+    {
+      type: UrlbarShared.RESULT_TYPE.URL,
+      expected: [
+        "urlbar-view-context-menu-open-in-tab2",
+        "urlbar-view-context-menu-open-in-container-tab2",
+        "urlbar-view-context-menu-open-in-window2",
+        "urlbar-view-context-menu-open-in-private-window2",
+      ],
+    },
+    {
+      type: UrlbarShared.RESULT_TYPE.SEARCH,
+      expected: [
+        "urlbar-view-context-menu-search-in-tab",
+        "urlbar-view-context-menu-search-in-container-tab",
+        "urlbar-view-context-menu-search-in-window",
+        "urlbar-view-context-menu-search-in-private-window",
+      ],
+    },
+  ];
+
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "example",
+    window,
+    fireInputEvent: true,
+  });
+
+  for (let { type, expected } of TEST_CASES) {
+    info(`Test for ${JSON.stringify({ type })}`);
+    let row;
+    for (let i = 0; i < UrlbarTestUtils.getResultCount(window); i++) {
+      let { element, result } = await UrlbarTestUtils.getDetailsOfResultAt(
+        window,
+        i
+      );
+      if (result.type == type) {
+        row = element.row;
+        break;
+      }
+    }
+    Assert.ok(row, "Found the result");
+
+    let menu = await openContextMenu(row);
+    Assert.deepEqual(
+      [
+        ...menu.querySelectorAll(
+          "[data-open-in][data-l10n-id], [data-open-in] > [data-l10n-id]"
+        ),
+      ].map(element => element.dataset.l10nId),
+      expected,
+      "The menu items are labeled for the result"
+    );
+    menu.hide(undefined, { force: true });
+  }
+
+  gURLBar.view.close();
+  await PlacesUtils.history.clear();
+});
+
 // With the feature gate off, the three-dot menu holds only the result's own
 // commands and a right-click opens nothing.
 add_task(async function feature_gate_off() {

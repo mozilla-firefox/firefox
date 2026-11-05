@@ -4285,14 +4285,20 @@ export class UrlbarView {
    * The commands that open a result in a new tab or window. They're offered
    * alongside a result's own menu commands, gated on `contextMenu.featureGate`.
    *
+   * @param {UrlbarResult} result
    * @returns {UrlbarResultCommand[]}
    */
-  get #openInCommands() {
+  #getOpenInCommands(result) {
+    let isSearch = result.type == UrlbarShared.RESULT_TYPE.SEARCH;
     /** @type {UrlbarResultCommand[]} */
     let commands = [
       {
         openIn: "tab",
-        l10n: { id: "urlbar-view-context-menu-open-in-tab2" },
+        l10n: {
+          id: isSearch
+            ? "urlbar-view-context-menu-search-in-tab"
+            : "urlbar-view-context-menu-open-in-tab2",
+        },
       },
     ];
     if (
@@ -4302,17 +4308,29 @@ export class UrlbarView {
       commands.push({
         openIn: "container-tab",
         submenu: true,
-        l10n: { id: "urlbar-view-context-menu-open-in-container-tab2" },
+        l10n: {
+          id: isSearch
+            ? "urlbar-view-context-menu-search-in-container-tab"
+            : "urlbar-view-context-menu-open-in-container-tab2",
+        },
       });
     }
     commands.push(
       {
         openIn: "window",
-        l10n: { id: "urlbar-view-context-menu-open-in-window2" },
+        l10n: {
+          id: isSearch
+            ? "urlbar-view-context-menu-search-in-window"
+            : "urlbar-view-context-menu-open-in-window2",
+        },
       },
       {
         openIn: "private-window",
-        l10n: { id: "urlbar-view-context-menu-open-in-private-window2" },
+        l10n: {
+          id: isSearch
+            ? "urlbar-view-context-menu-search-in-private-window"
+            : "urlbar-view-context-menu-open-in-private-window2",
+        },
       }
     );
     return commands;
@@ -4378,7 +4396,7 @@ export class UrlbarView {
   #getMenuCommands(result, { showSkipMenuWithTabItem = false } = {}) {
     let commands = this.#getResultMenuCommands(result);
     if (this.#canOpenInNewTarget(result)) {
-      let openInCommands = this.#openInCommands;
+      let openInCommands = this.#getOpenInCommands(result);
       commands = commands
         ? [...openInCommands, { name: "separator" }, ...commands]
         : openInCommands;
