@@ -2949,7 +2949,7 @@
 # see https://html.spec.whatwg.org/#blocking-attributes
 - name: dom.element.blocking.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 # The implementation-defined timeout of
@@ -5873,7 +5873,7 @@
 
 - name: dom.viewTransitions.cross-document.enabled
   type: RelaxedAtomicBool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
   rust: true
 
