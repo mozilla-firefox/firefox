@@ -434,6 +434,17 @@ void nsRFPService::PrefChanged(const char* aPref) {
   if (pref.EqualsLiteral(RESIST_FINGERPRINTINGPROTECTION_OVERRIDE_PREF) ||
       pref.EqualsLiteral(RESIST_FINGERPRINTINGPROTECTION_OVERRIDE_BASE_PREF)) {
     UpdateFPPOverrideList();
+
+    // Granular overrides are applied on top of the global set of enabled
+    // targets, which just changed. Ask the WebCompat service to send them
+    // again so they are recomputed against the new global set. This is done
+    // here, rather than by having the service observe the pref itself, to
+    // guarantee that the global set is updated first.
+    if (XRE_IsParentProcess() && mWebCompatService) {
+      DebugOnly<nsresult> rv = mWebCompatService->RefreshOverrides();
+      NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
+                           "Failed to refresh the fingerprinting overrides");
+    }
   } else if (pref.EqualsLiteral(GLEAN_DATA_SUBMISSION_PREF)) {
     if (XRE_IsParentProcess() &&
         !Preferences::GetBool(GLEAN_DATA_SUBMISSION_PREF, false)) {
@@ -2747,33 +2758,47 @@ nsRFPService::SetFingerprintingOverrides(
   // Clear all overrides before importing.
   CleanAllOverrides();
 
-  StaticMutexAutoLock lock(sEnabledFingerprintingProtectionsMutex);
-  for (const auto& fpOverride : aOverrides) {
-    nsAutoCString domainKey;
+  // Read the overrides out of the (JS-implemented) override objects before
+  // taking the lock, so that we don't call into JS while holding it.
+  struct ParsedOverride {
+    nsCString mDomainKey;
+    nsCString mOverridesText;
+    bool mIsBaseline = false;
+  };
+  nsTArray<ParsedOverride> parsedOverrides(aOverrides.Length());
 
-    nsresult rv = nsRFPService::CreateOverrideDomainKey(fpOverride, domainKey);
+  for (const auto& fpOverride : aOverrides) {
+    ParsedOverride parsed;
+
+    nsresult rv =
+        nsRFPService::CreateOverrideDomainKey(fpOverride, parsed.mDomainKey);
     // Skip the current overrides if we fail to create the domain key.
     if (NS_WARN_IF(NS_FAILED(rv))) {
       continue;
     }
 
-    nsAutoCString overridesText;
-    rv = fpOverride->GetOverrides(overridesText);
+    rv = fpOverride->GetOverrides(parsed.mOverridesText);
     NS_ENSURE_SUCCESS(rv, rv);
 
-    bool isBaseline = false;
-    rv = fpOverride->GetIsBaseline(&isBaseline);
+    rv = fpOverride->GetIsBaseline(&parsed.mIsBaseline);
     NS_ENSURE_SUCCESS(rv, rv);
 
-    RFPTargetSet baseOverrides = isBaseline
-                                     ? sEnabledFingerprintingProtectionsBase
-                                     : sEnabledFingerprintingProtections;
-    RFPTargetSet targets = nsRFPService::CreateOverridesFromText(
-        NS_ConvertUTF8toUTF16(overridesText), baseOverrides);
+    parsedOverrides.AppendElement(std::move(parsed));
+  }
 
-    // The newly added one will replace the existing one for the given domain
-    // key.
-    mFingerprintingOverrides.InsertOrUpdate(domainKey, targets);
+  {
+    StaticMutexAutoLock lock(sEnabledFingerprintingProtectionsMutex);
+    for (const auto& parsed : parsedOverrides) {
+      RFPTargetSet baseOverrides = parsed.mIsBaseline
+                                       ? sEnabledFingerprintingProtectionsBase
+                                       : sEnabledFingerprintingProtections;
+      RFPTargetSet targets = nsRFPService::CreateOverridesFromText(
+          NS_ConvertUTF8toUTF16(parsed.mOverridesText), baseOverrides);
+
+      // The newly added one will replace the existing one for the given
+      // domain key.
+      mFingerprintingOverrides.InsertOrUpdate(parsed.mDomainKey, targets);
+    }
   }
 
   if (Preferences::GetBool(

@@ -303,6 +303,17 @@ export class FingerprintingWebCompatService {
     this.#populateOverrides();
   }
 
+  refreshOverrides() {
+    lazy.logConsole.debug("refreshOverrides");
+
+    // Nothing has been imported yet, so there is nothing to refresh.
+    if (!this.#initialized) {
+      return;
+    }
+
+    this.#populateOverrides();
+  }
+
   shutdown() {
     lazy.logConsole.debug("shutdown");
 

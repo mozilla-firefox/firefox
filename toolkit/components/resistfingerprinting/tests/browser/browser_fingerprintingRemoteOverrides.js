@@ -662,3 +662,85 @@ add_task(async function test_granular_pref_schema_validation() {
   await SpecialPowers.popPrefEnv();
   await SpecialPowers.popPrefEnv();
 });
+
+// Granular overrides are applied on top of the global overrides. Verify that
+// they are recomputed when the global overrides prefs change, rather than
+// keeping the global set that was in effect when they were imported.
+add_task(async function test_granular_overrides_follow_global_overrides() {
+  await setGranularOverridePrefs(
+    JSON.stringify([
+      { firstPartyDomain: "example.net", overrides: "+Gamepad" },
+    ]),
+    JSON.stringify([
+      { firstPartyDomain: "example.info", overrides: "+Gamepad" },
+    ])
+  );
+
+  let fpp = Services.rfp
+    .getFingerprintingOverrides("example.info,0")
+    .getNth32BitSet(0);
+  is(
+    fpp & TARGET_CanvasRandomization,
+    TARGET_CanvasRandomization,
+    "The FPP granular override starts from the default FPP targets."
+  );
+  is(fpp & TARGET_Gamepad, TARGET_Gamepad, "The FPP override adds Gamepad.");
+
+  let baseline = Services.rfp
+    .getFingerprintingOverrides("example.net,1")
+    .getNth32BitSet(0);
+  is(
+    baseline & TARGET_PointerEvents,
+    0,
+    "The baseline granular override doesn't include PointerEvents yet."
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["privacy.fingerprintingProtection.overrides", "-CanvasRandomization"],
+      ["privacy.baselineFingerprintingProtection.overrides", "+PointerEvents"],
+    ],
+  });
+
+  fpp = Services.rfp
+    .getFingerprintingOverrides("example.info,0")
+    .getNth32BitSet(0);
+  is(
+    fpp & TARGET_CanvasRandomization,
+    0,
+    "The FPP granular override follows the updated global overrides."
+  );
+  is(
+    fpp & TARGET_Gamepad,
+    TARGET_Gamepad,
+    "The FPP granular override still adds Gamepad."
+  );
+
+  baseline = Services.rfp
+    .getFingerprintingOverrides("example.net,1")
+    .getNth32BitSet(0);
+  is(
+    baseline & TARGET_PointerEvents,
+    TARGET_PointerEvents,
+    "The baseline granular override follows the updated global overrides."
+  );
+  is(
+    baseline & TARGET_Gamepad,
+    TARGET_Gamepad,
+    "The baseline granular override still adds Gamepad."
+  );
+
+  await SpecialPowers.popPrefEnv();
+
+  fpp = Services.rfp
+    .getFingerprintingOverrides("example.info,0")
+    .getNth32BitSet(0);
+  is(
+    fpp & TARGET_CanvasRandomization,
+    TARGET_CanvasRandomization,
+    "The FPP granular override follows the global overrides being reset."
+  );
+
+  await SpecialPowers.popPrefEnv();
+  await SpecialPowers.popPrefEnv();
+});

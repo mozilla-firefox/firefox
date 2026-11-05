@@ -41,6 +41,13 @@ interface nsIFingerprintingWebCompatService : nsISupports
   void init();
 
   /**
+   * Send the current overrides to the RFP service again. Called by the RFP
+   * service when the global set of enabled targets changes, because the
+   * granular overrides are applied on top of it.
+   */
+  void refreshOverrides();
+
+  /**
    * Shutdown the service.
    */
   void shutdown();
