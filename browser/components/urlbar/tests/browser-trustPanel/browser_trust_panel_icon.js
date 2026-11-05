@@ -1716,6 +1716,89 @@ add_task(async function test_no_entry_page_class_on_tab_switch_back() {
   }
 });
 
+add_task(async function test_entry_page_class_on_restored_tab() {
+  await PlacesUtils.history.clear();
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.sessionstore.restore_on_demand", true]],
+  });
+  const tab = BrowserTestUtils.addTab(gBrowser, "about:blank", {
+    createLazyBrowser: true,
+  });
+  SessionStore.setTabState(
+    tab,
+    JSON.stringify({
+      entries: [
+        {
+          url: TRACKING_PAGE,
+          triggeringPrincipal_base64: E10SUtils.SERIALIZED_SYSTEMPRINCIPAL,
+        },
+      ],
+    })
+  );
+
+  try {
+    await TestUtils.waitForCondition(
+      () => tab.hasAttribute("pending"),
+      "Waiting for the tab to be pending restore"
+    );
+    const loaded = BrowserTestUtils.browserLoaded(
+      tab.linkedBrowser,
+      false,
+      TRACKING_PAGE
+    );
+    await BrowserTestUtils.switchTab(gBrowser, tab);
+    await loaded;
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "Waiting for has-blocked-trackers on the restored tab"
+    );
+
+    Assert.ok(
+      trustIconContainer().classList.contains("entry-page"),
+      "entry-page class is present on a restored tab's first load"
+    );
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_entry_page_class_after_enabling_tracker_count() {
+  await PlacesUtils.history.clear();
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.trackerCount.enabled", false]],
+  });
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TRACKING_PAGE,
+    waitForLoad: true,
+  });
+
+  try {
+    await SpecialPowers.popPrefEnv();
+    const loaded = BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+    tab.linkedBrowser.reload();
+    await loaded;
+    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+      content.postMessage("cryptomining", "*");
+    });
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "Waiting for has-blocked-trackers after enabling the tracker count"
+    );
+
+    Assert.ok(
+      trustIconContainer().classList.contains("entry-page"),
+      "entry-page class is present on a site's first load since the tracker count was enabled"
+    );
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+  }
+});
+
 add_task(async function test_tracker_count_shown_glean_event_entry_page() {
   await PlacesUtils.history.clear();
 

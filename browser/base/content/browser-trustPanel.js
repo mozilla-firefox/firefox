@@ -510,6 +510,26 @@ class TrustPanel {
   }
 
   /**
+   * Whether loading `uri` in the selected tab continues its visit to the
+   * current site. A tab whose tracker count hasn't shown a visit to that site
+   * yet, like a restored tab or one loaded before the tracker count was
+   * enabled, starts a new visit even though its URI was already on that site.
+   *
+   * @param {nsIURI} uri
+   * @returns {boolean}
+   */
+  #continuesSiteVisit(uri) {
+    if (!this.#trackerCountEnabled) {
+      return this.#isSameSite(uri, this.#uri);
+    }
+    const site = this.#siteKey(uri);
+    return (
+      !!site &&
+      TrustPanelTrackerLogs.getVisitedSite(gBrowser.selectedBrowser) === site
+    );
+  }
+
+  /**
    * Called at navigation start (before the security state is known) so the icon
    * drops to the "scanning" shield immediately, rather than showing the previous
    * page's secure check until updateIdentity runs on the security change.
@@ -521,7 +541,7 @@ class TrustPanel {
     // The page being navigated away from is still current, so store its log
     // now to include trackers blocked since the last content-blocking event.
     this.#recordCurrentPageLog(gBrowser.selectedBrowser);
-    const isSameSite = this.#isSameSite(targetURI, this.#uri);
+    const isSameSite = this.#continuesSiteVisit(targetURI);
     // Set this early (before the new page's content-blocking events) to avoid a
     // race with updateIdentity. STATE_START can fire without a URI.
     if (targetURI) {
@@ -595,7 +615,21 @@ class TrustPanel {
       // If the user visits the same site in different tabs, then switches between those tabs,
       // that results in two `updateIdentity` calls with the same site, but that should not
       // be considered a same-site navigation:
-      this.#sameTabNavigation && this.#isSameSite(uri, this.#uri);
+      this.#sameTabNavigation && this.#continuesSiteVisit(uri);
+    // Tab switches don't start a visit, and neither does a restored tab
+    // reporting its URI before its document loads, so that a restored tab's
+    // first load still shows the long form.
+    const site = this.#siteKey(uri);
+    if (
+      this.#sameTabNavigation &&
+      this.#trackerCountEnabled &&
+      site &&
+      this.#siteKey(
+        browser.browsingContext?.currentWindowGlobal?.documentURI
+      ) === site
+    ) {
+      TrustPanelTrackerLogs.setVisitedSite(browser, site);
+    }
     if (!this.#sameTabNavigation) {
       // Store the log of the tab being switched away from, in case it navigates
       // while in the background.

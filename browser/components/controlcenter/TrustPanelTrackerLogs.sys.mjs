@@ -15,6 +15,14 @@
  */
 const siteLogsByTab = new WeakMap();
 
+/**
+ * The site each tab's tracker count started showing a visit to, keyed like
+ * `siteLogsByTab`.
+ *
+ * @type {WeakMap<object, string>}
+ */
+const visitedSiteByTab = new WeakMap();
+
 export const TrustPanelTrackerLogs = {
   /**
    * Store the content-blocking log of a page. If the page is on a different
@@ -48,5 +56,28 @@ export const TrustPanelTrackerLogs = {
   getLogs(browser) {
     const key = browser.permanentKey;
     return key ? [...(siteLogsByTab.get(key)?.logs.values() ?? [])] : [];
+  },
+
+  /**
+   * Store the site a tab's tracker count started showing a visit to.
+   *
+   * @param {MozBrowser} browser
+   * @param {string} site
+   */
+  setVisitedSite(browser, site) {
+    if (browser.permanentKey) {
+      visitedSiteByTab.set(browser.permanentKey, site);
+    }
+  },
+
+  /**
+   * @param {MozBrowser} browser
+   * @returns {string|null} The site the browser's tab tracker count is showing
+   * a visit to, or null if it hasn't shown one yet, e.g. because the tab was
+   * restored or loaded before the tracker count was enabled.
+   */
+  getVisitedSite(browser) {
+    const key = browser.permanentKey;
+    return (key && visitedSiteByTab.get(key)) ?? null;
   },
 };
