@@ -443,6 +443,16 @@ extern JS_PUBLIC_API uint64_t GetSCOffset(JSStructuredCloneWriter* writer);
 /* Statically asserted in FunctionFlags.cpp. */
 static const unsigned JS_FUNCTION_INTERPRETED_BITS = 0x0060;
 
+// Allow running script in the interrupted realm for test purposes.
+class MOZ_RAII JS_PUBLIC_API AutoAllowScriptInInterrupt {
+  JS::Realm* realm_;
+  bool wasHandling_;
+
+ public:
+  explicit AutoAllowScriptInInterrupt(JSContext* cx);
+  ~AutoAllowScriptInInterrupt();
+};
+
 }  // namespace js
 
 static MOZ_ALWAYS_INLINE const JSJitInfo* FUNCTION_VALUE_TO_JITINFO(

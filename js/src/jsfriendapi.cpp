@@ -792,3 +792,12 @@ bool JS::AddMozDisplayNamesConstructor(JSContext* cx, JS::HandleObject intl) {
 JS_PUBLIC_API JS::Zone* js::GetObjectZoneFromAnyThread(const JSObject* obj) {
   return MaybeForwarded(obj)->zoneFromAnyThread();
 }
+
+js::AutoAllowScriptInInterrupt::AutoAllowScriptInInterrupt(JSContext* cx)
+    : realm_(cx->realm()), wasHandling_(realm_->handlingInterrupt()) {
+  realm_->setHandlingInterrupt(false);
+}
+
+js::AutoAllowScriptInInterrupt::~AutoAllowScriptInInterrupt() {
+  realm_->setHandlingInterrupt(wasHandling_);
+}

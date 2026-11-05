@@ -1221,6 +1221,10 @@ static bool ShellInterruptCallback(JSContext* cx) {
     JS::AutoSaveExceptionState savedExc(cx);
 
     if (sc->interruptFunc.isObject()) {
+      // We need to allow running the callback, which may be in the interrupted
+      // realm.
+      js::AutoAllowScriptInInterrupt allowScript(cx);
+
       JSAutoRealm ar(cx, &sc->interruptFunc.toObject());
 
       // Report any exceptions thrown by the JS interrupt callback, but do

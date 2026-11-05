@@ -386,9 +386,25 @@ static bool InvokeInterruptCallbacks(JSContext* cx) {
   return stop;
 }
 
+class MOZ_RAII AutoSetRealmHandlingInterrupt {
+  Realm* realm_;
+  bool wasHandling_;
+
+ public:
+  explicit AutoSetRealmHandlingInterrupt(Realm* realm)
+      : realm_(realm), wasHandling_(realm->handlingInterrupt()) {
+    realm_->setHandlingInterrupt(true);
+  }
+  ~AutoSetRealmHandlingInterrupt() {
+    realm_->setHandlingInterrupt(wasHandling_);
+  }
+};
+
 static bool HandleInterrupt(JSContext* cx, bool invokeCallback,
                             bool oomStackTrace) {
   MOZ_ASSERT(!cx->zone()->isAtomsZone());
+
+  AutoSetRealmHandlingInterrupt markHandlingInterrupt(cx->realm());
 
   cx->runtime()->gc.gcIfRequested();
 

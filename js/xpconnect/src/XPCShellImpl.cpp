@@ -501,6 +501,7 @@ static bool XPCShellInterruptCallback(JSContext* cx) {
 
   MOZ_ASSERT(js::IsFunctionObject(&callback.toObject()));
 
+  js::AutoAllowScriptInInterrupt allowScript(cx);
   JSAutoRealm ar(cx, &callback.toObject());
   RootedValue rv(cx);
   if (!JS_CallFunctionValue(cx, nullptr, callback,

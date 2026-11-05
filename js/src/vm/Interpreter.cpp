@@ -444,6 +444,9 @@ bool js::RunScript(JSContext* cx, RunState& state) {
 
   MOZ_ASSERT(cx->realm() == state.script()->realm());
 
+  // Interrupt handlers must not run script in the current realm.
+  MOZ_RELEASE_ASSERT(!cx->realm()->handlingInterrupt());
+
   MOZ_DIAGNOSTIC_ASSERT(cx->realm()->isSystem() ||
                         cx->runtime()->allowContentJS());
 

@@ -425,6 +425,11 @@ class JS::Realm : public JS::shadow::Realm {
 
   bool isSystem_ = false;
   bool allocatedDuringIncrementalGC_;
+
+  // Set while an interrupt is being handled in this realm. Interrupt handlers
+  // must not run script in the current realm, as optimizations assume that an
+  // interrupt does not modify arbitrary state in the realm.
+  bool handlingInterrupt_ = false;
   bool initializingGlobal_ = true;
 
   // Indicates that we are tracing all execution within this realm, i.e.,
@@ -700,6 +705,9 @@ class JS::Realm : public JS::shadow::Realm {
   void setPrincipals(JSPrincipals* principals) { principals_ = principals; }
 
   bool isSystem() const { return isSystem_; }
+
+  bool handlingInterrupt() const { return handlingInterrupt_; }
+  void setHandlingInterrupt(bool handling) { handlingInterrupt_ = handling; }
   //
   // The Debugger observes execution on a frame-by-frame basis. The
   // invariants of Realm's debug mode bits, JSScript::isDebuggee,
