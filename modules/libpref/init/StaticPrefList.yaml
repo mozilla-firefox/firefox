@@ -6204,13 +6204,6 @@
   value: false
   mirror: always
 
-# If true, when user selects a range, `Selection` will split the range to
-# exclude unselectable content from the range.
-- name: dom.selection.exclude_non_selectable_nodes
-  type: bool
-  value: false
-  mirror: always
-
 # Mimic Chrome's window.getSelection().toString() behaviour
 - name: dom.selection.mimic_chrome_tostring.enabled
   type: bool
