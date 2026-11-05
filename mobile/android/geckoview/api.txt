@@ -264,6 +264,7 @@ package org.mozilla.geckoview {
     field @Nullable public final String guid;
     field @NonNull public final String name;
     field @NonNull public final String number;
+    field @NonNull public final String securityCode;
   }
 
   public static class Autocomplete.CreditCard.Builder {
@@ -274,6 +275,7 @@ package org.mozilla.geckoview {
     method @AnyThread @NonNull public Autocomplete.CreditCard.Builder guid(@Nullable String);
     method @AnyThread @NonNull public Autocomplete.CreditCard.Builder name(@Nullable String);
     method @AnyThread @NonNull public Autocomplete.CreditCard.Builder number(@Nullable String);
+    method @AnyThread @NonNull public Autocomplete.CreditCard.Builder securityCode(@Nullable String);
   }
 
   public static class Autocomplete.CreditCardSaveOption extends Autocomplete.SaveOption<Autocomplete.CreditCard> {

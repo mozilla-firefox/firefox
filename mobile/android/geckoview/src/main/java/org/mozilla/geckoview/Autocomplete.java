@@ -115,6 +115,7 @@ public class Autocomplete {
     private static final String NUMBER_KEY = "number";
     private static final String EXP_MONTH_KEY = "expMonth";
     private static final String EXP_YEAR_KEY = "expYear";
+    private static final String SECURITY_CODE_KEY = "cvv";
 
     /** The unique identifier for this login entry. */
     public final @Nullable String guid;
@@ -131,6 +132,9 @@ public class Autocomplete {
     /** The expiration year. */
     public final @NonNull String expirationYear;
 
+    /** The security code (CVV), or an empty string if there is none. */
+    public final @NonNull String securityCode;
+
     /** Protected constructor for tests only. */
     @AnyThread
     protected CreditCard() {
@@ -139,6 +143,7 @@ public class Autocomplete {
       number = "";
       expirationMonth = "";
       expirationYear = "";
+      securityCode = "";
     }
 
     /**
@@ -153,6 +158,7 @@ public class Autocomplete {
       number = bundle.getString(NUMBER_KEY, "");
       expirationMonth = bundle.getString(EXP_MONTH_KEY, "");
       expirationYear = bundle.getString(EXP_YEAR_KEY, "");
+      securityCode = bundle.getString(SECURITY_CODE_KEY, "");
     }
 
     @Override
@@ -164,12 +170,12 @@ public class Autocomplete {
           .append(guid)
           .append(", name=")
           .append(name)
-          .append(", number=")
-          .append(number)
+          .append(", number=<redacted>")
           .append(", expirationMonth=")
           .append(expirationMonth)
           .append(", expirationYear=")
           .append(expirationYear)
+          .append(", securityCode=<redacted>")
           .append("}");
       return builder.toString();
     }
@@ -182,16 +188,13 @@ public class Autocomplete {
     @AnyThread
     @NonNull
     GeckoBundle toBundle() {
-      final GeckoBundle bundle = new GeckoBundle(7);
+      final GeckoBundle bundle = new GeckoBundle(8);
       bundle.putString(GUID_KEY, guid);
       bundle.putString(NAME_KEY, name);
       bundle.putString(NUMBER_KEY, number);
-      if (expirationMonth != null) {
-        bundle.putString(EXP_MONTH_KEY, expirationMonth);
-      }
-      if (expirationYear != null) {
-        bundle.putString(EXP_YEAR_KEY, expirationYear);
-      }
+      bundle.putString(EXP_MONTH_KEY, expirationMonth);
+      bundle.putString(EXP_YEAR_KEY, expirationYear);
+      bundle.putString(SECURITY_CODE_KEY, securityCode);
 
       return bundle;
     }
@@ -283,6 +286,18 @@ public class Autocomplete {
       @AnyThread
       public @NonNull Builder expirationYear(final @Nullable String expYear) {
         mBundle.putString(EXP_YEAR_KEY, expYear);
+        return this;
+      }
+
+      /**
+       * Set the security code for this credit card entry.
+       *
+       * @param securityCode The security code (CVV) string.
+       * @return This {@link Builder} instance.
+       */
+      @AnyThread
+      public @NonNull Builder securityCode(final @Nullable String securityCode) {
+        mBundle.putString(SECURITY_CODE_KEY, securityCode);
         return this;
       }
     }

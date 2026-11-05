@@ -191,6 +191,22 @@ class AutocompleteTest : BaseSessionTest() {
             creditCard.expirationYear,
             equalTo(""),
         )
+        assertThat(
+            "Security code should match",
+            creditCard.securityCode,
+            equalTo(""),
+        )
+    }
+
+    @Test
+    fun creditCardBuilderSecurityCode() {
+        val creditCard = CreditCard.Builder().securityCode("123").build()
+
+        assertThat(
+            "Security code should match",
+            creditCard.securityCode,
+            equalTo("123"),
+        )
     }
 
     @Test

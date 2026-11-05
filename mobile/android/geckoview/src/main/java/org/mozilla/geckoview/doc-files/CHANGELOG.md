@@ -13,6 +13,16 @@ exclude: true
 
 ⚠️  breaking change and deprecation notices
 
+## v161
+- Added [`Autocomplete.CreditCard.securityCode`][161.1] and
+    [`Autocomplete.CreditCard.Builder.securityCode`][161.2] so the credit card security code (CVV)
+    can be passed to and from the [`Autocomplete.StorageDelegate`][161.3].
+    ([bug 2085419]({{bugzilla}}2085419))
+
+[161.1]: {{javadoc_uri}}/Autocomplete.CreditCard.html#securityCode
+[161.2]: {{javadoc_uri}}/Autocomplete.CreditCard.Builder.html#securityCode(java.lang.String)
+[161.3]: {{javadoc_uri}}/Autocomplete.StorageDelegate.html
+
 ## v160
 - The `content-disposition` header of the [`WebResponse`][65.15] passed to
     [`ContentDelegate.onExternalResponse`][160.1] now contains a filename validated with the same
@@ -2108,4 +2118,4 @@ to allow adding gecko profiler markers.
 [65.24]: {{javadoc_uri}}/CrashReporter.html#sendCrashReport(android.content.Context,android.os.Bundle,java.lang.String)
 [65.25]: {{javadoc_uri}}/GeckoResult.html
 
-[api-version]: a2a30400e084298e8b1eb6a7570971d3f03979fc
+[api-version]: a809882635db0fb0b68e64032644b99dba25772b
