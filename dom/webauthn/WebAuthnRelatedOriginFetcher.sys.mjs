@@ -86,7 +86,7 @@ async function fetchAndValidateRelatedOrigin(aRpId, aCallerOrigin, aSignal) {
   let req;
   try {
     req = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest({ mozAnon: true });
       xhr.open("GET", `https://${aRpId}/.well-known/webauthn`);
       xhr.setRequestHeader("Sec-Fetch-Site", "none");
       xhr.setRequestHeader("Sec-Fetch-Mode", "no-cors");

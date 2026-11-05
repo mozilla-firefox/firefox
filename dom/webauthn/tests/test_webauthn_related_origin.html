@@ -116,6 +116,39 @@ async function clickRelatedOriginPopupCancel() {
   });
 }
 
+function loadChannelObserver() {
+  return SpecialPowers.loadChromeScript(() => {
+    /* eslint-env mozilla/chrome-script */
+    // Reports the next request whose path ends with pathSuffix.
+    addMessageListener("watch", ({ pathSuffix, topic }) => {
+      function observer(subject) {
+        let channel = subject.QueryInterface(Ci.nsIHttpChannelInternal);
+        if (!channel.URI.filePath.endsWith(pathSuffix)) {
+          return;
+        }
+        Services.obs.removeObserver(observer, topic);
+        let info = {
+          isAnonymous: !!(channel.loadFlags & Ci.nsIRequest.LOAD_ANONYMOUS),
+        };
+        sendAsyncMessage("observed", info);
+      }
+      Services.obs.addObserver(observer, topic);
+    });
+  });
+}
+
+// Runs aTrigger and resolves with [observed request, aTrigger's value]. The
+// observer is registered before aTrigger runs.
+async function observeChannel(aObserver, aPathSuffix, aTopic, aTrigger) {
+  await aObserver.sendQuery("watch", {
+    pathSuffix: aPathSuffix,
+    topic: aTopic,
+  });
+  let observed = aObserver.promiseOneMessage("observed");
+  let triggered = await aTrigger();
+  return [await observed, triggered];
+}
+
 add_task(async function test_pref_disabled() {
   await SpecialPowers.pushPrefEnv({
     set: [["security.webauthn.related_origin_requests_mode", 0]],
@@ -376,6 +409,30 @@ add_task(async function test_multi_part_tld_label() {
   let assertion = await navigator.credentials.get(makeGetOptions(cred.rawId));
   ok(assertion !== null, "multi-part TLD label: assertion succeeds");
   is(assertion.id, cred.id, "multi-part TLD label: asserted the created credential");
+});
+
+// "Requests to this well-known endpoint by WebAuthn Clients MUST be made
+// without credentials [...]". Parent process requests omit credentials by
+// default, so turn that default off to check that this request does not rely
+// on it.
+add_task(async function test_no_credentials() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["network.fetch.systemDefaultsToOmittingCredentials", false]],
+  });
+  await setWellKnownState("valid");
+
+  let observer = loadChannelObserver();
+  let [{ isAnonymous }, cred] = await observeChannel(
+    observer,
+    "/.well-known/webauthn",
+    "http-on-modify-request",
+    () => navigator.credentials.create(makeCredOptions())
+  );
+  ok(cred !== null, "no credentials: credential created");
+  ok(isAnonymous, "the .well-known request is anonymous");
+
+  observer.destroy();
+  await SpecialPowers.popPrefEnv();
 });
 
 // Caller's label was seen before the limit was reached, so even when
