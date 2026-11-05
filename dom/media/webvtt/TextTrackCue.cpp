@@ -192,10 +192,12 @@ double TextTrackCue::ComputedPosition() {
   if (!mPositionIsAutoKeyword) {
     return mPosition;
   }
-  if (ComputedPositionAlign() == PositionAlignSetting::Line_left) {
+  // The auto position depends on the cue text alignment only, so start and end
+  // alignment use 50 whatever the text direction is.
+  if (mAlign == AlignSetting::Left) {
     return 0.0;
   }
-  if (ComputedPositionAlign() == PositionAlignSetting::Line_right) {
+  if (mAlign == AlignSetting::Right) {
     return 100.0;
   }
   return 50.0;
