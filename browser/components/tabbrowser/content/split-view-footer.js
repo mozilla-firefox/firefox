@@ -51,7 +51,7 @@
         ),
     };
 
-    /** @type {XULElement} */
+    /** @type {MozTabbrowserTab} */
     #tab = null;
 
     static markup = `
@@ -69,7 +69,9 @@
       if (this.#initialized) {
         return;
       }
-      this.appendChild(this.constructor.fragment);
+      this.appendChild(
+        /** @type {typeof MozSplitViewFooter} */ (this.constructor).fragment
+      );
 
       this.securityElement = this.querySelector(".split-view-security-warning");
       this.tabImageIconElement = this.querySelector(".split-view-tab-image");
