@@ -80,21 +80,25 @@
 
 <spacer id="customization-footer-spacer"/>
 #ifdef XP_MACOSX
-    <button id="customization-touchbar-button"
-        class="footer-button"
-        hidden="true"
-        data-l10n-id="customize-mode-touchbar-cmd"/>
+    <html:moz-button
+      id="customization-touchbar-button"
+      hidden="true"
+      data-l10n-id="customize-mode-touchbar-cmd"
+    ></html:moz-button>
     <spacer hidden="true" id="customization-touchbar-spacer"/>
 #endif
-<button id="customization-undo-reset-button"
-        class="footer-button"
-        hidden="true"
-        data-l10n-id="customize-mode-undo-cmd"/>
-<button id="customization-reset-button"
-        data-l10n-id="customize-mode-restore-defaults"
-        class="footer-button"/>
-<button id="customization-done-button"
-        data-l10n-id="customize-mode-done"
-        default="true"
-        class="footer-button"/>
+<html:moz-button
+  id="customization-undo-reset-button"
+  hidden="true"
+  data-l10n-id="customize-mode-undo-cmd"
+></html:moz-button>
+<html:moz-button
+  id="customization-reset-button"
+  data-l10n-id="customize-mode-restore-defaults"
+></html:moz-button>
+<html:moz-button
+  type="primary"
+  id="customization-done-button"
+  data-l10n-id="customize-mode-done"
+></html:moz-button>
 </hbox>
