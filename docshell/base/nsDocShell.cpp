@@ -1127,8 +1127,7 @@ bool nsDocShell::MaybeHandleSubframeHistory(
   // set. To handle this case we check if mCurrentURI is about:blank.
 
   if (mCurrentURI &&
-      (!NS_IsAboutBlank(mCurrentURI) || mLoadingEntry || mActiveEntry) &&
-      !aLoadState->HistoryBehavior()) {
+      (!NS_IsAboutBlank(mCurrentURI) || mLoadingEntry || mActiveEntry)) {
     // This is a pre-existing subframe. If
     // 1. The load of this frame was not originally initiated by session
     //    history directly (i.e. (!shEntry) condition succeeded, but it can
@@ -1139,12 +1138,14 @@ bool nsDocShell::MaybeHandleSubframeHistory(
     // onLoadHandler is loading a new page in this child. Check parent's and
     // self's busy flag and if it is set, we don't want this onLoadHandler
     // load to get in to session history.
-    BusyFlags parentBusy = parentDS->GetBusyFlags();
-    BusyFlags selfBusy = GetBusyFlags();
+    if (!aLoadState->HistoryBehavior()) {
+      BusyFlags parentBusy = parentDS->GetBusyFlags();
+      BusyFlags selfBusy = GetBusyFlags();
 
-    if (parentBusy & BUSY_FLAGS_BUSY || selfBusy & BUSY_FLAGS_BUSY) {
-      aLoadState->SetLoadType(LOAD_NORMAL_REPLACE);
-      aLoadState->ClearLoadIsFromSessionHistory();
+      if (parentBusy & BUSY_FLAGS_BUSY || selfBusy & BUSY_FLAGS_BUSY) {
+        aLoadState->SetLoadType(LOAD_NORMAL_REPLACE);
+        aLoadState->ClearLoadIsFromSessionHistory();
+      }
     }
     return false;
   }

@@ -1,0 +1,68 @@
+<!doctype html>
+<meta charset=utf-8>
+<title>Navigating an existing iframe after its parent did a hard reload</title>
+<script src=/resources/testharness.js></script>
+<script src=/resources/testharnessreport.js></script>
+<body>
+<script>
+function load(frame) {
+  return new Promise(resolve => frame.addEventListener("load", resolve, { once: true }));
+}
+
+for (const hardReload of [false, true]) {
+  for (const fragment of [false, true]) {
+    for (const viaLocation of [false, true]) {
+      promise_test(async t => {
+        const parent = document.createElement("iframe");
+        parent.src = "/common/blank.html?parent";
+        t.add_cleanup(() => parent.remove());
+        let loaded = load(parent);
+        document.body.append(parent);
+        await loaded;
+
+        if (hardReload) {
+          loaded = load(parent);
+          parent.contentWindow.location.reload(true);
+          await loaded;
+        }
+
+        const initialURL = new URL("/common/blank.html?first", location.href).href;
+        const targetURL = fragment ? initialURL + "#second" : new URL("/common/blank.html?second", location.href).href;
+
+        const frame = parent.contentDocument.createElement("iframe");
+        frame.src = initialURL;
+        loaded = load(frame);
+        parent.contentDocument.body.append(frame);
+        await loaded;
+        await new Promise(resolve => t.step_timeout(resolve, 0));
+
+        const before = history.length;
+        frame.contentDocument.body.dataset.preserved = "true";
+        let navigationType;
+        let sameDocument;
+        frame.contentWindow.navigation.onnavigate = event => {
+          navigationType = event.navigationType;
+          sameDocument = event.destination.sameDocument;
+        };
+        loaded = new Promise(resolve => {
+          frame.addEventListener("load", resolve, { once: true });
+          frame.contentWindow.onhashchange = resolve;
+        });
+        if (viaLocation) {
+          frame.contentWindow.location.href = targetURL;
+        } else {
+          frame.src = targetURL;
+        }
+        await loaded;
+
+        assert_equals(navigationType, "push", "navigationType");
+        assert_equals(sameDocument, fragment, "sameDocument");
+        assert_equals(history.length - before, 1, "history.length change");
+        assert_array_equals(frame.contentWindow.navigation.entries().map(e => e.url), [initialURL, targetURL], "entries");
+        assert_equals(frame.contentWindow.location.href, targetURL, "url");
+        assert_equals(frame.contentDocument.body.dataset.preserved === "true", fragment, "document preserved");
+      }, `${hardReload ? "hard reload" : "initial load"}, ${fragment ? "fragment" : "cross-document"}, ${viaLocation ? "location.href" : "src"}`);
+    }
+  }
+}
+</script>
