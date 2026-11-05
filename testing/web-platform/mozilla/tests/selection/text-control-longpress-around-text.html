@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="timeout" content="long">
+<meta name="variant" content="?drag-out-of-frame-style=0">
+<meta name="variant" content="?drag-out-of-frame-style=1">
+<title>Long press in the padding of text controls and around their text</title>
+<link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2084416">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<style>
+  iframe {
+    inline-size: 600px;
+    block-size: 500px;
+    border: 0;
+  }
+</style>
+<script>
+"use strict";
+
+const kDragOutOfFrameStyle = Number(
+  new URLSearchParams(location.search).get("drag-out-of-frame-style")
+);
+
+// word: locates the reference word for pointFor() and is the default expected
+// range. [] marks a caret.
+// expected: "click" tells the test to simulate a click at the test point and save
+// its caret position. The test then resets the selection to initialSelection,
+// performs the long press at the same point, and compares with the saved position.
+// Using a click accounts for browser.drag_out_of_frame_style.
+const kTests = [
+  {
+    id: "input",
+    word: [4, 7], // ABC [DEF] GHI
+    position: "word-start",
+  },
+  {
+    id: "input",
+    word: [4, 7], // ABC [DEF] GHI
+    position: "padding-before",
+    expected: "click",
+  },
+  {
+    id: "textarea",
+    word: [24, 27], // Line 3: PQR [STU] VWX
+    position: "blank-far",
+    expected: "click",
+  },
+  {
+    id: "textarea",
+    word: [16, 19], // Line 2: JKL [MNO]
+    position: "past-line-end",
+    expected: [19, 19], // Line 2: JKL MNO[]
+  },
+  {
+    id: "input-empty",
+    word: [0, 0], // []
+    position: "padding-before-middle",
+    expected: [0, 0], // []
+  },
+  {
+    id: "textarea",
+    word: [16, 19], // Line 2: JKL [MNO]
+    position: "leading-before",
+    expected: "click",
+  },
+  // Scrolled so that the first line is hidden and the last one cut off.
+  {
+    id: "textarea-long",
+    word: [12, 15], // Line 2: GHI [JKL]
+    position: "border-before",
+    initialSelection: [20, 20], // Line 3: MNO []PQR
+    scrollTop: 80,
+    expected: "click",
+  },
+  // user-select: all on the ancestor resolves the point outside the input's editor,
+  // so long press must preserve its selection without requesting a menu.
+  {
+    id: "input-in-user-select-all",
+    word: [4, 7], // ABC [DEF] GHI
+    position: "padding-before",
+    initialSelection: [8, 8], // ABC DEF []GHI
+    expected: [8, 8], // ABC DEF []GHI
+    expectNoContextMenu: true,
+  },
+];
+
+// Return the point in viewport coordinates, initially at the reference word's
+// center. Positions adjust x and/or y from there.
+function pointFor(field, [wordStart, wordEnd], position, scrollTop) {
+  field.scrollIntoView({ block: "center", inline: "center" });
+  field.focus();
+  field.scrollTop = scrollTop;
+  // Measure with a range, as selecting would scroll the field.
+  const text = SpecialPowers.wrap(field).editor.rootElement.firstChild;
+  const range = SpecialPowers.wrap(field.ownerDocument).createRange();
+  range.setStart(text, wordStart);
+  range.setEnd(text, wordEnd);
+  const wordRect = range.getBoundingClientRect();
+  const bounds = field.getBoundingClientRect();
+  const style = field.ownerDocument.defaultView.getComputedStyle(field);
+  const px = name => parseFloat(style[name]);
+  const contentTop = bounds.top + px("borderTopWidth") + px("paddingTop");
+  const contentBottom = bounds.bottom - px("borderBottomWidth") - px("paddingBottom");
+  let x = (wordRect.left + wordRect.right) / 2;
+  let y = (wordRect.top + wordRect.bottom) / 2;
+  switch (position) {
+    // Inside the word, near its left edge.
+    case "word-start": x = wordRect.left + 1; break;
+    // Inside the field's top border.
+    case "border-before": y = bounds.top + 2; break;
+    // Top padding, above the content box.
+    case "padding-before": y = contentTop - 8; break;
+    // Top padding, horizontally centered in the field for empty content.
+    case "padding-before-middle":
+      x = (bounds.left + bounds.right) / 2;
+      y = contentTop - 8;
+      break;
+    // Line leading just above the reference word's text bounds.
+    case "leading-before": y = wordRect.top - 2; break;
+    // Blank content near the bottom, below all lines.
+    case "blank-far": y = contentBottom - 8; break;
+    // Past the line's end; the reference word must be last on its line.
+    case "past-line-end": x = wordRect.right + 24; break;
+    default: throw new Error(`Unknown position: ${position}`);
+  }
+  return [Math.round(x), Math.round(y)];
+}
+
+function waitForFrames(win) {
+  return new Promise(resolve => {
+    win.requestAnimationFrame(() => win.requestAnimationFrame(resolve));
+  });
+}
+
+function waitForPostedCaretEvents() {
+  return new Promise(resolve => SpecialPowers.executeSoon(resolve));
+}
+
+promise_setup(async () => {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.drag_out_of_frame_style", kDragOutOfFrameStyle],
+      ["layout.accessiblecaret.enabled", true],
+      ["layout.accessiblecaret.use_long_tap_injector", false],
+      ["layout.accessiblecaret.transition-duration", "0.0"],
+      ["layout.word_select.eat_space_to_next_word", false],
+    ],
+  });
+});
+
+for (const {
+  id, word, position,
+  // Start away from offset 0 so the range check catches failures to move there.
+  initialSelection = [1, 1], // A[]BC DEF GHI; [] in an empty input.
+  expected,
+  scrollTop = 0, expectNoContextMenu = false,
+} of kTests) {
+  promise_test(async t => {
+    const frame = document.createElement("iframe");
+    t.add_cleanup(() => frame.remove());
+    const loaded = new Promise(resolve => { frame.onload = resolve; });
+    frame.src = "resources/text-control-selection-around-text.html";
+    document.body.append(frame);
+    await loaded;
+    frame.scrollIntoView({ block: "start", inline: "start" });
+    const win = frame.contentWindow;
+    const field = win.document.getElementById(id);
+    const [x, y] = pointFor(field, word, position, scrollTop);
+    const wrappedWindow = SpecialPowers.wrap(win);
+    const scrolledTop = field.scrollTop;
+    field.setSelectionRange(...initialSelection);
+    await waitForFrames(win);
+    field.scrollTop = scrolledTop;
+    await waitForFrames(win);
+    let expectedRange = expected || word;
+    if (expected == "click") {
+      const pageScroll = [win.scrollX, win.scrollY];
+      wrappedWindow.synthesizeMouseEvent(
+        "mousedown", x, y, { clickCount: 1, inputSource: 1 }, { toWindow: true }
+      );
+      wrappedWindow.synthesizeMouseEvent(
+        "mouseup", x, y, { clickCount: 1, inputSource: 1 }, { toWindow: true }
+      );
+      await waitForFrames(win);
+      assert_equals(
+        field.selectionStart, field.selectionEnd, "Single click places a caret"
+      );
+      expectedRange = [field.selectionStart, field.selectionEnd];
+      field.setSelectionRange(...initialSelection);
+      await waitForFrames(win);
+      field.scrollTop = scrolledTop;
+      win.scrollTo(...pageScroll);
+      await waitForFrames(win);
+    }
+    await waitForPostedCaretEvents();
+    assert_equals(field.scrollTop, scrolledTop, "Control scroll position");
+
+    const reasons = [];
+    const onCaretStateChanged = event => reasons.push(event.reason);
+    SpecialPowers.addChromeEventListener(
+      "mozcaretstatechanged", onCaretStateChanged, true
+    );
+    t.add_cleanup(() => {
+      SpecialPowers.removeChromeEventListener(
+        "mozcaretstatechanged", onCaretStateChanged, true
+      );
+    });
+
+    const touches = [{ identifier: 0, offsetX: x, offsetY: y }];
+    try {
+      wrappedWindow.synthesizeTouchEvent(
+        "touchstart", touches, 0, { toWindow: true }
+      );
+      wrappedWindow.synthesizeMouseEvent(
+        "mouselongtap", x, y, {}, { toWindow: true }
+      );
+      assert_array_equals(
+        [field.selectionStart, field.selectionEnd], expectedRange,
+        "Selection while the touch is still down"
+      );
+      // Queue a barrier after the caret notifications posted by the long tap.
+      await waitForPostedCaretEvents();
+      if (!expectNoContextMenu) {
+        assert_true(
+          reasons.includes("updateposition"), "Long press updated the carets"
+        );
+      }
+      const contextMenuForCollapsedRange =
+        !expectNoContextMenu && expectedRange[0] == expectedRange[1];
+      // longpressonemptycontent requests the caret menu for both empty controls
+      // and presses outside the text in nonempty controls.
+      assert_equals(
+        reasons.includes("longpressonemptycontent"), contextMenuForCollapsedRange,
+        `Collapsed-selection menu request, caret state changes: ${reasons}`
+      );
+    } finally {
+      wrappedWindow.synthesizeTouchEvent(
+        "touchend", touches, 0, { toWindow: true }
+      );
+    }
+  }, `Long press at ${position} of ${id} with initial selection ${initialSelection}`);
+}
+</script>

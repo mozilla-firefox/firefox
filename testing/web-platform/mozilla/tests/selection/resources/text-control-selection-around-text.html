@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Text controls with padding and line leading</title>
+<style>
+  body {
+    margin: 30px;
+  }
+  input, textarea {
+    display: block;
+    margin-block: 20px;
+    padding: 40px;
+    border: 4px solid black;
+    /* The line height leaves space between the lines of text. */
+    font: 16px/32px monospace;
+    inline-size: 300px;
+    appearance: none;
+    resize: none;
+  }
+  textarea {
+    /* Six lines high. */
+    block-size: 192px;
+  }
+  #textarea-long {
+    block-size: 64px;
+  }
+</style>
+<input id="input" value="ABC DEF GHI">
+<input id="input-empty" placeholder="Search">
+<textarea id="textarea">ABC DEF GHI
+JKL MNO
+PQR STU VWX</textarea>
+<textarea id="textarea-long">ABC DEF
+GHI JKL
+MNO PQR
+STU VWX
+YZA BCD
+EFG HIJ</textarea>
+<div style="user-select: all">
+  <input id="input-in-user-select-all" value="ABC DEF GHI">
+</div>

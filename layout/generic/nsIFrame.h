@@ -2526,6 +2526,8 @@ class nsIFrame : public nsQueryFrame {
     SKIP_HIDDEN = 1 << 1,
     // Do not return content in native anonymous subtree (if the frame is in a
     // native anonymous subtree, the method may return content in same subtree).
+    // For pointing device events, use GetContentOffsetsFromPointForSelection(),
+    // which doesn't ignore the editor of a text control.
     IGNORE_NATIVE_ANONYMOUS_SUBTREE = 1 << 2,
     // Allow returning replaced elements
     INCLUDE_REPLACED = 1 << 3,
@@ -2539,6 +2541,21 @@ class nsIFrame : public nsQueryFrame {
    */
   ContentOffsets GetContentOffsetsFromPoint(const nsPoint& aPoint,
                                             uint32_t aFlags = 0);
+
+  /**
+   * Like GetContentOffsetsFromPoint(aPoint, SKIP_HIDDEN), but for selecting at
+   * the point of a pointing device event. Outside text controls, this also
+   * ignores native anonymous subtrees. For a text control, allow resolving
+   * into its anonymous editor, including from its padding, as a single click
+   * does.
+   *
+   * If the result is outside the editor, e.g. due to a `user-select: all`
+   * ancestor, return empty offsets (`content == nullptr`), since the control's
+   * independent selection cannot use that position.
+   *
+   * @param aPoint point relative to this frame
+   */
+  ContentOffsets GetContentOffsetsFromPointForSelection(const nsPoint& aPoint);
 
   virtual ContentOffsets GetContentOffsetsFromPointExternal(
       const nsPoint& aPoint, uint32_t aFlags = 0) {

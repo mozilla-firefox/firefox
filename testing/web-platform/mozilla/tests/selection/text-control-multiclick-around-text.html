@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta name="timeout" content="long">
+<meta name="variant" content="?drag-out-of-frame-style=0">
+<meta name="variant" content="?drag-out-of-frame-style=1">
+<title>Multi-click in the padding of text controls and around their text</title>
+<link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2084416">
+<link rel="stylesheet" href="/fonts/ahem.css">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/resources/testdriver.js"></script>
+<script src="/resources/testdriver-vendor.js"></script>
+<script src="/resources/testdriver-actions.js"></script>
+<style>
+  input, textarea {
+    display: block;
+    margin: 20px;
+    padding: 40px;
+    border: 4px solid black;
+    /* Ahem glyphs are 1em squares, centered in lines leaving space between
+       the lines of text. */
+    font: 32px/64px Ahem;
+    inline-size: 11em;
+    appearance: none;
+    resize: none;
+  }
+  textarea {
+    /* Only explicit newlines in the values below break lines. */
+    white-space: pre;
+    /* Four lines high, leaving blank space below both values. */
+    block-size: 256px;
+  }
+  #input-narrow {
+    inline-size: 4em;
+  }
+  #textarea-overflow {
+    inline-size: 9em;
+  }
+  #input-vertical {
+    writing-mode: vertical-rl;
+  }
+</style>
+<textarea id="textarea">ABC DEF GHI
+JKL MNO
+PQR STU VWX</textarea>
+<input id="input-vertical" value="ABC DEF GHI">
+<input id="input-narrow" value="ABC DEF GHI">
+<textarea id="textarea-overflow">ABC DEF GHI JKL MNO PQR STU VWX</textarea>
+<div style="user-select: all">
+  <input id="input-in-user-select-all" value="ABC DEF GHI">
+</div>
+<script>
+"use strict";
+
+const kFontSize = 32;
+const kLineHeight = 64;
+const kContentStart = 4 + 40;
+const kDragOutOfFrameStyle = Number(
+  new URLSearchParams(location.search).get("drag-out-of-frame-style")
+);
+
+// A click before or after all the lines of a text control goes to their start
+// or end with browser.drag_out_of_frame_style=1, and a multi-click selects from
+// where the click goes: expectedAtTextEdge.
+// word locates the reference word for pointFor and is the default expected range.
+const kTests = [
+  {
+    id: "input-vertical",
+    word: [4, 7], // ABC [DEF] GHI
+    position: "padding-before",
+    expectedAtTextEdge: [0, 3], // [ABC] DEF GHI
+  },
+  {
+    id: "input-narrow",
+    word: [0, 3], // [ABC] DEF GHI
+    position: "padding-before",
+  },
+  {
+    id: "textarea",
+    word: [16, 19], // Line 2: JKL [MNO]
+    position: "past-line-end",
+  },
+  {
+    id: "textarea",
+    word: [24, 27], // Line 3: PQR [STU] VWX
+    position: "blank-far",
+    expectedAtTextEdge: [28, 31], // Line 3: PQR STU [VWX]
+  },
+  {
+    id: "textarea",
+    word: [4, 7], // Line 1: ABC [DEF] GHI
+    position: "padding-before",
+    clickCount: 3,
+    expected: [0, 11], // Line 1: [ABC DEF GHI], excluding the newline
+  },
+  // Leading above and below the glyphs belongs to their line.
+  {
+    id: "textarea",
+    word: [4, 7], // Line 1: ABC [DEF] GHI
+    position: "block-end-leading",
+  },
+  {
+    id: "textarea",
+    word: [16, 19], // Line 2: JKL [MNO]
+    position: "block-start-leading",
+  },
+  // The reference word's center lies in the inline-end padding.
+  {
+    id: "textarea-overflow",
+    word: [8, 11], // Line 1: ABC DEF [GHI] JKL MNO PQR STU VWX
+    position: "block-start-leading",
+  },
+  // `user-select: all` on an ancestor takes the point out of the editor, so
+  // neither a click nor a multi-click moves the selection, set to [1, 1].
+  {
+    id: "input-in-user-select-all",
+    word: [4, 7], // ABC [DEF] GHI
+    position: "padding-before",
+    expected: [1, 1],
+  },
+];
+
+// Return the point in viewport coordinates, initially centered on the word
+// inline and its line box blockwise. Block-start is top for horizontal text
+// and right for vertical-rl.
+function pointFor(field, [wordStart, wordEnd], position) {
+  field.scrollIntoView({ block: "center", inline: "center" });
+  const bounds = field.getBoundingClientRect();
+  const vertical = getComputedStyle(field).writingMode == "vertical-rl";
+  const lines = field.value.slice(0, wordStart).split("\n");
+  const line = lines.length - 1;
+  const column = lines[line].length;
+  // Logical offsets from the block-start and inline-start edges of the border
+  // box.
+  const contentBEnd = (vertical ? bounds.width : bounds.height) - kContentStart;
+  const lineBStart = kContentStart + line * kLineHeight;
+  // Stay clear of line boundaries when coordinates are rounded to device pixels.
+  const leadingInset = (kLineHeight - kFontSize) / 4;
+  const wordIStart = kContentStart + column * kFontSize;
+  const wordIEnd = wordIStart + (wordEnd - wordStart) * kFontSize;
+  let i = (wordIStart + wordIEnd) / 2;
+  let b = lineBStart + kLineHeight / 2;
+  switch (position) {
+    // Block-start padding, 8px outside the content box.
+    case "padding-before": b = kContentStart - 8; break;
+    // Blank space after all lines, 8px inside the content's block-end edge.
+    case "blank-far": b = contentBEnd - 8; break;
+    // 24px past the reference word, which must be last on its line.
+    case "past-line-end": i = wordIEnd + 24; break;
+    // Halfway through the leading before the reference line's glyphs.
+    case "block-start-leading": b = lineBStart + leadingInset; break;
+    // Halfway through the leading after the reference line's glyphs.
+    case "block-end-leading": b = lineBStart + kLineHeight - leadingInset; break;
+    default: throw new Error(`Unknown position: ${position}`);
+  }
+  const [x, y] = vertical
+    ? [bounds.right - b, bounds.top + i]
+    : [bounds.left + i, bounds.top + b];
+  return [x, y];
+}
+
+promise_setup(async () => {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.drag_out_of_frame_style", kDragOutOfFrameStyle],
+      ["browser.triple_click_selects_paragraph", false],
+      ["layout.word_select.eat_space_to_next_word", false],
+    ],
+  });
+  await document.fonts.load(`${kFontSize}px Ahem`);
+  await document.fonts.ready;
+});
+
+for (const {
+  id, word, position, clickCount = 2, expected = word, expectedAtTextEdge,
+} of kTests) {
+  promise_test(async () => {
+    const field = document.getElementById(id);
+    field.focus();
+    field.setSelectionRange(1, 1);
+    const [x, y] = pointFor(field, word, position);
+    const actions = new test_driver.Actions().pointerMove(x, y);
+    for (let count = 0; count < clickCount; count++) {
+      actions.pointerDown().pointerUp();
+    }
+    await actions.send();
+    assert_array_equals(
+      [field.selectionStart, field.selectionEnd],
+      (kDragOutOfFrameStyle == 1 && expectedAtTextEdge) || expected,
+      "Selected range"
+    );
+  }, `${clickCount} clicks at ${position} of ${id}`);
+}
+</script>
