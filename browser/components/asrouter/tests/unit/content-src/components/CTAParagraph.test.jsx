@@ -49,6 +49,21 @@ describe("CTAParagraph component", () => {
     assert.calledOnce(handleAction);
   });
 
+  it("should call handleAction method when Enter or Space is pressed and released on the link", () => {
+    const btnLink = wrapper.find(".cta-paragraph span");
+    for (const key of ["Enter", " "]) {
+      btnLink.simulate("keydown", { key });
+      btnLink.simulate("keyup", { key, preventDefault() {} });
+    }
+    assert.calledTwice(handleAction);
+  });
+
+  it("should not call handleAction method when a key pressed elsewhere is released on the link", () => {
+    const btnLink = wrapper.find(".cta-paragraph span");
+    btnLink.simulate("keyup", { key: "Enter", preventDefault() {} });
+    assert.notCalled(handleAction);
+  });
+
   it("should not render CTAParagraph component if CTA text is not passed", () => {
     wrapper.setProps({ content: { text: null } });
     assert.ok(wrapper.isEmptyRender());

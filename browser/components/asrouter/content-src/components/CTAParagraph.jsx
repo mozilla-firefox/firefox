@@ -21,6 +21,8 @@ export const CTAParagraph = props => {
     [handleAction]
   );
 
+  const keyPressedRef = React.useRef(false);
+
   return (
     <h2
       className={`cta-paragraph ${content?.info_tile ? "info-tile" : ""}`}
@@ -43,9 +45,15 @@ export const CTAParagraph = props => {
           <span
             data-l10n-id={content.text.string_id}
             onClick={onClick}
-            onKeyUp={event =>
-              ["Enter", " "].includes(event.key) ? onClick(event) : null
-            }
+            onKeyDown={event => {
+              keyPressedRef.current = ["Enter", " "].includes(event.key);
+            }}
+            onKeyUp={event => {
+              if (keyPressedRef.current && ["Enter", " "].includes(event.key)) {
+                onClick(event);
+              }
+              keyPressedRef.current = false;
+            }}
             value="cta_paragraph"
           >
             {" "}
