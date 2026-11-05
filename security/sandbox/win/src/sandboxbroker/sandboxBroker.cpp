@@ -13,7 +13,6 @@
 #include <string>
 
 #include "ConfigHelpers.h"
-#include "FontFileValidator.h"
 #include "GfxDriverInfo.h"
 #include "WinUtils.h"
 #include "base/win/sid.h"
@@ -34,11 +33,9 @@
 #include "mozilla/UniquePtr.h"
 #include "mozilla/WinDllServices.h"
 #include "mozilla/WindowsVersion.h"
-#include "mozilla/gfx/FontPathSet.h"
 #include "mozilla/glean/SecuritySandboxMetrics.h"
 #include "mozilla/ipc/LaunchError.h"
 #include "mozilla/ipc/UtilityProcessSandboxing.h"
-#include "mozilla/sandboxing/BrokerGeckoServices.h"
 #include "nsAppDirectoryServiceDefs.h"
 #include "nsCOMPtr.h"
 #include "nsDirectoryServiceDefs.h"
@@ -65,8 +62,6 @@ namespace mozilla {
 constexpr wchar_t kLpacFirefoxInstallFiles[] = L"lpacFirefoxInstallFiles";
 
 sandbox::BrokerServices* sBrokerService = nullptr;
-
-static bool sGeckoDependentInitialized = false;
 
 // This is set to true in Initialize when our exe file name has a drive type of
 // DRIVE_REMOTE, so that we can tailor the sandbox policy as some settings break
@@ -97,10 +92,6 @@ LazyLogModule sSandboxBrokerLog("SandboxBroker");
 // Used to store whether we have accumulated an error combination for this
 // session.
 static StaticAutoPtr<nsTHashtable<nsCStringHashKey>> sLaunchErrors;
-
-// Whether the font file rule is used, which is only the case if the font file
-// validator has been registered.
-static bool sFontFileRuleEnabled = false;
 
 // This helper function is our version of SandboxWin::AddWin32kLockdownConfig
 // of Chromium, making sure the MITIGATION_WIN32K_DISABLE flag is set before
@@ -293,26 +284,6 @@ static void AddCachedWindowsDirRule(
 void SandboxBroker::GeckoDependentInitialize() {
   MOZ_ASSERT(NS_IsMainThread());
 
-  // This is exported by the executable, which might not export it if it is from
-  // a different version because of a broken installation.
-  auto setBrokerGeckoServices =
-      reinterpret_cast<sandboxing::SetBrokerGeckoServicesFn>(
-          ::GetProcAddress(::GetModuleHandleW(nullptr),
-                           sandboxing::kSetBrokerGeckoServicesName));
-
-  sFontFileRuleEnabled =
-      sBrokerService && setBrokerGeckoServices &&
-      Preferences::GetBool("security.sandbox.font-file-rule.enabled") &&
-      gfx::FontPathSet::Enable();
-
-  if (setBrokerGeckoServices) {
-    sandboxing::BrokerGeckoServices services;
-    if (sFontFileRuleEnabled) {
-      services.validateFontFile = sandboxing::ValidateFontFile;
-    }
-    setBrokerGeckoServices(&services);
-  }
-
   // Cache directory paths for use in policy rules, because the directory
   // service must be called on the main thread.
   nsresult rv;
@@ -333,15 +304,9 @@ void SandboxBroker::GeckoDependentInitialize() {
   CacheDirectoryServiceDir(dirSvc, XRE_USER_SYS_EXTENSION_DIR,
                            sUserExtensionsDir);
 #endif
-
-  sGeckoDependentInitialized = true;
 }
 
 SandboxBroker::SandboxBroker() {
-  MOZ_ASSERT(sGeckoDependentInitialized,
-             "GeckoDependentInitialize must be called before creating a "
-             "SandboxBroker.");
-
   if (sBrokerService) {
     mPolicy = sBrokerService->CreatePolicy();
     if (sRunningFromNetworkDrive) {
@@ -1217,12 +1182,10 @@ void SandboxBroker::SetSecurityLevelForContentProcess(int32_t aSandboxLevel,
                        "With these static arguments AddRule should never fail, "
                        "what happened?");
   } else {
-    if (!sFontFileRuleEnabled) {
-      // Add rule to allow access to user specific fonts.
-      AddCachedWindowsDirRule(config, sandbox::FileSemantics::kAllowReadonly,
-                              FOLDERID_LocalAppData,
-                              u"\\Microsoft\\Windows\\Fonts\\*"_ns);
-    }
+    // Add rule to allow access to user specific fonts.
+    AddCachedWindowsDirRule(config, sandbox::FileSemantics::kAllowReadonly,
+                            FOLDERID_LocalAppData,
+                            u"\\Microsoft\\Windows\\Fonts\\*"_ns);
 
     // Add rule to allow read access to installation directory.
     AddCachedDirRule(config, sandbox::FileSemantics::kAllowReadonly, sBinDir,
@@ -1254,10 +1217,8 @@ void SandboxBroker::SetSecurityLevelForContentProcess(int32_t aSandboxLevel,
     // Content process still needs to be able to read fonts.
     AddCachedWindowsDirRule(config, sandbox::FileSemantics::kAllowReadonly,
                             FOLDERID_Fonts);
-    if (!sFontFileRuleEnabled) {
-      AddCachedWindowsDirRule(config, sandbox::FileSemantics::kAllowReadonly,
-                              FOLDERID_Fonts, u"\\*"_ns);
-    }
+    AddCachedWindowsDirRule(config, sandbox::FileSemantics::kAllowReadonly,
+                            FOLDERID_Fonts, u"\\*"_ns);
 
     // Add access to Windows system binary dir to allow DLLs that are not
     // required in all content processes to load later.
@@ -1369,16 +1330,6 @@ void SandboxBroker::SetSecurityLevelForContentProcess(int32_t aSandboxLevel,
             result);
     }
   }
-
-  // Font file access is validated by the broker against the installed font
-  // files. This is added after the other rules here, so that paths they allow
-  // never wait for the font path set to be rebuilt. File processes already have
-  // read-only access to all files.
-  if (sFontFileRuleEnabled && aSandboxLevel != 1 && !aIsFileProcess) {
-    result = config->AllowFontFileAccess();
-    MOZ_RELEASE_ASSERT(sandbox::SBOX_ALL_OK == result,
-                       "Failed to add font file rules.");
-  }
 }
 
 void SandboxBroker::SetSecurityLevelForGPUProcess(int32_t aSandboxLevel) {
@@ -1454,35 +1405,23 @@ void SandboxBroker::SetSecurityLevelForGPUProcess(int32_t aSandboxLevel) {
   AddShaderCachesToPolicy(&trackingConfig, aSandboxLevel);
 
   if (aSandboxLevel >= 2) {
-    if (sFontFileRuleEnabled) {
-      // Font file access is validated by the broker against the installed font
-      // files. This is added after the other rules here, so that paths they
-      // allow never wait for the font path set to be rebuilt.
-      if (trackingConfig.AllowFontFileAccess() != sandbox::SBOX_ALL_OK) {
-        // Fall back to the standard per-user fonts directory.
-        AddCachedWindowsDirRule(
-            &trackingConfig, sandbox::FileSemantics::kAllowReadonly,
-            FOLDERID_LocalAppData, u"\\Microsoft\\Windows\\Fonts\\*"_ns);
-      }
-    } else {
-      // We don't want to add a rule directly here but use the same retrieval
-      // and caching mechanism to get the Windows user's dirs.
-      EnsureWindowsDirCached(FOLDERID_Profile, sWindowsProfileDir,
-                             "Failed to get Windows Profile folder");
-      EnsureWindowsDirCached(FOLDERID_LocalAppData, sLocalAppDataDir,
-                             "Failed to get Windows LocalAppData folder");
-      EnsureWindowsDirCached(FOLDERID_RoamingAppData, sRoamingAppDataDir,
-                             "Failed to get Windows RoamingAppData folder");
-      if (sWindowsProfileDir && sLocalAppDataDir && sRoamingAppDataDir) {
-        sandboxing::UserFontConfigHelper configHelper(
-            LR"(Software\Microsoft\Windows NT\CurrentVersion\Fonts)",
-            *sWindowsProfileDir, *sLocalAppDataDir, *sRoamingAppDataDir);
-        if (!configHelper.AddRules(trackingConfig)) {
-          // We've run out of space for font rules, so fall back to
-          // USER_INTERACTIVE to maintain access to all user fonts.
-          SANDBOX_SUCCEED_OR_CRASH(config->SetTokenLevel(
-              initialTokenLevel, sandbox::USER_INTERACTIVE));
-        }
+    // We don't want to add a rule directly here but use the same retrieval and
+    // caching mechanism to get the Windows user's dirs.
+    EnsureWindowsDirCached(FOLDERID_Profile, sWindowsProfileDir,
+                           "Failed to get Windows Profile folder");
+    EnsureWindowsDirCached(FOLDERID_LocalAppData, sLocalAppDataDir,
+                           "Failed to get Windows LocalAppData folder");
+    EnsureWindowsDirCached(FOLDERID_RoamingAppData, sRoamingAppDataDir,
+                           "Failed to get Windows RoamingAppData folder");
+    if (sWindowsProfileDir && sLocalAppDataDir && sRoamingAppDataDir) {
+      sandboxing::UserFontConfigHelper configHelper(
+          LR"(Software\Microsoft\Windows NT\CurrentVersion\Fonts)",
+          *sWindowsProfileDir, *sLocalAppDataDir, *sRoamingAppDataDir);
+      if (!configHelper.AddRules(trackingConfig)) {
+        // We've run out of space for font rules, so fall back to
+        // USER_INTERACTIVE to maintain access to all user fonts.
+        SANDBOX_SUCCEED_OR_CRASH(config->SetTokenLevel(
+            initialTokenLevel, sandbox::USER_INTERACTIVE));
       }
     }
   }

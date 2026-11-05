@@ -4,7 +4,6 @@
 
 SOURCES += [
     "ConfigHelpers.cpp",
-    "FontFileValidator.cpp",
     "sandboxBroker.cpp",
 ]
 
@@ -28,5 +27,4 @@ FINAL_LIBRARY = "xul"
 
 SOURCE_HEADERS += [
     "ConfigHelpers.h",
-    "FontFileValidator.h",
 ]
