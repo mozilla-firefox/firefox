@@ -643,6 +643,10 @@ struct NavigationWaitForAllScope final : public nsISupports,
         [browsingContext = RefPtr{GetBrowsingContext()},
          loadState = RefPtr{mLoadState}]() MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
           if (browsingContext && loadState) {
+            // Resuming the history step reuses a load state that has already
+            // been targeted by InternalLoad. Clear the target because LoadURI
+            // expects targeting to happen in InternalLoad.
+            loadState->SetTargetBrowsingContext(nullptr);
             browsingContext->LoadURI(loadState, /* aSetNavigating */ false);
           }
         });
