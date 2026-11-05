@@ -70,7 +70,6 @@ abstract class SettingsPlugin : Plugin<Settings> {
         initializeBuildMetrics(settings, configStartMs)
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun loadBuildConfig(settings: Settings) {
         val mozconfig = settings.gradle.extensions.extraProperties["mozconfig"] as Map<*, *>
         val topsrcdir = mozconfig["topsrcdir"] as String

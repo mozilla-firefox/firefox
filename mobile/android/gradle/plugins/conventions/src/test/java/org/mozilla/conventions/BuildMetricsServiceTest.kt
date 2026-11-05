@@ -276,9 +276,8 @@ class BuildMetricsServiceTest {
 
     private fun longValue(value: Any?): Long = (value as Number).toLong()
 
-    @Suppress("UNCHECKED_CAST")
     private fun <T : Any> mockProperty(value: T?): org.gradle.api.provider.Property<T> {
-        val property = mock(org.gradle.api.provider.Property::class.java) as org.gradle.api.provider.Property<T>
+        val property = mock<org.gradle.api.provider.Property<T>>()
         `when`(property.orNull).thenReturn(value)
         if (value != null) {
             `when`(property.get()).thenReturn(value)

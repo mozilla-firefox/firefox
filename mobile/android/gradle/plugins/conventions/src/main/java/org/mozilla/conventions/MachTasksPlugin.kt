@@ -26,10 +26,7 @@ abstract class MozconfigService : BuildService<MozconfigService.Params>, AutoClo
 
     override fun close() {}
 
-    fun getMozconfig(): Map<String, Any> {
-        @Suppress("UNCHECKED_CAST")
-        return parameters.mozconfigParam.get() as Map<String, Any>
-    }
+    fun getMozconfig(): Map<String, Any> = parameters.mozconfigParam.get()
 }
 
 data class InstallManifestData(
@@ -140,9 +137,8 @@ class MachTasksPlugin : Plugin<Project> {
         project: Project,
         mozconfig: Map<*, *>
     ): Provider<MozconfigService> {
-        @Suppress("UNCHECKED_CAST")
         return project.gradle.sharedServices.registerIfAbsent("mozconfig", MozconfigService::class.java) {
-            parameters.mozconfigParam.set(mozconfig as Map<String, Any>)
+            parameters.mozconfigParam.set(mozconfig.entries.associate { (key, value) -> key as String to value as Any })
         }
     }
 

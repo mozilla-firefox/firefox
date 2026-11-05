@@ -10,7 +10,6 @@ pluginManagement {
         apply(from = file("../../mozconfig.gradle"))
     }
 
-    @Suppress("UNCHECKED_CAST")
     val configureMavenRepositories = gradle.extra["configureMavenRepositories"] as groovy.lang.Closure<*>
 
     repositories {
@@ -21,7 +20,6 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
 
-    @Suppress("UNCHECKED_CAST")
     val configureMavenRepositories = gradle.extra["configureMavenRepositories"] as groovy.lang.Closure<*>
 
     repositories {

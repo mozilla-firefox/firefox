@@ -58,9 +58,8 @@ fun getManifestVersionString(componentsVersion: String, topobjdir: String, mozBu
 // a web extension. We automate this to make sure we never forget to update the version, either
 // in local development or for releases. In both cases, we want to make sure the latest version
 // of all extensions (including their latest changes) are installed on first start-up.
-@Suppress("UNCHECKED_CAST")
 fun updateExtensionVersion(task: Copy, extDir: String, componentsVersion: String) {
-    val mozconfig = task.project.gradle.extensions.extraProperties["mozconfig"] as Map<String, Any>
+    val mozconfig = task.project.gradle.extensions.extraProperties["mozconfig"] as Map<*, *>
     val topobjdir = mozconfig["topobjdir"] as String
     val mozBuildDate = task.project.providers.environmentVariable("MOZ_BUILD_DATE").orNull
 

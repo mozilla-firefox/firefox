@@ -54,7 +54,6 @@ import java.util.concurrent.Callable
 import java.util.zip.ZipFile
 
 class ProjectPlugin : Plugin<Project> {
-    @Suppress("UNCHECKED_CAST")
     override fun apply(project: Project) {
         val mozilla = project.extensions.create("mozilla", ProjectExtension::class.java)
         mozilla.androidComponentsProject.convention(false)
@@ -64,10 +63,10 @@ class ProjectPlugin : Plugin<Project> {
         mozilla.detektReports.convention(emptyMap())
 
         val extraProperties = project.gradle.extensions.extraProperties
-        val mozconfig = extraProperties["mozconfig"] as Map<String, Any>
+        val mozconfig = extraProperties["mozconfig"] as Map<*, *>
         val topsrcdir = mozconfig["topsrcdir"] as String
         val topobjdir = mozconfig["topobjdir"] as String
-        val substs = mozconfig["substs"] as Map<String, Any>
+        val substs = mozconfig["substs"] as Map<*, *>
         val configureMavenRepositories = extraProperties["configureMavenRepositories"] as groovy.lang.Closure<*>
 
         project.repositories.apply {
@@ -133,7 +132,7 @@ class ProjectPlugin : Plugin<Project> {
     private fun configureAppServicesSubstitution(
         project: Project,
         extraProperties: org.gradle.api.plugins.ExtraPropertiesExtension,
-        substs: Map<String, Any>,
+        substs: Map<*, *>,
     ) {
         // Only substitute when the a-s subprojects are part of this Gradle build:
         // either :geckoview is included (so the a-s subprojects are too), or we're
@@ -170,7 +169,7 @@ class ProjectPlugin : Plugin<Project> {
     // Extract native libs from libsForTests JARs so transitive .so dependencies
     // (e.g. libmozsqlite3.so needed by libmegazord.so) can be found by the OS
     // dynamic linker during JVM unit tests.
-    private fun configureNativeLibsForTests(project: Project, substs: Map<String, Any>) {
+    private fun configureNativeLibsForTests(project: Project, substs: Map<*, *>) {
         if (substs["DOWNLOAD_ALL_GRADLE_DEPENDENCIES"].isTruthy()) {
             return
         }
@@ -350,7 +349,7 @@ class ProjectPlugin : Plugin<Project> {
         }
     }
 
-    private fun configureAndroidBuildToolsVersion(project: Project, substs: Map<String, Any>) {
+    private fun configureAndroidBuildToolsVersion(project: Project, substs: Map<*, *>) {
         val buildToolsVersion = substs["ANDROID_BUILD_TOOLS_VERSION"] as String
         project.pluginManager.withPlugin("com.android.base") {
             project.extensions.getByType<CommonExtension>().buildToolsVersion = buildToolsVersion
