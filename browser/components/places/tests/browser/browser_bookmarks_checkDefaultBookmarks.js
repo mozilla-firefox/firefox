@@ -72,27 +72,6 @@ add_task(async function checkDefaultBookmarks() {
         },
       ],
     });
-  } else if (AppConstants.EARLY_BETA_OR_EARLIER) {
-    Assert.deepEqual(await fetchMenuTree(), {
-      children: [
-        {
-          children: [
-            {
-              uri: "https://support.mozilla.org/products/firefox",
-            },
-            {
-              uri: "https://support.mozilla.org/kb/customize-firefox-controls-buttons-and-toolbars?utm_source=firefox-browser&utm_medium=default-bookmarks&utm_campaign=customize",
-            },
-            {
-              uri: "https://www.mozilla.org/contribute/?utm_medium=firefox-desktop&utm_source=bookmarks-toolbar&utm_campaign=new-users-beta&utm_content=-global",
-            },
-            {
-              uri: "https://www.mozilla.org/about/",
-            },
-          ],
-        },
-      ],
-    });
   } else {
     // Release
     Assert.deepEqual(await fetchMenuTree(), {
