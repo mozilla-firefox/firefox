@@ -13,15 +13,14 @@
   const { TabStateFlusher } = ChromeUtils.importESModule(
     "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"
   );
-  const { ContentSharingUtils } = ChromeUtils.importESModule(
-    "moz-src:///browser/components/sharing/ContentSharingUtils.sys.mjs"
-  );
   const lazy = {};
   ChromeUtils.defineESModuleGetters(lazy, {
     AIWindow:
       "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
     AIWindowMenu:
       "moz-src:///browser/components/aiwindow/ui/modules/AIWindowMenu.sys.mjs",
+    ContentSharingUtils:
+      "moz-src:///browser/components/sharing/ContentSharingUtils.sys.mjs",
   });
 
   ChromeUtils.importESModule(
@@ -537,7 +536,7 @@
       });
 
       this.#commandButtons.shareTabGroup.addEventListener("command", () => {
-        ContentSharingUtils.handleShareTabGroup(this.activeGroup);
+        lazy.ContentSharingUtils.handleShareTabGroup(this.activeGroup);
         this.close();
       });
 
@@ -1029,7 +1028,7 @@
       }
 
       this.#commandButtons.shareTabGroup.hidden =
-        !ContentSharingUtils.isEnabled;
+        !lazy.ContentSharingUtils.isEnabled;
       this.#commandButtons.createAITab.hidden =
         !lazy.AIWindowMenu.canShowAITabMenu(
           window,
