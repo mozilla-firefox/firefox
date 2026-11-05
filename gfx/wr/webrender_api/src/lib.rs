@@ -24,7 +24,6 @@
 )]
 
 
-pub extern crate crossbeam_channel;
 pub extern crate euclid;
 
 extern crate app_units;

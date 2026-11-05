@@ -14,7 +14,7 @@ use api::{IdNamespace, PipelineId, RenderBackendId, RenderNotifier, SampledScrol
 use api::{NotificationRequest, Checkpoint, QualitySettings};
 use api::{FramePublishId, RenderReasons};
 use api::units::*;
-use api::channel::{single_msg_channel, Sender, Receiver};
+use api::channel::{single_msg_channel, Sender, Receiver, SyncSender};
 use crate::bump_allocator::ChunkPool;
 use crate::AsyncPropertySampler;
 #[cfg(feature = "replay")]
@@ -1252,7 +1252,7 @@ impl RenderBackend {
     fn process_transaction(
         &mut self,
         mut txns: Vec<Box<BuiltTransaction>>,
-        mut result_tx: Option<Sender<SceneSwapResult>>,
+        mut result_tx: Option<SyncSender<SceneSwapResult>>,
         frame_counter: &mut u32,
     ) -> bool {
         self.maybe_force_nop_documents(
@@ -2335,7 +2335,7 @@ impl RenderBackend {
         self.scene_tx.send(msg).unwrap();
     }
 
-    fn report_memory(&mut self, tx: Sender<Box<MemoryReport>>) {
+    fn report_memory(&mut self, tx: SyncSender<Box<MemoryReport>>) {
         let mut report = Box::new(MemoryReport::default());
         let ops = self.size_of_ops.as_mut().unwrap();
         let op = ops.size_of_op;

@@ -26,5 +26,4 @@ serde_derive = "1.0"
 serde_bytes = "0.11"
 malloc_size_of = { version = "0.2.0", path = "../wr_malloc_size_of", package = "wr_malloc_size_of" }
 peek-poke = { version = "0.3", path = "../peek-poke", features = ["extras"] }
-crossbeam-channel = "0.5"
 zeitstempel = "0.2.0"

@@ -7,7 +7,7 @@ use api::{FontInstanceOptions, FontInstancePlatformOptions};
 use api::{FontKey, FontRenderMode, FontSize, FontTemplate, FontVariation};
 use api::{ColorU, GlyphIndex, GlyphDimensions, SyntheticItalics};
 use api::{IdNamespace, BlobImageResources};
-use api::channel::crossbeam::{unbounded, Receiver, Sender};
+use api::channel::{unbounded_channel, Receiver, Sender};
 use api::units::*;
 use api::ImageFormat;
 use crate::platform::font::FontContext;
@@ -1544,7 +1544,7 @@ pub struct GlyphRasterizer {
 
 impl GlyphRasterizer {
     pub fn new(workers: Arc<ThreadPool>, dedicated_thread: Option<GlyphRasterThread>, can_use_r8_format: bool) -> Self {
-        let (glyph_tx, glyph_rx) = unbounded();
+        let (glyph_tx, glyph_rx) = unbounded_channel();
 
         let num_workers = workers.current_num_threads();
         let mut contexts = Vec::with_capacity(num_workers);
@@ -1951,7 +1951,7 @@ impl GlyphRasterThread {
         on_start: impl FnOnce() + Send + 'static,
         on_end: impl FnOnce() + Send+ 'static,
     ) -> std::io::Result<Self> {
-        let (tx, rx) = unbounded();
+        let (tx, rx) = unbounded_channel();
 
         std::thread::Builder::new().name("Glyph rasterizer".to_string()).spawn(move || {
             on_start();

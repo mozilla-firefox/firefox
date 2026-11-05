@@ -9302,7 +9302,6 @@ dependencies = [
  "bincode",
  "bitflags 2.10.0",
  "byteorder",
- "crossbeam-channel",
  "euclid",
  "malloc_size_of_derive",
  "peek-poke",

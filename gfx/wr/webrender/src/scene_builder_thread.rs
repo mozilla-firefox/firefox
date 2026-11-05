@@ -7,7 +7,7 @@ use api::{DocumentId, PipelineId, ExternalEvent, BlobImageRequest};
 use api::{NotificationRequest, Checkpoint, IdNamespace, QualitySettings, RenderBackendId};
 use api::{GlyphDimensionRequest, GlyphIndexRequest};
 use api::interning::DlDelta;
-use api::channel::{unbounded_channel, single_msg_channel, Receiver, Sender};
+use api::channel::{unbounded_channel, single_msg_channel, Receiver, Sender, SyncSender};
 use api::units::*;
 use crate::render_api::{ApiMsg, FrameMsg, SceneMsg, ResourceUpdate, TransactionMsg, MemoryReport};
 #[cfg(feature = "capture")]
@@ -109,12 +109,12 @@ pub enum SceneBuilderRequest {
     /// Sent on the low-priority scene channel by `stop_render_backend` and
     /// forwarded to the render backend, so that it cannot overtake work queued
     /// earlier on either scene channel. See `RenderApi::stop_render_backend`.
-    StopWindow(RenderBackendId, Sender<()>),
-    Flush(Sender<()>),
+    StopWindow(RenderBackendId, SyncSender<()>),
+    Flush(SyncSender<()>),
     SetFlags(DebugFlags),
     SetFrameBuilderConfig(RenderBackendId, FrameBuilderConfig),
     SetParameter(RenderBackendId, Parameter),
-    ReportMemory(Box<MemoryReport>, Sender<Box<MemoryReport>>),
+    ReportMemory(Box<MemoryReport>, SyncSender<Box<MemoryReport>>),
     /// Install or clear the scene-builder hooks for the given window.
     /// `Some(hooks)` registers them (`hooks.register()` is invoked on the
     /// SB thread, which is the correct thread for APZ's
@@ -141,9 +141,9 @@ pub enum SceneBuilderRequest {
 
 // Message from scene builder to render backend.
 pub enum SceneBuilderResult {
-    Transactions(Vec<Box<BuiltTransaction>>, Option<Sender<SceneSwapResult>>),
+    Transactions(Vec<Box<BuiltTransaction>>, Option<SyncSender<SceneSwapResult>>),
     ExternalEvent(RenderBackendId, ExternalEvent),
-    FlushComplete(Sender<()>),
+    FlushComplete(SyncSender<()>),
     DeleteDocument(DocumentId),
     ClearNamespace(RenderBackendId, IdNamespace),
     GetGlyphDimensions(RenderBackendId, GlyphDimensionRequest),
@@ -151,14 +151,14 @@ pub enum SceneBuilderResult {
     SetParameter(RenderBackendId, Parameter),
     /// Forwarded `SceneBuilderRequest::StopWindow`. The backend marks the window
     /// stopped and acks on the channel, releasing `stop_render_backend`.
-    StopWindow(RenderBackendId, Sender<()>),
+    StopWindow(RenderBackendId, SyncSender<()>),
     ShutDown(Option<Sender<()>>),
 
     #[cfg(feature = "capture")]
     /// The same as `Transactions`, but also supplies a `CaptureConfig` that the
     /// render backend should use for sequence capture, until the next
     /// `CapturedTransactions` or `StopCaptureSequence` result.
-    CapturedTransactions(Vec<Box<BuiltTransaction>>, CaptureConfig, Option<Sender<SceneSwapResult>>),
+    CapturedTransactions(Vec<Box<BuiltTransaction>>, CaptureConfig, Option<SyncSender<SceneSwapResult>>),
 
     #[cfg(feature = "capture")]
     /// The scene builder has stopped sequence capture, so the render backend
@@ -170,7 +170,7 @@ pub enum SceneBuilderResult {
 // scene swap was completed. We need a separate channel for this
 // so that they don't get mixed with SceneBuilderRequest messages.
 pub enum SceneSwapResult {
-    Complete(Sender<()>),
+    Complete(SyncSender<()>),
     Aborted,
 }
 

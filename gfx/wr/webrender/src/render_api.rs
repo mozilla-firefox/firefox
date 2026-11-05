@@ -10,7 +10,7 @@ use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
 use api::{MinimapData, SnapshotImageKey};
-use crate::api::channel::{Sender, single_msg_channel, unbounded_channel};
+use crate::api::channel::{Sender, SyncSender, single_msg_channel, unbounded_channel};
 use crate::api::{BuiltDisplayList, IdNamespace, ExternalScrollId, Parameter, BoolParameter};
 use crate::api::{FontKey, FontInstanceKey, NativeFontHandle};
 use crate::api::{BlobImageData, BlobImageKey, ImageData, ImageDescriptor, ImageKey, Epoch, QualitySettings};
@@ -915,9 +915,9 @@ pub enum FrameMsg {
     ///
     UpdateEpoch(PipelineId, Epoch),
     ///
-    HitTest(WorldPoint, Sender<HitTestResult>),
+    HitTest(WorldPoint, SyncSender<HitTestResult>),
     ///
-    RequestHitTester(Sender<Arc<dyn ApiHitTester>>),
+    RequestHitTester(SyncSender<Arc<dyn ApiHitTester>>),
     ///
     SetScrollOffsets(ExternalScrollId, Vec<SampledScrollOffset>),
     ///
@@ -1122,7 +1122,7 @@ pub struct ResourceCacheInit {
 /// Message sent by the `RenderApi` to the render backend thread.
 pub enum ApiMsg {
     /// Adds a new document namespace.
-    CloneApi(Sender<IdNamespace>),
+    CloneApi(SyncSender<IdNamespace>),
     /// Adds a new document namespace.
     CloneApiByClient(IdNamespace),
     /// Register a new window on this backend thread. Sent once per window,
@@ -1133,7 +1133,7 @@ pub enum ApiMsg {
     /// If a channel is passed via the second argument, an empty message will
     /// be sent on it after the window is unregistered. It can be used for
     /// synchronzation.
-    UnregisterWindow(RenderBackendId, Option<Sender<()>>),
+    UnregisterWindow(RenderBackendId, Option<SyncSender<()>>),
     /// Adds a new document with given initial size, owned by the given window.
     AddDocument(DocumentId, DeviceIntSize, RenderBackendId),
     /// A message targeted at a particular document.
@@ -1149,7 +1149,7 @@ pub enum ApiMsg {
     /// Flush from the caches anything that isn't necessary, to free some memory.
     MemoryPressure,
     /// Collects a memory report.
-    ReportMemory(Sender<Box<MemoryReport>>),
+    ReportMemory(SyncSender<Box<MemoryReport>>),
     /// Change debugging options, scoped to a specific window. The command
     /// only affects documents that belong to the given `RenderBackendId`,
     /// so callers can target one window in a shared backend pool without

@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 // local imports
 use crate::IdNamespace;
-use crate::channel::Sender;
+use crate::channel::SyncSender;
 use crate::units::LayoutPoint;
 
 /// Hashable floating-point storage for font size.
@@ -79,13 +79,13 @@ pub struct GlyphDimensions {
 pub struct GlyphDimensionRequest {
     pub key: FontInstanceKey,
     pub glyph_indices: Vec<GlyphIndex>,
-    pub sender: Sender<Vec<Option<GlyphDimensions>>>,
+    pub sender: SyncSender<Vec<Option<GlyphDimensions>>>,
 }
 
 pub struct GlyphIndexRequest {
     pub key: FontKey,
     pub text: String,
-    pub sender: Sender<Vec<Option<u32>>>,
+    pub sender: SyncSender<Vec<Option<u32>>>,
 }
 
 #[repr(C)]
