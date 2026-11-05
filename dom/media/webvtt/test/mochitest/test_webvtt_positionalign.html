@@ -75,6 +75,19 @@ function runTest() {
   }
   is(idx, cuesNumber, "finished checking all cues");
 
+  info("--- check the cue's computed position ---");
+  // https://w3c.github.io/webvtt/#cue-computed-position
+  // An auto position is 0 for left alignment, 100 for right alignment, and 50
+  // for any other alignment, including start and end.
+  const expectedAutoPosition = { left: 0, right: 100 };
+  for (let i = 0; i < cuesNumber; i++) {
+    const cue = cuesChrome[i];
+    const expected =
+      cue.position == "auto" ? (expectedAutoPosition[cue.align] ?? 50) : cue.position;
+    is(cue.computedPosition, expected,
+       `computedPosition for align "${cue.align}": ${cue.text}`);
+  }
+
   info("--- check the cue's computed position alignment from DOM API ---");
   is(cuesChrome[0].computedPositionAlign, "center", "Cue's computedPositionAlign align is center.");
 
