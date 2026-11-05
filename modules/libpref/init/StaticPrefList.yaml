@@ -9718,7 +9718,7 @@
   # hack the result forcibly.
 -   name: intl.tsf.hack.allow_to_stop_hacking_on_build_17643_or_later
     type: bool
-    value: @IS_EARLY_BETA_OR_EARLIER@
+    value: true
     mirror: always
 
   # If true, automatically extend selection to cluster boundaries when
