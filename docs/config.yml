@@ -171,9 +171,6 @@ allowed_warnings:
     - "missing attribute .* in object mozprocess.ProcessHandlerMixin"
     # Sphinx >= 8 wording for the same missing mozprocess attributes.
     - "attribute .* is listed in :members: but is missing .*mozprocess\\.processhandler\\.ProcessHandlerMixin"
-    # Sphinx >= 8 autosummary checks source_suffix for .rst, which the tree
-    # no longer registers now that the docs are markdown.
-    - "WARNING: autosummary generates \\.rst files internally"
     # Sphinx >= 8 reports ambiguous python cross-references that older versions
     # resolved silently.
     - "gecko_taskgraph\\.util\\.md.*WARNING: more than one target found for cross-reference"

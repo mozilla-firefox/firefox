@@ -119,6 +119,8 @@ jsdoc_config_path = "jsdoc.json"
 templates_path = ["_templates"]
 source_suffix = [".md"]
 autodoc_preserve_defaults = True
+# sphinx_js loads autosummary, whose stub generation only supports .rst.
+autosummary_generate = False
 master_doc = "index"
 project = "Firefox Source Docs"
 
