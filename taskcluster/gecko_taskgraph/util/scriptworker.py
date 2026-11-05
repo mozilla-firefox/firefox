@@ -610,7 +610,7 @@ def generate_beetmover_artifact_map(config, job, **kwargs):
     Currently only applies to beetmover tasks.
 
     Args:
-        config (): Current taskgraph configuration.
+        config (TransformConfig): Current taskgraph configuration.
         job (dict): The current job being generated
     Common kwargs:
         platform (str): The current build platform
@@ -791,7 +791,7 @@ def generate_beetmover_partials_artifact_map(config, job, partials_info, **kwarg
     Currently only applies to beetmover tasks.
 
     Args:
-        config (): Current taskgraph configuration.
+        config (TransformConfig): Current taskgraph configuration.
         job (dict): The current job being generated
         partials_info (dict): Current partials and information about them in a dict
     Common kwargs:
