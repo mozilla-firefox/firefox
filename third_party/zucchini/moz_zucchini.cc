@@ -84,6 +84,25 @@ static void MaybeTriggerTestCheckFailure() {
 
   CHECK(false);
 }
+
+// Test-only injection of the exception that Windows raises when accessing a
+// mapped file fails, used by updater tests to verify that we recover from it
+// and release the mapped files. Writes fail because the disk is full, reads
+// because of a device error.
+static void MaybeTriggerTestPageError(bool aTrigger, const uint8_t* aAddress,
+                                      bool aIsWrite) {
+  if (!aTrigger) {
+    return;
+  }
+
+#  if BUILDFLAG(IS_WIN) && defined(HAVE_SEH_EXCEPTIONS)
+  const ULONG_PTR info[3] = {
+      aIsWrite, reinterpret_cast<ULONG_PTR>(aAddress),
+      static_cast<ULONG_PTR>(aIsWrite ? STATUS_DISK_FULL
+                                      : STATUS_DEVICE_DATA_ERROR)};
+  ::RaiseException(EXCEPTION_IN_PAGE_ERROR, 0, 3, info);
+#  endif  // BUILDFLAG(IS_WIN) && HAVE_SEH_EXCEPTIONS
+}
 #endif  // ENABLE_TESTS
 
 static LogFunctionPtr gLogFunction = nullptr;
@@ -130,28 +149,33 @@ void SetLogFunction(LogFunctionPtr aLogFunction) {
   }
 
 #if BUILDFLAG(IS_WIN) && defined(HAVE_SEH_EXCEPTIONS)
+static status::Code PageErrorStatus(const ExceptionFilterHelper& aHelper) {
+  LOG(ERROR) << "EXCEPTION_IN_PAGE_ERROR while "
+             << (aHelper.is_write() ? "writing to" : "reading from")
+             << " mapped files; NTSTATUS = " << aHelper.nt_status();
+  return aHelper.nt_status() == STATUS_DISK_FULL ? status::kStatusDiskFull
+                                                 : status::kStatusIoError;
+}
+
 // Narrow handler that stays around the code touching the mapped file ranges,
 // where EXCEPTION_IN_PAGE_ERROR can be raised. Usable only within member
 // functions, as it relies on mImpl. This reflects the exception catching
 // present in upstream zucchini::ApplyCommon (zucchini_integration.cc).
-#  define BEGIN_PAGE_ERROR_TRY_EXCEPT() __try {
-#  define END_PAGE_ERROR_TRY_EXCEPT()                                      \
-    }                                                                      \
-    __except (mImpl->mExceptionFilterHelper.FilterPageError(               \
-        GetExceptionInformation()->ExceptionRecord)) {                     \
-      LOG(ERROR) << "EXCEPTION_IN_PAGE_ERROR while "                       \
-                 << (mImpl->mExceptionFilterHelper.is_write()              \
-                         ? "writing to"                                    \
-                         : "reading from")                                 \
-                 << " mapped files; NTSTATUS = "                           \
-                 << mImpl->mExceptionFilterHelper.nt_status();             \
-      return mImpl->mExceptionFilterHelper.nt_status() == STATUS_DISK_FULL \
-                 ? status::kStatusDiskFull                                 \
-                 : status::kStatusIoError;                                 \
-    }
+// Objects that need unwinding must live outside of aFunc: the unwinding that
+// follows an EXCEPTION_IN_PAGE_ERROR doesn't run their destructors.
+template <typename F>
+static status::Code GuardPageErrors(ExceptionFilterHelper& aHelper, F& aFunc) {
+  __try {
+    return aFunc();
+  } __except (
+      aHelper.FilterPageError(GetExceptionInformation()->ExceptionRecord)) {
+    return PageErrorStatus(aHelper);
+  }
+}
+#  define GUARD_PAGE_ERRORS(aFunc) \
+    GuardPageErrors(mImpl->mExceptionFilterHelper, aFunc)
 #else
-#  define BEGIN_PAGE_ERROR_TRY_EXCEPT()
-#  define END_PAGE_ERROR_TRY_EXCEPT()
+#  define GUARD_PAGE_ERRORS(aFunc) aFunc()
 #endif  // BUILDFLAG(IS_WIN) && HAVE_SEH_EXCEPTIONS
 
 status::Code ComputeCrc32(const uint8_t* aBuf, size_t aBufSize,
@@ -211,19 +235,24 @@ status::Code MappedPatch::LoadImpl(FILE* aPatchFile, uint32_t* aSourceSize,
   mImpl->mExceptionFilterHelper.AddRange(
       {fileReader.data(), fileReader.length()});
 #endif  // BUILDFLAG(IS_WIN) && HAVE_SEH_EXCEPTIONS
-  BEGIN_PAGE_ERROR_TRY_EXCEPT()
-  BufferSource source(fileReader.region());
-  auto& patchReader = mImpl->mPatchReader;
-  if (!patchReader.Initialize(&source)) {
-    LOG(ERROR) << "Error reading patch header.";
-    return status::kStatusPatchReadError;
-  }
-  auto& header = patchReader.header();
-  *aSourceSize = header.old_size;
-  *aDestinationSize = header.new_size;
-  *aSourceCrc32 = header.old_crc;
-  return status::kStatusSuccess;
-  END_PAGE_ERROR_TRY_EXCEPT()
+  auto readHeader = [&]() {
+#ifdef ENABLE_TESTS
+    MaybeTriggerTestPageError(gTestOptions.triggerReadPageError,
+                              fileReader.data(), /* aIsWrite */ false);
+#endif  // ENABLE_TESTS
+    BufferSource source(fileReader.region());
+    auto& patchReader = mImpl->mPatchReader;
+    if (!patchReader.Initialize(&source)) {
+      LOG(ERROR) << "Error reading patch header.";
+      return status::kStatusPatchReadError;
+    }
+    auto& header = patchReader.header();
+    *aSourceSize = header.old_size;
+    *aDestinationSize = header.new_size;
+    *aSourceCrc32 = header.old_crc;
+    return status::kStatusSuccess;
+  };
+  return GUARD_PAGE_ERRORS(readHeader);
 }
 
 status::Code MappedPatch::Load(FILE* aPatchFile, uint32_t* aSourceSize,
@@ -250,6 +279,8 @@ static status::Code ApplyBufferUnsafe(ConstBufferView aCheckedOldImage,
   ScopedDestructorMarker destructorTester;
   MaybeTriggerTestBadAlloc();
   MaybeTriggerTestCheckFailure();
+  MaybeTriggerTestPageError(gTestOptions.triggerWritePageError,
+                            aNewImage.begin(), /* aIsWrite */ true);
 #endif  // ENABLE_TESTS
 
   for (const auto& elementPatch : aPatchReader.elements()) {
@@ -280,10 +311,8 @@ status::Code MappedPatch::ApplyUnsafeImpl(const uint8_t* aCheckedOldImage,
     return status::kStatusFileWriteError;
   }
 
-  BEGIN_PAGE_ERROR_TRY_EXCEPT()
   PatchHeader header = mImpl->mPatchReader.header();
-  base::FilePath name;
-  name = name.AppendASCII("old_name");
+  base::FilePath name = base::FilePath().AppendASCII("old_name");
   MappedFileWriter mappedNew(name, std::move(newFile), header.new_size,
                              /*keep*/ true);
   if (mappedNew.HasError()) {
@@ -299,20 +328,22 @@ status::Code MappedPatch::ApplyUnsafeImpl(const uint8_t* aCheckedOldImage,
       {mappedNew.data(), mappedNew.length()});
 #endif  // BUILDFLAG(IS_WIN) && HAVE_SEH_EXCEPTIONS
 
-  status::Code result =
-      ApplyBufferUnsafe(oldImageView, mImpl->mPatchReader, mappedNew.region());
-  if (result != status::kStatusSuccess) {
-    LOG(ERROR) << "Fatal error encountered while applying patch.";
-    return result;
-  }
+  auto applyToNewFile = [&]() {
+    status::Code result = ApplyBufferUnsafe(oldImageView, mImpl->mPatchReader,
+                                            mappedNew.region());
+    if (result != status::kStatusSuccess) {
+      LOG(ERROR) << "Fatal error encountered while applying patch.";
+      return result;
+    }
 
-  if (!mappedNew.Flush()) {
-    LOG(ERROR) << "Error flushing changes to disk: " << mappedNew.error();
-    return status::kStatusFileWriteError;
-  }
+    if (!mappedNew.Flush()) {
+      LOG(ERROR) << "Error flushing changes to disk: " << mappedNew.error();
+      return status::kStatusFileWriteError;
+    }
 
-  return status::kStatusSuccess;
-  END_PAGE_ERROR_TRY_EXCEPT()
+    return status::kStatusSuccess;
+  };
+  return GUARD_PAGE_ERRORS(applyToNewFile);
 }
 
 status::Code MappedPatch::ApplyUnsafe(const uint8_t* aCheckedOldImage,

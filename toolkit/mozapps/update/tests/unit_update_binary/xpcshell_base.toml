@@ -159,6 +159,18 @@ skip-if = [
 
 ["marFailurePartialZucchiniCheck.js"]
 
+["marFailurePartialZucchiniReadPageError_win.js"]
+run-if = [
+  "os == 'win'",
+]
+reason = "Windows only test"
+
+["marFailurePartialZucchiniWritePageError_win.js"]
+run-if = [
+  "os == 'win'",
+]
+reason = "Windows only test"
+
 ["marFileInUseStageFailureComplete_win.js"]
 run-if = [
   "os == 'win'",

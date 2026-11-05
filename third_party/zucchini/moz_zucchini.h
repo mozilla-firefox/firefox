@@ -54,6 +54,8 @@ struct TestOptions {
   bool logDestructorMarker = false;
   bool triggerBadAlloc = false;
   bool triggerCheckFailure = false;
+  bool triggerReadPageError = false;
+  bool triggerWritePageError = false;
 };
 void SetTestOptions(const TestOptions& aOptions);
 #endif  // ENABLE_TESTS

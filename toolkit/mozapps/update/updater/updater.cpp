@@ -5668,6 +5668,10 @@ int DoUpdate() {
   options.logDestructorMarker = EnvHasValue("MOZ_TEST_ZUCCHINI_DTOR_MARKER");
   options.triggerBadAlloc = EnvHasValue("MOZ_TEST_ZUCCHINI_BAD_ALLOC");
   options.triggerCheckFailure = EnvHasValue("MOZ_TEST_ZUCCHINI_CHECK_FAILURE");
+  options.triggerReadPageError =
+      EnvHasValue("MOZ_TEST_ZUCCHINI_READ_PAGE_ERROR");
+  options.triggerWritePageError =
+      EnvHasValue("MOZ_TEST_ZUCCHINI_WRITE_PAGE_ERROR");
   zucchini::mozilla::SetTestOptions(options);
 #  endif  // TEST_UPDATER
 
