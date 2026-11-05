@@ -236,6 +236,7 @@ export class CreditCard {
     expMonth,
     expYear,
     type,
+    cvv,
     guid,
     timeCreated,
     timeLastUsed,
@@ -248,6 +249,7 @@ export class CreditCard {
     this.expMonth = expMonth ?? "";
     this.expYear = expYear ?? "";
     this.type = type ?? "";
+    this.cvv = cvv ?? "";
 
     // Metadata.
     this.guid = guid ?? null;
@@ -271,6 +273,7 @@ export class CreditCard {
       expMonth: aObj["cc-exp-month"]?.toString(),
       expYear: aObj["cc-exp-year"]?.toString(),
       type: aObj["cc-type"],
+      cvv: aObj["cc-csc"]?.toString(),
       guid: aObj.guid,
       timeCreated: aObj.timeCreated,
       timeLastUsed: aObj.timeLastUsed,
@@ -295,6 +298,7 @@ export class CreditCard {
       "cc-exp-year": this.expYear,
       "cc-type": this.type,
       guid: this.guid,
+      "cc-csc": this.cvv,
     };
 
     lazy.CreditCardRecord.computeFields(creditCard);
