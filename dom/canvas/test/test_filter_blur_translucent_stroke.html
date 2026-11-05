@@ -1,0 +1,86 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Blurred translucent strokes with shared canvas textures</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<script>
+SimpleTest.waitForExplicitFinish();
+
+function stroke(ctx, x, prime) {
+  ctx.beginPath();
+  ctx.moveTo(x - 0.5, x - 0.5);
+  ctx.lineTo(x + 0.5, x + 0.5);
+  if (prime) {
+    // Prime the path-mask cache rather than the single-line fast path.
+    ctx.lineTo(x + 0.5, x - 0.5);
+  }
+  ctx.stroke();
+}
+
+function checkStroke(offscreen, alpha, color, prime) {
+  const canvas = offscreen
+    ? new OffscreenCanvas(128, 128)
+    : document.createElement("canvas");
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = prime ? 15 : 13;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  if (prime) {
+    // Cache an unfiltered mask to exercise aliasing with the later blur target.
+    stroke(ctx, 108, prime);
+    ctx.clearRect(0, 0, 128, 128);
+  }
+  ctx.filter = "blur(2px)";
+  stroke(ctx, 32, prime);
+  stroke(ctx, 108, prime);
+
+  // Read once after both strokes so readback cannot switch the drawing backend.
+  const pixels = ctx.getImageData(0, 0, 128, 128).data;
+  const label = `${offscreen ? "offscreen" : "element"}, ${alpha}, ${color}, prime=${prime}`;
+  const expectedColor = color === "red" ? [255, 0, 0] : [0, 0, 255];
+  for (const x of [32, 108]) {
+    const offset = (x * 128 + x) * 4;
+    ok(Math.abs(pixels[offset + 3] - alpha * 255) <= 3,
+       `${label}: stroke at ${x} retains its alpha (${pixels[offset + 3]})`);
+    for (let channel = 0; channel < 3; ++channel) {
+      is(pixels[offset + channel], expectedColor[channel],
+         `${label}: stroke at ${x}, channel ${channel}`);
+    }
+    const fringe = pixels[(x * 128 + x - 8) * 4 + 3];
+    ok(fringe > 0 && fringe < pixels[offset + 3],
+       `${label}: stroke at ${x} is blurred (${fringe})`);
+  }
+}
+
+async function runTest() {
+  await SpecialPowers.pushPrefEnv({ set: [
+    ["gfx.canvas.accelerated", true],
+    ["gfx.canvas.accelerated.aa-stroke.enabled", true],
+    ["gfx.canvas.accelerated.shared-page-size", 1024],
+  ] });
+  for (const offscreen of [false, true]) {
+    for (const prime of [false, true]) {
+      for (const alpha of [0.25, 0.5, 0.99, 1]) {
+        for (const color of ["red", "blue"]) {
+          checkStroke(offscreen, alpha, color, prime);
+        }
+      }
+    }
+  }
+  SimpleTest.finish();
+}
+
+runTest().catch(error => {
+  ok(false, `Unexpected exception: ${error}`);
+  SimpleTest.finish();
+});
+</script>
+</body>
+</html>

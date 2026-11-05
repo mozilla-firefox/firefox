@@ -3334,7 +3334,11 @@ bool SharedContextWebgl::DrawRectAccel(
         // from a shared texture page.
         handle = AllocateTextureHandle(
             mCurrentTarget, format, texSize,
-            !aForceUpdate && surfacePattern.mExtendMode == ExtendMode::CLAMP);
+            !aForceUpdate && surfacePattern.mExtendMode == ExtendMode::CLAMP,
+            false,
+            mTargetHandle
+                ? mTargetHandle->GetBackingTexture()->GetWebGLTexture().get()
+                : nullptr);
         if (!handle) {
           MOZ_ASSERT(false);
           break;
@@ -3359,6 +3363,12 @@ bool SharedContextWebgl::DrawRectAccel(
                                   : handle->GetBounds().SafeIntersect(
                                         bounds + handle->GetBounds().TopLeft());
         backingSize = backing->GetSize();
+      }
+
+      // Cached masks can share a texture with the current filter input target.
+      if (mTargetHandle &&
+          tex == mTargetHandle->GetBackingTexture()->GetWebGLTexture()) {
+        return false;
       }
 
       // Map the composition op to a WebGL blend mode, if possible. If there is
@@ -5002,7 +5012,10 @@ already_AddRefed<TextureHandle> SharedContextWebgl::DrawStrokeMask(
     const PathVertexRange& aVertexRange, const IntSize& aSize) {
   // Allocate a new texture handle to store the rendered mask.
   RefPtr<TextureHandle> handle = AllocateTextureHandle(
-      mCurrentTarget, SurfaceFormat::A8, aSize, true, true);
+      mCurrentTarget, SurfaceFormat::A8, aSize, true, true,
+      mTargetHandle
+          ? mTargetHandle->GetBackingTexture()->GetWebGLTexture().get()
+          : nullptr);
   if (!handle) {
     return nullptr;
   }
