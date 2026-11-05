@@ -321,20 +321,11 @@ CORSCacheEntry::GetWithCredentials(bool* aWithCredentials) {
 }
 
 void CORSCacheEntry::PurgeExpired(TimeStamp now) {
-  for (uint32_t i = 0, len = mMethods.Length(); i < len; ++i) {
-    if (now >= mMethods[i].expirationTime) {
-      mMethods.UnorderedRemoveElementAt(i);
-      --i;  // Examine the element again, if necessary.
-      --len;
-    }
-  }
-  for (uint32_t i = 0, len = mHeaders.Length(); i < len; ++i) {
-    if (now >= mHeaders[i].expirationTime) {
-      mHeaders.UnorderedRemoveElementAt(i);
-      --i;  // Examine the element again, if necessary.
-      --len;
-    }
-  }
+  auto isExpired = [now](const nsPreflightCache::TokenTime& aEntry) {
+    return now >= aEntry.expirationTime;
+  };
+  mMethods.RemoveElementsBy(isExpired);
+  mHeaders.RemoveElementsBy(isExpired);
 }
 
 bool CORSCacheEntry::CheckDNSCache() {
