@@ -3609,12 +3609,7 @@ llvm_symbolizer = check_prog(
 @depends(target, c_compiler)
 def make_shared_library(target, compiler):
     if target.os == "WINNT":
-        if compiler.type == "gcc":
-            return namespace(
-                mkshlib=["$(CXX)", "$(DSO_LDOPTS)", "-o", "$@"],
-                mkcshlib=["$(CC)", "$(DSO_LDOPTS)", "-o", "$@"],
-            )
-        elif compiler.type == "clang":
+        if compiler.type == "clang":
             return namespace(
                 mkshlib=[
                     "$(CXX)",
