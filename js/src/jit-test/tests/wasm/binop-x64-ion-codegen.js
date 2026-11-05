@@ -200,6 +200,23 @@ codegenTestX64_adhoc(
 assertEq(wasmEvalText(uint32max64).exports.f(-37000000000n), BigInt.asIntN(64, -37000000000n*0xffffffffn))
 assertEq(wasmEvalText(uint32max64).exports.f(42000000000n), BigInt.asIntN(64, 42000000000n*0xffffffffn))
 
+// Test that multiplication by a power of two that doesn't fit in an int32
+// yields a shift.
+
+for (let [shift, hex] of [[31, "1F"], [40, "28"], [62, "3E"]]) {
+    let pow2_64 = `(module
+       (func (export "f") (param i64) (result i64)
+         (i64.mul (local.get 0) (i64.const ${1n << BigInt(shift)}))))`
+    codegenTestX64_adhoc(
+        pow2_64,
+        'f',
+        `shl \\$0x${hex}, %rax`, {no_prefix:true})
+    for (let x of [-37000000000n, 42000000000n]) {
+        assertEq(wasmEvalText(pow2_64).exports.f(x),
+                 BigInt.asIntN(64, x << BigInt(shift)))
+    }
+}
+
 // Test that 0-n yields negation.
 
 let subneg32 =

@@ -183,7 +183,7 @@ void CodeGenerator::visitMulI64(LMulI64* lir) {
       default: {
         // Use shift if constant is power of 2.
         int32_t shift = mozilla::FloorLog2(uint64_t(constant));
-        if (constant > 0 && (1 << shift) == constant) {
+        if (constant > 0 && std::has_single_bit(uint64_t(constant))) {
           if (lhs != out) {
             masm.movq(lhs, out);
           }
