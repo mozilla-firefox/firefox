@@ -26,6 +26,8 @@ exports.default = (program, host, _, { ts }) => {
         }
         return file;
       },
-    }
+    },
+    undefined,
+    program.getConfigFileParsingDiagnostics()
   );
 };
