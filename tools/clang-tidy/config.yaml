@@ -23,7 +23,7 @@ platforms:
 # Minimum clang-tidy version that is required for all the following checkers
 # to work properly.
 # This is also used by 'mach lint -l clang-format'
-package_version: "22.1.8"
+package_version: "23.1.5"
 
 # Header file that are platform dependant, not used to declare functions and
 # codes, not self-contained or generate false positive.
