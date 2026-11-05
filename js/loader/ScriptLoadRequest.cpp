@@ -95,6 +95,7 @@ ScriptLoadRequest::ScriptLoadRequest(
       mDiskCachingPlan(CachingPlan::Uninitialized),
       mMemoryCachingPlan(CachingPlan::Uninitialized),
       mIsRetrievedFromMemoryCache(false),
+      mHadRedirected_(false),
       mIntegrity(aIntegrity),
       mReferrer(aReferrer),
       mLoadContext(aContext),

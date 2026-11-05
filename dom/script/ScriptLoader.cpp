@@ -3291,6 +3291,13 @@ void ScriptLoader::CalculateCacheFlag(ScriptLoadRequest* aRequest) {
     return;
   }
 
+  if (aRequest->HadRedirected()) {
+    LOG(("ScriptLoadRequest (%p): Bytecode-cache: Skip all: redirected",
+         aRequest));
+    aRequest->MarkNotCacheable();
+    return;
+  }
+
   bool isHTTPS = aRequest->URI()->SchemeIs("https");
 
   if (!aRequest->URI()->SchemeIs("http") && !isHTTPS) {

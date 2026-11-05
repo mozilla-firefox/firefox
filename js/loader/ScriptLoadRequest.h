@@ -337,6 +337,9 @@ class ScriptLoadRequest : public nsISupports,
   bool HadPostponed() const { return mHadPostponed_; }
   void SetHadPostponed() { mHadPostponed_ = true; }
 
+  bool HadRedirected() const { return mHadRedirected_; }
+  void SetHadRedirected() { mHadRedirected_ = true; }
+
   const ScriptFetchInfo* FetchInfo() const { return mFetchInfo; }
   ScriptFetchInfo* FetchInfo() { return mFetchInfo; }
 
@@ -426,6 +429,8 @@ class ScriptLoadRequest : public nsISupports,
   CachingPlan mMemoryCachingPlan : 2;
 
   bool mIsRetrievedFromMemoryCache : 1;
+
+  bool mHadRedirected_ : 1;
 
   CacheExpirationTime mExpirationTime = CacheExpirationTime::Never();
 
