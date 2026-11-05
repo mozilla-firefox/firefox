@@ -87,3 +87,4 @@ load 1910211-1.avif
 load 1943715-1.png
 HTTP load 1944122-1.html
 load 2015202-1.html
+pref(gfx.ycbcr.accurate-conversion,true) load 2088696-1.avif
