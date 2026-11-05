@@ -68,13 +68,13 @@ add_task(async function test_enrollment_sets_and_restores_pref() {
   );
 });
 
-add_task(async function test_exceeded_budget_unenrolls_and_keeps_disabled() {
+add_task(async function test_exceeded_budget_keeps_enrollment() {
   Services.prefs.clearUserPref(PREF_ENABLED);
   Services.prefs.setBoolPref(PREF_ACTIVE, false);
   Services.prefs.setIntPref(PREF_ATTEMPTS, MAX_MIGRATION_ATTEMPTS);
 
   const slug = "logins-rust-storage-budget";
-  await NimbusTestUtils.enrollWithFeatureConfig(
+  const doCleanup = await NimbusTestUtils.enrollWithFeatureConfig(
     { featureId: FEATURE_ID, value: { enabled: true } },
     { slug }
   );
@@ -85,14 +85,13 @@ add_task(async function test_exceeded_budget_unenrolls_and_keeps_disabled() {
 
   Assert.equal(store, json, "the JSON storage stays primary");
   Assert.ok(
-    !ExperimentAPI.manager.store.get(slug).active,
-    "disabling the backend unenrolls the client"
+    ExperimentAPI.manager.store.get(slug).active,
+    "the client stays enrolled"
   );
   Assert.ok(
-    !Services.prefs.getBoolPref(PREF_ENABLED),
-    "the backend stays disabled after unenrollment"
+    Services.prefs.getBoolPref(PREF_ENABLED),
+    "the pref keeps the enrollment value"
   );
 
-  ExperimentAPI.manager.store._deleteForTests(slug);
-  await NimbusTestUtils.flushStore();
+  await doCleanup();
 });
