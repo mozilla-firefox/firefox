@@ -4443,6 +4443,7 @@ export var AddonManager = {
    * id exists).
    *
    * NOTE:
+   *
    * - This method is limited to built-in add-ons
    *   auto-installed in the "app-builtin-addons" location
    *   based on the list bundled in Firefox Desktop builds as
