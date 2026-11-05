@@ -170,9 +170,6 @@ package-generated-sources:
 
 ifdef JS_STANDALONE
 # Delegate js-specific rules to js
-check-%:
-	$(MAKE) -C js/src $@
-
 install:
 	$(MAKE) -C js/src $@
 
