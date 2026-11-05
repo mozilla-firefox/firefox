@@ -3,30 +3,68 @@ subsuite = "integration"
 tags = "local os_integration"
 
 ["test_automatic_startup_window_features_mismatch.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_automatic_with_taskbar_tab_window_features_mismatch.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_close_last_nonpopup_window.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_deferred_initial_state_window_features_mismatch.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_deferred_nothing_to_restore.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_log_files.py"]
 
 ["test_new_tab_on_restore.py"]
 skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 2054369
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
 ]
 
 ["test_persist_closed_tabs_restore_manually.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_aiwindow.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_counts.py"]
-skip-if = ["debug"] # StartupPerformance is not initialized in debug builds
+skip-if = [
+  "debug", # StartupPerformance is not initialized in debug builds
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_last_session_window_mismatch.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_loading_tab.py"]
 
@@ -36,14 +74,30 @@ skip-if = [
 ]
 
 ["test_restore_manually_with_pinned_tabs.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_manually_with_tab_groups.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_saved_tab_groups.py"]
 
 ["test_restore_sidebar.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_sidebar_automatic.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_restore_windows_after_close_last_tabs.py"]
 skip-if = [
@@ -68,27 +122,63 @@ skip-if = [
 ["test_session_availability.py"]
 
 ["test_session_decision.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_session_outcome.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_set_browser_state_window_features_mismatch.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_shutdown_flush_timeout.py"]
 
 ["test_splitview_hidden.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_splitview_restore.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_tabgroups_restore.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_tabnotes_canonicalurl_restore.py"]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_taskbartab_restore.py"]
 run-if = [
   "os == 'win'",
 ]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
+]
 
 ["test_taskbartab_sessionstate.py"]
 run-if = [
   "os == 'win'",
+]
+skip-if = [
+  "asan", # Bug 2088258 - front-end coverage only
+  "tsan", # Bug 2088258 - front-end coverage only
 ]
