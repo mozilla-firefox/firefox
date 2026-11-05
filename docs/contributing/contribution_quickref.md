@@ -261,6 +261,9 @@ This requires [level 1 commit access](https://www.mozilla.org/about/governance/p
 
 You can ask your reviewer to submit the patch for you if you don't have that
 level of access.
+
+To request level 1 access, follow the steps in
+{doc}`Request commit access level 1 <levelling-up>`.
 :::
 
 {doc}`More information </tools/try/index>`
