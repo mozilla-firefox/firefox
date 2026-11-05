@@ -28,3 +28,4 @@ skip-if(Android) load 2021184.html
 skip-if(Android) load 2045057.html
 skip-if(Android) load 2029070.html
 skip-if(Android) load 2077866.html
+skip-if(Android) pref(dom.webgpu.enabled,true) load 2089166.html

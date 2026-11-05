@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<head><meta charset="utf-8"></head>
+<body>
+<script id="worker" type="text/plain">
+(async () => {
+  try {
+    const adapter = await navigator.gpu.requestAdapter();
+    await adapter.requestDevice();
+    Object.defineProperty(Object.prototype, "then", {
+      get() {
+        const decoder = new AudioDecoder({ output: () => {}, error: () => {} });
+        decoder.configure({
+          codec: "pcm-s32",
+          sampleRate: 48000,
+          numberOfChannels: 5,
+        });
+      },
+    });
+  } finally {
+    postMessage("ready");
+  }
+})();
+</script>
+<script>
+const src = document.getElementById("worker").textContent;
+const worker = new Worker(URL.createObjectURL(new Blob([src])));
+worker.onmessage = () => {
+  worker.terminate();
+  document.documentElement.className = "";
+};
+</script>
+</body>
+</html>
