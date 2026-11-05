@@ -24,6 +24,7 @@ declare var isInitialPage: BrowserWindow["isInitialPage"];
 declare var CreateContainerTabMenu: BrowserWindow["CreateContainerTabMenu"];
 declare var UpdatePopupNotificationsVisibility: BrowserWindow["UpdatePopupNotificationsVisibility"];
 declare var openPreferences: BrowserWindow["openPreferences"];
+declare var openTrustedLinkIn: BrowserWindow["openTrustedLinkIn"];
 
 declare var gBrowserInit: BrowserWindow["gBrowserInit"];
 declare var BrowserCommands: BrowserWindow["BrowserCommands"];
