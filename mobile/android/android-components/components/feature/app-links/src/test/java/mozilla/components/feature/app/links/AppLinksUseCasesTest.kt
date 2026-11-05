@@ -176,6 +176,18 @@ class AppLinksUseCasesTest {
     }
 
     @Test
+    fun `GIVEN a link to an app that is not installed was looked up without the install fallback WHEN it is looked up with the install fallback THEN a market intent is returned`() {
+        val context = createContext()
+        val subject = AppLinksUseCases(context, { true })
+
+        val redirectWithoutInstall = subject.appLinkRedirect(appIntentWithPackageAndFallback)
+        assertFalse(redirectWithoutInstall.hasMarketplaceIntent())
+
+        val redirectWithInstall = subject.appLinkRedirectIncludeInstall(appIntentWithPackageAndFallback)
+        assertTrue(redirectWithInstall.hasMarketplaceIntent())
+    }
+
+    @Test
     fun `A file is not an app link`() {
         val context = createContext(Triple(filePath, appPackage, ""))
         val subject = AppLinksUseCases(context, { true })

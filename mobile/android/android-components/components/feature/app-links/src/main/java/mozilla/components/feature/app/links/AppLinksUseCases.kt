@@ -103,7 +103,7 @@ class AppLinksUseCases(
         operator fun invoke(url: String): AppLinkRedirect {
             // Absurdly long URLs put unneeded pressure on the system and can even lead to crashes.
             val url = url.trimmed()
-            val urlHash = (url + includeHttpAppLinks + includeHttpAppLinks).hashCode()
+            val urlHash = (url + includeHttpAppLinks + includeInstallAppFallback).hashCode()
             val currentTimeStamp = SystemClock.elapsedRealtime()
             // since redirectCache is mutable, get the latest
             val cache = redirectCache
