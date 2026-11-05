@@ -19,6 +19,12 @@
         app:isPreferenceVisible="false"
         android:layout="@layout/preference_category_no_icon_style">
 
+        <org.mozilla.fenix.settings.account.SignInPromoPreference
+            android:key="@string/pref_key_sign_in_promo"
+            app:isPreferenceVisible="false"
+            app:allowDividerAbove="false"
+            app:selectable="false" />
+
         <org.mozilla.fenix.settings.account.AccountPreference
             android:icon="@drawable/mozac_ic_avatar_circle_24"
             android:key="@string/pref_key_account" />
