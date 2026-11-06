@@ -1160,17 +1160,12 @@ InitializeFrameWithResourceAndSize(nsIGlobalObject* aGlobal,
   MOZ_ASSERT(image);
 
   const Maybe<VideoPixelFormat> pixelFormat = GuessVideoPixelFormat(image);
-  Maybe<VideoFrame::Format> format = ToInternalFormat(pixelFormat);
-  if (format && aInit.mAlpha == AlphaOption::Discard) {
-    format->MakeOpaque();
-    // Keep the alpha data in image for now until it's being rendered.
-    // TODO: The alpha will still be rendered if the format is unrecognized
-    // since no additional flag keeping this request. Should spec address what
-    // to do in this case?
-  }
-  VideoFrame::Resource resource = MOZ_TRY(
-      VideoFrame::ValidateImage(image, format)
+  const VideoFrame::Resource validated = MOZ_TRY(
+      VideoFrame::ValidateImage(image, ToInternalFormat(pixelFormat))
           .mapErr([](const MediaResult& aError) { return aError.Message(); }));
+  const VideoFrame::Resource resource = aInit.mAlpha == AlphaOption::Discard
+                                            ? validated.CreateOpaque()
+                                            : validated;
 
   std::pair<Maybe<gfx::IntRect>, Maybe<gfx::IntSize>> init = MOZ_TRY(
       ValidateVideoFrameInit(aInit, resource.mFormat, resource.mCodedSize));
@@ -1201,10 +1196,6 @@ InitializeFrameFromOtherFrame(nsIGlobalObject* aGlobal,
                               const VideoFrameInit& aInit) {
   MOZ_ASSERT(aGlobal);
 
-  // Keep the alpha data in image for now until it's being rendered.
-  // TODO: The alpha will still be rendered if the format is unrecognized
-  // since no additional flag keeping this request. Should spec address what
-  // to do in this case?
   const VideoFrame::Resource resource = aInit.mAlpha == AlphaOption::Discard
                                             ? aData.mResource.CreateOpaque()
                                             : aData.mResource;
@@ -2779,6 +2770,10 @@ VideoFrame::Resource::Resource(const RefPtr<layers::Image>& aImage,
 }
 
 VideoFrame::Resource VideoFrame::Resource::CreateOpaque() const {
+  // Keep the alpha data in image for now until it's being rendered.
+  // TODO: The alpha will still be rendered if the format is unrecognized
+  // since no additional flag keeping this request. Should spec address what
+  // to do in this case?
   Maybe<Format> format = mFormat;
   if (format) {
     format->MakeOpaque();

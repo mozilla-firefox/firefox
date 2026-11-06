@@ -204,7 +204,6 @@ class VideoFrame final : public nsISupports,
     ~Format() = default;
     const VideoPixelFormat& PixelFormat() const;
     gfx::SurfaceFormat ToSurfaceFormat() const;
-    void MakeOpaque();
 
     // TODO: Assign unique value for each plane?
     // The value indicates the order of the plane in format.
@@ -217,7 +216,9 @@ class VideoFrame final : public nsISupports,
     Result<size_t, MediaResult> ByteCount(const gfx::IntSize& aSize) const;
 
    private:
+    friend class Resource;
     bool IsYUV() const;
+    void MakeOpaque();
     VideoPixelFormat mFormat;
   };
 
