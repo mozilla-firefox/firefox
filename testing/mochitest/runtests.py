@@ -2421,16 +2421,6 @@ toolbar#nav-bar {
             # desktop seems to use the old
             certdbPath = options.profilePath
 
-        # certutil.exe depends on some DLLs in the app directory
-        # When running tests against an MSIX-installed Firefox, these DLLs
-        # cannot be used out of the install directory, they must be copied
-        # elsewhere first.
-        if "WindowsApps" in options.app:
-            install_dir = os.path.dirname(options.app)
-            for f in os.listdir(install_dir):
-                if f.endswith(".dll"):
-                    shutil.copy(os.path.join(install_dir, f), options.utilityPath)
-
         status = call(
             [certutil, "-N", "-d", certdbPath, "-f", pwfilePath], env=toolsEnv
         )
@@ -4751,6 +4741,18 @@ def view_gecko_profile_from_mochitest(profile_path, options, profiler_logger):
 
 def run_test_harness(parser, options):
     parser.validate(options)
+
+    # certutil.exe depends on some DLLs in the app directory
+    # When running tests against an MSIX-installed Firefox, these DLLs
+    # cannot be used out of the install directory, they must be copied
+    # elsewhere first. This is done once here rather than before every
+    # certutil call because overwriting the copies intermittently fails
+    # when the previous copies are still locked.
+    if "WindowsApps" in options.app:
+        install_dir = os.path.dirname(options.app)
+        for f in os.listdir(install_dir):
+            if f.endswith(".dll"):
+                shutil.copy(os.path.join(install_dir, f), options.utilityPath)
 
     logger_options = {
         key: value
