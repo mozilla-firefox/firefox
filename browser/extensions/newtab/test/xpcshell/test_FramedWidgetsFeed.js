@@ -110,8 +110,85 @@ add_task(async function test_fresh_cache_skips_fetch() {
 
   await feed.onAction({ type: actionTypes.INIT });
 
-  Assert.ok(feed.merino.fetchFramedWidgets.notCalled, "Serves today's cache");
+  Assert.ok(feed.merino.fetchFramedWidgets.notCalled, "Serves a fresh cache");
   Assert.deepEqual(lastUpdate(feed), FRAMES, "Broadcasts the cached manifest");
+  sandbox.restore();
+});
+
+add_task(async function test_cache_expires_after_30_minutes() {
+  const sandbox = sinon.createSandbox();
+  const NOW = Date.UTC(2026, 10, 6, 12, 0, 0);
+  sandbox.stub(FramedWidgetsFeed.prototype, "Date").returns({ now: () => NOW });
+  const feed = makeFeed(sandbox);
+  const MINUTE = 60 * 1000;
+
+  Assert.ok(feed.isStale(undefined), "No timestamp is stale");
+  Assert.ok(!feed.isStale(NOW), "A just-fetched manifest is fresh");
+  Assert.ok(!feed.isStale(NOW - 29 * MINUTE), "Fresh before 30 minutes");
+  Assert.ok(feed.isStale(NOW - 30 * MINUTE), "Stale after 30 minutes");
+  Assert.ok(feed.isStale(NOW + MINUTE), "A future timestamp is stale");
+  Assert.ok(feed.isStale(NOW - 2 * 60 * MINUTE), "Stale after two hours");
+
+  sandbox.restore();
+});
+
+add_task(async function test_expired_cache_refetches() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeFeed(sandbox, {
+    cache: {
+      frames: {
+        environment: "prod",
+        manifest: { widgets: [] },
+        lastUpdated: Date.now() - 31 * 60 * 1000,
+      },
+    },
+  });
+
+  await feed.onAction({ type: actionTypes.INIT });
+
+  Assert.ok(
+    feed.merino.fetchFramedWidgets.calledOnce,
+    "Refetches a cache older than 30 minutes"
+  );
+  Assert.deepEqual(lastUpdate(feed), FRAMES, "Broadcasts the new manifest");
+  sandbox.restore();
+});
+
+add_task(async function test_system_tick_skips_fresh_cache() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeFeed(sandbox, {
+    cache: {
+      frames: {
+        environment: "prod",
+        manifest: MANIFEST,
+        lastUpdated: Date.now(),
+      },
+    },
+  });
+
+  await feed.onAction({ type: actionTypes.SYSTEM_TICK });
+
+  Assert.ok(feed.merino.fetchFramedWidgets.notCalled, "Serves a fresh cache");
+  Assert.deepEqual(lastUpdate(feed), FRAMES, "Broadcasts the cached manifest");
+  sandbox.restore();
+});
+
+add_task(async function test_system_tick_retries_failed_fetch() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeFeed(sandbox);
+  stubMerino(sandbox, feed, { data: null, error: "load_error" });
+
+  await feed.onAction({ type: actionTypes.INIT });
+  Assert.deepEqual(lastUpdate(feed), {}, "No frames after the failed fetch");
+
+  stubMerino(sandbox, feed, { data: MANIFEST, error: null });
+  await feed.onAction({ type: actionTypes.SYSTEM_TICK });
+
+  Assert.ok(
+    feed.merino.fetchFramedWidgets.calledOnce,
+    "The next tick fetches again"
+  );
+  Assert.deepEqual(lastUpdate(feed), FRAMES, "Broadcasts the new manifest");
   sandbox.restore();
 });
 
