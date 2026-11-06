@@ -56,6 +56,7 @@ declare namespace BrowserWindow {
   // browser-customtitlebar.js
   var CustomTitlebar: {
     readonly enabled: boolean;
+    allowedBy(condition: string, allow: boolean): void;
   };
 
   // browser-sidebar.js
@@ -75,6 +76,8 @@ declare namespace BrowserWindow {
   };
 
   // browser.js
+  var gNavToolbox: XULElement;
+
   const DynamicShortcutTooltip: {
     nodeToTooltipMap: Record<string, string>;
     cache: Map<string, string>;

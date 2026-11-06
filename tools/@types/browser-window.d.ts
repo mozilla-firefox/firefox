@@ -32,6 +32,7 @@ declare var CustomTitlebar: BrowserWindow["CustomTitlebar"];
 declare var SidebarController: BrowserWindow["SidebarController"];
 declare var gSharedTabWarning: BrowserWindow["gSharedTabWarning"];
 declare var gKeywordURIFixup: BrowserWindow["gKeywordURIFixup"];
+declare var gNavToolbox: BrowserWindow["gNavToolbox"];
 declare const DynamicShortcutTooltip: BrowserWindow["DynamicShortcutTooltip"];
 declare const gClickAndHoldListenersOnElement: BrowserWindow["gClickAndHoldListenersOnElement"];
 declare var FirefoxViewHandler: BrowserWindow["FirefoxViewHandler"];
