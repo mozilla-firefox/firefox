@@ -1,0 +1,17 @@
+{
+  "label": "tiktok.com (enable floating player)",
+  "bugs": {
+    "1903555": {
+      "issue": "broken-videos",
+      "matches": ["https://www.tiktok.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "content_scripts": {
+        "js": ["bug1903555-tiktok.com-enable-floating-player.js"]
+      }
+    }
+  ]
+}
