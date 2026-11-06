@@ -8,6 +8,7 @@ prefs = [
   "browser.smartwindow.endpoint=http://localhost:0/v1"
 ]
 support-files = [
+  "head_smartwindow_request_response_telemetry.js",
   "head_smartwindow_first_turn_telemetry.js",
   "head.js",
   "head_aiwindow_group_tabs_button.js",
@@ -187,6 +188,21 @@ skip-if = [
 ]
 
 ["browser_smartwindow_recentchats.js"]
+
+["browser_smartwindow_request_response_build_errors_telemetry.js"]
+skip-if = [
+  "os == 'win' && debug && standalone", # Bug 2028654
+]
+
+["browser_smartwindow_request_response_retry_telemetry.js"]
+skip-if = [
+  "os == 'win' && debug && standalone", # Bug 2028654
+]
+
+["browser_smartwindow_request_response_stream_errors_telemetry.js"]
+skip-if = [
+  "os == 'win' && debug && standalone", # Bug 2028654
+]
 
 ["browser_smartwindow_request_response_telemetry.js"]
 skip-if = [
