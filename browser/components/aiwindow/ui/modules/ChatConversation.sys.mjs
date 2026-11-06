@@ -83,6 +83,7 @@ ChromeUtils.defineLazyGetter(lazy, "console", function () {
 
 const CHAT_ROLES = [MESSAGE_ROLE.USER, MESSAGE_ROLE.ASSISTANT];
 const RESTORABLE_ROLES = [...CHAT_ROLES, MESSAGE_ROLE.TOOL];
+const NO_PAGE_CONTEXT = "No page context is available for this message.";
 
 let _savedLoadPromptDescriptor = null;
 export function _setLoadPromptForTesting(fn) {
@@ -191,14 +192,6 @@ export class ChatConversation extends Conversation {
    * @type {Set<string>}
    */
   #pendingCitationUrls = new Set();
-
-  /**
-   * Last browser-context string written; injectRealTimeContext skips
-   * rewriting an identical one so the prompt-cache prefix stays stable.
-   *
-   * @type {string|null}
-   */
-  #lastBrowserContext = null;
 
   /**
    * @param {object} params
@@ -869,15 +862,35 @@ export class ChatConversation extends Conversation {
         securityProperties: this.securityProperties,
       }
     );
-    if (!realTimePrompt || !userMessage?.content) {
+    if (!userMessage?.content) {
       return;
     }
-    if (realTimePrompt === this.#lastBrowserContext) {
+    // Skip unchanged context and keep the prompt cache stable: Without previous
+    // context there is no page to leave so no note needed.
+    const browserContext = realTimePrompt || NO_PAGE_CONTEXT;
+    const lastBrowserContext =
+      this.#getLastBrowserContext(userMessage) ?? NO_PAGE_CONTEXT;
+    if (browserContext === lastBrowserContext) {
       return;
     }
     userMessage.content.userContext ??= {};
-    userMessage.content.userContext.realTimeContext = realTimePrompt;
-    this.#lastBrowserContext = realTimePrompt;
+    userMessage.content.userContext.realTimeContext = browserContext;
+  }
+
+  /**
+   * Browser context sent last before `userMessage`. Read from messages so
+   * retries and reopened conversations don’t need extra state.
+   *
+   * @param {ChatMessage} userMessage
+   * @returns {string|undefined}
+   */
+  #getLastBrowserContext(userMessage) {
+    return this.messages.findLast(
+      message =>
+        message !== userMessage &&
+        message.role === MESSAGE_ROLE.USER &&
+        message.content.userContext?.realTimeContext
+    )?.content.userContext.realTimeContext;
   }
 
   /**
@@ -997,8 +1010,8 @@ export class ChatConversation extends Conversation {
 
   /**
    * Chat wire-format snapshot: filters out empty-body assistant messages,
-   * walks message → wire shape, then injects realTime/memories `userContext`
-   * as USER messages just before the last user message.
+   * walks message → wire shape, then injects `userContext` of each
+   * message as USER messages just before it.
    *
    * @param {object} [opts]
    * @param {boolean} [opts.applyUrlTokens=true]
@@ -1033,27 +1046,49 @@ export class ChatConversation extends Conversation {
       }
     }
 
-    // Inject contextual user-context messages just before the last user
-    // message, as USER-role messages.
-    const lastUserMsgIdx = filteredSrc.findLastIndex(
-      msg => msg.role == MESSAGE_ROLE.USER
+    const messagesWithContext = ChatConversation.#withUserContext(
+      msgsForAPI,
+      filteredSrc
     );
-    if (lastUserMsgIdx > -1) {
-      const userContext = filteredSrc[lastUserMsgIdx].content.userContext;
-      if (userContext) {
-        const contextMsgs = Object.values(userContext).map(contextMsg => ({
-          role: getRoleLabel(MESSAGE_ROLE.USER).toLowerCase(),
-          content: contextMsg,
-        }));
-        msgsForAPI.splice(lastUserMsgIdx, 0, ...contextMsgs);
-      }
-    }
 
     if (applyUrlTokens) {
-      replaceUrlsWithTokens(this, msgsForAPI);
+      replaceUrlsWithTokens(this, messagesWithContext);
     }
 
-    return msgsForAPI;
+    return messagesWithContext;
+  }
+
+  /**
+   * Adds the context stored on each user message as USER messages just before
+   * it, so browser context stays in the history it was sent with. Memories
+   * only come with the last user message, which already folds in the memories
+   * of the messages before.
+   *
+   * @param {object[]} wireMessages - Messages in chat-completions format.
+   * @param {ChatMessage[]} sourceMessages - The messages `wireMessages` were
+   *   built from, in the same order.
+   * @returns {object[]}
+   */
+  static #withUserContext(wireMessages, sourceMessages) {
+    const lastUserMessageIdx = sourceMessages.findLastIndex(
+      msg => msg.role == MESSAGE_ROLE.USER
+    );
+    return wireMessages.flatMap((message, messageIdx) => {
+      const { role, content } = sourceMessages[messageIdx];
+      if (role != MESSAGE_ROLE.USER || !content.userContext) {
+        return [message];
+      }
+      const contextMessages = Object.entries(content.userContext)
+        .filter(
+          ([key]) =>
+            messageIdx === lastUserMessageIdx || key !== "memoriesContext"
+        )
+        .map(([, contextMessage]) => ({
+          role: getRoleLabel(MESSAGE_ROLE.USER).toLowerCase(),
+          content: contextMessage,
+        }));
+      return [...contextMessages, message];
+    });
   }
 
   #updateActiveBranchTipMessageId() {

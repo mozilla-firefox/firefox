@@ -613,6 +613,7 @@ add_task(function test_ChatConversation_getMessagesInChatCompletionsFormat() {
 
   Assert.deepEqual(openAiFormat, [
     { role: "system", content: "the system prompt" },
+    { role: "user", content: "321" },
     { role: "user", content: "a user's prompt" },
     { role: "tool", content: "[1,2,3]", name: "tool_1", tool_call_id: "123" },
     { role: "assistant", content: "the llm response" },
@@ -622,6 +623,40 @@ add_task(function test_ChatConversation_getMessagesInChatCompletionsFormat() {
     { role: "assistant", content: "the second llm response" },
   ]);
 });
+
+add_task(
+  function test_getMessagesInChatCompletionsFormat_keeps_browser_context_in_history() {
+    const conversation = new ChatConversation({});
+    conversation.addUserMessage("turn 1", null, new UserRoleOpts(), {
+      realTimeContext: "TAB: A",
+      memoriesContext: "MEMORIES 1",
+    });
+    conversation.addAssistantMessage("text", "answer 1");
+    conversation.addUserMessage("turn 2", null, new UserRoleOpts(), {});
+    conversation.addAssistantMessage("text", "answer 2");
+    conversation.addUserMessage("turn 3", null, new UserRoleOpts(), {
+      realTimeContext: "TAB: B",
+      memoriesContext: "MEMORIES 3",
+    });
+
+    Assert.deepEqual(
+      conversation
+        .getMessagesInChatCompletionsFormat()
+        .map(({ role, content }) => ({ role, content })),
+      [
+        { role: "user", content: "TAB: A" },
+        { role: "user", content: "turn 1" },
+        { role: "assistant", content: "answer 1" },
+        { role: "user", content: "turn 2" },
+        { role: "assistant", content: "answer 2" },
+        { role: "user", content: "TAB: B" },
+        { role: "user", content: "MEMORIES 3" },
+        { role: "user", content: "turn 3" },
+      ],
+      "Browser context stays before the message it was sent with. Memories only go with the latest message"
+    );
+  }
+);
 
 add_task(async function test_unrelatedMessage_ChatConversation_retryMessage() {
   const conversation = new ChatConversation({});
@@ -794,6 +829,45 @@ add_task(
   }
 );
 
+add_task(
+  async function test_injectRealTimeContext_no_op_without_user_message() {
+    _setRemoteClientForTesting({
+      get: () =>
+        Promise.resolve([
+          {
+            id: "browser-context--tab--v1--generic",
+            kind: "module",
+            feature: "browser-context",
+            module: "tab",
+            model: "generic",
+            version: "1.0",
+            prompts: "TAB: {title} ({url})",
+          },
+        ]),
+      on: () => {},
+    });
+    registerCleanupFunction(_clearRemoteClientForTesting);
+
+    const conversation = new ChatConversation({});
+    const opts = {
+      getRealTimeMapping: async () => ({
+        url: "https://example.com",
+        title: "Example",
+        hasTabInfo: true,
+      }),
+    };
+    await conversation.injectRealTimeContext(undefined, opts);
+    const userMessage = conversation.addUserMessage("hi");
+    await conversation.injectRealTimeContext(userMessage, opts);
+
+    Assert.equal(
+      userMessage.content.userContext.realTimeContext,
+      "TAB: Example (https://example.com)",
+      "The next user message still gets the context"
+    );
+  }
+);
+
 add_task(async function test_injectRealTimeContext_no_op_when_mapping_null() {
   const mockGetRealTimeMapping = lazy.sinon.stub().resolves(null);
 
@@ -808,6 +882,27 @@ add_task(async function test_injectRealTimeContext_no_op_when_mapping_null() {
     "Leaves userContext.realTimeContext unset when mapping is null"
   );
 });
+
+add_task(
+  async function test_injectRealTimeContext_marks_missing_context_after_reopen() {
+    const conversation = new ChatConversation({});
+    const earlierMessage = conversation.addUserMessage("turn 1");
+    earlierMessage.content.userContext.realTimeContext =
+      "TAB: Example (https://example.com)";
+    conversation.addAssistantMessage("text", "answer");
+
+    const userMessage = conversation.addUserMessage("turn 2");
+    await conversation.injectRealTimeContext(userMessage, {
+      getRealTimeMapping: async () => null,
+    });
+
+    Assert.equal(
+      userMessage.content.userContext.realTimeContext,
+      "No page context is available for this message.",
+      "Model is told the stored tab no longer applies"
+    );
+  }
+);
 
 add_task(async function test_injectRealTimeContext_dedupes_when_unchanged() {
   _setRemoteClientForTesting({
@@ -867,6 +962,67 @@ add_task(async function test_injectRealTimeContext_dedupes_when_unchanged() {
     "Third turn writes when context changes"
   );
 });
+
+add_task(
+  async function test_injectRealTimeContext_reinjects_after_retry_or_missing_context() {
+    _setRemoteClientForTesting({
+      get: () =>
+        Promise.resolve([
+          {
+            id: "browser-context--tab--v1--generic",
+            kind: "module",
+            feature: "browser-context",
+            module: "tab",
+            model: "generic",
+            version: "1.0",
+            prompts: "TAB: {title} ({url})",
+          },
+        ]),
+      on: () => {},
+    });
+    registerCleanupFunction(_clearRemoteClientForTesting);
+
+    const conversation = new ChatConversation({});
+    const tab = async () => ({
+      url: "https://example.com",
+      title: "Example",
+      hasTabInfo: true,
+    });
+    const sendTurn = async (prompt, getRealTimeMapping) => {
+      const userMessage = conversation.addUserMessage(prompt);
+      await conversation.injectRealTimeContext(userMessage, {
+        getRealTimeMapping,
+      });
+      conversation.addAssistantMessage("text", "answer");
+      return userMessage;
+    };
+    const contextOf = message => message.content.userContext?.realTimeContext;
+    const context = "TAB: Example (https://example.com)";
+
+    const firstMessage = await sendTurn("turn 1", tab);
+    await conversation.retryMessage(firstMessage);
+    Assert.equal(
+      contextOf(await sendTurn("turn 1", tab)),
+      context,
+      "Retried message receives the context again"
+    );
+
+    Assert.equal(
+      contextOf(await sendTurn("turn 2", async () => null)),
+      "No page context is available for this message.",
+      "Model is told the earlier tab no longer applies"
+    );
+    Assert.ok(
+      !contextOf(await sendTurn("turn 2b", async () => null)),
+      "The note is not repeated while there is still no page context"
+    );
+    Assert.equal(
+      contextOf(await sendTurn("turn 3", tab)),
+      context,
+      "Context is resubmitted after the tab was left out"
+    );
+  }
+);
 
 add_task(function test_ChatConversation_renderState_filters_phantom_messages() {
   const conversation = new ChatConversation({});
