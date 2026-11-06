@@ -24,7 +24,6 @@ rtc_library("async_audio_processing") {
     "../../api/task_queue:task_queue",
     "../../rtc_base:checks",
     "../../rtc_base:refcount",
-    "../../rtc_base:rtc_task_queue",
   ]
 }
 

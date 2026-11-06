@@ -55,8 +55,9 @@ class RTC_EXPORT VideoDecoderFactory {
   virtual std::unique_ptr<VideoDecoder> Create(const Environment& env,
                                                const SdpVideoFormat& format);
 
-  // TODO: bugs.webrtc.org/15791 - Make private or delete when all callers are
-  // migrated to `Create`.
+ private:
+  // TODO: bugs.webrtc.org/15791 - Delete when all derived classes implement
+  // `Create`.
   virtual std::unique_ptr<VideoDecoder> CreateVideoDecoder(
       const SdpVideoFormat& format);
 };

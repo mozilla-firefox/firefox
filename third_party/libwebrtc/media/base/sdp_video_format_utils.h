@@ -57,6 +57,10 @@ absl::optional<int> ParseSdpForVPxMaxFrameRate(const CodecParameterMap& params);
 // blocks but the returned value is in total number of pixels.
 absl::optional<int> ParseSdpForVPxMaxFrameSize(const CodecParameterMap& params);
 
+// Determines whether the non-standard x-google-per-layer-pli fmtp is present
+// in the parameters and has a value of "1".
+bool SupportsPerLayerPictureLossIndication(const CodecParameterMap& params);
+
 }  // namespace webrtc
 
 #endif  // MEDIA_BASE_SDP_VIDEO_FORMAT_UTILS_H_

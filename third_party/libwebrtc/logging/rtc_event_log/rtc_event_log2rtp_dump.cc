@@ -136,7 +136,7 @@ void ConvertRtpPacket(
     reconstructed_packet.SetExtension<webrtc::TransportSequenceNumber>(
         incoming.rtp.header.extension.transportSequenceNumber);
   if (incoming.rtp.header.extension.hasAudioLevel)
-    reconstructed_packet.SetExtension<webrtc::AudioLevel>(
+    reconstructed_packet.SetExtension<webrtc::AudioLevelExtension>(
         incoming.rtp.header.extension.voiceActivity,
         incoming.rtp.header.extension.audioLevel);
   if (incoming.rtp.header.extension.hasVideoRotation)

@@ -32,7 +32,7 @@ std::unique_ptr<SimulcastTestFixture> CreateSpecificSimulcastTestFixture() {
           });
   return CreateSimulcastTestFixture(std::move(encoder_factory),
                                     std::move(decoder_factory),
-                                    SdpVideoFormat("VP8"));
+                                    SdpVideoFormat::VP8());
 }
 }  // namespace
 

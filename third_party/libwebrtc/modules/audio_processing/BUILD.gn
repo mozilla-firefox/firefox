@@ -477,7 +477,6 @@ if (rtc_include_tests) {
           "../../api/audio:audio_frame_api",
           "../../api/audio:echo_control",
           "../../rtc_base:rtc_base_tests_utils",
-          "../../rtc_base:rtc_task_queue",
           "aec_dump",
           "aec_dump:aec_dump_unittests",
         ]

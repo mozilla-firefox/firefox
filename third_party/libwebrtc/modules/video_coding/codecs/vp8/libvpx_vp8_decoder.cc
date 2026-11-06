@@ -21,7 +21,6 @@
 #include "api/environment/environment.h"
 #include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
-#include "api/transport/field_trial_based_config.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
@@ -87,10 +86,6 @@ GetPostProcParamsFromFieldTrialGroup(const FieldTrialsView& field_trials) {
 
 }  // namespace
 
-std::unique_ptr<VideoDecoder> VP8Decoder::Create() {
-  return std::make_unique<LibvpxVp8Decoder>();
-}
-
 std::unique_ptr<VideoDecoder> CreateVp8Decoder(const Environment& env) {
   return std::make_unique<LibvpxVp8Decoder>(env);
 }
@@ -119,15 +114,10 @@ class LibvpxVp8Decoder::QpSmoother {
   rtc::ExpFilter smoother_;
 };
 
-LibvpxVp8Decoder::LibvpxVp8Decoder()
-    : LibvpxVp8Decoder(FieldTrialBasedConfig()) {}
-
 LibvpxVp8Decoder::LibvpxVp8Decoder(const Environment& env)
-    : LibvpxVp8Decoder(env.field_trials()) {}
-
-LibvpxVp8Decoder::LibvpxVp8Decoder(const FieldTrialsView& field_trials)
-    : use_postproc_(kIsArm ? field_trials.IsEnabled(kVp8PostProcArmFieldTrial)
-                           : true),
+    : use_postproc_(
+          kIsArm ? env.field_trials().IsEnabled(kVp8PostProcArmFieldTrial)
+                 : true),
       buffer_pool_(false, 300 /* max_number_of_buffers*/),
       decode_complete_callback_(NULL),
       inited_(false),
@@ -135,9 +125,9 @@ LibvpxVp8Decoder::LibvpxVp8Decoder(const FieldTrialsView& field_trials)
       last_frame_width_(0),
       last_frame_height_(0),
       key_frame_required_(true),
-      deblock_params_(use_postproc_
-                          ? GetPostProcParamsFromFieldTrialGroup(field_trials)
-                          : absl::nullopt),
+      deblock_params_(use_postproc_ ? GetPostProcParamsFromFieldTrialGroup(
+                                          env.field_trials())
+                                    : absl::nullopt),
       qp_smoother_(use_postproc_ ? new QpSmoother() : nullptr) {}
 
 LibvpxVp8Decoder::~LibvpxVp8Decoder() {

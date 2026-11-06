@@ -179,7 +179,7 @@ class FakeVideoEncoderFactory : public VideoEncoderFactory {
  public:
   FakeVideoEncoderFactory(Clock* clock) : clock_(clock) {}
   std::vector<SdpVideoFormat> GetSupportedFormats() const override {
-    return {SdpVideoFormat("VP8")};
+    return {SdpVideoFormat::VP8()};
   }
   std::unique_ptr<VideoEncoder> CreateVideoEncoder(
       const SdpVideoFormat& format) override {
@@ -193,10 +193,10 @@ class FakeVideoEncoderFactory : public VideoEncoderFactory {
 class FakeVideoDecoderFactory : public VideoDecoderFactory {
  public:
   std::vector<SdpVideoFormat> GetSupportedFormats() const override {
-    return {SdpVideoFormat("VP8")};
+    return {SdpVideoFormat::VP8()};
   }
-  std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      const SdpVideoFormat& format) override {
+  std::unique_ptr<VideoDecoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
     return std::make_unique<FakeDecoder>();
   }
 };

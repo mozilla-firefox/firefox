@@ -13,15 +13,16 @@
 
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 
 // A class for parsing out video parameter set (VPS) data from an H265 NALU.
-class H265VpsParser {
+class RTC_EXPORT H265VpsParser {
  public:
   // The parsed state of the VPS. Only some select values are stored.
   // Add more as they are actually needed.
-  struct VpsState {
+  struct RTC_EXPORT VpsState {
     VpsState();
 
     uint32_t id = 0;

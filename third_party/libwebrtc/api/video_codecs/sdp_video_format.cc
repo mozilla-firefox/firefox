@@ -29,6 +29,8 @@ namespace webrtc {
 
 namespace {
 
+// TODO(bugs.webrtc.org/15847): remove code duplication of IsSameCodecSpecific
+// in media/base/codec.cc
 std::string GetFmtpParameterOrDefault(const CodecParameterMap& params,
                                       const std::string& name,
                                       const std::string& default_value) {
@@ -74,29 +76,45 @@ bool AV1IsSameLevelIdx(const CodecParameterMap& left,
   return AV1GetLevelIdxOrDefault(left) == AV1GetLevelIdxOrDefault(right);
 }
 
+#ifdef RTC_ENABLE_H265
+std::string GetH265TxModeOrDefault(const CodecParameterMap& params) {
+  // If TxMode is not present, a value of "SRST" must be inferred.
+  // https://tools.ietf.org/html/rfc7798@section-7.1
+  return GetFmtpParameterOrDefault(params, cricket::kH265FmtpTxMode, "SRST");
+}
+
+bool IsSameH265TxMode(const CodecParameterMap& left,
+                      const CodecParameterMap& right) {
+  return absl::EqualsIgnoreCase(GetH265TxModeOrDefault(left),
+                                GetH265TxModeOrDefault(right));
+}
+#endif
+
 // Some (video) codecs are actually families of codecs and rely on parameters
 // to distinguish different incompatible family members.
-bool IsSameCodecSpecific(const SdpVideoFormat& format1,
-                         const SdpVideoFormat& format2) {
+bool IsSameCodecSpecific(const std::string& name1,
+                         const CodecParameterMap& params1,
+                         const std::string& name2,
+                         const CodecParameterMap& params2) {
   // The assumption when calling this function is that the two formats have the
   // same name.
-  RTC_DCHECK(absl::EqualsIgnoreCase(format1.name, format2.name));
+  RTC_DCHECK(absl::EqualsIgnoreCase(name1, name2));
 
-  VideoCodecType codec_type = PayloadStringToCodecType(format1.name);
+  VideoCodecType codec_type = PayloadStringToCodecType(name1);
   switch (codec_type) {
     case kVideoCodecH264:
-      return H264IsSameProfile(format1.parameters, format2.parameters) &&
-             H264IsSamePacketizationMode(format1.parameters,
-                                         format2.parameters);
+      return H264IsSameProfile(params1, params2) &&
+             H264IsSamePacketizationMode(params1, params2);
     case kVideoCodecVP9:
-      return VP9IsSameProfile(format1.parameters, format2.parameters);
+      return VP9IsSameProfile(params1, params2);
     case kVideoCodecAV1:
-      return AV1IsSameProfile(format1.parameters, format2.parameters) &&
-             AV1IsSameTier(format1.parameters, format2.parameters) &&
-             AV1IsSameLevelIdx(format1.parameters, format2.parameters);
+      return AV1IsSameProfile(params1, params2) &&
+             AV1IsSameTier(params1, params2) &&
+             AV1IsSameLevelIdx(params1, params2);
 #ifdef RTC_ENABLE_H265
     case kVideoCodecH265:
-      return H265IsSameProfileTierLevel(format1.parameters, format2.parameters);
+      return H265IsSameProfileTierLevel(params1, params2) &&
+             IsSameH265TxMode(params1, params2);
 #endif
     default:
       return true;
@@ -156,7 +174,7 @@ bool SdpVideoFormat::IsSameCodec(const SdpVideoFormat& other) const {
   // Two codecs are considered the same if the name matches (case insensitive)
   // and certain codec-specific parameters match.
   return absl::EqualsIgnoreCase(name, other.name) &&
-         IsSameCodecSpecific(*this, other);
+         IsSameCodecSpecific(name, parameters, other.name, other.parameters);
 }
 
 bool SdpVideoFormat::IsCodecInList(
@@ -172,6 +190,60 @@ bool SdpVideoFormat::IsCodecInList(
 bool operator==(const SdpVideoFormat& a, const SdpVideoFormat& b) {
   return a.name == b.name && a.parameters == b.parameters &&
          a.scalability_modes == b.scalability_modes;
+}
+
+const SdpVideoFormat SdpVideoFormat::VP8() {
+  return SdpVideoFormat(cricket::kVp8CodecName, {});
+}
+
+const SdpVideoFormat SdpVideoFormat::H264() {
+  // H264 will typically require more tweaking like setting
+  // * packetization-mode (which defaults to 0 but 1 is more common)
+  // * level-asymmetry-allowed (which defaults to 0 but 1 is more common)
+  // * profile-level-id of which there are many.
+  return SdpVideoFormat(cricket::kH264CodecName, {});
+}
+
+const SdpVideoFormat SdpVideoFormat::VP9Profile0() {
+  return SdpVideoFormat(
+      cricket::kVp9CodecName,
+      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile0)}});
+}
+
+const SdpVideoFormat SdpVideoFormat::VP9Profile1() {
+  return SdpVideoFormat(
+      cricket::kVp9CodecName,
+      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile1)}});
+}
+
+const SdpVideoFormat SdpVideoFormat::VP9Profile2() {
+  return SdpVideoFormat(
+      cricket::kVp9CodecName,
+      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile2)}});
+}
+
+const SdpVideoFormat SdpVideoFormat::VP9Profile3() {
+  return SdpVideoFormat(
+      cricket::kVp9CodecName,
+      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile3)}});
+}
+
+const SdpVideoFormat SdpVideoFormat::AV1Profile0() {
+  // https://aomediacodec.github.io/av1-rtp-spec/#72-sdp-parameters
+  return SdpVideoFormat(cricket::kAv1CodecName,
+                        {{cricket::kAv1FmtpProfile,
+                          AV1ProfileToString(AV1Profile::kProfile0).data()},
+                         {cricket::kAv1FmtpLevelIdx, "5"},
+                         {cricket::kAv1FmtpTier, "0"}});
+}
+
+const SdpVideoFormat SdpVideoFormat::AV1Profile1() {
+  // https://aomediacodec.github.io/av1-rtp-spec/#72-sdp-parameters
+  return SdpVideoFormat(cricket::kAv1CodecName,
+                        {{cricket::kAv1FmtpProfile,
+                          AV1ProfileToString(AV1Profile::kProfile1).data()},
+                         {cricket::kAv1FmtpLevelIdx, "5"},
+                         {cricket::kAv1FmtpTier, "0"}});
 }
 
 absl::optional<SdpVideoFormat> FuzzyMatchSdpVideoFormat(

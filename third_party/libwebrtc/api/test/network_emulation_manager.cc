@@ -71,7 +71,7 @@ NetworkEmulationManager::SimulatedNetworkNode::Builder::capacity_Mbps(
 
 NetworkEmulationManager::SimulatedNetworkNode::Builder&
 NetworkEmulationManager::SimulatedNetworkNode::Builder::loss(double loss_rate) {
-  config_.loss_percent = std::round(loss_rate * 100);
+  config_.loss_percent = loss_rate * 100;
   return *this;
 }
 

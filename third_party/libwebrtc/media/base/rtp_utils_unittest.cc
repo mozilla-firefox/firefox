@@ -72,15 +72,12 @@ static const int kAstIndexInOneByteRtpMsg = 21;
 // and in message `kRtpMsgWithTwoByteAbsSendTimeExtension`.
 static const int kAstIndexInTwoByteRtpMsg = 21;
 
-static const rtc::ArrayView<const char> kPcmuFrameArrayView =
-    rtc::MakeArrayView(reinterpret_cast<const char*>(kPcmuFrame),
-                       sizeof(kPcmuFrame));
-static const rtc::ArrayView<const char> kRtcpReportArrayView =
-    rtc::MakeArrayView(reinterpret_cast<const char*>(kRtcpReport),
-                       sizeof(kRtcpReport));
-static const rtc::ArrayView<const char> kInvalidPacketArrayView =
-    rtc::MakeArrayView(reinterpret_cast<const char*>(kInvalidPacket),
-                       sizeof(kInvalidPacket));
+static const rtc::ArrayView<const uint8_t> kPcmuFrameArrayView =
+    rtc::MakeArrayView(kPcmuFrame, sizeof(kPcmuFrame));
+static const rtc::ArrayView<const uint8_t> kRtcpReportArrayView =
+    rtc::MakeArrayView(kRtcpReport, sizeof(kRtcpReport));
+static const rtc::ArrayView<const uint8_t> kInvalidPacketArrayView =
+    rtc::MakeArrayView(kInvalidPacket, sizeof(kInvalidPacket));
 
 TEST(RtpUtilsTest, GetRtcp) {
   int pt;

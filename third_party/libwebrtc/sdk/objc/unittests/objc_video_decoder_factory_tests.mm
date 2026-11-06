@@ -14,6 +14,7 @@
 
 #include "sdk/objc/native/src/objc_video_decoder_factory.h"
 
+#include "api/environment/environment_factory.h"
 #import "base/RTCMacros.h"
 #import "base/RTCVideoDecoder.h"
 #import "base/RTCVideoDecoderFactory.h"
@@ -26,9 +27,9 @@ id<RTC_OBJC_TYPE(RTCVideoDecoderFactory)> CreateDecoderFactoryReturning(int retu
   id decoderMock = OCMProtocolMock(@protocol(RTC_OBJC_TYPE(RTCVideoDecoder)));
   OCMStub([decoderMock startDecodeWithNumberOfCores:1]).andReturn(return_code);
   OCMStub([decoderMock decode:[OCMArg any]
-                    missingFrames:NO
-                codecSpecificInfo:[OCMArg any]
-                     renderTimeMs:0])
+                  missingFrames:NO
+              codecSpecificInfo:[OCMArg any]
+                   renderTimeMs:0])
       .andReturn(return_code);
   OCMStub([decoderMock releaseDecoder]).andReturn(return_code);
 
@@ -51,7 +52,7 @@ id<RTC_OBJC_TYPE(RTCVideoDecoderFactory)> CreateErrorDecoderFactory() {
 std::unique_ptr<webrtc::VideoDecoder> GetObjCDecoder(
     id<RTC_OBJC_TYPE(RTCVideoDecoderFactory)> factory) {
   webrtc::ObjCVideoDecoderFactory decoder_factory(factory);
-  return decoder_factory.CreateVideoDecoder(webrtc::SdpVideoFormat(cricket::kH264CodecName));
+  return decoder_factory.Create(webrtc::CreateEnvironment(), webrtc::SdpVideoFormat::H264());
 }
 
 #pragma mark -

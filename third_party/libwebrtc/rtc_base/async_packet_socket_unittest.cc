@@ -10,6 +10,7 @@
 
 #include "rtc_base/async_packet_socket.h"
 
+#include "rtc_base/socket_address.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
@@ -47,10 +48,7 @@ class MockAsyncPacketSocket : public rtc::AsyncPacketSocket {
   MOCK_METHOD(int, GetError, (), (const, override));
   MOCK_METHOD(void, SetError, (int error), (override));
 
-  void NotifyPacketReceived() {
-    char data[1] = {'a'};
-    AsyncPacketSocket::NotifyPacketReceived(this, data, 1, SocketAddress(), -1);
-  }
+  using AsyncPacketSocket::NotifyPacketReceived;
 };
 
 TEST(AsyncPacketSocket, RegisteredCallbackReceivePacketsFromNotify) {
@@ -60,7 +58,7 @@ TEST(AsyncPacketSocket, RegisteredCallbackReceivePacketsFromNotify) {
 
   EXPECT_CALL(received_packet, Call);
   mock_socket.RegisterReceivedPacketCallback(received_packet.AsStdFunction());
-  mock_socket.NotifyPacketReceived();
+  mock_socket.NotifyPacketReceived(ReceivedPacket({}, SocketAddress()));
 }
 
 }  // namespace

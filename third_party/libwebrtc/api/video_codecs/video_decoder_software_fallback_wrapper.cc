@@ -23,7 +23,6 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/trace_event.h"
-#include "system_wrappers/include/field_trial.h"
 #include "system_wrappers/include/metrics.h"
 
 namespace webrtc {
@@ -35,9 +34,9 @@ constexpr size_t kMaxConsequtiveHwErrors = 4;
 class VideoDecoderSoftwareFallbackWrapper final : public VideoDecoder {
  public:
   VideoDecoderSoftwareFallbackWrapper(
+      const Environment& env,
       std::unique_ptr<VideoDecoder> sw_fallback_decoder,
-      std::unique_ptr<VideoDecoder> hw_decoder,
-      bool force_sw_decoder_fallback);
+      std::unique_ptr<VideoDecoder> hw_decoder);
   ~VideoDecoderSoftwareFallbackWrapper() override;
 
   bool Configure(const Settings& settings) override;
@@ -79,12 +78,13 @@ class VideoDecoderSoftwareFallbackWrapper final : public VideoDecoder {
 };
 
 VideoDecoderSoftwareFallbackWrapper::VideoDecoderSoftwareFallbackWrapper(
+    const Environment& env,
     std::unique_ptr<VideoDecoder> sw_fallback_decoder,
-    std::unique_ptr<VideoDecoder> hw_decoder,
-    bool force_sw_decoder_fallback)
+    std::unique_ptr<VideoDecoder> hw_decoder)
     : decoder_type_(DecoderType::kNone),
       hw_decoder_(std::move(hw_decoder)),
-      force_sw_decoder_fallback_(force_sw_decoder_fallback),
+      force_sw_decoder_fallback_(
+          env.field_trials().IsEnabled("WebRTC-Video-ForcedSwDecoderFallback")),
       fallback_decoder_(std::move(sw_fallback_decoder)),
       fallback_implementation_name_(
           fallback_decoder_->GetDecoderInfo().implementation_name +
@@ -169,10 +169,6 @@ void VideoDecoderSoftwareFallbackWrapper::UpdateFallbackDecoderHistograms() {
       break;
     case kVideoCodecH264:
       RTC_HISTOGRAM_COUNTS_100000(kFallbackHistogramsUmaPrefix + "H264",
-                                  hw_decoded_frames_since_last_fallback_);
-      break;
-    case kVideoCodecMultiplex:
-      RTC_HISTOGRAM_COUNTS_100000(kFallbackHistogramsUmaPrefix + "Multiplex",
                                   hw_decoded_frames_since_last_fallback_);
       break;
     case kVideoCodecH265:
@@ -285,16 +281,7 @@ std::unique_ptr<VideoDecoder> CreateVideoDecoderSoftwareFallbackWrapper(
     std::unique_ptr<VideoDecoder> sw_fallback_decoder,
     std::unique_ptr<VideoDecoder> hw_decoder) {
   return std::make_unique<VideoDecoderSoftwareFallbackWrapper>(
-      std::move(sw_fallback_decoder), std::move(hw_decoder),
-      env.field_trials().IsEnabled("WebRTC-Video-ForcedSwDecoderFallback"));
-}
-
-std::unique_ptr<VideoDecoder> CreateVideoDecoderSoftwareFallbackWrapper(
-    std::unique_ptr<VideoDecoder> sw_fallback_decoder,
-    std::unique_ptr<VideoDecoder> hw_decoder) {
-  return std::make_unique<VideoDecoderSoftwareFallbackWrapper>(
-      std::move(sw_fallback_decoder), std::move(hw_decoder),
-      webrtc::field_trial::IsEnabled("WebRTC-Video-ForcedSwDecoderFallback"));
+      env, std::move(sw_fallback_decoder), std::move(hw_decoder));
 }
 
 }  // namespace webrtc

@@ -29,6 +29,10 @@ no_check_targets = [
 
   # TODO(crbug.com/1151236) Remove once fixed.
   "//base/allocator/partition_allocator:partition_alloc",
+
+  # TODO: crbug/326607005 - GTEST_HAS_ABSL is broken
+  "//third_party/googletest:gmock",
+  "//third_party/googletest:gtest",
 ]
 
 # These are the list of GN files that run exec_script. This whitelist exists

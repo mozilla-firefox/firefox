@@ -40,8 +40,6 @@
 #include "modules/audio_device/include/audio_device.h"
 #include "modules/audio_mixer/audio_mixer_impl.h"
 #include "modules/video_coding/codecs/h264/include/h264.h"
-#include "modules/video_coding/codecs/multiplex/include/multiplex_decoder_adapter.h"
-#include "modules/video_coding/codecs/multiplex/include/multiplex_encoder_adapter.h"
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/utility/ivf_file_writer.h"
@@ -297,10 +295,7 @@ std::unique_ptr<VideoDecoder> VideoQualityTest::CreateVideoDecoder(
     const Environment& env,
     const SdpVideoFormat& format) {
   std::unique_ptr<VideoDecoder> decoder;
-  if (format.name == "multiplex") {
-    decoder = std::make_unique<MultiplexDecoderAdapter>(
-        env, decoder_factory_.get(), SdpVideoFormat(cricket::kVp9CodecName));
-  } else if (format.name == "FakeCodec") {
+  if (format.name == "FakeCodec") {
     decoder = webrtc::FakeVideoDecoderFactory::CreateVideoDecoder();
   } else {
     decoder = decoder_factory_->Create(env, format);
@@ -323,9 +318,6 @@ std::unique_ptr<VideoEncoder> VideoQualityTest::CreateVideoEncoder(
   if (format.name == "VP8") {
     encoder = std::make_unique<SimulcastEncoderAdapter>(encoder_factory_.get(),
                                                         format);
-  } else if (format.name == "multiplex") {
-    encoder = std::make_unique<MultiplexEncoderAdapter>(
-        encoder_factory_.get(), SdpVideoFormat(cricket::kVp9CodecName));
   } else if (format.name == "FakeCodec") {
     encoder = webrtc::FakeVideoEncoderFactory::CreateVideoEncoder();
   } else {
@@ -723,8 +715,6 @@ void VideoQualityTest::SetupVideo(Transport* send_transport,
     } else if (params_.video[video_idx].codec == "VP8") {
       payload_type = test::VideoTestConstants::kPayloadTypeVP8;
     } else if (params_.video[video_idx].codec == "VP9") {
-      payload_type = test::VideoTestConstants::kPayloadTypeVP9;
-    } else if (params_.video[video_idx].codec == "multiplex") {
       payload_type = test::VideoTestConstants::kPayloadTypeVP9;
     } else if (params_.video[video_idx].codec == "FakeCodec") {
       payload_type = test::VideoTestConstants::kFakeVideoSendPayloadType;

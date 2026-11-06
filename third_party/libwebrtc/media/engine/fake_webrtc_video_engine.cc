@@ -95,8 +95,8 @@ FakeWebRtcVideoDecoderFactory::GetSupportedFormats() const {
   return formats;
 }
 
-std::unique_ptr<webrtc::VideoDecoder>
-FakeWebRtcVideoDecoderFactory::CreateVideoDecoder(
+std::unique_ptr<webrtc::VideoDecoder> FakeWebRtcVideoDecoderFactory::Create(
+    const webrtc::Environment& env,
     const webrtc::SdpVideoFormat& format) {
   if (format.IsCodecInList(supported_codec_formats_)) {
     num_created_decoders_++;

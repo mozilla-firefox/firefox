@@ -45,7 +45,6 @@
 #include "media/engine/webrtc_video_engine.h"
 #include "modules/video_coding/codecs/av1/libaom_av1_encoder.h"
 #include "modules/video_coding/codecs/h264/include/h264.h"
-#include "modules/video_coding/codecs/multiplex/include/multiplex_encoder_adapter.h"
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 #include "modules/video_coding/codecs/vp9/include/vp9_globals.h"
@@ -8817,16 +8816,6 @@ class VideoStreamEncoderWithRealEncoderTest
       case kVideoCodecH264:
         encoder = H264Encoder::Create();
         break;
-      case kVideoCodecMultiplex:
-        mock_encoder_factory_for_multiplex_ =
-            std::make_unique<MockVideoEncoderFactory>();
-        EXPECT_CALL(*mock_encoder_factory_for_multiplex_, Die);
-        EXPECT_CALL(*mock_encoder_factory_for_multiplex_, CreateVideoEncoder)
-            .WillRepeatedly([] { return VP8Encoder::Create(); });
-        encoder = std::make_unique<MultiplexEncoderAdapter>(
-            mock_encoder_factory_for_multiplex_.get(), SdpVideoFormat("VP8"),
-            false);
-        break;
       case kVideoCodecH265:
         // TODO(bugs.webrtc.org/13485): Use a fake encoder
         break;
@@ -8908,11 +8897,6 @@ TEST_P(VideoStreamEncoderWithRealEncoderTest, EncoderMapsNativeNV12) {
 }
 
 TEST_P(VideoStreamEncoderWithRealEncoderTest, HandlesLayerToggling) {
-  if (codec_type_ == kVideoCodecMultiplex) {
-    // Multiplex codec here uses wrapped mock codecs, ignore for this test.
-    return;
-  }
-
   const size_t kNumSpatialLayers = 3u;
   const float kDownscaleFactors[] = {4.0, 2.0, 1.0};
   const int kFrameWidth = 1280;
@@ -9045,8 +9029,6 @@ constexpr std::pair<VideoCodecType, bool> kVP9DisallowConversion =
     std::make_pair(kVideoCodecVP9, /*allow_i420_conversion=*/false);
 constexpr std::pair<VideoCodecType, bool> kAV1AllowConversion =
     std::make_pair(kVideoCodecAV1, /*allow_i420_conversion=*/false);
-constexpr std::pair<VideoCodecType, bool> kMultiplexDisallowConversion =
-    std::make_pair(kVideoCodecMultiplex, /*allow_i420_conversion=*/false);
 #if defined(WEBRTC_USE_H264)
 constexpr std::pair<VideoCodecType, bool> kH264AllowConversion =
     std::make_pair(kVideoCodecH264, /*allow_i420_conversion=*/true);
@@ -9060,7 +9042,6 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(kVP8DisallowConversion,
                       kVP9DisallowConversion,
                       kAV1AllowConversion,
-                      kMultiplexDisallowConversion,
                       kH264AllowConversion),
     TestParametersVideoCodecAndAllowI420ConversionToString);
 #else
@@ -9069,8 +9050,7 @@ INSTANTIATE_TEST_SUITE_P(
     VideoStreamEncoderWithRealEncoderTest,
     ::testing::Values(kVP8DisallowConversion,
                       kVP9DisallowConversion,
-                      kAV1AllowConversion,
-                      kMultiplexDisallowConversion),
+                      kAV1AllowConversion),
     TestParametersVideoCodecAndAllowI420ConversionToString);
 #endif
 

@@ -208,9 +208,6 @@ CreateEncoderSpecificSettings(VideoStreamConfig config) {
     case Codec::kVideoCodecAV1:
     case Codec::kVideoCodecH265:
       return nullptr;
-    case Codec::kVideoCodecMultiplex:
-      RTC_DCHECK_NOTREACHED();
-      return nullptr;
   }
 }
 

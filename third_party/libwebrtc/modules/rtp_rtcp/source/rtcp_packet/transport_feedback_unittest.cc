@@ -14,6 +14,7 @@
 #include <memory>
 #include <utility>
 
+#include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"

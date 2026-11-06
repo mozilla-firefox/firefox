@@ -14,18 +14,20 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 
 namespace webrtc {
 struct LibvpxVp8DecoderTemplateAdapter {
   static std::vector<SdpVideoFormat> SupportedFormats() {
-    return {SdpVideoFormat("VP8")};
+    return {SdpVideoFormat::VP8()};
   }
 
   static std::unique_ptr<VideoDecoder> CreateDecoder(
+      const Environment& env,
       const SdpVideoFormat& format) {
-    return VP8Decoder::Create();
+    return CreateVp8Decoder(env);
   }
 };
 }  // namespace webrtc

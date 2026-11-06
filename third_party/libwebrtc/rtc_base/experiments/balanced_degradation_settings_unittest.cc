@@ -70,7 +70,6 @@ TEST(BalancedDegradationSettings, GetsDefaultConfigIfNoList) {
   EXPECT_FALSE(settings.GetQpThresholds(kVideoCodecH264, 1));
   EXPECT_FALSE(settings.GetQpThresholds(kVideoCodecAV1, 1));
   EXPECT_FALSE(settings.GetQpThresholds(kVideoCodecGeneric, 1));
-  EXPECT_FALSE(settings.GetQpThresholds(kVideoCodecMultiplex, 1));
 }
 
 TEST(BalancedDegradationSettings, GetsConfig) {
@@ -399,7 +398,6 @@ TEST(BalancedDegradationSettings, CanAdaptUpWithCodecType) {
   EXPECT_TRUE(s.CanAdaptUp(kVideoCodecAV1, 1000, 77000));
   EXPECT_FALSE(s.CanAdaptUp(kVideoCodecGeneric, 1000, 24000));
   EXPECT_TRUE(s.CanAdaptUp(kVideoCodecGeneric, 1000, 25000));
-  EXPECT_TRUE(s.CanAdaptUp(kVideoCodecMultiplex, 1000, 1));  // Not configured.
 }
 
 TEST(BalancedDegradationSettings, CanAdaptUpResolution) {
@@ -435,8 +433,6 @@ TEST(BalancedDegradationSettings, CanAdaptUpResolutionWithCodecType) {
   EXPECT_TRUE(s.CanAdaptUpResolution(kVideoCodecAV1, 1000, 77000));
   EXPECT_FALSE(s.CanAdaptUpResolution(kVideoCodecGeneric, 1000, 24000));
   EXPECT_TRUE(s.CanAdaptUpResolution(kVideoCodecGeneric, 1000, 25000));
-  EXPECT_TRUE(s.CanAdaptUpResolution(kVideoCodecMultiplex, 1000,
-                                     1));  // Not configured.
 }
 
 TEST(BalancedDegradationSettings, GetsFpsDiff) {

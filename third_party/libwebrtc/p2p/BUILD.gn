@@ -421,10 +421,13 @@ rtc_library("dtls_transport") {
     "../rtc_base:checks",
     "../rtc_base:dscp",
     "../rtc_base:logging",
+    "../rtc_base:socket_address",
     "../rtc_base:ssl",
     "../rtc_base:stream",
     "../rtc_base:stringutils",
     "../rtc_base:threading",
+    "../rtc_base:timeutils",
+    "../rtc_base/network:received_packet",
     "../rtc_base/system:no_unique_address",
   ]
   absl_deps = [
@@ -586,7 +589,6 @@ rtc_library("p2p_transport_channel") {
     "../logging:ice_log",
     "../rtc_base:async_packet_socket",
     "../rtc_base:checks",
-    "../rtc_base:crc32",
     "../rtc_base:dscp",
     "../rtc_base:event_tracer",
     "../rtc_base:ip_address",
@@ -629,13 +631,19 @@ rtc_library("packet_transport_internal") {
   deps = [
     ":connection",
     ":port",
+    "../api:sequence_checker",
     "../rtc_base:async_packet_socket",
+    "../rtc_base:callback_list",
     "../rtc_base:network_route",
     "../rtc_base:socket",
+    "../rtc_base/network:received_packet",
     "../rtc_base/system:rtc_export",
     "../rtc_base/third_party/sigslot",
   ]
-  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/functional:any_invocable",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
 }
 
 rtc_library("port") {
@@ -666,7 +674,6 @@ rtc_library("port") {
     "../rtc_base:byte_buffer",
     "../rtc_base:callback_list",
     "../rtc_base:checks",
-    "../rtc_base:crc32",
     "../rtc_base:dscp",
     "../rtc_base:event_tracer",
     "../rtc_base:ip_address",
@@ -1017,6 +1024,8 @@ if (rtc_include_tests) {
       "../api/units:time_delta",
       "../rtc_base:copy_on_write_buffer",
       "../rtc_base:task_queue_for_test",
+      "../rtc_base:timeutils",
+      "../rtc_base/network:received_packet",
     ]
     absl_deps = [
       "//third_party/abseil-cpp/absl/algorithm:container",
@@ -1091,6 +1100,7 @@ if (rtc_include_tests) {
       "../rtc_base:socket_server",
       "../rtc_base:ssl",
       "../rtc_base:threading",
+      "../rtc_base/network:received_packet",
       "../rtc_base/third_party/sigslot",
       "../test:test_support",
     ]
@@ -1109,6 +1119,7 @@ if (rtc_include_tests) {
       "base/dtls_transport_unittest.cc",
       "base/ice_credentials_iterator_unittest.cc",
       "base/p2p_transport_channel_unittest.cc",
+      "base/packet_transport_internal_unittest.cc",
       "base/port_allocator_unittest.cc",
       "base/port_unittest.cc",
       "base/pseudo_tcp_unittest.cc",

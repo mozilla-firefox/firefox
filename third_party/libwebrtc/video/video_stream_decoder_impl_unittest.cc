@@ -131,12 +131,13 @@ class VideoStreamDecoderImplTest : public ::testing::Test {
  public:
   VideoStreamDecoderImplTest()
       : time_controller_(Timestamp::Seconds(0)),
-        video_stream_decoder_(&callbacks_,
-                              &decoder_factory_,
-                              time_controller_.GetTaskQueueFactory(),
-                              {{1, std::make_pair(SdpVideoFormat("VP8"), 1)},
-                               {2, std::make_pair(SdpVideoFormat("AV1"), 1)}},
-                              &field_trials_) {
+        video_stream_decoder_(
+            &callbacks_,
+            &decoder_factory_,
+            time_controller_.GetTaskQueueFactory(),
+            {{1, std::make_pair(SdpVideoFormat::VP8(), 1)},
+             {2, std::make_pair(SdpVideoFormat::AV1Profile0(), 1)}},
+            &field_trials_) {
     // Set the min playout delay to a value greater than zero to not activate
     // the low-latency renderer.
     video_stream_decoder_.SetMinPlayoutDelay(TimeDelta::Millis(10));

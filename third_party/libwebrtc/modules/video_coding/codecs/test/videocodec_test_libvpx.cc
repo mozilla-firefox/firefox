@@ -366,7 +366,7 @@ TEST(VideoCodecTestLibvpx, MAYBE_SimulcastVP8) {
   std::unique_ptr<VideoEncoderFactory> adapted_encoder_factory =
       std::make_unique<FunctionVideoEncoderFactory>([&]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat(cricket::kVp8CodecName));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
   std::unique_ptr<InternalDecoderFactory> internal_decoder_factory(
       new InternalDecoderFactory());

@@ -53,6 +53,7 @@ rtc_library("frame_generator_impl") {
     "../api:frame_generator_api",
     "../api:scoped_refptr",
     "../api:sequence_checker",
+    "../api/environment:environment_factory",
     "../api/video:encoded_image",
     "../api/video:video_frame",
     "../api/video:video_frame_i010",

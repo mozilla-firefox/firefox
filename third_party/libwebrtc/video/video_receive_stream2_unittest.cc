@@ -238,7 +238,7 @@ class VideoReceiveStream2Test : public ::testing::TestWithParam<bool> {
     config_.renderer = &fake_renderer_;
     VideoReceiveStreamInterface::Decoder h264_decoder;
     h264_decoder.payload_type = 99;
-    h264_decoder.video_format = SdpVideoFormat("H264");
+    h264_decoder.video_format = SdpVideoFormat::H264();
     h264_decoder.video_format.parameters.insert(
         {"sprop-parameter-sets", "Z0IACpZTBYmI,aMljiA=="});
     VideoReceiveStreamInterface::Decoder h265_decoder;

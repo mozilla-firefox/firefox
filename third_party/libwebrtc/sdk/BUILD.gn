@@ -1178,6 +1178,7 @@ if (is_ios || is_mac) {
             "../api:scoped_refptr",
             "../api/audio_codecs:builtin_audio_decoder_factory",
             "../api/audio_codecs:builtin_audio_encoder_factory",
+            "../api/environment:environment_factory",
             "../api/task_queue:default_task_queue_factory",
             "../api/video:video_frame",
             "../api/video_codecs:video_codecs_api",
@@ -1544,8 +1545,9 @@ if (is_ios || is_mac) {
 
     rtc_library("wrapped_native_codec_objc") {
       sources = [
-        "objc/api/video_codec/RTCWrappedNativeVideoDecoder.h",
-        "objc/api/video_codec/RTCWrappedNativeVideoDecoder.mm",
+        "objc/api/video_codec/RTCNativeVideoDecoder.h",
+        "objc/api/video_codec/RTCNativeVideoDecoder.mm",
+        "objc/api/video_codec/RTCNativeVideoDecoderBuilder+Native.h",
         "objc/api/video_codec/RTCWrappedNativeVideoEncoder.h",
         "objc/api/video_codec/RTCWrappedNativeVideoEncoder.mm",
       ]
@@ -1556,9 +1558,10 @@ if (is_ios || is_mac) {
       deps = [
         ":base_objc",
         ":helpers_objc",
+        "../api/environment",
         "../api/video_codecs:video_codecs_api",
         "../media:codec",
-        "../media:rtc_media_base",
+        "../rtc_base:checks",
       ]
     }
 
@@ -1667,6 +1670,7 @@ if (is_ios || is_mac) {
         ":vpx_codec_constants",
         ":wrapped_native_codec_objc",
         "../api:make_ref_counted",
+        "../api/environment",
         "../api/video:video_frame",
         "../api/video:video_rtp_headers",
         "../api/video_codecs:video_codecs_api",

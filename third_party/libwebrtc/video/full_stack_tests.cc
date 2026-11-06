@@ -147,33 +147,6 @@ TEST(FullStackTest, Generator_Net_Delay_0_0_Plr_0_VP9Profile2) {
   fixture->RunWithAnalyzer(generator);
 }
 
-TEST(FullStackTest, Foreman_Cif_Net_Delay_0_0_Plr_0_Multiplex) {
-  auto fixture = CreateVideoQualityTestFixture();
-  ParamsWithLogging foreman_cif;
-  foreman_cif.call.send_side_bwe = true;
-  foreman_cif.video[0] = {
-      true,        352,    288,    30,
-      700000,      700000, 700000, false,
-      "multiplex", 1,      0,      0,
-      false,       false,  false,  ClipNameToClipPath("foreman_cif")};
-  foreman_cif.analyzer = {"foreman_cif_net_delay_0_0_plr_0_Multiplex", 0.0, 0.0,
-                          kFullStackTestDurationSecs};
-  fixture->RunWithAnalyzer(foreman_cif);
-}
-
-TEST(FullStackTest, Generator_Net_Delay_0_0_Plr_0_Multiplex) {
-  auto fixture = CreateVideoQualityTestFixture();
-
-  ParamsWithLogging generator;
-  generator.call.send_side_bwe = true;
-  generator.video[0] = {
-      true,        352, 288, 30, 700000, 700000, 700000, false,
-      "multiplex", 1,   0,   0,  false,  false,  false,  "GeneratorI420A"};
-  generator.analyzer = {"generator_net_delay_0_0_plr_0_Multiplex", 0.0, 0.0,
-                        kFullStackTestDurationSecs};
-  fixture->RunWithAnalyzer(generator);
-}
-
 #endif  // defined(RTC_ENABLE_VP9)
 
 #if defined(WEBRTC_LINUX)

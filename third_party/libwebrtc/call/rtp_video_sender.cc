@@ -31,7 +31,6 @@
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/task_queue.h"
 #include "rtc_base/trace_event.h"
 
 namespace webrtc {

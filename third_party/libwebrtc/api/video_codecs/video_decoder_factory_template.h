@@ -12,10 +12,12 @@
 #define API_VIDEO_CODECS_VIDEO_DECODER_FACTORY_TEMPLATE_H_
 
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 #include "absl/algorithm/container.h"
 #include "api/array_view.h"
+#include "api/environment/environment.h"
 #include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_decoder_factory.h"
 
@@ -31,7 +33,8 @@ namespace webrtc {
 //
 //   // Creates a decoder instance for the given format.
 //   static std::unique_ptr<VideoDecoder>
-//       CreateDecoder(const SdpVideoFormat& format);
+//       CreateDecoder(const Environment& env,
+//                     const SdpVideoFormat& format);
 //
 // Note that the order of the template arguments matter as the factory will
 // return the first decoder implementation supporting the given SdpVideoFormat.
@@ -42,9 +45,9 @@ class VideoDecoderFactoryTemplate : public VideoDecoderFactory {
     return GetSupportedFormatsInternal<Ts...>();
   }
 
-  std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      const SdpVideoFormat& format) override {
-    return CreateVideoDecoderInternal<Ts...>(format);
+  std::unique_ptr<VideoDecoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
+    return CreateVideoDecoderInternal<Ts...>(env, format);
   }
 
  private:
@@ -77,13 +80,21 @@ class VideoDecoderFactoryTemplate : public VideoDecoderFactory {
 
   template <typename V, typename... Vs>
   std::unique_ptr<VideoDecoder> CreateVideoDecoderInternal(
+      const Environment& env,
       const SdpVideoFormat& format) {
     if (IsFormatInList(format, V::SupportedFormats())) {
-      return V::CreateDecoder(format);
+      if constexpr (std::is_invocable_r_v<std::unique_ptr<VideoDecoder>,
+                                          decltype(V::CreateDecoder),
+                                          const Environment&,
+                                          const SdpVideoFormat&>) {
+        return V::CreateDecoder(env, format);
+      } else {
+        return V::CreateDecoder(format);
+      }
     }
 
     if constexpr (sizeof...(Vs) > 0) {
-      return CreateVideoDecoderInternal<Vs...>(format);
+      return CreateVideoDecoderInternal<Vs...>(env, format);
     }
 
     return nullptr;

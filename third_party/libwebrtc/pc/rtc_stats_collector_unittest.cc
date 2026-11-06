@@ -216,16 +216,13 @@ std::unique_ptr<cricket::Candidate> CreateFakeCandidate(
     uint32_t priority,
     const rtc::AdapterType underlying_type_for_vpn =
         rtc::ADAPTER_TYPE_UNKNOWN) {
-  std::unique_ptr<cricket::Candidate> candidate(new cricket::Candidate());
-  candidate->set_address(rtc::SocketAddress(hostname, port));
-  candidate->set_protocol(protocol);
+  std::unique_ptr<cricket::Candidate> candidate(new cricket::Candidate(
+      cricket::ICE_CANDIDATE_COMPONENT_RTP, protocol,
+      rtc::SocketAddress(hostname, port), priority, "iceusernamefragment",
+      "" /* pwd */, candidate_type, 0 /* generation */, "foundationIsAString"));
+
   candidate->set_network_type(adapter_type);
   candidate->set_underlying_type_for_vpn(underlying_type_for_vpn);
-  candidate->set_type(candidate_type);
-  candidate->set_priority(priority);
-  // Defaults for testing.
-  candidate->set_foundation("foundationIsAString");
-  candidate->set_username("iceusernamefragment");
   return candidate;
 }
 
@@ -498,6 +495,7 @@ class RTCStatsCollectorWrapper {
         CreateMockSender(media_type, track, ssrc, attachment_id, {});
     EXPECT_CALL(*sender, Stop());
     EXPECT_CALL(*sender, SetMediaChannel(_));
+    EXPECT_CALL(*sender, SetSendCodecs(_));
     pc_->AddSender(sender);
     return sender;
   }
@@ -574,6 +572,7 @@ class RTCStatsCollectorWrapper {
           voice_sender_info.local_stats[0].ssrc + 10, local_stream_ids);
       EXPECT_CALL(*rtp_sender, SetMediaChannel(_)).WillRepeatedly(Return());
       EXPECT_CALL(*rtp_sender, Stop());
+      EXPECT_CALL(*rtp_sender, SetSendCodecs(_));
       pc_->AddSender(rtp_sender);
     }
 
@@ -612,6 +611,7 @@ class RTCStatsCollectorWrapper {
           video_sender_info.local_stats[0].ssrc + 10, local_stream_ids);
       EXPECT_CALL(*rtp_sender, SetMediaChannel(_)).WillRepeatedly(Return());
       EXPECT_CALL(*rtp_sender, Stop());
+      EXPECT_CALL(*rtp_sender, SetSendCodecs(_));
       pc_->AddSender(rtp_sender);
     }
 
@@ -3092,6 +3092,7 @@ TEST_F(RTCStatsCollectorTest, RTCVideoSourceStatsCollectedForSenderWithTrack) {
       cricket::MEDIA_TYPE_VIDEO, video_track, kSsrc, kAttachmentId, {});
   EXPECT_CALL(*sender, Stop());
   EXPECT_CALL(*sender, SetMediaChannel(_));
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
@@ -3136,6 +3137,7 @@ TEST_F(RTCStatsCollectorTest,
       cricket::MEDIA_TYPE_VIDEO, video_track, kNoSsrc, kAttachmentId, {});
   EXPECT_CALL(*sender, Stop());
   EXPECT_CALL(*sender, SetMediaChannel(_));
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
@@ -3166,6 +3168,7 @@ TEST_F(RTCStatsCollectorTest,
       cricket::MEDIA_TYPE_VIDEO, video_track, kSsrc, kAttachmentId, {});
   EXPECT_CALL(*sender, Stop());
   EXPECT_CALL(*sender, SetMediaChannel(_));
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
@@ -3189,6 +3192,7 @@ TEST_F(RTCStatsCollectorTest,
       cricket::MEDIA_TYPE_AUDIO, /*track=*/nullptr, kSsrc, kAttachmentId, {});
   EXPECT_CALL(*sender, Stop());
   EXPECT_CALL(*sender, SetMediaChannel(_));
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
@@ -3541,6 +3545,7 @@ TEST_F(RTCStatsCollectorTest,
       cricket::MEDIA_TYPE_VIDEO, /*track=*/nullptr, kSsrc, kAttachmentId, {});
   EXPECT_CALL(*sender, Stop());
   EXPECT_CALL(*sender, SetMediaChannel(_));
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
@@ -3662,6 +3667,7 @@ TEST_F(RTCStatsCollectorTest, RtpIsMissingWhileSsrcIsZero) {
   rtc::scoped_refptr<MockRtpSenderInternal> sender =
       CreateMockSender(cricket::MEDIA_TYPE_AUDIO, track, 0, 49, {});
   EXPECT_CALL(*sender, Stop());
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
@@ -3679,11 +3685,11 @@ TEST_F(RTCStatsCollectorTest, DoNotCrashIfSsrcIsKnownButInfosAreStillMissing) {
   rtc::scoped_refptr<MockRtpSenderInternal> sender =
       CreateMockSender(cricket::MEDIA_TYPE_AUDIO, track, 4711, 49, {});
   EXPECT_CALL(*sender, Stop());
+  EXPECT_CALL(*sender, SetSendCodecs(_));
   pc_->AddSender(sender);
 
   // We do not generate any matching voice_sender_info stats.
   rtc::scoped_refptr<const RTCStatsReport> report = stats_->GetStatsReport();
-
   auto outbound_rtps = report->GetStatsOfType<RTCOutboundRtpStreamStats>();
   EXPECT_TRUE(outbound_rtps.empty());
 }

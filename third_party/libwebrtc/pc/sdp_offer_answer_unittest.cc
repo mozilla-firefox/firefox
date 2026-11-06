@@ -1215,4 +1215,31 @@ TEST_F(SdpOfferAnswerTest,
             cricket::kMsidSignalingNotUsed);
 }
 
+TEST_F(SdpOfferAnswerTest, OfferWithRejectedMlineWithoutFingerprintIsAccepted) {
+  auto pc = CreatePeerConnection();
+  // A rejected m-line without fingerprint.
+  // The answer does not require one.
+  std::string sdp =
+      "v=0\r\n"
+      "o=- 0 3 IN IP4 127.0.0.1\r\n"
+      "s=-\r\n"
+      "t=0 0\r\n"
+      "a=setup:actpass\r\n"
+      "a=ice-ufrag:ETEn\r\n"
+      "a=ice-pwd:OtSK0WpNtpUjkY4+86js7Z/l\r\n"
+      "m=audio 0 RTP/SAVPF 111\r\n"
+      "c=IN IP4 0.0.0.0\r\n"
+      "a=sendrecv\r\n"
+      "a=rtpmap:111 opus/48000/2\r\n"
+      "a=rtcp-mux\r\n";
+  auto desc = CreateSessionDescription(SdpType::kOffer, sdp);
+  ASSERT_NE(desc, nullptr);
+  RTCError error;
+  pc->SetRemoteDescription(std::move(desc), &error);
+  EXPECT_TRUE(error.ok());
+
+  auto answer = pc->CreateAnswer();
+  EXPECT_TRUE(pc->SetLocalDescription(std::move(answer)));
+}
+
 }  // namespace webrtc

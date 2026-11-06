@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017 The WebRTC project authors. All Rights Reserved.
+ *  Copyright (c) 2024 The WebRTC project authors. All Rights Reserved.
  *
  *  Use of this source code is governed by a BSD-style license
  *  that can be found in the LICENSE file in the root of the source
@@ -10,27 +10,12 @@
 
 #import <Foundation/Foundation.h>
 
-#import "RTCWrappedNativeVideoDecoder.h"
+#import "RTCNativeVideoDecoder.h"
 #import "base/RTCMacros.h"
 #import "helpers/NSString+StdString.h"
+#include "rtc_base/checks.h"
 
-@implementation RTC_OBJC_TYPE (RTCWrappedNativeVideoDecoder) {
-  std::unique_ptr<webrtc::VideoDecoder> _wrappedDecoder;
-}
-
-- (instancetype)initWithNativeDecoder:(std::unique_ptr<webrtc::VideoDecoder>)decoder {
-  if (self = [super init]) {
-    _wrappedDecoder = std::move(decoder);
-  }
-
-  return self;
-}
-
-- (std::unique_ptr<webrtc::VideoDecoder>)releaseWrappedDecoder {
-  return std::move(_wrappedDecoder);
-}
-
-#pragma mark - RTC_OBJC_TYPE(RTCVideoDecoder)
+@implementation RTC_OBJC_TYPE (RTCNativeVideoDecoder)
 
 - (void)setCallback:(RTCVideoDecoderCallback)callback {
   RTC_DCHECK_NOTREACHED();
@@ -46,7 +31,7 @@
   return 0;
 }
 
-// TODO(bugs.webrtc.org/15444): Remove obsolete missingFrames param.
+// TODO: bugs.webrtc.org/15444 - Remove obsolete missingFrames param.
 - (NSInteger)decode:(RTC_OBJC_TYPE(RTCEncodedImage) *)encodedImage
         missingFrames:(BOOL)missingFrames
     codecSpecificInfo:(nullable id<RTC_OBJC_TYPE(RTCCodecSpecificInfo)>)info

@@ -248,7 +248,7 @@ void RtpSenderBase::SetParametersInternal(const RtpParameters& parameters,
   }
   if (!media_channel_ || !ssrc_) {
     auto result = cricket::CheckRtpParametersInvalidModificationAndValues(
-        init_parameters_, parameters, codec_preferences_, absl::nullopt);
+        init_parameters_, parameters, send_codecs_, absl::nullopt);
     if (result.ok()) {
       init_parameters_ = parameters;
     }
@@ -299,7 +299,7 @@ RTCError RtpSenderBase::SetParametersInternalWithAllLayers(
   }
   if (!media_channel_ || !ssrc_) {
     auto result = cricket::CheckRtpParametersInvalidModificationAndValues(
-        init_parameters_, parameters, codec_preferences_, absl::nullopt);
+        init_parameters_, parameters, send_codecs_, absl::nullopt);
     if (result.ok()) {
       init_parameters_ = parameters;
     }
@@ -345,16 +345,14 @@ RTCError RtpSenderBase::CheckCodecParameters(const RtpParameters& parameters) {
   // the SVC capabilities.
   absl::optional<cricket::Codec> send_codec_with_svc_info;
   if (send_codec && send_codec->type == cricket::Codec::Type::kVideo) {
-    auto codec_match =
-        absl::c_find_if(codec_preferences_, [&](auto& codec_preference) {
-          return send_codec->Matches(codec_preference);
-        });
-    if (codec_match != codec_preferences_.end()) {
+    auto codec_match = absl::c_find_if(
+        send_codecs_, [&](auto& codec) { return send_codec->Matches(codec); });
+    if (codec_match != send_codecs_.end()) {
       send_codec_with_svc_info = *codec_match;
     }
   }
 
-  return cricket::CheckScalabilityModeValues(parameters, codec_preferences_,
+  return cricket::CheckScalabilityModeValues(parameters, send_codecs_,
                                              send_codec_with_svc_info);
 }
 

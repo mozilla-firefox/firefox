@@ -34,7 +34,7 @@ constexpr ExtensionInfo CreateExtensionInfo() {
 
 constexpr ExtensionInfo kExtensions[] = {
     CreateExtensionInfo<TransmissionOffset>(),
-    CreateExtensionInfo<AudioLevel>(),
+    CreateExtensionInfo<AudioLevelExtension>(),
     CreateExtensionInfo<CsrcAudioLevel>(),
     CreateExtensionInfo<AbsoluteSendTime>(),
     CreateExtensionInfo<AbsoluteCaptureTimeExtension>(),

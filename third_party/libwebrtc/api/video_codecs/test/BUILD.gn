@@ -83,6 +83,8 @@ if (rtc_include_tests) {
       "..:video_decoder_factory_template_open_h264_adapter",
       "../../:mock_video_decoder",
       "../../../test:test_support",
+      "../../environment",
+      "../../environment:environment_factory",
       "//testing/gtest",
     ]
   }

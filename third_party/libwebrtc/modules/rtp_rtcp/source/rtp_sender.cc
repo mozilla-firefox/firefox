@@ -89,7 +89,7 @@ constexpr RtpExtensionSize kVideoExtensionSizes[] = {
 constexpr RtpExtensionSize kAudioExtensionSizes[] = {
     CreateExtensionSize<AbsoluteSendTime>(),
     CreateExtensionSize<AbsoluteCaptureTimeExtension>(),
-    CreateExtensionSize<AudioLevel>(),
+    CreateExtensionSize<AudioLevelExtension>(),
     CreateExtensionSize<InbandComfortNoiseExtension>(),
     CreateExtensionSize<TransmissionOffset>(),
     CreateExtensionSize<TransportSequenceNumber>(),

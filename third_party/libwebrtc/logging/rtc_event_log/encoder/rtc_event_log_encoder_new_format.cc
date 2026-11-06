@@ -106,9 +106,6 @@ rtclog2::FrameDecodedEvents::Codec ConvertToProtoFormat(VideoCodecType codec) {
       return rtclog2::FrameDecodedEvents::CODEC_AV1;
     case VideoCodecType::kVideoCodecH264:
       return rtclog2::FrameDecodedEvents::CODEC_H264;
-    case VideoCodecType::kVideoCodecMultiplex:
-      // This codec type is afaik not used.
-      return rtclog2::FrameDecodedEvents::CODEC_UNKNOWN;
     case VideoCodecType::kVideoCodecH265:
       return rtclog2::FrameDecodedEvents::CODEC_H265;
   }
@@ -449,8 +446,8 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
   {
     bool voice_activity;
     uint8_t audio_level;
-    if (base_event->template GetExtension<AudioLevel>(&voice_activity,
-                                                      &audio_level)) {
+    if (base_event->template GetExtension<AudioLevelExtension>(&voice_activity,
+                                                               &audio_level)) {
       RTC_DCHECK_LE(audio_level, 0x7Fu);
       base_audio_level = audio_level;
       proto_batch->set_audio_level(audio_level);
@@ -646,8 +643,8 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
     const EventType* event = batch[i + 1];
     bool voice_activity;
     uint8_t audio_level;
-    if (event->template GetExtension<AudioLevel>(&voice_activity,
-                                                 &audio_level)) {
+    if (event->template GetExtension<AudioLevelExtension>(&voice_activity,
+                                                          &audio_level)) {
       RTC_DCHECK_LE(audio_level, 0x7Fu);
       values[i] = audio_level;
     } else {
@@ -664,8 +661,8 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
     const EventType* event = batch[i + 1];
     bool voice_activity;
     uint8_t audio_level;
-    if (event->template GetExtension<AudioLevel>(&voice_activity,
-                                                 &audio_level)) {
+    if (event->template GetExtension<AudioLevelExtension>(&voice_activity,
+                                                          &audio_level)) {
       RTC_DCHECK_LE(audio_level, 0x7Fu);
       values[i] = voice_activity;
     } else {

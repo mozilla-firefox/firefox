@@ -31,9 +31,6 @@ TEST(GetExperimentalMinVideoBitrateTest,
             absl::nullopt);
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::nullopt);
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
@@ -49,9 +46,6 @@ TEST(GetExperimentalMinVideoBitrateTest,
             absl::nullopt);
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::nullopt);
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest, BrForAllCodecsIfDefined) {
@@ -66,9 +60,6 @@ TEST(GetExperimentalMinVideoBitrateTest, BrForAllCodecsIfDefined) {
             absl::make_optional(DataRate::KilobitsPerSec(123)));
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::make_optional(DataRate::KilobitsPerSec(123)));
 }
 
 TEST(GetExperimentalMinVideoBitrateTest, BrTrumpsSpecificCodecConfigs) {
@@ -84,9 +75,6 @@ TEST(GetExperimentalMinVideoBitrateTest, BrTrumpsSpecificCodecConfigs) {
             absl::make_optional(DataRate::KilobitsPerSec(123)));
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::make_optional(DataRate::KilobitsPerSec(123)));
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
@@ -103,9 +91,6 @@ TEST(GetExperimentalMinVideoBitrateTest,
             absl::nullopt);
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::nullopt);
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest, SpecificCodecConfigsUsedIfExpEnabled) {
@@ -121,9 +106,6 @@ TEST(GetExperimentalMinVideoBitrateTest, SpecificCodecConfigsUsedIfExpEnabled) {
             absl::make_optional(DataRate::KilobitsPerSec(200)));
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::make_optional(DataRate::KilobitsPerSec(300)));
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
@@ -152,9 +134,6 @@ TEST(GetExperimentalMinVideoBitrateTest,
             absl::make_optional(DataRate::KilobitsPerSec(200)));
   EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
             absl::make_optional(DataRate::KilobitsPerSec(300)));
-  EXPECT_EQ(
-      GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecMultiplex),
-      absl::nullopt);
 }
 
 }  // namespace

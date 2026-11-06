@@ -27,6 +27,7 @@
 #include "p2p/base/packet_transport_internal.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/thread.h"
@@ -605,8 +606,11 @@ void DcSctpTransport::ConnectTransportSignals() {
   }
   transport_->SignalWritableState.connect(
       this, &DcSctpTransport::OnTransportWritableState);
-  transport_->SignalReadPacket.connect(this,
-                                       &DcSctpTransport::OnTransportReadPacket);
+  transport_->RegisterReceivedPacketCallback(
+      this, [&](rtc::PacketTransportInternal* transport,
+                const rtc::ReceivedPacket& packet) {
+        OnTransportReadPacket(transport, packet);
+      });
   transport_->SignalClosed.connect(this, &DcSctpTransport::OnTransportClosed);
 }
 
@@ -616,7 +620,7 @@ void DcSctpTransport::DisconnectTransportSignals() {
     return;
   }
   transport_->SignalWritableState.disconnect(this);
-  transport_->SignalReadPacket.disconnect(this);
+  transport_->DeregisterReceivedPacketCallback(this);
   transport_->SignalClosed.disconnect(this);
 }
 
@@ -632,21 +636,17 @@ void DcSctpTransport::OnTransportWritableState(
 
 void DcSctpTransport::OnTransportReadPacket(
     rtc::PacketTransportInternal* transport,
-    const char* data,
-    size_t length,
-    const int64_t& /* packet_time_us */,
-    int flags) {
+    const rtc::ReceivedPacket& packet) {
   RTC_DCHECK_RUN_ON(network_thread_);
-  if (flags) {
+  if (packet.decryption_info() != rtc::ReceivedPacket::kDtlsDecrypted) {
     // We are only interested in SCTP packets.
     return;
   }
 
-  RTC_DLOG(LS_VERBOSE) << debug_name_
-                       << "->OnTransportReadPacket(), length=" << length;
+  RTC_DLOG(LS_VERBOSE) << debug_name_ << "->OnTransportReadPacket(), length="
+                       << packet.payload().size();
   if (socket_) {
-    socket_->ReceivePacket(rtc::ArrayView<const uint8_t>(
-        reinterpret_cast<const uint8_t*>(data), length));
+    socket_->ReceivePacket(packet.payload());
   }
 }
 

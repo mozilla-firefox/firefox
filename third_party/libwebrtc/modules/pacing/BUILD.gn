@@ -50,7 +50,6 @@ rtc_library("pacing") {
     "../../rtc_base:logging",
     "../../rtc_base:macromagic",
     "../../rtc_base:rtc_numerics",
-    "../../rtc_base:rtc_task_queue",
     "../../rtc_base:timeutils",
     "../../rtc_base/experiments:field_trial_parser",
     "../../rtc_base/synchronization:mutex",

@@ -374,18 +374,6 @@ class RTC_EXPORT Port : public PortInterface, public sigslot::has_slots<> {
 
   void GetStunStats(absl::optional<StunStats>* stats) override {}
 
-  // Foundation:  An arbitrary string that is the same for two candidates
-  //   that have the same type, base IP address, protocol (UDP, TCP,
-  //   etc.), and STUN or TURN server.  If any of these are different,
-  //   then the foundation will be different.  Two candidate pairs with
-  //   the same foundation pairs are likely to have similar network
-  //   characteristics. Foundations are used in the frozen algorithm.
-  std::string ComputeFoundation(
-      absl::string_view type,
-      absl::string_view protocol,
-      absl::string_view relay_protocol,
-      const rtc::SocketAddress& base_address) override;
-
  protected:
   void UpdateNetworkCost() override;
 

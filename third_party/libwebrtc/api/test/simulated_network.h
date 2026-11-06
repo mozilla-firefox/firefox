@@ -60,8 +60,8 @@ struct BuiltInNetworkBehaviorConfig {
   int delay_standard_deviation_ms = 0;
   // Link capacity in kbps.
   int link_capacity_kbps = 0;
-  // Random packet loss.
-  int loss_percent = 0;
+  // Random packet loss, range 0 to 100.
+  double loss_percent = 0.;
   // If packets are allowed to be reordered.
   bool allow_reordering = false;
   // The average length of a burst of lost packets.

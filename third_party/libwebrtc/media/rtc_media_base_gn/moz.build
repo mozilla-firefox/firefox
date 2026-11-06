@@ -33,8 +33,7 @@ LOCAL_INCLUDES += [
 UNIFIED_SOURCES += [
     "/third_party/libwebrtc/media/base/video_adapter.cc",
     "/third_party/libwebrtc/media/base/video_broadcaster.cc",
-    "/third_party/libwebrtc/media/base/video_common.cc",
-    "/third_party/libwebrtc/media/base/video_source_base.cc"
+    "/third_party/libwebrtc/media/base/video_common.cc"
 ]
 
 if not CONFIG["MOZ_DEBUG"]:

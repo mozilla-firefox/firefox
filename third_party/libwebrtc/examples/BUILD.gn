@@ -60,10 +60,6 @@ group("examples") {
       deps += [ ":peerconnection_client" ]
     }
   }
-
-  if (is_android || is_win) {
-    deps += [ ":webrtc_unity_plugin" ]
-  }
 }
 
 rtc_library("read_auth_file") {
@@ -838,94 +834,7 @@ if (is_linux || is_chromeos || is_win) {
   }
 }
 
-if (is_win || is_android) {
-  rtc_shared_library("webrtc_unity_plugin") {
-    testonly = true
-    sources = [
-      "unityplugin/simple_peer_connection.cc",
-      "unityplugin/simple_peer_connection.h",
-      "unityplugin/unity_plugin_apis.cc",
-      "unityplugin/unity_plugin_apis.h",
-      "unityplugin/video_observer.cc",
-      "unityplugin/video_observer.h",
-    ]
-
-    if (is_android) {
-      sources += [
-        "unityplugin/class_reference_holder.cc",
-        "unityplugin/class_reference_holder.h",
-        "unityplugin/jni_onload.cc",
-      ]
-      suppressed_configs += [ "//build/config/android:hide_all_but_jni_onload" ]
-    }
-
-    if (is_win) {
-      configs += [ "//build/config/win:windowed" ]
-    }
-    deps = [
-      "../api:create_peerconnection_factory",
-      "../api:libjingle_peerconnection_api",
-      "../api:media_stream_interface",
-      "../api/audio_codecs:builtin_audio_decoder_factory",
-      "../api/audio_codecs:builtin_audio_encoder_factory",
-      "../api/video:video_frame",
-      "../api/video:video_rtp_headers",
-      "../media:rtc_audio_video",
-      "../media:rtc_internal_video_codecs",
-      "../media:rtc_media",
-      "../media:rtc_media_base",
-      "../modules/audio_device",
-      "../modules/audio_processing",
-      "../modules/audio_processing:api",
-      "../modules/video_capture:video_capture_module",
-      "../pc:libjingle_peerconnection",
-      "../pc:video_track_source",
-      "../rtc_base:ssl",
-      "../test:platform_video_capturer",
-      "../test:video_test_common",
-      "//third_party/abseil-cpp/absl/memory",
-    ]
-    if (is_android) {
-      deps += [
-        "../modules/utility",
-        "../sdk/android:libjingle_peerconnection_jni",
-        "../sdk/android:native_api_jni",
-      ]
-    }
-  }
-}
-
 if (is_android) {
-  rtc_android_library("webrtc_unity_java") {
-    sources = [ "unityplugin/java/src/org/webrtc/UnityUtility.java" ]
-    deps = [
-      "../rtc_base:base_java",
-      "../sdk/android:camera_java",
-      "../sdk/android:libjingle_peerconnection_java",
-      "../sdk/android:peerconnection_java",
-      "../sdk/android:video_api_java",
-      "../sdk/android:video_java",
-      "//third_party/androidx:androidx_annotation_annotation_java",
-    ]
-  }
-
-  # TODO(https://bugs.webrtc.org/15095) - Fix or remove this target.
-  #dist_jar("libwebrtc_unity") {
-  #  _target_dir_name = get_label_info(":$target_name", "dir")
-  #  output = "${root_out_dir}/lib.java${_target_dir_name}/${target_name}.jar"
-  #  direct_deps_only = false
-  #  use_interface_jars = false
-  #  use_unprocessed_jars = false
-  #  requires_android = true
-  #  deps = [
-  #    ":webrtc_unity_java",
-  #    "../rtc_base:base_java",
-  #    "../sdk/android:libjingle_peerconnection_java",
-  #    "../sdk/android:libjingle_peerconnection_metrics_default_java",
-  #    "//third_party/androidx:androidx_annotation_annotation_java",
-  #  ]
-  #}
-
   robolectric_binary("android_examples_junit_tests") {
     sources = [
       "androidjunit/src/org/appspot/apprtc/BluetoothManagerTest.java",

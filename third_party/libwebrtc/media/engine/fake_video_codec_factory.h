@@ -44,8 +44,8 @@ class RTC_EXPORT FakeVideoDecoderFactory : public VideoDecoderFactory {
 
   // VideoDecoderFactory implementation
   std::vector<SdpVideoFormat> GetSupportedFormats() const override;
-  std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      const SdpVideoFormat& format) override;
+  std::unique_ptr<VideoDecoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override;
 };
 
 }  // namespace webrtc

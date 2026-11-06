@@ -24,106 +24,124 @@ import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.MediaRecorder.AudioSource;
 import android.os.Build;
-import java.lang.Thread;
+import android.os.Build.VERSION_CODES;
 import java.util.Arrays;
 import org.webrtc.Logging;
 
-final class WebRtcAudioUtils {
+/** Utilities for implementations of {@code AudioDeviceModule}, mostly for logging. */
+public final class WebRtcAudioUtils {
   private static final String TAG = "WebRtcAudioUtilsExternal";
 
-  // Helper method for building a string of thread information.
+  /** Helper method for building a string of thread information. */
   public static String getThreadInfo() {
-    return "@[name=" + Thread.currentThread().getName() + ", id=" + Thread.currentThread().getId()
-        + "]";
+    Thread current = Thread.currentThread();
+    return "@[name=" + current.getName() + ", id=" + current.getId() + "]";
   }
 
-  // Returns true if we're running on emulator.
+  /** Returns true if we're running on emulator. */
   public static boolean runningOnEmulator() {
-    return Build.HARDWARE.equals("goldfish") && Build.BRAND.startsWith("generic_");
+    // Hardware type of qemu1 is goldfish and qemu2 is ranchu.
+    return Build.HARDWARE.equals("goldfish") || Build.HARDWARE.equals("ranchu");
   }
 
-  // Information about the current build, taken from system properties.
-  static void logDeviceInfo(String tag) {
-    Logging.d(tag,
-        "Android SDK: " + Build.VERSION.SDK_INT + ", "
-            + "Release: " + Build.VERSION.RELEASE + ", "
-            + "Brand: " + Build.BRAND + ", "
-            + "Device: " + Build.DEVICE + ", "
-            + "Id: " + Build.ID + ", "
-            + "Hardware: " + Build.HARDWARE + ", "
-            + "Manufacturer: " + Build.MANUFACTURER + ", "
-            + "Model: " + Build.MODEL + ", "
-            + "Product: " + Build.PRODUCT);
+  /** Information about the current build, taken from system properties. */
+  private static void logDeviceInfo(String tag) {
+    Logging.d(
+        tag,
+        ("Android SDK: " + Build.VERSION.SDK_INT)
+            + (", Release: " + Build.VERSION.RELEASE)
+            + (", Brand: " + Build.BRAND)
+            + (", Device: " + Build.DEVICE)
+            + (", Id: " + Build.ID)
+            + (", Hardware: " + Build.HARDWARE)
+            + (", Manufacturer: " + Build.MANUFACTURER)
+            + (", Model: " + Build.MODEL)
+            + (", Product: " + Build.PRODUCT));
   }
 
-  // Logs information about the current audio state. The idea is to call this
-  // method when errors are detected to log under what conditions the error
-  // occurred. Hopefully it will provide clues to what might be the root cause.
-  static void logAudioState(String tag, Context context, AudioManager audioManager) {
+  /**
+   * Logs information about the current audio state. The idea is to call this method when errors are
+   * detected to log under what conditions the error occurred. Hopefully it will provide clues to
+   * what might be the root cause.
+   */
+  public static void logAudioState(String tag, Context context, AudioManager audioManager) {
     logDeviceInfo(tag);
     logAudioStateBasic(tag, context, audioManager);
     logAudioStateVolume(tag, audioManager);
     logAudioDeviceInfo(tag, audioManager);
   }
 
-  // Converts AudioDeviceInfo types to local string representation.
-  static String deviceTypeToString(int type) {
+  /** Converts AudioDeviceInfo types to local string representation. */
+  public static String deviceTypeToString(int type) {
     switch (type) {
-      case AudioDeviceInfo.TYPE_UNKNOWN:
-        return "TYPE_UNKNOWN";
-      case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
-        return "TYPE_BUILTIN_EARPIECE";
-      case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
-        return "TYPE_BUILTIN_SPEAKER";
-      case AudioDeviceInfo.TYPE_WIRED_HEADSET:
-        return "TYPE_WIRED_HEADSET";
-      case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
-        return "TYPE_WIRED_HEADPHONES";
-      case AudioDeviceInfo.TYPE_LINE_ANALOG:
-        return "TYPE_LINE_ANALOG";
-      case AudioDeviceInfo.TYPE_LINE_DIGITAL:
-        return "TYPE_LINE_DIGITAL";
-      case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
-        return "TYPE_BLUETOOTH_SCO";
+      case AudioDeviceInfo.TYPE_AUX_LINE:
+        return "TYPE_AUX_LINE";
+      case AudioDeviceInfo.TYPE_BLE_BROADCAST:
+        return "TYPE_BLE_BROADCAST";
+      case AudioDeviceInfo.TYPE_BLE_HEADSET:
+        return "TYPE_BLE_HEADSET";
+      case AudioDeviceInfo.TYPE_BLE_SPEAKER:
+        return "TYPE_BLE_SPEAKER";
       case AudioDeviceInfo.TYPE_BLUETOOTH_A2DP:
         return "TYPE_BLUETOOTH_A2DP";
+      case AudioDeviceInfo.TYPE_BLUETOOTH_SCO:
+        return "TYPE_BLUETOOTH_SCO";
+      case AudioDeviceInfo.TYPE_BUILTIN_EARPIECE:
+        return "TYPE_BUILTIN_EARPIECE";
+      case AudioDeviceInfo.TYPE_BUILTIN_MIC:
+        return "TYPE_BUILTIN_MIC";
+      case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER:
+        return "TYPE_BUILTIN_SPEAKER";
+      case AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE:
+        return "TYPE_BUILTIN_SPEAKER_SAFE";
+      case AudioDeviceInfo.TYPE_BUS:
+        return "TYPE_BUS";
+      case AudioDeviceInfo.TYPE_DOCK:
+        return "TYPE_DOCK";
+      case AudioDeviceInfo.TYPE_DOCK_ANALOG:
+        return "TYPE_DOCK_ANALOG";
+      case AudioDeviceInfo.TYPE_FM:
+        return "TYPE_FM";
+      case AudioDeviceInfo.TYPE_FM_TUNER:
+        return "TYPE_FM_TUNER";
       case AudioDeviceInfo.TYPE_HDMI:
         return "TYPE_HDMI";
       case AudioDeviceInfo.TYPE_HDMI_ARC:
         return "TYPE_HDMI_ARC";
-      case AudioDeviceInfo.TYPE_USB_DEVICE:
-        return "TYPE_USB_DEVICE";
-      case AudioDeviceInfo.TYPE_USB_ACCESSORY:
-        return "TYPE_USB_ACCESSORY";
-      case AudioDeviceInfo.TYPE_DOCK:
-        return "TYPE_DOCK";
-      case AudioDeviceInfo.TYPE_FM:
-        return "TYPE_FM";
-      case AudioDeviceInfo.TYPE_BUILTIN_MIC:
-        return "TYPE_BUILTIN_MIC";
-      case AudioDeviceInfo.TYPE_FM_TUNER:
-        return "TYPE_FM_TUNER";
-      case AudioDeviceInfo.TYPE_TV_TUNER:
-        return "TYPE_TV_TUNER";
-      case AudioDeviceInfo.TYPE_TELEPHONY:
-        return "TYPE_TELEPHONY";
-      case AudioDeviceInfo.TYPE_AUX_LINE:
-        return "TYPE_AUX_LINE";
+      case AudioDeviceInfo.TYPE_HDMI_EARC:
+        return "TYPE_HDMI_EARC";
+      case AudioDeviceInfo.TYPE_HEARING_AID:
+        return "TYPE_HEARING_AID";
       case AudioDeviceInfo.TYPE_IP:
         return "TYPE_IP";
-      case AudioDeviceInfo.TYPE_BUS:
-        return "TYPE_BUS";
+      case AudioDeviceInfo.TYPE_LINE_ANALOG:
+        return "TYPE_LINE_ANALOG";
+      case AudioDeviceInfo.TYPE_LINE_DIGITAL:
+        return "TYPE_LINE_DIGITAL";
+      case AudioDeviceInfo.TYPE_REMOTE_SUBMIX:
+        return "TYPE_REMOTE_SUBMIX";
+      case AudioDeviceInfo.TYPE_TELEPHONY:
+        return "TYPE_TELEPHONY";
+      case AudioDeviceInfo.TYPE_TV_TUNER:
+        return "TYPE_TV_TUNER";
+      case AudioDeviceInfo.TYPE_UNKNOWN:
+        return "TYPE_UNKNOWN";
+      case AudioDeviceInfo.TYPE_USB_ACCESSORY:
+        return "TYPE_USB_ACCESSORY";
+      case AudioDeviceInfo.TYPE_USB_DEVICE:
+        return "TYPE_USB_DEVICE";
       case AudioDeviceInfo.TYPE_USB_HEADSET:
         return "TYPE_USB_HEADSET";
+      case AudioDeviceInfo.TYPE_WIRED_HEADPHONES:
+        return "TYPE_WIRED_HEADPHONES";
+      case AudioDeviceInfo.TYPE_WIRED_HEADSET:
+        return "TYPE_WIRED_HEADSET";
       default:
-        return "TYPE_UNKNOWN";
+        return "TYPE_UNKNOWN(" + type + ")";
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.N)
   public static String audioSourceToString(int source) {
-    // AudioSource.UNPROCESSED requires API level 29. Use local define instead.
-    final int VOICE_PERFORMANCE = 10;
     switch (source) {
       case AudioSource.DEFAULT:
         return "DEFAULT";
@@ -143,7 +161,7 @@ final class WebRtcAudioUtils {
         return "VOICE_COMMUNICATION";
       case AudioSource.UNPROCESSED:
         return "UNPROCESSED";
-      case VOICE_PERFORMANCE:
+      case AudioSource.VOICE_PERFORMANCE:
         return "VOICE_PERFORMANCE";
       default:
         return "INVALID";
@@ -164,7 +182,7 @@ final class WebRtcAudioUtils {
     }
   }
 
-  @TargetApi(Build.VERSION_CODES.N)
+  @TargetApi(VERSION_CODES.N)
   public static String audioEncodingToString(int enc) {
     switch (enc) {
       case AudioFormat.ENCODING_INVALID:
@@ -190,23 +208,29 @@ final class WebRtcAudioUtils {
     }
   }
 
-  // Reports basic audio statistics.
+  /** Reports basic audio statistics. */
   private static void logAudioStateBasic(String tag, Context context, AudioManager audioManager) {
-    Logging.d(tag,
+    Logging.d(
+        tag,
         "Audio State: "
-            + "audio mode: " + modeToString(audioManager.getMode()) + ", "
-            + "has mic: " + hasMicrophone(context) + ", "
-            + "mic muted: " + audioManager.isMicrophoneMute() + ", "
-            + "music active: " + audioManager.isMusicActive() + ", "
-            + "speakerphone: " + audioManager.isSpeakerphoneOn() + ", "
-            + "BT SCO: " + audioManager.isBluetoothScoOn());
+            + ("audio mode: " + modeToString(audioManager.getMode()))
+            + (", has mic: " + hasMicrophone(context))
+            + (", mic muted: " + audioManager.isMicrophoneMute())
+            + (", music active: " + audioManager.isMusicActive())
+            + (", speakerphone: " + audioManager.isSpeakerphoneOn())
+            + (", BT SCO: " + audioManager.isBluetoothScoOn()));
   }
 
-  // Adds volume information for all possible stream types.
+  /** Adds volume information for all possible stream types. */
   private static void logAudioStateVolume(String tag, AudioManager audioManager) {
-    final int[] streams = {AudioManager.STREAM_VOICE_CALL, AudioManager.STREAM_MUSIC,
-        AudioManager.STREAM_RING, AudioManager.STREAM_ALARM, AudioManager.STREAM_NOTIFICATION,
-        AudioManager.STREAM_SYSTEM};
+    final int[] streams = {
+      AudioManager.STREAM_VOICE_CALL,
+      AudioManager.STREAM_MUSIC,
+      AudioManager.STREAM_RING,
+      AudioManager.STREAM_ALARM,
+      AudioManager.STREAM_NOTIFICATION,
+      AudioManager.STREAM_SYSTEM
+    };
     Logging.d(tag, "Audio State: ");
     // Some devices may not have volume controls and might use a fixed volume.
     boolean fixedVolume = audioManager.isVolumeFixed();
@@ -217,16 +241,11 @@ final class WebRtcAudioUtils {
         info.append("  " + streamTypeToString(stream) + ": ");
         info.append("volume=").append(audioManager.getStreamVolume(stream));
         info.append(", max=").append(audioManager.getStreamMaxVolume(stream));
-        logIsStreamMute(tag, audioManager, stream, info);
+        if (Build.VERSION.SDK_INT >= VERSION_CODES.M) {
+          info.append(", muted=").append(audioManager.isStreamMute(stream));
+        }
         Logging.d(tag, info.toString());
       }
-    }
-  }
-
-  private static void logIsStreamMute(
-      String tag, AudioManager audioManager, int stream, StringBuilder info) {
-    if (Build.VERSION.SDK_INT >= 23) {
-      info.append(", muted=").append(audioManager.isStreamMute(stream));
     }
   }
 
@@ -235,7 +254,7 @@ final class WebRtcAudioUtils {
   // https://developer.android.com/reference/android/media/AudioManager#GET_DEVICES_ALL
   @SuppressLint("WrongConstant")
   private static void logAudioDeviceInfo(String tag, AudioManager audioManager) {
-    if (Build.VERSION.SDK_INT < 23) {
+    if (Build.VERSION.SDK_INT < VERSION_CODES.M) {
       return;
     }
     final AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_ALL);
@@ -266,7 +285,7 @@ final class WebRtcAudioUtils {
     }
   }
 
-  // Converts media.AudioManager modes into local string representation.
+  /** Converts media.AudioManager modes into local string representation. */
   static String modeToString(int mode) {
     switch (mode) {
       case MODE_IN_CALL:
@@ -301,7 +320,7 @@ final class WebRtcAudioUtils {
     }
   }
 
-  // Returns true if the device can record audio via a microphone.
+  /** Returns true if the device can record audio via a microphone. */
   private static boolean hasMicrophone(Context context) {
     return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE);
   }

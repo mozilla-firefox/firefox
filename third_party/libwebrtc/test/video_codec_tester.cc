@@ -1070,7 +1070,6 @@ class Encoder : public EncodedImageCallback {
         vc.qpMax = cricket::kDefaultVideoMaxQpH26x;
         break;
       case kVideoCodecGeneric:
-      case kVideoCodecMultiplex:
         RTC_CHECK_NOTREACHED();
         break;
     }
@@ -1278,7 +1277,6 @@ void SetDefaultCodecSpecificSettings(VideoCodec* vc, int num_temporal_layers) {
     case kVideoCodecH265:
       break;
     case kVideoCodecGeneric:
-    case kVideoCodecMultiplex:
       RTC_CHECK_NOTREACHED();
   }
 }
@@ -1357,7 +1355,6 @@ SplitBitrateAndUpdateScalabilityMode(std::string codec_type,
         }
         break;
       case kVideoCodecGeneric:
-      case kVideoCodecMultiplex:
         RTC_CHECK_NOTREACHED();
     }
   } else {
@@ -1380,7 +1377,6 @@ SplitBitrateAndUpdateScalabilityMode(std::string codec_type,
         RTC_CHECK(result) << "SetAv1SvcConfig failed";
       } break;
       case kVideoCodecGeneric:
-      case kVideoCodecMultiplex:
         RTC_CHECK_NOTREACHED();
     }
 

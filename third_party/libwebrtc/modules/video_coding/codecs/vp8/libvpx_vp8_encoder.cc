@@ -317,7 +317,9 @@ LibvpxVp8Encoder::LibvpxVp8Encoder(std::unique_ptr<LibvpxInterface> interface,
       variable_framerate_experiment_(ParseVariableFramerateConfig(
           "WebRTC-VP8VariableFramerateScreenshare")),
       framerate_controller_(variable_framerate_experiment_.framerate_limit),
-      max_frame_drop_interval_(ParseFrameDropInterval()) {
+      max_frame_drop_interval_(ParseFrameDropInterval()),
+      android_specific_threading_settings_(webrtc::field_trial::IsEnabled(
+          "WebRTC-LibvpxVp8Encoder-AndroidSpecificThreadingSettings")) {
   // TODO(eladalon/ilnik): These reservations might be wasting memory.
   // InitEncode() is resizing to the actual size, which might be smaller.
   raw_images_.reserve(kMaxSimulcastStreams);
@@ -782,21 +784,26 @@ int LibvpxVp8Encoder::GetCpuSpeed(int width, int height) {
 }
 
 int LibvpxVp8Encoder::NumberOfThreads(int width, int height, int cpus) {
+#if defined(WEBRTC_ANDROID)
+  if (android_specific_threading_settings_) {
+#endif
 #if defined(WEBRTC_ANDROID) || defined(WEBRTC_ARCH_MIPS)
-  if (width * height >= 320 * 180) {
-    if (cpus >= 4) {
-      // 3 threads for CPUs with 4 and more cores since most of times only 4
-      // cores will be active.
-      return 3;
-    } else if (cpus == 3 || cpus == 2) {
-      return 2;
-    } else {
-      return 1;
+    if (width * height >= 320 * 180) {
+      if (cpus >= 4) {
+        // 3 threads for CPUs with 4 and more cores since most of times only 4
+        // cores will be active.
+        return 3;
+      } else if (cpus == 3 || cpus == 2) {
+        return 2;
+      } else {
+        return 1;
+      }
     }
+    return 1;
+#if defined(WEBRTC_ANDROID)
   }
-  return 1;
-#else
-#if defined(WEBRTC_IOS)
+#endif
+#elif defined(WEBRTC_IOS)
   std::string trial_string =
       field_trial::FindFullName(kVP8IosMaxNumberOfThreadFieldTrial);
   FieldTrialParameter<int> max_thread_number(
@@ -823,11 +830,10 @@ int LibvpxVp8Encoder::NumberOfThreads(int width, int height, int cpus) {
       return 3;
     }
     return 2;
-  } else {
-    // 1 thread for VGA or less.
-    return 1;
   }
-#endif
+
+  // 1 thread for VGA or less.
+  return 1;
 }
 
 int LibvpxVp8Encoder::InitAndSetControlSettings() {

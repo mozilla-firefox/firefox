@@ -8,6 +8,8 @@
  *  be found in the AUTHORS file in the root of the source tree.
  */
 
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "api/test/mock_video_decoder.h"
 #include "api/video_codecs/video_decoder_factory_template.h"
 #include "api/video_codecs/video_decoder_factory_template_dav1d_adapter.h"
@@ -17,17 +19,17 @@
 #include "test/gmock.h"
 #include "test/gtest.h"
 
-using ::testing::Contains;
-using ::testing::Each;
-using ::testing::Eq;
-using ::testing::Field;
-using ::testing::IsEmpty;
-using ::testing::Ne;
-using ::testing::Not;
-using ::testing::UnorderedElementsAre;
-
 namespace webrtc {
 namespace {
+
+using ::testing::Each;
+using ::testing::Field;
+using ::testing::IsEmpty;
+using ::testing::IsNull;
+using ::testing::Not;
+using ::testing::NotNull;
+using ::testing::UnorderedElementsAre;
+
 const SdpVideoFormat kFooSdp("Foo");
 const SdpVideoFormat kBarLowSdp("Bar", {{"profile", "low"}});
 const SdpVideoFormat kBarHighSdp("Bar", {{"profile", "high"}});
@@ -49,6 +51,7 @@ struct BarDecoderTemplateAdapter {
   }
 
   static std::unique_ptr<VideoDecoder> CreateDecoder(
+      const Environment& env,
       const SdpVideoFormat& format) {
     auto decoder = std::make_unique<testing::StrictMock<MockVideoDecoder>>();
     EXPECT_CALL(*decoder, Destruct);
@@ -57,10 +60,11 @@ struct BarDecoderTemplateAdapter {
 };
 
 TEST(VideoDecoderFactoryTemplate, OneTemplateAdapterCreateDecoder) {
+  const Environment env = CreateEnvironment();
   VideoDecoderFactoryTemplate<FooDecoderTemplateAdapter> factory;
   EXPECT_THAT(factory.GetSupportedFormats(), UnorderedElementsAre(kFooSdp));
-  EXPECT_THAT(factory.CreateVideoDecoder(kFooSdp), Ne(nullptr));
-  EXPECT_THAT(factory.CreateVideoDecoder(SdpVideoFormat("FooX")), Eq(nullptr));
+  EXPECT_THAT(factory.Create(env, kFooSdp), NotNull());
+  EXPECT_THAT(factory.Create(env, SdpVideoFormat("FooX")), IsNull());
 }
 
 TEST(VideoDecoderFactoryTemplate, TwoTemplateAdaptersNoDuplicates) {
@@ -71,52 +75,57 @@ TEST(VideoDecoderFactoryTemplate, TwoTemplateAdaptersNoDuplicates) {
 }
 
 TEST(VideoDecoderFactoryTemplate, TwoTemplateAdaptersCreateDecoders) {
+  const Environment env = CreateEnvironment();
   VideoDecoderFactoryTemplate<FooDecoderTemplateAdapter,
                               BarDecoderTemplateAdapter>
       factory;
   EXPECT_THAT(factory.GetSupportedFormats(),
               UnorderedElementsAre(kFooSdp, kBarLowSdp, kBarHighSdp));
-  EXPECT_THAT(factory.CreateVideoDecoder(kFooSdp), Ne(nullptr));
-  EXPECT_THAT(factory.CreateVideoDecoder(kBarLowSdp), Ne(nullptr));
-  EXPECT_THAT(factory.CreateVideoDecoder(kBarHighSdp), Ne(nullptr));
-  EXPECT_THAT(factory.CreateVideoDecoder(SdpVideoFormat("FooX")), Eq(nullptr));
-  EXPECT_THAT(factory.CreateVideoDecoder(SdpVideoFormat("Bar")), Eq(nullptr));
+  EXPECT_THAT(factory.Create(env, kFooSdp), NotNull());
+  EXPECT_THAT(factory.Create(env, kBarLowSdp), NotNull());
+  EXPECT_THAT(factory.Create(env, kBarHighSdp), NotNull());
+  EXPECT_THAT(factory.Create(env, SdpVideoFormat("FooX")), IsNull());
+  EXPECT_THAT(factory.Create(env, SdpVideoFormat("Bar")), IsNull());
 }
 
 TEST(VideoDecoderFactoryTemplate, LibvpxVp8) {
+  const Environment env = CreateEnvironment();
   VideoDecoderFactoryTemplate<LibvpxVp8DecoderTemplateAdapter> factory;
   auto formats = factory.GetSupportedFormats();
-  EXPECT_THAT(formats.size(), 1);
-  EXPECT_THAT(formats[0], Field(&SdpVideoFormat::name, "VP8"));
-  EXPECT_THAT(factory.CreateVideoDecoder(formats[0]), Ne(nullptr));
+  ASSERT_THAT(formats,
+              UnorderedElementsAre(Field(&SdpVideoFormat::name, "VP8")));
+  EXPECT_THAT(factory.Create(env, formats[0]), NotNull());
 }
 
 TEST(VideoDecoderFactoryTemplate, LibvpxVp9) {
+  const Environment env = CreateEnvironment();
   VideoDecoderFactoryTemplate<LibvpxVp9DecoderTemplateAdapter> factory;
   auto formats = factory.GetSupportedFormats();
   EXPECT_THAT(formats, Not(IsEmpty()));
   EXPECT_THAT(formats, Each(Field(&SdpVideoFormat::name, "VP9")));
-  EXPECT_THAT(factory.CreateVideoDecoder(formats[0]), Ne(nullptr));
+  EXPECT_THAT(factory.Create(env, formats[0]), NotNull());
 }
 
 // TODO(bugs.webrtc.org/13573): When OpenH264 is no longer a conditional build
 //                              target remove this #ifdef.
 #if defined(WEBRTC_USE_H264)
 TEST(VideoDecoderFactoryTemplate, OpenH264) {
+  const Environment env = CreateEnvironment();
   VideoDecoderFactoryTemplate<OpenH264DecoderTemplateAdapter> factory;
   auto formats = factory.GetSupportedFormats();
   EXPECT_THAT(formats, Not(IsEmpty()));
   EXPECT_THAT(formats, Each(Field(&SdpVideoFormat::name, "H264")));
-  EXPECT_THAT(factory.CreateVideoDecoder(formats[0]), Ne(nullptr));
+  EXPECT_THAT(factory.Create(env, formats[0]), NotNull());
 }
 #endif  // defined(WEBRTC_USE_H264)
 
 TEST(VideoDecoderFactoryTemplate, Dav1d) {
+  const Environment env = CreateEnvironment();
   VideoDecoderFactoryTemplate<Dav1dDecoderTemplateAdapter> factory;
   auto formats = factory.GetSupportedFormats();
   EXPECT_THAT(formats, Not(IsEmpty()));
   EXPECT_THAT(formats, Each(Field(&SdpVideoFormat::name, "AV1")));
-  EXPECT_THAT(factory.CreateVideoDecoder(formats[0]), Ne(nullptr));
+  EXPECT_THAT(factory.Create(env, formats[0]), NotNull());
 }
 
 }  // namespace

@@ -38,7 +38,6 @@
 namespace rtc {
 struct SentPacket;
 struct NetworkRoute;
-class TaskQueue;
 }  // namespace rtc
 namespace webrtc {
 

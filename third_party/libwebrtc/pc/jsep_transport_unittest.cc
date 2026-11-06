@@ -31,6 +31,7 @@
 #include "rtc_base/helpers.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/net_helper.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/ssl_identity.h"
@@ -1039,42 +1040,44 @@ class JsepTransport2HeaderExtensionTest
     auto fake_dtls2 =
         static_cast<FakeDtlsTransport*>(jsep_transport2_->rtp_dtls_transport());
 
-    fake_dtls1->fake_ice_transport()->SignalReadPacket.connect(
-        this, &JsepTransport2HeaderExtensionTest::OnReadPacket1);
-    fake_dtls2->fake_ice_transport()->SignalReadPacket.connect(
-        this, &JsepTransport2HeaderExtensionTest::OnReadPacket2);
+    fake_dtls1->fake_ice_transport()->RegisterReceivedPacketCallback(
+        this, [&](rtc::PacketTransportInternal* transport,
+                  const rtc::ReceivedPacket& packet) {
+          OnReadPacket1(transport, packet);
+        });
+    fake_dtls2->fake_ice_transport()->RegisterReceivedPacketCallback(
+        this, [&](rtc::PacketTransportInternal* transport,
+                  const rtc::ReceivedPacket& packet) {
+          OnReadPacket2(transport, packet);
+        });
 
-      auto cert1 = rtc::RTCCertificate::Create(
-          rtc::SSLIdentity::Create("session1", rtc::KT_DEFAULT));
-      jsep_transport1_->rtp_dtls_transport()->SetLocalCertificate(cert1);
-      auto cert2 = rtc::RTCCertificate::Create(
-          rtc::SSLIdentity::Create("session1", rtc::KT_DEFAULT));
-      jsep_transport2_->rtp_dtls_transport()->SetLocalCertificate(cert2);
+    auto cert1 = rtc::RTCCertificate::Create(
+        rtc::SSLIdentity::Create("session1", rtc::KT_DEFAULT));
+    jsep_transport1_->rtp_dtls_transport()->SetLocalCertificate(cert1);
+    auto cert2 = rtc::RTCCertificate::Create(
+        rtc::SSLIdentity::Create("session1", rtc::KT_DEFAULT));
+    jsep_transport2_->rtp_dtls_transport()->SetLocalCertificate(cert2);
   }
 
   void OnReadPacket1(rtc::PacketTransportInternal* transport,
-                     const char* data,
-                     size_t size,
-                     const int64_t& /* packet_time_us */,
-                     int flags) {
+                     const rtc::ReceivedPacket& packet) {
     RTC_LOG(LS_INFO) << "JsepTransport 1 Received a packet.";
     CompareHeaderExtensions(
         reinterpret_cast<const char*>(kPcmuFrameWithExtensions),
-        sizeof(kPcmuFrameWithExtensions), data, size, recv_encrypted_headers1_,
-        false);
+        sizeof(kPcmuFrameWithExtensions),
+        reinterpret_cast<const char*>(packet.payload().data()),
+        packet.payload().size(), recv_encrypted_headers1_, false);
     received_packet_count_++;
   }
 
   void OnReadPacket2(rtc::PacketTransportInternal* transport,
-                     const char* data,
-                     size_t size,
-                     const int64_t& /* packet_time_us */,
-                     int flags) {
+                     const rtc::ReceivedPacket& packet) {
     RTC_LOG(LS_INFO) << "JsepTransport 2 Received a packet.";
     CompareHeaderExtensions(
         reinterpret_cast<const char*>(kPcmuFrameWithExtensions),
-        sizeof(kPcmuFrameWithExtensions), data, size, recv_encrypted_headers2_,
-        false);
+        sizeof(kPcmuFrameWithExtensions),
+        reinterpret_cast<const char*>(packet.payload().data()),
+        packet.payload().size(), recv_encrypted_headers2_, false);
     received_packet_count_++;
   }
 

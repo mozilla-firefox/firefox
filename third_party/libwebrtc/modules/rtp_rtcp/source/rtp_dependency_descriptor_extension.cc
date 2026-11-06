@@ -52,7 +52,7 @@ bool RtpDependencyDescriptorExtension::Write(
   return writer.Write();
 }
 
-bool RtpDependencyDescriptorExtensionMandatory::Parse(
+bool RtpDependencyDescriptorExtension::Parse(
     rtc::ArrayView<const uint8_t> data,
     DependencyDescriptorMandatory* descriptor) {
   if (data.size() < 3) {

@@ -233,6 +233,7 @@ rtc_library("video_coding") {
     "../../api/video:video_bitrate_allocation",
     "../../api/video:video_bitrate_allocator",
     "../../api/video:video_bitrate_allocator_factory",
+    "../../api/video:video_codec_constants",
     "../../api/video:video_frame",
     "../../api/video:video_frame_type",
     "../../api/video:video_rtp_headers",
@@ -512,37 +513,6 @@ rtc_library("webrtc_h264") {
   }
 }
 
-rtc_library("webrtc_multiplex") {
-  sources = [
-    "codecs/multiplex/augmented_video_frame_buffer.cc",
-    "codecs/multiplex/include/augmented_video_frame_buffer.h",
-    "codecs/multiplex/include/multiplex_decoder_adapter.h",
-    "codecs/multiplex/include/multiplex_encoder_adapter.h",
-    "codecs/multiplex/multiplex_decoder_adapter.cc",
-    "codecs/multiplex/multiplex_encoded_image_packer.cc",
-    "codecs/multiplex/multiplex_encoded_image_packer.h",
-    "codecs/multiplex/multiplex_encoder_adapter.cc",
-  ]
-
-  deps = [
-    ":video_codec_interface",
-    ":video_coding_utility",
-    "../../api:fec_controller_api",
-    "../../api:scoped_refptr",
-    "../../api/environment",
-    "../../api/video:encoded_image",
-    "../../api/video:video_frame",
-    "../../api/video:video_rtp_headers",
-    "../../api/video_codecs:video_codecs_api",
-    "../../common_video",
-    "../../media:rtc_media_base",
-    "../../rtc_base:checks",
-    "../../rtc_base:logging",
-    "../../rtc_base/synchronization:mutex",
-    "../rtp_rtcp:rtp_rtcp_format",
-  ]
-}
-
 # This target defines a bare-bones interface towards libvpx, used by the
 # VP8 and VP9 wrappers below.
 rtc_library("webrtc_libvpx_interface") {
@@ -589,7 +559,6 @@ rtc_library("webrtc_vp8") {
     "../../api:field_trials_view",
     "../../api:scoped_refptr",
     "../../api/environment",
-    "../../api/transport:field_trial_based_config",
     "../../api/units:time_delta",
     "../../api/units:timestamp",
     "../../api/video:encoded_image",
@@ -1054,7 +1023,6 @@ if (rtc_include_tests) {
 
     sources = [
       "codecs/h264/test/h264_impl_unittest.cc",
-      "codecs/multiplex/test/multiplex_adapter_unittest.cc",
       "codecs/test/video_encoder_decoder_instantiation_tests.cc",
       "codecs/test/videocodec_test_av1.cc",
       "codecs/test/videocodec_test_libvpx.cc",
@@ -1078,7 +1046,6 @@ if (rtc_include_tests) {
       ":videocodec_test_impl",
       ":webrtc_h264",
       ":webrtc_libvpx_interface",
-      ":webrtc_multiplex",
       ":webrtc_vp8",
       ":webrtc_vp9",
       ":webrtc_vp9_helpers",

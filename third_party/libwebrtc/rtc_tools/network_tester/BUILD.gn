@@ -52,7 +52,6 @@ if (rtc_enable_protobuf) {
       "../../rtc_base:logging",
       "../../rtc_base:macromagic",
       "../../rtc_base:protobuf_utils",
-      "../../rtc_base:rtc_task_queue",
       "../../rtc_base:socket_address",
       "../../rtc_base:socket_server",
       "../../rtc_base:threading",

@@ -438,7 +438,7 @@ RtpVideoStreamReceiver2::ParseGenericDependenciesExtension(
     RTPVideoHeader* video_header) {
   RTC_DCHECK_RUN_ON(&packet_sequence_checker_);
   if (DependencyDescriptorMandatory dd_mandatory;
-      rtp_packet.GetExtension<RtpDependencyDescriptorExtensionMandatory>(
+      rtp_packet.GetExtension<RtpDependencyDescriptorExtension>(
           &dd_mandatory)) {
     const int64_t frame_id =
         frame_id_unwrapper_.Unwrap(dd_mandatory.frame_number());

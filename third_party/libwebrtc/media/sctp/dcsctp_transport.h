@@ -27,6 +27,7 @@
 #include "p2p/base/packet_transport_internal.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/copy_on_write_buffer.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/random.h"
 #include "rtc_base/third_party/sigslot/sigslot.h"
 #include "rtc_base/thread.h"
@@ -94,10 +95,7 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   void DisconnectTransportSignals();
   void OnTransportWritableState(rtc::PacketTransportInternal* transport);
   void OnTransportReadPacket(rtc::PacketTransportInternal* transport,
-                             const char* data,
-                             size_t length,
-                             const int64_t& /* packet_time_us */,
-                             int flags);
+                             const rtc::ReceivedPacket& packet);
   void OnTransportClosed(rtc::PacketTransportInternal* transport);
 
   void MaybeConnectSocket();

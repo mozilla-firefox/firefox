@@ -153,6 +153,10 @@ class MockPeerConnectionInternal : public PeerConnectionInternal {
               (std::unique_ptr<SessionDescriptionInterface>,
                rtc::scoped_refptr<SetRemoteDescriptionObserverInterface>),
               (override));
+  MOCK_METHOD(bool,
+              ShouldFireNegotiationNeededEvent,
+              (uint32_t event_id),
+              (override));
   MOCK_METHOD(PeerConnectionInterface::RTCConfiguration,
               GetConfiguration,
               (),
@@ -192,6 +196,10 @@ class MockPeerConnectionInternal : public PeerConnectionInternal {
               (override));
   MOCK_METHOD(PeerConnectionState, peer_connection_state, (), (override));
   MOCK_METHOD(IceGatheringState, ice_gathering_state, (), (override));
+  MOCK_METHOD(void,
+              AddAdaptationResource,
+              (rtc::scoped_refptr<Resource>),
+              (override));
   MOCK_METHOD(absl::optional<bool>, can_trickle_ice_candidates, (), (override));
   MOCK_METHOD(bool,
               StartRtcEventLog,

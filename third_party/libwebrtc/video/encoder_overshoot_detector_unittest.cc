@@ -39,8 +39,6 @@ static std::string CodecTypeToHistogramSuffix(VideoCodecType codec) {
       return "H265";
     case kVideoCodecGeneric:
       return "Generic";
-    case kVideoCodecMultiplex:
-      return "Multiplex";
   }
 }
 

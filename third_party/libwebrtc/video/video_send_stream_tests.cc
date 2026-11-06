@@ -4214,7 +4214,7 @@ TEST_F(VideoSendStreamTest, TestTemporalLayersVp8) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
 
   TestTemporalLayers(&encoder_factory, "VP8",
@@ -4227,7 +4227,7 @@ TEST_F(VideoSendStreamTest, TestTemporalLayersVp8Simulcast) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
 
   TestTemporalLayers(&encoder_factory, "VP8",
@@ -4240,7 +4240,7 @@ TEST_F(VideoSendStreamTest, TestTemporalLayersVp8SimulcastWithDifferentNumTls) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
 
   TestTemporalLayers(&encoder_factory, "VP8",
@@ -4262,7 +4262,7 @@ TEST_F(VideoSendStreamTest, TestScalabilityModeVp8L1T2) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
 
   TestTemporalLayers(&encoder_factory, "VP8",
@@ -4274,7 +4274,7 @@ TEST_F(VideoSendStreamTest, TestScalabilityModeVp8Simulcast) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
 
   TestTemporalLayers(&encoder_factory, "VP8",
@@ -4287,7 +4287,7 @@ TEST_F(VideoSendStreamTest, TestScalabilityModeVp8SimulcastWithDifferentMode) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
 
   TestTemporalLayers(&encoder_factory, "VP8",

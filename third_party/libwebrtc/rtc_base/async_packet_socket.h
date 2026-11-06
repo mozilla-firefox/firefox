@@ -151,16 +151,6 @@ class RTC_EXPORT AsyncPacketSocket : public sigslot::has_slots<> {
     on_close_.Send(this, err);
   }
 
-  // TODO(bugs.webrtc.org:15368): Deprecate and remove.
-  void NotifyPacketReceived(AsyncPacketSocket*,
-                            const char* data,
-                            size_t size,
-                            const SocketAddress& address,
-                            const int64_t& packet_time_us) {
-    NotifyPacketReceived(
-        ReceivedPacket::CreateFromLegacy(data, size, packet_time_us, address));
-  }
-
   void NotifyPacketReceived(const rtc::ReceivedPacket& packet);
 
   RTC_NO_UNIQUE_ADDRESS webrtc::SequenceChecker network_checker_{

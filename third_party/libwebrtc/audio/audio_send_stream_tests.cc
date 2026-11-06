@@ -109,7 +109,7 @@ TEST_F(AudioSendStreamCallTest, SupportsAudioLevel) {
   class AudioLevelObserver : public AudioSendTest {
    public:
     AudioLevelObserver() : AudioSendTest() {
-      extensions_.Register<AudioLevel>(kAudioLevelExtensionId);
+      extensions_.Register<AudioLevelExtension>(kAudioLevelExtensionId);
     }
 
     Action OnSendRtp(rtc::ArrayView<const uint8_t> packet) override {
@@ -118,7 +118,8 @@ TEST_F(AudioSendStreamCallTest, SupportsAudioLevel) {
 
       uint8_t audio_level = 0;
       bool voice = false;
-      EXPECT_TRUE(rtp_packet.GetExtension<AudioLevel>(&voice, &audio_level));
+      EXPECT_TRUE(
+          rtp_packet.GetExtension<AudioLevelExtension>(&voice, &audio_level));
       if (audio_level != 0) {
         // Wait for at least one packet with a non-zero level.
         observation_complete_.Set();

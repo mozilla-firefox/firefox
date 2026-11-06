@@ -28,12 +28,6 @@ CreateVideoDecoderSoftwareFallbackWrapper(
     std::unique_ptr<VideoDecoder> sw_fallback_decoder,
     std::unique_ptr<VideoDecoder> hw_decoder);
 
-// TODO: bugs.webrtc.org/15791 - Deprecated, remove when not used by chromium.
-RTC_EXPORT std::unique_ptr<VideoDecoder>
-CreateVideoDecoderSoftwareFallbackWrapper(
-    std::unique_ptr<VideoDecoder> sw_fallback_decoder,
-    std::unique_ptr<VideoDecoder> hw_decoder);
-
 }  // namespace webrtc
 
 #endif  // API_VIDEO_CODECS_VIDEO_DECODER_SOFTWARE_FALLBACK_WRAPPER_H_

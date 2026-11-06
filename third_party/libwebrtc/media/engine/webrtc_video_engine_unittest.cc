@@ -922,59 +922,6 @@ void WebRtcVideoEngineTest::ExpectRtpCapabilitySupport(const char* uri,
   }
 }
 
-TEST_F(WebRtcVideoEngineTest, SendsFeedbackAfterUnsignaledRtxPacket) {
-  // Setup a channel with VP8, RTX and transport sequence number header
-  // extension. Receive stream is not explicitly configured.
-  AddSupportedVideoCodecType("VP8");
-  std::vector<VideoCodec> supported_codecs =
-      engine_.recv_codecs(/*include_rtx=*/true);
-  ASSERT_EQ(supported_codecs[1].name, "rtx");
-  int rtx_payload_type = supported_codecs[1].id;
-  MockNetworkInterface network;
-  RtcpPacketParser rtcp_parser;
-  ON_CALL(network, SendRtcp)
-      .WillByDefault(
-          testing::DoAll(WithArg<0>([&](rtc::CopyOnWriteBuffer* packet) {
-                           ASSERT_TRUE(rtcp_parser.Parse(*packet));
-                         }),
-                         Return(true)));
-  std::unique_ptr<VideoMediaSendChannelInterface> send_channel =
-      engine_.CreateSendChannel(call_.get(), GetMediaConfig(), VideoOptions(),
-                                webrtc::CryptoOptions(),
-                                video_bitrate_allocator_factory_.get());
-  std::unique_ptr<VideoMediaReceiveChannelInterface> receive_channel =
-      engine_.CreateReceiveChannel(call_.get(), GetMediaConfig(),
-                                   VideoOptions(), webrtc::CryptoOptions());
-  cricket::VideoReceiverParameters parameters;
-  parameters.codecs = supported_codecs;
-  const int kTransportSeqExtensionId = 1;
-  parameters.extensions.push_back(RtpExtension(
-      RtpExtension::kTransportSequenceNumberUri, kTransportSeqExtensionId));
-  ASSERT_TRUE(receive_channel->SetReceiverParameters(parameters));
-  send_channel->SetInterface(&network);
-  receive_channel->SetInterface(&network);
-  send_channel->OnReadyToSend(true);
-  receive_channel->SetReceive(true);
-
-  // Inject a RTX packet.
-  webrtc::RtpHeaderExtensionMap extension_map(parameters.extensions);
-  webrtc::RtpPacketReceived packet(&extension_map);
-  packet.SetMarker(true);
-  packet.SetPayloadType(rtx_payload_type);
-  packet.SetSsrc(999);
-  packet.SetExtension<webrtc::TransportSequenceNumber>(7);
-  uint8_t* buf_ptr = packet.AllocatePayload(11);
-  memset(buf_ptr, 0, 11);  // Pass MSAN (don't care about bytes 1-9)
-  receive_channel->OnPacketReceived(packet);
-
-  //  Expect that feedback is  sent after a while.
-  time_controller_.AdvanceTime(webrtc::TimeDelta::Seconds(1));
-  EXPECT_GT(rtcp_parser.transport_feedback()->num_packets(), 0);
-
-  send_channel->SetInterface(nullptr);
-  receive_channel->SetInterface(nullptr);
-}
-
 TEST_F(WebRtcVideoEngineTest, ReceiveBufferSizeViaFieldTrial) {
   webrtc::test::ScopedKeyValueConfig override_field_trials(
       field_trials_, "WebRTC-ReceiveBufferSize/size_bytes:10000/");
@@ -1474,7 +1421,7 @@ TEST(WebRtcVideoEngineNewVideoCodecFactoryTest, Vp8) {
 
   // Expect no decoder to be created at this point. The decoder will only be
   // created if we receive payload data.
-  EXPECT_CALL(*decoder_factory, CreateVideoDecoder(format)).Times(0);
+  EXPECT_CALL(*decoder_factory, Create).Times(0);
 
   // Create a call.
   webrtc::GlobalSimulatedTimeController time_controller(
@@ -1676,7 +1623,7 @@ class WebRtcVideoChannelEncodedFrameCallbackTest : public ::testing::Test {
 
 const std::vector<webrtc::SdpVideoFormat>
     WebRtcVideoChannelEncodedFrameCallbackTest::kSdpVideoFormats = {
-        webrtc::SdpVideoFormat("VP8")};
+        webrtc::SdpVideoFormat::VP8()};
 
 TEST_F(WebRtcVideoChannelEncodedFrameCallbackTest,
        SetEncodedFrameBufferFunction_DefaultStream) {
@@ -2617,9 +2564,8 @@ TEST_F(WebRtcVideoChannelBaseTest, RequestEncoderSwitchStrictPreference) {
   ASSERT_TRUE(codec);
   EXPECT_EQ("VP8", codec->name);
 
-  SendImpl()->RequestEncoderSwitch(
-      webrtc::SdpVideoFormat("VP9", {{"profile-id", "1"}}),
-      /*allow_default_fallback=*/false);
+  SendImpl()->RequestEncoderSwitch(webrtc::SdpVideoFormat::VP9Profile1(),
+                                   /*allow_default_fallback=*/false);
   time_controller_.AdvanceTime(kFrameDuration);
 
   // VP9 profile_id=1 is not available. Default fallback is not allowed. Switch
@@ -2628,9 +2574,8 @@ TEST_F(WebRtcVideoChannelBaseTest, RequestEncoderSwitchStrictPreference) {
   ASSERT_TRUE(codec);
   EXPECT_EQ("VP8", codec->name);
 
-  SendImpl()->RequestEncoderSwitch(
-      webrtc::SdpVideoFormat("VP9", {{"profile-id", "0"}}),
-      /*allow_default_fallback=*/false);
+  SendImpl()->RequestEncoderSwitch(webrtc::SdpVideoFormat::VP9Profile0(),
+                                   /*allow_default_fallback=*/false);
   time_controller_.AdvanceTime(kFrameDuration);
 
   // VP9 profile_id=0 is available. Switch encoder.
@@ -7475,12 +7420,12 @@ TEST_F(WebRtcVideoChannelTest, Vp9PacketCreatesUnsignalledStream) {
                                   true /* expect_created_receive_stream */);
 }
 
-TEST_F(WebRtcVideoChannelTest, RtxPacketCreateUnsignalledStream) {
+TEST_F(WebRtcVideoChannelTest, RtxPacketDoesntCreateUnsignalledStream) {
   AssignDefaultAptRtxTypes();
   const cricket::VideoCodec vp8 = GetEngineCodec("VP8");
   const int rtx_vp8_payload_type = default_apt_rtx_types_[vp8.id];
   TestReceiveUnsignaledSsrcPacket(rtx_vp8_payload_type,
-                                  true /* expect_created_receive_stream */);
+                                  false /* expect_created_receive_stream */);
 }
 
 TEST_F(WebRtcVideoChannelTest, UlpfecPacketDoesntCreateUnsignalledStream) {
@@ -7534,8 +7479,7 @@ TEST_F(WebRtcVideoChannelTest, RtxAfterMediaPacketUpdatesUnsignalledRtxSsrc) {
   EXPECT_EQ(fake_call_->GetDeliveredPacketsForSsrc(rtx_ssrc), 1u);
 }
 
-TEST_F(WebRtcVideoChannelTest,
-       MediaPacketAfterRtxImmediatelyRecreatesUnsignalledStream) {
+TEST_F(WebRtcVideoChannelTest, UnsignaledStreamCreatedAfterMediaPacket) {
   AssignDefaultAptRtxTypes();
   const cricket::VideoCodec vp8 = GetEngineCodec("VP8");
   const int payload_type = vp8.id;
@@ -7543,15 +7487,15 @@ TEST_F(WebRtcVideoChannelTest,
   const uint32_t ssrc = kIncomingUnsignalledSsrc;
   const uint32_t rtx_ssrc = ssrc + 1;
 
-  // Send rtx packet.
+  // Receive rtx packet.
   RtpPacketReceived rtx_packet;
   rtx_packet.SetPayloadType(rtx_vp8_payload_type);
   rtx_packet.SetSsrc(rtx_ssrc);
   receive_channel_->OnPacketReceived(rtx_packet);
   time_controller_.AdvanceTime(TimeDelta::Zero());
-  EXPECT_EQ(1u, fake_call_->GetVideoReceiveStreams().size());
+  EXPECT_EQ(0u, fake_call_->GetVideoReceiveStreams().size());
 
-  // Send media packet.
+  // Receive media packet.
   RtpPacketReceived packet;
   packet.SetPayloadType(payload_type);
   packet.SetSsrc(ssrc);
@@ -9823,7 +9767,7 @@ TEST_F(WebRtcVideoChannelBaseTest, EncoderSelectorSwitchCodec) {
 
   webrtc::MockEncoderSelector encoder_selector;
   EXPECT_CALL(encoder_selector, OnAvailableBitrate)
-      .WillRepeatedly(Return(webrtc::SdpVideoFormat("VP9")));
+      .WillRepeatedly(Return(webrtc::SdpVideoFormat::VP9Profile0()));
 
   send_channel_->SetEncoderSelector(kSsrc, &encoder_selector);
   time_controller_.AdvanceTime(kFrameDuration);

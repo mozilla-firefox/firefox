@@ -61,7 +61,8 @@ std::vector<SdpVideoFormat> FakeVideoDecoderFactory::GetSupportedFormats()
       1, SdpVideoFormat(kFakeCodecFactoryCodecName));
 }
 
-std::unique_ptr<VideoDecoder> FakeVideoDecoderFactory::CreateVideoDecoder(
+std::unique_ptr<VideoDecoder> FakeVideoDecoderFactory::Create(
+    const Environment& env,
     const SdpVideoFormat& format) {
   return std::make_unique<test::FakeDecoder>();
 }

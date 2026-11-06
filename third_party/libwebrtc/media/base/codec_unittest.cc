@@ -148,6 +148,22 @@ TEST(CodecTest, TestAudioCodecMatches) {
   EXPECT_FALSE(c3.Matches(cricket::CreateAudioCodec(96, "A", 44100, 0)));
 }
 
+TEST(CodecTest, TestOpusAudioCodecWithDifferentParameters) {
+  AudioCodec opus_with_fec = cricket::CreateAudioCodec(96, "opus", 48000, 2);
+  opus_with_fec.params["useinbandfec"] = "1";
+  AudioCodec opus_without_fec = cricket::CreateAudioCodec(96, "opus", 48000, 2);
+
+  EXPECT_TRUE(opus_with_fec != opus_without_fec);
+  // Matches does not compare parameters for audio.
+  EXPECT_TRUE(opus_with_fec.Matches(opus_without_fec));
+
+  webrtc::RtpCodecParameters rtp_opus_with_fec =
+      opus_with_fec.ToCodecParameters();
+  // MatchesRtpCodec takes parameters into account.
+  EXPECT_TRUE(opus_with_fec.MatchesRtpCodec(rtp_opus_with_fec));
+  EXPECT_FALSE(opus_without_fec.MatchesRtpCodec(rtp_opus_with_fec));
+}
+
 TEST(CodecTest, TestVideoCodecOperators) {
   VideoCodec c0 = cricket::CreateVideoCodec(96, "V");
   VideoCodec c1 = cricket::CreateVideoCodec(95, "V");
@@ -308,6 +324,7 @@ TEST(CodecTest, TestVP9CodecMatches) {
 TEST(CodecTest, TestH264CodecMatches) {
   const char kProfileLevelId1[] = "42e01f";
   const char kProfileLevelId2[] = "42a01e";
+  const char kProfileLevelId3[] = "42e01e";
 
   VideoCodec pli_1_pm_0 = cricket::CreateVideoCodec(95, "H264");
   pli_1_pm_0.params[cricket::kH264FmtpProfileLevelId] = kProfileLevelId1;
@@ -321,6 +338,10 @@ TEST(CodecTest, TestH264CodecMatches) {
 
     // Matches since if packetization-mode is not specified it defaults to "0".
     EXPECT_TRUE(pli_1_pm_0.Matches(pli_1_pm_blank));
+
+    // MatchesRtpCodec does exact comparison of parameters.
+    EXPECT_FALSE(
+        pli_1_pm_0.MatchesRtpCodec(pli_1_pm_blank.ToCodecParameters()));
   }
 
   {
@@ -330,6 +351,8 @@ TEST(CodecTest, TestH264CodecMatches) {
 
     // Does not match since packetization-mode is different.
     EXPECT_FALSE(pli_1_pm_0.Matches(pli_1_pm_1));
+
+    EXPECT_FALSE(pli_1_pm_0.MatchesRtpCodec(pli_1_pm_1.ToCodecParameters()));
   }
 
   {
@@ -339,6 +362,23 @@ TEST(CodecTest, TestH264CodecMatches) {
 
     // Does not match since profile-level-id is different.
     EXPECT_FALSE(pli_1_pm_0.Matches(pli_2_pm_0));
+
+    EXPECT_FALSE(pli_1_pm_0.MatchesRtpCodec(pli_2_pm_0.ToCodecParameters()));
+  }
+
+  {
+    VideoCodec pli_3_pm_0_asym = cricket::CreateVideoCodec(95, "H264");
+    pli_3_pm_0_asym.params[cricket::kH264FmtpProfileLevelId] = kProfileLevelId3;
+    pli_3_pm_0_asym.params[cricket::kH264FmtpPacketizationMode] = "0";
+
+    // Does match, profile-level-id is different but the level is not compared.
+    // and the profile matches.
+    EXPECT_TRUE(pli_1_pm_0.Matches(pli_3_pm_0_asym));
+
+    EXPECT_FALSE(
+        pli_1_pm_0.MatchesRtpCodec(pli_3_pm_0_asym.ToCodecParameters()));
+
+    //
   }
 }
 
@@ -377,7 +417,7 @@ TEST(CodecTest, TestH265CodecMatches) {
         cricket::CreateVideoCodec(95, cricket::kH265CodecName);
     c_level_id_3_1.params[cricket::kH265FmtpLevelId] = kLevel3_1;
 
-    // Matches since level-id unspecified defautls to "93".
+    // Matches since level-id unspecified defaults to "93".
     EXPECT_TRUE(c_ptl_blank.Matches(c_level_id_3_1));
   }
 
@@ -444,7 +484,7 @@ TEST(CodecTest, TestIntersectFeedbackParams) {
 }
 
 TEST(CodecTest, TestGetCodecType) {
-  // Codec type comparison should be case insenstive on names.
+  // Codec type comparison should be case insensitive on names.
   const VideoCodec codec = cricket::CreateVideoCodec(96, "V");
   const VideoCodec rtx_codec = cricket::CreateVideoCodec(96, "rTx");
   const VideoCodec ulpfec_codec = cricket::CreateVideoCodec(96, "ulpFeC");
@@ -459,13 +499,22 @@ TEST(CodecTest, TestGetCodecType) {
 }
 
 TEST(CodecTest, TestCreateRtxCodec) {
-  VideoCodec rtx_codec = cricket::CreateVideoRtxCodec(96, 120);
+  const VideoCodec rtx_codec = cricket::CreateVideoRtxCodec(96, 120);
   EXPECT_EQ(96, rtx_codec.id);
   EXPECT_EQ(rtx_codec.GetResiliencyType(), Codec::ResiliencyType::kRtx);
   int associated_payload_type;
   ASSERT_TRUE(rtx_codec.GetParam(kCodecParamAssociatedPayloadType,
                                  &associated_payload_type));
   EXPECT_EQ(120, associated_payload_type);
+}
+
+TEST(CodecTest, TestMatchesRtpCodecRtx) {
+  const VideoCodec rtx_codec_1 = cricket::CreateVideoRtxCodec(96, 120);
+  const VideoCodec rtx_codec_2 = cricket::CreateVideoRtxCodec(96, 121);
+  EXPECT_TRUE(rtx_codec_1.Matches(rtx_codec_2));
+  // MatchesRtpCodec ignores the different associated payload type (apt) for
+  // RTX.
+  EXPECT_TRUE(rtx_codec_1.MatchesRtpCodec(rtx_codec_2.ToCodecParameters()));
 }
 
 TEST(CodecTest, TestValidateCodecFormat) {

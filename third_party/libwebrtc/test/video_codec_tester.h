@@ -48,7 +48,7 @@ class VideoCodecTester {
   };
 
   struct EncodingSettings {
-    SdpVideoFormat sdp_video_format = SdpVideoFormat("VP8");
+    SdpVideoFormat sdp_video_format = SdpVideoFormat::VP8();
     ScalabilityMode scalability_mode = ScalabilityMode::kL1T1;
 
     struct LayerSettings {

@@ -15,11 +15,12 @@
 #include "api/array_view.h"
 #include "common_video/h265/h265_sps_parser.h"
 #include "rtc_base/bitstream_reader.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 
 // A class for parsing out picture parameter set (PPS) data from a H265 NALU.
-class H265PpsParser {
+class RTC_EXPORT H265PpsParser {
  public:
   // The parsed state of the PPS. Only some select values are stored.
   // Add more as they are actually needed.

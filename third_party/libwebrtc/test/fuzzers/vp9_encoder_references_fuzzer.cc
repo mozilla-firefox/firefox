@@ -193,6 +193,12 @@ class FieldTrials : public FieldTrialsView {
         key == "WebRTC-VP9QualityScaler") {
       return "";
     }
+
+    // TODO: bugs.webrtc.org/15827 - Fuzz frame drop config.
+    if (key == "WebRTC-LibvpxVp9Encoder-SvcFrameDropConfig") {
+      return "";
+    }
+
     // Crash when using unexpected field trial to decide if it should be fuzzed
     // or have a constant value.
     RTC_CHECK(false) << "Unfuzzed field trial " << key << "\n";

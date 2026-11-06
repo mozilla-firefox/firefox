@@ -24,7 +24,9 @@
 #include "api/units/time_delta.h"
 #include "p2p/base/ice_transport_internal.h"
 #include "rtc_base/copy_on_write_buffer.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/task_queue_for_test.h"
+#include "rtc_base/time_utils.h"
 
 namespace cricket {
 using ::webrtc::SafeTask;
@@ -391,8 +393,8 @@ class FakeIceTransport : public IceTransportInternal {
       RTC_EXCLUSIVE_LOCKS_REQUIRED(network_thread_) {
     if (dest_) {
       last_sent_packet_ = packet;
-      dest_->SignalReadPacket(dest_, packet.data<char>(), packet.size(),
-                              rtc::TimeMicros(), 0);
+      dest_->NotifyPacketReceived(rtc::ReceivedPacket::CreateFromLegacy(
+          packet.data(), packet.size(), rtc::TimeMicros()));
     }
   }
 

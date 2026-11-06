@@ -216,7 +216,7 @@ void MultiCodecReceiveTest::RunTestWithCodecs(
       [](const Environment& env,
          const SdpVideoFormat& format) -> std::unique_ptr<VideoDecoder> {
         if (format.name == "VP8") {
-          return VP8Decoder::Create();
+          return CreateVp8Decoder(env);
         }
         if (format.name == "VP9") {
           return VP9Decoder::Create();

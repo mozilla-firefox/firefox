@@ -42,14 +42,14 @@ namespace cricket {
 // least one video codec of the list. If the list is empty, no check is done.
 webrtc::RTCError CheckScalabilityModeValues(
     const webrtc::RtpParameters& new_parameters,
-    rtc::ArrayView<cricket::Codec> codec_preferences,
+    rtc::ArrayView<cricket::Codec> send_codecs,
     absl::optional<cricket::Codec> send_codec);
 
 // Checks the parameters have valid and supported values, and checks parameters
 // with CheckScalabilityModeValues().
 webrtc::RTCError CheckRtpParametersValues(
     const webrtc::RtpParameters& new_parameters,
-    rtc::ArrayView<cricket::Codec> codec_preferences,
+    rtc::ArrayView<cricket::Codec> send_codecs,
     absl::optional<cricket::Codec> send_codec);
 
 // Checks that the immutable values have not changed in new_parameters and
@@ -57,7 +57,7 @@ webrtc::RTCError CheckRtpParametersValues(
 webrtc::RTCError CheckRtpParametersInvalidModificationAndValues(
     const webrtc::RtpParameters& old_parameters,
     const webrtc::RtpParameters& new_parameters,
-    rtc::ArrayView<cricket::Codec> codec_preferences,
+    rtc::ArrayView<cricket::Codec> send_codecs,
     absl::optional<cricket::Codec> send_codec);
 
 // Checks that the immutable values have not changed in new_parameters and

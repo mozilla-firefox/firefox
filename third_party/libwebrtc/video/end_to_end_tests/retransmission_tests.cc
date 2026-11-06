@@ -469,7 +469,7 @@ void RetransmissionEndToEndTest::DecodesRetransmittedFrame(bool enable_rtx,
       send_config->encoder_settings.encoder_factory = &encoder_factory_;
       send_config->rtp.payload_name = "VP8";
       encoder_config->codec_type = kVideoCodecVP8;
-      (*receive_configs)[0].decoders[0].video_format = SdpVideoFormat("VP8");
+      (*receive_configs)[0].decoders[0].video_format = SdpVideoFormat::VP8();
     }
 
     void OnFrameGeneratorCapturerCreated(

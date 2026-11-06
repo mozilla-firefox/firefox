@@ -24,6 +24,9 @@ namespace {
 const char kVPxFmtpMaxFrameRate[] = "max-fr";
 // Max frame size for VP8 and VP9 video.
 const char kVPxFmtpMaxFrameSize[] = "max-fs";
+// Nonstandard per-layer PLI for video.
+const char kCodecParamPerLayerPictureLossIndication[] =
+    "x-google-per-layer-pli";
 }  // namespace
 
 TEST(SdpVideoFormatUtilsTest, TestH264GenerateProfileLevelIdForAnswerEmpty) {
@@ -139,6 +142,17 @@ TEST(SdpVideoFormatUtilsTest, MaxFrameSizeIsSpecified) {
   EXPECT_EQ(ParseSdpForVPxMaxFrameSize(params), 1920 * 1080);
   params[kVPxFmtpMaxFrameSize] = "32400";  // 3840 x 2160 / (16^2)
   EXPECT_EQ(ParseSdpForVPxMaxFrameSize(params), 3840 * 2160);
+}
+
+TEST(SdpVideoFormatUtilsTest, PerLayerPictureLossIndication) {
+  CodecParameterMap params;
+  EXPECT_FALSE(SupportsPerLayerPictureLossIndication(params));
+  params[kCodecParamPerLayerPictureLossIndication] = "wrong";
+  EXPECT_FALSE(SupportsPerLayerPictureLossIndication(params));
+  params[kCodecParamPerLayerPictureLossIndication] = "0";
+  EXPECT_FALSE(SupportsPerLayerPictureLossIndication(params));
+  params[kCodecParamPerLayerPictureLossIndication] = "1";
+  EXPECT_TRUE(SupportsPerLayerPictureLossIndication(params));
 }
 
 }  // namespace webrtc

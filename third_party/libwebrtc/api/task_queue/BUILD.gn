@@ -171,7 +171,6 @@ if (rtc_include_tests) {
       ":pending_task_safety_flag",
       "../../rtc_base:logging",
       "../../rtc_base:rtc_event",
-      "../../rtc_base:rtc_task_queue",
       "../../rtc_base:task_queue_for_test",
       "../../test:test_support",
     ]

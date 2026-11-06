@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "absl/functional/any_invocable.h"
+#include "absl/types/optional.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/task_queue/test/mock_task_queue_base.h"
 #include "api/units/time_delta.h"

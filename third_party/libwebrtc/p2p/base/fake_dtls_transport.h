@@ -22,6 +22,7 @@
 #include "p2p/base/dtls_transport_internal.h"
 #include "p2p/base/fake_ice_transport.h"
 #include "rtc_base/fake_ssl_identity.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/rtc_certificate.h"
 
 namespace cricket {
@@ -37,8 +38,11 @@ class FakeDtlsTransport : public DtlsTransportInternal {
         component_(ice_transport->component()),
         dtls_fingerprint_("", nullptr) {
     RTC_DCHECK(ice_transport_);
-    ice_transport_->SignalReadPacket.connect(
-        this, &FakeDtlsTransport::OnIceTransportReadPacket);
+    ice_transport_->RegisterReceivedPacketCallback(
+        this, [&](rtc::PacketTransportInternal* transport,
+                  const rtc::ReceivedPacket& packet) {
+          OnIceTransportReadPacket(transport, packet);
+        });
     ice_transport_->SignalNetworkRouteChanged.connect(
         this, &FakeDtlsTransport::OnNetworkRouteChanged);
   }
@@ -49,8 +53,11 @@ class FakeDtlsTransport : public DtlsTransportInternal {
         component_(owned_ice_transport_->component()),
         dtls_fingerprint_("", rtc::ArrayView<const uint8_t>()) {
     ice_transport_ = owned_ice_transport_.get();
-    ice_transport_->SignalReadPacket.connect(
-        this, &FakeDtlsTransport::OnIceTransportReadPacket);
+    ice_transport_->RegisterReceivedPacketCallback(
+        this, [&](rtc::PacketTransportInternal* transport,
+                  const rtc::ReceivedPacket& packet) {
+          OnIceTransportReadPacket(transport, packet);
+        });
     ice_transport_->SignalNetworkRouteChanged.connect(
         this, &FakeDtlsTransport::OnNetworkRouteChanged);
   }
@@ -71,6 +78,7 @@ class FakeDtlsTransport : public DtlsTransportInternal {
     if (dest_ && dest_->dest_ == this) {
       dest_->dest_ = nullptr;
     }
+    ice_transport_->DeregisterReceivedPacketCallback(this);
   }
 
   // Get inner fake ICE transport.
@@ -264,11 +272,8 @@ class FakeDtlsTransport : public DtlsTransportInternal {
 
  private:
   void OnIceTransportReadPacket(PacketTransportInternal* ice_,
-                                const char* data,
-                                size_t len,
-                                const int64_t& packet_time_us,
-                                int flags) {
-    SignalReadPacket(this, data, len, packet_time_us, flags);
+                                const rtc::ReceivedPacket& packet) {
+    NotifyPacketReceived(packet);
   }
 
   void set_receiving(bool receiving) {

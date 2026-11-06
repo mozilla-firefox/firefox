@@ -10,6 +10,8 @@
 
 #include "media/engine/internal_decoder_factory.h"
 
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "api/video_codecs/av1_profile.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder.h"
@@ -56,44 +58,44 @@ MATCHER_P(Support, expected, "") {
 }
 
 TEST(InternalDecoderFactoryTest, Vp8) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
   std::unique_ptr<VideoDecoder> decoder =
-      factory.CreateVideoDecoder(SdpVideoFormat(cricket::kVp8CodecName));
+      factory.Create(env, SdpVideoFormat::VP8());
   EXPECT_TRUE(decoder);
 }
 
 TEST(InternalDecoderFactoryTest, Vp9Profile0) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
   std::unique_ptr<VideoDecoder> decoder =
-      factory.CreateVideoDecoder(SdpVideoFormat(
-          cricket::kVp9CodecName,
-          {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile0)}}));
+      factory.Create(env, SdpVideoFormat::VP9Profile0());
   EXPECT_EQ(static_cast<bool>(decoder), kVp9Enabled);
 }
 
 TEST(InternalDecoderFactoryTest, Vp9Profile1) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
   std::unique_ptr<VideoDecoder> decoder =
-      factory.CreateVideoDecoder(SdpVideoFormat(
-          cricket::kVp9CodecName,
-          {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile1)}}));
+      factory.Create(env, SdpVideoFormat::VP9Profile1());
   EXPECT_EQ(static_cast<bool>(decoder), kVp9Enabled);
 }
 
 TEST(InternalDecoderFactoryTest, H264) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
   std::unique_ptr<VideoDecoder> decoder =
-      factory.CreateVideoDecoder(SdpVideoFormat(cricket::kH264CodecName));
+      factory.Create(env, SdpVideoFormat::H264());
   EXPECT_EQ(static_cast<bool>(decoder), kH264Enabled);
 }
 
 TEST(InternalDecoderFactoryTest, Av1Profile0) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
   if (kDav1dIsIncluded) {
     EXPECT_THAT(factory.GetSupportedFormats(),
                 Contains(Field(&SdpVideoFormat::name, cricket::kAv1CodecName)));
-    EXPECT_TRUE(
-        factory.CreateVideoDecoder(SdpVideoFormat(cricket::kAv1CodecName)));
+    EXPECT_TRUE(factory.Create(env, SdpVideoFormat::AV1Profile0()));
   } else {
     EXPECT_THAT(
         factory.GetSupportedFormats(),
@@ -103,9 +105,10 @@ TEST(InternalDecoderFactoryTest, Av1Profile0) {
 
 // At current stage since internal H.265 decoder is not implemented,
 TEST(InternalDecoderFactoryTest, H265IsNotEnabled) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
   std::unique_ptr<VideoDecoder> decoder =
-      factory.CreateVideoDecoder(SdpVideoFormat(cricket::kH265CodecName));
+      factory.Create(env, SdpVideoFormat(cricket::kH265CodecName));
   EXPECT_EQ(static_cast<bool>(decoder), kH265Enabled);
 }
 
@@ -118,53 +121,53 @@ TEST(InternalDecoderFactoryTest, Av1) {
 #endif
 
 TEST(InternalDecoderFactoryTest, Av1Profile1_Dav1dDecoderTrialEnabled) {
+  const Environment env = CreateEnvironment();
   InternalDecoderFactory factory;
-  std::unique_ptr<VideoDecoder> decoder = factory.CreateVideoDecoder(
-      SdpVideoFormat(cricket::kAv1CodecName,
-                     {{cricket::kAv1FmtpProfile,
-                       AV1ProfileToString(AV1Profile::kProfile1).data()}}));
+  std::unique_ptr<VideoDecoder> decoder =
+      factory.Create(env, SdpVideoFormat::AV1Profile1());
   EXPECT_EQ(static_cast<bool>(decoder), kDav1dIsIncluded);
 }
 
 TEST(InternalDecoderFactoryTest, QueryCodecSupportNoReferenceScaling) {
   InternalDecoderFactory factory;
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kVp8CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::VP8(),
                                         /*reference_scaling=*/false),
               Support(kSupported));
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kVp9CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::VP9Profile0(),
                                         /*reference_scaling=*/false),
               Support(kVp9Enabled ? kSupported : kUnsupported));
-  EXPECT_THAT(factory.QueryCodecSupport(
-                  SdpVideoFormat(cricket::kVp9CodecName,
-                                 {{kVP9FmtpProfileId,
-                                   VP9ProfileToString(VP9Profile::kProfile1)}}),
-                  /*reference_scaling=*/false),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::VP9Profile1(),
+                                        /*reference_scaling=*/false),
               Support(kVp9Enabled ? kSupported : kUnsupported));
 
 #if defined(RTC_DAV1D_IN_INTERNAL_DECODER_FACTORY)
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kAv1CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::AV1Profile0(),
                                         /*reference_scaling=*/false),
               Support(kSupported));
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::AV1Profile1(),
+                                        /*reference_scaling=*/false),
+              Support(kSupported));
+
 #endif
 }
 
 TEST(InternalDecoderFactoryTest, QueryCodecSupportReferenceScaling) {
   InternalDecoderFactory factory;
   // VP9 and AV1 support for spatial layers.
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kVp9CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::VP9Profile0(),
                                         /*reference_scaling=*/true),
               Support(kVp9Enabled ? kSupported : kUnsupported));
 #if defined(RTC_DAV1D_IN_INTERNAL_DECODER_FACTORY)
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kAv1CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::AV1Profile0(),
                                         /*reference_scaling=*/true),
               Support(kSupported));
 #endif
 
   // Invalid config even though VP8 and H264 are supported.
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kH264CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::H264(),
                                         /*reference_scaling=*/true),
               Support(kUnsupported));
-  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat(cricket::kVp8CodecName),
+  EXPECT_THAT(factory.QueryCodecSupport(SdpVideoFormat::VP8(),
                                         /*reference_scaling=*/true),
               Support(kUnsupported));
 }

@@ -28,32 +28,59 @@
 namespace cricket {
 namespace {
 
-std::string GetH264PacketizationModeOrDefault(
-    const webrtc::CodecParameterMap& params) {
-  auto it = params.find(kH264FmtpPacketizationMode);
+// TODO(bugs.webrtc.org/15847): remove code duplication of IsSameCodecSpecific
+// in api/video_codecs/sdp_video_format.cc
+std::string GetFmtpParameterOrDefault(const webrtc::CodecParameterMap& params,
+                                      const std::string& name,
+                                      const std::string& default_value) {
+  const auto it = params.find(name);
   if (it != params.end()) {
     return it->second;
   }
-  // If packetization-mode is not present, default to "0".
-  // https://tools.ietf.org/html/rfc6184#section-6.2
-  return "0";
+  return default_value;
 }
 
-bool IsSameH264PacketizationMode(const webrtc::CodecParameterMap& left,
+std::string H264GetPacketizationModeOrDefault(
+    const webrtc::CodecParameterMap& params) {
+  // If packetization-mode is not present, default to "0".
+  // https://tools.ietf.org/html/rfc6184#section-6.2
+  return GetFmtpParameterOrDefault(params, cricket::kH264FmtpPacketizationMode,
+                                   "0");
+}
+
+bool H264IsSamePacketizationMode(const webrtc::CodecParameterMap& left,
                                  const webrtc::CodecParameterMap& right) {
-  return GetH264PacketizationModeOrDefault(left) ==
-         GetH264PacketizationModeOrDefault(right);
+  return H264GetPacketizationModeOrDefault(left) ==
+         H264GetPacketizationModeOrDefault(right);
+}
+
+std::string AV1GetTierOrDefault(const webrtc::CodecParameterMap& params) {
+  // If the parameter is not present, the tier MUST be inferred to be 0.
+  // https://aomediacodec.github.io/av1-rtp-spec/#72-sdp-parameters
+  return GetFmtpParameterOrDefault(params, cricket::kAv1FmtpTier, "0");
+}
+
+bool AV1IsSameTier(const webrtc::CodecParameterMap& left,
+                   const webrtc::CodecParameterMap& right) {
+  return AV1GetTierOrDefault(left) == AV1GetTierOrDefault(right);
+}
+
+std::string AV1GetLevelIdxOrDefault(const webrtc::CodecParameterMap& params) {
+  // If the parameter is not present, it MUST be inferred to be 5 (level 3.1).
+  // https://aomediacodec.github.io/av1-rtp-spec/#72-sdp-parameters
+  return GetFmtpParameterOrDefault(params, cricket::kAv1FmtpLevelIdx, "5");
+}
+
+bool AV1IsSameLevelIdx(const webrtc::CodecParameterMap& left,
+                       const webrtc::CodecParameterMap& right) {
+  return AV1GetLevelIdxOrDefault(left) == AV1GetLevelIdxOrDefault(right);
 }
 
 #ifdef RTC_ENABLE_H265
 std::string GetH265TxModeOrDefault(const webrtc::CodecParameterMap& params) {
-  auto it = params.find(kH265FmtpTxMode);
-  if (it != params.end()) {
-    return it->second;
-  }
   // If TxMode is not present, a value of "SRST" must be inferred.
   // https://tools.ietf.org/html/rfc7798@section-7.1
-  return "SRST";
+  return GetFmtpParameterOrDefault(params, kH265FmtpTxMode, "SRST");
 }
 
 bool IsSameH265TxMode(const webrtc::CodecParameterMap& left,
@@ -76,11 +103,13 @@ bool IsSameCodecSpecific(const std::string& name1,
   };
   if (either_name_matches(kH264CodecName))
     return webrtc::H264IsSameProfile(params1, params2) &&
-           IsSameH264PacketizationMode(params1, params2);
+           H264IsSamePacketizationMode(params1, params2);
   if (either_name_matches(kVp9CodecName))
     return webrtc::VP9IsSameProfile(params1, params2);
   if (either_name_matches(kAv1CodecName))
-    return webrtc::AV1IsSameProfile(params1, params2);
+    return webrtc::AV1IsSameProfile(params1, params2) &&
+           AV1IsSameTier(params1, params2) &&
+           AV1IsSameLevelIdx(params1, params2);
 #ifdef RTC_ENABLE_H265
   if (either_name_matches(kH265CodecName)) {
     return webrtc::H265IsSameProfileTierLevel(params1, params2) &&
@@ -243,10 +272,10 @@ bool Codec::MatchesRtpCodec(const webrtc::RtpCodec& codec_capability) const {
 
   return codec_parameters.name == codec_capability.name &&
          codec_parameters.kind == codec_capability.kind &&
+         codec_parameters.num_channels == codec_capability.num_channels &&
+         codec_parameters.clock_rate == codec_capability.clock_rate &&
          (codec_parameters.name == cricket::kRtxCodecName ||
-          (codec_parameters.num_channels == codec_capability.num_channels &&
-           codec_parameters.clock_rate == codec_capability.clock_rate &&
-           codec_parameters.parameters == codec_capability.parameters));
+          codec_parameters.parameters == codec_capability.parameters);
 }
 
 bool Codec::GetParam(const std::string& name, std::string* out) const {

@@ -12,12 +12,15 @@
 
 #include <cstring>
 #include <map>
+#include <string>
 #include <utility>
 
 #include "api/video_codecs/h264_profile_level_id.h"
 #ifdef RTC_ENABLE_H265
 #include "api/video_codecs/h265_profile_tier_level.h"
 #endif
+#include "absl/algorithm/container.h"
+#include "media/base/media_constants.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/string_to_number.h"
 
@@ -175,6 +178,15 @@ absl::optional<int> ParseSdpForVPxMaxFrameSize(
       ParsePositiveNumberFromParams(params, kVPxFmtpMaxFrameSize);
   return i ? absl::make_optional(i.value() * kVPxFmtpFrameSizeSubBlockPixels)
            : absl::nullopt;
+}
+
+bool SupportsPerLayerPictureLossIndication(const CodecParameterMap& params) {
+  return absl::c_find_if(
+             params, [](const std::pair<std::string, std::string>& kv) {
+               return kv.first ==
+                          cricket::kCodecParamPerLayerPictureLossIndication &&
+                      kv.second == "1";
+             }) != params.end();
 }
 
 }  // namespace webrtc

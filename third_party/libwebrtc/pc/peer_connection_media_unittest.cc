@@ -1548,29 +1548,6 @@ TEST_F(PeerConnectionMediaTestUnifiedPlan,
 }
 
 TEST_F(PeerConnectionMediaTestUnifiedPlan,
-       SetCodecPreferencesAudioMissingSendCodec) {
-  auto fake_engine = std::make_unique<FakeMediaEngine>();
-  auto recv_codecs = fake_engine->voice().recv_codecs();
-  recv_codecs.push_back(cricket::CreateAudioCodec(recv_codecs.back().id + 1,
-                                                  "recv_only_codec", 0, 1));
-  fake_engine->SetAudioRecvCodecs(recv_codecs);
-  auto caller = CreatePeerConnectionWithAudio(std::move(fake_engine));
-
-  auto transceiver = caller->pc()->GetTransceivers().front();
-  auto capabilities = caller->pc_factory()->GetRtpReceiverCapabilities(
-      cricket::MediaType::MEDIA_TYPE_AUDIO);
-
-  std::vector<RtpCodecCapability> codecs;
-  absl::c_copy_if(capabilities.codecs, std::back_inserter(codecs),
-                  [](const RtpCodecCapability& codec) {
-                    return codec.name.find("_only_") != std::string::npos;
-                  });
-
-  auto result = transceiver->SetCodecPreferences(codecs);
-  EXPECT_EQ(RTCErrorType::INVALID_MODIFICATION, result.type());
-}
-
-TEST_F(PeerConnectionMediaTestUnifiedPlan,
        SetCodecPreferencesAudioRejectsVideoCodec) {
   auto caller = CreatePeerConnectionWithAudio();
 

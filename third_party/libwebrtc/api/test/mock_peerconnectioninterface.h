@@ -160,6 +160,10 @@ class MockPeerConnectionInterface : public webrtc::PeerConnectionInterface {
               (std::unique_ptr<SessionDescriptionInterface>,
                rtc::scoped_refptr<SetRemoteDescriptionObserverInterface>),
               (override));
+  MOCK_METHOD(bool,
+              ShouldFireNegotiationNeededEvent,
+              (uint32_t event_id),
+              (override));
   MOCK_METHOD(PeerConnectionInterface::RTCConfiguration,
               GetConfiguration,
               (),
@@ -195,6 +199,10 @@ class MockPeerConnectionInterface : public webrtc::PeerConnectionInterface {
               (override));
   MOCK_METHOD(PeerConnectionState, peer_connection_state, (), (override));
   MOCK_METHOD(IceGatheringState, ice_gathering_state, (), (override));
+  MOCK_METHOD(void,
+              AddAdaptationResource,
+              (rtc::scoped_refptr<Resource>),
+              (override));
   MOCK_METHOD(absl::optional<bool>, can_trickle_ice_candidates, (), (override));
   MOCK_METHOD(bool,
               StartRtcEventLog,
@@ -206,6 +214,7 @@ class MockPeerConnectionInterface : public webrtc::PeerConnectionInterface {
               (override));
   MOCK_METHOD(void, StopRtcEventLog, (), (override));
   MOCK_METHOD(void, Close, (), (override));
+  MOCK_METHOD(rtc::Thread*, signaling_thread, (), (const override));
 };
 
 static_assert(

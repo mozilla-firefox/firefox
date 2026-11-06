@@ -14,8 +14,8 @@
 #include <memory>
 
 #include "api/audio/audio_frame_processor.h"
+#include "api/task_queue/task_queue_base.h"
 #include "rtc_base/ref_count.h"
-#include "rtc_base/task_queue.h"
 
 namespace webrtc {
 
@@ -101,7 +101,7 @@ class AsyncAudioProcessing final {
   //   called.
   AudioFrameProcessor& frame_processor_;
   std::unique_ptr<AudioFrameProcessor> owned_frame_processor_;
-  rtc::TaskQueue task_queue_;
+  std::unique_ptr<TaskQueueBase, TaskQueueDeleter> task_queue_;
 };
 
 }  // namespace webrtc

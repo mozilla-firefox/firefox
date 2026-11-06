@@ -652,7 +652,7 @@ TEST_P(VideoCodecTesterTestPacing, PaceDecode) {
   decoder_settings.pacing_settings = pacing_settings;
   std::vector<Frame> frames =
       VideoCodecTester::RunDecodeTest(env_, &video_source, &decoder_factory,
-                                      decoder_settings, SdpVideoFormat("VP8"))
+                                      decoder_settings, SdpVideoFormat::VP8())
           ->Slice(/*filter=*/{}, /*merge=*/false);
   ASSERT_THAT(frames, SizeIs(kNumFrames));
   EXPECT_NEAR((frames[1].decode_start - frames[0].decode_start).ms(),

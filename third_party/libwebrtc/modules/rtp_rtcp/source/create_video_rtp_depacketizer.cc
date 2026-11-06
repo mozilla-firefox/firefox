@@ -43,7 +43,6 @@ std::unique_ptr<VideoRtpDepacketizer> CreateVideoRtpDepacketizer(
       return nullptr;
 #endif
     case kVideoCodecGeneric:
-    case kVideoCodecMultiplex:
       return std::make_unique<VideoRtpDepacketizerGeneric>();
   }
   RTC_CHECK_NOTREACHED();

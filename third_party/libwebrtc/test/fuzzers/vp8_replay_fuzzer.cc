@@ -22,7 +22,7 @@ void FuzzOneInput(const uint8_t* data, size_t size) {
   VideoReceiveStreamInterface::Config vp8_config(&(stream_state->transport));
 
   VideoReceiveStreamInterface::Decoder vp8_decoder;
-  vp8_decoder.video_format = SdpVideoFormat("VP8");
+  vp8_decoder.video_format = SdpVideoFormat::VP8();
   vp8_decoder.payload_type = 125;
   vp8_config.decoders.push_back(std::move(vp8_decoder));
 

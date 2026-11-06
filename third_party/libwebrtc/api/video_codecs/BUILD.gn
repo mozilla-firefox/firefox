@@ -231,7 +231,8 @@ rtc_source_set("video_decoder_factory_template") {
 
   deps = [
     ":video_codecs_api",
-    "../../api:array_view",
+    "..:array_view",
+    "../environment",
   ]
 
   absl_deps = [ "//third_party/abseil-cpp/absl/algorithm:container" ]
@@ -245,6 +246,7 @@ rtc_source_set("video_decoder_factory_template_libvpx_vp8_adapter") {
   deps = [
     ":video_codecs_api",
     "../../modules/video_coding:webrtc_vp8",
+    "../environment",
   ]
 }
 

@@ -34,8 +34,8 @@ class VideoDecoderProxyFactory final : public VideoDecoderFactory {
     return {};
   }
 
-  std::unique_ptr<VideoDecoder> CreateVideoDecoder(
-      const SdpVideoFormat& format) override {
+  std::unique_ptr<VideoDecoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
     return std::make_unique<DecoderProxy>(decoder_);
   }
 

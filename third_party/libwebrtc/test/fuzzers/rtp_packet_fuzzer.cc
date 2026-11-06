@@ -75,7 +75,7 @@ void FuzzOneInput(const uint8_t* data, size_t size) {
       case kRtpExtensionAudioLevel:
         bool voice_activity;
         uint8_t audio_level;
-        packet.GetExtension<AudioLevel>(&voice_activity, &audio_level);
+        packet.GetExtension<AudioLevelExtension>(&voice_activity, &audio_level);
         break;
 #if !defined(WEBRTC_MOZILLA_BUILD)
       case kRtpExtensionCsrcAudioLevel: {

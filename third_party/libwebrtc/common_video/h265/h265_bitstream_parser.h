@@ -22,12 +22,13 @@
 #include "common_video/h265/h265_sps_parser.h"
 #include "common_video/h265/h265_vps_parser.h"
 #include "rtc_base/containers/flat_map.h"
+#include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
 
 // Stateful H265 bitstream parser (due to VPS/SPS/PPS). Used to parse out QP
 // values from the bitstream.
-class H265BitstreamParser : public BitstreamParser {
+class RTC_EXPORT H265BitstreamParser : public BitstreamParser {
  public:
   H265BitstreamParser();
   ~H265BitstreamParser() override;
@@ -35,6 +36,8 @@ class H265BitstreamParser : public BitstreamParser {
   // New interface.
   void ParseBitstream(rtc::ArrayView<const uint8_t> bitstream) override;
   absl::optional<int> GetLastSliceQp() const override;
+
+  absl::optional<uint32_t> GetLastSlicePpsId() const;
 
   static absl::optional<uint32_t> ParsePpsIdFromSliceSegmentLayerRbsp(
       const uint8_t* data,

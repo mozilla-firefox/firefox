@@ -16,7 +16,7 @@ const int kVideoCodecClockrate = 90000;
 
 const int kVideoMtu = 1200;
 const int kVideoRtpSendBufferSize = 262144;
-const int kVideoRtpRecvBufferSize = 262144;
+const int kVideoRtpRecvBufferSize = 1048576;
 
 const float kHighSystemCpuThreshold = 0.85f;
 const float kLowSystemCpuThreshold = 0.65f;
@@ -24,7 +24,6 @@ const float kProcessCpuThreshold = 0.10f;
 
 const char kRedCodecName[] = "red";
 const char kUlpfecCodecName[] = "ulpfec";
-const char kMultiplexCodecName[] = "multiplex";
 
 // TODO(brandtr): Change this to 'flexfec' when we are confident that the
 // header format is not changing anymore.
@@ -96,6 +95,8 @@ const char kCodecParamMaxBitrate[] = "x-google-max-bitrate";
 const char kCodecParamMinBitrate[] = "x-google-min-bitrate";
 const char kCodecParamStartBitrate[] = "x-google-start-bitrate";
 const char kCodecParamMaxQuantization[] = "x-google-max-quantization";
+const char kCodecParamPerLayerPictureLossIndication[] =
+    "x-google-per-layer-pli";
 
 const char kComfortNoiseCodecName[] = "CN";
 

@@ -191,6 +191,7 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
   const absl::optional<unsigned int> experimental_boosted_screenshare_qp_;
   const bool boost_base_layer_quality_;
   const bool prefer_temporal_support_on_base_layer_;
+  const bool per_layer_pli_;
 
   const SimulcastEncoderAdapterEncoderInfoSettings encoder_info_override_;
 };

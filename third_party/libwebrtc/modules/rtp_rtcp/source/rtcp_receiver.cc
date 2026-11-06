@@ -87,7 +87,6 @@ bool ResetTimestampIfExpired(const Timestamp now,
 }  // namespace
 
 constexpr size_t RTCPReceiver::RegisteredSsrcs::kMediaSsrcIndex;
-constexpr size_t RTCPReceiver::RegisteredSsrcs::kMaxSsrcs;
 
 RTCPReceiver::RegisteredSsrcs::RegisteredSsrcs(
     bool disable_sequence_checker,
@@ -105,7 +104,7 @@ RTCPReceiver::RegisteredSsrcs::RegisteredSsrcs(
     }
   }
   // Ensure that the RegisteredSsrcs can inline the SSRCs.
-  RTC_DCHECK_LE(ssrcs_.size(), RTCPReceiver::RegisteredSsrcs::kMaxSsrcs);
+  RTC_DCHECK_LE(ssrcs_.size(), kMaxSimulcastStreams);
 }
 
 bool RTCPReceiver::RegisteredSsrcs::contains(uint32_t ssrc) const {

@@ -98,6 +98,8 @@ class FakePacketTransport : public PacketTransportInternal {
     SignalNetworkRouteChanged(network_route);
   }
 
+  using PacketTransportInternal::NotifyPacketReceived;
+
  private:
   void set_writable(bool writable) {
     if (writable_ == writable) {
@@ -121,8 +123,8 @@ class FakePacketTransport : public PacketTransportInternal {
   void SendPacketInternal(const CopyOnWriteBuffer& packet) {
     last_sent_packet_ = packet;
     if (dest_) {
-      dest_->SignalReadPacket(dest_, packet.data<char>(), packet.size(),
-                              TimeMicros(), 0);
+      dest_->NotifyPacketReceived(rtc::ReceivedPacket::CreateFromLegacy(
+          packet.data(), packet.size(), rtc::TimeMicros()));
     }
   }
 

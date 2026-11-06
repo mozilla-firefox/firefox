@@ -12,11 +12,15 @@
 #define P2P_BASE_PACKET_TRANSPORT_INTERNAL_H_
 
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "absl/types/optional.h"
 #include "p2p/base/port.h"
 #include "rtc_base/async_packet_socket.h"
+#include "rtc_base/callback_list.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/network_route.h"
 #include "rtc_base/socket.h"
 #include "rtc_base/system/rtc_export.h"
@@ -78,15 +82,13 @@ class RTC_EXPORT PacketTransportInternal : public sigslot::has_slots<> {
   // Emitted when receiving state changes to true.
   sigslot::signal1<PacketTransportInternal*> SignalReceivingState;
 
-  // Signalled each time a packet is received on this channel.
-  sigslot::signal5<PacketTransportInternal*,
-                   const char*,
-                   size_t,
-                   // TODO(bugs.webrtc.org/9584): Change to passing the int64_t
-                   // timestamp by value.
-                   const int64_t&,
-                   int>
-      SignalReadPacket;
+  // Callback is invoked each time a packet is received on this channel.
+  void RegisterReceivedPacketCallback(
+      void* id,
+      absl::AnyInvocable<void(PacketTransportInternal*,
+                              const rtc::ReceivedPacket&)> callback);
+
+  void DeregisterReceivedPacketCallback(void* id);
 
   // Signalled each time a packet is sent on this channel.
   sigslot::signal2<PacketTransportInternal*, const rtc::SentPacket&>
@@ -101,6 +103,14 @@ class RTC_EXPORT PacketTransportInternal : public sigslot::has_slots<> {
  protected:
   PacketTransportInternal();
   ~PacketTransportInternal() override;
+
+  void NotifyPacketReceived(const rtc::ReceivedPacket& packet);
+
+  webrtc::SequenceChecker network_checker_{webrtc::SequenceChecker::kDetached};
+
+ private:
+  webrtc::CallbackList<PacketTransportInternal*, const rtc::ReceivedPacket&>
+      received_packet_callback_list_ RTC_GUARDED_BY(&network_checker_);
 };
 
 }  // namespace rtc

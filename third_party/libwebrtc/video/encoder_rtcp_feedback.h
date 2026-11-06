@@ -33,6 +33,7 @@ class EncoderRtcpFeedback : public RtcpIntraFrameObserver,
  public:
   EncoderRtcpFeedback(
       Clock* clock,
+      bool per_layer_keyframes,
       const std::vector<uint32_t>& ssrcs,
       VideoStreamEncoderInterface* encoder,
       std::function<std::vector<RtpSequenceNumberMap::Info>(
@@ -51,6 +52,7 @@ class EncoderRtcpFeedback : public RtcpIntraFrameObserver,
  private:
   Clock* const clock_;
   const std::vector<uint32_t> ssrcs_;
+  const bool per_layer_keyframes_;
   const std::function<std::vector<RtpSequenceNumberMap::Info>(
       uint32_t ssrc,
       const std::vector<uint16_t>& seq_nums)>
@@ -58,7 +60,7 @@ class EncoderRtcpFeedback : public RtcpIntraFrameObserver,
   VideoStreamEncoderInterface* const video_stream_encoder_;
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker packet_delivery_queue_;
-  Timestamp time_last_packet_delivery_queue_
+  std::vector<Timestamp> time_last_packet_delivery_queue_
       RTC_GUARDED_BY(packet_delivery_queue_);
 
   const TimeDelta min_keyframe_send_interval_;

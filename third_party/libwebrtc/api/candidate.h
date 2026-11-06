@@ -26,6 +26,7 @@
 
 namespace webrtc {
 enum class IceCandidateType : int { kHost, kSrflx, kPrflx, kRelay };
+RTC_EXPORT absl::string_view IceCandidateTypeToString(IceCandidateType);
 }  // namespace webrtc
 
 namespace cricket {
@@ -42,13 +43,21 @@ RTC_EXPORT extern const absl::string_view RELAY_PORT_TYPE;
 static constexpr size_t kMaxTurnServers = 32;
 
 // Candidate for ICE based connection discovery.
-// TODO(phoglund): remove things in here that are not needed in the public API.
-
 class RTC_EXPORT Candidate {
  public:
   Candidate();
-  // TODO(pthatcher): Match the ordering and param list as per RFC 5245
-  // candidate-attribute syntax. http://tools.ietf.org/html/rfc5245#section-15.1
+  Candidate(int component,
+            absl::string_view protocol,
+            const rtc::SocketAddress& address,
+            uint32_t priority,
+            absl::string_view username,
+            absl::string_view password,
+            webrtc::IceCandidateType type,
+            uint32_t generation,
+            absl::string_view foundation,
+            uint16_t network_id = 0,
+            uint16_t network_cost = 0);
+  // TODO(tommi): Deprecate.
   Candidate(int component,
             absl::string_view protocol,
             const rtc::SocketAddress& address,
@@ -74,10 +83,18 @@ class RTC_EXPORT Candidate {
   void set_component(int component) { component_ = component; }
 
   const std::string& protocol() const { return protocol_; }
+
+  // Valid protocol values are:
+  // UDP_PROTOCOL_NAME, TCP_PROTOCOL_NAME, SSLTCP_PROTOCOL_NAME,
+  // TLS_PROTOCOL_NAME.
   void set_protocol(absl::string_view protocol) { Assign(protocol_, protocol); }
 
   // The protocol used to talk to relay.
   const std::string& relay_protocol() const { return relay_protocol_; }
+
+  // Valid protocol values are:
+  // UDP_PROTOCOL_NAME, TCP_PROTOCOL_NAME, SSLTCP_PROTOCOL_NAME,
+  // TLS_PROTOCOL_NAME.
   void set_relay_protocol(absl::string_view protocol) {
     Assign(relay_protocol_, protocol);
   }
@@ -95,7 +112,7 @@ class RTC_EXPORT Candidate {
   const std::string& password() const { return password_; }
   void set_password(absl::string_view password) { Assign(password_, password); }
 
-  const std::string& type() const { return type_; }
+  webrtc::IceCandidateType type() const { return type_; }
 
   // Returns the name of the candidate type as specified in
   // https://datatracker.ietf.org/doc/html/rfc5245#section-15.1
@@ -105,13 +122,14 @@ class RTC_EXPORT Candidate {
   // cricket::LOCAL_PORT_TYPE). The type should really be an enum rather than a
   // string, but until we make that change the lifetime attribute helps us lock
   // things down. See also the `Port` class.
-  void set_type(absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND) {
-    Assign(type_, type);
-  }
+  void set_type(webrtc::IceCandidateType type) { type_ = type; }
 
-  // Provide these simple checkers to abstract away dependency on the port types
-  // that are currently defined outside of Candidate. This will ease the change
-  // from the string type to an enum.
+  // TODO(tommi): Deprecate.
+  void set_type(absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND);
+
+  // Simple checkers for checking the candidate type without dependency on the
+  // IceCandidateType enum. The `is_local()` and `is_stun()` names are legacy
+  // names and should now more accurately be `is_host()` and `is_srflx()`.
   bool is_local() const;
   bool is_stun() const;
   bool is_prflx() const;
@@ -169,7 +187,15 @@ class RTC_EXPORT Candidate {
   uint16_t network_id() const { return network_id_; }
   void set_network_id(uint16_t network_id) { network_id_ = network_id; }
 
+  // From RFC 5245, section-7.2.1.3:
+  // The foundation of the candidate is set to an arbitrary value, different
+  // from the foundation for all other remote candidates.
+  // Note: Use ComputeFoundation to populate this value.
   const std::string& foundation() const { return foundation_; }
+
+  // TODO(tommi): Deprecate in favor of ComputeFoundation.
+  // For situations where serializing/deserializing a candidate is needed,
+  // the constructor can be used to inject a value for the foundation.
   void set_foundation(absl::string_view foundation) {
     Assign(foundation_, foundation);
   }
@@ -221,6 +247,25 @@ class RTC_EXPORT Candidate {
   Candidate ToSanitizedCopy(bool use_hostname_address,
                             bool filter_related_address) const;
 
+  // Computes and populates the `foundation()` field.
+  // Foundation:  An arbitrary string that is the same for two candidates
+  //   that have the same type, base IP address, protocol (UDP, TCP,
+  //   etc.), and STUN or TURN server.  If any of these are different,
+  //   then the foundation will be different.  Two candidate pairs with
+  //   the same foundation pairs are likely to have similar network
+  //   characteristics. Foundations are used in the frozen algorithm.
+  // A session wide (peerconnection) tie-breaker is applied to the foundation,
+  // adds additional randomness and must be the same for all candidates.
+  void ComputeFoundation(const rtc::SocketAddress& base_address,
+                         uint64_t tie_breaker);
+
+  // https://www.rfc-editor.org/rfc/rfc5245#section-7.2.1.3
+  // Call to populate the foundation field for a new peer reflexive remote
+  // candidate. The type of the candidate must be "prflx".
+  // The foundation of the candidate is set to an arbitrary value, different
+  // from the foundation for all other remote candidates.
+  void ComputePrflxFoundation();
+
  private:
   // TODO(bugs.webrtc.org/13220): With C++17, we get a std::string assignment
   // operator accepting any object implicitly convertible to std::string_view,
@@ -236,7 +281,7 @@ class RTC_EXPORT Candidate {
   uint32_t priority_;
   std::string username_;
   std::string password_;
-  std::string type_;
+  webrtc::IceCandidateType type_ = webrtc::IceCandidateType::kHost;
   std::string network_name_;
   rtc::AdapterType network_type_;
   rtc::AdapterType underlying_type_for_vpn_;

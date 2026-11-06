@@ -428,7 +428,6 @@ bool Convert(std::string inputfile,
         {VideoCodecType::kVideoCodecVP9, "VP9"},
         {VideoCodecType::kVideoCodecAV1, "AV1"},
         {VideoCodecType::kVideoCodecH264, "H264"},
-        {VideoCodecType::kVideoCodecMultiplex, "MULTIPLEX"},
         {VideoCodecType::kVideoCodecH265, "H265"}};
 
     fprintf(output,

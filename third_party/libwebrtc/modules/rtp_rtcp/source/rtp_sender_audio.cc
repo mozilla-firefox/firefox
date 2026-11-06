@@ -261,7 +261,7 @@ bool RTPSenderAudio::SendAudio(const RtpAudioFrame& frame) {
   packet->SetTimestamp(frame.rtp_timestamp);
   packet->set_capture_time(clock_->CurrentTime());
   // Set audio level extension, if included.
-  packet->SetExtension<AudioLevel>(
+  packet->SetExtension<AudioLevelExtension>(
       frame.type == AudioFrameType::kAudioFrameSpeech,
       frame.audio_level_dbov.value_or(127));
 

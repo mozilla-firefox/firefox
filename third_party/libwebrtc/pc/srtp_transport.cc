@@ -118,44 +118,46 @@ bool SrtpTransport::SendRtcpPacket(rtc::CopyOnWriteBuffer* packet,
   return SendPacket(/*rtcp=*/true, packet, options, flags);
 }
 
-void SrtpTransport::OnRtpPacketReceived(rtc::CopyOnWriteBuffer packet,
-                                        int64_t packet_time_us) {
+void SrtpTransport::OnRtpPacketReceived(const rtc::ReceivedPacket& packet) {
   TRACE_EVENT0("webrtc", "SrtpTransport::OnRtpPacketReceived");
   if (!IsSrtpActive()) {
     RTC_LOG(LS_WARNING)
         << "Inactive SRTP transport received an RTP packet. Drop it.";
     return;
   }
-  char* data = packet.MutableData<char>();
-  int len = rtc::checked_cast<int>(packet.size());
+
+  rtc::CopyOnWriteBuffer payload(packet.payload());
+  char* data = payload.MutableData<char>();
+  int len = rtc::checked_cast<int>(payload.size());
   if (!UnprotectRtp(data, len, &len)) {
     // Limit the error logging to avoid excessive logs when there are lots of
     // bad packets.
     const int kFailureLogThrottleCount = 100;
     if (decryption_failure_count_ % kFailureLogThrottleCount == 0) {
       RTC_LOG(LS_ERROR) << "Failed to unprotect RTP packet: size=" << len
-                        << ", seqnum=" << ParseRtpSequenceNumber(packet)
-                        << ", SSRC=" << ParseRtpSsrc(packet)
+                        << ", seqnum=" << ParseRtpSequenceNumber(payload)
+                        << ", SSRC=" << ParseRtpSsrc(payload)
                         << ", previous failure count: "
                         << decryption_failure_count_;
     }
     ++decryption_failure_count_;
     return;
   }
-  packet.SetSize(len);
-  DemuxPacket(std::move(packet), packet_time_us);
+  payload.SetSize(len);
+  DemuxPacket(std::move(payload),
+              packet.arrival_time().value_or(Timestamp::MinusInfinity()));
 }
 
-void SrtpTransport::OnRtcpPacketReceived(rtc::CopyOnWriteBuffer packet,
-                                         int64_t packet_time_us) {
+void SrtpTransport::OnRtcpPacketReceived(const rtc::ReceivedPacket& packet) {
   TRACE_EVENT0("webrtc", "SrtpTransport::OnRtcpPacketReceived");
   if (!IsSrtpActive()) {
     RTC_LOG(LS_WARNING)
         << "Inactive SRTP transport received an RTCP packet. Drop it.";
     return;
   }
-  char* data = packet.MutableData<char>();
-  int len = rtc::checked_cast<int>(packet.size());
+  rtc::CopyOnWriteBuffer payload(packet.payload());
+  char* data = payload.MutableData<char>();
+  int len = rtc::checked_cast<int>(payload.size());
   if (!UnprotectRtcp(data, len, &len)) {
     int type = -1;
     cricket::GetRtcpType(data, len, &type);
@@ -163,8 +165,9 @@ void SrtpTransport::OnRtcpPacketReceived(rtc::CopyOnWriteBuffer packet,
                       << ", type=" << type;
     return;
   }
-  packet.SetSize(len);
-  SendRtcpPacketReceived(&packet, packet_time_us);
+  payload.SetSize(len);
+  SendRtcpPacketReceived(
+      &payload, packet.arrival_time() ? packet.arrival_time()->us() : -1);
 }
 
 void SrtpTransport::OnNetworkRouteChanged(

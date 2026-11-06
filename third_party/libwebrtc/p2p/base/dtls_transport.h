@@ -23,6 +23,7 @@
 #include "p2p/base/ice_transport_internal.h"
 #include "rtc_base/buffer.h"
 #include "rtc_base/buffer_queue.h"
+#include "rtc_base/network/received_packet.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/stream.h"
 #include "rtc_base/strings/string_builder.h"
@@ -216,10 +217,7 @@ class DtlsTransport : public DtlsTransportInternal {
 
   void OnWritableState(rtc::PacketTransportInternal* transport);
   void OnReadPacket(rtc::PacketTransportInternal* transport,
-                    const char* data,
-                    size_t size,
-                    const int64_t& packet_time_us,
-                    int flags);
+                    const rtc::ReceivedPacket& packet);
   void OnSentPacket(rtc::PacketTransportInternal* transport,
                     const rtc::SentPacket& sent_packet);
   void OnReadyToSend(rtc::PacketTransportInternal* transport);
@@ -228,7 +226,7 @@ class DtlsTransport : public DtlsTransportInternal {
   void OnNetworkRouteChanged(absl::optional<rtc::NetworkRoute> network_route);
   bool SetupDtls();
   void MaybeStartDtls();
-  bool HandleDtlsPacket(const char* data, size_t size);
+  bool HandleDtlsPacket(rtc::ArrayView<const uint8_t> payload);
   void OnDtlsHandshakeError(rtc::SSLHandshakeError error);
   void ConfigureHandshakeTimeout();
 

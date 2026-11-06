@@ -73,6 +73,7 @@ using ::testing::SetArgPointee;
 using ::testing::SizeIs;
 using ::testing::Values;
 using ::testing::WithParamInterface;
+using ::webrtc::IceCandidateType;
 using ::webrtc::PendingTaskSafetyFlag;
 using ::webrtc::SafeTask;
 
@@ -321,9 +322,9 @@ class P2PTransportChannelTestBase : public ::testing::Test,
   };
 
   struct Result {
-    Result(absl::string_view controlling_type,
+    Result(IceCandidateType controlling_type,
            absl::string_view controlling_protocol,
-           absl::string_view controlled_type,
+           IceCandidateType controlled_type,
            absl::string_view controlled_protocol,
            int wait)
         : controlling_type(controlling_type),
@@ -333,10 +334,10 @@ class P2PTransportChannelTestBase : public ::testing::Test,
           connect_wait(wait) {}
 
     // The expected candidate type and protocol of the controlling ICE agent.
-    std::string controlling_type;
+    IceCandidateType controlling_type;
     std::string controlling_protocol;
     // The expected candidate type and protocol of the controlled ICE agent.
-    std::string controlled_type;
+    IceCandidateType controlled_type;
     std::string controlled_protocol;
     // How long to wait before the correct candidate pair is selected.
     int connect_wait;
@@ -477,8 +478,11 @@ class P2PTransportChannelTestBase : public ::testing::Test,
         [this](IceTransportInternal* transport, const Candidates& candidates) {
           OnCandidatesRemoved(transport, candidates);
         });
-    channel->SignalReadPacket.connect(
-        this, &P2PTransportChannelTestBase::OnReadPacket);
+    channel->RegisterReceivedPacketCallback(
+        this, [&](rtc::PacketTransportInternal* transport,
+                  const rtc::ReceivedPacket& packet) {
+          OnReadPacket(transport, packet);
+        });
     channel->SignalRoleConflict.connect(
         this, &P2PTransportChannelTestBase::OnRoleConflict);
     channel->SignalNetworkRouteChanged.connect(
@@ -916,12 +920,11 @@ class P2PTransportChannelTestBase : public ::testing::Test,
   }
 
   void OnReadPacket(rtc::PacketTransportInternal* transport,
-                    const char* data,
-                    size_t len,
-                    const int64_t& /* packet_time_us */,
-                    int flags) {
+                    const rtc::ReceivedPacket& packet) {
     std::list<std::string>& packets = GetPacketList(transport);
-    packets.push_front(std::string(data, len));
+    packets.push_front(
+        std::string(reinterpret_cast<const char*>(packet.payload().data()),
+                    packet.payload().size()));
   }
 
   void OnRoleConflict(IceTransportInternal* channel) {
@@ -1025,87 +1028,87 @@ class P2PTransportChannelTestBase : public ::testing::Test,
 
 // The tests have only a few outcomes, which we predefine.
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kLocalUdpToLocalUdp("local",
+    P2PTransportChannelTestBase::kLocalUdpToLocalUdp(IceCandidateType::kHost,
                                                      "udp",
-                                                     "local",
+                                                     IceCandidateType::kHost,
                                                      "udp",
                                                      1000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kLocalUdpToStunUdp("local",
+    P2PTransportChannelTestBase::kLocalUdpToStunUdp(IceCandidateType::kHost,
                                                     "udp",
-                                                    "stun",
+                                                    IceCandidateType::kSrflx,
                                                     "udp",
                                                     1000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kLocalUdpToPrflxUdp("local",
+    P2PTransportChannelTestBase::kLocalUdpToPrflxUdp(IceCandidateType::kHost,
                                                      "udp",
-                                                     "prflx",
-                                                     "udp",
-                                                     1000);
-const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kPrflxUdpToLocalUdp("prflx",
-                                                     "udp",
-                                                     "local",
+                                                     IceCandidateType::kPrflx,
                                                      "udp",
                                                      1000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kStunUdpToLocalUdp("stun",
+    P2PTransportChannelTestBase::kPrflxUdpToLocalUdp(IceCandidateType::kPrflx,
+                                                     "udp",
+                                                     IceCandidateType::kHost,
+                                                     "udp",
+                                                     1000);
+const P2PTransportChannelTestBase::Result
+    P2PTransportChannelTestBase::kStunUdpToLocalUdp(IceCandidateType::kSrflx,
                                                     "udp",
-                                                    "local",
+                                                    IceCandidateType::kHost,
                                                     "udp",
                                                     1000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kStunUdpToStunUdp("stun",
+    P2PTransportChannelTestBase::kStunUdpToStunUdp(IceCandidateType::kSrflx,
                                                    "udp",
-                                                   "stun",
+                                                   IceCandidateType::kSrflx,
                                                    "udp",
                                                    1000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kStunUdpToPrflxUdp("stun",
+    P2PTransportChannelTestBase::kStunUdpToPrflxUdp(IceCandidateType::kSrflx,
                                                     "udp",
-                                                    "prflx",
-                                                    "udp",
-                                                    1000);
-const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kPrflxUdpToStunUdp("prflx",
-                                                    "udp",
-                                                    "stun",
+                                                    IceCandidateType::kPrflx,
                                                     "udp",
                                                     1000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kLocalUdpToRelayUdp("local",
+    P2PTransportChannelTestBase::kPrflxUdpToStunUdp(IceCandidateType::kPrflx,
+                                                    "udp",
+                                                    IceCandidateType::kSrflx,
+                                                    "udp",
+                                                    1000);
+const P2PTransportChannelTestBase::Result
+    P2PTransportChannelTestBase::kLocalUdpToRelayUdp(IceCandidateType::kHost,
                                                      "udp",
-                                                     "relay",
+                                                     IceCandidateType::kRelay,
                                                      "udp",
                                                      2000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kPrflxUdpToRelayUdp("prflx",
+    P2PTransportChannelTestBase::kPrflxUdpToRelayUdp(IceCandidateType::kPrflx,
                                                      "udp",
-                                                     "relay",
-                                                     "udp",
-                                                     2000);
-const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kRelayUdpToPrflxUdp("relay",
-                                                     "udp",
-                                                     "prflx",
+                                                     IceCandidateType::kRelay,
                                                      "udp",
                                                      2000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kLocalTcpToLocalTcp("local",
+    P2PTransportChannelTestBase::kRelayUdpToPrflxUdp(IceCandidateType::kRelay,
+                                                     "udp",
+                                                     IceCandidateType::kPrflx,
+                                                     "udp",
+                                                     2000);
+const P2PTransportChannelTestBase::Result
+    P2PTransportChannelTestBase::kLocalTcpToLocalTcp(IceCandidateType::kHost,
                                                      "tcp",
-                                                     "local",
+                                                     IceCandidateType::kHost,
                                                      "tcp",
                                                      3000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kLocalTcpToPrflxTcp("local",
+    P2PTransportChannelTestBase::kLocalTcpToPrflxTcp(IceCandidateType::kHost,
                                                      "tcp",
-                                                     "prflx",
+                                                     IceCandidateType::kPrflx,
                                                      "tcp",
                                                      3000);
 const P2PTransportChannelTestBase::Result
-    P2PTransportChannelTestBase::kPrflxTcpToLocalTcp("prflx",
+    P2PTransportChannelTestBase::kPrflxTcpToLocalTcp(IceCandidateType::kPrflx,
                                                      "tcp",
-                                                     "local",
+                                                     IceCandidateType::kHost,
                                                      "tcp",
                                                      3000);
 
@@ -1788,8 +1791,8 @@ TEST_F(P2PTransportChannelTest, CanOnlyMakeOutgoingTcpConnections) {
   fw()->SetUnbindableIps({rtc::GetAnyIP(AF_INET), rtc::GetAnyIP(AF_INET6),
                           kPublicAddrs[0].ipaddr()});
   CreateChannels();
-  // Expect a "prflx" candidate on the side that can only make outgoing
-  // connections, endpoint 0.
+  // Expect a IceCandidateType::kPrflx candidate on the side that can only make
+  // outgoing connections, endpoint 0.
   Test(kPrflxTcpToLocalTcp);
   DestroyChannels();
 }
@@ -2393,8 +2396,8 @@ class P2PTransportChannelSameNatTest : public P2PTransportChannelTestBase {
 
 TEST_F(P2PTransportChannelSameNatTest, TestConesBehindSameCone) {
   ConfigureEndpoints(NAT_FULL_CONE, NAT_FULL_CONE, NAT_FULL_CONE);
-  Test(
-      P2PTransportChannelTestBase::Result("prflx", "udp", "stun", "udp", 1000));
+  Test(P2PTransportChannelTestBase::Result(
+      IceCandidateType::kPrflx, "udp", IceCandidateType::kSrflx, "udp", 1000));
 }
 
 // Test what happens when we have multiple available pathways.
@@ -4959,8 +4962,8 @@ class P2PTransportChannelMostLikelyToWorkFirstTest
   // types and, for relay local candidate, the expected relay protocol and ping
   // it.
   void VerifyNextPingableConnection(
-      absl::string_view local_candidate_type,
-      absl::string_view remote_candidate_type,
+      IceCandidateType local_candidate_type,
+      IceCandidateType remote_candidate_type,
       absl::string_view relay_protocol_type = UDP_PROTOCOL_NAME) {
     Connection* conn = FindNextPingableConnectionAndPingIt(channel_.get());
     ASSERT_TRUE(conn != nullptr);
@@ -5053,22 +5056,27 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest,
   EXPECT_TRUE_WAIT(ch.connections().size() == 2, kDefaultTimeout);
 
   // Initially, only have Local/Local and Local/Relay.
-  VerifyNextPingableConnection(LOCAL_PORT_TYPE, LOCAL_PORT_TYPE);
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, LOCAL_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kHost,
+                               IceCandidateType::kHost);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kHost);
 
   // Remote Relay candidate arrives.
   ch.AddRemoteCandidate(CreateUdpCandidate(RELAY_PORT_TYPE, "2.2.2.2", 2, 2));
   EXPECT_TRUE_WAIT(ch.connections().size() == 4, kDefaultTimeout);
 
   // Relay/Relay should be the first since it hasn't been pinged before.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kRelay);
 
   // Local/Relay is the final one.
-  VerifyNextPingableConnection(LOCAL_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kHost,
+                               IceCandidateType::kRelay);
 
   // Now, every connection has been pinged once. The next one should be
   // Relay/Relay.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kRelay);
 }
 
 // Test that when we receive a new remote candidate, they will be tried first
@@ -5084,24 +5092,29 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest,
   EXPECT_TRUE_WAIT(ch.connections().size() == 2, kDefaultTimeout);
 
   // Initially, only have Relay/Relay and Local/Relay. Ping Relay/Relay first.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kRelay);
 
   // Next, ping Local/Relay.
-  VerifyNextPingableConnection(LOCAL_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kHost,
+                               IceCandidateType::kRelay);
 
   // Remote Local candidate arrives.
   ch.AddRemoteCandidate(CreateUdpCandidate(LOCAL_PORT_TYPE, "2.2.2.2", 2, 2));
   EXPECT_TRUE_WAIT(ch.connections().size() == 4, kDefaultTimeout);
 
   // Local/Local should be the first since it hasn't been pinged before.
-  VerifyNextPingableConnection(LOCAL_PORT_TYPE, LOCAL_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kHost,
+                               IceCandidateType::kHost);
 
   // Relay/Local is the final one.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, LOCAL_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kHost);
 
   // Now, every connection has been pinged once. The next one should be
   // Relay/Relay.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kRelay);
 }
 
 // Test skip_relay_to_non_relay_connections field-trial.
@@ -5146,14 +5159,16 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest, TestTcpTurn) {
   EXPECT_TRUE_WAIT(ch.connections().size() == 3, kDefaultTimeout);
 
   // UDP Relay/Relay should be pinged first.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kRelay);
 
   // TCP Relay/Relay is the next.
-  VerifyNextPingableConnection(RELAY_PORT_TYPE, RELAY_PORT_TYPE,
-                               TCP_PROTOCOL_NAME);
+  VerifyNextPingableConnection(IceCandidateType::kRelay,
+                               IceCandidateType::kRelay, TCP_PROTOCOL_NAME);
 
   // Finally, Local/Relay will be pinged.
-  VerifyNextPingableConnection(LOCAL_PORT_TYPE, RELAY_PORT_TYPE);
+  VerifyNextPingableConnection(IceCandidateType::kHost,
+                               IceCandidateType::kRelay);
 }
 
 // Test that a resolver is created, asked for a result, and destroyed

@@ -390,7 +390,7 @@ TEST_P(PictureIdTest, ContinuousAfterReconfigureSimulcastEncoderAdapter) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
   SetupEncoder(&encoder_factory, "VP8");
   TestPictureIdContinuousAfterReconfigure({1, 3, 3, 1, 1});
@@ -403,7 +403,7 @@ TEST_P(PictureIdTest,
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
   SetupEncoder(&encoder_factory, "VP8");
   TestPictureIdIncreaseAfterRecreateStreams({1, 3, 3, 1, 1});
@@ -414,7 +414,7 @@ TEST_P(PictureIdTest, ContinuousAfterStreamCountChangeSimulcastEncoderAdapter) {
   test::FunctionVideoEncoderFactory encoder_factory(
       [&internal_encoder_factory]() {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat("VP8"));
+            &internal_encoder_factory, SdpVideoFormat::VP8());
       });
   // Make sure that the picture id is not reset if the stream count goes
   // down and then up.

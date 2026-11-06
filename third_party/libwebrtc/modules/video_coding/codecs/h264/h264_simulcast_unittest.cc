@@ -30,7 +30,7 @@ std::unique_ptr<SimulcastTestFixture> CreateSpecificSimulcastTestFixture() {
           []() { return H264Decoder::Create(); });
   return CreateSimulcastTestFixture(std::move(encoder_factory),
                                     std::move(decoder_factory),
-                                    SdpVideoFormat("H264"));
+                                    SdpVideoFormat::H264());
 }
 }  // namespace
 

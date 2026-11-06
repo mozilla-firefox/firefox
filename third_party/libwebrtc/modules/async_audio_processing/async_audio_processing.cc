@@ -63,7 +63,7 @@ AsyncAudioProcessing::AsyncAudioProcessing(
           "AsyncAudioProcessing",
           TaskQueueFactory::Priority::NORMAL)) {
   frame_processor_.SetSink([this](std::unique_ptr<AudioFrame> frame) {
-    task_queue_.PostTask([this, frame = std::move(frame)]() mutable {
+    task_queue_->PostTask([this, frame = std::move(frame)]() mutable {
       on_frame_processed_callback_(std::move(frame));
     });
   });
@@ -80,7 +80,7 @@ AsyncAudioProcessing::AsyncAudioProcessing(
           "AsyncAudioProcessing",
           TaskQueueFactory::Priority::NORMAL)) {
   owned_frame_processor_->SetSink([this](std::unique_ptr<AudioFrame> frame) {
-    task_queue_.PostTask([this, frame = std::move(frame)]() mutable {
+    task_queue_->PostTask([this, frame = std::move(frame)]() mutable {
       on_frame_processed_callback_(std::move(frame));
     });
   });
@@ -88,11 +88,11 @@ AsyncAudioProcessing::AsyncAudioProcessing(
 
 void AsyncAudioProcessing::Process(std::unique_ptr<AudioFrame> frame) {
   if (owned_frame_processor_) {
-    task_queue_.PostTask([this, frame = std::move(frame)]() mutable {
+    task_queue_->PostTask([this, frame = std::move(frame)]() mutable {
       owned_frame_processor_->Process(std::move(frame));
     });
   } else {
-    task_queue_.PostTask([this, frame = std::move(frame)]() mutable {
+    task_queue_->PostTask([this, frame = std::move(frame)]() mutable {
       frame_processor_.Process(std::move(frame));
     });
   }

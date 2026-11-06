@@ -39,7 +39,6 @@
 #include "call/video_send_stream.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/network/sent_packet.h"
-#include "rtc_base/task_queue.h"
 #include "system_wrappers/include/clock.h"
 #include "video/config/video_encoder_config.h"
 

@@ -567,14 +567,14 @@ void PeerConnectionE2EQualityTest::SetPeerCodecPreferences(TestPeer* peer) {
           peer->params().video_codecs, true, peer->params().use_ulp_fec,
           peer->params().use_flex_fec,
           peer->pc_factory()
-              ->GetRtpSenderCapabilities(cricket::MediaType::MEDIA_TYPE_VIDEO)
+              ->GetRtpReceiverCapabilities(cricket::MediaType::MEDIA_TYPE_VIDEO)
               .codecs);
   std::vector<RtpCodecCapability> without_rtx_video_capabilities =
       FilterVideoCodecCapabilities(
           peer->params().video_codecs, false, peer->params().use_ulp_fec,
           peer->params().use_flex_fec,
           peer->pc_factory()
-              ->GetRtpSenderCapabilities(cricket::MediaType::MEDIA_TYPE_VIDEO)
+              ->GetRtpReceiverCapabilities(cricket::MediaType::MEDIA_TYPE_VIDEO)
               .codecs);
 
   // Set codecs for transceivers

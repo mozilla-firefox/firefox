@@ -645,23 +645,6 @@ rtc_source_set("type_traits") {
   sources = [ "type_traits.h" ]
 }
 
-rtc_library("rtc_task_queue") {
-  visibility = [ "*" ]
-  sources = [
-    "task_queue.cc",
-    "task_queue.h",
-  ]
-  deps = [
-    ":macromagic",
-    "../api/task_queue",
-    "system:rtc_export",
-  ]
-  absl_deps = [
-    "//third_party/abseil-cpp/absl/functional:any_invocable",
-    "//third_party/abseil-cpp/absl/memory",
-  ]
-}
-
 rtc_source_set("rtc_operations_chain") {
   visibility = [ "*" ]
   sources = [
@@ -1057,7 +1040,6 @@ rtc_library("threading") {
     ":platform_thread_types",
     ":refcount",
     ":rtc_event",
-    ":rtc_task_queue",
     ":socket",
     ":socket_address",
     ":socket_server",
@@ -1407,6 +1389,7 @@ if (rtc_include_tests) {
     deps = [
       ":async_packet_socket",
       ":gunit_helpers",
+      ":socket_address",
       "../test:test_support",
       "network:received_packet",
       "third_party/sigslot",
@@ -1985,7 +1968,6 @@ if (rtc_include_tests) {
         ":rtc_base_tests_utils",
         ":rtc_event",
         ":rtc_numerics",
-        ":rtc_task_queue",
         ":safe_compare",
         ":safe_minmax",
         ":sample_counter",

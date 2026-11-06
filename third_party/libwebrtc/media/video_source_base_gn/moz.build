@@ -31,7 +31,7 @@ LOCAL_INCLUDES += [
 ]
 
 UNIFIED_SOURCES += [
-    "/third_party/libwebrtc/rtc_base/task_queue.cc"
+    "/third_party/libwebrtc/media/base/video_source_base.cc"
 ]
 
 if not CONFIG["MOZ_DEBUG"]:
@@ -127,6 +127,13 @@ if CONFIG["OS_TARGET"] == "WINNT":
     DEFINES["_WINDOWS"] = True
     DEFINES["__STD_C"] = True
 
+    OS_LIBS += [
+        "crypt32",
+        "iphlpapi",
+        "secur32",
+        "winmm"
+    ]
+
 if CONFIG["CPU_ARCH"] == "aarch64":
 
     DEFINES["WEBRTC_ARCH_ARM64"] = True
@@ -221,4 +228,4 @@ if CONFIG["CPU_ARCH"] == "x86_64" and CONFIG["OS_TARGET"] == "Linux":
 
     DEFINES["_GNU_SOURCE"] = True
 
-Library("rtc_task_queue_gn")
+Library("video_source_base_gn")

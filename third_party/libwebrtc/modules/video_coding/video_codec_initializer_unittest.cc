@@ -86,8 +86,6 @@ class VideoCodecInitializerTest : public ::testing::Test {
       vp9_settings.numberOfTemporalLayers = num_temporal_streams;
       config_.encoder_specific_settings = rtc::make_ref_counted<
           webrtc::VideoEncoderConfig::Vp9EncoderSpecificSettings>(vp9_settings);
-    } else if (type != VideoCodecType::kVideoCodecMultiplex) {
-      ADD_FAILURE() << "Unexpected codec type: " << type;
     }
   }
 
@@ -100,8 +98,6 @@ class VideoCodecInitializerTest : public ::testing::Test {
     bitrate_allocator_ = CreateBuiltinVideoBitrateAllocatorFactory()
                              ->CreateVideoBitrateAllocator(codec_out_);
     RTC_CHECK(bitrate_allocator_);
-    if (codec_out_.codecType == VideoCodecType::kVideoCodecMultiplex)
-      return true;
 
     // Make sure temporal layers instances have been created.
     if (codec_out_.codecType == VideoCodecType::kVideoCodecVP8) {
@@ -286,12 +282,6 @@ TEST_F(VideoCodecInitializerTest, HighFpsSimulcastVp8Screenshare) {
   EXPECT_EQ(kHighScreenshareTl0Bps, bitrate_allocation.GetBitrate(1, 0));
   EXPECT_EQ(kHighScreenshareTl1Bps - kHighScreenshareTl0Bps,
             bitrate_allocation.GetBitrate(1, 1));
-}
-
-TEST_F(VideoCodecInitializerTest, SingleStreamMultiplexCodec) {
-  SetUpFor(VideoCodecType::kVideoCodecMultiplex, absl::nullopt, 1, 1, true);
-  streams_.push_back(DefaultStream());
-  EXPECT_TRUE(InitializeCodec());
 }
 
 TEST_F(VideoCodecInitializerTest, Vp9SvcDefaultLayering) {

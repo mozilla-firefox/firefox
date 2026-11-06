@@ -39,7 +39,7 @@ using ::testing::ElementsAreArray;
 class LoopbackTransportTest : public webrtc::Transport {
  public:
   LoopbackTransportTest() {
-    receivers_extensions_.Register<AudioLevel>(kAudioLevelExtensionId);
+    receivers_extensions_.Register<AudioLevelExtension>(kAudioLevelExtensionId);
     receivers_extensions_.Register<AbsoluteCaptureTimeExtension>(
         kAbsoluteCaptureTimeExtensionId);
   }
@@ -102,7 +102,7 @@ TEST_F(RtpSenderAudioTest, SendAudio) {
 
 TEST_F(RtpSenderAudioTest, SendAudioWithAudioLevelExtension) {
   const uint8_t kAudioLevel = 0x5a;
-  rtp_module_->RegisterRtpHeaderExtension(AudioLevel::Uri(),
+  rtp_module_->RegisterRtpHeaderExtension(AudioLevelExtension::Uri(),
                                           kAudioLevelExtensionId);
 
   const char payload_name[] = "PAYLOAD_NAME";
@@ -123,7 +123,7 @@ TEST_F(RtpSenderAudioTest, SendAudioWithAudioLevelExtension) {
   // Verify AudioLevel extension.
   bool voice_activity;
   uint8_t audio_level;
-  EXPECT_TRUE(transport_.last_sent_packet().GetExtension<AudioLevel>(
+  EXPECT_TRUE(transport_.last_sent_packet().GetExtension<AudioLevelExtension>(
       &voice_activity, &audio_level));
   EXPECT_EQ(kAudioLevel, audio_level);
   EXPECT_FALSE(voice_activity);

@@ -185,7 +185,6 @@ class RTCPReceiver final {
   class RegisteredSsrcs {
    public:
     static constexpr size_t kMediaSsrcIndex = 0;
-    static constexpr size_t kMaxSsrcs = 3;
     // Initializes the set of registered local SSRCS by extracting them from the
     // provided `config`. The `disable_sequence_checker` flag is a workaround
     // to be able to use a sequence checker without breaking downstream
@@ -200,7 +199,7 @@ class RTCPReceiver final {
 
    private:
     RTC_NO_UNIQUE_ADDRESS CustomSequenceChecker packet_sequence_checker_;
-    absl::InlinedVector<uint32_t, kMaxSsrcs> ssrcs_
+    absl::InlinedVector<uint32_t, kMaxSimulcastStreams> ssrcs_
         RTC_GUARDED_BY(packet_sequence_checker_);
   };
 

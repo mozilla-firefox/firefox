@@ -128,7 +128,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../../modules/video_coding:video_codec_interface",
       "../../modules/video_coding:video_coding_utility",
       "../../modules/video_coding:webrtc_h264",
-      "../../modules/video_coding:webrtc_multiplex",
       "../../modules/video_coding:webrtc_vp8",
       "../../modules/video_coding:webrtc_vp9",
       "../../modules/video_coding/svc:scalability_mode_util",

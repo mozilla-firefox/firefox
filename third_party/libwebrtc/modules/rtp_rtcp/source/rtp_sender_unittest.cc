@@ -290,8 +290,8 @@ TEST_F(RtpSenderTest, AllocatePacketReserveExtensions) {
       TransmissionOffset::Uri(), kTransmissionTimeOffsetExtensionId));
   ASSERT_TRUE(rtp_sender_->RegisterRtpHeaderExtension(
       AbsoluteSendTime::Uri(), kAbsoluteSendTimeExtensionId));
-  ASSERT_TRUE(rtp_sender_->RegisterRtpHeaderExtension(AudioLevel::Uri(),
-                                                      kAudioLevelExtensionId));
+  ASSERT_TRUE(rtp_sender_->RegisterRtpHeaderExtension(
+      AudioLevelExtension::Uri(), kAudioLevelExtensionId));
   ASSERT_TRUE(rtp_sender_->RegisterRtpHeaderExtension(
       TransportSequenceNumber::Uri(), kTransportSequenceNumberExtensionId));
   ASSERT_TRUE(rtp_sender_->RegisterRtpHeaderExtension(
@@ -305,7 +305,7 @@ TEST_F(RtpSenderTest, AllocatePacketReserveExtensions) {
   EXPECT_TRUE(packet->HasExtension<AbsoluteSendTime>());
   EXPECT_TRUE(packet->HasExtension<TransportSequenceNumber>());
   // Do not allocate media specific extensions.
-  EXPECT_FALSE(packet->HasExtension<AudioLevel>());
+  EXPECT_FALSE(packet->HasExtension<AudioLevelExtension>());
   EXPECT_FALSE(packet->HasExtension<VideoOrientation>());
 }
 

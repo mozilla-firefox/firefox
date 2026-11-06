@@ -111,10 +111,25 @@ struct RTC_EXPORT Codec {
 
   // Indicates if this codec is compatible with the specified codec by
   // checking the assigned id and profile values for the relevant video codecs.
-  // For H.264, packetization modes will be compared; If H.265 is enabled,
-  // TxModes will be compared.
-  // H.264(and H.265, if enabled) levels are not compared.
+  // The rules for this comparison, in particular the parameters are
+  // codec-specific as described in RFC 3264 6.1:
+  // https://www.rfc-editor.org/rfc/rfc3264#section-6.1
+  // For H.264, packetization modes will be compared.
+  // If H.265 is enabled, TxModes will be compared.
+  // H.264 (and H.265, if enabled) levels are not compared.
+  // In all other cases, parameters do not need to match.
+  // This is used in SDP offer/answer codec matching.
   bool Matches(const Codec& codec) const;
+
+  // This is an exact match similar to what is described in
+  // https://w3c.github.io/webrtc-pc/#dfn-codec-match
+  // with two differences:
+  // - rtx which is included in capabilities  without the apt parameter
+  //   so number of channels, clock rate or the equality of the parameters
+  //   are not compared.
+  // - parameters is compared element-wise, not as a string comparison.
+  // This method should only be used to compare input on our end to something we
+  // generated, done e.g. by setCodecPreferences or setParameters.
   bool MatchesRtpCodec(const webrtc::RtpCodec& capability) const;
 
   // Find the parameter for `name` and write the value to `out`.

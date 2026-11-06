@@ -12,6 +12,7 @@
 
 #include <limits>
 
+#include "api/environment/environment_factory.h"
 #include "api/video/encoded_image.h"
 #include "api/video/i420_buffer.h"
 #include "api/video_codecs/video_codec.h"
@@ -137,7 +138,9 @@ void IvfVideoFrameGenerator::OnFrameDecoded(const VideoFrame& decoded_frame) {
 std::unique_ptr<VideoDecoder> IvfVideoFrameGenerator::CreateVideoDecoder(
     VideoCodecType codec_type) {
   if (codec_type == VideoCodecType::kVideoCodecVP8) {
-    return VP8Decoder::Create();
+    // Use a default environment for the VP8 decoder while there is no use case
+    // for a propagated environment in this test utility IvfVideoFrameGenerator.
+    return CreateVp8Decoder(CreateEnvironment());
   }
   if (codec_type == VideoCodecType::kVideoCodecVP9) {
     return VP9Decoder::Create();
