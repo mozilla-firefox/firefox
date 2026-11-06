@@ -9,7 +9,10 @@
 ///
 /// This is especially useful to avoid statics with interior mutations affecting tests.
 macro_rules! mocked_static {
-    ( $(#[$m:meta])* $vis:vis static $name:ident: $T:ty = $init:expr ; $($item:item)* ) => {
+    ( $(#[$m:meta])* $vis:vis static $name:ident: $T:ty = $init:expr ;
+      mocked type = $MT:ty ;
+      $($impl:item)*
+    ) => {
         $(#[$m])* $vis static $name: $T = $init;
     }
 }

@@ -688,6 +688,52 @@ fn self_path() -> &'static Path {
     &*PATH
 }
 
+#[cfg(target_os = "linux")]
+pub mod linux {
+    #![cfg_attr(mock, allow(unused))]
+
+    #[cfg(mock)]
+    use crate::std::mock::MockKey;
+    use crate::std::{mock::mocked_static, path::Path};
+    use once_cell::sync::Lazy;
+
+    struct IsRunningUnderFlatpak {
+        inner: Lazy<bool>,
+    }
+
+    impl IsRunningUnderFlatpak {
+        const fn new() -> Self {
+            Self {
+                inner: Lazy::new(|| {
+                    // https://gitlab.gnome.org/GNOME/gtk/-/blob/4300a5c609306ce77cbc8a3580c19201dccd8d13/gdk/gdk.c#L472
+                    Path::new("/.flatpak-info").exists()
+                }),
+            }
+        }
+    }
+
+    impl IsRunningUnderFlatpak {
+        fn get(&self) -> bool {
+            *self.inner
+        }
+    }
+
+    mocked_static! {
+        static IS_RUNNING_UNDER_FLATPAK: IsRunningUnderFlatpak = IsRunningUnderFlatpak::new();
+        mocked type = bool;
+
+        impl IS_RUNNING_UNDER_FLATPAK {
+            fn get(&self) -> bool {
+                Self.try_get(|v| *v).unwrap_or(false)
+            }
+        }
+    }
+
+    pub fn is_running_under_flatpak() -> bool {
+        IS_RUNNING_UNDER_FLATPAK.get()
+    }
+}
+
 fn env_bool<K: AsRef<OsStr>>(name: K) -> bool {
     std::env::var(name).map(|s| !s.is_empty()).unwrap_or(false)
 }

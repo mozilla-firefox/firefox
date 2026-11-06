@@ -88,6 +88,7 @@ std::mock::mocked_static! {
     /// The background task may repeatedly fail for many reasons, for example due to a crash or
     /// misconfigured network settings.
     static BACKGROUND_TASK_ATTEMPTS: BackgroundTaskAttempts = BackgroundTaskAttempts::new(2);
+    mocked type = std::sync::Arc<BackgroundTaskAttempts>;
 
     impl BACKGROUND_TASK_ATTEMPTS {
         fn should_attempt(self) -> bool {

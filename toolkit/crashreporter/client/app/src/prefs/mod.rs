@@ -38,13 +38,21 @@ impl Prefs {
         let prefs_files = [
             app_dir.join("defaults/pref"),
             app_dir.join("defaults/preferences"),
+            // legacy for debian official packages, see bug 2070693
+            #[cfg(target_os = "linux")]
+            app_dir.join("defaults/syspref"),
             // On linux, there is a sysconf directory to check.
             //
             // System-scoped directories have priority over install-scoped, so they come later in
             // the list.
             #[cfg(target_os = "linux")]
             format!(
-                "/etc/{appname}/defaults/pref",
+                "{sysconf_dir}/{appname}/defaults/pref",
+                sysconf_dir = if crate::config::linux::is_running_under_flatpak() {
+                    "/app/etc"
+                } else {
+                    "/etc"
+                },
                 appname = mozbuild::config::MOZ_APP_BASENAME.to_lowercase()
             )
             .into(),
@@ -323,24 +331,50 @@ mod test {
     #[cfg(target_os = "linux")]
     #[test]
     fn linux_file_priorities() {
-        let appname = mozbuild::config::MOZ_APP_BASENAME.to_lowercase();
-        let files = MockFiles::new();
-        files
-            .add_dir("/etc")
-            .add_dir(format!("/etc/{appname}"))
-            .add_dir(format!("/etc/{appname}/defaults"))
-            .add_dir(format!("/etc/{appname}/defaults/pref"))
-            .add_file(format!("/etc/{appname}/defaults/pref/pref.js"), "");
-        let prefs = mock::builder().set(MockFS, files).run(|| {
-            let mut prefs = Prefs::default();
-            prefs
-                .update_from_app_dir(Path::new("app_dir"))
-                .update_from_profile_dir(Path::new("profile_dir"));
-            prefs
-        });
-        assert_eq!(
-            prefs.paths,
-            [format!("/etc/{appname}/defaults/pref/pref.js").into()]
-        );
+        for in_flatpak in [false, true] {
+            let appname = mozbuild::config::MOZ_APP_BASENAME.to_lowercase();
+            let files = MockFiles::new();
+            files
+                .add_dir("app_dir")
+                .add_dir("app_dir/defaults")
+                .add_dir("app_dir/defaults/syspref")
+                .add_dir("/etc")
+                .add_dir(format!("/etc/{appname}"))
+                .add_dir(format!("/etc/{appname}/defaults"))
+                .add_dir(format!("/etc/{appname}/defaults/pref"))
+                .add_dir("/app")
+                .add_dir("/app/etc")
+                .add_dir(format!("/app/etc/{appname}"))
+                .add_dir(format!("/app/etc/{appname}/defaults"))
+                .add_dir(format!("/app/etc/{appname}/defaults/pref"))
+                .add_file("app_dir/defaults/syspref/syspref.js", "")
+                .add_file(format!("/etc/{appname}/defaults/pref/pref.js"), "")
+                .add_file(
+                    format!("/app/etc/{appname}/defaults/pref/flatpakpref.js"),
+                    "",
+                );
+            let prefs = mock::builder()
+                .set(MockFS, files)
+                .set(crate::config::linux::IS_RUNNING_UNDER_FLATPAK, in_flatpak)
+                .run(|| {
+                    let mut prefs = Prefs::default();
+                    prefs
+                        .update_from_app_dir(Path::new("app_dir"))
+                        .update_from_profile_dir(Path::new("profile_dir"));
+                    prefs
+                });
+            assert_eq!(
+                prefs.paths,
+                [
+                    "app_dir/defaults/syspref/syspref.js".into(),
+                    if in_flatpak {
+                        format!("/app/etc/{appname}/defaults/pref/flatpakpref.js")
+                    } else {
+                        format!("/etc/{appname}/defaults/pref/pref.js")
+                    }
+                    .into()
+                ]
+            );
+        }
     }
 }
