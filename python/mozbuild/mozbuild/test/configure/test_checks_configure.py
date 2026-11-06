@@ -7,8 +7,10 @@ import sys
 import textwrap
 import unittest
 from io import StringIO
+from pathlib import PurePosixPath
 
 from buildconfig import topsrcdir
+from mozboot.android import get_java_bin_path
 from mozpack import path as mozpath
 from mozshellutil import quote as shell_quote
 from mozunit import MockedOpen, main
@@ -592,7 +594,7 @@ class TestChecksConfigure(unittest.TestCase):
         javac = mozpath.abspath("/usr/bin/javac")
         paths = {java: None, javac: None}
         expected_error_message = (
-            "ERROR: Could not locate Java at /mozbuild/jdk/jdk-17.0.20.1+1/bin, "
+            f"ERROR: Could not locate Java at {get_java_bin_path('linux', PurePosixPath('/mozbuild'))}, "
             "please run ./mach bootstrap --no-system-changes\n"
         )
 

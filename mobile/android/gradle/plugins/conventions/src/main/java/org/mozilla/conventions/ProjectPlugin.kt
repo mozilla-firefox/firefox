@@ -407,6 +407,8 @@ class ProjectPlugin : Plugin<Project> {
                     // Classfile, because javac has a bug with MethodParameters attributes
                     // with Java 7. https://bugs.openjdk.java.net/browse/JDK-8190452
                     "-Xlint:-classfile",
+                    // This-escape, because GeckoView API classes pass `this` out of their constructors.
+                    "-Xlint:-this-escape",
                 ),
             )
 
@@ -415,6 +417,13 @@ class ProjectPlugin : Plugin<Project> {
             val werrorProjects = setOf("annotations", "messaging_example", "port_messaging_example", "test_runner")
             if (project.name.startsWith("geckoview") || project.name in werrorProjects) {
                 options.compilerArgs.add("-Werror")
+            }
+        }
+        project.pluginManager.withPlugin("com.android.base") {
+            project.tasks.withType<JavaCompile>().configureEach {
+                // AGP's generated BuildConfig.java has a dangling doc comment.
+                // https://issuetracker.google.com/issues/567587949
+                options.compilerArgs.add("-Xlint:-dangling-doc-comments")
             }
         }
     }
@@ -654,6 +663,7 @@ class ProjectPlugin : Plugin<Project> {
                 systemProperty("robolectric.logging", "stdout")
                 systemProperty("logging.test-mode", "true")
                 systemProperty("javax.net.ssl.trustStoreType", "JKS")
+                jvmArgs("--enable-native-access=ALL-UNNAMED")
                 if (automation) {
                     systemProperty(
                         "robolectric.dependency.dir",

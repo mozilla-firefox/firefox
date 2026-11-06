@@ -201,7 +201,7 @@ class SportsOnlineSuggestionProviderTest {
         val result = provider.parseDate(isoDate, Locale.US, timeZone)
 
         assertIs<SportSuggestionDate.Tomorrow>(result)
-        assertEquals("5:00 PM", result.time)
+        assertEquals(formatShortTime(tomorrow.atTime(17, 0), Locale.US), result.time)
     }
 
     @Test
@@ -212,7 +212,7 @@ class SportsOnlineSuggestionProviderTest {
 
         val result = provider.parseDate(isoDate, Locale.US, timeZone)
 
-        assertEquals("6:07 PM", (result as SportSuggestionDate.Tomorrow).time)
+        assertEquals("6:07\u202FPM", (result as SportSuggestionDate.Tomorrow).time)
     }
 
     @Test

@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.awesomebar.provider
 
+import java.time.LocalDateTime
 import java.util.Locale
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.CancellationException
@@ -227,7 +228,7 @@ class FlightsOnlineSuggestionProviderTest {
         assertNotNull(result)
         assertEquals("LAX", result.airportCode)
         assertEquals("Los Angeles", result.airportCity)
-        assertEquals("3:05 PM", result.time)
+        assertEquals(formatShortTime(LocalDateTime.of(2025, 10, 5, 15, 5), Locale.US), result.time)
         assertEquals("Oct 5", result.date)
     }
 
@@ -250,7 +251,7 @@ class FlightsOnlineSuggestionProviderTest {
         assertNotNull(result)
         assertEquals("JFK", result.airportCode)
         assertEquals("New York", result.airportCity)
-        assertEquals("1:05 PM", result.time)
+        assertEquals(formatShortTime(LocalDateTime.of(2025, 10, 5, 13, 5), Locale.US), result.time)
         assertEquals("Oct 5", result.date)
     }
 
@@ -305,9 +306,9 @@ class FlightsOnlineSuggestionProviderTest {
 
         assertNotNull(departureResult)
         assertNotNull(arrivalResult)
-        assertEquals("10:13 PM", departureResult.time)
+        assertEquals(formatShortTime(LocalDateTime.of(2025, 10, 5, 22, 13), Locale.US), departureResult.time)
         assertEquals("Oct 5", departureResult.date)
-        assertEquals("12:13 AM", arrivalResult.time)
+        assertEquals(formatShortTime(LocalDateTime.of(2025, 10, 6, 0, 13), Locale.US), arrivalResult.time)
         assertEquals("Oct 6", arrivalResult.date)
     }
 

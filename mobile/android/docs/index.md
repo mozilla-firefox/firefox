@@ -169,7 +169,7 @@ required to run some newer versions of the APIs or others.
 Assuming the following environment variables are already set (versions/OS may change):
 
 ```bash
-JAVA_HOME=$HOME/.mozbuild/jdk/jdk-17.0.12+7
+JAVA_HOME=$HOME/.mozbuild/jdk/jdk-25.0.5+8
 ANDROID_HOME=$HOME/.mozbuild/android-sdk-linux
 ANDROID_AVD_HOME=$HOME/.mozbuild/android-device/avd
 PATH=$ANDROID_HOME/cmdline-tools/12.0/bin/:$PATH

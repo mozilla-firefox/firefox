@@ -46,7 +46,7 @@ class ProviderUtilsTest {
 
         val result = formatShortTime(dateTime, Locale.US)
 
-        assertEquals("5:30 PM", result)
+        assertEquals("5:30\u202FPM", result)
     }
 
     @Test
