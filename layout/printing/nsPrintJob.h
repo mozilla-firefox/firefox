@@ -151,7 +151,6 @@ class nsPrintJob final : public nsIWebProgressListener,
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void FirePrintingErrorEvent(nsresult aPrintError);
 
   bool CheckBeforeDestroy() const;
-  nsresult Cancel();
   void Destroy();
   void DestroyPrintingData();
 
