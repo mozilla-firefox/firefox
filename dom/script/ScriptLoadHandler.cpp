@@ -557,6 +557,12 @@ nsresult ScriptLoadHandler::DoOnStreamComplete(nsIChannel* aChannel,
 
         uint32_t alignedSRILength =
             JS::AlignTranscodingBytecodeOffset(sriLength);
+        if (alignedSRILength > buf.length() ||
+            buf.length() - alignedSRILength <
+                JS::loader::LoadedScript::EncodingHeaderSize) {
+          return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
+        }
+
         mRequest->SetAlignedSRILength(alignedSRILength);
 
         const JS::loader::LoadedScript::EncodingHeader* header =
