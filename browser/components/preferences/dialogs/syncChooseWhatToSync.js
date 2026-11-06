@@ -74,6 +74,16 @@ let gSyncChooseWhatToSync = {
         elt.hidden = true;
       }
     }
+
+    const perDeviceSyncEnabled = Services.prefs.getBoolPref(
+      "services.sync.perDeviceEngineChoices",
+      false
+    );
+    if (!perDeviceSyncEnabled) {
+      document
+        .getElementById("syncCwtsMigrationNotificationContainer")
+        .remove();
+    }
   },
   _setupEventListeners() {
     document.addEventListener("dialogaccept", () => {

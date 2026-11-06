@@ -27,6 +27,7 @@
         rel="localization"
         href="browser/preferences/preferences.ftl"
       />
+      <html:link rel="localization" href="toolkit/global/mozSupportLink.ftl" />
     </linkset>
     <script src="chrome://global/content/preferencesBindings.js" />
     <script src="chrome://browser/content/preferences/dialogs/syncChooseWhatToSync.js" />
@@ -87,6 +88,21 @@
           preference="services.sync.engine.prefs"
         />
       </html:div>
+    </html:div>
+    <html:div id="syncCwtsMigrationNotificationContainer">
+      <html:moz-message-bar
+        id="syncCwtsMigrationNotification"
+        data-l10n-id="sync-cwts-migration-notification"
+        role="status"
+        data-l10n-attrs="message"
+      >
+        <html:a
+          slot="support-link"
+          is="moz-support-link"
+          support-page="how-do-i-choose-what-information-sync-firefox"
+          data-l10n-id="moz-support-link-text"
+        ></html:a>
+      </html:moz-message-bar>
     </html:div>
   </dialog>
 </window>

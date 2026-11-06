@@ -1331,6 +1331,10 @@ sync-sign-in =
 
 ## Sync section - enabling or disabling sync.
 
+# "Your sync choices" refers to the choices a user makes on what types of data they want to sync
+sync-cwts-migration-notification =
+    .message = Your sync choices now apply only to this device.
+
 prefs-syncing-on = Syncing: ON
 
 prefs-syncing-on-2 =
