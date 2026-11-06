@@ -16,6 +16,17 @@ XPCOMUtils.defineLazyPreferenceGetter(
 const JSON_VIEW_MIME_TYPE = "application/vnd.mozilla.json.view";
 const JSONLINES_VIEW_MIME_TYPE = "application/vnd.mozilla.jsonlines.view";
 
+// Content types that say nothing about the actual format, either because the
+// server doesn't know the .jsonl extension or sent no Content-Type at all.
+// The extension is only trusted for these, so an explicit type such as
+// text/html served at a .jsonl URL is honored (bug 2088590).
+const GENERIC_CONTENT_TYPES = new Set([
+  "",
+  "text/plain",
+  "application/octet-stream",
+  "application/x-unknown-content-type",
+]);
+
 function getContentDisposition(channel) {
   try {
     return channel.contentDisposition;
@@ -62,7 +73,7 @@ export class Sniffer {
 
         // Check if this is a JSON Lines content-type (one JSON value per line).
         let isJsonlines = isJsonlMimeType(contentType);
-        if (!isJsonlines) {
+        if (!isJsonlines && GENERIC_CONTENT_TYPES.has(contentType)) {
           try {
             isJsonlines =
               request.URI.QueryInterface(

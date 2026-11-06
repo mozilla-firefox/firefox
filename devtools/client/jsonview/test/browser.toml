@@ -12,6 +12,8 @@ support-files = [
   "head.js",
   "invalid_json.json",
   "invalid_json.json^headers^",
+  "jsonl_html_contenttype.jsonl",
+  "jsonl_html_contenttype.jsonl^headers^",
   "jsonl_no_contenttype.jsonl",
   "jsonl_no_contenttype.jsonl^headers^",
   "manifest_json.json",

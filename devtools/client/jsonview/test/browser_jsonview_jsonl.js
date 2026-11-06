@@ -135,3 +135,49 @@ add_task(async function testExtensionFallback() {
 
   BrowserTestUtils.removeTab(tab);
 });
+
+add_task(async function testExplicitContentTypeIsHonored() {
+  info("Test .jsonl served with an explicit non-JSON content type started");
+
+  const TEST_URL = URL_ROOT + "jsonl_html_contenttype.jsonl";
+  const tab = await addTab(TEST_URL);
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    is(
+      content.document.contentType,
+      "text/html",
+      "A .jsonl URL served as text/html keeps its declared content type"
+    );
+    ok(
+      !content.wrappedJSObject.JSONView,
+      "The JSON Viewer did not take over the document"
+    );
+    is(
+      content.document.querySelector("p")?.textContent,
+      "This is an HTML document, not JSON Lines.",
+      "The HTML document is rendered as a regular page"
+    );
+  });
+
+  BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function testLocalFile() {
+  info("Test local .jsonl file started");
+
+  // A file:// load has no server-provided type: the extension decides.
+  const dir = getChromeDir(getResolvedURI(gTestPath));
+  dir.append("jsonl_no_contenttype.jsonl");
+  dir.normalize();
+  const TEST_URL = Services.io.newFileURI(dir).spec;
+  const tab = await addJsonViewTab(TEST_URL);
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    ok(
+      content.wrappedJSObject.JSONView.isJsonlines,
+      "A local .jsonl file is opened by the JSON Viewer as JSON Lines"
+    );
+  });
+
+  BrowserTestUtils.removeTab(tab);
+});

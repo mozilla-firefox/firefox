@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>HTML page at a .jsonl URL</title>
+</head>
+<body>
+  <p id="content">This is an HTML document, not JSON Lines.</p>
+</body>
+</html>
