@@ -366,18 +366,6 @@ static const struct EVInfo kEVInfos[] = {
     "BVVWvPJepDU1w6QP1atFcg==",
   },
   {
-    // CN=DigiCert Trusted Root G4,OU=www.digicert.com,O=DigiCert Inc,C=US
-    "2.16.840.1.114412.2.1",
-    "DigiCert EV OID",
-    { 0x55, 0x2F, 0x7B, 0xDC, 0xF1, 0xA7, 0xAF, 0x9E, 0x6C, 0xE6, 0x72,
-      0x01, 0x7F, 0x4F, 0x12, 0xAB, 0xF7, 0x72, 0x40, 0xC7, 0x8E, 0x76,
-      0x1A, 0xC2, 0x03, 0xD1, 0xD9, 0xD2, 0x0A, 0xC8, 0x99, 0x88 },
-    "MGIxCzAJBgNVBAYTAlVTMRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsT"
-    "EHd3dy5kaWdpY2VydC5jb20xITAfBgNVBAMTGERpZ2lDZXJ0IFRydXN0ZWQgUm9v"
-    "dCBHNA==",
-    "BZsbV56OITLiOQe9p3d1XA==",
-  },
-  {
     // CN=DigiCert TLS RSA4096 Root G5,O="DigiCert, Inc.",C=US
     "2.23.140.1.1",
     "CA/Browser Forum EV OID",
