@@ -19,7 +19,7 @@ linux64-mingw32-nsis:
     fetches:
         fetch:
             - nsis-3.07
-            - zlib-1.3.2
+            - zlib
         toolchain:
             - linux64-binutils
             - linux64-clang-mingw-x86
