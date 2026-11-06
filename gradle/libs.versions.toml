@@ -80,6 +80,7 @@ tomlj = "2.2.0"
 
 # Linters
 androidx-lint = "1.0.0"
+checkstyle = "14.3.0"
 # Fix LongParameterList thresholds to preserve behavior when we update from 1.23.8
 # see - https://github.com/detekt/detekt/issues/3679
 detekt = "1.23.8"

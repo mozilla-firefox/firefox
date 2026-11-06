@@ -1187,7 +1187,7 @@ public class Autocomplete {
      * @param creditCard The {@link CreditCard} as confirmed by the prompt request.
      */
     @UiThread
-    default void onCreditCardSave(@NonNull CreditCard creditCard) {}
+    default void onCreditCardSave(@NonNull final CreditCard creditCard) {}
 
     /**
      * Request saving or updating of the given address entry. This is triggered by confirming a
@@ -1196,7 +1196,7 @@ public class Autocomplete {
      * @param address The {@link Address} as confirmed by the prompt request.
      */
     @UiThread
-    default void onAddressSave(@NonNull Address address) {}
+    default void onAddressSave(@NonNull final Address address) {}
 
     /**
      * Notify that the given login was used to autofill login input fields. This is triggered by

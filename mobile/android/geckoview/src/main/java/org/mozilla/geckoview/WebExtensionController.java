@@ -352,7 +352,7 @@ public class WebExtensionController {
      * @param extension The {@link WebExtension} that is being disabled.
      */
     @UiThread
-    default void onDisabling(@NonNull WebExtension extension) {}
+    default void onDisabling(@NonNull final WebExtension extension) {}
 
     /**
      * Called whenever optional permissions of an extension have changed.
@@ -360,7 +360,7 @@ public class WebExtensionController {
      * @param extension The {@link WebExtension} that has optional permissions changed.
      */
     @UiThread
-    default void onOptionalPermissionsChanged(@NonNull WebExtension extension) {}
+    default void onOptionalPermissionsChanged(@NonNull final WebExtension extension) {}
 
     /**
      * Called whenever an extension has been disabled.

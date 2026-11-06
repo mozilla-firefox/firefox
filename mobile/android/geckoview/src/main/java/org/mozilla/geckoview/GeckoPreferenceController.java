@@ -431,9 +431,9 @@ public class GeckoPreferenceController {
   public static final int PREF_BRANCH_DEFAULT = 1;
 
   /**
-   * Convenience method for converting from {@link #@PrefBranch} to string.
+   * Convenience method for converting from {@link PrefBranch} to string.
    *
-   * @param prefBranch The defined {@link #@PrefBranch}.
+   * @param prefBranch The defined {@link PrefBranch}.
    * @return The String representation of the construct.
    */
   @AnyThread

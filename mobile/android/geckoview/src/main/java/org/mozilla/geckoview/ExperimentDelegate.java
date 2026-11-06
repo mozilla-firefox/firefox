@@ -41,7 +41,7 @@ public interface ExperimentDelegate {
    *     ExperimentException} if the feature wasn't found.
    */
   @HandlerThread
-  default @NonNull GeckoResult<JSONObject> onGetExperimentFeature(@NonNull String feature) {
+  default @NonNull GeckoResult<JSONObject> onGetExperimentFeature(@NonNull final String feature) {
     ThreadUtils.assertOnHandlerThread();
     final GeckoResult<JSONObject> result = new GeckoResult<>();
     result.completeExceptionally(
@@ -67,7 +67,7 @@ public interface ExperimentDelegate {
    *     wasn't found.
    */
   @HandlerThread
-  default @NonNull GeckoResult<Void> onRecordExposureEvent(@NonNull String feature) {
+  default @NonNull GeckoResult<Void> onRecordExposureEvent(@NonNull final String feature) {
     ThreadUtils.warnOnHandlerThread();
     final GeckoResult<Void> result = new GeckoResult<>();
     result.completeExceptionally(
@@ -93,7 +93,7 @@ public interface ExperimentDelegate {
    */
   @HandlerThread
   default @NonNull GeckoResult<Void> onRecordExperimentExposureEvent(
-      @NonNull String feature, @NonNull String slug) {
+      @NonNull final String feature, @NonNull final String slug) {
     ThreadUtils.warnOnHandlerThread();
     final GeckoResult<Void> result = new GeckoResult<>();
     result.completeExceptionally(
@@ -113,7 +113,7 @@ public interface ExperimentDelegate {
    */
   @HandlerThread
   default @NonNull GeckoResult<Void> onRecordMalformedConfigurationEvent(
-      @NonNull String feature, @NonNull String part) {
+      @NonNull final String feature, @NonNull final String part) {
     ThreadUtils.warnOnHandlerThread();
     final GeckoResult<Void> result = new GeckoResult<>();
     result.completeExceptionally(

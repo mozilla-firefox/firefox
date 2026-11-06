@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  *   <li>{@link MediaFormat#KEY_I_FRAME_INTERVAL}
  *   <li>{@link MediaFormat#KEY_STRIDE}
  *   <li>{@link MediaFormat#KEY_SLICE_HEIGHT}
- *   <li>{@link MediaFormat#KEY_COLOR_RANGE
+ *   <li>{@link MediaFormat#KEY_COLOR_RANGE}
  *   <li>{@link MediaFormat#KEY_COLOR_STANDARD}
  *   <li>"csd-0"
  *   <li>"csd-1"

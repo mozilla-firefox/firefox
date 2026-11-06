@@ -4737,7 +4737,7 @@ public class GeckoSession {
      */
     @UiThread
     default @Nullable GeckoResult<AllowOrDeny> onShowClipboardPermissionRequest(
-        @NonNull final GeckoSession session, @NonNull ClipboardPermission permission) {
+        @NonNull final GeckoSession session, @NonNull final ClipboardPermission permission) {
       return GeckoResult.deny();
     }
 
@@ -4807,10 +4807,10 @@ public class GeckoSession {
      */
     @UiThread
     default void onLocationChange(
-        @NonNull GeckoSession session,
-        @Nullable String url,
+        @NonNull final GeckoSession session,
+        @Nullable final String url,
         final @NonNull List<PermissionDelegate.ContentPermission> perms,
-        @NonNull Boolean hasUserGesture) {}
+        @NonNull final Boolean hasUserGesture) {}
 
     /**
      * The view's ability to go back has changed.
@@ -5083,7 +5083,7 @@ public class GeckoSession {
          * @param prompt the prompt that was completed.
          */
         @AnyThread
-        default void onPromptCompleted(@NonNull BasePrompt prompt) {}
+        default void onPromptCompleted(@NonNull final BasePrompt prompt) {}
       }
 
       private void complete() {
@@ -7694,7 +7694,7 @@ public class GeckoSession {
      */
     @UiThread
     default @Nullable GeckoResult<Integer> onContentPermissionRequest(
-        @NonNull final GeckoSession session, @NonNull ContentPermission perm) {
+        @NonNull final GeckoSession session, @NonNull final ContentPermission perm) {
       return GeckoResult.fromValue(ContentPermission.VALUE_PROMPT);
     }
 

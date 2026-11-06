@@ -1020,7 +1020,7 @@ public class TranslationsController {
        * @param translationState The state of the translation as reported by the translation engine.
        */
       default void onTranslationStateChange(
-          @NonNull final GeckoSession session, @Nullable TranslationState translationState) {}
+          @NonNull final GeckoSession session, @Nullable final TranslationState translationState) {}
     }
 
     /** Translation pair is the from language and to language set on the translation state. */

@@ -352,7 +352,7 @@ androidComponents.onVariants(androidComponents.selector().all()) { variant ->
 checkstyle {
     configDirectory = file(".")
     configFile = file("checkstyle.xml")
-    toolVersion = "8.36.2"
+    toolVersion = libs.versions.checkstyle.get()
 }
 
 // AGP creates the javac and bundleLibRuntimeToJar tasks after onVariants runs, so wire the
