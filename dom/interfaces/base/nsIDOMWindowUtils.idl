@@ -664,9 +664,10 @@ interface nsIDOMWindowUtils : nsISupports {
    * NOTE: The synthesized native event will be fired asynchronously, and upon
    * completion the callback, if provided, will be notified.
    *
-   * Widget support: Windows.
+   * Widget support: Windows, GTK, headless.
    * @param aScreenX, aScreenY screen coords of the focus point of this event.
-   * @param aDeltaX, aDeltaY the amount of delta in the pan.
+   * @param aDeltaX, aDeltaY the amount of delta in the pan. Positive values
+   *        scroll the content down / to the right, on all platforms.
    * @param aModifierFlags is expected to contain native modifier values.
    */
   void sendNativeTouchpadPan(in unsigned long aEventPhase,

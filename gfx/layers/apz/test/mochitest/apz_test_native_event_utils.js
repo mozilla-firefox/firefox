@@ -1769,7 +1769,7 @@ const NativePanHandlerForLinux = {
   updatePhase: SpecialPowers.DOMWindowUtils.PHASE_UPDATE,
   endPhase: SpecialPowers.DOMWindowUtils.PHASE_END,
   promiseNativePanEvent: promiseNativeTouchpadPanEventAndWaitForObserver,
-  delta: -50,
+  delta: 50,
 };
 
 const NativePanHandlerForWindows = {
