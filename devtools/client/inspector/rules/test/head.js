@@ -1844,3 +1844,52 @@ async function editSelectorForRuleEditor(view, ruleEditor, newSelector) {
     onNewElementSelected,
   ]);
 }
+
+/**
+ * Wait for the selection of the original style sheet editor
+ *
+ * @param {object} toolbox
+ * @returns {Promise}
+ */
+function waitForOriginalStyleSheetEditorSelection(toolbox) {
+  const panel = toolbox.getCurrentPanel();
+  return new Promise(resolve => {
+    const maybeContinue = editor => {
+      // The style editor selects the first sheet at first load before
+      // selecting the desired sheet.
+      if (editor.styleSheet.href.endsWith("scss")) {
+        info("Original source editor selected");
+        off();
+        resolve(editor);
+      }
+    };
+    const off = panel.UI.on("editor-selected", maybeContinue);
+    if (panel.UI.selectedEditor) {
+      maybeContinue(panel.UI.selectedEditor);
+    }
+  });
+}
+
+/**
+ * Click a link in the ruleview and wait for the style sheet to open
+ * in the panel.
+ *
+ * @param {*} toolbox
+ * @param {*} view
+ * @param {number} index
+ */
+async function testClickStylesheetLink(toolbox, view, index) {
+  info("Listening for switch to the style editor");
+  const isStylesheetInDebuggerEnabled = Services.prefs.getBoolPref(
+    "devtools.debugger.features.stylesheets-in-debugger",
+    false
+  );
+  const panel = isStylesheetInDebuggerEnabled ? "jsdebugger" : "styleeditor";
+  const onPanelReady = toolbox.once(`${panel}-selected`);
+
+  info("Finding the stylesheet link and clicking it");
+  const link = getRuleViewLinkByIndex(view, index);
+  link.scrollIntoView();
+  link.click();
+  await onPanelReady;
+}

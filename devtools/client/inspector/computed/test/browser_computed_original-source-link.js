@@ -12,6 +12,15 @@ const SCSS_LOC = "doc_sourcemaps.scss:4";
 const CSS_LOC = "doc_sourcemaps.css:1";
 
 add_task(async function () {
+  // Open any external styles in the debugger
+  await testOriginalSourceLinksInComputedView(true);
+  // Open any external styles in the style editor
+  await testOriginalSourceLinksInComputedView(false);
+});
+
+async function testOriginalSourceLinksInComputedView(
+  styleSheetInDebuggerEnabled
+) {
   info("Turning the pref " + PREF + " on");
   Services.prefs.setBoolPref(PREF, true);
 
@@ -41,24 +50,50 @@ add_task(async function () {
   await onLinksUpdated;
 
   info("Testing that clicking on the link works");
-  await testClickingLink(toolbox, view);
+  await testClickStylesheetLink(toolbox, view, styleSheetInDebuggerEnabled);
 
   info("Turning the pref " + PREF + " off");
   Services.prefs.clearUserPref(PREF);
-});
+}
 
-async function testClickingLink(toolbox, view) {
-  const onEditor = waitForStyleEditor(toolbox, "doc_sourcemaps.scss");
+async function testClickStylesheetLink(
+  toolbox,
+  view,
+  styleSheetInDebuggerEnabled
+) {
+  await pushPref(
+    "devtools.debugger.features.stylesheets-in-debugger",
+    styleSheetInDebuggerEnabled
+  );
+  if (!styleSheetInDebuggerEnabled) {
+    const onEditor = waitForStyleEditor(toolbox, "doc_sourcemaps.scss");
 
-  info("Clicking the computedview stylesheet link");
-  const link = getComputedViewLinkByIndex(view, 0);
-  link.scrollIntoView();
-  link.click();
+    info("Clicking the computedview stylesheet link");
+    const link = getComputedViewLinkByIndex(view, 0);
+    link.scrollIntoView();
+    link.click();
 
-  const editor = await onEditor;
+    const editor = await onEditor;
 
-  const { line } = editor.sourceEditor.getCursor();
-  is(line, 3, "cursor is at correct line number in original source");
+    const { line } = editor.sourceEditor.getCursor();
+    is(line, 3, "cursor is at correct line number in original source");
+  } else {
+    const onSelectDebugger = waitFor(() => {
+      const debuggerPanel = toolbox.getPanel("jsdebugger");
+      return debuggerPanel?._selectors.getSelectedLocation(
+        debuggerPanel._getState()
+      );
+    });
+
+    info("Clicking the computedview stylesheet link");
+    const link = getComputedViewLinkByIndex(view, 0);
+    link.scrollIntoView();
+    link.click();
+
+    const location = await onSelectDebugger;
+
+    is(location.line, 4, "cursor is at correct line number in original source");
+  }
 }
 
 function verifyLinkText(view, text) {
