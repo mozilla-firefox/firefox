@@ -391,6 +391,8 @@
   <string name="ai_controls_voice_search_title">Recerca vocal</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Le audio es convertite a texto per Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Ascolta le pagina</string>
   <!-- Description for the listen to page AI feature toggle -->
   <string name="ai_controls_listen_to_page_description">Tu apparato pote usar IA pro leger in alte voce. Le texto e le audio remane private.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->

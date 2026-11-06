@@ -68,7 +68,7 @@
   <!-- The document title and heading of the error page shown when a website takes too long to load. -->
   <string name="mozac_browser_errorpages_net_timeout_title">De wachttiid foar de ferbining is ferstrutsen</string>
   <!-- The error message shown when a website took long to load. -->
-  <string name="mozac_browser_errorpages_net_timeout_message"><![CDATA[<p>De opfrege website hat net op in ferbiningsfersyk antwurde en de browser wachtet net mear op in antwurd.</p>\n<ul>\n<li>Miskien ûnderfynt de server in hege fraach of in tydlike stroomûnderbrekking? Probearje it letter opnij.</li>\n<li>Kinne jo gjin oare websites besykje? Kontrolearje de netwurkferbining fan it apparaat.</li>\n<li>Wurdt jo apparaat of netwurk beskerme troch in firewall of proxy? Ferkearde ynstellingen kinne in goede wurking wylst it webbrowsen tsjin gean.</li>\n<li>Hawwe jo noch hieltyd problemen? Freegje jo netwurkbehearder of ynternetprovider foar assistinsje.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_net_timeout_message"><![CDATA[<p>De opfrege website hat net op in ferbiningsfersyk antwurde en de browser wachtet net mear op in antwurd.</p>\n<ul>\n<li>Miskien ûnderfynt de server in hege fraach of in tydlike ûnderbrekking? Probearje it letter opnij.</li>\n<li>Kinne jo gjin oare websites besykje? Kontrolearje de netwurkferbining fan it apparaat.</li>\n<li>Wurdt jo apparaat of netwurk beskerme troch in firewall of proxy? Ferkearde ynstellingen kinne in goede wurking wylst it webbrowsen tsjin gean.</li>\n<li>Hawwe jo noch hieltyd problemen? Freegje jo netwurkbehearder of ynternetprovider foar assistinsje.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website could not be reached. -->
   <string name="mozac_browser_errorpages_connection_failure_title">Kin gjin ferbining meitsje</string>
   <!-- The error message shown when a website could not be reached. -->
@@ -152,7 +152,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_safe_harmful_uri_title">Probleem mei skealike website</string>
   <!-- The %1$s will be replaced by the malicious website URL -->
-  <string name="mozac_browser_errorpages_safe_harmful_uri_message"><![CDATA[<p>De website op %1$s is rapportearre as in fertochte side en is blokkearre op basis fan jo befeiligingsfoarkarren.</p>]]></string>
+  <string name="mozac_browser_errorpages_safe_harmful_uri_message"><![CDATA[<p>De website op %1$s is rapportearre as in mooglik skealike website en is blokkearre op basis fan jo befeiligingsfoarkarren.</p>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_safe_phishing_uri_title">Probleem mei misliedende website</string>
   <!-- The %1$s will be replaced by the malicious website URL -->

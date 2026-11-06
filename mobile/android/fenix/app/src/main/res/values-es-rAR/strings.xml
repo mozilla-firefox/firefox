@@ -1194,7 +1194,7 @@
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Tus datos están respaldados y disponibles en dispositivos sincronizados.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
-  <string name="preferences_enable_sync_summary_sync_disabled">Usando datos guardados en tu cuenta %1$s.</string>
+  <string name="preferences_enable_sync_summary_sync_disabled">Usando datos guardados en tu cuenta de %1$s.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Administrar lo que se sincroniza entre todos los dispositivos conectados</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -4550,11 +4550,11 @@
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Eliminar widget</string>
   <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
-  <string name="wrex_widget_match_full_time_short">FT</string>
+  <string name="wrex_widget_match_full_time_short">Fin</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
-  <string name="wrex_widget_match_half_time">Medio tiempo</string>
+  <string name="wrex_widget_match_half_time">Entretiempo</string>
   <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
-  <string name="wrex_widget_match_extra_time_short">ET</string>
+  <string name="wrex_widget_match_extra_time_short">Alargue</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">Penales</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
@@ -4565,7 +4565,7 @@
     (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
     or a match status like "Full time").
   -->
-  <string name="wrex_widget_match_content_description">%1$s frente a %2$s, %3$s</string>
+  <string name="wrex_widget_match_content_description">%1$s versus %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
@@ -4593,9 +4593,9 @@
   <!-- Sports widget error card description shown when the user is offline. -->
   <string name="wrex_widget_error_connection_offline_description">Verificá la conexión a internet y probá de nuevo.</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
-  <string name="wrex_widget_error_load_failed_title">No se puede mostrar la información de la coincidencia en este momento</string>
+  <string name="wrex_widget_error_load_failed_title">No se puede mostrar información del partido en este momento</string>
   <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
-  <string name="wrex_widget_error_try_refreshing">Intente actualizar o vuelva más tarde.</string>
+  <string name="wrex_widget_error_try_refreshing">Probá actualizar o volvé más tarde.</string>
   <!-- Sports widget error card title shown when the latest match results fail to load. -->
   <string name="wrex_widget_error_results_load_failed_title">No se pueden mostrar resultados en este momento</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->

@@ -18,7 +18,7 @@
   <!-- Accessible description for decreasing the font size -->
   <string name="mozac_feature_readerview_font_size_decrease_desc">Lettergrutte ferlytsje</string>
   <!-- Accessible description for increasing the font size -->
-  <string name="mozac_feature_readerview_font_size_increase_desc">Lettertype fergrutsje</string>
+  <string name="mozac_feature_readerview_font_size_increase_desc">Lettergrutte fergrutsje</string>
   <!-- Color option for the background -->
   <string name="mozac_feature_readerview_dark">Donker</string>
   <!-- Accessible description for the color option -->

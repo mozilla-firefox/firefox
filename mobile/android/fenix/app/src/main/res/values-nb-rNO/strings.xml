@@ -1010,6 +1010,14 @@
   <string name="customize_addon_collection_user_hint">Samlingseier (bruker-ID)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Utvidelsessamling endret. Avslutter applikasjonen for å legge til endringer…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Fjerne %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Dette fjerner utvidelsen og innstillingene for den fra denne enheten.</string>
   <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
   <string name="addon_remove_dialog_confirm">Fjern</string>
   <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->

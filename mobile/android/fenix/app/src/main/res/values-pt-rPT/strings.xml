@@ -4550,11 +4550,11 @@
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Remover widget</string>
   <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
-  <string name="wrex_widget_match_full_time_short">FT</string>
+  <string name="wrex_widget_match_full_time_short">RF</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
   <string name="wrex_widget_match_half_time">Intervalo</string>
   <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
-  <string name="wrex_widget_match_extra_time_short">ET</string>
+  <string name="wrex_widget_match_extra_time_short">TE</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">Grandes penalidades</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
@@ -4576,7 +4576,7 @@
     %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
     and %5$s is the match elapsed time (e.g. 72 minutes).
   -->
-  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, ativos</string>
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, a decorrer</string>
   <!--
     Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
     %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
@@ -4591,9 +4591,9 @@
   <!-- Sports widget error card title shown when the user is offline. -->
   <string name="wrex_widget_error_connection_offline_title">Parece que está offline</string>
   <!-- Sports widget error card description shown when the user is offline. -->
-  <string name="wrex_widget_error_connection_offline_description">Verifique a sua ligação à Internet e tente novamente.</string>
+  <string name="wrex_widget_error_connection_offline_description">Verifique a sua ligação à internet e tente novamente.</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
-  <string name="wrex_widget_error_load_failed_title">Não é possível mostrar informações da correspondência neste momento</string>
+  <string name="wrex_widget_error_load_failed_title">Não é possível mostrar informações do jogo neste momento</string>
   <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
   <string name="wrex_widget_error_try_refreshing">Tente atualizar ou volte mais tarde.</string>
   <!-- Sports widget error card title shown when the latest match results fail to load. -->
