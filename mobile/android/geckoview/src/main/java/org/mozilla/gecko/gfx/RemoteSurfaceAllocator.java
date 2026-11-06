@@ -19,13 +19,15 @@ public final class RemoteSurfaceAllocator extends ISurfaceAllocator.Stub
   /// the new compositor process (either a new GPU process, or the parent process) do not clash with
   /// surface handles allocated by a previous GPU process.
   private final int mAllocatorId;
-  /// Monotonically increasing counter used to generate unique handles
-  /// for each SurfaceTexture by combining with mAllocatorId.
+
+  /// Monotonically increasing counter used to generate unique handles for each SurfaceTexture by
+  /// combining with mAllocatorId.
   private static AtomicInteger sNextHandle = new AtomicInteger(1);
 
-  ///  List of Surface handles owned by this instance.
+  /// List of Surface handles owned by this instance.
   private final LongSparseArray<Boolean> mOwnedHandles = new LongSparseArray<Boolean>();
-  ///  Whether the client is still connected to this allocator.
+
+  /// Whether the client is still connected to this allocator.
   private boolean mClientConnected = true;
 
   /**
