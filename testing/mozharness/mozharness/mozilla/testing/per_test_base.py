@@ -41,6 +41,19 @@ class SingleTestMixin:
             return True
         return False
 
+    @staticmethod
+    def _tests_under(tests_by_path, paths):
+        prefixes = []
+        for path in paths:
+            path = path.replace(posixpath.sep, os.sep).rstrip(os.sep)
+            prefixes.append((path, path + os.sep))
+
+        return [
+            test
+            for test in tests_by_path
+            if any(test == path or test.startswith(prefix) for path, prefix in prefixes)
+        ]
+
     def _find_misc_tests(self, dirs, changed_files, mozinfo, gpu=False):
         manifests = [
             (
@@ -164,6 +177,15 @@ class SingleTestMixin:
                 "Per-test run updated with manifest %s (%d tests)"
                 % (path, len(man.files))
             )
+
+        if self.config.get("verify_paths"):
+            requested_paths = changed_files
+            changed_files = self._tests_under(tests_by_path, requested_paths)
+            if not changed_files:
+                self.warning(
+                    "Per-test run found no test under the requested paths: "
+                    + ", ".join(sorted(requested_paths))
+                )
 
         # for each changed file, determine if it is a test file, and what suite it is in
         for file in changed_files:
@@ -428,11 +450,11 @@ class SingleTestMixin:
                     if changed.startswith(specified):
                         changed_and_specified.add(changed)
                         break
-            if changed_and_specified:
+            if changed_and_specified and not self.config.get("verify_paths"):
                 changed_files = changed_and_specified
             else:
-                # if specified paths do not match changed files, assume the
-                # specified paths are explicitly requested tests
+                # verify the specified paths themselves when asked to or when
+                # they do not match changed files
                 changed_files = set()
                 changed_files.update(specified_paths)
             self.info("Per-test run found explicit request in MOZHARNESS_TEST_PATHS:")

@@ -16,6 +16,16 @@ verify_config_options = [
             "help": "Run additional verification on modified tests.",
         },
     ],
+    [
+        ["--verify-paths"],
+        {
+            "action": "store_true",
+            "dest": "verify_paths",
+            "default": False,
+            "help": "Verify every test under the requested paths, rather than "
+            "only the tests modified on this push.",
+        },
+    ],
 ]
 
 

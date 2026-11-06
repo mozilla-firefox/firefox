@@ -26,6 +26,10 @@ from gecko_taskgraph.util.perfile import perfile_number_of_chunks
 DYNAMIC_CHUNK_DURATION = 20 * 60  # seconds
 """The approximate time each test chunk should take to run."""
 
+TESTS_PER_VERIFY_CHUNK = 10
+"""How many tests one test-verify-path chunk verifies, as many as the harness
+verifies in one per-test task."""
+
 
 transforms = TransformSequence()
 
@@ -50,10 +54,52 @@ def _requested_test_paths(config):
     return _parse_test_paths(env.get("MOZHARNESS_TEST_PATHS", "{}"))
 
 
+@functools.cache
+def _resolve_tests_under(paths):
+    return {
+        test["srcdir_relpath"]: test
+        for path in paths
+        for test in resolver.resolve_tests(paths=[path])
+    }
+
+
+@transforms.add
+def set_test_verify_path_chunks(config, tasks):
+    """Size test-verify-path from the tests under the requested paths. The
+    count includes tests the harness skips on the platform, so a chunk may
+    verify fewer than TESTS_PER_VERIFY_CHUNK."""
+    for task in tasks:
+        if task["suite"] != "test-verify-path":
+            yield task
+            continue
+
+        paths = _requested_test_paths(config)
+        if not paths:
+            # `mach try` generates its task list without paths, and still
+            # needs to offer the task. Anywhere else it would only repeat
+            # test-verify.
+            if config.params["try_mode"] == "try_select":
+                task["chunks"] = 1
+                yield task
+            continue
+
+        requested = frozenset(
+            path for suite_paths in paths.values() for path in suite_paths
+        )
+        task["chunks"] = (
+            ceil(len(_resolve_tests_under(requested)) / TESTS_PER_VERIFY_CHUNK) or 1
+        )
+        yield task
+
+
 @transforms.add
 def set_test_verify_chunks(config, tasks):
     """Set the number of chunks we use for test-verify."""
     for task in tasks:
+        if task["suite"] == "test-verify-path":
+            yield task
+            continue
+
         if any(task["suite"].startswith(s) for s in ("test-verify", "test-coverage")):
             try_task_config = config.params.get("try_task_config", {}) or {}
             env = try_task_config.get("env", {})

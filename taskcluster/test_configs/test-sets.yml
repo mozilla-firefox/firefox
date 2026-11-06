@@ -230,6 +230,7 @@ linux-tests:
     - reftest
     - telemetry-tests-client
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - xpcshell
@@ -263,6 +264,7 @@ linux-2404-tsan-tests:
     - reftest
     - telemetry-tests-client
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - xpcshell
@@ -304,6 +306,7 @@ linux2204-wayland-tests:
     - reftest
     - telemetry-tests-client
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - xpcshell
@@ -325,6 +328,7 @@ windows32-tests:
     - mochitest-media
     - reftest
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - xpcshell
@@ -384,6 +388,7 @@ windows11-25h2-tests:
     - mochitest-webgl2-ext
     - telemetry-tests-client
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - xpcshell
@@ -483,6 +488,7 @@ macosx1500-64-tests:
     - reftest
     - telemetry-tests-client
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - xpcshell
@@ -523,6 +529,7 @@ macosx1500-aarch64-tests:
     - reftest
     - telemetry-tests-client
     - test-verify
+    - test-verify-path
     - test-verify-gpu
     - test-verify-wpt
     - web-platform-tests

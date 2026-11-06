@@ -834,5 +834,58 @@ def test_perfherder_extra_options(run_transform, make_test_task):
     assert task["worker"]["env"]["PERFHERDER_EXTRA_OPTIONS"] == "xpcshell"
 
 
+@pytest.fixture
+def verify_path_task(monkeypatch):
+    chunk._resolve_tests_under.cache_clear()
+
+    def resolve_tests(paths):
+        def tests(flavor, prefix, count, manifest):
+            return [
+                {
+                    "srcdir_relpath": f"{paths[0]}/{prefix}_{i}.js",
+                    "manifest_relpath": f"{paths[0]}/{manifest}",
+                    "flavor": flavor,
+                }
+                for i in range(count)
+            ]
+
+        return tests("browser-chrome", "browser", 25, "browser/browser.toml") + tests(
+            "xpcshell", "test", 50, "xpcshell.toml"
+        )
+
+    monkeypatch.setattr(chunk.resolver, "resolve_tests", resolve_tests)
+    return {"suite": "test-verify-path", "test-name": "test-verify-path"}
+
+
+def test_test_verify_path_is_sized_from_the_requested_paths(
+    run_transform, verify_path_task
+):
+    params = _make_test_paths_params(["dir"])
+    params["try_mode"] = "try_task_config"
+
+    tasks = list(
+        run_transform(
+            chunk.set_test_verify_path_chunks, verify_path_task, params=params
+        )
+    )
+    assert [t["chunks"] for t in tasks] == [8]
+
+
+@pytest.mark.parametrize(
+    "try_mode,expected", [("try_select", [1]), ("try_task_config", []), (None, [])]
+)
+def test_test_verify_path_without_paths(
+    run_transform, verify_path_task, try_mode, expected
+):
+    params = FakeParameters({"try_task_config": {}, "try_mode": try_mode})
+
+    tasks = list(
+        run_transform(
+            chunk.set_test_verify_path_chunks, verify_path_task, params=params
+        )
+    )
+    assert [t["chunks"] for t in tasks] == expected
+
+
 if __name__ == "__main__":
     mozunit.main()

@@ -1312,6 +1312,12 @@ class DesktopUnittest(TestingMixin, MercurialScript, MozbaseMixin, CodeCoverageM
         max_per_test_tests = 10
         if self.per_test_coverage:
             max_per_test_tests = 30
+        if self.config.get("verify_paths"):
+            # The decision task sized each chunk for its share of the tests,
+            # rather than for the few a push usually modifies.
+            # max_per_test_time is the time limit of the whole per-test task,
+            # not of each test.
+            max_per_test_time = timedelta(minutes=150)
         executed_tests = 0
         executed_too_many_tests = False
 

@@ -65,7 +65,7 @@ telemetry-tests-client:
                 windows.*: []
                 macosx.*: []
 
-test-verify:
+test-verify: &test-verify
     description: "Extra verification of tests modified on this push"
     suite: test-verify
     treeherder-symbol: TV
@@ -110,7 +110,7 @@ test-verify:
     optimization:
         test-verify: ["test-verify"]
     tier: 2
-    mozharness:
+    mozharness: &test-verify-mozharness
         script:
             by-test-platform:
                 android-em.*: android_emulator_unittest.py
@@ -169,6 +169,20 @@ test-verify:
             - tr8ns.T.esen.lex
             - tr8ns.T.esen.model
             - tr8ns.T.esen.vocab
+
+# Runs on the projects test-verify runs on, to be in the set `mach try` offers,
+# and is dropped outside of try by set_test_verify_path_chunks.
+test-verify-path:
+    <<: *test-verify
+    description: "Extra verification of every test under the requested paths"
+    suite: test-verify-path
+    treeherder-symbol: TVp
+    variants: []
+    mozharness:
+        <<: *test-verify-mozharness
+        extra-options:
+            - --verify
+            - --verify-paths
 
 test-verify-gpu:
     description: "Extra verification of tests modified on this push on gpu instances"

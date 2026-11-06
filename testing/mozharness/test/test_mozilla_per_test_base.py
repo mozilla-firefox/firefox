@@ -17,6 +17,32 @@ class Harness(SingleTestMixin):
         self.per_test_coverage = per_test_coverage
 
 
+class TestTestsUnder(unittest.TestCase):
+    TESTS = {
+        os.path.join("a", "b", "test_one.js"): None,
+        os.path.join("a", "b", "test_two.js"): None,
+        os.path.join("a", "bb", "test_three.js"): None,
+        os.path.join("c", "test_four.js"): None,
+    }
+
+    def under(self, *paths):
+        return SingleTestMixin._tests_under(self.TESTS, paths)
+
+    def test_directory_expands_to_the_tests_below_it(self):
+        self.assertEqual(
+            self.under("a/b"),
+            [
+                os.path.join("a", "b", "test_one.js"),
+                os.path.join("a", "b", "test_two.js"),
+            ],
+        )
+
+    def test_a_test_file_matches_itself(self):
+        self.assertEqual(
+            self.under("c/test_four.js"), [os.path.join("c", "test_four.js")]
+        )
+
+
 class TestChunkSuites(unittest.TestCase):
     def chunk(self, suites, total_chunks, this_chunk):
         harness = Harness()
