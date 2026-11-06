@@ -338,7 +338,8 @@ class MOZ_STACK_CLASS AutoClonedRangeArray {
     mDirection = nsDirection::eDirNext;
   }
 
-  void RemoveCollapsedRanges();
+  enum class PreservePrimaryRangeIfAllRangesCollapsed : bool { No, Yes };
+  void RemoveCollapsedRanges(PreservePrimaryRangeIfAllRangesCollapsed);
 
   /**
    * If the points are same (i.e., mean a collapsed range) and in an empty block
