@@ -10,7 +10,7 @@
 SimpleTest.waitForExplicitFinish();
 SimpleTest.waitForFocus(async () => {
   await SpecialPowers.pushPrefEnv({
-    set: [["test.ime_content_observer.assert_invalid_cache", true]],
+    set: [["test.ime_content_observer.assert_valid_cache", true]],
   });
 
   const editingHost = document.querySelector("div[contenteditable]");

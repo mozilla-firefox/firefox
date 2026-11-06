@@ -1,4 +1,4 @@
-defaults pref(test.ime_content_observer.assert_invalid_cache,true)
+defaults pref(test.ime_content_observer.assert_valid_cache,true)
 
 load 336081-1.xhtml
 load 403965-1.xhtml

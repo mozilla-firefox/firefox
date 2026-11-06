@@ -11261,7 +11261,7 @@ async function runTest()
   await SpecialPowers.pushPrefEnv({
     set: [
       ["dom.events.textevent.enabled", true],
-      ["test.ime_content_observer.assert_invalid_cache", true],
+      ["test.ime_content_observer.assert_valid_cache", true],
     ],
   });
 

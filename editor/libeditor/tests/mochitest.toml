@@ -3,7 +3,7 @@ prefs = [
   "apz.zoom-to-focused-input.enabled=false",
   # Bug 2077709
   "dom.navigation.navigationRateLimit.count=0",
-  "test.ime_content_observer.assert_invalid_cache=true",
+  "test.ime_content_observer.assert_valid_cache=true",
   "ui.dragThresholdX=4", # Bug 1873142
   "ui.dragThresholdY=4", # Bug 1873142
 ]

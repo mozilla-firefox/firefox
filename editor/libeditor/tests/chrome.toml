@@ -1,5 +1,5 @@
 [DEFAULT]
-prefs = ["test.ime_content_observer.assert_invalid_cache=true"]
+prefs = ["test.ime_content_observer.assert_valid_cache=true"]
 
 ["test_bug489202.xhtml"]
 
