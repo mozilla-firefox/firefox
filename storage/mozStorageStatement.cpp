@@ -236,13 +236,34 @@ void Statement::MaybeRecordQueryStatus(int srv, bool isResetting) {
   mQueryStatusRecorded = !isResetting;
 }
 
-Statement::~Statement() { internalFinalize(true); }
+Statement::~Statement() {
+  MOZ_DIAGNOSTIC_ASSERT(mRefCnt == 1, "Unexpected refcount at destruction");
+  MOZ_ASSERT(NS_IsMainThread() || (mStatementParamsHolder == nullptr &&
+                                   mStatementRowHolder == nullptr),
+             "Must be destroyed on the main thread if JS helpers exist");
+  internalFinalize(/* aDestructing */ true);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //// nsISupports
 
 NS_IMPL_ADDREF(Statement)
-NS_IMPL_RELEASE(Statement)
+NS_IMPL_RELEASE_WITH_DESTROY(Statement, Destroy())
+
+void Statement::Destroy() {
+  // The JS helpers keep raw pointers to us that are cleared when their holders
+  // are released on the main thread. Delete there, so that happens as part of
+  // our destruction rather than after it.
+  if (!NS_IsMainThread() &&
+      (mStatementParamsHolder != nullptr || mStatementRowHolder != nullptr)) {
+    // Unlike AsyncStatement::Destroy(), there is no need to call
+    // destructorAsyncFinalize() here, it is invoked by internalFinalize() from
+    // ~Statement.
+    NS_PROXY_DELETE_TO_MAIN_THREAD(Statement);
+    return;
+  }
+  delete this;
+}
 
 NS_INTERFACE_MAP_BEGIN(Statement)
   NS_INTERFACE_MAP_ENTRY(mozIStorageStatement)
