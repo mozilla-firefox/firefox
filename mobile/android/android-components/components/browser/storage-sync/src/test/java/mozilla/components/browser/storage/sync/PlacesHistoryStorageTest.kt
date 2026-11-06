@@ -388,6 +388,15 @@ class PlacesHistoryStorageTest {
     }
 
     @Test
+    fun `store replaces lone surrogates in observed titles`() = runTest {
+        history.recordVisit("https://www.mozilla.org", PageVisit(VisitType.TYPED))
+        history.recordObservation("https://www.mozilla.org", PageObservation("Mozilla \uD83D"))
+        val recorded = history.getDetailedVisits(0)
+        assertEquals(1, recorded.size)
+        assertEquals("Mozilla \uFFFD", recorded[0].title)
+    }
+
+    @Test
     fun `store can provide suggestions`() = runTest {
         assertEquals(0, history.getSuggestions("Mozilla", 100).size)
 
@@ -495,6 +504,13 @@ class PlacesHistoryStorageTest {
         assertEquals(1, res.totalItems)
 
         assertNull(history.getAutocompleteSuggestion("hello"))
+    }
+
+    @Test
+    fun `autocomplete ignores queries with lone surrogates`() = runTest {
+        history.recordVisit("http://www.mozilla.org", PageVisit(VisitType.LINK))
+        assertNull(history.getAutocompleteSuggestion("moz\uD83D"))
+        assertEquals("mozilla.org/", history.getAutocompleteSuggestion("moz")!!.text)
     }
 
     @Test

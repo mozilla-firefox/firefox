@@ -797,6 +797,19 @@ class StringTest {
         assertEquals("", "".toSnakeCase())
     }
 
+    @Test
+    fun `toWellFormed only replaces unpaired surrogates`() {
+        val valid = "abc \uD83D\uDE00 def"
+        assertSame(valid, valid.toWellFormed())
+        assertEquals("", "".toWellFormed())
+        assertEquals("\uFFFD", "\uD83D".toWellFormed())
+        assertEquals("\uFFFD", "\uDE00".toWellFormed())
+        assertEquals("a\uFFFDb", "a\uD83Db".toWellFormed())
+        assertEquals("\uFFFD\uFFFD", "\uDE00\uD83D".toWellFormed())
+        assertEquals("\uFFFD\uD83D\uDE00", "\uD83D\uD83D\uDE00".toWellFormed())
+        assertEquals("\uD83D\uDE00\uFFFD", "\uD83D\uDE00\uDE00".toWellFormed())
+    }
+
     private infix fun String.shortenedShouldBecome(expect: String) {
         assertEquals(expect, this.shortened())
     }

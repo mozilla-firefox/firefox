@@ -18,6 +18,7 @@ import mozilla.components.concept.sync.SyncableStore
 import mozilla.components.concept.toolbar.AutocompleteProvider
 import mozilla.components.concept.toolbar.AutocompleteResult
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.ktx.kotlin.toWellFormed
 import mozilla.components.support.utils.doesUrlStartsWithText
 import mozilla.components.support.utils.segmentAwareDomainMatch
 
@@ -129,7 +130,7 @@ open class PlacesBookmarksStorage(
     override suspend fun addItem(parentGuid: String, url: String, title: String, position: UInt?): Result<String> {
         return withContext(writeScope.coroutineContext) {
             Result.runCatching {
-                writer.createBookmarkItem(parentGuid, url, title, position)
+                writer.createBookmarkItem(parentGuid, url, title.toWellFormed(), position)
             }
         }
     }
@@ -147,7 +148,7 @@ open class PlacesBookmarksStorage(
     override suspend fun addFolder(parentGuid: String, title: String, position: UInt?): Result<String> {
         return withContext(writeScope.coroutineContext) {
             Result.runCatching {
-                writer.createFolder(parentGuid, title, position)
+                writer.createFolder(parentGuid, title.toWellFormed(), position)
             }
         }
     }
@@ -179,7 +180,10 @@ open class PlacesBookmarksStorage(
      */
     override suspend fun updateNode(guid: String, info: BookmarkInfo): Result<Unit> {
         return withContext(writeScope.coroutineContext) {
-            Result.runCatching { writer.updateBookmark(guid, info.parentGuid, info.position, info.title, info.url) }
+            Result.runCatching {
+                val title = info.title?.toWellFormed()
+                writer.updateBookmark(guid, info.parentGuid, info.position, title, info.url)
+            }
         }
     }
 

@@ -86,6 +86,22 @@ class PlacesBookmarksStorageTest {
     }
 
     @Test
+    fun `bookmarks replace lone surrogates in titles`() = runTest {
+        val itemGuid =
+            bookmarks.addItem(BookmarkRoot.Mobile.id, "http://www.mozilla.org", "Mozilla \uD83D", null).getOrNull()!!
+        assertEquals("Mozilla \uFFFD", bookmarks.getBookmark(itemGuid).getOrNull()!!.title)
+
+        bookmarks.updateNode(
+            itemGuid,
+            BookmarkInfo(parentGuid = null, position = null, title = "\uDE00 Moz", url = null),
+        )
+        assertEquals("\uFFFD Moz", bookmarks.getBookmark(itemGuid).getOrNull()!!.title)
+
+        val folderGuid = bookmarks.addFolder(BookmarkRoot.Mobile.id, "Folder \uDE00", null).getOrNull()!!
+        assertEquals("Folder \uFFFD", bookmarks.getBookmark(folderGuid).getOrNull()!!.title)
+    }
+
+    @Test
     fun `bookmarks APIs smoke testing - basic operations`() = runTest {
         val url = "http://www.mozilla.org"
 

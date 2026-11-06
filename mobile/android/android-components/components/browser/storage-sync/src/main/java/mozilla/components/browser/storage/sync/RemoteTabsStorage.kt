@@ -26,6 +26,7 @@ import mozilla.components.concept.sync.SyncableStore
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.base.observer.Observable
 import mozilla.components.support.base.observer.ObserverRegistry
+import mozilla.components.support.ktx.kotlin.toWellFormed
 import mozilla.components.support.utils.logElapsedTime
 
 private const val TABS_DB_NAME = "tabs.sqlite"
@@ -55,7 +56,13 @@ open class RemoteTabsStorage(
                     tabs.map {
                         val activeTab = it.active()
                         val urlHistory = listOf(activeTab.url) + it.previous().reversed().map { it.url }
-                        RemoteTab(activeTab.title, urlHistory, activeTab.iconUrl, it.lastUsed, it.inactive)
+                        RemoteTab(
+                            activeTab.title.toWellFormed(),
+                            urlHistory,
+                            activeTab.iconUrl,
+                            it.lastUsed,
+                            it.inactive,
+                        )
                     }
                 )
                 logger.info("Told the tabs store we have ${tabs.size}")

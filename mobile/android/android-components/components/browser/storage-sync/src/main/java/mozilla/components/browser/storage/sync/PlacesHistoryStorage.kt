@@ -35,6 +35,7 @@ import mozilla.components.concept.sync.SyncableStore
 import mozilla.components.concept.toolbar.AutocompleteProvider
 import mozilla.components.concept.toolbar.AutocompleteResult
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.ktx.kotlin.toWellFormed
 import mozilla.components.support.utils.segmentAwareDomainMatch
 
 private const val AUTOCOMPLETE_SOURCE_NAME = "placesHistory"
@@ -92,7 +93,7 @@ open class PlacesHistoryStorage(
                         VisitObservation(
                             url = uri,
                             visitType = null,
-                            title = observation.title,
+                            title = observation.title?.toWellFormed(),
                             previewImageUrl = observation.previewImageUrl,
                         )
                     )

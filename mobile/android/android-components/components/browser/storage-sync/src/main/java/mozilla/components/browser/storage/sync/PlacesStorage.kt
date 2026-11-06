@@ -174,6 +174,10 @@ abstract class PlacesStorage(
     ): T {
         return try {
             block()
+        } catch (e: MalformedInputException) {
+            crashReporter?.submitCaughtException(e)
+            logger.debug("Ignoring invalid invalid non utf-8 character when running $operation", e)
+            default
         } catch (e: PlacesApiException.OperationInterrupted) {
             logger.debug("Ignoring expected OperationInterrupted exception when running $operation", e)
             default

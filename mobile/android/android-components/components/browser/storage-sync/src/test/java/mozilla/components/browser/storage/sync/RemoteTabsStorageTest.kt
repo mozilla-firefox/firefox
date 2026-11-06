@@ -94,6 +94,35 @@ class RemoteTabsStorageTest {
     }
 
     @Test
+    fun `store() replaces lone surrogates in titles`() = runTest {
+        remoteTabs.store(
+            listOf(
+                Tab(
+                    listOf(
+                        TabEntry("Old \uDE00", "https://foo/2", null),
+                        TabEntry("Foo \uD83D", "https://foo/1", "https://foo/icon"),
+                    ),
+                    1,
+                    0,
+                    false,
+                )
+            )
+        )
+
+        verify(apiMock)
+            .setLocalTabs(
+                listOf(
+                    RemoteTab(
+                        "Foo \uFFFD",
+                        listOf("https://foo/1", "https://foo/2"),
+                        "https://foo/icon",
+                        0,
+                    )
+                )
+            )
+    }
+
+    @Test
     fun `getAll() translates tabs to our format`() = runTest {
         `when`(apiMock.getAll())
             .thenReturn(
