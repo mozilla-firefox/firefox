@@ -1710,6 +1710,31 @@ add_task(async function test_findOriginalUserPrompt_is_public() {
   );
 });
 
+add_task(
+  async function test_findOriginalUserPrompt_after_several_tool_rounds() {
+    const conversation = new ChatConversation({});
+    const message = "Close my duplicate tabs";
+    conversation.addUserMessage(message, {});
+    conversation.addAssistantMessage("text", "");
+    for (const id of ["call_1", "call_2"]) {
+      conversation.addAssistantMessage("function", {
+        tool_calls: [
+          { id, type: "function", function: { name: "get_open_tabs" } },
+        ],
+      });
+      conversation.addToolCallMessage({ tool_call_id: id, body: [] });
+      conversation.addAssistantMessage("text", "");
+    }
+    const reply = conversation.messages.at(-1);
+
+    Assert.equal(
+      ToolUI.findOriginalUserPrompt(conversation.messages, reply),
+      message,
+      "Finds the prompt from a reply after multiple tool calls"
+    );
+  }
+);
+
 /**
  * Test that originalUserPrompt is added to website confirmations
  */

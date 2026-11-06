@@ -3879,12 +3879,17 @@ export class AIWindow extends MozLitElement {
   }
 
   #getUserMessageForAssistantId(assistantMessageId) {
-    const assistantMsg = this.#getMessageById(assistantMessageId);
-    if (!assistantMsg?.parentMessageId) {
+    const { messages } = this.#conversation;
+    const index = messages.findIndex(m => m.id === assistantMessageId);
+    if (index === -1) {
       return null;
     }
 
-    return this.#getMessageById(assistantMsg.parentMessageId) ?? null;
+    return (
+      messages.findLast(
+        (m, i) => i < index && m.role === lazy.MESSAGE_ROLE.USER
+      ) ?? null
+    );
   }
 
   #retryAfterError() {

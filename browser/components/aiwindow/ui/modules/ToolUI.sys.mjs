@@ -1204,41 +1204,22 @@ export class ToolUI {
   }
 
   /**
-   * Finds the original user prompt that led to the given assistant message
-   * by traversing the message chain backwards using parentMessageId
+   * Finds the original user prompt that led to the given assistant message:
+   * the last user message before it.
    *
    * @param {Array} messages - All conversation messages
    * @param {object} assistantMessage - The assistant message with tool UI data
    * @returns {string|null} The original user prompt text, or null if not found
    */
   static findOriginalUserPrompt(messages, assistantMessage) {
-    // Use parentMessageId to trace back to the user message
-    let nextMessageId = assistantMessage.parentMessageId;
-    // To prevent potential infinite loops, we set a maximum depth for traversal
-    const maxDepth = 5;
-    let depth = 0;
-
-    // Follow the chain backwards to find the user message
-    while (nextMessageId && depth < maxDepth) {
-      const nextMessage = messages.find(m => m.id === nextMessageId);
-
-      if (!nextMessage) {
-        break;
-      }
-
-      if (
-        nextMessage.role === lazy.MESSAGE_ROLE.USER &&
-        nextMessage.content?.type === "text"
-      ) {
-        return nextMessage.content.body;
-      }
-
-      // Continue up the chain
-      nextMessageId = nextMessage.parentMessageId;
-      depth++;
-    }
-
-    return null;
+    const index = messages.findIndex(m => m.id === assistantMessage.id);
+    const userMessage = messages.findLast(
+      (m, i) =>
+        i < index &&
+        m.role === lazy.MESSAGE_ROLE.USER &&
+        m.content?.type === "text"
+    );
+    return userMessage?.content.body ?? null;
   }
 
   /**
