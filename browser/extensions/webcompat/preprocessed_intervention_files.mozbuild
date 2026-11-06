@@ -28,6 +28,7 @@ preprocessed_intervention_files = [
     "bug1842437-YouTube_back_forward_fix.js",
     "bug1845299-Google_Slides-hide_extra_scrollbars.css",
     "bug1848849-theaa.com-fix_blank_print_preview.css",
+    "bug1851182-search.yahoo.com-fix_select_text_alignment.css",
     "bug1854165-Sites_relying_on_there_being_no_window.InstallTrigger.js",
     "bug1860417-www.samsung.com_images_fix.js",
     "bug1873166-nsandi.com-hide_browser_notice.css",

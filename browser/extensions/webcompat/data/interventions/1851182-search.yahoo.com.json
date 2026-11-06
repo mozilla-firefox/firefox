@@ -1,0 +1,20 @@
+{
+  "label": "search.yahoo.com",
+  "bugs": {
+    "1851182": {
+      "issue": "broken-layout",
+      "matches": ["*://search.yahoo.com/preferences/*"]
+    }
+  },
+  "css": {
+    "fix_select_text_alignment": ".firefox #pref .slct-bg select { padding-top: 0; padding-bottom: 0; padding-left: 10px; }"
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "css": {
+        "which": ["fix_select_text_alignment"]
+      }
+    }
+  ]
+}
