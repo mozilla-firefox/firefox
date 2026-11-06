@@ -1914,6 +1914,10 @@ XMLHttpRequestMainThread::OnDataAvailable(nsIRequest* request,
   DEBUG_WORKERREFS;
   NS_ENSURE_ARG_POINTER(inStr);
 
+  if (request != mChannel) {
+    return NS_BINDING_ABORTED;
+  }
+
   mProgressSinceLastProgressEvent = true;
   XMLHttpRequest_Binding::ClearCachedResponseTextValue(this);
 

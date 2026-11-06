@@ -324,7 +324,10 @@ void MutableBlobStorage::GetBlobImplWhenReady(
   MutexAutoLock lock(mMutex);
 
   // GetBlob can be called just once.
-  MOZ_ASSERT(mStorageState != eClosed);
+  if (mStorageState == eClosed) {
+    MOZ_ASSERT(false);
+    return;
+  }
   StorageState previousState = mStorageState;
   mStorageState = eClosed;
 
@@ -384,7 +387,10 @@ nsresult MutableBlobStorage::Append(const void* aData, uint32_t aLength) {
   // This method can be called on any thread.
 
   MutexAutoLock lock(mMutex);
-  MOZ_ASSERT(mStorageState != eClosed);
+  if (mStorageState == eClosed) {
+    MOZ_ASSERT(false);
+    return NS_ERROR_NOT_AVAILABLE;
+  }
   NS_ENSURE_ARG_POINTER(aData);
 
   if (!aLength) {
@@ -574,6 +580,8 @@ void MutableBlobStorage::TemporaryFileCreated(PRFileDesc* aFD) {
   MOZ_ASSERT(runnable);
 
   mData = nullptr;
+  mDataBufferLen = 0;
+  mDataLen = 0;
 
   nsresult rv = DispatchToIOThread(runnable.forget());
   if (NS_WARN_IF(NS_FAILED(rv))) {
