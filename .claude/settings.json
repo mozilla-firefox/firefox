@@ -1,4 +1,7 @@
 {
+  "skillOverrides": {
+    "desktop-theme-probing": "name-only"
+  },
   "extraKnownMarketplaces": {
     "firefox-aidev-plugins": {
       "source": {
