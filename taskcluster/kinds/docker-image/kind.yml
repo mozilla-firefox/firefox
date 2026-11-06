@@ -469,7 +469,7 @@ tasks:
             SNAP_LIST: "core22 gnome-46-2404 gtk-common-themes gnome-46-2404-sdk mesa-2404"
     android-components:
         symbol: I(android-components)
-        parent: debian12-base
+        parent: debian13-base
     android-ui-tests:
         symbol: I(android-ui-tests)
         parent: ubuntu2204-base

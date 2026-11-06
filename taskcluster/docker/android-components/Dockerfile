@@ -28,7 +28,7 @@ RUN apt-get update && \
       jq \
       less \
       locales \
-      openjdk-17-jdk \
+      openjdk-25-jdk \
       openssh-client \
       procps \
       python3-dev \
