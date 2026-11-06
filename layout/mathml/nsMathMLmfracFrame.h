@@ -92,10 +92,6 @@ class nsMathMLmfracFrame final : public nsMathMLContainerFrame {
 
   bool IsMathContentBoxHorizontallyCentered() const final { return true; }
 
-  // Display a slash
-  void DisplaySlash(nsDisplayListBuilder* aBuilder, const nsRect& aRect,
-                    nscoord aThickness, const nsDisplayListSet& aLists);
-
   nsRect mLineRect;
   nsMathMLChar* mSlashChar;
   nscoord mLineThickness;
