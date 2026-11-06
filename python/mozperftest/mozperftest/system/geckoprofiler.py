@@ -143,6 +143,11 @@ class GeckoProfilerController:
 
         # Always reset state, even if the command failed
         self.profiling_active = False
+        # Don't profile the app launches between the profiled runs.
+        if self.config_filename:
+            self.device.shell(
+                f"rm -f {GECKOVIEW_CONFIG_PATH_PREFIX}/{self.config_filename}"
+            )
 
         if result.returncode != 0:
             print(
