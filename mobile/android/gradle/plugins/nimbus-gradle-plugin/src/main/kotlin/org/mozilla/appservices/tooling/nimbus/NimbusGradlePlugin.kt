@@ -56,6 +56,14 @@ abstract class NimbusPluginExtension {
     abstract val manifestFile: Property<String>
 
     /**
+     * The .fml.yaml files that `manifestFile` loads transitively using `includes` or `import`. Changing one of them
+     * regenerates the code.
+     *
+     * Paths are relative to the project root. This defaults to an empty list.
+     */
+    abstract val manifestDependencies: ListProperty<String>
+
+    /**
      * The mapping between the build variant and the release channel.
      *
      * Variants that are not in this map are used literally.
@@ -186,6 +194,7 @@ class NimbusPlugin : Plugin<Project> {
 
                 configureCommonTaskProperties(this, project, "features${variant.name.replaceFirstChar { it.uppercase() }}")
                 val extension = project.extensions.getByType(NimbusPluginExtension::class.java)
+                manifestDependencies.setFrom(project.files(extension.manifestDependencies))
                 channel.set(extension.channels.getting(variant.name).orElse(variant.name))
                 outputDir.set(project.layout.buildDirectory.dir("generated/source/nimbus/${variant.name}/kotlin"))
             }

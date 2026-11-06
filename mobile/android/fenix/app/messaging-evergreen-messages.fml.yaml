@@ -15,6 +15,8 @@
 # validate them.
 #
 # Triggers, actions and styles are configured in messaging-fenix.fml.yaml.
+
+# Keep `nimbus.manifestDependencies` in `build.gradle` in sync when changing `includes` or `import`.
 import:
   - path: ../../android-components/components/service/nimbus/messaging.fml.yaml
     channel: release
