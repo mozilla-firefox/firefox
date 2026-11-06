@@ -522,6 +522,12 @@
     }
   }
 
+  /* Keep the button that opened the menu hovered, so that it doesn't disappear
+     or flicker before the menu sets aria-expanded on it. */
+  .urlbarView-row[menu-trigger] > .urlbarView-row-buttons > & {
+    pointer-events: auto;
+  }
+
   /* Labeled result menu button */
 
   &:not(:empty) {
@@ -543,6 +549,14 @@
       font-size: 0;
     }
   }
+}
+
+/* While the result menu is open, the results and one-offs ignore the mouse, so
+   that hovering doesn't highlight them and clicking them only closes the menu,
+   as with a native context menu. */
+.urlbarView-result-menu[open] ~ .urlbarView-results > .urlbarView-row,
+.urlbarView-result-menu[open] ~ .search-one-offs {
+  pointer-events: none;
 }
 
 /* Button with label, e.g. tip button */
