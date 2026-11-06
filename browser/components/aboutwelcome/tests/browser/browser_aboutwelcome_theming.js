@@ -193,13 +193,12 @@ add_task(async function test_aboutwelcome_with_text_color_override() {
   );
 
   // Ensure title inherits light text color
-  const novaEnabled = Services.prefs.getBoolPref("browser.nova.enabled", false);
   await test_element_styles(
     browser,
     "#mainContentHeader",
     // Expected styles:
     {
-      color: novaEnabled ? "rgb(24, 14, 48)" : "rgb(21, 20, 26)",
+      color: "rgb(24, 14, 48)",
     }
   );
 
@@ -209,7 +208,7 @@ add_task(async function test_aboutwelcome_with_text_color_override() {
     ".indicator:not(.current)",
     // Expected styles:
     {
-      color: novaEnabled ? "rgb(242, 240, 248)" : "rgb(251, 251, 254)",
+      color: "rgb(242, 240, 248)",
     }
   );
 

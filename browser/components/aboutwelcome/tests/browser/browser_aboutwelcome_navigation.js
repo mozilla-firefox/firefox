@@ -83,8 +83,7 @@ add_task(async function test_aboutwelcome_with_progress_bar() {
   });
   let browser = await openAboutWelcome(JSON.stringify(screens));
 
-  const novaEnabled = Services.prefs.getBoolPref("browser.nova.enabled", false);
-  await SpecialPowers.spawn(browser, [novaEnabled], async isNova => {
+  await SpecialPowers.spawn(browser, [], async () => {
     const progressBar = await ContentTaskUtils.waitForCondition(() =>
       content.document.querySelector(".progress-bar")
     );
@@ -94,9 +93,7 @@ add_task(async function test_aboutwelcome_with_progress_bar() {
     // Progress bar should have a gray background.
     is(
       content.window.getComputedStyle(progressBar)["background-color"],
-      isNova
-        ? "color(srgb 0.0862745 0.0784314 0.137255 / 0.25)"
-        : "color(srgb 0.0823529 0.0784314 0.101961 / 0.25)",
+      "color(srgb 0.0862745 0.0784314 0.137255 / 0.25)",
       "Correct progress bar background"
     );
 
@@ -104,7 +101,7 @@ add_task(async function test_aboutwelcome_with_progress_bar() {
     for (let [key, val] of Object.entries({
       // The filled "completed" element should have
       // `background-color: var(--button-background-color-primary);`
-      "background-color": isNova ? "rgb(118, 78, 221)" : "oklch(0.55 0.24 260)",
+      "background-color": "rgb(118, 78, 221)",
       // Base progress bar step styles.
       height: "6px",
       "margin-inline": "-1px",

@@ -67,17 +67,14 @@ add_task(async function test_aboutwelcome_split_position() {
   );
 
   // Ensure secondary action has button styling
-  const novaEnabled = Services.prefs.getBoolPref("browser.nova.enabled", false);
   await test_element_styles(
     browser,
     ".action-buttons .secondary-cta .secondary",
     // Expected styles:
     {
       // Override default text-link styles
-      "background-color": novaEnabled
-        ? "rgba(0, 0, 0, 0)"
-        : "color(srgb 0.0823529 0.0784314 0.101961 / 0.07)",
-      color: novaEnabled ? "rgb(22, 20, 35)" : "rgb(21, 20, 26)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      color: "rgb(22, 20, 35)",
     }
   );
   await SpecialPowers.popPrefEnv();
@@ -121,7 +118,6 @@ add_task(async function test_aboutwelcome_center_large_position() {
   );
 
   // Ensure main section has center-large template styling.
-  const novaEnabled = Services.prefs.getBoolPref("browser.nova.enabled", false);
   await test_element_styles(
     browser,
     "main.screen .section-main .main-content",
@@ -159,10 +155,8 @@ add_task(async function test_aboutwelcome_center_large_position() {
     // Expected styles:
     {
       // Override default text-link styles
-      "background-color": novaEnabled
-        ? "rgba(0, 0, 0, 0)"
-        : "color(srgb 0.0823529 0.0784314 0.101961 / 0.07)",
-      color: novaEnabled ? "rgb(22, 20, 35)" : "rgb(21, 20, 26)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      color: "rgb(22, 20, 35)",
     }
   );
   await SpecialPowers.popPrefEnv();
