@@ -200,6 +200,25 @@ static nsTArray<UniquePtr<TrackInfo>> GetTracksInfo(
   return {};
 }
 
+// https://w3c.github.io/webcodecs/pcm_codec_registration.html#fully-qualified-codec-strings
+// "pcm-u8, using format u8", "pcm-s16, using format s16", "pcm-s24, using
+// three byte (24-bit) samples", "pcm-s32, using format s32".
+static Maybe<uint32_t> IntegerPCMBitDepth(const nsAString& aCodec) {
+  if (aCodec.EqualsLiteral("pcm-u8")) {
+    return Some(8u);
+  }
+  if (aCodec.EqualsLiteral("pcm-s16")) {
+    return Some(16u);
+  }
+  if (aCodec.EqualsLiteral("pcm-s24")) {
+    return Some(24u);
+  }
+  if (aCodec.EqualsLiteral("pcm-s32")) {
+    return Some(32u);
+  }
+  return Nothing();
+}
+
 static Result<Ok, nsresult> CloneConfiguration(
     RootedDictionary<AudioDecoderConfig>& aDest, JSContext* aCx,
     const AudioDecoderConfig& aConfig, ErrorResult& aRv) {
@@ -270,6 +289,9 @@ Result<UniquePtr<TrackInfo>, nsresult> AudioDecoderTraits::CreateTrackInfo(
 
   ai->mChannels = aConfig.mNumberOfChannels;
   ai->mRate = aConfig.mSampleRate;
+  if (Maybe<uint32_t> bitDepth = IntegerPCMBitDepth(aConfig.mCodec)) {
+    ai->mBitDepth = *bitDepth;
+  }
 
   if (aConfig.mCodec.EqualsLiteral("opus")) {
     OpusCodecSpecificData opusData;

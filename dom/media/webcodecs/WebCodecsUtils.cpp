@@ -614,7 +614,7 @@ nsCString ConvertCodecName(const nsCString& aContainer,
   if (aCodec.EqualsLiteral("alaw")) {
     return nsCString("6");
   }
-  if (aCodec.Find("f32")) {
+  if (aCodec.EqualsLiteral("pcm-f32")) {
     return nsCString("3");
   }
   // Linear PCM
