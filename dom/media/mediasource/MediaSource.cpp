@@ -210,6 +210,7 @@ already_AddRefed<MediaSource> MediaSource::Constructor(
 MediaSource::~MediaSource() {
   MOZ_ASSERT(NS_IsMainThread());
   MSE_API("");
+  CompletePendingTransactions();
   if (mDecoder) {
     mDecoder->DetachMediaSource();
   }
@@ -501,7 +502,7 @@ bool MediaSource::Attach(MediaSourceDecoder* aDecoder) {
 
 void MediaSource::Detach() {
   MOZ_ASSERT(NS_IsMainThread());
-  MOZ_RELEASE_ASSERT(mCompletionPromises.IsEmpty());
+  CompletePendingTransactions();
   MSE_DEBUG("mDecoder=%p owner=%p", mDecoder.get(),
             mDecoder ? mDecoder->GetOwner() : nullptr);
   if (!mDecoder) {
