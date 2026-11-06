@@ -28,7 +28,18 @@ macosx64-gn:
         symbol: TM(gn)
     run:
         script: build-gn-macosx.sh
-        toolchain-alias: macosx64-aarch64-gn
+    fetches:
+        toolchain:
+            - linux64-clang-toolchain
+            - macosx64-sdk-toolchain
+
+macosx64-aarch64-gn:
+    treeherder:
+        symbol: TM(gn-aarch64)
+    run:
+        script: build-gn-macosx.sh
+        arguments:
+            - aarch64-apple-darwin
     fetches:
         toolchain:
             - linux64-clang-toolchain
