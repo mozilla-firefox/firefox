@@ -33,7 +33,7 @@ export class AITabToolUI extends MozLitElement {
     state: { type: String },
     title: { type: String },
     viewerURL: { type: String },
-    completeStateOpen: { type: Boolean },
+    actionsStateOpen: { type: Boolean },
   };
 
   constructor() {
@@ -41,7 +41,7 @@ export class AITabToolUI extends MozLitElement {
     this.state = STATE_CHOOSE;
     this.title = "";
     this.viewerURL = "";
-    this.completeStateOpen = true;
+    this.actionsStateOpen = true;
   }
 
   #handleTitleClick(event) {
@@ -53,12 +53,12 @@ export class AITabToolUI extends MozLitElement {
   #handleKeyboardActivation(event) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      this.#toggleCompleteMessage();
+      this.#toggleActionsState();
     }
   }
 
-  #toggleCompleteMessage() {
-    this.completeStateOpen = !this.completeStateOpen;
+  #toggleActionsState() {
+    this.actionsStateOpen = !this.actionsStateOpen;
   }
 
   #requestOpen(openTarget) {
@@ -71,18 +71,35 @@ export class AITabToolUI extends MozLitElement {
     );
   }
 
-  #renderChoose() {
+  #renderCardContents() {
+    const arrow = this.actionsStateOpen
+      ? "chrome://global/skin/icons/arrow-up-12.svg"
+      : "chrome://global/skin/icons/arrow-down-12.svg";
+
     return html`<div class="card">
-      <p class="title">
-        <img
-          src="chrome://newtab/content/data/content/assets/firefox.svg"
-          alt=""
-          width="16"
-          height="16"
-        />
-        <span class="card-title">${this.title}</span>
-      </p>
-      <div class="actions">
+      <div
+        class="card-title"
+        role="button"
+        tabindex="0"
+        aria-expanded=${this.actionsStateOpen ? "true" : "false"}
+        aria-controls="aitab-card-actions"
+        @click=${() => this.#toggleActionsState()}
+        @keydown=${e => this.#handleKeyboardActivation(e)}
+      >
+        <img src=${arrow} alt="" />
+        <span data-l10n-id="smartwindow-aitab-response-card-title"></span>
+      </div>
+
+      ${this.actionsStateOpen ? this.#renderTitle() : nothing}
+      ${this.actionsStateOpen && this.state === STATE_CHOOSE
+        ? this.#renderChoices()
+        : nothing}
+    </div>`;
+  }
+
+  #renderChoices() {
+    return html`
+      <div id="aitab-card-actions" class="actions">
         <moz-button
           type="default"
           data-l10n-id="smartwindow-aitab-open-current"
@@ -96,7 +113,7 @@ export class AITabToolUI extends MozLitElement {
           @click=${() => this.#requestOpen("new")}
         ></moz-button>
       </div>
-    </div>`;
+    `;
   }
 
   #renderTitle() {
@@ -113,45 +130,11 @@ export class AITabToolUI extends MozLitElement {
     return this.viewerURL
       ? html`<a
           href=${this.viewerURL}
-          class="title"
+          class="page-title"
           @click=${this.#handleTitleClick}
           >${title}</a
         >`
-      : html`<p class="title">${title}</p>`;
-  }
-
-  #renderComplete() {
-    const arrow = this.completeStateOpen
-      ? "chrome://global/skin/icons/arrow-up-12.svg"
-      : "chrome://global/skin/icons/arrow-down-12.svg";
-
-    return html`<div class="complete card">
-      <div
-        class="complete-title"
-        role="button"
-        tabindex="0"
-        @click=${() => this.#toggleCompleteMessage()}
-        @keydown=${e => this.#handleKeyboardActivation(e)}
-      >
-        <img src=${arrow} alt="" />
-        <span data-l10n-id="smartwindow-aitab-created-an-aitab"></span>
-      </div>
-
-      ${this.completeStateOpen ? this.#renderTitle() : nothing}
-    </div>`;
-  }
-
-  #renderState() {
-    switch (this.state) {
-      case STATE_CHOOSE:
-        return this.#renderChoose();
-
-      case STATE_COMPLETE:
-        return this.#renderComplete();
-
-      default:
-        return nothing;
-    }
+      : html`<p class="page-title">${title}</p>`;
   }
 
   render() {
@@ -164,7 +147,8 @@ export class AITabToolUI extends MozLitElement {
         rel="stylesheet"
         href="chrome://browser/content/aiwindow/components/aitab-tool-ui.css"
       />
-      ${this.#renderState()}
+
+      ${this.#renderCardContents()}
     `;
   }
 }
