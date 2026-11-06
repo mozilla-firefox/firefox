@@ -668,23 +668,24 @@ static nscoord CalcUnpaginatedBSize(nsTableCellFrame& aCellFrame,
       static_cast<nsTableFrame*>(aTableFrame.FirstInFlow());
   nsTableRowFrame* row =
       static_cast<nsTableRowFrame*>(firstCellInFlow->GetParent());
-  nsTableRowGroupFrame* firstRGInFlow =
-      static_cast<nsTableRowGroupFrame*>(row->GetParent());
+  MOZ_ASSERT(!row->GetPrevInFlow(),
+             "First-in-flow cell should be in a first-in-flow row");
 
-  uint32_t rowIndex = firstCellInFlow->RowIndex();
-  int32_t rowSpan = aTableFrame.GetEffectiveRowSpan(*firstCellInFlow);
+  const uint32_t rowIndex = firstCellInFlow->RowIndex();
+  const int32_t rowSpan = aTableFrame.GetEffectiveRowSpan(*firstCellInFlow);
 
   nscoord computedBSize =
       firstTableInFlow->GetRowSpacing(rowIndex, rowIndex + rowSpan - 1);
   computedBSize -= aBlockDirBorderPadding;
-  uint32_t rowX;
-  for (row = firstRGInFlow->GetFirstRow(), rowX = 0; row;
-       row = row->GetNextRowAcrossFragments(), rowX++) {
-    if (rowX > rowIndex + rowSpan - 1) {
-      break;
-    } else if (rowX >= rowIndex) {
-      computedBSize += row->GetUnpaginatedBSize();
+
+  // Only first-in-flow rows store their unpaginated bsize.
+  for (int32_t spanned = 0; row && spanned < rowSpan;
+       row = row->GetNextRowAcrossFragments()) {
+    if (row->GetPrevInFlow()) {
+      continue;
     }
+    computedBSize += row->GetUnpaginatedBSize();
+    spanned++;
   }
   return computedBSize;
 }
