@@ -206,8 +206,6 @@ https_first_disabled = true # Bug 1898241
 
 ["browser_net_content-type.js"]
 
-["browser_net_cookies_filter.js"]
-
 ["browser_net_cookies_sorted.js"]
 
 ["browser_net_copy_as_curl.js"]

@@ -168,8 +168,6 @@ support-files = [
 
 ["browser_net_req-resp-bodies.js"]
 
-["browser_net_request_filter.js"]
-
 ["browser_net_requests-keep-alive.js"]
 
 ["browser_net_requests_with_empty_response.js"]

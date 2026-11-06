@@ -310,7 +310,6 @@ class RequestPanel extends Component {
         SearchBox({
           delay: FILTER_SEARCH_DELAY,
           type: "filter",
-          initialValue: filterText,
           onChange: text => this.setState({ filterText: text }),
           placeholder: REQUEST_FILTER_TEXT,
         })
