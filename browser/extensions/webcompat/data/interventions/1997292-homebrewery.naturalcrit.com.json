@@ -1,0 +1,20 @@
+{
+  "label": "homebrewery.naturalcrit.com",
+  "bugs": {
+    "1997292": {
+      "issue": "unsupported-warning",
+      "matches": ["*://homebrewery.naturalcrit.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "hide_messages": [
+        {
+          "container": ".renderWarnings",
+          "message": "Built for Chrome"
+        }
+      ]
+    }
+  ]
+}

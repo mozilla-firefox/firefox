@@ -130,6 +130,7 @@ preprocessed_intervention_files = [
     "bug1994062-managetrips.jetblue.com-fix_only_one_page_printing.css",
     "bug1994704-avlguest.justice.nsw.gov.au.js",
     "bug1995452-polymarket.com-hide_extra_scrollbars.css",
+    "bug1997292-homebrewery.naturalcrit.com.js",
     "bug1997575-perplexity.ai.js",
     "bug1998361-doctolib.de-hide_browser_notice.css",
     "bug1999490-demo.paw.wolffaud.io.js",
