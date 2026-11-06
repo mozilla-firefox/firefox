@@ -948,6 +948,12 @@ bool NS_IsAboutBlankAllowQueryAndFragment(nsIURI* uri);
 bool NS_IsAboutSrcdoc(nsIURI* uri);
 
 /**
+ * Test whether a URI is "about:blank" or "about:srcdoc", possibly with fragment
+ * or query.  |uri| must not be null
+ */
+bool NS_IsAboutBlankOrSrcdoc(nsIURI* uri);
+
+/**
  * Test whether a URI has an "about", "blob", "data", "file", or an HTTP(S)
  * scheme.
  */

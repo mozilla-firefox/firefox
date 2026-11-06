@@ -185,7 +185,7 @@ class SessionHistoryInfo {
   nsIStructuredCloneContainer* GetNavigationAPIState() const;
   void SetNavigationAPIState(nsIStructuredCloneContainer* aState);
 
-  already_AddRefed<nsIURI> GetURIOrInheritedForAboutBlank() const;
+  already_AddRefed<nsIURI> GetURIOrInheritedForAboutBlankOrSrcdoc() const;
 
  private:
   friend class SessionHistoryEntry;
@@ -509,7 +509,7 @@ class SessionHistoryEntry : public nsISHEntry, public nsSupportsWeakReference {
 
   const nsTArray<RefPtr<SessionHistoryEntry>>& Children() { return mChildren; }
 
-  already_AddRefed<nsIURI> GetURIOrInheritedForAboutBlank() const;
+  already_AddRefed<nsIURI> GetURIOrInheritedForAboutBlankOrSrcdoc() const;
 
   void SetNavigationAPIState(nsIStructuredCloneContainer* aState) {
     mInfo->SetNavigationAPIState(aState);
