@@ -23,7 +23,7 @@
 #include "nsIFile.h"
 #include "nsIPrefBranch.h"
 #include "nsIPrefService.h"
-#include "prtime.h"
+#include "nsThreadUtils.h"
 
 namespace mozilla::dom::quota::test {
 
@@ -57,6 +57,36 @@ class TestQuotaManagerAndShutdownFixture
   void TearDown() override { ASSERT_NO_FATAL_FAILURE(ShutdownFixture()); }
 };
 
+class TestQuotaManagerWithShortOriginFlushIntervals
+    : public QuotaManagerDependencyFixture {
+ public:
+  static constexpr int32_t kOriginFlushIntervalMs = 1000;
+
+  void SetUp() override {
+    nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
+    ASSERT_TRUE(prefs);
+    ASSERT_NS_SUCCEEDED(
+        prefs->SetIntPref("dom.quotaManager.originWriteQuiescentThresholdMs",
+                          kOriginFlushIntervalMs));
+    ASSERT_NS_SUCCEEDED(
+        prefs->SetIntPref("dom.quotaManager.originMetadataFlushCheckIntervalMs",
+                          kOriginFlushIntervalMs));
+
+    ASSERT_NO_FATAL_FAILURE(InitializeFixture());
+  }
+
+  void TearDown() override {
+    ASSERT_NO_FATAL_FAILURE(ShutdownFixture());
+
+    nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
+    ASSERT_TRUE(prefs);
+    ASSERT_NS_SUCCEEDED(prefs->ClearUserPref(
+        "dom.quotaManager.originWriteQuiescentThresholdMs"));
+    ASSERT_NS_SUCCEEDED(prefs->ClearUserPref(
+        "dom.quotaManager.originMetadataFlushCheckIntervalMs"));
+  }
+};
+
 TEST_F(TestQuotaManager, GetThumbnailPrivateIdentityId) {
   PerformOnIOThread([]() {
     QuotaManager* quotaManager = QuotaManager::Get();
@@ -68,6 +98,46 @@ TEST_F(TestQuotaManager, GetThumbnailPrivateIdentityId) {
     const uint32_t id = quotaManager->GetThumbnailPrivateIdentityId();
     ASSERT_GT(id, 4u);
   });
+}
+
+TEST_F(TestQuotaManagerWithShortOriginFlushIntervals,
+       InitQuotaForOrigin_InitializesDirtyTimestamp) {
+  const auto originMetadata = GetTestOriginMetadata();
+
+  ASSERT_NO_FATAL_FAILURE(ShutdownStorage());
+  ASSERT_NO_FATAL_FAILURE(InitializeStorage());
+  ASSERT_NO_FATAL_FAILURE(InitializeTemporaryStorage());
+
+  ASSERT_NO_FATAL_FAILURE(InitializeTemporaryOrigin(originMetadata));
+
+  const auto originStateMetadata = GetOriginStateMetadata(originMetadata);
+  ASSERT_TRUE(originStateMetadata);
+  EXPECT_TRUE(originStateMetadata->mDirty);
+
+  PerformOnIOThread([]() {
+    auto* quotaManager = QuotaManager::Get();
+    ASSERT_TRUE(quotaManager);
+    quotaManager->FlushDirtyOriginInfos();
+  });
+
+  const auto originStateMetadataAfterImmediateFlush =
+      GetOriginStateMetadata(originMetadata);
+  ASSERT_TRUE(originStateMetadataAfterImmediateFlush);
+  EXPECT_TRUE(originStateMetadataAfterImmediateFlush->mDirty);
+
+  bool flushIntervalsElapsed = false;
+  RefPtr<CancelableRunnable> timer = NS_NewCancelableRunnableFunction(
+      "QuotaManager origin flush intervals elapsed",
+      [&] { flushIntervalsElapsed = true; });
+  ASSERT_NS_SUCCEEDED(NS_DelayedDispatchToCurrentThread(
+      do_AddRef(timer), 3 * kOriginFlushIntervalMs));
+  SpinEventLoopUntil("Waiting for origin flush intervals"_ns,
+                     [&] { return flushIntervalsElapsed; });
+  timer->Cancel();
+
+  const auto originStateMetadataAfter = GetOriginStateMetadata(originMetadata);
+  ASSERT_TRUE(originStateMetadataAfter);
+  EXPECT_FALSE(originStateMetadataAfter->mDirty);
 }
 
 // Test OpenStorageDirectory when an opening of the storage directory is
