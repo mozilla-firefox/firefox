@@ -440,6 +440,70 @@ add_task(async function test_tool_turn_with_preamble_renders_one_bubble() {
   });
 });
 
+add_task(async function test_action_log_loads_until_text_after_its_tools() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.enabled", true]],
+  });
+
+  await BrowserTestUtils.withNewTab("about:aichatcontent", async browser => {
+    await SpecialPowers.spawn(browser, [], async () => {
+      await content.customElements.whenDefined("ai-chat-content");
+      const chatContent = content.document.querySelector("ai-chat-content");
+      const dispatch = (type, detail) =>
+        chatContent.dispatchEvent(
+          new content.CustomEvent(type, {
+            detail: Cu.cloneInto(detail, content),
+            bubbles: true,
+          })
+        );
+      const message = detail =>
+        dispatch("aiChatContentActor:message", { convId: "conv1", ...detail });
+      const assistant = (ordinal, id, body) =>
+        message({
+          role: "assistant",
+          ordinal,
+          id,
+          content: { body },
+          memoriesApplied: [],
+          followUpSuggestions: [],
+        });
+      const isLoading = async () => {
+        await chatContent.wrappedJSObject.updateComplete;
+        return chatContent.shadowRoot.querySelector("ai-action-result")
+          .wrappedJSObject.isLoading;
+      };
+
+      dispatch("aiChatContentActor:set-generating", { isGenerating: true });
+      message({ role: "user", ordinal: 1, content: { body: "What tabs?" } });
+      assistant(2, "msg-preamble", "Let me look.");
+      message({
+        role: "tool",
+        ordinal: 4,
+        content: { tool_call_id: "tc_1", name: "get_open_tabs" },
+        actionLog: {
+          uiType: "action-log",
+          pendingLabel: { l10nId: "action-log-getting-open-tabs" },
+          row: {
+            labelL10nId: "action-log-got-open-tabs",
+            labelL10nArgs: null,
+            items: [],
+          },
+        },
+      });
+      Assert.ok(
+        await isLoading(),
+        "The action log keeps loading while its tool runs after the preamble"
+      );
+
+      assistant(5, "msg-reply", "You have no tabs open.");
+      Assert.ok(
+        !(await isLoading()),
+        "The action log completes once the reply streams after its tools"
+      );
+    });
+  });
+});
+
 add_task(async function test_localized_message_after_reply_stays_separate() {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.smartwindow.enabled", true]],

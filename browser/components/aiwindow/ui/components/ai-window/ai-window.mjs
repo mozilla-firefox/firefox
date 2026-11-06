@@ -2006,16 +2006,12 @@ export class AIWindow extends MozLitElement {
     }
     this.#abortController.abort();
     this.isGenerating = false;
-    const lastAssistant = this.#conversation?.messages
-      ?.filter(
-        m => m.role == lazy.MESSAGE_ROLE.ASSISTANT && m?.content?.type == "text"
-      )
-      .at(-1);
+    const messageToMarkComplete = this.#conversation?.getCurrentReplyMessage();
     this.#dispatchMessageToChatContent({
       role: "assistant-message-complete",
-      content: { id: lastAssistant?.id },
+      content: { id: messageToMarkComplete?.id },
       historyResults: this.#conversation?.getHistoryResultsSnapshot() ?? [],
-      citations: lastAssistant?.citations ?? [],
+      citations: messageToMarkComplete?.citations ?? [],
     });
   };
 

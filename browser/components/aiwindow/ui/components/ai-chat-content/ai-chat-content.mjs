@@ -1916,6 +1916,9 @@ export class AIChatContent extends MozLitElement {
     let pendingActionLogs = [];
     let pendingAssistantParts = [];
     let pendingAssistantContextUrl;
+    // Whether an assistant response has streamed since the turn’s last action
+    // log. Resets on every action log and turn.
+    let replyStarted = false;
 
     // Commit the current turn's buffered action logs and assistant reply into
     // items. Action log render above the assistant message
@@ -1948,6 +1951,7 @@ export class AIChatContent extends MozLitElement {
       pendingActionLogs = [];
       pendingAssistantParts = [];
       pendingAssistantContextUrl = undefined;
+      replyStarted = false;
     };
 
     for (const msg of this.conversationState) {
@@ -1958,6 +1962,7 @@ export class AIChatContent extends MozLitElement {
       // Hold tool UI messages for the current turn
       if (msg.uiType === UI_TYPES.ACTION_LOG) {
         pendingActionLogs.push(msg);
+        replyStarted = false;
         continue;
       }
 
@@ -1978,6 +1983,9 @@ export class AIChatContent extends MozLitElement {
           pendingAssistantContextUrl = lastContextPageUrl;
         }
         pendingAssistantParts.push(msg);
+        if (msg.body && pendingActionLogs.length) {
+          replyStarted = true;
+        }
         continue;
       }
 
@@ -1999,10 +2007,9 @@ export class AIChatContent extends MozLitElement {
     }
 
     // Commit anything still pending at end of loop. The action log is finished
-    // once the turn's reply starts streaming (its tools are done by then) or the
-    // whole turn completes, so it doesn't keep shimmering through response
-    // generation.
-    const replyStarted = pendingAssistantParts.some(part => part.body);
+    // once text streams after the turn's last tool (its tools are done by then)
+    // or the whole turn completes, so it doesn't keep shimmering through
+    // response generation.
     appendPendingAssistantTurn(!this.assistantIsLoading || replyStarted);
 
     return items;

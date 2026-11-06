@@ -77,11 +77,14 @@ function setupConversationForChat(
   conversation.parameters = parameters ?? {};
 }
 
+function getAssistantTextMessages(conversation) {
+  return conversation.messages.filter(
+    m => m.role == MESSAGE_ROLE.ASSISTANT && m.content.type === "text"
+  );
+}
+
 function getLastAssistantResponse(conversation) {
-  return conversation.messages
-    .filter(m => m.role == MESSAGE_ROLE.ASSISTANT)
-    .filter(m => m.content.type === "text")
-    .at(-1);
+  return getAssistantTextMessages(conversation).at(-1);
 }
 
 add_task(async function test_Chat_real_tools_are_registered() {
@@ -394,10 +397,10 @@ add_task(async function test_Chat_fetchWithHistory_handles_tool_calls() {
         message?.content?.type === "function"
     );
 
-    Assert.equal(
-      getLastAssistantResponse(conversation).content.body,
-      "I'll help you with that. \n\nTool executed successfully!",
-      "Should yield text from both model calls"
+    Assert.deepEqual(
+      getAssistantTextMessages(conversation).map(m => m.content.body),
+      ["I'll help you with that. ", "Tool executed successfully!"],
+      "Should store the text from before and after the tool call in order"
     );
     Assert.equal(toolCalls.length, 1, "Should have one tool call");
     Assert.ok(
@@ -435,6 +438,166 @@ add_task(async function test_Chat_fetchWithHistory_handles_tool_calls() {
     sb.restore();
   }
 });
+
+function makeScriptedEngine(responses, capturedArgs) {
+  return {
+    runWithGenerator(options) {
+      capturedArgs.push(options.args);
+      const chunks = responses[capturedArgs.length - 1];
+      return (async function* () {
+        yield* chunks;
+      })();
+    },
+    getConfig() {
+      return {};
+    },
+  };
+}
+
+const HISTORY_TOOL_CALL = {
+  toolCalls: [
+    {
+      id: "call_1",
+      function: {
+        name: "search_browsing_history",
+        arguments: JSON.stringify({ searchTerm: "recipes" }),
+      },
+    },
+  ],
+};
+
+async function runToolTurn(responses, followUp) {
+  const capturedArgs = [];
+  const conversation = new ChatConversation({
+    title: "chat title",
+    description: "chat desc",
+    pageUrl: new URL("https://www.firefox.com"),
+    pageMeta: {},
+  });
+  setupConversationForChat(conversation, {
+    model: TEST_MODEL,
+    engine: makeScriptedEngine(responses, capturedArgs),
+  });
+
+  conversation.addUserMessage("Find my recipe page");
+  conversation.addAssistantMessage("text", "");
+  await Chat.fetchWithHistory({ conversation });
+
+  if (followUp) {
+    conversation.addUserMessage(followUp);
+    conversation.addAssistantMessage("text", "");
+    await Chat.fetchWithHistory({ conversation });
+  }
+  return { conversation, capturedArgs };
+}
+
+add_task(
+  async function test_Chat_fetchWithHistory_stores_reply_after_tool_results() {
+    const sb = sinon.createSandbox();
+    try {
+      sb.stub(toolFns, "searchBrowsingHistory").resolves("tool result");
+      sb.stub(AuthProvider, "getToken").resolves("mock_token");
+
+      const { conversation, capturedArgs } = await runToolTurn(
+        [
+          [{ text: "Let me look." }, HISTORY_TOOL_CALL],
+          [{ text: "Found a recipe page. Want me to open it?" }],
+          [{ text: "Opening it." }],
+        ],
+        "yes"
+      );
+
+      Assert.deepEqual(
+        conversation.messages
+          .slice(0, 5)
+          .map(({ role, content }) => [
+            role,
+            content.type,
+            typeof content.body === "string" ? content.body : "",
+          ]),
+        [
+          [MESSAGE_ROLE.USER, "text", "Find my recipe page"],
+          [MESSAGE_ROLE.ASSISTANT, "text", "Let me look."],
+          [MESSAGE_ROLE.ASSISTANT, "function", ""],
+          [MESSAGE_ROLE.TOOL, undefined, "tool result"],
+          [
+            MESSAGE_ROLE.ASSISTANT,
+            "text",
+            "Found a recipe page. Want me to open it?",
+          ],
+        ],
+        "The turn is stored in the order it happened"
+      );
+      Assert.equal(
+        capturedArgs[1].at(-1).role,
+        "tool",
+        "The request continuing the turn ends on the tool result"
+      );
+
+      const followUpArgs = capturedArgs[2];
+      Assert.deepEqual(
+        followUpArgs.map(({ role, content, tool_calls, tool_call_id }) => ({
+          role,
+          content,
+          ...(tool_calls && { toolCallId: tool_calls[0].id }),
+          ...(tool_call_id && { toolCallId: tool_call_id }),
+        })),
+        [
+          { role: "user", content: "Find my recipe page" },
+          { role: "assistant", content: "Let me look." },
+          { role: "assistant", content: "", toolCallId: "call_1" },
+          { role: "tool", content: '"tool result"', toolCallId: "call_1" },
+          {
+            role: "assistant",
+            content: "Found a recipe page. Want me to open it?",
+          },
+          { role: "user", content: "yes" },
+        ],
+        "The follow-up request has the prior turn in the order it happened"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
+
+add_task(
+  async function test_Chat_fetchWithHistory_straight_to_tool_leaves_empty_anchor() {
+    const sb = sinon.createSandbox();
+    try {
+      sb.stub(toolFns, "searchBrowsingHistory").resolves("tool result");
+      sb.stub(AuthProvider, "getToken").resolves("mock_token");
+
+      const { conversation, capturedArgs } = await runToolTurn([
+        [HISTORY_TOOL_CALL],
+        [{ text: "Found a recipe page." }],
+      ]);
+
+      Assert.deepEqual(
+        conversation.messages.map(({ role, content }) => [
+          role,
+          content.type,
+          typeof content.body === "string" ? content.body : "",
+        ]),
+        [
+          [MESSAGE_ROLE.USER, "text", "Find my recipe page"],
+          [MESSAGE_ROLE.ASSISTANT, "text", ""],
+          [MESSAGE_ROLE.ASSISTANT, "function", ""],
+          [MESSAGE_ROLE.TOOL, undefined, "tool result"],
+          [MESSAGE_ROLE.ASSISTANT, "text", "Found a recipe page."],
+        ],
+        "The reply follows the tool results and the empty anchor stays"
+      );
+      Assert.deepEqual(
+        capturedArgs[1].map(({ role }) => role),
+        ["user", "assistant", "tool"],
+        "The empty anchor is left out of the request"
+      );
+    } finally {
+      sb.restore();
+    }
+  }
+);
 
 add_task(
   async function test_Chat_fetchWithHistory_propagates_engine_build_error() {
@@ -544,10 +707,10 @@ add_task(
         conversation,
       });
 
-      Assert.equal(
-        getLastAssistantResponse(conversation).content.body,
-        "Using tool with bad args: \n\nDone.",
-        "Should yield text from both calls"
+      Assert.deepEqual(
+        getAssistantTextMessages(conversation).map(m => m.content.body),
+        ["Using tool with bad args: ", "Done."],
+        "Should store the text from before and after the tool call in order"
       );
       Assert.ok(
         toolStub.notCalled,
@@ -639,10 +802,10 @@ add_task(
         toolFns.getOpenTabs.calledOnce,
         "Tool should be called once by the tool call"
       );
-      Assert.equal(
-        getLastAssistantResponse(conversation).content.body,
-        "Calling tool with no args: \n\nTool completed.",
-        "Should yield text from both calls"
+      Assert.deepEqual(
+        getAssistantTextMessages(conversation).map(m => m.content.body),
+        ["Calling tool with no args: ", "Tool completed."],
+        "Should store the text from before and after the tool call in order"
       );
     } finally {
       sb.restore();

@@ -1067,6 +1067,106 @@ add_task(function test_renderState_includes_empty_message_with_tool_ui() {
   Assert.ok(conversation.renderState().includes(message));
 });
 
+function addToolRound(conversation, id) {
+  conversation.addAssistantMessage("function", {
+    tool_calls: [
+      { id, type: "function", function: { name: "tool_1", arguments: "{}" } },
+    ],
+  });
+  conversation.addToolCallMessage({
+    tool_call_id: id,
+    name: "tool_1",
+    body: [],
+  });
+}
+
+async function* toolCallStream(text) {
+  if (text) {
+    yield { text };
+  }
+  yield {
+    toolCalls: [
+      { id: "call_1", function: { name: "tool_1", arguments: "{}" } },
+    ],
+  };
+}
+
+add_task(
+  async function test_receiveResponse_streams_reply_after_tool_results_into_new_message() {
+    const conversation = new ChatConversation({});
+    const completed = [];
+    conversation.on("chat-conversation:message-complete", (_event, message) =>
+      completed.push(message)
+    );
+    conversation.addUserMessage("Find my recipe page");
+    const preamble = conversation.addAssistantMessage("text", "");
+
+    await conversation.receiveResponse(toolCallStream("Let me look."));
+    addToolRound(conversation, "call_1");
+    conversation.addCitations([{ url: "https://example.com/recipe" }]);
+    await conversation.receiveResponse(
+      (async function* () {
+        yield { text: "Found it." };
+      })()
+    );
+
+    const reply = conversation.messages.at(-1);
+    Assert.deepEqual(
+      conversation.messages.map(({ role, content }) => [role, content.type]),
+      [
+        [MESSAGE_ROLE.USER, "text"],
+        [MESSAGE_ROLE.ASSISTANT, "text"],
+        [MESSAGE_ROLE.ASSISTANT, "function"],
+        [MESSAGE_ROLE.TOOL, undefined],
+        [MESSAGE_ROLE.ASSISTANT, "text"],
+      ],
+      "The reply is stored after the tool results"
+    );
+    Assert.equal(preamble.content.body, "Let me look.", "The preamble is kept");
+    Assert.equal(
+      reply.content.body,
+      "Found it.",
+      "The reply has its own message"
+    );
+    Assert.deepEqual(
+      reply.citations.map(({ url }) => url),
+      ["https://example.com/recipe"],
+      "The reply carries the turn's citations"
+    );
+    Assert.deepEqual(
+      completed,
+      [reply],
+      "Only the reply completes, once the turn is done"
+    );
+  }
+);
+
+add_task(async function test_receiveResponse_empty_reply_completes_preamble() {
+  const conversation = new ChatConversation({});
+  const completed = [];
+  conversation.on("chat-conversation:message-complete", (_event, message) =>
+    completed.push(message)
+  );
+  conversation.addUserMessage("Find my recipe page");
+  const preamble = conversation.addAssistantMessage("text", "");
+
+  await conversation.receiveResponse(toolCallStream("Let me look."));
+  addToolRound(conversation, "call_1");
+  conversation.addCitations([{ url: "https://example.com/recipe" }]);
+  await conversation.receiveResponse((async function* () {})());
+
+  Assert.deepEqual(
+    completed,
+    [preamble],
+    "The preamble completes the turn when the reply after the tools is empty"
+  );
+  Assert.deepEqual(
+    preamble.citations.map(({ url }) => url),
+    ["https://example.com/recipe"],
+    "The preamble carries the citations found by the turn's tools"
+  );
+});
+
 add_task(
   async function test_deduplicatesMemoryIds_ChatConversation_receiveResponse() {
     let sandbox = lazy.sinon.createSandbox();
@@ -1132,20 +1232,14 @@ add_task(
     sandbox.stub(MemoryStore, "requestSave").resolves();
 
     const conversation = new ChatConversation({});
+    conversation.addUserMessage("What do you remember?");
     conversation.addAssistantMessage("text", "");
     const assistantMsg = conversation.messages.at(-1);
 
-    // First turn: The model cites a memory and requests a tool call in the same pass,
-    // so this assistant message keeps streaming after the tool runs.
-    async function* toolCallStream() {
-      yield { text: "Let me check that.§existing_memory: mem-1§" };
-      yield {
-        toolCalls: [
-          { id: "call_1", function: { name: "run_search", arguments: "{}" } },
-        ],
-      };
-    }
-    const withToolCalls = await conversation.receiveResponse(toolCallStream());
+    // First pass: The model cites a memory and requests a tool call.
+    const withToolCalls = await conversation.receiveResponse(
+      toolCallStream("Let me check that.§existing_memory: mem-1§")
+    );
 
     Assert.equal(
       withToolCalls.pendingToolCalls.length,
@@ -1162,11 +1256,14 @@ add_task(
       "memoriesApplied should still hold the raw cited id mid-turn"
     );
 
-    // Second Turn: The same memory is cited again once the tool result is in.
+    addToolRound(conversation, "call_1");
+
+    // Second pass: The same memory is cited again once the tool result is in.
     async function* finalStream() {
-      yield { text: " Here is what I found.§existing_memory: mem-1§" };
+      yield { text: "Here is what I found.§existing_memory: mem-1§" };
     }
     const final = await conversation.receiveResponse(finalStream());
+    const replyMsg = conversation.messages.at(-1);
 
     Assert.equal(
       final.pendingToolCalls,
@@ -1187,9 +1284,14 @@ add_task(
       "Use should be recorded once even though the memory was cited twice"
     );
     Assert.deepEqual(
-      assistantMsg.memoriesApplied,
+      replyMsg.memoriesApplied,
       mockMemories,
-      "memoriesApplied should end up as the resolved memories"
+      "The reply should end up with the resolved memories"
+    );
+    Assert.deepEqual(
+      assistantMsg.memoriesApplied,
+      [],
+      "The preamble should not keep the raw cited ids"
     );
 
     sandbox.restore();
