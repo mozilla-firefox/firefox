@@ -314,10 +314,8 @@ pixels wide is invisible in a full-window shot, so attach a zoom beside the
 pair: `scripts/zoom-pair.py before.png after.png zoom.png --rect X,Y,W,H`
 (`--help`).
 
-The in-tree `bug-filing` skill cannot attach files. Attach each image with
-`scripts/attach-to-bug.py` (`--help`; `--dry-run` first, which prints the
-payload and fails only when no key is configured in
-`~/.config/python-bugzilla/bugzillarc`, without checking the key against
-Bugzilla; and `--file-name` where several variant directories each hold a
-`before.png`). Attaching is outward-facing and permanent: confirm with the user
+Attach each image with the `bug-filing` skill's
+`.agents/skills/bug-filing/attach-to-bug.py`, following that skill's dry-run
+steps; pass `--file-name` where several variant directories each hold a
+`before.png`. Attaching is outward-facing and permanent: confirm with the user
 first and say which bug.

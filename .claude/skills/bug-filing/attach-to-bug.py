@@ -4,7 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Attach a file to a bugzilla.mozilla.org bug via the REST API.
 
-    ./mach python --virtualenv wpt -- <skill>/scripts/attach-to-bug.py --bug NNNNNN \
+    python3 .agents/skills/bug-filing/attach-to-bug.py --bug NNNNNN \
         --file /path/to/testcase.html \
         --summary "Testcase: ..." \
         --comment-file /path/to/comment.md

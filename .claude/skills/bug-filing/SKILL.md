@@ -1,6 +1,6 @@
 ---
 name: bug-filing
-description: File a Bugzilla bug for Firefox/Gecko work, or draft a bug summary and description. Use when the user asks to file a bug, wants a bug summary/description for a change, or needs to report a defect/enhancement/task. Determines the product and component with `mach file-info`, drafts the summary and description, and opens a prefilled enter_bug.cgi form in the browser for the user to submit.
+description: File a Bugzilla bug for Firefox/Gecko work, draft a bug summary and description, or attach a file to an existing bug. Use when the user asks to file a bug, wants a bug summary/description for a change, needs to report a defect/enhancement/task, or wants a file (e.g. a screenshot or testcase) attached to a bug. Determines the product and component with `mach file-info`, drafts the summary and description, and opens a prefilled enter_bug.cgi form in the browser for the user to submit.
 allowed-tools:
   - Bash(./mach file-info:*)
   - Bash(python3 .agents/skills/bug-filing/file-bug.py:*)
@@ -65,6 +65,8 @@ created under their own account with a chance to review and adjust.
    A request to file a bug, in any wording, means opening this form. Never create
    the bug yourself, even with a Bugzilla API key at hand: the form is the user's
    only chance to review the text before it goes public under their name.
+   Attaching a file to an existing bug is the one post you make yourself, and
+   only once the user approves it (see below).
 
    Run the helper script with each Bugzilla
    `enter_bug.cgi` field as a `field=value` argument; it URL-encodes the values and
@@ -92,6 +94,25 @@ created under their own account with a chance to review and adjust.
    changes; for changes, run the script again with the revised draft. Once they
    submit the form, they provide the bug number.
 
+## Attaching a file to an existing bug
+
+A form cannot prefill a file input, so attaching goes through the REST API:
+```
+python3 .agents/skills/bug-filing/attach-to-bug.py --bug <N> --file <path> \
+    --summary '<attachment description>' --comment-file <path>
+```
+It reads the API key from `api_key` under `[bugzilla.mozilla.org]` in
+`~/.config/python-bugzilla/bugzillarc`, and prints the new attachment's URL.
+`--comment '<text>'` takes the comment inline, for short text without quotes.
+`--help` lists the other options, e.g. `--file-name`.
+
+Run it with `--dry-run` first, which prints the payload without posting it.
+The dry run fails when no key is configured, but never checks the key against
+Bugzilla, so a bad key shows up only as an HTTP 401 on the real run.
+Show the user that output, name the bug, and wait for their approval before
+the real run: the attachment is public and permanent.
+
 ## Notes
 
-- This skill only opens a prefilled form; it never submits the bug itself.
+- Filing a bug only opens a prefilled form; the skill never submits the bug
+  itself. It posts only an attachment, after the user approves the dry run.
