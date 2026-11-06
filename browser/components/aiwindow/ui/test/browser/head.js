@@ -285,6 +285,15 @@ const MOCK_RS_RECORDS = [
   ]);
 
 add_setup(async function () {
+  if (parseInt(Services.env.get("MOZ_CHAOSMODE"), 16)) {
+    // When running chaos mode in --verify test runs, the amount of time
+    // that we spend on animations dramatically increases the time that
+    // tests take to run, to the point that some of the tests time out.
+    await SpecialPowers.pushPrefEnv({
+      set: [["ui.prefersReducedMotion", 1]],
+    });
+  }
+
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.endpoint", "http://localhost:0/v1"],
