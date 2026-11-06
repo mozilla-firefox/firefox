@@ -49,7 +49,6 @@ interface nsIPrintSettings : nsISupports
   const unsigned long kInitSaveUnwriteableMargins = 0x00004000;
   const unsigned long kInitSaveEdges          = 0x00008000;
 
-  const unsigned long kInitSaveReversed       = 0x00010000;
   const unsigned long kInitSaveInColor        = 0x00020000;
   const unsigned long kInitSaveOrientation    = 0x00040000;
 
@@ -70,14 +69,14 @@ interface nsIPrintSettings : nsISupports
   const unsigned long kGlobalSettings =
       kInitSaveHeaderLeft | kInitSaveHeaderCenter | kInitSaveHeaderRight |
       kInitSaveFooterLeft | kInitSaveFooterCenter | kInitSaveFooterRight |
-      kInitSaveEdges | kInitSaveReversed | kInitSaveInColor |
+      kInitSaveEdges | kInitSaveInColor |
       kInitSaveBGColors | kInitSaveBGImages | kInitSaveShrinkToFit;
 
   // These settings may be changed by native print dialog and should be
   // persisted when changed.
   const unsigned long kPrintDialogPersistSettings =
       kGlobalSettings | kInitSavePaperSize | kInitSaveDuplex |
-      kInitSaveEdges | kInitSaveReversed | kInitSaveInColor |
+      kInitSaveEdges | kInitSaveInColor |
       kInitSaveOrientation | kInitSavePageDelay | kInitSaveMargins |
       kInitSaveShrinkToFit | kInitSaveScaling;
 
@@ -302,7 +301,6 @@ interface nsIPrintSettings : nsISupports
   attribute double  paperHeight;   /* height of the paper in inches or mm */
   attribute short   paperSizeUnit; /* paper is in inches or mm */
 
-  attribute boolean printReversed;
   [infallible] attribute boolean printInColor;  /* a false means grayscale */
   attribute long    orientation;   /*  see orientation consts */
   attribute long    numCopies;

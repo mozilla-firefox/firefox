@@ -81,15 +81,6 @@ nsPrintSettings::nsPrintSettings(const nsPrintSettings& aPS) { *this = aPS; }
 
 nsPrintSettings::~nsPrintSettings() = default;
 
-NS_IMETHODIMP nsPrintSettings::GetPrintReversed(bool* aPrintReversed) {
-  *aPrintReversed = mPrintReversed;
-  return NS_OK;
-}
-NS_IMETHODIMP nsPrintSettings::SetPrintReversed(bool aPrintReversed) {
-  mPrintReversed = aPrintReversed;
-  return NS_OK;
-}
-
 NS_IMETHODIMP nsPrintSettings::GetPrintInColor(bool* aPrintInColor) {
   *aPrintInColor = mPrintInColor;
   return NS_OK;
@@ -902,7 +893,6 @@ nsPrintSettings& nsPrintSettings::operator=(const nsPrintSettings& rhs) {
   mPaperWidth = rhs.mPaperWidth;
   mPaperHeight = rhs.mPaperHeight;
   mPaperSizeUnit = rhs.mPaperSizeUnit;
-  mPrintReversed = rhs.mPrintReversed;
   mPrintInColor = rhs.mPrintInColor;
   mOrientation = rhs.mOrientation;
   mResolution = rhs.mResolution;

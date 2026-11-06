@@ -45,12 +45,9 @@ class nsPrintSettingsGTK : public nsPrintSettings {
   GtkPrinter* GetGtkPrinter() { return mGTKPrinter; };
   void SetGtkPrinter(GtkPrinter* aPrinter);
 
-  // Reversed, color, orientation and file name are all stored in the
+  // Color, orientation and file name are all stored in the
   // GtkPrintSettings. Orientation is also stored in the GtkPageSetup and its
   // setting takes priority when getting the orientation.
-  NS_IMETHOD GetPrintReversed(bool* aPrintReversed) override;
-  NS_IMETHOD SetPrintReversed(bool aPrintReversed) override;
-
   NS_IMETHOD GetPrintInColor(bool* aPrintInColor) override;
   NS_IMETHOD SetPrintInColor(bool aPrintInColor) override;
 

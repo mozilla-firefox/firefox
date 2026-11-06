@@ -67,7 +67,6 @@ static const char kPrintFooterStrCenter[] = "print_footercenter";
 static const char kPrintFooterStrRight[] = "print_footerright";
 
 // Additional Prefs
-static const char kPrintReversed[] = "print_reversed";
 static const char kPrintInColor[] = "print_in_color";
 static const char kPrintPaperId[] = "print_paper_id";
 static const char kPrintPaperSizeUnit[] = "print_paper_size_unit";
@@ -142,7 +141,6 @@ nsPrintSettingsService::SerializeToPrintData(nsIPrintSettings* aSettings,
   aSettings->GetPaperHeight(&data->paperHeight());
   aSettings->GetPaperSizeUnit(&data->paperSizeUnit());
 
-  aSettings->GetPrintReversed(&data->printReversed());
   aSettings->GetPrintInColor(&data->printInColor());
   aSettings->GetOrientation(&data->orientation());
 
@@ -221,7 +219,6 @@ nsPrintSettingsService::DeserializeToPrintSettings(const PrintData& data,
   settings->SetPaperHeight(data.paperHeight());
   settings->SetPaperSizeUnit(data.paperSizeUnit());
 
-  settings->SetPrintReversed(data.printReversed());
   settings->SetPrintInColor(data.printInColor());
   settings->SetOrientation(data.orientation());
 
@@ -490,13 +487,6 @@ nsresult nsPrintSettingsService::ReadPrefs(nsIPrintSettings* aPS,
     }
   }
 
-  if (aFlags & nsIPrintSettings::kInitSaveReversed) {
-    if (GETBOOLPREF(kPrintReversed, &b)) {
-      aPS->SetPrintReversed(b);
-      noValidPrefsFound = false;
-    }
-  }
-
   if (aFlags & nsIPrintSettings::kInitSaveInColor) {
     if (GETBOOLPREF(kPrintInColor, &b)) {
       aPS->SetPrintInColor(b);
@@ -698,12 +688,6 @@ nsresult nsPrintSettingsService::WritePrefs(nsIPrintSettings* aPS,
   if (aFlags & nsIPrintSettings::kInitSaveBGImages) {
     b = aPS->GetPrintBGImages();
     Preferences::SetBool(GetPrefName(kPrintBGImages, aPrinterName), b);
-  }
-
-  if (aFlags & nsIPrintSettings::kInitSaveReversed) {
-    if (NS_SUCCEEDED(aPS->GetPrintReversed(&b))) {
-      Preferences::SetBool(GetPrefName(kPrintReversed, aPrinterName), b);
-    }
   }
 
   if (aFlags & nsIPrintSettings::kInitSaveInColor) {

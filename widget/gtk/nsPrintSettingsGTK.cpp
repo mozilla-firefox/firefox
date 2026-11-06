@@ -223,17 +223,6 @@ nsPrintSettingsGTK::SetPageRanges(const nsTArray<int32_t>& aRanges) {
 }
 
 NS_IMETHODIMP
-nsPrintSettingsGTK::GetPrintReversed(bool* aPrintReversed) {
-  *aPrintReversed = gtk_print_settings_get_reverse(mPrintSettings);
-  return NS_OK;
-}
-NS_IMETHODIMP
-nsPrintSettingsGTK::SetPrintReversed(bool aPrintReversed) {
-  gtk_print_settings_set_reverse(mPrintSettings, aPrintReversed);
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 nsPrintSettingsGTK::GetPrintInColor(bool* aPrintInColor) {
   *aPrintInColor = gtk_print_settings_get_use_color(mPrintSettings);
   return NS_OK;

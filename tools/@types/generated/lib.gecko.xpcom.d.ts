@@ -22913,8 +22913,6 @@ interface nsIPrintSettings extends nsISupports, Enums<typeof nsIPrintSettings_Ou
   readonly kInitSaveUnwriteableMargins?: 16384;
   /** <!-- binding_to(idl, const, XPIDL_nsIPrintSettings_kInitSaveEdges) --> */
   readonly kInitSaveEdges?: 32768;
-  /** <!-- binding_to(idl, const, XPIDL_nsIPrintSettings_kInitSaveReversed) --> */
-  readonly kInitSaveReversed?: 65536;
   /** <!-- binding_to(idl, const, XPIDL_nsIPrintSettings_kInitSaveInColor) --> */
   readonly kInitSaveInColor?: 131072;
   /** <!-- binding_to(idl, const, XPIDL_nsIPrintSettings_kInitSaveOrientation) --> */
@@ -23040,8 +23038,6 @@ interface nsIPrintSettings extends nsISupports, Enums<typeof nsIPrintSettings_Ou
   paperHeight: double;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIPrintSettings_paperSizeUnit) --> */
   paperSizeUnit: i16;
-  /** <!-- binding_to(idl, attribute, XPIDL_nsIPrintSettings_printReversed) --> */
-  printReversed: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIPrintSettings_printInColor) --> */
   printInColor: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIPrintSettings_orientation) --> */

@@ -51,7 +51,6 @@ struct PrintData {
   double paperWidth;
   double paperHeight;
   short paperSizeUnit;
-  bool printReversed;
   bool printInColor;
   int32_t orientation;
   int32_t numCopies;

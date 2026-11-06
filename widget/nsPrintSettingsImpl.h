@@ -114,7 +114,6 @@ class nsPrintSettings : public nsIPrintSettings {
   double mPaperHeight = 11.0;
   int16_t mPaperSizeUnit = kPaperSizeInches;
 
-  bool mPrintReversed = false;
   bool mPrintInColor = true;
   int32_t mOrientation = kPortraitOrientation;
   int32_t mResolution = 0;
