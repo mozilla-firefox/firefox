@@ -62,9 +62,8 @@ std::unique_ptr<webrtc::VideoDecoder> WebrtcVideoDecoderFactory::Create(
   return decoder;
 }
 
-std::unique_ptr<webrtc::VideoEncoder>
-WebrtcVideoEncoderFactory::CreateVideoEncoder(
-    const webrtc::SdpVideoFormat& aFormat) {
+std::unique_ptr<webrtc::VideoEncoder> WebrtcVideoEncoderFactory::Create(
+    const webrtc::Environment& aEnv, const webrtc::SdpVideoFormat& aFormat) {
   if (!mInternalFactory->Supports(aFormat)) {
     return nullptr;
   }
@@ -93,8 +92,8 @@ bool WebrtcVideoEncoderFactory::InternalFactory::Supports(
 }
 
 std::unique_ptr<webrtc::VideoEncoder>
-WebrtcVideoEncoderFactory::InternalFactory::CreateVideoEncoder(
-    const webrtc::SdpVideoFormat& aFormat) {
+WebrtcVideoEncoderFactory::InternalFactory::Create(
+    const webrtc::Environment& aEnv, const webrtc::SdpVideoFormat& aFormat) {
   MOZ_ASSERT(Supports(aFormat));
 
   std::unique_ptr<webrtc::VideoEncoder> platformEncoder;
