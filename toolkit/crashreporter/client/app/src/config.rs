@@ -173,6 +173,11 @@ impl Config {
         Self::default()
     }
 
+    /// Load the prefs from the installation directory.
+    pub fn read_app_prefs(&mut self) {
+        self.prefs.update_from_app_dir(installation_path());
+    }
+
     /// Load a configuration from the application environment.
     #[cfg_attr(mock, allow(unused))]
     pub fn read_from_environment(&mut self) {
@@ -215,6 +220,8 @@ impl Config {
         }
 
         self.strings = Some(lang::load());
+
+        self.read_app_prefs();
     }
 
     /// Get the localized string for the given index.

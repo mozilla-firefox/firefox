@@ -5,7 +5,7 @@
 //! An entry point for sending a crash ping.
 
 use crate::std::{env, io::stdin, path::PathBuf};
-use crate::{glean, logging, net::ping, prefs::Prefs};
+use crate::{config::installation_path, glean, logging, net::ping, prefs::Prefs};
 
 pub fn main() {
     logging::init();
@@ -54,6 +54,7 @@ pub fn cleanup_main() {
 
 fn load_glean(data_path: PathBuf, profile_dir: Option<PathBuf>) -> crashping::GleanHandle {
     let mut prefs = Prefs::default();
+    prefs.update_from_app_dir(installation_path());
     if let Some(dir) = profile_dir {
         prefs.update_from_profile_dir(dir.as_ref());
     }

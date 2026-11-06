@@ -606,6 +606,10 @@ pub fn write<P: AsRef<Path>, C: AsRef<[u8]>>(path: P, contents: C) -> Result<()>
     File::create(path.as_ref())?.write_all(contents.as_ref())
 }
 
+pub fn read_dir<P: AsRef<crate::std::path::Path>>(path: P) -> Result<ReadDir> {
+    ReadDir::new(path.as_ref().as_ref())
+}
+
 pub struct ReadDir {
     base: PathBuf,
     children: Vec<OsString>,
@@ -652,6 +656,34 @@ impl DirEntry {
                 }
             })
         })
+    }
+
+    pub fn file_type(&self) -> Result<FileType> {
+        Ok(FileType::new(&self.metadata()?))
+    }
+}
+
+pub struct FileType {
+    is_dir: bool,
+}
+
+impl FileType {
+    fn new(meta: &Metadata) -> Self {
+        Self {
+            is_dir: meta.is_dir,
+        }
+    }
+
+    pub fn is_dir(&self) -> bool {
+        self.is_dir
+    }
+
+    pub fn is_file(&self) -> bool {
+        !self.is_dir
+    }
+
+    pub fn is_symlink(&self) -> bool {
+        false
     }
 }
 

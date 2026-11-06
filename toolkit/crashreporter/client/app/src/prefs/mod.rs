@@ -10,7 +10,7 @@
 mod parser;
 
 use crate::std::{
-    fs::read_to_string,
+    fs::{read_dir, read_to_string, ReadDir},
     io::ErrorKind,
     path::{Path, PathBuf},
 };
@@ -30,6 +30,43 @@ pub struct Prefs {
 }
 
 impl Prefs {
+    /// Update prefs from the given application directory.
+    ///
+    /// This will load files from known defaults directories. On Linux, this includes system
+    /// directories as well (not under `app_dir`).
+    pub fn update_from_app_dir(&mut self, app_dir: &Path) -> &mut Self {
+        let prefs_files = [
+            app_dir.join("defaults/pref"),
+            app_dir.join("defaults/preferences"),
+            // On linux, there is a sysconf directory to check.
+            //
+            // System-scoped directories have priority over install-scoped, so they come later in
+            // the list.
+            #[cfg(target_os = "linux")]
+            format!(
+                "/etc/{appname}/defaults/pref",
+                appname = mozbuild::config::MOZ_APP_BASENAME.to_lowercase()
+            )
+            .into(),
+        ]
+        .into_iter()
+        .flat_map(|dir| {
+            // Files in each directory are loaded in reverse-alphabetical order due to a [design][] long
+            // ago, so we have to aggregate these into a Vec and sort it appropriately.
+            //
+            // [design]: https://searchfox.org/firefox-main/rev/d35ef8d3940ee6929400750d80d7e32d80f2c29d/modules/libpref/src/nsPrefService.cpp#651-653
+            let mut files: Vec<_> = JsFilesInDir::new(dir).collect();
+            files.sort_unstable_by(|a, b| b.file_name().cmp(&a.file_name()));
+            files
+        });
+
+        for file in prefs_files {
+            self.update_from_file(&file);
+        }
+
+        self
+    }
+
     /// Update prefs from the given profile directory.
     pub fn update_from_profile_dir(&mut self, profile_dir: &Path) -> &mut Self {
         self.update_from_file(&profile_dir.join("prefs.js"));
@@ -110,6 +147,59 @@ impl std::fmt::Display for DisplayPrefsPaths<'_> {
     }
 }
 
+/// An iterator over files with a .js extension in a given directory.
+struct JsFilesInDir {
+    dir: Option<ReadDir>,
+    path: PathBuf,
+}
+
+impl JsFilesInDir {
+    fn new<P: AsRef<Path>>(dir: P) -> Self {
+        let path = dir.as_ref().to_owned();
+        let dir = match read_dir(dir) {
+            Err(e) => {
+                if e.kind() != ErrorKind::NotFound {
+                    log::warn!("failed to read pref directory {}: {e}", path.display());
+                }
+                None
+            }
+            Ok(dir) => Some(dir),
+        };
+        Self { dir, path }
+    }
+}
+
+impl Iterator for JsFilesInDir {
+    type Item = PathBuf;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let entry = self.dir.as_mut()?.next()?;
+            match entry {
+                Err(e) => {
+                    log::warn!(
+                        "failed while reading pref directory {}: {e}",
+                        self.path.display()
+                    );
+                    self.dir = None;
+                    return None;
+                }
+                Ok(entry) => {
+                    let path = entry.path();
+                    if entry
+                        .file_type()
+                        .map(|ft| ft.is_file() || ft.is_symlink())
+                        .unwrap_or(false)
+                        && path.extension().map(|e| e == "js").unwrap_or(false)
+                    {
+                        return Some(path);
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -172,6 +262,85 @@ mod test {
                 .requested_locales()
                 .unwrap(),
             &["fr", "en-US"]
+        );
+    }
+
+    #[test]
+    fn directories() {
+        for default_dir in ["pref", "preferences"] {
+            let files = MockFiles::new();
+            files
+                .add_dir("app_dir")
+                .add_dir("app_dir/defaults")
+                .add_dir(format!("app_dir/defaults/{default_dir}"))
+                .add_file(format!("app_dir/defaults/{default_dir}/prefs.js"), "");
+            let prefs = mock::builder().set(MockFS, files).run(|| {
+                let mut prefs = Prefs::default();
+                prefs.update_from_app_dir(Path::new("app_dir"));
+                prefs
+            });
+            assert_eq!(
+                prefs.paths,
+                [format!("app_dir/defaults/{default_dir}/prefs.js").into()]
+            );
+        }
+    }
+
+    #[test]
+    fn file_priorities() {
+        let files = MockFiles::new();
+        files
+            .add_dir("profile_dir")
+            .add_file("profile_dir/prefs.js", "")
+            .add_file("profile_dir/user.js", "")
+            .add_dir("app_dir")
+            .add_dir("app_dir/defaults")
+            .add_dir("app_dir/defaults/pref")
+            .add_dir("app_dir/defaults/preferences")
+            .add_file("app_dir/defaults/preferences/c_pref.js", "")
+            .add_file("app_dir/defaults/pref/a_notjs.ts", "")
+            .add_file("app_dir/defaults/pref/b_pref.js", "")
+            .add_file("app_dir/defaults/pref/c_pref.js", "");
+        let prefs = mock::builder().set(MockFS, files).run(|| {
+            let mut prefs = Prefs::default();
+            prefs
+                .update_from_app_dir(Path::new("app_dir"))
+                .update_from_profile_dir(Path::new("profile_dir"));
+            prefs
+        });
+        assert_eq!(
+            prefs.paths,
+            [
+                "app_dir/defaults/pref/c_pref.js".into(),
+                "app_dir/defaults/pref/b_pref.js".into(),
+                "app_dir/defaults/preferences/c_pref.js".into(),
+                "profile_dir/prefs.js".into(),
+                "profile_dir/user.js".into(),
+            ]
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_file_priorities() {
+        let appname = mozbuild::config::MOZ_APP_BASENAME.to_lowercase();
+        let files = MockFiles::new();
+        files
+            .add_dir("/etc")
+            .add_dir(format!("/etc/{appname}"))
+            .add_dir(format!("/etc/{appname}/defaults"))
+            .add_dir(format!("/etc/{appname}/defaults/pref"))
+            .add_file(format!("/etc/{appname}/defaults/pref/pref.js"), "");
+        let prefs = mock::builder().set(MockFS, files).run(|| {
+            let mut prefs = Prefs::default();
+            prefs
+                .update_from_app_dir(Path::new("app_dir"))
+                .update_from_profile_dir(Path::new("profile_dir"));
+            prefs
+        });
+        assert_eq!(
+            prefs.paths,
+            [format!("/etc/{appname}/defaults/pref/pref.js").into()]
         );
     }
 }
