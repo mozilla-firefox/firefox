@@ -336,3 +336,155 @@ add_task(
     });
   }
 );
+
+add_task(async function test_tool_turn_with_preamble_renders_one_bubble() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.enabled", true]],
+  });
+
+  await BrowserTestUtils.withNewTab("about:aichatcontent", async browser => {
+    await SpecialPowers.spawn(browser, [], async () => {
+      await content.customElements.whenDefined("ai-chat-content");
+      const chatContent = content.document.querySelector("ai-chat-content");
+      const root = chatContent.shadowRoot;
+      const count = selector =>
+        chatContent.shadowRoot.querySelectorAll(selector).length;
+      const dispatch = (type, detail) =>
+        chatContent.dispatchEvent(
+          new content.CustomEvent(type, {
+            detail: Cu.cloneInto(detail, content),
+            bubbles: true,
+          })
+        );
+      const message = detail =>
+        dispatch("aiChatContentActor:message", { convId: "conv1", ...detail });
+      const assistant = (ordinal, id, body) =>
+        message({
+          role: "assistant",
+          ordinal,
+          id,
+          content: { body },
+          memoriesApplied: [],
+          followUpSuggestions: [],
+        });
+
+      message({ role: "user", ordinal: 1, content: { body: "What tabs?" } });
+      assistant(2, "msg-preamble", "Let me look.");
+      await chatContent.wrappedJSObject.updateComplete;
+      const chatBubble = root.querySelector(".chat-bubble-assistant");
+      message({
+        role: "tool",
+        ordinal: 4,
+        content: { tool_call_id: "tc_1", name: "get_open_tabs" },
+        actionLog: {
+          uiType: "action-log",
+          pendingLabel: { l10nId: "action-log-getting-open-tabs" },
+          row: {
+            labelL10nId: "action-log-got-open-tabs",
+            labelL10nArgs: null,
+            items: [],
+          },
+        },
+      });
+      await chatContent.wrappedJSObject.updateComplete;
+      Assert.strictEqual(
+        root.querySelector(".chat-bubble-assistant"),
+        chatBubble,
+        "The bubble is kept when the action log appears above it"
+      );
+
+      assistant(5, "msg-reply", "You have no tabs open.");
+      message({
+        role: "assistant-message-complete",
+        content: { id: "msg-reply" },
+      });
+      await chatContent.wrappedJSObject.updateComplete;
+
+      const text = "Let me look.\n\nYou have no tabs open.";
+      Assert.equal(count(".chat-bubble-assistant"), 1, "One assistant bubble");
+      Assert.strictEqual(
+        root.querySelector(".chat-bubble-assistant"),
+        chatBubble,
+        "The bubble is kept when the reply starts after the preamble"
+      );
+      Assert.equal(
+        root.querySelector(".chat-bubble-assistant ai-chat-message")
+          .wrappedJSObject.message,
+        text,
+        "The bubble shows the preamble and the reply"
+      );
+      Assert.equal(count("assistant-message-footer"), 1, "One footer");
+
+      const copied = new Promise(resolve =>
+        chatContent.addEventListener(
+          "AIChatContent:DispatchAction",
+          event => resolve(event.detail),
+          { once: true }
+        )
+      );
+      dispatch("copy-message", { messageId: "msg-reply" });
+      Assert.equal((await copied).text, text, "Copy copies the whole turn");
+
+      dispatch("aiChatContentActor:truncate", { messageId: "msg-reply" });
+      await chatContent.wrappedJSObject.updateComplete;
+      Assert.deepEqual(
+        [
+          count(".chat-bubble-user"),
+          count("ai-action-result"),
+          count(".chat-bubble-assistant"),
+        ],
+        [1, 0, 0],
+        "Truncating the reply removes the turn but keeps the user message"
+      );
+    });
+  });
+});
+
+add_task(async function test_localized_message_after_reply_stays_separate() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.smartwindow.enabled", true]],
+  });
+
+  await BrowserTestUtils.withNewTab("about:aichatcontent", async browser => {
+    await SpecialPowers.spawn(browser, [], async () => {
+      await content.customElements.whenDefined("ai-chat-content");
+      const chatContent = content.document.querySelector("ai-chat-content");
+      const message = detail =>
+        chatContent.dispatchEvent(
+          new content.CustomEvent("aiChatContentActor:message", {
+            detail: Cu.cloneInto(
+              { convId: "conv1", isPreviousMessage: true, ...detail },
+              content
+            ),
+            bubbles: true,
+          })
+        );
+
+      message({ role: "user", ordinal: 1, content: { body: "Hello" } });
+      message({
+        role: "assistant",
+        ordinal: 2,
+        id: "msg-reply",
+        content: { body: "Hi!" },
+      });
+      message({
+        role: "assistant",
+        ordinal: 3,
+        id: "msg-l10n",
+        content: {
+          body: "",
+          l10nId: "smartwindow-agent-monitor-limit-reached",
+          l10nArgs: { count: 3 },
+        },
+      });
+      await chatContent.wrappedJSObject.updateComplete;
+
+      Assert.equal(
+        chatContent.shadowRoot.querySelectorAll(".chat-bubble-assistant")
+          .length,
+        2,
+        "A localized assistant message keeps its own bubble"
+      );
+    });
+  });
+});
