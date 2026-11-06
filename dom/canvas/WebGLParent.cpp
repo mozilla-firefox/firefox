@@ -186,6 +186,11 @@ IPCResult WebGLParent::RecvGetBufferSubData(const GLenum target,
     return IPC_FAIL(this, "HostWebGLContext is not initialized.");
   }
 
+  if (byteSize == ~0ull) {
+    NS_WARNING("Failed to alloc shmem for RecvGetBufferSubData.");
+    return IPC_OK();
+  }
+
   const auto allocSize = 1 + byteSize;
   auto shmem = webgl::RaiiShmem::Alloc(this, allocSize);
   if (!shmem) {
