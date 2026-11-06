@@ -495,7 +495,6 @@ rtc_library("rtc_simulcast_encoder_adapter") {
     "../api:scoped_refptr",
     "../api:sequence_checker",
     "../api/environment",
-    "../api/transport:field_trial_based_config",
     "../api/video:video_codec_constants",
     "../api/video:video_frame",
     "../api/video:video_rtp_headers",

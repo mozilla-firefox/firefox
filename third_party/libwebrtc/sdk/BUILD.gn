@@ -1548,6 +1548,9 @@ if (is_ios || is_mac) {
         "objc/api/video_codec/RTCNativeVideoDecoder.h",
         "objc/api/video_codec/RTCNativeVideoDecoder.mm",
         "objc/api/video_codec/RTCNativeVideoDecoderBuilder+Native.h",
+        "objc/api/video_codec/RTCNativeVideoEncoder.h",
+        "objc/api/video_codec/RTCNativeVideoEncoder.mm",
+        "objc/api/video_codec/RTCNativeVideoEncoderBuilder+Native.h",
         "objc/api/video_codec/RTCWrappedNativeVideoEncoder.h",
         "objc/api/video_codec/RTCWrappedNativeVideoEncoder.mm",
       ]

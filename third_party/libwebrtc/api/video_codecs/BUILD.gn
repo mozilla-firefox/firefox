@@ -151,7 +151,6 @@ rtc_library("builtin_video_encoder_factory") {
     "../../media:rtc_simulcast_encoder_adapter",
     "../../rtc_base/system:rtc_export",
     "../environment",
-    "../transport:field_trial_based_config",
   ]
   absl_deps = [
     "//third_party/abseil-cpp/absl/strings",

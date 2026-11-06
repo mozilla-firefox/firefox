@@ -16,7 +16,6 @@
 
 #include "absl/types/optional.h"
 #include "api/environment/environment.h"
-#include "api/transport/field_trial_based_config.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
@@ -32,22 +31,6 @@ class BuiltinVideoEncoderFactory : public VideoEncoderFactory {
  public:
   BuiltinVideoEncoderFactory()
       : internal_encoder_factory_(new InternalEncoderFactory()) {}
-
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override {
-    // Try creating an InternalEncoderFactory-backed SimulcastEncoderAdapter.
-    // The adapter has a passthrough mode for the case that simulcast is not
-    // used, so all responsibility can be delegated to it.
-    std::unique_ptr<VideoEncoder> encoder;
-    if (format.IsCodecInList(
-            internal_encoder_factory_->GetSupportedFormats())) {
-      encoder = std::make_unique<SimulcastEncoderAdapter>(
-          /*primary_factory=*/internal_encoder_factory_.get(),
-          /*fallback_factory=*/nullptr, format, FieldTrialBasedConfig());
-    }
-
-    return encoder;
-  }
 
   std::unique_ptr<VideoEncoder> Create(const Environment& env,
                                        const SdpVideoFormat& format) override {

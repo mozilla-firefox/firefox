@@ -22,7 +22,6 @@
 #include "absl/types/optional.h"
 #include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
-#include "api/transport/field_trial_based_config.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/video_codec_constants.h"
 #include "api/video/video_frame_buffer.h"
@@ -251,38 +250,7 @@ SimulcastEncoderAdapter::SimulcastEncoderAdapter(
     absl::Nonnull<VideoEncoderFactory*> primary_factory,
     absl::Nullable<VideoEncoderFactory*> fallback_factory,
     const SdpVideoFormat& format)
-    : SimulcastEncoderAdapter(&env,
-                              primary_factory,
-                              fallback_factory,
-                              format,
-                              env.field_trials()) {}
-
-SimulcastEncoderAdapter::SimulcastEncoderAdapter(VideoEncoderFactory* factory,
-                                                 const SdpVideoFormat& format)
-    : SimulcastEncoderAdapter(/*env=*/nullptr,
-                              /*primary_factory=*/factory,
-                              /*fallback_factory=*/nullptr,
-                              format,
-                              FieldTrialBasedConfig()) {}
-
-SimulcastEncoderAdapter::SimulcastEncoderAdapter(
-    VideoEncoderFactory* primary_factory,
-    VideoEncoderFactory* fallback_factory,
-    const SdpVideoFormat& format,
-    const FieldTrialsView& field_trials)
-    : SimulcastEncoderAdapter(/*env=*/nullptr,
-                              primary_factory,
-                              fallback_factory,
-                              format,
-                              field_trials) {}
-
-SimulcastEncoderAdapter::SimulcastEncoderAdapter(
-    absl::Nullable<const Environment*> env,
-    absl::Nonnull<VideoEncoderFactory*> primary_factory,
-    absl::Nullable<VideoEncoderFactory*> fallback_factory,
-    const SdpVideoFormat& format,
-    const FieldTrialsView& field_trials)
-    : env_(env != nullptr ? absl::make_optional(*env) : absl::nullopt),
+    : env_(env),
       inited_(0),
       primary_encoder_factory_(primary_factory),
       fallback_encoder_factory_(fallback_factory),
@@ -291,11 +259,11 @@ SimulcastEncoderAdapter::SimulcastEncoderAdapter(
       bypass_mode_(false),
       encoded_complete_callback_(nullptr),
       experimental_boosted_screenshare_qp_(
-          GetScreenshareBoostedQpValue(field_trials)),
+          GetScreenshareBoostedQpValue(env_.field_trials())),
       boost_base_layer_quality_(
-          RateControlSettings::ParseFromKeyValueConfig(&field_trials)
+          RateControlSettings::ParseFromKeyValueConfig(&env_.field_trials())
               .Vp8BoostBaseLayerQuality()),
-      prefer_temporal_support_on_base_layer_(field_trials.IsEnabled(
+      prefer_temporal_support_on_base_layer_(env_.field_trials().IsEnabled(
           "WebRTC-Video-PreferTemporalSupportOnBaseLayer")),
       per_layer_pli_(SupportsPerLayerPictureLossIndication(format.parameters)) {
   RTC_DCHECK(primary_factory);
@@ -769,16 +737,11 @@ SimulcastEncoderAdapter::FetchOrCreateEncoderContext(
     cached_encoder_contexts_.erase(encoder_context_iter);
   } else {
     std::unique_ptr<VideoEncoder> primary_encoder =
-        env_.has_value()
-            ? primary_encoder_factory_->Create(*env_, video_format_)
-            : primary_encoder_factory_->CreateVideoEncoder(video_format_);
+        primary_encoder_factory_->Create(env_, video_format_);
 
     std::unique_ptr<VideoEncoder> fallback_encoder;
     if (fallback_encoder_factory_ != nullptr) {
-      fallback_encoder =
-          env_.has_value()
-              ? fallback_encoder_factory_->Create(*env_, video_format_)
-              : fallback_encoder_factory_->CreateVideoEncoder(video_format_);
+      fallback_encoder = fallback_encoder_factory_->Create(env_, video_format_);
     }
 
     std::unique_ptr<VideoEncoder> encoder;
