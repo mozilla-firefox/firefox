@@ -7,6 +7,8 @@ support-files = [
 
 ["browser_emptyResultSet.js"]
 
+["browser_fullscreenMenubarShift.js"]
+
 ["browser_overflow.js"]
 
 ["browser_removedSelectedElement.js"]

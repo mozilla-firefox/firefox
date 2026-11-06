@@ -533,8 +533,18 @@ var FullScreen = {
       gNavToolbox,
       document.getElementById("vertical-tabs"),
     ];
+    if (
+      !Services.prefs.getBoolPref(
+        "layout.css.anchor-positioning.follows-transforms.enabled"
+      )
+    ) {
+      let searchbar = document.getElementById("searchbar-new");
+      elementsToTranslate.push(gURLBar.panel, searchbar?.panel);
+    }
     for (let element of elementsToTranslate) {
-      element.style.translate = translate;
+      if (element) {
+        element.style.translate = translate;
+      }
     }
     this._currentToolbarShift = shiftSize;
   },
