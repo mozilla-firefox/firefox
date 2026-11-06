@@ -18,13 +18,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
 // GeolocationPositionError has no interface object, so we can't use that here.
 const POSITION_UNAVAILABLE = 2;
 
-ChromeUtils.defineLazyGetter(lazy, "log", () => {
-  let consoleOptions = {
+ChromeUtils.defineLazyGetter(lazy, "log", () =>
+  console.createInstance({
     maxLogLevelPref: "geo.provider.network.loglevel",
-    prefix: "NetworkGeolocationProvider",
-  };
-  return console.createInstance(consoleOptions);
-});
+    logModule: "NetworkGeolocationProvider",
+  })
+);
 
 // Registrable domains of the network geolocation services we report on
 // individually, mapped to their geolocation.network_provider Glean label.

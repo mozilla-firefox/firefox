@@ -58,7 +58,7 @@ const lazy = {};
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
   return console.createInstance({
     maxLogLevelPref: "toolkit.download.loglevel",
-    prefix: "Downloads",
+    logModule: "Downloads",
   });
 });
 ```

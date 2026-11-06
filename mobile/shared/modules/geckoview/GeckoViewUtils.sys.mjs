@@ -361,7 +361,7 @@ export var GeckoViewUtils = {
 
   /**
    * Like initLogging, but forwards to a ConsoleInstance named
-   * "GeckoView.<aTag>", whose prefix doubles as the MOZ_LOG module name, so
+   * "GeckoView.<aTag>", whose logModule names its MOZ_LOG module, so
    * about:logging can capture the messages along with their stack traces.
    * Interpolated values are handed to the console as-is rather than formatted
    * into the message, so they stay inspectable.

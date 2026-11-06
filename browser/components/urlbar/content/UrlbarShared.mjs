@@ -1896,7 +1896,7 @@ export const UrlbarShared = {
  * @returns {Console}
  */
 function createLoggerChrome(prefix, maxLogLevelPref) {
-  let logger = console.createInstance({ prefix, maxLogLevelPref });
+  let logger = console.createInstance({ logModule: prefix, maxLogLevelPref });
   // Casting from ConsoleInstance to Console. Note that it is technically not a
   // `Console` because it is missing the chrome-only property `createInstance`.
   return /** @type {Console} */ (/** @type {unknown} */ (logger));

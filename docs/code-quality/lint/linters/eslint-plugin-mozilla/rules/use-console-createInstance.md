@@ -13,5 +13,5 @@ Rejects usage of Console.sys.mjs or Log.sys.mjs, preferring use of
 ## Examples of correct code for this rule
 
 ```js
-console.createInstance({ prefix: "Foo" });
+console.createInstance({ logModule: "Foo" });
 ```
