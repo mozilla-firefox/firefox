@@ -26,13 +26,13 @@ use windows::{create_platform_specific_annotations, process_uptime};
 
 use anyhow::{Context, Result};
 use crash_helper_common::{
+    crash_annotations::{
+        should_include_annotation, type_of_annotation, CrashAnnotation, CrashAnnotationType,
+    },
     ApplicationInfo, AsRawProcessHandle, AsRawThreadHandle, BreakpadChar, BreakpadString,
     ExtraCrashData, GeckoChildId, Pid, ProcessHandle, RawProcessHandle, ThreadHandle,
-    crash_annotations::{
-        CrashAnnotation, CrashAnnotationType, should_include_annotation, type_of_annotation,
-    },
 };
-use mozannotation_server::{AnnotationData, CAnnotation, errors::AnnotationsRetrievalError};
+use mozannotation_server::{errors::AnnotationsRetrievalError, AnnotationData, CAnnotation};
 use num_traits::FromPrimitive;
 use std::{
     collections::HashMap,
@@ -146,7 +146,11 @@ impl CrashGenerator {
                 AsRawProcessHandle::as_raw_handle(target_process),
                 /* extra_data */ None,
                 &path,
-                if id == 0 { ProcessType::Parent } else { ProcessType::Child },
+                if id == 0 {
+                    ProcessType::Parent
+                } else {
+                    ProcessType::Child
+                },
             );
             Some(CrashReport::new(path.as_os_str(), &error))
         } else {
@@ -412,7 +416,10 @@ fn retrieve_annotations(
         return Ok(vec![]);
     }
 
-    Ok(mozannotation_server::retrieve_annotations(process, CrashAnnotation::Count as usize)?)
+    Ok(mozannotation_server::retrieve_annotations(
+        process,
+        CrashAnnotation::Count as usize,
+    )?)
 }
 
 /// Helper function to merge a vector of annotations retrieved from a process memory into
@@ -425,7 +432,6 @@ fn fold_annotations(
     mut merged: HashMap<u32, AnnotationData>,
     to_merge: Result<Vec<CAnnotation>>,
 ) -> HashMap<u32, AnnotationData> {
-
     let mut merge_annotation = |annotation: CAnnotation| {
         let _ = merged.insert(annotation.id, annotation.data);
     };
@@ -559,7 +565,10 @@ mod tests {
 
     #[test]
     fn fold_annotations_error() {
-        let merged = fold_annotations(HashMap::new(), None.context("MissingMainProcessAnnotations"));
+        let merged = fold_annotations(
+            HashMap::new(),
+            None.context("MissingMainProcessAnnotations"),
+        );
 
         assert_eq!(merged.len(), 1);
         assert_eq!(

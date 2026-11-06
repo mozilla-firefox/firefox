@@ -153,8 +153,7 @@ pub unsafe extern "C" fn crash_generator_logic_android(
     // On Android the main thread is used to respond to the intents so we
     // can't block it. Run the crash generation loop in a separate thread.
     let _ = std::thread::spawn(move || {
-        let listener = IPCListener::new(0)
-            .expect("IPCListener creation failed!");
+        let listener = IPCListener::new(0).expect("IPCListener creation failed!");
         // SAFETY: The `pipe` file descriptor passed in from the caller is
         // guaranteed to be valid.
         let connector = match unsafe { IPCConnector::from_raw_connector(pipe) } {
