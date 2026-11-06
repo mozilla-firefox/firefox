@@ -1570,7 +1570,8 @@ export class UrlbarView {
           includeHiddenExposures: true,
         });
       let canBeVisible =
-        newSpanCount <= this.#queryContext.maxResults && !seenMisplacedResult;
+        newSpanCount <= this.#queryContext.maxResultsActual &&
+        !seenMisplacedResult;
       if (result.isHiddenExposure) {
         if (canBeVisible) {
           this.controller.engagementEvent.addExposure(

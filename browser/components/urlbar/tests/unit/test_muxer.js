@@ -1098,3 +1098,99 @@ add_task(async function test_semantic_history_separate_group_ratio() {
   providersManager.unregisterProvider(semanticProvider);
   UrlbarPrefs.clear("suggest.semanticHistory.separateGroup");
 });
+
+/**
+ * Does a zero prefix query with history results and, optionally, 3 temporal
+ * search suggestions. The default of 15 history results is more than any max
+ * result count the tests expect, so the number of results is limited by
+ * `maxResultsActual` and not by the number of available results. Any number of
+ * temporal suggestions makes the muxer use `temporal.zeroPrefixMaxRichResults`.
+ * 3 matches the temporal row count of the 7:3:3 zero prefix layout.
+ *
+ * @param {object} options
+ * @param {boolean} options.temporal
+ *   Whether temporal search suggestions are included.
+ * @param {number} [options.historyCount]
+ *   The number of history results.
+ * @returns {Promise<UrlbarQueryContext>}
+ */
+async function doMaxResultsActualQuery({ temporal, historyCount = 15 }) {
+  let results = Array.from(
+    { length: historyCount },
+    (_, i) =>
+      new UrlbarResult({
+        type: UrlbarShared.RESULT_TYPE.URL,
+        source: UrlbarShared.RESULT_SOURCE.HISTORY,
+        payload: { url: `https://example.com/${i}`, title: "Page" },
+      })
+  );
+  if (temporal) {
+    for (let query of ["q1", "q2", "q3"]) {
+      results.push(
+        new UrlbarResult({
+          type: UrlbarShared.RESULT_TYPE.SEARCH,
+          source: UrlbarShared.RESULT_SOURCE.SEARCH,
+          group: UrlbarShared.RESULT_GROUP.TEMPORAL_SUGGESTION,
+          payload: {
+            engine: "Test",
+            suggestion: query,
+            lowerCaseSuggestion: query,
+            title: query,
+          },
+        })
+      );
+    }
+  }
+
+  let provider = registerBasicTestProvider(results);
+  let context = createContext("", { providers: [provider.name] });
+  let providersManager = ProvidersManager.getInstanceForSap("urlbar");
+  await providersManager.startQuery(
+    context,
+    UrlbarTestUtils.mockChildController().parentController
+  );
+  providersManager.unregisterProvider(provider);
+  return context;
+}
+
+// Without temporal suggestions, maxResultsActual is maxResults.
+add_task(async function test_maxResultsActual_noTemporalSuggestions() {
+  let context = await doMaxResultsActualQuery({ temporal: false });
+  Assert.equal(context.maxResultsActual, 10);
+  Assert.equal(context.results.length, 10);
+});
+
+// With temporal suggestions, temporal.zeroPrefixMaxRichResults is used.
+add_task(async function test_maxResultsActual_temporalSuggestions() {
+  let context = await doMaxResultsActualQuery({ temporal: true });
+  Assert.equal(context.maxResultsActual, 13);
+  Assert.equal(context.results.length, 13);
+});
+
+// maxResultsActual follows a modified temporal.zeroPrefixMaxRichResults.
+add_task(async function test_maxResultsActual_zeroPrefixMaxRichResults() {
+  UrlbarPrefs.set("temporal.zeroPrefixMaxRichResults", 8);
+  let context = await doMaxResultsActualQuery({ temporal: true });
+  Assert.equal(context.maxResultsActual, 8);
+  Assert.equal(context.results.length, 8);
+  UrlbarPrefs.clear("temporal.zeroPrefixMaxRichResults");
+});
+
+// A user-set maxRichResults takes precedence over temporal suggestions.
+add_task(async function test_maxResultsActual_userMaxRichResults() {
+  UrlbarPrefs.set("maxRichResults", 5);
+  let context = await doMaxResultsActualQuery({ temporal: true });
+  Assert.equal(context.maxResultsActual, 5);
+  Assert.equal(context.results.length, 5);
+  UrlbarPrefs.clear("maxRichResults");
+});
+
+// maxResultsActual is a max, so there can be fewer results than it.
+add_task(async function test_maxResultsActual_fewerResults() {
+  let context = await doMaxResultsActualQuery({
+    temporal: true,
+    historyCount: 5,
+  });
+  Assert.equal(context.maxResultsActual, 13);
+  Assert.equal(context.results.length, 8);
+});
