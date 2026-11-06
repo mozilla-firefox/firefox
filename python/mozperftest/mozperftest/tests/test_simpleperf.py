@@ -534,8 +534,9 @@ def test_local_simpleperf_symbolicate_failure(tmp_path):
         mock_cleanup.assert_called_once()
 
 
+@pytest.mark.parametrize("merge_succeeds", [True, False])
 @mock.patch("mozperftest.system.simpleperf.get_adb_device_or_emu", new=FakeDevice)
-def test_ci_simpleperf_symbolicate(tmp_path):
+def test_ci_simpleperf_symbolicate(tmp_path, merge_succeeds):
 
     mach_cmd, metadata, env = running_env(
         app="fenix", tests=[str(EXAMPLE_SHELL_TEST)], output=None
@@ -547,33 +548,50 @@ def test_ci_simpleperf_symbolicate(tmp_path):
         create_mock_symbolication_directories(tmp_path)
     )
 
-    # The tgz will extract to work_dir/unit_test/simpleperf/mock_perf-0.data
+    # The tgz will extract to work_dir/unit_test/<subdir>/mock_perf-0.data
     perf_dir = mock_work_dir_path / "unit_test" / "simpleperf"
+    combined_perf_dir = mock_work_dir_path / "unit_test" / "simpleperf-geckoprofiler"
 
-    # Mock profile files at the path where _import_perf_data will output them
-    # (work_dir / parent_folder, where parent_folder = "simpleperf")
-    profile_dir = mock_work_dir_path / "simpleperf"
-    profile_dir.mkdir(parents=True, exist_ok=True)
-    (profile_dir / "profile-0.json").write_text("mock-symbolicated-profile")
+    # Mock profile files at the paths where _import_perf_data will output them
+    # (work_dir / parent_folder)
+    for folder in ["simpleperf", "simpleperf-geckoprofiler"]:
+        profile_dir = mock_work_dir_path / folder
+        profile_dir.mkdir(parents=True, exist_ok=True)
+        (profile_dir / "profile-0.json").write_text("mock-symbolicated-profile")
+    unmerged_path = mock_work_dir_path / "simpleperf-geckoprofiler" / "unmerged-0.json"
+    unmerged_path.write_text("mock-unmerged-profile")
 
     # Mock executables
     samply_path = mock_fetch_path / "samply" / "samply"
+    node_path = mock_fetch_path / "node" / "bin" / "node"
+    profiler_edit_path = mock_fetch_path / "profiler-node-tools" / "profiler-edit.js"
 
     # Mock .zip file with a symbol file
     mock_sym_zip_file = mock_fetch_path / "target.crashreporter-symbols.zip"
     with zipfile.ZipFile(mock_sym_zip_file, "w") as mock_zip:
         mock_zip.writestr("libxul.so/ABCD1234/libxul.so.sym", "some_data")
 
-    # Mock tar file with a perf data file
+    # Mock tar file with a perf data file from a simpleperf-only run, and a
+    # perf data file and a Gecko markers profile from a combined run.
     mock_perf_data = output_dir / "unit_test.tgz"
     with tarfile.open(mock_perf_data, "w:gz") as tar:
         perf_path = tmp_path / "mock_perf-0.data"
         perf_path.write_text("mock-data")
+        markers_path = tmp_path / "gecko-markers-0.json"
+        markers_path.write_text("mock-markers")
         tar.add(perf_path, arcname="unit_test/simpleperf/mock_perf-0.data")
+        tar.add(
+            perf_path, arcname="unit_test/simpleperf-geckoprofiler/mock_perf-0.data"
+        )
+        tar.add(
+            markers_path,
+            arcname="unit_test/simpleperf-geckoprofiler/gecko-markers-0.json",
+        )
 
     # Set env and metadata
     profiler.env.set_arg("output", output_dir)
     profiler.test_name = "unit_test"
+    profiler.package_id = "org.mozilla.fenix"
 
     # Test symbolication in CI
     with mock.patch.dict(
@@ -587,7 +605,13 @@ def test_ci_simpleperf_symbolicate(tmp_path):
     ), mock.patch("tempfile.mkdtemp", return_value=str(mock_work_dir_path)), mock.patch(
         "shutil.rmtree"
     ) as mock_rmtree, mock.patch("subprocess.Popen") as mock_popen:
-        mock_popen.side_effect = [make_mock_process(context=True)]
+
+        def popen(cmd, **kwargs):
+            is_merge = str(cmd[1]) == str(profiler_edit_path)
+            failed = is_merge and not merge_succeeds
+            return make_mock_process(return_code=1 if failed else 0, context=True)
+
+        mock_popen.side_effect = popen
 
         # Test _symbolicate() via teardown()
         profiler.teardown()
@@ -605,19 +629,60 @@ def test_ci_simpleperf_symbolicate(tmp_path):
         # Verify proper .tgz extraction
         assert (perf_dir / "mock_perf-0.data").exists()
 
-        assert mock_popen.call_args_list == [
-            expected_samply_import(
-                samply_path,
-                perf_dir / "mock_perf-0.data",
-                symbol_dir,
-                mock_work_dir_path / "simpleperf" / "profile-0.json",
-            )
-        ]
+        expected_import = expected_samply_import(
+            samply_path,
+            perf_dir / "mock_perf-0.data",
+            symbol_dir,
+            mock_work_dir_path / "simpleperf" / "profile-0.json",
+        )
+        expected_combined_import = expected_samply_import(
+            samply_path,
+            combined_perf_dir / "mock_perf-0.data",
+            symbol_dir,
+            mock_work_dir_path / "simpleperf-geckoprofiler" / "unmerged-0.json",
+        )
+        expected_merge = call(
+            [
+                str(node_path),
+                str(profiler_edit_path),
+                "-i",
+                str(
+                    mock_work_dir_path / "simpleperf-geckoprofiler" / "unmerged-0.json"
+                ),
+                "--merge-markers-from",
+                str(combined_perf_dir / "gecko-markers-0.json"),
+                "--only-keep-processes-with-name-prefix",
+                "org.mozilla.fenix",
+                "-o",
+                str(mock_work_dir_path / "simpleperf-geckoprofiler" / "profile-0.json"),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+
+        calls = mock_popen.call_args_list
+        assert expected_import in calls
+        assert expected_combined_import in calls
+        assert expected_merge in calls
+        assert calls.index(expected_combined_import) < calls.index(expected_merge)
+        assert not unmerged_path.exists()
 
         # Verify exported symbolicated profiles
         output_zip = output_dir / "profile_unit_test.zip"
         with zipfile.ZipFile(output_zip) as zf:
-            assert zf.namelist() == ["simpleperf/profile-0.json"]
+            assert sorted(zf.namelist()) == [
+                "simpleperf-geckoprofiler/profile-0.json",
+                "simpleperf/profile-0.json",
+            ]
+            # If the merge fails, the unmerged profile is kept.
+            combined_profile = zf.read("simpleperf-geckoprofiler/profile-0.json")
+            assert combined_profile == (
+                b"mock-symbolicated-profile"
+                if merge_succeeds
+                else b"mock-unmerged-profile"
+            )
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ import pytest
 
 from mozperftest.system.geckoprofiler import (
     DEFAULT_GECKOPROFILER_OPTS,
+    MARKERS_ONLY_GECKOPROFILER_OPTS,
     GeckoProfiler,
     GeckoProfilerAlreadyActiveError,
     GeckoProfilerController,
@@ -341,6 +342,46 @@ def test_controller_stop_success(mock_run, tmp_path):
 
 @mock.patch("mozperftest.system.geckoprofiler.get_adb_device_or_emu", new=FakeDevice)
 @mock.patch("mozperftest.system.geckoprofiler.subprocess.run")
+@mock.patch("tempfile.NamedTemporaryFile")
+def test_controller_markers_only(mock_temp, mock_run, tmp_path):
+    """Test that the markers-only mode, used together with simpleperf, uses the
+    markers-only settings, and names the profile so that it gets merged into
+    the simpleperf profile."""
+    os.environ["MOZPERFTEST_GECKOPROFILE"] = "1"
+    GeckoProfilerController.set_package_id("org.mozilla.fenix")
+
+    mock_file = MagicMock()
+    mock_file.name = "/tmp/test_config"
+    mock_temp.return_value.__enter__.return_value = mock_file
+
+    controller = GeckoProfiler.get_controller(markers_only=True)
+    controller.start()
+
+    config_str = b"".join(
+        call_args[0][0] for call_args in mock_file.write.call_args_list
+    ).decode()
+    assert (
+        f"MOZ_PROFILER_STARTUP_FEATURES: {MARKERS_ONLY_GECKOPROFILER_OPTS['features']}"
+        in config_str
+    )
+    assert "MOZ_PROFILER_STARTUP_INTERVAL: 500" in config_str
+    assert "MOZ_PROFILER_STARTUP_NO_BASE: 1" in config_str
+
+    mock_run.side_effect = partial(mock_subprocess_run, b"{}", 0)
+    result = controller.stop(str(tmp_path), 2)
+
+    assert result == tmp_path / "gecko-markers-2.json"
+    assert result.exists()
+    assert (
+        "rm -f /data/local/tmp/org.mozilla.fenix-geckoview-config.yaml"
+        in controller.device.commands
+    )
+
+    os.environ.pop("MOZPERFTEST_GECKOPROFILE", None)
+
+
+@mock.patch("mozperftest.system.geckoprofiler.get_adb_device_or_emu", new=FakeDevice)
+@mock.patch("mozperftest.system.geckoprofiler.subprocess.run")
 def test_controller_stop_error(mock_run, tmp_path):
     """Test that GeckoProfilerController.stop() handles errors and resets state"""
     os.environ["MOZPERFTEST_GECKOPROFILE"] = "1"
@@ -363,6 +404,8 @@ def test_controller_stop_error(mock_run, tmp_path):
     assert controller.profiling_active is False
     # Verify None is returned on error
     assert result is None
+    # Verify the partial profile is removed
+    assert not (output_dir / f"profile-{index}.json").exists()
 
     os.environ.pop("MOZPERFTEST_GECKOPROFILE", None)
 

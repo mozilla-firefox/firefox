@@ -12,6 +12,7 @@ from pathlib import Path
 from mozbuild.nodeutil import find_node_executable
 
 from mozperftest.layers import Layer
+from mozperftest.system.geckoprofiler import GECKO_MARKERS_PROFILE_PREFIX
 from mozperftest.utils import (
     ON_TRY,
     archive_files,
@@ -147,13 +148,15 @@ class SimpleperfProfiler(Layer):
         "profiler-node-tools-path": {
             "type": str,
             "default": None,
-            "help": "Path to directory containing profiler-node-tools build.",
+            "help": "Path to directory containing profiler-node-tools build. "
+            "Needed for merging the markers of Gecko profiles from the same run.",
         },
     }
 
     def __init__(self, env, mach_cmd):
         super().__init__(env, mach_cmd)
         self.device = get_adb_device_or_emu()
+        self.package_id = None
 
     @staticmethod
     def is_enabled():
@@ -307,6 +310,10 @@ class SimpleperfProfiler(Layer):
         """Convert perf.data files into symbolicated profiles in the Firefox
         Profiler's processed profile format.
 
+        If the Gecko profiler ran at the same time, its markers-only profile is
+        next to the perf.data file. Its markers are merged into the profile,
+        and only the browser's processes are kept.
+
         :param perf_data list[pathlib.Path]: list of paths to perf.data files
         :param work_dir pathlib.Path: working directory for output files
         :return list[pathlib.Path]: Returns list of paths to .json profiles
@@ -323,6 +330,22 @@ class SimpleperfProfiler(Layer):
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / f"profile-{number}.json"
 
+            gecko_markers_path = (
+                file_path.parent / f"{GECKO_MARKERS_PROFILE_PREFIX}{number}.json"
+            )
+            merge_markers = gecko_markers_path.exists()
+            if merge_markers and self.profiler_node_tools_dir is None:
+                self.warning(
+                    "No profiler-node-tools directory provided, "
+                    f"not merging the markers from {gecko_markers_path}"
+                )
+                merge_markers = False
+            # The name of the unmerged profile mustn't match the profile-*.json
+            # pattern, which the geckoprofiler layer archives.
+            samply_output_path = (
+                output_dir / f"unmerged-{number}.json" if merge_markers else output_path
+            )
+
             returncode = self._run_and_log(
                 "samply",
                 [
@@ -336,12 +359,34 @@ class SimpleperfProfiler(Layer):
                     BREAKPAD_SYMBOL_SERVER,
                     "--save-only",
                     "-o",
-                    output_path,
+                    samply_output_path,
                 ],
             )
             if returncode != 0:
                 self.warning(f"samply import failed for {file_path}")
                 continue
+
+            if merge_markers:
+                cmd = [
+                    self.node_path,
+                    Path(self.profiler_node_tools_dir, "profiler-edit.js"),
+                    "-i",
+                    samply_output_path,
+                    "--merge-markers-from",
+                    gecko_markers_path,
+                ]
+                if self.package_id:
+                    cmd += ["--only-keep-processes-with-name-prefix", self.package_id]
+                cmd += ["-o", output_path]
+                returncode = self._run_and_log("profiler-edit", cmd)
+                if returncode == 0:
+                    samply_output_path.unlink()
+                else:
+                    self.warning(
+                        f"Failed to merge the markers into {output_path}, "
+                        "keeping the unmerged profile"
+                    )
+                    samply_output_path.replace(output_path)
 
             profiles.append(output_path)
 
@@ -371,7 +416,8 @@ class SimpleperfProfiler(Layer):
         locally, it assumes that samply is already
         installed on the system. Additionally, the local path to
         the directory containing Breakpad symbols must be provided via
-        command-line arguments for local symbolication.
+        command-line arguments for local symbolication, and the path to a
+        build of profiler-node-tools for merging the Gecko profiler markers.
         """
         work_dir = None
         try:
@@ -412,6 +458,7 @@ class SimpleperfProfiler(Layer):
         the start/stop controls are manually called through the ProfilerMediator.
         """
         self.test_name = metadata.script["name"]
+        self.package_id = getattr(metadata, "binary", None)
 
         metadata.add_extra_options(["simpleperf"])
         return metadata
