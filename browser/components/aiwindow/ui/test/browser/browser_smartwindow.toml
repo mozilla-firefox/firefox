@@ -195,9 +195,6 @@ skip-if = [
 ["browser_smartwindow_shortcut.js"]
 
 ["browser_smartwindow_sidebar.js"]
-skip-if = [
-  "true", # Bug 2057925
-]
 
 ["browser_smartwindow_sidebar_auto_open_pref_prompt.js"]
 

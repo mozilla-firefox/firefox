@@ -19,6 +19,7 @@ const { gDevTools } = devtoolsRequire(
 registerCleanupFunction(() => {
   for (const pref of [
     "browser.smartwindow.lastSmartWindowUsageTime",
+    "browser.smartwindow.lastLLMTelemetryRunTime",
     "browser.smartwindow.sidebar.emptyCloseCount",
     "places.semanticHistory.initialized",
     "devtools.everOpened",
