@@ -173,6 +173,7 @@
 #include "mozilla/PoisonIOInterposer.h"
 #include "mozilla/ProfilerLabels.h"
 #include "mozilla/ProfilerMarkers.h"
+#include "mozilla/Queue.h"
 #include "mozilla/SegmentedVector.h"
 #include "mozilla/ThreadLocal.h"
 #include "mozilla/UniquePtr.h"
@@ -181,7 +182,6 @@
 #include "nsCycleCollectionNoteRootCallback.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsCycleCollector.h"
-#include "nsDeque.h"
 #include "nsDumpUtils.h"
 #include "nsExceptionHandler.h"
 #include "nsIConsoleService.h"
@@ -1191,6 +1191,8 @@ enum ccIsManual { CCIsNotManual = false, CCIsManual = true };
 
 class JSPurpleBuffer;
 
+using FloodBlackQueue = Queue<PtrInfo*, 1024>;
+
 class nsCycleCollector : public nsIMemoryReporter {
  public:
   NS_DECL_ISUPPORTS
@@ -1312,10 +1314,10 @@ class nsCycleCollector : public nsIMemoryReporter {
                        nsICycleCollectorListener* aManualListener);
   void MarkRoots(SliceBudget& aBudget);
   void ScanRoots(bool aFullySynchGraphBuild);
-  void ScanIncrementalRoots();
+  void ScanIncrementalRoots(FloodBlackQueue& aQueue);
   void ScanWhiteNodes(bool aFullySynchGraphBuild);
-  void ScanBlackNodes();
-  void ScanWeakMaps();
+  void ScanBlackNodes(FloodBlackQueue& aQueue);
+  void ScanWeakMaps(FloodBlackQueue& aQueue);
 
   // returns whether anything was collected
   bool CollectWhite();
@@ -2956,9 +2958,12 @@ MOZ_NEVER_INLINE void nsCycleCollector::MarkRoots(SliceBudget& aBudget) {
 // Bacon & Rajan's |ScanRoots| routine.
 ////////////////////////////////////////////////////////////////////////
 
-MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
+// aQueue must be empty. It is passed in so that the storage of its first page
+// can be reused across calls.
+MOZ_NEVER_INLINE static void FloodBlackNode(FloodBlackQueue& aQueue,
+                                            uint32_t& aWhiteNodeCount,
                                             PtrInfo* aPi) {
-  nsDeque<PtrInfo> queue;
+  MOZ_ASSERT(aQueue.IsEmpty());
   MOZ_RELEASE_ASSERT(aPi);
 
   // Nodes are marked black when they are pushed, so each node is pushed at
@@ -2971,15 +2976,15 @@ MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
       --aWhiteNodeCount;
     }
     aNode->mColor = black;
-    queue.Push(aNode);
+    aQueue.Push(std::move(aNode));
   };
 
   markBlack(aPi);
 
   // Use a queue to match the breadth-first traversal used when we
   // built the graph, for hopefully-better locality.
-  while (queue.GetSize() > 0) {
-    PtrInfo* pi = queue.PopFront();
+  while (!aQueue.IsEmpty()) {
+    PtrInfo* pi = aQueue.Pop();
     for (EdgePool::Iterator child = pi->FirstChild(),
                             child_end = pi->LastChild();
          child != child_end; ++child) {
@@ -2995,7 +3000,7 @@ MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
 
 // Iterate over the WeakMaps.  If we mark anything while iterating
 // over the WeakMaps, we must iterate over all of the WeakMaps again.
-void nsCycleCollector::ScanWeakMaps() {
+void nsCycleCollector::ScanWeakMaps(FloodBlackQueue& aQueue) {
   bool anyChanged;
   do {
     anyChanged = false;
@@ -3014,12 +3019,12 @@ void nsCycleCollector::ScanWeakMaps() {
       MOZ_ASSERT(vColor != grey, "Uncolored weak map value");
 
       if (mColor == black && kColor != black && kdColor == black) {
-        FloodBlackNode(mWhiteNodeCount, wm->mKey);
+        FloodBlackNode(aQueue, mWhiteNodeCount, wm->mKey);
         anyChanged = true;
       }
 
       if (mColor == black && kColor == black && vColor != black) {
-        FloodBlackNode(mWhiteNodeCount, wm->mVal);
+        FloodBlackNode(aQueue, mWhiteNodeCount, wm->mVal);
         anyChanged = true;
       }
     }
@@ -3030,8 +3035,8 @@ void nsCycleCollector::ScanWeakMaps() {
 class PurpleScanBlackVisitor {
  public:
   PurpleScanBlackVisitor(CCGraph& aGraph, nsCycleCollectorLogger* aLogger,
-                         uint32_t& aCount)
-      : mGraph(aGraph), mLogger(aLogger), mCount(aCount) {}
+                         FloodBlackQueue& aQueue, uint32_t& aCount)
+      : mGraph(aGraph), mLogger(aLogger), mQueue(aQueue), mCount(aCount) {}
 
   void Visit(const nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject,
@@ -3062,19 +3067,20 @@ class PurpleScanBlackVisitor {
     if (pi->mColor == black) {
       return;
     }
-    FloodBlackNode(mCount, pi);
+    FloodBlackNode(mQueue, mCount, pi);
   }
 
  private:
   CCGraph& mGraph;
   RefPtr<nsCycleCollectorLogger> mLogger;
+  FloodBlackQueue& mQueue;
   uint32_t& mCount;
 };
 
 // Objects that have been stored somewhere since the start of incremental graph
 // building must be treated as live for this cycle collection, because we may
 // not have accurate information about who holds references to them.
-void nsCycleCollector::ScanIncrementalRoots() {
+void nsCycleCollector::ScanIncrementalRoots(FloodBlackQueue& aQueue) {
   TimeLog timeLog;
 
   // Reference counted objects:
@@ -3086,7 +3092,7 @@ void nsCycleCollector::ScanIncrementalRoots() {
   // live during the current CC. We don't remove anything from the purple
   // buffer here, so these objects will be suspected and freed in the next CC
   // if they are garbage.
-  PurpleScanBlackVisitor purpleScanBlackVisitor(mGraph, mLogger,
+  PurpleScanBlackVisitor purpleScanBlackVisitor(mGraph, mLogger, aQueue,
                                                 mWhiteNodeCount);
   mPurpleBuf.VisitEntriesReentrant(purpleScanBlackVisitor);
   timeLog.Checkpoint("ScanIncrementalRoots::fix purple");
@@ -3151,14 +3157,15 @@ void nsCycleCollector::ScanIncrementalRoots() {
     // At this point, pi must be an incremental root.
 
     // If there's a listener, tell it about this root. We don't bother with the
-    // optimization of skipping the Walk() if pi is black: it will just return
-    // without doing anything and there's no need to make this case faster.
+    // optimization of skipping the FloodBlackNode() if pi is black: it will
+    // just return without doing anything and there's no need to make this case
+    // faster.
     if (MOZ_UNLIKELY(hasLogger) && pi->mPointer) {
       // Dead objects aren't logged. See bug 1031370.
       mLogger->NoteIncrementalRoot((uint64_t)pi->mPointer);
     }
 
-    FloodBlackNode(mWhiteNodeCount, pi);
+    FloodBlackNode(aQueue, mWhiteNodeCount, pi);
   }
 
   timeLog.Checkpoint("ScanIncrementalRoots::fix nodes");
@@ -3207,12 +3214,12 @@ void nsCycleCollector::ScanWhiteNodes(bool aFullySynchGraphBuild) {
 // so mark them and their children black. Any nodes that are black must have
 // already had their children marked black, so there's no need to look at them
 // again. This pass may turn some white nodes to black.
-void nsCycleCollector::ScanBlackNodes() {
+void nsCycleCollector::ScanBlackNodes(FloodBlackQueue& aQueue) {
   NodePool::Enumerator nodeEnum(mGraph.mNodes);
   while (!nodeEnum.IsDone()) {
     PtrInfo* pi = nodeEnum.GetNext();
     if (pi->mColor == grey) {
-      FloodBlackNode(mWhiteNodeCount, pi);
+      FloodBlackNode(aQueue, mWhiteNodeCount, pi);
     }
   }
 }
@@ -3227,19 +3234,21 @@ void nsCycleCollector::ScanRoots(bool aFullySynchGraphBuild) {
 
   JS::AutoEnterCycleCollection autocc(Runtime()->Runtime());
 
+  FloodBlackQueue floodQueue;
+
   if (!aFullySynchGraphBuild) {
-    ScanIncrementalRoots();
+    ScanIncrementalRoots(floodQueue);
   }
 
   TimeLog timeLog;
   ScanWhiteNodes(aFullySynchGraphBuild);
   timeLog.Checkpoint("ScanRoots::ScanWhiteNodes");
 
-  ScanBlackNodes();
+  ScanBlackNodes(floodQueue);
   timeLog.Checkpoint("ScanRoots::ScanBlackNodes");
 
   // Scanning weak maps must be done last.
-  ScanWeakMaps();
+  ScanWeakMaps(floodQueue);
   timeLog.Checkpoint("ScanRoots::ScanWeakMaps");
 
   if (mLogger) {
