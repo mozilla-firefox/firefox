@@ -2,8 +2,9 @@
 name: documentation
 description: Use this skill when working with Firefox documentation,
   including building documentation with `./mach doc`,
-  fixing Sphinx build errors or warnings, modifying existing
-  documentation, or adding new docs.
+  fixing Sphinx build errors or warnings, modifying or adding
+  documentation, or editing JSDoc, including type annotations, in a
+  file that feeds a generated API page (`js_source_paths`, sphinx-js).
 ---
 
 # Firefox documentation
