@@ -39,6 +39,12 @@ const ACCEPTED = [
   "<span title=\"a<b\">x</span><span title='</span>'>y</span>",
   "<div class=\"abcdefghijklmnopqrstuvwxyz\" title=\"x<em>y</em>z\">text that spans strides</div>",
   "<label for=x>l</label><input id=x>",
+  "<!-- c -->x",
+  "<!---->x<!-- a --->y<!-- -- -->z<!--<svg>&-->",
+  "<ul><!--x--><li>1</li><!---->\n<li>2</li></ul>",
+  "<?lit$1088786$>x<div><?lit$2$></div>",
+  "<? x>a<?$x>b<?1>c<?-a>d<?a.b>e<?a-b_1:c?>f",
+  "<span title=\"<!--\"><b>x</b><!---->-->y</span>",
   "<div class$lit$=\"a\" data-x:y=1 _a=2 a.b=3 \u00e9=4 xml:lang=de>x</div>",
   "<img src=\"x.png\">",
   "<img src=x.png>",
@@ -84,8 +90,24 @@ const REJECTED = [
   ...TEXT_WITHOUT_MARKUP,
   "a &amp; b",
   "<div title=\"&lt;\">x</div>",
-  "<!-- c -->x",
   "<div a\"b=1>x</div>",
+  "<!-->x",
+  "<!--->x",
+  "<!--a--!>b",
+  "<!-- a --! b -->x",
+  "<!--unclosed",
+  "<!-- a\r\nb -->",
+  "<!-- \0 -->",
+  "<!DOCTYPE html>x",
+  "<![CDATA[x]]>",
+  "<?x",
+  "<?pi>x",
+  "<?pi data?>x",
+  "<?_a b>x",
+  "<?a-b?>x",
+  "<?a\tb>x",
+  "<?xml version=\"1.0\"?>x",
+  "<?xml-stylesheet href=\"a\"?>x",
   "<div a<b=1>x</div>",
   "<div a\0b=1>x</div>",
   "<div a=b`c>x</div>",
@@ -147,6 +169,8 @@ const REJECTED = [
   "<dl><dt>t</dt><dd>d</dd></dl>",
   "<ruby>a<rt>b</rt></ruby>",
   "<output>o</output>",
+  "<?a\rb>x",
+  "<?a\0b>x",
 ];
 
 // The fast path scans text 16 code units at a time, so put characters it has
@@ -154,7 +178,7 @@ const REJECTED = [
 // every position around the stride boundaries.
 const TEXT = "abcdefghijklmnopqrstuvwxyz0123456789ABCD";
 for (const [insert, accepted] of [
-  ["&amp;", false], ["\r", false], ["\0", false], ["<b>x</b>", true],
+  ["&amp;", false], ["\r", false], ["\0", false], ["<b>x</b>", true], ["<!--c-->", true],
   ["</span>", false], ["ļ", true], ["Ħ", true], ["č", true], ["Ā", true],
   ["\u{1F600}", true],
 ]) {
