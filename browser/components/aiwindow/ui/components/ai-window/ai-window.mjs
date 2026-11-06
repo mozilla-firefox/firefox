@@ -1338,6 +1338,7 @@ export class AIWindow extends MozLitElement {
     if (
       selectedTab !== this.#getCurrentTab() ||
       !this.isConnected ||
+      this.isGenerating ||
       this.#conversation?.messageCount
     ) {
       return;
@@ -1404,7 +1405,7 @@ export class AIWindow extends MozLitElement {
               2,
               memoriesEnabled,
               this.conversationId,
-              this.#starterPromptsAbortController.signal
+              abortController.signal
             )
             .catch(e => {
               lazy.log.error(
@@ -1520,7 +1521,9 @@ export class AIWindow extends MozLitElement {
       this.resumeCardsLoading = false;
     }
 
-    this.#starterPromptsAbortController = null;
+    if (this.#starterPromptsAbortController === abortController) {
+      this.#starterPromptsAbortController = null;
+    }
     if (!rendersCardsIndependently && !abortController.signal.aborted) {
       this.#conversation.transientStarters = starters;
       this.#renderStarterPrompts(starters);
