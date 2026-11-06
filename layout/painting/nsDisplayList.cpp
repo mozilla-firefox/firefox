@@ -5638,17 +5638,52 @@ void nsDisplayOwnLayer::WriteDebugInfo(std::stringstream& aStream) {
                  .get();
 }
 
+static ViewTransition* SubdocumentViewTransition(nsIFrame* aSubDocFrame) {
+  PresShell* ps =
+      static_cast<nsSubDocumentFrame*>(aSubDocFrame)->GetSubdocumentPresShell();
+  return ps ? ps->GetDocument()->GetActiveViewTransition() : nullptr;
+}
+
 WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
     wr::DisplayListBuilder& aBuilder, wr::IpcResourceUpdateQueue& aResources,
     const StackingContextHelper& aSc, RenderRootStateManager* aManager,
     nsDisplayListBuilder* aDisplayListBuilder) {
   Maybe<wr::SnapshotInfo> si;
   nsPresContext* pc = mFrame->PresContext();
+  if (mKind == Kind::Subdocument) {
+    ViewTransition* vt = SubdocumentViewTransition(mFrame);
+    MOZ_ASSERT(vt && vt->IsCapturingSubdocumentSnapshot());
+    // Only what was built is captured, so don't make the snapshot bigger.
+    const nsRect area =
+        vt->ClipSubdocumentSnapshotRect(GetBuildingRect() - ToReferenceFrame());
+    const wr::ImageKey* key =
+        !area.IsEmpty()
+            ? vt->GetOrCreateSubdocumentSnapshotKey(aManager, aResources)
+            : nullptr;
+    wr::StackingContextParams params;
+    params.clip =
+        wr::WrStackingContextClip::ClipChain(aBuilder.CurrentClipChainId());
+    if (key) {
+      si.emplace(wr::SnapshotInfo{
+          .key = wr::SnapshotImageKey{*key},
+          .area = wr::ToLayoutRect(LayoutDeviceRect::FromAppUnits(
+              area + ToReferenceFrame(), pc->AppUnitsPerDevPixel())),
+          .detached = true,
+      });
+      params.snapshot = si.ptr();
+    }
+    StackingContextHelper sc(aSc, GetActiveScrolledRoot(), mFrame, this,
+                             aBuilder, params);
+    return nsDisplayWrapList::CreateWebRenderCommands(
+        aBuilder, aResources, sc, aManager, aDisplayListBuilder);
+  }
+
+  const bool isRoot = mKind == Kind::Root;
   nsIFrame* capturedFrame =
-      mIsRoot ? pc->FrameConstructor()->GetRootElementStyleFrame()
-              : nsLayoutUtils::FirstContinuationOrIBSplitSibling(mFrame);
+      isRoot ? pc->FrameConstructor()->GetRootElementStyleFrame()
+             : nsLayoutUtils::FirstContinuationOrIBSplitSibling(mFrame);
   auto captureRect =
-      ViewTransition::CapturedInkOverflowRectForFrame(capturedFrame, mIsRoot);
+      ViewTransition::CapturedInkOverflowRectForFrame(capturedFrame, isRoot);
   auto* vt = pc->Document()->GetActiveViewTransition();
   auto key = [&]() -> Maybe<wr::SnapshotImageKey> {
     if (NS_WARN_IF(!vt)) {
@@ -5724,8 +5759,8 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
     // The capture rect is relative to the first fragment of the captured
     // element, but we might be a merged item for another fragment.
     const nsPoint offsetToCapturedFrame =
-        mIsRoot || capturedFrame == mFrame ? nsPoint()
-                                           : capturedFrame->GetOffsetTo(mFrame);
+        isRoot || capturedFrame == mFrame ? nsPoint()
+                                          : capturedFrame->GetOffsetTo(mFrame);
 
     si.emplace(wr::SnapshotInfo{
         .key = *key,
@@ -5740,6 +5775,33 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
                            params, referenceFrame);
   return nsDisplayWrapList::CreateWebRenderCommands(
       aBuilder, aResources, sc, aManager, aDisplayListBuilder);
+}
+
+nsDisplayViewTransitionSubdocumentSnapshot::
+    nsDisplayViewTransitionSubdocumentSnapshot(nsDisplayListBuilder* aBuilder,
+                                               nsSubDocumentFrame* aFrame,
+                                               const nsRect& aRect)
+    : nsPaintedDisplayItem(aBuilder, aFrame), mRect(aRect) {
+  MOZ_COUNT_CTOR(nsDisplayViewTransitionSubdocumentSnapshot);
+}
+
+WebRenderCommandsResult
+nsDisplayViewTransitionSubdocumentSnapshot::CreateWebRenderCommands(
+    wr::DisplayListBuilder& aBuilder, wr::IpcResourceUpdateQueue& aResources,
+    const StackingContextHelper& aSc, RenderRootStateManager* aManager,
+    nsDisplayListBuilder* aDisplayListBuilder) {
+  ViewTransition* vt = SubdocumentViewTransition(mFrame);
+  const wr::ImageKey* key = vt ? vt->ReadSubdocumentSnapshotKey() : nullptr;
+  if (!key) {
+    return Ok();
+  }
+  const auto rect = wr::ToLayoutRect(LayoutDeviceRect::FromAppUnits(
+      mRect + ToReferenceFrame(),
+      mFrame->PresContext()->AppUnitsPerDevPixel()));
+  aBuilder.PushImage(rect, rect, !BackfaceIsHidden(),
+                     /* aForceAntiAliasing = */ false, wr::ImageRendering::Auto,
+                     *key);
+  return Ok();
 }
 
 nsDisplaySubDocument::nsDisplaySubDocument(nsDisplayListBuilder* aBuilder,

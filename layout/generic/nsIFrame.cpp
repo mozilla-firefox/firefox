@@ -3910,7 +3910,8 @@ void nsIFrame::BuildDisplayListForStackingContext(
   // like a separator between the VTCapture the outside, if it is transformed.
   if (capturedByViewTransition) {
     resultList.AppendNewToTop<nsDisplayViewTransitionCapture>(
-        aBuilder, this, &resultList, nullptr, false);
+        aBuilder, this, &resultList, nullptr,
+        nsDisplayViewTransitionCapture::Kind::Element);
     createdContainer = true;
     MarkAsIsolated();
     // We don't want the capture to be clipped, so we do this _after_ building

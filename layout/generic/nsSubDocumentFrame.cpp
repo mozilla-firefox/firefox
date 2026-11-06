@@ -20,6 +20,7 @@
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/ImageDocument.h"
 #include "mozilla/dom/RemoteBrowser.h"
+#include "mozilla/dom/ViewTransition.h"
 #include "mozilla/layers/RenderRootStateManager.h"
 #include "mozilla/layers/StackingContextHelper.h"  // for StackingContextHelper
 #include "mozilla/layers/WebRenderScrollData.h"
@@ -393,6 +394,19 @@ void nsSubDocumentFrame::BuildDisplayList(nsDisplayListBuilder* aBuilder,
     }
   }
 
+  Document* subdoc = presShell->GetDocument();
+  ViewTransition* vt = subdoc->GetActiveViewTransition();
+  if (vt && aBuilder->IsPaintingToWindow() &&
+      subdoc->RenderingSuppressedForViewTransitions() &&
+      vt->IsHoldingSubdocument()) {
+    DisplayListClipState::AutoSaveRestore clipState(aBuilder);
+    clipState.ClipContainingBlockDescendantsToContentBox(aBuilder, this);
+    aLists.Content()
+        ->AppendNewToTop<nsDisplayViewTransitionSubdocumentSnapshot>(
+            aBuilder, this, vt->SubdocumentSnapshotRect());
+    return;
+  }
+
   nsIFrame* subdocRootFrame = presShell->GetRootFrame();
 
   nsPresContext* presContext = presShell->GetPresContext();
@@ -517,6 +531,17 @@ void nsSubDocumentFrame::BuildDisplayList(nsDisplayListBuilder* aBuilder,
   if (layerItem) {
     childItems.AppendToTop(layerItem);
     layerItem->SetShouldFlattenAway(!needsOwnLayer);
+  }
+
+  if (vt && vt->IsCapturingSubdocumentSnapshot() &&
+      aBuilder->IsPaintingToWindow()) {
+    // The iframe element can also be captured by a transition in its own
+    // document, which wraps this frame in another
+    // nsDisplayViewTransitionCapture, so this one needs a different index.
+    childItems.AppendNewToTopWithIndex<nsDisplayViewTransitionCapture>(
+        aBuilder, this, /* aIndex = */ 1, &childItems,
+        aBuilder->CurrentActiveScrolledRoot(),
+        nsDisplayViewTransitionCapture::Kind::Subdocument);
   }
 
   if (aBuilder->IsForFrameVisibility()) {

@@ -5602,30 +5602,48 @@ class nsDisplayStickyPosition final : public nsDisplayOwnLayer {
 
 class nsDisplayViewTransitionCapture final : public nsDisplayOwnLayer {
  public:
+  enum class Kind : uint8_t {
+    // An element with a view-transition-name, other than the document element.
+    Element,
+    // The document element, whose capture covers the snapshot containing
+    // block. It's built by the root scroll frame.
+    Root,
+    // Unlike the other two, not one of the transition's captures: the contents
+    // of an in-process subdocument, captured from its nsSubDocumentFrame in a
+    // paint of its own, so that the embedder can paint the image in place of
+    // the subdocument while its rendering is suppressed. See
+    // ViewTransition::CaptureSubdocumentSnapshotIfNeeded.
+    Subdocument,
+  };
+
   nsDisplayViewTransitionCapture(nsDisplayListBuilder* aBuilder,
                                  nsIFrame* aFrame, nsDisplayList* aList,
-                                 const ActiveScrolledRoot* aASR, bool aIsRoot)
+                                 const ActiveScrolledRoot* aASR, Kind aKind)
       : nsDisplayOwnLayer(aBuilder, aFrame, aList, aASR,
                           ContainerASRType::Constant),
-        mIsRoot(aIsRoot) {
+        mKind(aKind) {
     MOZ_COUNT_CTOR(nsDisplayViewTransitionCapture);
-    // aASR should always be null so ContainerASRType::Constant is correct.
-    MOZ_ASSERT(aASR == nullptr);
+    // aASR is null for element and root captures, so ContainerASRType::Constant
+    // is correct. A subdocument capture uses the ASR its frame is in, which is
+    // correct too since nothing in a subdocument can have an ASR outside it.
+    MOZ_ASSERT(aASR == nullptr || aKind == Kind::Subdocument);
   }
 
   nsDisplayViewTransitionCapture(nsDisplayListBuilder* aBuilder,
                                  const nsDisplayViewTransitionCapture& aOther)
-      : nsDisplayOwnLayer(aBuilder, aOther), mIsRoot(aOther.mIsRoot) {
+      : nsDisplayOwnLayer(aBuilder, aOther), mKind(aOther.mKind) {
     MOZ_COUNT_CTOR(nsDisplayViewTransitionCapture);
   }
 
   MOZ_COUNTED_DTOR_FINAL(nsDisplayViewTransitionCapture)
   NS_DISPLAY_DECL_NAME("VTCapture", TYPE_VT_CAPTURE)
 
+  Kind GetKind() const { return mKind; }
+
   // Fragments of the same captured inline get merged into a single capture.
   bool CanMerge(const nsDisplayItem* aItem) const override {
-    return !mIsRoot && HasDifferentFrame(aItem) && HasSameTypeAndClip(aItem) &&
-           HasSameContent(aItem);
+    return mKind == Kind::Element && HasDifferentFrame(aItem) &&
+           HasSameTypeAndClip(aItem) && HasSameContent(aItem);
   }
 
   void Paint(nsDisplayListBuilder* aBuilder, gfxContext* aCtx) override {
@@ -5641,7 +5659,40 @@ class nsDisplayViewTransitionCapture final : public nsDisplayOwnLayer {
 
  private:
   NS_DISPLAY_ALLOW_CLONING()
-  bool mIsRoot = false;
+  Kind mKind = Kind::Element;
+};
+
+/**
+ * Paints the snapshot of an in-process subdocument in place of the
+ * subdocument, while the subdocument's rendering is suppressed for a view
+ * transition. Only built when painting with WebRender.
+ */
+class nsDisplayViewTransitionSubdocumentSnapshot final
+    : public nsPaintedDisplayItem {
+ public:
+  // aRect is relative to aFrame.
+  nsDisplayViewTransitionSubdocumentSnapshot(nsDisplayListBuilder* aBuilder,
+                                             nsSubDocumentFrame* aFrame,
+                                             const nsRect& aRect);
+
+  MOZ_COUNTED_DTOR_FINAL(nsDisplayViewTransitionSubdocumentSnapshot)
+  NS_DISPLAY_DECL_NAME("VTSubdocumentSnapshot", TYPE_VT_SUBDOCUMENT_SNAPSHOT)
+
+  nsRect GetBounds(nsDisplayListBuilder* aBuilder, bool* aSnap) const override {
+    *aSnap = false;
+    return mRect + ToReferenceFrame();
+  }
+
+  void Paint(nsDisplayListBuilder* aBuilder, gfxContext* aCtx) override {}
+
+  WebRenderCommandsResult CreateWebRenderCommands(
+      wr::DisplayListBuilder& aBuilder, wr::IpcResourceUpdateQueue& aResources,
+      const StackingContextHelper& aSc,
+      layers::RenderRootStateManager* aManager,
+      nsDisplayListBuilder* aDisplayListBuilder) override;
+
+ private:
+  nsRect mRect;
 };
 
 class nsDisplayFixedPosition : public nsDisplayOwnLayer {

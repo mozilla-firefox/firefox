@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<title>View transitions: reference for an iframe that was offscreen when its old state was captured</title>
+<script src="/common/reftest-wait.js"></script>
+<style>
+  body {
+    margin: 0;
+    background: white;
+  }
+  #spacer {
+    height: 10000px;
+  }
+  #box {
+    width: 300px;
+    height: 200px;
+    border: 5px solid black;
+  }
+</style>
+<div id="spacer"></div>
+<div id="box"></div>
+<script>
+onload = () => {
+  window.scrollTo(0, box.offsetTop);
+  takeScreenshot();
+};
+</script>
+</html>

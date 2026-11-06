@@ -655,7 +655,9 @@ class MergeState {
       nsDisplayItem* aItem, const Maybe<OldListIndex>& aOldIndex,
       Span<const MergedListIndex> aDirectPredecessors,
       const Maybe<MergedListIndex>& aExtraDirectPredecessor) {
-    if (aItem->GetType() != DisplayItemType::TYPE_VT_CAPTURE) {
+    if (aItem->GetType() != DisplayItemType::TYPE_VT_CAPTURE ||
+        static_cast<nsDisplayViewTransitionCapture*>(aItem)->GetKind() ==
+            nsDisplayViewTransitionCapture::Kind::Subdocument) {
       UpdateContainerASR(aItem);
     }
     aItem->NotifyUsed(mBuilder->Builder());
