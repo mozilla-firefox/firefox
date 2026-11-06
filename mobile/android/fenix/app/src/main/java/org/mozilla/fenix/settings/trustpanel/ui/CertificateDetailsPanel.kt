@@ -5,6 +5,7 @@
 package org.mozilla.fenix.settings.trustpanel.ui
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,12 +20,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
@@ -33,11 +37,19 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.MenuScaffold
 import org.mozilla.fenix.theme.FirefoxTheme
 
+private const val DARK_BACKGROUND_LUMINANCE = 0.5f
+
+// The EU trust mark must be displayed at least 64 pixels wide and 85 pixels high, as required by Commission
+// Implementing Regulation (EU) 2015/806. With the trust mark's aspect ratio, this width gives a height of about 94dp.
+private val EU_TRUST_MARK_WIDTH = 64.dp
+
 /**
  * Sub-page of the Trust Panel that shows the certificate details of the current website.
  *
  * @param url The URL of the current website.
  * @param icon The favicon of the current website, or null to fall back to a generated icon.
+ * @param isQwac Whether the certificate is a Qualified Website Authentication Certificate (QWAC), in which case the
+ *   QWAC statement and the EU trust mark are shown.
  * @param issuedTo Slot for the details of who the certificate was issued to.
  * @param verifiedBy Slot for the details of who verified the certificate.
  */
@@ -45,6 +57,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
 internal fun CertificateDetailsPanel(
     url: String,
     icon: Bitmap?,
+    isQwac: Boolean,
     issuedTo: @Composable () -> Unit,
     verifiedBy: @Composable () -> Unit,
 ) {
@@ -74,9 +87,44 @@ internal fun CertificateDetailsPanel(
             verticalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static200),
         ) {
             issuedTo()
-            verifiedBy()
+
+            Row(verticalAlignment = Alignment.Bottom) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static200),
+                ) {
+                    verifiedBy()
+
+                    if (isQwac) {
+                        Text(
+                            text = stringResource(R.string.connection_security_panel_qualified_certificate),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = FirefoxTheme.typography.body2,
+                        )
+                    }
+                }
+
+                if (isQwac) {
+                    Spacer(modifier = Modifier.width(FirefoxTheme.layout.space.static200))
+
+                    EuTrustMark()
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun EuTrustMark() {
+    // The colors of the EU trust mark must not be altered, so the inverted asset is used on dark backgrounds instead
+    // of tinting it.
+    val isDarkBackground = MaterialTheme.colorScheme.surfaceBright.luminance() < DARK_BACKGROUND_LUMINANCE
+    Image(
+        painter =
+            painterResource(if (isDarkBackground) R.drawable.eu_trust_mark_inverted else R.drawable.eu_trust_mark),
+        contentDescription = stringResource(R.string.certificate_details_panel_eu_trust_mark_content_description),
+        modifier = Modifier.width(EU_TRUST_MARK_WIDTH),
+    )
 }
 
 @Composable
@@ -109,11 +157,15 @@ private fun CertificateDetailsHeader(
 }
 
 @Composable
-private fun CertificateDetailsPanelPreviewContent(url: String = "https://www.theguardian.com") {
+private fun CertificateDetailsPanelPreviewContent(
+    url: String = "https://www.theguardian.com",
+    isQwac: Boolean = true,
+) {
     Column(modifier = Modifier.background(color = MaterialTheme.colorScheme.surface)) {
         CertificateDetailsPanel(
             url = url,
             icon = null,
+            isQwac = isQwac,
             issuedTo = {
                 Column {
                     Text(
@@ -150,6 +202,12 @@ private fun CertificateDetailsPanelPreviewContent(url: String = "https://www.the
 @Composable
 private fun CertificateDetailsPanelPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
     FirefoxTheme(theme) { CertificateDetailsPanelPreviewContent() }
+}
+
+@Preview
+@Composable
+private fun CertificateDetailsPanelNotQwacPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
+    FirefoxTheme(theme) { CertificateDetailsPanelPreviewContent(isQwac = false) }
 }
 
 @Preview

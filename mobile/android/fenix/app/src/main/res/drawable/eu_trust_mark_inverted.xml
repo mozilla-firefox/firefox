@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- may be protected as a trademark in some jurisdictions -->
+<!-- Converted from toolkit/themes/shared/icons/EU-trust-mark-inverted.svg. The EU trust mark is registered as a collective
+   - mark and there are restrictions on how it is displayed: it must be at least 64 pixels wide and 85 pixels high,
+   - and its colors must not be altered.
+   - See https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32015R0806 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="94.05dp"
+    android:viewportWidth="94.06"
+    android:viewportHeight="138.23">
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M80.55,52.22c-.07-5.56-.13-11.97-.13-18.54C80.42,15.08,65.37,0,46.8,0S13.19,15.08,13.19,33.68v18.57c-7.38.58-13.19,6.76-13.19,14.29v57.36c0,7.92,6.42,14.34,14.34,14.34h65.39c7.92,0,14.34-6.42,14.34-14.34v-57.36c0-7.64-5.98-13.89-13.52-14.31M46.8,14.34c10.63,0,19.27,8.68,19.27,19.34,0,6.53.06,12.94.13,18.52H27.53v-18.52c0-10.66,8.65-19.34,19.27-19.34" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M47.03,58.9 L46.04,61.93 L43.04,61.93 L45.43,63.87 L44.56,66.9 L47.03,65.09 L49.5,66.9 L48.63,63.87 L51.02,61.93 L48.02,61.93 L47.03,58.9 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M15.31,83.82 L17.78,82.01 L20.25,83.82 L19.38,80.79 L21.77,78.85 L18.77,78.85 L17.78,75.82 L16.79,78.85 L13.79,78.85 L16.18,80.79 L15.31,83.82 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M19.63,110.11 L18.64,107.08 L17.65,110.11 L14.65,110.11 L17.04,112.05 L16.17,115.08 L18.64,113.27 L21.11,115.08 L20.24,112.05 L22.63,110.11 L19.63,110.11 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M29.83,63.49 L28.83,66.52 L25.84,66.52 L28.23,68.46 L27.36,71.48 L29.83,69.68 L32.29,71.48 L31.42,68.46 L33.81,66.52 L30.82,66.52 L29.83,63.49 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M30.82,122.15 L29.83,119.13 L28.83,122.15 L25.84,122.15 L28.23,124.09 L27.36,127.12 L29.83,125.32 L32.29,127.12 L31.42,124.09 L33.81,122.15 L30.82,122.15 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M73.53,83.82 L76,82.01 L78.47,83.82 L77.59,80.79 L79.99,78.85 L76.99,78.85 L76,75.82 L75.01,78.85 L72.01,78.85 L74.4,80.79 L73.53,83.82 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M76.99,110.11 L76,107.08 L75.01,110.11 L72.01,110.11 L74.4,112.05 L73.53,115.08 L76,113.27 L78.47,115.08 L77.59,112.05 L79.99,110.11 L76.99,110.11 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M64.24,63.49 L63.25,66.52 L60.25,66.52 L62.64,68.46 L61.77,71.48 L64.24,69.68 L66.71,71.48 L65.84,68.46 L68.23,66.52 L65.23,66.52 L64.24,63.49 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M65.23,121.01 L64.24,117.98 L63.25,121.01 L60.25,121.01 L62.64,122.95 L61.77,125.97 L64.24,124.17 L66.71,125.97 L65.84,122.95 L68.23,121.01 L65.23,121.01 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M48.02,126.17 L47.03,123.14 L46.04,126.17 L43.04,126.17 L45.43,128.11 L44.56,131.14 L47.03,129.33 L49.5,131.14 L48.63,128.11 L51.02,126.17 L48.02,126.17 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M82.85,93.76 L79.85,93.76 L78.86,90.73 L77.87,93.76 L74.87,93.76 L77.27,95.7 L76.4,98.73 L78.86,96.92 L81.33,98.73 L80.46,95.7 L82.85,93.76 Z" />
+    <path
+        android:fillColor="#2B4375"
+        android:pathData="M15.2,96.92 L17.67,98.73 L16.8,95.7 L19.19,93.76 L16.19,93.76 L15.2,90.73 L14.21,93.76 L11.21,93.76 L13.6,95.7 L12.73,98.73 L15.2,96.92 Z" />
+    <path
+        android:fillColor="#F3CA12"
+        android:fillType="evenOdd"
+        android:pathData="M84.18,61.09c-2.65,1.54-7.66,5.59-15.02,12.14-6.85,6.11-14.76,13.65-23.75,22.63l-15.46-13.47-5.85,5.74c11.78,11.77,20.17,20.83,25.18,27.16,5.67-9.35,12.02-18.71,19.05-28.09,7.03-9.38,13.6-16.8,19.71-22.24-1.33-2.65-2.48-3.4-3.87-3.86" />
+</vector>
