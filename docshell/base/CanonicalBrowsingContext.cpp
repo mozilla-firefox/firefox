@@ -831,9 +831,8 @@ void CanonicalBrowsingContext::GetContiguousEntriesForLoad(
     const RefPtr<SessionHistoryEntry>& aEntry) {
   MOZ_DIAGNOSTIC_ASSERT(Navigation::IsAPIEnabled());
   nsCOMPtr<nsIURI> uri =
-      mActiveEntry ? mActiveEntry->GetURIOrInheritedForAboutBlankOrSrcdoc()
-                   : nullptr;
-  nsCOMPtr<nsIURI> targetURI = aEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+      mActiveEntry ? mActiveEntry->GetURIOrInheritedForAboutBlank() : nullptr;
+  nsCOMPtr<nsIURI> targetURI = aEntry->GetURIOrInheritedForAboutBlank();
   bool sameOrigin =
       NS_SUCCEEDED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
           targetURI, uri, false, false));
@@ -903,8 +902,8 @@ void CanonicalBrowsingContext::MaybeReuseNavigationKeyFromActiveEntry(
     return;
   }
 
-  nsCOMPtr<nsIURI> uri = mActiveEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
-  nsCOMPtr<nsIURI> targetURI = aEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+  nsCOMPtr<nsIURI> uri = mActiveEntry->GetURIOrInheritedForAboutBlank();
+  nsCOMPtr<nsIURI> targetURI = aEntry->GetURIOrInheritedForAboutBlank();
   bool sameOrigin =
       NS_SUCCEEDED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
           targetURI, uri, false, false));
@@ -1480,6 +1479,14 @@ void CanonicalBrowsingContext::NotifyOnHistoryReload(
   // the nsDocShell will create a load state based on its document.
 }
 
+// about:blank and about:srcdoc, with or without a query or fragment.
+static bool IsAboutBlankOrSrcdoc(nsIURI* aURI) {
+  nsAutoCString name;
+  return aURI->SchemeIs("about") &&
+         NS_SUCCEEDED(NS_GetAboutModuleName(aURI, name)) &&
+         (name.EqualsLiteral("blank") || name.EqualsLiteral("srcdoc"));
+}
+
 // Returns aPrincipal if it is a content principal, its precursor if it is a
 // null principal, and nullptr otherwise.
 static already_AddRefed<nsIPrincipal> GetPrincipalOrPrecursor(
@@ -1500,7 +1507,7 @@ static already_AddRefed<nsIPrincipal> GetPrincipalOrPrecursor(
 static bool ReloadWouldInheritDocumentPrincipal(
     WindowGlobalParent* aWgp, const SessionHistoryInfo* aInfo) {
   nsIURI* uri = aInfo->GetURI();
-  if (!NS_IsAboutBlankOrSrcdoc(uri) && !uri->SchemeIs("data")) {
+  if (!IsAboutBlankOrSrcdoc(uri) && !uri->SchemeIs("data")) {
     return true;
   }
 

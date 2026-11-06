@@ -7235,21 +7235,15 @@ nsresult nsDocShell::CreateDocumentViewer(const nsACString& aContentType,
   //         entryToReplace's document state's origin, then set
   //         historyEntry's navigation API key to entryToReplace's
   //         navigation API key.
-  //
-  // Check that the top BC has session history, as without it the parent doesn't
-  // track the active entry and so can't reuse the key, which would leave us out
-  // of sync with the contiguous entries it sends.
   bool isReplace =
       mActiveEntry && mLoadingEntry &&
-      mBrowsingContext->Top()->GetHasSessionHistory() &&
       mLoadingEntry->mTriggeringNavigationType
           .map([](auto type) { return type == NavigationType::Replace; })
           .valueOr(false);
   if (isReplace) {
-    nsCOMPtr<nsIURI> uri =
-        mActiveEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+    nsCOMPtr<nsIURI> uri = mActiveEntry->GetURIOrInheritedForAboutBlank();
     nsCOMPtr<nsIURI> targetURI =
-        mLoadingEntry->mInfo.GetURIOrInheritedForAboutBlankOrSrcdoc();
+        mLoadingEntry->mInfo.GetURIOrInheritedForAboutBlank();
     bool sameOrigin =
         NS_SUCCEEDED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false));
@@ -11644,10 +11638,9 @@ void nsDocShell::MaybeFireTraverseHistory(nsDocShellLoadState* aLoadState) {
     return;
   }
 
-  nsCOMPtr activeURI = mActiveEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
-  nsCOMPtr<nsIURI> loadingURI =
-      aLoadState->GetLoadingSessionHistoryInfo()
-          ->mInfo.GetURIOrInheritedForAboutBlankOrSrcdoc();
+  nsCOMPtr activeURI = mActiveEntry->GetURIOrInheritedForAboutBlank();
+  nsCOMPtr<nsIURI> loadingURI = aLoadState->GetLoadingSessionHistoryInfo()
+                                    ->mInfo.GetURIOrInheritedForAboutBlank();
   if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
           activeURI, loadingURI,
           /*reportError=*/false,

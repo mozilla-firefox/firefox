@@ -615,7 +615,7 @@ void nsSHistory::WalkContiguousEntriesInOrder(
     return;
   }
 
-  nsCOMPtr<nsIURI> targetURI = entry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+  nsCOMPtr<nsIURI> targetURI = entry->GetURIOrInheritedForAboutBlank();
   AutoTArray<SessionHistoryEntry*, 16> previousEntries;
 
   // Walk backward to find the entries that have the same origin as the
@@ -624,8 +624,7 @@ void nsSHistory::WalkContiguousEntriesInOrder(
   while (RefPtr previousEntry =
              shistory->FindLeftmostAdjacentContiguousEntryFor(
                  current, SearchDirection::Left)) {
-    nsCOMPtr<nsIURI> uri =
-        previousEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+    nsCOMPtr<nsIURI> uri = previousEntry->GetURIOrInheritedForAboutBlank();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
       break;
@@ -648,7 +647,7 @@ void nsSHistory::WalkContiguousEntriesInOrder(
   // input entry.
   while ((entry = shistory->FindLeftmostAdjacentContiguousEntryFor(
               entry, SearchDirection::Right))) {
-    nsCOMPtr<nsIURI> uri = entry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+    nsCOMPtr<nsIURI> uri = entry->GetURIOrInheritedForAboutBlank();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
       break;
@@ -678,7 +677,7 @@ void nsSHistory::WalkClosestContiguousEntriesFrom(
     return;
   }
 
-  nsCOMPtr<nsIURI> targetURI = entry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+  nsCOMPtr<nsIURI> targetURI = entry->GetURIOrInheritedForAboutBlank();
 
   // Walk backward to find the entries that have the same origin as the
   // input entry.
@@ -687,7 +686,7 @@ void nsSHistory::WalkClosestContiguousEntriesFrom(
                entry, SearchDirection::Left);
        current; current = shistory->FindClosestAdjacentContiguousEntryFor(
                     current, SearchDirection::Left)) {
-    nsCOMPtr<nsIURI> uri = current->GetURIOrInheritedForAboutBlankOrSrcdoc();
+    nsCOMPtr<nsIURI> uri = current->GetURIOrInheritedForAboutBlank();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
       break;
@@ -704,7 +703,7 @@ void nsSHistory::WalkClosestContiguousEntriesFrom(
                entry, SearchDirection::Right);
        current; current = shistory->FindClosestAdjacentContiguousEntryFor(
                     current, SearchDirection::Right)) {
-    nsCOMPtr<nsIURI> uri = current->GetURIOrInheritedForAboutBlankOrSrcdoc();
+    nsCOMPtr<nsIURI> uri = current->GetURIOrInheritedForAboutBlank();
     if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false))) {
       break;
