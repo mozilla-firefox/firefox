@@ -36,3 +36,5 @@ declare var gNavToolbox: BrowserWindow["gNavToolbox"];
 declare const DynamicShortcutTooltip: BrowserWindow["DynamicShortcutTooltip"];
 declare const gClickAndHoldListenersOnElement: BrowserWindow["gClickAndHoldListenersOnElement"];
 declare var FirefoxViewHandler: BrowserWindow["FirefoxViewHandler"];
+declare var XULBrowserWindow: BrowserWindow["XULBrowserWindow"];
+declare var MousePosTracker: BrowserWindow["MousePosTracker"];
