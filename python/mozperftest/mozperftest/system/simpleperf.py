@@ -12,11 +12,6 @@ from pathlib import Path
 from mozbuild.nodeutil import find_node_executable
 
 from mozperftest.layers import Layer
-from mozperftest.system.geckoprofiler import (
-    GECKO_MARKERS_PROFILE_PREFIX,
-    browser_package_id,
-    perf_spew_dir,
-)
 from mozperftest.utils import (
     ON_TRY,
     archive_files,
@@ -28,13 +23,6 @@ from mozperftest.utils import (
    call graph so that we can collect Java stacks.  This requires root access.
 """
 DEFAULT_SIMPLEPERF_OPTS = "-g --duration 30 -f 1000 --trace-offcpu -e cpu-clock -a"
-
-"""When Gecko writes jitdump files, frame pointer unwinding gives us JS stacks and
-   deeper native stacks, but no Java stacks.
-"""
-JIT_FRAMES_SIMPLEPERF_OPTS = (
-    "--call-graph fp --duration 30 -f 1000 --trace-offcpu -e cpu-clock -a"
-)
 
 BREAKPAD_SYMBOL_SERVER = "https://symbols.mozilla.org/"
 
@@ -82,27 +70,9 @@ class SimpleperfSymbolicationError(SimpleperfError):
 
 
 class SimpleperfController:
-    def __init__(self, jit_frames=False):
+    def __init__(self):
         self.device = get_adb_device_or_emu()
         self.profiler_process = None
-        self.jit_frames = jit_frames
-        self.package_id = None
-
-    def _list_jit_files(self):
-        """List the jitdump files that Gecko wrote for simpleperf."""
-        if not self.jit_frames or not self.package_id:
-            return []
-        spew_dir = perf_spew_dir(self.package_id)
-        output = self.device.shell_output(f"ls {spew_dir} 2>/dev/null || true")
-        return [
-            f"{spew_dir}/{name}"
-            for name in output.split()
-            if name.startswith("jit-") and name.endswith(".dump")
-        ]
-
-    def _remove_jit_files(self, files):
-        if files:
-            self.device.shell("rm -f " + " ".join(files))
 
     def start(self, simpleperf_opts):
         """Starts the simpleperf profiler asynchronously if the layer is enabled.
@@ -115,26 +85,11 @@ class SimpleperfController:
         root access.
         """
         if simpleperf_opts is None:
-            simpleperf_opts = (
-                JIT_FRAMES_SIMPLEPERF_OPTS
-                if self.jit_frames
-                else DEFAULT_SIMPLEPERF_OPTS
-            )
+            simpleperf_opts = DEFAULT_SIMPLEPERF_OPTS
 
         assert SimpleperfProfiler.is_enabled()
         if self.profiler_process:
             raise SimpleperfAlreadyRunningError("simpleperf already running")
-
-        if self.jit_frames:
-            self.package_id = browser_package_id()
-            if not self.package_id:
-                print(
-                    "Warning: the browser package id is unknown, so the jitdump "
-                    "files can't be collected and the profile won't have JS frames"
-                )
-
-        # Remove the files of earlier app launches, which aren't profiled.
-        self._remove_jit_files(self._list_jit_files())
 
         cmd = f"/data/local/tmp/simpleperf record {simpleperf_opts} -o /data/local/tmp/perf.data"
 
@@ -172,13 +127,7 @@ class SimpleperfController:
         # Pull profiler data directly to the given output path.
         self.device.pull("/data/local/tmp/perf.data", str(profile_path))
         self.device.shell("rm -f /data/local/tmp/perf.data")
-
-        # samply import looks for the jitdump files next to the perf.data file.
-        jit_files = self._list_jit_files()
-        for jit_file in jit_files:
-            self.device.pull(jit_file, str(Path(output_path, Path(jit_file).name)))
-        self._remove_jit_files(jit_files)
-        return profile_path
+        return Path(output_path, f"perf-{index}.data")
 
 
 class SimpleperfProfiler(Layer):
@@ -198,23 +147,21 @@ class SimpleperfProfiler(Layer):
         "profiler-node-tools-path": {
             "type": str,
             "default": None,
-            "help": "Path to directory containing profiler-node-tools build. "
-            "Needed for merging the markers of Gecko profiles from the same run.",
+            "help": "Path to directory containing profiler-node-tools build.",
         },
     }
 
     def __init__(self, env, mach_cmd):
         super().__init__(env, mach_cmd)
         self.device = get_adb_device_or_emu()
-        self.package_id = None
 
     @staticmethod
     def is_enabled():
         return os.environ.get("MOZPERFTEST_SIMPLEPERF", "0") == "1"
 
     @staticmethod
-    def get_controller(jit_frames=False):
-        return SimpleperfController(jit_frames=jit_frames)
+    def get_controller():
+        return SimpleperfController()
 
     def setup_simpleperf_path(self):
         """Sets up and verifies that the simpleperf NDK exists.
@@ -360,10 +307,6 @@ class SimpleperfProfiler(Layer):
         """Convert perf.data files into symbolicated profiles in the Firefox
         Profiler's processed profile format.
 
-        If the Gecko profiler ran at the same time, its markers-only profile is
-        next to the perf.data file. Its markers are merged into the profile,
-        and only the browser's processes are kept.
-
         :param perf_data list[pathlib.Path]: list of paths to perf.data files
         :param work_dir pathlib.Path: working directory for output files
         :return list[pathlib.Path]: Returns list of paths to .json profiles
@@ -380,22 +323,6 @@ class SimpleperfProfiler(Layer):
             output_dir.mkdir(parents=True, exist_ok=True)
             output_path = output_dir / f"profile-{number}.json"
 
-            gecko_markers_path = (
-                file_path.parent / f"{GECKO_MARKERS_PROFILE_PREFIX}{number}.json"
-            )
-            merge_markers = gecko_markers_path.exists()
-            if merge_markers and self.profiler_node_tools_dir is None:
-                self.warning(
-                    "No profiler-node-tools directory provided, "
-                    f"not merging the markers from {gecko_markers_path}"
-                )
-                merge_markers = False
-            # The name of the unmerged profile mustn't match the profile-*.json
-            # pattern, which the geckoprofiler layer archives.
-            samply_output_path = (
-                output_dir / f"unmerged-{number}.json" if merge_markers else output_path
-            )
-
             returncode = self._run_and_log(
                 "samply",
                 [
@@ -409,34 +336,12 @@ class SimpleperfProfiler(Layer):
                     BREAKPAD_SYMBOL_SERVER,
                     "--save-only",
                     "-o",
-                    samply_output_path,
+                    output_path,
                 ],
             )
             if returncode != 0:
                 self.warning(f"samply import failed for {file_path}")
                 continue
-
-            if merge_markers:
-                cmd = [
-                    self.node_path,
-                    Path(self.profiler_node_tools_dir, "profiler-edit.js"),
-                    "-i",
-                    samply_output_path,
-                    "--merge-markers-from",
-                    gecko_markers_path,
-                ]
-                if self.package_id:
-                    cmd += ["--only-keep-processes-with-name-prefix", self.package_id]
-                cmd += ["-o", output_path]
-                returncode = self._run_and_log("profiler-edit", cmd)
-                if returncode == 0:
-                    samply_output_path.unlink()
-                else:
-                    self.warning(
-                        f"Failed to merge the markers into {output_path}, "
-                        "keeping the unmerged profile"
-                    )
-                    samply_output_path.replace(output_path)
 
             profiles.append(output_path)
 
@@ -466,8 +371,7 @@ class SimpleperfProfiler(Layer):
         locally, it assumes that samply is already
         installed on the system. Additionally, the local path to
         the directory containing Breakpad symbols must be provided via
-        command-line arguments for local symbolication, and the path to a
-        build of profiler-node-tools for merging the Gecko profiler markers.
+        command-line arguments for local symbolication.
         """
         work_dir = None
         try:
@@ -508,7 +412,6 @@ class SimpleperfProfiler(Layer):
         the start/stop controls are manually called through the ProfilerMediator.
         """
         self.test_name = metadata.script["name"]
-        self.package_id = getattr(metadata, "binary", None)
 
         metadata.add_extra_options(["simpleperf"])
         return metadata

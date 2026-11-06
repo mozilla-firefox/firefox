@@ -42,39 +42,6 @@ DEFAULT_GECKOPROFILER_OPTS = {
     "filters": "GeckoMain,Compositor,Renderer,IPDL Background,socket",
 }
 
-# When simpleperf runs at the same time, it collects the samples, and the Gecko
-# profiler only collects the markers. The two profiles are merged afterwards.
-MARKERS_ONLY_GECKOPROFILER_OPTS = {
-    "interval": 500,
-    "features": "nostacksampling,nomarkerstacks,screenshots,ipcmessages,java,cpu,markersallthreads,flows,fileio",
-    "filters": "GeckoMain,Compositor,Renderer,IPDL Background,*",
-}
-
-# The markers-only profiles are named differently so that they're merged into
-# the simpleperf profiles instead of being archived on their own.
-GECKO_MARKERS_PROFILE_PREFIX = "gecko-markers-"
-
-
-def perf_spew_dir(package_id):
-    """The directory into which Gecko writes its jitdump files for simpleperf."""
-    return f"/storage/emulated/0/Android/data/{package_id}/files"
-
-
-def browser_package_id():
-    """The package id of the browser under test, or None if it isn't known."""
-    return GeckoProfilerController._package_id or os.environ.get("BROWSER_BINARY")
-
-
-def jit_env_for_simpleperf(package_id):
-    """Environment variables which let simpleperf unwind and name JS frames."""
-    return {
-        "PERF_SPEW_DIR": perf_spew_dir(package_id),
-        "IONPERF": "func",
-        "JIT_OPTION_emitInterpreterEntryTrampoline": "true",
-        "JIT_OPTION_enableICFramePointers": "true",
-        "JIT_OPTION_onlyInlineSelfHosted": "true",
-    }
-
 
 class GeckoProfilerController:
     """Controller that starts and stops profiling on device."""
@@ -85,30 +52,24 @@ class GeckoProfilerController:
     def set_package_id(cls, package_id: str):
         cls._package_id = package_id
 
-    def __init__(self, markers_only=False):
+    def __init__(self):
         self.device = get_adb_device_or_emu()
-        self.markers_only = markers_only
         self.profiling_active = False
         self.package_id = None
         self.config_filename = None
 
     def _resolve_package_id(self):
-        pkg = browser_package_id()
+        pkg = self._package_id or os.environ.get("BROWSER_BINARY")
         if not pkg:
             raise GeckoProfilerError("Package id not set for GeckoProfiler")
         return pkg
 
     def start(self, geckoprofiler_opts=None):
         """Create a temporary geckoview-config.yaml on device and enable startup profiling."""
-        default_opts = (
-            MARKERS_ONLY_GECKOPROFILER_OPTS
-            if self.markers_only
-            else DEFAULT_GECKOPROFILER_OPTS
-        )
         if geckoprofiler_opts is None:
-            geckoprofiler_opts = default_opts
+            geckoprofiler_opts = DEFAULT_GECKOPROFILER_OPTS
         else:
-            opts = default_opts.copy()
+            opts = DEFAULT_GECKOPROFILER_OPTS.copy()
             opts.update(geckoprofiler_opts)
             geckoprofiler_opts = opts
 
@@ -119,20 +80,12 @@ class GeckoProfilerController:
         self.package_id = self._resolve_package_id()
         self.config_filename = f"{self.package_id}-geckoview-config.yaml"
 
-        env = {
-            "MOZ_PROFILER_STARTUP": 1,
-            "MOZ_PROFILER_STARTUP_INTERVAL": geckoprofiler_opts["interval"],
-            "MOZ_PROFILER_STARTUP_FEATURES": geckoprofiler_opts["features"],
-            "MOZ_PROFILER_STARTUP_FILTERS": geckoprofiler_opts["filters"],
-        }
-        if self.markers_only:
-            # With the long interval, the handoff from the base profiler would
-            # delay startup, see bug 1955125.
-            env["MOZ_PROFILER_STARTUP_NO_BASE"] = 1
-            env.update(jit_env_for_simpleperf(self.package_id))
-        config_content = (
-            "env:\n" + "".join(f"  {key}: {value}\n" for key, value in env.items())
-        ).encode()
+        config_content = f"""env:
+  MOZ_PROFILER_STARTUP: 1
+  MOZ_PROFILER_STARTUP_INTERVAL: {geckoprofiler_opts["interval"]}
+  MOZ_PROFILER_STARTUP_FEATURES: {geckoprofiler_opts["features"]}
+  MOZ_PROFILER_STARTUP_FILTERS: {geckoprofiler_opts["filters"]}
+""".encode()
 
         with tempfile.NamedTemporaryFile(delete=False) as config_file:
             config_file.write(config_content)
@@ -170,8 +123,7 @@ class GeckoProfilerController:
 
         # Use content provider to stop profiling and stream raw profile data
         # This command blocks until the profile data is fully streamed
-        prefix = GECKO_MARKERS_PROFILE_PREFIX if self.markers_only else "profile-"
-        output_filename = f"{prefix}{index}.json"
+        output_filename = f"profile-{index}.json"
         local_output_path = Path(output_path) / output_filename
 
         with open(local_output_path, "wb") as output_file:
@@ -191,11 +143,6 @@ class GeckoProfilerController:
 
         # Always reset state, even if the command failed
         self.profiling_active = False
-        # Don't profile the app launches between the profiled runs.
-        if self.config_filename:
-            self.device.shell(
-                f"rm -f {GECKOVIEW_CONFIG_PATH_PREFIX}/{self.config_filename}"
-            )
 
         if result.returncode != 0:
             print(
@@ -203,7 +150,6 @@ class GeckoProfilerController:
             )
             if result.stderr:
                 print(f"Error details:\n{result.stderr.decode()}")
-            local_output_path.unlink(missing_ok=True)
             return None
 
         with open(local_output_path, "rb") as f:
@@ -240,8 +186,8 @@ class GeckoProfiler(Layer):
         return os.environ.get("MOZPERFTEST_GECKOPROFILE", "0") == "1"
 
     @staticmethod
-    def get_controller(markers_only=False):
-        return GeckoProfilerController(markers_only=markers_only)
+    def get_controller():
+        return GeckoProfilerController()
 
     def _archive_profiles(self):
         """Collect Gecko profiles and add to archive."""
