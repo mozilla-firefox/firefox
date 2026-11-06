@@ -45,7 +45,17 @@ function doRequestWhenReady() {
   return doRequestPromise;
 }
 
+// Infinite loading animations are gated on this class so they don't keep the
+// refresh driver running in a hidden document, such as a preloaded newtab.
+function syncPageVisibleClass() {
+  const sync = () =>
+    document.body.classList.toggle("page-visible", !document.hidden);
+  sync();
+  document.addEventListener("visibilitychange", sync);
+}
+
 export function renderWithoutState() {
+  syncPageVisibleClass();
   const store = initStore(reducers);
   new DetectUserSessionStart(store).sendEventOrAddListener();
 
@@ -63,6 +73,7 @@ export function renderWithoutState() {
 }
 
 export function renderCache(initialState) {
+  syncPageVisibleClass();
   if (initialState) {
     initialState.App.isForStartupCache.App = false;
   }

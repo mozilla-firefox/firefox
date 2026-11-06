@@ -75,7 +75,9 @@ $ds-card-image-gradient-solid: rgba(0, 0, 0, 100%);
       z-index: 2;
 
       @media (prefers-reduced-motion: no-preference) {
-        animation: loading 1.5s infinite;
+        .page-visible & {
+          animation: loading 1.5s infinite;
+        }
       }
     }
 
