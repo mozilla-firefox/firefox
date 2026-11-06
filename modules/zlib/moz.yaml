@@ -10,8 +10,8 @@ origin:
 
   url: https://github.com/madler/zlib
 
-  release: v1.3.2 (2026-02-17T05:01:19-08:00).
-  revision: v1.3.2
+  release: v1.4 (2026-11-04T20:32:10-08:00).
+  revision: v1.4
 
   license: Zlib
 
