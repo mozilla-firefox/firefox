@@ -230,7 +230,9 @@ class SearchTest : BaseTest(LaunchConfig(isPocketEnabled = false)) {
             .mozVerifyAnyContainsText(SearchBarSelectors.SEARCH_SUGGESTION, secondPageUrl)
             .mozClick(SearchBarSelectors.SEARCH_SUGGESTION_WITH_TEXT(firstPageUrl))
 
-        on.browserPage.navigateToPage().verifyUrl(firstPageUrl)
+        // The suggestion click already navigated to the browser, so verify the URL directly;
+        // navigateToPage()'s non-polling check can race the load and fail against the search bar.
+        on.browserPage.verifyUrl(firstPageUrl)
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2154199
