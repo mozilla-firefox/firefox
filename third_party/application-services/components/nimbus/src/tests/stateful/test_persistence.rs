@@ -121,10 +121,7 @@ fn test_corrupt_db() -> Result<()> {
     fs::create_dir(&db_dir)?;
 
     // The database filename differs depending on the rkv mode.
-    #[cfg(feature = "rkv-safe-mode")]
     let db_file = db_dir.join("data.safe.bin");
-    #[cfg(not(feature = "rkv-safe-mode"))]
-    let db_file = db_dir.join("data.mdb");
 
     let garbage_len = write_garbage(&db_file)?;
 
@@ -207,7 +204,6 @@ fn test_corrupt_db() -> Result<()> {
 }
 
 #[test]
-#[cfg(feature = "rkv-safe-mode")]
 fn test_corrupt_db_get_calculated_attributes() -> Result<()> {
     let tmp_dir = tempfile::tempdir()?;
     let db_dir = tmp_dir.path().join("db");

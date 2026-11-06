@@ -746,6 +746,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_ads_client_checksum_method_mozadsclientbuilder_telemetry(
     ): Int
+    external fun uniffi_ads_client_checksum_method_mozadsclientbuilder_user_agent(
+    ): Int
     external fun uniffi_ads_client_checksum_constructor_mozadsclientbuilder_new(
     ): Int
     external fun uniffi_ads_client_checksum_method_mozadstelemetry_record_build_cache_error(
@@ -814,6 +816,8 @@ internal object UniffiLib {
     external fun uniffi_ads_client_fn_method_mozadsclientbuilder_environment(`ptr`: Long,`environment`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_ads_client_fn_method_mozadsclientbuilder_telemetry(`ptr`: Long,`telemetry`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Long
+    external fun uniffi_ads_client_fn_method_mozadsclientbuilder_user_agent(`ptr`: Long,`userAgent`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_ads_client_fn_init_callback_vtable_mozadstelemetry(`vtable`: UniffiVTableCallbackInterfaceMozAdsTelemetry,
     ): Unit
@@ -1866,6 +1870,12 @@ public interface MozAdsClientBuilderInterface {
      */
     fun `telemetry`(`telemetry`: MozAdsTelemetry): MozAdsClientBuilder
     
+    /**
+     * The browser's user agent, sent to MARS on OHTTP requests when the
+     * preflight returns none. Defaults to viaduct's global default user agent.
+     */
+    fun `userAgent`(`userAgent`: kotlin.String): MozAdsClientBuilder
+    
     companion object
 }
 
@@ -2049,6 +2059,24 @@ open class MozAdsClientBuilder: Disposable, AutoCloseable, MozAdsClientBuilderIn
         it,
         
         FfiConverterTypeMozAdsTelemetry.lower(`telemetry`),_status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * The browser's user agent, sent to MARS on OHTTP requests when the
+     * preflight returns none. Defaults to viaduct's global default user agent.
+     */override fun `userAgent`(`userAgent`: kotlin.String): MozAdsClientBuilder {
+            return FfiConverterTypeMozAdsClientBuilder.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_ads_client_fn_method_mozadsclientbuilder_user_agent(
+        it,
+        
+        FfiConverterString.lower(`userAgent`),_status)
 }
     }
     )

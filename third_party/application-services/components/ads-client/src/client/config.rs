@@ -4,12 +4,14 @@
 */
 
 use crate::mars::Environment;
+use crate::non_empty_string::NonEmptyString;
 
 pub(crate) struct AdsClientConfig {
     pub cache_config: Option<AdsCacheConfig>,
     pub environment: Environment,
     #[cfg(feature = "stateful")]
     pub store_config: Option<AdsStoreConfig>,
+    pub user_agent: Option<NonEmptyString>,
 }
 
 #[derive(Clone, Debug)]

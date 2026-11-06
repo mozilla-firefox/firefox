@@ -3917,6 +3917,16 @@ export class MozAdsClientBuilderInterface {
         telemetry) {
       throw Error("telemetry not implemented");
     }
+    /**
+     * The browser's user agent, sent to MARS on OHTTP requests when the
+     * preflight returns none. Defaults to viaduct's global default user agent.
+     * @param {string} userAgent
+     * @returns {MozAdsClientBuilder}
+     */
+    userAgent(
+        userAgent) {
+      throw Error("userAgent not implemented");
+    }
 
 }
 
@@ -4029,6 +4039,28 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
             51, // uniffi_ads_client_fn_method_mozadsclientbuilder_telemetry
             FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
             FfiConverterTypeMozAdsTelemetry.lower(telemetry),
+        )
+        return handleRustResult(
+            result,
+            FfiConverterTypeMozAdsClientBuilder.lift.bind(FfiConverterTypeMozAdsClientBuilder),
+            null,
+        )
+    }
+
+    /**
+     * The browser's user agent, sent to MARS on OHTTP requests when the
+     * preflight returns none. Defaults to viaduct's global default user agent.
+     * @param {string} userAgent
+     * @returns {MozAdsClientBuilder}
+     */
+    userAgent(
+        userAgent) {
+       
+        FfiConverterString.checkType(userAgent);
+        const result = UniFFIScaffolding.callSync(
+            52, // uniffi_ads_client_fn_method_mozadsclientbuilder_user_agent
+            FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
+            FfiConverterString.lower(userAgent),
         )
         return handleRustResult(
             result,

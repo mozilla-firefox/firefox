@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#![cfg(feature = "rkv-safe-mode")]
+#![cfg(feature = "stateful")]
 
 // Testing the two phase updates.
 // This test crashes lmdb for reasons that make no sense, so only run it
@@ -64,7 +64,6 @@ fn assert_experiment_count(client: &NimbusClient, count: usize) -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "rkv-safe-mode")]
 #[test]
 fn test_set_experiments_locally() -> Result<()> {
     let client = new_test_client("test_set_experiments_locally")?;
@@ -85,7 +84,6 @@ fn test_set_experiments_locally() -> Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "rkv-safe-mode")]
 #[test]
 fn test_startup_behavior() -> Result<()> {
     let client = new_test_client("test_startup_behavior")?;
@@ -115,7 +113,6 @@ use serde_json::json;
 
 // forked from persistence.rs; need to be merged in a separated test-utils
 // module usable both by unit and integration tests (nimbus/test-utils?)
-#[cfg(feature = "rkv-safe-mode")]
 pub fn get_db_v1_experiments_with_missing_feature_fields() -> Vec<serde_json::Value> {
     vec![
         json!({
@@ -413,7 +410,6 @@ pub fn get_db_v1_experiments_with_missing_feature_fields() -> Vec<serde_json::Va
 
 /// test that even with a database with orphan records,
 /// apply_pending_experiments does not throw an error
-#[cfg(feature = "rkv-safe-mode")]
 #[test]
 fn test_startup_orphan_behavior() -> Result<()> {
     error_support::init_for_tests();
@@ -492,7 +488,6 @@ fn test_startup_orphan_behavior() -> Result<()> {
 /// Test that with pre-existing experiments that are missing enrollments,
 /// apply_pending_experiments drops the experiments and returns the right
 /// thing.
-#[cfg(feature = "rkv-safe-mode")]
 #[test]
 fn test_experiments_without_enrollments_are_dropped() -> Result<()> {
     error_support::init_for_tests();

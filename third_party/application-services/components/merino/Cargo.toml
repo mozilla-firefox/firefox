@@ -12,6 +12,8 @@ url = "2"
 viaduct = { path = "../viaduct", features = ["ohttp"] }
 error-support = { path = "../support/error" }
 thiserror = "2"
+parking_lot = "0.12"
+uuid = { version = "1.3", features = ["v4"] }
 
 [build-dependencies]
 uniffi = { version = "0.32", features = ["build"] }

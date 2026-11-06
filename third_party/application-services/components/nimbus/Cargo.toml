@@ -13,11 +13,9 @@ exclude = ["/android", "/ios"]
 name = "nimbus"
 
 [features]
-# `rkv-safe-mode` is the same name as used by glean. For us though, it's the default.
-default=["stateful"]
-rkv-safe-mode = ["dep:rkv"]
+default = ["stateful"]
 stateful-uniffi-bindings = []
-stateful = ["rkv-safe-mode", "stateful-uniffi-bindings", "dep:remote_settings", "dep:regex", "dep:firefox-versioning"]
+stateful = ["dep:rkv", "stateful-uniffi-bindings", "dep:remote_settings", "dep:regex", "dep:firefox-versioning"]
 
 [dependencies]
 anyhow = "1"

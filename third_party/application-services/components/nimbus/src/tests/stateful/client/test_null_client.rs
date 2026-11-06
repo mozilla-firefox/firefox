@@ -2,14 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-// Allow this to run in "safe mode"
-#![allow(unused_imports)]
+#![cfg(feature = "stateful")]
 
 use crate::NimbusClient;
 use crate::error::Result;
 use crate::tests::helpers::TestMetrics;
 
-#[cfg(feature = "rkv-safe-mode")]
 #[test]
 fn test_null_client() -> Result<()> {
     error_support::init_for_tests();

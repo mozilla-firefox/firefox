@@ -26,6 +26,9 @@ pub enum CallbackRequestError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
+    #[error("OHTTP request has no user agent to send")]
+    MissingUserAgent,
+
     #[error("Error sending request: {0}")]
     Request(#[from] viaduct::ViaductError),
 }

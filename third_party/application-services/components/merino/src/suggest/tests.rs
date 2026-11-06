@@ -337,6 +337,120 @@ fn test_empty_providers_and_client_variants_omitted() {
     assert!(!params.contains_key("client_variants"));
 }
 
+type CapturedSession = (Option<String>, Option<u32>);
+
+struct FakeSessionCapturingClient {
+    captured: std::sync::Arc<std::sync::Mutex<Vec<CapturedSession>>>,
+    status: u16,
+}
+
+impl http::HttpClientTrait for FakeSessionCapturingClient {
+    fn make_suggest_request(
+        &self,
+        _query: &str,
+        options: http::SuggestQueryParams<'_>,
+        _endpoint_url: Url,
+    ) -> Result<Option<Response>> {
+        self.captured.lock().unwrap().push((
+            options.session_id.map(str::to_string),
+            options.sequence_number,
+        ));
+        match self.status {
+            200 => Ok(Some(make_response(200, "{}"))),
+            code => Err(Error::Server {
+                code,
+                message: "Internal server error".to_string(),
+            }),
+        }
+    }
+}
+
+fn session_capturing_client(
+    status: u16,
+) -> (
+    SuggestClientInner<FakeSessionCapturingClient>,
+    std::sync::Arc<std::sync::Mutex<Vec<CapturedSession>>>,
+) {
+    let captured = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+    let client_inner = SuggestClientInner::new_with_client(FakeSessionCapturingClient {
+        captured: captured.clone(),
+        status,
+    });
+    (client_inner, captured)
+}
+
+#[test]
+fn test_session_started_on_first_request() {
+    let (client_inner, captured) = session_capturing_client(200);
+    let endpoint = Url::parse("https://merino.services.mozilla.com/api/v1/suggest").unwrap();
+
+    let _ = client_inner.get_suggestions("a", default_options(), &endpoint);
+
+    let captured = captured.lock().unwrap();
+    let (sid, seq) = &captured[0];
+    let sid = sid.as_deref().expect("sid should be sent");
+    assert!(uuid::Uuid::parse_str(sid).is_ok(), "sid should be a UUID");
+    assert_eq!(*seq, Some(0));
+}
+
+#[test]
+fn test_sequence_number_increments_within_session() {
+    let (client_inner, captured) = session_capturing_client(200);
+    let endpoint = Url::parse("https://merino.services.mozilla.com/api/v1/suggest").unwrap();
+
+    for query in ["a", "ap", "app"] {
+        let _ = client_inner.get_suggestions(query, default_options(), &endpoint);
+    }
+
+    let captured = captured.lock().unwrap();
+    let sid = captured[0].0.clone();
+    assert!(captured.iter().all(|(s, _)| *s == sid));
+    let seqs: Vec<_> = captured.iter().map(|(_, seq)| *seq).collect();
+    assert_eq!(seqs, vec![Some(0), Some(1), Some(2)]);
+}
+
+#[test]
+fn test_sequence_number_increments_on_failed_request() {
+    let (client_inner, captured) = session_capturing_client(500);
+    let endpoint = Url::parse("https://merino.services.mozilla.com/api/v1/suggest").unwrap();
+
+    let _ = client_inner.get_suggestions("a", default_options(), &endpoint);
+    let _ = client_inner.get_suggestions("ap", default_options(), &endpoint);
+
+    let captured = captured.lock().unwrap();
+    assert_eq!(captured[0].0, captured[1].0);
+    assert_eq!(captured[0].1, Some(0));
+    assert_eq!(captured[1].1, Some(1));
+}
+
+#[test]
+fn test_reset_session_starts_new_session() {
+    let (client_inner, captured) = session_capturing_client(200);
+    let endpoint = Url::parse("https://merino.services.mozilla.com/api/v1/suggest").unwrap();
+
+    let _ = client_inner.get_suggestions("a", default_options(), &endpoint);
+    let _ = client_inner.get_suggestions("ap", default_options(), &endpoint);
+    client_inner.reset_session();
+    let _ = client_inner.get_suggestions("b", default_options(), &endpoint);
+
+    let captured = captured.lock().unwrap();
+    assert_ne!(captured[0].0, captured[2].0);
+    assert_eq!(captured[2].1, Some(0));
+}
+
+#[test]
+fn test_reset_session_without_active_session() {
+    let (client_inner, captured) = session_capturing_client(200);
+    let endpoint = Url::parse("https://merino.services.mozilla.com/api/v1/suggest").unwrap();
+
+    client_inner.reset_session();
+    let _ = client_inner.get_suggestions("a", default_options(), &endpoint);
+
+    let captured = captured.lock().unwrap();
+    assert!(captured[0].0.is_some());
+    assert_eq!(captured[0].1, Some(0));
+}
+
 #[test]
 fn test_builder_fails_with_invalid_base_host() {
     let result = SuggestClientBuilder::new()

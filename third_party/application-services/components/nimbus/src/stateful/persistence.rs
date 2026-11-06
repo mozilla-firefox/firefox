@@ -4,11 +4,16 @@
 
 //! Our storage abstraction, currently backed by Rkv.
 
-use rkv::{StoreError, StoreOptions};
 use std::fmt;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
+
+use rkv::backend::{
+    SafeMode, SafeModeDatabase, SafeModeEnvironment, SafeModeRoCursor, SafeModeRoTransaction,
+    SafeModeRwTransaction,
+};
+use rkv::{StoreError, StoreOptions};
 
 use crate::enrollment::ExperimentEnrollment;
 use crate::error::{ErrorCode, NimbusError, Result, debug, info, warn};
@@ -49,66 +54,22 @@ pub(crate) const DB_KEY_GLOBAL_USER_PARTICIPATION: &str = "user-opt-in";
 pub(crate) const DEFAULT_EXPERIMENT_PARTICIPATION: bool = true;
 pub(crate) const DEFAULT_ROLLOUT_PARTICIPATION: bool = true;
 
-// Inspired by Glean - use a feature to choose between the backends.
-// Select the LMDB-powered storage backend when the feature is not activated.
-#[cfg(not(feature = "rkv-safe-mode"))]
-mod backend {
-    use rkv::backend::{
-        Lmdb, LmdbDatabase, LmdbEnvironment, LmdbRoCursor, LmdbRoTransaction, LmdbRwTransaction,
-    };
-    use std::path::Path;
-
-    use super::RKV_MAX_DBS;
-
-    pub type Rkv = rkv::Rkv<LmdbEnvironment>;
-    pub type RkvSingleStore = rkv::SingleStore<LmdbDatabase>;
-    pub type Reader<'t> = rkv::Reader<LmdbRoTransaction<'t>>;
-    pub type Writer<'t> = rkv::Writer<LmdbRwTransaction<'t>>;
-    pub trait Readable<'r>:
-        rkv::Readable<'r, Database = LmdbDatabase, RoCursor = LmdbRoCursor<'r>>
-    {
-    }
-    impl<'r, T: rkv::Readable<'r, Database = LmdbDatabase, RoCursor = LmdbRoCursor<'r>>>
-        Readable<'r> for T
-    {
-    }
-
-    pub fn rkv_new(path: &Path) -> Result<Rkv, rkv::StoreError> {
-        Rkv::with_capacity::<Lmdb>(path, RKV_MAX_DBS)
-    }
+pub type Rkv = rkv::Rkv<SafeModeEnvironment>;
+pub type RkvSingleStore = rkv::SingleStore<SafeModeDatabase>;
+pub type Reader<'t> = rkv::Reader<SafeModeRoTransaction<'t>>;
+pub type Writer<'t> = rkv::Writer<SafeModeRwTransaction<'t>>;
+pub trait Readable<'r>:
+    rkv::Readable<'r, Database = SafeModeDatabase, RoCursor = SafeModeRoCursor<'r>>
+{
+}
+impl<'r, T: rkv::Readable<'r, Database = SafeModeDatabase, RoCursor = SafeModeRoCursor<'r>>>
+    Readable<'r> for T
+{
 }
 
-// Select the "safe mode" storage backend when the feature is activated.
-#[cfg(feature = "rkv-safe-mode")]
-mod backend {
-    use rkv::backend::{
-        SafeMode, SafeModeDatabase, SafeModeEnvironment, SafeModeRoCursor, SafeModeRoTransaction,
-        SafeModeRwTransaction,
-    };
-    use std::path::Path;
-
-    use super::RKV_MAX_DBS;
-
-    pub type Rkv = rkv::Rkv<SafeModeEnvironment>;
-    pub type RkvSingleStore = rkv::SingleStore<SafeModeDatabase>;
-    pub type Reader<'t> = rkv::Reader<SafeModeRoTransaction<'t>>;
-    pub type Writer<'t> = rkv::Writer<SafeModeRwTransaction<'t>>;
-    pub trait Readable<'r>:
-        rkv::Readable<'r, Database = SafeModeDatabase, RoCursor = SafeModeRoCursor<'r>>
-    {
-    }
-    impl<'r, T: rkv::Readable<'r, Database = SafeModeDatabase, RoCursor = SafeModeRoCursor<'r>>>
-        Readable<'r> for T
-    {
-    }
-
-    pub fn rkv_new(path: &Path) -> Result<Rkv, rkv::StoreError> {
-        Rkv::with_capacity::<SafeMode>(path, RKV_MAX_DBS)
-    }
+pub fn rkv_new(path: &Path) -> Result<Rkv, rkv::StoreError> {
+    Rkv::with_capacity::<SafeMode>(path, RKV_MAX_DBS)
 }
-
-use backend::*;
-pub use backend::{Readable, Writer};
 
 /// Enumeration of the different stores within our database.
 ///

@@ -193,9 +193,11 @@ tasks:
                                   taskclusterProxy: true
                                   chainOfTrust: true
                               # Note: This task is built server side without the context or tooling that
-                              # exist in tree so we must hard code the hash
+                              # exist in tree so we must hard code the hash.
+                              # taskgraph itself comes from APPSERVICES_PIP_REQUIREMENTS, which run-task
+                              # installs into ~/.local, so the command below adds ~/.local/bin to PATH.
                               image:
-                                  mozillareleases/taskgraph:decision-v11.2.4@sha256:eb53b1ca6b86b1344d61f55aab77b130048c0ae007eef181ec82eec327e91e07
+                                  mozillareleases/taskgraph:run-task-v24.6.0@sha256:585c0fb90f39cd66baa1d3a3f43ab045d127140892ed0e327b6ee8043f264556
 
                               maxRunTime: 1800
 
@@ -218,9 +220,11 @@ tasks:
                                     in:
                                       $if: 'tasks_for == "action"'
                                       then: >
+                                        export PATH="$HOME/.local/bin:$PATH" &&
                                         ln -s /builds/worker/artifacts artifacts &&
                                         taskgraph action-callback
                                       else: >
+                                        export PATH="$HOME/.local/bin:$PATH" &&
                                         ln -s /builds/worker/artifacts artifacts &&
                                         taskgraph decision
                                         --pushlog-id='0'

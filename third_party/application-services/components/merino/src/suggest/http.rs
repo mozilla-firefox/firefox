@@ -19,6 +19,8 @@ pub struct SuggestQueryParams<'a> {
     pub client_variants: Option<&'a str>,
     pub request_type: Option<&'a str>,
     pub accept_language: Option<&'a str>,
+    pub session_id: Option<&'a str>,
+    pub sequence_number: Option<u32>,
 }
 
 pub trait HttpClientTrait {
@@ -56,6 +58,12 @@ fn build_suggest_url(query: &str, options: &SuggestQueryParams<'_>, endpoint_url
         }
         if let Some(v) = options.request_type {
             params.append_pair("request_type", v);
+        }
+        if let Some(v) = options.session_id {
+            params.append_pair("sid", v);
+        }
+        if let Some(v) = options.sequence_number {
+            params.append_pair("seq", &v.to_string());
         }
     }
     url
@@ -150,6 +158,8 @@ mod tests {
             client_variants: Some("control"),
             request_type: Some("weather"),
             accept_language: Some("en-US"),
+            session_id: Some("6f3c2a1e-0000-4000-8000-000000000000"),
+            sequence_number: Some(2),
         };
         let url = build_suggest_url("new york", &options, base_url());
         assert!(has_param(&url, "q", "new york"));
@@ -160,6 +170,12 @@ mod tests {
         assert!(has_param(&url, "city", "New York"));
         assert!(has_param(&url, "client_variants", "control"));
         assert!(has_param(&url, "request_type", "weather"));
+        assert!(has_param(
+            &url,
+            "sid",
+            "6f3c2a1e-0000-4000-8000-000000000000"
+        ));
+        assert!(has_param(&url, "seq", "2"));
     }
 
     #[test]
@@ -180,6 +196,8 @@ mod tests {
             client_variants: Some("control"),
             request_type: None,
             accept_language: None,
+            session_id: Some("6f3c2a1e-0000-4000-8000-000000000000"),
+            sequence_number: Some(0),
         };
         let url = build_suggest_url("apple", &options, base_url());
         assert_eq!(
@@ -190,7 +208,9 @@ mod tests {
             &region=CA\
             &city=San+Francisco\
             &providers=wikipedia\
-            &client_variants=control"
+            &client_variants=control\
+            &sid=6f3c2a1e-0000-4000-8000-000000000000\
+            &seq=0"
         );
     }
 }

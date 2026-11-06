@@ -46,7 +46,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterFloat32.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    320, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_f32
+    321, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_f32
     FfiConverterFloat32.lower(v),
 )
 return handleRustResult(
@@ -70,7 +70,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterFloat64.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    321, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_f64
+    322, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_f64
     FfiConverterFloat64.lower(v),
 )
 return handleRustResult(
@@ -94,7 +94,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt16.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    322, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i16
+    323, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i16
     FfiConverterInt16.lower(v),
 )
 return handleRustResult(
@@ -118,7 +118,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt32.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    323, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i32
+    324, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i32
     FfiConverterInt32.lower(v),
 )
 return handleRustResult(
@@ -142,7 +142,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt64.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    324, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i64
+    325, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i64
     FfiConverterInt64.lower(v),
 )
 return handleRustResult(
@@ -166,7 +166,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt8.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    325, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i8
+    326, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_i8
     FfiConverterInt8.lower(v),
 )
 return handleRustResult(
@@ -190,7 +190,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterMapStringString.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    326, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_map
+    327, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_map
     FfiConverterMapStringString.lower(v),
 )
 return handleRustResult(
@@ -214,7 +214,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeAsyncInterface.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    327, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_obj
+    328, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_obj
     FfiConverterTypeAsyncInterface.lower(v),
 )
 return handleRustResult(
@@ -238,7 +238,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterString.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    328, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_string
+    329, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_string
     FfiConverterString.lower(v),
 )
 return handleRustResult(
@@ -262,7 +262,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt16.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    329, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u16
+    330, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u16
     FfiConverterUInt16.lower(v),
 )
 return handleRustResult(
@@ -286,7 +286,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    330, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u32
+    331, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u32
     FfiConverterUInt32.lower(v),
 )
 return handleRustResult(
@@ -310,7 +310,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt64.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    331, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u64
+    332, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u64
     FfiConverterUInt64.lower(v),
 )
 return handleRustResult(
@@ -334,7 +334,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt8.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    332, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u8
+    333, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_u8
     FfiConverterUInt8.lower(v),
 )
 return handleRustResult(
@@ -358,7 +358,7 @@ if (v instanceof UniffiSkipJsTypeCheck) {
     FfiConverterSequenceUInt32.checkType(v);
 }
 const result = await UniFFIScaffolding.callAsync(
-    333, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_vec
+    334, // uniffi_uniffi_bindings_tests_fn_func_async_roundtrip_vec
     FfiConverterSequenceUInt32.lower(v),
 )
 return handleRustResult(
@@ -374,7 +374,7 @@ return handleRustResult(
 export async function asyncThrowError() {
    
 const result = await UniFFIScaffolding.callAsync(
-    334, // uniffi_uniffi_bindings_tests_fn_func_async_throw_error
+    335, // uniffi_uniffi_bindings_tests_fn_func_async_throw_error
 )
 return handleRustResult(
     result,
@@ -397,7 +397,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestInterface.checkType(int);
 }
 const result = UniFFIScaffolding.callSync(
-    335, // uniffi_uniffi_bindings_tests_fn_func_clone_interface
+    336, // uniffi_uniffi_bindings_tests_fn_func_clone_interface
     FfiConverterTypeTestInterface.lower(int),
 )
 return handleRustResult(
@@ -421,7 +421,7 @@ if (value instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(value);
 }
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    336, // uniffi_uniffi_bindings_tests_fn_func_create_async_test_trait_interface
+    337, // uniffi_uniffi_bindings_tests_fn_func_create_async_test_trait_interface
     FfiConverterUInt32.lower(value),
 )
 return handleRustResult(
@@ -445,7 +445,7 @@ if (value instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(value);
 }
 const result = UniFFIScaffolding.callSync(
-    337, // uniffi_uniffi_bindings_tests_fn_func_create_test_trait_interface
+    338, // uniffi_uniffi_bindings_tests_fn_func_create_test_trait_interface
     FfiConverterUInt32.lower(value),
 )
 return handleRustResult(
@@ -469,7 +469,7 @@ if (arg instanceof UniffiSkipJsTypeCheck) {
     FfiConverterString.checkType(arg);
 }
 const result = UniFFIScaffolding.callSync(
-    338, // uniffi_uniffi_bindings_tests_fn_func_func_with_default
+    339, // uniffi_uniffi_bindings_tests_fn_func_func_with_default
     FfiConverterString.lower(arg),
 )
 return handleRustResult(
@@ -492,7 +492,7 @@ if (input instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(input);
 }
 const result = UniFFIScaffolding.callSync(
-    339, // uniffi_uniffi_bindings_tests_fn_func_func_with_error
+    340, // uniffi_uniffi_bindings_tests_fn_func_func_with_error
     FfiConverterUInt32.lower(input),
 )
 return handleRustResult(
@@ -515,7 +515,7 @@ if (input instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(input);
 }
 const result = UniFFIScaffolding.callSync(
-    340, // uniffi_uniffi_bindings_tests_fn_func_func_with_flat_error
+    341, // uniffi_uniffi_bindings_tests_fn_func_func_with_flat_error
     FfiConverterUInt32.lower(input),
 )
 return handleRustResult(
@@ -540,7 +540,7 @@ if (theArgument instanceof UniffiSkipJsTypeCheck) {
     FfiConverterString.checkType(theArgument);
 }
 const result = UniFFIScaffolding.callSync(
-    341, // uniffi_uniffi_bindings_tests_fn_func_func_with_multi_word_arg
+    342, // uniffi_uniffi_bindings_tests_fn_func_func_with_multi_word_arg
     FfiConverterString.lower(theArgument),
 )
 return handleRustResult(
@@ -557,7 +557,7 @@ return handleRustResult(
 export async function getCustomTypesDemo() {
    
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    342, // uniffi_uniffi_bindings_tests_fn_func_get_custom_types_demo
+    343, // uniffi_uniffi_bindings_tests_fn_func_get_custom_types_demo
 )
 return handleRustResult(
     result,
@@ -580,7 +580,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeAsyncTestTraitInterface.checkType(int);
 }
 const result = await UniFFIScaffolding.callAsync(
-    343, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_get_value
+    344, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_get_value
     FfiConverterTypeAsyncTestTraitInterface.lower(int),
 )
 return handleRustResult(
@@ -603,7 +603,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeAsyncTestTraitInterface.checkType(int);
 }
 const result = await UniFFIScaffolding.callAsync(
-    344, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_noop
+    345, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_noop
     FfiConverterTypeAsyncTestTraitInterface.lower(int),
 )
 return handleRustResult(
@@ -633,7 +633,7 @@ if (value instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(value);
 }
 const result = await UniFFIScaffolding.callAsync(
-    345, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_set_value
+    346, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_set_value
     FfiConverterTypeAsyncTestTraitInterface.lower(int),
     FfiConverterUInt32.lower(value),
 )
@@ -665,7 +665,7 @@ if (numbers instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeCallbackInterfaceNumbers.checkType(numbers);
 }
 const result = await UniFFIScaffolding.callAsync(
-    346, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_throw_if_equal
+    347, // uniffi_uniffi_bindings_tests_fn_func_invoke_async_test_trait_interface_throw_if_equal
     FfiConverterTypeAsyncTestTraitInterface.lower(int),
     FfiConverterTypeCallbackInterfaceNumbers.lower(numbers),
 )
@@ -690,7 +690,7 @@ if (cbi instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestAsyncCallbackInterface.checkType(cbi);
 }
 const result = await UniFFIScaffolding.callAsync(
-    347, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_get_value
+    348, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_get_value
     FfiConverterTypeTestAsyncCallbackInterface.lower(cbi),
 )
 return handleRustResult(
@@ -713,7 +713,7 @@ if (cbi instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestAsyncCallbackInterface.checkType(cbi);
 }
 const result = await UniFFIScaffolding.callAsync(
-    348, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_noop
+    349, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_noop
     FfiConverterTypeTestAsyncCallbackInterface.lower(cbi),
 )
 return handleRustResult(
@@ -743,7 +743,7 @@ if (value instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(value);
 }
 const result = await UniFFIScaffolding.callAsync(
-    349, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_set_value
+    350, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_set_value
     FfiConverterTypeTestAsyncCallbackInterface.lower(cbi),
     FfiConverterUInt32.lower(value),
 )
@@ -775,7 +775,7 @@ if (numbers instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeCallbackInterfaceNumbers.checkType(numbers);
 }
 const result = await UniFFIScaffolding.callAsync(
-    350, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_throw_if_equal
+    351, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_async_callback_interface_throw_if_equal
     FfiConverterTypeTestAsyncCallbackInterface.lower(cbi),
     FfiConverterTypeCallbackInterfaceNumbers.lower(numbers),
 )
@@ -800,7 +800,7 @@ if (cbi instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestCallbackInterface.checkType(cbi);
 }
 const result = UniFFIScaffolding.callSync(
-    351, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_get_value
+    352, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_get_value
     FfiConverterTypeTestCallbackInterface.lower(cbi),
 )
 return handleRustResult(
@@ -823,7 +823,7 @@ if (cbi instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestCallbackInterface.checkType(cbi);
 }
 const result = UniFFIScaffolding.callSync(
-    352, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_noop
+    353, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_noop
     FfiConverterTypeTestCallbackInterface.lower(cbi),
 )
 return handleRustResult(
@@ -853,7 +853,7 @@ if (value instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(value);
 }
 const result = UniFFIScaffolding.callSync(
-    353, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_set_value
+    354, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_set_value
     FfiConverterTypeTestCallbackInterface.lower(cbi),
     FfiConverterUInt32.lower(value),
 )
@@ -885,7 +885,7 @@ if (numbers instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeCallbackInterfaceNumbers.checkType(numbers);
 }
 const result = UniFFIScaffolding.callSync(
-    354, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_throw_if_equal
+    355, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_callback_interface_throw_if_equal
     FfiConverterTypeTestCallbackInterface.lower(cbi),
     FfiConverterTypeCallbackInterfaceNumbers.lower(numbers),
 )
@@ -910,7 +910,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestTraitInterface.checkType(int);
 }
 const result = UniFFIScaffolding.callSync(
-    355, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_get_value
+    356, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_get_value
     FfiConverterTypeTestTraitInterface.lower(int),
 )
 return handleRustResult(
@@ -933,7 +933,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestTraitInterface.checkType(int);
 }
 const result = UniFFIScaffolding.callSync(
-    356, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_noop
+    357, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_noop
     FfiConverterTypeTestTraitInterface.lower(int),
 )
 return handleRustResult(
@@ -963,7 +963,7 @@ if (value instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(value);
 }
 const result = UniFFIScaffolding.callSync(
-    357, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_set_value
+    358, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_set_value
     FfiConverterTypeTestTraitInterface.lower(int),
     FfiConverterUInt32.lower(value),
 )
@@ -995,7 +995,7 @@ if (numbers instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeCallbackInterfaceNumbers.checkType(numbers);
 }
 const result = UniFFIScaffolding.callSync(
-    358, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_throw_if_equal
+    359, // uniffi_uniffi_bindings_tests_fn_func_invoke_test_trait_interface_throw_if_equal
     FfiConverterTypeTestTraitInterface.lower(int),
     FfiConverterTypeCallbackInterfaceNumbers.lower(numbers),
 )
@@ -1020,7 +1020,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeAsyncTestTraitInterface.checkType(int);
 }
 const result = UniFFIScaffolding.callSync(
-    359, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_async_test_trait_interface
+    360, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_async_test_trait_interface
     FfiConverterTypeAsyncTestTraitInterface.lower(int),
 )
 return handleRustResult(
@@ -1044,7 +1044,7 @@ if (intList instanceof UniffiSkipJsTypeCheck) {
     FfiConverterSequenceTypeAsyncTestTraitInterface.checkType(intList);
 }
 const result = UniFFIScaffolding.callSync(
-    360, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_async_test_trait_interface_list
+    361, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_async_test_trait_interface_list
     FfiConverterSequenceTypeAsyncTestTraitInterface.lower(intList),
 )
 return handleRustResult(
@@ -1068,7 +1068,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterBoolean.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    361, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_bool
+    362, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_bool
     FfiConverterBoolean.lower(a),
 )
 return handleRustResult(
@@ -1092,7 +1092,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterOptionalSequenceMapStringUInt32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    362, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_complex_compound
+    363, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_complex_compound
     FfiConverterOptionalSequenceMapStringUInt32.lower(a),
 )
 return handleRustResult(
@@ -1116,7 +1116,7 @@ if (en instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeComplexEnum.checkType(en);
 }
 const result = UniFFIScaffolding.callSync(
-    363, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_complex_enum
+    364, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_complex_enum
     FfiConverterTypeComplexEnum.lower(en),
 )
 return handleRustResult(
@@ -1140,7 +1140,7 @@ if (rec instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeComplexRec.checkType(rec);
 }
 const result = UniFFIScaffolding.callSync(
-    364, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_complex_rec
+    365, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_complex_rec
     FfiConverterTypeComplexRec.lower(rec),
 )
 return handleRustResult(
@@ -1164,7 +1164,7 @@ if (handle instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeHandle.checkType(handle);
 }
 const result = UniFFIScaffolding.callSync(
-    365, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_custom_type
+    366, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_custom_type
     FfiConverterTypeHandle.lower(handle),
 )
 return handleRustResult(
@@ -1188,7 +1188,7 @@ if (en instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeEnumNoData.checkType(en);
 }
 const result = UniFFIScaffolding.callSync(
-    366, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_enum_no_data
+    367, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_enum_no_data
     FfiConverterTypeEnumNoData.lower(en),
 )
 return handleRustResult(
@@ -1212,7 +1212,7 @@ if (en instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeEnumWithData.checkType(en);
 }
 const result = UniFFIScaffolding.callSync(
-    367, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_enum_with_data
+    368, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_enum_with_data
     FfiConverterTypeEnumWithData.lower(en),
 )
 return handleRustResult(
@@ -1236,7 +1236,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterFloat32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    368, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_f32
+    369, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_f32
     FfiConverterFloat32.lower(a),
 )
 return handleRustResult(
@@ -1260,7 +1260,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterFloat64.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    369, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_f64
+    370, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_f64
     FfiConverterFloat64.lower(a),
 )
 return handleRustResult(
@@ -1284,7 +1284,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterMapStringUInt32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    370, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_hash_map
+    371, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_hash_map
     FfiConverterMapStringUInt32.lower(a),
 )
 return handleRustResult(
@@ -1308,7 +1308,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt16.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    371, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i16
+    372, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i16
     FfiConverterInt16.lower(a),
 )
 return handleRustResult(
@@ -1332,7 +1332,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    372, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i32
+    373, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i32
     FfiConverterInt32.lower(a),
 )
 return handleRustResult(
@@ -1356,7 +1356,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt64.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    373, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i64
+    374, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i64
     FfiConverterInt64.lower(a),
 )
 return handleRustResult(
@@ -1380,7 +1380,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterInt8.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    374, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i8
+    375, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_i8
     FfiConverterInt8.lower(a),
 )
 return handleRustResult(
@@ -1404,7 +1404,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterOptionalUInt32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    375, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_option
+    376, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_option
     FfiConverterOptionalUInt32.lower(a),
 )
 return handleRustResult(
@@ -1428,7 +1428,7 @@ if (rec instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeSimpleRec.checkType(rec);
 }
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    376, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_simple_rec
+    377, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_simple_rec
     FfiConverterTypeSimpleRec.lower(rec),
 )
 return handleRustResult(
@@ -1452,7 +1452,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterString.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    377, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_string
+    378, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_string
     FfiConverterString.lower(a),
 )
 return handleRustResult(
@@ -1476,7 +1476,7 @@ if (int instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTestTraitInterface.checkType(int);
 }
 const result = UniFFIScaffolding.callSync(
-    378, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_test_trait_interface
+    379, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_test_trait_interface
     FfiConverterTypeTestTraitInterface.lower(int),
 )
 return handleRustResult(
@@ -1500,7 +1500,7 @@ if (intList instanceof UniffiSkipJsTypeCheck) {
     FfiConverterSequenceTypeTestTraitInterface.checkType(intList);
 }
 const result = UniFFIScaffolding.callSync(
-    379, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_test_trait_interface_list
+    380, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_test_trait_interface_list
     FfiConverterSequenceTypeTestTraitInterface.lower(intList),
 )
 return handleRustResult(
@@ -1524,7 +1524,7 @@ if (time instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTimeIntervalMs.checkType(time);
 }
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    380, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_time_interval_ms
+    381, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_time_interval_ms
     FfiConverterTypeTimeIntervalMs.lower(time),
 )
 return handleRustResult(
@@ -1548,7 +1548,7 @@ if (time instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTimeIntervalSecDbl.checkType(time);
 }
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    381, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_time_interval_sec_dbl
+    382, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_time_interval_sec_dbl
     FfiConverterTypeTimeIntervalSecDbl.lower(time),
 )
 return handleRustResult(
@@ -1572,7 +1572,7 @@ if (time instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTimeIntervalSecFlt.checkType(time);
 }
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    382, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_time_interval_sec_flt
+    383, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_time_interval_sec_flt
     FfiConverterTypeTimeIntervalSecFlt.lower(time),
 )
 return handleRustResult(
@@ -1596,7 +1596,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt16.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    383, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u16
+    384, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u16
     FfiConverterUInt16.lower(a),
 )
 return handleRustResult(
@@ -1620,7 +1620,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    384, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u32
+    385, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u32
     FfiConverterUInt32.lower(a),
 )
 return handleRustResult(
@@ -1644,7 +1644,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt64.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    385, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u64
+    386, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u64
     FfiConverterUInt64.lower(a),
 )
 return handleRustResult(
@@ -1668,7 +1668,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterUInt8.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    386, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u8
+    387, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_u8
     FfiConverterUInt8.lower(a),
 )
 return handleRustResult(
@@ -1692,7 +1692,7 @@ if (url instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeUrl.checkType(url);
 }
 const result = await UniFFIScaffolding.callAsyncWrapper(
-    387, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_url
+    388, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_url
     FfiConverterTypeUrl.lower(url),
 )
 return handleRustResult(
@@ -1716,7 +1716,7 @@ if (a instanceof UniffiSkipJsTypeCheck) {
     FfiConverterSequenceUInt32.checkType(a);
 }
 const result = UniFFIScaffolding.callSync(
-    388, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_vec
+    389, // uniffi_uniffi_bindings_tests_fn_func_roundtrip_vec
     FfiConverterSequenceUInt32.lower(a),
 )
 return handleRustResult(
@@ -1810,7 +1810,7 @@ if (negate instanceof UniffiSkipJsTypeCheck) {
     FfiConverterBoolean.checkType(negate);
 }
 const result = UniFFIScaffolding.callSync(
-    389, // uniffi_uniffi_bindings_tests_fn_func_sum_with_many_types
+    390, // uniffi_uniffi_bindings_tests_fn_func_sum_with_many_types
     FfiConverterUInt8.lower(a),
     FfiConverterInt8.lower(b),
     FfiConverterUInt16.lower(c),
@@ -1844,7 +1844,7 @@ if (interfaces instanceof UniffiSkipJsTypeCheck) {
     FfiConverterTypeTwoTestInterfaces.checkType(interfaces);
 }
 const result = UniFFIScaffolding.callSync(
-    390, // uniffi_uniffi_bindings_tests_fn_func_swap_test_interfaces
+    391, // uniffi_uniffi_bindings_tests_fn_func_swap_test_interfaces
     FfiConverterTypeTwoTestInterfaces.lower(interfaces),
 )
 return handleRustResult(
@@ -1860,7 +1860,7 @@ return handleRustResult(
 export function testFunc() {
    
 const result = UniFFIScaffolding.callSync(
-    391, // uniffi_uniffi_bindings_tests_fn_func_test_func
+    392, // uniffi_uniffi_bindings_tests_fn_func_test_func
 )
 return handleRustResult(
     result,
@@ -2845,7 +2845,7 @@ export class TestInterface extends TestInterfaceInterface {
             FfiConverterUInt32.checkType(value);
         }
         const result = UniFFIScaffolding.callSync(
-            406, // uniffi_uniffi_bindings_tests_fn_constructor_testinterface_new
+            407, // uniffi_uniffi_bindings_tests_fn_constructor_testinterface_new
             FfiConverterUInt32.lower(value),
         )
         return handleRustResult(
@@ -2862,7 +2862,7 @@ export class TestInterface extends TestInterfaceInterface {
     getValue() {
        
         const result = UniFFIScaffolding.callSync(
-            407, // uniffi_uniffi_bindings_tests_fn_method_testinterface_get_value
+            408, // uniffi_uniffi_bindings_tests_fn_method_testinterface_get_value
             FfiConverterTypeTestInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2881,7 +2881,7 @@ export class TestInterface extends TestInterfaceInterface {
     refCount() {
        
         const result = UniFFIScaffolding.callSync(
-            408, // uniffi_uniffi_bindings_tests_fn_method_testinterface_ref_count
+            409, // uniffi_uniffi_bindings_tests_fn_method_testinterface_ref_count
             FfiConverterTypeTestInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3657,7 +3657,7 @@ export class AsyncInterface extends AsyncInterfaceInterface {
             FfiConverterString.checkType(name);
         }
         const result = UniFFIScaffolding.callSync(
-            397, // uniffi_uniffi_bindings_tests_fn_constructor_asyncinterface_new
+            398, // uniffi_uniffi_bindings_tests_fn_constructor_asyncinterface_new
             FfiConverterString.lower(name),
         )
         return handleRustResult(
@@ -3674,7 +3674,7 @@ export class AsyncInterface extends AsyncInterfaceInterface {
     async name() {
        
         const result = await UniFFIScaffolding.callAsync(
-            398, // uniffi_uniffi_bindings_tests_fn_method_asyncinterface_name
+            399, // uniffi_uniffi_bindings_tests_fn_method_asyncinterface_name
             FfiConverterTypeAsyncInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3785,7 +3785,7 @@ export class AsyncTestTraitInterfaceImpl extends AsyncTestTraitInterface {
     async noop() {
        
         const result = await UniFFIScaffolding.callAsync(
-            399, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_noop
+            400, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_noop
             FfiConverterTypeAsyncTestTraitInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3802,7 +3802,7 @@ export class AsyncTestTraitInterfaceImpl extends AsyncTestTraitInterface {
     async getValue() {
        
         const result = await UniFFIScaffolding.callAsync(
-            400, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_get_value
+            401, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_get_value
             FfiConverterTypeAsyncTestTraitInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3825,7 +3825,7 @@ export class AsyncTestTraitInterfaceImpl extends AsyncTestTraitInterface {
             FfiConverterUInt32.checkType(value);
         }
         const result = await UniFFIScaffolding.callAsync(
-            401, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_set_value
+            402, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_set_value
             FfiConverterTypeAsyncTestTraitInterface.lowerReceiver(this),
             FfiConverterUInt32.lower(value),
         )
@@ -3853,7 +3853,7 @@ export class AsyncTestTraitInterfaceImpl extends AsyncTestTraitInterface {
             FfiConverterTypeCallbackInterfaceNumbers.checkType(numbers);
         }
         const result = await UniFFIScaffolding.callAsync(
-            402, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_throw_if_equal
+            403, // uniffi_uniffi_bindings_tests_fn_method_asynctesttraitinterface_throw_if_equal
             FfiConverterTypeAsyncTestTraitInterface.lowerReceiver(this),
             FfiConverterTypeCallbackInterfaceNumbers.lower(numbers),
         )
@@ -4025,7 +4025,7 @@ export class ComplexMethods extends ComplexMethodsInterface {
     static init() {
        
         const result = UniFFIScaffolding.callSync(
-            403, // uniffi_uniffi_bindings_tests_fn_constructor_complexmethods_new
+            404, // uniffi_uniffi_bindings_tests_fn_constructor_complexmethods_new
         )
         return handleRustResult(
             result,
@@ -4048,7 +4048,7 @@ export class ComplexMethods extends ComplexMethodsInterface {
             FfiConverterString.checkType(arg);
         }
         const result = UniFFIScaffolding.callSync(
-            404, // uniffi_uniffi_bindings_tests_fn_method_complexmethods_method_with_default
+            405, // uniffi_uniffi_bindings_tests_fn_method_complexmethods_method_with_default
             FfiConverterTypeComplexMethods.lowerReceiver(this),
             FfiConverterString.lower(arg),
         )
@@ -4073,7 +4073,7 @@ export class ComplexMethods extends ComplexMethodsInterface {
             FfiConverterString.checkType(theArgument);
         }
         const result = UniFFIScaffolding.callSync(
-            405, // uniffi_uniffi_bindings_tests_fn_method_complexmethods_method_with_multi_word_arg
+            406, // uniffi_uniffi_bindings_tests_fn_method_complexmethods_method_with_multi_word_arg
             FfiConverterTypeComplexMethods.lowerReceiver(this),
             FfiConverterString.lower(theArgument),
         )
@@ -4185,7 +4185,7 @@ export class TestTraitInterfaceImpl extends TestTraitInterface {
     noop() {
        
         const result = UniFFIScaffolding.callSync(
-            409, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_noop
+            410, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_noop
             FfiConverterTypeTestTraitInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -4202,7 +4202,7 @@ export class TestTraitInterfaceImpl extends TestTraitInterface {
     getValue() {
        
         const result = UniFFIScaffolding.callSync(
-            410, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_get_value
+            411, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_get_value
             FfiConverterTypeTestTraitInterface.lowerReceiver(this),
         )
         return handleRustResult(
@@ -4225,7 +4225,7 @@ export class TestTraitInterfaceImpl extends TestTraitInterface {
             FfiConverterUInt32.checkType(value);
         }
         const result = UniFFIScaffolding.callSync(
-            411, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_set_value
+            412, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_set_value
             FfiConverterTypeTestTraitInterface.lowerReceiver(this),
             FfiConverterUInt32.lower(value),
         )
@@ -4253,7 +4253,7 @@ export class TestTraitInterfaceImpl extends TestTraitInterface {
             FfiConverterTypeCallbackInterfaceNumbers.checkType(numbers);
         }
         const result = UniFFIScaffolding.callSync(
-            412, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_throw_if_equal
+            413, // uniffi_uniffi_bindings_tests_fn_method_testtraitinterface_throw_if_equal
             FfiConverterTypeTestTraitInterface.lowerReceiver(this),
             FfiConverterTypeCallbackInterfaceNumbers.lower(numbers),
         )

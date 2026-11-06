@@ -10,7 +10,7 @@ use crate::enrollment::{
 };
 use crate::error::{NimbusError, Result, debug, warn};
 use crate::evaluator::{CanEnrollResult, can_enroll};
-use crate::stateful::enrollment::get_enrollments;
+use crate::stateful::enrollment::get_enrolled_experiments;
 use crate::stateful::firefox_labs::FirefoxLabsMetadata;
 use crate::stateful::gecko_prefs::GeckoPrefStore;
 use crate::stateful::persistence::{Database, StoreId, Writer};
@@ -64,19 +64,19 @@ impl DatabaseCache {
     ) -> Result<()> {
         // By passing in the active `writer` we read the state of enrollments
         // as written by the calling code, before it's committed to the db.
-        let enrollments = get_enrollments(db, &writer)?;
-
-        // Build a lookup table for experiments by experiment slug.
-        // This will be used for get_experiment_branch() and get_active_experiments()
-        let mut experiments_by_slug = HashMap::with_capacity(enrollments.len());
-        for e in enrollments {
-            experiments_by_slug.insert(e.slug.clone(), e);
-        }
-
         let enrollments: Vec<ExperimentEnrollment> =
             db.get_store(StoreId::Enrollments).collect_all(&writer)?;
         let experiments: Vec<Experiment> =
             db.get_store(StoreId::Experiments).collect_all(&writer)?;
+
+        let enrolled_experiments = get_enrolled_experiments(&enrollments, &experiments)?;
+
+        // Build a lookup table for experiments by experiment slug.
+        // This will be used for get_experiment_branch() and get_active_experiments()
+        let mut experiments_by_slug = HashMap::with_capacity(enrolled_experiments.len());
+        for e in enrolled_experiments {
+            experiments_by_slug.insert(e.slug.clone(), e);
+        }
 
         let features_by_feature_id =
             map_features_by_feature_id(&enrollments, &experiments, coenrolling_ids);

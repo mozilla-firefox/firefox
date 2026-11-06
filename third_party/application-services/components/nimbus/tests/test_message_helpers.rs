@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#![cfg(feature = "rkv-safe-mode")]
+#![cfg(feature = "stateful")]
 
 // Testing get_experiment_branch semantics.
 
@@ -11,7 +11,6 @@ use chrono::{Duration, Utc};
 use nimbus::error::Result;
 use serde_json::json;
 
-#[cfg(feature = "stateful")]
 #[test]
 fn test_jexl_expression() -> Result<()> {
     let nimbus = crate::common::new_test_client("jexl_test")?;

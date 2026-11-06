@@ -16,12 +16,16 @@ use crate::enrollment::{
 };
 use crate::stateful::behavior::EventStore;
 use crate::stateful::enrollment::{
-    get_enrollments, get_experiment_participation, get_rollout_participation, opt_in_with_branch,
-    opt_out, reset_telemetry_identifiers, set_experiment_participation, set_rollout_participation,
+    get_enrolled_experiments, get_experiment_participation, get_rollout_participation,
+    opt_in_with_branch, opt_out, reset_telemetry_identifiers, set_experiment_participation,
+    set_rollout_participation,
 };
 use crate::stateful::persistence::{Database, Readable, StoreId};
 use crate::tests::helpers::{TestMetrics, get_test_experiments, no_coenrolling_features};
-use crate::{AppContext, AvailableRandomizationUnits, NimbusTargetingHelper, Result};
+use crate::{
+    AppContext, AvailableRandomizationUnits, EnrolledExperiment, Experiment, NimbusTargetingHelper,
+    Result,
+};
 
 fn get_experiment_enrollments<'r>(
     db: &Database,
@@ -35,6 +39,17 @@ impl From<EventStore> for NimbusTargetingHelper {
         let ctx: AppContext = Default::default();
         NimbusTargetingHelper::new(ctx, Arc::new(Mutex::new(value)), None)
     }
+}
+
+fn get_experiments<'r>(
+    db: &Database,
+    reader: &'r impl Readable<'r>,
+) -> Result<Vec<EnrolledExperiment>> {
+    let enrollments: Vec<ExperimentEnrollment> =
+        db.get_store(StoreId::Enrollments).collect_all(reader)?;
+    let experiments: Vec<Experiment> = db.get_store(StoreId::Experiments).collect_all(reader)?;
+
+    get_enrolled_experiments(&enrollments, &experiments)
 }
 
 #[test]
@@ -53,13 +68,13 @@ fn test_enrollments() -> Result<()> {
         ..Default::default()
     }
     .into();
-    assert_eq!(get_enrollments(&db, &writer)?.len(), 0);
+    assert_eq!(get_experiments(&db, &writer)?.len(), 0);
 
     let ids = no_coenrolling_features();
     let mut evolver = EnrollmentsEvolver::new(&aru, &mut targeting_attributes, &ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &[exp1], None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 1);
     let enrollment = &enrollments[0];
     assert_eq!(enrollment.slug, "secure-gold");
@@ -95,7 +110,7 @@ fn test_enrollments() -> Result<()> {
 
     // Now opt-out.
     let events = opt_out(&db, &mut writer, "secure-gold", None)?;
-    assert_eq!(get_enrollments(&db, &writer)?.len(), 0);
+    assert_eq!(get_experiments(&db, &writer)?.len(), 0);
     // check we recorded the "why" correctly.
     let ee: ExperimentEnrollment = db
         .get_store(StoreId::Enrollments)
@@ -122,7 +137,7 @@ fn test_enrollments() -> Result<()> {
 
     // Opt in to a specific branch.
     let events = opt_in_with_branch(&db, &mut writer, "secure-gold", "treatment")?;
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 1);
     let enrollment = &enrollments[0];
     assert_eq!(enrollment.slug, "secure-gold");
@@ -157,7 +172,7 @@ fn test_updates() -> Result<()> {
         channel: "nightly".to_string(),
         ..Default::default()
     });
-    assert_eq!(get_enrollments(&db, &writer)?.len(), 0);
+    assert_eq!(get_experiments(&db, &writer)?.len(), 0);
     let exps = get_test_experiments();
 
     let ids = no_coenrolling_features();
@@ -165,7 +180,7 @@ fn test_updates() -> Result<()> {
     let mut evolver = EnrollmentsEvolver::new(&aru, &mut targeting_helper, &ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &exps, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 2);
 
     assert_eq!(
@@ -195,7 +210,7 @@ fn test_updates() -> Result<()> {
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, exps, None)?;
 
     // should only have 1 now.
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 1);
     // Check that the un-enrolled event was emitted.
     assert_eq!(
@@ -227,7 +242,7 @@ fn test_experiments_opt_out() -> Result<()> {
         ..Default::default()
     });
     let aru = AvailableRandomizationUnits::with_nimbus_id(&nimbus_id);
-    assert_eq!(get_enrollments(&db, &writer)?.len(), 0);
+    assert_eq!(get_experiments(&db, &writer)?.len(), 0);
     let exps = get_test_experiments();
 
     // User has opted out of new experiments.
@@ -238,7 +253,7 @@ fn test_experiments_opt_out() -> Result<()> {
     let mut evolver = EnrollmentsEvolver::new(&aru, &mut targeting_helper, &ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &exps, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 0);
     assert_eq!(&events, &[]);
     // We should see the experiment non-enrollments.
@@ -263,7 +278,7 @@ fn test_experiments_opt_out() -> Result<()> {
     let mut evolver = EnrollmentsEvolver::new(&aru, &mut targeting_helper, &ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &exps, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 2);
     assert_eq!(
         &events,
@@ -299,7 +314,7 @@ fn test_experiments_opt_out() -> Result<()> {
     let mut evolver = EnrollmentsEvolver::new(&aru, &mut targeting_helper, &ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &exps, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 0);
     assert_eq!(
         &events,
@@ -346,7 +361,7 @@ fn test_experiments_opt_out() -> Result<()> {
     let mut evolver = EnrollmentsEvolver::new(&aru, &mut targeting_helper, &ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &exps, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 0);
     assert_eq!(&events, &[]);
 
@@ -383,7 +398,7 @@ fn test_rollouts_opt_out() -> Result<()> {
         ..Default::default()
     });
     let aru = AvailableRandomizationUnits::with_nimbus_id(&nimbus_id);
-    assert_eq!(get_enrollments(&db, &writer)?.len(), 0);
+    assert_eq!(get_experiments(&db, &writer)?.len(), 0);
     let recipes = {
         let mut recipes = get_test_experiments();
         recipes[0].is_rollout = true;
@@ -403,7 +418,7 @@ fn test_rollouts_opt_out() -> Result<()> {
 
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &recipes, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(&enrollments, &[]);
     assert_eq!(&events, &[]);
     let experiment_enrollments = get_experiment_enrollments(&db, &writer)?;
@@ -429,7 +444,7 @@ fn test_rollouts_opt_out() -> Result<()> {
 
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &recipes, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 2);
     assert_eq!(
         &events,
@@ -465,7 +480,7 @@ fn test_rollouts_opt_out() -> Result<()> {
         EnrollmentsEvolver::new(&aru, &mut targeting_helper, &coenrolling_feature_ids);
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &recipes, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 0);
     assert_eq!(
         &events,
@@ -514,7 +529,7 @@ fn test_rollouts_opt_out() -> Result<()> {
     println!("====");
     let events = evolver.evolve_enrollments_in_db(&db, &mut writer, &recipes, None)?;
 
-    let enrollments = get_enrollments(&db, &writer)?;
+    let enrollments = get_experiments(&db, &writer)?;
     assert_eq!(enrollments.len(), 2);
     assert_eq!(
         &events,

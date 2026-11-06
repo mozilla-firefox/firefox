@@ -6,7 +6,10 @@
 use serde::Deserialize;
 use std::hash::{Hash, Hasher};
 use url::Url;
-use viaduct::{Headers, Request};
+use viaduct::{Headers, Request, GLOBAL_SETTINGS};
+
+use super::error::CallbackRequestError;
+use crate::non_empty_string::NonEmptyString;
 
 pub struct PreflightRequest(pub Url);
 
@@ -27,19 +30,29 @@ impl From<PreflightRequest> for Request {
 pub struct PreflightResponse {
     #[serde(default)]
     pub geo_location: String,
-    #[serde(default)]
-    pub normalized_ua: String,
+    #[serde(default, deserialize_with = "NonEmptyString::deserialize_option")]
+    pub normalized_ua: Option<NonEmptyString>,
 }
 
-impl TryFrom<PreflightResponse> for Headers {
-    type Error = viaduct::ViaductError;
-
-    fn try_from(preflight: PreflightResponse) -> Result<Self, Self::Error> {
+impl PreflightResponse {
+    pub fn into_headers(
+        self,
+        browser_user_agent: Option<&NonEmptyString>,
+    ) -> Result<Headers, CallbackRequestError> {
+        let user_agent = self
+            .normalized_ua
+            .or_else(|| browser_user_agent.cloned())
+            .or_else(|| {
+                GLOBAL_SETTINGS
+                    .read()
+                    .default_user_agent
+                    .clone()
+                    .and_then(NonEmptyString::new)
+            })
+            .ok_or(CallbackRequestError::MissingUserAgent)?;
         let mut headers = Headers::new();
-        headers.insert("X-Geo-Location", preflight.geo_location)?;
-        if !preflight.normalized_ua.is_empty() {
-            headers.insert("X-User-Agent", preflight.normalized_ua)?;
-        }
+        headers.insert("X-Geo-Location", self.geo_location)?;
+        headers.insert("X-User-Agent", user_agent)?;
         Ok(headers)
     }
 }
@@ -48,47 +61,62 @@ impl TryFrom<PreflightResponse> for Headers {
 mod tests {
     use super::*;
 
+    fn preflight(geo_location: &str, normalized_ua: &str) -> PreflightResponse {
+        serde_json::from_value(serde_json::json!({
+            "geo_location": geo_location,
+            "normalized_ua": normalized_ua,
+        }))
+        .unwrap()
+    }
+
+    fn browser_user_agent() -> Option<NonEmptyString> {
+        NonEmptyString::new("Mozilla/5.0 Firefox/140.0")
+    }
+
     #[test]
-    fn headers_carry_geo_location_and_normalized_ua() {
-        let headers = Headers::try_from(PreflightResponse {
-            geo_location: "US-CA".to_string(),
-            normalized_ua: "Firefox/140.0".to_string(),
-        })
-        .unwrap();
+    fn normalized_ua_wins_over_the_fallback() {
+        let headers = preflight("US-CA", "Firefox/140.0")
+            .into_headers(browser_user_agent().as_ref())
+            .unwrap();
 
         assert_eq!(headers.get("X-Geo-Location"), Some("US-CA"));
         assert_eq!(headers.get("X-User-Agent"), Some("Firefox/140.0"));
     }
 
     #[test]
-    fn empty_normalized_ua_is_omitted() {
-        let headers = Headers::try_from(PreflightResponse {
-            geo_location: "US-CA".to_string(),
-            normalized_ua: String::new(),
-        })
-        .unwrap();
+    fn empty_normalized_ua_falls_back_to_the_browser_user_agent() {
+        let headers = preflight("US-CA", "")
+            .into_headers(browser_user_agent().as_ref())
+            .unwrap();
 
-        assert_eq!(headers.get("X-Geo-Location"), Some("US-CA"));
-        assert_eq!(headers.get("X-User-Agent"), None);
+        assert_eq!(
+            headers.get("X-User-Agent"),
+            Some("Mozilla/5.0 Firefox/140.0")
+        );
     }
 
     #[test]
-    fn non_ascii_geo_location_is_an_error_not_a_panic() {
-        let result = Headers::try_from(PreflightResponse {
-            geo_location: "Zürich".to_string(),
-            normalized_ua: String::new(),
-        });
+    fn falls_back_to_viaducts_user_agent_else_is_an_error() {
+        GLOBAL_SETTINGS.write().default_user_agent = None;
+        let result = preflight("US-CA", "").into_headers(None);
+        assert!(matches!(
+            result,
+            Err(CallbackRequestError::MissingUserAgent)
+        ));
 
-        assert!(result.is_err());
+        viaduct::settings::set_global_default_user_agent("viaduct-user-agent".into());
+        let headers = preflight("US-CA", "").into_headers(None).unwrap();
+        GLOBAL_SETTINGS.write().default_user_agent = None;
+        assert_eq!(headers.get("X-User-Agent"), Some("viaduct-user-agent"));
     }
 
     #[test]
-    fn header_injection_in_normalized_ua_is_an_error_not_a_panic() {
-        let result = Headers::try_from(PreflightResponse {
-            geo_location: "US-CA".to_string(),
-            normalized_ua: "Firefox/140.0\r\nX-Injected: yes".to_string(),
-        });
-
-        assert!(result.is_err());
+    fn invalid_header_values_are_an_error_not_a_panic() {
+        assert!(preflight("Zürich", "Firefox/140.0")
+            .into_headers(None)
+            .is_err());
+        assert!(preflight("US-CA", "Firefox/140.0\r\nX-Injected: yes")
+            .into_headers(None)
+            .is_err());
     }
 }

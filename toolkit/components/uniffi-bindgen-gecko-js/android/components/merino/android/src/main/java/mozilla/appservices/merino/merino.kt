@@ -682,6 +682,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_merino_checksum_method_suggestclient_get_suggestions(
     ): Int
+    external fun uniffi_merino_checksum_method_suggestclient_reset_session(
+    ): Int
     external fun uniffi_merino_checksum_constructor_curatedrecommendationsclient_new(
     ): Int
     external fun uniffi_merino_checksum_constructor_suggestclient_new(
@@ -722,6 +724,8 @@ internal object UniffiLib {
     ): Long
     external fun uniffi_merino_fn_method_suggestclient_get_suggestions(`ptr`: Long,`query`: RustBuffer.ByValue,`options`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
+    external fun uniffi_merino_fn_method_suggestclient_reset_session(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
     external fun uniffi_merino_fn_func_all_curated_recommendation_locales(uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_merino_fn_func_curated_recommendation_locale_from_string(`locale`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1555,6 +1559,18 @@ public interface SuggestClientInterface {
      */
     fun `getSuggestions`(`query`: kotlin.String, `options`: SuggestOptions): kotlin.String?
     
+    /**
+     * Ends the current search session.
+     *
+     * A new session, with a new session ID and the sequence number reset to 0,
+     * is started on the next call to [`SuggestClient::get_suggestions`].
+     *
+     * Consumers should call this whenever a search session ends (e.g. the user
+     * navigates away from the address bar). Consumers may also call it to end a
+     * long-lived session after a certain duration for better privacy protection.
+     */
+    fun `resetSession`()
+    
     companion object
 }
 
@@ -1697,6 +1713,28 @@ open class SuggestClient: Disposable, AutoCloseable, SuggestClientInterface
     }
     )
     }
+    
+
+    
+    /**
+     * Ends the current search session.
+     *
+     * A new session, with a new session ID and the sequence number reset to 0,
+     * is started on the next call to [`SuggestClient::get_suggestions`].
+     *
+     * Consumers should call this whenever a search session ends (e.g. the user
+     * navigates away from the address bar). Consumers may also call it to end a
+     * long-lived session after a certain duration for better privacy protection.
+     */override fun `resetSession`()
+        = 
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_merino_fn_method_suggestclient_reset_session(
+        it,
+        _status)
+}
+    }
+    
     
 
     

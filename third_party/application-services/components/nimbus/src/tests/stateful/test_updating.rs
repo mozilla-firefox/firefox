@@ -2,8 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-// Allow this to run in "safe mode"
-#![allow(unused_imports)]
+#![cfg(feature = "stateful")]
 
 use crate::Experiment;
 use crate::error::Result;
@@ -13,7 +12,6 @@ use crate::tests::helpers::TestMetrics;
 
 // This test crashes lmdb for reasons that make no sense, so only run it
 // in the "safe mode" backend.
-#[cfg(feature = "rkv-safe-mode")]
 #[test]
 fn test_reading_writing_and_removing_experiments() -> Result<()> {
     let tmp_dir = tempfile::tempdir()?;
