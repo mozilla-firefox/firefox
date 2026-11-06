@@ -5,6 +5,11 @@ description: Workflow guide when working with Android builds or the mobile/ dire
 
 # Android
 
+## Tech principles
+
+Use the principles documented [here](../../../mobile/android/fenix/docs/Tech-Principles.md)
+to inform decision-making when writing and reviewing code.
+
 ## Workflow
 - Instead of `gradlew`, use `./mach gradle` as the wrapper. Use `-p` argument of gradle if you need to run in a subdirectory
 
