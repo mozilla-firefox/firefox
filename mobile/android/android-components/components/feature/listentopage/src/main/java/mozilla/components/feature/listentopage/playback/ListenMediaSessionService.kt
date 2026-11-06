@@ -103,8 +103,11 @@ internal class ListenMediaSessionService : MediaSessionService() {
         return started
     }
 
+    @OptIn(UnstableApi::class)
     override fun onTaskRemoved(rootIntent: Intent?) {
-        endPlayback()
+        if (!(rootIntent.isExcludedFromRecents() && isPlaybackOngoing)) {
+            endPlayback()
+        }
     }
 
     /**
@@ -319,3 +322,6 @@ internal const val LISTEN_NOTIFICATION_ID = 1001
 @OptIn(UnstableApi::class)
 internal fun Intent.isNotificationDismissal(): Boolean =
     getBooleanExtra(MediaNotification.NOTIFICATION_DISMISSED_EVENT_KEY, false)
+
+internal fun Intent?.isExcludedFromRecents(): Boolean =
+    this != null && (flags and Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS) != 0

@@ -15,6 +15,7 @@ import android.os.Process
 import android.view.KeyEvent
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
+import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaLibraryInfo
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -55,6 +56,28 @@ class ListenMediaSessionServiceTest {
 
     @Test
     fun `test that swiping the app out of the recents list ends the service`() {
+        val service = startService()
+
+        service.onTaskRemoved(null)
+
+        assertTrue(shadowOf(service).isStoppedBySelf)
+    }
+
+    //  Test to cover scenario where Listen to page is opened from a shortcut - bug 2086312
+    @OptIn(UnstableApi::class)
+    @Test
+    fun `test that removing a task excluded from recents leaves the reading playing`() {
+        val service = startReading()
+
+        service.onTaskRemoved(taskExcludedFromRecents())
+
+        assertFalse(shadowOf(service).isStoppedBySelf)
+        assertTrue(service.isPlaybackOngoing)
+    }
+
+    //  Test to cover scenario where Listen to page is opened from a shortcut - bug 2086312
+    @Test
+    fun `test that removing a task excluded from recents ends the service when nothing is playing`() {
         val service = startService()
 
         service.onTaskRemoved(null)
@@ -233,6 +256,34 @@ class ListenMediaSessionServiceTest {
 
     @OptIn(UnstableApi::class)
     private fun startSession(): MediaSession = checkNotNull(startService().onGetSession(mock()))
+
+    /**
+     * A service that media3 has put in the foreground because its session is reading. The session is added the way a
+     * controller binding to the service adds it, and the player is held buffering a seek so that it counts as playing
+     * without any audio to load.
+     */
+    @OptIn(UnstableApi::class)
+    private fun startReading(): ListenMediaSessionService {
+        val service = startService()
+        val session = checkNotNull(service.onGetSession(mock()))
+        service.addSession(session)
+        val player = session.player as SessionPlayer
+
+        player.setMediaItem(MediaItem.fromUri("file:///chunk"))
+        player.playWhenReady = true
+        player.bufferAt(0)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        check(service.isPlaybackOngoing) { "The reading did not bring the service to the foreground" }
+        return service
+    }
+
+    /**
+     * The task of an activity with `excludeFromRecents`, such as the one a launcher shortcut opens the app through,
+     * which Android drops from the recents list once another task is in front of it.
+     */
+    private fun taskExcludedFromRecents() =
+        Intent(Intent.ACTION_VIEW).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
 
     private fun playerAt(speed: Float): Player = mock {
         whenever(this.playbackParameters).thenReturn(PlaybackParameters(speed))
