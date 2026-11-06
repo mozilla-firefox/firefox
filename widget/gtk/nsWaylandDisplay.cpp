@@ -1145,8 +1145,30 @@ MOZ_NEVER_INLINE static void WlLogHandler_InvalidDisplayObject(
                           WaylandProxy::GetState());
 }
 
-// 4% of crashes - Example: "failed to import supplied dmabufs: EGL failed to
-// allocate resources"
+// dmabuf import failures. Mutter reports them as "failed to import supplied
+// dmabufs: <reason>", and the reason names the step that failed, which also
+// tracks the graphics driver. The two known reasons get their own functions;
+// anything else goes to WlLogHandler_DmabufImportFailed. See bug 2035750.
+
+// Example: "failed to import supplied dmabufs: Could not bind the given
+// EGLImage to a CoglTexture2D". Seen with the proprietary NVIDIA driver.
+MOZ_NEVER_INLINE static void WlLogHandler_DmabufImportFailed_EGLImageBind(
+    const char* error) {
+  MOZ_CRASH_UNSAFE_PRINTF("(%s) %s Proxy: %s",
+                          GetDesktopEnvironmentIdentifier().get(), error,
+                          WaylandProxy::GetState());
+}
+
+// Example: "failed to import supplied dmabufs: EGL failed to allocate
+// resources for the requested operation." Seen with Mesa.
+MOZ_NEVER_INLINE static void WlLogHandler_DmabufImportFailed_EGLAlloc(
+    const char* error) {
+  MOZ_CRASH_UNSAFE_PRINTF("(%s) %s Proxy: %s",
+                          GetDesktopEnvironmentIdentifier().get(), error,
+                          WaylandProxy::GetState());
+}
+
+// Any other dmabuf import failure that mentions EGL.
 MOZ_NEVER_INLINE static void WlLogHandler_DmabufImportFailed(
     const char* error) {
   MOZ_CRASH_UNSAFE_PRINTF("(%s) %s Proxy: %s",
@@ -1266,6 +1288,12 @@ static void WlLogHandler(const char* format, va_list args) {
   // Pattern 7: dmabuf import failures (4% of crashes)
   if (strstr(error, "dmabuf") && strstr(error, "failed") &&
       strstr(error, "EGL")) {
+    if (strstr(error, "Could not bind the given EGLImage")) {
+      WlLogHandler_DmabufImportFailed_EGLImageBind(error);
+    }
+    if (strstr(error, "EGL failed to allocate resources")) {
+      WlLogHandler_DmabufImportFailed_EGLAlloc(error);
+    }
     WlLogHandler_DmabufImportFailed(error);
   }
 
