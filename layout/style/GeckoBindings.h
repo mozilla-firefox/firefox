@@ -663,6 +663,10 @@ bool Gecko_GetAnchorPosSize(const AnchorPosResolutionParams* aParams,
                             mozilla::StyleAnchorSizeKeyword aAnchorSizeKeyword,
                             mozilla::Length* aOut);
 
+// Tries to schedule a function to run in the current thread at idle priority.
+// Returns true if it was successfully scheduled.
+bool Gecko_ScheduleIdle(void (*)(), uint32_t aTimeout);
+
 }  // extern "C"
 
 #endif  // mozilla_GeckoBindings_h

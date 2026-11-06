@@ -2054,3 +2054,9 @@ bool Gecko_GetAnchorPosSize(const AnchorPosResolutionParams* aParams,
   *aOut = Length::FromPixels(CSSPixel::FromAppUnits(l));
   return true;
 }
+
+bool Gecko_ScheduleIdle(void (*aFunction)(), uint32_t aTimeout) {
+  return NS_SUCCEEDED(NS_DispatchToCurrentThreadQueue(
+      NS_NewRunnableFunction("Gecko_ScheduleIdle", aFunction), aTimeout,
+      EventQueuePriority::Idle));
+}

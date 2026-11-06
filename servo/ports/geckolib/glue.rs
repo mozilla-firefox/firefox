@@ -20,12 +20,14 @@ use selectors::parser::PseudoElement as PseudoElementTrait;
 use selectors::{Element, OpaqueElement};
 use servo_arc::{Arc, ArcBorrow};
 use smallvec::SmallVec;
+use std::cell::UnsafeCell;
 use std::collections::{BTreeSet, HashSet};
 use std::fmt::Write;
 use std::iter;
 use std::os::raw::c_void;
 use std::ptr;
 use std::sync::LazyLock;
+use std::sync::atomic::Ordering;
 use style::color::mix::ColorInterpolationMethod;
 use style::color::{AbsoluteColor, ColorComponents, ColorSpace};
 use style::computed_value_flags::ComputedValueFlags;
@@ -229,6 +231,7 @@ pub unsafe extern "C" fn Servo_Initialize(
 
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn Servo_Shutdown() {
+    drop_deferred_data();
     unsafe {
         DUMMY_URL_DATA = ptr::null_mut();
         DUMMY_CHROME_URL_DATA = ptr::null_mut();
@@ -412,8 +415,11 @@ pub extern "C" fn Servo_TraverseSubtree(
 /// if so, frees them.
 #[unsafe(no_mangle)]
 pub extern "C" fn Servo_MaybeGCRuleTree(raw_data: &PerDocumentStyleData) {
+    debug_assert!(is_main_thread());
     let per_doc_data = raw_data.borrow_mut();
-    per_doc_data.stylist.rule_tree().maybe_gc();
+    unsafe {
+        per_doc_data.stylist.rule_tree().root().maybe_gc();
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -1478,9 +1484,65 @@ pub extern "C" fn Servo_Property_IsDiscreteAnimatable(property: NonCustomCSSProp
     }
 }
 
+static mut DEFERRED_ELEMENT_DATA: UnsafeCell<Vec<Box<data::ElementDataWrapper>>> =
+    UnsafeCell::new(Vec::new());
+
+/// Upper bound on the amount of element data waiting to be dropped. Past it,
+/// element data is dropped synchronously.
+const MAX_DEFERRED_ELEMENT_DATA: usize = 20000;
+
+#[inline]
+fn schedule_deferred_data_drop() -> bool {
+    unsafe {
+        bindings::Gecko_ScheduleIdle(Some(drop_deferred_data), 1000 /* ms */)
+    }
+}
+
+/// Clears the element's style data, potentially deferred until drop_deferred_data() runs.
 #[unsafe(no_mangle)]
 pub extern "C" fn Servo_Element_ClearData(element: &RawGeckoElement) {
-    unsafe { GeckoElement(element).clear_data() };
+    debug_assert!(is_main_thread());
+    let Some(data) = (unsafe { GeckoElement(element).take_data() }) else {
+        return;
+    };
+
+    // As narrow of a static borrow as a it can get.
+    // Ideally we'd use something like [1] but that's not stable yet.
+    //
+    // [1]: https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html#unsafecell-with-sync
+    #[allow(static_mut_refs)]
+    {
+        let deferred = unsafe { DEFERRED_ELEMENT_DATA.get_mut() };
+        if deferred.is_empty() && !schedule_deferred_data_drop() {
+            return;
+        }
+        if deferred.len() < MAX_DEFERRED_ELEMENT_DATA {
+            deferred.push(data);
+            return;
+        }
+    }
+
+    drop_deferred_data();
+}
+
+/// Drops the element data detached by Servo_Element_ClearData.
+extern "C" fn drop_deferred_data() {
+    debug_assert!(is_main_thread());
+    // Similarly, as narrow of a borrow as it can get.
+    #[allow(static_mut_refs)]
+    let old = unsafe { std::mem::take(DEFERRED_ELEMENT_DATA.get_mut()) };
+
+    let mut roots_to_gc = HashSet::new();
+    for data in old {
+        let root = data.borrow().styles.primary().rules().root();
+        roots_to_gc.insert(root);
+        drop(data);
+    }
+    for root in roots_to_gc {
+        unsafe {
+            root.maybe_gc();
+        }
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -2673,7 +2735,6 @@ pub extern "C" fn Servo_NestedDeclarationsRule_SetStyle(
 pub extern "C" fn Servo_DeclarationBlock_IsImmutable(
     declarations: &LockedDeclarationBlock,
 ) -> bool {
-    use std::sync::atomic::Ordering;
     // SAFETY: See StyleSource::mark_in_rule_tree. This boolean is conceptually not part of the
     // locked data, and it's a relaxed atomic, so it's sound to read.
     unsafe {

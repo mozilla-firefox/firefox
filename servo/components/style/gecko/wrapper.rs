@@ -658,6 +658,37 @@ impl<'le> GeckoElement<'le> {
         unsafe { self.0.mServoData.get().as_ref() }
     }
 
+    /// Like `TElement::clear_data`, but hands the detached data (if any) to the
+    /// caller instead of dropping it.
+    ///
+    /// # Safety
+    /// The caller must have exclusive access to the element and its style data.
+    pub unsafe fn take_data(&self) -> Option<Box<ElementDataWrapper>> {
+        #[cfg(debug_assertions)]
+        {
+            // Perform a mutable borrow of the data in debug builds. This serves as an assertion
+            // that there are no outstanding borrows when we detach the data.
+            let _ = self.mutate_data();
+        }
+        let ptr = self.0.mServoData.get();
+        unsafe {
+            // NOTE: When adding flags here consider whether they need to be dropped in
+            // Element::ClearServoData.
+            self.unset_flags(
+                ELEMENT_HAS_SNAPSHOT
+                    | ELEMENT_HANDLED_SNAPSHOT
+                    | structs::Element_kAllServoDescendantBits
+                    | NODE_NEEDS_FRAME,
+            );
+            if ptr.is_null() {
+                return None;
+            }
+            debug!("Detaching ElementData for {self:?}");
+            self.0.mServoData.set(ptr::null_mut());
+            Some(Box::from_raw(ptr))
+        }
+    }
+
     /// Returns whether any animation applies to this element.
     #[inline]
     pub fn has_any_animation(&self) -> bool {
@@ -1428,28 +1459,7 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     unsafe fn clear_data(&self) {
-        #[cfg(debug_assertions)]
-        {
-            // Perform a mutable borrow of the data in debug builds. This serves as an assertion
-            // that there are no outstanding borrows when we destroy the data.
-            let _ = self.mutate_data();
-        }
-        let ptr = self.0.mServoData.get();
-        unsafe {
-            // NOTE: When adding flags here consider whether they need to be dropped in
-            // Element::ClearServoData.
-            self.unset_flags(
-                ELEMENT_HAS_SNAPSHOT
-                    | ELEMENT_HANDLED_SNAPSHOT
-                    | structs::Element_kAllServoDescendantBits
-                    | NODE_NEEDS_FRAME,
-            );
-            if !ptr.is_null() {
-                debug!("Dropping ElementData for {:?}", self);
-                let _data = Box::from_raw(self.0.mServoData.get());
-                self.0.mServoData.set(ptr::null_mut());
-            }
-        }
+        drop(unsafe { self.take_data() });
     }
 
     #[inline]

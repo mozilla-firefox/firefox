@@ -6181,6 +6181,7 @@ void Element::SetSavedScrollState(UniquePtr<ScrollState> aState) {
 
 void Element::ClearServoData(Document* aDoc) {
   MOZ_ASSERT(aDoc);
+  MOZ_ASSERT(NS_IsMainThread());
   if (HasServoData()) {
     Servo_Element_ClearData(this);
   } else {
