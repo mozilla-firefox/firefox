@@ -8,6 +8,7 @@
 #include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/dom/CacheBinding.h"
 #include "mozilla/dom/ChannelInfo.h"
+#include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/Promise.h"
 #include "mozilla/dom/PromiseNativeHandler.h"
 #include "mozilla/dom/ScriptLoadHandler.h"
@@ -99,8 +100,7 @@ class CacheLoadHandler final : public PromiseNativeHandler,
       const uint8_t* aString, uint32_t aStringLen,
       const mozilla::dom::ChannelInfo& aChannelInfo,
       UniquePtr<PrincipalInfo> aPrincipalInfo,
-      const nsACString& aCSPHeaderValue,
-      const nsACString& aCSPReportOnlyHeaderValue,
+      const PolicyContainer::Headers& aPolicyContainerHeaders,
       const nsACString& aReferrerPolicyHeaderValue,
       const nsACString& aReportingEndpointsHeaderValue);
   nsresult DataReceived();
@@ -116,8 +116,7 @@ class CacheLoadHandler final : public PromiseNativeHandler,
   mozilla::dom::ChannelInfo mChannelInfo;
   UniquePtr<PrincipalInfo> mPrincipalInfo;
   UniquePtr<ScriptDecoder> mDecoder;
-  nsCString mCSPHeaderValue;
-  nsCString mCSPReportOnlyHeaderValue;
+  PolicyContainer::Headers mPolicyContainerHeaders;
   nsCString mReferrerPolicyHeaderValue;
   nsCString mReportingEndpointsHeaderValue;
   nsCOMPtr<nsISerialEventTarget> mMainThreadEventTarget;

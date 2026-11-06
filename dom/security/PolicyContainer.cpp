@@ -4,10 +4,12 @@
 
 #include "PolicyContainer.h"
 
+#include "mozilla/BasePrincipal.h"
 #include "mozilla/dom/ConnectionAllowlists.h"
 #include "mozilla/dom/IntegrityPolicy.h"
 #include "mozilla/dom/IntegrityPolicyWAICT.h"
 #include "mozilla/dom/nsCSPContext.h"
+#include "mozilla/extensions/WebExtensionPolicy.h"
 #include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "nsCSPUtils.h"
 #include "nsIClassInfoImpl.h"
@@ -99,21 +101,33 @@ PolicyContainer::CreateForNonDocument(nsIPrincipal* aPrincipal,
                                       const Headers& aHeaders) {
   RefPtr<PolicyContainer> policyContainer = new PolicyContainer();
 
+  RefPtr<extensions::WebExtensionPolicy> addonPolicy;
+  if (auto* basePrin = BasePrincipal::Cast(aPrincipal)) {
+    addonPolicy = basePrin->AddonPolicy();
+  }
+
   if (!aHeaders.mContentSecurityPolicy.IsEmpty() ||
-      !aHeaders.mContentSecurityPolicyReportOnly.IsEmpty()) {
+      !aHeaders.mContentSecurityPolicyReportOnly.IsEmpty() || addonPolicy) {
     RefPtr<nsCSPContext> csp = new nsCSPContext();
     MOZ_TRY(csp->SetRequestContextWithPrincipal(aPrincipal, aSelfURI,
                                                 /* aReferrer */ ""_ns,
                                                 /* aInnerWindowId */ 0));
     if (!aHeaders.mContentSecurityPolicy.IsEmpty()) {
       MOZ_TRY(CSP_AppendCSPFromHeader(
-          csp, NS_ConvertUTF8toUTF16(aHeaders.mContentSecurityPolicy),
+          csp, NS_ConvertASCIItoUTF16(aHeaders.mContentSecurityPolicy),
           false /* aReportOnly */));
     }
     if (!aHeaders.mContentSecurityPolicyReportOnly.IsEmpty()) {
       MOZ_TRY(CSP_AppendCSPFromHeader(
-          csp, NS_ConvertUTF8toUTF16(aHeaders.mContentSecurityPolicyReportOnly),
+          csp,
+          NS_ConvertASCIItoUTF16(aHeaders.mContentSecurityPolicyReportOnly),
           true /* aReportOnly */));
+    }
+    // For extensions there aren't any CSP header values, instead the
+    // Extension CSP is inherited.
+    if (addonPolicy) {
+      csp->AppendPolicy(addonPolicy->BaseCSP(), false, false);
+      csp->AppendPolicy(addonPolicy->ExtensionPageCSP(), false, false);
     }
     policyContainer->SetCSP(csp);
   }

@@ -1425,17 +1425,10 @@ void WorkerPrivate::EvictFromBFCache() {
   runnable->Dispatch(this);
 }
 
-nsresult WorkerPrivate::SetCSPFromHeaderValues(
-    const nsACString& aCSPHeaderValue,
-    const nsACString& aCSPReportOnlyHeaderValue) {
+nsresult WorkerPrivate::SetPolicyContainerFromHeaders(
+    const PolicyContainer::Headers& aHeaders) {
   AssertIsOnMainThread();
   MOZ_DIAGNOSTIC_ASSERT(!mLoadInfo.mPolicyContainer);
-
-  NS_ConvertASCIItoUTF16 cspHeaderValue(aCSPHeaderValue);
-  NS_ConvertASCIItoUTF16 cspROHeaderValue(aCSPReportOnlyHeaderValue);
-
-  nsresult rv;
-  nsCOMPtr<nsIContentSecurityPolicy> csp = new nsCSPContext();
 
   // First, we try to query the URI from the Principal, but
   // in case selfURI remains empty (e.g in case the Principal
@@ -1453,36 +1446,10 @@ nsresult WorkerPrivate::SetCSPFromHeaderValues(
   }
   MOZ_ASSERT(selfURI, "need a self URI for CSP");
 
-  rv = csp->SetRequestContextWithPrincipal(mLoadInfo.mPrincipal, selfURI, ""_ns,
-                                           0);
-  NS_ENSURE_SUCCESS(rv, rv);
+  RefPtr<PolicyContainer> policyContainer =
+      MOZ_TRY(PolicyContainer::CreateForNonDocument(mLoadInfo.mPrincipal,
+                                                    selfURI, aHeaders));
 
-  // If there's a CSP header, apply it.
-  if (!cspHeaderValue.IsEmpty()) {
-    rv = CSP_AppendCSPFromHeader(csp, cspHeaderValue, false);
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-  // If there's a report-only CSP header, apply it.
-  if (!cspROHeaderValue.IsEmpty()) {
-    rv = CSP_AppendCSPFromHeader(csp, cspROHeaderValue, true);
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  RefPtr<extensions::WebExtensionPolicy> addonPolicy;
-
-  if (basePrin) {
-    addonPolicy = basePrin->AddonPolicy();
-  }
-
-  // For extension workers there aren't any csp header values,
-  // instead it will inherit the Extension CSP.
-  if (addonPolicy) {
-    csp->AppendPolicy(addonPolicy->BaseCSP(), false, false);
-    csp->AppendPolicy(addonPolicy->ExtensionPageCSP(), false, false);
-  }
-
-  RefPtr policyContainer = MakeRefPtr<PolicyContainer>();
-  policyContainer->SetCSP(csp);
   return SetPolicyContainerOnMainThread(policyContainer);
 }
 

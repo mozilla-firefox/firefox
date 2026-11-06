@@ -13,6 +13,7 @@
 #include "mozilla/StaticPrefs_javascript.h"
 #include "mozilla/dom/BlobURLProtocolHandler.h"
 #include "mozilla/dom/InternalResponse.h"
+#include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/Response.h"
 #include "mozilla/dom/ScriptLoader.h"
 #include "mozilla/dom/ServiceWorkerBinding.h"
@@ -170,7 +171,8 @@ nsresult NetworkLoadHandler::DataReceivedFromNetwork(nsIStreamLoader* aLoader,
   // Make sure we're not seeing the result of a 404 or something by checking
   // the 'requestSucceeded' attribute on the http channel.
   nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(request);
-  nsAutoCString tCspHeaderValue, tCspROHeaderValue, tRPHeaderCValue;
+  PolicyContainer::Headers policyContainerHeaders;
+  nsAutoCString tRPHeaderCValue;
 
   if (httpChannel) {
     bool requestSucceeded;
@@ -181,11 +183,20 @@ nsresult NetworkLoadHandler::DataReceivedFromNetwork(nsIStreamLoader* aLoader,
       return NS_ERROR_NOT_AVAILABLE;
     }
 
-    (void)httpChannel->GetResponseHeader("content-security-policy"_ns,
-                                         tCspHeaderValue);
+    (void)httpChannel->GetResponseHeader(
+        "content-security-policy"_ns,
+        policyContainerHeaders.mContentSecurityPolicy);
 
     (void)httpChannel->GetResponseHeader(
-        "content-security-policy-report-only"_ns, tCspROHeaderValue);
+        "content-security-policy-report-only"_ns,
+        policyContainerHeaders.mContentSecurityPolicyReportOnly);
+
+    (void)httpChannel->GetResponseHeader(
+        "connection-allowlist"_ns, policyContainerHeaders.mConnectionAllowlist);
+
+    (void)httpChannel->GetResponseHeader(
+        "connection-allowlist-report-only"_ns,
+        policyContainerHeaders.mConnectionAllowlistReportOnly);
 
     (void)httpChannel->GetResponseHeader("referrer-policy"_ns, tRPHeaderCValue);
 
@@ -282,11 +293,11 @@ nsresult NetworkLoadHandler::DataReceivedFromNetwork(nsIStreamLoader* aLoader,
     MOZ_TRY(mWorkerRef->Private()->SetPrincipalsAndPolicyContainerFromChannel(
         channel));
 
-    // Set CSP from the header if we don't inherit the Policy-Container from the
-    // channel.
+    // Set the Policy-Container from the headers if we don't inherit it from
+    // the channel.
     if (!CSP_ShouldResponseInheritCSP(channel)) {
-      MOZ_TRY(mWorkerRef->Private()->SetCSPFromHeaderValues(tCspHeaderValue,
-                                                            tCspROHeaderValue));
+      MOZ_TRY(mWorkerRef->Private()->SetPolicyContainerFromHeaders(
+          policyContainerHeaders));
     }
 
     mWorkerRef->Private()->UpdateReferrerInfoFromHeader(tRPHeaderCValue);

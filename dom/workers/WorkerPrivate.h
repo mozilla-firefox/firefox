@@ -995,8 +995,8 @@ class WorkerPrivate final
     return PolicyContainer::GetCSP(GetPolicyContainer());
   }
 
-  nsresult SetCSPFromHeaderValues(const nsACString& aCSPHeaderValue,
-                                  const nsACString& aCSPReportOnlyHeaderValue);
+  nsresult SetPolicyContainerFromHeaders(
+      const PolicyContainer::Headers& aHeaders);
 
   void StorePolicyContainerArgsOnClient();
 
