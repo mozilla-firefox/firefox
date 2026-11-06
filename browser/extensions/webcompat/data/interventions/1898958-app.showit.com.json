@@ -1,0 +1,15 @@
+{
+  "label": "app.showit.com",
+  "bugs": {
+    "1898958": {
+      "issue": "firefox-blocked-completely",
+      "matches": ["*://app.showit.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "ua_string": ["Chrome"]
+    }
+  ]
+}
