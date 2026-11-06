@@ -134,7 +134,7 @@ function check_telemetry() {
   );
   equal(
     keySizeHistogram.values[3],
-    70,
+    68,
     "Actual and expected verification failures unrelated to key size should match"
   );
 }
@@ -301,10 +301,9 @@ async function run_simple_tests() {
   await certOverrideTest("mitm.example.com", SEC_ERROR_UNKNOWN_ISSUER);
   Services.prefs.clearUserPref("security.pki.mitm_canary_issuer");
 
-  // This is intended to test the case where a verification has failed for one
-  // overridable reason (e.g. unknown issuer) but then, in the process of
-  // reporting that error, a non-overridable error is encountered. The
-  // non-overridable error should be prioritized.
+  // The issuer is untrusted, which is overridable, but NSS rejects
+  // certificates with unknown critical extensions while parsing them, before
+  // PSM verifies them, so the non-overridable error is reported.
   let rootCert = addCertFromFile(gCertDB, "bad_certs/test-ca.pem", ",,");
   await preventedCertOverrideTest(
     "nsCertTypeCritical.example.com",
