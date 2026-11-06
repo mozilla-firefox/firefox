@@ -4624,6 +4624,9 @@ void Document::SetDocumentURI(nsIURI* aURI) {
   if (!equalBases) {
     mCachedURLData = nullptr;
     RefreshLinkHrefs();
+    if (mSpeculationRules) {
+      mSpeculationRules->UpdateForBaseURLChange();
+    }
   }
 
   // Tell our WindowGlobalParent that the document's URI has been changed.
@@ -7631,6 +7634,9 @@ void Document::SetBaseURI(nsIURI* aURI) {
   mDocumentBaseURI = aURI;
   mCachedURLData = nullptr;
   RefreshLinkHrefs();
+  if (mSpeculationRules) {
+    mSpeculationRules->UpdateForBaseURLChange();
+  }
 }
 
 Result<OwningNonNull<nsIURI>, nsresult> Document::ResolveWithBaseURI(
