@@ -7737,13 +7737,33 @@ uint32_t nsWindow::GetMaxTouchPoints() const {
 void nsWindow::SessionRestoreFinished() {
   LOGW("nsWindow::SessionRestoreFinished() set focus to [%p]",
        gFocusRequestWindow.get());
+
+  // A window is shown by MoveToWorkspace() when it is restored, but a window
+  // without a saved workspace ID, or one which is not restored at all, never
+  // receives that call. Show every window which still waits for it. Showing a
+  // window may run GTK callbacks, so the windows are collected first.
+  nsTArray<RefPtr<nsWindow>> waitingWindows;
+  GList* toplevels = gtk_window_list_toplevels();
+  for (GList* item = toplevels; item; item = item->next) {
+    nsWindow* window = FromGtkWidget(GTK_WIDGET(item->data));
+    if (window && window->mWaitingToSessionRestore) {
+      waitingWindows.AppendElement(window);
+    }
+  }
+  g_list_free(toplevels);
+  for (const RefPtr<nsWindow>& window : waitingWindows) {
+    if (window->IsDestroyed() || !window->mWaitingToSessionRestore) {
+      continue;
+    }
+    LOGW("  [%p] was not restored, show it", window.get());
+    window->mWaitingToSessionRestore = false;
+    if (window->mNeedsShow) {
+      window->NativeShow(/* show */ true);
+    }
+  }
+
   if (!gFocusRequestWindow) {
     return;
-  }
-  if (gFocusRequestWindow->mWaitingToSessionRestore) {
-    NS_WARNING(
-        "Session restore finished before nsWindow::MoveToWorkspace() calls!");
-    gFocusRequestWindow->mWaitingToSessionRestore = false;
   }
   gFocusRequestWindow->SetFocus(gFocusRequestWindowRaise,
                                 mozilla::dom::CallerType::System);
