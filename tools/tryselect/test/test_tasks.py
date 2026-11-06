@@ -6,6 +6,7 @@ import io
 import os
 from types import SimpleNamespace
 
+import mozpack.path as mozpath
 import mozunit
 import pytest
 from tryselect import tasks as tasks_mod
@@ -220,12 +221,17 @@ def _run_suggest(
     run_result=None,
     run_exc=None,
     platform="linux",
+    shell="/bin/bash",
 ):
     """Drive suggest_watchman_setup() with the environment stubbed out and
     return whatever it printed."""
     stdout = _FakeStdout(tty)
     monkeypatch.setattr(tasks_mod.sys, "stdout", stdout)
     monkeypatch.setattr(tasks_mod.sys, "platform", platform)
+    if shell is None:
+        monkeypatch.delenv("SHELL", raising=False)
+    else:
+        monkeypatch.setenv("SHELL", shell)
     monkeypatch.setattr(tasks_mod.shutil, "which", lambda _: watchman)
 
     def fake_run(*args, **kwargs):
@@ -244,20 +250,29 @@ def test_suggest_watchman_setup_shows_hint(monkeypatch):
         monkeypatch,
         run_result=SimpleNamespace(returncode=0, stdout="some-other-trigger\n"),
     )
-    assert "watchman -j" in out
-    assert "watchman.json" in out
-    assert "cmd /d /c" not in out
+    watchman_json = mozpath.normsep(os.path.join(tasks_mod.here, "watchman.json"))
+    assert f'\n    watchman -j < "{watchman_json}"\n' in out
 
 
-def test_suggest_watchman_setup_hint_adds_cmd_form_on_windows(monkeypatch):
+def test_suggest_watchman_setup_hint_windows_shell(monkeypatch):
     out = _run_suggest(
         monkeypatch,
         platform="win32",
         run_result=SimpleNamespace(returncode=0, stdout="some-other-trigger\n"),
     )
-    assert "watchman -j < " in out
-    assert 'cmd /d /c "watchman -j < ' in out
-    assert "\\" not in out
+    watchman_json = mozpath.normsep(os.path.join(tasks_mod.here, "watchman.json"))
+    assert f'\n    watchman -j < "{watchman_json}"\n' in out
+
+
+def test_suggest_watchman_setup_hint_windows_cmd(monkeypatch):
+    out = _run_suggest(
+        monkeypatch,
+        platform="win32",
+        shell=None,
+        run_result=SimpleNamespace(returncode=0, stdout="some-other-trigger\n"),
+    )
+    watchman_json = os.path.join(tasks_mod.here, "watchman.json")
+    assert f'\n    more "{watchman_json}" | watchman -j\n' in out
 
 
 def test_suggest_watchman_setup_silent_when_not_tty(monkeypatch):

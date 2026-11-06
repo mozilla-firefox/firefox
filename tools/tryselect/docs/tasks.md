@@ -34,11 +34,11 @@ watchman -j < tools/tryselect/watchman.json
 ```
 
 :::{note}
-PowerShell on Windows does not support the `<` redirection operator. Run the
-last command through `cmd` instead:
+PowerShell on Windows does not support the `<` redirection operator. From
+PowerShell or `cmd`, pipe the file in instead:
 
 ```shell
-cmd /d /c "watchman -j < tools/tryselect/watchman.json"
+more tools\tryselect\watchman.json | watchman -j
 ```
 :::
 

@@ -94,17 +94,9 @@ after pulling firefox-main or switching branches). watchman can rebuild the
 taskgraph cache in the background so `mach try` stays fast. Since watchman is
 already watching this checkout, enable it with:
 
-    watchman -j < {watchman_json}
-{powershell}
+    {command}
+
 See https://firefox-source-docs.mozilla.org/tools/try/tasks.html for details.
-"""
-
-WATCHMAN_HINT_POWERSHELL = """\
-
-PowerShell on Windows does not support the `<` redirection operator. Run it
-through cmd instead:
-
-    cmd /d /c "watchman -j < {watchman_json}"
 """
 
 
@@ -139,11 +131,13 @@ def suggest_watchman_setup():
     if proc.returncode != 0 or WATCHMAN_TRIGGER_NAME in proc.stdout:
         return
 
-    watchman_json = mozpath.normsep(os.path.join(here, "watchman.json"))
-    powershell = ""
-    if sys.platform == "win32":
-        powershell = WATCHMAN_HINT_POWERSHELL.format(watchman_json=watchman_json)
-    print(WATCHMAN_HINT.format(watchman_json=watchman_json, powershell=powershell))
+    watchman_json = os.path.join(here, "watchman.json")
+    # cmd and PowerShell do not set SHELL.
+    if sys.platform == "win32" and "SHELL" not in os.environ:
+        command = f'more "{watchman_json}" | watchman -j'
+    else:
+        command = f'watchman -j < "{mozpath.normsep(watchman_json)}"'
+    print(WATCHMAN_HINT.format(command=command))
 
 
 def write_profile(monitor):
