@@ -125,6 +125,8 @@ preprocessed_intervention_files = [
     "bug1982295-hall.ssjj.cn-fix_layout.css",
     "bug1983538-incontrol.landrover.com.js",
     "bug1986438-gamma.app.js",
+    "bug1992699-feishu.cn-hide_unsupported_banner.css",
+    "bug1992699-feishu.cn.js",
     "bug1993452-www.lee.in-fix_product_image_hover_zoom.css",
     "bug1993453-www.dockers.in-fix_product_image_hover_zoom.css",
     "bug1993454-www.wrangler.in-fix_product_image_hover_zoom.css",

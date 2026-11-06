@@ -1,0 +1,23 @@
+{
+  "label": "feishu.cn",
+  "bugs": {
+    "1992699": {
+      "issue": "unsupported-warning",
+      "matches": ["*://*.feishu.cn/*"]
+    }
+  },
+  "css": {
+    "hide_unsupported_banner": ".not-compatible__announce { display: none !important; }"
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "css": ["hide_unsupported_banner"],
+      "hide_messages": {
+        "container": ".not-compatible__announce .ud__notice__main",
+        "message": "This browser is not supported",
+        "click_adjacent": ".ud__notice__close"
+      }
+    }
+  ]
+}
