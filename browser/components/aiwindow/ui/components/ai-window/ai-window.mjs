@@ -153,17 +153,20 @@ ChromeUtils.defineLazyGetter(lazy, "log", function () {
  */
 
 /**
- * Request context used to record an assistant response's first displayed character.
+ * Request context for telemetry about the first displayed response content.
  *
  * @typedef {{
  *   messageId: string,
+ *   turnIndex: number,
+ *   contextMessageCount: number,
+ *   contextLength: number,
  *   conversationId: string,
  *   requestId: string,
  *   messageSeq: number,
  *   startedAt: number,
  *   location: string,
  *   model: string
- * }} PendingFirstCharacterContext
+ * }} PendingResponseContext
  */
 
 const MODE = {
@@ -302,9 +305,16 @@ export class AIWindow extends MozLitElement {
    * Context for a response awaiting its first displayed character, allowing
    * that character to be associated with the request telemetry.
    *
-   * @type {PendingFirstCharacterContext | null}
+   * @type {PendingResponseContext | null}
    */
   #pendingFirstCharacterContext = null;
+
+  /**
+   * Request awaiting its first visible action-log entry.
+   *
+   * @type {PendingResponseContext | null}
+   */
+  #pendingFirstActionLogContext = null;
 
   #starters = [];
   #starterPromptsAbortController = null;
@@ -921,6 +931,7 @@ export class AIWindow extends MozLitElement {
     this.#abortController?.abort();
     this.#abortController = null;
     this.#pendingFirstCharacterContext = null;
+    this.#pendingFirstActionLogContext = null;
 
     // Clean up visibility change handler
     if (this.#visibilityChangeHandler) {
@@ -2851,6 +2862,7 @@ export class AIWindow extends MozLitElement {
 
     this.#abortController?.abort();
     this.#pendingFirstCharacterContext = null;
+    this.#pendingFirstActionLogContext = null;
     this.#abortController = new AbortController();
     const { signal } = this.#abortController;
     const stopWatchingTabClose =
@@ -2926,8 +2938,13 @@ export class AIWindow extends MozLitElement {
           lazy.MESSAGE_ROLE.ASSISTANT,
           conversation
         );
+        const context = conversation.compactChatCompletions();
+
         this.#pendingFirstCharacterContext = {
           messageId: assistantMessage.id,
+          turnIndex: assistantMessage.turnIndex,
+          contextMessageCount: context.length,
+          contextLength: JSON.stringify(context).length,
           conversationId: conversation.id,
           requestId: assistantMessage.parentMessageId,
           messageSeq: messageCount,
@@ -2935,6 +2952,7 @@ export class AIWindow extends MozLitElement {
           location: this.mode === MODE.FULLPAGE ? "home" : MODE.SIDEBAR,
           model: engine.model,
         };
+        this.#pendingFirstActionLogContext = this.#pendingFirstCharacterContext;
       }
 
       await lazy.Chat.fetchWithHistory({
@@ -3096,6 +3114,39 @@ export class AIWindow extends MozLitElement {
       message_seq: pending.messageSeq,
       request_id: pending.requestId,
       model: pending.model,
+      turn_index: pending.turnIndex,
+      context_message_count: pending.contextMessageCount,
+      context_length: pending.contextLength,
+      latency: Math.round(ChromeUtils.now() - pending.startedAt),
+    });
+  }
+
+  /**
+   * Records request latency when its first action-log entry becomes visible.
+   *
+   * @param {{conversationId: string, turnIndex: number}} detail
+   * @returns {void}
+   */
+  onFirstActionLogDisplayed({ conversationId, turnIndex }) {
+    const pending = this.#pendingFirstActionLogContext;
+    if (
+      !pending ||
+      pending.conversationId !== conversationId ||
+      pending.turnIndex !== turnIndex
+    ) {
+      return;
+    }
+
+    this.#pendingFirstActionLogContext = null;
+    Glean.smartWindow.timeToFirstActionLog.record({
+      location: pending.location,
+      chat_id: pending.conversationId,
+      message_seq: pending.messageSeq,
+      request_id: pending.requestId,
+      model: pending.model,
+      turn_index: pending.turnIndex,
+      context_message_count: pending.contextMessageCount,
+      context_length: pending.contextLength,
       latency: Math.round(ChromeUtils.now() - pending.startedAt),
     });
   }
