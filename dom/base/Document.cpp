@@ -18538,8 +18538,9 @@ void Document::ReportTrustedTypesReadiness() {
       used || Has(TrustedTypesReadinessSignal::CreatedPolicy);
   glean::security::trusted_types_readiness
       .Get(nsPrintfCString(
-          "htmlsink-%s_writesink-%s_ttcsp-%s_strictcsp-%s_created-%u_used-%u_"
-          "lib-%u_js-%u",
+          "doc-%s_htmlsink-%s_writesink-%s_ttcsp-%s_strictcsp-%s_created-%u_"
+          "used-%u_lib-%u_js-%u",
+          IsTopLevelContentDocument() ? "top" : "sub",
           Sink(TrustedTypesReadinessSignal::UsedHTMLSinkWithString,
                TrustedTypesReadinessSignal::UsedHTMLSinkWithTrustedHTML),
           Sink(TrustedTypesReadinessSignal::UsedWriteSinkWithString,
