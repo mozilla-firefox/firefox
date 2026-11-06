@@ -635,13 +635,13 @@ void WaylandSurface::CommitLocked(const WaylandSurfaceLock& aProofOfLock,
   Commit((WaylandSurfaceLock*)&aProofOfLock, aForceCommit, aForceDisplayFlush);
 }
 
-void WaylandSurface::MoveLocked(const WaylandSurfaceLock& aProofOfLock,
+bool WaylandSurface::MoveLocked(const WaylandSurfaceLock& aProofOfLock,
                                 DesktopIntPoint aPosition) {
   MOZ_DIAGNOSTIC_ASSERT(&aProofOfLock == mSurfaceLock);
   MOZ_DIAGNOSTIC_ASSERT(mIsMapped);
 
   if (mSubsurfacePosition == aPosition) {
-    return;
+    return false;
   }
 
   MOZ_DIAGNOSTIC_ASSERT(mSubsurface);
@@ -650,6 +650,7 @@ void WaylandSurface::MoveLocked(const WaylandSurfaceLock& aProofOfLock,
   mSubsurfacePosition = aPosition;
   wl_subsurface_set_position(mSubsurface.get(), aPosition.x, aPosition.y);
   mSurfaceNeedsCommit = true;
+  return true;
 }
 
 // Route input to parent wl_surface owned by Gtk+ so we get input

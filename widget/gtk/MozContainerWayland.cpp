@@ -184,10 +184,9 @@ static bool moz_container_wayland_ensure_surface(MozContainer* container,
 
   // We're already mapped, only move surface and quit.
   if (surface->IsMapped()) {
-    if (aPosition) {
-      surface->MoveLocked(lock, *aPosition);
+    if (aPosition && surface->MoveLocked(lock, *aPosition)) {
+      moz_container_wayland_invalidate(container);
     }
-    moz_container_wayland_invalidate(container);
     return true;
   }
 

@@ -200,7 +200,7 @@ class WaylandSurface final {
   // Place this WaylandSurface above aLowerSurface
   void PlaceAboveLocked(const WaylandSurfaceLock& aProofOfLock,
                         WaylandSurfaceLock& aLowerSurfaceLock);
-  void MoveLocked(const WaylandSurfaceLock& aProofOfLock,
+  bool MoveLocked(const WaylandSurfaceLock& aProofOfLock,
                   DesktopIntPoint aPosition);
   void SetViewportFollowsSizeChangesLocked(
       const WaylandSurfaceLock& aProofOfLock);
