@@ -203,17 +203,6 @@ static const struct EVInfo kEVInfos[] = {
     "BAAAAAABIVhTCKI=",
   },
   {
-    // CN=Buypass Class 3 Root CA,O=Buypass AS-983163327,C=NO
-    "2.16.578.1.26.1.3.3",
-    "Buypass EV OID",
-    { 0xED, 0xF7, 0xEB, 0xBC, 0xA2, 0x7A, 0x2A, 0x38, 0x4D, 0x38, 0x7B,
-      0x7D, 0x40, 0x10, 0xC6, 0x66, 0xE2, 0xED, 0xB4, 0x84, 0x3E, 0x4C,
-      0x29, 0xB4, 0xAE, 0x1D, 0x5B, 0x93, 0x32, 0xE6, 0xB2, 0x4D },
-    "ME4xCzAJBgNVBAYTAk5PMR0wGwYDVQQKDBRCdXlwYXNzIEFTLTk4MzE2MzMyNzEg"
-    "MB4GA1UEAwwXQnV5cGFzcyBDbGFzcyAzIFJvb3QgQ0E=",
-    "Ag==",
-  },
-  {
     // CN=Certum Trusted Network CA,OU=Certum Certification Authority,O=Unizeto Technologies S.A.,C=PL
     "1.2.616.1.113527.2.5.1.1",
     "Certum EV OID",
