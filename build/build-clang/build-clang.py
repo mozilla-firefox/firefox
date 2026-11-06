@@ -482,7 +482,10 @@ def prune_final_dir_for_clang_tidy(final_dir, target):
         name = os.path.basename(f)
         if name == "clang":
             continue
-        if is_darwin(target) and name in ["libLLVM.dylib", "libclang-cpp.dylib"]:
+        if is_darwin(target) and (
+            fnmatch.fnmatch(name, "libLLVM*.dylib")
+            or fnmatch.fnmatch(name, "libclang-cpp*.dylib")
+        ):
             continue
         if is_linux(target) and (
             fnmatch.fnmatch(name, "libLLVM*.so*")
