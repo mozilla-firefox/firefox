@@ -35,7 +35,7 @@ enum class ChaosFeature : uint32_t {
 
 namespace detail {
 extern MFBT_DATA Atomic<uint32_t, Relaxed> gChaosModeCounter;
-extern MFBT_DATA ChaosFeature gChaosFeatures;
+extern MFBT_DATA Atomic<uint32_t, Relaxed> gChaosFeatures;
 }  // namespace detail
 
 /**
@@ -46,12 +46,12 @@ extern MFBT_DATA ChaosFeature gChaosFeatures;
 class ChaosMode {
  public:
   static void SetChaosFeature(ChaosFeature aChaosFeature) {
-    detail::gChaosFeatures = aChaosFeature;
+    detail::gChaosFeatures = uint32_t(aChaosFeature);
   }
 
   static bool isActive(ChaosFeature aFeature) {
     return detail::gChaosModeCounter > 0 &&
-           (uint32_t(detail::gChaosFeatures) & uint32_t(aFeature));
+           (detail::gChaosFeatures & uint32_t(aFeature));
   }
 
   /**

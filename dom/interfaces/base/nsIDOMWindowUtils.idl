@@ -1968,9 +1968,10 @@ interface nsIDOMWindowUtils : nsISupports {
    * Increase the chaos mode activation level. An equivalent number of
    * calls to leaveChaosMode must be made in order to restore the original
    * chaos mode state. If the activation level is nonzero all chaos mode
-   * features are activated.
+   * features are activated, or only those of aFeatures (a mask of
+   * mozilla::ChaosFeature values) once it has been given.
    */
-  void enterChaosMode();
+  void enterChaosMode([optional] in unsigned long aFeatures);
 
   /**
    * Decrease the chaos mode activation level. See enterChaosMode().

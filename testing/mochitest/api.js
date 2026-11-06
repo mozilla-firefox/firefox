@@ -110,12 +110,48 @@ var WindowListener = {
   },
 };
 
+// The window through which the harness entered chaos mode, until it leaves it
+// so that shutdown and the leak checks are not slowed down.
+let chaosModeWindow = null;
+const LEAVE_CHAOS_MODE_TOPICS = [
+  "mochitest-leave-chaos-mode",
+  "quit-application-granted",
+];
+
+function leaveChaosMode() {
+  if (!chaosModeWindow) {
+    return;
+  }
+  for (let topic of LEAVE_CHAOS_MODE_TOPICS) {
+    Services.obs.removeObserver(leaveChaosMode, topic);
+  }
+  chaosModeWindow.windowUtils.leaveChaosMode();
+  Services.env.set("MOZ_CHAOSMODE", "");
+  chaosModeWindow = null;
+  dump("*** The test harness left chaos mode. ***\n");
+}
+
 function loadMochitest(e) {
   let flavor = e.detail[0];
   let url = e.detail[1];
 
   let win = Services.wm.getMostRecentWindow(WINDOW_TYPE);
   win.removeEventListener("mochitest-load", loadMochitest);
+
+  let chaosModeFeatures = Services.prefs.getIntPref(
+    "mochitest.chaosModeFeatures",
+    0
+  );
+  if (chaosModeFeatures) {
+    win.windowUtils.enterChaosMode(chaosModeFeatures);
+    // For tests that adapt to chaos mode.
+    Services.env.set("MOZ_CHAOSMODE", `0x${chaosModeFeatures.toString(16)}`);
+    chaosModeWindow = win;
+    for (let topic of LEAVE_CHAOS_MODE_TOPICS) {
+      Services.obs.addObserver(leaveChaosMode, topic);
+    }
+    dump("*** The test harness entered chaos mode. ***\n");
+  }
 
   // for mochitest-plain, navigating to the url is all we need
   if (!IS_THUNDERBIRD) {

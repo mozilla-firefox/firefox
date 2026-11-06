@@ -9,7 +9,8 @@ namespace mozilla {
 namespace detail {
 
 Atomic<uint32_t, Relaxed> gChaosModeCounter(0);
-ChaosFeature gChaosFeatures = ChaosFeature::Any;
+Atomic<uint32_t, Relaxed> gChaosFeatures(
+    static_cast<uint32_t>(ChaosFeature::Any));
 
 } /* namespace detail */
 } /* namespace mozilla */

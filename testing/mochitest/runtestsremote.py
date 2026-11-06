@@ -25,6 +25,7 @@ SCRIPT_DIR = os.path.abspath(os.path.realpath(os.path.dirname(__file__)))
 
 
 class MochiRemote(MochitestDesktop):
+    deferChaosMode = False
     localProfile = None
     logMessages = []
 

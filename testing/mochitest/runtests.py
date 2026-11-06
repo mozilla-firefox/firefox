@@ -1037,6 +1037,10 @@ class MochitestDesktop:
     DEFAULT_TIMEOUT = 60.0
     mediaDevices = None
     mozinfo_variables_shown = False
+    # Whether api.js enters chaos mode once the harness has started, rather
+    # than Firefox at startup through MOZ_CHAOSMODE. Remote harnesses don't run
+    # start_desktop.js, which has api.js start the tests.
+    deferChaosMode = True
 
     patternFiles = {}
 
@@ -2696,11 +2700,14 @@ toolbar#nav-bar {
         elif options.flavor in ("a11y", "chrome"):
             test_timeout = 45
 
-        if "MOZ_CHAOSMODE=0xfb" in options.environment and test_timeout:
+        chaos_mode_features = getattr(options, "chaosModeFeatures", None)
+        if chaos_mode_features and test_timeout:
             test_timeout *= 2
             self.log.info(
-                f"Increasing default timeout to {test_timeout} seconds (MOZ_CHAOSMODE)"
+                f"Increasing default timeout to {test_timeout} seconds (chaos mode)"
             )
+        if chaos_mode_features and self.deferChaosMode:
+            prefs["mochitest.chaosModeFeatures"] = chaos_mode_features
 
         if test_timeout:
             prefs["testing.browserTestHarness.timeout"] = test_timeout
@@ -3667,6 +3674,10 @@ toolbar#nav-bar {
         # Number of times to repeat test(s) when running test in
         VERIFY_REPEAT_SINGLE_BROWSER = 5
 
+        # Every chaos mode feature except TimerScheduling (bug 1390884).
+        CHAOS_MODE_FEATURES = 0xFB
+        chaos_env = [] if self.deferChaosMode else ["MOZ_CHAOSMODE=0xfb"]
+
         def step1():
             options.repeat = VERIFY_REPEAT
             options.keep_open = False
@@ -3694,10 +3705,13 @@ toolbar#nav-bar {
             options.repeat = VERIFY_REPEAT
             options.keep_open = False
             options.runUntilFailure = True
-            options.environment.append("MOZ_CHAOSMODE=0xfb")
+            options.environment.extend(chaos_env)
+            options.chaosModeFeatures = CHAOS_MODE_FEATURES
             options.profilePath = None
             result = self.runTests(options)
-            options.environment.remove("MOZ_CHAOSMODE=0xfb")
+            for var in chaos_env:
+                options.environment.remove(var)
+            options.chaosModeFeatures = None
             result = result or (-2 if self.countfail > 0 else 0)
             self.message_logger.finish()
             return result
@@ -3706,7 +3720,8 @@ toolbar#nav-bar {
             options.repeat = 0
             options.keep_open = False
             options.runUntilFailure = False
-            options.environment.append("MOZ_CHAOSMODE=0xfb")
+            options.environment.extend(chaos_env)
+            options.chaosModeFeatures = CHAOS_MODE_FEATURES
             for i in range(VERIFY_REPEAT_SINGLE_BROWSER):
                 options.profilePath = None
                 result = self.runTests(options)
@@ -3714,7 +3729,9 @@ toolbar#nav-bar {
                 self.message_logger.finish()
                 if result != 0:
                     break
-            options.environment.remove("MOZ_CHAOSMODE=0xfb")
+            for var in chaos_env:
+                options.environment.remove(var)
+            options.chaosModeFeatures = None
             return result
 
         def fission_step(fission_pref):
@@ -4153,7 +4170,7 @@ toolbar#nav-bar {
                 # See bug 479518 and bug 1414063.
                 timeout = 370.0
 
-            if "MOZ_CHAOSMODE=0xfb" in options.environment and timeout:
+            if getattr(options, "chaosModeFeatures", None) and timeout:
                 timeout *= 2
 
             # Detect shutdown leaks for m-bc runs

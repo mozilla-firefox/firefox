@@ -4207,7 +4207,10 @@ nsDOMWindowUtils::GetRefreshDriverHasPendingTick(bool* aResult) {
 }
 
 NS_IMETHODIMP
-nsDOMWindowUtils::EnterChaosMode() {
+nsDOMWindowUtils::EnterChaosMode(uint32_t aFeatures) {
+  if (aFeatures) {
+    ChaosMode::SetChaosFeature(static_cast<ChaosFeature>(aFeatures));
+  }
   ChaosMode::enterChaosMode();
   return NS_OK;
 }

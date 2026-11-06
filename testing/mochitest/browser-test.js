@@ -1693,6 +1693,7 @@ Tester.prototype = {
     // Make sure the window is raised before starting the next test.
     this.SimpleTest.waitForFocus(() => {
       if (this.done) {
+        Services.obs.notifyObservers(null, "mochitest-leave-chaos-mode");
         if (!this._shouldCheckForLeaks) {
           this.finish();
           return;
@@ -2124,6 +2125,7 @@ Tester.prototype = {
               // here: waiting on TabDestroyObserver can hang a session that
               // has already timed out.
               self.ClickChecks.forgetMouseDownState();
+              Services.obs.notifyObservers(null, "mochitest-leave-chaos-mode");
               if (self._shouldCheckForLeaks) {
                 self._releaseResourcesKeptAliveUntilShutdown();
                 await self._collectAndCheckForLeakedWindows(true);
