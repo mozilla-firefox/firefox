@@ -5172,11 +5172,13 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
           aState.mReflowInput.mParentReflowInput->mCBReflowInput;
       MOZ_ASSERT(cbReflowInput->mFrame->StyleColumn()->IsColumnContainerStyle(),
                  "Get unexpected reflow input of multicol containing block!");
+      nscoord multicolBSizeAsPercentBasis =
+          cbReflowInput->ComputedBSizeAsPercentageBasis();
 
       // Use column-width as the containing block's inline-size, i.e. the column
       // content's computed inline-size.
       cbSize.emplace(LogicalSize(wm, aState.mReflowInput.ComputedISize(),
-                                 cbReflowInput->ComputedBSize())
+                                 multicolBSizeAsPercentBasis)
                          .ConvertTo(frame->GetWritingMode(), wm));
 
       // If a ColumnSetWrapper is in a balancing column content, it may be
