@@ -42,13 +42,7 @@ pub fn cleanup_main() {
 
     let mut args = env::args_os().skip(2);
     let data_path = args.next().expect("no data path provided");
-    let upload_enabled: bool = args
-        .next()
-        .expect("upload enabled missing")
-        .to_str()
-        .expect("non-unicode upload enabled value")
-        .parse()
-        .expect("invalid upload enabled value");
+    let profile_dir = args.next();
 
     let _glean_handle = glean::InitOptions {
         data_dir: data_path.into(),

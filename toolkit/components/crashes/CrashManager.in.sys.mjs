@@ -89,15 +89,22 @@ function sendGleanPing(reason, annotations) {
  */
 async function cleanupPings() {
   const uAppDataPath = Services.dirsvc.get("UAppData", Ci.nsIFile).path;
+  let profPath;
+  try {
+    profPath = Services.dirsvc.get("ProfD", Ci.nsIFile).path;
+  } catch (e) {
+    // If there is no profile dir, leave the path undefined.
+  }
   const crashDataPath = PathUtils.join(uAppDataPath, "Crash Reports");
-  const telemetryEnabled = Services.prefs.getBoolPref(
-    "datareporting.healthreport.uploadEnabled",
-    true
-  );
+
+  const args = ["--ping-cleanup", crashDataPath];
+  if (profPath !== undefined) {
+    args.push(profPath);
+  }
 
   const process = await lazy.Subprocess.call({
     command: lazy.CrashServiceUtils.getCrashReporterPath().path,
-    arguments: ["--ping-cleanup", crashDataPath, telemetryEnabled.toString()],
+    arguments: args,
   });
 
   const blocker = () => process.kill();
