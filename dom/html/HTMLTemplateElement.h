@@ -84,12 +84,8 @@ class HTMLTemplateElement final : public nsGenericHTMLElement {
     SetHTMLAttr(nsGkAtoms::shadowrootcustomelementregistry, aValue);
   }
 
-  void GetShadowRootReferenceTarget(nsAString& aResult) const {
-    GetHTMLAttr(nsGkAtoms::shadowrootreferencetarget, aResult);
-  }
-  void SetShadowRootReferenceTarget(const nsAString& aValue, ErrorResult& aRv) {
-    SetHTMLAttr(nsGkAtoms::shadowrootreferencetarget, aValue);
-  }
+  REFLECT_NULLABLE_DOMSTRING_ATTR(ShadowRootReferenceTarget,
+                                  shadowrootreferencetarget)
 
   void GetShadowRootSlotAssignment(nsAString& aResult) const;
   void SetShadowRootSlotAssignment(const nsAString& aValue) {
