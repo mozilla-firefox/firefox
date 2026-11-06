@@ -30,6 +30,7 @@ stl_headers = [
     "cstring",
     "cwchar",
     "deque",
+    "filesystem",
     "functional",
     "ios",
     "iosfwd",
