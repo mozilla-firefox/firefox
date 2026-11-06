@@ -1,0 +1,17 @@
+{
+  "label": "sandboxels.r74n.com",
+  "bugs": {
+    "1956760": {
+      "issue": "broken-interactive-elements",
+      "matches": ["*://sandboxels.r74n.com/*", "*://neal.fun/sandboxels/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["bug1956760-sandboxels.r74n.com-enable-glow-mod.js"]
+      }
+    }
+  ]
+}
