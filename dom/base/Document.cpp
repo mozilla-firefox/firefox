@@ -17374,6 +17374,26 @@ Document::ElementReadyCheckResult Document::FullscreenElementReadyCheck(
     aRequest.Reject("FullscreenDeniedNotFocusedTab");
     return ElementReadyCheckResult::eErrorPromiseRejected;
   }
+  const bool isActiveDocumentChainConsistent = ([self = this]() {
+    Document* doc = self;
+    while (doc) {
+      if (!doc->IsCurrentActiveDocument()) {
+        return false;
+      }
+      Element* embedder = doc->GetEmbedderElement();
+      Document* parent = doc->GetInProcessParentDocument();
+      if (!!embedder != !!parent ||
+          (embedder && embedder->GetComposedDoc() != parent)) {
+        return false;
+      }
+      doc = parent;
+    }
+    return true;
+  })();
+  if (!isActiveDocumentChainConsistent) {
+    aRequest.Reject("FullscreenDeniedHidden");
+    return ElementReadyCheckResult::eErrorPromiseRejected;
+  }
   return ElementReadyCheckResult::eOk;
 }
 
