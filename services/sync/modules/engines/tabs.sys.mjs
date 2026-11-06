@@ -137,6 +137,7 @@ TabEngine.prototype = {
     // these values for now (which is fine for now as these hardly ever change)
     this._bridge.storageVersion = STORAGE_VERSION;
     this._bridge.allowSkippedRecord = true;
+    this._bridge.getSyncId = async () => this._bridge.syncId();
 
     this._log.info("Got a bridged engine!");
     this._tracker.modified = true;

@@ -201,9 +201,7 @@ BridgedEngine.prototype = {
   },
 
   /**
-   * Returns the sync ID for this engine. This is exposed for tests, but
-   * Sync code always calls `resetSyncID()` and `ensureCurrentSyncID()`,
-   * not this.
+   * Returns the sync ID for this engine.
    *
    * @returns {string?} The sync ID, or `null` if one isn't set.
    */
