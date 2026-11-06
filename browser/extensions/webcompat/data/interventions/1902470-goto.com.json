@@ -1,0 +1,20 @@
+{
+  "label": "goto.com (unblock browser)",
+  "bugs": {
+    "1902470": {
+      "issue": "firefox-blocked-completely",
+      "matches": [
+        "https://global.gotomeeting.com/join/*",
+        "https://meet.goto.com/*",
+        "https://app.goto.com/meeting/*"
+      ]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "only_channels": ["nightly"],
+      "ua_string": ["Chrome"]
+    }
+  ]
+}

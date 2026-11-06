@@ -1,5 +1,5 @@
 {
-  "label": "goto.com",
+  "label": "goto.com (spoof non-standard web API)",
   "bugs": {
     "1902508": {
       "issue": "broken-meetings",
