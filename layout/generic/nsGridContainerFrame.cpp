@@ -3284,7 +3284,7 @@ struct MOZ_STACK_CLASS nsGridContainerFrame::GridReflowInput {
 
     if (auto* absCB = aGridContainerFrame->GetAbsoluteContainingBlock()) {
       // Prepare absolute frames before constructing GridItemInfo.
-      absCB->PrepareAbsoluteFrames(aGridContainerFrame);
+      (void)absCB->PrepareAbsoluteFrames(aGridContainerFrame);
     }
     // XXX NOTE: This is O(n^2) in the number of abs.pos. items. (bug 1252186)
     const nsFrameList& absPosChildren =
