@@ -113,3 +113,18 @@ when = { any_file = { include = [
 load = [
   { type = "file", path = ".claude/skills/necko-review/SKILL.md" },
 ]
+
+[[rules]]
+name = "Android"
+description = "Android conventions and principles"
+when = { any_file = { include = [
+  "mobile/android/**",
+], ext = [
+  ".kt",
+  ".java",
+  ".xml",
+  ".yaml",
+] } }
+load = [
+  { type = "file", path = ".agents/skills/android/SKILL.md" },
+]
