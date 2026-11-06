@@ -336,8 +336,6 @@ class nsTableRowGroupFrame final : public nsContainerFrame,
 
   bool IsSimpleRowFrame(nsTableFrame* aTableFrame, nsTableRowFrame* aRowFrame);
 
-  void GetNextRowSibling(nsIFrame** aRowFrame);
-
   void UndoContinuedRow(nsPresContext* aPresContext, nsTableRowFrame* aRow);
 
  public:

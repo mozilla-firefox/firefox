@@ -381,8 +381,6 @@ class nsCellMap {
 
   CellData* GetDataAt(int32_t aMapRowIndex, int32_t aColIndex) const;
 
-  int32_t GetNumCellsIn(int32_t aColIndex) const;
-
   void ExpandWithRows(nsTableCellMap& aMap,
                       nsTArray<nsTableRowFrame*>& aRowFrames,
                       int32_t aStartRowIndex, int32_t aRgFirstRowIndex,
@@ -434,8 +432,6 @@ class nsCellMap {
     */
   bool CellsSpanInOrOut(int32_t aStartRowIndex, int32_t aEndRowIndex,
                         int32_t aStartColIndex, int32_t aEndColIndex) const;
-
-  bool CreateEmptyRow(int32_t aRowIndex, int32_t aNumCols);
 
   int32_t GetRowSpanForNewCell(nsTableCellFrame* aCellFrameToAdd,
                                int32_t aRowIndex, bool& aIsZeroRowSpan) const;

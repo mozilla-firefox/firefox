@@ -255,10 +255,6 @@ class nsTableRowFrame : public nsContainerFrame {
 
   LogicalSides GetLogicalSkipSides() const override;
 
-  // row-specific methods
-
-  nscoord ComputeCellXOffset(const ReflowInput& aState, nsIFrame* aKidFrame,
-                             const nsMargin& aKidMargin) const;
   /**
    * Called for incremental/dirty and resize reflows. If aDirtyOnly is true then
    * only reflow dirty cells.
@@ -296,9 +292,6 @@ class nsTableRowFrame : public nsContainerFrame {
   // half of the border only
   nscoord mBStartBorderWidth = 0;
   nscoord mBEndBorderWidth = 0;
-  nscoord mIEndContBorderWidth = 0;
-  nscoord mBStartContBorderWidth = 0;
-  nscoord mIStartContBorderWidth = 0;
 
   /**
    * Sets the NS_ROW_HAS_CELL_WITH_STYLE_BSIZE bit to indicate whether

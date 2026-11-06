@@ -81,9 +81,6 @@ class nsTableColFrame final : public nsSplittableFrame {
   /** return the number of the columns the col represents.  always >= 1 */
   int32_t GetSpan();
 
-  /** convenience method, calls into cellmap */
-  int32_t Count() const;
-
   nscoord GetIStartBorderWidth() const { return mIStartBorderWidth; }
   nscoord GetIEndBorderWidth() const { return mIEndBorderWidth; }
   void SetIStartBorderWidth(nscoord aWidth) { mIStartBorderWidth = aWidth; }

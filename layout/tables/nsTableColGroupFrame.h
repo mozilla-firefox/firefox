@@ -73,16 +73,6 @@ class nsTableColGroupFrame final : public nsContainerFrame {
   bool IsSynthetic() const;
   void SetIsSynthetic();
 
-  /** Real in this context are colgroups that come from an element
-   * with table-column-group display or wrap around columns that
-   * come from an element with table-column display. Colgroups
-   * that are the result of wrapping cells in an anonymous
-   * column and colgroup are not considered real here.
-   * @param aTableFrame - the table parent of the colgroups
-   * @return the last real colgroup
-   */
-  static nsTableColGroupFrame* GetLastRealColGroup(nsTableFrame* aTableFrame);
-
   /** @see nsIFrame::DidSetComputedStyle */
   void DidSetComputedStyle(ComputedStyle* aOldComputedStyle) override;
 

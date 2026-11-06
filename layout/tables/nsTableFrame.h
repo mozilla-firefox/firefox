@@ -553,11 +553,6 @@ class nsTableFrame : public nsContainerFrame {
                       nsIFrame*& aLastChildReflowed,
                       mozilla::OverflowAreas& aOverflowAreas);
 
-  // This calls the col group and column reflow methods, which do two things:
-  //  (1) set all the dimensions to 0
-  //  (2) notify the table about colgroups or columns with hidden visibility
-  void ReflowColGroups(gfxContext* aRenderingContext);
-
   /** return the isize of the table taking into account visibility collapse
    * on columns and colgroups
    * @param aBorderPadding  the border and padding of the table
@@ -587,10 +582,6 @@ class nsTableFrame : public nsContainerFrame {
   nsITableLayoutStrategy* LayoutStrategy() const {
     return FirstInFlowAsTable()->mTableLayoutStrategy.get();
   }
-
-  // Helper for InsertFrames.
-  void HomogenousInsertFrames(ChildListID aListID, nsIFrame* aPrevFrame,
-                              nsFrameList& aFrameList);
 
  private:
   /* Handle a row that got inserted during reflow.  aNewHeight is the
