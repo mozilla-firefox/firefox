@@ -10,6 +10,8 @@ body {
   position: fixed;
   top: 30px;
   bottom: 0;
+  /* Overrides the singletest height: 100% so that bottom: 0 applies. */
+  height: auto;
   right: 0;
   left: 0;
   overflow: auto;

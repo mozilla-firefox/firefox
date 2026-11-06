@@ -297,9 +297,6 @@ support-files = "window_panel_focus.xhtml"
 ["test_popuphidden.xhtml"]
 
 ["test_popupincontent.xhtml"]
-skip-if = [
-  "os == 'win' && standalone", # Bug 2026600
-]
 
 ["test_popupremoving.xhtml"]
 

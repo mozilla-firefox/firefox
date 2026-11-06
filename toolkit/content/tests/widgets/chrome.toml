@@ -152,9 +152,6 @@ support-files = [
 ["test_panel_list_submenu_click.html"]
 
 ["test_popupanchor.xhtml"]
-skip-if = [
-  "os == 'win' && standalone", # Bug 2026600
-]
 
 ["test_popupreflows.xhtml"]
 
