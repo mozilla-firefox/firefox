@@ -137,6 +137,46 @@ class LensCameraActivityTest {
     }
 
     @Test
+    fun `GIVEN a context WHEN newQrScannerIntent is called THEN the intent targets LensCameraActivity in QR only mode`() {
+        val intent = LensCameraActivity.newQrScannerIntent(testContext)
+
+        assertEquals(LensCameraActivity::class.java.name, intent.component?.className)
+        assertTrue(intent.getBooleanExtra(LensCameraActivity.EXTRA_QR_ONLY, false))
+        assertFalse(intent.hasExtra(LensCameraActivity.EXTRA_IS_PRIVATE))
+        assertFalse(intent.hasExtra(LensCameraActivity.EXTRA_INITIAL_MODE))
+    }
+
+    @Test
+    fun `GIVEN a context WHEN newIntent is called THEN the intent is not QR only`() {
+        val intent = LensCameraActivity.newIntent(testContext, isPrivate = false, initialMode = CameraMode.QR)
+
+        assertFalse(intent.hasExtra(LensCameraActivity.EXTRA_QR_ONLY))
+    }
+
+    @Test
+    fun `GIVEN a QR scanner intent with a LENS initial mode extra WHEN resolveInitialMode is called THEN QR is returned`() {
+        val intent =
+            LensCameraActivity.newQrScannerIntent(testContext)
+                .putExtra(LensCameraActivity.EXTRA_INITIAL_MODE, CameraMode.LENS.name)
+        val activity = Robolectric.buildActivity(LensCameraActivity::class.java, intent).create().get()
+
+        assertEquals(CameraMode.QR, activity.resolveInitialMode())
+    }
+
+    @Test
+    fun `GIVEN QR only WHEN the camera fragment is added THEN it is told to open QR only in QR mode`() {
+        val intent = LensCameraActivity.newQrScannerIntent(testContext)
+        val activity = Robolectric.buildActivity(LensCameraActivity::class.java, intent).create().get()
+
+        activity.handlePermissionResult(isGranted = true)
+        activity.supportFragmentManager.executePendingTransactions()
+
+        val fragment = activity.supportFragmentManager.findFragmentById(R.id.lens_fragment_container_view)
+        assertTrue(fragment?.arguments?.getBoolean(LensCameraFragment.ARG_QR_ONLY) == true)
+        assertEquals("QR", fragment?.arguments?.getString(LensCameraFragment.ARG_INITIAL_MODE))
+    }
+
+    @Test
     fun `GIVEN the last used mode is QR WHEN the camera fragment is added THEN it is told to open in QR mode`() {
         every { settings.lensCameraLastMode } returns CameraMode.QR
         val activity = Robolectric.buildActivity(LensCameraActivity::class.java).create().get()
@@ -591,6 +631,45 @@ class LensCameraActivityTest {
         assertFalse(activity.findViewById<ComposeView>(R.id.lens_upload_overlay).isVisible)
     }
 
+    @Test
+    fun `GIVEN QR only WHEN a photo picker image is returned THEN it is not uploaded`() {
+        uploadNeverFinishes()
+        val activity = cameraActivityController(qrOnly = true).get()
+
+        activity.handleGalleryResult(pickedImageUri)
+
+        assertIs<LensCameraFragment>(
+            activity.supportFragmentManager.findFragmentById(R.id.lens_fragment_container_view)
+        )
+        assertFalse(activity.findViewById<ComposeView>(R.id.lens_upload_overlay).isVisible)
+    }
+
+    @Test
+    fun `GIVEN QR only WHEN the camera fragment returns a captured image THEN it is not uploaded and the activity finishes canceled`() {
+        val activity = cameraActivityController(qrOnly = true).get()
+
+        returnCapturedImage(activity)
+
+        assertFalse(activity.findViewById<ComposeView>(R.id.lens_upload_overlay).isVisible)
+        assertEquals(Activity.RESULT_CANCELED, Shadows.shadowOf(activity).resultCode)
+        assertTrue(activity.isFinishing)
+    }
+
+    @Test
+    fun `GIVEN QR only WHEN the camera fragment requests the Lens gallery THEN no picker is launched and the activity finishes canceled`() {
+        val activity = cameraActivityController(qrOnly = true).get()
+
+        activity.supportFragmentManager.setFragmentResult(
+            LensCameraFragment.RESULT_REQUEST_KEY,
+            Bundle().apply { putBoolean(LensCameraFragment.RESULT_GALLERY_REQUEST, true) },
+        )
+        activity.supportFragmentManager.executePendingTransactions()
+
+        assertNull(Shadows.shadowOf(activity).nextStartedActivityForResult)
+        assertEquals(Activity.RESULT_CANCELED, Shadows.shadowOf(activity).resultCode)
+        assertTrue(activity.isFinishing)
+    }
+
     private fun returnCapturedImage(activity: LensCameraActivity) {
         activity.supportFragmentManager.setFragmentResult(
             LensCameraFragment.RESULT_REQUEST_KEY,
@@ -615,14 +694,17 @@ class LensCameraActivityTest {
     private fun cameraActivityController(
         isPrivate: Boolean = false,
         savedState: Bundle? = null,
+        qrOnly: Boolean = false,
     ): ActivityController<LensCameraActivity> {
         Shadows.shadowOf(ApplicationProvider.getApplicationContext<Application>())
             .grantPermissions(Manifest.permission.CAMERA)
-        val controller =
-            Robolectric.buildActivity(
-                LensCameraActivity::class.java,
-                LensCameraActivity.newIntent(testContext, isPrivate),
-            )
+        val intent =
+            if (qrOnly) {
+                LensCameraActivity.newQrScannerIntent(testContext)
+            } else {
+                LensCameraActivity.newIntent(testContext, isPrivate)
+            }
+        val controller = Robolectric.buildActivity(LensCameraActivity::class.java, intent)
         controller.get().uploadViewModelFactory =
             LensUploadViewModel.Factory(
                 uploaderProvider = { uploader },
@@ -645,6 +727,24 @@ class LensCameraActivityTest {
 
         assertNotNull(activity.supportFragmentManager.findFragmentByTag(GoogleLensOptOutBottomSheetFragment.TAG))
         assertNull(activity.supportFragmentManager.findFragmentById(R.id.lens_fragment_container_view))
+    }
+
+    @Test
+    fun `GIVEN QR only and the opt-out sheet has not been acknowledged WHEN the activity reaches onResume THEN no sheet or backdrop is shown and the camera fragment is added`() {
+        every { settings.hasAcceptedGoogleLensFirstRun } returns false
+        val shadowApp = Shadows.shadowOf(ApplicationProvider.getApplicationContext<Application>())
+        shadowApp.grantPermissions(Manifest.permission.CAMERA)
+        val intent = LensCameraActivity.newQrScannerIntent(testContext)
+
+        val activity = Robolectric.buildActivity(LensCameraActivity::class.java, intent).setup().get()
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        activity.supportFragmentManager.executePendingTransactions()
+
+        assertNull(activity.supportFragmentManager.findFragmentByTag(GoogleLensOptOutBottomSheetFragment.TAG))
+        assertFalse(activity.findViewById<ComposeView>(R.id.lens_opt_out_backdrop).isVisible)
+        assertIs<LensCameraFragment>(
+            activity.supportFragmentManager.findFragmentById(R.id.lens_fragment_container_view)
+        )
     }
 
     @Test

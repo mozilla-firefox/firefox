@@ -88,11 +88,13 @@ private const val VIEWFINDER_WIDTH_FRACTION = 0.7f
  * @property mode Active capture mode; controls which controls and overlays are shown.
  * @property previewAspectRatio Display-oriented width/height ratio for the camera preview, or null if not yet
  *   determined.
+ * @property showModeToggle Whether the toggle for switching between Lens and QR modes is shown.
  */
 data class LensCameraState(
     val showError: Boolean,
     val mode: CameraMode,
     val previewAspectRatio: Float?,
+    val showModeToggle: Boolean = true,
 )
 
 /**
@@ -152,10 +154,12 @@ fun LensCameraScreen(
                 mode = state.mode,
                 onClose = onClose,
             )
-            ModeToggle(
-                mode = state.mode,
-                onModeChange = onModeChange,
-            )
+            if (state.showModeToggle) {
+                ModeToggle(
+                    mode = state.mode,
+                    onModeChange = onModeChange,
+                )
+            }
         }
 
         val bottomControlsModifier =

@@ -104,6 +104,9 @@ class LensCameraFragment(private val now: () -> Long = DefaultDateTimeProvider()
 
     @VisibleForTesting internal val qrInFlight = AtomicBoolean(false)
 
+    private val isQrOnly: Boolean
+        get() = arguments?.getBoolean(ARG_QR_ONLY, false) == true
+
     @VisibleForTesting internal var qrResultSent = false
 
     @VisibleForTesting
@@ -179,8 +182,12 @@ class LensCameraFragment(private val now: () -> Long = DefaultDateTimeProvider()
 
     @VisibleForTesting
     internal fun restoreFromState(savedInstanceState: Bundle?) {
-        val modeName = savedInstanceState?.getString(STATE_CAMERA_MODE) ?: arguments?.getString(ARG_INITIAL_MODE)
-        CameraMode.fromNameOrNull(modeName)?.let { cameraMode.value = it }
+        if (isQrOnly) {
+            cameraMode.value = CameraMode.QR
+        } else {
+            val modeName = savedInstanceState?.getString(STATE_CAMERA_MODE) ?: arguments?.getString(ARG_INITIAL_MODE)
+            CameraMode.fromNameOrNull(modeName)?.let { cameraMode.value = it }
+        }
         savedInstanceState?.let { state ->
             qrResultSent = state.getBoolean(STATE_QR_RESULT_SENT, false)
         }
@@ -201,6 +208,7 @@ class LensCameraFragment(private val now: () -> Long = DefaultDateTimeProvider()
                         showError = showCameraError.value,
                         mode = mode,
                         previewAspectRatio = previewAspectRatio.value,
+                        showModeToggle = !isQrOnly,
                     ),
                 onModeChange = ::handleModeChanged,
                 onClose = { handleResult(null) },
@@ -610,7 +618,7 @@ class LensCameraFragment(private val now: () -> Long = DefaultDateTimeProvider()
 
     @VisibleForTesting
     internal fun handleModeChanged(newMode: CameraMode) {
-        if (cameraMode.value == newMode) return
+        if (cameraMode.value == newMode || (isQrOnly && newMode != CameraMode.QR)) return
         cameraMode.value = newMode
         if (newMode == CameraMode.QR) {
             qrAnalyzer.reset()
@@ -818,6 +826,9 @@ class LensCameraFragment(private val now: () -> Long = DefaultDateTimeProvider()
 
         /** Fragment argument naming the [CameraMode] to open in when there is no saved state. */
         const val ARG_INITIAL_MODE = "lens_camera_initial_mode"
+
+        /** Fragment argument locking the camera to [CameraMode.QR] and hiding the mode toggle, for QR-only scans. */
+        const val ARG_QR_ONLY = "lens_camera_qr_only"
 
         /** Fragment result key emitted whenever the user switches [CameraMode], carrying [RESULT_CAMERA_MODE]. */
         const val MODE_CHANGED_REQUEST_KEY = "lens_camera_mode_changed_key"

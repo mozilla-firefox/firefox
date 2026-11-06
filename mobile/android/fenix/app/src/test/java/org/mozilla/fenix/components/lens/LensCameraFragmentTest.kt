@@ -1146,6 +1146,21 @@ class LensCameraFragmentTest {
         verify(exactly = 0) { fragmentManager.setFragmentResult(any(), any()) }
     }
 
+    @Test
+    fun `GIVEN QR only WHEN handleModeChanged LENS is called THEN the mode stays QR and no fragment result is reported`() {
+        val fragment = spyk(LensCameraFragment())
+        val fragmentManager: FragmentManager = mockk(relaxed = true)
+        every { fragment.isAdded } returns true
+        every { fragment.parentFragmentManager } returns fragmentManager
+        fragment.arguments = Bundle().apply { putBoolean(LensCameraFragment.ARG_QR_ONLY, true) }
+        fragment.cameraMode.value = CameraMode.QR
+
+        fragment.handleModeChanged(CameraMode.LENS)
+
+        assertEquals(CameraMode.QR, fragment.cameraMode.value)
+        verify(exactly = 0) { fragmentManager.setFragmentResult(any(), any()) }
+    }
+
     // --- onSaveInstanceState / onCreate tests ---
 
     @Test
@@ -1207,6 +1222,21 @@ class LensCameraFragmentTest {
         fragment.restoreFromState(savedState)
 
         assertEquals(CameraMode.LENS, fragment.cameraMode.value)
+    }
+
+    @Test
+    fun `GIVEN QR only AND savedInstanceState contains LENS WHEN restoreFromState is called THEN cameraMode is QR`() {
+        val fragment = LensCameraFragment()
+        fragment.arguments =
+            Bundle().apply {
+                putBoolean(LensCameraFragment.ARG_QR_ONLY, true)
+                putString(LensCameraFragment.ARG_INITIAL_MODE, "LENS")
+            }
+        val savedState = Bundle().apply { putString("camera_mode", "LENS") }
+
+        fragment.restoreFromState(savedState)
+
+        assertEquals(CameraMode.QR, fragment.cameraMode.value)
     }
 
     @Test
