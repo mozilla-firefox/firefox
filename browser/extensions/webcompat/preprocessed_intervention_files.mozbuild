@@ -74,6 +74,7 @@ preprocessed_intervention_files = [
     "bug1916920-tokbox.com.js",
     "bug1918604-g1.globo.com_Caca_Palavras-fix_clipped_buttons.css",
     "bug1918995-calculator.net-hide-copypaste-ui-for-buttons.css",
+    "bug1919254-donorperfect.com.js",
     "bug1919263-www.nbcsports.com.js",
     "bug1922498-ilgeniodellapizza.com.js",
     "bug1924334-neopets.com-fix_content_width.css",

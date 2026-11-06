@@ -1,0 +1,18 @@
+{
+  "label": "donorperfect.com",
+  "bugs": {
+    "1919254": {
+      "issue": "unsupported-warning",
+      "matches": ["*://www.donorperfect.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "hide_messages": {
+        "container": "#ff-alert",
+        "message": "tracking protection"
+      }
+    }
+  ]
+}
