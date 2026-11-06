@@ -1,0 +1,17 @@
+{
+  "label": "chzzk.naver.com",
+  "bugs": {
+    "1944312": {
+      "issue": "broken-videos",
+      "matches": ["*://chzzk.naver.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "content_scripts": {
+        "js": ["define_userAgentData.js"]
+      }
+    }
+  ]
+}

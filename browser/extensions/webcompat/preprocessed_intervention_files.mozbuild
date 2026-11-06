@@ -86,6 +86,7 @@ preprocessed_intervention_files = [
     "bug1940173-bambulab.com-fix_image_flickering.css",
     "bug1942292-beterbed.nl-hide_extra_scrollbars.css",
     "bug1943987-andisearch.com-fix-offscreen-elements.css",
+    "bug1944312-chzzk.naver.com.js",
     "bug1944518-app.powerbi.com-hide_extra_scrollbars.css",
     "bug1944518-app.powerbi.com.js",
     "bug1944727-linkedin.com-fix-dark-overlay.css",
