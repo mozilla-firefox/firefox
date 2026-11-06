@@ -69,6 +69,7 @@ preprocessed_intervention_files = [
     "bug1911253-qq.com-unhide-checkboxes.css",
     "bug1912923-class.com.js",
     "bug1913668-workbench.researchallofus.org-hide-browser-notice.css",
+    "bug1916920-tokbox.com.js",
     "bug1918604-g1.globo.com_Caca_Palavras-fix_clipped_buttons.css",
     "bug1918995-calculator.net-hide-copypaste-ui-for-buttons.css",
     "bug1919263-www.nbcsports.com.js",

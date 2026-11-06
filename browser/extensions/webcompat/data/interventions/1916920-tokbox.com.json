@@ -1,0 +1,21 @@
+{
+  "label": "tokbox.com",
+  "bugs": {
+    "1916920": {
+      "issue": "firefox-blocked-completely",
+      "matches": ["*://tokbox.com/developer/tools/precall/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": [
+          "undefine_InstallTrigger.js",
+          "add_chrome_to_useragent.js",
+          "use_chrome_vendor.js"
+        ]
+      }
+    }
+  ]
+}
