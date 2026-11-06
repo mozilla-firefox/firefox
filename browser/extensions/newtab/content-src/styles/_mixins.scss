@@ -241,6 +241,16 @@ $side-col-width-px: $col-width-px * 2;
   --widget-size-transition-easing: ease;
 }
 
+// Visually hidden but kept in the accessibility tree.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 // Baseline styles for all widgets
 @mixin widget-base-style {
   @include widget-size-transition-tokens;

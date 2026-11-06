@@ -44,12 +44,7 @@
 
 // Visually hidden but kept in the accessibility tree (same technique as .stock-ticker-sr).
 .stocks .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  @include visually-hidden;
 }
 
 // moz-badge renders its label in shadow DOM, so it can only be styled here
@@ -237,12 +232,7 @@
 }
 
 .stock-ticker-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  @include visually-hidden;
 }
 
 .stock-indicator {

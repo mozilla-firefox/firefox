@@ -5,6 +5,13 @@
 .travel {
   @include widget-base-style;
 
+  // The frame is full bleed: it fills the card edge to edge, and the badge and
+  // context menu float over it. Clipping rounds the frame's corners to the
+  // card's inner edge; the context menu opens as a popover, so it isn't
+  // clipped.
+  padding: 0;
+  overflow: hidden;
+
   &.medium-widget {
     grid-row: span 2;
   }
@@ -14,18 +21,25 @@
   }
 }
 
-.travel-title-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-block-end: var(--space-xsmall);
+// The card and the frame keep the title as their accessible name.
+.travel .sr-only {
+  @include visually-hidden;
 }
 
-.travel-badge-title-wrapper {
+.travel-overlay {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
   display: flex;
-  align-items: center;
-  gap: var(--space-small);
-  min-inline-size: 0;
+  align-items: flex-start;
+  padding: var(--space-small);
+  // Only the badge and menu take pointer events, so the frame stays usable
+  // between them.
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 }
 
 .travel-new-badge {
@@ -48,6 +62,11 @@
 }
 
 .travel-context-menu-wrapper {
+  margin-inline-start: auto;
+  // A backdrop keeps the button readable over any frame content.
+  background-color: var(--newtab-background-color-secondary);
+  border-radius: var(--border-radius-medium);
+  // Hidden, and not a click target, until the card is hovered or focused.
   opacity: 0;
   pointer-events: none;
 }
@@ -60,18 +79,9 @@
   }
 }
 
-.travel-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-small);
-  min-height: 0;
-}
-
 .travel-frame {
   flex: 1;
   min-block-size: 0;
   width: 100%;
   border: none;
-  border-radius: var(--border-radius-medium);
 }

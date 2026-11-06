@@ -103,20 +103,18 @@ function Travel({
       ref={impressionRef}
       aria-labelledby="travel-widget-label"
     >
-      <div className="travel-title-wrapper">
-        <div className="travel-badge-title-wrapper">
-          {!hasInteracted && (
-            <moz-badge
-              className="travel-new-badge"
-              data-l10n-id="newtab-widget-lists-label-new"
-            ></moz-badge>
-          )}
-          <h2
-            id="travel-widget-label"
-            className="newtab-widget-title"
-            data-l10n-id="newtab-travel-widget-title"
-          />
-        </div>
+      <h2
+        id="travel-widget-label"
+        className="newtab-widget-title sr-only"
+        data-l10n-id="newtab-travel-widget-title"
+      />
+      <div className="travel-overlay">
+        {!hasInteracted && (
+          <moz-badge
+            className="travel-new-badge"
+            data-l10n-id="newtab-widget-lists-label-new"
+          ></moz-badge>
+        )}
         <div className="travel-context-menu-wrapper">
           <WidgetMenuButton
             className="travel-context-menu-button"
@@ -155,14 +153,12 @@ function Travel({
           </panel-list>
         </div>
       </div>
-      <div className="travel-body">
-        <iframe
-          className="travel-frame"
-          aria-labelledby="travel-widget-label"
-          src={src}
-          sandbox={FRAMED_WIDGET_SANDBOX}
-        />
-      </div>
+      <iframe
+        className="travel-frame"
+        aria-labelledby="travel-widget-label"
+        src={src}
+        sandbox={FRAMED_WIDGET_SANDBOX}
+      />
     </article>
   );
 }
