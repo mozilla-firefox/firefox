@@ -62,6 +62,24 @@
         );
       }
 
+      function spyOnSrcSets(frame) {
+        const spy = { count: 0 };
+        const descriptor = Object.getOwnPropertyDescriptor(
+          HTMLIFrameElement.prototype,
+          "src"
+        );
+        Object.defineProperty(frame, "src", {
+          get() {
+            return descriptor.get.call(this);
+          },
+          set(value) {
+            spy.count++;
+            descriptor.set.call(this, value);
+          },
+        });
+        return spy;
+      }
+
       const IAB_WIDTH = 300;
       const IAB_HEIGHT = 250;
 
@@ -561,6 +579,94 @@
         widget.frame.dispatchEvent(new Event("load"));
         is(readyEvents, 1, "one ready event with the attribute");
 
+        widget.remove();
+      });
+
+      add_task(async function test_iframe_updates() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: WIDGET_DOCUMENT,
+          title: "Test widget",
+        });
+        await widget.updateComplete;
+
+        const frame = widget.frame;
+        const srcSpy = spyOnSrcSets(frame);
+
+        widget.title = "Renamed widget";
+        await widget.updateComplete;
+        is(widget.frame, frame, "same iframe after title change");
+        is(frame.getAttribute("title"), "Renamed widget", "frame title updated");
+        is(srcSpy.count, 0, "src not set on title change");
+
+        widget.title = null;
+        await widget.updateComplete;
+        ok(!frame.hasAttribute("title"), "frame title removed");
+        is(srcSpy.count, 0, "src not set on title removal");
+
+        const otherSrc = `${WIDGET_DOCUMENT}#other`;
+        widget.src = otherSrc;
+        await widget.updateComplete;
+        const otherFrame = widget.frame;
+        isnot(otherFrame, frame, "new iframe after src change");
+        ok(!frame.isConnected, "old iframe removed");
+        ok(otherFrame.isConnected, "new iframe connected after src change");
+        is(otherFrame.getAttribute("src"), otherSrc, "new iframe src");
+        is(srcSpy.count, 0, "old iframe src not set on src change");
+
+        widget.title = "Test widget";
+        widget.src = null;
+        await widget.updateComplete;
+        ok(!otherFrame.isConnected, "iframe removed");
+
+        widget.src = WIDGET_DOCUMENT;
+        await widget.updateComplete;
+        const newFrame = widget.frame;
+        isnot(newFrame, otherFrame, "new iframe");
+        ok(newFrame.isConnected, "new iframe connected");
+        is(newFrame.getAttribute("src"), WIDGET_DOCUMENT, "new frame src");
+        is(newFrame.getAttribute("title"), "Test widget", "new frame title");
+        is(
+          newFrame.getAttribute("sandbox"),
+          "allow-forms allow-same-origin allow-scripts allow-popups allow-popups-to-escape-sandbox",
+          "new frame sandbox"
+        );
+        widget.remove();
+      });
+
+      add_task(async function test_iframe_relative_src() {
+        const relativeSrc = "does_not_exist.html";
+        const widget = createWidget({
+          supportsXULElements: false,
+          src: relativeSrc,
+          title: "Test widget",
+        });
+        await widget.updateComplete;
+
+        const frame = widget.frame;
+        isnot(frame.src, relativeSrc, "frame src property is resolved");
+        is(frame.getAttribute("src"), relativeSrc, "frame src attribute");
+        const srcSpy = spyOnSrcSets(frame);
+
+        widget.title = "Renamed widget";
+        await widget.updateComplete;
+        is(widget.frame, frame, "same iframe after title change");
+        is(srcSpy.count, 0, "relative src not set again on title change");
+        widget.remove();
+      });
+
+      add_task(async function test_iframe_title_before_src() {
+        const widget = createWidget({
+          supportsXULElements: false,
+          title: "Test widget",
+        });
+        await widget.updateComplete;
+        ok(!widget.frame, "no frame without src");
+
+        widget.src = WIDGET_DOCUMENT;
+        await widget.updateComplete;
+        is(widget.frame.localName, "iframe", "iframe created");
+        is(widget.frame.getAttribute("title"), "Test widget", "frame title");
         widget.remove();
       });
 

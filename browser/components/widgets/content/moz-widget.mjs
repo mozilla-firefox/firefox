@@ -3,11 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
-import {
-  html,
-  keyed,
-  nothing,
-} from "chrome://global/content/vendor/lit.all.mjs";
+import { html, nothing } from "chrome://global/content/vendor/lit.all.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/widgets/moz-widget-header.mjs";
 
@@ -66,6 +62,8 @@ export class MozWidget extends MozLitElement {
 
   /** @type {MozBrowser|null} The `<browser>` frame if used. */
   #browser = null;
+  /** @type {HTMLIFrameElement|null} The `<iframe>` if used. */
+  #iframe = null;
 
   #errorReason;
 
@@ -138,7 +136,7 @@ export class MozWidget extends MozLitElement {
     if (this.#browser) {
       return this.#browser;
     }
-    return this.renderRoot?.querySelector("iframe");
+    return this.#iframe;
   }
 
   /**
@@ -162,6 +160,9 @@ export class MozWidget extends MozLitElement {
     if (changes.has("src") && this.hasUpdated) {
       this.error = false;
     }
+
+    this.#setupIframe();
+
     if (!this.src) {
       this.#setBrowser(null);
       return;
@@ -214,6 +215,27 @@ export class MozWidget extends MozLitElement {
       header.menuId = this._menuId;
     }
     this._hasHeader = !!header;
+  }
+
+  #setupIframe() {
+    if (this.supportsXULElements || !this.src) {
+      this.#iframe = null;
+      return;
+    }
+    // A new iframe for each src gives each document its own window, so a
+    // message from the one before it no longer matches.
+    if (this.#iframe?.getAttribute("src") != this.src) {
+      this.#iframe = this.ownerDocument.createElement("iframe");
+      this.#iframe.setAttribute("sandbox", WIDGET_SANDBOX);
+      this.#iframe.addEventListener("load", this.#onFrameLoad);
+      this.#iframe.addEventListener("error", this.#onFrameError);
+      this.#iframe.src = this.src;
+    }
+    if (this.title) {
+      this.#iframe.setAttribute("title", this.title);
+    } else {
+      this.#iframe.removeAttribute("title");
+    }
   }
 
   #updateBrowser(changes) {
@@ -281,18 +303,9 @@ export class MozWidget extends MozLitElement {
     if (this.#browser) {
       return html`<slot name=${FRAME_SLOT}></slot>`;
     }
-    // Keying the iframe on src gives each document its own window, so a
-    // message from the one before it no longer matches.
-    return keyed(
-      this.src,
-      html`<iframe
-        src=${this.src}
-        sandbox=${WIDGET_SANDBOX}
-        title=${this.title ?? nothing}
-        @load=${this.#onFrameLoad}
-        @error=${this.#onFrameError}
-      ></iframe>`
-    );
+    // Use the manually created iframe since we don't want Lit creating
+    // potentially dangerous elements.
+    return this.#iframe;
   }
 
   #renderMenuButton() {
