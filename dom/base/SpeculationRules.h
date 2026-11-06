@@ -43,8 +43,6 @@ class SpeculationRules final {
                           UniquePtr<SpeculationRuleSet> aRuleSet);
   void Unregister(nsIScriptElement* aScriptElement);
 
-  void UpdateForBaseURLChange();
-
   void ConsiderLoads();
   void InnerConsiderLoads();
 
