@@ -4,8 +4,11 @@
 
 package mozilla.components.support.locale
 
+import android.content.res.Configuration
+import android.content.res.Configuration.UI_MODE_NIGHT_MASK
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.Locale
+import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever
@@ -16,6 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.never
+import org.mockito.Mockito.spy
 import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.robolectric.annotation.Config
@@ -52,9 +56,9 @@ class LocaleManagerTest {
 
     @Test
     @Config(qualifiers = "en-rUS")
-    fun `when calling updateResources without a stored language we must not change the system locale`() {
+    fun `when calling onConfigurationChanged without a stored language we must not change the system locale`() {
         val previousSystemLocale = Locale.getDefault()
-        LocaleManager.updateResources(testContext)
+        LocaleManager.onConfigurationChanged(testContext)
 
         assertEquals(previousSystemLocale, Locale.getDefault())
     }
@@ -149,5 +153,25 @@ class LocaleManagerTest {
 
         verify(localeUseCases, times(1)).notifyLocaleChanged
         assertEquals(locale2, Locale.getDefault())
+    }
+
+    @Test
+    @Config(qualifiers = "en-rUS-night")
+    fun `GIVEN night mode WHEN attaching the base context THEN only the locale is overridden`() {
+        LocaleManager.setNewLocale(testContext, locale = "fr".toLocale())
+        val context = spy(testContext)
+        val captor = argumentCaptor<Configuration>()
+
+        LocaleManager.onAttachBaseContext(context)
+
+        verify(context).createConfigurationContext(captor.capture())
+        assertEquals("fr".toLocale(), captor.value.locales[0])
+        assertEquals(Configuration.UI_MODE_NIGHT_UNDEFINED, captor.value.uiMode and UI_MODE_NIGHT_MASK)
+
+        LocaleManager.onConfigurationChanged(context)
+
+        verify(context, times(2)).createConfigurationContext(captor.capture())
+        assertEquals("fr".toLocale(), captor.value.locales[0])
+        assertEquals(Configuration.UI_MODE_NIGHT_YES, captor.value.uiMode and UI_MODE_NIGHT_MASK)
     }
 }

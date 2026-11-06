@@ -144,12 +144,10 @@ open class FocusApplication : Application(), Provider {
     }
 
     override fun onConfigurationChanged(config: android.content.res.Configuration) {
-        applicationContext.resources.configuration.uiMode = config.uiMode
-
         if (isMainProcess()) {
             super.onConfigurationChanged(config)
             // Update locale on main process
-            LocaleManager.updateResources(this)
+            LocaleManager.onAttachBaseContext(this)
         } else {
             super.onConfigurationChanged(config)
         }
@@ -158,7 +156,7 @@ open class FocusApplication : Application(), Provider {
     override fun attachBaseContext(base: Context) {
         // Sets the locale information. Other threads do not have locale aware needs
         if (base.isMainProcess()) {
-            val localeAwareContext = LocaleManager.updateResources(base)
+            val localeAwareContext = LocaleManager.onAttachBaseContext(base)
             super.attachBaseContext(localeAwareContext)
         } else {
             super.attachBaseContext(base)

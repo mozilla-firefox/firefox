@@ -37,7 +37,7 @@ object LocaleManager {
         Storage.save(context, locale?.toLanguageTag())
         notifyStore(locale, localeUseCase)
 
-        return updateResources(context)
+        return onConfigurationChanged(context)
     }
 
     /**
@@ -74,11 +74,35 @@ object LocaleManager {
     }
 
     /**
+     * Applies only the Locale to a new Context without using any cached overrides from [baseContext]. Use this if
+     * overriding [android.app.Application.attachBaseContext] or [android.app.Activity.attachBaseContext].
+     *
+     * See [onConfigurationChanged] if you want the opposite, i.e., to include cached overrides from [baseContext].
+     *
+     * @param baseContext the [Context] to update.
+     */
+    @SuppressLint("AppBundleLocaleChanges")
+    fun onAttachBaseContext(baseContext: Context): Context {
+        val locale = getCurrentLocale(baseContext) ?: getSystemDefault()
+
+        updateSystemLocale(locale)
+
+        val configuration =
+            Configuration().apply {
+                setLocale(locale)
+                setLayoutDirection(locale)
+            }
+        return baseContext.createConfigurationContext(configuration)
+    }
+
+    /**
      * Updates localization resources to use the current locale.
+     *
+     * See [onAttachBaseContext] to avoid using cached overrides.
      *
      * @return A context that is locale aware.
      */
-    fun updateResources(baseContext: Context): Context {
+    fun onConfigurationChanged(baseContext: Context): Context {
         val locale = getCurrentLocale(baseContext) ?: getSystemDefault()
 
         updateSystemLocale(locale)

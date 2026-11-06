@@ -206,7 +206,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     override fun attachBaseContext(base: Context) {
         // Sets the locale information. Other threads do not have locale aware needs
         if (base.isMainProcess()) {
-            val localeAwareContext = LocaleManager.updateResources(base)
+            val localeAwareContext = LocaleManager.onAttachBaseContext(base)
             super.attachBaseContext(localeAwareContext)
         } else {
             super.attachBaseContext(base)
@@ -1304,11 +1304,6 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     }
 
     override fun onConfigurationChanged(config: android.content.res.Configuration) {
-        // Workaround for androidx appcompat issue where follow system day/night mode config changes
-        // are not triggered when also using createConfigurationContext like we do in LocaleManager
-        // https://issuetracker.google.com/issues/143570309#comment3
-        applicationContext.resources.configuration.uiMode = config.uiMode
-
         if (isMainProcess()) {
             // We can only do this on the main process as resetAfter will access components.core, which
             // will initialize the engine and create an additional GeckoRuntime from the Gecko
@@ -1319,7 +1314,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
             components.strictMode.allowViolation(StrictMode::allowThreadDiskReads) {
                 super.onConfigurationChanged(config)
                 // Update locale on main process
-                LocaleManager.updateResources(this)
+                LocaleManager.onConfigurationChanged(this)
             }
         } else {
             super.onConfigurationChanged(config)
