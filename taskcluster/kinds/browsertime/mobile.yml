@@ -455,7 +455,7 @@ browsertime-benchmark-speedometer3-mobile:
         by-app:
             fenix:
                 by-test-platform:
-                    android-em-14-arm64.*: 3
+                    android-em-14-arm64.*: 2
                     default: 1
             geckoview: 2
             cstm-car-m: 2
