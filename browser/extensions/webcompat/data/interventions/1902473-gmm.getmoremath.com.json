@@ -1,0 +1,20 @@
+{
+  "label": "gmm.getmoremath.com",
+  "bugs": {
+    "1902473": {
+      "issue": "unsupported-warning",
+      "matches": ["*://gmm.getmoremath.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "hide_messages": [
+        {
+          "container": ".MuiAlert-root",
+          "message": "Firefox"
+        }
+      ]
+    }
+  ]
+}

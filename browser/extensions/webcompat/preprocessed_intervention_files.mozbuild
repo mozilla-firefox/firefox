@@ -62,6 +62,7 @@ preprocessed_intervention_files = [
     "bug1902415-kaigetsu.staysee.jp.js",
     "bug1902416-acionafacil.com.br.js",
     "bug1902419-jamsune.com.js",
+    "bug1902473-gmm.getmoremath.com.js",
     "bug1902520-www.keisan.nta.go.jp.js",
     "bug1903480-ace7.acecombat.jp.js",
     "bug1905069-one.geekie.com.br.js",
