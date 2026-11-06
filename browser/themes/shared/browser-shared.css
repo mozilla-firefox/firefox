@@ -1581,7 +1581,6 @@ popupnotificationcontent {
 
 #PictureInPicturePanel {
   /* Panel variables will be tokenized in bug 2017979 */
-  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   width: var(--menu-panel-width-wide);
   font: caption;
 }

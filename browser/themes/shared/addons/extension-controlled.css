@@ -15,8 +15,8 @@
 }
 
 .extension-controlled-icon {
-  height: 16px;
-  width: 16px;
+  height: var(--icon-size);
+  width: var(--icon-size);
   vertical-align: bottom;
 
   &.alltabs-icon {

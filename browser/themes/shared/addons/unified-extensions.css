@@ -4,7 +4,7 @@
 
 :root {
   /* uei = unified extensions item */
-  --uei-icon-size: 32px;
+  --uei-icon-size: var(--icon-size-xlarge);
   --uei-attention-dot-size: 8px;
   --uei-button-bgcolor: var(--button-background-color-ghost);
   --uei-button-color: var(--button-text-color-ghost);
@@ -15,7 +15,7 @@
   --uei-button-attention-dot-color: var(--color-accent-attention);
 
   &[uidensity="compact"] {
-    --uei-icon-size: 24px;
+    --uei-icon-size: var(--icon-size-large);
   }
 }
 
@@ -84,7 +84,7 @@ unified-extensions-item {
   -moz-context-properties: fill;
   fill: currentColor;
   /* Have some spacing between items in the panel; mainly useful for when HCM is enabled. */
-  margin-block: 2px !important; /* override panelUI-shared.css */
+  margin-block: var(--space-xxsmall) !important; /* override panelUI-shared.css */
 }
 
 /* Override the margin for the subviewbutton wrapped inside
@@ -112,6 +112,8 @@ unified-extensions-item {
 
   /* Adjust attention dots position in the unified extensions panel. */
   &.subviewbutton {
+    /* This position is based on icon/dot sizes and padding */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     background-position: left var(--uei-dot-horizontal-position-in-panel) bottom var(--uei-dot-vertical-position-in-panel);
 
     &:-moz-locale-dir(rtl) {
@@ -128,7 +130,7 @@ unified-extensions-item {
    * extension icon being 32px in this case, makes the item look crowded even for
    * compact mode. */
   :root[uidensity="compact"] panel:not([touchmode]) & {
-    padding-block: 4px;
+    padding-block: var(--space-xsmall);
   }
 }
 
@@ -148,8 +150,8 @@ unified-extensions-item {
   }
 
   > .toolbarbutton-badge-stack > .toolbarbutton-icon {
-    height: 16px;
-    width: 16px;
+    height: var(--icon-size);
+    width: var(--icon-size);
   }
 }
 
@@ -162,7 +164,7 @@ unified-extensions-item {
 /* The first selector is for the custom elements icon, which appears only in the UEP. */
 .unified-extensions-item-icon,
 .unified-extensions-item .webextension-browser-action.subviewbutton > .toolbarbutton-badge-stack {
-  margin-inline-end: 6px;
+  margin-inline-end: var(--space-small);
 }
 
 .unified-extensions-item-icon,
@@ -211,6 +213,7 @@ unified-extensions-item {
   &:hover:active > .toolbarbutton-icon {
     color: var(--uei-button-active-color);
     background-color: var(--uei-button-active-bgcolor);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     box-shadow: 0 1px 0 hsla(210, 4%, 10%, 0.03) inset;
   }
 

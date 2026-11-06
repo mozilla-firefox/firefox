@@ -63,6 +63,7 @@ html|ul.webext-perm-domains-list {
   /* max-height is set when the domains list is longer than 5 domains
    * to force the domains list to become scrollable. */
   &.scrollable-domains-list {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     max-height: 5.5lh;
   }
 
@@ -115,5 +116,5 @@ html|ul.webext-perm-domains-list {
 
 .addon-warning-icon {
   -moz-context-properties: fill;
-  fill: #ffbf00;
+  fill: var(--icon-color-warning);
 }
