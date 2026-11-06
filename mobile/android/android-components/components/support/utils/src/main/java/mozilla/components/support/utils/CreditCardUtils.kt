@@ -5,6 +5,7 @@
 package mozilla.components.support.utils
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.VisibleForTesting
 import kotlin.math.floor
 import kotlin.math.log10
 import mozilla.components.support.utils.ext.toCreditCardNumber
@@ -311,3 +312,33 @@ fun String.creditCardIIN() = CreditCardUtils.getCreditCardIIN(this)
  *   recognized credit card type.
  */
 fun String.creditCardIssuerNetwork() = CreditCardUtils.getCreditCardIssuerNetwork(this)
+
+/**
+ * Returns true if the provided string is a valid credit card by checking if it has a matching credit card issuer
+ * network and passes the Luhn algorithm, and false otherwise.
+ */
+fun String.validateCreditCardNumber(): Boolean {
+    val creditCardNumber = this.toCreditCardNumber()
+
+    if (creditCardNumber != this || creditCardNumber.creditCardIIN() == null) {
+        return false
+    }
+
+    return luhnAlgorithmValidation(creditCardNumber)
+}
+
+private const val DECIMAL_BASE = 10
+
+/** Implementation of Luhn Algorithm validation (https://en.wikipedia.org/wiki/Luhn_algorithm) */
+@VisibleForTesting
+internal fun luhnAlgorithmValidation(creditCardNumber: String): Boolean {
+    var checksum = 0
+    val reversedCardNumber = creditCardNumber.reversed()
+
+    for (index in reversedCardNumber.indices) {
+        val digit = Character.getNumericValue(reversedCardNumber[index])
+        checksum += if (index % 2 == 0) digit else (digit * 2).let { (it / DECIMAL_BASE) + (it % DECIMAL_BASE) }
+    }
+
+    return (checksum % DECIMAL_BASE) == 0
+}

@@ -4,7 +4,7 @@
 
 package org.mozilla.fenix.settings.creditcards.ui
 
-import org.mozilla.fenix.settings.creditcards.validateCreditCardNumber
+import mozilla.components.support.utils.validateCreditCardNumber
 
 /**
  * Reducer for the [CreditCardEditorStore].
