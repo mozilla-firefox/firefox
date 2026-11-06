@@ -1314,7 +1314,6 @@ class DesktopUnittest(TestingMixin, MercurialScript, MozbaseMixin, CodeCoverageM
             max_per_test_tests = 30
         executed_tests = 0
         executed_too_many_tests = False
-        xpcshell_selftests = 0
 
         if suites:
             self.info("#### Running %s suites" % suite_category)
@@ -1445,25 +1444,16 @@ class DesktopUnittest(TestingMixin, MercurialScript, MozbaseMixin, CodeCoverageM
                     final_cmd = copy.copy(cmd)
                     final_cmd.extend(per_test_args)
 
-                    # Run xpcshell self-tests only once per test-verify run or only in chunk 1.
-                    if "--self-test" in final_cmd:
-                        should_remove_selftest = False
-
-                        # Remove self-test for test-verify runs after the first one
-                        if self.verify_enabled or self.per_test_coverage:
-                            xpcshell_selftests += 1
-                            if xpcshell_selftests > 1:
-                                should_remove_selftest = True
-
-                        # Remove self-test for chunked runs when not in chunk 1
-                        if (
+                    # Run xpcshell self-tests only in chunk 1, and never in per-test runs.
+                    if "--self-test" in final_cmd and (
+                        self.verify_enabled
+                        or self.per_test_coverage
+                        or (
                             self.config.get("this_chunk")
                             and int(self.config["this_chunk"]) != 1
-                        ):
-                            should_remove_selftest = True
-
-                        if should_remove_selftest:
-                            final_cmd.remove("--self-test")
+                        )
+                    ):
+                        final_cmd.remove("--self-test")
 
                     final_env = copy.copy(env)
 
