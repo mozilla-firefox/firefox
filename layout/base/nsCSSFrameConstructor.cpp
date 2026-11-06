@@ -1829,12 +1829,14 @@ void nsCSSFrameConstructor::CreateGeneratedContentItem(
   // just stick the style on the element and avoid an additional traversal.
   //
   // We don't do this for pseudos that may trigger animations or transitions,
-  // since those need to be kicked off by the traversal machinery.
+  // since those need to be kicked off by the traversal machinery, nor for
+  // pseudos that declare timelines or a timeline-scope, which the traversal
+  // registers.
   //
   // Note that when a pseudo-element animates, we flag the originating element,
   // so we check that flag, but we could also a more expensive (but exhaustive)
   // check using EffectSet::GetEffectSet, for example.
-  if (!Servo_ComputedValues_SpecifiesAnimationsOrTransitions(pseudoStyle) &&
+  if (!Servo_ComputedValues_NeedsAnimationTraversal(pseudoStyle) &&
       !aOriginatingElement.MayHaveAnimations()) {
     Servo_SetExplicitStyle(container, pseudoStyle);
   } else {

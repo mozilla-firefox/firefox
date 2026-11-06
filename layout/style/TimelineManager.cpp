@@ -4,6 +4,7 @@
 
 #include "TimelineManager.h"
 
+#include "mozilla/AnimationUtils.h"
 #include "mozilla/ElementAnimationData.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/ElementInlines.h"
@@ -141,14 +142,13 @@ nsTArray<RefPtr<const nsAtom>> TimelineManager::UpdateTimelines(
 }
 
 void TimelineManager::UpdateTimelineScopes(
-    Element* aElement, const ComputedStyle* aComputedStyle) {
-  // For now, a scope specified on a pseudo-element is recorded against its
-  // originating element.
-  const auto pseudo = PseudoStyleRequest::NotPseudo();
-  auto* scope = TimelineScope::Get(aElement, pseudo);
+    Element* aElement, const PseudoStyleRequest& aPseudoRequest,
+    const ComputedStyle* aComputedStyle) {
+  auto* scope = TimelineScope::Get(aElement, aPseudoRequest);
   const auto timelineScope =
       aComputedStyle->StyleUIReset()->mTimelineScope.value.AsSpan();
   if (timelineScope.IsEmpty()) {
+    // Delete the scope & we're done.
     MOZ_ASSERT(scope, "Timeline scopes out of sync");
     if (scope) {
       scope->Destroy();
@@ -157,8 +157,8 @@ void TimelineManager::UpdateTimelineScopes(
   }
 
   if (!scope) {
-    scope =
-        &aElement->EnsureAnimationData().EnsureTimelineScope(*aElement, pseudo);
+    scope = &aElement->EnsureAnimationData().EnsureTimelineScope(
+        *aElement, aPseudoRequest);
     mTimelineScopes.insertBack(scope);
   }
 
@@ -191,10 +191,10 @@ static bool ScopedNameLooselyMatches(const dom::ShadowRoot* aTargetShadowRoot,
 }
 
 /* static */
-bool TimelineManager::TimelineNameScopedByElement(const dom::Element* aElement,
-                                                  const nsAtom* aName) {
-  const auto* scope =
-      TimelineScope::Get(aElement, PseudoStyleRequest::NotPseudo());
+bool TimelineManager::TimelineNameScopedByElement(
+    const dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
+    const nsAtom* aName) {
+  const auto* scope = TimelineScope::Get(aElement, aPseudoRequest);
   return scope && scope->Scopes(aName);
 }
 
@@ -282,7 +282,8 @@ TimelineType* TimelineManager::DoGetNamedTimelineInSubtree(
   auto IsValid = [&](const Element* aTimelineCandidate, const Element* aRoot) {
     const auto* e = aTimelineCandidate;
     for (; e && e != aRoot; e = e->GetParentElementCrossingShadowRoot()) {
-      if (TimelineNameScopedByElement(e, aName)) {
+      const auto [element, pseudo] = AnimationUtils::GetElementPseudoPair(e);
+      if (TimelineNameScopedByElement(element, pseudo, aName)) {
         // Scope already limited by some other element, bail.
         // TODO(dshin): This is a lot of linear traversals...
         return false;
@@ -297,8 +298,9 @@ TimelineType* TimelineManager::DoGetNamedTimelineInSubtree(
   for (auto itr = candidates.Data().crbegin(); itr != candidates.Data().crend();
        ++itr) {
     auto* timeline = itr->mTimeline.get();
-    const auto* e = timeline->TimelineTarget().mElement;
-    if (!IsValid(e, aRoot)) {
+    const auto target = timeline->TimelineTarget();
+    const auto* e = target.mElement;
+    if (!IsValid(e->GetPseudoElement(target.mPseudoRequest), aRoot)) {
       continue;
     }
     if (!ScopedNameLooselyMatches(aTargetShadowRoot, e, itr->mCascadeLevel)) {

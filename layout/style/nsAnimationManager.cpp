@@ -191,11 +191,11 @@ static already_AddRefed<dom::AnimationTimeline> GetNamedProgressTimeline(
       return result.forget();
     }
     // We're scoped, or have reached the top.
-    if (timelineManager &&
-        (timelineManager->TimelineNameScopedByElement(element, aName.mName) ||
-         e->IsRootElement())) {
+    if (timelineManager && (TimelineManager::TimelineNameScopedByElement(
+                                element, pseudo, aName.mName) ||
+                            e->IsRootElement())) {
       return timelineManager->GetNamedTimelineInSubtree(
-          element, aName.mName, targetShadowRoot, aDocument);
+          e, aName.mName, targetShadowRoot, aDocument);
     }
     // Continue the search with our parent.
   }
