@@ -1,0 +1,17 @@
+{
+  "label": "vizzy.io",
+  "bugs": {
+    "1928945": {
+      "issue": "unsupported-warning",
+      "matches": ["*://vizzy.io/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["use_chrome_useragent.js", "use_chrome_vendor.js"]
+      }
+    }
+  ]
+}
