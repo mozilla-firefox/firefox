@@ -128,3 +128,33 @@ when = { any_file = { include = [
 load = [
   { type = "file", path = ".agents/skills/android/SKILL.md" },
 ]
+
+# Media: Triggered when a patch touches dom/media source code.
+[[rules]]
+name = "dom/media"
+description = "dom/media review checklists: threading, async lifecycle, IPC, memory safety and spec correctness"
+when = { any_file = { include = [
+  "dom/media/**",
+], exclude = [
+  "dom/media/gmp/rlz/**",
+  "dom/media/gmp/widevine-adapter/content_decryption_module*",
+  "dom/media/platforms/ffmpeg/ffmpeg[0-9]*/**",
+  "dom/media/platforms/ffmpeg/libav[0-9]*/**",
+  "dom/media/webrtc/transport/third_party/**",
+], ext = [
+  ".c",
+  ".cc",
+  ".cpp",
+  ".h",
+  ".ipdl",
+  ".ipdlh",
+  ".mm",
+  ".rs",
+] } }
+load = [
+  { type = "file", path = "dom/media/docs/review/threading.md" },
+  { type = "file", path = "dom/media/docs/review/async-lifecycle.md" },
+  { type = "file", path = "dom/media/docs/review/ipc.md" },
+  { type = "file", path = "dom/media/docs/review/memory-safety.md" },
+  { type = "file", path = "dom/media/docs/review/spec-correctness.md" },
+]
