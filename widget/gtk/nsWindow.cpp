@@ -241,9 +241,6 @@ static void drag_data_received_event_cb(
     GtkWidget* aWidget, GdkDragContext* aDragContext, gint aX, gint aY,
     GtkSelectionData* aSelectionData, guint aInfo, guint aTime, gpointer aData);
 
-/* initialization static functions */
-static nsresult initialize_prefs(void);
-
 static guint32 sLastUserInputTime = GDK_CURRENT_TIME;
 
 static SystemTimeConverter<guint32>& TimeConverter() {
@@ -341,7 +338,6 @@ static nsIWidget::Raise gFocusRequestWindowRaise = nsIWidget::Raise::No;
 static bool gBlockActivateEvent = false;
 static bool gGlobalsInitialized = false;
 static bool gUseAspectRatio = true;
-bool gUseStableRounding = true;
 static uint32_t gLastTouchID = 0;
 // See Bug 1777269 for details. We don't know if the suspected leave notify
 // event is a correct one when we get it.
@@ -432,21 +428,19 @@ nsWindow::nsWindow()
 
   if (!gGlobalsInitialized) {
     gGlobalsInitialized = true;
-
-    // It's OK if either of these fail, but it may not be one day.
-    initialize_prefs();
-
+    if (Preferences::HasUserValue("widget.use-aspect-ratio")) {
+      gUseAspectRatio = Preferences::GetBool("widget.use-aspect-ratio", true);
+    } else {
+      gUseAspectRatio =
+          IsGnomeDesktopEnvironment() || IsKdeDesktopEnvironment();
+    }
 #ifdef MOZ_WAYLAND
-    // Wayland provides clipboard data to application on focus-in event
-    // so we need to init our clipboard hooks before we create window
-    // and get focus.
     if (GdkIsWaylandDisplay()) {
-      nsCOMPtr<nsIClipboard> clipboard =
-          do_GetService("@mozilla.org/widget/clipboard;1");
-      NS_ASSERTION(clipboard, "Failed to init clipboard!");
+      nsWindowWayland::InitPrefs();
     }
 #endif
   }
+
   // Dummy call to mozgtk to prevent the linker from removing
   // the dependency with --as-needed.
   // see toolkit/library/moz.build for details.
@@ -494,12 +488,9 @@ void nsWindow::DispatchResized() {
     return;
   }
 
-  // Wayland popups are painted at 0,0 but we use mClientArea.x/y as popup
-  // position so we can't use it for rounding of size coordinates.
-  auto clientSize = gUseStableRounding && !IsWaylandPopup()
-                        ? GetClientSize()
-                        : LayoutDeviceIntSize::Round(mClientArea.Size() *
-                                                     GetDesktopToDeviceScale());
+  // Upscale painted window size according windowing system rounding
+  // to ensure 1:1 buffer/screen rendering.
+  auto clientSize = GetRoundedClientSize();
 
   LOG("nsWindow::DispatchResized() client scaled size [%d, %d]",
       (int)clientSize.width, (int)clientSize.height);
@@ -669,7 +660,7 @@ bool nsWindow::WidgetTypeSupportsNativeCompositing() {
   if (IsDragPopup()) {
     return false;
   }
-  return WidgetTypeSupportsAcceleration();
+  return mIsAccelerated;
 }
 
 static bool IsPenEvent(GdkEvent* aEvent, bool* isEraser) {
@@ -1388,6 +1379,12 @@ LayoutDeviceIntRect nsWindow::GetBounds() {
 
 LayoutDeviceIntSize nsWindow::GetClientSize() {
   return ToLayoutDevicePixels(mClientArea).Size();
+}
+
+// This is default rounding for X11
+LayoutDeviceIntSize nsWindow::GetRoundedClientSize() {
+  return LayoutDeviceIntSize::Round(mClientArea.Size() *
+                                    GetDesktopToDeviceScale());
 }
 
 LayoutDeviceIntRect nsWindow::GetClientBounds() {
@@ -6462,18 +6459,6 @@ void nsWindow::InitDragEvent(WidgetDragEvent& aEvent) {
   KeymapWrapper::InitInputEvent(aEvent, modifierState);
 }
 
-static nsresult initialize_prefs(void) {
-  if (Preferences::HasUserValue("widget.use-aspect-ratio")) {
-    gUseAspectRatio = Preferences::GetBool("widget.use-aspect-ratio", true);
-  } else {
-    gUseAspectRatio = IsGnomeDesktopEnvironment() || IsKdeDesktopEnvironment();
-  }
-  // 'Stable' Wayland subsurface rounding algorithm is used by all compositors
-  // except KDE.
-  gUseStableRounding = !IsKdeDesktopEnvironment() || GdkIsX11Display();
-  return NS_OK;
-}
-
 #ifdef ACCESSIBILITY
 void nsWindow::CreateRootAccessible() {
   if (!mRootAccessible) {
@@ -7283,15 +7268,8 @@ void nsWindow::GetCompositorWidgetInitData(
   }
 #endif
 
-  // Wayland popups are painted at 0,0 but we use mClientArea.x/y as popup
-  // position so we can't use it for rounding of size coordinates.
-  auto clientSize = gUseStableRounding && !IsWaylandPopup()
-                        ? GetClientSize()
-                        : LayoutDeviceIntSize::Round(mClientArea.Size() *
-                                                     GetDesktopToDeviceScale());
-
   *aInitData = mozilla::widget::GtkCompositorWidgetInitData(
-      GetX11Window(), displayName, GdkIsX11Display(), clientSize);
+      GetX11Window(), displayName, GdkIsX11Display(), GetRoundedClientSize());
 }
 
 nsresult nsWindow::SetSystemFont(const nsCString& aFontName) {

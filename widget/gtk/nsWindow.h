@@ -101,14 +101,6 @@ struct _GdkEventTouchpadPinch;
 typedef struct _GdkEventTouchpadPinch GdkEventTouchpadPinch;
 #endif
 
-// 'Stable' Wayland subsurface rounding algorithm is used by all compositors
-// except KDE.
-// See
-// https://gitlab.freedesktop.org/wayland/wayland-protocols/-/merge_requests/143#note_1343171
-// for details.
-// We want to replace it by wp-fractional-scale-v2 when it's available.
-extern bool gUseStableRounding;
-
 #if !GTK_CHECK_VERSION(3, 22, 0)
 typedef enum {
   GDK_ANCHOR_FLIP_X = 1 << 0,
@@ -222,6 +214,10 @@ class nsWindow : public nsIWidget {
   nsresult GetRestoredBounds(LayoutDeviceIntRect&) override;
   bool PersistClientBounds() const override { return true; }
   LayoutDeviceIntMargin NormalSizeModeClientToWindowMargin() override;
+
+  // Get rounded client size based on actual window position and rounding
+  // method, see nsWindowWayland::sUseStableRounding.
+  virtual LayoutDeviceIntSize GetRoundedClientSize();
 
   bool WorkspaceManagementDisabled();
   bool ConstrainSizeWithScale(int* aWidth, int* aHeight, double aScale);

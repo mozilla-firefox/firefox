@@ -49,6 +49,11 @@ class nsWindowWayland : public nsWindow {
 
   nsCString GenerateWorkspaceID();
 
+  LayoutDeviceIntSize GetRoundedClientSize() override;
+
+  static void InitPrefs();
+  static bool UseStableRounding() { return sUseStableRounding; }
+
  protected:
   virtual ~nsWindowWayland() = default;
 
@@ -69,6 +74,14 @@ class nsWindowWayland : public nsWindow {
   // (i.e. mWaylandToplevel).
   RefPtr<nsWindowWayland> mWaylandWindowPrev;
   RefPtr<nsWindowWayland> mWaylandWindowNext;
+
+  // 'Stable' Wayland subsurface rounding algorithm is used by all compositors
+  // except KDE.
+  // See
+  // https://gitlab.freedesktop.org/wayland/wayland-protocols/-/merge_requests/143#note_1343171
+  // for details.
+  // We want to replace it by wp-fractional-scale-v2 when it's available.
+  static bool sUseStableRounding;
 };
 
 class nsWindowWaylandToplevel : public nsWindowWayland {

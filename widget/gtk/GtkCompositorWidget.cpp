@@ -151,6 +151,7 @@ mozilla::layers::NativeLayerRoot* GtkCompositorWidget::GetNativeLayerRoot() {
     mNativeLayerRoot = layers::NativeLayerRootWayland::Create(
         MOZ_WL_SURFACE(mWidget->GetMozContainer()));
     mNativeLayerRoot->Init();
+    MOZ_WL_SURFACE(mWidget->GetMozContainer())->MarkAsRootSurface();
   }
   return mNativeLayerRoot;
 }

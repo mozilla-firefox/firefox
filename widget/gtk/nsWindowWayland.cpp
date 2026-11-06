@@ -29,6 +29,8 @@ using namespace mozilla::gfx;
 using namespace mozilla::layers;
 using namespace mozilla::widget;
 
+bool nsWindowWayland::sUseStableRounding = true;
+
 // Returns the last window of window chain starting at aWindow.
 // Returns aWindow itself when it has no windows attached.
 nsWindowWayland* nsWindowWayland::FindLastWindow(nsWindowWayland* aWindow) {
@@ -303,6 +305,24 @@ void nsWindowWayland::UnlockNativePointer() {
     zwp_locked_pointer_v1_destroy(mLockedPointer);
     mLockedPointer = nullptr;
   }
+}
+
+LayoutDeviceIntSize nsWindowWayland::GetRoundedClientSize() {
+  WaylandSurfaceLock lock(mSurface);
+  return mSurface->GetScaledSize(lock, mClientArea.Size());
+}
+
+void nsWindowWayland::InitPrefs() {
+  // 'Stable' Wayland subsurface rounding algorithm is used by all compositors
+  // except KDE.
+  sUseStableRounding = !IsKdeDesktopEnvironment();
+
+  // Wayland provides clipboard data to application on focus-in event
+  // so we need to init our clipboard hooks before we create window
+  // and get focus.
+  nsCOMPtr<nsIClipboard> clipboard =
+      do_GetService("@mozilla.org/widget/clipboard;1");
+  NS_ASSERTION(clipboard, "Failed to init clipboard!");
 }
 
 nsWindowWaylandToplevel::~nsWindowWaylandToplevel() = default;
