@@ -149,7 +149,7 @@ add_task(
 
     Assert.deepEqual(
       weightedInput.features,
-      ["thom", "rece", "freq", "ctr"],
+      ["thom", "rece", "freq", "bmark", "ctr"],
       "built-in feature defaults are used without trainhop config"
     );
     Assert.equal(
@@ -184,6 +184,155 @@ add_task(
     );
 
     sandbox.restore();
+  }
+);
+
+add_task(
+  async function test_rankTopSites_preserves_weights_after_rollout_removal() {
+    // Tests a user's learned weights are preserved after rollout ends and
+    // and prefs come from local files instead.
+    const { RankShortcutsProvider } = ChromeUtils.importESModule(
+      "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+    );
+    const { updateWeights } = ChromeUtils.importESModule(
+      "resource://newtab/lib/SmartShortcutsRanker/RankShortcutsWorkerClass.mjs"
+    );
+    const { NewTabUtils } = ChromeUtils.importESModule(
+      "resource://gre/modules/NewTabUtils.sys.mjs"
+    );
+    await NewTabUtils.init();
+
+    const sandbox = sinon.createSandbox();
+    try {
+      const provider = new RankShortcutsProvider();
+      const rollout = {
+        type: "smartShortcuts",
+        payload: {
+          enabled: true,
+          telem: false,
+          force_log: true,
+          eta: 10,
+          click_bonus: 20,
+          positive_prior: 1,
+          negative_prior: 1000,
+          sticky_numimps: 0,
+          min_exp_clicks: 10,
+          min_exp_impressions: 1000,
+          features: ["thom", "rece", "freq", "bmark", "ctr"],
+          frec_weight: 0,
+          thom_weight: 181,
+          hour_weight: 0,
+          daily_weight: 0,
+          bmark_weight: 0,
+          rece_weight: 466,
+          freq_weight: 200,
+          refre_weight: 0,
+          open_weight: 0,
+          unid_weight: 0,
+          ctr_weight: 954,
+          bias_weight: 0,
+        },
+      };
+      const prefs = {
+        [PREF_SYSTEM_SHORTCUTS_PERSONALIZATION]: true,
+        trainhopConfig: { [rollout.type]: rollout.payload },
+      };
+      const sites = [{ guid: "a", url: "https://a.com", frecency: 10 }];
+      const scoreMap = {
+        a: { final: 0, thom: 0.5, rece: 0.5, freq: 0.5, bmark: 1, ctr: 0.5 },
+      };
+      const cache = { score_map: scoreMap };
+      let learningInput;
+      let rankingInput;
+
+      sandbox
+        .stub(NewTabUtils.activityStreamProvider, "executePlacesQuery")
+        .callsFake(async sql =>
+          sql.includes("FROM moz_bookmarks") ? [["a", 1]] : [["a", 10, 1000]]
+        );
+      const interactions = sandbox
+        .stub(provider, "getLatestInteractions")
+        .resolves({ a: { clicks: 1, impressions: 0 } });
+      sandbox.stub(provider, "fetchRefreFeatures").resolves({
+        rece: { a: 1 },
+        freq: { a: 1 },
+      });
+      sandbox
+        .stub(provider.sc_obj, "get")
+        .callsFake(async () => structuredClone(cache));
+      sandbox.stub(provider.sc_obj, "set").callsFake(async (key, value) => {
+        cache[key] = structuredClone(value);
+      });
+      provider._rankShortcutsWorker = {
+        post(method, [input]) {
+          if (method === "updateWeights") {
+            learningInput = structuredClone(input);
+            return updateWeights(structuredClone(input));
+          }
+          if (method === "weightedSampleTopSites") {
+            rankingInput = structuredClone(input);
+            return { norms: {}, score_map: scoreMap };
+          }
+          throw new Error(`unexpected worker method: ${method}`);
+        },
+      };
+
+      await provider.rankTopSites(sites, prefs, false);
+      const learnedWeights = structuredClone(cache.weights);
+      const initialWeights = structuredClone(cache.init_weights);
+      for (const feature of rollout.payload.features) {
+        Assert.notEqual(
+          learnedWeights[feature],
+          initialWeights[feature],
+          `${feature} learns from the click during the rollout`
+        );
+      }
+
+      delete prefs.trainhopConfig;
+      interactions.resolves({});
+      await provider.rankTopSites(sites, prefs, false);
+
+      Assert.deepEqual(
+        learningInput.weights,
+        learnedWeights,
+        "removing the rollout passes learned weights into learning without a reset"
+      );
+      Assert.deepEqual(
+        rankingInput.weights,
+        learnedWeights,
+        "local defaults rank with the learned weights"
+      );
+      Assert.deepEqual(
+        cache.weights,
+        learnedWeights,
+        "learned weights remain cached"
+      );
+      Assert.deepEqual(
+        cache.init_weights,
+        initialWeights,
+        "local initial weights match the rollout's initial weights"
+      );
+      Assert.deepEqual(rankingInput.features, rollout.payload.features);
+      Assert.equal(learningInput.eta, rollout.payload.eta / 10000);
+      Assert.equal(learningInput.click_bonus, rollout.payload.click_bonus / 10);
+
+      interactions.resolves({ a: { clicks: 1, impressions: 0 } });
+      await provider.rankTopSites(sites, prefs, false);
+      Assert.deepEqual(
+        learningInput.weights,
+        learnedWeights,
+        "local learning continues from the previously learned weights"
+      );
+      for (const feature of rollout.payload.features) {
+        Assert.greater(
+          cache.weights[feature],
+          learnedWeights[feature],
+          `${feature} continues learning after rollout removal`
+        );
+      }
+    } finally {
+      sandbox.restore();
+    }
   }
 );
 

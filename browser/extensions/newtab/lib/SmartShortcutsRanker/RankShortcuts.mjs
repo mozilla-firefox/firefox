@@ -39,8 +39,8 @@ const PLACES_TABLE = "moz_places";
 const VISITS_TABLE = "moz_historyvisits";
 const BOOKMARK_TABLE = "moz_bookmarks";
 const BASE_SEASONALITY_CACHE_EXPIRATION = 1e3 * 60 * 60 * 24 * 7; // 7 day in miliseconds
-const ETA = 0;
-const CLICK_BONUS = 10;
+const ETA = 10;
+const CLICK_BONUS = 20;
 const PREF_SYSTEM_SHORTCUTS_PERSONALIZATION =
   "discoverystream.shortcuts.personalization.enabled";
 
@@ -59,7 +59,7 @@ const FEATURE_META = {
   bias: { pref: "bias_weight", def: 0 },
 };
 
-const FEATURES = ["thom", "rece", "freq", "ctr"];
+const FEATURES = ["thom", "rece", "freq", "bmark", "ctr"];
 const SHORTCUT_POSITIVE_PRIOR = 1;
 const SHORTCUT_NEGATIVE_PRIOR = 1000;
 const SHORTCUT_TAU = 100;
