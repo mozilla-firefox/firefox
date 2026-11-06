@@ -783,6 +783,14 @@ class nsBlockFrame : public nsContainerFrame {
       Maybe<nsBlockFrame::LineClampTarget> aLineClampNumberedTarget,
       nsBlockFrame* aLineClampRoot);
 
+  // Resolved descendant maximum block size, including border and padding.
+  NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(LineClampDescendantMaxBSize, nscoord);
+  Maybe<nscoord> GetLineClampDescendantMaxBSize() const {
+    bool found = false;
+    const nscoord maxBSize = GetProperty(LineClampDescendantMaxBSize(), &found);
+    return found ? mozilla::Some(maxBSize) : Nothing();
+  }
+
   struct LineClampAutoInfo {
     Maybe<nscoord> lineClampRootMaxHeight = Nothing();
     bool blockIsFullyClampedOut = false;
@@ -1240,6 +1248,7 @@ class nsBlockFrame : public nsContainerFrame {
   nsLineList mLines;
 
   friend class mozilla::BlockReflowState;
+  friend class LineClampLineIterator;
   friend class nsBlockInFlowLineIterator;
 
 #ifdef DEBUG
