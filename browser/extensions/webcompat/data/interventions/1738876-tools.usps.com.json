@@ -1,0 +1,17 @@
+{
+  "label": "tools.usps.com",
+  "bugs": {
+    "1738876": {
+      "issue": "page-fails-to-load",
+      "matches": ["https://tools.usps.com/rcas.htm*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["bug1738876-tools.usps.com-fix-load-race-condition.js"]
+      }
+    }
+  ]
+}
