@@ -1000,8 +1000,11 @@ class WorkerPrivate final
 
   void StorePolicyContainerArgsOnClient();
 
-  const mozilla::ipc::CSPInfo& GetCSPInfo() const {
-    return mLoadInfo.mCSPContext->CSPInfo();
+  Maybe<const mozilla::ipc::CSPInfo&> GetCSPInfo() const {
+    if (!mLoadInfo.mCSPContext) {
+      return Nothing();
+    }
+    return SomeRef(mLoadInfo.mCSPContext->CSPInfo());
   }
 
   OffThreadCSPContext* GetCSPContext() const {

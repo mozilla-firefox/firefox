@@ -514,9 +514,12 @@ inline bool PrepareExecutionOfTrustedTypesDefaultPolicy(
   } else if (IsWorkerGlobal(globalObject->GetGlobalJSObject())) {
     MOZ_ASSERT(!NS_IsMainThread());
     WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
-    const mozilla::ipc::CSPInfo& cspInfo = workerPrivate->GetCSPInfo();
+    Maybe<const mozilla::ipc::CSPInfo&> cspInfo = workerPrivate->GetCSPInfo();
+    if (!cspInfo) {
+      return false;
+    }
     requireTrustedTypesForDirectiveState =
-        cspInfo.requireTrustedTypesForDirectiveState();
+        cspInfo->requireTrustedTypesForDirectiveState();
     if (requireTrustedTypesForDirectiveState ==
         RequireTrustedTypesForDirectiveState::NONE) {
       return false;
@@ -899,9 +902,9 @@ bool AreArgumentsTrustedForEnsureCSPDoesNotBlockStringCompilation(
     }
     MOZ_ASSERT(!NS_IsMainThread());
     WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
-    const mozilla::ipc::CSPInfo& cspInfo = workerPrivate->GetCSPInfo();
-    if (cspInfo.requireTrustedTypesForDirectiveState() ==
-        RequireTrustedTypesForDirectiveState::NONE) {
+    Maybe<const mozilla::ipc::CSPInfo&> cspInfo = workerPrivate->GetCSPInfo();
+    if (!cspInfo || cspInfo->requireTrustedTypesForDirectiveState() ==
+                        RequireTrustedTypesForDirectiveState::NONE) {
       return true;
     }
   }
