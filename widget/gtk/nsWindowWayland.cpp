@@ -323,12 +323,11 @@ bool nsWindowWaylandToplevel::CreateRestoreSessionImpl(
   }
 
   // If we have old profile / workspace ID or it's empty just replace it by
-  // UUID to avoid protocol error crash (Bug 2059617).
-  nsresult ret = NS_OK;
-  if (!mWorkspaceID.IsEmpty()) {
-    (void)mWorkspaceID.ToInteger(&ret);
-  }
-  if (NS_SUCCEEDED(ret)) {
+  // UUID to avoid protocol error crash (Bug 2059617). Every ID saved for a
+  // Wayland window is a UUID from GenerateWorkspaceID(), while an old one is
+  // an integer, so an ID which is not a UUID is replaced.
+  nsID id;
+  if (!id.Parse(mWorkspaceID)) {
     mWorkspaceID = GenerateWorkspaceID();
     aRestoreWindow = false;
   }
