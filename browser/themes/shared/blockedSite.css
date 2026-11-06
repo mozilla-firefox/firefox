@@ -32,12 +32,10 @@
 
 #errorDescriptionContainer {
   position: absolute;
-  margin: 48px auto;
+  margin: var(--space-xxlarge) auto;
 }
 
 .error-description {
-  min-width: var(--in-content-container-min-width);
-  max-width: var(--in-content-container-max-width);
   color: black;
   background-color: white;
 }

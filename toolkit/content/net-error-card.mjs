@@ -1203,7 +1203,7 @@ export class NetErrorCard extends MozLitElement {
 
     return html`<div
       id="certificateErrorDebugInformation"
-      class="advanced-panel"
+      class="advanced-panel container"
     >
       <moz-button
         id="copyToClipboardTop"

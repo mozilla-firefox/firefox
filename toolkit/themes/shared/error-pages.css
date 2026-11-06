@@ -6,6 +6,9 @@
 
 body {
   --error-page-padding: 0px;
+  --error-page-card-width: min(100%, 720px);
+  --error-page-card-margin-block-start: calc(150px - var(--error-page-padding, 0px));
+
   background-size: 64px 32px;
   background-repeat: repeat-x;
   padding: 0;
@@ -14,6 +17,14 @@ body {
    * gets clipped in iframes with small width. We don't accomodate
    * any padding to prioritize real estate in the small viewport. */
   min-width: 13em;
+}
+
+net-error-card,
+.error-page-card {
+  width: var(--error-page-card-width);
+  min-width: min-content;
+  margin-block-start: var(--error-page-card-margin-block-start);
+  padding-block-end: var(--space-xxlarge);
 }
 
 .button-container {

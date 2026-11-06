@@ -11,10 +11,6 @@ body {
 .error-page-card {
   display: flex;
   flex-direction: row;
-  width: min(100%, 720px);
-  min-width: min-content;
-  margin-block-start: calc(150px - var(--error-page-padding, 0px));
-  padding-block-end: var(--space-xxlarge);
 }
 
 .error-page-card > .container {

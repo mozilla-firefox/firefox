@@ -14,7 +14,7 @@
   border: none;
   padding: 0;
   margin: 0;
-  padding-inline-end: 45px;
+  padding-inline-end: var(--space-xxlarge);
   position: relative;
 }
 

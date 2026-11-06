@@ -112,8 +112,6 @@ button:disabled {
 
 .advanced-panel {
   margin: 48px auto;
-  min-width: var(--in-content-container-min-width);
-  max-width: var(--in-content-container-max-width);
 }
 
 .custom-net-error-card h3,
@@ -232,11 +230,6 @@ button:disabled {
   }
 
   net-error-card {
-    width: min(100%, 720px);
-    min-width: min-content;
-    margin-top: calc(150px - var(--error-page-padding, 0px));
-    padding-block-end: var(--space-xxlarge);
-
     @media (max-width: 640px) {
       /* min-content holds the card wider than a narrow viewport, which is what
          forces a horizontal scrollbar. */
