@@ -2556,6 +2556,9 @@ class XPCShellTests:
             # in hopes of finding intermittent failures.
             #
 
+            # A retry would hide the intermittent failures we are looking for.
+            kwargs["retry"] = False
+
             def step1():
                 # Run tests sequentially. Parallel mode would also work, except that
                 # the logging system gets confused when 2 or more tests with the same
@@ -2563,9 +2566,7 @@ class XPCShellTests:
                 sequential_tests = []
                 for i in range(VERIFY_REPEAT):
                     self.testCount += 1
-                    test = testClass(
-                        test_object, retry=False, mobileArgs=mobileArgs, **kwargs
-                    )
+                    test = testClass(test_object, mobileArgs=mobileArgs, **kwargs)
                     sequential_tests.append(test)
                 status = self.runTestList(
                     tests_queue, sequential_tests, testClass, mobileArgs, **kwargs
@@ -2585,9 +2586,7 @@ class XPCShellTests:
                 kwargs["harness_timeout"] = self.harness_timeout * 2
                 for i in range(VERIFY_REPEAT):
                     self.testCount += 1
-                    test = testClass(
-                        test_object, retry=False, mobileArgs=mobileArgs, **kwargs
-                    )
+                    test = testClass(test_object, mobileArgs=mobileArgs, **kwargs)
                     sequential_tests.append(test)
                 status = self.runTestList(
                     tests_queue, sequential_tests, testClass, mobileArgs, **kwargs

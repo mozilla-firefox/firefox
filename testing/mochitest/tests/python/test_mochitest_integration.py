@@ -156,6 +156,23 @@ def test_output_fail(flavor, runFailures, runtests, test_name):
     assert lines[0]["status"] == results["line_status"]
 
 
+@pytest.mark.parametrize("flavor", ["plain", "browser-chrome"])
+def test_output_fail_verify(flavor, runtests, test_name, monkeypatch):
+    monkeypatch.setenv("MOZ_AUTOMATION", "1")
+
+    status, lines = runtests(test_name("fail"), verify=True)
+
+    tbpl_status, log_level, summary = get_mozharness_status(lines, status)
+    assert tbpl_status == TBPL_WARNING
+
+    assert not any(l["name"] == "retry" for l in filter_action("group_start", lines))
+    lines = filter_action("test_status", lines)
+    assert len(lines) == 1
+    assert lines[0]["status"] == "FAIL"
+    assert lines[0]["expected"] == "PASS"
+    assert "will_retry" not in lines[0].get("extra", {})
+
+
 @pytest.mark.parametrize("runFailures", ["selftest", ""])
 @pytest.mark.parametrize("flavor", ["plain", "browser-chrome"])
 def test_output_restart_after_failure(flavor, runFailures, runtests, test_name):

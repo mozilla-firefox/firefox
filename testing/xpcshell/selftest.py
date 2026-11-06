@@ -342,6 +342,19 @@ function run_test () {
 }
 """
 
+TEST_FAILING_ONCE = """
+function run_test () {
+  // See TEST_CRASHING_ONCE about writing to the cwd.
+  let marker = do_get_cwd();
+  marker.append("failed_once");
+  let failed = marker.exists();
+  if (!failed) {
+    marker.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0o644);
+  }
+  Assert.ok(failed);
+}
+"""
+
 # A test for asynchronous cleanup functions
 ASYNC_CLEANUP = """
 function run_test() {
@@ -576,7 +589,13 @@ prefs = [
         self.manifest = self.writeFile("xpcshell.toml", val)
 
     def assertTestResult(
-        self, expected, shuffle=False, verbose=False, headless=False, retry=None
+        self,
+        expected,
+        shuffle=False,
+        verbose=False,
+        headless=False,
+        retry=None,
+        verify=False,
     ):
         """
         Assert that self.x.runTests with manifest=self.manifest
@@ -595,6 +614,9 @@ prefs = [
         kwargs["testingModulesDir"] = self.testing_modules
         kwargs["utility_path"] = self.utility_path
         kwargs["repeat"] = 0
+        if verify:
+            kwargs["verify"] = True
+            kwargs["verifyMaxTime"] = 3600
         # Don't retry tests that are expected to fail
         if retry is not None:
             kwargs["retry"] = retry
@@ -1201,6 +1223,17 @@ add_test({
             self.assertEqual(1, len(self.errorSummaryLines("crash")))
             self.assertInLog("INFO crashed process")
             self.assertNotInLog("\nPROCESS-CRASH")
+
+    def testVerifyDoesNotRetry(self):
+        """
+        Test that verification reports a failure that a retry would hide.
+        """
+        self.writeFile("test_fails_once.js", TEST_FAILING_ONCE)
+        self.writeManifest(["test_fails_once.js"])
+
+        self.assertTestResult(False, retry=True, verify=True)
+        self.assertEqual(1, self.x.failCount)
+        self.assertNotInLog("will retry")
 
     def testCrashWithRetry(self):
         """

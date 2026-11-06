@@ -3547,9 +3547,11 @@ toolbar#nav-bar {
 
         # Retry-on-failure relies on counters populated by the desktop
         # OutputHandler pipeline, which remote harness subclasses bypass.
+        # Verification looks for intermittent failures, which a retry hides.
         retry = (
             type(self) is MochitestDesktop
             and os.environ.get("MOZ_AUTOMATION") is not None
+            and not (options.verify or options.verify_fission)
         )
         if retry:
             self.message_logger.retry_mode = True
