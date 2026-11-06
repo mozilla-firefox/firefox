@@ -9,6 +9,7 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/LoadInfo.h"
 #include "mozilla/NullPrincipal.h"
+#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/ScriptSettings.h"
@@ -19,6 +20,7 @@
 #include "nsDOMJSUtils.h"
 #include "nsDOMString.h"
 #include "nsError.h"
+#include "nsHtml5FragmentFastPath.h"
 #include "nsIScriptGlobalObject.h"
 #include "nsIStreamListener.h"
 #include "nsNetUtil.h"
@@ -70,9 +72,19 @@ already_AddRefed<Document> DOMParser::ParseFromStringInternal(
       document->ForceSkipDTDSecurityChecks();
     }
 
-    nsresult rv = nsContentUtils::ParseDocumentHTML(aStr, document, false);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      aRv.Throw(rv);
+    const bool fastPathEnabled =
+        StaticPrefs::dom_html_fragment_fast_path_enabled();
+    const bool parsedFast =
+        fastPathEnabled &&
+        nsHtml5FragmentFastPath::TryParseDocument(aStr, document, aRv);
+    if (!parsedFast) {
+      nsresult rv = nsContentUtils::ParseDocumentHTML(aStr, document, false);
+      if (NS_WARN_IF(NS_FAILED(rv))) {
+        aRv.Throw(rv);
+        return nullptr;
+      }
+    }
+    if (NS_WARN_IF(aRv.Failed())) {
       return nullptr;
     }
 

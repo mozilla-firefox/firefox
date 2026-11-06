@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>innerHTML gives the same result with and without the fragment fast path</title>
+<title>innerHTML and DOMParser give the same result with and without the fragment fast path</title>
 <script src="/tests/SimpleTest/SimpleTest.js"></script>
 <link rel="stylesheet" href="/tests/SimpleTest/test.css">
 <div id="contexts"></div>
@@ -331,6 +331,93 @@ add_task(async function test_fast_path_matches_full_parser() {
     }
   }
   is(mismatches, 0, `${cases.length} cases match`);
+});
+
+// Markup that only DOMParser treats differently: whitespace and comments
+// before the first content, and the tags that make the document's structure.
+const DOCUMENT_ACCEPTED = [
+  ...TEXT_WITHOUT_MARKUP,
+  " \t\n\f\r",
+  "  \r\n<span>x</span>",
+  "x",
+  " x <b>y</b> ",
+  "<strong>3</strong> items left",
+  " x",
+  "x<!--c-->",
+  "<p>a</p><!--c-->",
+];
+const DOCUMENT_REJECTED = [
+  "<!--c-->x",
+  "  <!--c--><p>x</p>",
+  "<!---->",
+  "<?pi>x",
+  "<!DOCTYPE html><p>x</p>",
+  "<html><p>x</p>",
+  "<head><title>t</title></head>x",
+  "<body class=a>x",
+  "<title>t</title>",
+  "<meta charset=utf-8><p>x</p>",
+  "<link rel=stylesheet href=a.css><p>x</p>",
+  "<style>p {}</style><p>x</p>",
+  "<script>x<\/script>",
+  "<noscript><p>x</p></noscript>",
+  "<template><p>x</p></template>",
+  "<frameset></frameset>",
+  "</p>x",
+  "&#10;",
+  " &#32;<header></header>",
+  "&#9;x",
+];
+
+function parseDocument(markup) {
+  const before = utils.innerHTMLFastPathCount;
+  const doc = new DOMParser().parseFromString(markup, "text/html");
+  const fast = utils.innerHTMLFastPathCount != before;
+  return {
+    html: doc.documentElement.outerHTML,
+    dom: describe(doc),
+    nodes: describeNodes(doc),
+    state: JSON.stringify([doc.compatMode, doc.readyState, doc.characterSet,
+                           doc.contentType, !!doc.head, !!doc.body]),
+    fast,
+  };
+}
+
+add_task(async function test_domparser_matches_full_parser() {
+  const startsWithNonContent = markup =>
+    /^(<!|<\?|<\/|&)/.test(markup.replace(/^[\t\n\f\r ]+/, ""));
+  const cases = [
+    ...[...ACCEPTED, ...DOCUMENT_ACCEPTED].map(markup =>
+      ({ markup, fast: !startsWithNonContent(markup) })),
+    ...[...REJECTED.filter(markup => !TEXT_WITHOUT_MARKUP.includes(markup)),
+        ...DOCUMENT_REJECTED].map(markup => ({ markup, fast: false })),
+  ];
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, false]] });
+  const expected = cases.map(c => parseDocument(c.markup));
+  await SpecialPowers.popPrefEnv();
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  const actual = cases.map(c => parseDocument(c.markup));
+  await SpecialPowers.popPrefEnv();
+
+  let mismatches = 0;
+  for (const [i, c] of cases.entries()) {
+    const name = `DOMParser ${JSON.stringify(c.markup)}`;
+    for (const key of ["html", "dom", "nodes", "state"]) {
+      if (actual[i][key] !== expected[i][key]) {
+        is(actual[i][key], expected[i][key], `${name}: ${key}`);
+        mismatches++;
+      }
+    }
+    if (actual[i].fast !== c.fast) {
+      is(actual[i].fast, c.fast, `${name}: parsed by the fast path`);
+      mismatches++;
+    }
+    if (expected[i].fast) {
+      ok(false, `${name}: parsed by the fast path with the pref disabled`);
+      mismatches++;
+    }
+  }
+  is(mismatches, 0, `${cases.length} DOMParser cases match`);
 });
 
 add_task(async function test_mutation_records() {

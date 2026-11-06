@@ -14,15 +14,16 @@ class nsIContent;
 namespace mozilla {
 class ErrorResult;
 namespace dom {
+class Document;
 class Element;
 }  // namespace dom
 }  // namespace mozilla
 
 /**
- * A fast path for parsing innerHTML for a small subset of HTML: common tags
- * whose nesting can't trigger any of the tree builder's fix-ups, attributes,
- * comments, and text with the character references whose decoding doesn't
- * depend on the context.
+ * A fast path for parsing innerHTML and DOMParser input for a small subset of
+ * HTML: common tags whose nesting can't trigger any of the tree builder's
+ * fix-ups, attributes, comments, and text with the character references whose
+ * decoding doesn't depend on the context.
  *
  * It checks all of the input before it creates any node, so that callers can
  * fall back to the full parser for input outside the subset.
@@ -41,7 +42,20 @@ class nsHtml5FragmentFastPath final {
                        mozilla::ErrorResult& aError);
 
   /**
-   * How many times TryParse() succeeded in this process, for tests.
+   * Parses aSource into aDocument, which must have no children, as the HTML
+   * parser would parse a document from it. Supports input that is only body
+   * content after optional whitespace, and that starts with a start tag or with
+   * text other than a character reference. Returns false without touching
+   * aDocument if aSource isn't supported, and otherwise behaves like
+   * TryParse().
+   */
+  static bool TryParseDocument(const nsAString& aSource,
+                               mozilla::dom::Document* aDocument,
+                               mozilla::ErrorResult& aError);
+
+  /**
+   * How many times TryParse() or TryParseDocument() succeeded in this process,
+   * for tests.
    */
   static uint32_t SuccessCount();
 };
