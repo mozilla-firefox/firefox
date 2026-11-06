@@ -274,6 +274,7 @@ export class GeckoViewStartup {
             module: "resource://gre/modules/ChildCrashHandler.sys.mjs",
             observers: [
               "compositor:process-aborted",
+              "gmp-plugin-crash",
               "ipc:content-created",
               "ipc:content-shutdown",
               "process-type-set",

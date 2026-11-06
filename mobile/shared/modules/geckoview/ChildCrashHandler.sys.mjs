@@ -117,6 +117,38 @@ export var ChildCrashHandler = {
 
         break;
       }
+
+      case "gmp-plugin-crash":
+        this.onGMPCrash(aSubject);
+        break;
     }
+  },
+
+  async onGMPCrash(aSubject) {
+    if (
+      !AppConstants.MOZ_CRASHREPORTER ||
+      Services.env.get("MOZ_CRASHREPORTER_NO_REPORT")
+    ) {
+      return;
+    }
+
+    const dumpID = aSubject
+      .QueryInterface(Ci.nsIPropertyBag2)
+      .get("pluginDumpID");
+    const [minidumpPath, extrasPath] = getPendingMinidump(dumpID);
+    // GMPParent makes up a dump ID when it couldn't take a minidump.
+    if (!(await IOUtils.exists(minidumpPath))) {
+      return;
+    }
+
+    debug`Notifying GMP process crash, dump ID ${dumpID}`;
+    lazy.EventDispatcher.instance.sendRequest("GeckoView:ChildCrashReport", {
+      minidumpPath,
+      extrasPath,
+      success: true,
+      fatal: false,
+      processVisibility: "BACKGROUND_CHILD",
+      processType: "gmplugin",
+    });
   },
 };
