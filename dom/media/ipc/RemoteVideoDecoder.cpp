@@ -185,6 +185,11 @@ IPCResult RemoteVideoDecoderParent::RecvConstruct(
     return IPC_OK();
   }
 
+  if (!IsMediaEngineIdAllowed()) {
+    aResolver(MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR, __func__));
+    return IPC_OK();
+  }
+
   // If the compositor is being recreated, wait for the new video bridge so that
   // we can share the decoded frames with it.
   layers::VideoBridgeChild::WaitUntilReady()

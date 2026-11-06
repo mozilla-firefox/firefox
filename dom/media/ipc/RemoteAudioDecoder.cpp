@@ -109,6 +109,11 @@ IPCResult RemoteAudioDecoderParent::RecvConstruct(
     return IPC_OK();
   }
 
+  if (!IsMediaEngineIdAllowed()) {
+    aResolver(MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR, __func__));
+    return IPC_OK();
+  }
+
   auto params = CreateDecoderParams{
       mAudioInfo,     static_cast<PRemoteCDMActor*>(mCDM.get()),
       mOptions,       CreateDecoderParams::WrapperSet({/* No wrapper */}),
