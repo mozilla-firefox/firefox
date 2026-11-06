@@ -1086,10 +1086,7 @@ preonboarding:
 moreFromMozilla:
   description: "New page on about:preferences to suggest more Mozilla products"
   owner: omc-core@mozilla.com
-  hasExposure: true
-  exposureDescription: >-
-    Exposure is sent once per browsing session when the about:preferences URL is
-    first accessed.
+  hasExposure: false
   variables:
     enabled:
       type: boolean

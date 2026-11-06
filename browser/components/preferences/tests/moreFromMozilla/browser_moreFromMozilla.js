@@ -185,3 +185,19 @@ add_task(async function test_aboutpreferences_search() {
   BrowserTestUtils.removeTab(gBrowser.selectedTab);
   await SpecialPowers.popPrefEnv();
 });
+
+add_task(async function test_disabled_more_route_falls_back_to_sync() {
+  await clearPolicies();
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.preferences.moreFromMozilla", false]],
+  });
+  let { selectedPane } = await openPreferencesViaOpenPreferencesAPI(
+    "paneMoreFromMozilla"
+  );
+  Assert.equal(
+    selectedPane,
+    "paneSync",
+    "The disabled More from Mozilla pane falls back to Sync"
+  );
+  await SpecialPowers.popPrefEnv();
+});

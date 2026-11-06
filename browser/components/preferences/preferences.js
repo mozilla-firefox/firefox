@@ -5,7 +5,6 @@
 // Import globals from the files imported by the .xul files.
 /* import-globals-from main.js */
 /* import-globals-from sync.js */
-/* import-globals-from moreFromMozilla.js */
 /* import-globals-from findInPage.js */
 /* import-globals-from /browser/base/content/utilityOverlay.js */
 /* import-globals-from /toolkit/content/preferencesBindings.js */
@@ -92,7 +91,6 @@ if (Cc["@mozilla.org/gio-service;1"]) {
 }
 
 ChromeUtils.defineESModuleGetters(this, {
-  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
   ContextualIdentityService:
     "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   DownloadUtils: "resource://gre/modules/DownloadUtils.sys.mjs",
@@ -108,7 +106,6 @@ ChromeUtils.defineESModuleGetters(this, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   OSKeyStore: "resource://gre/modules/OSKeyStore.sys.mjs",
-  Region: "resource://gre/modules/Region.sys.mjs",
   SelectionChangedMenulist:
     "resource:///modules/SelectionChangedMenulist.sys.mjs",
   ShortcutUtils: "resource://gre/modules/ShortcutUtils.sys.mjs",
@@ -639,14 +636,6 @@ function init_all() {
         groupIds: ["browserIconBasic", "browserIconBonus"],
         module: "chrome://browser/content/preferences/config/browser-icon.mjs",
       });
-    }
-  } else {
-    NimbusFeatures.moreFromMozilla.recordExposureEvent({ once: true });
-    if (NimbusFeatures.moreFromMozilla.getVariable("enabled")) {
-      document.getElementById("category-more-from-mozilla").hidden = false;
-      gMoreFromMozillaPane.option =
-        NimbusFeatures.moreFromMozilla.getVariable("template");
-      register_module("paneMoreFromMozilla", gMoreFromMozillaPane);
     }
   }
 
