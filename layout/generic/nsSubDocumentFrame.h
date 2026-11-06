@@ -113,12 +113,6 @@ class nsSubDocumentFrame final : public nsAtomicContainerFrame,
   bool ReflowFinished() override;
   void ReflowCallbackCanceled() override;
 
-  /**
-   * Return true if pointer event hit-testing should be allowed to target
-   * content in the subdocument.
-   */
-  bool PassPointerEventsToChildren();
-
   void MaybeShowViewer() {
     if (!mDidCreateDoc && !mCallingShow) {
       ShowViewer();

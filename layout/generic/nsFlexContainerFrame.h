@@ -378,10 +378,6 @@ class nsFlexContainerFrame final : public nsContainerFrame,
    */
   static nscoord FlexItemConsumedBSize(const FlexItem& aItem);
 
-#ifdef DEBUG
-  void SanityCheckAnonymousFlexItems() const;
-#endif  // DEBUG
-
   /**
    * Construct a new FlexItem for the given child frame, directly at the end of
    * aLine.

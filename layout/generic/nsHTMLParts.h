@@ -45,9 +45,6 @@ nsBlockFrame* NS_NewBlockFrame(mozilla::PresShell* aPresShell,
 nsIFrame* NS_NewBRFrame(mozilla::PresShell* aPresShell,
                         mozilla::ComputedStyle* aStyle);
 
-nsIFrame* NS_NewCommentFrame(mozilla::PresShell* aPresShell,
-                             mozilla::ComputedStyle* aStyle);
-
 // <frame> and <iframe>
 nsIFrame* NS_NewSubDocumentFrame(mozilla::PresShell* aPresShell,
                                  mozilla::ComputedStyle* aStyle);

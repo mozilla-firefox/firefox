@@ -74,12 +74,6 @@ class ViewportFrame : public nsContainerFrame {
       const ReflowInput& aReflowInput) const;
 
   /**
-   * Update our style (and recursively the styles of any anonymous boxes we
-   * might own)
-   */
-  void UpdateStyle(ServoRestyleState& aStyleSet);
-
-  /**
    * Return our single anonymous box child.
    */
   void AppendDirectlyOwnedAnonBoxes(nsTArray<OwnedAnonBox>& aResult) override;

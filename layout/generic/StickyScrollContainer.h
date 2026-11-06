@@ -132,8 +132,6 @@ class StickyScrollContainer final {
    */
   void UpdatePositions(nsPoint aScrollPosition, nsIFrame* aSubtreeRoot);
 
-  void ScrollPositionDidChange(const nsPoint&);
-
   ~StickyScrollContainer() = default;
 
   const DepthOrderedFrameList& GetFrames() const { return mFrames; }
