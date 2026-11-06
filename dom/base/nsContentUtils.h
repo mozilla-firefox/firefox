@@ -2003,6 +2003,18 @@ class nsContentUtils {
   // setHTML().
   static const int32_t kParseFragmentNoSanitization = -2;
 
+  /**
+   * Whether ParseFragmentHTML() and ParseFragmentXML() sanitize a fragment
+   * parsed for a node with aPrincipal, given their aFlags.
+   */
+  static bool ShouldSanitizeFragment(nsIPrincipal* aPrincipal, int32_t aFlags);
+
+  /**
+   * Whether ParseFragmentHTML(), ParseDocumentHTML() or ParseFragmentXML() is
+   * running, which they don't allow to be reentered.
+   */
+  static bool IsFragmentParsingActive() { return sFragmentParsingActive; }
+
   enum class SanitizerMode { Safe, Unsafe };
 
   /**

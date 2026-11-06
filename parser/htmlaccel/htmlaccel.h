@@ -531,6 +531,42 @@ MOZ_ALWAYS_INLINE_EVEN_DEBUG bool ContainsMarkup(const char16_t* aInput,
   return false;
 }
 
+MOZ_ALWAYS_INLINE_EVEN_DEBUG const char16_t* CollectLessThanAndAmpersand(
+    const char16_t* aStart, const char16_t* aPtr, const char16_t* aEnd,
+    uint32_t*& aOut, const uint32_t* aOutEnd) {
+  const char16_t* current = aPtr;
+  while (aEnd - current >= 16 && aOutEnd - aOut >= 16) {
+    uint8x16_t mask = StrideToMask(current, ZERO_LT_AMP_CR);
+    // One set bit per matching lane. On aarch64, each lane maps to a nibble
+    // of which only the top bit is kept.
+#if defined(__aarch64__)
+    uint64_t bits =
+        vget_lane_u64(
+            vreinterpret_u64_u8(vshrn_n_u16(vreinterpretq_u16_u8(mask), 4)),
+            0) &
+        0x8888888888888888ULL;
+    constexpr int kLaneShift = 2;
+#elif defined(__loongarch_sx)
+    uint64_t bits = __lsx_vpickve2gr_hu(
+        __lsx_vmskltz_b(reinterpret_cast<__m128i>(mask)), 0);
+    constexpr int kLaneShift = 0;
+#else  // x86/x86_64
+    uint64_t bits = uint32_t(_mm_movemask_epi8(mask));
+    constexpr int kLaneShift = 0;
+#endif
+    while (bits) {
+      const char16_t* match = current + (__builtin_ctzll(bits) >> kLaneShift);
+      if (*match != char16_t('<') && *match != char16_t('&')) {
+        return match;
+      }
+      *aOut++ = uint32_t(match - aStart);
+      bits &= bits - 1;
+    }
+    current += 16;
+  }
+  return current;
+}
+
 }  // namespace detail
 
 // Public entry points are in htmlaccelNotInline.h for now.

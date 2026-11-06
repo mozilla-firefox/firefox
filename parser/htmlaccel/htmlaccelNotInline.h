@@ -20,6 +20,26 @@ namespace mozilla::htmlaccel {
 MOZ_NEVER_INLINE bool ContainsMarkup(const char16_t* aPtr,
                                      const char16_t* aEnd);
 
+/// Appends the offsets from aStart of the less-than signs and ampersands from
+/// aPtr on to aOut. Returns where it stopped: at the first U+0000 or carriage
+/// return, or at the first 16-code-unit stride that doesn't fit before aEnd
+/// or whose offsets might not fit before aOutEnd.
+MOZ_NEVER_INLINE const char16_t* CollectLessThanAndAmpersand(
+    const char16_t* aStart, const char16_t* aPtr, const char16_t* aEnd,
+    uint32_t*& aOut, const uint32_t* aOutEnd);
+
+/// Returns the offset from aPtr of the first double quote, ampersand, carriage
+/// return or U+0000, or of the first 16-code-unit stride that doesn't fit
+/// before aEnd.
+MOZ_NEVER_INLINE size_t SkipAttributeValueDoubleQuoted(const char16_t* aPtr,
+                                                       const char16_t* aEnd);
+
+/// Returns the offset from aPtr of the first single quote, ampersand, carriage
+/// return or U+0000, or of the first 16-code-unit stride that doesn't fit
+/// before aEnd.
+MOZ_NEVER_INLINE size_t SkipAttributeValueSingleQuoted(const char16_t* aPtr,
+                                                       const char16_t* aEnd);
+
 // HTML Serializer functions
 
 // NOTE! The SkipNonEscaped functions only skip full SIMD strides, but the
