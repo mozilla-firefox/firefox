@@ -97,15 +97,6 @@ class FilterInstance {
       const gfxRect* aOverrideBBox = nullptr);
 
   /**
-   * Returns the post-filter area that could be dirtied when the given
-   * pre-filter area of aFilteredFrame changes.
-   * @param aPreFilterDirtyRegion The pre-filter area of aFilteredFrame that
-   *   has changed, relative to aFilteredFrame, in app units.
-   */
-  static nsRegion GetPostFilterDirtyArea(nsIFrame* aFilteredFrame,
-                                         const nsRegion& aPreFilterDirtyRegion);
-
-  /**
    * Returns the pre-filter area that is needed from aFilteredFrame when the
    * given post-filter area needs to be repainted.
    * @param aPostFilterDirtyRegion The post-filter area that is dirty, relative

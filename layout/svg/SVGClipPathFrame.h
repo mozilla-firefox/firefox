@@ -146,9 +146,6 @@ class SVGClipPathFrame final : public SVGContainerFrame {
   // SVGContainerFrame methods:
   gfxMatrix GetCanvasTM() override;
 
-  already_AddRefed<DrawTarget> CreateClipMask(gfxContext& aReferenceContext,
-                                              gfx::IntPoint& aOffset);
-
   void PaintFrameIntoMask(nsIFrame* aFrame, nsIFrame* aClippedFrame,
                           gfxContext& aTarget);
 
