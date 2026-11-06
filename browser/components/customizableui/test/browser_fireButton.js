@@ -82,6 +82,11 @@ async function awaitAndDismissToast() {
   gHintCalls = [];
 
   let hint = document.getElementById("confirmation-hint");
+  if (hint.state == "hiding") {
+    // A toast asked for while the previous one is still hiding only opens
+    // once that one has finished hiding.
+    await BrowserTestUtils.waitForPopupEvent(hint, "hidden");
+  }
   if (hint.state == "open" || hint.state == "showing") {
     let hidden = BrowserTestUtils.waitForEvent(hint, "popuphidden");
     hint.hidePopup();
