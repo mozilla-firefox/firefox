@@ -714,7 +714,7 @@ nsresult HappyEyeballsConnectionAttempt::ProcessHappyEyeballsOutput() {
           }
         }
 
-        EstablishTCPConnection(AsVariant(ByNameTarget{dnsHostname}),
+        EstablishTCPConnection(AsVariant(ByNameTarget{std::move(dnsHostname)}),
                                event.attempt_connection_by_name.port,
                                std::move(echConfig),
                                event.attempt_connection_by_name.id,
