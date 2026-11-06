@@ -9,7 +9,6 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/LoadInfo.h"
 #include "mozilla/NullPrincipal.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/BindingUtils.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/ScriptSettings.h"
@@ -20,7 +19,6 @@
 #include "nsDOMJSUtils.h"
 #include "nsDOMString.h"
 #include "nsError.h"
-#include "nsHtml5FragmentFastPath.h"
 #include "nsIScriptGlobalObject.h"
 #include "nsIStreamListener.h"
 #include "nsNetUtil.h"
@@ -72,34 +70,9 @@ already_AddRefed<Document> DOMParser::ParseFromStringInternal(
       document->ForceSkipDTDSecurityChecks();
     }
 
-    nsHtml5FragmentFastPath::ParseTimer timer(
-        nsHtml5FragmentFastPath::ParseTimer::Caller::DOMParser, aStr.Length());
-    const bool fastPathEnabled =
-        StaticPrefs::dom_html_fragment_fast_path_enabled();
-    const bool parsedFast =
-        fastPathEnabled &&
-        nsHtml5FragmentFastPath::TryParseDocument(aStr, document, aRv);
-    if (fastPathEnabled) {
-      timer.FastPathTried(parsedFast);
-      // DOMParser::CreateWithoutGlobal() leaves mGlobal null.
-      if (nsPIDOMWindowInner* window =
-              mGlobal ? mGlobal->GetAsInnerWindow() : nullptr) {
-        if (Document* windowDocument = window->GetExtantDoc()) {
-          windowDocument->SetUseCounter(
-              parsedFast ? eUseCounter_custom_DOMParserFastPath
-                         : eUseCounter_custom_DOMParserFastPathRejected);
-        }
-      }
-    }
-    if (!parsedFast) {
-      nsresult rv = nsContentUtils::ParseDocumentHTML(aStr, document, false);
-      if (NS_WARN_IF(NS_FAILED(rv))) {
-        aRv.Throw(rv);
-        return nullptr;
-      }
-    }
-    timer.Finish();
-    if (NS_WARN_IF(aRv.Failed())) {
+    nsresult rv = nsContentUtils::ParseDocumentHTML(aStr, document, false);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      aRv.Throw(rv);
       return nullptr;
     }
 

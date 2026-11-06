@@ -21,7 +21,6 @@
 #include "mozilla/PresShell.h"
 #include "mozilla/ScrollState.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/TextEditor.h"
 #include "mozilla/dom/CharacterDataBuffer.h"
@@ -57,7 +56,6 @@
 #include "nsCycleCollector.h"
 #include "nsDOMMutationObserver.h"
 #include "nsGkAtoms.h"
-#include "nsHtml5FragmentFastPath.h"
 #include "nsIControllers.h"
 #include "nsNodeInfoManager.h"
 #include "nsNodeSupportsWeakRefTearoff.h"
@@ -1326,35 +1324,11 @@ void FragmentOrElement::SetInnerHTMLInternal(const nsAString& aInnerHTML,
     nsAtom* contextLocalName = parseContext->NodeInfo()->NameAtom();
     int32_t contextNameSpaceID = parseContext->GetNameSpaceID();
 
-    // Only the full parser sanitizes fragments.
-    const bool mayParseFast =
-        StaticPrefs::dom_html_fragment_fast_path_enabled() &&
-        customElementRegistry.isNothing() && parseContext->IsElement() &&
-        !nsContentUtils::ShouldSanitizeFragment(
-            target->NodePrincipal(),
-            nsContentUtils::kParseFragmentPrivilegedDefaultSanitization);
-    nsHtml5FragmentFastPath::ParseTimer timer(
-        nsHtml5FragmentFastPath::ParseTimer::Caller::InnerHTML,
-        aInnerHTML.Length());
-    const bool parsedFast =
-        mayParseFast &&
-        nsHtml5FragmentFastPath::TryParse(aInnerHTML, target,
-                                          parseContext->AsElement(), aError);
-    if (mayParseFast) {
-      timer.FastPathTried(parsedFast);
-      // Not target's document, which is inert for template contents.
-      parseContext->OwnerDoc()->SetUseCounter(
-          parsedFast ? eUseCounter_custom_InnerHtmlFastPath
-                     : eUseCounter_custom_InnerHtmlFastPathRejected);
-    }
-    if (!parsedFast) {
-      aError = nsContentUtils::ParseFragmentHTML(
-          aInnerHTML, target, contextLocalName, contextNameSpaceID,
-          doc->GetCompatibilityMode() == eCompatibility_NavQuirks, true,
-          nsContentUtils::kParseFragmentPrivilegedDefaultSanitization,
-          std::move(customElementRegistry));
-    }
-    timer.Finish();
+    aError = nsContentUtils::ParseFragmentHTML(
+        aInnerHTML, target, contextLocalName, contextNameSpaceID,
+        doc->GetCompatibilityMode() == eCompatibility_NavQuirks, true,
+        nsContentUtils::kParseFragmentPrivilegedDefaultSanitization,
+        std::move(customElementRegistry));
     doc->ResumeDOMNotifications();
     if (target->GetFirstChild()) {
       MutationObservers::NotifyContentAppended(target, target->GetFirstChild(),

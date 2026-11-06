@@ -685,12 +685,6 @@ interface nsIDOMWindowUtils : nsISupports {
   readonly attribute unsigned long parsedStyleSheets;
 
   /**
-   * Returns how many times the innerHTML fast path parsed markup in this
-   * process.
-   */
-  readonly attribute unsigned long innerHTMLFastPathCount;
-
-  /**
    * See nsIWidget::ActivateNativeMenuItemAt
    *
    * Cannot be accessed from unprivileged context (not content-accessible)

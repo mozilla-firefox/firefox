@@ -7091,9 +7091,7 @@ void nsContentUtils::SetHTMLUnsafe(
 // Please note that about:blank and about:srcdoc inherit the security
 // context from the embedding context and hence are not loaded using
 // an about: scheme principal.
-// static
-bool nsContentUtils::ShouldSanitizeFragment(nsIPrincipal* aPrincipal,
-                                            int32_t aFlags) {
+bool ShouldSanitize(nsIPrincipal* aPrincipal, int32_t aFlags) {
   // We don't need to sanitize for setHTML(), which uses
   // kParseFragmentNoSanitization.
   if (aFlags == nsContentUtils::kParseFragmentNoSanitization) {
@@ -7188,7 +7186,7 @@ nsresult nsContentUtils::ParseFragmentHTML(
   RefPtr<Document> doc = aTargetNode->OwnerDoc();
   RefPtr<DocumentFragment> fragment;
 
-  if (ShouldSanitizeFragment(nodePrincipal, aFlags)) {
+  if (ShouldSanitize(nodePrincipal, aFlags)) {
     if (!doc->IsLoadedAsData()) {
       doc = nsContentUtils::CreateInertHTMLDocument(doc);
       if (!doc) {
@@ -7285,7 +7283,7 @@ nsresult nsContentUtils::ParseFragmentXML(const nsAString& aSourceBuffer,
   }
 #endif
 
-  bool shouldSanitize = ShouldSanitizeFragment(nodePrincipal, aFlags);
+  bool shouldSanitize = ShouldSanitize(nodePrincipal, aFlags);
   if (shouldSanitize && !aDocument->IsLoadedAsData()) {
     doc = nsContentUtils::CreateInertXMLDocument(aDocument);
   } else {

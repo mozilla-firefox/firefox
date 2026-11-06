@@ -62,7 +62,6 @@
 #include "nsFrameManager.h"
 #include "nsGlobalWindowInner.h"
 #include "nsGlobalWindowOuter.h"
-#include "nsHtml5FragmentFastPath.h"
 #include "nsIDocShell.h"
 #include "nsIFrame.h"
 #include "nsIObjectLoadingContent.h"
@@ -1164,12 +1163,6 @@ nsDOMWindowUtils::GetParsedStyleSheets(uint32_t* aSheets) {
   } else {
     *aSheets = 0;
   }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsDOMWindowUtils::GetInnerHTMLFastPathCount(uint32_t* aCount) {
-  *aCount = nsHtml5FragmentFastPath::SuccessCount();
   return NS_OK;
 }
 
